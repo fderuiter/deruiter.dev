@@ -8,9 +8,10 @@
 
 > **pickKeyboardAim**(`targets`, `eyeX`, `eyeY`, `width?`): `object`
 
-Where a keyboard shot aims: the nearest live enemy ahead of the loon,
-preferring real enemies over incoming shots, or straight ahead when the
-sky is clear. Keyboard players have no pointer to aim with.
+Where a keyboard shot aims: a soft lock on the nearest live enemy within
+a narrow cone ahead of the loon, preferring real enemies over incoming
+shots, or straight ahead when nothing is in the cone. Keyboard players
+have no pointer, so they aim by flying into line.
 
 ## Parameters
 

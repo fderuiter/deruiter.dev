@@ -77,7 +77,7 @@ describe("Laser Loon keyboard aim (#1940)", () => {
   it("aims at the nearest enemy ahead of the loon", () => {
     const aim = pickKeyboardAim(
       [
-        minion({ id: 1, x: 700, y: 100 }),
+        minion({ id: 1, x: 700, y: 150 }),
         minion({ id: 2, x: 300, y: 190 }),
         minion({ id: 3, x: 80, y: 180 }),
       ],
@@ -97,6 +97,16 @@ describe("Laser Loon keyboard aim (#1940)", () => {
       180
     );
     expect(aim).toEqual({ x: 600, y: 180 });
+  });
+
+  it("only locks on within a narrow cone, so the player flies into line", () => {
+    expect(
+      pickKeyboardAim([minion({ x: 300, y: 400 })], 150, 180, 768)
+    ).toEqual({ x: 748, y: 180 });
+    expect(pickKeyboardAim([minion({ x: 600, y: 230 })], 150, 180)).toEqual({
+      x: 600,
+      y: 230,
+    });
   });
 
   it("fires straight ahead when the sky is clear", () => {

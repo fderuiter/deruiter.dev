@@ -484,3 +484,9 @@ export const MINION_SHOT_SPEED = 3;
 export const MINION_SHOT_RADIUS = 7;
 /** How far ahead of the loon a minion must be before it may fire. */
 export const MINION_FIRE_MIN_LEAD = 120;
+/**
+ * Half-angle of the cone a keyboard shot locks on within, in radians:
+ * enough to forgive near misses, narrow enough that the player still flies
+ * into line.
+ */
+export const KEYBOARD_AIM_CONE_RADIANS = 0.2;

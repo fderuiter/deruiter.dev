@@ -44,6 +44,7 @@ import {
   MINION_SHOT_SPEED,
   MINION_SHOT_RADIUS,
   MINION_FIRE_MIN_LEAD,
+  KEYBOARD_AIM_CONE_RADIANS,
 } from "./constants";
 
 export function createInitialState(
@@ -1211,9 +1212,10 @@ export function getActProgressReadout(
 }
 
 /**
- * Where a keyboard shot aims: the nearest live enemy ahead of the loon,
- * preferring real enemies over incoming shots, or straight ahead when the
- * sky is clear. Keyboard players have no pointer to aim with.
+ * Where a keyboard shot aims: a soft lock on the nearest live enemy within
+ * a narrow cone ahead of the loon, preferring real enemies over incoming
+ * shots, or straight ahead when nothing is in the cone. Keyboard players
+ * have no pointer, so they aim by flying into line.
  *
  * @param targets - All live targets.
  * @param eyeX - The laser's origin x.
@@ -1230,6 +1232,8 @@ export function pickKeyboardAim(
   let bestScore = Infinity;
   for (const t of targets) {
     if (t.hp <= 0 || t.x <= eyeX || t.x > width + t.radius) continue;
+    const reach = Math.atan2(Math.abs(t.y - eyeY) - t.radius, t.x - eyeX);
+    if (reach > KEYBOARD_AIM_CONE_RADIANS) continue;
     const distance = Math.hypot(t.x - eyeX, t.y - eyeY);
     const score = t.isProjectile ? distance + 10_000 : distance;
     if (score < bestScore) {

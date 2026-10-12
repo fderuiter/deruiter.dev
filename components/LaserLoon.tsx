@@ -835,15 +835,6 @@ export const LaserLoon: React.FC = () => {
     return () => clearInterval(timer);
   }, [gameState, mode, isHalted]);
 
-  // Campaign acts count unpaused play toward their par time.
-  useEffect(() => {
-    if (gameState !== "playing" || mode !== "campaign" || isHalted) return;
-    const timer = setInterval(() => {
-      actPlayMsRef.current += 250;
-    }, 250);
-    return () => clearInterval(timer);
-  }, [gameState, mode, isHalted]);
-
   // Handle countdown expiration outside functional state updater
   useEffect(() => {
     if (gameState === "playing" && mode === "arcade" && timeLeft === 0) {
@@ -994,6 +985,11 @@ export const LaserLoon: React.FC = () => {
       // The backdrop parallax and boss hit flash run on wall-clock time.
       const time = performance.now();
       const dt = deltaMs / 16.666;
+      // Acts are timed in game time, so a pause or a slow frame never
+      // counts against par (#1940).
+      if (gameState === "playing" && mode === "campaign") {
+        actPlayMsRef.current += deltaMs;
+      }
 
       const width = DEFAULT_CANVAS_WIDTH;
       const height = DEFAULT_CANVAS_HEIGHT;
@@ -2767,7 +2763,8 @@ export const LaserLoon: React.FC = () => {
       <div className="arcade-shooter-footer w-full max-w-3xl flex flex-wrap gap-2 justify-between items-center px-4 mt-2 text-[10px] font-mono text-neutral-500">
         <span>
           Controls: WASD or arrows to fly · Mouse to aim and fire, or Space to
-          fire at the nearest enemy · 1-4 Optics · U Tremolo · P or Esc to pause
+          fire at an enemy in line ahead · 1-4 Optics · U Tremolo · P or Esc to
+          pause
         </span>
         <div className="flex items-center gap-4">
           {(gameState === "playing" || isPaused) && (

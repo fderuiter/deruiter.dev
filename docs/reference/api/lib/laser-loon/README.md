@@ -236,6 +236,12 @@ Re-exports [isBossTelegraphing](engine/functions/isBossTelegraphing.md)
 
 ***
 
+### KEYBOARD\_AIM\_CONE\_RADIANS
+
+Re-exports [KEYBOARD_AIM_CONE_RADIANS](constants/variables/KEYBOARD_AIM_CONE_RADIANS.md)
+
+***
+
 ### LaserHitResult
 
 Re-exports [LaserHitResult](engine/interfaces/LaserHitResult.md)

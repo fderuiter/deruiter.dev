@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useRef, type ReactNode } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { clamp } from "@/lib/game-utils";
 
 type Verdict = "win" | "loss" | "neutral";
 
@@ -76,7 +77,8 @@ function RollUp({ value, suffix = "" }: { value: number; suffix?: string }) {
     let frame = 0;
     const start = performance.now();
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / ROLL_UP_MS);
+      // A frame's timestamp can predate the start; never roll below zero.
+      const t = clamp((now - start) / ROLL_UP_MS, 0, 1);
       const eased = 1 - (1 - t) ** 3;
       el.textContent = `${Math.round(value * eased)}${suffix}`;
       if (t < 1) frame = requestAnimationFrame(tick);

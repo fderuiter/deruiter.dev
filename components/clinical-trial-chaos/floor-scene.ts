@@ -527,7 +527,7 @@ export function getVerdictStamp(
 }
 
 /** Tailwind classes for a BIMO report, coloured by its verdict (#1937). */
-export interface ReportTone {
+interface ReportTone {
   frame: string;
   score: string;
   icon: string;

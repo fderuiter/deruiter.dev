@@ -70,5 +70,6 @@ export {
   getCoachTile,
   getHint,
   getPrompt,
+  shownPrompts,
 } from "./internal/views";
 export type { CoachStep, Prompt } from "./internal/views";

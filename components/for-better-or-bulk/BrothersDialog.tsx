@@ -30,6 +30,17 @@ const SETTLE_MS = 500;
 /** The keys that would activate an option by accident during the settle time. */
 const SETTLE_KEYS: ReadonlySet<string> = new Set(["Enter", " ", "e", "E"]);
 
+/**
+ * The resting look of every option in the text. The three answers share it, so
+ * no option is highlighted before the player moves to it: only focus and hover
+ * change the look (round 9, brothers dialog). The disabled state is a variant,
+ * so it applies only when the break has nothing to promise, and the hover
+ * highlight is limited to enabled options (`enabled:hover:`), so a disabled
+ * option never lights up.
+ */
+const OPTION_CLASS =
+  "min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] enabled:hover:border-[var(--fbb-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)] disabled:opacity-40";
+
 const COMMITMENT_LABELS: Readonly<Record<Commitment, string>> = {
   chairs: "The chairs",
   lanterns: "The lanterns",
@@ -112,7 +123,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
             <button
               type="button"
               onClick={() => onDecide({ choice: "stay", commitment: null })}
-              className="min-h-11 rounded border border-[var(--fbb-accent)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+              className={OPTION_CLASS}
             >
               Stay and help. (He will keep stopping to retie a shoelace.)
             </button>
@@ -120,14 +131,14 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
               type="button"
               disabled={commitments.length === 0}
               onClick={() => setPromising(true)}
-              className="min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)] disabled:opacity-40"
+              className={OPTION_CLASS}
             >
               Take a short break and promise to come back for something.
             </button>
             <button
               type="button"
               onClick={() => onDecide({ choice: "leave", commitment: null })}
-              className="min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+              className={OPTION_CLASS}
             >
               Go with them. (Back around{" "}
               {clockLabel(
@@ -153,7 +164,7 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
                 key={commitment}
                 type="button"
                 onClick={() => onDecide({ choice: "break", commitment })}
-                className="min-h-11 rounded border border-[var(--fbb-control)] px-3 text-left text-xs font-bold active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+                className={OPTION_CLASS}
               >
                 {COMMITMENT_LABELS[commitment]}
               </button>

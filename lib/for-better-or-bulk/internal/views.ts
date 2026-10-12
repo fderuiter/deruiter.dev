@@ -10,6 +10,7 @@ import {
   CRATE_NAMES,
   FLOOR_CAP,
   INTERRUPTIONS,
+  ITEM_LABELS,
   THROW_OUT_PROMPT,
 } from "../presets";
 import type {
@@ -21,12 +22,15 @@ import type {
   PlayerId,
   StationKind,
   SupplyKind,
+  Target,
+  TargetKind,
   Tile,
 } from "../types";
 import { freeStation, openTarget, roseStation, stationsOf } from "./gates";
 import {
   COOKED_NAMES,
   ITEM_NAMES,
+  SPOT_NAMES,
   STATION_NAMES,
   TARGET_NAMES,
   crateGrabName,
@@ -34,7 +38,7 @@ import {
   heldLabel,
   heldName,
 } from "./words";
-import { GRILL_COOKS, interactTile, workTileFor } from "./press";
+import { GRILL_COOKS, faceTiles, interactTile, workTileFor } from "./press";
 
 /** The level runs from 9:00 to 4:00 on the wall clock. */
 const START_HOUR = 9;
@@ -78,21 +82,20 @@ const BUFFET_FOOD: Partial<
 };
 
 /**
- * The prompt for a cooked food faced at a buffet slot that wants another dish,
- * so the refusal says which dish the slot takes (round 8, S2). Null otherwise.
+ * The refusal for a buffet slot that the person faces. The slot is named by the
+ * food it takes (round 9, Buffet spots), and a cooked food carried to the wrong
+ * slot is told where it goes instead (round 8, S2). Null when the slot is not a
+ * buffet slot.
  */
-function wrongSlotPrompt(
-  state: GameState,
-  tile: Tile,
-  held: Item
-): string | null {
-  const target = at(state.targets, tile);
-  if (target?.kind !== "buffet" || target.status !== "open") return null;
-  if (target.wants === held.kind) return null;
+function buffetRefusal(target: Target, held: Item | null): string | null {
   const wanted = BUFFET_FOOD[target.wants];
-  const carried = BUFFET_FOOD[held.kind];
-  if (!wanted || !carried) return null;
-  return `This spot is for ${wanted.want}. ${carried.item} ${carried.verb} on their own spot.`;
+  const carried = held ? BUFFET_FOOD[held.kind] : undefined;
+  const name = wanted ? `This is the ${wanted.want} spot.` : null;
+  if (!name) return null;
+  if (carried && held && held.kind !== target.wants) {
+    return `${name} ${carried.item} ${carried.verb} on their own spot.`;
+  }
+  return name;
 }
 
 /**
@@ -142,6 +145,125 @@ function fullFloorPrompt(
     held
   );
   return blocked ? `${blocked} ${line}` : line;
+}
+
+/** What a spot that has been filled says, by its kind. */
+const SPOT_DONE: Readonly<Record<TargetKind, string>> = {
+  basket: "This bouquet basket is full.",
+  table: "This table is finished.",
+  aisle: "This aisle spot is already done.",
+  "chair-spot": "This chair spot is already set.",
+  hook: "This lantern hook is already done.",
+  buffet: "This spot is already set.",
+};
+
+/** What a spot that was left bare on purpose (simplified by hold work) says, by its kind. */
+const SPOT_BARE: Readonly<Record<TargetKind, string>> = {
+  basket: "This bouquet basket was left bare on purpose.",
+  table: "This table was left bare on purpose.",
+  aisle: "This aisle spot was left bare on purpose.",
+  "chair-spot": "This chair spot was left bare on purpose.",
+  hook: "This lantern hook was left bare on purpose.",
+  buffet: "This spot was left bare on purpose.",
+};
+
+/** Whether the bin is on this tile. */
+function isBinAt(state: GameState, tile: Tile): boolean {
+  return at(state.stations, tile)?.kind === "bin";
+}
+
+/**
+ * The reason a faced tile gives for a press that does nothing, or null when
+ * that tile has nothing to say: a plain tile with nothing in hand, or the bin
+ * with something in hand (see `unpressedReason`).
+ */
+function reasonOnTile(
+  state: GameState,
+  tile: Tile,
+  held: Item | null
+): string | null {
+  const supply = at(state.supplies, tile);
+  const station = at(state.stations, tile);
+  const target = at(state.targets, tile);
+  const floorItem = at(state.floor, tile);
+
+  if (supply) {
+    if (held)
+      return `The ${CRATE_NAMES[supply.kind]} crate only takes ${ITEM_NAMES[supply.kind]}.`;
+    return `The ${CRATE_NAMES[supply.kind]} crate is empty.`;
+  }
+  if (station) {
+    // The bin is emptied by holding work, and the work prompt names that hold,
+    // so a held item at the bin gets no interact line.
+    if (station.kind === "bin")
+      return held ? null : `Nothing on ${STATION_NAMES.bin} to take.`;
+    if (station.item)
+      return `${capitalise(STATION_NAMES[station.kind])} is full.`;
+    if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
+    if (station.kind === "grill")
+      return "The GRILL (G) takes raw hot dogs or wings.";
+    return `${capitalise(STATION_NAMES[station.kind])} takes roses.`;
+  }
+  if (target) {
+    if (target.status === "unplanned") return "This spot is not in this plan.";
+    if (target.status === "simplified") return SPOT_BARE[target.kind];
+    if (target.status !== "open") return SPOT_DONE[target.kind];
+    if (target.kind === "buffet") return buffetRefusal(target, held);
+    return `This ${SPOT_NAMES[target.kind]} needs ${ITEM_LABELS[target.wants]}.`;
+  }
+  if (floorItem) return "Something is already on the floor here.";
+  return null;
+}
+
+/**
+ * Why an interact press does nothing for this person, as one line. Only
+ * `getPrompt` calls it, and only when `interactTile` has already found that no
+ * press lands, so `pressTileFor` is not run a second time. The contract is
+ * one-way: a press that lands never gets a line here, and a press that does
+ * nothing gets one, with these exceptions:
+ *
+ * - The bin with something in hand gets no line, because the work prompt
+ *   names the hold that empties it. This holds even when the bin is one of
+ *   two faced tiles, so a bin that straddles with a wall gets no line either.
+ * - A press with nothing in hand that faces only plain ground gets no line,
+ *   since there is nothing to refuse.
+ *
+ * Each faced tile is checked in turn (see `faceTiles`), and the first reason
+ * wins. So a bin with no line lets the grill beside it speak. When no faced
+ * tile has a reason and something is held, the tile in front is named: a full
+ * floor, a station in reach that is full, or a plain "Nothing here takes ..."
+ * when the front is a wall or otherwise unusable.
+ */
+function unpressedReason(state: GameState, person: Player): string | null {
+  const held = person.holding;
+  const faced = faceTiles(person);
+  for (const tile of faced) {
+    const reason = reasonOnTile(state, tile, held);
+    if (reason) return reason;
+  }
+  if (!held) return null;
+  if (faced.some((tile) => isBinAt(state, tile))) return null;
+  return (
+    fullFloorPrompt(state, person, held) ??
+    `Nothing here takes ${heldName(held)}.`
+  );
+}
+
+/**
+ * The people whose status line the prompt panel shows. Solo shows the person at
+ * the keyboard, and the partner as well while the partner is out or frozen (on
+ * the phone, or retying a shoelace), so a call never goes unexplained (round 9,
+ * task 4). Co-op shows both people and is not handled here.
+ */
+export function shownPrompts(
+  state: GameState,
+  active: PlayerId
+): readonly PlayerId[] {
+  const partner: PlayerId = active === "fred" ? "abbi" : "fred";
+  const other = state.players[partner];
+  return other.presence === "away" || other.busyFor > 0
+    ? [active, partner]
+    : [active];
 }
 
 function capitalise(text: string): string {
@@ -264,10 +386,8 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
           )
         : null;
     if (blocked && interact) interact = `${blocked} ${interact}`;
-  } else if (held) {
-    interact =
-      wrongSlotPrompt(state, faced, held) ??
-      fullFloorPrompt(state, player, held);
+  } else {
+    interact = unpressedReason(state, player);
   }
   if (!held) {
     if (

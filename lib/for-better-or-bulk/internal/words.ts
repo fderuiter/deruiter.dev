@@ -32,6 +32,20 @@ export const TARGET_NAMES: Readonly<Record<TargetKind, string>> = {
   buffet: "the buffet (B)",
 };
 
+/**
+ * The spot a target is, in a refusal such as "This table needs ...". Buffet
+ * slots are named by the food they take instead, so they are not listed here.
+ */
+export const SPOT_NAMES: Readonly<
+  Record<Exclude<TargetKind, "buffet">, string>
+> = {
+  basket: "bouquet basket",
+  table: "table",
+  aisle: "aisle spot",
+  "chair-spot": "chair spot",
+  hook: "lantern hook",
+};
+
 /** Items in the middle of a sentence, such as "Carry the roses to...". */
 export const ITEM_NAMES: Readonly<Record<ItemKind, string>> = {
   roses: "the roses",

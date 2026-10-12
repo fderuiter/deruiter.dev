@@ -11,6 +11,7 @@
 - [COOKED\_NAMES](variables/COOKED_NAMES.md)
 - [CRATE\_ITEM\_NAMES](variables/CRATE_ITEM_NAMES.md)
 - [ITEM\_NAMES](variables/ITEM_NAMES.md)
+- [SPOT\_NAMES](variables/SPOT_NAMES.md)
 - [STATION\_NAMES](variables/STATION_NAMES.md)
 - [TARGET\_NAMES](variables/TARGET_NAMES.md)
 

@@ -18,3 +18,4 @@
 - [getCoachTile](functions/getCoachTile.md)
 - [getHint](functions/getHint.md)
 - [getPrompt](functions/getPrompt.md)
+- [shownPrompts](functions/shownPrompts.md)

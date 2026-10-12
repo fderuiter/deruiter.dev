@@ -842,6 +842,12 @@ Re-exports [SHOWER_WALK_FACTOR](presets/variables/SHOWER_WALK_FACTOR.md)
 
 ***
 
+### shownPrompts
+
+Re-exports [shownPrompts](internal/views/functions/shownPrompts.md)
+
+***
+
 ### SIMPLIFY\_SECONDS
 
 Re-exports [SIMPLIFY_SECONDS](presets/variables/SIMPLIFY_SECONDS.md)

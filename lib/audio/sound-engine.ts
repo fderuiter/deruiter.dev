@@ -105,6 +105,7 @@ export class SoundEngine {
   private volume: number;
   private muted: boolean;
   private storage: RawStorage | null;
+  private reducedMotionOptIn = false;
   private audioCtx: AudioContext | null = null;
   private activeSources = new Set<AudioScheduledSourceNode>();
   private activeSequenceTimeouts = new Set<NodeJS.Timeout | number>();
@@ -288,11 +289,23 @@ export class SoundEngine {
   }
 
   /**
-   * Checks if user has enabled OS or browser-level accessibility bypasses
-   * (e.g. forced-colors, high-contrast, or prefers-reduced-motion).
+   * Lets a page whose purpose is sound (the Meme Vault soundboard) play under
+   * `prefers-reduced-motion` once the visitor asks for it. Reduced motion is
+   * about motion; contrast and the stored bypass still silence everything.
+   * The page clears it when it unmounts.
    */
-  public isBypassActive(): boolean {
-    if (typeof window === "undefined") return false;
+  public setReducedMotionOptIn(optIn: boolean): void {
+    this.reducedMotionOptIn = optIn;
+    if (!optIn && this.isBypassActive()) this.stopAll();
+  }
+
+  /**
+   * Why sound is bypassed: `"reduced-motion"` when that preference is the
+   * only cause (a page may offer an opt-in), `"contrast"` for forced colours,
+   * high contrast or the stored setting, or `null` when sound is not bypassed.
+   */
+  public getBypassReason(): "reduced-motion" | "contrast" | null {
+    if (typeof window === "undefined") return null;
     try {
       const forcedColors = getMatchMediaMatches("(forced-colors: active)");
       const msHighContrast = getMatchMediaMatches(
@@ -312,18 +325,31 @@ export class SoundEngine {
         } catch {}
       }
 
-      return !!(
+      if (
         forcedColors ||
         msHighContrast ||
-        prefersReducedMotion ||
         documentClasses.includes("high-contrast") ||
         documentClasses.includes("contrast") ||
         documentHtmlContrast === "high" ||
         storageBypass
-      );
+      ) {
+        return "contrast";
+      }
+      return prefersReducedMotion ? "reduced-motion" : null;
     } catch {
-      return false;
+      return null;
     }
+  }
+
+  /**
+   * Checks if user has enabled OS or browser-level accessibility bypasses
+   * (e.g. forced-colors, high-contrast, or prefers-reduced-motion). Reduced
+   * motion does not count once a page has called `setReducedMotionOptIn`.
+   */
+  public isBypassActive(): boolean {
+    const reason = this.getBypassReason();
+    if (reason === "reduced-motion") return !this.reducedMotionOptIn;
+    return reason !== null;
   }
 
   /**

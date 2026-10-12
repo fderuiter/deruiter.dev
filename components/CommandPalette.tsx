@@ -1376,7 +1376,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
     if (q.includes("duck") || q.includes("puppy") || q.includes("woof")) {
       secretItems.push({
         id: "secret-duck",
-        title: "🐾 Summon Duck the Golden Retriever",
+        title: "🐾 Summon Duck the Golden Retriever puppy",
         subtitle: "Click to toss a treat and hear Duck bark happily!",
         category: "navigation",
         url: "action:duck",

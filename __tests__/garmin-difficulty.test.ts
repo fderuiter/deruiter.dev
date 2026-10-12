@@ -69,8 +69,10 @@ function survive(
   const stepMs = 50;
   let state: GameEngineState = {
     ...startGame(createInitialState(device, 0, []), device),
-    // A memory test: no gaps for a bot that never jumps (#1950).
+    // A memory test: no gaps or course foes for a bot that never jumps
+    // (#1950, #1991).
     course: EMPTY_COURSE,
+    foes: [],
     lastAllocTime: clock,
     lastObstacleTime: clock,
   };

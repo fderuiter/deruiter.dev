@@ -126,6 +126,30 @@ Milliseconds left in which a Cape runner's jump presses climb.
 
 ***
 
+### foes?
+
+> `optional` **foes?**: [`Foe`](../../garmin-foes/interfaces/Foe.md)[]
+
+Foes placed on the course for the current stage.
+
+***
+
+### foeShots?
+
+> `optional` **foeShots?**: [`FoeShot`](../../garmin-foes/interfaces/FoeShot.md)[]
+
+Shots fired by Auto Laps and the Rep Max.
+
+***
+
+### foeShotsFired?
+
+> `optional` **foeShotsFired?**: `number`
+
+Foe shots fired this run, for their ids.
+
+***
+
 ### fogLevel
 
 > **fogLevel**: `number`

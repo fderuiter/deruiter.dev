@@ -580,7 +580,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Scoring",
         detail:
-          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High, by a heat bolt or by a cape spin 200, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
+          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High, by a heat bolt, a cape spin or a sliding kettlebell 200, the Rep Max 2,000, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
         badge: "High Score",
       },
       {
@@ -588,6 +588,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Running into NULL is a Null Pointer, DOG is Watchdog Tripped, and STK is Stack Overflow; landing on NULL or DOG from above stomps them instead, but STK is spiked. Falling through a gap in the track is a Segmentation Fault. Each of these costs a life and restarts the stage; on your last life the crash screen names the cause and how to avoid it next run.",
         badge: "Crash Types",
+      },
+      {
+        title: "Course Foes",
+        detail:
+          "Each stage also places its own gym foes. A Kettlebell waddles along the track: stomp it to tip it over, then touch or stomp it to kick it; a sliding kettlebell flattens every enemy in its path and bounces off blocks, so stay clear when it comes back. A Move Alert (the watch's buzzing move nag) flies a wave; a stomp clips its wings. A Box Jumper (a plyo box on a spring) hops toward you on a timer. An Auto Lap (a lap timer on a base) buzzes slow lap pings at you while it is on screen. Halfway through stages 3 and 5 the Rep Max, a gym bro in a headband, hops and lobs dumbbells: it takes three stomps or six bolt or spin hits and pays 2,000. A Kettlebell hit is a Dropped Kettlebell; the rest are Gym Injuries. Heat bolts, cape spins and a Runner's High beat every ordinary foe outright and wear the Rep Max down.",
+        badge: "Foes",
       },
       {
         title: "The Course",

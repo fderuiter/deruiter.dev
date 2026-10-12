@@ -32,6 +32,7 @@ import {
   STAGE_COUNT,
   type CourseLayout,
 } from "@/lib/garmin-course";
+import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
 import {
   CAPE_SPIN_MS,
   CAPE_SPIN_REACH,
@@ -1110,6 +1111,249 @@ function drawObstacle(ctx: Ctx, obs: Obstacle) {
   ctx.restore();
 }
 
+// ------------------------------------------------------------ course foes
+
+const FOE_COLORS = {
+  steel: "#94a3b8",
+  dark: "#0d0e11",
+  amber: "#f59e0b",
+  coral: "#fb7185",
+  sky: "#38bdf8",
+  emerald: "#10b981",
+  iron: "#64748b",
+  skin: "#d6a77a",
+} as const;
+
+/** A Kettlebell: an iron bell with a handle, waddling on stubby feet, or tipped on its side. */
+function drawKettlebell(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  if (foe.mode === "walk") {
+    // Handle.
+    ctx.strokeStyle = FOE_COLORS.steel;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(w / 2, h * 0.36, w * 0.26, Math.PI, 0);
+    ctx.stroke();
+    // Bell.
+    ctx.fillStyle = FOE_COLORS.iron;
+    ctx.beginPath();
+    ctx.arc(w / 2, h * 0.64, w * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    // Weight plate on the front.
+    ctx.fillStyle = FOE_COLORS.amber;
+    ctx.fillRect(w / 2 - 3, h * 0.56, 6, 4);
+    ctx.fillStyle = FOE_COLORS.dark;
+    ctx.fillRect(3, h - 2, 4, 2);
+    ctx.fillRect(w - 7, h - 2, 4, 2);
+    return;
+  }
+  // Tipped over: the bell on its side with the handle pointing back.
+  const ahead = foe.mode === "kicked" && foe.vx < 0 ? -1 : 1;
+  ctx.fillStyle = FOE_COLORS.iron;
+  ctx.beginPath();
+  ctx.ellipse(w / 2, h / 2, w / 2 - 1, h / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = FOE_COLORS.steel;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(
+    w / 2 - ahead * (w / 2 - 1),
+    h / 2,
+    h * 0.35,
+    Math.PI / 2,
+    -Math.PI / 2,
+    ahead > 0
+  );
+  ctx.stroke();
+  ctx.fillStyle = FOE_COLORS.amber;
+  ctx.fillRect(w / 2 - 2, h / 2 - 2, 4, 4);
+  if (foe.mode === "kicked") {
+    // Speed lines behind a sliding kettlebell.
+    ctx.strokeStyle = FOE_COLORS.steel;
+    ctx.lineWidth = 1;
+    const back = foe.vx > 0 ? -3 : w + 3;
+    const dir = foe.vx > 0 ? -1 : 1;
+    for (const y of [h * 0.3, h * 0.7]) {
+      ctx.beginPath();
+      ctx.moveTo(back, y);
+      ctx.lineTo(back + dir * 5, y);
+      ctx.stroke();
+    }
+  }
+}
+
+/** A Move Alert: the watch's buzzing "move" nag, a bubble with a bang, on buzzing wings. */
+function drawMoveAlert(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  if (foe.mode === "fly") {
+    ctx.strokeStyle = FOE_COLORS.steel;
+    ctx.lineWidth = 1.4;
+    const flap = Math.sin((foe.phase ?? 0) * 6) * 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-2, 1 + flap);
+    ctx.lineTo(w * 0.35, 3);
+    ctx.moveTo(w + 2, 1 - flap);
+    ctx.lineTo(w * 0.65, 3);
+    ctx.stroke();
+  }
+  ctx.fillStyle = FOE_COLORS.sky;
+  ctx.beginPath();
+  ctx.roundRect(1, 2, w - 2, h - 4, 3);
+  ctx.fill();
+  // Bubble tail.
+  ctx.beginPath();
+  ctx.moveTo(w * 0.3, h - 2.5);
+  ctx.lineTo(w * 0.22, h);
+  ctx.lineTo(w * 0.48, h - 2.5);
+  ctx.fill();
+  // The bang.
+  ctx.fillStyle = FOE_COLORS.dark;
+  ctx.fillRect(w / 2 - 0.9, 3.5, 1.8, h * 0.38);
+  ctx.fillRect(w / 2 - 0.9, h - 5.5, 1.8, 1.6);
+}
+
+/** A Box Jumper: a plyo box on a spring, springing toward the runner. */
+function drawBoxJumper(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  ctx.fillStyle = FOE_COLORS.coral;
+  ctx.beginPath();
+  ctx.roundRect(0, 0, w, h - 3, 2);
+  ctx.fill();
+  // Plywood edges and a hand hole.
+  ctx.strokeStyle = FOE_COLORS.dark;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(1.5, 1.5, w - 3, h - 6);
+  ctx.fillStyle = FOE_COLORS.dark;
+  ctx.beginPath();
+  ctx.roundRect(w * 0.3, h * 0.25, w * 0.4, 2.5, 1.2);
+  ctx.fill();
+  // Spring.
+  ctx.strokeStyle = FOE_COLORS.steel;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.3, h - 3);
+  ctx.lineTo(w * 0.5, h - 1.5);
+  ctx.lineTo(w * 0.7, h - 3);
+  ctx.lineTo(w * 0.5, h);
+  ctx.stroke();
+}
+
+/** An Auto Lap: a lap timer face on a squat base. */
+function drawAutoLap(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  ctx.fillStyle = FOE_COLORS.iron;
+  ctx.fillRect(1, h - 5, w - 2, 5);
+  ctx.fillStyle = FOE_COLORS.steel;
+  ctx.beginPath();
+  ctx.arc(w / 2, h * 0.4, w * 0.42, 0, Math.PI * 2);
+  ctx.fill();
+  // Stopwatch crown.
+  ctx.fillRect(w / 2 - 1.5, -1.5, 3, 2);
+  ctx.strokeStyle = FOE_COLORS.dark;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(w / 2, h * 0.4);
+  ctx.lineTo(w / 2, h * 0.4 - w * 0.3);
+  ctx.moveTo(w / 2, h * 0.4);
+  ctx.lineTo(w / 2 + w * 0.22, h * 0.4);
+  ctx.stroke();
+}
+
+/** The Rep Max: a gym bro in a headband, pressing a dumbbell, with hit pips. */
+function drawRepMax(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  if (foe.graceMs > 0 && Math.floor(foe.graceMs / 80) % 2 === 0) return;
+  // Dumbbell pressed overhead.
+  ctx.fillStyle = FOE_COLORS.steel;
+  ctx.fillRect(1, 0, w - 2, 2);
+  ctx.fillStyle = FOE_COLORS.iron;
+  ctx.fillRect(0, -2, 4, 6);
+  ctx.fillRect(w - 4, -2, 4, 6);
+  // Arms.
+  ctx.fillStyle = FOE_COLORS.skin;
+  ctx.fillRect(3, 2, 3, 9);
+  ctx.fillRect(w - 6, 2, 3, 9);
+  // Head and headband.
+  ctx.beginPath();
+  ctx.arc(w / 2, 8, 4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = FOE_COLORS.amber;
+  ctx.fillRect(w / 2 - 4, 6, 8, 1.6);
+  // Tank top, wide at the shoulders.
+  ctx.fillStyle = FOE_COLORS.coral;
+  ctx.beginPath();
+  ctx.moveTo(2, 12);
+  ctx.lineTo(w - 2, 12);
+  ctx.lineTo(w - 6, h - 9);
+  ctx.lineTo(6, h - 9);
+  ctx.closePath();
+  ctx.fill();
+  // Shorts and legs.
+  ctx.fillStyle = FOE_COLORS.iron;
+  ctx.fillRect(6, h - 9, w - 12, 4);
+  ctx.fillStyle = FOE_COLORS.skin;
+  ctx.fillRect(7, h - 5, 3, 5);
+  ctx.fillRect(w - 10, h - 5, 3, 5);
+  // Hit pips: one per two hit points left.
+  ctx.fillStyle = FOE_COLORS.coral;
+  const pips = Math.ceil(foe.hp / 2);
+  for (let i = 0; i < pips; i++) {
+    ctx.fillRect(w / 2 - 6 + i * 4.5, -7, 3, 2.5);
+  }
+}
+
+/** Course foes, drawn at their screen x. */
+function drawFoes(ctx: Ctx, foes: readonly Foe[], camera: number) {
+  for (const f of foes) {
+    const x = f.x - camera;
+    if (x > CANVAS_SIZE || x + f.width < -8) continue;
+    ctx.save();
+    ctx.translate(x, f.y);
+    if (f.kind === "kettlebell") drawKettlebell(ctx, f);
+    else if (f.kind === "alert") drawMoveAlert(ctx, f);
+    else if (f.kind === "box") drawBoxJumper(ctx, f);
+    else if (f.kind === "lap") drawAutoLap(ctx, f);
+    else drawRepMax(ctx, f);
+    ctx.restore();
+  }
+}
+
+/** Foe shots: a lap ping is a small sky diamond, a dumbbell a tumbling bar with plates. */
+function drawFoeShots(ctx: Ctx, shots: readonly FoeShot[], camera: number) {
+  const r = FOE_SHOT_SIZE / 2;
+  for (const s of shots) {
+    const cx = s.x - camera + r;
+    const cy = s.y + r;
+    if (cx - r > CANVAS_SIZE || cx + r < 0) continue;
+    if (s.kind === "ping") {
+      ctx.fillStyle = FOE_COLORS.sky;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - r);
+      ctx.lineTo(cx + r, cy);
+      ctx.lineTo(cx, cy + r);
+      ctx.lineTo(cx - r, cy);
+      ctx.closePath();
+      ctx.fill();
+    } else {
+      // A tumbling dumbbell: a bar with a plate at each end.
+      const a = s.x / 6;
+      const dx = Math.cos(a) * r;
+      const dy = Math.sin(a) * r;
+      ctx.strokeStyle = FOE_COLORS.steel;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - dx, cy - dy);
+      ctx.lineTo(cx + dx, cy + dy);
+      ctx.stroke();
+      ctx.fillStyle = FOE_COLORS.iron;
+      ctx.beginPath();
+      ctx.arc(cx - dx, cy - dy, 2, 0, Math.PI * 2);
+      ctx.arc(cx + dx, cy + dy, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
 // ------------------------------------------------------- data-field ring
 
 function drawRingArc(ctx: Ctx, side: "ram" | "flash", fraction: number) {
@@ -1441,12 +1685,14 @@ export function renderWatchFace(
   drawBlocks(ctx, course, camera);
   drawKudos(ctx, course, camera);
 
+  drawFoes(ctx, state.foes ?? [], camera);
   for (const obs of state.obstacles) {
     drawObstacle(ctx, obs);
   }
   drawRunner(ctx, state);
   drawSpin(ctx, state);
   drawBolts(ctx, state.bolts ?? [], camera);
+  drawFoeShots(ctx, state.foeShots ?? [], camera);
   drawPopups(ctx, state, camera);
 
   if (state.isGcActive) drawGcFreeze(ctx, state);

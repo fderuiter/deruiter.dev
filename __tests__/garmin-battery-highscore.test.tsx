@@ -108,6 +108,8 @@ function runningSession(
     ...startGame(createInitialState("fenix", 0), "fenix"),
     obstacles: [],
     course: EMPTY_COURSE,
+    // No course foes for a runner that never jumps (#1991).
+    foes: [],
     lastObstacleTime: Date.now() + 60_000,
     ...overrides,
   };

@@ -219,6 +219,7 @@
 - [lib/garmin-cape](lib/garmin-cape/README.md)
 - [lib/garmin-course](lib/garmin-course/README.md)
 - [lib/garmin-engine](lib/garmin-engine/README.md)
+- [lib/garmin-foes](lib/garmin-foes/README.md)
 - [lib/garmin-ground-strip](lib/garmin-ground-strip/README.md)
 - [lib/garmin-powerups](lib/garmin-powerups/README.md)
 - [lib/garmin-telemetry](lib/garmin-telemetry/README.md)

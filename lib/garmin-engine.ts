@@ -46,6 +46,23 @@ import {
   type PowerTier,
 } from "./garmin-powerups";
 import {
+  FOE_DEFEAT_SCORE,
+  FOE_STOMP_SCORE,
+  damageFoe,
+  foeBox,
+  generateFoes,
+  kickShell,
+  overlaps,
+  runnerContact,
+  shellSweep,
+  shotBox,
+  stepFoes,
+  stompFoe,
+  type Foe,
+  type FoeKind,
+  type FoeShot,
+} from "./garmin-foes";
+import {
   CAPE_CEILING_Y,
   CAPE_FLAP_VY,
   CAPE_FLIGHT_MS,
@@ -225,6 +242,8 @@ export interface CrashReport {
     | "Stack Overflow"
     | "Out Of Storage"
     | "Segmentation Fault"
+    | "Dropped Kettlebell"
+    | "Gym Injury"
     | "Power Loss";
   file: string;
   line: number;
@@ -396,6 +415,13 @@ export interface GameEngineState {
   spinMs?: number;
   /** Milliseconds until the next spin can start. */
   spinCooldownMs?: number;
+  // ---- Course foes (#1991).
+  /** Foes placed on the course for the current stage. */
+  foes?: Foe[];
+  /** Shots fired by Auto Laps and the Rep Max. */
+  foeShots?: FoeShot[];
+  /** Foe shots fired this run, for their ids. */
+  foeShotsFired?: number;
   /** The jump key is held: the rise uses the lighter gravity. */
   jumpHeld?: boolean;
   /** Milliseconds since the runner last had footing, for coyote time. */
@@ -536,6 +562,13 @@ export function startGame(
     courseSeed,
     lives: START_LIVES,
     course: generateStage(1, courseSeed, GROUND_Y),
+    foes: generateFoes(
+      1,
+      courseSeed,
+      generateStage(1, courseSeed, GROUND_Y),
+      GROUND_Y
+    ),
+    foeShots: [],
     banner: { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
   };
 }
@@ -1070,6 +1103,13 @@ function loseLife(
     spinMs: 0,
     spinCooldownMs: 0,
     course: generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
+    foes: generateFoes(
+      stage,
+      state.courseSeed ?? 0,
+      generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
+      GROUND_Y
+    ),
+    foeShots: [],
     lastObstacleTime: now,
     banner: {
       text: `${report.errorType.toUpperCase()} · LIVES ${lives}`,
@@ -1078,6 +1118,262 @@ function loseLife(
     },
   };
 }
+
+/** The crash a foe or its shot causes on the runner's last hit. */
+function foeCrashReport(
+  state: GameEngineState,
+  source: FoeKind | FoeShot["kind"]
+): CrashReport {
+  const names: Record<FoeKind | FoeShot["kind"], string> = {
+    kettlebell: "Kettlebell",
+    alert: "Move Alert",
+    box: "Box Jumper",
+    lap: "Auto Lap",
+    repmax: "Rep Max",
+    ping: "Auto Lap ping",
+    dumbbell: "Rep Max dumbbell",
+  };
+  const dropped = source === "kettlebell";
+  return {
+    errorType: dropped ? "Dropped Kettlebell" : "Gym Injury",
+    file: "Garmin_Schvitz_App.mc",
+    line: dropped ? 163 : 201,
+    stackTrace: dropped
+      ? [
+          "Dropped Kettlebell: never skip leg day",
+          `Runner hit by a ${names[source]}`,
+          "at Garmin_Schvitz_App.onStep() [App.mc:163]",
+        ]
+      : [
+          "Gym Injury: one rep too many",
+          `Runner hit by a ${names[source]}`,
+          "at Garmin_Schvitz_App.onStep() [App.mc:201]",
+        ],
+    heapUsedKb: state.allocatedRamKb,
+    heapLimitKb: DEVICE_PROFILES[state.device].ramLimitKb,
+  };
+}
+
+/**
+ * Moves the course foes and their shots, then settles everything they touch:
+ * sliding shells, heat bolts, cape spins and the Runner's High defeat them,
+ * stomps tip, clip or flatten them, and a foe or shot that reaches the
+ * runner hurts like any bug. Sliding shells also flatten the drifting bugs
+ * in `obstacles` (screen coordinates).
+ */
+function updateCourseFoes(
+  state: GameEngineState,
+  obstacles: readonly Obstacle[],
+  ctx: {
+    cameraX: number;
+    bodyH: number;
+    prevBottom: number;
+    spinning: boolean;
+    deltaMs: number;
+  }
+): { state: GameEngineState; obstacles: Obstacle[]; lost: boolean } {
+  const startFoes = state.foes ?? [];
+  const startShots = state.foeShots ?? [];
+  if (startFoes.length === 0 && startShots.length === 0) {
+    return { state, obstacles: obstacles.slice(), lost: false };
+  }
+  const { cameraX, bodyH, prevBottom, spinning, deltaMs } = ctx;
+  const runnerX = cameraX + PLAYER_X + PLAYER_WIDTH / 2;
+  const stepped = stepFoes(
+    startFoes,
+    startShots,
+    state.course ?? EMPTY_COURSE,
+    GROUND_Y,
+    cameraX,
+    CANVAS_SIZE,
+    deltaMs,
+    runnerX,
+    state.foeShotsFired ?? 0
+  );
+  let foes = stepped.foes;
+  let shots = stepped.shots;
+  let score = 0;
+  const popups = [...(state.popups ?? [])];
+  const award = (f: Foe, points: number, label = `+${points}`) => {
+    if (points <= 0) return;
+    score += points;
+    popups.push({ x: f.x, y: f.y - 6, text: label, ttlMs: 800 });
+  };
+  // Hits that wear the foe down; a defeated one is dropped.
+  const hitFoe = (f: Foe, amount: number): Foe | null => {
+    const hit = damageFoe(f, amount);
+    award(f, hit.score);
+    return hit.foe;
+  };
+
+  // Sliding shells flatten other foes.
+  const sweep = shellSweep(foes);
+  for (const h of sweep.hits) award(h.foe, h.score);
+  foes = sweep.foes;
+
+  // Heat bolts: each is spent on the first foe it touches.
+  let bolts = state.bolts ?? [];
+  if (bolts.length > 0) {
+    const keptBolts: Bolt[] = [];
+    for (const b of bolts) {
+      const idx = foes.findIndex((f) => {
+        const box = foeBox(f);
+        return boltHits(b, box.left, box.top, box.right, box.bottom);
+      });
+      if (idx === -1) {
+        keptBolts.push(b);
+        continue;
+      }
+      const left = hitFoe(foes[idx], 1);
+      foes = left
+        ? foes.map((f, i) => (i === idx ? left : f))
+        : foes.filter((_, i) => i !== idx);
+    }
+    bolts = keptBolts;
+  }
+
+  const runnerBox = {
+    left: cameraX + PLAYER_X + 2,
+    right: cameraX + PLAYER_X + PLAYER_WIDTH - 2,
+    top: state.playerY + 2,
+    bottom: state.playerY + bodyH - 2,
+  };
+  // A cape spin hits every foe beside the runner.
+  if (spinning) {
+    const kept: Foe[] = [];
+    for (const f of foes) {
+      if (inSpinReach(runnerBox, foeBox(f))) {
+        const left = hitFoe(f, 1);
+        if (left) kept.push(left);
+      } else {
+        kept.push(f);
+      }
+    }
+    foes = kept;
+  }
+
+  const star = (state.starMs ?? 0) > 0;
+  const invulnerable = (state.invulnerableMs ?? 0) > 0;
+  let next: GameEngineState = state;
+  let hurtBy: FoeKind | FoeShot["kind"] | null = null;
+  const kept: Foe[] = [];
+  // Every foe is judged against the fall the runner came in with, so a stomp
+  // bounce doesn't turn a second foe landed on in the same tick into a hit.
+  const landingVy = state.playerVy;
+  for (const f of foes) {
+    const contact = runnerContact(f, runnerBox, prevBottom, landingVy);
+    if (contact === "stomp") {
+      const hit = stompFoe(f, runnerX);
+      // A stomp the Rep Max shrugs off during its grace doesn't build the chain.
+      const chain = (next.stompChain ?? 0) + (hit.score > 0 ? 1 : 0);
+      const points =
+        hit.score > 0 ? Math.min(3200, hit.score * 2 ** (chain - 1)) : 0;
+      award(
+        f,
+        points,
+        chain > 1 && points > 0 ? `+${points} x${chain}` : undefined
+      );
+      const buffered = (next.jumpBufferMs ?? 0) > 0;
+      next = {
+        ...next,
+        playerY: Math.min(next.playerY, f.y - bodyH),
+        playerVy: buffered ? JUMP_FORCE : STOMP_BOUNCE_VY,
+        jumpBufferMs: 0,
+        stompChain: chain,
+      };
+      if (hit.foe) kept.push(hit.foe);
+      continue;
+    }
+    if (contact === "kick") {
+      award(f, FOE_STOMP_SCORE);
+      kept.push(kickShell(f, runnerX));
+      continue;
+    }
+    if (contact === "hurt") {
+      if (star) {
+        const left = hitFoe(f, REPMAX_HP_ALL);
+        if (left) kept.push(left);
+        continue;
+      }
+      if (!invulnerable && hurtBy === null) hurtBy = f.kind;
+    }
+    kept.push(f);
+  }
+  foes = kept;
+
+  // Shots: a Runner's High burns them off; otherwise they hurt.
+  shots = shots.filter((sh) => {
+    if (!overlaps(runnerBox, shotBox(sh))) return true;
+    if (star) return false;
+    if (invulnerable) return true;
+    if (hurtBy === null) hurtBy = sh.kind;
+    return false;
+  });
+
+  // Sliding shells flatten drifting bugs too, spiked ones included.
+  const shells = foes.filter((f) => f.mode === "kicked");
+  let keptObstacles = obstacles.slice();
+  if (shells.length > 0) {
+    keptObstacles = obstacles.filter((o) => {
+      const walker =
+        o.type === "null_pointer" ||
+        o.type === "watchdog" ||
+        o.type === "stack_overflow";
+      if (!walker) return true;
+      const box = {
+        left: cameraX + o.x + 2,
+        right: cameraX + o.x + o.width - 2,
+        top: o.y + 2,
+        bottom: o.y + o.height - 2,
+      };
+      if (!shells.some((sh) => overlaps(foeBox(sh), box))) return true;
+      score += FOE_DEFEAT_SCORE;
+      popups.push({
+        x: cameraX + o.x,
+        y: o.y - 6,
+        text: `+${FOE_DEFEAT_SCORE}`,
+        ttlMs: 800,
+      });
+      return false;
+    });
+  }
+
+  next = {
+    ...next,
+    foes,
+    foeShots: shots,
+    foeShotsFired: stepped.nextShotId,
+    bolts,
+    score: next.score + score,
+    highScore: Math.max(next.highScore, next.score + score),
+    popups,
+  };
+
+  if (hurtBy !== null) {
+    const hit = damageTier(next.power);
+    if (!hit.survived) {
+      return {
+        state: loseLife(
+          { ...next, obstacles: keptObstacles },
+          foeCrashReport(next, hurtBy)
+        ),
+        obstacles: [],
+        lost: true,
+      };
+    }
+    next = {
+      ...next,
+      power: hit.power,
+      playerY: next.playerY + bodyH - playerHeightFor(hit.power),
+      invulnerableMs: DAMAGE_GRACE_MS,
+      banner: { text: "OUCH · BACK TO BASE", ttlMs: 1400, tone: "warn" },
+    };
+  }
+  return { state: next, obstacles: keptObstacles, lost: false };
+}
+
+/** Enough damage to defeat any foe outright. */
+const REPMAX_HP_ALL = 99;
 
 /**
  * Primary Game Physics & Simulation Update Loop (Called by requestAnimationFrame)
@@ -1721,8 +2017,20 @@ export function updateGameSimulation(
     };
   }
   if (stageCleared) {
-    // Bugs on screen at the pole are cleared with the stage.
-    updatedState = { ...updatedState, obstacles: [] };
+    // Bugs on screen at the pole are cleared with the stage, and the next
+    // stage's foes take the course.
+    const seed = state.courseSeed ?? 0;
+    updatedState = {
+      ...updatedState,
+      obstacles: [],
+      foes: generateFoes(
+        stage,
+        seed,
+        generateStage(stage, seed, GROUND_Y),
+        GROUND_Y
+      ),
+      foeShots: [],
+    };
   }
 
   const now = Date.now();
@@ -2039,6 +2347,18 @@ export function updateGameSimulation(
       crashTriggered
     );
   }
+
+  // 5b. Course foes and their shots (#1991).
+  const foeTick = updateCourseFoes(updatedState, nextObstacles, {
+    cameraX,
+    bodyH,
+    prevBottom: prevPlayerBottom,
+    spinning,
+    deltaMs: safeDelta,
+  });
+  if (foeTick.lost) return foeTick.state;
+  updatedState = foeTick.state;
+  nextObstacles.splice(0, nextObstacles.length, ...foeTick.obstacles);
 
   // 6. Spawn new Obstacles
   // Early stages leave room to learn the course before the bugs crowd in.

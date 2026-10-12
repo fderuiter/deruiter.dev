@@ -388,7 +388,7 @@ describe("PlayCabinet - Viewport Budgeting & Responsive Container Suite", () => 
   });
 });
 
-describe("PlayCabinet game keys (#1963)", () => {
+describe("PlayCabinet fullscreenKey (#1963)", () => {
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -399,8 +399,8 @@ describe("PlayCabinet game keys (#1963)", () => {
   });
 
   async function launch(
-    gameKeys: readonly string[] | undefined,
-    onKey: (key: string) => void
+    fullscreenKey: boolean | undefined,
+    onKey: (key: string, shift: boolean) => void
   ) {
     render(
       <PlayCabinet
@@ -410,12 +410,12 @@ describe("PlayCabinet game keys (#1963)", () => {
         instructions="Play"
         controls={[]}
         importComponent={() => Promise.resolve({})}
-        gameKeys={gameKeys}
+        fullscreenKey={fullscreenKey}
       >
         <div
           tabIndex={0}
           data-testid="work-key"
-          onKeyDown={(event) => onKey(event.key)}
+          onKeyDown={(event) => onKey(event.key, event.shiftKey)}
         >
           Work
         </div>
@@ -437,20 +437,34 @@ describe("PlayCabinet game keys (#1963)", () => {
     );
   }
 
-  it("lets a game-owned F reach the game and leaves fullscreen alone", async () => {
+  it("with fullscreenKey false, a bare F reaches the game and leaves fullscreen alone", async () => {
     const onKey = vi.fn();
-    await launch(["f"], onKey);
+    await launch(false, onKey);
     await act(async () => {
       fireEvent.keyDown(screen.getByTestId("work-key"), {
         key: "f",
         code: "KeyF",
       });
     });
-    expect(onKey).toHaveBeenCalledWith("f");
+    expect(onKey).toHaveBeenCalledWith("f", false);
     expect(fullscreenState()).toBe("false");
   });
 
-  it("still toggles fullscreen on a bare F when the game does not claim it", async () => {
+  it("with fullscreenKey false, Shift+F also reaches the game", async () => {
+    const onKey = vi.fn();
+    await launch(false, onKey);
+    await act(async () => {
+      fireEvent.keyDown(screen.getByTestId("work-key"), {
+        key: "F",
+        code: "KeyF",
+        shiftKey: true,
+      });
+    });
+    expect(onKey).toHaveBeenCalledWith("F", true);
+    expect(fullscreenState()).toBe("false");
+  });
+
+  it("toggles fullscreen on a bare F by default, as before", async () => {
     const onKey = vi.fn();
     await launch(undefined, onKey);
     await act(async () => {

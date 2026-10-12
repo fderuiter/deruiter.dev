@@ -51,12 +51,13 @@ interface PlayCabinetProps {
   onLaunch?: () => void;
   onExit?: () => void;
   /**
-   * Lowercase `event.key` values the game owns while it plays. A bare F
-   * toggles fullscreen unless the game lists "f" here, so its own work key
-   * reaches the game untouched. Fullscreen stays on the cabinet's button.
-   * Every other key, and every game that omits this, behaves as before.
+   * Whether a bare F toggles fullscreen (default true). A game whose work key
+   * is F passes false: F then never toggles fullscreen for this cabinet, in
+   * any phase or key layout, so the game gets the key untouched (a Shift+F
+   * included), and fullscreen is on the cabinet's button. Escape still leaves
+   * fullscreen either way.
    */
-  gameKeys?: readonly string[];
+  fullscreenKey?: boolean;
   /**
    * One title screen per game (#1516). When true (the default), the attract
    * screen is the game's title screen and the cabinet tells the game, through
@@ -107,7 +108,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   controlDock,
   onLaunch,
   onExit,
-  gameKeys,
+  fullscreenKey = true,
   singleTitleScreen = true,
   children,
 }) => {
@@ -350,6 +351,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         pending = null;
         const active = document.activeElement;
         if (!ownsFocus || (active && active !== document.body)) return;
+        // A modal dialog the game opened owns focus until it moves it (the
+        // game's own focus effects), so the boundary does not take it here.
+        if (cabinet.querySelector('[aria-modal="true"]')) return;
         getKeyboardBoundary(cabinet)?.focus({ preventScroll: true });
       }, 0);
     });
@@ -411,11 +415,8 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               return;
             }
           }
-          const key = event.key.toLowerCase();
-          // A key the game owns passes through to the game untouched.
-          const gameOwnsKey = gameKeys?.some((k) => k.toLowerCase() === key);
           if (
-            (key === "f" && !gameOwnsKey) ||
+            (fullscreenKey && event.key.toLowerCase() === "f") ||
             (event.key === "Escape" && isFullscreen)
           ) {
             event.preventDefault();

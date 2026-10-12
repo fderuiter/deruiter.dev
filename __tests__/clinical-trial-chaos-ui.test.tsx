@@ -1609,10 +1609,12 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     // Which offered value is compliant depends on the random subject, so pick
     // by position: a pick that leaves the dialog open was a wrong fix, and a
     // pick that closes it resolved the field, so open the next one.
+    // Allow the auditor to finish issuing Form 483 when the full suite leaves
+    // the run near 98% scrutiny after the former 120-step limit.
     let wrongPicks = 0;
     for (
       let i = 0;
-      i < 120 && !container.textContent?.includes("CLINICAL HOLD");
+      i < 140 && !container.textContent?.includes("CLINICAL HOLD");
       i++
     ) {
       const dialog = openDialog();

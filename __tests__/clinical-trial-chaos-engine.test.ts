@@ -381,7 +381,7 @@ describe("Clinical Trial Chaos Engine - Unit Tests", () => {
       "STUDYID,DOMAIN,USUBJID,SEQ,TESTCD,TEST,ORRES,STRESC,STRESN,STRESU,VISIT,DY,SIGNDATE,STATUS"
     );
     expect(csv).toContain("CT-CHAOS-2026");
-    expect(csv).toContain("DM");
+    expect(csv).toContain(",VS,");
   });
 
   it("generates BIMO inspection report with VAI and OAI verdicts based on violations", () => {

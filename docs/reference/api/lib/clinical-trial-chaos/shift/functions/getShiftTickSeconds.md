@@ -6,10 +6,10 @@
 
 # Function: getShiftTickSeconds()
 
-> **getShiftTickSeconds**(`elapsedMs`, `halted`): `number`
+> **getShiftTickSeconds**(`elapsedMs`, `halted`, `rate?`): `number`
 
 Seconds a frame advances the shift clocks: none while halted, otherwise
-the elapsed time clamped to `MAX_SHIFT_TICK_MS`.
+the elapsed time clamped to `MAX_SHIFT_TICK_MS`, scaled by `rate`.
 
 ## Parameters
 
@@ -24,6 +24,12 @@ Milliseconds since the previous frame.
 `boolean`
 
 Whether the clocks are held still.
+
+### rate?
+
+`number` = `1`
+
+Clock speed, from `getShiftClockRate`.
 
 ## Returns
 

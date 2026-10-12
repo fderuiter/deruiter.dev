@@ -25,6 +25,7 @@
 
 - [COFFEE\_BREAK\_END\_LOG](variables/COFFEE_BREAK_END_LOG.md)
 - [COFFEE\_BREAK\_START\_LOG](variables/COFFEE_BREAK_START_LOG.md)
+- [DIALOG\_CLOCK\_RATE](variables/DIALOG_CLOCK_RATE.md)
 - [EXPIRY\_SUSPICION](variables/EXPIRY_SUSPICION.md)
 - [MAX\_SHIFT\_TICK\_MS](variables/MAX_SHIFT_TICK_MS.md)
 - [PHASE\_TARGETS](variables/PHASE_TARGETS.md)
@@ -58,6 +59,7 @@
 - [getPhaseProgress](functions/getPhaseProgress.md)
 - [getPowerUpRefusal](functions/getPowerUpRefusal.md)
 - [getSAEChance](functions/getSAEChance.md)
+- [getShiftClockRate](functions/getShiftClockRate.md)
 - [getShiftTickSeconds](functions/getShiftTickSeconds.md)
 - [getSubjectErrorChance](functions/getSubjectErrorChance.md)
 - [getSubmissionCharge](functions/getSubmissionCharge.md)

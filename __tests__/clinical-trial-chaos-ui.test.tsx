@@ -661,7 +661,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         ).toBe(true);
 
         const dmStation = Array.from(container.querySelectorAll("h4"))
-          .find((h) => h.textContent?.includes("DM Station"))
+          .find((h) => h.textContent?.includes("VS Station"))
           ?.closest(".group") as HTMLElement;
         await act(async () => {
           dmStation.click();
@@ -816,7 +816,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         vi.advanceTimersByTime(600);
       });
       const dmHeading = Array.from(container.querySelectorAll("h4")).find((h) =>
-        h.textContent?.includes("DM Station")
+        h.textContent?.includes("VS Station")
       );
       await act(async () => {
         (dmHeading?.closest(".group") as HTMLElement).click();
@@ -899,7 +899,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
     // The first seeded packet is routine, clean, and below the phase target.
     const dmHeading = Array.from(container.querySelectorAll("h4")).find((h) =>
-      h.textContent?.includes("DM Station")
+      h.textContent?.includes("VS Station")
     );
     expect(dmHeading).toBeDefined();
     const dmStationCard = dmHeading?.closest(".group") as HTMLElement;
@@ -951,14 +951,14 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     // Let the remaining subjects expire until the auditor issues a 483
     for (
       let i = 0;
-      i < 60 && !container.textContent?.includes("TRIAL TERMINATED");
+      i < 60 && !container.textContent?.includes("CLINICAL HOLD");
       i++
     ) {
       await act(async () => {
         vi.advanceTimersByTime(5000);
       });
     }
-    expect(container.textContent).toContain("TRIAL TERMINATED");
+    expect(container.textContent).toContain("CLINICAL HOLD");
 
     const restartBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.includes("Restart Phase I")
@@ -1042,7 +1042,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       ) as HTMLElement;
       await act(async () => {
         board.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "1", bubbles: true })
+          new KeyboardEvent("keydown", { key: "2", bubbles: true })
         );
       });
       expect(container.textContent).toContain("Submits:1");
@@ -1099,6 +1099,18 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         "21 CFR Part 11 Electronic Signature"
       );
       expect(container.textContent).not.toContain("Submits:1");
+      // An SAE is signed Urgent Safety Expedited; the dialog starts on the
+      // routine reason, so the player has to choose it (#1937).
+      expect(
+        container.querySelector('[data-testid="cc-sign-reason-rule"]')
+          ?.textContent
+      ).toContain("SAE: sign it Urgent Safety Expedited");
+      const urgent = Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent?.trim() === "Urgent Safety Expedited"
+      );
+      await act(async () => {
+        urgent?.click();
+      });
       const confirm = Array.from(container.querySelectorAll("button")).find(
         (button) => button.textContent?.includes("Sign & Lock CRF (Enter)")
       );
@@ -1128,7 +1140,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         '[data-keyboard-boundary="true"]'
       ) as HTMLElement;
       const dmStation = Array.from(container.querySelectorAll("h4"))
-        .find((heading) => heading.textContent?.includes("DM Station"))
+        .find((heading) => heading.textContent?.includes("VS Station"))
         ?.closest("button") as HTMLButtonElement;
       expect(dmStation).toBeDefined();
       expect(dmStation.textContent).toContain("Fix first");
@@ -1154,7 +1166,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
       await act(async () => {
         board.dispatchEvent(
-          new KeyboardEvent("keydown", { key: "1", bubbles: true })
+          new KeyboardEvent("keydown", { key: "2", bubbles: true })
         );
       });
       expect(container.textContent).toContain(
@@ -1600,7 +1612,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     let wrongPicks = 0;
     for (
       let i = 0;
-      i < 120 && !container.textContent?.includes("TRIAL TERMINATED");
+      i < 120 && !container.textContent?.includes("CLINICAL HOLD");
       i++
     ) {
       const dialog = openDialog();
@@ -1622,7 +1634,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     }
 
     expect(wrongPicks).toBeGreaterThan(0);
-    expect(container.textContent).toContain("TRIAL TERMINATED");
+    expect(container.textContent).toContain("CLINICAL HOLD");
     // The fix dialog no longer sits over the Form 483 panel.
     expect(container.textContent).not.toContain(
       "CDISC Controlled Terminology Validation"
@@ -1634,7 +1646,9 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
     vi.mocked(Math.random).mockRestore();
     vi.useRealTimers();
-  });
+    // Dialogs now slow the clocks instead of stopping them (#1937), so the
+    // auditor keeps patrolling between picks and the run takes longer.
+  }, 20000);
 
   it("says on the board when a clean CRF went to the wrong station (#1326)", async () => {
     vi.useFakeTimers();
@@ -2018,12 +2032,12 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       await startCampaign();
       for (
         let i = 0;
-        i < 240 && !container.textContent?.includes("TRIAL TERMINATED");
+        i < 240 && !container.textContent?.includes("CLINICAL HOLD");
         i++
       ) {
         await flush(1000);
       }
-      expect(container.textContent).toContain("TRIAL TERMINATED");
+      expect(container.textContent).toContain("CLINICAL HOLD");
       const report = dialogTitled("FDA Bioresearch Monitoring (BIMO) Report");
       expect(report).toBeTruthy();
       expect(report?.textContent).toContain(
@@ -2057,7 +2071,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     expect(container.textContent).toContain("9800");
   });
 
-  it("should freeze conveyor subject timers when Controlled Terminology Drawer or Signature Modal is open, and resume immediately on close", async () => {
+  it("slows conveyor subject timers to a quarter while the Controlled Terminology Drawer or Signature Modal is open, and resumes full speed on close (#1937)", async () => {
     vi.useFakeTimers();
 
     await act(async () => {
@@ -2116,10 +2130,14 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       "CDISC Controlled Terminology Validation"
     );
 
-    // Let another 3 seconds pass while drawer is open
-    await tickGame(3000, 100);
+    // Eight seconds with the drawer open cost the subject about two (#1937).
+    await tickGame(8000, 100);
 
-    expect(activeTimer()).toBe(afterTick);
+    const drawerDrop =
+      parseInt(afterTick ?? "", 10) - parseInt(activeTimer() ?? "", 10);
+    expect(drawerDrop).toBeGreaterThanOrEqual(1);
+    expect(drawerDrop).toBeLessThanOrEqual(3);
+    const afterDrawer = activeTimer();
 
     // Close the drawer using the close button
     const closeBtn = Array.from(container.querySelectorAll("button")).find(
@@ -2133,7 +2151,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     await tickGame(2000, 100);
 
     expect(parseInt(activeTimer() ?? "", 10)).toBeLessThan(
-      parseInt(afterTick ?? "", 10)
+      parseInt(afterDrawer ?? "", 10)
     );
 
     // Routing now requires a clean dossier; fix the seeded observation first.
@@ -2163,11 +2181,14 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       "21 CFR Part 11 Electronic Signature"
     );
 
-    // Let another 4 seconds pass while signature modal is open
-    await tickGame(4000, 100);
+    // Eight seconds with the signature modal open cost about two.
+    await tickGame(8000, 100);
 
-    // The active dossier's timer stays frozen while the modal is open.
-    expect(activeTimer()).toBe(beforeSignature);
+    const signDrop =
+      parseInt(beforeSignature ?? "", 10) - parseInt(activeTimer() ?? "", 10);
+    expect(signDrop).toBeGreaterThanOrEqual(1);
+    expect(signDrop).toBeLessThanOrEqual(3);
+    const afterSignature = activeTimer();
 
     // Cancel signature modal (Close/Cancel)
     const cancelBtn = Array.from(container.querySelectorAll("button")).find(
@@ -2182,7 +2203,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
     // The active dossier's timer resumes immediately after closing.
     expect(parseInt(activeTimer() ?? "", 10)).toBeLessThan(
-      parseInt(beforeSignature ?? "", 10)
+      parseInt(afterSignature ?? "", 10)
     );
 
     vi.useRealTimers();
@@ -2509,9 +2530,10 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         "CDISC Controlled Terminology Validation"
       );
 
-      // Verify timer is frozen during drawer interlock pause
+      // The drawer slows the timer to a quarter rather than freezing it
+      // (#1937): three seconds open cost about 0.75 s.
       await tickGame(3000, 100);
-      expect(container.textContent).toContain("38s");
+      expect(container.textContent).toContain("37s");
 
       // Close drawer
       const closeBtn = Array.from(container.querySelectorAll("button")).find(
@@ -2523,7 +2545,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
 
       // Timer resumes after closing drawer
       await tickGame(2000, 100);
-      expect(container.textContent).toContain("36s");
+      expect(container.textContent).toContain("35s");
 
       vi.useRealTimers();
     }, 15000);

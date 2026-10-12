@@ -717,7 +717,7 @@ export function applySponsorSkeletonsToReport(
   let summary = report.summary;
   if (skeletons.some((s) => s.severity === "Critical")) {
     verdict = "OAI (Official Action Indicated - Form 483 Issued)";
-  } else if (verdict === "NAI (No Action Indicated - Approved)") {
+  } else if (verdict === "NAI (No Action Indicated)") {
     verdict = "VAI (Voluntary Action Indicated)";
   }
   summary = `${summary} Inspectors also found ${skeletons.length} sponsor-pleasing shortcut${

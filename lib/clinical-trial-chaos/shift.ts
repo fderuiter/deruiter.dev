@@ -795,20 +795,40 @@ export function isShiftClockHalted(pause: ShiftPauseState): boolean {
   );
 }
 
+/** How fast the shift clocks run while a fix or sign dialog is open. */
+export const DIALOG_CLOCK_RATE = 0.25;
+
+/**
+ * How fast the shift clocks run in the live game (#1937): stopped for a
+ * pause, the Field Manual or calibration, slowed to `DIALOG_CLOCK_RATE`
+ * while a fix or signature dialog is open, so a decision still costs time,
+ * and full speed otherwise.
+ *
+ * @param pause - What is currently open or paused.
+ * @returns 0, `DIALOG_CLOCK_RATE` or 1.
+ */
+export function getShiftClockRate(pause: ShiftPauseState): number {
+  if (pause.userPaused || pause.manualOpen || pause.calibrating) return 0;
+  if (pause.dialogOpen) return DIALOG_CLOCK_RATE;
+  return 1;
+}
+
 /**
  * Seconds a frame advances the shift clocks: none while halted, otherwise
- * the elapsed time clamped to `MAX_SHIFT_TICK_MS`.
+ * the elapsed time clamped to `MAX_SHIFT_TICK_MS`, scaled by `rate`.
  *
  * @param elapsedMs - Milliseconds since the previous frame.
  * @param halted - Whether the clocks are held still.
+ * @param rate - Clock speed, from `getShiftClockRate`.
  * @returns Seconds to pass to `tickShiftClocks`.
  */
 export function getShiftTickSeconds(
   elapsedMs: number,
-  halted: boolean
+  halted: boolean,
+  rate = 1
 ): number {
   if (halted) return 0;
-  return clamp(elapsedMs, 0, MAX_SHIFT_TICK_MS) / 1000;
+  return (clamp(elapsedMs, 0, MAX_SHIFT_TICK_MS) / 1000) * clamp(rate, 0, 1);
 }
 
 /** The state the per-frame clocks advance. */

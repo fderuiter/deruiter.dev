@@ -34,6 +34,7 @@
 - [getNextShiftScoreState](functions/getNextShiftScoreState.md)
 - [getObservationChoices](functions/getObservationChoices.md)
 - [getRoutingReadiness](functions/getRoutingReadiness.md)
+- [getSignatureReasonError](functions/getSignatureReasonError.md)
 - [getSpawnIntervalSeconds](functions/getSpawnIntervalSeconds.md)
 - [getSubmissionMode](functions/getSubmissionMode.md)
 - [isSubjectFullyCompliant](functions/isSubjectFullyCompliant.md)

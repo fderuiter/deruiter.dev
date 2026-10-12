@@ -228,11 +228,7 @@ describe("Clinical Chaos floor feedback (#1521, #1326)", () => {
     expect(getVerdictStamp("playing", null, "auditor")).toBeNull();
     expect(getVerdictStamp("idle", "NAI (x)", "auditor")).toBeNull();
     expect(
-      getVerdictStamp(
-        "phase_cleared",
-        "NAI (No Action Indicated - Approved)",
-        "auditor"
-      )
+      getVerdictStamp("phase_cleared", "NAI (No Action Indicated)", "auditor")
     ).toMatchObject({ code: "NAI", tone: "good" });
     expect(
       getVerdictStamp(

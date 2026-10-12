@@ -525,3 +525,37 @@ export function getVerdictStamp(
     return { code: "OAI", caption: "Form 483 issued", tone: "bad" };
   return null;
 }
+
+/** Tailwind classes for a BIMO report, coloured by its verdict (#1937). */
+interface ReportTone {
+  frame: string;
+  score: string;
+  icon: string;
+}
+
+/**
+ * The BIMO report's frame, score and icon colours: emerald for NAI, amber
+ * for VAI and rose for OAI, so a failing report never reads as a pass.
+ */
+export function getReportTone(verdict: string): ReportTone {
+  const code = verdict.slice(0, 3);
+  if (code === "NAI") {
+    return {
+      frame: "border-emerald-500/50",
+      score: "text-emerald-400",
+      icon: "text-emerald-400",
+    };
+  }
+  if (code === "VAI") {
+    return {
+      frame: "border-amber-500/50",
+      score: "text-amber-300",
+      icon: "text-amber-300",
+    };
+  }
+  return {
+    frame: "border-rose-500/50",
+    score: "text-rose-300",
+    icon: "text-rose-300",
+  };
+}

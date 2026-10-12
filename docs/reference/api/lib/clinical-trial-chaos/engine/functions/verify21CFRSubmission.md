@@ -26,8 +26,6 @@ Evaluates 21 CFR Part 11 Electronic Signature submission.
 
 ## Returns
 
-`object`
-
 ### level
 
 > **level**: `"WARN"` \| `"CRITICAL"` \| `"COMPLIANT"`
@@ -35,6 +33,12 @@ Evaluates 21 CFR Part 11 Electronic Signature submission.
 ### logMessage
 
 > **logMessage**: `string`
+
+### reasonMismatch?
+
+> `optional` **reasonMismatch?**: `boolean`
+
+Set when the signature reason, not the data or routing, was wrong.
 
 ### success
 

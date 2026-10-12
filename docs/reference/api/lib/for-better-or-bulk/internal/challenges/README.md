@@ -15,3 +15,4 @@
 
 - [countStars](functions/countStars.md)
 - [evaluateChallenges](functions/evaluateChallenges.md)
+- [setByThree](functions/setByThree.md)

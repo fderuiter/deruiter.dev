@@ -184,7 +184,9 @@ export function describeEvent(event: GameEvent): string | null {
         ? "The hot dogs are done."
         : "The wings are done.";
     case "burnt":
-      return "Something on the grill is now charcoal.";
+      return event.item === "hotdogs"
+        ? "The hot dogs on the grill are charcoal."
+        : "The wings on the grill are charcoal.";
     case "restocked":
       return RESTOCK_LINES[event.supply] ?? null;
     case "supply-empty":
@@ -198,15 +200,16 @@ export function describeEvent(event: GameEvent): string | null {
     case "fred-returned":
       return "Fred is back, and noticeably calmer.";
     case "shoes-retied":
-      return "Fred is double-checking his shoes. Again.";
+      return "Fred stops to retie a shoelace.";
     case "seeded-start":
       return SEEDED_LINES[event.id];
     case "seeded-end":
       return SEEDED_END_LINES[event.id];
     case "level-finished":
+      if (!event.allSet) return "It's 4:00. Time to get married.";
       return event.early
         ? "Everything is set. Early, even."
-        : "It's 4:00. Time to get married.";
+        : "Everything is set.";
     default:
       return null;
   }

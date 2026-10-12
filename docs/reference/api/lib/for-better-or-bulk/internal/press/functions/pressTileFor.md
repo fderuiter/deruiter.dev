@@ -13,12 +13,13 @@ The tile a press of the interact key acts on for a person standing as
 deterministic: the engine, the prompts, the canvas and the assist's route
 all read this one rule.
 
-With nothing in hand, the faced tile is used when it has stock, an item on a
-station, or a loose item on the floor. With something in hand, the faced
-tile is used when it takes the item. Failing that, a station next to the
-person that takes the item is used, so standing beside the arrange table
-puts roses on it and not on the floor. The floor is the last choice, and
-only the faced tile counts as the floor.
+With nothing in hand, the first faced tile (see `faceTiles`) that has stock,
+an item on a station, or a loose item on the floor is used. With something
+in hand, the first faced tile that takes the item is used. Failing that, a
+station next to the person that takes the item is used, so standing beside
+the arrange table puts roses on it and not on the floor. The floor is the
+last choice, and only the tile in front of the nearest tile counts as the
+floor.
 
 ## Parameters
 

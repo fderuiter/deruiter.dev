@@ -8,6 +8,7 @@
 
 ## Functions
 
+- [availableCommitments](functions/availableCommitments.md)
 - [categoryProgress](functions/categoryProgress.md)
 - [computeReceipt](functions/computeReceipt.md)
 - [readinessLines](functions/readinessLines.md)

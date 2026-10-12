@@ -6,6 +6,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import {
@@ -14,12 +15,14 @@ import {
   bankText,
   LEFT_LINE,
   RELAXED_LEVEL_SECONDS,
+  availableCommitments,
   createLevel,
   type Frame,
   type GameEvent,
   type GameState,
 } from "@/lib/for-better-or-bulk";
 import { BrothersDialog } from "@/components/for-better-or-bulk/BrothersDialog";
+import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import {
   seedName,
   throttleFloorFull,
@@ -357,6 +360,100 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(frame.active).toBe(true);
   });
 
+  it("moves focus to the brothers' heading as the text opens, and keeps it there (#1963)", async () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(<ForBetterOrBulkGame />);
+    start();
+    // Start moves focus to the cabinet on the next frame; let that land before the text opens.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    const heading = screen.getByRole("heading", {
+      name: "Text from Fred's brothers",
+    });
+    // Focus lands on the heading at once, not after the focus trap's own timer.
+    expect(document.activeElement).toBe(heading);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    expect(document.activeElement).toBe(heading);
+    fireEvent.click(screen.getByRole("button", { name: /Take a short break/ }));
+    expect(document.activeElement).toBe(heading);
+  });
+
+  it("hands focus back to the element focused before the text opened, not the heading (#1963)", async () => {
+    const state = { ...createLevel(DEFAULT_SETUP), phase: "brothers" as const };
+    const before = <button type="button">Before the text</button>;
+    const { rerender } = render(<>{before}</>);
+    screen.getByRole("button", { name: "Before the text" }).focus();
+    rerender(
+      <>
+        {before}
+        <BrothersDialog state={state} onDecide={vi.fn()} />
+      </>
+    );
+    expect(document.activeElement).toBe(
+      screen.getByRole("heading", { name: "Text from Fred's brothers" })
+    );
+    rerender(<>{before}</>);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: "Before the text" })
+    );
+  });
+
+  it("sends a KeyF press from the game boundary to the engine as work, and leaves fullscreen alone (#1963)", async () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(
+      <PlayCabinet
+        gameId="for-better-or-bulk"
+        title="For Better or Bulk"
+        icon={<span />}
+        instructions="Play"
+        controls={[]}
+        importComponent={() => Promise.resolve({})}
+        fullscreenKey={false}
+        singleTitleScreen={false}
+      >
+        <ForBetterOrBulkGame />
+      </PlayCabinet>
+    );
+    const launch = screen.getByRole("button", { name: /Launch Cabinet/i });
+    await act(async () => {
+      fireEvent.mouseEnter(launch);
+      await Promise.resolve();
+    });
+    await act(async () => {
+      fireEvent.click(launch);
+    });
+    await screen.findByRole(
+      "button",
+      { name: "Start setup" },
+      { timeout: 5000 }
+    );
+    start();
+    const cabinet = document.querySelector(
+      '[data-arcade-cabinet="for-better-or-bulk"]'
+    );
+    expect(cabinet?.getAttribute("data-fullscreen")).toBe("false");
+
+    engine.inputs = [];
+    fireEvent.keyDown(game(), { key: "f", code: "KeyF" });
+    runUntil(() => engine.inputs.some((frame) => frame.inputs.abbi.work), 40);
+    expect(engine.inputs.some((frame) => frame.inputs.abbi.work)).toBe(true);
+    expect(cabinet?.getAttribute("data-fullscreen")).toBe("false");
+    fireEvent.keyUp(game(), { key: "f", code: "KeyF" });
+
+    engine.inputs = [];
+    fireEvent.keyDown(game(), { key: "F", code: "KeyF", shiftKey: true });
+    runUntil(() => engine.inputs.some((frame) => frame.inputs.abbi.work), 40);
+    expect(engine.inputs.some((frame) => frame.inputs.abbi.work)).toBe(true);
+    expect(cabinet?.getAttribute("data-fullscreen")).toBe("false");
+  });
+
   /** Runs focus moves at once, and records each scrollIntoView call. */
   function stubScroll(): ReturnType<typeof vi.fn> {
     const scroll = vi.fn();
@@ -432,7 +529,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(
       screen.getByText(new RegExp(`Abbi is carrying ${ITEM_LABELS.roses}`))
     ).toBeTruthy();
-    expect(screen.getByText(/Fred has not calmed down yet/)).toBeTruthy();
+    expect(screen.getByText(/The wedding is still on\./)).toBeTruthy();
     unmount();
 
     const free = {
@@ -445,7 +542,8 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     render(<BrothersDialog state={free} onDecide={vi.fn()} />);
     expect(screen.getByText(/Abbi has her hands free/)).toBeTruthy();
     expect(screen.queryByText(/carrying|chairs/)).toBeNull();
-    expect(screen.getByText(/Fred has calmed down/)).toBeTruthy();
+    // The line is about the wedding whatever the mood, so it does not change.
+    expect(screen.getByText(/The wedding is still on\./)).toBeTruthy();
   });
 
   it("offers a break only with a promise about work that is in the plan", () => {
@@ -704,6 +802,72 @@ describe("For Better or Bulk day seed on the page (#1918)", () => {
   });
 });
 
+describe("For Better or Bulk solo swap line and the helper's line in the panel", () => {
+  beforeEach(() => {
+    stubLoud(false);
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the idle partner's swap line in the solo panel, with no buttons under it", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    const fred = screen.getByTestId("fbb-prompt-fred");
+    expect(fred.textContent).toBe("Fred is waiting. Tab to switch to him.");
+    expect(within(fred).queryByRole("button")).toBeNull();
+  });
+
+  it("keeps the idle partner out of the panel on a helper day", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    expect(screen.queryByTestId("fbb-prompt-fred")).toBeNull();
+    expect(screen.getByTestId("fbb-prompt-abbi")).toBeTruthy();
+  });
+
+  it("shows the helper's job line in the side panel, after the prompts, after the start and after several steps", () => {
+    render(
+      <ForBetterOrBulkGame
+        initialSetup={{ ...DEFAULT_SETUP, assist: true, seed: 12345 }}
+      />
+    );
+    start();
+    // The line must be on screen in the prompt column, below the prompt it
+    // follows, and not hidden by any ancestor (jsdom does not lay out, so this
+    // checks the rendered tree and the computed display and visibility).
+    const expectOnPanel = () => {
+      const line = screen.getByTestId("fbb-helper");
+      const prompt = screen.getByTestId("fbb-prompt-abbi");
+      expect(line.textContent).toMatch(/^(Fred|Abbi) .+\.$/);
+      expect(line.parentElement).toBe(prompt.parentElement);
+      expect(
+        prompt.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBeTruthy();
+      for (let el: HTMLElement | null = line; el; el = el.parentElement) {
+        expect(el.hidden).toBe(false);
+        expect(el.getAttribute("aria-hidden")).not.toBe("true");
+        const style = window.getComputedStyle(el);
+        expect(style.display).not.toBe("none");
+        expect(style.visibility).not.toBe("hidden");
+      }
+    };
+    expectOnPanel();
+    const stepsBefore = engine.inputs.length;
+    for (let i = 0; i < 12; i++) {
+      act(() => {
+        if (frame.active) frame.callback?.(250);
+      });
+    }
+    expect(engine.inputs.length).toBeGreaterThan(stepsBefore);
+    expectOnPanel();
+  });
+});
+
 describe("For Better or Bulk side panel: helper, partner and day (fbb round)", () => {
   beforeEach(() => {
     stubLoud(false);
@@ -726,15 +890,19 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     expect(screen.getByTestId("fbb-active").textContent).toContain(
       "Tab to swap · Shift+Tab to leave · Escape to pause"
     );
+    // The job line is not a live region: the status region announces its kind changes.
+    expect(
+      screen.getByTestId("fbb-helper").getAttribute("aria-live")
+    ).toBeNull();
     expect(screen.getByTestId("fbb-helper").textContent).toMatch(
-      /^Helper: .+\.$/
+      /^(Fred|Abbi) .+\.$/
     );
     // The idle line is readable text, not the dim token, and is announced once at the start.
     expect(screen.getByTestId("fbb-helper").className).toContain(
       "text-[var(--fbb-text)]"
     );
     expect(screen.getByRole("status").textContent).toContain(
-      "Helper is waiting for Abbi to place something first."
+      "Fred starts helping after Abbi places the first item."
     );
   });
 
@@ -810,8 +978,13 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
-    // With one person out there is no swap, so Tab is left to the browser.
-    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(true);
+    // The hint says why Tab does not swap (round 16, round 18 S-1).
+    expect(screen.getByTestId("fbb-active").textContent).toContain(
+      "Fred is out, so Tab does nothing"
+    );
+    // With one person out there is no swap, and Tab keeps focus on the game
+    // so the arrows still move Abbi.
+    expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(false);
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
     expect(screen.getByRole("status").textContent).toBe(
       "Fred is out with his brothers."
@@ -872,5 +1045,199 @@ describe("For Better or Bulk day names", () => {
     expect(seedName(0, 99)).toBe("Standard day");
     expect(seedName(99, 99)).toBe("Today's seed");
     expect(seedName(12345, 99)).toBe("Seed 12345");
+  });
+});
+
+describe("the brothers' text (round 8, B1)", () => {
+  /** The level at the brothers' text, with every category still open. */
+  const atText = { ...createLevel(DEFAULT_SETUP), phase: "brothers" as const };
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("puts focus on the dialog heading, not on Stay and help", async () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const heading = screen.getByRole("heading", {
+      name: "Text from Fred's brothers",
+    });
+    await waitFor(() => expect(document.activeElement).toBe(heading));
+    expect(document.activeElement).not.toBe(
+      screen.getByRole("button", { name: /Stay and help/ })
+    );
+  });
+
+  it("ignores an interact key in the first half second, and then lets it choose", () => {
+    const SETTLE_MS = 500;
+    const opened = 1_000_000;
+    const now = vi.spyOn(Date, "now").mockReturnValue(opened);
+    const onDecide = vi.fn();
+    render(<BrothersDialog state={atText} onDecide={onDecide} />);
+    const stay = screen.getByRole("button", { name: /Stay and help/ });
+
+    now.mockReturnValue(opened + SETTLE_MS - 1);
+    expect(fireEvent.keyDown(stay, { key: "Enter" })).toBe(false);
+    expect(fireEvent.keyDown(stay, { key: " " })).toBe(false);
+    expect(fireEvent.keyUp(stay, { key: "e" })).toBe(false);
+    expect(onDecide).not.toHaveBeenCalled();
+
+    now.mockReturnValue(opened + SETTLE_MS);
+    expect(fireEvent.keyDown(stay, { key: "Enter" })).toBe(true);
+    expect(onDecide).not.toHaveBeenCalled();
+  });
+
+  it("lets a mouse click choose at once, inside the settle time", () => {
+    vi.spyOn(Date, "now").mockReturnValue(1_000_000);
+    const onDecide = vi.fn();
+    render(<BrothersDialog state={atText} onDecide={onDecide} />);
+    fireEvent.click(screen.getByRole("button", { name: /Stay and help/ }));
+    expect(onDecide).toHaveBeenCalledWith({ choice: "stay", commitment: null });
+  });
+
+  it("does not choose on Escape", () => {
+    const onDecide = vi.fn();
+    render(<BrothersDialog state={atText} onDecide={onDecide} />);
+    fireEvent.keyDown(screen.getByRole("dialog"), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("heading"), { key: "Escape" });
+    expect(onDecide).not.toHaveBeenCalled();
+  });
+
+  it("leaves out a promise whose categories are already complete (S6)", () => {
+    const level = createLevel(DEFAULT_SETUP);
+    const lanternsDone = {
+      ...level,
+      targets: level.targets.map((t) =>
+        t.category === "lanterns"
+          ? {
+              ...t,
+              status: "filled" as const,
+              filled: Array.from({ length: t.capacity }, () => ({
+                kind: "lantern" as const,
+                madeBy: null,
+              })),
+            }
+          : t
+      ),
+    };
+    expect(availableCommitments(level)).toContain("lanterns");
+    expect(availableCommitments(lanternsDone)).not.toContain("lanterns");
+    expect(availableCommitments(lanternsDone)).toContain("chairs");
+  });
+
+  it("does not put the pause sheet over the text when Escape is pressed (round 8, B1)", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    fireEvent.keyDown(game(), { key: "Escape" });
+    expect(screen.queryByText(/^Paused at/)).toBeNull();
+    expect(screen.getByTestId("fbb-brothers")).toBeTruthy();
+  });
+
+  it("shows the text and its toast together, and the level stops while it is up", () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    for (const mode of ["solo", "coop"] as const) {
+      const { unmount } = render(<ForBetterOrBulkGame initialMode={mode} />);
+      start();
+      runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+      expect(screen.getByTestId("fbb-brothers")).toBeTruthy();
+      const toast = Array.from(document.querySelectorAll("li")).some(
+        (li) => li.textContent === "Fred's brothers are texting."
+      );
+      expect(toast).toBe(true);
+      expect(frame.active).toBe(false);
+      unmount();
+    }
+  });
+});
+
+/** Runs the solo level until Abbi's phone line shows, clicking Stay if the brothers' text stops it. */
+function runUntilPhoneLine() {
+  runUntil(() => {
+    const dialog = screen.queryByTestId("fbb-brothers");
+    if (dialog) {
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: /Stay and help/ })
+      );
+    }
+    return screen.queryAllByText(/is on the phone/).length > 0;
+  });
+}
+
+describe("solo keys and prompts (round 9)", () => {
+  beforeEach(() => {
+    frame.callback = null;
+    frame.active = false;
+    engine.finishNext = false;
+    engine.inputs = [];
+    stubLoud(false);
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=8");
+  });
+
+  afterEach(() => {
+    cleanup();
+    window.history.replaceState(null, "", "/");
+    delete (window as Partial<Window>).matchMedia;
+  });
+
+  it("records F as Abbi's work key in solo, and does not give it to Fred", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    fireEvent.keyDown(game(), { key: "f", code: "KeyF" });
+    act(() => {
+      frame.callback?.(250);
+    });
+    fireEvent.keyUp(game(), { key: "f", code: "KeyF" });
+    const held = engine.inputs.filter((f) => f.inputs.abbi.work);
+    expect(held.length).toBeGreaterThan(0);
+    expect(held.every((f) => !f.inputs.fred.work)).toBe(true);
+  });
+
+  it("shows Abbi's phone line while she is at the keys, and still while she is idle", () => {
+    render(<ForBetterOrBulkGame />);
+    start();
+    runUntilPhoneLine();
+    expect(screen.getByTestId("fbb-prompt-abbi").textContent).toMatch(
+      /Abbi is on the phone \(about \d+ min left\): What should we get you\?/
+    );
+    fireEvent.keyDown(game(), { key: "Tab", code: "Tab" });
+    expect(screen.getByTestId("fbb-active").textContent).toContain("Fred");
+    expect(screen.getByTestId("fbb-prompt-abbi").textContent).toMatch(
+      /Abbi is on the phone \(about \d+ min left\)/
+    );
+  });
+});
+
+describe("the brothers' options share one resting look (round 9)", () => {
+  const atText = { ...createLevel(DEFAULT_SETUP), phase: "brothers" as const };
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("gives Stay and help no highlight of its own before focus", () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const stay = screen.getByRole("button", { name: /Stay and help/ });
+    const leave = screen.getByRole("button", { name: /Go with them/ });
+    const breakButton = screen.getByRole("button", {
+      name: /Take a short break/,
+    });
+    expect(stay.className).toBe(leave.className);
+    expect(stay.className).toBe(breakButton.className);
+    expect(stay.className).not.toMatch(/(^|\s)border-\[var\(--fbb-accent\)\]/);
+    expect(document.activeElement).not.toBe(stay);
+  });
+
+  it("names the break button with a short label and the promise as its description (round 15)", () => {
+    render(<BrothersDialog state={atText} onDecide={vi.fn()} />);
+    const breakButton = screen.getByRole("button", {
+      name: "Take a short break.",
+    });
+    const detail = document.getElementById(
+      breakButton.getAttribute("aria-describedby") ?? ""
+    );
+    expect(detail?.textContent).toBe("(Promise to come back for something.)");
   });
 });

@@ -231,7 +231,18 @@ function reasonOnTile(
     }
     if (station.item)
       return `${capitalise(STATION_NAMES[station.kind])} is full.`;
-    if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
+    if (!held) {
+      // A cart without petals never uses the bucket, so say that instead of
+      // calling it empty (round 16).
+      if (
+        station.kind === "petals" &&
+        !state.targets.some(
+          (t) => t.category === "petals" && t.status !== "unplanned"
+        )
+      )
+        return "There are no petals in this plan.";
+      return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
+    }
     if (station.kind === "grill") {
       if (held.kind !== "hotdogs" && held.kind !== "wings")
         return "The GRILL takes raw hot dogs or wings.";
@@ -388,8 +399,15 @@ function takePrompt(state: GameState, tile: Tile): string | null {
   const floorItem = at(state.floor, tile);
   if (supply && state.stock[supply.kind] > 0)
     return `Take ${crateTakeName(supply.kind, state.stock[supply.kind])} from the ${CRATE_NAMES[supply.kind]} crate`;
-  if (station?.item)
-    return `Take ${stationItemName(station.item)} off ${STATION_NAMES[station.kind]}`;
+  if (station?.item) {
+    const take = `Take ${stationItemName(station.item)} off ${STATION_NAMES[station.kind]}`;
+    // Raw food on the grill is still cooking, so the prompt says so (round 16).
+    const cooking =
+      station.kind === "grill" &&
+      (station.item.kind === "hotdogs-raw" ||
+        station.item.kind === "wings-raw");
+    return cooking ? `${take} (not cooked yet)` : take;
+  }
   if (floorItem) return `Pick up ${heldLabel(floorItem.item)} off the floor`;
   return null;
 }

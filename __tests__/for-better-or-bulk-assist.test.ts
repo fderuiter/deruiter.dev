@@ -476,6 +476,8 @@ describe("the assist in stepGame", () => {
     );
     expect(helped.assistTicks).toBeGreaterThan(0);
     expect(computeReceipt(helped).assist).toBe(ASSIST_LINE);
+    // A fact, not a verdict, since a helper day can end unfinished (round 16).
+    expect(ASSIST_LINE).toBe("A helper kept the other lane going.");
   });
 });
 
@@ -1105,6 +1107,13 @@ describe("the helper's own grill batch", () => {
       expect(state.finishedAt, label).not.toBeNull();
     }
   }, 60000);
+
+  it("says it has caught up with the player, not that it is waiting to start (round 16)", () => {
+    const base = createLevel(ASSIST_SETUP);
+    expect(assistJob(base, "abbi")).toBe(
+      "Abbi has placed as many items as Fred, and helps again after Fred's next one."
+    );
+  });
 
   it("says it is waiting for its own raw batch to cook, and does not wander off", () => {
     const base = createLevel(ASSIST_SETUP);

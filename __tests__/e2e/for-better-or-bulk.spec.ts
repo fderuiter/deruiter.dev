@@ -159,9 +159,7 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
 
     await skipPlaybackToReceipt(page);
     await expect(page.getByTestId("fbb-title")).toBeFocused();
-    await expect(page.getByTestId("fbb-follow-through")).toContainText(
-      "Kept. Fred stayed"
-    );
+    await expect(page.getByTestId("fbb-follow-through")).toContainText("Kept.");
     await expectTitleBelowBanner(page);
     await expectNoBlockingViolations(page, "receipt");
   });

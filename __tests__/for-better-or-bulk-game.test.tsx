@@ -902,7 +902,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       "text-[var(--fbb-text)]"
     );
     expect(screen.getByRole("status").textContent).toContain(
-      "Fred is waiting for Abbi to place something first."
+      "Fred has placed as many items as Abbi, and helps again after Abbi's next one."
     );
   });
 
@@ -978,6 +978,10 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
+    // The hint says why Tab reaches Pause instead of swapping (round 16).
+    expect(screen.getByTestId("fbb-active").textContent).toContain(
+      "Fred is out, so Tab reaches Pause"
+    );
     // With one person out there is no swap, so Tab is left to the browser.
     expect(fireEvent.keyDown(game(), { key: "Tab", code: "Tab" })).toBe(true);
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");

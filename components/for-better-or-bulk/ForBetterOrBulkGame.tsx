@@ -1045,7 +1045,7 @@ export function ForBetterOrBulkGame({
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
               {view.players[partner].presence === "away"
-                ? " Tab to reach Pause · Shift+Tab to leave · Escape to pause"
+                ? ` ${NAMES[partner]} is out, so Tab reaches Pause · Shift+Tab to leave · Escape to pause`
                 : " Tab to swap · Shift+Tab to leave · Escape to pause"}
             </span>
           ) : (

@@ -1188,8 +1188,17 @@ export function ForBetterOrBulkGame({
                 >
                   <p className="break-words">{prompt.status}</p>
                   {prompt.interact ? (
-                    <p className="text-[var(--fbb-accent)]">
-                      {`${interactKeyName(id, mode === "coop")}: ${prompt.interact}`}
+                    // A refusal gets no key, so it never reads as an action (round 17).
+                    <p
+                      className={
+                        prompt.interactLands
+                          ? "text-[var(--fbb-accent)]"
+                          : "text-[var(--fbb-text)]"
+                      }
+                    >
+                      {prompt.interactLands
+                        ? `${interactKeyName(id, mode === "coop")}: ${prompt.interact}`
+                        : prompt.interact}
                     </p>
                   ) : null}
                   {prompt.floorDrop ? (

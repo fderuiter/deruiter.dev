@@ -348,7 +348,14 @@ export interface FloorDropPrompt {
 
 /** What one person's buttons would do right now. */
 export interface Prompt {
+  /**
+   * What an interact press does, or why it does nothing; `interactLands`
+   * says which. The cabinet puts the key in front of a press that lands only,
+   * so a refusal never reads as an action (round 17).
+   */
   readonly interact: string | null;
+  /** Whether an interact press lands, so `interact` names an action. */
+  readonly interactLands: boolean;
   /** Set when the interact press would set the held item on open floor: it needs a hold. */
   readonly floorDrop: FloorDropPrompt | null;
   readonly work: string | null;
@@ -454,6 +461,7 @@ export function getPrompt(
         : ` Back around ${clockLabel(state.returnsAt, state.duration)}.`;
     return {
       interact: null,
+      interactLands: false,
       floorDrop: null,
       work: null,
       status: `${name} is out with his brothers.${back}`,
@@ -475,6 +483,7 @@ export function getPrompt(
       );
       return {
         interact: null,
+        interactLands: false,
         floorDrop: null,
         work: null,
         status: `${name} is on the phone (about ${minutes} min left): ${call.text}`,
@@ -482,6 +491,7 @@ export function getPrompt(
     }
     return {
       interact: null,
+      interactLands: false,
       floorDrop: null,
       work: null,
       status: `${name}: ${player.busyReason ?? "busy"}`,
@@ -491,6 +501,7 @@ export function getPrompt(
   if (options.waiting && !state.setup.assist) {
     return {
       interact: null,
+      interactLands: false,
       floorDrop: null,
       work: null,
       status: swapStatus(id, held),
@@ -543,7 +554,13 @@ export function getPrompt(
         ? `Put ${heldName(held)} back in the ${CRATE_NAMES.chairs} crate`
         : THROW_OUT_PROMPT;
   }
-  return { interact, floorDrop, work, status };
+  return {
+    interact,
+    interactLands: tile !== null && floorDrop === null,
+    floorDrop,
+    work,
+    status,
+  };
 }
 
 /** Whether two tiles are the same tile. */

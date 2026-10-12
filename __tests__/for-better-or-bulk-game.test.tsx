@@ -902,7 +902,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
       "text-[var(--fbb-text)]"
     );
     expect(screen.getByRole("status").textContent).toContain(
-      "Fred has placed as many items as Abbi, and helps again after Abbi's next one."
+      "Fred starts helping after Abbi places the first item."
     );
   });
 

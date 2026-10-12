@@ -9,7 +9,10 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  getArcadeProgress,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { AnimatePresence, Reorder } from "framer-motion";
 import {
   BIOSTAT_OPS_CAMPAIGN,
@@ -27,6 +30,7 @@ import {
   parseSeed,
   planActs,
   deriveRunView,
+  describeBlindLoss,
   previewAllocation,
   type ClockAction,
   type CpuAction,
@@ -388,7 +392,7 @@ function ResumePrompt({
   return (
     <section
       aria-labelledby="resume-heading"
-      className="mx-auto max-w-xl border border-zinc-800 bg-[color:var(--te-surface-1)] p-4 text-left sm:p-6"
+      className="mx-auto max-w-xl border border-zinc-800 bg-[color:var(--te-surface-1)] p-4 text-left font-mono sm:p-6"
       data-testid="resume-run"
     >
       <h2
@@ -466,6 +470,46 @@ function ResumePrompt({
  * derived view, dispatches intents, and never computes a score. It plays an
  * act's Blinds in order (T&E-02).
  */
+/**
+ * Keyboard focus is nowhere in the game: on the page body, or on the bare
+ * arcade cabinet, which only hands keys to games that mark a keyboard
+ * boundary. The table manages its own focus instead (#1944).
+ */
+function focusIsIdle(): boolean {
+  const active = document.activeElement;
+  return (
+    active === null ||
+    active === document.body ||
+    active.hasAttribute("data-arcade-cabinet")
+  );
+}
+
+/**
+ * Focuses where play starts, the hand's current card or the Resume prompt's
+ * choice, and reports whether there was one. Inside the arcade only, unless
+ * `anywhere`: an embedded table leaves the page's focus alone.
+ */
+function focusPlayStart(anywhere = false): boolean {
+  const target = document.querySelector<HTMLElement>(
+    '[data-testid="hand"] [tabindex="0"], [data-testid="resume-run"] button'
+  );
+  if (!target || (!anywhere && !target.closest("[data-arcade-cabinet]"))) {
+    return false;
+  }
+  target.focus({ preventScroll: true });
+  return true;
+}
+
+/** After the Resume prompt unmounts under focus, move it to the hand. */
+function focusHandSoon() {
+  requestAnimationFrame(() => {
+    if (focusIsIdle()) focusPlayStart(true);
+  });
+}
+
+/** Keys the hand answers to, which would otherwise scroll the page. */
+const HAND_START_KEYS = new Set([" ", "ArrowLeft", "ArrowRight"]);
+
 export function CardTable({
   act: actProp,
   scenario: single,
@@ -512,6 +556,27 @@ export function CardTable({
     saved !== null &&
     resumeChoice !== "DONE" &&
     log.actions.length === 0;
+  // Launching the cabinet focuses the cabinet itself, where the hand's keys
+  // do nothing and Space scrolls the page (#1944). Once the table is up, put
+  // focus on the hand, and while focus is still idle let the first arrow or
+  // Space land on the hand instead of the page.
+  useEffect(() => {
+    const timers = [150, 400].map((ms) =>
+      setTimeout(() => {
+        if (focusIsIdle()) focusPlayStart();
+      }, ms)
+    );
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.altKey || event.ctrlKey) return;
+      if (event.metaKey || !HAND_START_KEYS.has(event.key)) return;
+      if (focusIsIdle() && focusPlayStart()) event.preventDefault();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      timers.forEach(clearTimeout);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
   const runView = deriveRunView(act, run);
   // A won campaign that can still go on into post-marketing is not over
   // until the player chooses.
@@ -962,6 +1027,11 @@ export function CardTable({
   });
 
   const preview = view.preview;
+  // A stale card blocks Play Hand, so the preview scores nothing until it is
+  // recompiled rather than a hand the table will refuse (#1944).
+  const staleBlocksPlay =
+    view.staleSelected.length > 0 && view.playBlockedReason !== null;
+  const shownPreview = staleBlocksPlay ? null : preview;
   const slashed =
     preview !== null && preview.finalMult < view.previewUnpenalizedMult;
   // The domain already classified against the stage: a hand outside the
@@ -1052,6 +1122,15 @@ export function CardTable({
     !runInfoOpen &&
     !deckBuilderOpen &&
     !handSheetOpen;
+  // Why the run was lost, and the best round this browser has scored, so the
+  // fail screen gives a reason to try again (#1944).
+  const lossDiagnosis = showResultCard ? describeBlindLoss(view) : null;
+  const bestRound = showResultCard
+    ? Math.max(
+        view.roundScore,
+        getArcadeProgress().highScores["trial-and-error"] ?? 0
+      )
+    : 0;
   /** Where a played card left the hand, for its trip into the play zone. */
   const originOf = (cardId: string) =>
     cardRefs.current.get(cardId)?.getBoundingClientRect() ?? null;
@@ -1065,12 +1144,14 @@ export function CardTable({
           setResumeChoice("DONE");
           dispatch({ type: "LOAD_SAVED", saved });
           announce(`Resumed ${resumedView(saved)}.`);
+          focusHandSoon();
         }}
         onNew={() => setResumeChoice("CONFIRM_NEW")}
         onConfirmNew={() => {
           setResumeChoice("DONE");
           clearRunSave(act.id);
           announce("Saved run discarded. New run started.");
+          focusHandSoon();
         }}
         onCancelNew={() => setResumeChoice("PENDING")}
       />
@@ -1525,16 +1606,20 @@ export function CardTable({
                       )}
                     </ol>
                     <ScoreCounters
-                      chips={preview?.chips.total ?? 0}
-                      mult={preview?.finalMult ?? 0}
-                      score={preview ? preview.score : null}
+                      chips={shownPreview?.chips.total ?? 0}
+                      mult={shownPreview?.finalMult ?? 0}
+                      score={shownPreview ? shownPreview.score : null}
                       width={Math.max(
                         COUNTER_MIN_CHARS,
-                        String(preview?.score ?? 0).length
+                        String(shownPreview?.score ?? 0).length
                       )}
                       roll={false}
-                      muted={!preview}
-                      struckMult={slashed ? view.previewUnpenalizedMult : null}
+                      muted={!shownPreview}
+                      struckMult={
+                        slashed && shownPreview
+                          ? view.previewUnpenalizedMult
+                          : null
+                      }
                       idPrefix="preview"
                     />
                   </div>
@@ -1549,6 +1634,15 @@ export function CardTable({
                           Lv.
                           {view.handLevels[view.classification.handType].level}
                         </span>
+                        {staleBlocksPlay && (
+                          <span
+                            className="text-rose-300"
+                            data-testid="preview-recompile"
+                          >
+                            {" "}
+                            · Recompile first
+                          </span>
+                        )}
                       </span>
                     ) : (
                       <span className="uppercase tracking-wider">
@@ -2436,7 +2530,8 @@ export function CardTable({
               { label: "Round score", value: view.roundScore },
               { label: "Target", value: view.quota },
               { label: "Hands", value: view.handsPlayed },
-              { label: "CPU spent", value: view.cpu.spent },
+              // CPU spent stays in the summary line above (#1944).
+              { label: "Best round", value: bestRound },
             ]}
             primary={{
               label: endAction
@@ -2453,6 +2548,14 @@ export function CardTable({
               },
             }}
           >
+            {lossDiagnosis && (
+              <p
+                className="mx-auto mt-3 max-w-md text-xs leading-relaxed text-zinc-300 break-words"
+                data-testid="te-loss-diagnosis"
+              >
+                {lossDiagnosis}
+              </p>
+            )}
             {clock?.hold && (
               <section
                 aria-labelledby="clinical-hold-heading"

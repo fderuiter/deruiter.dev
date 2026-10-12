@@ -66,6 +66,7 @@ export {
   type SlotStatus,
 } from "./internal/package";
 export { validate } from "./internal/validator";
+export { describeBlindLoss } from "./internal/loss";
 export { traceCell, type CellTrace, type ListingRow } from "./internal/listing";
 export {
   KM_DECIMALS,

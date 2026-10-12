@@ -836,6 +836,12 @@ Re-exports [deriveTableView](internal/table/functions/deriveTableView.md)
 
 ***
 
+### describeBlindLoss
+
+Re-exports [describeBlindLoss](internal/loss/functions/describeBlindLoss.md)
+
+***
+
 ### DeskAction
 
 Re-exports [DeskAction](internal/desk/type-aliases/DeskAction.md)

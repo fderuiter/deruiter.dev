@@ -236,6 +236,16 @@ Subscribes to a typed one-shot action event (e.g. sfx, haptic, screen shake).
 
 ***
 
+### pressAction()
+
+> **pressAction**(): `void`
+
+#### Returns
+
+`void`
+
+***
+
 ### pressButton()
 
 > **pressButton**(`btn`): `void`

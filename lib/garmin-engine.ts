@@ -45,6 +45,20 @@ import {
   type Pickup,
   type PowerTier,
 } from "./garmin-powerups";
+import {
+  CAPE_CEILING_Y,
+  CAPE_FLAP_VY,
+  CAPE_FLIGHT_MS,
+  CAPE_SPIN_COOLDOWN_MS,
+  CAPE_SPIN_MS,
+  SPIN_DEFEAT_SCORE,
+  canSpin,
+  glideVy,
+  inSpinReach,
+  jumpForceFor,
+  startsFlight,
+  stepPaceMeter,
+} from "./garmin-cape";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
 export type VariableType = "int" | "float" | "string" | "array";
@@ -373,6 +387,15 @@ export interface GameEngineState {
   boltCooldownMs?: number;
   /** Bolts thrown this run, for their ids. */
   boltsThrown?: number;
+  // ---- Pace meter and Compression Cape (#1990).
+  /** Pace meter, 0 (empty) to 1 (full). */
+  paceMeter?: number;
+  /** Milliseconds left in which a Cape runner's jump presses climb. */
+  flightMs?: number;
+  /** Milliseconds left in the current cape spin. */
+  spinMs?: number;
+  /** Milliseconds until the next spin can start. */
+  spinCooldownMs?: number;
   /** The jump key is held: the rise uses the lighter gravity. */
   jumpHeld?: boolean;
   /** Milliseconds since the runner last had footing, for coyote time. */
@@ -475,6 +498,10 @@ export function createInitialState(
     bolts: [],
     boltCooldownMs: 0,
     boltsThrown: 0,
+    paceMeter: 0,
+    flightMs: 0,
+    spinMs: 0,
+    spinCooldownMs: 0,
     jumpHeld: false,
     coyoteMs: 0,
     jumpBufferMs: 0,
@@ -546,9 +573,11 @@ export function resumeGame(
 
 /**
  * Presses jump. On footing, or within {@link COYOTE_MS} of leaving it, the
- * runner jumps at once; in the air the press is remembered for
- * {@link JUMP_BUFFER_MS} and fires on landing. Holding the key (until
- * {@link releaseJump}) keeps the rise floaty for a higher jump.
+ * runner jumps at once, higher with a full pace meter; in the air the press
+ * is remembered for {@link JUMP_BUFFER_MS} and fires on landing. Holding the
+ * key (until {@link releaseJump}) keeps the rise floaty for a higher jump.
+ * A Cape runner with a full meter takes off, and while the flight lasts each
+ * press in the air climbs again.
  */
 export function pressJump(state: GameEngineState): GameEngineState {
   if (state.gameState !== "playing") return state;
@@ -556,11 +585,22 @@ export function pressJump(state: GameEngineState): GameEngineState {
   if (canJump && state.playerVy >= 0) {
     return {
       ...state,
-      playerVy: JUMP_FORCE,
+      playerVy: jumpForceFor(state.paceMeter, JUMP_FORCE),
       isGrounded: false,
       jumpHeld: true,
       // Spent: no second coyote jump from the same edge.
       coyoteMs: COYOTE_MS,
+      jumpBufferMs: 0,
+      flightMs: startsFlight(state.power, state.paceMeter)
+        ? CAPE_FLIGHT_MS
+        : (state.flightMs ?? 0),
+    };
+  }
+  if (state.power === "cape" && (state.flightMs ?? 0) > 0) {
+    return {
+      ...state,
+      playerVy: Math.min(state.playerVy, CAPE_FLAP_VY),
+      jumpHeld: true,
       jumpBufferMs: 0,
     };
   }
@@ -605,6 +645,31 @@ export function throwBolt(state: GameEngineState): GameEngineState {
     boltCooldownMs: BOLT_COOLDOWN_MS,
     boltsThrown: id,
   };
+}
+
+/**
+ * Spins the Compression Cape: for {@link CAPE_SPIN_MS} it defeats bugs and
+ * watchdogs beside the runner and bumps Sync Blocks from the side. Only a
+ * Cape runner can spin, once per {@link CAPE_SPIN_COOLDOWN_MS}.
+ */
+export function spinCape(state: GameEngineState): GameEngineState {
+  if (state.gameState !== "playing") return state;
+  if (!canSpin(state.power, state.spinCooldownMs)) return state;
+  return {
+    ...state,
+    spinMs: CAPE_SPIN_MS,
+    spinCooldownMs: CAPE_SPIN_COOLDOWN_MS,
+  };
+}
+
+/**
+ * The action key: a Heat Map runner throws a heat bolt and a Cape runner
+ * spins; at any other tier it does nothing.
+ */
+export function pressAction(state: GameEngineState): GameEngineState {
+  if (state.power === "heatmap") return throwBolt(state);
+  if (state.power === "cape") return spinCape(state);
+  return state;
 }
 
 /** Sets the held pace input: 1 sprints, -1 brakes, 0 runs. */
@@ -1000,6 +1065,10 @@ function loseLife(
     pickups: [],
     bolts: [],
     boltCooldownMs: 0,
+    paceMeter: 0,
+    flightMs: 0,
+    spinMs: 0,
+    spinCooldownMs: 0,
     course: generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
     lastObstacleTime: now,
     banner: {
@@ -1288,10 +1357,39 @@ export function updateGameSimulation(
     const ttlMs = banner.ttlMs - safeDelta;
     banner = ttlMs > 0 ? { ...banner, ttlMs } : null;
   }
+  // Bumping an unused Sync Block uses it up and pays out its contents.
+  const bumpBlock = (index: number) => {
+    const block = course.blocks[index];
+    if (block.kind !== "sync" || block.used) return;
+    const blocks = course.blocks.slice();
+    blocks[index] = { ...block, used: true };
+    course = { ...course, blocks };
+    const reward = blockReward(block.contents, power);
+    if (reward === "kudos") {
+      kudos += 1;
+      score += KUDOS_SCORE + SYNC_BLOCK_SCORE;
+      popups.push({
+        x: block.x,
+        y: block.y - 6,
+        text: `+${KUDOS_SCORE + SYNC_BLOCK_SCORE}`,
+        ttlMs: 800,
+      });
+    } else {
+      score += SYNC_BLOCK_SCORE;
+      pickups = [...pickups, emergePickup(reward, block, block.id)];
+    }
+  };
+
   const jumpHeld = state.jumpHeld ?? false;
   const gravity = state.playerVy < 0 && jumpHeld ? GRAVITY : FALL_GRAVITY;
   let nextPlayerY = state.playerY + state.playerVy * dtRatio;
   let nextPlayerVy = Math.min(MAX_FALL_VY, state.playerVy + gravity * dtRatio);
+  // A Cape runner holding jump glides, and flight stops at the ceiling.
+  nextPlayerVy = glideVy(nextPlayerVy, power, jumpHeld);
+  if (power === "cape" && nextPlayerY < CAPE_CEILING_Y) {
+    nextPlayerY = CAPE_CEILING_Y;
+    nextPlayerVy = Math.max(0, nextPlayerVy);
+  }
   let isGrounded = false;
 
   const prevBottom = state.playerY + h;
@@ -1344,37 +1442,59 @@ export function updateGameSimulation(
       const block = course.blocks[bumped];
       nextPlayerY = block.y + BLOCK_SIZE;
       nextPlayerVy = 1;
-      if (block.kind === "sync" && !block.used) {
-        const blocks = course.blocks.slice();
-        blocks[bumped] = { ...block, used: true };
-        course = { ...course, blocks };
-        const reward = blockReward(block.contents, power);
-        if (reward === "kudos") {
-          kudos += 1;
-          score += KUDOS_SCORE + SYNC_BLOCK_SCORE;
-          popups.push({
-            x: block.x,
-            y: block.y - 6,
-            text: `+${KUDOS_SCORE + SYNC_BLOCK_SCORE}`,
-            ttlMs: 800,
-          });
-        } else {
-          score += SYNC_BLOCK_SCORE;
-          pickups = [...pickups, emergePickup(reward, block, block.id)];
-        }
-      }
+      bumpBlock(bumped);
     }
   }
+
+  // A cape spin bumps Sync Blocks level with the runner from the side.
+  if ((state.spinMs ?? 0) > 0) {
+    const runnerBox = {
+      left: bodyLeft,
+      right: bodyRight,
+      top: nextPlayerY,
+      bottom: nextPlayerY + h,
+    };
+    course.blocks.forEach((b, i) => {
+      if (
+        b.kind === "sync" &&
+        !b.used &&
+        inSpinReach(runnerBox, {
+          left: b.x,
+          right: b.x + BLOCK_SIZE,
+          top: b.y,
+          bottom: b.y + BLOCK_SIZE,
+        })
+      ) {
+        bumpBlock(i);
+      }
+    });
+  }
+
+  // The pace meter fills while sprinting on footing and holds in the air.
+  // A flight keeps it full and empties it when it ends, on landing or
+  // when its time runs out.
+  const wasFlying = (state.flightMs ?? 0) > 0;
+  let flightMs = isGrounded
+    ? 0
+    : Math.max(0, (state.flightMs ?? 0) - safeDelta);
+  const paceMeter = wasFlying
+    ? flightMs > 0
+      ? 1
+      : 0
+    : stepPaceMeter(state.paceMeter, isGrounded, pace > 1, safeDelta);
 
   // Coyote time and the jump buffer.
   let coyoteMs = isGrounded ? 0 : (state.coyoteMs ?? 0) + safeDelta;
   let jumpBufferMs = Math.max(0, (state.jumpBufferMs ?? 0) - safeDelta);
   if (isGrounded && (state.jumpBufferMs ?? 0) > 0) {
-    nextPlayerVy = JUMP_FORCE;
+    nextPlayerVy = jumpForceFor(paceMeter, JUMP_FORCE);
+    if (startsFlight(power, paceMeter)) flightMs = CAPE_FLIGHT_MS;
     isGrounded = false;
     coyoteMs = COYOTE_MS;
     jumpBufferMs = 0;
   }
+  const spinMs = Math.max(0, (state.spinMs ?? 0) - safeDelta);
+  const spinCooldownMs = Math.max(0, (state.spinCooldownMs ?? 0) - safeDelta);
   const stompChain = isGrounded ? 0 : (state.stompChain ?? 0);
 
   // Falling below the face through a gap costs a life.
@@ -1472,7 +1592,9 @@ export function updateGameSimulation(
           text:
             nextPower === "heatmap"
               ? "HEAT MAP · X THROWS"
-              : "PROTEIN SHAKE · BUFF",
+              : nextPower === "cape"
+                ? "COMPRESSION CAPE · X SPINS"
+                : "PROTEIN SHAKE · BUFF",
           ttlMs: 1800,
           tone: "good",
         };
@@ -1577,6 +1699,10 @@ export function updateGameSimulation(
     pickups: stageCleared ? [] : pickups,
     bolts: stageCleared ? [] : bolts,
     boltCooldownMs,
+    paceMeter,
+    flightMs,
+    spinMs,
+    spinCooldownMs,
     invulnerableMs: Math.max(0, (state.invulnerableMs ?? 0) - safeDelta),
     coyoteMs,
     jumpBufferMs,
@@ -1634,6 +1760,7 @@ export function updateGameSimulation(
   const paceShift = 2.5 * (pace - 1);
   const invulnerable = (updatedState.invulnerableMs ?? 0) > 0;
   const prevPlayerBottom = state.playerY + h;
+  const spinning = (state.spinMs ?? 0) > 0 && updatedState.power === "cape";
   for (const obs of currentObstacles) {
     const nextX = obs.x - (obs.speed + paceShift) * dtRatio;
     const isWalker =
@@ -1654,6 +1781,47 @@ export function updateGameSimulation(
       obsVy = Math.min(MAX_FALL_VY, (obsVy ?? 0) + FALL_GRAVITY * dtRatio);
       obsY += obsVy * dtRatio;
       if (obsY > CANVAS_SIZE) continue;
+    }
+
+    // A cape spin defeats a bug or a watchdog beside the runner; a spiked
+    // stack overflow shrugs it off.
+    if (
+      spinning &&
+      isWalker &&
+      obs.type !== "stack_overflow" &&
+      inSpinReach(
+        {
+          left: PLAYER_X,
+          right: PLAYER_X + PLAYER_WIDTH,
+          top: updatedState.playerY,
+          bottom: updatedState.playerY + bodyH,
+        },
+        {
+          left: nextX,
+          right: nextX + obs.width,
+          top: obsY,
+          bottom: obsY + obs.height,
+        }
+      )
+    ) {
+      updatedState = {
+        ...updatedState,
+        score: updatedState.score + SPIN_DEFEAT_SCORE,
+        highScore: Math.max(
+          updatedState.highScore,
+          updatedState.score + SPIN_DEFEAT_SCORE
+        ),
+        popups: [
+          ...(updatedState.popups ?? []),
+          {
+            x: cameraX + nextX,
+            y: obsY - 6,
+            text: `+${SPIN_DEFEAT_SCORE}`,
+            ttlMs: 700,
+          },
+        ],
+      };
+      continue;
     }
 
     // A heat bolt defeats a bug or a watchdog it touches and is spent; a
@@ -2549,6 +2717,11 @@ export class GarminWatchEngine extends ArcadeEngine<
 
   public throwBolt(): void {
     this.state = throwBolt(this.state);
+    this.notifySubscribers();
+  }
+
+  public pressAction(): void {
+    this.state = pressAction(this.state);
     this.notifySubscribers();
   }
 

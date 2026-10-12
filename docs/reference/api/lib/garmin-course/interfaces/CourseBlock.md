@@ -7,14 +7,15 @@
 # Interface: CourseBlock
 
 A block floating over the lane. Bumping a Sync Block from below pops its
-contents once: Kudos, a power-up (a Protein Shake for a Base runner), or a
-Runner's High. A brick is plain solid footing.
+contents once: Kudos, a power-up (a Protein Shake for a Base runner, then
+a Heat Map from a power block or a Compression Cape from a cape block), or
+a Runner's High. A brick is plain solid footing.
 
 ## Properties
 
 ### contents
 
-> **contents**: `"kudos"` \| `"power"` \| `"high"`
+> **contents**: `"cape"` \| `"kudos"` \| `"power"` \| `"high"`
 
 ***
 

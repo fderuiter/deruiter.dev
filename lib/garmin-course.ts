@@ -41,8 +41,9 @@ export interface CourseLedge {
 
 /**
  * A block floating over the lane. Bumping a Sync Block from below pops its
- * contents once: Kudos, a power-up (a Protein Shake for a Base runner), or a
- * Runner's High. A brick is plain solid footing.
+ * contents once: Kudos, a power-up (a Protein Shake for a Base runner, then
+ * a Heat Map from a power block or a Compression Cape from a cape block), or
+ * a Runner's High. A brick is plain solid footing.
  */
 export interface CourseBlock {
   id: number;
@@ -50,7 +51,7 @@ export interface CourseBlock {
   /** Top surface. */
   y: number;
   kind: "sync" | "brick";
-  contents: "kudos" | "power" | "high";
+  contents: "kudos" | "power" | "cape" | "high";
   used: boolean;
 }
 
@@ -146,7 +147,8 @@ export function generateStage(
   // The opening 450 px of every stage is flat track, so a stage never opens
   // under the runner's feet, and the last 360 px run clear to the pole.
   let x = start + 450;
-  // Up to two power blocks a stage, and on some stages one Runner's High.
+  // Up to two power blocks a stage, the second holding a cape, and on some
+  // stages one Runner's High.
   let powerLeft = 2;
   let highLeft = rand() < 0.35 ? 1 : 0;
   const end = pole - 360;
@@ -177,7 +179,7 @@ export function generateStage(
           contents = "high";
           highLeft--;
         } else if (isSync && powerLeft > 0 && rand() < 0.55) {
-          contents = "power";
+          contents = powerLeft === 2 ? "power" : "cape";
           powerLeft--;
         }
         layout.blocks.push({

@@ -216,6 +216,7 @@
 - [lib/game-audio](lib/game-audio/README.md)
 - [lib/game-manuals](lib/game-manuals/README.md)
 - [lib/game-utils](lib/game-utils/README.md)
+- [lib/garmin-cape](lib/garmin-cape/README.md)
 - [lib/garmin-course](lib/garmin-course/README.md)
 - [lib/garmin-engine](lib/garmin-engine/README.md)
 - [lib/garmin-ground-strip](lib/garmin-ground-strip/README.md)

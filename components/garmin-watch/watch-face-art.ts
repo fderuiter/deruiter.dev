@@ -33,6 +33,12 @@ import {
   type CourseLayout,
 } from "@/lib/garmin-course";
 import {
+  CAPE_SPIN_MS,
+  CAPE_SPIN_REACH,
+  PACE_SEGMENTS,
+  paceSegments,
+} from "@/lib/garmin-cape";
+import {
   BASE_HEIGHT,
   BOLT_SIZE,
   PICKUP_SIZE,
@@ -616,6 +622,21 @@ function drawHeatMap(ctx: Ctx, x: number, y: number) {
   }
 }
 
+/** A Compression Cape: an emerald vest with a trailing hem. */
+function drawCape(ctx: Ctx, x: number, y: number) {
+  ctx.fillStyle = FACE_COLORS.good;
+  ctx.beginPath();
+  ctx.moveTo(x + 3, y + 1);
+  ctx.lineTo(x + PICKUP_SIZE - 3, y + 1);
+  ctx.lineTo(x + PICKUP_SIZE - 1, y + PICKUP_SIZE - 1);
+  ctx.lineTo(x + PICKUP_SIZE / 2, y + PICKUP_SIZE - 3);
+  ctx.lineTo(x + 1, y + PICKUP_SIZE - 1);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#0d0e11";
+  ctx.fillRect(x + PICKUP_SIZE / 2 - 1.5, y + 1, 3, 3);
+}
+
 /** Power-ups travelling the course, behind the blocks they rise out of. */
 function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
   for (const p of pickups) {
@@ -623,8 +644,26 @@ function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
     if (x > CANVAS_SIZE || x + PICKUP_SIZE < 0) continue;
     if (p.kind === "high") drawHigh(ctx, x, p.y);
     else if (p.kind === "heatmap") drawHeatMap(ctx, x, p.y);
+    else if (p.kind === "cape") drawCape(ctx, x, p.y);
     else drawShake(ctx, x, p.y);
   }
+}
+
+/** A cape spin: an emerald swoosh around the runner while it lasts. */
+function drawSpin(ctx: Ctx, state: GameEngineState) {
+  const spinMs = state.spinMs ?? 0;
+  if (spinMs <= 0) return;
+  const h = playerHeightFor(state.power);
+  const cx = PLAYER_X + 10;
+  const cy = state.playerY + h / 2;
+  const turn = (1 - spinMs / CAPE_SPIN_MS) * Math.PI * 2;
+  ctx.strokeStyle = FACE_COLORS.good;
+  ctx.globalAlpha = 0.85;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, 10 + CAPE_SPIN_REACH, h / 2, 0, turn, turn + Math.PI);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
 }
 
 /** Heat bolts: an orange ball with a pale core. */
@@ -684,6 +723,31 @@ function drawCourseHud(ctx: Ctx, state: GameEngineState) {
     6,
     FACE_COLORS.dim
   );
+  drawPaceMeter(ctx, state);
+}
+
+/**
+ * The pace meter under the course line: six segments that light amber as
+ * the runner sprints, and blink emerald when full.
+ */
+function drawPaceMeter(ctx: Ctx, state: GameEngineState) {
+  const lit = paceSegments(state.paceMeter);
+  const full = lit === PACE_SEGMENTS;
+  const blinkOff =
+    full && Math.floor(state.distanceMeters * 4) % 2 === 1 && !state.isGrounded;
+  const segW = 6;
+  const gap = 1.5;
+  const total = PACE_SEGMENTS * segW + (PACE_SEGMENTS - 1) * gap;
+  const left = FACE_CENTER - total / 2;
+  for (let i = 0; i < PACE_SEGMENTS; i++) {
+    ctx.fillStyle =
+      i < lit && !blinkOff
+        ? full
+          ? FACE_COLORS.good
+          : FACE_COLORS.warn
+        : FACE_COLORS.track;
+    ctx.fillRect(left + i * (segW + gap), 88, segW, 3);
+  }
 }
 
 // --------------------------------------------------------------- runner
@@ -753,6 +817,19 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+
+  // Compression Cape: an emerald hem streaming behind the shoulders.
+  if (state.power === "cape") {
+    const flutter = Math.sin(state.distanceMeters * 3) * 1.2;
+    ctx.fillStyle = FACE_COLORS.good;
+    ctx.beginPath();
+    ctx.moveTo(10.5, 8);
+    ctx.lineTo(1, 11 + flutter);
+    ctx.lineTo(2.5, 14 + flutter);
+    ctx.lineTo(8, 14);
+    ctx.closePath();
+    ctx.fill();
+  }
 
   // Tail, curling up behind.
   ctx.strokeStyle = fur.back;
@@ -1368,6 +1445,7 @@ export function renderWatchFace(
     drawObstacle(ctx, obs);
   }
   drawRunner(ctx, state);
+  drawSpin(ctx, state);
   drawBolts(ctx, state.bolts ?? [], camera);
   drawPopups(ctx, state, camera);
 

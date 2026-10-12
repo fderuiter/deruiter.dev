@@ -6,6 +6,6 @@
 
 # Type Alias: PowerTier
 
-> **PowerTier** = `"base"` \| `"buff"` \| `"heatmap"`
+> **PowerTier** = `"base"` \| `"buff"` \| `"heatmap"` \| `"cape"`
 
 The runner's power tier, from weakest to strongest.

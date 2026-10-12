@@ -12,7 +12,7 @@ import {
   MOVE_SPEED,
   TICK_SECONDS,
   assistInput,
-  assistStatus,
+  assistJob,
   computeReceipt,
   createLevel,
   frontTile,
@@ -1104,8 +1104,8 @@ describe("the helper's own grill batch", () => {
           : s
       ),
     };
-    expect(assistStatus(state, "abbi")).toMatch(
-      /^Helper: waiting for .+ to cook\.$/
+    expect(assistJob(state, "abbi")).toMatch(
+      /^Abbi is waiting for .+ to cook\.$/
     );
     expect(assistInput(state, "abbi").interact).toBe(false);
   });
@@ -1155,8 +1155,8 @@ describe("the helper keeps out of its partner's way", () => {
       "fred"
     );
     const state = facingTile(base, "abbi", base.targets[0], ARRANGEMENT);
-    expect(assistStatus(state, "abbi")).toMatch(/^Helper: carrying /);
-    expect(assistStatus(state, "abbi")).toMatch(/\.$/);
+    expect(assistJob(state, "abbi")).toMatch(/^Abbi is carrying /);
+    expect(assistJob(state, "abbi")).toMatch(/\.$/);
     const away = {
       ...state,
       players: {
@@ -1164,9 +1164,7 @@ describe("the helper keeps out of its partner's way", () => {
         abbi: { ...state.players.abbi, presence: "away" as const },
       },
     };
-    expect(assistStatus(away, "abbi")).toBe(
-      "Helper: waiting for Abbi to be back."
-    );
+    expect(assistJob(away, "abbi")).toBe("Abbi is out with his brothers.");
   });
 });
 

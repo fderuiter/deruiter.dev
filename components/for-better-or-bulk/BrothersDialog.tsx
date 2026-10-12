@@ -6,7 +6,7 @@
  * promise about what he comes back for, and leaving is leaving.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
   BREAK_SECONDS,
@@ -80,6 +80,15 @@ export function BrothersDialog({ state, onDecide }: BrothersDialogProps) {
   useEffect(() => {
     openedAt.current = Date.now();
   }, []);
+
+  // Focus the heading before the browser paints, and again whenever the
+  // options change (a break swaps them out, and the focused button leaves the
+  // page). The focus trap's own initial focus waits 50 ms, and until then the
+  // game's container keeps focus (#1963), so this moves it at once.
+  // The trap's timer then sees focus already inside the dialog and leaves it.
+  useLayoutEffect(() => {
+    headingRef.current?.focus({ preventScroll: true });
+  }, [promising]);
 
   /** Swallows a settle-time key so it cannot activate the focused option. */
   const settling = (event: React.KeyboardEvent<HTMLDivElement>) => {

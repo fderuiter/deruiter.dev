@@ -359,6 +359,28 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(frame.active).toBe(true);
   });
 
+  it("moves focus to the brothers' heading as the text opens, and keeps it there (#1963)", async () => {
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
+    render(<ForBetterOrBulkGame />);
+    start();
+    // Start moves focus to the cabinet on the next frame; let that land before the text opens.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    const heading = screen.getByRole("heading", {
+      name: "Text from Fred's brothers",
+    });
+    // Focus lands on the heading at once, not after the focus trap's own timer.
+    expect(document.activeElement).toBe(heading);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 120));
+    });
+    expect(document.activeElement).toBe(heading);
+    fireEvent.click(screen.getByRole("button", { name: /Take a short break/ }));
+    expect(document.activeElement).toBe(heading);
+  });
+
   /** Runs focus moves at once, and records each scrollIntoView call. */
   function stubScroll(): ReturnType<typeof vi.fn> {
     const scroll = vi.fn();
@@ -728,8 +750,11 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     expect(screen.getByTestId("fbb-active").textContent).toContain(
       "Tab to swap · Shift+Tab to leave · Escape to pause"
     );
+    expect(screen.getByTestId("fbb-helper").getAttribute("aria-live")).toBe(
+      "polite"
+    );
     expect(screen.getByTestId("fbb-helper").textContent).toMatch(
-      /^Helper: .+\.$/
+      /^(Fred|Abbi) .+\.$/
     );
     // The idle line is readable text, not the dim token, and is announced once at the start.
     expect(screen.getByTestId("fbb-helper").className).toContain(

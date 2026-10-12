@@ -9,6 +9,6 @@
 ## Functions
 
 - [assistInput](functions/assistInput.md)
+- [assistJob](functions/assistJob.md)
 - [assistRests](functions/assistRests.md)
-- [assistStatus](functions/assistStatus.md)
 - [helperMayAct](functions/helperMayAct.md)

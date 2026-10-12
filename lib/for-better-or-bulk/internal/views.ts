@@ -150,7 +150,7 @@ function fullFloorPrompt(
 /** What a spot that has been filled says, by its kind. */
 const SPOT_DONE: Readonly<Record<TargetKind, string>> = {
   basket: "This bouquet basket is full.",
-  table: "This table is finished.",
+  table: "This table already has its centerpiece.",
   aisle: "This aisle spot is already done.",
   "chair-spot": "This chair spot is already set.",
   hook: "This lantern hook is already done.",
@@ -201,7 +201,10 @@ function reasonOnTile(
       return `${capitalise(STATION_NAMES[station.kind])} is full.`;
     if (!held) return `Nothing on ${STATION_NAMES[station.kind]} to take.`;
     if (station.kind === "grill")
-      return "The GRILL (G) takes raw hot dogs or wings.";
+      // Cooked food in hand is not a rule about the grill: it belongs on the buffet.
+      return held.kind === "hotdogs" || held.kind === "wings"
+        ? "Cooked food goes on the buffet, not back on the grill."
+        : "The GRILL (G) takes raw hot dogs or wings.";
     return `${capitalise(STATION_NAMES[station.kind])} takes roses.`;
   }
   if (target) {
@@ -318,7 +321,7 @@ function placePrompt(state: GameState, tile: Tile, held: Item): string | null {
   const target = at(state.targets, tile);
   if (target) return `Place ${heldLabel(held)} at ${TARGET_NAMES[target.kind]}`;
   return state.floor.length < FLOOR_CAP
-    ? `Put ${heldName(held)} on the floor`
+    ? `Set ${heldName(held)} down on the floor here`
     : null;
 }
 
@@ -403,7 +406,7 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
     ) {
       // Held work here drops the spot from the plan, so the prompt says so.
       const spot = target.kind === "aisle" ? "aisle spot" : "table";
-      work = `leave this ${spot} bare (drops it from the plan)`;
+      work = `leave this ${spot} bare (it stays out of the plan)`;
     }
   } else if (station?.kind === "bin") {
     work =
@@ -412,6 +415,63 @@ export function getPrompt(state: GameState, id: PlayerId): Prompt {
         : THROW_OUT_PROMPT;
   }
   return { interact, work, status };
+}
+
+/** Whether two tiles are the same tile. */
+function sameTileAs(a: Tile, b: Tile): boolean {
+  return a.x === b.x && a.y === b.y;
+}
+
+/**
+ * The open spot a carried item goes on, nearest to the person: an open chair
+ * spot for chairs and an open lantern hook for a lantern. Distance is measured
+ * in tiles from the tile the person stands on, and a tie goes to the spot
+ * listed first in the venue. Null when the person carries neither, or no such
+ * spot is open. Pure; the canvas highlights the tile it returns.
+ */
+export function nextSpotTile(state: GameState, id: PlayerId): Tile | null {
+  const player = state.players[id];
+  const held = player.holding;
+  if (!held) return null;
+  const kind: TargetKind | null =
+    held.kind === "chairs"
+      ? "chair-spot"
+      : held.kind === "lantern"
+        ? "hook"
+        : null;
+  if (!kind) return null;
+  const cx = Math.floor(player.x);
+  const cy = Math.floor(player.y);
+  let best: Target | null = null;
+  let bestDistance = Infinity;
+  for (const target of state.targets) {
+    if (target.kind !== kind || target.status !== "open") continue;
+    if (target.wants !== held.kind) continue;
+    const distance = Math.abs(target.x - cx) + Math.abs(target.y - cy);
+    if (distance < bestDistance) {
+      best = target;
+      bestDistance = distance;
+    }
+  }
+  return best ? { x: best.x, y: best.y } : null;
+}
+
+/**
+ * The tile a press would drop the carried item on, when that tile is plain
+ * floor: nothing carried, a busy or away person, or a press that lands on a
+ * station, crate or target gives null. The canvas draws a floor drop in its
+ * own warning style, so the drop is clear before the press.
+ */
+export function floorDropTile(state: GameState, id: PlayerId): Tile | null {
+  const player = state.players[id];
+  if (!player.holding || player.presence === "away" || player.busyFor > 0)
+    return null;
+  const tile = interactTile(state, id);
+  if (!tile) return null;
+  const onStructure = [state.stations, state.supplies, state.targets].some(
+    (list) => list.some((entry) => sameTileAs(entry, tile))
+  );
+  return onStructure ? null : tile;
 }
 
 const COOKED: Partial<Record<ItemKind, ItemKind>> = {

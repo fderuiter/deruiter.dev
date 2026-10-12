@@ -33,11 +33,13 @@ import {
   computeReceipt,
   createLevel,
   dollars,
+  floorDropTile,
   frontTile,
   getCoachStep,
   getHint,
   getPrompt,
   interactTile,
+  nextSpotTile,
   onLevelClock,
   readinessLines,
   replayLevel,
@@ -1011,7 +1013,7 @@ describe("views", () => {
     );
     const atTable = place(createLevel(DEFAULT_SETUP), "abbi", 7, 8, [0, -1]);
     expect(getPrompt(atTable, "abbi").work).toBe(
-      "leave this table bare (drops it from the plan)"
+      "leave this table bare (it stays out of the plan)"
     );
     const away = decide(untilBrothers(createLevel(DEFAULT_SETUP)), {
       choice: "leave",
@@ -1810,7 +1812,9 @@ describe("interaction targets", () => {
   it("drops on the floor only when no station is in reach", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 10, 4, [0, -1], roses);
     expect(interactTile(at, "fred")).toEqual({ x: 10, y: 3 });
-    expect(getPrompt(at, "fred").interact).toBe("Put the roses on the floor");
+    expect(getPrompt(at, "fred").interact).toBe(
+      "Set the roses down on the floor here"
+    );
     const after = stepGame(at, frameFor("fred", { interact: true })).state;
     expect(after.floor).toEqual([{ x: 10, y: 3, item: roses }]);
   });
@@ -2225,7 +2229,7 @@ describe("a press that would drop an item because a station is blocked (round 8,
     const at = placeExact(base, "fred", 3.5, 3.5, [-1, 0], raw);
     expect(interactTile(at, "fred")).toEqual({ x: 2, y: 3 });
     expect(getPrompt(at, "fred").interact).toBe(
-      "The GRILL (G) is full. Put the raw wings on the floor"
+      "The GRILL (G) is full. Set the raw wings down on the floor here"
     );
   });
 
@@ -2394,7 +2398,7 @@ describe("a full floor says why a press does nothing (round 8, S8)", () => {
   it("still offers the floor while there is room on it", () => {
     const at = place(createLevel(DEFAULT_SETUP), "fred", 2, 4, [0, 1], raw);
     expect(getPrompt(at, "fred").interact).toBe(
-      "Put the raw wings on the floor"
+      "Set the raw wings down on the floor here"
     );
   });
 });
@@ -2449,7 +2453,7 @@ describe("the receipt's website lines (round 8, copy)", () => {
   it("says a blocked feature got calls through in plain words, not as a negation", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
     const copy = JSON.stringify(receipt);
-    expect(copy).toContain("Registry scraper: 1 call got through without it.");
+    expect(copy).toContain("Registry scraper: 1 call went through on its own.");
     expect(copy).not.toContain("No Registry");
     expect(copy).not.toContain("no promise to break");
   });
@@ -2497,7 +2501,9 @@ describe("a refused press says why (round 9, task 1)", () => {
   it("names a finished centerpiece table", () => {
     const done = withTargetAt(base, 4, 9, { status: "filled" });
     const at = place(done, "abbi", 4, 8, [0, 1], ARRANGEMENT);
-    expect(getPrompt(at, "abbi").interact).toBe("This table is finished.");
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "This table already has its centerpiece."
+    );
   });
 
   it("says a simplified table was left bare on purpose, not that it is finished", () => {
@@ -2757,5 +2763,105 @@ describe("the prompt panel's people in solo (round 9, task 4)", () => {
       },
     };
     expect(shownPrompts(away, "abbi")).toEqual(["abbi", "fred"]);
+  });
+});
+
+describe("the venue's copy and the next-spot and floor-drop views (#1963)", () => {
+  const roses: Item = { kind: "roses", madeBy: null };
+  const hotdogs: Item = { kind: "hotdogs", madeBy: "abbi" };
+  const chairs: Item = { kind: "chairs", madeBy: null, count: 2 };
+  const lantern: Item = { kind: "lantern", madeBy: null };
+
+  function stationOf(
+    state: GameState,
+    kind: "grill" | "arrange"
+  ): { x: number; y: number } {
+    const station = state.stations.find((s) => s.kind === kind);
+    if (!station) throw new Error(`no ${kind} in the venue`);
+    return station;
+  }
+
+  it("says cooked food goes on the buffet when it faces the empty grill", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const grill = stationOf(base, "grill");
+    const at = place(base, "abbi", grill.x, grill.y + 1, [0, -1], hotdogs);
+    expect(interactTile(at, "abbi")).toBeNull();
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "Cooked food goes on the buffet, not back on the grill."
+    );
+  });
+
+  it("keeps the raw-food reason for anything else the grill refuses", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const grill = stationOf(base, "grill");
+    const at = place(base, "fred", grill.x, grill.y + 1, [0, -1], roses);
+    expect(getPrompt(at, "fred").interact).toBe(
+      "The GRILL (G) takes raw hot dogs or wings."
+    );
+  });
+
+  it("names a finished table as having its centerpiece", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const table = base.targets.find((t) => t.kind === "table");
+    if (!table) throw new Error("no table in the venue");
+    const done = {
+      ...base,
+      targets: base.targets.map((t) =>
+        t === table ? { ...t, status: "filled" as const } : t
+      ),
+    };
+    const at = place(done, "abbi", table.x, table.y + 1, [0, -1]);
+    expect(getPrompt(at, "abbi").interact).toBe(
+      "This table already has its centerpiece."
+    );
+  });
+
+  it("points at the open chair spot nearest the person while carrying chairs", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const spots = base.targets.filter(
+      (t) => t.kind === "chair-spot" && t.status === "open"
+    );
+    expect(spots.length).toBeGreaterThan(1);
+    const spot = spots[1];
+    const at = place(base, "fred", spot.x, spot.y, [0, 1], chairs);
+    expect(nextSpotTile(at, "fred")).toEqual({ x: spot.x, y: spot.y });
+    expect(nextSpotTile(at, "abbi")).toBeNull();
+  });
+
+  it("points at an open lantern hook while carrying a lantern, and at nothing otherwise", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const hook = base.targets.find(
+      (t) => t.kind === "hook" && t.status === "open"
+    );
+    if (!hook) throw new Error("no open hook in the venue");
+    const carrying = place(base, "abbi", hook.x, hook.y, [0, 1], lantern);
+    expect(nextSpotTile(carrying, "abbi")).toEqual({ x: hook.x, y: hook.y });
+    const empty = place(base, "abbi", hook.x, hook.y, [0, 1]);
+    expect(nextSpotTile(empty, "abbi")).toBeNull();
+    const roseHands = place(base, "abbi", hook.x, hook.y, [0, 1], roses);
+    expect(nextSpotTile(roseHands, "abbi")).toBeNull();
+  });
+
+  it("names the plain floor a carried item would drop on, and nothing else", () => {
+    const base = createLevel(DEFAULT_SETUP);
+    const onFloor = place(base, "fred", 10, 4, [0, -1], roses);
+    expect(floorDropTile(onFloor, "fred")).toEqual({ x: 10, y: 3 });
+    expect(
+      floorDropTile(place(base, "fred", 10, 4, [0, -1]), "fred")
+    ).toBeNull();
+    const arrange = stationOf(base, "arrange");
+    const atArrange = place(
+      base,
+      "fred",
+      arrange.x,
+      arrange.y + 1,
+      [0, -1],
+      roses
+    );
+    expect(interactTile(atArrange, "fred")).toEqual({
+      x: arrange.x,
+      y: arrange.y,
+    });
+    expect(floorDropTile(atArrange, "fred")).toBeNull();
   });
 });

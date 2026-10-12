@@ -366,7 +366,10 @@ function websiteLines(state: GameState): readonly WebsiteLine[] {
     } else if (chosen) {
       text = `${label}: blocked ${calls.length} call${calls.length === 1 ? "" : "s"}.`;
     } else {
-      text = `${label}: ${calls.length} call${calls.length === 1 ? "" : "s"} got through without it.`;
+      text =
+        calls.length === 1
+          ? `${label}: 1 call went through on its own.`
+          : `${label}: ${calls.length} calls went through on their own.`;
     }
     return { capability, chosen, text };
   });

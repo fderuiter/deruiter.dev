@@ -14,8 +14,10 @@
 ## Functions
 
 - [clockLabel](functions/clockLabel.md)
+- [floorDropTile](functions/floorDropTile.md)
 - [getCoachStep](functions/getCoachStep.md)
 - [getCoachTile](functions/getCoachTile.md)
 - [getHint](functions/getHint.md)
 - [getPrompt](functions/getPrompt.md)
+- [nextSpotTile](functions/nextSpotTile.md)
 - [shownPrompts](functions/shownPrompts.md)

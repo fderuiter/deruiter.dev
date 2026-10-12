@@ -62,14 +62,16 @@ export type {
   RunVerification,
   SharedRun,
 } from "./internal/run-code";
-export { assistInput, assistStatus } from "./internal/assist";
+export { assistInput, assistJob } from "./internal/assist";
 export { heldLabel, heldName } from "./internal/words";
 export {
   clockLabel,
+  floorDropTile,
   getCoachStep,
   getCoachTile,
   getHint,
   getPrompt,
+  nextSpotTile,
   shownPrompts,
 } from "./internal/views";
 export type { CoachStep, Prompt } from "./internal/views";

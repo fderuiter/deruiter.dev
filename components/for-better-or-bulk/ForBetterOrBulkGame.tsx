@@ -19,7 +19,7 @@ import {
   IDLE_FRAME,
   THROW_OUT_PROMPT,
   TICK_SECONDS,
-  assistStatus,
+  assistJob,
   clockLabel,
   computeReceipt,
   createLevel,
@@ -1170,11 +1170,15 @@ export function ForBetterOrBulkGame({
               );
             })}
             {mode === "solo" && view.setup.assist ? (
+              // The job line is a polite live region: its text changes when
+              // the helper's goal changes, not on every tick.
               <p
                 data-testid="fbb-helper"
+                aria-live="polite"
+                aria-atomic="true"
                 className="min-w-0 break-words border-t border-[var(--fbb-rule)] pt-2 text-[var(--fbb-text)]"
               >
-                {assistStatus(view, partner)}
+                {assistJob(view, partner)}
               </p>
             ) : null}
             {(mode === "solo" && view.setup.assist) || speed !== 1 ? (

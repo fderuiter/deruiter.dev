@@ -579,7 +579,7 @@ function placedCount(state: GameState, id: PlayerId): number {
  * does: it starts only once they have placed more, and it stops when it
  * catches up. An idle player therefore gets no help, and a working player gets
  * about as many placements from the helper as they make. The simulation
- * checks this before it uses `assistInput`, and so does `assistStatus`. A
+ * checks this before it uses `assistInput`, and so does `assistJob`. A
  * helper with a batch of its own on a grill may always act, so it can collect
  * that batch. Pure.
  */
@@ -608,21 +608,23 @@ export function assistInput(state: GameState, id: PlayerId): PlayerInput {
 }
 
 /**
- * The status line for the helper working for `id`, in plain words, derived
- * from the same plan `assistInput` follows. Pure.
+ * The job line for the helper working for `id`, as one sentence, derived from
+ * the same plan `assistInput` follows: "Fred is carrying the roses to the
+ * ARRANGE table (A).", "Fred is waiting for a free spot." or "Fred is out with
+ * his brothers.". Pure.
  */
-export function assistStatus(state: GameState, id: PlayerId): string {
+export function assistJob(state: GameState, id: PlayerId): string {
   const name = id === "fred" ? "Fred" : "Abbi";
   const player = state.players[id];
-  if (player.presence === "away")
-    return `Helper: waiting for ${name} to be back.`;
-  if (player.busyFor > 0) return `Helper: waiting for ${name} to be free.`;
+  if (player.presence === "away") return `${name} is out with his brothers.`;
+  if (player.busyFor > 0) return `${name} is busy, so the helper waits.`;
   if (!helperMayAct(state, id)) {
     const other = id === "fred" ? "Abbi" : "Fred";
-    return `Helper: waiting for ${other} to place something first.`;
+    return `${name} is waiting for ${other} to place something first.`;
   }
   const plan = planFor(state, id);
-  return plan
-    ? `Helper: ${plan.text}.`
-    : "Helper: nothing useful to do right now.";
+  if (plan) return `${name} is ${plan.text}.`;
+  return player.holding
+    ? `${name} is waiting for a free spot.`
+    : `${name} has nothing useful to do right now.`;
 }

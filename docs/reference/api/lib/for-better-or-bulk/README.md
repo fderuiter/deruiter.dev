@@ -38,9 +38,9 @@ Re-exports [assistInput](internal/assist/functions/assistInput.md)
 
 ***
 
-### assistStatus
+### assistJob
 
-Re-exports [assistStatus](internal/assist/functions/assistStatus.md)
+Re-exports [assistJob](internal/assist/functions/assistJob.md)
 
 ***
 
@@ -326,6 +326,12 @@ Re-exports [FLOOR_FULL_REPEAT_SECONDS](presets/variables/FLOOR_FULL_REPEAT_SECON
 
 ***
 
+### floorDropTile
+
+Re-exports [floorDropTile](internal/views/functions/floorDropTile.md)
+
+***
+
 ### FloorItem
 
 Re-exports [FloorItem](types/interfaces/FloorItem.md)
@@ -527,6 +533,12 @@ Re-exports [MAX_SEED](internal/prng/variables/MAX_SEED.md)
 ### MOVE\_SPEED
 
 Re-exports [MOVE_SPEED](presets/variables/MOVE_SPEED.md)
+
+***
+
+### nextSpotTile
+
+Re-exports [nextSpotTile](internal/views/functions/nextSpotTile.md)
 
 ***
 

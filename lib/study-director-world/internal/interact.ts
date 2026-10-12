@@ -262,7 +262,11 @@ export function hudReadout(world: WorldState): HudReadout {
   return {
     day: study.day,
     weekday: weekdayFor(study.day),
-    clock: formatClock(world.minute),
+    // At home the study has already moved to the next day while the clock
+    // still reads the minute the player left, so the HUD said "Day 2,
+    // 9:51 AM, Morning" behind the overnight report (#1936).
+    clock: world.location === "home" ? "Overnight" : formatClock(world.minute),
+    overnight: world.location === "home",
     energy: Math.round(world.energy),
     focus: Math.round(world.focus),
     budget: { spent: study.spent, total: study.setup.budget },

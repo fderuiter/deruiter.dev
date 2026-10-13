@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
@@ -22,7 +22,7 @@ const RetroLabyrinthLoader = () =>
 const DynamicRetroLabyrinth = dynamic(RetroLabyrinthLoader, {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-500 animate-pulse">
+    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-400">
       <div className="w-8 h-8 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin mb-4" />
       <span>Building the dungeon...</span>
     </div>
@@ -30,6 +30,14 @@ const DynamicRetroLabyrinth = dynamic(RetroLabyrinthLoader, {
 });
 
 export const RetroLabyrinthClient: React.FC = () => {
+  // Counts the moments a phone cabinet should pause (ADR 0061). The game
+  // reacts to each change by pausing a running room; resuming is its choice.
+  const [autoPauseCount, setAutoPauseCount] = useState(0);
+  const handleAutoPause = useCallback(
+    () => setAutoPauseCount((count) => count + 1),
+    []
+  );
+
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -96,9 +104,15 @@ export const RetroLabyrinthClient: React.FC = () => {
                 { key: "Enter / R", action: "Continue / Retry" },
               ]}
               importComponent={RetroLabyrinthLoader}
+              mobileOrientation="landscape"
+              mobileLayout="fit"
+              onAutoPause={handleAutoPause}
             >
-              <div className="flex flex-col items-center w-full">
-                <DynamicRetroLabyrinth isMounted={true} />
+              <div className="flex flex-col items-center w-full min-h-0 flex-1">
+                <DynamicRetroLabyrinth
+                  isMounted={true}
+                  autoPauseCount={autoPauseCount}
+                />
               </div>
             </PlayCabinet>
           </DesktopOnlyGate>

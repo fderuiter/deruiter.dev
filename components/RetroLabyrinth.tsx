@@ -15,21 +15,31 @@ import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import {
-  IconTrophy,
-  IconRefresh,
-  IconArrowRight,
   IconCheck,
   IconFileText,
   IconTerminal2,
-  IconShoppingCart,
   IconDeviceTv,
 } from "@tabler/icons-react";
 import { DpadActionDock } from "@/components/arcade/ControlDocks";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
-import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
+import {
+  controlHint,
+  DockFrame,
+  HoldDpad,
+  TouchControlsGate,
+  swipeDirection,
+  TouchButton,
+  useCabinetTouch,
+  usePhone,
+  useControlHint,
+  useInputModality,
+  type Handedness,
+} from "@/components/arcade/mobile";
 import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/arcade/DynamicCRTCalibrationModal";
 import {
   CRTCalibrationConfig,
@@ -48,6 +58,7 @@ import {
   TILE,
   boardSafeColor,
   clampLabelCenter,
+  computeFillCanvasSize,
   computeIntegerCanvasSize,
   fitFontSize,
   enemySprite,
@@ -76,6 +87,24 @@ import {
   isCrtIdle,
   resolveLabyrinthCrt,
 } from "@/components/retro-labyrinth/labyrinth-crt";
+import { triggerHaptic } from "@/lib/haptics";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
+import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
+import {
+  patrolThreat,
+  type ThreatLevel,
+} from "@/components/retro-labyrinth/threat";
+import { markNodeVisited } from "@/components/retro-labyrinth/tsp-nodes";
+import {
+  serializeGrid,
+  serializeNodes,
+} from "@/components/retro-labyrinth/room-data";
+import {
+  FINAL_ROOM_HINT,
+  RETRY_HINT,
+  ROOM_CLEAR_HINT,
+} from "@/components/retro-labyrinth/control-hints";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import {
   ActiveSideEffect,
@@ -112,6 +141,7 @@ import {
   ENEMY_STEP_INTERVAL_MS,
   type AmmoGrantResult,
   updateTSPMovingWalls,
+  tspWallTelegraph,
   retroAudio,
   CRT_THEMES,
   CYBERDECK_CLASSES,
@@ -179,6 +209,27 @@ const WEAPON_SHORT_LABELS: Record<WeaponId, string> = {
   ransomware_lock: "Ransomware",
 };
 
+/** Short tool names for the phone grid, so each fits a 44px key at 9px. */
+const PHONE_TOOL_LABELS: Partial<Record<WeaponId, string>> = {
+  npm_install: "npm i",
+  git_force_push: "push -f",
+  stack_overflow: "Stack",
+  port_scan: "Scan",
+  buffer_overflow: "Buffer",
+  mitm_spoof: "MitM",
+  ransomware_lock: "Ransom",
+};
+
+/** How long a phone tool toast stays up before it clears (ADR 0061). */
+const PHONE_TOAST_MS = 2200;
+
+/** The tool's short name for a phone toast, such as "Scan" or "EMP". */
+function phoneToolLabel(weaponId: WeaponId): string {
+  return (
+    PHONE_TOOL_LABELS[weaponId] ?? WEAPON_SHORT_LABELS[weaponId] ?? weaponId
+  );
+}
+
 interface Drone {
   x: number;
   y: number;
@@ -189,6 +240,11 @@ interface Drone {
 
 interface RetroLabyrinthProps {
   isMounted?: boolean;
+  /**
+   * Bumped by the cabinet each time a phone should pause (ADR 0061). A
+   * change pauses a running room; the player resumes it.
+   */
+  autoPauseCount?: number;
 }
 
 type GameStatus =
@@ -240,8 +296,16 @@ const getHighScoreSnapshot = () => {
 const getHighScoreServerSnapshot = () => "0";
 const emptySubscribe = () => () => {};
 
+// The resume copy names the gesture on touch and the keys elsewhere (ADR 0061).
+const RESUME_HINT = controlHint({
+  key: "P, Esc or Enter",
+  touch: "Tap Resume",
+  desktop: "P, Esc or Enter to resume",
+});
+
 export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   isMounted: propIsMounted,
+  autoPauseCount = 0,
 }) => {
   const clientMounted = useSyncExternalStore(
     emptySubscribe,
@@ -339,6 +403,37 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     { moves: number; crypto: number }[]
   >([]);
   const [isFocused, setIsFocused] = useState(false);
+  // Phone cabinet (ADR 0061): a compact layout with controls either side of
+  // the maze. The options panel is a sheet there, not an inline disclosure.
+  const phoneCabinet = useCabinetTouch();
+  // A phone gets the rotate prompt; a tablet keeps the orientation hint.
+  const phoneDevice = usePhone();
+  // A portrait tablet has the room for larger keys under the maze.
+  const portraitView = useMediaQuery("(orientation: portrait)");
+  // Key numbers are keyboard hints, so they show only while a keyboard is in use.
+  const showKeyHints = useInputModality() === "keyboard";
+  const resumeHint = useControlHint(RESUME_HINT);
+  const retryHint = useControlHint(RETRY_HINT);
+  const roomClearHint = useControlHint(ROOM_CLEAR_HINT);
+  const finalRoomHint = useControlHint(FINAL_ROOM_HINT);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  // The phone sheet's focus refs and trap are hooks, so they sit above the
+  // early return for the unmounted skeleton.
+  const optionsButtonRef = useRef<HTMLButtonElement>(null);
+  const closeOptionsRef = useRef<HTMLButtonElement>(null);
+  // The phone sheet is a modal dialog: focus stays inside it while it is open
+  // and returns to the Options key when it closes.
+  const optionsSheetRef = useFocusTrap<HTMLElement>(
+    phoneCabinet && optionsOpen,
+    {
+      initialFocusRef: closeOptionsRef,
+      returnFocusTo: optionsButtonRef,
+    }
+  );
+  const [handedness, setHandedness] = useState<Handedness>("right");
+  const swipeStartRef = useRef<{ id: number; x: number; y: number } | null>(
+    null
+  );
 
   // Hacking Minigame State
   const [hexPuzzle, setHexPuzzle] = useState<HexMatrixPuzzle | null>(null);
@@ -359,8 +454,45 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [activeSideEffect, setActiveSideEffect] =
     useState<ActiveSideEffect | null>(null);
 
+  // A phone tool press answers with a short line saying what fired and what
+  // happened. It is plain text with no motion, so reduced motion needs nothing.
+  const [phoneToast, setPhoneToast] = useState<{
+    id: number;
+    text: string;
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showPhoneToast = useCallback((text: string) => {
+    setPhoneToast({ id: Date.now(), text });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      toastTimerRef.current = null;
+      setPhoneToast(null);
+    }, PHONE_TOAST_MS);
+  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
+
   // Room Entities
   const [enemies, setEnemies] = useState<Enemy[]>([]);
+  // A live patrol within two steps warns (amber), and one that can step onto
+  // the player next turn is red. Only the phone cabinet warns: the touch player
+  // has no sight of the maze's edges to read the danger from (ADR 0061).
+  const threatLevel: ThreatLevel =
+    phoneCabinet && gameStatus === "playing"
+      ? patrolThreat(playerPosition, enemies)
+      : "none";
+  const wasRedThreatRef = useRef(false);
+  useEffect(() => {
+    const wasRed = wasRedThreatRef.current;
+    const isRed = threatLevel === "red";
+    wasRedThreatRef.current = isRed;
+    // Buzz once on the rising edge into red, not on every frame it stays red.
+    if (isRed && !wasRed) triggerHaptic([40, 60, 40]);
+  }, [threatLevel]);
   const [items, setItems] = useState<ItemPickup[]>([]);
   const [boss, setBoss] = useState<BossState | undefined>(undefined);
   // The player's last step and when it was taken; boss salvos lead it (#1321).
@@ -368,6 +500,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     null
   );
   const [tspNodes, setTspNodes] = useState(generateTSPRoom().tspNodes || []);
+  // Testing and playtest read the room as data: the grid, the route nodes and
+  // whether the exit is still locked. Recomputed only when they change.
+  const gridData = useMemo(() => serializeGrid(currentMaze), [currentMaze]);
+  const nodeData = useMemo(() => serializeNodes(tspNodes), [tspNodes]);
   const [tspWalls, setTspWalls] = useState(
     generateTSPRoom().tspMovingWalls || []
   );
@@ -401,11 +537,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const measure = () => {
       const rect = frame.getBoundingClientRect();
       if (rect.width <= 0 || rect.height <= 0) return;
-      const next = computeIntegerCanvasSize(
-        rect.width,
-        rect.height,
-        window.devicePixelRatio || 1
-      );
+      // The phone fills its dock with the largest 5:3 box. The desktop keeps
+      // whole-pixel art scaling (#1522).
+      const next = phoneCabinet
+        ? computeFillCanvasSize(
+            rect.width,
+            rect.height,
+            window.devicePixelRatio || 1
+          )
+        : computeIntegerCanvasSize(
+            rect.width,
+            rect.height,
+            window.devicePixelRatio || 1
+          );
       setCanvasSize((prev) =>
         prev &&
         prev.backingWidth === next.backingWidth &&
@@ -420,7 +564,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const observer = new ResizeObserver(measure);
     observer.observe(frame);
     return () => observer.disconnect();
-  }, [isMounted]);
+  }, [isMounted, phoneCabinet]);
   // The fog texture and the maps it was painted from, rebuilt only when the
   // field of view changes.
   const fogRef = useRef<{
@@ -885,7 +1029,48 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setExploredMap(fov.explored);
         }
 
-        // TSP room: Dynamic wall shifting & node collection
+        // Route nodes: every move (keyboard, d-pad tap, hold or swipe) lands
+        // here, so each one collects a node the same way. The side effects run
+        // here, outside any state updater, and only when a node is new.
+        if (gameMode === "roguelike") {
+          const visit = markNodeVisited(tspNodes, nextX, nextY);
+          if (visit.collected) {
+            setTspNodes(visit.nodes);
+            // The in-world prompt is drawn once per room, so the last node
+            // re-states the goal when it opens the exit.
+            if (
+              getExitLockState(boss, tspNodes).locked &&
+              !getExitLockState(boss, visit.nodes).locked
+            ) {
+              floatingTextsRef.current.push({
+                id: `exit-open-${Date.now()}`,
+                x: 7,
+                y: 8,
+                text: "REACH THE EXIT >>",
+                color: "#f59e0b",
+                alpha: 3,
+                vy: 0,
+              });
+              // A phone has no objective line, so it hears it here too.
+              if (phoneCabinet) showPhoneToast("Exit open: reach the EXIT");
+            }
+            playSuccess();
+            retroAudio.playPickup();
+            setScore((s) => s + 200);
+            earnCrypto(50);
+            floatingTextsRef.current.push({
+              id: `tsp-node-${Date.now()}`,
+              x: nextX,
+              y: nextY,
+              text: "AIRGAP NODE BYPASS! +200 PTS",
+              color: currentTheme.accentColor,
+              alpha: 1,
+              vy: -0.02,
+            });
+          }
+        }
+
+        // TSP room: Dynamic wall shifting
         if (
           gameMode === "roguelike" &&
           campaignRooms[roomIndex]?.id === "tsp"
@@ -897,28 +1082,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           );
           setCurrentMaze(updatedGrid);
           setTspWalls(updatedWalls);
-
-          setTspNodes((prev) =>
-            prev.map((node) => {
-              if (!node.visited && node.x === nextX && node.y === nextY) {
-                playSuccess();
-                retroAudio.playPickup();
-                setScore((s) => s + 200);
-                earnCrypto(50);
-                floatingTextsRef.current.push({
-                  id: `tsp-node-${Date.now()}`,
-                  x: nextX,
-                  y: nextY,
-                  text: "AIRGAP NODE BYPASS! +200 PTS",
-                  color: currentTheme.accentColor,
-                  alpha: 1,
-                  vy: -0.02,
-                });
-                return { ...node, visited: true };
-              }
-              return node;
-            })
-          );
         }
 
         // Item Collection check. Ammo goes to a weapon this class can
@@ -1080,6 +1243,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       profile,
       recordEvent,
       openHackingTerminal,
+      phoneCabinet,
+      showPhoneToast,
     ]
   );
 
@@ -1101,6 +1266,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         nowMs,
         currentRam
       );
+
+      if (phoneCabinet) {
+        const weapon = weapons[wId];
+        const outcome = res.success
+          ? res.message
+          : !weapon || weapon.ammo <= 0
+            ? "out of ammo"
+            : "out of RAM";
+        showPhoneToast(`${phoneToolLabel(wId)}: ${outcome}`);
+      }
 
       if (!res.success) {
         floatingTextsRef.current.push({
@@ -1177,6 +1352,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       playNote,
       playSuccess,
       earnCrypto,
+      phoneCabinet,
+      showPhoneToast,
     ]
   );
 
@@ -1215,6 +1392,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     setGameStatus(overlayReturnStatusRef.current);
     containerRef.current?.focus({ preventScroll: true });
   }, []);
+
+  // The cabinet reports the moment to stop (tab hidden, window blurred, device
+  // rotated). A running room pauses and waits for the player to resume.
+  const lastAutoPauseRef = useRef(autoPauseCount);
+  useEffect(() => {
+    if (autoPauseCount === lastAutoPauseRef.current) return;
+    lastAutoPauseRef.current = autoPauseCount;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setGameStatus((status) => (status === "playing" ? "paused" : status));
+  }, [autoPauseCount]);
 
   // Keyboard controls
   const handleKeyDown = useCallback(
@@ -1400,10 +1587,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       ) {
         setActiveWeaponId(candidateWeaponId);
         handleFireWeapon(candidateWeaponId);
-        break;
+        return;
       }
     }
-  }, [selectedClass.starterWeapons, activeWeaponId, weapons, handleFireWeapon]);
+    if (phoneCabinet) showPhoneToast("Exploit: no tool has ammo");
+  }, [
+    selectedClass.starterWeapons,
+    activeWeaponId,
+    weapons,
+    handleFireWeapon,
+    phoneCabinet,
+    showPhoneToast,
+  ]);
 
   // Cursor tracking for every campaign room: the TSP room draws a hover
   // highlight from it, and BlinkBrowse also steers the player towards it.
@@ -1533,8 +1728,28 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   }, [playerPosition.x, playerPosition.y, tspNodes]);
 
   // Loop State Mirroring Ref for Stable Animation Lifecycle
+  // The walls' next shift: drawn as a ghost on the maze and counted down in
+  // the HUD. Walls only exist in Room 1, so other rooms have none.
+  const wallTelegraph = useMemo(
+    () =>
+      tspWalls.length > 0
+        ? tspWallTelegraph(currentMaze, tspWalls, movesCount)
+        : null,
+    [currentMaze, tspWalls, movesCount]
+  );
+  const wallShiftLabel = wallTelegraph
+    ? wallTelegraph.stepsUntilAppear === null
+      ? "Walls steady"
+      : `Walls shift in ${wallTelegraph.stepsUntilAppear} step${
+          wallTelegraph.stepsUntilAppear === 1 ? "" : "s"
+        }`
+    : null;
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+
   const loopStateRef = useRef({
     isMounted,
+    wallTelegraph,
+    reducedMotion,
     currentMaze,
     playerPosition,
     visibleMap,
@@ -1558,6 +1773,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   useEffect(() => {
     loopStateRef.current = {
       isMounted,
+      wallTelegraph,
+      reducedMotion,
       currentMaze,
       playerPosition,
       visibleMap,
@@ -1649,6 +1866,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       const campaignRooms = campaignRoomsRef.current;
 
       const {
+        wallTelegraph,
+        reducedMotion,
         currentMaze,
         playerPosition,
         visibleMap,
@@ -1951,6 +2170,41 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             );
           });
 
+          // Wall telegraph: drawn over the fog, so the next shift shows even in
+          // unexplored rooms: a dashed amber ghost where a wall will appear, and
+          // a dim over the walls the next move takes away (flickers unless
+          // reduced motion).
+          if (wallTelegraph) {
+            ctx.save();
+            ctx.strokeStyle = LABYRINTH_INK.amber;
+            ctx.lineWidth = TILE * 0.09;
+            ctx.setLineDash([TILE * 0.25, TILE * 0.2]);
+            ctx.globalAlpha = 0.6;
+            for (const cell of wallTelegraph.appearing) {
+              const [gx, gy] = cell.split(",").map(Number);
+              ctx.strokeRect(
+                gx * TILE + TILE * 0.12,
+                gy * TILE + TILE * 0.12,
+                TILE * 0.76,
+                TILE * 0.76
+              );
+            }
+            ctx.restore();
+            if (wallTelegraph.vanishing.length > 0) {
+              const dimOn = reducedMotion
+                ? true
+                : Math.floor(timestamp / 250) % 2 === 0;
+              ctx.save();
+              ctx.fillStyle = LABYRINTH_INK.stage;
+              ctx.globalAlpha = dimOn ? 0.7 : 0.35;
+              for (const cell of wallTelegraph.vanishing) {
+                const [gx, gy] = cell.split(",").map(Number);
+                ctx.fillRect(gx * TILE, gy * TILE, TILE, TILE);
+              }
+              ctx.restore();
+            }
+          }
+
           // Enemies, coloured by what they are doing, with CVE plates
           ctx.font = labyrinthFont(5);
           enemies.forEach((enemy) => {
@@ -2252,152 +2506,1209 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ? generateClassicStage2()
         : generateClassicStage1();
 
-  return (
-    <div className="arcade-labyrinth w-full flex flex-col items-center select-none my-6 font-mono">
-      {/* Tablet Orientation Recommendation */}
-      <TabletOrientationHint className="w-full" />
+  // Swipe on the maze (phone only): one drag is one step, and a tap does nothing.
+  const handleCanvasPointerDown = (
+    event: React.PointerEvent<HTMLCanvasElement>
+  ) => {
+    if (!phoneCabinet || event.pointerType === "mouse") return;
+    swipeStartRef.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  };
+  const handleCanvasPointerUp = (
+    event: React.PointerEvent<HTMLCanvasElement>
+  ) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!phoneCabinet || !start || start.id !== event.pointerId) return;
+    const direction = swipeDirection(
+      event.clientX - start.x,
+      event.clientY - start.y
+    );
+    if (direction) handleDirectionalMove(direction);
+  };
+  const handleCanvasPointerCancel = () => {
+    swipeStartRef.current = null;
+  };
 
-      <details className="arcade-labyrinth-options w-full">
-        <summary className="min-h-12 p-3 cursor-pointer text-xs text-zinc-300">
-          Game mode, class & display
-        </summary>
-        {/* Top HUD Banner: Mode, Class, CRT Theme & Expand Toggle */}
-        <div className="mb-2 w-full flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
-          <div className="flex items-center gap-2">
-            <span
-              className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-bold uppercase tracking-wider border transition-all duration-300 ${
-                isFocused
-                  ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                  : "bg-neutral-950 text-neutral-500 border-neutral-900"
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                  isFocused ? "bg-emerald-400" : "bg-neutral-700"
+  // A class tool slot fires only with ammo left, as the hotbar does.
+  const fireStarterSlot = (slotIdx: number) => {
+    const weaponId = selectedClass.starterWeapons[slotIdx];
+    if (weaponId && weapons[weaponId] && weapons[weaponId].ammo > 0) {
+      setActiveWeaponId(weaponId);
+      handleFireWeapon(weaponId);
+    }
+  };
+
+  // Options open over the maze and pause a running room, so the sheet never
+  // hides a live fight.
+  const openOptionsSheet = () => {
+    setOptionsOpen(true);
+    setGameStatus((status) => (status === "playing" ? "paused" : status));
+  };
+  const closeOptionsSheet = () => setOptionsOpen(false);
+
+  const roomBadge =
+    gameMode === "roguelike"
+      ? `ROOM ${String(roomIndex + 1).padStart(2, "0")}`
+      : `SUBNET 0${stage}`;
+
+  const phoneHud = (
+    <div
+      className="flex h-11 w-full min-w-0 shrink-0 items-center gap-2 border-b border-neutral-900/60 pl-1 text-xs font-bold"
+      // The touch toolbar sits over this row's right end. The playfield already
+      // pads 4px, so the row pads the toolbar's width less that.
+      style={{ paddingRight: "calc(var(--cabinet-toolbar-inset, 0px) - 4px)" }}
+    >
+      <span
+        className="shrink-0 text-neutral-300"
+        data-testid="labyrinth-phone-floor"
+      >
+        {roomBadge}
+      </span>
+      {wallShiftLabel && (
+        <span
+          className="hidden landscape:min-[700px]:inline shrink-0 text-amber-300 text-[10px]"
+          data-testid="labyrinth-wall-telegraph-phone"
+        >
+          {wallShiftLabel}
+        </span>
+      )}
+      <span className="flex shrink-0 items-center gap-1">
+        <span className="text-neutral-400">HP</span>
+        <span className="h-2 w-10 overflow-hidden rounded-full border border-neutral-800 bg-neutral-900">
+          <span
+            className={`block h-full motion-safe:transition-all motion-safe:duration-200 ${
+              playerHp > 50
+                ? "bg-emerald-500"
+                : playerHp > 25
+                  ? "bg-amber-500"
+                  : "bg-rose-500"
+            }`}
+            style={{ width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%` }}
+          />
+        </span>
+        <span className="text-neutral-300" data-testid="labyrinth-phone-hp">
+          {playerHp}
+        </span>
+      </span>
+      {gameMode === "roguelike" && boss && (
+        <span
+          className="shrink-0 text-rose-400"
+          data-testid="labyrinth-phone-boss"
+        >
+          BOSS {boss.defeated ? "DOWN" : boss.hp}
+        </span>
+      )}
+      <span className="min-w-0 flex-1" aria-hidden="true" />
+      <span
+        className="shrink-0 text-zinc-100"
+        data-testid="labyrinth-phone-score"
+      >
+        {score}
+      </span>
+      <span
+        className="flex shrink-0 items-center gap-1"
+        data-testid="labyrinth-phone-ram"
+      >
+        {threatLevel !== "none" && (
+          <span
+            role="status"
+            className={`font-bold uppercase text-[10px] ${
+              threatLevel === "red" ? "text-rose-400" : "text-amber-400"
+            }`}
+          >
+            {threatLevel === "red" ? "Patrol adjacent" : "Patrol 2 steps out"}
+          </span>
+        )}
+        <span className="text-slate-400">RAM</span>
+        <span className="text-neutral-300">
+          {currentRam}/{maxRam}
+        </span>
+      </span>
+      <button
+        ref={optionsButtonRef}
+        type="button"
+        onClick={openOptionsSheet}
+        aria-expanded={optionsOpen}
+        aria-controls="labyrinth-options-sheet"
+        className="h-11 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-xs font-bold text-zinc-200 touch-manipulation active:scale-[0.98]"
+      >
+        Options
+      </button>
+    </div>
+  );
+
+  // The tablet's room panel, kept to a few short rows: the route and exit, the
+  // bars, the tool and EMP with the wall countdown, and the event line. CSS
+  // shows it on a portrait tablet only.
+  const roomNodes = tspNodes ?? [];
+  const routeVisited = roomNodes.filter((node) => node.visited).length;
+  const exitLocked =
+    gameMode === "roguelike" && getExitLockState(boss, tspNodes).locked;
+  const empWeapon = weapons.emp_blast;
+  const phoneRoomPanel = (
+    <section
+      aria-label="Room status"
+      data-testid="labyrinth-room-panel"
+      className="hidden min-h-0 flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-xs portrait:min-[480px]:flex portrait:min-[480px]:col-span-2 portrait:min-[480px]:row-start-2"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          {roomNodes.length > 0 && (
+            <span className="font-bold uppercase tracking-wider text-zinc-400">
+              Route {routeVisited}/{roomNodes.length}
+            </span>
+          )}
+          <ul aria-label="Route nodes" className="flex items-center gap-1">
+            {roomNodes.map((node, index) => (
+              <li
+                key={`${node.x},${node.y}`}
+                aria-label={`Node ${index + 1} ${node.visited ? "visited" : "not visited"}`}
+                className={`flex h-6 min-w-6 items-center justify-center rounded border px-1 text-xs font-bold ${
+                  node.visited
+                    ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
+                    : "border-zinc-700 text-zinc-400"
                 }`}
-              />
-              {/* Both labels share one grid cell, so the pill keeps the
+              >
+                {index + 1}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <span
+          className={`font-bold uppercase tracking-wider ${
+            exitLocked ? "text-rose-400" : "text-emerald-400"
+          }`}
+          data-testid="labyrinth-room-exit"
+        >
+          {exitLocked ? "Exit locked" : "Exit open"}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+        <div className="flex items-center gap-2">
+          <span className="w-7 font-bold text-zinc-400">HP</span>
+          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-900">
+            <span
+              className={`block h-full transition-[width] duration-200 ${
+                playerHp > 50
+                  ? "bg-emerald-500"
+                  : playerHp > 25
+                    ? "bg-amber-500"
+                    : "bg-rose-500"
+              }`}
+              style={{
+                width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%`,
+              }}
+            />
+          </span>
+          <span className="w-12 text-right font-bold text-zinc-100">
+            {playerHp}/{maxPlayerHp}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-8 font-bold text-slate-400">RAM</span>
+          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-900">
+            <span
+              className="block h-full bg-sky-500 transition-[width] duration-200"
+              style={{ width: `${Math.max(0, (currentRam / maxRam) * 100)}%` }}
+            />
+          </span>
+          <span className="w-12 text-right font-bold text-zinc-100">
+            {currentRam}/{maxRam}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-zinc-200">
+          <span className="text-zinc-400">TOOL </span>
+          {PHONE_TOOL_LABELS[activeWeaponId] ??
+            WEAPON_SHORT_LABELS[activeWeaponId] ??
+            weapons[activeWeaponId]?.name ??
+            activeWeaponId}
+        </span>
+        <span
+          className={`shrink-0 ${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}
+        >
+          {empWeapon && empWeapon.maxAmmo >= 999
+            ? `EMP ∞ · ${empWeapon.ramCost ?? 0} RAM`
+            : `EMP ${empWeapon?.ammo ?? 0}/${empWeapon?.maxAmmo ?? 0}`}
+          {dronesStunned ? " · stunned" : ""}
+        </span>
+        {wallShiftLabel && (
+          <span
+            className="shrink-0 font-bold text-amber-300"
+            data-testid="labyrinth-wall-telegraph-panel"
+          >
+            {wallShiftLabel}
+          </span>
+        )}
+      </div>
+      {phoneToast && (
+        <p className="truncate text-amber-200" aria-hidden="true">
+          {phoneToast.text}
+        </p>
+      )}
+    </section>
+  );
+
+  const phoneActionGrid = (
+    <div
+      role="group"
+      aria-label="Tools and actions"
+      className="grid grid-cols-2 gap-1 portrait:min-[480px]:w-max portrait:min-[480px]:gap-2"
+    >
+      {[0, 1, 2].map((slotIdx) => {
+        const weaponId = selectedClass.starterWeapons[slotIdx];
+        // A starter slot holding EMP would duplicate the EMP key, so the key
+        // stands for it alone.
+        if (weaponId === "emp_blast") return null;
+        const weapon = weaponId ? weapons[weaponId] : null;
+        const hasAmmo = !!weapon && weapon.ammo > 0;
+        const shortLabel = weaponId
+          ? PHONE_TOOL_LABELS[weaponId] ||
+            WEAPON_SHORT_LABELS[weaponId] ||
+            weapon?.name ||
+            weaponId
+          : "---";
+        return (
+          <TouchButton
+            key={`tool-${slotIdx}`}
+            label={
+              hasAmmo
+                ? `${shortLabel}: fire tool ${slotIdx + 1}`
+                : `${shortLabel}: out of ammo`
+            }
+            disabled={!hasAmmo}
+            onPress={() => fireStarterSlot(slotIdx)}
+            className="relative flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
+          >
+            {showKeyHints && (
+              <span
+                aria-hidden="true"
+                className="absolute left-1.5 top-1 text-[11px] leading-none text-amber-200/80"
+              >
+                {slotIdx + 1}
+              </span>
+            )}
+            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)]">
+              {shortLabel}
+            </span>
+          </TouchButton>
+        );
+      })}
+      <TouchButton
+        label="EMP: fire an EMP burst"
+        onPress={() => handleFireWeapon("emp_blast")}
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
+      >
+        EMP
+      </TouchButton>
+      <TouchButton
+        label="Exploit: cycle to the next tool and fire it"
+        onPress={cycleWeapon}
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
+      >
+        EXPLOIT
+      </TouchButton>
+      <TouchButton
+        label="Market: open the darknet market"
+        onPress={() => openOverlay("darknet_shop")}
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
+      >
+        Market
+      </TouchButton>
+    </div>
+  );
+
+  // Mode, class, phosphor theme and calibration. The desktop disclosure and the
+  // phone sheet share this markup.
+  const optionsContent = (
+    <>
+      <div className="mb-2 w-full flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-bold uppercase tracking-wider border transition-all duration-300 ${
+              isFocused
+                ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
+                : "bg-neutral-950 text-neutral-500 border-neutral-900"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                isFocused ? "bg-emerald-400" : "bg-neutral-700"
+              }`}
+            />
+            {/* Both labels share one grid cell, so the pill keeps the
                   width of the longer one and focusing the board never
                   reflows the row under the pointer (#1693). */}
-              <span className="grid">
-                <span
-                  className={`col-start-1 row-start-1 ${isFocused ? "" : "invisible"}`}
-                >
-                  Netrunner Breach: ACTIVE
-                </span>
-                <span
-                  className={`col-start-1 row-start-1 ${isFocused ? "invisible" : ""}`}
-                >
-                  Click Subnet to Focus &amp; Hack
-                </span>
+            <span className="grid">
+              <span
+                className={`col-start-1 row-start-1 ${isFocused ? "" : "invisible"}`}
+              >
+                Netrunner Breach: ACTIVE
+              </span>
+              <span
+                className={`col-start-1 row-start-1 ${isFocused ? "invisible" : ""}`}
+              >
+                Click Subnet to Focus &amp; Hack
               </span>
             </span>
+          </span>
 
-            {/* Class Badge */}
-            <button
-              onClick={() => openOverlay("class_select")}
-              className="px-2.5 py-1 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 rounded-full flex items-center gap-1 cursor-pointer transition-colors"
-              title="Change Cyberdeck Class"
-            >
-              <span>{selectedClass.icon}</span>
-              <span className="font-bold text-zinc-100">
-                {selectedClass.name}
-              </span>
-            </button>
-          </div>
+          {/* Class Badge */}
+          <button
+            onClick={() => {
+              if (phoneCabinet) setOptionsOpen(false);
+              openOverlay("class_select");
+            }}
+            className="px-2.5 py-1 bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 rounded-full flex items-center gap-1 cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11"
+            title="Change Cyberdeck Class"
+          >
+            <span>{selectedClass.icon}</span>
+            <span className="font-bold text-zinc-100">
+              {selectedClass.name}
+            </span>
+          </button>
+        </div>
 
-          {/* Mode Selector, CRT Palette & Expand */}
-          <div className="flex flex-wrap items-center justify-end gap-1.5">
-            <FieldManualButton
-              manualId="retro-labyrinth"
-              label="Manual"
-              onOpenChange={handleManualOpenChange}
-            />
+        {/* Mode Selector, CRT Palette & Expand */}
+        <div className="flex flex-wrap items-center justify-end gap-1.5">
+          <FieldManualButton
+            manualId="retro-labyrinth"
+            label="Manual"
+            onOpenChange={handleManualOpenChange}
+          />
+          {!phoneCabinet && (
             <FullscreenButton
               isFullscreen={isFullscreen}
               onToggle={toggleFullscreen}
               variant="header"
             />
+          )}
 
-            {/* Phosphor theme: emerald by default, amber as an option
+          {/* Phosphor theme: emerald by default, amber as an option
                 (#1522). Synthwave pink is gone (AGENTS.md section 20). */}
+          <div
+            role="group"
+            aria-label="Phosphor theme"
+            className="flex items-center gap-0.5 bg-neutral-900 p-0.5 rounded-lg text-xs"
+          >
+            {PHOSPHOR_THEME_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setCrtThemeId(option.id)}
+                title={CRT_THEMES[option.id].name}
+                aria-pressed={crtThemeId === option.id}
+                className={`px-2 py-1 rounded cursor-pointer inline-flex items-center gap-1.5 [@media(pointer:coarse)]:min-h-11 ${
+                  crtThemeId === option.id
+                    ? "bg-neutral-800 text-zinc-100 font-bold"
+                    : "text-neutral-400 hover:text-zinc-200"
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className="w-2 h-2 rounded-sm"
+                  style={{
+                    backgroundColor: CRT_THEMES[option.id].primaryColor,
+                  }}
+                />
+                {option.label}
+              </button>
+            ))}
+
+            {/* CRT Calibration Trigger */}
+            <span className="w-px h-3 bg-neutral-800 mx-0.5" />
+            <button
+              onClick={() => setIsCRTModalOpen(true)}
+              title="Calibrate CRT Display & Phosphor Shaders"
+              aria-label="Calibrate CRT Display & Phosphor Shaders"
+              className="px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-emerald-400 cursor-pointer flex items-center gap-1 transition-colors [@media(pointer:coarse)]:min-h-11"
+            >
+              <IconDeviceTv className="w-3 h-3" />
+              <span className="hidden sm:inline">CRT</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg text-xs">
+            <button
+              onClick={startRoguelikeCampaign}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 ${
+                gameMode === "roguelike"
+                  ? "bg-amber-500 text-black font-bold"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Graveyard Roguelike
+            </button>
+            <button
+              onClick={() => switchStage(1)}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 ${
+                gameMode === "classic" && stage === 1
+                  ? "bg-amber-500 text-black font-bold"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Subnet 01
+            </button>
+            <button
+              onClick={() => switchStage(2)}
+              className={`px-2 py-0.5 rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 ${
+                gameMode === "classic" && stage === 2
+                  ? "bg-amber-500 text-black font-bold"
+                  : "text-neutral-400 hover:text-white"
+              }`}
+            >
+              Subnet 02 (Firewall)
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  // The playfield (canvas frame, its overlays and the accessible subtree) is
+  // one node, so the phone row and the desktop column can both place it.
+  const canvasFrameNode = (
+    <>
+      {/* Game Canvas Container. Height budget: 21rem covers the navbar,
+            cabinet header, HUD rows and the hotbar below, so the whole
+            stage fits a launched 1280x800 viewport (#1552). */}
+      <div
+        ref={canvasFrameRef}
+        className={`arcade-labyrinth-canvas relative ${
+          phoneCabinet
+            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:col-span-2 portrait:row-start-1 portrait:w-full portrait:aspect-[5/3] portrait:h-auto portrait:flex-none"
+            : isFullscreen
+              ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
+              : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
+        } flex items-center justify-center transition-all duration-300 ${phoneCabinet ? "" : "my-auto"} ${threatLevel === "red" ? "rounded-lg ring-2 ring-rose-500 motion-safe:animate-pulse" : threatLevel === "amber" ? "rounded-lg ring-2 ring-amber-500 motion-safe:animate-pulse" : ""}`}
+        style={
+          crtCalibration.curvature > 0.05
+            ? {
+                borderRadius: `${Math.round(8 + crtCalibration.curvature * 20)}px`,
+                boxShadow: `inset 0 0 ${Math.round(crtCalibration.curvature * 30)}px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)`,
+              }
+            : undefined
+        }
+      >
+        <canvas
+          ref={canvasRef}
+          width={canvasSize?.backingWidth ?? LOGICAL_WIDTH}
+          height={canvasSize?.backingHeight ?? LOGICAL_HEIGHT}
+          style={
+            canvasSize
+              ? {
+                  width: `${canvasSize.cssWidth}px`,
+                  height: `${canvasSize.cssHeight}px`,
+                }
+              : undefined
+          }
+          data-pixel-scale={canvasSize?.scale ?? 1}
+          onMouseMove={handleCanvasMouseMove}
+          onMouseLeave={() => {
+            cursorGridPosRef.current = null;
+          }}
+          onPointerDown={handleCanvasPointerDown}
+          onPointerUp={handleCanvasPointerUp}
+          onPointerCancel={handleCanvasPointerCancel}
+          role="application"
+          aria-label={
+            phoneCabinet
+              ? "Retro Labyrinth Cyberdeck Dungeon Crawl. Swipe the maze or use the arrow pad to move."
+              : "Retro Labyrinth Cyberdeck Dungeon Crawl. Use arrow keys or WASD to navigate, and Tab to access accessible controls."
+          }
+          tabIndex={0}
+          className={`block ${
+            canvasSize
+              ? "shrink-0"
+              : isFullscreen
+                ? "max-w-full max-h-full aspect-[240/144] object-contain"
+                : "w-full aspect-[240/144] h-auto"
+          } [image-rendering:pixelated] bg-[#0d0e11] cursor-crosshair ${phoneCabinet ? "touch-none select-none" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60`}
+        />
+
+        {phoneToast && (
+          <div
+            key={phoneToast.id}
+            role="status"
+            aria-live="polite"
+            data-testid="labyrinth-phone-toast"
+            className="pointer-events-none absolute bottom-2 left-1/2 z-10 w-max max-w-[90%] -translate-x-1/2 rounded border border-amber-500/50 bg-zinc-950/90 px-3 py-1.5 text-center text-xs font-bold text-amber-200"
+          >
+            {phoneToast.text}
+          </div>
+        )}
+
+        {/* Off-screen Accessible DOM Fallback Subtree */}
+        <div
+          className="sr-only"
+          aria-label="Retro Labyrinth Accessible Subtree"
+        >
+          <fieldset>
+            <legend>Retro Labyrinth Dungeon Crawl State and Controls</legend>
+
             <div
               role="group"
-              aria-label="Phosphor theme"
-              className="flex items-center gap-0.5 bg-neutral-900 p-0.5 rounded-lg text-xs"
+              aria-label="Dungeon Telemetry and Status"
+              data-player-cell={`${playerPosition.x},${playerPosition.y}`}
+              data-exit-cell={`${EXIT_X},${EXIT_Y}`}
+              data-exit-locked={String(roomExitLock.locked)}
+              data-threat={threatLevel}
+              data-grid={gridData}
+              data-nodes={nodeData}
+              data-patrol-cells={enemies
+                .filter((e) => e.state !== "stunned" && e.state !== "frozen")
+                .map((e) => `${e.x},${e.y}`)
+                .join(";")}
             >
-              {PHOSPHOR_THEME_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setCrtThemeId(option.id)}
-                  title={CRT_THEMES[option.id].name}
-                  aria-pressed={crtThemeId === option.id}
-                  className={`px-2 py-1 rounded cursor-pointer inline-flex items-center gap-1.5 ${
-                    crtThemeId === option.id
-                      ? "bg-neutral-800 text-zinc-100 font-bold"
-                      : "text-neutral-400 hover:text-zinc-200"
-                  }`}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="w-2 h-2 rounded-sm"
-                    style={{
-                      backgroundColor: CRT_THEMES[option.id].primaryColor,
-                    }}
-                  />
-                  {option.label}
-                </button>
-              ))}
-
-              {/* CRT Calibration Trigger */}
-              <span className="w-px h-3 bg-neutral-800 mx-0.5" />
-              <button
-                onClick={() => setIsCRTModalOpen(true)}
-                title="Calibrate CRT Display & Phosphor Shaders"
-                aria-label="Calibrate CRT Display & Phosphor Shaders"
-                className="px-1.5 py-0.5 rounded hover:bg-neutral-800 text-neutral-400 hover:text-emerald-400 cursor-pointer flex items-center gap-1 transition-colors"
-              >
-                <IconDeviceTv className="w-3 h-3" />
-                <span className="hidden sm:inline">CRT</span>
-              </button>
+              <output htmlFor="retro-score">Score: {score}</output>
+              <output htmlFor="retro-highscore">
+                High Score: {effectiveHighScore}
+              </output>
+              <output htmlFor="retro-stage">Stage: {stage}</output>
+              <output htmlFor="retro-status">Game Status: {gameStatus}</output>
+              <output htmlFor="retro-player-pos">
+                Player Location: Grid ({playerPosition.x}, {playerPosition.y})
+              </output>
+              <output htmlFor="retro-hp">
+                Cyberdeck Integrity: {playerHp} / {maxPlayerHp} HP
+              </output>
+              {gameMode === "roguelike" && boss && (
+                <output htmlFor="retro-boss-hp">
+                  {boss.defeated
+                    ? "Boss defeated."
+                    : `Boss HP: ${boss.hp} / ${boss.maxHp}`}
+                </output>
+              )}
+              <output htmlFor="retro-weapon">
+                Active Cyberdeck Weapon: {activeWeaponId}
+              </output>
+              <output htmlFor="retro-bypass">
+                Bypass Chips: {bypassChips}
+              </output>
             </div>
 
-            <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg text-xs">
+            {/* Out of the Tab order: every action has a key, and invisible
+                  tab stops between the board and the toolbar lost sighted
+                  keyboard players (#1943). Screen readers still reach them. */}
+            <div
+              role="group"
+              aria-label="Interactive Navigation and Combat Actions"
+            >
               <button
-                onClick={startRoguelikeCampaign}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  gameMode === "roguelike"
-                    ? "bg-amber-500 text-black font-bold"
-                    : "text-neutral-400 hover:text-white"
-                }`}
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleDirectionalMove("up");
+                  announce(
+                    `Moved Up to (${playerPosition.x}, ${Math.max(0, playerPosition.y - 1)})`,
+                    "polite"
+                  );
+                }}
               >
-                Graveyard Roguelike
+                Move North / Up
               </button>
               <button
-                onClick={() => switchStage(1)}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  gameMode === "classic" && stage === 1
-                    ? "bg-amber-500 text-black font-bold"
-                    : "text-neutral-400 hover:text-white"
-                }`}
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleDirectionalMove("down");
+                  announce(
+                    `Moved Down to (${playerPosition.x}, ${playerPosition.y + 1})`,
+                    "polite"
+                  );
+                }}
               >
-                Subnet 01
+                Move South / Down
               </button>
               <button
-                onClick={() => switchStage(2)}
-                className={`px-2 py-0.5 rounded cursor-pointer transition-colors ${
-                  gameMode === "classic" && stage === 2
-                    ? "bg-amber-500 text-black font-bold"
-                    : "text-neutral-400 hover:text-white"
-                }`}
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleDirectionalMove("left");
+                  announce(
+                    `Moved Left to (${Math.max(0, playerPosition.x - 1)}, ${playerPosition.y})`,
+                    "polite"
+                  );
+                }}
               >
-                Subnet 02 (Firewall)
+                Move West / Left
+              </button>
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleDirectionalMove("right");
+                  announce(
+                    `Moved Right to (${playerPosition.x + 1}, ${playerPosition.y})`,
+                    "polite"
+                  );
+                }}
+              >
+                Move East / Right
+              </button>
+
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleFireWeapon(activeWeaponId);
+                  announce(
+                    `Dispatched cyber weapon attack: ${activeWeaponId}`,
+                    "polite"
+                  );
+                }}
+              >
+                Execute Selected Cyber Attack ({activeWeaponId})
+              </button>
+
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleUseBypassChip();
+                  announce("Used hardware bypass chip.", "polite");
+                }}
+                disabled={bypassChips <= 0}
+              >
+                Consume Bypass Chip
+              </button>
+
+              <button
+                type="button"
+                tabIndex={-1}
+                onClick={() => {
+                  handleRestart();
+                  announce("Restarted Cyberdeck Dungeon Simulation.", "polite");
+                }}
+              >
+                Restart Dungeon Simulation
+              </button>
+
+              {gameStatus === "victory" && (
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => {
+                    handleNextRoom();
+                    announce("Navigated to next cyberdeck room.", "polite");
+                  }}
+                >
+                  Advance to Next Stage
+                </button>
+              )}
+            </div>
+          </fieldset>
+        </div>
+
+        {/* Victory Overlay. Clearing the last campaign room ends the run
+              with its own card and a new run from Room 01 (#1668). */}
+        {gameStatus === "victory" && (
+          <RoomClearedCard
+            isFinalRoom={isFinalRoom}
+            campaignRoomCount={campaignRooms.length}
+            runMoves={runMoves}
+            runCrypto={runCrypto}
+            movesCount={movesCount}
+            roomCrypto={roomCrypto}
+            score={score}
+            highScore={effectiveHighScore}
+            showNextRoom={gameMode === "roguelike" && !isFinalRoom}
+            hint={isFinalRoom ? finalRoomHint : roomClearHint}
+            onNextRoom={() => {
+              handleNextRoom();
+              containerRef.current?.focus({ preventScroll: true });
+            }}
+            onRestart={() => {
+              if (isFinalRoom) {
+                startRoguelikeCampaign();
+              } else {
+                handleRestart();
+              }
+              containerRef.current?.focus({ preventScroll: true });
+            }}
+          />
+        )}
+
+        {/* Pause Overlay */}
+        {gameStatus === "paused" && (
+          <div
+            className={`absolute inset-0 ${phoneCabinet ? "bg-black/90" : "bg-neutral-950/90 backdrop-blur-sm"} flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30`}
+          >
+            <h2 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
+              PAUSED
+            </h2>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setGameStatus("playing");
+                containerRef.current?.focus({ preventScroll: true });
+              }}
+              className="mt-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-all cursor-pointer [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-28"
+            >
+              Resume
+            </button>
+            <p className="text-xs text-neutral-400 mt-1">{resumeHint}</p>
+          </div>
+        )}
+
+        {/* Caught / Game Over Overlay */}
+        {gameStatus === "caught" && (
+          <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-rose-500/30 z-30">
+            <h2 className="text-rose-400 font-bold text-xs uppercase tracking-widest">
+              IP TRACE INTERCEPTED
+            </h2>
+            <p
+              className="text-xs text-neutral-400 mt-1"
+              data-testid="labyrinth-trace-cause"
+            >
+              {lastHitBy}
+            </p>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRestart();
+                containerRef.current?.focus({ preventScroll: true });
+              }}
+              className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-xs font-bold rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-28"
+            >
+              RETRY BREACH
+            </button>
+            <p className="text-xs text-neutral-500 mt-1">{retryHint}</p>
+          </div>
+        )}
+
+        {/* Interactive Hex Matrix Hacking Modal Overlay */}
+        {gameStatus === "hacking" && hexPuzzle && (
+          <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2 rounded-lg border border-zinc-700 z-40">
+            <div className="w-full flex justify-between items-center text-xs font-bold text-amber-400 border-b border-zinc-800 pb-1">
+              <div className="flex items-center gap-1">
+                <IconTerminal2 className="w-3.5 h-3.5 text-amber-400" />
+                <span>HEX BUFFER BYPASS MATRIX</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span>TARGET: [{hexPuzzle.targetSequence.join(" ")}]</span>
+                <span className="text-amber-400">
+                  +{hexPuzzle.rewardCrypto} CRYPTO
+                </span>
+              </div>
+            </div>
+
+            {/* Buffer Bar */}
+            <div className="w-full flex items-center justify-between px-2 py-0.5 text-xs bg-neutral-900/80 rounded border border-neutral-800">
+              <span className="text-neutral-400">
+                BUFFER [{hexPuzzle.currentInput.length}/
+                {hexPuzzle.maxBufferSize}]:
+              </span>
+              <span className="text-zinc-100 font-bold">
+                {hexPuzzle.currentInput.length > 0
+                  ? hexPuzzle.currentInput.join(" ")
+                  : "(EMPTY)"}
+              </span>
+              <span className="text-amber-300 font-bold">
+                AXIS:{" "}
+                {hexPuzzle.activeAxis === "row"
+                  ? `ROW ${hexPuzzle.activeIndex + 1}`
+                  : `COL ${hexPuzzle.activeIndex + 1}`}
+              </span>
+            </div>
+
+            {/* Hex Grid */}
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 my-1">
+              {hexPuzzle.grid.map((row, rIdx) =>
+                row.map((cell, cIdx) => {
+                  const isSelectable =
+                    (hexPuzzle.activeAxis === "row" &&
+                      rIdx === hexPuzzle.activeIndex) ||
+                    (hexPuzzle.activeAxis === "col" &&
+                      cIdx === hexPuzzle.activeIndex);
+
+                  return (
+                    <button
+                      key={`${rIdx}-${cIdx}`}
+                      onClick={() => handleHexCellClick(rIdx, cIdx)}
+                      disabled={
+                        cell.selected || hexPuzzle.solved || hexPuzzle.failed
+                      }
+                      className={`w-7 h-6 rounded flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
+                        cell.selected
+                          ? "bg-neutral-900 text-neutral-600 border border-neutral-800"
+                          : isSelectable
+                            ? "bg-amber-500/15 text-amber-200 border border-amber-400 hover:bg-amber-500/30"
+                            : "bg-neutral-900/60 text-neutral-500 border border-neutral-900"
+                      }`}
+                    >
+                      {cell.byte}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Feedback text */}
+            <div className="text-xs font-bold text-center text-zinc-100 px-2 break-words w-full">
+              {hackingFeedback}
+            </div>
+
+            {/* Minigame Action Footer */}
+            <div className="w-full flex items-center justify-between gap-1 pt-1 border-t border-neutral-900/60 text-xs">
+              <button
+                onClick={handleUseBypassChip}
+                disabled={bypassChips <= 0 || hexPuzzle.solved}
+                className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-300 hover:bg-emerald-900 disabled:opacity-40 cursor-pointer font-bold"
+              >
+                🔌 Hardware Chip ({bypassChips} left)
+              </button>
+
+              <button
+                ref={hackCloseButtonRef}
+                onClick={closeHackingModal}
+                className="px-3 py-0.5 rounded bg-neutral-800 text-neutral-300 hover:bg-neutral-700 cursor-pointer font-bold"
+              >
+                {hexPuzzle.solved ? "Complete Decryption" : "Abort [ESC]"}
               </button>
             </div>
           </div>
+        )}
+
+        {/* Darknet Vendor Shop Modal: a dialog with a focus trap (ADR 0061). */}
+        {gameStatus === "darknet_shop" && (
+          <DarknetMarket
+            crypto={cryptoBounty}
+            rows={DARKNET_VENDOR_CATALOG.map((item) => {
+              const unavailable =
+                cryptoBounty < item.cost ||
+                (item.category === "firmware" && cveFeedActive);
+              return {
+                id: item.id,
+                name: item.name,
+                icon: item.icon,
+                description: item.description,
+                note: marketAmmoNote(item.category),
+                disabled: unavailable,
+                label:
+                  item.category === "firmware" && cveFeedActive
+                    ? "Active"
+                    : `🪙 ${item.cost}`,
+              };
+            })}
+            onBuy={buyDarknetItem}
+            onClose={closeOverlay}
+          />
+        )}
+
+        {/* Cyberdeck Class Select Modal */}
+        {gameStatus === "class_select" && (
+          <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
+            <div className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+              SELECT CYBERDECK FIRMWARE ARCHETYPE
+            </div>
+
+            <div className="grid grid-cols-2 gap-1.5 my-1 w-full flex-1 min-h-0 content-start overflow-y-auto">
+              {Object.values(CYBERDECK_CLASSES).map((cls) => (
+                <button
+                  key={cls.id}
+                  onClick={() => chooseClass(cls.id)}
+                  className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all cursor-pointer [@media(pointer:coarse)]:min-h-11 ${
+                    selectedClassId === cls.id
+                      ? "bg-amber-500/15 border-amber-400 text-amber-100"
+                      : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-xs text-white">
+                      {cls.icon} {cls.name}
+                    </span>
+                    <span className="text-xs text-amber-400">
+                      {cls.baseRam}GB RAM
+                    </span>
+                  </div>
+                  <div className="text-xs text-neutral-400 mt-0.5 leading-tight">
+                    {cls.passiveBonus}
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={closeOverlay}
+              className="w-full py-0.5 bg-neutral-800 text-neutral-300 rounded text-xs font-bold cursor-pointer [@media(pointer:coarse)]:min-h-11"
+            >
+              Confirm Loadout & Hack
+            </button>
+          </div>
+        )}
+
+        {/* Billable Hours Timesheet Modal (Room 4) */}
+        {gameStatus === "timesheet" && (
+          <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-amber-500/40 z-40">
+            <div className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-1 text-amber-400">
+              <IconFileText className="w-4 h-4" />
+            </div>
+            <h2 className="text-amber-400 font-bold text-xs uppercase tracking-wider">
+              BILLABLE HOURS INTERRUPT
+            </h2>
+            <p className="text-xs text-neutral-400 mt-0.5 leading-tight">
+              Opening this abandoned repo chest requires logging 0.25h of admin
+              work.
+            </p>
+            <div className="w-full max-w-[210px] bg-neutral-900/90 border border-neutral-800 rounded p-1.5 my-1.5 text-left text-xs space-y-0.5 text-neutral-300">
+              <div>
+                CLIENT:{" "}
+                <span className="text-zinc-100">Abandoned Repos LLC</span>
+              </div>
+              <div>
+                TASK:{" "}
+                <span className="text-amber-300">
+                  JIRA-404: Refactor Legacy Rust
+                </span>
+              </div>
+              <div>
+                HOURS:{" "}
+                <span className="text-emerald-400 font-bold">
+                  0.25 hrs (Admin)
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSubmitTimesheet();
+                containerRef.current?.focus({ preventScroll: true });
+              }}
+              className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-md transition-all cursor-pointer shadow-md"
+            >
+              <IconCheck className="w-3 h-3" />
+              Submit Timesheet & Open Vault [ENTER]
+            </button>
+          </div>
+        )}
+        {phoneCabinet && optionsOpen && (
+          <section
+            ref={optionsSheetRef}
+            id="labyrinth-options-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="labyrinth-options-title"
+            data-testid="labyrinth-options-sheet"
+            onKeyDown={(event) => {
+              // Escape closes the sheet here and stops there, so the game's own
+              // Escape does not also resume the paused room.
+              if (event.key === "Escape") {
+                event.stopPropagation();
+                closeOptionsSheet();
+              }
+            }}
+            className="absolute inset-0 z-40 flex flex-col gap-2 overflow-y-auto rounded-lg border border-zinc-700 bg-black/90 p-2"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span
+                id="labyrinth-options-title"
+                className="text-xs font-bold uppercase tracking-wider text-amber-400"
+              >
+                Options
+              </span>
+              <button
+                ref={closeOptionsRef}
+                type="button"
+                onClick={closeOptionsSheet}
+                className="min-h-11 min-w-11 rounded-lg border border-zinc-700 bg-zinc-900 px-3 text-xs font-bold text-zinc-200"
+              >
+                Close options
+              </button>
+            </div>
+            {optionsContent}
+            <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-300">
+              <span>Dominant hand</span>
+              <div
+                role="group"
+                aria-label="Dominant hand"
+                className="flex gap-1"
+              >
+                {(["right", "left"] as const).map((hand) => (
+                  <button
+                    key={hand}
+                    type="button"
+                    aria-pressed={handedness === hand}
+                    onClick={() => setHandedness(hand)}
+                    className={`min-h-11 min-w-11 rounded-lg border px-3 text-xs font-bold capitalize ${
+                      handedness === hand
+                        ? "border-amber-500/50 bg-amber-500/20 text-amber-300"
+                        : "border-zinc-700 bg-zinc-900 text-zinc-300"
+                    }`}
+                  >
+                    {hand}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+      </div>
+    </>
+  );
+
+  // The desktop hotbar and touch d-pad strip. The phone uses its own dock.
+  const footerNode = (
+    <>
+      {/* Weapons Hotbar & Controls Footer */}
+      <div className="arcade-labyrinth-controls w-full flex flex-col gap-1 px-2 pt-1 border-t border-neutral-900/60">
+        <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
+          {/* Weapon Hotkeys */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {[0, 1, 2, 3, 4].map((slotIdx) => {
+              const keyNum = slotIdx + 1;
+              const weaponId = selectedClass.starterWeapons[slotIdx];
+              const weapon = weaponId ? weapons[weaponId] : null;
+              const isActive = weaponId ? activeWeaponId === weaponId : false;
+              const hasAmmo = weapon ? weapon.ammo > 0 : false;
+              const isDisabled = !weapon || !hasAmmo;
+              const shortLabel = weaponId
+                ? WEAPON_SHORT_LABELS[weaponId] || weapon?.name || weaponId
+                : "---";
+
+              if (!weapon) {
+                return (
+                  <button
+                    key={`hotbar-slot-${keyNum}`}
+                    disabled
+                    className="px-1.5 py-0.5 rounded border flex items-center gap-1 bg-neutral-950 text-neutral-600 border-neutral-900 opacity-50 cursor-not-allowed"
+                  >
+                    <span className="font-bold">
+                      [{keyNum}] {shortLabel}
+                    </span>
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={`hotbar-slot-${keyNum}`}
+                  onClick={() => {
+                    if (weaponId && hasAmmo) {
+                      setActiveWeaponId(weaponId);
+                      handleFireWeapon(weaponId);
+                    }
+                  }}
+                  disabled={isDisabled}
+                  className={`px-1.5 py-0.5 rounded border flex items-center gap-1 transition-all ${
+                    isDisabled
+                      ? "bg-neutral-900/50 text-neutral-600 border-neutral-800/50 cursor-not-allowed opacity-60"
+                      : isActive
+                        ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)] cursor-pointer"
+                        : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-neutral-200 cursor-pointer"
+                  }`}
+                >
+                  <span className="font-bold">
+                    [{keyNum}] {shortLabel}
+                  </span>
+                  <span
+                    className={hasAmmo ? "text-amber-400" : "text-rose-500"}
+                  >
+                    ({weapon.ammo})
+                  </span>
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => handleFireWeapon("emp_blast")}
+              className="px-1.5 py-0.5 rounded border bg-neutral-900 text-slate-300 border-slate-700 hover:bg-slate-900 cursor-pointer font-bold"
+            >
+              [SPACE] EMP
+            </button>
+
+            <button
+              onClick={() => openOverlay("darknet_shop")}
+              className="px-1.5 py-0.5 rounded border bg-amber-950/40 text-amber-300 border-amber-700/50 hover:bg-amber-900/40 cursor-pointer font-bold"
+            >
+              🛒 Market
+            </button>
+          </div>
+
+          {/* Controls string */}
+          <div className="text-neutral-400 uppercase tracking-wider hidden md:block">
+            WASD / ARROWS · 1-3: TOOLS · SPACE: EMP · P / ESC: PAUSE · C: CRT
+          </div>
         </div>
-      </details>
+
+        {/* Enhanced Touch D-Pad for Mobile & Tablet */}
+        <div className="w-full pt-1.5 flex flex-col items-center">
+          <DpadActionDock
+            onDirectionPress={handleDirectionalMove}
+            onActionAPress={() => handleFireWeapon("emp_blast")}
+            onActionBPress={cycleWeapon}
+            actionALabel="EMP"
+            actionBLabel="EXPLOIT"
+            className="w-full max-w-sm py-2 px-3"
+          />
+        </div>
+      </div>
+    </>
+  );
+
+  // Landscape: movement, maze, tools in one row. Portrait (the tablet held
+  // upright): the maze takes the first full-width line and the movement and
+  // tool docks share the line below it, so the controls sit under the thumbs.
+  // Both orders hold under DockFrame's row reversal for left-handed players.
+  // Portrait is a two-column grid: the maze on the top row, and the docks on a
+  // second row that takes the rest of the height. Each dock is a size container,
+  // so its keys scale to fill it.
+  const leftHanded = handedness === "left";
+  const phoneRow = (
+    <DockFrame
+      handedness={handedness}
+      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[480px]:grid-rows-[auto_auto_minmax(0,1fr)] portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,16vw,120px)]"
+    >
+      {/* The controls sit in a gate: a keyboard hides them, a touch brings
+          them back (ADR 0061). */}
+      <div
+        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:grid portrait:min-h-0 portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[480px]:row-start-3 portrait:min-[480px]:self-end portrait:min-[480px]:justify-items-start portrait:min-[480px]:[container-type:normal] ${leftHanded ? "portrait:col-start-2" : "portrait:col-start-1"}`}
+      >
+        <TouchControlsGate>
+          <HoldDpad
+            onMove={handleDirectionalMove}
+            compact={!portraitView}
+            large={portraitView}
+            paused={gameStatus !== "playing" || optionsOpen}
+          />
+        </TouchControlsGate>
+      </div>
+      {canvasFrameNode}
+      {phoneRoomPanel}
+      <div
+        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[480px]:row-start-3 portrait:min-[480px]:h-auto portrait:min-[480px]:self-end portrait:min-[480px]:items-end portrait:min-[480px]:[container-type:normal] ${leftHanded ? "portrait:col-start-1" : "portrait:col-start-2"}`}
+      >
+        <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
+      </div>
+    </DockFrame>
+  );
+
+  return (
+    <div
+      className={`arcade-labyrinth w-full flex flex-col select-none font-mono ${
+        phoneCabinet ? "min-h-0 flex-1 items-stretch" : "items-center my-6"
+      }`}
+    >
+      {!phoneDevice && <TabletOrientationHint className="w-full" />}
+      {!phoneCabinet && (
+        <details
+          className="arcade-labyrinth-options w-full"
+          open={optionsOpen}
+          onToggle={(event) => setOptionsOpen(event.currentTarget.open)}
+        >
+          <summary className="min-h-12 p-3 cursor-pointer text-xs text-zinc-300">
+            Game mode, class & display
+          </summary>
+          {/* Closed options are inert, so Tab cannot reach them over the playfield. */}
+          <div inert={!optionsOpen}>{optionsContent}</div>
+        </details>
+      )}
       {/* Main Focusable Game Container */}
       <div
         ref={containerRef}
@@ -2408,149 +3719,185 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         data-keyboard-boundary="true"
         data-field-manual="retro-labyrinth"
         className={`arcade-labyrinth-playfield relative w-full ${
-          isFullscreen
-            ? "fixed inset-0 z-50 w-full h-[100vh] h-[100dvh] max-h-[100vh] max-h-[100dvh] max-w-none rounded-none border-none bg-black flex flex-col items-center justify-between p-1.5 sm:p-4 select-none touch-none overflow-hidden"
-            : "h-auto max-h-[100vh] max-h-[100dvh]"
-        } bg-neutral-950/90 border rounded-2xl flex flex-col items-center justify-between p-2.5 overflow-hidden outline-none transition-all duration-300 ${
+          phoneCabinet
+            ? "min-h-0 flex-1"
+            : isFullscreen
+              ? "fixed inset-0 z-50 w-full h-[100vh] h-[100dvh] max-h-[100vh] max-h-[100dvh] max-w-none rounded-none border-none bg-black flex flex-col items-center justify-between p-1.5 sm:p-4 select-none touch-none overflow-hidden"
+              : "h-auto max-h-[100vh] max-h-[100dvh]"
+        } bg-neutral-950/90 border rounded-2xl flex flex-col ${phoneCabinet ? "items-stretch justify-start gap-1 p-1" : "items-center justify-between p-2.5"} overflow-hidden outline-none transition-all duration-300 ${
           isFocused
             ? "border-amber-500/60 ring-2 ring-amber-500/10"
             : "border-neutral-900"
         }`}
+        style={
+          phoneCabinet
+            ? {
+                // Notches and rounded corners sit outside the docks.
+                paddingLeft: "calc(4px + env(safe-area-inset-left, 0px))",
+                paddingRight: "calc(4px + env(safe-area-inset-right, 0px))",
+              }
+            : undefined
+        }
       >
-        <FullscreenButton
-          isFullscreen={isFullscreen}
-          onToggle={toggleFullscreen}
-          variant="floating"
-        />
-        {/* Header HUD: Subnet Badge, HP, RAM, Crypto, Score */}
-        <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs font-bold px-2 py-0.5 border-b border-neutral-900/60">
-          <div className="flex items-center gap-2">
-            <span className="text-neutral-400">
-              SYSTEM_LABYRINTH.EXE ·{" "}
-              {gameMode === "roguelike"
-                ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
-                : currentRoom.badge}
-            </span>
-            <span
-              className="text-zinc-400 text-xs hidden sm:inline truncate max-w-[150px]"
-              title={currentRoom.title}
-            >
-              [{currentRoom.title}]
-            </span>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            {/* Boss HP: the only other feedback is the mesh colour (#1667) */}
-            {gameMode === "roguelike" && boss && (
-              <div
-                className="flex items-center gap-1 text-xs"
-                data-testid="labyrinth-boss-hp"
-              >
-                <span className="text-rose-400">BOSS</span>
-                {!boss.defeated && boss.phaseTitle && (
+        {!phoneCabinet && (
+          <FullscreenButton
+            isFullscreen={isFullscreen}
+            onToggle={toggleFullscreen}
+            variant="floating"
+          />
+        )}
+        {!phoneCabinet && (
+          <>
+            {/* Header HUD: Subnet Badge, HP, RAM, Crypto, Score */}
+            <div className="w-full flex flex-wrap justify-between items-center gap-x-3 gap-y-1 text-xs font-bold px-2 py-0.5 border-b border-neutral-900/60">
+              <div className="flex items-center gap-2">
+                <span className="text-neutral-400">
+                  SYSTEM_LABYRINTH.EXE ·{" "}
+                  {gameMode === "roguelike"
+                    ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
+                    : currentRoom.badge}
+                </span>
+                <span
+                  className="text-zinc-400 text-xs hidden sm:inline truncate max-w-[150px]"
+                  title={currentRoom.title}
+                >
+                  [{currentRoom.title}]
+                </span>
+                {wallShiftLabel && (
                   <span
-                    className="text-neutral-300 hidden xl:inline"
-                    data-testid="labyrinth-boss-phase"
+                    className="text-amber-300 text-xs"
+                    data-testid="labyrinth-wall-telegraph"
                   >
-                    {boss.phaseTitle}
+                    {wallShiftLabel}
                   </span>
                 )}
-                <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+              </div>
+
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                {/* Boss HP: the only other feedback is the mesh colour (#1667) */}
+                {gameMode === "roguelike" && boss && (
                   <div
-                    className="h-full bg-rose-500 transition-all duration-200"
-                    style={{
-                      width: `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`,
-                    }}
-                  />
+                    className="flex items-center gap-1 text-xs"
+                    data-testid="labyrinth-boss-hp"
+                  >
+                    <span className="text-rose-400">BOSS</span>
+                    {!boss.defeated && boss.phaseTitle && (
+                      <span
+                        className="text-neutral-300 hidden xl:inline"
+                        data-testid="labyrinth-boss-phase"
+                      >
+                        {boss.phaseTitle}
+                      </span>
+                    )}
+                    <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                      <div
+                        className="h-full bg-rose-500 transition-all duration-200"
+                        style={{
+                          width: `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-neutral-300 font-bold">
+                      {boss.defeated ? "DOWN" : boss.hp}
+                    </span>
+                  </div>
+                )}
+
+                {/* Player HP */}
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="text-neutral-400">HP</span>
+                  <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                    <div
+                      className={`h-full transition-all duration-200 ${
+                        playerHp > 50
+                          ? "bg-emerald-500"
+                          : playerHp > 25
+                            ? "bg-amber-500"
+                            : "bg-rose-500"
+                      }`}
+                      style={{
+                        width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-neutral-300 font-bold">{playerHp}</span>
                 </div>
-                <span className="text-neutral-300 font-bold">
-                  {boss.defeated ? "DOWN" : boss.hp}
-                </span>
-              </div>
-            )}
 
-            {/* Player HP */}
-            <div className="flex items-center gap-1 text-xs">
-              <span className="text-neutral-400">HP</span>
-              <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                {/* Cyberdeck RAM */}
+                <div className="flex items-center gap-1 text-xs">
+                  <span className="text-slate-400">RAM</span>
+                  <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                    <div
+                      className="h-full bg-slate-400 transition-all duration-200"
+                      style={{
+                        width: `${Math.max(0, (currentRam / maxRam) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-neutral-300 font-bold">
+                    {currentRam}
+                  </span>
+                </div>
+
+                {/* Crypto Balance */}
                 <div
-                  className={`h-full transition-all duration-200 ${
-                    playerHp > 50
-                      ? "bg-emerald-500"
-                      : playerHp > 25
-                        ? "bg-amber-500"
-                        : "bg-rose-500"
-                  }`}
-                  style={{
-                    width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%`,
-                  }}
-                />
-              </div>
-              <span className="text-neutral-300 font-bold">{playerHp}</span>
-            </div>
+                  className="flex items-center gap-1 text-xs font-mono text-amber-400 font-bold"
+                  title="Crypto"
+                >
+                  <span aria-hidden="true">🪙</span>
+                  <span>{cryptoBounty} Crypto</span>
+                </div>
 
-            {/* Cyberdeck RAM */}
-            <div className="flex items-center gap-1 text-xs">
-              <span className="text-slate-400">RAM</span>
-              <div className="w-14 h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800">
+                {/* Total Score & High Score */}
                 <div
-                  className="h-full bg-slate-400 transition-all duration-200"
-                  style={{
-                    width: `${Math.max(0, (currentRam / maxRam) * 100)}%`,
-                  }}
-                />
+                  className="flex items-center gap-1 text-xs font-mono text-zinc-100 font-bold"
+                  title="Score"
+                >
+                  <span>SCORE: {score}</span>
+                  {effectiveHighScore > 0 && (
+                    <span className="text-neutral-400 font-normal">
+                      (BEST {effectiveHighScore})
+                    </span>
+                  )}
+                </div>
               </div>
-              <span className="text-neutral-300 font-bold">{currentRam}</span>
             </div>
 
-            {/* Crypto Balance */}
-            <div
-              className="flex items-center gap-1 text-xs font-mono text-amber-400 font-bold"
-              title="Crypto"
-            >
-              <span aria-hidden="true">🪙</span>
-              <span>{cryptoBounty} Crypto</span>
-            </div>
-
-            {/* Total Score & High Score */}
-            <div
-              className="flex items-center gap-1 text-xs font-mono text-zinc-100 font-bold"
-              title="Score"
-            >
-              <span>SCORE: {score}</span>
-              {effectiveHighScore > 0 && (
-                <span className="text-neutral-400 font-normal">
-                  (BEST {effectiveHighScore})
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Objective: always say what winning looks like. Short landscape
+            {/* Objective: always say what winning looks like. Short landscape
             screens need every row for the maze, and the in-maze
             "REACH THE EXIT" prompt already carries the goal there. */}
-        <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 line-clamp-2 [@media(max-height:500px)]:hidden">
-          <span className="text-amber-400">OBJECTIVE</span> ·{" "}
-          {roomExitLock.locked ? (
-            <>
-              <span className="text-rose-400" data-testid="labyrinth-objective">
-                {roomExitLock.objective}
-              </span>{" "}
-              to unlock the <span className="text-amber-400">EXIT</span> (bottom
-              right), then guide your{" "}
-              <span className="text-zinc-100">netrunner</span> there. Bugs and
-              drones cost HP.
-            </>
-          ) : (
-            <>
-              Guide your <span className="text-zinc-100">netrunner</span> to the{" "}
-              <span className="text-amber-400">EXIT</span> (bottom right). Bugs
-              and drones cost HP.
-            </>
-          )}
-        </p>
-
+            <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 line-clamp-2 [@media(max-height:500px)]:hidden">
+              <span className="text-amber-400">OBJECTIVE</span> ·{" "}
+              {roomExitLock.locked ? (
+                <>
+                  <span
+                    className="text-rose-400"
+                    data-testid="labyrinth-objective"
+                  >
+                    {roomExitLock.objective}
+                  </span>{" "}
+                  to unlock the <span className="text-amber-400">EXIT</span>{" "}
+                  (bottom right), then guide your{" "}
+                  <span className="text-zinc-100">netrunner</span> there. Bugs
+                  and drones cost HP.
+                </>
+              ) : (
+                <>
+                  <span
+                    className="text-amber-400"
+                    data-testid="labyrinth-objective"
+                  >
+                    REACH THE EXIT
+                  </span>
+                  : guide your <span className="text-zinc-100">netrunner</span>{" "}
+                  to the <span className="text-amber-400">EXIT</span> (bottom
+                  right). Bugs and drones cost HP.
+                </>
+              )}
+            </p>
+          </>
+        )}
+        {phoneCabinet && phoneHud}
         {/* Active Side-Effect Warning Banner */}
         {activeSideEffect && (
           <div className="w-full bg-rose-950/60 border border-rose-800/60 rounded px-2 py-0.5 my-0.5 flex items-center justify-between text-xs text-rose-300">
@@ -2561,691 +3908,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </div>
         )}
 
-        {/* Game Canvas Container. Height budget: 21rem covers the navbar,
-            cabinet header, HUD rows and the hotbar below, so the whole
-            stage fits a launched 1280x800 viewport (#1552). */}
-        <div
-          ref={canvasFrameRef}
-          className={`arcade-labyrinth-canvas relative ${
-            isFullscreen
-              ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
-              : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
-          } flex items-center justify-center transition-all duration-300 my-auto`}
-          style={
-            crtCalibration.curvature > 0.05
-              ? {
-                  borderRadius: `${Math.round(8 + crtCalibration.curvature * 20)}px`,
-                  boxShadow: `inset 0 0 ${Math.round(crtCalibration.curvature * 30)}px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5)`,
-                }
-              : undefined
-          }
-        >
-          <canvas
-            ref={canvasRef}
-            width={canvasSize?.backingWidth ?? LOGICAL_WIDTH}
-            height={canvasSize?.backingHeight ?? LOGICAL_HEIGHT}
-            style={
-              canvasSize
-                ? {
-                    width: `${canvasSize.cssWidth}px`,
-                    height: `${canvasSize.cssHeight}px`,
-                  }
-                : undefined
-            }
-            data-pixel-scale={canvasSize?.scale ?? 1}
-            onMouseMove={handleCanvasMouseMove}
-            onMouseLeave={() => {
-              cursorGridPosRef.current = null;
-            }}
-            role="application"
-            aria-label="Retro Labyrinth Cyberdeck Dungeon Crawl. Use arrow keys or WASD to navigate, and Tab to access accessible controls."
-            tabIndex={0}
-            className={`block ${
-              canvasSize
-                ? "shrink-0"
-                : isFullscreen
-                  ? "max-w-full max-h-full aspect-[240/144] object-contain"
-                  : "w-full aspect-[240/144] h-auto"
-            } [image-rendering:pixelated] bg-[#0d0e11] cursor-crosshair focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60`}
-          />
-
-          {/* Off-screen Accessible DOM Fallback Subtree */}
-          <div
-            className="sr-only"
-            aria-label="Retro Labyrinth Accessible Subtree"
-          >
-            <fieldset>
-              <legend>Retro Labyrinth Dungeon Crawl State and Controls</legend>
-
-              <div role="group" aria-label="Dungeon Telemetry and Status">
-                <output htmlFor="retro-score">Score: {score}</output>
-                <output htmlFor="retro-highscore">
-                  High Score: {effectiveHighScore}
-                </output>
-                <output htmlFor="retro-stage">Stage: {stage}</output>
-                <output htmlFor="retro-status">
-                  Game Status: {gameStatus}
-                </output>
-                <output htmlFor="retro-player-pos">
-                  Player Location: Grid ({playerPosition.x}, {playerPosition.y})
-                </output>
-                <output htmlFor="retro-hp">
-                  Cyberdeck Integrity: {playerHp} / {maxPlayerHp} HP
-                </output>
-                {gameMode === "roguelike" && boss && (
-                  <output htmlFor="retro-boss-hp">
-                    {boss.defeated
-                      ? "Boss defeated."
-                      : `Boss HP: ${boss.hp} / ${boss.maxHp}`}
-                  </output>
-                )}
-                <output htmlFor="retro-weapon">
-                  Active Cyberdeck Weapon: {activeWeaponId}
-                </output>
-                <output htmlFor="retro-bypass">
-                  Bypass Chips: {bypassChips}
-                </output>
-              </div>
-
-              {/* Out of the Tab order: every action has a key, and invisible
-                  tab stops between the board and the toolbar lost sighted
-                  keyboard players (#1943). Screen readers still reach them. */}
-              <div
-                role="group"
-                aria-label="Interactive Navigation and Combat Actions"
-              >
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleDirectionalMove("up");
-                    announce(
-                      `Moved Up to (${playerPosition.x}, ${Math.max(0, playerPosition.y - 1)})`,
-                      "polite"
-                    );
-                  }}
-                >
-                  Move North / Up
-                </button>
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleDirectionalMove("down");
-                    announce(
-                      `Moved Down to (${playerPosition.x}, ${playerPosition.y + 1})`,
-                      "polite"
-                    );
-                  }}
-                >
-                  Move South / Down
-                </button>
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleDirectionalMove("left");
-                    announce(
-                      `Moved Left to (${Math.max(0, playerPosition.x - 1)}, ${playerPosition.y})`,
-                      "polite"
-                    );
-                  }}
-                >
-                  Move West / Left
-                </button>
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleDirectionalMove("right");
-                    announce(
-                      `Moved Right to (${playerPosition.x + 1}, ${playerPosition.y})`,
-                      "polite"
-                    );
-                  }}
-                >
-                  Move East / Right
-                </button>
-
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleFireWeapon(activeWeaponId);
-                    announce(
-                      `Dispatched cyber weapon attack: ${activeWeaponId}`,
-                      "polite"
-                    );
-                  }}
-                >
-                  Execute Selected Cyber Attack ({activeWeaponId})
-                </button>
-
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleUseBypassChip();
-                    announce("Used hardware bypass chip.", "polite");
-                  }}
-                  disabled={bypassChips <= 0}
-                >
-                  Consume Bypass Chip
-                </button>
-
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  onClick={() => {
-                    handleRestart();
-                    announce(
-                      "Restarted Cyberdeck Dungeon Simulation.",
-                      "polite"
-                    );
-                  }}
-                >
-                  Restart Dungeon Simulation
-                </button>
-
-                {gameStatus === "victory" && (
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => {
-                      handleNextRoom();
-                      announce("Navigated to next cyberdeck room.", "polite");
-                    }}
-                  >
-                    Advance to Next Stage
-                  </button>
-                )}
-              </div>
-            </fieldset>
-          </div>
-
-          {/* Victory Overlay. Clearing the last campaign room ends the run
-              with its own card and a new run from Room 01 (#1668). */}
-          {gameStatus === "victory" && (
-            <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30">
-              <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-400">
-                <IconTrophy className="w-4 h-4" />
-              </div>
-              <h3 className="text-emerald-400 font-bold text-xs uppercase tracking-widest">
-                {isFinalRoom ? "RUN COMPLETE" : "MAINFRAME TIER BREACHED"}
-              </h3>
-              {isFinalRoom && (
-                <p className="text-xs text-neutral-400 mt-0.5">
-                  All {campaignRooms.length} rooms cleared.
-                </p>
-              )}
-              {isFinalRoom ? (
-                <>
-                  <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                    Run total:{" "}
-                    <span className="font-bold text-zinc-100">
-                      {runMoves.reduce((a, b) => a + b, 0)}
-                    </span>{" "}
-                    moves. Crypto Harvested:{" "}
-                    <span className="font-bold text-amber-400">
-                      +{runCrypto}
-                    </span>
-                  </p>
-                  <p
-                    className="text-xs text-neutral-400 font-mono tabular-nums"
-                    data-testid="labyrinth-run-rooms"
-                  >
-                    {runMoves
-                      .map(
-                        (moves, i) =>
-                          `R${String(i + 1).padStart(2, "0")} ${moves}`
-                      )
-                      .join(" · ")}
-                  </p>
-                </>
-              ) : (
-                <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
-                  This room:{" "}
-                  <span className="font-bold text-zinc-100">{movesCount}</span>{" "}
-                  moves. Crypto Harvested:{" "}
-                  <span className="font-bold text-amber-400">
-                    +{roomCrypto}
-                  </span>
-                </p>
-              )}
-              <p className="text-xs text-neutral-400">
-                Final Score:{" "}
-                <span className="font-bold text-zinc-100">{score}</span>
-                {isFinalRoom && (
-                  <>
-                    {" "}
-                    · High Score:{" "}
-                    <span className="font-bold text-amber-400">
-                      {effectiveHighScore}
-                    </span>
-                  </>
-                )}
-              </p>
-              <div className="flex gap-2 mt-2">
-                {gameMode === "roguelike" && !isFinalRoom ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleNextRoom();
-                      containerRef.current?.focus({ preventScroll: true });
-                    }}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-all cursor-pointer shadow-md"
-                  >
-                    <span>Next Room</span>
-                    <IconArrowRight className="w-3 h-3" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (isFinalRoom) {
-                        startRoguelikeCampaign();
-                      } else {
-                        handleRestart();
-                      }
-                      containerRef.current?.focus({ preventScroll: true });
-                    }}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-amber-500/40 text-neutral-200 hover:text-amber-300 text-xs font-bold rounded-lg transition-all cursor-pointer"
-                  >
-                    <IconRefresh className="w-3 h-3" />
-                    {isFinalRoom ? "New Run" : "Play Again"}
-                  </button>
-                )}
-              </div>
-              <p className="text-xs text-neutral-500 mt-1">
-                {isFinalRoom
-                  ? "Enter for a new run from Room 01 · R to retry this room"
-                  : "Enter to continue · R to retry this room"}
-              </p>
-            </div>
-          )}
-
-          {/* Pause Overlay */}
-          {gameStatus === "paused" && (
-            <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30">
-              <h3 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
-                PAUSED
-              </h3>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setGameStatus("playing");
-                  containerRef.current?.focus({ preventScroll: true });
-                }}
-                className="mt-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-all cursor-pointer"
-              >
-                Resume
-              </button>
-              <p className="text-xs text-neutral-400 mt-1">
-                P, Esc or Enter to resume
-              </p>
-            </div>
-          )}
-
-          {/* Caught / Game Over Overlay */}
-          {gameStatus === "caught" && (
-            <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-rose-500/30 z-30">
-              <h3 className="text-rose-400 font-bold text-xs uppercase tracking-widest">
-                IP TRACE INTERCEPTED
-              </h3>
-              <p
-                className="text-xs text-neutral-400 mt-1"
-                data-testid="labyrinth-trace-cause"
-              >
-                {lastHitBy}
-              </p>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRestart();
-                  containerRef.current?.focus({ preventScroll: true });
-                }}
-                className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-xs font-bold rounded cursor-pointer transition-colors"
-              >
-                RETRY BREACH
-              </button>
-              <p className="text-xs text-neutral-500 mt-1">
-                Enter or R to retry
-              </p>
-            </div>
-          )}
-
-          {/* Interactive Hex Matrix Hacking Modal Overlay */}
-          {gameStatus === "hacking" && hexPuzzle && (
-            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2 rounded-lg border border-zinc-700 z-40">
-              <div className="w-full flex justify-between items-center text-xs font-bold text-amber-400 border-b border-zinc-800 pb-1">
-                <div className="flex items-center gap-1">
-                  <IconTerminal2 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>HEX BUFFER BYPASS MATRIX</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span>TARGET: [{hexPuzzle.targetSequence.join(" ")}]</span>
-                  <span className="text-amber-400">
-                    +{hexPuzzle.rewardCrypto} CRYPTO
-                  </span>
-                </div>
-              </div>
-
-              {/* Buffer Bar */}
-              <div className="w-full flex items-center justify-between px-2 py-0.5 text-xs bg-neutral-900/80 rounded border border-neutral-800">
-                <span className="text-neutral-400">
-                  BUFFER [{hexPuzzle.currentInput.length}/
-                  {hexPuzzle.maxBufferSize}]:
-                </span>
-                <span className="text-zinc-100 font-bold">
-                  {hexPuzzle.currentInput.length > 0
-                    ? hexPuzzle.currentInput.join(" ")
-                    : "(EMPTY)"}
-                </span>
-                <span className="text-amber-300 font-bold">
-                  AXIS:{" "}
-                  {hexPuzzle.activeAxis === "row"
-                    ? `ROW ${hexPuzzle.activeIndex + 1}`
-                    : `COL ${hexPuzzle.activeIndex + 1}`}
-                </span>
-              </div>
-
-              {/* Hex Grid */}
-              <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 my-1">
-                {hexPuzzle.grid.map((row, rIdx) =>
-                  row.map((cell, cIdx) => {
-                    const isSelectable =
-                      (hexPuzzle.activeAxis === "row" &&
-                        rIdx === hexPuzzle.activeIndex) ||
-                      (hexPuzzle.activeAxis === "col" &&
-                        cIdx === hexPuzzle.activeIndex);
-
-                    return (
-                      <button
-                        key={`${rIdx}-${cIdx}`}
-                        onClick={() => handleHexCellClick(rIdx, cIdx)}
-                        disabled={
-                          cell.selected || hexPuzzle.solved || hexPuzzle.failed
-                        }
-                        className={`w-7 h-6 rounded flex items-center justify-center text-xs font-bold transition-all cursor-pointer ${
-                          cell.selected
-                            ? "bg-neutral-900 text-neutral-600 border border-neutral-800"
-                            : isSelectable
-                              ? "bg-amber-500/15 text-amber-200 border border-amber-400 hover:bg-amber-500/30"
-                              : "bg-neutral-900/60 text-neutral-500 border border-neutral-900"
-                        }`}
-                      >
-                        {cell.byte}
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Feedback text */}
-              <div className="text-xs font-bold text-center text-zinc-100 px-2 break-words w-full">
-                {hackingFeedback}
-              </div>
-
-              {/* Minigame Action Footer */}
-              <div className="w-full flex items-center justify-between gap-1 pt-1 border-t border-neutral-900/60 text-xs">
-                <button
-                  onClick={handleUseBypassChip}
-                  disabled={bypassChips <= 0 || hexPuzzle.solved}
-                  className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-700 text-emerald-300 hover:bg-emerald-900 disabled:opacity-40 cursor-pointer font-bold"
-                >
-                  🔌 Hardware Chip ({bypassChips} left)
-                </button>
-
-                <button
-                  ref={hackCloseButtonRef}
-                  onClick={closeHackingModal}
-                  className="px-3 py-0.5 rounded bg-neutral-800 text-neutral-300 hover:bg-neutral-700 cursor-pointer font-bold"
-                >
-                  {hexPuzzle.solved ? "Complete Decryption" : "Abort [ESC]"}
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Darknet Vendor Shop Modal */}
-          {gameStatus === "darknet_shop" && (
-            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
-              <div className="w-full flex justify-between items-center text-xs font-bold text-amber-300 border-b border-zinc-800 pb-1">
-                <div className="flex items-center gap-1">
-                  <IconShoppingCart className="w-3.5 h-3.5" />
-                  <span>DARKNET EXPLOIT BLACK-MARKET</span>
-                </div>
-                <span className="text-amber-300">
-                  🪙 {cryptoBounty} Crypto Available
-                </span>
-              </div>
-
-              <div className="w-full flex flex-col gap-1 my-1 overflow-y-auto flex-1 min-h-0 pr-1">
-                {DARKNET_VENDOR_CATALOG.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-1 bg-neutral-900/80 border border-neutral-800 rounded text-xs"
-                  >
-                    <div className="flex items-center gap-1 min-w-0">
-                      <span>{item.icon}</span>
-                      <div className="min-w-0">
-                        <div className="text-neutral-200 font-bold">
-                          {item.name}
-                        </div>
-                        <div className="text-neutral-400 text-xs">
-                          {item.description}
-                          {marketAmmoNote(item.category)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => buyDarknetItem(item.id)}
-                      disabled={
-                        cryptoBounty < item.cost ||
-                        (item.category === "firmware" && cveFeedActive)
-                      }
-                      className="shrink-0 px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 disabled:opacity-40 font-bold cursor-pointer whitespace-nowrap"
-                    >
-                      {item.category === "firmware" && cveFeedActive
-                        ? "Active"
-                        : `🪙 ${item.cost}`}
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={closeOverlay}
-                className="w-full py-0.5 bg-neutral-800 text-neutral-300 hover:bg-neutral-700 rounded text-xs font-bold cursor-pointer"
-              >
-                Close Darknet Market
-              </button>
-            </div>
-          )}
-
-          {/* Cyberdeck Class Select Modal */}
-          {gameStatus === "class_select" && (
-            <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
-              <div className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-                SELECT CYBERDECK FIRMWARE ARCHETYPE
-              </div>
-
-              <div className="grid grid-cols-2 gap-1.5 my-1 w-full flex-1 min-h-0 content-start overflow-y-auto">
-                {Object.values(CYBERDECK_CLASSES).map((cls) => (
-                  <button
-                    key={cls.id}
-                    onClick={() => chooseClass(cls.id)}
-                    className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all cursor-pointer ${
-                      selectedClassId === cls.id
-                        ? "bg-amber-500/15 border-amber-400 text-amber-100"
-                        : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-white">
-                        {cls.icon} {cls.name}
-                      </span>
-                      <span className="text-xs text-amber-400">
-                        {cls.baseRam}GB RAM
-                      </span>
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-0.5 leading-tight">
-                      {cls.passiveBonus}
-                    </div>
-                  </button>
-                ))}
-              </div>
-
-              <button
-                onClick={closeOverlay}
-                className="w-full py-0.5 bg-neutral-800 text-neutral-300 rounded text-xs font-bold cursor-pointer"
-              >
-                Confirm Loadout & Hack
-              </button>
-            </div>
-          )}
-
-          {/* Billable Hours Timesheet Modal (Room 4) */}
-          {gameStatus === "timesheet" && (
-            <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm flex flex-col items-center justify-center text-center p-3 rounded-lg border border-amber-500/40 z-40">
-              <div className="w-7 h-7 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mb-1 text-amber-400">
-                <IconFileText className="w-4 h-4" />
-              </div>
-              <h3 className="text-amber-400 font-bold text-xs uppercase tracking-wider">
-                BILLABLE HOURS INTERRUPT
-              </h3>
-              <p className="text-xs text-neutral-400 mt-0.5 leading-tight">
-                Opening this abandoned repo chest requires logging 0.25h of
-                admin work.
-              </p>
-              <div className="w-full max-w-[210px] bg-neutral-900/90 border border-neutral-800 rounded p-1.5 my-1.5 text-left text-xs space-y-0.5 text-neutral-300">
-                <div>
-                  CLIENT:{" "}
-                  <span className="text-zinc-100">Abandoned Repos LLC</span>
-                </div>
-                <div>
-                  TASK:{" "}
-                  <span className="text-amber-300">
-                    JIRA-404: Refactor Legacy Rust
-                  </span>
-                </div>
-                <div>
-                  HOURS:{" "}
-                  <span className="text-emerald-400 font-bold">
-                    0.25 hrs (Admin)
-                  </span>
-                </div>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSubmitTimesheet();
-                  containerRef.current?.focus({ preventScroll: true });
-                }}
-                className="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-md transition-all cursor-pointer shadow-md"
-              >
-                <IconCheck className="w-3 h-3" />
-                Submit Timesheet & Open Vault [ENTER]
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Weapons Hotbar & Controls Footer */}
-        <div className="arcade-labyrinth-controls w-full flex flex-col gap-1 px-2 pt-1 border-t border-neutral-900/60">
-          <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
-            {/* Weapon Hotkeys */}
-            <div className="flex items-center gap-1 flex-wrap">
-              {[0, 1, 2, 3, 4].map((slotIdx) => {
-                const keyNum = slotIdx + 1;
-                const weaponId = selectedClass.starterWeapons[slotIdx];
-                const weapon = weaponId ? weapons[weaponId] : null;
-                const isActive = weaponId ? activeWeaponId === weaponId : false;
-                const hasAmmo = weapon ? weapon.ammo > 0 : false;
-                const isDisabled = !weapon || !hasAmmo;
-                const shortLabel = weaponId
-                  ? WEAPON_SHORT_LABELS[weaponId] || weapon?.name || weaponId
-                  : "---";
-
-                if (!weapon) {
-                  return (
-                    <button
-                      key={`hotbar-slot-${keyNum}`}
-                      disabled
-                      className="px-1.5 py-0.5 rounded border flex items-center gap-1 bg-neutral-950 text-neutral-600 border-neutral-900 opacity-50 cursor-not-allowed"
-                    >
-                      <span className="font-bold">
-                        [{keyNum}] {shortLabel}
-                      </span>
-                    </button>
-                  );
-                }
-
-                return (
-                  <button
-                    key={`hotbar-slot-${keyNum}`}
-                    onClick={() => {
-                      if (weaponId && hasAmmo) {
-                        setActiveWeaponId(weaponId);
-                        handleFireWeapon(weaponId);
-                      }
-                    }}
-                    disabled={isDisabled}
-                    className={`px-1.5 py-0.5 rounded border flex items-center gap-1 transition-all ${
-                      isDisabled
-                        ? "bg-neutral-900/50 text-neutral-600 border-neutral-800/50 cursor-not-allowed opacity-60"
-                        : isActive
-                          ? "bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)] cursor-pointer"
-                          : "bg-neutral-900 text-neutral-400 border-neutral-800 hover:text-neutral-200 cursor-pointer"
-                    }`}
-                  >
-                    <span className="font-bold">
-                      [{keyNum}] {shortLabel}
-                    </span>
-                    <span
-                      className={hasAmmo ? "text-amber-400" : "text-rose-500"}
-                    >
-                      ({weapon.ammo})
-                    </span>
-                  </button>
-                );
-              })}
-
-              <button
-                onClick={() => handleFireWeapon("emp_blast")}
-                className="px-1.5 py-0.5 rounded border bg-neutral-900 text-slate-300 border-slate-700 hover:bg-slate-900 cursor-pointer font-bold"
-              >
-                [SPACE] EMP
-              </button>
-
-              <button
-                onClick={() => openOverlay("darknet_shop")}
-                className="px-1.5 py-0.5 rounded border bg-amber-950/40 text-amber-300 border-amber-700/50 hover:bg-amber-900/40 cursor-pointer font-bold"
-              >
-                🛒 Market
-              </button>
-            </div>
-
-            {/* Controls string */}
-            <div className="text-neutral-400 uppercase tracking-wider hidden md:block">
-              WASD / ARROWS · 1-3: TOOLS · SPACE: EMP · P / ESC: PAUSE · C: CRT
-            </div>
-          </div>
-
-          {/* Enhanced Touch D-Pad for Mobile & Tablet */}
-          <div className="w-full pt-1.5 flex flex-col items-center">
-            <DpadActionDock
-              onDirectionPress={handleDirectionalMove}
-              onActionAPress={() => handleFireWeapon("emp_blast")}
-              onActionBPress={cycleWeapon}
-              actionALabel="EMP"
-              actionBLabel="EXPLOIT"
-              className="w-full max-w-sm py-2 px-3"
-            />
-          </div>
-        </div>
+        {phoneCabinet ? phoneRow : canvasFrameNode}
+        {!phoneCabinet && footerNode}
       </div>
 
       {/* CRT Calibration Modal */}

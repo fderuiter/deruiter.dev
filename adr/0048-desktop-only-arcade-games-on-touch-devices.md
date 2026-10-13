@@ -102,7 +102,7 @@ The gated games are now:
 | Quasi-Perfect Puzzler | `quasi-puzzler`     | This ADR                  |
 | Monkey C Mayhem       | `garmin-watch`      | This ADR                  |
 | Clinical Trial Chaos  | `clinical-chaos`    | This ADR                  |
-| Retro Labyrinth       | `retro-labyrinth`   | This ADR                  |
+| Retro Labyrinth       | `retro-labyrinth`   | Left the gate, ADR 0061   |
 | Study Director        | `study-director`    | ADR 0054                  |
 | Protocol Drift        | `protocol-drift`    | This amendment (ADR 0056) |
 

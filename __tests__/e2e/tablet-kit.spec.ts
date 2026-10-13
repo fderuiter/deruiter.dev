@@ -51,6 +51,9 @@ async function attemptPageScroll(page: Page) {
     type: "touchMove",
     touchPoints: [{ x: 250, y: 200 }],
   });
+  // Hold the finger still before lifting: Chrome starts a fling from the
+  // velocity of the last moves, and a fling would eat the power-off tap.
+  await page.waitForTimeout(200);
   await cdp.send("Input.dispatchTouchEvent", {
     type: "touchEnd",
     touchPoints: [],
@@ -67,6 +70,29 @@ async function expectFillsViewport(page: Page, cabinet: Locator) {
   expect(box!.y).toBeCloseTo(0, 0);
   expect(box!.width).toBeCloseTo(viewport!.width, 0);
   expect(box!.height).toBeCloseTo(viewport!.height, 0);
+}
+
+/** Resolves once the page's scroll offset holds still across two frames. */
+async function settleScroll(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let last = window.scrollY;
+        let still = 0;
+        const step = () => {
+          if (window.scrollY === last) {
+            still += 1;
+          } else {
+            last = window.scrollY;
+            still = 0;
+          }
+          // Thirty still frames: a fling under load can pause for a few.
+          if (still >= 30) resolve();
+          else requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      })
+  );
 }
 
 test.describe("Tablet arcade kit (iPad projects)", () => {
@@ -139,7 +165,10 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
           .analyze();
         const blocking = results.violations
           .filter((v) => BLOCKING.has(v.impact ?? ""))
-          .map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+          .map(
+            (v) =>
+              `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+          );
         expect(blocking).toEqual([]);
       });
 
@@ -154,12 +183,18 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         await attemptPageScroll(page);
         expect(await page.evaluate(() => window.scrollY)).toBe(pinned);
 
+        // The attempt above can leave a fling or wheel still settling. A tap
+        // then ends the fling instead of landing, so wait for the scroll to
+        // stop before the one tap.
+        await settleScroll(page);
         await page
           .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
           .tap();
         await expect(page.locator("[data-immersive]")).toHaveCount(0);
-        // Exit hands the page back: it scrolls freely again, and the preview
-        // scrolls into view as it always has.
+        // Exit hands the page back at the offset the player left: it returns to
+        // the pinned position (no scrollIntoView jump), then scrolls freely.
+        // 300 is the offset the player had before launch (see above).
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(300);
         const reachable = await page.evaluate(() => {
           window.scrollTo(0, 600);
           return window.scrollY;

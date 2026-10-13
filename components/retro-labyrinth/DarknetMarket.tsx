@@ -93,18 +93,18 @@ export function DarknetMarket({
           aria-label="Market items"
           tabIndex={0}
           onScroll={measure}
-          className="w-full h-full flex flex-col gap-1 overflow-y-auto pr-1"
+          className="w-full h-full grid grid-cols-1 content-start gap-1 overflow-y-auto pr-1 [@media(pointer:coarse)_and_(orientation:landscape)]:grid-cols-2"
         >
           {rows.map((row) => (
             <div
               key={row.id}
-              className="flex items-center justify-between gap-1 p-1 bg-neutral-900/80 border border-neutral-800 rounded text-xs"
+              className="flex min-w-0 items-center justify-between gap-1 p-1 bg-neutral-900/80 border border-neutral-800 rounded text-xs"
             >
               <div className="flex items-center gap-1 min-w-0">
                 <span aria-hidden="true">{row.icon}</span>
                 <div className="min-w-0">
                   <div className="text-neutral-200 font-bold">{row.name}</div>
-                  <div className="text-neutral-400 text-xs">
+                  <div className="line-clamp-2 text-neutral-400 text-xs">
                     {row.description}
                     {row.note}
                   </div>

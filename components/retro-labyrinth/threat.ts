@@ -10,21 +10,32 @@ interface ThreatEnemy extends GridCell {
 }
 
 /**
- * Whether an active patrol is one step from the player, so its next step can
- * trace them. Stunned and frozen patrols cannot step, so they never count.
+ * How close a live patrol is to the player: red when its next step can trace
+ * them, amber when it can reach them in two, none otherwise.
+ */
+export type ThreatLevel = "red" | "amber" | "none";
+
+/**
+ * Rates the patrol threat to the player. Distance is counted in orthogonal
+ * steps ignoring walls, so the check is conservative: it may warn about a patrol
+ * a wall would keep out, never miss one that can reach. Stunned and frozen
+ * patrols cannot step, so they never count.
  *
  * @param player - The player's grid cell.
  * @param enemies - The room's enemies.
- * @returns True when a live patrol is orthogonally adjacent to the player.
+ * @returns The closest live patrol's threat level.
  */
-export function isPatrolThreat(
+export function patrolThreat(
   player: GridCell,
   enemies: ReadonlyArray<ThreatEnemy>
-): boolean {
-  return enemies.some(
-    (enemy) =>
-      enemy.state !== "stunned" &&
-      enemy.state !== "frozen" &&
-      Math.abs(enemy.x - player.x) + Math.abs(enemy.y - player.y) === 1
-  );
+): ThreatLevel {
+  let closest = Infinity;
+  for (const enemy of enemies) {
+    if (enemy.state === "stunned" || enemy.state === "frozen") continue;
+    const steps = Math.abs(enemy.x - player.x) + Math.abs(enemy.y - player.y);
+    if (steps < closest) closest = steps;
+  }
+  if (closest <= 1) return "red";
+  if (closest === 2) return "amber";
+  return "none";
 }

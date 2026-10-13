@@ -87,7 +87,15 @@ import {
 import { triggerHaptic } from "@/lib/haptics";
 import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
 import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
-import { isPatrolThreat } from "@/components/retro-labyrinth/threat";
+import {
+  patrolThreat,
+  type ThreatLevel,
+} from "@/components/retro-labyrinth/threat";
+import { markNodeVisited } from "@/components/retro-labyrinth/tsp-nodes";
+import {
+  serializeGrid,
+  serializeNodes,
+} from "@/components/retro-labyrinth/room-data";
 import {
   FINAL_ROOM_HINT,
   RETRY_HINT,
@@ -206,6 +214,16 @@ const PHONE_TOOL_LABELS: Partial<Record<WeaponId, string>> = {
   mitm_spoof: "MitM",
   ransomware_lock: "Ransom",
 };
+
+/** How long a phone tool toast stays up before it clears (ADR 0061). */
+const PHONE_TOAST_MS = 2200;
+
+/** The tool's short name for a phone toast, such as "Scan" or "EMP". */
+function phoneToolLabel(weaponId: WeaponId): string {
+  return (
+    PHONE_TOOL_LABELS[weaponId] ?? WEAPON_SHORT_LABELS[weaponId] ?? weaponId
+  );
+}
 
 interface Drone {
   x: number;
@@ -425,20 +443,45 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [activeSideEffect, setActiveSideEffect] =
     useState<ActiveSideEffect | null>(null);
 
+  // A phone tool press answers with a short line saying what fired and what
+  // happened. It is plain text with no motion, so reduced motion needs nothing.
+  const [phoneToast, setPhoneToast] = useState<{
+    id: number;
+    text: string;
+  } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const showPhoneToast = useCallback((text: string) => {
+    setPhoneToast({ id: Date.now(), text });
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = setTimeout(() => {
+      toastTimerRef.current = null;
+      setPhoneToast(null);
+    }, PHONE_TOAST_MS);
+  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    },
+    []
+  );
+
   // Room Entities
   const [enemies, setEnemies] = useState<Enemy[]>([]);
-  // A live patrol one step from the player can trace them on its next move. On
-  // touch the danger is shown and buzzed, not only drawn (ADR 0061).
-  const patrolThreat =
-    phoneCabinet &&
-    gameStatus === "playing" &&
-    isPatrolThreat(playerPosition, enemies);
-  const wasPatrolThreatRef = useRef(false);
+  // A live patrol within two steps warns (amber), and one that can step onto
+  // the player next turn is red. Only the phone cabinet warns: the touch player
+  // has no sight of the maze's edges to read the danger from (ADR 0061).
+  const threatLevel: ThreatLevel =
+    phoneCabinet && gameStatus === "playing"
+      ? patrolThreat(playerPosition, enemies)
+      : "none";
+  const wasRedThreatRef = useRef(false);
   useEffect(() => {
-    const was = wasPatrolThreatRef.current;
-    wasPatrolThreatRef.current = patrolThreat;
-    if (patrolThreat && !was) triggerHaptic([40, 60, 40]);
-  }, [patrolThreat]);
+    const wasRed = wasRedThreatRef.current;
+    const isRed = threatLevel === "red";
+    wasRedThreatRef.current = isRed;
+    // Buzz once on the rising edge into red, not on every frame it stays red.
+    if (isRed && !wasRed) triggerHaptic([40, 60, 40]);
+  }, [threatLevel]);
   const [items, setItems] = useState<ItemPickup[]>([]);
   const [boss, setBoss] = useState<BossState | undefined>(undefined);
   // The player's last step and when it was taken; boss salvos lead it (#1321).
@@ -446,6 +489,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     null
   );
   const [tspNodes, setTspNodes] = useState(generateTSPRoom().tspNodes || []);
+  // Testing and playtest read the room as data: the grid, the route nodes and
+  // whether the exit is still locked. Recomputed only when they change.
+  const gridData = useMemo(() => serializeGrid(currentMaze), [currentMaze]);
+  const nodeData = useMemo(() => serializeNodes(tspNodes), [tspNodes]);
   const [tspWalls, setTspWalls] = useState(
     generateTSPRoom().tspMovingWalls || []
   );
@@ -971,7 +1018,48 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setExploredMap(fov.explored);
         }
 
-        // TSP room: Dynamic wall shifting & node collection
+        // Route nodes: every move (keyboard, d-pad tap, hold or swipe) lands
+        // here, so each one collects a node the same way. The side effects run
+        // here, outside any state updater, and only when a node is new.
+        if (gameMode === "roguelike") {
+          const visit = markNodeVisited(tspNodes, nextX, nextY);
+          if (visit.collected) {
+            setTspNodes(visit.nodes);
+            // The in-world prompt is drawn once per room, so the last node
+            // re-states the goal when it opens the exit.
+            if (
+              getExitLockState(boss, tspNodes).locked &&
+              !getExitLockState(boss, visit.nodes).locked
+            ) {
+              floatingTextsRef.current.push({
+                id: `exit-open-${Date.now()}`,
+                x: 7,
+                y: 8,
+                text: "REACH THE EXIT >>",
+                color: "#f59e0b",
+                alpha: 3,
+                vy: 0,
+              });
+              // A phone has no objective line, so it hears it here too.
+              if (phoneCabinet) showPhoneToast("Exit open: reach the EXIT");
+            }
+            playSuccess();
+            retroAudio.playPickup();
+            setScore((s) => s + 200);
+            earnCrypto(50);
+            floatingTextsRef.current.push({
+              id: `tsp-node-${Date.now()}`,
+              x: nextX,
+              y: nextY,
+              text: "AIRGAP NODE BYPASS! +200 PTS",
+              color: currentTheme.accentColor,
+              alpha: 1,
+              vy: -0.02,
+            });
+          }
+        }
+
+        // TSP room: Dynamic wall shifting
         if (
           gameMode === "roguelike" &&
           campaignRooms[roomIndex]?.id === "tsp"
@@ -983,28 +1071,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           );
           setCurrentMaze(updatedGrid);
           setTspWalls(updatedWalls);
-
-          setTspNodes((prev) =>
-            prev.map((node) => {
-              if (!node.visited && node.x === nextX && node.y === nextY) {
-                playSuccess();
-                retroAudio.playPickup();
-                setScore((s) => s + 200);
-                earnCrypto(50);
-                floatingTextsRef.current.push({
-                  id: `tsp-node-${Date.now()}`,
-                  x: nextX,
-                  y: nextY,
-                  text: "AIRGAP NODE BYPASS! +200 PTS",
-                  color: currentTheme.accentColor,
-                  alpha: 1,
-                  vy: -0.02,
-                });
-                return { ...node, visited: true };
-              }
-              return node;
-            })
-          );
         }
 
         // Item Collection check. Ammo goes to a weapon this class can
@@ -1166,6 +1232,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       profile,
       recordEvent,
       openHackingTerminal,
+      phoneCabinet,
+      showPhoneToast,
     ]
   );
 
@@ -1187,6 +1255,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         nowMs,
         currentRam
       );
+
+      if (phoneCabinet) {
+        const weapon = weapons[wId];
+        const outcome = res.success
+          ? res.message
+          : !weapon || weapon.ammo <= 0
+            ? "out of ammo"
+            : "out of RAM";
+        showPhoneToast(`${phoneToolLabel(wId)}: ${outcome}`);
+      }
 
       if (!res.success) {
         floatingTextsRef.current.push({
@@ -1263,6 +1341,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       playNote,
       playSuccess,
       earnCrypto,
+      phoneCabinet,
+      showPhoneToast,
     ]
   );
 
@@ -1496,10 +1576,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       ) {
         setActiveWeaponId(candidateWeaponId);
         handleFireWeapon(candidateWeaponId);
-        break;
+        return;
       }
     }
-  }, [selectedClass.starterWeapons, activeWeaponId, weapons, handleFireWeapon]);
+    if (phoneCabinet) showPhoneToast("Exploit: no tool has ammo");
+  }, [
+    selectedClass.starterWeapons,
+    activeWeaponId,
+    weapons,
+    handleFireWeapon,
+    phoneCabinet,
+    showPhoneToast,
+  ]);
 
   // Cursor tracking for every campaign room: the TSP room draws a hover
   // highlight from it, and BlinkBrowse also steers the player towards it.
@@ -2447,12 +2535,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         className="flex shrink-0 items-center gap-1"
         data-testid="labyrinth-phone-ram"
       >
-        {patrolThreat && (
+        {threatLevel !== "none" && (
           <span
             role="status"
-            className="font-bold uppercase text-rose-400 text-[10px]"
+            className={`font-bold uppercase text-[10px] ${
+              threatLevel === "red" ? "text-rose-400" : "text-amber-400"
+            }`}
           >
-            Patrol adjacent
+            {threatLevel === "red" ? "Patrol adjacent" : "Patrol 2 steps out"}
           </span>
         )}
         <span className="text-slate-400">RAM</span>
@@ -2694,7 +2784,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             : isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
               : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
-        } flex items-center justify-center transition-all duration-300 ${phoneCabinet ? "" : "my-auto"} ${patrolThreat ? "rounded-lg ring-2 ring-rose-500 motion-safe:animate-pulse" : ""}`}
+        } flex items-center justify-center transition-all duration-300 ${phoneCabinet ? "" : "my-auto"} ${threatLevel === "red" ? "rounded-lg ring-2 ring-rose-500 motion-safe:animate-pulse" : threatLevel === "amber" ? "rounded-lg ring-2 ring-amber-500 motion-safe:animate-pulse" : ""}`}
         style={
           crtCalibration.curvature > 0.05
             ? {
@@ -2740,6 +2830,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           } [image-rendering:pixelated] bg-[#0d0e11] cursor-crosshair ${phoneCabinet ? "touch-none select-none" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60`}
         />
 
+        {phoneToast && (
+          <div
+            key={phoneToast.id}
+            role="status"
+            aria-live="polite"
+            data-testid="labyrinth-phone-toast"
+            className="pointer-events-none absolute bottom-2 left-1/2 z-10 w-max max-w-[90%] -translate-x-1/2 rounded border border-amber-500/50 bg-zinc-950/90 px-3 py-1.5 text-center text-xs font-bold text-amber-200"
+          >
+            {phoneToast.text}
+          </div>
+        )}
+
         {/* Off-screen Accessible DOM Fallback Subtree */}
         <div
           className="sr-only"
@@ -2753,6 +2855,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               aria-label="Dungeon Telemetry and Status"
               data-player-cell={`${playerPosition.x},${playerPosition.y}`}
               data-exit-cell={`${EXIT_X},${EXIT_Y}`}
+              data-exit-locked={String(roomExitLock.locked)}
+              data-threat={threatLevel}
+              data-grid={gridData}
+              data-nodes={nodeData}
               data-patrol-cells={enemies
                 .filter((e) => e.state !== "stunned" && e.state !== "frozen")
                 .map((e) => `${e.x},${e.y}`)
@@ -3547,8 +3653,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </>
               ) : (
                 <>
-                  Guide your <span className="text-zinc-100">netrunner</span> to
-                  the <span className="text-amber-400">EXIT</span> (bottom
+                  <span
+                    className="text-amber-400"
+                    data-testid="labyrinth-objective"
+                  >
+                    REACH THE EXIT
+                  </span>
+                  : guide your <span className="text-zinc-100">netrunner</span>{" "}
+                  to the <span className="text-amber-400">EXIT</span> (bottom
                   right). Bugs and drones cost HP.
                 </>
               )}

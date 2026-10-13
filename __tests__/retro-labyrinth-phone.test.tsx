@@ -109,6 +109,37 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(screen.queryByRole("button", { name: "Tap" })).toBeNull();
   });
 
+  it("answers an EMP press with a toast that names the tool and its outcome", () => {
+    renderGame({ touch: true });
+    expect(screen.queryByTestId("labyrinth-phone-toast")).toBeNull();
+
+    act(() => {
+      fireEvent.pointerDown(
+        screen.getByRole("button", { name: "EMP: fire an EMP burst" }),
+        { pointerId: 1, isPrimary: true, button: 0 }
+      );
+    });
+
+    const toast = screen.getByTestId("labyrinth-phone-toast");
+    expect(toast.textContent?.startsWith("EMP: ")).toBe(true);
+    expect(toast.getAttribute("role")).toBe("status");
+    // Plain text with no motion class, so reduced motion needs nothing more.
+    expect(toast.className).not.toMatch(/animate|transition/);
+  });
+
+  it("answers an Exploit press with a toast, even when no tool has ammo to fire", () => {
+    renderGame({ touch: true });
+    act(() => {
+      fireEvent.pointerDown(
+        screen.getByRole("button", { name: /Exploit: cycle/ }),
+        { pointerId: 1, isPrimary: true, button: 0 }
+      );
+    });
+    expect(
+      screen.getByTestId("labyrinth-phone-toast").textContent
+    ).toBeTruthy();
+  });
+
   it("exposes the player's cell and the patrol cells as data for the e2e specs", () => {
     const { container } = renderGame({ touch: true });
     const status = container.querySelector("[data-player-cell]");

@@ -204,11 +204,40 @@ running room pauses on hide, blur or rotation and waits for a tap on Resume.
   list is a labelled, keyboard-focusable region; a "More below" cue shows
   while items sit under the fold. Price buttons and Close are at least 44px on
   a coarse pointer. Purchases go through the same handler on both devices.
-- **Patrol warning.** A live patrol one orthogonal step from the player turns
-  the maze frame red and pulses it (motion-safe), shows "Patrol adjacent" in
-  the HUD, and buzzes once through `triggerHaptic` when the warning begins.
-  The warning is drawn on the frame, not per cell. Desktop has no warning, so
-  nothing changes there.
+  On a coarse pointer in landscape the list is two columns, so at 568x320 all
+  five items fit without scrolling in the usual case. Each description is
+  clamped to two lines. The "More below" cue still shows while items sit under
+  the fold. Desktop and portrait phones keep one column.
+- **Patrol warning.** A live patrol within two orthogonal steps of the player
+  warns on the phone cabinet, in two levels. Amber is two steps out, and the
+  HUD reads "Patrol 2 steps out". Red is one step out, and the HUD reads
+  "Patrol adjacent". Each colours the maze frame and pulses it under
+  `motion-safe:`. Red alone buzzes once through `triggerHaptic`, on the rising
+  edge into red. The level comes from `patrolThreat`, which counts steps
+  ignoring walls, so it may warn about a patrol a wall would keep out but never
+  misses one that can reach. Stunned and frozen patrols never count. Desktop
+  has no warning, so nothing changes there.
+- **Phone tool toast.** Every EMP, Exploit and tool press on the phone shows a
+  short line in the maze frame: the tool, then what happened, such as
+  "EMP: ..." or "Scan: out of RAM". An Exploit with no tool left to fire reads
+  "Exploit: no tool has ammo". The toast is plain text with no motion, clears
+  after about 2.2 seconds, and sits in a `role="status"` live region. Desktop
+  keeps its floating in-maze text and gets no toast.
+- **Route nodes and the exit.** Every move, whether a key, a d-pad tap, a hold
+  repeat or a swipe, reaches the route nodes through one path in `tryMove`.
+  `markNodeVisited` is pure, and the component calls it outside any state
+  updater, so a node scores once and only when it is new. The in-world
+  "REACH THE EXIT" prompt is drawn once when a room loads, so the last node
+  now draws it again as it opens the exit. The status group's objective line
+  reads "REACH THE EXIT" once the exit is open, as well as while it is locked.
+- **Testing data.** The status group carries `data-grid` (one "#" or "." string
+  per row, rows joined with "|", moving walls read as walls), `data-nodes`
+  ("x,y:visited" entries joined with ";"), `data-exit-locked` ("true" or
+  "false"), `data-threat` ("red", "amber" or "none"), and the existing
+  `data-player-cell`, `data-patrol-cells` and `data-exit-cell`. These are read
+  by tests and the route walk in `__tests__/e2e/retro-labyrinth-mobile.spec.ts`,
+  which plans with a breadth-first search from the grid and never reads React
+  internals.
 - **Launch and exit.** Launch pins the page at its offset. Exit restores that
   exact offset, so the preview returns where the player left it with no jump;
   the earlier scroll-into-view on exit was removed.

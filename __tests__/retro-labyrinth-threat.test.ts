@@ -1,51 +1,59 @@
 import { describe, it, expect } from "vitest";
-import { isPatrolThreat } from "@/components/retro-labyrinth/threat";
+import { patrolThreat } from "@/components/retro-labyrinth/threat";
 
-describe("isPatrolThreat (phone fairness)", () => {
+describe("patrolThreat (phone fairness)", () => {
   const player = { x: 5, y: 5 };
+  const patrol = (x: number, y: number) => ({ x, y, state: "patrol" });
 
-  it("warns when a live patrol is one orthogonal step away", () => {
+  it("is red when a live patrol is one orthogonal step away", () => {
     for (const cell of [
       { x: 4, y: 5 },
       { x: 6, y: 5 },
       { x: 5, y: 4 },
       { x: 5, y: 6 },
     ]) {
-      expect(isPatrolThreat(player, [{ ...cell, state: "patrol" }])).toBe(true);
+      expect(patrolThreat(player, [patrol(cell.x, cell.y)])).toBe("red");
     }
   });
 
-  it("does not warn for a diagonal, a two-step gap or a distant patrol", () => {
-    expect(isPatrolThreat(player, [{ x: 4, y: 4, state: "patrol" }])).toBe(
-      false
+  it("is amber when a live patrol is two steps away", () => {
+    expect(patrolThreat(player, [patrol(3, 5)])).toBe("amber");
+    expect(patrolThreat(player, [patrol(6, 6)])).toBe("amber");
+    expect(patrolThreat(player, [patrol(4, 4)])).toBe("amber");
+  });
+
+  it("is none for a patrol three or more steps away", () => {
+    expect(patrolThreat(player, [patrol(2, 5)])).toBe("none");
+    expect(patrolThreat(player, [patrol(12, 1)])).toBe("none");
+  });
+
+  it("skips stunned and frozen patrols, which cannot step", () => {
+    expect(patrolThreat(player, [{ x: 4, y: 5, state: "stunned" }])).toBe(
+      "none"
     );
-    expect(isPatrolThreat(player, [{ x: 3, y: 5, state: "patrol" }])).toBe(
-      false
+    expect(patrolThreat(player, [{ x: 4, y: 5, state: "frozen" }])).toBe(
+      "none"
     );
-    expect(isPatrolThreat(player, [{ x: 12, y: 1, state: "patrol" }])).toBe(
-      false
+    expect(patrolThreat(player, [{ x: 6, y: 5, state: "stunned" }])).toBe(
+      "none"
+    );
+    expect(patrolThreat(player, [{ x: 5, y: 7, state: "frozen" }])).toBe(
+      "none"
     );
   });
 
-  it("ignores patrols that cannot step", () => {
-    expect(isPatrolThreat(player, [{ x: 4, y: 5, state: "stunned" }])).toBe(
-      false
-    );
-    expect(isPatrolThreat(player, [{ x: 4, y: 5, state: "frozen" }])).toBe(
-      false
-    );
-  });
-
-  it("is false with no patrols in the room", () => {
-    expect(isPatrolThreat(player, [])).toBe(false);
-  });
-
-  it("is true when any one of several patrols is adjacent", () => {
+  it("does not let a stunned patrol hide a live one nearby", () => {
     expect(
-      isPatrolThreat(player, [
-        { x: 0, y: 0, state: "patrol" },
-        { x: 5, y: 6, state: "patrol" },
-      ])
-    ).toBe(true);
+      patrolThreat(player, [{ x: 4, y: 5, state: "stunned" }, patrol(3, 5)])
+    ).toBe("amber");
+  });
+
+  it("is none with no patrols in the room", () => {
+    expect(patrolThreat(player, [])).toBe("none");
+  });
+
+  it("reports the closest live patrol when several are present", () => {
+    expect(patrolThreat(player, [patrol(0, 0), patrol(5, 6)])).toBe("red");
+    expect(patrolThreat(player, [patrol(0, 0), patrol(3, 5)])).toBe("amber");
   });
 });

@@ -643,3 +643,320 @@ test.describe("Retro Labyrinth on a phone", () => {
     expect(blocking).toEqual([]);
   });
 });
+
+// The route walk (#2003). A playtester bot reported that the exit stayed locked
+// after four route nodes. The walk below plans from the room's own data: the
+// grid, the node list and the player's cell, all read from the status group.
+// It re-plans before every step, so moving walls and patrols cannot strand it.
+/** The landscape sizes the route walk plays at, and the room-cleared shot. */
+const WALK_SIZES: ReadonlyArray<readonly [number, number]> = [
+  [844, 390],
+  [568, 320],
+];
+
+type Cell = { x: number; y: number };
+type RouteNode = Cell & { visited: boolean };
+
+/** The maze grid: rows split by "|", each cell "." for floor and "#" for wall. */
+function parseOpenGrid(raw: string): boolean[][] {
+  return raw.split("|").map((row) => [...row].map((ch) => ch === "."));
+}
+
+/** The route nodes: "x,y:visited" entries joined with ";". */
+function parseNodes(raw: string): RouteNode[] {
+  if (!raw) return [];
+  return raw.split(";").map((entry) => {
+    const [xy, flag] = entry.split(":");
+    const [x, y] = xy.split(",").map(Number);
+    return { x, y, visited: flag === "1" };
+  });
+}
+
+/** Each d-pad button, with the grid step it takes. Y grows downwards. */
+const STEPS: ReadonlyArray<{ button: string; dx: number; dy: number }> = [
+  { button: "Move Up", dx: 0, dy: -1 },
+  { button: "Move Down", dx: 0, dy: 1 },
+  { button: "Move Left", dx: -1, dy: 0 },
+  { button: "Move Right", dx: 1, dy: 0 },
+];
+
+/** The shortest route over open cells, excluding the start. Null if none. */
+function planRoute(open: boolean[][], from: Cell, to: Cell): Cell[] | null {
+  const key = (c: Cell) => `${c.x},${c.y}`;
+  const cameFrom = new Map<string, Cell>();
+  const seen = new Set<string>([key(from)]);
+  const queue: Cell[] = [from];
+  for (let head = 0; head < queue.length; head++) {
+    const current = queue[head];
+    if (current.x === to.x && current.y === to.y) {
+      const route: Cell[] = [];
+      let at: Cell | undefined = current;
+      while (at && key(at) !== key(from)) {
+        route.unshift(at);
+        at = cameFrom.get(key(at));
+      }
+      return route;
+    }
+    for (const step of STEPS) {
+      const next = { x: current.x + step.dx, y: current.y + step.dy };
+      if (!open[next.y]?.[next.x] || seen.has(key(next))) continue;
+      seen.add(key(next));
+      cameFrom.set(key(next), current);
+      queue.push(next);
+    }
+  }
+  return null;
+}
+
+/** The room as the status group describes it, read in one place. */
+async function readRoom(page: Page) {
+  const group = page.locator("[data-grid]").first();
+  const [grid, nodes, exitLocked, threat, patrols, player] = await Promise.all([
+    group.getAttribute("data-grid"),
+    group.getAttribute("data-nodes"),
+    group.getAttribute("data-exit-locked"),
+    group.getAttribute("data-threat"),
+    group.getAttribute("data-patrol-cells"),
+    playerCell(page),
+  ]);
+  // A patrol's cell and the cells beside it count as closed, so the walker
+  // plans around patrols instead of into them.
+  const raw = parseOpenGrid(grid ?? "");
+  const open = raw.map((row) => [...row]);
+  for (const entry of (patrols ?? "").split(";").filter(Boolean)) {
+    const [px, py] = entry.split(",").map(Number);
+    for (const [dx, dy] of [
+      [0, 0],
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
+      if (open[py + dy]?.[px + dx] !== undefined)
+        open[py + dy][px + dx] = false;
+    }
+  }
+  return {
+    open,
+    raw,
+    nodes: parseNodes(nodes ?? ""),
+    exitLocked,
+    threat,
+    player,
+  };
+}
+
+test.describe("Retro Labyrinth room 1 walk on a Small Phone (#2003)", () => {
+  test.setTimeout(420000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "Small Phone",
+      "the route walk runs on the Small Phone project"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(ROUTE);
+  });
+
+  for (const [width, height] of WALK_SIZES) {
+    test(`walks every route node and opens the exit at ${width}x${height}`, async ({
+      page,
+    }, testInfo) => {
+      await page.setViewportSize({ width, height });
+      await launchCabinet(page);
+
+      const exitRaw = await page
+        .locator("[data-exit-cell]")
+        .first()
+        .getAttribute("data-exit-cell");
+      const [exitX, exitY] = (exitRaw ?? "").split(",").map(Number);
+      const exit: Cell = { x: exitX, y: exitY };
+
+      let shotAmber = false;
+      let shotRed = false;
+      let nodesDone = false;
+      let arrived = false;
+      let blockedPasses = 0;
+      let plan: Cell[] = [];
+      let retries = 0;
+
+      for (let step = 0; step < 800 && !arrived; step++) {
+        const retry = page.getByRole("button", { name: /RETRY BREACH/i });
+        if (await retry.isVisible()) {
+          // Patrols move on the clock, so a bot can still be caught. The room
+          // resets on retry; the walk starts it again, a bounded number of times.
+          retries += 1;
+          if (retries > 3) {
+            throw new Error("the run was lost before the walk finished");
+          }
+          await retry.tap();
+          plan = [];
+          nodesDone = false;
+          blockedPasses = 0;
+          continue;
+        }
+        if (await page.getByText("Tap Next Room").isVisible()) {
+          arrived = true;
+          break;
+        }
+
+        let room = await readRoom(page);
+        if (!room.player) throw new Error("the player cell is not on the page");
+
+        // A patrol within two steps: show the warning, then give it time to pass.
+        if (room.threat === "amber" || room.threat === "red") {
+          if (width === 844 && room.threat === "amber" && !shotAmber) {
+            shotAmber = true;
+            await shoot(page, testInfo, "warning-amber-844x390");
+          }
+          if (width === 844 && room.threat === "red" && !shotRed) {
+            shotRed = true;
+            await shoot(page, testInfo, "warning-red-844x390");
+          }
+          await expect
+            .poll(async () => (await readRoom(page)).threat, { timeout: 4000 })
+            .toBe("none")
+            .catch(() => undefined);
+          room = await readRoom(page);
+          if (!room.player)
+            throw new Error("the player cell is not on the page");
+        }
+
+        const unvisited = room.nodes.filter((node) => !node.visited);
+        if (unvisited.length > 0) {
+          expect(
+            room.exitLocked,
+            "the exit stays locked while nodes remain"
+          ).toBe("true");
+        } else if (!nodesDone) {
+          // The last node is in. The exit should now open, in the DOM and the HUD.
+          nodesDone = true;
+          await expect
+            .poll(async () => (await readRoom(page)).exitLocked, {
+              timeout: 5000,
+            })
+            .toBe("false");
+          // A phone has no objective line, so the toast says it.
+          await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(
+            "Exit open"
+          );
+        }
+
+        // Nearest unvisited node, or the exit once every node is in.
+        const targets = unvisited.length > 0 ? unvisited : [exit];
+        const player = room.player;
+        // Keep following the current plan while its next cell is open: the
+        // walls shift with every step, so re-planning each step makes the
+        // shortest route flip back and forth and the walker never leaves.
+        let route: Cell[] | null =
+          plan.length > 0 &&
+          room.open[plan[0].y]?.[plan[0].x] &&
+          Math.abs(plan[0].x - player.x) + Math.abs(plan[0].y - player.y) ===
+            1 &&
+          targets.some(
+            (t) =>
+              t.x === plan[plan.length - 1].x && t.y === plan[plan.length - 1].y
+          )
+            ? plan
+            : null;
+        for (const target of route ? [] : targets) {
+          // Long stuck: a patrol is parked on the only way through. Plan over
+          // the plain maze and lean on the threat wait above to time the pass.
+          const candidate = planRoute(
+            blockedPasses > 8 ? room.raw : room.open,
+            player,
+            target
+          );
+          if (candidate && (!route || candidate.length < route.length)) {
+            route = candidate;
+          }
+        }
+        if (!route || route.length === 0) {
+          // The route-room walls shift with the player's step count, not the
+          // clock, so a closed corridor opens only after more steps. Step to
+          // an open neighbour and re-plan; the walls move with it.
+          blockedPasses += 1;
+          if (blockedPasses > 120) {
+            throw new Error(`no route from ${player.x},${player.y}`);
+          }
+          const shuffle = STEPS.filter(
+            (s) => room.open[player.y + s.dy]?.[player.x + s.dx]
+          );
+          route = shuffle.length
+            ? [
+                {
+                  x: player.x + shuffle[blockedPasses % shuffle.length].dx,
+                  y: player.y + shuffle[blockedPasses % shuffle.length].dy,
+                },
+              ]
+            : null;
+          if (!route) {
+            // Patrols on every side: hold still and let them move on.
+            await page.waitForTimeout(300);
+            continue;
+          }
+        } else {
+          blockedPasses = 0;
+        }
+
+        const next = route[0];
+        plan = route.slice(1);
+        const move = STEPS.find(
+          (s) => s.dx === next.x - player.x && s.dy === next.y - player.y
+        );
+        if (!move) throw new Error("the route left the grid's neighbours");
+        await page.getByRole("button", { name: move.button }).tap();
+        // A blocked step (a wall or a patrol) leaves the cell as it was; the
+        // next pass re-plans from the new grid rather than retrying blindly.
+        await expect
+          .poll(async () => playerCell(page), { timeout: 2000 })
+          .not.toEqual(player)
+          .catch(() => undefined);
+      }
+
+      expect(arrived, "the walk should reach the room-cleared card").toBe(true);
+      expect(nodesDone, "the walk should visit every route node first").toBe(
+        true
+      );
+
+      await expect(page.getByText("Tap Next Room")).toBeVisible();
+      await shoot(page, testInfo, `room-cleared-${width}x${height}`);
+      if (width !== 844) return;
+
+      await page.getByRole("button", { name: /^Next Room$/ }).tap();
+      await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
+        "ROOM 02",
+        { timeout: 30000 }
+      );
+      await shoot(page, testInfo, "room2-844x390");
+
+      // A tool press in room 2 answers with a toast that names the tool.
+      await page.getByRole("button", { name: "EMP: fire an EMP burst" }).tap();
+      await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(
+        "EMP: "
+      );
+      await shoot(page, testInfo, "toast-844x390");
+    });
+  }
+
+  test("retakes the landscape game screens for the PR", async ({
+    page,
+  }, testInfo) => {
+    for (const [width, height] of LANDSCAPE_SIZES) {
+      await page.setViewportSize({ width, height });
+      await page.goto(ROUTE);
+      await launchCabinet(page);
+      await shoot(page, testInfo, `${width}x${height}-landscape-game`);
+    }
+
+    // The tablet view is the desktop cabinet at 1024px, not the immersive one.
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await page.goto(ROUTE);
+    const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+    if ((await launch.count()) > 0) await launch.first().click();
+    await expect(page.locator(PLAYFIELD).first()).toBeVisible({
+      timeout: 90000,
+    });
+    await shoot(page, testInfo, "1024x768-landscape-tablet");
+  });
+});

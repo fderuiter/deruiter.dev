@@ -132,7 +132,7 @@ const FACE_COLORS = {
  * identity accent (lane edge, ledges and the runner's singlet) and the world
  * behind the lane; signal colours stay in FACE_COLORS.
  */
-export interface ThemePalette {
+interface ThemePalette {
   /** Identity accent: lane edge, ledge tops and the runner's singlet. */
   accent: string;
   /** Top of the sky, or of the water column on water stages. */

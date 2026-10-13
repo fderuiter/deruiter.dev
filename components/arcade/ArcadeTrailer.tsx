@@ -1,15 +1,15 @@
 import React from "react";
 import { IconMovie } from "@tabler/icons-react";
 
-const TRAILER_SRC = "/videos/arcade-trailer.mp4";
-const TRAILER_WEBM = "/videos/arcade-trailer.webm";
-const TRAILER_POSTER = "/videos/arcade-trailer-poster.jpg";
-const TRAILER_CAPTIONS = "/videos/arcade-trailer.vtt";
+const TRAILER_SRC = "/videos/arcade-sizzle.mp4";
+const TRAILER_WEBM = "/videos/arcade-sizzle.webm";
+const TRAILER_POSTER = "/videos/arcade-sizzle-poster.jpg";
+const TRAILER_CAPTIONS = "/videos/arcade-sizzle.vtt";
 
 /**
- * The arcade's gameplay trailer: 50 seconds of real play from every cabinet,
- * cut to the music. It never autoplays and preloads nothing, so it costs the
- * page no bandwidth or audio until a visitor presses play (#1788).
+ * The arcade's sizzle reel: 58 seconds of real play from every cabinet,
+ * cut on the beat. It never autoplays and preloads nothing, so it costs the
+ * page no bandwidth or audio until a visitor presses play (#1788, #2030).
  */
 export function ArcadeTrailer() {
   return (
@@ -26,7 +26,7 @@ export function ArcadeTrailer() {
           Trailer
         </h2>
         <span className="font-mono text-[11px] text-zinc-400">
-          0:50 · real gameplay
+          0:58 · real gameplay
         </span>
       </div>
       <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-[#0d0e11]">
@@ -57,8 +57,8 @@ export function ArcadeTrailer() {
         id="arcade-trailer-credit"
         className="mt-3 font-mono text-[11px] leading-relaxed text-zinc-400 break-words"
       >
-        A 50-second cut of all eight games, recorded straight from this site.
-        Music: &ldquo;Cyber Runner&rdquo; by ansimuz (CC0).
+        A 58-second sizzle reel of every game, recorded straight from this site.
+        Music: &ldquo;Generic trailer music&rdquo; by emmama (CC0).
       </p>
     </section>
   );

@@ -33,6 +33,11 @@ import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { applyCanvasScale } from "@/lib/arcade";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import {
+  useDuckTouchBridge,
+  type DuckCommand,
+  type DuckTouchSnapshot,
+} from "@/components/working-with-duck/touch-bridge";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconPlayerPlay,
@@ -547,6 +552,61 @@ const TOY_LABEL: Record<(typeof TOY_BY_KEY)[keyof typeof TOY_BY_KEY], string> =
     kong: "Kong",
     "squeaky-toy": "squeaky toy",
   };
+
+/** The toy each toy command uses, the same as its number key. */
+const TOY_BY_COMMAND = {
+  "toy-1": TOY_BY_KEY["1"],
+  "toy-2": TOY_BY_KEY["2"],
+  "toy-3": TOY_BY_KEY["3"],
+} as const;
+
+/** The trick each trick command performs. */
+const TRICK_BY_COMMAND = {
+  "trick-sit": "SIT",
+  "trick-high-five": "HIGH_FIVE",
+  "trick-drop-it": "DROP_IT",
+  "trick-spin": "SPIN",
+} as const;
+
+/**
+ * The command a key sends, or null for a key that has none. Arrow keys in the
+ * office drag Duck instead, so they map to nothing here; W steers in the park
+ * and high-fives in the office.
+ */
+function duckCommandForKey(
+  e: KeyboardEvent,
+  state: WorkingWithDuckState
+): DuckCommand | null {
+  if (e.code === "Space") return "space";
+  switch (e.key) {
+    case "1":
+      return "toy-1";
+    case "2":
+      return "toy-2";
+    case "3":
+      return "toy-3";
+    case "4":
+      return "treat";
+    case "q":
+    case "Q":
+      return "trick-sit";
+    case "w":
+    case "W":
+      return state.inDogPark ? "steer-up" : "trick-high-five";
+    case "e":
+    case "E":
+      return "trick-drop-it";
+    case "r":
+    case "R":
+      return "trick-spin";
+    case "ArrowUp":
+      return state.inDogPark ? "steer-up" : null;
+    case "ArrowDown":
+      return state.inDogPark ? "steer-down" : null;
+    default:
+      return null;
+  }
+}
 
 /** Where a toy used from the keyboard lands: the ball goes across the room,
  * other toys just past Duck, toward the middle of the floor. */
@@ -1404,6 +1464,111 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     { isActive: !isContextLost, maxDeltaMs: Infinity }
   );
 
+  // Every game action the keyboard or the touch cabinet can take (ADR 0061).
+  // A key maps to a command through duckCommandForKey; a touch button sends
+  // the same command through the bridge. Both land here, so they cannot
+  // drift. A paused sprint is frozen (#1645): only pause acts.
+  const runDuckCommand = useCallback(
+    (command: DuckCommand) => {
+      const state = gameStateRef.current;
+      if (command === "pause") {
+        if (state.status === "running" || state.status === "paused") {
+          toggleManualPause();
+        }
+        return;
+      }
+      // The cabinet reports a moment to stop (tab hidden, window blurred,
+      // device rotated). A running sprint pauses; the player resumes it.
+      if (command === "auto-pause") {
+        if (state.status === "running") toggleManualPause();
+        return;
+      }
+      if (state.status === "paused") return;
+
+      if (command === "toy-1" || command === "toy-2" || command === "toy-3") {
+        if (!state.inDogPark && !state.inBathtub) {
+          const item = TOY_BY_COMMAND[command];
+          if (state.selectedItem === item) {
+            // A second press uses the toy without the mouse (#1942): the
+            // ball is thrown across the room, a Kong or squeaky toy lands
+            // just past Duck to pull him off whatever he is chewing.
+            applyTransition((state) => {
+              const { x, y } = keyboardToyTarget(state);
+              return applySelectedItemAt(duckService, state, x, y);
+            });
+            announce(`Used the ${TOY_LABEL[item]} near Duck.`, "polite");
+          } else {
+            applyTransition((state) => ({ ...state, selectedItem: item }));
+          }
+        }
+      } else if (command === "treat") {
+        handleGiveTreat();
+      } else if (
+        command === "trick-sit" ||
+        command === "trick-high-five" ||
+        command === "trick-drop-it" ||
+        command === "trick-spin"
+      ) {
+        if (!state.inDogPark && !state.inBathtub) {
+          handlePerformTrick(TRICK_BY_COMMAND[command]);
+        }
+      } else if (command === "steer-up") {
+        if (state.inDogPark) {
+          applyTransition((state) =>
+            steerParkDuck(state, state.parkState.duckY - 25)
+          );
+        }
+      } else if (command === "steer-down") {
+        if (state.inDogPark) {
+          applyTransition((state) =>
+            steerParkDuck(state, state.parkState.duckY + 25)
+          );
+        }
+      } else if (command === "space") {
+        if (state.inDogPark && state.parkState.status === "aim") {
+          // Keyboard throw: a solid mid-field throw, so the park is playable
+          // without a mouse drag (#1942).
+          applyTransition((state) => throwParkBall(state, 11, 0));
+        } else if (state.inDogPark) {
+          applyTransition((state) => jumpParkHurdle(state));
+        } else if (!state.inBathtub) {
+          applyTransition((state) => activeCodeBurst(state));
+        }
+      }
+    },
+    [
+      applyTransition,
+      duckService,
+      announce,
+      handleGiveTreat,
+      handlePerformTrick,
+      toggleManualPause,
+    ]
+  );
+
+  // The cabinet's control dock (touch only) reads the scene from here and
+  // sends commands back through the runner.
+  const touchBridge = useDuckTouchBridge();
+  useEffect(() => {
+    if (!touchBridge) return;
+    touchBridge.setRunner(runDuckCommand);
+    return () => touchBridge.setRunner(null);
+  }, [touchBridge, runDuckCommand]);
+  const touchScene: DuckTouchSnapshot["scene"] = uiState.inBathtub
+    ? "bath"
+    : uiState.inDogPark
+      ? "park"
+      : "office";
+  const touchAiming = uiState.inDogPark && uiState.parkState.status === "aim";
+  const touchPaused = uiState.status === "paused";
+  useEffect(() => {
+    touchBridge?.publish({
+      scene: touchScene,
+      aiming: touchAiming,
+      paused: touchPaused,
+    });
+  }, [touchBridge, touchScene, touchAiming, touchPaused]);
+
   // Keyboard Shortcuts (1-4 for hotbar items, Q-W-E-R for tricks, Space for coding/jumping)
   //
   // DUCK_HOTKEYS lists every key the handler acts on under every Ctrl, Alt
@@ -1468,62 +1633,22 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         if (e.code === "Space" || e.key.startsWith("Arrow")) {
           e.preventDefault();
         }
-      } else if (e.key === "1" || e.key === "2" || e.key === "3") {
-        if (!state.inDogPark && !state.inBathtub) {
-          const item = TOY_BY_KEY[e.key];
-          if (state.selectedItem === item) {
-            // A second press uses the toy without the mouse (#1942): the
-            // ball is thrown across the room, a Kong or squeaky toy lands
-            // just past Duck to pull him off whatever he is chewing.
-            applyTransition((state) => {
-              const { x, y } = keyboardToyTarget(state);
-              return applySelectedItemAt(duckService, state, x, y);
-            });
-            announce(`Used the ${TOY_LABEL[item]} near Duck.`, "polite");
-          } else {
-            applyTransition((state) => ({ ...state, selectedItem: item }));
-          }
-        }
-      } else if (e.key === "4") {
-        handleGiveTreat();
-      } else if (e.key === "q" || e.key === "Q") {
-        if (!state.inDogPark && !state.inBathtub) {
-          handlePerformTrick("SIT");
-        }
-      } else if (e.key === "w" || e.key === "W") {
-        if (!state.inDogPark && !state.inBathtub) {
-          handlePerformTrick("HIGH_FIVE");
-        } else if (state.inDogPark) {
-          applyTransition((state) =>
-            steerParkDuck(state, state.parkState.duckY - 25)
-          );
-        }
-      } else if (e.key === "e" || e.key === "E") {
-        if (!state.inDogPark && !state.inBathtub) {
-          handlePerformTrick("DROP_IT");
-        }
-      } else if (e.key === "r" || e.key === "R") {
-        if (!state.inDogPark && !state.inBathtub) {
-          handlePerformTrick("SPIN");
-        }
-      } else if (e.code === "Space") {
+        return;
+      }
+
+      if (e.code === "Space" || e.key.startsWith("Arrow")) {
         e.preventDefault();
-        if (state.inDogPark && state.parkState.status === "aim") {
-          // Keyboard throw: a solid mid-field throw, so the park is playable
-          // without a mouse drag (#1942).
-          applyTransition((state) => throwParkBall(state, 11, 0));
-        } else if (state.inDogPark) {
-          applyTransition((state) => jumpParkHurdle(state));
-        } else if (!state.inBathtub) {
-          applyTransition((state) => activeCodeBurst(state));
-        }
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (state.inDogPark) {
-          applyTransition((state) =>
-            steerParkDuck(state, state.parkState.duckY - 25)
-          );
-        } else {
+      }
+      const command = duckCommandForKey(e, state);
+      if (command) {
+        runDuckCommand(command);
+        return;
+      }
+
+      // Office arrows drag Duck; the touch equivalent is dragging him on the
+      // canvas. Enter drops him.
+      if (e.key === "ArrowUp") {
+        if (!state.inDogPark) {
           const s = applyTransition((state) => {
             let next = state;
             if (next.duck.state !== "DRAGGED") {
@@ -1538,12 +1663,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           );
         }
       } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        if (state.inDogPark) {
-          applyTransition((state) =>
-            steerParkDuck(state, state.parkState.duckY + 25)
-          );
-        } else {
+        if (!state.inDogPark) {
           const s = applyTransition((state) => {
             let next = state;
             if (next.duck.state !== "DRAGGED") {
@@ -1558,7 +1678,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           );
         }
       } else if (e.key === "ArrowLeft") {
-        e.preventDefault();
         if (!state.inDogPark) {
           const s = applyTransition((state) => {
             let next = state;
@@ -1574,7 +1693,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           );
         }
       } else if (e.key === "ArrowRight") {
-        e.preventDefault();
         if (!state.inDogPark) {
           const s = applyTransition((state) => {
             let next = state;

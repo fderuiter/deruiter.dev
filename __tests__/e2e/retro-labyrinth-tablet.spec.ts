@@ -552,22 +552,26 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     );
   });
 
-  test("a rotation mid-run keeps the room paused, and it resumes only on Resume", async ({
+  test("a rotation pauses a phone until Resume, and a tablet keeps playing", async ({
     page,
   }) => {
     await launchCabinet(page);
     const paused = page.getByText("PAUSED", { exact: true });
     await expect(paused).toHaveCount(0);
 
+    // Phones match PHONE_ORIENTATION_QUERY (short side at most 500px). Tablets
+    // never pause on rotation (ADR 0061, 2026-10-13).
     const size = page.viewportSize()!;
+    const phone = Math.min(size.width, size.height) <= 500;
     await page.setViewportSize({ width: size.height, height: size.width });
     await expect(page.locator(IMMERSIVE)).toBeVisible();
-    await expect(paused).toBeVisible();
-
+    if (phone) {
+      await expect(paused).toBeVisible();
+      await page.setViewportSize(size);
+      await expect(paused).toBeVisible();
+      await page.getByRole("button", { name: "Resume", exact: true }).tap();
+    }
     await page.setViewportSize(size);
-    await expect(paused).toBeVisible();
-
-    await page.getByRole("button", { name: "Resume", exact: true }).tap();
     await expect(paused).toHaveCount(0);
     const start = await readPlayerGrid(page);
     const moves = ["Move Up", "Move Right", "Move Down", "Move Left"];

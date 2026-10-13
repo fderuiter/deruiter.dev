@@ -83,7 +83,8 @@ async function settleScroll(page: Page) {
             last = window.scrollY;
             still = 0;
           }
-          if (still >= 2) resolve();
+          // Thirty still frames: a fling under load can pause for a few.
+          if (still >= 30) resolve();
           else requestAnimationFrame(step);
         };
         requestAnimationFrame(step);

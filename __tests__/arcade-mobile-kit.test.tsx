@@ -540,7 +540,7 @@ describe("arcade mobile kit", () => {
   describe("useCabinetAutoPause", () => {
     it("fires on blur, page hide and an orientation change without a screen API", () => {
       const onPause = vi.fn();
-      renderHook(() => useCabinetAutoPause(onPause));
+      renderHook(() => useCabinetAutoPause(onPause, { pauseOnRotate: true }));
       fireEvent(window, new Event("blur"));
       fireEvent(window, new Event("pagehide"));
       fireEvent(window, new Event("orientationchange"));
@@ -558,7 +558,7 @@ describe("arcade mobile kit", () => {
       });
       const addWindow = vi.spyOn(window, "addEventListener");
       const onPause = vi.fn();
-      renderHook(() => useCabinetAutoPause(onPause));
+      renderHook(() => useCabinetAutoPause(onPause, { pauseOnRotate: true }));
 
       const rotatedTypes = addWindow.mock.calls.map(([type]) => type);
       expect(rotatedTypes).not.toContain("orientationchange");

@@ -69,8 +69,14 @@ function renderPhoneRoom() {
 /** Presses and releases a touch control the way a finger does. */
 function tap(button: HTMLElement) {
   act(() => {
-    fireEvent.pointerDown(button, { pointerId: 1, isPrimary: true, button: 0 });
-    fireEvent.pointerUp(button, { pointerId: 1, isPrimary: true, button: 0 });
+    const touch = {
+      pointerId: 1,
+      pointerType: "touch",
+      isPrimary: true,
+      button: 0,
+    };
+    fireEvent.pointerDown(button, touch);
+    fireEvent.pointerUp(button, touch);
   });
 }
 

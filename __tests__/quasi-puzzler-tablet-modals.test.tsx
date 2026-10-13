@@ -81,6 +81,20 @@ describe("Quasi-Puzzler modals on the touch cabinet (#2042)", () => {
     await waitFor(() => {
       expect(dialog.contains(document.activeElement)).toBe(true);
     });
+    // Tab from the last control wraps to the first, and Shift+Tab back.
+    const stops = Array.from(
+      dialog.querySelectorAll<HTMLElement>("button:not([disabled])")
+    );
+    expect(stops.length).toBeGreaterThan(1);
+    stops[stops.length - 1].focus();
+    act(() => {
+      fireEvent.keyDown(window, { key: "Tab" });
+    });
+    expect(document.activeElement).toBe(stops[0]);
+    act(() => {
+      fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+    });
+    expect(document.activeElement).toBe(stops[stops.length - 1]);
     act(() => {
       fireEvent.keyDown(dialog, { key: "Escape" });
     });

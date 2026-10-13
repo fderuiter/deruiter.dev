@@ -415,6 +415,65 @@ test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => 
     await assertNoHorizontalOverflow(page);
   });
 
+  test("the content uses the full width below the header, and the header clears the toolbar", async ({
+    page,
+  }) => {
+    await launchQuasiCabinet(page);
+    const viewport = page.viewportSize();
+    const board = await page
+      .locator(`${QUASI_ROOT} .qp-touch-panel`)
+      .boundingBox();
+    const hand = await page.locator(QUASI_HAND).boundingBox();
+    const drawers = await page
+      .locator('[data-testid="diagnostic-drawers"]')
+      .boundingBox();
+    expect(board && hand && drawers).toBeTruthy();
+    for (const box of [board!, hand!, drawers!]) {
+      // The 16px gutter, plus the cabinet's 2px frame.
+      expect(box.x).toBeLessThanOrEqual(16 + 2 + 1);
+      expect(box.x + box.width).toBeGreaterThanOrEqual(viewport!.width - 24);
+    }
+    // Header buttons never sit under the floating cabinet toolbar.
+    const toolbar = await page
+      .locator('[data-testid="cabinet-touch-toolbar"]')
+      .boundingBox();
+    expect(toolbar).not.toBeNull();
+    const headerButtons = page.locator(
+      `${QUASI_ROOT} .qp-touch-header button:visible`
+    );
+    const count = await headerButtons.count();
+    for (let i = 0; i < count; i += 1) {
+      const box = await headerButtons.nth(i).boundingBox();
+      if (!box || box.width <= 1) continue;
+      const clear =
+        box.x + box.width <= toolbar!.x + 1 ||
+        box.y >= toolbar!.y + toolbar!.height - 1;
+      expect(clear, `header control ${i} under the toolbar`).toBe(true);
+    }
+  });
+
+  test("the board fills the spare height: no gap over 48px above the hand, and the helper line stays in the box", async ({
+    page,
+  }) => {
+    await launchQuasiCabinet(page);
+    const panel = await page
+      .locator(`${QUASI_ROOT} .qp-touch-panel`)
+      .boundingBox();
+    const hand = await page.locator(QUASI_HAND).boundingBox();
+    expect(panel && hand).toBeTruthy();
+    expect(hand!.y - (panel!.y + panel!.height)).toBeLessThanOrEqual(48);
+    const helper = page
+      .locator(`${QUASI_ROOT} .qp-touch-panel`)
+      .getByText(/Drag a tactic card/);
+    await expect(helper).toBeVisible();
+    const text = await helper.boundingBox();
+    expect(text).not.toBeNull();
+    expect(text!.y).toBeGreaterThanOrEqual(panel!.y - 1);
+    expect(text!.y + text!.height).toBeLessThanOrEqual(
+      panel!.y + panel!.height + 1
+    );
+  });
+
   test("the tactic hand stays on screen, with no page scroll", async ({
     page,
   }) => {

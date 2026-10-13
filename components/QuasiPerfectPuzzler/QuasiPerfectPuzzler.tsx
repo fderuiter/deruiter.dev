@@ -930,7 +930,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
       <div className="relative">
         {/* 1. Compact header: level drawer, mode, campaign/sandbox, tools */}
-        <div ref={headerRowRef} className="flex flex-wrap items-center gap-2">
+        <div
+          ref={headerRowRef}
+          className={`flex flex-wrap items-center gap-2${inCabinet ? " qp-touch-header" : ""}`}
+        >
           {activeTab === "campaign" && (
             <button
               ref={levelToggleRef}

@@ -1018,17 +1018,51 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  /* Clears the cabinet's floating toolbar at the top right. */
-  padding-right: max(0.75rem, var(--cabinet-toolbar-inset, 0px));
+  /* A 16px gutter on both sides; only the header row clears the toolbar. */
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 .qp-root.qp-touch > * {
   flex-shrink: 0;
 }
+/* The header row leaves room for the cabinet's floating toolbar at the top
+   right, so its buttons never sit under it or its notification dots. */
+.qp-root.qp-touch .qp-touch-header {
+  padding-right: var(--cabinet-toolbar-inset, 0px);
+}
+/* The board region takes the spare height. Its panel fills it, the tree
+   scrolls inside the panel, and the helper line stays in the box. */
 .qp-root.qp-touch > .qp-touch-board {
   flex: 1 1 0;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
   overscroll-behavior: contain;
+}
+.qp-root.qp-touch > .qp-touch-board > div:not(.hidden) {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.qp-root.qp-touch .qp-touch-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.qp-root.qp-touch .qp-touch-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+/* Centres the tree in the spare height; auto margins still scroll, not clip. */
+.qp-root.qp-touch .qp-touch-tree > * {
+  flex: none;
+  margin: auto;
 }
 /* Every on-screen control is at least 44px square. */
 .qp-root.qp-touch button {
@@ -1045,6 +1079,32 @@
 .qp-root.qp-touch .qp-card {
   width: 7.5rem;
   height: 9.75rem;
+}
+/* On a short landscape screen (iPad mini, iPad Air) the two drawers sit side
+   by side, without the "Expand Drawer" words (the chevron and aria-expanded
+   still say it), so the board keeps a drawer row's worth of height. */
+@media (orientation: landscape) and (max-height: 900px) {
+  .qp-root.qp-touch [data-testid="diagnostic-drawers"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.75rem;
+  }
+  .qp-root.qp-touch [data-testid="diagnostic-drawers"] > * {
+    margin: 0;
+  }
+  .qp-root.qp-touch .qp-touch-drawer-state {
+    display: none;
+  }
+  /* One line per drawer header: the title shortens rather than wrapping. */
+  .qp-root.qp-touch .qp-touch-drawer-head {
+    flex-wrap: nowrap;
+  }
+  .qp-root.qp-touch .qp-touch-drawer-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
 
 .qp-math {

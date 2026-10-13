@@ -142,7 +142,9 @@ describe("Quasi-Puzzler on the touch cabinet (#2042)", () => {
     it("scopes every touch rule to the qp-touch class, never the bare root", () => {
       const rules = touchBlock
         .slice(0, touchBlock.indexOf(".qp-math {"))
-        .replace(/\/\*[\s\S]*?\*\//g, "");
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        // A media query only wraps rules; check the selectors inside it.
+        .replace(/@media[^{]*\{/g, "");
       const selectors = rules
         .split("}")
         .map((block) => block.split("{")[0].trim())
@@ -182,6 +184,35 @@ describe("Quasi-Puzzler on the touch cabinet (#2042)", () => {
         name: /Generated Lean 4 Text/,
       });
       expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    });
+
+    it("keeps Tab and Shift+Tab inside the dialog", async () => {
+      renderGame(true);
+      click(screen.getByRole("button", { name: /Generated Lean 4 Text/ }));
+      const dialog = await waitFor(() => {
+        const el = document.getElementById("lean-ide-drawer-content");
+        expect(el?.getAttribute("role")).toBe("dialog");
+        return el as HTMLElement;
+      });
+      await waitFor(() => {
+        expect(dialog.contains(document.activeElement)).toBe(true);
+      });
+      // From the last stop Tab wraps to the first; Shift+Tab wraps back.
+      const stops = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+      expect(stops.length).toBeGreaterThan(0);
+      stops[stops.length - 1].focus();
+      act(() => {
+        fireEvent.keyDown(window, { key: "Tab" });
+      });
+      expect(document.activeElement).toBe(stops[0]);
+      act(() => {
+        fireEvent.keyDown(window, { key: "Tab", shiftKey: true });
+      });
+      expect(document.activeElement).toBe(stops[stops.length - 1]);
     });
   });
 });

@@ -13,6 +13,7 @@ import {
   prettyMath,
 } from "./boardArt";
 import { useCalmMotion } from "./useCalmMotion";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 import { IconFocus2, IconSparkles } from "@tabler/icons-react";
 
 // Short desktop screens (1024x768) pull the tree rows closer together so the
@@ -81,6 +82,9 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
   statusMessage,
 }) => {
   const calm = useCalmMotion();
+  // On the touch cabinet the panel fills the board region and the tree scrolls
+  // inside it, so the helper line stays in the box (#2042).
+  const inCabinet = useCabinetTouch();
   const mathematicalNotation = renderASTString(goalAST);
   const [boardWidth, setBoardWidth] = useState(0);
   const boardRef = useResizeObserver<HTMLDivElement>((entry) => {
@@ -116,7 +120,9 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
   const isNodeInteractive = !isProofComplete;
 
   return (
-    <div className="qp-board relative w-full rounded-2xl font-mono">
+    <div
+      className={`qp-board relative w-full rounded-2xl font-mono${inCabinet ? " qp-touch-panel" : ""}`}
+    >
       {/* Goal formula, the largest thing on the board */}
       <div className="flex flex-wrap items-start justify-between gap-3 px-5 pt-3">
         <div className="min-w-0">
@@ -198,7 +204,10 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
       </div>
 
       {/* The AST, drawn top-down with SVG edges */}
-      <div ref={boardRef} className="relative mt-2 w-full overflow-x-auto">
+      <div
+        ref={boardRef}
+        className={`relative mt-2 w-full overflow-x-auto${inCabinet ? " qp-touch-tree" : ""}`}
+      >
         <div
           className="relative mx-auto"
           style={{ width: layout.width, height: layout.height }}

@@ -61,9 +61,13 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
           aria-controls="lean-ide-drawer-content"
           className="qp-focus w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[color:var(--qp-raised)] cursor-pointer"
         >
-          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+          <div
+            className={`flex min-w-0 flex-wrap items-center gap-2.5${inCabinet ? " qp-touch-drawer-head" : ""}`}
+          >
             <IconCode className="w-4 h-4 qp-text-accent shrink-0" />
-            <span className="min-w-0 text-xs sm:text-sm font-bold text-zinc-100">
+            <span
+              className={`min-w-0 text-xs sm:text-sm font-bold text-zinc-100${inCabinet ? " qp-touch-drawer-title" : ""}`}
+            >
               Generated Lean 4 Text &amp; Simulator Inspector
             </span>
             <span
@@ -81,7 +85,9 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-2 text-zinc-400">
-            <span className="text-[10px] hidden sm:inline text-zinc-400">
+            <span
+              className={`text-[10px] hidden sm:inline text-zinc-400${inCabinet ? " qp-touch-drawer-state" : ""}`}
+            >
               {isLeanInspectorOpen ? "Collapse Drawer" : "Expand Drawer"}
             </span>
             {isLeanInspectorOpen ? (
@@ -125,9 +131,13 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
           aria-controls="terminal-log-drawer-content"
           className="qp-focus w-full flex items-center justify-between gap-2 px-4 py-2.5 text-left transition-colors hover:bg-[color:var(--qp-raised)] cursor-pointer"
         >
-          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+          <div
+            className={`flex min-w-0 flex-wrap items-center gap-2.5${inCabinet ? " qp-touch-drawer-head" : ""}`}
+          >
             <IconTerminal2 className="w-4 h-4 text-zinc-300 shrink-0" />
-            <span className="min-w-0 text-xs sm:text-sm font-bold text-zinc-100">
+            <span
+              className={`min-w-0 text-xs sm:text-sm font-bold text-zinc-100${inCabinet ? " qp-touch-drawer-title" : ""}`}
+            >
               Local Tactic Diagnostics &amp; TTY Feedback Log
             </span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border border-[color:var(--qp-hairline)] text-zinc-300">
@@ -135,7 +145,9 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-2 text-zinc-400">
-            <span className="text-[10px] hidden sm:inline text-zinc-400">
+            <span
+              className={`text-[10px] hidden sm:inline text-zinc-400${inCabinet ? " qp-touch-drawer-state" : ""}`}
+            >
               {isTerminalOpen ? "Collapse Drawer" : "Expand Drawer"}
             </span>
             {isTerminalOpen ? (

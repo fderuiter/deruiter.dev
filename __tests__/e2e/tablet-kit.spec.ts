@@ -433,6 +433,8 @@ test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => 
   }) => {
     await launchQuasiCabinet(page);
     const controls = page.locator(`${QUASI_ROOT} button:visible`);
+    // The board loads after the cabinet opens, so wait for its controls.
+    await expect(controls.first()).toBeVisible({ timeout: 60000 });
     const count = await controls.count();
     expect(count).toBeGreaterThan(0);
     const small: string[] = [];
@@ -485,6 +487,16 @@ test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => 
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await expect(page.locator(IMMERSIVE)).toBeVisible();
+    // Closing the briefing hands focus back to its trigger inside the
+    // cabinet, where the next Escape is heard.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (sel) => !!document.activeElement?.closest(sel),
+          IMMERSIVE
+        )
+      )
+      .toBe(true);
     await page.keyboard.press("Escape");
     await expect(page.locator(IMMERSIVE)).toBeHidden({ timeout: 15000 });
   });

@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-// ADR 0048: ten games show a desktop-only notice on phones and portrait
-// tablets. Each case sets its own viewport and touch emulation so the spec
+// ADR 0048, narrowed by ADR 0061: ten games show a desktop-only notice on
+// phones (PHONE_QUERY). Tablets get the game. Each case sets its own viewport and touch emulation so the spec
 // means the same thing under every Playwright project.
 const GATED = [
   "working-with-duck",
@@ -90,6 +90,36 @@ test.describe("Desktop-only arcade gate", () => {
         page.getByRole("button", { name: /Launch Cabinet/i })
       ).toBeVisible();
       await expect(page.getByTestId("desktop-only-notice")).toHaveCount(0);
+    });
+  });
+
+  test.describe("on a tablet", () => {
+    // ADR 0061: iPads in either orientation get the game, not the notice.
+    test.use({
+      viewport: { width: 820, height: 1180 },
+      hasTouch: true,
+      isMobile: true,
+    });
+
+    test("a gated game shows no notice on an iPad in portrait", async ({
+      page,
+      browserName,
+    }) => {
+      test.skip(browserName === "firefox", "isMobile is unsupported");
+      await page.goto("/arcade/retro-labyrinth");
+      await expect(page.getByTestId("desktop-only-notice")).toBeHidden();
+      await expect(
+        page.getByRole("button", { name: /Launch Cabinet/i })
+      ).toBeVisible();
+    });
+
+    test("the arcade hub shows no desktop-only markers on an iPad", async ({
+      page,
+      browserName,
+    }) => {
+      test.skip(browserName === "firefox", "isMobile is unsupported");
+      await page.goto("/arcade");
+      await expect(page.getByText("Desktop only").first()).toBeHidden();
     });
   });
 

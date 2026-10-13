@@ -30,9 +30,12 @@ import { logger } from "@/lib/logger";
 import {
   lockScreenOrientation,
   RotateDevicePrompt,
+  TouchControlsGate,
   useCabinetAutoPause,
+  useInputModality,
   useOrientationMismatch,
-  useTouchNarrow,
+  usePhone,
+  useTouchDevice,
   type MobileOrientation,
 } from "@/components/arcade/mobile";
 import {
@@ -150,17 +153,21 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
-  // Touch phones and portrait tablets get the immersive cabinet once it is
+  // Any touch device, phone or tablet, gets the immersive cabinet once it is
   // launched (ADR 0061). Desktop never sets it, so its markup stays as it was.
   // The device class is latched at Launch and held until exit, so an iPad that
-  // turns across 1024px mid-game stays immersive instead of jumping layouts.
-  const isTouchNarrow = useTouchNarrow();
+  // turns across a breakpoint mid-game stays immersive instead of jumping layouts.
+  const isTouchDevice = useTouchDevice();
+  const isPhone = usePhone();
   const [launchedOnTouch, setLaunchedOnTouch] = useState(false);
   const touchImmersive = isLaunched && launchedOnTouch;
-  // The phone is held against the game's orientation: the cabinet is blocked
-  // behind the rotate prompt (inert siblings, focus in the prompt).
+  // The input the player used last, for the immersive cabinet's controls.
+  const inputModality = useInputModality();
+  // Orientation is a phone concern: a tablet is never asked to turn. The phone
+  // is held against the game's orientation: the cabinet is blocked behind the
+  // rotate prompt (inert siblings, focus in the prompt).
   const orientationMismatch = useOrientationMismatch(mobileOrientation);
-  const rotateBlocked = touchImmersive && orientationMismatch;
+  const rotateBlocked = touchImmersive && isPhone && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);
@@ -265,6 +272,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   useEffect(() => {
     if (
       !touchImmersive ||
+      !isPhone ||
       !isFullscreen ||
       isPseudoFullscreen ||
       mobileOrientation === "either"
@@ -272,7 +280,13 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       return;
     }
     return lockScreenOrientation(mobileOrientation);
-  }, [touchImmersive, isFullscreen, isPseudoFullscreen, mobileOrientation]);
+  }, [
+    touchImmersive,
+    isPhone,
+    isFullscreen,
+    isPseudoFullscreen,
+    mobileOrientation,
+  ]);
 
   // Leaving the immersive cabinet puts the preview back in view.
   const previewRef = useRef<HTMLDivElement>(null);
@@ -322,7 +336,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   };
 
   const handleLaunch = () => {
-    setLaunchedOnTouch(isTouchNarrow);
+    setLaunchedOnTouch(isTouchDevice);
     handlePrefetch();
     setIsWarmingUp(true);
     setBootProgress(0);
@@ -530,7 +544,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         data-game={gameId}
         data-fullscreen={immersive}
         {...(touchImmersive
-          ? { "data-immersive": true, "data-mobile-layout": mobileLayout }
+          ? {
+              "data-immersive": true,
+              "data-mobile-layout": mobileLayout,
+              "data-input-modality": inputModality,
+            }
           : {})}
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
           immersive
@@ -701,7 +719,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             inert={rotateBlocked}
             className="w-full mt-3 flex justify-center shrink-0"
           >
-            {controlDock}
+            {touchImmersive ? (
+              <TouchControlsGate>{controlDock}</TouchControlsGate>
+            ) : (
+              controlDock
+            )}
           </div>
         )}
 

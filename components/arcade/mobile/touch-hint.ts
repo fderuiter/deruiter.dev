@@ -1,6 +1,6 @@
 "use client";
 
-import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { useInputModality } from "@/components/arcade/mobile/input-modality";
 
 /**
  * A control named two ways: the key on a keyboard and the gesture on a touch
@@ -46,19 +46,22 @@ export function resolveControlHint(
 }
 
 /**
- * Whether the primary pointer is coarse (a finger). SSR returns false.
+ * Whether the player's last input was a finger or a Pencil. It follows the
+ * input modality, not the pointer query, so a keyboard case on an iPad reads
+ * the keys. SSR returns false.
  *
- * @returns True on touch-first devices.
+ * @returns True when the last input was touch or pen.
  */
 export function useTouchHint(): boolean {
-  return useMediaQuery("(pointer: coarse)");
+  const modality = useInputModality();
+  return modality === "touch" || modality === "pen";
 }
 
 /**
  * The phrase for a control on this device.
  *
  * @param hint - The control hint.
- * @returns "Tap" style copy on touch devices, "Press Space" style elsewhere.
+ * @returns "Tap" style copy after touch or pen, "Press Space" style elsewhere.
  */
 export function useControlHint(hint: ControlHint): string {
   return resolveControlHint(hint, useTouchHint());

@@ -3,6 +3,7 @@ import { describe, it, expect, afterEach, vi } from "vitest";
 import React from "react";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { DesktopOnlyGate } from "../components/arcade/DesktopOnlyGate";
+import { PHONE_QUERY } from "../components/arcade/mobile";
 
 const mockCopy = vi.fn(async (text: string) => {
   void text;
@@ -12,7 +13,8 @@ vi.mock("@/lib/clipboard", () => ({
   copyToClipboard: (text: string) => mockCopy(text),
 }));
 
-const GATE_QUERY = "[@media(pointer:coarse)_and_(max-width:1023px)]";
+const GATE_QUERY =
+  "[@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]";
 
 describe("DesktopOnlyGate", () => {
   afterEach(() => {
@@ -34,6 +36,13 @@ describe("DesktopOnlyGate", () => {
     expect(notice.className).toContain("hidden");
     expect(notice.className).toContain(`${GATE_QUERY}:block`);
     expect(notice.textContent).toContain("Laser Loon needs a bigger screen");
+  });
+
+  it("gates on exactly PHONE_QUERY, so tablets keep the game", () => {
+    // Tailwind's arbitrary @media variant spells the query with no spaces.
+    expect(GATE_QUERY).toBe(
+      `[@media${PHONE_QUERY.replace(/: /g, ":").replace(/ /g, "_")}]`
+    );
   });
 
   it("points at parts of the site that work on a phone", () => {

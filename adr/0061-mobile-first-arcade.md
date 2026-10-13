@@ -68,10 +68,10 @@ rather than replacing them. TouchButton, DockFrame and the control-hint helpers
 await their first game consumer; they are here so that consumer can adopt them
 without a new kit change.
 
-- **Immersive touch cabinet.** On a coarse pointer under 1024px, the cabinet
-  goes immersive when it launches and stays immersive until the player exits.
-  The device class is latched at Launch, so an iPad that turns across 1024px
-  mid-game keeps the layout it started with. The cabinet is fixed to the
+- **Immersive touch cabinet.** On any touch device (`TOUCH_DEVICE_QUERY`, see
+  the amendment below), the cabinet goes immersive when it launches and stays
+  immersive until the player exits. The device class is latched at Launch, so
+  an iPad that turns mid-game keeps the layout it started with. The cabinet is fixed to the
   viewport at `h-dvh`, padded by the safe-area insets, with page scroll locked
   and overscroll disabled. It reuses the fullscreen layout and its CSS
   (`.arcade-cabinet[data-fullscreen="true"]`), and adds `data-immersive="true"`
@@ -93,8 +93,9 @@ without a new kit change.
   desktop every inset is 0, so the layout does not change. Pinch-zoom is not
   blocked: no `maximumScale` or `userScalable` is set.
 - **Orientation.** A game declares `mobileOrientation="portrait" | "landscape" |
-"either"`. PlayCabinet reads the device's orientation and, when it is held
-  against the declared one, blocks the cabinet. The stage and the control dock
+"either"`. On a phone (`PHONE_QUERY`), PlayCabinet reads the device's
+  orientation and, when it is held against the declared one, blocks the
+  cabinet. Tablets are never asked to turn. The stage and the control dock
   are made `inert`, and `RotateDevicePrompt` covers the cabinet as an
   `alertdialog` with `aria-modal="true"`. Focus moves to its "Leave cabinet"
   button on show and returns to the element that had it when the prompt goes
@@ -131,8 +132,10 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
 
 ## Consequences
 
-- ADR 0048's ten gated games keep the notice until their mobile pull requests
-  land. Its "Try it anyway" escape hatch stays for those games.
+- ADR 0048's ten gated games keep the notice on phones until their mobile pull
+  requests land. The notice now shows only where `PHONE_QUERY` matches, so
+  iPads play every game. Its "Try it anyway" escape hatch stays for those
+  games on phones.
 - The Trial & Error cabinet is the first to run immersive on phones, since it is
   ungated. It keeps the `scroll` layout until its own mobile pass. The
   Playwright spec checks that its stage reaches all of its content at
@@ -159,3 +162,54 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
 - **Force landscape with CSS transforms.** A rotated layout cannot be made
   fullscreen on iOS and breaks the browser's own orientation. The prompt asks the
   player to turn the device instead.
+
+## Amendment (2026-10-13): Tablet-first
+
+The phone bar stays. The priority moves to the iPad: a tablet is the arcade's
+primary touch device, and phones are parked until a later change. Fred's
+direction was to make every game perfect on an iPad first.
+
+- **Phones parked behind the narrowed gate.** The gate (ADR 0048) and the
+  hub's "Desktop only" badges use `PHONE_QUERY`:
+  `(pointer: coarse) and ((max-width: 743px) or (max-height: 500px))`. That is
+  phones in either orientation, plus a touch device whose window is narrower
+  than 744px. The 743px bound is deliberate: a full-screen iPad mini in portrait
+  is 744px wide and is a tablet. Every iPad Split View pane of a 1024px screen
+  (507px, 678px) is a phone, so Split View keeps the gate. Gated games are not
+  removed from the gate here; they stop being gated on tablets.
+- **Immersive on every touch device.** The cabinet latches immersive at Launch
+  on `TOUCH_DEVICE_QUERY` (`(pointer: coarse)`), so tablets in both orientations
+  get it at every width. The rotate prompt and the Screen Orientation lock apply
+  to phones only (`PHONE_QUERY`), since `mobileOrientation` is a phone concern.
+  Desktop with a fine pointer is unchanged.
+- **Apple Pencil.** Pointer events with `pointerType` `"pen"` are treated as
+  touch by the kit. `TouchButton` captures, counts and releases a Pencil and a
+  finger on one control as one press, and the control hints read "Tap".
+- **Keyboard case modality.** `useInputModality()` returns `"touch"`, `"pen"`,
+  `"keyboard"` or `"mouse"` from the last `pointerdown` type or a hardware key.
+  Modifier-only keys and keys typed into a field do not count. It starts on
+  touch for a coarse pointer and on mouse otherwise, and it is SSR-safe through
+  `useSyncExternalStore`. The immersive cabinet root carries
+  `data-input-modality`, and `TouchControlsGate` hides the on-screen controls
+  while the keyboard or a trackpad is in use; the next touch brings them back.
+  `useTouchHint` and `useControlHint` follow the modality, so a keyboard case
+  reads "Press Space" and a finger reads "Tap".
+- **Split View by container width.** The cabinet root is an `@container`, so
+  games lay out by the width of their own container, not the window. A game
+  that lays out by container width fits a Split View pane without a separate
+  layout. The Playwright spec checks the immersive cabinet at 507x1024 and
+  678x1024 on an ungated cabinet, the gate and its "Try it anyway" at the same
+  sizes, and the immersive cabinet at 768px and wider.
+- **Tablet device matrix.** Chromium with touch emulation, `hasTouch`, `isMobile`
+  and a device scale factor of 2 stands in for iPad Safari. Each size runs in
+  portrait and landscape: iPad mini 744x1133, iPad Air 820x1180, iPad Pro 11
+  834x1194 and iPad Pro 13 1024x1366, with their landscape pairs. The projects
+  run only `tablet-kit.spec.ts` and the later `*-tablet.spec.ts` files. The
+  existing Tablet Safari (WebKit) project is unchanged. Real iPad Safari remains
+  the final check before a game's tablet pull request merges.
+
+### Gated games, after this amendment
+
+The ten games under ADR 0048 keep their notice on phones only. A game leaves
+`DesktopOnlyGate` in its own mobile pull request once it meets the phone bar.
+Each game's tablet work is a `*-tablet.spec.ts` file in the tablet projects.

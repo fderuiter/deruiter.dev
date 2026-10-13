@@ -26,12 +26,14 @@ describe("RetroLabyrinthClient phone wiring (ADR 0061)", () => {
     cabinetProps.current = null;
   });
 
-  it("declares a landscape fit layout and an auto-pause handler, and no desktop-only gate", () => {
+  it("declares a landscape fit layout and an auto-pause handler, behind the phone gate", () => {
     render(<RetroLabyrinthClient />);
 
     expect(cabinetProps.current?.mobileOrientation).toBe("landscape");
     expect(cabinetProps.current?.mobileLayout).toBe("fit");
     expect(typeof cabinetProps.current?.onAutoPause).toBe("function");
-    expect(screen.queryByTestId("desktop-only-notice")).toBeNull();
+    // The gate is CSS (PHONE_QUERY): the notice is in the markup for phones
+    // and hidden on tablets, which the cabinet owns (#2032).
+    expect(screen.getByTestId("desktop-only-notice")).toBeTruthy();
   });
 });

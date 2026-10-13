@@ -6,7 +6,7 @@ import type { Enemy, TSPMovingWall, TSPNode } from "../../lib/dungeon/types";
 export type Move = "Up" | "Down" | "Left" | "Right";
 
 /** The part of a Room 1 (TSP) state the solver reads. */
-export interface TspRoomState {
+interface TspRoomState {
   grid: string[][];
   tspMovingWalls?: TSPMovingWall[];
   enemies: Enemy[];
@@ -18,7 +18,7 @@ export interface TspRoomState {
 }
 
 /** One player state: where the walker is, what is visited, and the enemies. */
-export interface TspSimState {
+interface TspSimState {
   px: number;
   py: number;
   visited: number;
@@ -39,7 +39,7 @@ const DIRS: ReadonlyArray<{ move: Move; dx: number; dy: number }> = [
  * after 1 to 4 moves. The walls repeat every four moves, so a later move reuses
  * a phase (the game's updateTSPMovingWalls, applied per move).
  */
-export function tspWallPhases(room: TspRoomState): string[][][] {
+function tspWallPhases(room: TspRoomState): string[][][] {
   const phases: string[][][] = [room.grid.map((row) => [...row])];
   let grid = room.grid.map((row) => [...row]);
   let walls = (room.tspMovingWalls ?? []).map((wall) => ({ ...wall }));
@@ -67,7 +67,7 @@ function walkable(grid: string[][], x: number, y: number): boolean {
  * One move and the enemy tick that follows it, as the game does it. Returns
  * null when the move is not allowed or the enemies touch the walker.
  */
-export function tspStep(
+function tspStep(
   room: TspRoomState,
   phases: string[][][],
   state: TspSimState,
@@ -101,7 +101,7 @@ export function tspStep(
 }
 
 /** The state a room starts in, before any move. */
-export function tspStartState(room: TspRoomState): TspSimState {
+function tspStartState(room: TspRoomState): TspSimState {
   return {
     px: room.startX,
     py: room.startY,

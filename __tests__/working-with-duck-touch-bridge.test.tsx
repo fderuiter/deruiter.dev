@@ -3,9 +3,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { fireEvent } from "@testing-library/react";
+import { CabinetTouchContext } from "@/components/arcade/mobile";
 import {
   createInitialDuckGameState,
   enterDogPark,
+  type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
 import {
   createDuckTouchBridge,
@@ -160,6 +163,7 @@ describe("Working With Duck touch bridge (ADR 0061)", () => {
       scene: "office",
       aiming: false,
       paused: false,
+      manualPause: false,
     });
   });
 
@@ -221,5 +225,146 @@ describe("Working With Duck touch bridge (ADR 0061)", () => {
     });
     root = createRoot(container);
     expect(() => bridge.run("treat")).not.toThrow();
+  });
+});
+
+describe("Working With Duck: keys and touch run the same game (#2039 round 2)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  let bridge: DuckTouchBridge;
+
+  /** Mounts the game fresh, optionally inside the touch cabinet context. */
+  async function mountGame(state: WorkingWithDuckState, inCabinet = false) {
+    await act(async () => {
+      root.render(
+        <CabinetTouchContext.Provider value={inCabinet}>
+          <DuckTouchProvider bridge={bridge}>
+            <WorkingWithDuck initialState={state} />
+          </DuckTouchProvider>
+        </CabinetTouchContext.Provider>
+      );
+    });
+  }
+
+  /** Unmounts and mounts a clean container, so each path starts from the same state. */
+  function freshRoot() {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  }
+
+  function focusGame() {
+    const boundary = container.querySelector<HTMLElement>(
+      '[data-keyboard-boundary="true"]'
+    );
+    expect(boundary).not.toBeNull();
+    act(() => {
+      boundary!.focus();
+    });
+    return boundary!;
+  }
+
+  beforeEach(() => {
+    // No animation frames: the sprint clock stays still, so the two paths
+    // can be compared frame for frame.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-13T12:00:00Z"));
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 0);
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    bridge = createDuckTouchBridge();
+  });
+
+  afterEach(() => {
+    act(() => {
+      root.unmount();
+    });
+    container.remove();
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  /** Kong is held, so the 1 key changes the selection and shows it. */
+  const paritySprint = () => ({
+    ...runningOffice(),
+    selectedItem: "kong" as const,
+  });
+
+  it.each<[string, string, "toy-1" | "trick-sit" | "space"]>([
+    ["the 1 key", "1", "toy-1"],
+    ["the Q key", "q", "trick-sit"],
+    ["the Space key", " ", "space"],
+  ])(
+    "%s and its touch command leave the same game state",
+    async (_label, key, command) => {
+      await mountGame(paritySprint());
+      const baseline = container.innerHTML;
+
+      freshRoot();
+      await mountGame(paritySprint());
+      const boundary = focusGame();
+      fireEvent.keyDown(boundary, {
+        key,
+        code: key === " " ? "Space" : undefined,
+      });
+      const viaKey = container.innerHTML;
+
+      freshRoot();
+      await mountGame(paritySprint());
+      act(() => bridge.run(command));
+      const viaTouch = container.innerHTML;
+
+      // The action did something, and both paths did the same thing.
+      expect(viaKey).not.toBe(baseline);
+      expect(viaTouch).toBe(viaKey);
+    }
+  );
+
+  it("ignores every command but pause while the sprint is paused", async () => {
+    const paused = { ...runningOffice(), status: "paused" as const };
+    await mountGame(paused);
+    const before = container.innerHTML;
+
+    act(() => {
+      bridge.run("toy-1");
+      bridge.run("treat");
+      bridge.run("trick-sit");
+      bridge.run("space");
+      bridge.run("steer-up");
+      bridge.run("auto-pause");
+    });
+
+    expect(container.innerHTML).toBe(before);
+  });
+
+  it("draws the game's own duplicate deck outside the cabinet, and not inside it", async () => {
+    const hasButton = (label: string) =>
+      Array.from(container.querySelectorAll("button")).some((b) =>
+        b.textContent?.includes(label)
+      );
+
+    await mountGame(runningOffice(), false);
+    expect(hasButton("Toys")).toBe(true);
+    expect(hasButton("Focus Work Sprint")).toBe(true);
+    expect(
+      container.querySelector('[data-testid="duck-cabinet-actions"]')
+    ).toBeNull();
+
+    freshRoot();
+    await mountGame(runningOffice(), true);
+    expect(hasButton("Toys")).toBe(false);
+    expect(hasButton("Focus Work Sprint")).toBe(false);
+    expect(hasButton("Jump Hurdle")).toBe(false);
+    // The actions with no dock control stay, in one compact row.
+    expect(hasButton("Dog Park")).toBe(true);
+    expect(hasButton("Bathtub")).toBe(true);
+    const row = container.querySelector('[data-testid="duck-cabinet-actions"]');
+    expect(row?.getAttribute("role")).toBe("group");
+    expect(row?.querySelectorAll("button").length).toBeGreaterThanOrEqual(4);
   });
 });

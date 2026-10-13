@@ -32,7 +32,14 @@ export interface DuckTouchSnapshot {
   scene: "office" | "park" | "bath";
   /** True while the park throw is being aimed, so Space throws. */
   aiming: boolean;
+  /** True while the sprint is paused at all, for any reason. */
   paused: boolean;
+  /**
+   * True only when the player paused it, with P, the pause key or the
+   * cabinet's auto-pause. Pausing for a scrapbook, wardrobe, manual or a hidden
+   * tab is not this, and the dock offers no Resume for those.
+   */
+  manualPause: boolean;
 }
 
 /**
@@ -52,6 +59,7 @@ const INITIAL_SNAPSHOT: DuckTouchSnapshot = {
   scene: "office",
   aiming: false,
   paused: false,
+  manualPause: false,
 };
 
 /**
@@ -75,7 +83,8 @@ export function createDuckTouchBridge(): DuckTouchBridge {
       if (
         next.scene === snapshot.scene &&
         next.aiming === snapshot.aiming &&
-        next.paused === snapshot.paused
+        next.paused === snapshot.paused &&
+        next.manualPause === snapshot.manualPause
       ) {
         return;
       }

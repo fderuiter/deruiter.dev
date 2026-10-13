@@ -20,6 +20,7 @@ const OFFICE: DuckTouchSnapshot = {
   scene: "office",
   aiming: false,
   paused: false,
+  manualPause: false,
 };
 
 /**
@@ -87,6 +88,7 @@ describe("DuckControlDock wiring (ADR 0061)", () => {
       scene: "park",
       aiming: false,
       paused: false,
+      manualPause: false,
     };
 
     it("steers up and down with the pad, and draws no sideways arrows", () => {
@@ -126,6 +128,7 @@ describe("DuckControlDock wiring (ADR 0061)", () => {
         scene: "bath",
         aiming: false,
         paused: false,
+        manualPause: false,
       });
       expect(screen.queryByRole("button", { name: "Work Sprint" })).toBeNull();
       expect(screen.queryByRole("button", { name: "Kong" })).toBeNull();
@@ -140,6 +143,7 @@ describe("DuckControlDock wiring (ADR 0061)", () => {
         scene: "office",
         aiming: false,
         paused: true,
+        manualPause: true,
       });
       expect(screen.getByRole("button", { name: "Kong" })).toHaveProperty(
         "disabled",
@@ -160,11 +164,54 @@ describe("DuckControlDock wiring (ADR 0061)", () => {
     expect(
       screen.getByTestId("duck-control-dock").getAttribute("data-scene")
     ).toBe("office");
-    act(() => bridge.publish({ scene: "park", aiming: false, paused: false }));
+    act(() =>
+      bridge.publish({
+        scene: "park",
+        aiming: false,
+        paused: false,
+        manualPause: false,
+      })
+    );
     expect(
       screen.getByTestId("duck-control-dock").getAttribute("data-scene")
     ).toBe("park");
     expect(screen.getByRole("button", { name: "Move Up" })).toBeTruthy();
+  });
+
+  describe("pause reasons (the dock offers only a Resume it can deliver)", () => {
+    it("offers no Resume for a pause the player did not make, and disables Pause", () => {
+      const { run } = renderDock({
+        scene: "office",
+        aiming: false,
+        paused: true,
+        manualPause: false,
+      });
+      expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
+      const pause = screen.getByRole("button", { name: "Pause" });
+      expect(pause).toHaveProperty("disabled", true);
+      tap("Pause");
+      expect(run).not.toHaveBeenCalled();
+    });
+
+    it("reads Pause, not Resume, while the sprint runs", () => {
+      renderDock({
+        scene: "office",
+        aiming: false,
+        paused: false,
+        manualPause: false,
+      });
+      expect(screen.getByRole("button", { name: "Pause" })).toHaveProperty(
+        "disabled",
+        false
+      );
+      expect(screen.queryByRole("button", { name: "Resume" })).toBeNull();
+    });
+  });
+
+  it("labels the group the Duck controls", () => {
+    renderDock();
+    const dock = screen.getByRole("group", { name: "Duck controls" });
+    expect(dock.getAttribute("data-testid")).toBe("duck-control-dock");
   });
 
   it("draws nothing without a cabinet bridge", () => {

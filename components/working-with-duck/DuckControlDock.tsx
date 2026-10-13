@@ -10,7 +10,12 @@ import {
 
 /** Every key is at least 48px tall, so a fingertip lands on it. */
 const KEY =
-  "h-12 min-w-12 rounded-xl border border-zinc-700 bg-zinc-800/90 px-2 font-mono text-xs font-bold text-zinc-100 active:scale-[0.98] active:bg-amber-500/30 disabled:opacity-40 focus-visible:ring-cyan-400";
+  "h-12 min-w-12 rounded-xl border border-zinc-700 bg-zinc-800/90 px-2 font-mono text-xs font-bold text-zinc-100 active:scale-[0.98] active:bg-amber-500/30 disabled:opacity-40 focus-visible:ring-amber-400";
+
+/** Keeps the keys off the bottom edge and clear of the home indicator. */
+const DOCK_PADDING = {
+  paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 8px)",
+};
 
 /**
  * The touch cabinet's control dock for Working With Duck. Each button runs the
@@ -18,7 +23,10 @@ const KEY =
  * controls that do something in the current scene are drawn: the office has
  * toys, tricks and the work sprint; the park has the steer pad and jump; the
  * bathtub has the treat. Pause is always there. While the sprint is paused
- * every other control is disabled, as the keys are.
+ * every other control is disabled, as the keys are. Pause reads Resume only
+ * when the player paused it. A pause for a scrapbook, wardrobe, manual or
+ * hidden tab offers neither Resume nor a pause, since the game cannot resume
+ * those from here.
  *
  * It is passed to PlayCabinet only on a touch device, so a desktop cabinet
  * keeps its markup.
@@ -27,7 +35,7 @@ const KEY =
  */
 export function DuckControlDock() {
   const bridge = useDuckTouchBridge();
-  const { scene, aiming, paused } = useDuckTouchSnapshot(bridge);
+  const { scene, aiming, paused, manualPause } = useDuckTouchSnapshot(bridge);
   if (!bridge) return null;
 
   const run = (command: DuckCommand) => bridge.run(command);
@@ -44,71 +52,85 @@ export function DuckControlDock() {
     </TouchButton>
   );
 
+  // Resume only when the player paused it; any other pause has no control here.
+  const pauseDisabled = paused && !manualPause;
+  const pauseLabel = manualPause ? "Resume" : "Pause";
   const pause = (
     <TouchButton
       key="pause"
-      label={paused ? "Resume" : "Pause"}
+      label={pauseLabel}
+      disabled={pauseDisabled}
       onPress={() => run("pause")}
       className={KEY}
     >
-      {paused ? "Resume" : "Pause"}
+      {pauseLabel}
     </TouchButton>
+  );
+
+  const root = (
+    sceneName: string,
+    className: string,
+    children: React.ReactNode
+  ) => (
+    <div
+      role="group"
+      aria-label="Duck controls"
+      data-testid="duck-control-dock"
+      data-scene={sceneName}
+      style={DOCK_PADDING}
+      className={`w-full font-mono ${className}`}
+    >
+      {children}
+    </div>
   );
 
   if (scene === "park") {
     const jump = aiming ? "Throw" : "Jump";
-    return (
-      <div
-        data-testid="duck-control-dock"
-        data-scene="park"
-        className="w-full font-mono"
-      >
-        <DockFrame>
+    return root(
+      "park",
+      "",
+      <DockFrame>
+        <div className={paused ? "pointer-events-none opacity-40" : undefined}>
           <HoldDpad
             directions={["up", "down"]}
             paused={paused}
-            large
             onMove={(direction) => {
               if (direction === "up") run("steer-up");
               else if (direction === "down") run("steer-down");
             }}
           />
-          <div className="flex flex-col justify-center gap-2">
-            <TouchButton
-              label={jump}
-              disabled={paused}
-              onPress={() => run("space")}
-              className={KEY}
-            >
-              {jump}
-            </TouchButton>
-            {keyButton("Treat", "treat")}
-            {pause}
-          </div>
-        </DockFrame>
-      </div>
+        </div>
+        <div className="flex flex-col justify-center gap-2">
+          <TouchButton
+            label={jump}
+            disabled={paused}
+            onPress={() => run("space")}
+            className={KEY}
+          >
+            {jump}
+          </TouchButton>
+          {keyButton("Treat", "treat")}
+          {pause}
+        </div>
+      </DockFrame>
     );
   }
 
   if (scene === "bath") {
-    return (
-      <div
-        data-testid="duck-control-dock"
-        data-scene="bath"
-        className="grid w-full grid-cols-2 gap-2 font-mono"
-      >
+    return root(
+      "bath",
+      "grid grid-cols-2 gap-2",
+      <>
         {keyButton("Treat", "treat")}
         {pause}
-      </div>
+      </>
     );
   }
 
-  return (
-    <div
-      data-testid="duck-control-dock"
-      data-scene="office"
-      className="flex w-full flex-col gap-2 font-mono"
-    >
+  return root(
+    "office",
+    "flex flex-col gap-2",
+    <>
       <div className="grid grid-cols-4 gap-2">
         {keyButton("Tennis ball", "toy-1")}
         {keyButton("Kong", "toy-2")}
@@ -125,6 +147,6 @@ export function DuckControlDock() {
         {keyButton("Work Sprint", "space")}
         {pause}
       </div>
-    </div>
+    </>
   );
 }

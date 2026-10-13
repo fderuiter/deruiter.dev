@@ -38,6 +38,7 @@ import {
   type DuckCommand,
   type DuckTouchSnapshot,
 } from "@/components/working-with-duck/touch-bridge";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconPlayerPlay,
@@ -787,6 +788,12 @@ const TRICK_KEY =
 const DOCK_GROUP = "flex min-w-0 flex-wrap items-center gap-1";
 // Below 1280px the captions, toy icons and the Space chip drop out so the
 // dock fits two rows and the canvas keeps its height at 1024 (#1942).
+/** Actions with no dock control, in the touch cabinet's compact row (44px floor). */
+const CABINET_ACTION =
+  "disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
+/** Icon-only keys in the same row; each keeps a 44px square. */
+const CABINET_ICON =
+  "disabled:opacity-40 min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 flex items-center justify-center cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
 const DOCK_CAPTION =
   "hidden xl:inline pr-1 text-[10px] font-bold uppercase tracking-wider text-zinc-400";
 const DOCK_ICON = "hidden xl:block w-3.5 h-3.5";
@@ -1549,6 +1556,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   // The cabinet's control dock (touch only) reads the scene from here and
   // sends commands back through the runner.
   const touchBridge = useDuckTouchBridge();
+  // Inside the immersive touch cabinet the dock carries these controls, so the
+  // game's own copies of them are not drawn (ADR 0061).
+  const cabinetTouch = useCabinetTouch();
   useEffect(() => {
     if (!touchBridge) return;
     touchBridge.setRunner(runDuckCommand);
@@ -1561,13 +1571,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       : "office";
   const touchAiming = uiState.inDogPark && uiState.parkState.status === "aim";
   const touchPaused = uiState.status === "paused";
+  const touchManualPause = isManuallyPaused;
   useEffect(() => {
     touchBridge?.publish({
       scene: touchScene,
       aiming: touchAiming,
       paused: touchPaused,
+      manualPause: touchManualPause,
     });
-  }, [touchBridge, touchScene, touchAiming, touchPaused]);
+  }, [touchBridge, touchScene, touchAiming, touchPaused, touchManualPause]);
 
   // Keyboard Shortcuts (1-4 for hotbar items, Q-W-E-R for tricks, Space for coding/jumping)
   //
@@ -2253,8 +2265,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   let tutorialHint: string | null = null;
   if (uiState.status === "running" && uiState.inDogPark) {
     // Scene tips show on every sprint: the controls change with the scene.
-    tutorialHint =
-      "Dog Park: press Space (or drag on the field and let go) to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
+    tutorialHint = cabinetTouch
+      ? "Dog Park: drag on the field and let go to throw, steer Duck with Move Up and Move Down, and tap Jump to clear hurdles. Work, Excitement and Bladder pause until you return to the office."
+      : "Dog Park: press Space (or drag on the field and let go) to throw, steer Duck with the mouse, W or the arrow keys, and press Space to jump. Work, Excitement and Bladder pause until you return to the office.";
   } else if (uiState.status === "running" && uiState.inBathtub) {
     tutorialHint =
       "Bath time: move your cursor over the tub to lather Duck, then Rinse until he's clean and Finish Bath. Work, Excitement and Bladder pause until you're back in the office.";
@@ -2262,8 +2275,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     if (uiState.ticks < SPRINT_ONE_BRIEF_TICKS) {
       // The cabinet launch is the title screen (#1516), so the goal goes
       // here for the opening seconds of the first sprint (#1942).
-      tutorialHint =
-        "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit (Q) calms Duck, and the Back Door handles Bladder.";
+      tutorialHint = cabinetTouch
+        ? "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit calms Duck, and the Back Door handles Bladder."
+        : "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit (Q) calms Duck, and the Back Door handles Bladder.";
     } else if (uiState.duck.state === "THE_FLOP") {
       tutorialHint =
         "Duck flopped on his back! Move your cursor back & forth over his belly!";
@@ -2274,17 +2288,21 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       tutorialHint =
         "Duck needs to go! Click and drag Duck over to the Back Door!";
     } else if (uiState.duck.state === "SNEAKY_CHEW") {
-      tutorialHint =
-        "Duck is eyeing your work! Drop a Kong (2) or Call Drop It (E) to save it!";
+      tutorialHint = cabinetTouch
+        ? "Duck is eyeing your work! Tap Kong or Drop It to save it!"
+        : "Duck is eyeing your work! Drop a Kong (2) or Call Drop It (E) to save it!";
     } else if (uiState.duck.state === "NO_TAKE_THROW") {
-      tutorialHint =
-        "Duck caught the ball! Press (4) to trade a treat or (E) for Drop It!";
+      tutorialHint = cabinetTouch
+        ? "Duck caught the ball! Tap Treat to trade, or tap Drop It!"
+        : "Duck caught the ball! Press (4) to trade a treat or (E) for Drop It!";
     } else if (uiState.excitement > 80) {
-      tutorialHint =
-        "Excitement is high! Call Sit (Q) or take a Dog Park trip!";
+      tutorialHint = cabinetTouch
+        ? "Excitement is high! Tap Sit or take a Dog Park trip!"
+        : "Excitement is high! Call Sit (Q) or take a Dog Park trip!";
     } else {
-      tutorialHint =
-        "Tip: Work advances automatically. Press Space for coding bursts, Q-W-E-R for tricks, and drag Duck to the Back Door when Bladder fills.";
+      tutorialHint = cabinetTouch
+        ? "Tip: Work advances automatically. Tap Work Sprint for coding bursts, the tricks for Sit, High Five, Drop It and Spin, and drag Duck to the Back Door when Bladder fills."
+        : "Tip: Work advances automatically. Press Space for coding bursts, Q-W-E-R for tricks, and drag Duck to the Back Door when Bladder fills.";
     }
   }
 
@@ -2398,7 +2416,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         isFullscreen
           ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none bg-black p-2 sm:p-4 overflow-y-auto overflow-x-hidden flex flex-col justify-between"
           : ""
-      }`}
+      }${cabinetTouch ? " flex h-full min-h-0 flex-col" : ""}`}
     >
       {/* Tablet Orientation Recommendation */}
       <TabletOrientationHint />
@@ -2408,6 +2426,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         ref={hudRef}
         data-testid="duck-hud-meters"
         className="mb-2 overflow-hidden rounded-xl border border-white/[0.08] [@media(max-height:650px)]:mb-1.5"
+        style={
+          cabinetTouch
+            ? {
+                // The cabinet toolbar floats over the HUD's right end (Labyrinth does the same).
+                paddingRight: "calc(var(--cabinet-toolbar-inset, 0px) - 4px)",
+              }
+            : undefined
+        }
       >
         <ArcadeHud
           stats={[
@@ -2491,7 +2517,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       {/* Main Canvas Screen Container */}
       <div
         ref={fxStageRef}
-        className="relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden"
+        className={`relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden${cabinetTouch ? " flex min-h-0 flex-1 items-center justify-center" : ""}`}
       >
         <div
           ref={fxFlashRef}
@@ -2694,7 +2720,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       <div
         ref={dockRef}
         data-testid="duck-action-dock"
-        className="mt-2 flex flex-col gap-2 font-mono [@media(max-height:650px)]:mt-1.5 [@media(max-height:650px)]:gap-1.5"
+        className={`${cabinetTouch ? "mt-auto pt-2" : "mt-2"} flex flex-col gap-2 font-mono [@media(max-height:650px)]:mt-1.5 [@media(max-height:650px)]:gap-1.5`}
       >
         <span id="duck-paused-reason" className="sr-only">
           {sessionLabel} paused. Press P or Resume {sessionLabel} to continue.
@@ -2704,612 +2730,317 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           them.
         </span>
         {/* --- MOBILE VIEWPORT CONTROL DECK (<md, or any short/landscape viewport) --- */}
-        <div className="flex [@media(min-width:768px)_and_(min-height:560px)]:hidden flex-col gap-2">
-          {/* Segmented Switcher Tabs */}
-          <div className="grid grid-cols-3 p-1 rounded-2xl bg-[#0d0e11] border border-white/[0.08] gap-1 text-xs font-bold">
-            <button
-              onClick={() => setMobileTab("toys")}
-              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                mobileTab === "toys"
-                  ? "bg-amber-400 text-zinc-950 font-bold"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <span>Toys</span>
-              {uiState.duck.state === "NO_TAKE_THROW" && (
-                <span
-                  aria-hidden="true"
-                  className="w-2 h-2 rounded-full bg-rose-400"
-                />
-              )}
-            </button>
-
-            <button
-              onClick={() => setMobileTab("tricks")}
-              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                mobileTab === "tricks"
-                  ? "bg-amber-400 text-zinc-950 font-bold"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <span>Tricks</span>
-              {uiState.excitement > 80 && (
-                <span
-                  aria-hidden="true"
-                  className="w-2 h-2 rounded-full bg-amber-300"
-                />
-              )}
-            </button>
-
-            <button
-              onClick={() => setMobileTab("actions")}
-              className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                mobileTab === "actions"
-                  ? "bg-amber-400 text-zinc-950 font-bold"
-                  : "text-zinc-400 hover:text-white"
-              }`}
-            >
-              <span>Actions</span>
-              {(uiState.inDogPark || uiState.inBathtub || uiState.isMuddy) && (
-                <span
-                  aria-hidden="true"
-                  className="w-2 h-2 rounded-full bg-emerald-400"
-                />
-              )}
-            </button>
-          </div>
-
-          {/* Mobile Tab 1: Toys & Treats */}
-          {mobileTab === "toys" && (
-            <div className="grid grid-cols-2 gap-2 animate-fadeIn">
+        {!cabinetTouch && (
+          <div className="flex [@media(min-width:768px)_and_(min-height:560px)]:hidden flex-col gap-2">
+            {/* Segmented Switcher Tabs */}
+            <div className="grid grid-cols-3 p-1 rounded-2xl bg-[#0d0e11] border border-white/[0.08] gap-1 text-xs font-bold">
               <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => {
-                  applyTransition((state) => ({
-                    ...state,
-                    selectedItem: "tennis-ball",
-                  }));
-                }}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "tennis-ball"
-                    ? TOY_SELECTED
-                    : TOY_IDLE
+                onClick={() => setMobileTab("toys")}
+                className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                  mobileTab === "toys"
+                    ? "bg-amber-400 text-zinc-950 font-bold"
+                    : "text-zinc-400 hover:text-white"
                 }`}
               >
-                <IconBallTennis
-                  aria-hidden="true"
-                  className="w-4 h-4 shrink-0"
-                />
-                <span>Tennis Ball</span>
+                <span>Toys</span>
+                {uiState.duck.state === "NO_TAKE_THROW" && (
+                  <span
+                    aria-hidden="true"
+                    className="w-2 h-2 rounded-full bg-rose-400"
+                  />
+                )}
               </button>
 
               <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => {
-                  applyTransition((state) => ({
-                    ...state,
-                    selectedItem: "kong",
-                  }));
-                }}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE
+                onClick={() => setMobileTab("tricks")}
+                className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                  mobileTab === "tricks"
+                    ? "bg-amber-400 text-zinc-950 font-bold"
+                    : "text-zinc-400 hover:text-white"
                 }`}
               >
-                <span>Kong Chew</span>
+                <span>Tricks</span>
+                {uiState.excitement > 80 && (
+                  <span
+                    aria-hidden="true"
+                    className="w-2 h-2 rounded-full bg-amber-300"
+                  />
+                )}
               </button>
 
               <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => {
-                  applyTransition((state) => ({
-                    ...state,
-                    selectedItem: "squeaky-toy",
-                  }));
-                }}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                  uiState.selectedItem === "squeaky-toy"
-                    ? TOY_SELECTED
-                    : TOY_IDLE
+                onClick={() => setMobileTab("actions")}
+                className={`py-2 px-2 rounded-xl transition-all flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                  mobileTab === "actions"
+                    ? "bg-amber-400 text-zinc-950 font-bold"
+                    : "text-zinc-400 hover:text-white"
                 }`}
               >
-                <IconBone aria-hidden="true" className="w-4 h-4 shrink-0" />
-                <span>Squeaky</span>
-              </button>
-
-              <button
-                disabled={isPlayFrozen}
-                aria-describedby={pausedReasonId}
-                onClick={handleGiveTreat}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TOY_IDLE}`}
-              >
-                <span>Treat</span>
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Tab 2: Training Tricks */}
-          {mobileTab === "tricks" && (
-            <div className="grid grid-cols-2 gap-2 animate-fadeIn">
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("SIT")}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
-              >
-                <span>Sit (Calm)</span>
-              </button>
-
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("HIGH_FIVE")}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
-              >
-                <span>High Five</span>
-              </button>
-
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("DROP_IT")}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
-              >
-                <span>Drop It!</span>
-              </button>
-
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("SPIN")}
-                className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
-              >
-                <span>Spin Trick</span>
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Tab 3: Actions & Mini-games */}
-          {mobileTab === "actions" && (
-            <div className="flex flex-col gap-2 animate-fadeIn">
-              {!uiState.inDogPark && !uiState.inBathtub ? (
-                <>
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => activeCodeBurst(state));
-                    }}
-                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed w-full py-3 px-4 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none"
-                  >
-                    <IconCode aria-hidden="true" className="w-4 h-4" />
-                    <span>Focus Work Sprint</span>
-                  </button>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      disabled={isPlayFrozen}
-                      aria-describedby={pausedReasonId}
-                      onClick={() => {
-                        applyTransition((state) => enterDogPark(state));
-                      }}
-                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
-                    >
-                      <IconTrees aria-hidden="true" className="w-4 h-4" />
-                      <span>Dog Park</span>
-                    </button>
-
-                    <button
-                      disabled={isPlayFrozen}
-                      aria-describedby={pausedReasonId}
-                      onClick={() => {
-                        applyTransition((state) => enterBathtub(state));
-                      }}
-                      className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                        uiState.isMuddy ? TOY_SELECTED : TOY_IDLE
-                      }`}
-                    >
-                      <IconDroplet aria-hidden="true" className="w-4 h-4" />
-                      <span>
-                        {uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}
-                      </span>
-                    </button>
-                  </div>
-                </>
-              ) : uiState.inBathtub ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => rinseBathtub(state));
-                    }}
-                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
-                  >
-                    <IconDroplet className="w-4 h-4" />
-                    <span>Rinse Spray</span>
-                  </button>
-
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => exitBathtub(state));
-                    }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
-                  >
-                    <span>Finish Bath</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      disabled={isPlayFrozen}
-                      aria-describedby={pausedReasonId}
-                      onClick={() => {
-                        applyTransition((state) => jumpParkHurdle(state));
-                      }}
-                      className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
-                    >
-                      <span>Jump Hurdle</span>
-                    </button>
-
-                    <button
-                      disabled={isPlayFrozen}
-                      aria-describedby={pausedReasonId}
-                      onClick={() => {
-                        applyTransition((state) => tapParkWhistle(state));
-                      }}
-                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
-                    >
-                      <span>Whistle</span>
-                    </button>
-                  </div>
-
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      const isSuccess = uiState.parkState.status === "success";
-                      applyTransition((state) => exitDogPark(state, isSuccess));
-                    }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed w-full py-2.5 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[44px] cursor-pointer touch-manipulation select-none active:scale-95"
-                  >
-                    <span>Return to Office</span>
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Mobile Meta Controls Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2 border-t border-zinc-800/80">
-            {renderPauseButton(false)}
-
-            <button
-              onClick={openWardrobe}
-              className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-              title="Wardrobe"
-            >
-              <IconShirt className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={openScrapbook}
-              className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-              title="Scrapbook"
-            >
-              <IconBook className="w-4 h-4" />
-            </button>
-
-            <button
-              onClick={() => setIsMusicMuted(!isMusicMuted)}
-              className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-              title={isMusicMuted ? "Unmute Music" : "Mute Music"}
-            >
-              {isMusicMuted ? (
-                <IconMusicOff className="w-4 h-4 text-zinc-500" />
-              ) : (
-                <IconMusic className="w-4 h-4 text-emerald-400" />
-              )}
-            </button>
-
-            <button
-              onClick={() => setMuted(!muted)}
-              className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-              title={muted ? "Unmute Audio" : "Mute Audio"}
-            >
-              {muted ? (
-                <IconVolumeOff className="w-4 h-4" />
-              ) : (
-                <IconVolume className="w-4 h-4 text-zinc-200" />
-              )}
-            </button>
-
-            <FieldManualButton
-              manualId="working-with-duck"
-              label="Manual"
-              onOpenChange={handleManualOpenChange}
-              isHotkeyOwner={true}
-            />
-            <FullscreenButton
-              isFullscreen={isFullscreen}
-              onToggle={toggleFullscreen}
-              variant="header"
-            />
-          </div>
-        </div>
-
-        {/* --- DESKTOP VIEWPORT HOTBAR (>=md and tall enough to fit 3 rows) --- */}
-        <div className="hidden [@media(min-width:768px)_and_(min-height:560px)]:flex flex-col gap-2">
-          {/* Desktop Row 1: Toys [1-4] + Tricks [Q-W-E-R] */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Toys & Treats */}
-            <div role="group" aria-label="Toys" className={DOCK_GROUP}>
-              <span aria-hidden="true" className={DOCK_CAPTION}>
-                Toys
-              </span>
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => {
-                  applyTransition((state) => ({
-                    ...state,
-                    selectedItem: "tennis-ball",
-                  }));
-                }}
-                aria-pressed={uiState.selectedItem === "tennis-ball"}
-                className={`${DOCK_BUTTON} ${uiState.selectedItem === "tennis-ball" ? TOY_SELECTED : TOY_IDLE}`}
-                title="Throw ball to play fetch & drain Excitement"
-              >
-                <kbd className={DOCK_KEY}>1</kbd>
-                <IconBallTennis aria-hidden="true" className={DOCK_ICON} />
-                <span>Tennis Ball</span>
-              </button>
-
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => {
-                  applyTransition((state) => ({
-                    ...state,
-                    selectedItem: "kong",
-                  }));
-                }}
-                aria-pressed={uiState.selectedItem === "kong"}
-                className={`${DOCK_BUTTON} ${uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE}`}
-                title="Drop chew toy to distract Duck away from desk hazards"
-              >
-                <kbd className={DOCK_KEY}>2</kbd>
-                <span>Kong Chew</span>
-              </button>
-
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => {
-                  applyTransition((state) => ({
-                    ...state,
-                    selectedItem: "squeaky-toy",
-                  }));
-                }}
-                aria-pressed={uiState.selectedItem === "squeaky-toy"}
-                className={`${DOCK_BUTTON} ${uiState.selectedItem === "squeaky-toy" ? TOY_SELECTED : TOY_IDLE}`}
-                title="Squeak to instantly get Duck's attention and recall"
-              >
-                <kbd className={DOCK_KEY}>3</kbd>
-                <IconBone aria-hidden="true" className={DOCK_ICON} />
-                <span>Squeaky</span>
-              </button>
-
-              <button
-                disabled={isPlayFrozen}
-                aria-describedby={pausedReasonId}
-                onClick={handleGiveTreat}
-                aria-pressed={uiState.selectedItem === "treat"}
-                className={`${DOCK_BUTTON} ${TOY_IDLE}`}
-                title="Give treat (trades ball during No Take Only Throw)"
-              >
-                <kbd className={DOCK_KEY}>4</kbd>
-                <span>Treat</span>
+                <span>Actions</span>
+                {(uiState.inDogPark ||
+                  uiState.inBathtub ||
+                  uiState.isMuddy) && (
+                  <span
+                    aria-hidden="true"
+                    className="w-2 h-2 rounded-full bg-emerald-400"
+                  />
+                )}
               </button>
             </div>
 
-            {/* Training Tricks [Q-W-E-R] */}
-            <div role="group" aria-label="Tricks" className={DOCK_GROUP}>
-              <span aria-hidden="true" className={DOCK_CAPTION}>
-                Tricks
-              </span>
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("SIT")}
-                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                title="Command Sit: Calms Excitement (-20) & boosts Good Boy scale"
-              >
-                <kbd className={TRICK_KEY}>Q</kbd>
-                <span>Sit</span>
-              </button>
+            {/* Mobile Tab 1: Toys & Treats */}
+            {mobileTab === "toys" && (
+              <div className="grid grid-cols-2 gap-2 animate-fadeIn">
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => {
+                    applyTransition((state) => ({
+                      ...state,
+                      selectedItem: "tennis-ball",
+                    }));
+                  }}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                    uiState.selectedItem === "tennis-ball"
+                      ? TOY_SELECTED
+                      : TOY_IDLE
+                  }`}
+                >
+                  <IconBallTennis
+                    aria-hidden="true"
+                    className="w-4 h-4 shrink-0"
+                  />
+                  <span>Tennis Ball</span>
+                </button>
 
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("HIGH_FIVE")}
-                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                title="Command High Five: Morale boost (+45 pts) & tail wag"
-              >
-                <kbd className={TRICK_KEY}>W</kbd>
-                <span>High Five</span>
-              </button>
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => {
+                    applyTransition((state) => ({
+                      ...state,
+                      selectedItem: "kong",
+                    }));
+                  }}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                    uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE
+                  }`}
+                >
+                  <span>Kong Chew</span>
+                </button>
 
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("DROP_IT")}
-                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                title="Command Drop It: Immediately drops stolen hazards or ball (+60-75 pts)"
-              >
-                <kbd className={TRICK_KEY}>E</kbd>
-                <span>Drop It</span>
-              </button>
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => {
+                    applyTransition((state) => ({
+                      ...state,
+                      selectedItem: "squeaky-toy",
+                    }));
+                  }}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                    uiState.selectedItem === "squeaky-toy"
+                      ? TOY_SELECTED
+                      : TOY_IDLE
+                  }`}
+                >
+                  <IconBone aria-hidden="true" className="w-4 h-4 shrink-0" />
+                  <span>Squeaky</span>
+                </button>
 
-              <button
-                disabled={officeOnlyDisabled}
-                aria-describedby={officeOnlyReasonId}
-                onClick={() => handlePerformTrick("SPIN")}
-                className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
-                title="Command Spin: Playful trick (+50 pts) with 360 rotation"
-              >
-                <kbd className={TRICK_KEY}>R</kbd>
-                <span>Spin</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Desktop Row 2: Active Desk Coding + Office Stations + Dog Park + Meta */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {/* Active Action Button */}
-            <div className="flex items-center gap-2">
-              {!uiState.inDogPark && !uiState.inBathtub ? (
                 <button
                   disabled={isPlayFrozen}
                   aria-describedby={pausedReasonId}
-                  onClick={() => {
-                    applyTransition((state) => activeCodeBurst(state));
-                  }}
-                  className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
-                  title="Focus work sprint at desk (Spacebar)"
+                  onClick={handleGiveTreat}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TOY_IDLE}`}
                 >
-                  <IconCode aria-hidden="true" className="w-4 h-4" />
-                  <span>Focus Work Sprint</span>
-                  <kbd className="hidden xl:inline rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
-                    Space
-                  </kbd>
+                  <span>Treat</span>
                 </button>
-              ) : uiState.inBathtub ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => rinseBathtub(state));
-                    }}
-                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
-                  >
-                    <IconDroplet className="w-4 h-4" />
-                    <span>Rinse Spray</span>
-                  </button>
+              </div>
+            )}
 
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => exitBathtub(state));
-                    }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
-                  >
-                    <span>Finish Bath</span>
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => jumpParkHurdle(state));
-                    }}
-                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
-                  >
-                    <span>Agility Jump</span>
-                    <kbd className="rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
-                      Space
-                    </kbd>
-                  </button>
+            {/* Mobile Tab 2: Training Tricks */}
+            {mobileTab === "tricks" && (
+              <div className="grid grid-cols-2 gap-2 animate-fadeIn">
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("SIT")}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
+                >
+                  <span>Sit (Calm)</span>
+                </button>
 
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => tapParkWhistle(state));
-                    }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
-                  >
-                    <span>Whistle</span>
-                  </button>
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("HIGH_FIVE")}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
+                >
+                  <span>High Five</span>
+                </button>
 
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      const isSuccess = uiState.parkState.status === "success";
-                      applyTransition((state) => exitDogPark(state, isSuccess));
-                    }}
-                    className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
-                  >
-                    <span>Return to Office</span>
-                  </button>
-                </div>
-              )}
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("DROP_IT")}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
+                >
+                  <span>Drop It!</span>
+                </button>
 
-              {!uiState.inDogPark && !uiState.inBathtub && (
-                <>
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => enterDogPark(state));
-                    }}
-                    className={`${DOCK_BUTTON} border-emerald-400/40 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20`}
-                  >
-                    <IconTrees aria-hidden="true" className="w-4 h-4" />
-                    <span>Dog Park</span>
-                  </button>
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("SPIN")}
+                  className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-colors flex items-center justify-center gap-2 min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-[0.98] ${TRICK_BUTTON}`}
+                >
+                  <span>Spin Trick</span>
+                </button>
+              </div>
+            )}
 
-                  <button
-                    disabled={isPlayFrozen}
-                    aria-describedby={pausedReasonId}
-                    onClick={() => {
-                      applyTransition((state) => enterBathtub(state));
-                    }}
-                    className={`${DOCK_BUTTON} ${
-                      uiState.isMuddy ? TOY_SELECTED : TOY_IDLE
-                    }`}
-                  >
-                    <IconDroplet aria-hidden="true" className="w-4 h-4" />
-                    <span>{uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}</span>
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Mobile Tab 3: Actions & Mini-games */}
+            {mobileTab === "actions" && (
+              <div className="flex flex-col gap-2 animate-fadeIn">
+                {!uiState.inDogPark && !uiState.inBathtub ? (
+                  <>
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => activeCodeBurst(state));
+                      }}
+                      className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed w-full py-3 px-4 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 min-h-[48px] cursor-pointer touch-manipulation select-none"
+                    >
+                      <IconCode aria-hidden="true" className="w-4 h-4" />
+                      <span>Focus Work Sprint</span>
+                    </button>
 
-            {/* Quick Meta Controls */}
-            <div className="flex items-center gap-2">
-              {renderPauseButton(true)}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        disabled={isPlayFrozen}
+                        aria-describedby={pausedReasonId}
+                        onClick={() => {
+                          applyTransition((state) => enterDogPark(state));
+                        }}
+                        className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                      >
+                        <IconTrees aria-hidden="true" className="w-4 h-4" />
+                        <span>Dog Park</span>
+                      </button>
+
+                      <button
+                        disabled={isPlayFrozen}
+                        aria-describedby={pausedReasonId}
+                        onClick={() => {
+                          applyTransition((state) => enterBathtub(state));
+                        }}
+                        className={`disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-xs font-bold transition-all flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+                          uiState.isMuddy ? TOY_SELECTED : TOY_IDLE
+                        }`}
+                      >
+                        <IconDroplet aria-hidden="true" className="w-4 h-4" />
+                        <span>
+                          {uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}
+                        </span>
+                      </button>
+                    </div>
+                  </>
+                ) : uiState.inBathtub ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => rinseBathtub(state));
+                      }}
+                      className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                    >
+                      <IconDroplet className="w-4 h-4" />
+                      <span>Rinse Spray</span>
+                    </button>
+
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => exitBathtub(state));
+                      }}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
+                    >
+                      <span>Finish Bath</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        disabled={isPlayFrozen}
+                        aria-describedby={pausedReasonId}
+                        onClick={() => {
+                          applyTransition((state) => jumpParkHurdle(state));
+                        }}
+                        className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border text-zinc-950 font-bold text-xs transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                      >
+                        <span>Jump Hurdle</span>
+                      </button>
+
+                      <button
+                        disabled={isPlayFrozen}
+                        aria-describedby={pausedReasonId}
+                        onClick={() => {
+                          applyTransition((state) => tapParkWhistle(state));
+                        }}
+                        className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all flex items-center justify-center min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-95"
+                      >
+                        <span>Whistle</span>
+                      </button>
+                    </div>
+
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        const isSuccess =
+                          uiState.parkState.status === "success";
+                        applyTransition((state) =>
+                          exitDogPark(state, isSuccess)
+                        );
+                      }}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed w-full py-2.5 rounded-2xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs active:bg-zinc-800 transition-colors flex items-center justify-center min-h-[44px] cursor-pointer touch-manipulation select-none active:scale-95"
+                    >
+                      <span>Return to Office</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Mobile Meta Controls Strip */}
+            <div className="flex flex-wrap items-center justify-center gap-1.5 pt-2 border-t border-zinc-800/80">
+              {renderPauseButton(false)}
 
               <button
                 onClick={openWardrobe}
-                className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title="Duck Wardrobe & Accessories"
+                className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                title="Wardrobe"
               >
                 <IconShirt className="w-4 h-4" />
               </button>
 
               <button
                 onClick={openScrapbook}
-                className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title="Duck Scrapbook & Facts"
+                className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                title="Scrapbook"
               >
                 <IconBook className="w-4 h-4" />
               </button>
 
               <button
                 onClick={() => setIsMusicMuted(!isMusicMuted)}
-                className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
-                title={isMusicMuted ? "Unmute Lo-Fi Music" : "Mute Lo-Fi Music"}
+                className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                title={isMusicMuted ? "Unmute Music" : "Mute Music"}
               >
                 {isMusicMuted ? (
                   <IconMusicOff className="w-4 h-4 text-zinc-500" />
@@ -3320,7 +3051,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
               <button
                 onClick={() => setMuted(!muted)}
-                className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                className="p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
                 title={muted ? "Unmute Audio" : "Mute Audio"}
               >
                 {muted ? (
@@ -3343,7 +3074,456 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               />
             </div>
           </div>
-        </div>
+        )}
+
+        {/* --- DESKTOP VIEWPORT HOTBAR (>=md and tall enough to fit 3 rows) --- */}
+        {!cabinetTouch && (
+          <div className="hidden [@media(min-width:768px)_and_(min-height:560px)]:flex flex-col gap-2">
+            {/* Desktop Row 1: Toys [1-4] + Tricks [Q-W-E-R] */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Toys & Treats */}
+              <div role="group" aria-label="Toys" className={DOCK_GROUP}>
+                <span aria-hidden="true" className={DOCK_CAPTION}>
+                  Toys
+                </span>
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => {
+                    applyTransition((state) => ({
+                      ...state,
+                      selectedItem: "tennis-ball",
+                    }));
+                  }}
+                  aria-pressed={uiState.selectedItem === "tennis-ball"}
+                  className={`${DOCK_BUTTON} ${uiState.selectedItem === "tennis-ball" ? TOY_SELECTED : TOY_IDLE}`}
+                  title="Throw ball to play fetch & drain Excitement"
+                >
+                  <kbd className={DOCK_KEY}>1</kbd>
+                  <IconBallTennis aria-hidden="true" className={DOCK_ICON} />
+                  <span>Tennis Ball</span>
+                </button>
+
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => {
+                    applyTransition((state) => ({
+                      ...state,
+                      selectedItem: "kong",
+                    }));
+                  }}
+                  aria-pressed={uiState.selectedItem === "kong"}
+                  className={`${DOCK_BUTTON} ${uiState.selectedItem === "kong" ? TOY_SELECTED : TOY_IDLE}`}
+                  title="Drop chew toy to distract Duck away from desk hazards"
+                >
+                  <kbd className={DOCK_KEY}>2</kbd>
+                  <span>Kong Chew</span>
+                </button>
+
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => {
+                    applyTransition((state) => ({
+                      ...state,
+                      selectedItem: "squeaky-toy",
+                    }));
+                  }}
+                  aria-pressed={uiState.selectedItem === "squeaky-toy"}
+                  className={`${DOCK_BUTTON} ${uiState.selectedItem === "squeaky-toy" ? TOY_SELECTED : TOY_IDLE}`}
+                  title="Squeak to instantly get Duck's attention and recall"
+                >
+                  <kbd className={DOCK_KEY}>3</kbd>
+                  <IconBone aria-hidden="true" className={DOCK_ICON} />
+                  <span>Squeaky</span>
+                </button>
+
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={handleGiveTreat}
+                  aria-pressed={uiState.selectedItem === "treat"}
+                  className={`${DOCK_BUTTON} ${TOY_IDLE}`}
+                  title="Give treat (trades ball during No Take Only Throw)"
+                >
+                  <kbd className={DOCK_KEY}>4</kbd>
+                  <span>Treat</span>
+                </button>
+              </div>
+
+              {/* Training Tricks [Q-W-E-R] */}
+              <div role="group" aria-label="Tricks" className={DOCK_GROUP}>
+                <span aria-hidden="true" className={DOCK_CAPTION}>
+                  Tricks
+                </span>
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("SIT")}
+                  className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
+                  title="Command Sit: Calms Excitement (-20) & boosts Good Boy scale"
+                >
+                  <kbd className={TRICK_KEY}>Q</kbd>
+                  <span>Sit</span>
+                </button>
+
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("HIGH_FIVE")}
+                  className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
+                  title="Command High Five: Morale boost (+45 pts) & tail wag"
+                >
+                  <kbd className={TRICK_KEY}>W</kbd>
+                  <span>High Five</span>
+                </button>
+
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("DROP_IT")}
+                  className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
+                  title="Command Drop It: Immediately drops stolen hazards or ball (+60-75 pts)"
+                >
+                  <kbd className={TRICK_KEY}>E</kbd>
+                  <span>Drop It</span>
+                </button>
+
+                <button
+                  disabled={officeOnlyDisabled}
+                  aria-describedby={officeOnlyReasonId}
+                  onClick={() => handlePerformTrick("SPIN")}
+                  className={`${DOCK_BUTTON} ${TRICK_BUTTON}`}
+                  title="Command Spin: Playful trick (+50 pts) with 360 rotation"
+                >
+                  <kbd className={TRICK_KEY}>R</kbd>
+                  <span>Spin</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Desktop Row 2: Active Desk Coding + Office Stations + Dog Park + Meta */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Active Action Button */}
+              <div className="flex items-center gap-2">
+                {!uiState.inDogPark && !uiState.inBathtub ? (
+                  <button
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
+                    onClick={() => {
+                      applyTransition((state) => activeCodeBurst(state));
+                    }}
+                    className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
+                    title="Focus work sprint at desk (Spacebar)"
+                  >
+                    <IconCode aria-hidden="true" className="w-4 h-4" />
+                    <span>Focus Work Sprint</span>
+                    <kbd className="hidden xl:inline rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
+                      Space
+                    </kbd>
+                  </button>
+                ) : uiState.inBathtub ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => rinseBathtub(state));
+                      }}
+                      className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
+                    >
+                      <IconDroplet className="w-4 h-4" />
+                      <span>Rinse Spray</span>
+                    </button>
+
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => exitBathtub(state));
+                      }}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
+                    >
+                      <span>Finish Bath</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => jumpParkHurdle(state));
+                      }}
+                      className="arcade-launch-button disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl border text-zinc-950 font-bold text-xs transition-colors active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer touch-manipulation select-none"
+                    >
+                      <span>Agility Jump</span>
+                      <kbd className="rounded border border-black/20 bg-black/10 px-1 font-mono text-[10px]">
+                        Space
+                      </kbd>
+                    </button>
+
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => tapParkWhistle(state));
+                      }}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-amber-500/40 bg-amber-500/10 text-amber-300 text-xs font-bold transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
+                    >
+                      <span>Whistle</span>
+                    </button>
+
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        const isSuccess =
+                          uiState.parkState.status === "success";
+                        applyTransition((state) =>
+                          exitDogPark(state, isSuccess)
+                        );
+                      }}
+                      className="disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs hover:bg-zinc-800 transition-colors cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center"
+                    >
+                      <span>Return to Office</span>
+                    </button>
+                  </div>
+                )}
+
+                {!uiState.inDogPark && !uiState.inBathtub && (
+                  <>
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => enterDogPark(state));
+                      }}
+                      className={`${DOCK_BUTTON} border-emerald-400/40 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20`}
+                    >
+                      <IconTrees aria-hidden="true" className="w-4 h-4" />
+                      <span>Dog Park</span>
+                    </button>
+
+                    <button
+                      disabled={isPlayFrozen}
+                      aria-describedby={pausedReasonId}
+                      onClick={() => {
+                        applyTransition((state) => enterBathtub(state));
+                      }}
+                      className={`${DOCK_BUTTON} ${
+                        uiState.isMuddy ? TOY_SELECTED : TOY_IDLE
+                      }`}
+                    >
+                      <IconDroplet aria-hidden="true" className="w-4 h-4" />
+                      <span>
+                        {uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}
+                      </span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {/* Quick Meta Controls */}
+              <div className="flex items-center gap-2">
+                {renderPauseButton(true)}
+
+                <button
+                  onClick={openWardrobe}
+                  className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-amber-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                  title="Duck Wardrobe & Accessories"
+                >
+                  <IconShirt className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={openScrapbook}
+                  className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                  title="Duck Scrapbook & Facts"
+                >
+                  <IconBook className="w-4 h-4" />
+                </button>
+
+                <button
+                  onClick={() => setIsMusicMuted(!isMusicMuted)}
+                  className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                  title={
+                    isMusicMuted ? "Unmute Lo-Fi Music" : "Mute Lo-Fi Music"
+                  }
+                >
+                  {isMusicMuted ? (
+                    <IconMusicOff className="w-4 h-4 text-zinc-500" />
+                  ) : (
+                    <IconMusic className="w-4 h-4 text-emerald-400" />
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setMuted(!muted)}
+                  className="p-2 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
+                  title={muted ? "Unmute Audio" : "Mute Audio"}
+                >
+                  {muted ? (
+                    <IconVolumeOff className="w-4 h-4" />
+                  ) : (
+                    <IconVolume className="w-4 h-4 text-zinc-200" />
+                  )}
+                </button>
+
+                <FieldManualButton
+                  manualId="working-with-duck"
+                  label="Manual"
+                  onOpenChange={handleManualOpenChange}
+                  isHotkeyOwner={true}
+                />
+                <FullscreenButton
+                  isFullscreen={isFullscreen}
+                  onToggle={toggleFullscreen}
+                  variant="header"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {cabinetTouch && (
+          <div
+            data-testid="duck-cabinet-actions"
+            role="group"
+            aria-label="Duck actions"
+            className="flex flex-wrap items-center justify-center gap-2 font-mono"
+          >
+            {uiState.inBathtub ? (
+              <>
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={() =>
+                    applyTransition((state) => rinseBathtub(state))
+                  }
+                  className={CABINET_ACTION}
+                >
+                  <IconDroplet aria-hidden="true" className="w-4 h-4" />
+                  <span>Rinse Spray</span>
+                </button>
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={() => applyTransition((state) => exitBathtub(state))}
+                  className={CABINET_ACTION}
+                >
+                  <span>Finish Bath</span>
+                </button>
+              </>
+            ) : uiState.inDogPark ? (
+              <>
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={() =>
+                    applyTransition((state) => tapParkWhistle(state))
+                  }
+                  className={CABINET_ACTION}
+                >
+                  <span>Whistle</span>
+                </button>
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={() => {
+                    const isSuccess = uiState.parkState.status === "success";
+                    applyTransition((state) => exitDogPark(state, isSuccess));
+                  }}
+                  className={CABINET_ACTION}
+                >
+                  <span>Return to Office</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={() =>
+                    applyTransition((state) => enterDogPark(state))
+                  }
+                  className={CABINET_ACTION}
+                >
+                  <IconTrees aria-hidden="true" className="w-4 h-4" />
+                  <span>Dog Park</span>
+                </button>
+                <button
+                  disabled={isPlayFrozen}
+                  aria-describedby={pausedReasonId}
+                  onClick={() =>
+                    applyTransition((state) => enterBathtub(state))
+                  }
+                  className={CABINET_ACTION}
+                >
+                  <IconDroplet aria-hidden="true" className="w-4 h-4" />
+                  <span>{uiState.isMuddy ? "Bath: muddy!" : "Bathtub"}</span>
+                </button>
+              </>
+            )}
+
+            <button
+              onClick={openWardrobe}
+              className={CABINET_ICON}
+              title="Wardrobe"
+              aria-label="Wardrobe"
+            >
+              <IconShirt className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <button
+              onClick={openScrapbook}
+              className={CABINET_ICON}
+              title="Scrapbook"
+              aria-label="Scrapbook"
+            >
+              <IconBook className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <button
+              onClick={() => setIsMusicMuted(!isMusicMuted)}
+              className={CABINET_ICON}
+              title={isMusicMuted ? "Unmute Music" : "Mute Music"}
+              aria-label={isMusicMuted ? "Unmute Music" : "Mute Music"}
+            >
+              {isMusicMuted ? (
+                <IconMusicOff
+                  className="w-4 h-4 text-zinc-500"
+                  aria-hidden="true"
+                />
+              ) : (
+                <IconMusic
+                  className="w-4 h-4 text-emerald-400"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+            <button
+              onClick={() => setMuted(!muted)}
+              className={CABINET_ICON}
+              title={muted ? "Unmute Audio" : "Mute Audio"}
+              aria-label={muted ? "Unmute Audio" : "Mute Audio"}
+            >
+              {muted ? (
+                <IconVolumeOff className="w-4 h-4" aria-hidden="true" />
+              ) : (
+                <IconVolume
+                  className="w-4 h-4 text-zinc-200"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+            <FieldManualButton
+              manualId="working-with-duck"
+              label="Manual"
+              onOpenChange={handleManualOpenChange}
+              isHotkeyOwner={false}
+            />
+          </div>
+        )}
       </div>
 
       {/* Sprint result (#1677): the shared arcade card with this run's recap */}

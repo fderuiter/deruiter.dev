@@ -74,7 +74,8 @@ export interface CourseLedge {
  * A block floating over the lane. Bumping a Sync Block from below pops its
  * contents once: Kudos, a power-up (a Protein Shake for a Base runner, then
  * a Heat Map from a power block or a Compression Cape from a cape block), or
- * a Runner's High. A brick is plain solid footing.
+ * a Runner's High, or on some land stages a Running Buddy (#2024). A brick is
+ * plain solid footing.
  */
 export interface CourseBlock {
   id: number;
@@ -82,7 +83,7 @@ export interface CourseBlock {
   /** Top surface. */
   y: number;
   kind: "sync" | "brick";
-  contents: "kudos" | "power" | "cape" | "high" | "suit";
+  contents: "kudos" | "power" | "cape" | "high" | "suit" | "buddy";
   used: boolean;
   /** A Kudos turned into a brick by a Rest Day (#1992); it turns back after. */
   fromKudos?: boolean;
@@ -128,6 +129,16 @@ export interface CourseCurrent {
   flow: number;
 }
 
+/**
+ * A medicine ball resting on the course (#2024). `x` is the world-pixel left
+ * edge and `y` the top; its rules live in `lib/garmin-medball.ts`.
+ */
+export interface CourseMedBall {
+  id: number;
+  x: number;
+  y: number;
+}
+
 /** Every live feature of the course, across the current and previous stage. */
 export interface CourseLayout {
   gaps: CourseGap[];
@@ -139,6 +150,8 @@ export interface CourseLayout {
   ceilings?: CourseCeiling[];
   /** Open Water currents; absent on other themes. */
   currents?: CourseCurrent[];
+  /** Medicine balls resting on the lane (#2024); absent on water stages. */
+  medBalls?: CourseMedBall[];
 }
 
 /** An empty course, for idle watches and states built before #1950. */
@@ -402,7 +415,53 @@ export function generateStage(
   } else if (theme === "open-water") {
     layout.currents = placeCurrents(s, seed);
   }
+  if (!water) placeLandExtras(layout, s, seed, groundY, start + 450, end);
   return layout;
+}
+
+/** Edge length of a medicine ball, in px (#2024). */
+export const MEDBALL_SIZE = 10;
+
+/**
+ * Adds the land-stage extras of #2024 from their own random stream, so the
+ * main layout draws are untouched: on about half the stages one Sync Block
+ * that held Kudos hatches a Running Buddy instead, and one or two medicine
+ * balls rest on open lane between `from` and `to`.
+ */
+function placeLandExtras(
+  layout: CourseLayout,
+  stage: number,
+  seed: number,
+  groundY: number,
+  from: number,
+  to: number
+): void {
+  // Salted apart from the props stream in lib/garmin-props.ts.
+  const rand = courseRandom(seed * 67 + stage * 130153 + 29);
+  const plain = layout.blocks.filter(
+    (b) => b.kind === "sync" && b.contents === "kudos"
+  );
+  if (plain.length > 0 && rand() < 0.5) {
+    plain[Math.floor(rand() * plain.length)].contents = "buddy";
+  }
+  const balls: CourseMedBall[] = [];
+  const count = rand() < 0.5 ? 1 : 2;
+  let id = 1;
+  for (let tries = 0; tries < 12 && balls.length < count; tries++) {
+    const x = Math.round(from + rand() * Math.max(0, to - from - MEDBALL_SIZE));
+    const clear =
+      !layout.gaps.some(
+        (g) => x + MEDBALL_SIZE + 30 > g.x && x - 30 < g.x + g.width
+      ) &&
+      !(layout.ceilings ?? []).some(
+        (c) => x + MEDBALL_SIZE + 8 > c.x && x - 8 < c.x + c.width
+      ) &&
+      !balls.some((b) => Math.abs(b.x - x) < 120);
+    if (clear) {
+      balls.push({ id: stage * 100 + id++, x, y: groundY - MEDBALL_SIZE });
+    }
+  }
+  layout.medBalls = balls;
 }
 
 /** True when world x lies over a gap in the track. */
@@ -435,6 +494,7 @@ export function pruneCourse(
   const poles = course.poles.filter((p) => p.x + POLE_REACH > behind);
   const ceilings = course.ceilings?.filter((c) => c.x + c.width > behind);
   const currents = course.currents?.filter((c) => c.x + c.width > behind);
+  const medBalls = course.medBalls?.filter((b) => b.x + MEDBALL_SIZE > behind);
   if (
     gaps.length === course.gaps.length &&
     ledges.length === course.ledges.length &&
@@ -442,19 +502,22 @@ export function pruneCourse(
     kudos.length === course.kudos.length &&
     poles.length === course.poles.length &&
     (ceilings?.length ?? 0) === (course.ceilings?.length ?? 0) &&
-    (currents?.length ?? 0) === (course.currents?.length ?? 0)
+    (currents?.length ?? 0) === (course.currents?.length ?? 0) &&
+    (medBalls?.length ?? 0) === (course.medBalls?.length ?? 0)
   ) {
     return course;
   }
   const pruned: CourseLayout = { gaps, ledges, blocks, kudos, poles };
   if (ceilings) pruned.ceilings = ceilings;
   if (currents) pruned.currents = currents;
+  if (medBalls) pruned.medBalls = medBalls;
   return pruned;
 }
 
 /**
  * Adds `next` onto `course`, keeping what is still live. The optional
- * ceilings and currents keys are carried only when either side has them.
+ * ceilings, currents and medicine ball keys are carried only when either
+ * side has them.
  */
 export function appendCourse(
   course: CourseLayout,
@@ -472,6 +535,9 @@ export function appendCourse(
   }
   if (course.currents || next.currents) {
     joined.currents = [...(course.currents ?? []), ...(next.currents ?? [])];
+  }
+  if (course.medBalls || next.medBalls) {
+    joined.medBalls = [...(course.medBalls ?? []), ...(next.medBalls ?? [])];
   }
   return joined;
 }

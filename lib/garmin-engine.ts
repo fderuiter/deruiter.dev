@@ -19,12 +19,14 @@ import {
   pruneCourse,
   stageStartX,
   type CourseLayout,
+  type CourseMedBall,
 } from "./garmin-course";
 import {
   BONUS_ROOM_LENGTH,
   EMPTY_PROPS,
   PR_BOARD_SCORE,
   REST_DAY_MS,
+  SWITCH_WIDTH,
   appendProps,
   beltOffset,
   generateBonusRoom,
@@ -69,6 +71,26 @@ import {
   isSpikyFoe,
   type MoveName,
 } from "./garmin-moves";
+import {
+  BUDDY_EAT_SCORE,
+  BUDDY_JUMP_BONUS_VY,
+  BUDDY_RUNAWAY_LEAD,
+  BUDDY_RUNAWAY_MS,
+  BUDDY_RUNAWAY_SPEED,
+  BUDDY_TOASTS,
+  isEdibleFoe,
+} from "./garmin-buddy";
+import {
+  MEDBALL_FILL_SCALE,
+  MEDBALL_KO_SCORE,
+  MEDBALL_SIZE,
+  MEDBALL_TOAST,
+  ballHits,
+  ballInReach,
+  stepThrownBall,
+  throwBall,
+  type ThrownBall,
+} from "./garmin-medball";
 import {
   BOLT_COOLDOWN_MS,
   BOLT_DEFEAT_SCORE,
@@ -582,6 +604,18 @@ export interface GameEngineState {
   wallJumpReady?: boolean;
   /** Moves already toasted this run, so each toast shows once per run. */
   movesUsed?: MoveName[];
+
+  // ---- Running Buddy and Medicine Ball (#2024).
+  /** The runner is riding a Running Buddy. */
+  riding?: boolean;
+  /** The runner is carrying a medicine ball. */
+  carrying?: boolean;
+  /** Id of the carried medicine ball, reused when it is thrown and lands. */
+  carryingId?: number;
+  /** The medicine ball in flight, if any. */
+  thrownBall?: ThrownBall | null;
+  /** The "Med ball!" toast has shown this run. */
+  medBallToasted?: boolean;
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -835,8 +869,26 @@ export function enterStation(state: GameEngineState): GameEngineState {
     (state.restDayMs ?? 0) > 0
       ? restDaySwap(state.course ?? EMPTY_COURSE, false)
       : (state.course ?? EMPTY_COURSE);
+  // The buddy waits outside a bonus room and is left behind (#2024).
+  const stayPopups = state.riding
+    ? [
+        ...(state.popups ?? []),
+        {
+          x: cameraX + PLAYER_X + 3,
+          y: state.playerY - 14,
+          text: BUDDY_TOASTS.stay,
+          ttlMs: 1100,
+        },
+      ]
+    : state.popups;
   return {
     ...state,
+    riding: false,
+    // A carried ball is left at the door with the buddy.
+    carrying: false,
+    carryingId: undefined,
+    thrownBall: null,
+    popups: stayPopups,
     bonusRoom: {
       returnCourse: outside,
       returnProps: {
@@ -938,6 +990,11 @@ export function startGame(
     wallSide: false,
     wallJumpReady: false,
     movesUsed: [],
+    riding: false,
+    carrying: false,
+    carryingId: undefined,
+    thrownBall: null,
+    medBallToasted: false,
     banner: fitness
       ? { text: gpsBannerText(0), ttlMs: GPS_LOCK_MS + 1800, tone: "info" }
       : { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
@@ -1002,11 +1059,15 @@ function stroke(state: GameEngineState): GameEngineState {
  */
 function takeOffVy(
   power: PowerTier | undefined,
-  paceMeter: number | undefined
+  paceMeter: number | undefined,
+  riding: boolean = false
 ): number {
-  return power === "trisuit"
-    ? SUIT_LAND_JUMP_VY
-    : jumpForceFor(paceMeter, JUMP_FORCE);
+  const base =
+    power === "trisuit"
+      ? SUIT_LAND_JUMP_VY
+      : jumpForceFor(paceMeter, JUMP_FORCE);
+  // A Running Buddy under the runner adds a little lift to every take-off (#2024).
+  return riding ? base + BUDDY_JUMP_BONUS_VY : base;
 }
 
 /**
@@ -1033,7 +1094,7 @@ export function pressJump(state: GameEngineState): GameEngineState {
   if (canJump && state.playerVy >= 0) {
     return {
       ...state,
-      playerVy: takeOffVy(state.power, state.paceMeter),
+      playerVy: takeOffVy(state.power, state.paceMeter, state.riding === true),
       isGrounded: false,
       jumpHeld: true,
       // Spent: no second coyote jump from the same edge.
@@ -1115,11 +1176,70 @@ export function spinCape(state: GameEngineState): GameEngineState {
 }
 
 /**
- * The action key: a Heat Map runner throws a heat bolt and a Cape runner
- * spins. Any other tier in the air starts a Spin Jump (#2023); on the ground
- * it does nothing.
+ * The action key (#2024): a runner carrying a medicine ball throws it, and a
+ * grounded runner standing by one picks it up. Returns null when the key
+ * means something else for this state.
+ */
+function medBallAction(state: GameEngineState): GameEngineState | null {
+  if (state.gameState !== "playing") return null;
+  if (state.carrying) {
+    // One ball in flight at a time: a second throw waits for it to land.
+    if (state.thrownBall) return state;
+    const cameraX = state.distanceMeters * PX_PER_METER;
+    return {
+      ...state,
+      carrying: false,
+      carryingId: undefined,
+      thrownBall: throwBall(
+        state.carryingId ?? 0,
+        cameraX + PLAYER_X + PLAYER_WIDTH,
+        state.playerY + 8
+      ),
+    };
+  }
+  if (!state.isGrounded || isUnderwater(state)) return null;
+  const cameraX = state.distanceMeters * PX_PER_METER;
+  const ball = ballInReach(
+    state.course?.medBalls,
+    cameraX + PLAYER_X,
+    cameraX + PLAYER_X + PLAYER_WIDTH,
+    state.playerY + playerHeightFor(state.power)
+  );
+  if (!ball) return null;
+  const popups = state.popups ?? [];
+  const toast = state.medBallToasted !== true;
+  return {
+    ...state,
+    course: {
+      ...(state.course ?? EMPTY_COURSE),
+      medBalls: (state.course?.medBalls ?? []).filter((b) => b.id !== ball.id),
+    },
+    carrying: true,
+    carryingId: ball.id,
+    medBallToasted: true,
+    popups: toast
+      ? [
+          ...popups,
+          {
+            x: cameraX + PLAYER_X + 3,
+            y: state.playerY - 14,
+            text: MEDBALL_TOAST,
+            ttlMs: 1100,
+          },
+        ]
+      : popups,
+  };
+}
+
+/**
+ * The action key: a runner next to a medicine ball picks it up, or one
+ * carrying a ball throws it (#2024). Otherwise a Heat Map runner throws a
+ * heat bolt and a Cape runner spins. Any other tier in the air starts a Spin
+ * Jump (#2023); on the ground it does nothing.
  */
 export function pressAction(state: GameEngineState): GameEngineState {
+  const medBall = medBallAction(state);
+  if (medBall) return medBall;
   if (state.power === "heatmap") return throwBolt(state);
   if (state.power === "cape") return spinCape(state);
   return startSpinJump(state);
@@ -1624,6 +1744,210 @@ export function causeLabel(
   return errorType.toUpperCase();
 }
 
+/**
+ * Drops a carried medicine ball at the runner's feet on the lane (#2024), or
+ * loses it when the feet are over a gap. The ball is placed by where the
+ * runner stands, so a hit that costs a tier or the buddy never leaves the
+ * runner holding it.
+ */
+/** Whether a station, plyo box or switch stands over the lane from `left` to `right`. */
+function overlapsProp(
+  props: CourseProps,
+  left: number,
+  right: number
+): boolean {
+  return (
+    props.stations.some((p) => p.x < right && p.x + p.width > left) ||
+    props.plyos.some((p) => p.x < right && p.x + p.width > left) ||
+    props.switches.some((p) => p.x < right && p.x + SWITCH_WIDTH > left)
+  );
+}
+
+function dropCarriedBall(
+  state: GameEngineState,
+  cameraX: number
+): GameEngineState {
+  if (!state.carrying) return state;
+  const course = state.course ?? EMPTY_COURSE;
+  const x = cameraX + PLAYER_X + PLAYER_WIDTH / 2 - MEDBALL_SIZE / 2;
+  const cleared = { ...state, carrying: false, carryingId: undefined };
+  // Dropped in mid-air, the ball is lost; on the ground it rests at the
+  // feet, on the lane or a ledge, where it can be picked up again.
+  if (!state.isGrounded) return cleared;
+  const feetY = state.playerY + playerHeightFor(state.power);
+  const onLane = Math.abs(feetY - GROUND_Y) < 1;
+  if (onLane && isFootingOverGap(course, x, x + MEDBALL_SIZE)) return cleared;
+  // On a station, plyo box or switch there is no lane to drop it on.
+  if (overlapsProp(state.props ?? EMPTY_PROPS, x, x + MEDBALL_SIZE)) {
+    return cleared;
+  }
+  const ball: CourseMedBall = {
+    id: state.carryingId ?? 0,
+    x,
+    y: feetY - MEDBALL_SIZE,
+  };
+  return {
+    ...cleared,
+    course: { ...course, medBalls: [...(course.medBalls ?? []), ball] },
+  };
+}
+
+/**
+ * A hit taken by a rider (#2024): the buddy takes it instead of the tier.
+ * The runner keeps the tier and every life, gets the damage grace, and the
+ * buddy runs off ahead as a runaway pickup that can be caught again for
+ * {@link BUDDY_RUNAWAY_MS}. A carried ball is dropped as in any hit.
+ */
+function riderLosesBuddy(
+  state: GameEngineState,
+  cameraX: number
+): GameEngineState {
+  const dropped = dropCarriedBall(state, cameraX);
+  const pickups = dropped.pickups ?? [];
+  const runaway: Pickup = {
+    id: Math.max(0, ...pickups.map((p) => p.id)) + 1,
+    kind: "buddy",
+    x: cameraX + PLAYER_X + PLAYER_WIDTH + BUDDY_RUNAWAY_LEAD,
+    y: state.playerY + playerHeightFor(state.power) - PICKUP_SIZE,
+    vx: BUDDY_RUNAWAY_SPEED,
+    vy: 0,
+    emergeMs: 0,
+    ttlMs: BUDDY_RUNAWAY_MS,
+  };
+  return {
+    ...dropped,
+    riding: false,
+    invulnerableMs: DAMAGE_GRACE_MS,
+    pickups: [...pickups, runaway],
+    banner: { text: BUDDY_TOASTS.lost, ttlMs: 1400, tone: "warn" },
+  };
+}
+
+/**
+ * Advances a thrown medicine ball one tick (#2024). The first foe it
+ * overlaps is knocked out (a Rep Max takes two hit points, as a stomp does),
+ * the first brick it overlaps breaks for the PR Board reward, and a sync
+ * block or a fromKudos brick just stops it. Otherwise it flies on, and where
+ * it lands it rests on the course as a medicine ball again.
+ */
+function stepThrownMedBallOnce(
+  state: GameEngineState,
+  cameraX: number,
+  deltaMs: number
+): GameEngineState {
+  const ball = state.thrownBall;
+  if (!ball) return state;
+  const course = state.course ?? EMPTY_COURSE;
+  const foes = state.foes ?? [];
+  const foeIdx = foes.findIndex((f) => {
+    const box = foeBox(f);
+    return ballHits(ball, box.left, box.top, box.right, box.bottom);
+  });
+  if (foeIdx !== -1) {
+    const foe = foes[foeIdx];
+    const hit =
+      foe.kind === "repmax"
+        ? damageFoe(foe, 2)
+        : { foe: null, score: MEDBALL_KO_SCORE };
+    const points = hit.score;
+    const survivor = hit.foe;
+    const nextFoes = survivor
+      ? foes.map((f, i) => (i === foeIdx ? survivor : f))
+      : foes.filter((_, i) => i !== foeIdx);
+    const fitness = isFitnessRun(state);
+    return {
+      ...state,
+      thrownBall: null,
+      foes: nextFoes,
+      score: state.score + points,
+      highScore: Math.max(state.highScore, state.score + points),
+      ...(points > 0 && fitness
+        ? { stageFoes: (state.stageFoes ?? 0) + 1 }
+        : {}),
+      popups:
+        points > 0
+          ? [
+              ...(state.popups ?? []),
+              {
+                x: foe.x,
+                y: foe.y - 6,
+                text: `+${points}`,
+                ttlMs: 800,
+              },
+            ]
+          : state.popups,
+    };
+  }
+  const blockIdx = course.blocks.findIndex((b) =>
+    ballHits(ball, b.x, b.y, b.x + BLOCK_SIZE, b.y + BLOCK_SIZE)
+  );
+  if (blockIdx !== -1) {
+    const block = course.blocks[blockIdx];
+    if (block.kind !== "brick" || block.fromKudos) {
+      return { ...state, thrownBall: null };
+    }
+    return {
+      ...state,
+      thrownBall: null,
+      course: {
+        ...course,
+        blocks: course.blocks.filter((_, i) => i !== blockIdx),
+      },
+      score: state.score + PR_BOARD_SCORE,
+      highScore: Math.max(state.highScore, state.score + PR_BOARD_SCORE),
+      popups: [
+        ...(state.popups ?? []),
+        { x: block.x, y: block.y - 6, text: "NEW PR!", ttlMs: 900 },
+      ],
+    };
+  }
+  const stepped = stepThrownBall(
+    ball,
+    course,
+    GROUND_Y,
+    cameraX,
+    CANVAS_SIZE,
+    deltaMs
+  );
+  if (stepped.landed) {
+    const landed = stepped.landed;
+    // A ball that comes down inside a station, plyo box or switch is lost.
+    const buried = overlapsProp(
+      state.props ?? EMPTY_PROPS,
+      landed.x,
+      landed.x + MEDBALL_SIZE
+    );
+    return {
+      ...state,
+      thrownBall: null,
+      course: buried
+        ? course
+        : { ...course, medBalls: [...(course.medBalls ?? []), landed] },
+    };
+  }
+  return { ...state, thrownBall: stepped.ball };
+}
+
+/**
+ * Moves a thrown medicine ball through `deltaMs` in frame-sized steps, so a
+ * long frame can't carry it through a foe or a brick without a hit.
+ */
+function stepThrownMedBall(
+  state: GameEngineState,
+  cameraX: number,
+  deltaMs: number
+): GameEngineState {
+  const frameMs = 1000 / 60;
+  let next = state;
+  let left = deltaMs;
+  for (let i = 0; i < 300 && left > 0 && next.thrownBall; i++) {
+    const dt = Math.min(frameMs, left);
+    next = stepThrownMedBallOnce(next, cameraX, dt);
+    left -= dt;
+  }
+  return next;
+}
+
 function loseLife(
   state: GameEngineState,
   report: CrashReport,
@@ -1641,6 +1965,10 @@ function loseLife(
       lives: 0,
       gameState: "crashed",
       crashReport: report,
+      riding: false,
+      carrying: false,
+      carryingId: undefined,
+      thrownBall: null,
     };
   }
   const stage = state.stage ?? 1;
@@ -1663,6 +1991,12 @@ function loseLife(
     pickups: [],
     bolts: [],
     boltCooldownMs: 0,
+    // A life lost takes the buddy and any ball with it; the moves that
+    // were toasted stay toasted (medBallToasted, like movesUsed).
+    riding: false,
+    carrying: false,
+    carryingId: undefined,
+    thrownBall: null,
     paceMeter: 0,
     flightMs: 0,
     spinMs: 0,
@@ -1910,7 +2244,9 @@ function updateCourseFoes(
       next = {
         ...next,
         playerY: Math.min(next.playerY, f.y - bodyH),
-        playerVy: buffered ? JUMP_FORCE : STOMP_BOUNCE_VY,
+        playerVy: buffered
+          ? JUMP_FORCE + (next.riding ? BUDDY_JUMP_BONUS_VY : 0)
+          : STOMP_BOUNCE_VY,
         jumpBufferMs: 0,
         stompChain: chain,
       };
@@ -1926,6 +2262,11 @@ function updateCourseFoes(
       if (star) {
         const left = hitFoe(f, REPMAX_HP_ALL);
         if (left) kept.push(left);
+        continue;
+      }
+      // A rider's buddy eats a small foe it runs into, with no harm (#2024).
+      if (next.riding && isEdibleFoe(f)) {
+        award(f, BUDDY_EAT_SCORE);
         continue;
       }
       if (!invulnerable && hurtBy === null) hurtBy = f.kind;
@@ -1986,25 +2327,33 @@ function updateCourseFoes(
   };
 
   if (hurtBy !== null) {
-    const hit = damageTier(next.power);
-    if (!hit.survived) {
-      return {
-        state: loseLife(
-          { ...next, obstacles: keptObstacles },
-          foeCrashReport(next, hurtBy)
-        ),
-        obstacles: [],
-        lost: true,
-      };
+    // A rider's buddy takes the hit: the tier and every life are kept (#2024).
+    if (next.riding) {
+      next = riderLosesBuddy(next, cameraX);
+    } else {
+      const hit = damageTier(next.power);
+      if (!hit.survived) {
+        return {
+          state: loseLife(
+            { ...next, obstacles: keptObstacles },
+            foeCrashReport(next, hurtBy)
+          ),
+          obstacles: [],
+          lost: true,
+        };
+      }
+      next = dropCarriedBall(
+        {
+          ...next,
+          ...hitToll(next),
+          power: hit.power,
+          playerY: next.playerY + bodyH - playerHeightFor(hit.power),
+          invulnerableMs: DAMAGE_GRACE_MS,
+          banner: { text: ouchText(next), ttlMs: 1400, tone: "warn" },
+        },
+        cameraX
+      );
     }
-    next = {
-      ...next,
-      ...hitToll(next),
-      power: hit.power,
-      playerY: next.playerY + bodyH - playerHeightFor(hit.power),
-      invulnerableMs: DAMAGE_GRACE_MS,
-      banner: { text: ouchText(next), ttlMs: 1400, tone: "warn" },
-    };
   }
   return { state: next, obstacles: keptObstacles, lost: false };
 }
@@ -2370,6 +2719,8 @@ function stepSimulation(
   let score = state.score;
   let kudos = state.kudos ?? 0;
   let power: PowerTier = state.power ?? "base";
+  // A Running Buddy under the runner (#2024); a catch below mounts it.
+  let riding = state.riding === true;
   let lives = state.lives;
   let starMs = Math.max(0, (state.starMs ?? 0) - safeDelta);
   let pickups = state.pickups ?? [];
@@ -2630,7 +2981,13 @@ function stepSimulation(
     ? flightMs > 0
       ? 1
       : 0
-    : stepPaceMeter(state.paceMeter, isGrounded, pace > 1, safeDelta);
+    : stepPaceMeter(
+        state.paceMeter,
+        isGrounded,
+        pace > 1,
+        safeDelta,
+        state.carrying ? MEDBALL_FILL_SCALE : 1
+      );
 
   // Coyote time and the jump buffer.
   // Neither applies while swimming.
@@ -2639,7 +2996,7 @@ function stepSimulation(
     ? 0
     : Math.max(0, (state.jumpBufferMs ?? 0) - safeDelta);
   if (!swimming && isGrounded && (state.jumpBufferMs ?? 0) > 0) {
-    nextPlayerVy = takeOffVy(power, paceMeter);
+    nextPlayerVy = takeOffVy(power, paceMeter, riding);
     if (startsFlight(power, paceMeter)) flightMs = CAPE_FLIGHT_MS;
     isGrounded = false;
     coyoteMs = COYOTE_MS;
@@ -2711,6 +3068,12 @@ function stepSimulation(
     };
   }
 
+  // A runaway Running Buddy that runs out of time is gone, and says so.
+  for (const p of pickups) {
+    if (p.ttlMs !== undefined && p.ttlMs - safeDelta <= 0) {
+      popups.push({ x: p.x, y: p.y - 6, text: BUDDY_TOASTS.gone, ttlMs: 900 });
+    }
+  }
   // Power-ups travel the course; touching one collects it.
   pickups = stepPickups(
     pickups,
@@ -2731,6 +3094,29 @@ function stepSimulation(
         p.y < playerBottom;
       if (!hit) {
         kept.push(p);
+        continue;
+      }
+      if (p.kind === "buddy") {
+        // A hatched buddy scores; a runaway caught again gives no points.
+        // Mounting shows "Good boy!" once; a rider has nothing more to do.
+        if (p.ttlMs === undefined) {
+          score += POWERUP_SCORE;
+          popups.push({
+            x: p.x,
+            y: p.y - 6,
+            text: `+${POWERUP_SCORE}`,
+            ttlMs: 900,
+          });
+        }
+        if (!riding) {
+          riding = true;
+          popups.push({
+            x: bodyLeft,
+            y: playerTop - 14,
+            text: BUDDY_TOASTS.mount,
+            ttlMs: 1100,
+          });
+        }
         continue;
       }
       score += POWERUP_SCORE;
@@ -2974,6 +3360,12 @@ function stepSimulation(
     lives,
     starMs,
     pickups: stageCleared ? [] : pickups,
+    // Stage advance: the buddy, a carried ball and a thrown one are left
+    // behind on the finished stage.
+    riding: stageCleared ? false : riding,
+    carrying: stageCleared ? false : state.carrying,
+    carryingId: stageCleared ? undefined : state.carryingId,
+    thrownBall: stageCleared ? null : (state.thrownBall ?? null),
     bolts: stageCleared ? [] : bolts,
     boltCooldownMs,
     paceMeter,
@@ -3037,6 +3429,8 @@ function stepSimulation(
       })),
       foeShots: [],
       obstacles: [],
+      // A ball still in flight at the far wall stays in the room.
+      thrownBall: null,
     };
   }
   if (runComplete) {
@@ -3087,20 +3481,28 @@ function stepSimulation(
 
   // A tall runner under a rack takes a hit, once per grace window.
   if (rackHit && (updatedState.invulnerableMs ?? 0) <= 0) {
-    // Only a tier taller than Base is hit, and every such tier survives a
-    // hit by dropping a tier, so a rack never costs a life.
-    const hit = damageTier(updatedState.power);
-    updatedState = {
-      ...updatedState,
-      ...hitToll(updatedState),
-      power: hit.power,
-      playerY:
-        updatedState.playerY +
-        playerHeightFor(updatedState.power) -
-        playerHeightFor(hit.power),
-      invulnerableMs: DAMAGE_GRACE_MS,
-      banner: { text: ouchText(updatedState), ttlMs: 1400, tone: "warn" },
-    };
+    if (updatedState.riding) {
+      // The buddy takes a rack hit instead of the tier (#2024).
+      updatedState = riderLosesBuddy(updatedState, cameraX);
+    } else {
+      // Only a tier taller than Base is hit, and every such tier survives a
+      // hit by dropping a tier, so a rack never costs a life.
+      const hit = damageTier(updatedState.power);
+      updatedState = dropCarriedBall(
+        {
+          ...updatedState,
+          ...hitToll(updatedState),
+          power: hit.power,
+          playerY:
+            updatedState.playerY +
+            playerHeightFor(updatedState.power) -
+            playerHeightFor(hit.power),
+          invulnerableMs: DAMAGE_GRACE_MS,
+          banner: { text: ouchText(updatedState), ttlMs: 1400, tone: "warn" },
+        },
+        cameraX
+      );
+    }
   }
 
   // 5. Procedural Obstacles & Memory Tokens Update
@@ -3111,7 +3513,6 @@ function stepSimulation(
   // Enemies and tokens move with their own speed plus the change in track
   // scroll from sprinting or braking.
   const paceShift = 2.5 * (pace - 1);
-  const invulnerable = (updatedState.invulnerableMs ?? 0) > 0;
   const prevPlayerBottom = state.playerY + h;
   const spinning = (state.spinMs ?? 0) > 0 && updatedState.power === "cape";
   for (const obs of currentObstacles) {
@@ -3256,7 +3657,9 @@ function stepSimulation(
             updatedState.score + points
           ),
           playerY: obsY - bodyH,
-          playerVy: buffered ? JUMP_FORCE : STOMP_BOUNCE_VY,
+          playerVy: buffered
+            ? JUMP_FORCE + (updatedState.riding ? BUDDY_JUMP_BONUS_VY : 0)
+            : STOMP_BOUNCE_VY,
           jumpBufferMs: 0,
           stompChain: chain,
           popups: [
@@ -3293,21 +3696,31 @@ function stepSimulation(
         };
         continue;
       }
-      if (invulnerable) {
+      // Read live: a hit earlier in this tick starts the grace window.
+      if ((updatedState.invulnerableMs ?? 0) > 0) {
+        nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
+        continue;
+      }
+      if (updatedState.riding) {
+        // The buddy takes this bug, and the runner keeps the tier (#2024).
+        updatedState = riderLosesBuddy(updatedState, cameraX);
         nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
         continue;
       }
       const hit = damageTier(updatedState.power);
       if (hit.survived) {
         // Dropping to Base shrinks the box from the top; the feet stay put.
-        updatedState = {
-          ...updatedState,
-          ...hitToll(updatedState),
-          power: hit.power,
-          playerY: updatedState.playerY + bodyH - playerHeightFor(hit.power),
-          invulnerableMs: DAMAGE_GRACE_MS,
-          banner: { text: ouchText(updatedState), ttlMs: 1400, tone: "warn" },
-        };
+        updatedState = dropCarriedBall(
+          {
+            ...updatedState,
+            ...hitToll(updatedState),
+            power: hit.power,
+            playerY: updatedState.playerY + bodyH - playerHeightFor(hit.power),
+            invulnerableMs: DAMAGE_GRACE_MS,
+            banner: { text: ouchText(updatedState), ttlMs: 1400, tone: "warn" },
+          },
+          cameraX
+        );
         nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
         continue;
       }
@@ -3410,6 +3823,11 @@ function stepSimulation(
   if (foeTick.lost) return foeTick.state;
   updatedState = foeTick.state;
   nextObstacles.splice(0, nextObstacles.length, ...foeTick.obstacles);
+
+  // 5c. A thrown medicine ball flies on (#2024).
+  if (updatedState.thrownBall) {
+    updatedState = stepThrownMedBall(updatedState, cameraX, safeDelta);
+  }
 
   // 6. Spawn new Obstacles
   // Early stages leave room to learn the course before the bugs crowd in.

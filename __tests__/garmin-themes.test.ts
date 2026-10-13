@@ -66,8 +66,23 @@ const TRACK_CHECKSUMS: Record<string, string> = {
 };
 
 /** The layout and props for one stage, seed and theme, as the engine lays them out. */
+/**
+ * A layout without the land-stage extras of #2024 (the buddy block and the
+ * medicine balls), which come from their own random stream: what is left
+ * must match the pre-theme output byte for byte.
+ */
+function withoutExtras(layout: CourseLayout): CourseLayout {
+  const { medBalls: _medBalls, ...rest } = layout;
+  return {
+    ...rest,
+    blocks: rest.blocks.map((b) =>
+      b.contents === "buddy" ? { ...b, contents: "kudos" as const } : b
+    ),
+  };
+}
+
 function build(stage: number, seed: number, theme: StageTheme) {
-  const layout = generateStage(stage, seed, GROUND_Y, theme);
+  const layout = withoutExtras(generateStage(stage, seed, GROUND_Y, theme));
   const { props, layout: trimmed } = generateStageProps(
     stage,
     seed,
@@ -230,9 +245,13 @@ describe("basement gym ceilings", () => {
         expect(generateStage(stage, seed, GROUND_Y, "basement-gym")).toEqual(
           gym
         );
-        const { ceilings, ...rest } = gym;
+        const { ceilings, ...rest } = withoutExtras(gym);
         expect(ceilings).toBeDefined();
-        expect(rest).toEqual(generateStage(stage, seed, GROUND_Y));
+        // The medicine balls also keep clear of the racks, so they are
+        // compared apart from the track layout.
+        expect(rest).toEqual(
+          withoutExtras(generateStage(stage, seed, GROUND_Y))
+        );
       }
     }
   });

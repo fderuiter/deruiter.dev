@@ -88,6 +88,22 @@ Set while the runner is in a Water Station's bonus room.
 
 ***
 
+### carrying?
+
+> `optional` **carrying?**: `boolean`
+
+The runner is carrying a medicine ball.
+
+***
+
+### carryingId?
+
+> `optional` **carryingId?**: `number`
+
+Id of the carried medicine ball, reused when it is thrown and lands.
+
+***
+
 ### consecutiveDodges
 
 > **consecutiveDodges**: `number`
@@ -359,6 +375,14 @@ Lives left, counting the current one; absent means this is the last.
 
 ***
 
+### medBallToasted?
+
+> `optional` **medBallToasted?**: `boolean`
+
+The "Med ball!" toast has shown this run.
+
+***
+
 ### movesUsed?
 
 > `optional` **movesUsed?**: [`MoveName`](../../garmin-moves/type-aliases/MoveName.md)[]
@@ -460,6 +484,14 @@ Water Stations, Plyo Boxes, Treadmill Belts and Rest Day Switches.
 > `optional` **restDayMs?**: `number`
 
 Milliseconds left of a Rest Day, when bricks and Kudos swap.
+
+***
+
+### riding?
+
+> `optional` **riding?**: `boolean`
+
+The runner is riding a Running Buddy.
 
 ***
 
@@ -598,6 +630,14 @@ game clock and resets on a new run and on a lost life.
 ### thermalStress
 
 > **thermalStress**: `number`
+
+***
+
+### thrownBall?
+
+> `optional` **thrownBall?**: [`ThrownBall`](../../garmin-medball/interfaces/ThrownBall.md) \| `null`
+
+The medicine ball in flight, if any.
 
 ***
 

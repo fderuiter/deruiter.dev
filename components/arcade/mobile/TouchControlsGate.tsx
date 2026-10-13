@@ -26,6 +26,48 @@ const NONE = "none";
  * @param props - The on-screen controls.
  * @returns The controls, hidden while the keyboard or a mouse is in use.
  */
+/**
+ * Hides or restores every focusable control under `root` to match `active`.
+ * A hidden control leaves the Tab order; a shown one gets its own tabindex
+ * back. The focus is moved off a control that was just hidden.
+ *
+ * @param root - The gate's root element.
+ * @param active - True while touch controls are shown.
+ */
+function syncFocusability(root: HTMLElement, active: boolean): void {
+  root.querySelectorAll<HTMLElement>(FOCUSABLE).forEach((el) => {
+    if (!active) {
+      if (!el.hasAttribute(SAVED_TABINDEX)) {
+        el.setAttribute(SAVED_TABINDEX, el.getAttribute("tabindex") ?? NONE);
+      }
+      el.setAttribute("tabindex", "-1");
+    } else if (el.hasAttribute(SAVED_TABINDEX)) {
+      const saved = el.getAttribute(SAVED_TABINDEX);
+      if (saved === NONE) el.removeAttribute("tabindex");
+      else if (saved !== null) el.setAttribute("tabindex", saved);
+      el.removeAttribute(SAVED_TABINDEX);
+    }
+  });
+  if (!active && root.contains(document.activeElement)) {
+    (document.activeElement as HTMLElement).blur();
+  }
+}
+
+/**
+ * Keeps on-screen controls mounted and hit-testable while a keyboard or a
+ * trackpad is in use, and hides them visually and from assistive tech. The
+ * next touch shows them again (ADR 0061).
+ *
+ * The controls are not unmounted, so the first tap after a key press lands on
+ * the control rather than on the stage behind it. Hiding uses opacity, which
+ * keeps the pointer target live; `inert` would block that, so the controls
+ * drop out of the Tab order with tabindex instead. While hidden, a control
+ * that mounts later (a dock that swaps keys on a scene change) is hidden the
+ * same way as soon as it appears.
+ *
+ * @param props - The on-screen controls.
+ * @returns The controls, hidden while the keyboard or a mouse is in use.
+ */
 export function TouchControlsGate({ children }: TouchControlsGateProps) {
   const modality = useInputModality();
   const active = modality === "touch" || modality === "pen";
@@ -35,23 +77,19 @@ export function TouchControlsGate({ children }: TouchControlsGateProps) {
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    root.querySelectorAll<HTMLElement>(FOCUSABLE).forEach((el) => {
-      if (!active) {
-        if (!el.hasAttribute(SAVED_TABINDEX)) {
-          el.setAttribute(SAVED_TABINDEX, el.getAttribute("tabindex") ?? NONE);
-        }
-        el.setAttribute("tabindex", "-1");
-      } else if (el.hasAttribute(SAVED_TABINDEX)) {
-        const saved = el.getAttribute(SAVED_TABINDEX);
-        if (saved === NONE) el.removeAttribute("tabindex");
-        else if (saved !== null) el.setAttribute("tabindex", saved);
-        el.removeAttribute(SAVED_TABINDEX);
-      }
-    });
-    if (!active && root.contains(document.activeElement)) {
-      (document.activeElement as HTMLElement).blur();
-    }
+    syncFocusability(root, active);
   });
+
+  // Children can mount between renders (a dock that remounts its keys when
+  // the scene changes). While hidden, a mutation re-hides them. Shown
+  // controls need no watching.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root || active || typeof MutationObserver === "undefined") return;
+    const observer = new MutationObserver(() => syncFocusability(root, false));
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [active]);
 
   return (
     <div

@@ -101,7 +101,7 @@ function DirectionButton({
       label={DIRECTION_LABEL[direction]}
       onPress={() => repeat.start()}
       onRelease={() => repeat.stop()}
-      className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-cyan-400 active:bg-cyan-500/30 active:text-cyan-300`}
+      className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-amber-400 active:bg-cyan-500/30 active:text-cyan-300`}
     >
       <Icon
         className={`${large ? "min-[480px]:h-[calc(var(--touch-key,80px)*0.3)] min-[480px]:w-[calc(var(--touch-key,80px)*0.3)] " : ""}h-6 w-6`}

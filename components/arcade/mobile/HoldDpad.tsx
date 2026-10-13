@@ -20,7 +20,10 @@ export interface HoldDpadProps {
    * of width. The default is the comfortable 48px.
    */
   compact?: boolean;
-  /** Keys at 80px, for a portrait tablet whose lower dock has the room. */
+  /**
+   * Keys fill their dock cell, and on a portrait tablet (600px and up) they
+   * take the dock's --touch-key size in a tight cluster instead.
+   */
   large?: boolean;
   /**
    * True while the game is not taking moves (paused, or an options sheet is
@@ -64,7 +67,9 @@ const CELLS: ({ dir: SwipeDirection } | null)[] = [
  * pad takes the whole dock. Otherwise 44px when compact, else 48px.
  */
 function keySize(compact: boolean, large: boolean): string {
-  if (large) return "h-full w-full";
+  // A tablet's dock sets --touch-key (96 to 120px); without it, the key fills
+  // its cell as before.
+  if (large) return "h-[var(--touch-key,100%)] w-[var(--touch-key,100%)]";
   return compact ? "h-11 w-11" : "h-12 w-12";
 }
 
@@ -93,7 +98,10 @@ function DirectionButton({
       onRelease={() => repeat.stop()}
       className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-cyan-400 active:bg-cyan-500/30 active:text-cyan-300`}
     >
-      <Icon className="h-6 w-6" aria-hidden="true" />
+      <Icon
+        className={`${large ? "min-[600px]:h-[calc(var(--touch-key,96px)*0.3)] min-[600px]:w-[calc(var(--touch-key,96px)*0.3)] " : ""}h-6 w-6`}
+        aria-hidden="true"
+      />
     </TouchButton>
   );
 }
@@ -115,7 +123,11 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
     role="group"
     aria-label="Directional pad"
     data-hold-dpad=""
-    className={`grid grid-cols-3 gap-1 touch-none select-none ${large ? "h-full grid-rows-3" : ""} ${className}`}
+    className={`grid grid-cols-3 gap-1 touch-none select-none ${
+      large
+        ? "h-full grid-rows-3 min-[600px]:h-auto min-[600px]:w-max min-[600px]:grid-rows-none min-[600px]:gap-2"
+        : ""
+    } ${className}`}
   >
     {CELLS.map((cell, index) =>
       cell ? (

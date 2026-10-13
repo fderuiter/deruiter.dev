@@ -2573,11 +2573,109 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     </div>
   );
 
+  // The tablet's room panel: the route, the exit, the weapons, and the bars the
+  // phone HUD only hints at. CSS shows it on a portrait tablet only.
+  const roomNodes = tspNodes ?? [];
+  const routeVisited = roomNodes.filter((node) => node.visited).length;
+  const exitLocked =
+    gameMode === "roguelike" && getExitLockState(boss, tspNodes).locked;
+  const empWeapon = weapons.emp_blast;
+  const phoneRoomPanel = (
+    <section
+      aria-label="Room status"
+      data-testid="labyrinth-room-panel"
+      className="hidden min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/80 p-3 font-mono text-xs portrait:min-[600px]:flex portrait:min-[600px]:col-span-2 portrait:min-[600px]:row-start-2"
+    >
+      <div className="flex items-center justify-between gap-2">
+        {roomNodes.length > 0 && (
+          <span className="font-bold uppercase tracking-wider text-zinc-400">
+            Route {routeVisited}/{roomNodes.length}
+          </span>
+        )}
+        <span
+          className={`font-bold uppercase tracking-wider ${
+            exitLocked ? "text-rose-400" : "text-emerald-400"
+          }`}
+          data-testid="labyrinth-room-exit"
+        >
+          {exitLocked ? "Exit locked" : "Exit open"}
+        </span>
+      </div>
+      {roomNodes.length > 0 && (
+        <ul aria-label="Route nodes" className="flex flex-wrap gap-2">
+          {roomNodes.map((node, index) => (
+            <li
+              key={`${node.x},${node.y}`}
+              aria-label={`Node ${index + 1} ${node.visited ? "visited" : "not visited"}`}
+              className={`flex h-9 min-w-9 items-center justify-center rounded-md border px-2 text-sm font-bold ${
+                node.visited
+                  ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
+                  : "border-zinc-700 text-zinc-400"
+              }`}
+            >
+              {index + 1}
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex items-center justify-between gap-2 text-sm">
+        <span className="text-zinc-200">
+          <span className="text-zinc-500">TOOL </span>
+          {PHONE_TOOL_LABELS[activeWeaponId] ??
+            WEAPON_SHORT_LABELS[activeWeaponId] ??
+            weapons[activeWeaponId]?.name ??
+            activeWeaponId}
+        </span>
+        <span className={dronesStunned ? "text-cyan-300" : "text-amber-300"}>
+          EMP {empWeapon?.ammo ?? 0}/{empWeapon?.maxAmmo ?? 0}
+          {dronesStunned ? " · drones stunned" : ""}
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between text-sm font-bold">
+          <span className="text-zinc-400">HP</span>
+          <span className="text-zinc-100">
+            {playerHp}/{maxPlayerHp}
+          </span>
+        </div>
+        <span className="block h-4 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900">
+          <span
+            className={`block h-full transition-[width] duration-200 ${
+              playerHp > 50
+                ? "bg-emerald-500"
+                : playerHp > 25
+                  ? "bg-amber-500"
+                  : "bg-rose-500"
+            }`}
+            style={{ width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%` }}
+          />
+        </span>
+      </div>
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between text-sm font-bold">
+          <span className="text-slate-400">RAM</span>
+          <span className="text-zinc-100">
+            {currentRam}/{maxRam}
+          </span>
+        </div>
+        <span className="block h-4 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900">
+          <span
+            className="block h-full bg-sky-500 transition-[width] duration-200"
+            style={{ width: `${Math.max(0, (currentRam / maxRam) * 100)}%` }}
+          />
+        </span>
+      </div>
+      <p className="min-h-5 truncate text-amber-200" aria-hidden="true">
+        {phoneToast?.text ?? ""}
+      </p>
+    </section>
+  );
+
   const phoneActionGrid = (
     <div
       role="group"
       aria-label="Tools and actions"
-      className="grid grid-cols-2 gap-1"
+      className="grid grid-cols-2 gap-1 portrait:min-[600px]:w-max portrait:min-[600px]:gap-2"
     >
       {[0, 1, 2].map((slotIdx) => {
         const weaponId = selectedClass.starterWeapons[slotIdx];
@@ -2602,7 +2700,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             }
             disabled={!hasAmmo}
             onPress={() => fireStarterSlot(slotIdx)}
-            className="relative flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
+            className="relative flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
           >
             {showKeyHints && (
               <span
@@ -2612,7 +2710,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 {slotIdx + 1}
               </span>
             )}
-            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm">
+            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)]">
               {shortLabel}
             </span>
           </TouchButton>
@@ -2621,21 +2719,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       <TouchButton
         label="EMP: fire an EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm font-bold text-slate-200"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Exploit: cycle to the next tool and fire it"
         onPress={cycleWeapon}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm font-bold text-cyan-200"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
         label="Market: open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm font-bold text-amber-300"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -3482,12 +3580,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneRow = (
     <DockFrame
       handedness={handedness}
-      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2"
+      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[600px]:grid-rows-[auto_minmax(0,1fr)_auto] portrait:min-[600px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[600px]:[--touch-key:clamp(96px,14vw,120px)]"
     >
       {/* The controls sit in a gate: a keyboard hides them, a touch brings
           them back (ADR 0061). */}
       <div
-        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:grid portrait:min-h-0 portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] ${leftHanded ? "portrait:col-start-2" : "portrait:col-start-1"}`}
+        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:grid portrait:min-h-0 portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[600px]:row-start-3 portrait:min-[600px]:self-end portrait:min-[600px]:justify-items-start portrait:min-[600px]:[container-type:normal] ${leftHanded ? "portrait:col-start-2" : "portrait:col-start-1"}`}
       >
         <TouchControlsGate>
           <HoldDpad
@@ -3499,8 +3597,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         </TouchControlsGate>
       </div>
       {canvasFrameNode}
+      {phoneRoomPanel}
       <div
-        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] ${leftHanded ? "portrait:col-start-1" : "portrait:col-start-2"}`}
+        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[600px]:row-start-3 portrait:min-[600px]:h-auto portrait:min-[600px]:self-end portrait:min-[600px]:items-end portrait:min-[600px]:[container-type:normal] ${leftHanded ? "portrait:col-start-1" : "portrait:col-start-2"}`}
       >
         <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
       </div>

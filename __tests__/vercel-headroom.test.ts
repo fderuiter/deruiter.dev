@@ -340,7 +340,15 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
 
   describe("6. System Evaluation & Runbook Parity", () => {
     it("evaluates current Vercel Hobby state and flags critical functions storage", () => {
-      const result = evaluateVercelHeadroom();
+      // #2015: pinned inside the snapshot's 30-day horizon. On the wall clock
+      // this test turned the meter "stale" on 2026-10-12 and failed every run.
+      const result = evaluateVercelHeadroom(
+        DEFAULT_THRESHOLDS,
+        {},
+        new HeadroomAlertManager(),
+        undefined,
+        new Date("2026-09-13T12:00:00.000Z")
+      );
       expect(result.plan).toBe("Vercel Hobby");
       expect(result.hasCriticalAlerts).toBe(true);
       expect(result.meters.functionsStorage.severity).toBe("critical");

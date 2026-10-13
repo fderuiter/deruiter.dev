@@ -105,7 +105,47 @@ describe("CI Workflow Toolchain Pinning", () => {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
     ) as { scripts: Record<string, string> };
-    expect(pkg.scripts.typecheck).toBe("tsc --noEmit");
+    expect(pkg.scripts.typecheck).toBe(
+      "node --max-old-space-size=3072 node_modules/typescript/bin/tsc --noEmit"
+    );
+  });
+
+  /**
+   * #2014: the whole-project check needs a little over 2 GB of heap, which is
+   * the default limit in the Vercel Deployment Checks sandbox, so the gate
+   * crashed with exit 134 there while passing on larger runners. The ceiling
+   * is set in the script so every caller (CI, Husky, Vercel) gets the same one.
+   */
+  it("gives the typecheck an explicit heap ceiling above 2 GB", () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
+    ) as { scripts: Record<string, string> };
+    const heap = /--max-old-space-size=(\d+)/.exec(pkg.scripts.typecheck);
+    expect(Number(heap?.[1])).toBeGreaterThan(2048);
+  });
+
+  /**
+   * #2014: CI checks the whole program cold under a smaller heap than the
+   * Vercel ceiling, so growth fails the pull request while the deploy check
+   * still has headroom.
+   */
+  it("runs a cold typecheck in CI under a heap budget below the ceiling", () => {
+    const pkg = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
+    ) as { scripts: Record<string, string> };
+    const heapOf = (script: string) =>
+      Number(/--max-old-space-size=(\d+)/.exec(script)?.[1]);
+    const budget = pkg.scripts["typecheck:budget"];
+
+    expect(budget).toContain("node_modules/typescript/bin/tsc --noEmit");
+    expect(budget).toContain("--incremental false");
+    expect(heapOf(budget)).toBeLessThan(heapOf(pkg.scripts.typecheck));
+
+    const ci = fs.readFileSync(path.join(workflowDir, "ci.yml"), "utf8");
+    const typeCheckStep = ci
+      .split("- name:")
+      .find((section) => section.includes("Type Check"));
+    expect(typeCheckStep).toContain("npm run typecheck:budget");
   });
 
   /**

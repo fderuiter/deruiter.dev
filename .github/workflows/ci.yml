@@ -182,24 +182,28 @@ jobs:
       - name: Lint Documentation
         run: npm run lint:docs
 
-      # tsc's incremental state records a content hash per file, and ESLint's
-      # cache uses the content strategy, so a restored entry only skips work
-      # on files whose bytes are unchanged; it can never hide a new error.
-      # The config here is not type-aware, so a file's lint result depends on
-      # that file alone.
-      - name: Cache TypeScript and ESLint Incremental State
+      # ESLint's cache uses the content strategy, so a restored entry only
+      # skips work on files whose bytes are unchanged; it can never hide a new
+      # error. The config here is not type-aware, so a file's lint result
+      # depends on that file alone.
+      - name: Cache ESLint Incremental State
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
-            tsconfig.tsbuildinfo
             .eslintcache
           key: static-incremental-${{ hashFiles('package-lock.json') }}-${{ github.sha }}
           restore-keys: |
             static-incremental-${{ hashFiles('package-lock.json') }}-
 
-      - name: Type Check & Lint
+      # #2014: the typecheck runs from scratch under a heap smaller than the
+      # 3 GB ceiling `npm run typecheck` gives Vercel's Deployment Checks, so
+      # a program that outgrows its memory fails here on the pull request,
+      # with headroom to spare, instead of crashing the production deploy.
+      # An incremental run would check only changed files and could pass on
+      # less memory than a cold run needs.
+      - name: Type Check (Memory Budget) & Lint
         run: |
-          npm run typecheck -- --incremental
+          npm run typecheck:budget
           npm run lint -- --cache --cache-strategy content --cache-location .eslintcache
 
       # The full `npm run verify` runs in heavy-gate-report, after the bench

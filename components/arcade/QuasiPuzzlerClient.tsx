@@ -99,6 +99,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
                 { key: "sorry", action: "Admit Goal" },
               ]}
               importComponent={QuasiPerfectPuzzlerLoader}
+              mobileLayout="fit"
             >
               <DynamicQuasiPerfectPuzzler />
             </PlayCabinet>

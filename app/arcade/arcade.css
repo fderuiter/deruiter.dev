@@ -1004,6 +1004,49 @@
   border: 1px solid var(--qp-hairline);
 }
 
+/*
+ * Quasi-Puzzler on the immersive touch cabinet (ADR 0061, #2042). The section
+ * carries `qp-touch` only while useCabinetTouch() is true, so desktop markup
+ * and styles never see these rules. The cabinet fills the viewport: the header,
+ * the tactic hand and the drawers keep their natural height, and the board
+ * (`qp-touch-board`) takes the rest and scrolls inside itself, so the page
+ * never scrolls and the hand stays on screen in both orientations.
+ */
+.qp-root.qp-touch {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  /* Clears the cabinet's floating toolbar at the top right. */
+  padding-right: max(0.75rem, var(--cabinet-toolbar-inset, 0px));
+}
+.qp-root.qp-touch > * {
+  flex-shrink: 0;
+}
+.qp-root.qp-touch > .qp-touch-board {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Every on-screen control is at least 44px square. */
+.qp-root.qp-touch button {
+  min-height: 44px;
+  min-width: 44px;
+}
+/* No text under 12px on the cabinet. */
+.qp-root.qp-touch .text-\[9px\],
+.qp-root.qp-touch .text-\[10px\],
+.qp-root.qp-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+/* Tactic cards grow with their 12px labels, so the text is not clipped. */
+.qp-root.qp-touch .qp-card {
+  width: 7.5rem;
+  height: 9.75rem;
+}
+
 .qp-math {
   font-family: var(--qp-math);
   font-feature-settings: "ss01";

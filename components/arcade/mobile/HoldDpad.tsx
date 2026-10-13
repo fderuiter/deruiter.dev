@@ -30,6 +30,11 @@ export interface HoldDpadProps {
    * open). Any repeat in progress is released at once.
    */
   paused?: boolean;
+  /**
+   * The arrows to draw. Defaults to all four. A game that steers on one axis
+   * passes just that pair, so no arrow is drawn that does nothing.
+   */
+  directions?: readonly SwipeDirection[];
 }
 
 const DIRECTION_LABEL: Record<SwipeDirection, string> = {
@@ -118,6 +123,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
   compact = false,
   large = false,
   paused = false,
+  directions,
 }) => (
   <div
     role="group"
@@ -130,7 +136,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
     } ${className}`}
   >
     {CELLS.map((cell, index) =>
-      cell ? (
+      cell && (!directions || directions.includes(cell.dir)) ? (
         <DirectionButton
           key={cell.dir}
           direction={cell.dir}

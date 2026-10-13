@@ -319,3 +319,51 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
     });
   });
 });
+
+// Working With Duck is gated on phones only (ADR 0061). On a tablet it
+// launches the immersive cabinet with its own control dock (#2039).
+const DUCK_ROUTE = "/arcade/working-with-duck";
+const DUCK_DOCK = '[data-testid="duck-control-dock"]';
+
+test.describe("Working With Duck on a tablet (iPad projects)", () => {
+  test.setTimeout(240000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(DUCK_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches immersive with its control dock", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchCabinet(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-fullscreen",
+      "true"
+    );
+    await expect(page.locator(DUCK_DOCK)).toBeVisible();
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the immersive cabinet has no blocking axe violations", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const results = await new AxeBuilder({ page })
+      .include(IMMERSIVE)
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+      .analyze();
+    const blocking = results.violations
+      .filter((v) => BLOCKING.has(v.impact ?? ""))
+      .map(
+        (v) =>
+          `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+      );
+    expect(blocking).toEqual([]);
+  });
+});

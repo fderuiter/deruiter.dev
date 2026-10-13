@@ -11,16 +11,16 @@ import {
 } from "@tabler/icons-react";
 import { copyToClipboard } from "@/lib/clipboard";
 
-// The gate matches `(pointer: coarse) and (max-width: 1023px)` (ADR 0048):
-// phones in either orientation and tablets held in portrait. A desktop window
-// resized narrow keeps its fine pointer and still gets the game. It is decided
-// in CSS rather than with matchMedia so the server-rendered HTML is already
-// correct: no hydration flash of the cabinet on phones, or of the notice on
-// desktops.
+// The gate matches PHONE_QUERY (ADR 0061, narrowing ADR 0048): phones in
+// either orientation and touch devices in a Split View pane narrower than
+// 744px. Tablets get the game. A desktop window resized narrow keeps its fine
+// pointer and still gets the game. It is decided in CSS rather than with
+// matchMedia so the server-rendered HTML is already correct: no hydration
+// flash of the cabinet on phones, or of the notice on desktops and tablets.
 const SHOW_ON_DESKTOP =
-  "[@media(pointer:coarse)_and_(max-width:1023px)]:hidden";
+  "[@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:hidden";
 const SHOW_ON_TOUCH_COMPACT =
-  "hidden [@media(pointer:coarse)_and_(max-width:1023px)]:block";
+  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:block";
 
 /** Places that pass the phone vibe test (ADR 0048). */
 const PHONE_FRIENDLY = [
@@ -47,8 +47,7 @@ interface DesktopOnlyGateProps {
 }
 
 /**
- * Replaces a game's play area with a desktop-only notice on phones and
- * portrait tablets. The notice shows desktop gameplay, offers to save the
+ * Replaces a game's play area with a desktop-only notice on phones (PHONE_QUERY). The notice shows desktop gameplay, offers to save the
  * link for later, and points at parts of the site that work on a phone. The route's
  * heading, description and metadata render unchanged, so shared links and
  * search previews still describe the game. "Try it anyway" reveals the

@@ -2,11 +2,34 @@ import { expect, type Page } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
 
-/** The widths of the mobile matrix (ADR 0061): floor, phone, tablet, desktop. */
-const MATRIX_WIDTHS = [320, 375, 768, 1440] as const;
+/** A viewport size for a matrix capture. */
+interface MatrixSize {
+  width: number;
+  height: number;
+}
 
-/** Viewport height used for matrix captures. */
-const MATRIX_HEIGHT = 800;
+/**
+ * The phone and desktop matrix (ADR 0061): floor, phone, tablet, desktop, at
+ * a fixed height.
+ */
+const MATRIX_SIZES: readonly MatrixSize[] = [320, 375, 768, 1440].map(
+  (width) => ({ width, height: 800 })
+);
+
+/**
+ * The iPad matrix (ADR 0061): every tablet size in portrait and in landscape,
+ * as the tablet projects in playwright.config.ts run them.
+ */
+export const TABLET_MATRIX: readonly MatrixSize[] = [
+  { width: 744, height: 1133 },
+  { width: 1133, height: 744 },
+  { width: 820, height: 1180 },
+  { width: 1180, height: 820 },
+  { width: 834, height: 1194 },
+  { width: 1194, height: 834 },
+  { width: 1024, height: 1366 },
+  { width: 1366, height: 1024 },
+];
 
 /**
  * Fails when any rendered element, or the document itself, is wider than the
@@ -61,43 +84,45 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
   expect(report.offenders, "elements wider than the viewport").toEqual([]);
 }
 
-/** One matrix capture: the width, the file, and whether the cabinet was immersive. */
-export interface MatrixShot {
-  width: number;
+/** One matrix capture: the size, the file, and whether the cabinet was immersive. */
+interface MatrixShot extends MatrixSize {
   file: string;
   immersive: boolean;
 }
 
 /**
- * Captures the page at each matrix width into `dir`, named by the state the
- * page is in at that width: `<slug>-<width>-immersive.png` or
- * `<slug>-<width>-windowed.png`. The viewport the page started at is restored.
+ * Captures the page at each size into `dir`, named by the size and the state
+ * the page is in there: `<slug>-<width>x<height>-immersive.png` or
+ * `<slug>-<width>x<height>-windowed.png`. The viewport the page started at is
+ * restored.
  *
  * @param page - The page to capture, already navigated and settled.
  * @param slug - A short name for the page, e.g. `trial-and-error`.
  * @param dir - The directory to write into. Created if missing.
- * @returns One entry per width, in matrix order.
+ * @param sizes - The sizes to capture. Defaults to the phone and desktop matrix.
+ * @returns One entry per size, in the order given.
  */
 export async function captureMatrix(
   page: Page,
   slug: string,
-  dir: string
+  dir: string,
+  sizes: readonly MatrixSize[] = MATRIX_SIZES
 ): Promise<MatrixShot[]> {
   fs.mkdirSync(dir, { recursive: true });
   const original = page.viewportSize();
   const shots: MatrixShot[] = [];
-  for (const width of MATRIX_WIDTHS) {
-    await page.setViewportSize({ width, height: MATRIX_HEIGHT });
+  for (const size of sizes) {
+    await page.setViewportSize(size);
     await page.waitForTimeout(250);
     const immersive = await page.evaluate(
       () => document.querySelector('[data-immersive="true"]') !== null
     );
     const file = path.join(
       dir,
-      `${slug}-${width}-${immersive ? "immersive" : "windowed"}.png`
+      `${slug}-${size.width}x${size.height}-${immersive ? "immersive" : "windowed"}.png`
     );
     await page.screenshot({ path: file });
-    shots.push({ width, file, immersive });
+    shots.push({ ...size, file, immersive });
   }
   if (original) await page.setViewportSize(original);
   return shots;

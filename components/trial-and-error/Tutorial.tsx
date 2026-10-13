@@ -198,12 +198,12 @@ function TutorialOffer({
     >
       {/* One slim strip, so the table still fits one screen (#1524). */}
       <div className="min-w-0 flex-1 break-words text-zinc-300">
-        <h3
+        <strong
           id="tutorial-offer-title"
           className="mr-2 inline font-bold uppercase tracking-wider text-amber-300"
         >
           First time at the table?
-        </h3>
+        </strong>
         Play a guided Blind: one hand, seven short steps, with a coach pointing
         at each control.
       </div>

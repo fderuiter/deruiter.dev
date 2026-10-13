@@ -1,4 +1,13 @@
-export { TOUCH_NARROW_QUERY, useTouchNarrow } from "./immersive";
+export {
+  TOUCH_DEVICE_QUERY,
+  PHONE_QUERY,
+  useTouchDevice,
+  usePhone,
+} from "./immersive";
+export { useInputModality, type InputModality } from "./input-modality";
+export { TouchControlsGate } from "./TouchControlsGate";
+export { InputModalityAttribute } from "./InputModalityAttribute";
+export type { TouchControlsGateProps } from "./TouchControlsGate";
 export {
   useOrientationMismatch,
   lockScreenOrientation,

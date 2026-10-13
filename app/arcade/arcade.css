@@ -473,6 +473,9 @@
    panning and pinch-zoom over the play area; the toolbar and the control dock
    sit outside the stage and keep their own taps. */
 .arcade-cabinet[data-immersive="true"] {
+  /* The space the floating toolbar takes at the top of the cabinet. The stage
+     keeps it clear when the browser scrolls a focused control into view. */
+  --cabinet-toolbar-inset: 4rem;
   /* Panning keeps a scroll-layout stage (and any horizontal strip inside it,
      such as a card hand) scrollable while ruling out pinch and double-tap
      zoom; a fit-layout cabinet takes every gesture. */
@@ -486,6 +489,14 @@
 .arcade-cabinet[data-immersive="true"][data-mobile-layout="fit"]
   .arcade-cabinet-stage {
   touch-action: none;
+}
+/* The immersive cabinet hides the rotate banner from the hub (ADR 0061): it
+   tells a phone to turn, and a tablet in the cabinet has nothing to turn to. */
+.arcade-cabinet[data-immersive="true"] [data-tablet-orientation-hint] {
+  display: none;
+}
+.arcade-cabinet[data-immersive="true"] .arcade-cabinet-stage {
+  scroll-padding-top: var(--cabinet-toolbar-inset, 0px);
 }
 .arcade-cabinet-stage > * {
   flex-shrink: 0;

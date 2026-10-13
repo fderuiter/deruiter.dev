@@ -66,11 +66,12 @@ const getScore = (key?: string) => () => {
 
 const getServerScore = () => "0";
 
-// Same query as DesktopOnlyGate (ADR 0048): phones and portrait tablets.
+// Same query as DesktopOnlyGate (PHONE_QUERY, ADR 0061): phones only. Tablets
+// are not marked desktop only.
 const SHOW_ON_TOUCH_COMPACT_INLINE =
-  "hidden [@media(pointer:coarse)_and_(max-width:1023px)]:inline-block";
+  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:inline-block";
 const SHOW_ON_TOUCH_COMPACT_BLOCK =
-  "hidden [@media(pointer:coarse)_and_(max-width:1023px)]:block";
+  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:block";
 
 const ARCADE_GAMES: ArcadeGameCard[] = [
   {

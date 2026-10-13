@@ -502,8 +502,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
 
   "garmin-watch": {
     id: "garmin-watch",
-    title: "Monkey C Mayhem: Garmin Schvitz App",
-    subtitle: "Embedded Systems & Garmin Schvitz App Simulator",
+    title: "Monkey C Mayhem",
+    subtitle: "A Garmin 5K Platformer",
     genre: "Embedded Systems",
     badge: "Monkey C Mayhem",
     route: "/arcade/garmin-watch",
@@ -511,68 +511,56 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     objective:
-      "Run a 5K: five 1 km stages of side-scrolling platforming, each ending at a finish pole. Stomp the bugs, clear the gaps, collect Kudos, and keep the Connect IQ app under the device's RAM limit with the battery alive. You have three lives; clear stage 5 to finish. Your high score is saved.",
+      "Run a 5K: five 1 km stages on three lives. Each run starts with Waiting for GPS… and then GO. Stomp Couch Potatoes, jump Hurdles, bump Sync Blocks, and keep your Body Battery above zero on the way to each finish pole. Clear stage 5 to finish the 5K. Your high score is saved on this device.",
     quickSummary:
-      "Press Enter to boot. Up or Space jumps (hold for height), Right sprints, Left brakes. Land on bugs and watchdogs to stomp them, jump the spiked stacks and the gaps, bump Sync Blocks from below for power-ups, and throw heat bolts or spin the Compression Cape with X. Sprint to fill the pace meter for a higher jump, or a take-off with the Cape. Pop variables with Down or run GC with Backspace before the heap fills. Wipe fog with W or a drag.",
+      "Press Enter to start. Up or Space jumps (hold for height), Right sprints, Left eases to a jog. Stomp Couch Potatoes and Snooze Buttons, and jump the Hurdles. Bump Sync Blocks for power-ups, press X to throw heat bolts or spin the Compression Cape, and keep your Body Battery above zero.",
     controls: [
       {
-        action: "Start, Pause & Resume",
+        action: "Start & Pause",
         description:
-          "Boots the app, pauses and resumes a run, or reboots after a crash. Same as the START bezel button. P and Esc also pause and resume; Space boots the app when no run is going.",
+          "Enter starts a run, which opens with Waiting for GPS…, and pauses or resumes it. P or Esc also pause and resume. The pause screen says AUTO PAUSE.",
         key: "Enter / P / Esc",
       },
       {
         action: "Jump",
         description:
-          "Tap for a hop, hold for a full jump. A jump still works a moment after running off an edge, and a press just before landing fires on touchdown. Floating memory and NV tokens are collected by touching them, so jump or run under them on purpose. Same as the UP bezel button, or swipe up on the screen.",
+          "Tap for a short hop, hold for a full jump. Hold longer to clear the Hurdles and the gaps.",
         key: "↑ / Space",
       },
       {
-        action: "Sprint & Brake",
+        action: "Sprint & Jog",
         description:
-          "Hold Right to run faster (longer jumps across wide gaps) or Left to slow down and time a jump. Sprinting on the track fills the six-segment pace meter under the course line; a full meter gives a higher jump, and it drains when you stop sprinting.",
+          "Hold Right to sprint. Sprinting drains Body Battery faster. Hold Left to ease to a jog, which rests you and recharges Body Battery.",
         key: "→ / ←",
       },
       {
-        action: "Pop Heap Variable (Jettison)",
+        action: "Action (Heat Map & Cape)",
         description:
-          "Frees the oldest collectible variable instantly for +5 points. The app's required state (appCtx, displayGfx) is never popped. Same as the DOWN bezel button, or swipe down.",
-        key: "↓",
+          "With a Heat Map, throws a heat bolt along the track. With the Compression Cape, spins to knock foes aside. Both work on Couch Potatoes, Snooze Buttons and Kettlebells. In Dev Mode, Backspace and G force garbage collection instead.",
+        key: "X / Backspace / G",
       },
       {
-        action: "Force Garbage Collection",
+        action: "Glide & Take Off (Compression Cape)",
         description:
-          "Frees 2 to 4 KB of garbage for +10 points, but freezes the game for 500 ms (350 ms with the low-power loadout) and heats the watch. Does nothing on a clean heap. Same as the BACK bezel button, or swipe left.",
-        key: "G / Backspace",
-      },
-      {
-        action: "Glide & Fly (Compression Cape)",
-        description:
-          "With the Compression Cape, hold jump while falling to glide down slowly. Jump with a full pace meter to take off: for about 4 seconds every further jump press climbs again.",
+          "With the Compression Cape, hold jump while falling to glide down slowly. Sprint to fill the pace meter; a full meter lets you take off.",
         key: "Hold ↑ / Space",
-      },
-      {
-        action: "Cape Spin",
-        description:
-          "With the Compression Cape, spins to flatten NULL and DOG beside you for 200 points and bump Sync Blocks from the side. Spiked STK shrugs it off. While you hold the Cape the BACK bezel button spins too; G still collects garbage.",
-        key: "X",
-      },
-      {
-        action: "Throw Heat Bolt",
-        description:
-          "With a Heat Map, throws a heat bolt that bounces along the track and ledges. It flattens NULL and DOG for 200 points, fizzles on spiked STK, and goes out in gaps, against blocks or off the face. Two can be on screen at once. While you hold a Heat Map the BACK bezel button throws too; G still collects garbage.",
-        key: "X",
       },
       {
         action: "Backlight",
         description:
-          "Lights the display but quadruples battery drain and, after a few seconds, raises thermal stress and fog. Same as the LIGHT bezel button.",
+          "Turns the watch backlight on or off. In Dev Mode the backlight drains the watch battery.",
         key: "L",
       },
       {
-        action: "Wipe Screen Fog",
+        action: "Down (Dev Mode Only)",
         description:
-          "Clears part of the condensation. Drag across the watch face to wipe where you drag.",
+          "Does nothing in a normal run. In Dev Mode, Down pops the oldest heap variable.",
+        key: "↓",
+      },
+      {
+        action: "Wipe Fog (Dev Mode Only)",
+        description:
+          "Only in Dev Mode, where thermal fog builds up. Drag across the watch face to wipe where you drag. Normal runs have no fog to wipe.",
         key: "W / Drag Across Screen",
       },
     ],
@@ -580,83 +568,78 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Scoring",
         detail:
-          "You earn about 60 points for every second the app stays up. A stomp pays 100 (200 for a watchdog) and doubles for each further stomp before you land. A Kudos pays 50, a power-up 1,000, an enemy flattened during a Runner's High, by a heat bolt, a cape spin or a sliding kettlebell 200, the Rep Max 2,000, a stage clear 1,000, and the finish pole 100 to 2,000 depending on how high you grab it. Pops pay 5 and a GC that frees memory 10. A power loss costs 50. Your best score is saved on this device.",
+          "Stomps, Kudos, power-ups, foes beaten by a heat bolt, a cape spin or a Runner's High, and stage clears all add points. The Rep Max pays 2,000. Pass your best score mid-run and the watch flashes NEW PR! Your best score is saved on this device.",
         badge: "High Score",
       },
       {
-        title: "Bugs Crash the App",
+        title: "Foes",
         detail:
-          "Running into NULL is a Null Pointer, DOG is Watchdog Tripped, and STK is Stack Overflow; landing on NULL or DOG from above stomps them instead, but STK is spiked. Falling through a gap in the track is a Segmentation Fault. Each of these costs a life and restarts the stage; on your last life the crash screen names the cause and how to avoid it next run.",
-        badge: "Crash Types",
+          "Couch Potatoes and Snooze Buttons walk toward you. Stomp them from above; a Snooze Button pays double. Hurdles are spiked: jump over them, and never land on one.",
+        badge: "Foes",
       },
       {
         title: "Course Foes",
         detail:
-          "Each stage also places its own gym foes. A Kettlebell waddles along the track: stomp it to tip it over, then touch or stomp it to kick it; a sliding kettlebell flattens every enemy in its path and bounces off blocks, so stay clear when it comes back. A Move Alert (the watch's buzzing move nag) flies a wave; a stomp clips its wings. A Box Jumper (a plyo box on a spring) hops toward you on a timer. An Auto Lap (a lap timer on a base) buzzes slow lap pings at you while it is on screen. Halfway through stages 3 and 5 the Rep Max, a gym bro in a headband, hops and lobs dumbbells: it takes three stomps or six bolt or spin hits and pays 2,000. A Kettlebell hit is a Dropped Kettlebell; the rest are Gym Injuries. Heat bolts, cape spins and a Runner's High beat every ordinary foe outright and wear the Rep Max down.",
+          "Each stage adds its own gym foes. A Kettlebell tips over when you stomp it, then slides when you touch or kick it, and a sliding kettlebell flattens anything in its path. A Move Alert (the watch nagging you to move) flies in waves; stomp it to clip its wings. A Box Jumper hops toward you on a timer. An Auto Lap is a lap timer that buzzes lap pings at you while it is on screen. The Rep Max, a gym bro who lobs dumbbells, waits on stages 3 and 5. It takes three stomps or six hits, and pays 2,000.",
         badge: "Foes",
       },
       {
         title: "The Course",
         detail:
-          "Each 1 km stage has gaps in the track, one-way ledges you can jump up through, and rows of blocks. Bumping the lit Sync Block from below pops a Kudos or a power-up that slides along the track until you catch it. Grab the finish pole to clear the stage; stage 5's pole completes the 5K.",
+          "Each 1 km stage has gaps in the track, one-way ledges you can jump up through, and rows of blocks. Bump a Sync Block from below to release a power-up or a Kudos. Grab the finish pole to clear the stage. Clearing stage 5 completes the 5K.",
         badge: "5K",
       },
       {
         title: "Power-ups & Lives",
         detail:
-          "A Protein Shake makes the monkey Buff: taller, and able to take one hit, which drops it back to Base for a moment of blinking safety. Bump a power block while Buff and it gives a Heat Map, which lets you throw heat bolts with X; the second power block of a stage gives a Compression Cape instead, for gliding, flight and spins. Any hit drops a Heat Map or Cape runner straight back to Base. A rare Runner's High makes you invincible for 8 seconds and flattens anything you run into, spikes included. You start with three lives and earn one for every 100 Kudos. Memory, storage and battery failures still end the run outright: those are the watch crashing, not the runner.",
+          "Sync Blocks give four power-ups. A Protein Shake makes the monkey Buff: taller, and able to take one hit. A Heat Map lets you throw heat bolts with X. A Compression Cape lets you glide and take off. A Runner's High makes you invincible for a short time, and flattens anything you run into. A hit drops you back to Base. At Base, a hit costs a life. You start with three lives.",
         badge: "Lives",
       },
       {
-        title: "Heap Ceiling (Out of Memory)",
+        title: "Body Battery",
         detail:
-          "The app allocates an int, float, string or array on its own every few seconds, and floating memory tokens add one more. Reach the device's RAM limit and the app halts with Out Of Memory.",
-        badge: "RAM Limit",
+          "Body Battery replaces the watch battery. It drains while you run, and faster while you sprint. A hit costs 15. Kudos add 2, and power-ups and stage clears add 25. A Runner's High fills it. Ease to a jog to recharge it. At 0 you bonk: you can't sprint until it recovers to 25, and it recharges at a steady pace as well as a jog. It never ends a run.",
+        badge: "Body Battery",
       },
       {
-        title: "Flash Storage (Out of Storage)",
+        title: "Training Effect & Status",
         detail:
-          "NV tokens write 4 KB to persistent flash, which survives between runs. Fill the device's flash limit and the app crashes with Out Of Storage. Clear Flash Storage below the watch empties it.",
-        badge: "NV Flash",
+          "Each stage clear scores a Training Effect from 0.0 to 5.0, shown with a label such as TE 3.4 · Improving. Game over shows your Training Status, from Unproductive to Peaking, and a recovery time in hours.",
+        badge: "Training",
       },
       {
-        title: "Battery & Power Loss",
+        title: "Watch Messages",
         detail:
-          "The battery drains about 0.1% a second, or 0.4% with the backlight on. At 0% the watch browns out, the run ends, and you lose 50 points.",
-        badge: "Power",
+          "The watch talks back. Stomp chains, power-ups, hits, 1UPs, stage clears and the Rep Max each pop a short message, such as NEGATIVE SPLIT, CARB LOADED, DID YOU EVEN SYNC? and NEVER SKIP LEG DAY. Ease off (hold Left) on the ground for six seconds and it buzzes MOVE!",
+        badge: "Toasts",
       },
       {
-        title: "Thermal Fog",
+        title: "Dev Mode (Optional)",
         detail:
-          "Fog builds when the watch heats up: from the backlight after a few seconds, from RAM above 80%, or during a GC freeze. It fades as the watch cools, or wipe it away.",
-        badge: "Fog",
+          "Dev Mode is a toggle in the simulator controls, off by default. It brings back the original firmware challenge: a RAM heap that fills with automatic allocations, Down to pop variables, forced garbage collection that freezes the watch, NV flash that fills up, a battery that drains with thermal fog you wipe with W, and crash reports such as Null Pointer, Watchdog Tripped, Stack Overflow, Out Of Memory, Out Of Storage and Segmentation Fault. Each device tier has its own RAM limit: Fēnix 5 has 32 KB, Forerunner 245 has 64 KB, and Edge 1030 has 128 KB.",
+        badge: "Optional",
       },
       {
-        title: "Device Tiers",
+        title: "Telemetry",
         detail:
-          "Fēnix 5 has 32 KB of RAM and 64 KB of flash and allocates every 3.2 s (hard). Forerunner 245 has 64 KB and 256 KB every 4 s (medium). Edge 1030 has 128 KB and 512 KB every 5 s (casual).",
-        badge: "Difficulty",
-      },
-      {
-        title: "Telemetry & Ground Strip",
-        detail:
-          "The companion panel samples each run once per second of play. Download it as a CSV with every metric, or a FIT file with heart rate and distance only (a simulator file, not a Garmin Connect upload). The ground strip's three readouts can show steps, distance, heap variables, heart rate, thermal stress, fog, RAM or NV flash.",
+          "The companion panel samples each run once per second of play. Download it as a CSV with every metric, or a FIT file with heart rate and distance only (a simulator file, not a Garmin Connect upload).",
         badge: "Data",
       },
     ],
     proTips: [
-      "Pop with Down when RAM passes about 70%: it's instant, while GC freezes you for half a second.",
-      "Keep the backlight off unless fog is heavy; it drains the battery four times faster.",
-      "Only GC when nothing is about to reach you, since you can't jump during the freeze.",
-      "Jump at the finish pole so you grab it at the top of your arc: the top pays 2,000.",
-      "Stay Buff: a Protein Shake turns your next hit into a near miss instead of a lost life.",
-      "With a Heat Map, throw early: bolts bounce low along the track and clear a walker before it reaches you.",
-      "With the Cape, sprint the flat stretch before a wide gap: a full pace meter turns the jump into a take-off.",
+      "Stomp Couch Potatoes from above. They never see it coming.",
+      "Jump early over the Hurdles. A late hop lands you on the spikes.",
+      "Ease to a jog before your Body Battery hits zero. A bonk costs you the sprint.",
+      "Pick up every Kudos you can. Each one adds 2 to Body Battery, and they add up over a 5K.",
+      "The Rep Max takes three stomps. Stomp from above, then stay out of the dumbbell arc.",
+      "With a Heat Map, throw early so the bolts clear a walker before it reaches you.",
+      "With the Cape, sprint the flat stretch before a wide gap so a full pace meter turns the jump into a take-off.",
+      "Dev Mode is optional. Turn it on in the simulator controls for the full RAM challenge.",
     ],
     lore: {
       title: "Engineering for Wearable Hardware Constraints",
       story:
-        "The game started on the Theodore Wirth mud run, a 10 km Minnesota trail race where Fred's Garmin fogged up and fought for GPS lock the whole way. That run became the mechanics: the runner and the bugs are the race, the fog is the sweat on the watch glass, and the heap is the tiny memory a real Connect IQ app has to live in. Garmin watches pair ultra-low-power Memory-in-Pixel (MIP) displays with microcontrollers that run for weeks on a charge, so Monkey C code has to be frugal: reuse object pools, avoid dynamic closures, and keep bitmaps small.",
+        "The game started on the Theodore Wirth mud run, a 10 km Minnesota trail race where Fred's Garmin fought for GPS lock the whole way. That run became the mechanics: a 5K in five stages, foes that come off the course, and a Body Battery that drains with every sprint. Under the hood, a watch's memory is still tiny. Garmin watches pair ultra-low-power Memory-in-Pixel (MIP) displays with microcontrollers that run for weeks on a charge, so Monkey C code has to be frugal: reuse object pools, avoid dynamic closures, and keep bitmaps small. Dev Mode brings that memory limit back to the runner.",
       realWorldTech: [
         "Garmin Connect IQ",
         "Monkey C VM",

@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -101,6 +103,11 @@ describe("GarminWatchSimulator Accessibility & Gesture Suite", () => {
     vi.clearAllMocks();
   });
 
+  // These cover the firmware rules, which only run in Dev Mode.
+  beforeEach(() => {
+    window.localStorage.setItem("garmin_dev_mode", "1");
+  });
+
   afterEach(() => {
     act(() => {
       root.unmount();
@@ -121,7 +128,9 @@ describe("GarminWatchSimulator Accessibility & Gesture Suite", () => {
     const canvas = container.querySelector("canvas");
     expect(canvas).not.toBeNull();
     expect(canvas?.getAttribute("role")).toBe("img");
-    expect(canvas?.getAttribute("aria-label")).toContain("Smartwatch display simulator");
+    expect(canvas?.getAttribute("aria-label")).toContain(
+      "Smartwatch display simulator"
+    );
     expect(canvas?.getAttribute("aria-label")).toContain("Memory:");
   });
 
@@ -131,7 +140,9 @@ describe("GarminWatchSimulator Accessibility & Gesture Suite", () => {
     });
 
     const politeRegion = container.querySelector('[aria-live="polite"]');
-    const assertiveRegion = container.querySelector('[role="alert"][aria-live="assertive"]');
+    const assertiveRegion = container.querySelector(
+      '[role="alert"][aria-live="assertive"]'
+    );
 
     expect(politeRegion).not.toBeNull();
     expect(politeRegion?.textContent).toContain("Garmin Simulator Telemetry");
@@ -150,29 +161,60 @@ describe("GarminWatchSimulator Accessibility & Gesture Suite", () => {
     // 1. Swipe Right (Start Simulation)
     await act(async () => {
       canvas?.dispatchEvent(
-        new PointerEvent("pointerdown", { clientX: 100, clientY: 100, bubbles: true, buttons: 1 })
+        new PointerEvent("pointerdown", {
+          clientX: 100,
+          clientY: 100,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointermove", { clientX: 150, clientY: 100, bubbles: true, buttons: 1 })
+        new PointerEvent("pointermove", {
+          clientX: 150,
+          clientY: 100,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointerup", { clientX: 150, clientY: 100, bubbles: true })
+        new PointerEvent("pointerup", {
+          clientX: 150,
+          clientY: 100,
+          bubbles: true,
+        })
       );
     });
 
     expect(mockVibrate).toHaveBeenCalledWith(15);
-    expect(mockRecordEvent).toHaveBeenCalledWith("garmin_simulator_start", "project_click");
+    expect(mockRecordEvent).toHaveBeenCalledWith(
+      "garmin_simulator_start",
+      "project_click"
+    );
 
     // 2. Swipe Up (Jump)
     await act(async () => {
       canvas?.dispatchEvent(
-        new PointerEvent("pointerdown", { clientX: 100, clientY: 100, bubbles: true, buttons: 1 })
+        new PointerEvent("pointerdown", {
+          clientX: 100,
+          clientY: 100,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointermove", { clientX: 100, clientY: 50, bubbles: true, buttons: 1 })
+        new PointerEvent("pointermove", {
+          clientX: 100,
+          clientY: 50,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointerup", { clientX: 100, clientY: 50, bubbles: true })
+        new PointerEvent("pointerup", {
+          clientX: 100,
+          clientY: 50,
+          bubbles: true,
+        })
       );
     });
 
@@ -181,13 +223,27 @@ describe("GarminWatchSimulator Accessibility & Gesture Suite", () => {
     // 3. Swipe Down (Jettison)
     await act(async () => {
       canvas?.dispatchEvent(
-        new PointerEvent("pointerdown", { clientX: 100, clientY: 50, bubbles: true, buttons: 1 })
+        new PointerEvent("pointerdown", {
+          clientX: 100,
+          clientY: 50,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointermove", { clientX: 100, clientY: 100, bubbles: true, buttons: 1 })
+        new PointerEvent("pointermove", {
+          clientX: 100,
+          clientY: 100,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointerup", { clientX: 100, clientY: 100, bubbles: true })
+        new PointerEvent("pointerup", {
+          clientX: 100,
+          clientY: 100,
+          bubbles: true,
+        })
       );
     });
 
@@ -196,13 +252,27 @@ describe("GarminWatchSimulator Accessibility & Gesture Suite", () => {
     // 4. Swipe Left (Force GC)
     await act(async () => {
       canvas?.dispatchEvent(
-        new PointerEvent("pointerdown", { clientX: 150, clientY: 100, bubbles: true, buttons: 1 })
+        new PointerEvent("pointerdown", {
+          clientX: 150,
+          clientY: 100,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointermove", { clientX: 100, clientY: 100, bubbles: true, buttons: 1 })
+        new PointerEvent("pointermove", {
+          clientX: 100,
+          clientY: 100,
+          bubbles: true,
+          buttons: 1,
+        })
       );
       canvas?.dispatchEvent(
-        new PointerEvent("pointerup", { clientX: 100, clientY: 100, bubbles: true })
+        new PointerEvent("pointerup", {
+          clientX: 100,
+          clientY: 100,
+          bubbles: true,
+        })
       );
     });
 

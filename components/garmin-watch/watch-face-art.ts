@@ -30,8 +30,19 @@ import {
   POLE_HEIGHT,
   PX_PER_METER,
   STAGE_COUNT,
+  stagePoleX,
+  stageStartX,
   type CourseLayout,
 } from "@/lib/garmin-course";
+import {
+  bodyBatteryFraction,
+  bodyBatteryLabel,
+} from "@/lib/garmin-body-battery";
+import {
+  AUTO_PAUSE_TEXT,
+  recoveryHours,
+  trainingStatus,
+} from "@/lib/garmin-culture";
 import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
 import {
   CAPE_SPIN_MS,
@@ -52,6 +63,7 @@ import {
   DEVICE_PROFILES,
   GROUND_Y,
   PLAYER_X,
+  isFitnessRun,
   type CrashReport,
   type GameEngineState,
   type Obstacle,
@@ -261,7 +273,7 @@ function groundStripReadout(
 
 /** What a full-screen end face says. */
 interface EndFace {
-  kind: "crash" | "power" | "complete";
+  kind: "crash" | "power" | "complete" | "status";
   headline: string;
   detail: string;
 }
@@ -271,8 +283,28 @@ interface EndFace {
  * The crash face names the real cause and where it happened.
  */
 export function endFaceFor(
-  state: Pick<GameEngineState, "gameState" | "battery" | "crashReport">
+  state: Pick<GameEngineState, "gameState" | "battery" | "crashReport"> &
+    Partial<Pick<GameEngineState, "rules" | "stage">>
 ): EndFace | null {
+  // The fitness rules end on a Training Status, like a watch after a run.
+  if (isFitnessRun(state)) {
+    const stage = state.stage ?? 1;
+    if (state.gameState === "crashed") {
+      return {
+        kind: "status",
+        headline: trainingStatus(stage, false).toUpperCase(),
+        detail: `Training Status · Recovery ${recoveryHours(stage - 1, false)} h`,
+      };
+    }
+    if (state.gameState === "summary") {
+      return {
+        kind: "complete",
+        headline: "5K COMPLETE",
+        detail: `${trainingStatus(stage, true)} · Recovery ${recoveryHours(stage, true)} h`,
+      };
+    }
+    return null;
+  }
   if (state.gameState === "shutdown" || state.battery <= 0) {
     return {
       kind: "power",
@@ -1089,9 +1121,115 @@ function drawNvCard(ctx: Ctx, w: number, h: number) {
   text(ctx, "NV", w / 2, h - 2.6, 4.5, "#0d0e11");
 }
 
-function drawObstacle(ctx: Ctx, obs: Obstacle) {
+/** A Couch Potato: a lumpy potato slumped on a cushion, remote in hand. */
+function drawCouchPotato(ctx: Ctx, w: number, h: number) {
+  groundShadow(ctx, w, h);
+  const cx = w / 2;
+  // Cushion.
+  ctx.fillStyle = "#475569";
+  ctx.beginPath();
+  ctx.roundRect(1, h - 5, w - 2, 5, 1.5);
+  ctx.fill();
+  // Potato body.
+  ctx.fillStyle = "#b7895a";
+  ctx.beginPath();
+  ctx.ellipse(cx, h - 10, w / 2 - 3, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Eyes and spots.
+  ctx.fillStyle = "#0d0e11";
+  ctx.fillRect(cx - 4, h - 13, 2, 1.5);
+  ctx.fillRect(cx + 2, h - 13, 2, 1.5);
+  ctx.fillStyle = "#8a6440";
+  ctx.fillRect(cx - 6, h - 8, 1.5, 1.5);
+  ctx.fillRect(cx + 4, h - 7, 1.5, 1.5);
+  // The remote.
+  ctx.fillStyle = "#18181b";
+  ctx.fillRect(w - 6, h - 12, 3, 6);
+  ctx.fillStyle = FACE_COLORS.danger;
+  ctx.fillRect(w - 5.5, h - 11.5, 2, 1);
+}
+
+/** A Snooze Button: a round alarm clock with a big amber Z button on top. */
+function drawSnoozeButton(ctx: Ctx, w: number, h: number) {
+  groundShadow(ctx, w, h);
+  const cx = w / 2;
+  const cy = h - 9.5;
+  const r = 8;
+  // Feet.
+  ctx.fillStyle = "#64748b";
+  ctx.fillRect(cx - 6, h - 2.5, 3, 2.5);
+  ctx.fillRect(cx + 3, h - 2.5, 3, 2.5);
+  // Snooze bar.
+  ctx.fillStyle = FACE_COLORS.warn;
+  ctx.beginPath();
+  ctx.roundRect(cx - 6, cy - r - 4, 12, 3.5, 1.5);
+  ctx.fill();
+  // Clock face.
+  ctx.fillStyle = "#18181b";
+  ctx.strokeStyle = "#94a3b8";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  // Zz.
+  text(ctx, "Z", cx, cy + 3, 8, FACE_COLORS.warn);
+}
+
+/** A Hurdle: a striped track hurdle on two legs. Spiked to the touch. */
+function drawHurdle(ctx: Ctx, w: number, h: number) {
+  groundShadow(ctx, w, h);
+  const top = h - 17;
+  // Legs and feet.
+  ctx.strokeStyle = "#94a3b8";
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(3, top);
+  ctx.lineTo(3, h);
+  ctx.moveTo(w - 3, top);
+  ctx.lineTo(w - 3, h);
+  ctx.moveTo(0, h - 0.8);
+  ctx.lineTo(6, h - 0.8);
+  ctx.moveTo(w - 6, h - 0.8);
+  ctx.lineTo(w, h - 0.8);
+  ctx.stroke();
+  // The striped bar.
+  ctx.fillStyle = "#f4f4f6";
+  ctx.fillRect(1, top, w - 2, 4);
+  ctx.fillStyle = FACE_COLORS.danger;
+  for (let x = 1; x < w - 2; x += 6) {
+    ctx.fillRect(x, top, 3, 4);
+  }
+  // Spikes along the top: it can't be stomped.
+  ctx.fillStyle = "#fca5a5";
+  ctx.beginPath();
+  for (let x = 3.6; x < w - 2; x += 3.6) {
+    ctx.moveTo(x - 1.8, top);
+    ctx.lineTo(x, top - 4);
+    ctx.lineTo(x + 1.8, top);
+  }
+  ctx.closePath();
+  ctx.fill();
+}
+
+/** Fitness runs draw the legacy obstacles as gym and couch foes. */
+const FITNESS_OBSTACLE_ART: Partial<
+  Record<Obstacle["type"], (ctx: Ctx, w: number, h: number) => void>
+> = {
+  null_pointer: drawCouchPotato,
+  watchdog: drawSnoozeButton,
+  stack_overflow: drawHurdle,
+};
+
+function drawObstacle(ctx: Ctx, obs: Obstacle, fitness = false) {
   ctx.save();
   ctx.translate(obs.x, obs.y);
+  const fitnessArt = fitness ? FITNESS_OBSTACLE_ART[obs.type] : undefined;
+  if (fitnessArt) {
+    fitnessArt(ctx, obs.width, obs.height);
+    ctx.restore();
+    return;
+  }
   switch (OBSTACLE_PICTOGRAMS[obs.type]) {
     case "bug":
       drawBug(ctx, obs.width, obs.height);
@@ -1356,7 +1494,12 @@ function drawFoeShots(ctx: Ctx, shots: readonly FoeShot[], camera: number) {
 
 // ------------------------------------------------------- data-field ring
 
-function drawRingArc(ctx: Ctx, side: "ram" | "flash", fraction: number) {
+function drawRingArc(
+  ctx: Ctx,
+  side: "ram" | "flash",
+  fraction: number,
+  tone: MeterTone = meterTone(fraction)
+) {
   const track = ringFillSpan(side, 1);
   ctx.lineCap = "round";
   ctx.lineWidth = RING_WIDTH;
@@ -1373,7 +1516,7 @@ function drawRingArc(ctx: Ctx, side: "ram" | "flash", fraction: number) {
   ctx.stroke();
   if (fraction <= 0) return;
   const fill = ringFillSpan(side, fraction);
-  ctx.strokeStyle = TONE_COLOR[meterTone(fraction)];
+  ctx.strokeStyle = TONE_COLOR[tone];
   ctx.beginPath();
   ctx.arc(
     FACE_CENTER,
@@ -1411,11 +1554,89 @@ function drawBatteryGlyph(ctx: Ctx, x: number, y: number, percent: number) {
  * flash as arcs with readouts down the sides, and steps, distance and heap
  * variables in the ground strip below the lane.
  */
+/** How far the runner is from this stage's start to its finish pole, 0 to 1. */
+export function stageProgress(
+  state: Pick<GameEngineState, "stage" | "distanceMeters">
+): number {
+  const stage = state.stage ?? 1;
+  return clamp(
+    (state.distanceMeters * PX_PER_METER - stageStartX(stage)) /
+      (stagePoleX(stage) - stageStartX(stage)),
+    0,
+    1
+  );
+}
+
+/**
+ * The ring and readouts under the fitness rules: Body Battery on the left
+ * arc, the stage's progress to the finish pole on the right, and running
+ * stats along the ground strip.
+ */
+function drawFitnessRing(ctx: Ctx, state: GameEngineState) {
+  const bb = state.bodyBattery;
+  const bbValue = Math.round(bodyBatteryFraction(bb) * 100);
+  const bbTone = bb?.bonked ? "danger" : batteryTone(bbValue);
+  const stage = state.stage ?? 1;
+  const progress = stageProgress(state);
+  drawRingArc(ctx, "ram", bbValue / 100, bbTone);
+  drawRingArc(ctx, "flash", progress, "ok");
+
+  text(ctx, `${state.score}`, FACE_CENTER, 44, 20, FACE_COLORS.text);
+  text(ctx, "PTS", FACE_CENTER, 55, 7, FACE_COLORS.dim);
+  drawHeart(ctx, 71, 40);
+  text(
+    ctx,
+    `${Math.round(state.heartRate)}`,
+    78,
+    43,
+    9,
+    FACE_COLORS.text,
+    "left"
+  );
+  drawBatteryGlyph(ctx, 171, 40, bbValue);
+  text(ctx, `${bbValue}`, 212, 43, 9, TONE_COLOR[bbTone], "right");
+
+  text(ctx, "BODY", 24, 93, 6.5, FACE_COLORS.dim, "left");
+  text(ctx, bodyBatteryLabel(bb), 24, 104, 9, TONE_COLOR[bbTone], "left");
+  text(ctx, `${stage}K`, 256, 93, 6.5, FACE_COLORS.dim, "right");
+  text(
+    ctx,
+    `${Math.round(progress * 100)}%`,
+    256,
+    104,
+    9,
+    FACE_COLORS.text,
+    "right"
+  );
+
+  const fields: [string, string][] = [
+    [`${stepsFor(state.distanceMeters)}`, "STEPS"],
+    [(Math.max(0, state.distanceMeters) / 1000).toFixed(2), "KM"],
+    [`${state.kudos ?? 0}`, "KUDOS"],
+  ];
+  fields.forEach(([value, label], i) => {
+    const x = GROUND_STRIP_X[i];
+    text(ctx, value, x, 231, 9, FACE_COLORS.text);
+    text(ctx, label, x, 240, 5.5, FACE_COLORS.dim);
+  });
+  if (bb?.bonked) {
+    ctx.fillStyle = FACE_COLORS.danger;
+    ctx.beginPath();
+    ctx.roundRect(116, 248, 48, 10, 3);
+    ctx.fill();
+    text(ctx, "BONKED", FACE_CENTER, 255.5, 6.5, "#0d0e11");
+  }
+}
+
 function drawDataRing(
   ctx: Ctx,
   state: GameEngineState,
   strip: GroundStripLayout
 ) {
+  if (isFitnessRun(state)) {
+    drawFitnessRing(ctx, state);
+    return;
+  }
   const profile = DEVICE_PROFILES[state.device] ?? DEVICE_PROFILES.fenix;
   const ramFraction = state.allocatedRamKb / profile.ramLimitKb;
   const flashFraction = state.allocatedFlashKb / profile.flashLimitKb;
@@ -1568,10 +1789,10 @@ function drawFog(ctx: Ctx, state: GameEngineState) {
   }
 }
 
-function drawPaused(ctx: Ctx) {
+function drawPaused(ctx: Ctx, title: string) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-  text(ctx, "PAUSED", FACE_CENTER, FACE_CENTER - 4, 16, FACE_COLORS.text);
+  text(ctx, title, FACE_CENTER, FACE_CENTER - 4, 16, FACE_COLORS.text);
   text(
     ctx,
     "PRESS START / ENTER",
@@ -1609,6 +1830,35 @@ function drawEmptyBattery(ctx: Ctx, cx: number, cy: number) {
   ctx.fillRect(cx - 24, cy - 10, 5, 20);
 }
 
+/** A Training Status gauge: a half dial with its needle low. */
+function drawStatusGauge(ctx: Ctx, cx: number, cy: number) {
+  ctx.lineCap = "round";
+  ctx.lineWidth = 5;
+  const bands = [FACE_COLORS.danger, FACE_COLORS.warn, FACE_COLORS.ok];
+  bands.forEach((color, i) => {
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.arc(
+      cx,
+      cy,
+      24,
+      Math.PI + (i * Math.PI) / 3 + 0.08,
+      Math.PI + ((i + 1) * Math.PI) / 3 - 0.08
+    );
+    ctx.stroke();
+  });
+  ctx.strokeStyle = FACE_COLORS.text;
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx - 17, cy - 9);
+  ctx.stroke();
+  ctx.fillStyle = FACE_COLORS.text;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   ctx.fillStyle = face.kind === "power" ? "#050508" : "#000000";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -1616,6 +1866,8 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
     drawEmptyBattery(ctx, FACE_CENTER, 98);
   } else if (face.kind === "crash") {
     drawIqMark(ctx, FACE_CENTER, 96);
+  } else if (face.kind === "status") {
+    drawStatusGauge(ctx, FACE_CENTER, 104);
   } else {
     ctx.strokeStyle = FACE_COLORS.good;
     ctx.lineWidth = 4;
@@ -1643,7 +1895,7 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   text(ctx, `SCORE ${state.score}`, FACE_CENTER, 196, 8, FACE_COLORS.text);
   text(
     ctx,
-    "PRESS START TO REBOOT",
+    isFitnessRun(state) ? "PRESS START TO RUN AGAIN" : "PRESS START TO REBOOT",
     FACE_CENTER,
     214,
     7.5,
@@ -1686,8 +1938,9 @@ export function renderWatchFace(
   drawKudos(ctx, course, camera);
 
   drawFoes(ctx, state.foes ?? [], camera);
+  const fitness = isFitnessRun(state);
   for (const obs of state.obstacles) {
-    drawObstacle(ctx, obs);
+    drawObstacle(ctx, obs, fitness);
   }
   drawRunner(ctx, state);
   drawSpin(ctx, state);
@@ -1696,7 +1949,7 @@ export function renderWatchFace(
   drawPopups(ctx, state, camera);
 
   if (state.isGcActive) drawGcFreeze(ctx, state);
-  if (state.battery < 15) {
+  if (!isFitnessRun(state) && state.battery < 15) {
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   }
@@ -1707,7 +1960,8 @@ export function renderWatchFace(
     drawBanner(ctx, state);
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
-  if (state.gameState === "paused") drawPaused(ctx);
+  if (state.gameState === "paused")
+    drawPaused(ctx, isFitnessRun(state) ? AUTO_PAUSE_TEXT : "PAUSED");
 
   ctx.restore();
 }

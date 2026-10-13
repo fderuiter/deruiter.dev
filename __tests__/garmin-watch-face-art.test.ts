@@ -291,7 +291,7 @@ describe("watch end faces", () => {
     gameState: "crashed",
     crashReport: {
       errorType: "Null Pointer",
-      file: "Garmin_Schvitz_App.mc",
+      file: "MonkeyC_Mayhem_App.mc",
       line: 77,
       stackTrace: [],
       heapUsedKb: 4,
@@ -303,7 +303,7 @@ describe("watch end faces", () => {
     expect(endFaceFor(crashed)).toEqual({
       kind: "crash",
       headline: "NULL POINTER",
-      detail: "Garmin_Schvitz_App.mc:77",
+      detail: "MonkeyC_Mayhem_App.mc:77",
     });
     expect(endFaceFor(running())).toBeNull();
     expect(endFaceFor(running({ gameState: "shutdown" }))?.kind).toBe("power");

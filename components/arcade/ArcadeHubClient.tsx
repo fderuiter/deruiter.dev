@@ -154,16 +154,16 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
   {
     id: "garmin-watch",
     slug: "garmin-watch",
-    title: "Monkey C Mayhem: Garmin Schvitz App",
-    subtitle: "A Small Watch With a Lot Going On",
+    title: "Monkey C Mayhem: A Garmin 5K Platformer",
+    subtitle: "Five Stages, Three Lives, One Body Battery",
     genre: "Embedded Systems",
     description:
-      "Keep a simulated Garmin Schvitz App running with a 32KB memory budget. Clear memory, dodge obstacles, and wipe the fog off the screen before the watch has a very bad day.",
+      "Run a 5K in five stages on three lives. Stomp Couch Potatoes, jump Hurdles, earn a Training Effect on every stage, and keep your Body Battery above zero. Dev Mode is optional.",
     mechanics: [
       "Circular LCD 280×280",
-      "32KB Monkey C RAM Limit",
-      "500ms GC Freeze",
-      "Overheat Fog Wiping",
+      "Body Battery Drain & Recharge",
+      "Training Effect Scores",
+      "Optional Dev Mode RAM Limit",
     ],
     techStack: [
       "HTML5 Canvas",

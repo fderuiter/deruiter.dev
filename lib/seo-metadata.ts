@@ -186,17 +186,18 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     isAccessibleForFree: true,
   },
   garminWatch: {
-    title: "Monkey C Mayhem: Garmin Schvitz App",
+    title: "Monkey C Mayhem: Garmin 5K Platformer",
     description:
-      "Run a 5K platformer on a smartwatch with a 32KB memory budget in Monkey C Mayhem: stomp bugs, clear the gaps and wipe the screen when it fogs up.",
+      "Run a 5K platformer on a smartwatch in Monkey C Mayhem: stomp Couch Potatoes, jump Hurdles and keep your Body Battery above zero through five stages.",
     path: "/arcade/garmin-watch",
     ogImageType: "image/jpeg",
     keywords: [
       "Monkey C Mayhem",
-      "Garmin Schvitz App",
+      "Garmin 5K Platformer",
       "Garmin Connect IQ Simulator",
-      "Monkey C Memory Profiling",
-      "32KB Embedded RAM",
+      "Body Battery",
+      "Training Effect",
+      "Monkey C Game",
       "Smartwatch Engine",
       "Retro MIP Simulator",
     ],

@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -121,6 +123,11 @@ describe("GarminWatchSimulator React Component UI Suite", () => {
     vi.clearAllMocks();
   });
 
+  // These cover the firmware rules, which only run in Dev Mode.
+  beforeEach(() => {
+    window.localStorage.setItem("garmin_dev_mode", "1");
+  });
+
   afterEach(() => {
     act(() => {
       root.unmount();
@@ -173,8 +180,8 @@ describe("GarminWatchSimulator React Component UI Suite", () => {
       root.render(<GarminWatchSimulator />);
     });
 
-    const startBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("START")
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("START")
     );
     expect(startBtn).toBeDefined();
 
@@ -182,7 +189,10 @@ describe("GarminWatchSimulator React Component UI Suite", () => {
       startBtn?.click();
     });
 
-    expect(mockRecordEvent).toHaveBeenCalledWith("garmin_simulator_start", "project_click");
+    expect(mockRecordEvent).toHaveBeenCalledWith(
+      "garmin_simulator_start",
+      "project_click"
+    );
     expect(mockPlaySuccess).toHaveBeenCalled();
   });
 
@@ -191,8 +201,8 @@ describe("GarminWatchSimulator React Component UI Suite", () => {
       root.render(<GarminWatchSimulator />);
     });
 
-    const lightBtn = Array.from(container.querySelectorAll("button")).find((b) =>
-      b.textContent?.includes("LIGHT")
+    const lightBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("LIGHT")
     );
     const upBtn = Array.from(container.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("UP")

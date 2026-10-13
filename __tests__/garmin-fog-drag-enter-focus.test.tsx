@@ -132,6 +132,11 @@ describe("Garmin watch fog drag and Enter focus (#1648, #1649)", () => {
     vibrate.mockClear();
   });
 
+  // These cover the firmware rules, which only run in Dev Mode.
+  beforeEach(() => {
+    window.localStorage.setItem("garmin_dev_mode", "1");
+  });
+
   afterEach(() => {
     act(() => {
       root.unmount();

@@ -495,7 +495,7 @@ describe("Cape in a run", () => {
 
   it("the manual lists the cape controls", () => {
     const actions = GAME_MANUALS["garmin-watch"].controls.map((c) => c.action);
-    expect(actions).toContain("Cape Spin");
-    expect(actions).toContain("Glide & Fly (Compression Cape)");
+    expect(actions).toContain("Action (Heat Map & Cape)");
+    expect(actions).toContain("Glide & Take Off (Compression Cape)");
   });
 });

@@ -92,7 +92,7 @@ function crashedWith(errorType: CrashReport["errorType"]) {
     gameState: "crashed" as const,
     crashReport: {
       errorType,
-      file: "Garmin_Schvitz_App.mc",
+      file: "MonkeyC_Mayhem_App.mc",
       line: 42,
       stackTrace: [],
       heapUsedKb: 10,

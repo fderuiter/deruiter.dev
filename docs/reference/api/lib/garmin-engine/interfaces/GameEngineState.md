@@ -32,6 +32,22 @@
 
 ***
 
+### bestAtStart?
+
+> `optional` **bestAtStart?**: `number`
+
+Best score when the run began, so a new PR is announced once.
+
+***
+
+### bodyBattery?
+
+> `optional` **bodyBattery?**: [`BodyBattery`](../../garmin-body-battery/interfaces/BodyBattery.md)
+
+Body Battery under the fitness rules.
+
+***
+
 ### boltCooldownMs?
 
 > `optional` **boltCooldownMs?**: `number`
@@ -174,6 +190,14 @@ Foe shots fired this run, for their ids.
 
 ***
 
+### gpsMs?
+
+> `optional` **gpsMs?**: `number`
+
+Milliseconds left of the "Waiting for GPS…" intro; the run holds until it ends.
+
+***
+
 ### heartRate
 
 > **heartRate**: `number`
@@ -183,6 +207,14 @@ Foe shots fired this run, for their ids.
 ### highScore
 
 > **highScore**: `number`
+
+***
+
+### idleMs?
+
+> `optional` **idleMs?**: `number`
+
+Milliseconds the runner has been easing or standing on footing, for the move alert.
 
 ***
 
@@ -264,6 +296,14 @@ Wall-clock time of the last pop, for its cooldown.
 
 ***
 
+### lastTrainingEffect?
+
+> `optional` **lastTrainingEffect?**: `number`
+
+Training Effect of the last cleared stage.
+
+***
+
 ### lightActiveDurationMs
 
 > **lightActiveDurationMs**: `number`
@@ -300,6 +340,14 @@ Wall-clock time the run was paused, so resuming can shift the spawn timers.
 
 ***
 
+### pendingRules?
+
+> `optional` **pendingRules?**: [`GameRules`](../type-aliases/GameRules.md)
+
+Rules chosen during a run, applied when the next run starts.
+
+***
+
 ### pickups?
 
 > `optional` **pickups?**: [`Pickup`](../../garmin-powerups/interfaces/Pickup.md)[]
@@ -331,6 +379,25 @@ Power-ups travelling the course.
 > `optional` **power?**: [`PowerTier`](../../garmin-powerups/type-aliases/PowerTier.md)
 
 Power tier; absent means Base.
+
+***
+
+### prAnnounced?
+
+> `optional` **prAnnounced?**: `boolean`
+
+A new PR was announced this run.
+
+***
+
+### rules?
+
+> `optional` **rules?**: [`GameRules`](../type-aliases/GameRules.md)
+
+Which rules the run plays by. "fitness" is the default game: no heap,
+GC, flash, fog or watch battery, with Body Battery instead. "dev" is
+the original firmware challenge (Dev Mode). Absent means "dev", so
+snapshots from before #2010 keep the rules they were recorded under.
 
 ***
 
@@ -377,6 +444,30 @@ Milliseconds left in the current cape spin.
 > `optional` **stage?**: `number`
 
 Current stage, 1 to [STAGE\_COUNT](../../garmin-course/variables/STAGE_COUNT.md).
+
+***
+
+### stageFoes?
+
+> `optional` **stageFoes?**: `number`
+
+Foes and bugs defeated this stage, for its Training Effect.
+
+***
+
+### stageHits?
+
+> `optional` **stageHits?**: `number`
+
+Hits taken this stage, for its Training Effect.
+
+***
+
+### stageLivesLost?
+
+> `optional` **stageLivesLost?**: `number`
+
+Lives lost this stage, for its Training Effect.
 
 ***
 

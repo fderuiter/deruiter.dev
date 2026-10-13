@@ -61,6 +61,7 @@ import {
   type Foe,
   type FoeKind,
   type FoeShot,
+  REPMAX_SCORE,
 } from "./garmin-foes";
 import {
   CAPE_CEILING_Y,
@@ -76,6 +77,28 @@ import {
   startsFlight,
   stepPaceMeter,
 } from "./garmin-cape";
+import {
+  BODY_BATTERY_HIT_COST,
+  BODY_BATTERY_KUDOS_GAIN,
+  BODY_BATTERY_MAX,
+  BODY_BATTERY_POWER_GAIN,
+  FRESH_BODY_BATTERY,
+  adjustBodyBattery,
+  effectiveRunInput,
+  stepBodyBattery,
+  type BodyBattery,
+} from "./garmin-body-battery";
+import {
+  GPS_LOCK_MS,
+  MOVE_ALERT_IDLE_MS,
+  MOVE_ALERT_TEXT,
+  NEW_PR_TEXT,
+  gpsBannerText,
+  pickToast,
+  type ToastEvent,
+  trainingEffect,
+  trainingEffectLabel,
+} from "./garmin-culture";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
 export type VariableType = "int" | "float" | "string" | "array";
@@ -434,6 +457,64 @@ export interface GameEngineState {
   stompChain?: number;
   popups?: FacePopup[];
   banner?: FaceBanner | null;
+  // ---- Gameplay first (#2010).
+  /**
+   * Which rules the run plays by. "fitness" is the default game: no heap,
+   * GC, flash, fog or watch battery, with Body Battery instead. "dev" is
+   * the original firmware challenge (Dev Mode). Absent means "dev", so
+   * snapshots from before #2010 keep the rules they were recorded under.
+   */
+  rules?: GameRules;
+  /** Rules chosen during a run, applied when the next run starts. */
+  pendingRules?: GameRules;
+  /** Body Battery under the fitness rules. */
+  bodyBattery?: BodyBattery;
+  /** Milliseconds left of the "Waiting for GPS…" intro; the run holds until it ends. */
+  gpsMs?: number;
+  /** Milliseconds the runner has been easing or standing on footing, for the move alert. */
+  idleMs?: number;
+  /** Best score when the run began, so a new PR is announced once. */
+  bestAtStart?: number;
+  /** A new PR was announced this run. */
+  prAnnounced?: boolean;
+  /** Foes and bugs defeated this stage, for its Training Effect. */
+  stageFoes?: number;
+  /** Hits taken this stage, for its Training Effect. */
+  stageHits?: number;
+  /** Lives lost this stage, for its Training Effect. */
+  stageLivesLost?: number;
+  /** Training Effect of the last cleared stage. */
+  lastTrainingEffect?: number;
+}
+
+/** The rules a run plays by: the fitness game, or Dev Mode's firmware challenge. */
+export type GameRules = "fitness" | "dev";
+
+/** Whether a run plays by the fitness rules. */
+export function isFitnessRun(state: Pick<GameEngineState, "rules">): boolean {
+  return state.rules === "fitness";
+}
+
+/**
+ * Sets the rules for the next run. Turning Dev Mode on or off takes effect
+ * when a run starts, so a run in progress keeps its rules.
+ */
+export function setRules(
+  state: GameEngineState,
+  rules: GameRules
+): GameEngineState {
+  // Only an idle watch switches at once; a run in progress, or one whose end
+  // screen is showing, keeps its rules until the next run starts.
+  if (state.gameState !== "idle") {
+    if ((state.rules ?? "dev") === rules) {
+      return state.pendingRules === undefined
+        ? state
+        : { ...state, pendingRules: undefined };
+    }
+    return { ...state, pendingRules: rules };
+  }
+  if (state.rules === rules && state.pendingRules === undefined) return state;
+  return { ...state, rules, pendingRules: undefined };
 }
 
 export const CANVAS_SIZE = 280;
@@ -551,9 +632,24 @@ export function startGame(
   const runTuning = tuning ?? state.tuning;
   const now = Date.now();
   const courseSeed = Math.floor(Math.random() * 1e9);
+  const runRules = state.pendingRules ?? state.rules;
+  const fitness = runRules === "fitness";
   return {
     ...initial,
     ...(runTuning ? { tuning: runTuning } : {}),
+    ...(runRules ? { rules: runRules } : {}),
+    ...(fitness
+      ? {
+          bodyBattery: FRESH_BODY_BATTERY,
+          gpsMs: GPS_LOCK_MS,
+          idleMs: 0,
+          bestAtStart: state.highScore,
+          prAnnounced: false,
+          stageFoes: 0,
+          stageHits: 0,
+          stageLivesLost: 0,
+        }
+      : {}),
     gameState: "playing",
     // The spawn and allocation clocks start now, with a grace before the
     // first bug, so nothing is on the lane at frame one (#1945).
@@ -569,7 +665,9 @@ export function startGame(
       GROUND_Y
     ),
     foeShots: [],
-    banner: { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
+    banner: fitness
+      ? { text: gpsBannerText(0), ttlMs: GPS_LOCK_MS + 1800, tone: "info" }
+      : { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
   };
 }
 
@@ -939,7 +1037,7 @@ export function allocateVariable(
         `Failed to allocate ${sizeKb}KB (${type})`,
         `Heap: ${newRam}KB / ${ramLimit}KB`,
         "at Rez.Fonts.drawGlyph() [Rez.mc:88]",
-        "at Garmin_Schvitz_App.onUpdate() [App.mc:42]",
+        "at MonkeyC_Mayhem_App.onUpdate() [App.mc:42]",
       ],
       heapUsedKb: newRam,
       heapLimitKb: ramLimit,
@@ -993,7 +1091,7 @@ export function allocateFlashVariable(
         `Failed to allocate ${sizeKb}KB to NVRAM Flash`,
         `Out of Storage: ${newFlash}KB / ${flashLimit}KB limit exceeded`,
         "at Application.Storage.setValue() [Storage.mc:104]",
-        "at Garmin_Schvitz_App.saveState() [App.mc:95]",
+        "at MonkeyC_Mayhem_App.saveState() [App.mc:95]",
       ],
       heapUsedKb: state.allocatedRamKb,
       heapLimitKb: DEVICE_PROFILES[state.device].ramLimitKb,
@@ -1070,18 +1168,68 @@ export function wipeScreenFog(
  * restarts from its start at Base, with a moment of hit immunity; on the
  * last life the run ends with `report`.
  */
+/**
+ * What a hit costs under the fitness rules: Body Battery, and a mark against
+ * the stage's Training Effect. Dev Mode runs pay nothing extra.
+ */
+function hitToll(
+  state: GameEngineState
+): Pick<GameEngineState, "bodyBattery" | "stageHits"> | null {
+  if (!isFitnessRun(state)) return null;
+  return {
+    bodyBattery: adjustBodyBattery(state.bodyBattery, -BODY_BATTERY_HIT_COST),
+    stageHits: (state.stageHits ?? 0) + 1,
+  };
+}
+
+/** The banner when a hit knocks the runner back to Base. */
+function ouchText(state: GameEngineState): string {
+  if (!isFitnessRun(state)) return "OUCH · BACK TO BASE";
+  return `${pickToast("hit", state.score + (state.stageHits ?? 0))} · BACK TO BASE`;
+}
+
+/** The fitness name for what ended a life, keyed by the Dev Mode crash type. */
+const FITNESS_CAUSE: Partial<Record<CrashReport["errorType"], string>> = {
+  "Null Pointer": "COUCH POTATO",
+  "Watchdog Tripped": "SNOOZED",
+  "Stack Overflow": "CLIPPED A HURDLE",
+  "Segmentation Fault": "MISSED THE CURB",
+  "Dropped Kettlebell": "DROPPED KETTLEBELL",
+  "Gym Injury": "GYM INJURY",
+};
+
+/** The banner name for what ended a life under the run's rules. */
+export function causeLabel(
+  state: Pick<GameEngineState, "rules">,
+  errorType: CrashReport["errorType"]
+): string {
+  if (isFitnessRun(state)) return FITNESS_CAUSE[errorType] ?? "DNF";
+  return errorType.toUpperCase();
+}
+
 function loseLife(
   state: GameEngineState,
   report: CrashReport,
   now: number = Date.now()
 ): GameEngineState {
   const lives = (state.lives ?? 1) - 1;
+  const toll = hitToll(state);
+  const fitnessToll = toll
+    ? { ...toll, stageLivesLost: (state.stageLivesLost ?? 0) + 1 }
+    : {};
   if (lives <= 0) {
-    return { ...state, lives: 0, gameState: "crashed", crashReport: report };
+    return {
+      ...state,
+      ...fitnessToll,
+      lives: 0,
+      gameState: "crashed",
+      crashReport: report,
+    };
   }
   const stage = state.stage ?? 1;
   return {
     ...state,
+    ...fitnessToll,
     lives,
     power: "base",
     starMs: 0,
@@ -1112,7 +1260,7 @@ function loseLife(
     foeShots: [],
     lastObstacleTime: now,
     banner: {
-      text: `${report.errorType.toUpperCase()} · LIVES ${lives}`,
+      text: `${causeLabel(state, report.errorType)} · LIVES ${lives}`,
       ttlMs: 2200,
       tone: "warn",
     },
@@ -1136,18 +1284,18 @@ function foeCrashReport(
   const dropped = source === "kettlebell";
   return {
     errorType: dropped ? "Dropped Kettlebell" : "Gym Injury",
-    file: "Garmin_Schvitz_App.mc",
+    file: "MonkeyC_Mayhem_App.mc",
     line: dropped ? 163 : 201,
     stackTrace: dropped
       ? [
           "Dropped Kettlebell: never skip leg day",
           `Runner hit by a ${names[source]}`,
-          "at Garmin_Schvitz_App.onStep() [App.mc:163]",
+          "at MonkeyC_Mayhem_App.onStep() [App.mc:163]",
         ]
       : [
           "Gym Injury: one rep too many",
           `Runner hit by a ${names[source]}`,
-          "at Garmin_Schvitz_App.onStep() [App.mc:201]",
+          "at MonkeyC_Mayhem_App.onStep() [App.mc:201]",
         ],
     heapUsedKb: state.allocatedRamKb,
     heapLimitKb: DEVICE_PROFILES[state.device].ramLimitKb,
@@ -1161,6 +1309,22 @@ function foeCrashReport(
  * runner hurts like any bug. Sliding shells also flatten the drifting bugs
  * in `obstacles` (screen coordinates).
  */
+/**
+ * The popup for a stomp in a chain: the points and the chain count, or under
+ * fitness rules from the third stomp on, a running toast.
+ */
+function chainLabel(
+  state: Pick<GameEngineState, "rules">,
+  points: number,
+  chain: number
+): string | undefined {
+  if (chain <= 1 || points <= 0) return undefined;
+  if (isFitnessRun(state) && chain >= 3) {
+    return `${pickToast("stomp-chain", chain)} x${chain}`;
+  }
+  return `+${points} x${chain}`;
+}
+
 function updateCourseFoes(
   state: GameEngineState,
   obstacles: readonly Obstacle[],
@@ -1194,10 +1358,18 @@ function updateCourseFoes(
   let shots = stepped.shots;
   let score = 0;
   const popups = [...(state.popups ?? [])];
+  let defeats = 0;
+  const fitness = isFitnessRun(state);
   const award = (f: Foe, points: number, label = `+${points}`) => {
     if (points <= 0) return;
+    defeats += 1;
     score += points;
-    popups.push({ x: f.x, y: f.y - 6, text: label, ttlMs: 800 });
+    // Beating the Rep Max under fitness rules gets a gym toast.
+    const text =
+      fitness && f.kind === "repmax" && points >= REPMAX_SCORE
+        ? pickToast("rep-max", state.score + score)
+        : label;
+    popups.push({ x: f.x, y: f.y - 6, text, ttlMs: 800 });
   };
   // Hits that wear the foe down; a defeated one is dropped.
   const hitFoe = (f: Foe, amount: number): Foe | null => {
@@ -1268,11 +1440,7 @@ function updateCourseFoes(
       const chain = (next.stompChain ?? 0) + (hit.score > 0 ? 1 : 0);
       const points =
         hit.score > 0 ? Math.min(3200, hit.score * 2 ** (chain - 1)) : 0;
-      award(
-        f,
-        points,
-        chain > 1 && points > 0 ? `+${points} x${chain}` : undefined
-      );
+      award(f, points, chainLabel(state, points, chain));
       const buffered = (next.jumpBufferMs ?? 0) > 0;
       next = {
         ...next,
@@ -1344,6 +1512,9 @@ function updateCourseFoes(
     foeShots: shots,
     foeShotsFired: stepped.nextShotId,
     bolts,
+    ...(defeats > 0 && isFitnessRun(next)
+      ? { stageFoes: (next.stageFoes ?? 0) + defeats }
+      : {}),
     score: next.score + score,
     highScore: Math.max(next.highScore, next.score + score),
     popups,
@@ -1363,10 +1534,11 @@ function updateCourseFoes(
     }
     next = {
       ...next,
+      ...hitToll(next),
       power: hit.power,
       playerY: next.playerY + bodyH - playerHeightFor(hit.power),
       invulnerableMs: DAMAGE_GRACE_MS,
-      banner: { text: "OUCH · BACK TO BASE", ttlMs: 1400, tone: "warn" },
+      banner: { text: ouchText(next), ttlMs: 1400, tone: "warn" },
     };
   }
   return { state: next, obstacles: keptObstacles, lost: false };
@@ -1382,7 +1554,8 @@ export function updateGameSimulation(
   state: GameEngineState,
   deltaMs: number
 ): GameEngineState {
-  if (state.gameState !== "playing" || state.battery <= 0) {
+  const fitness = isFitnessRun(state);
+  if (state.gameState !== "playing" || (!fitness && state.battery <= 0)) {
     if (state.gameState === "playing" && state.battery <= 0) {
       const penalty = 50;
       const penalizedScore = Math.max(0, state.score - penalty);
@@ -1416,8 +1589,24 @@ export function updateGameSimulation(
   const tuning = state.tuning ?? DEFAULT_RUN_TUNING;
   const drainScale = tuning.batteryDrainScale;
 
-  // Handle GC Freeze
-  if (state.isGcActive) {
+  // Waiting for GPS: the fitness run holds at the start line until the
+  // watch has a lock, then goes.
+  if (fitness && (state.gpsMs ?? 0) > 0) {
+    const gpsMs = Math.max(0, (state.gpsMs ?? 0) - safeDelta);
+    const elapsed = GPS_LOCK_MS - gpsMs;
+    return {
+      ...state,
+      gpsMs,
+      banner: {
+        text: gpsBannerText(elapsed),
+        ttlMs: gpsMs > 0 ? gpsMs + 1800 : 1800,
+        tone: gpsMs > 0 ? "info" : "good",
+      },
+    };
+  }
+
+  // Handle GC Freeze (Dev Mode only)
+  if (state.isGcActive && !fitness) {
     const remainingGc = state.gcTimerMs - safeDelta;
 
     // Calculate battery, backlight, thermal stress, fog level updates during GC
@@ -1539,12 +1728,14 @@ export function updateGameSimulation(
   // Base battery drain: 0.1%/sec; With light: +0.3%/sec (0.4%/sec total).
   // Battery is kept unrounded: a frame drains about 0.0017%, which rounding
   // to two decimals would undo every frame. Round only for display.
+  // The fitness rules have no watch battery: Body Battery takes its place.
   const baseDrainPerMs = 0.0001;
   const lightDrainPerMs = 0.0003;
-  const totalDrain =
-    (baseDrainPerMs + (state.isLightOn ? lightDrainPerMs : 0)) *
-    safeDelta *
-    drainScale;
+  const totalDrain = fitness
+    ? 0
+    : (baseDrainPerMs + (state.isLightOn ? lightDrainPerMs : 0)) *
+      safeDelta *
+      drainScale;
   nextBattery = Math.max(0, nextBattery - totalDrain);
 
   let nextLight = state.isLightOn;
@@ -1597,8 +1788,11 @@ export function updateGameSimulation(
     ramPct > 0.8 ? Math.min(1.0, 0.4 + (ramPct - 0.8) * 3.0) : 0;
   const gcStress = state.isGcActive ? 0.8 : 0;
 
-  const targetStress = Math.max(backlightStress, ramStress, gcStress);
-  let nextThermalStress = state.thermalStress ?? 0;
+  // No heat and no fog under the fitness rules.
+  const targetStress = fitness
+    ? 0
+    : Math.max(backlightStress, ramStress, gcStress);
+  let nextThermalStress = fitness ? 0 : (state.thermalStress ?? 0);
   if (targetStress > nextThermalStress) {
     nextThermalStress = Math.min(
       targetStress,
@@ -1611,7 +1805,7 @@ export function updateGameSimulation(
     );
   }
 
-  let nextFogLevel = state.fogLevel;
+  let nextFogLevel = fitness ? 0 : state.fogLevel;
   if (nextThermalStress > nextFogLevel) {
     nextFogLevel = Math.min(
       nextThermalStress,
@@ -1626,7 +1820,13 @@ export function updateGameSimulation(
 
   // 2. Pace, camera and platformer physics (#1950). The camera sits at ten
   // world pixels per metre; the runner stays at PLAYER_X on screen.
-  const pace = paceFor(state.runInput);
+  // A bonked runner can only jog.
+  const runInput = fitness
+    ? effectiveRunInput(state.bodyBattery, state.runInput)
+    : state.runInput;
+  const pace = paceFor(runInput);
+  // Body Battery gained or spent this tick by Kudos, power-ups and the pole.
+  let bodyBatteryChange = 0;
   const nextDistance = state.distanceMeters + 0.25 * pace * dtRatio;
   const cameraX = nextDistance * PX_PER_METER;
   const footLeft = cameraX + PLAYER_X + 5;
@@ -1653,6 +1853,8 @@ export function updateGameSimulation(
     const ttlMs = banner.ttlMs - safeDelta;
     banner = ttlMs > 0 ? { ...banner, ttlMs } : null;
   }
+  // The banner carried in from last frame; anything else was set this frame.
+  const carriedBanner = banner;
   // Bumping an unused Sync Block uses it up and pays out its contents.
   const bumpBlock = (index: number) => {
     const block = course.blocks[index];
@@ -1806,12 +2008,12 @@ export function updateGameSimulation(
       },
       {
         errorType: "Segmentation Fault",
-        file: "Garmin_Schvitz_App.mc",
+        file: "MonkeyC_Mayhem_App.mc",
         line: 256,
         stackTrace: [
           "Segmentation Fault: read past the end of the track",
           "Runner fell through a gap in the lane",
-          "at Garmin_Schvitz_App.onStep() [App.mc:256]",
+          "at MonkeyC_Mayhem_App.onStep() [App.mc:256]",
         ],
         heapUsedKb: state.allocatedRamKb,
         heapLimitKb: DEVICE_PROFILES[state.device].ramLimitKb,
@@ -1833,6 +2035,7 @@ export function updateGameSimulation(
       if (!hit) return true;
       kudos += 1;
       score += KUDOS_SCORE;
+      bodyBatteryChange += BODY_BATTERY_KUDOS_GAIN;
       popups.push({ x: k.x, y: k.y - 6, text: `+${KUDOS_SCORE}`, ttlMs: 600 });
       return false;
     });
@@ -1880,6 +2083,8 @@ export function updateGameSimulation(
         ttlMs: 900,
       });
       const nextPower = collectTier(power, p.kind);
+      bodyBatteryChange +=
+        p.kind === "high" ? BODY_BATTERY_MAX : BODY_BATTERY_POWER_GAIN;
       if (p.kind === "high") {
         starMs = HIGH_MS;
         banner = { text: "RUNNER'S HIGH!", ttlMs: 1800, tone: "good" };
@@ -1919,6 +2124,7 @@ export function updateGameSimulation(
 
   // The finish pole: grabbing it ends the stage, higher pays more.
   let stageCleared = false;
+  let stageTrainingEffect: number | null = null;
   let runComplete = false;
   const poleIdx = course.poles.findIndex(
     (p) => p.grabbed === undefined && bodyRight >= p.x
@@ -1942,6 +2148,16 @@ export function updateGameSimulation(
       ttlMs: 1200,
     });
     stageCleared = true;
+    bodyBatteryChange += BODY_BATTERY_POWER_GAIN;
+    // The fitness rules grade the stage like a workout.
+    if (fitness) {
+      stageTrainingEffect = trainingEffect({
+        foesDefeated: state.stageFoes ?? 0,
+        hitsTaken: state.stageHits ?? 0,
+        livesLost: state.stageLivesLost ?? 0,
+        poleHeight: height,
+      });
+    }
     if (pole.stage >= STAGE_COUNT) {
       runComplete = true;
     } else {
@@ -1951,7 +2167,10 @@ export function updateGameSimulation(
         generateStage(stage, state.courseSeed ?? 0, GROUND_Y)
       );
       banner = {
-        text: `STAGE ${pole.stage} CLEAR · ${stage}K NEXT`,
+        text:
+          stageTrainingEffect === null
+            ? `STAGE ${pole.stage} CLEAR · ${stage}K NEXT`
+            : `TE ${stageTrainingEffect.toFixed(1)} · ${trainingEffectLabel(stageTrainingEffect).toUpperCase()}`,
         ttlMs: 2200,
         tone: "good",
       };
@@ -1969,6 +2188,56 @@ export function updateGameSimulation(
   const nextScoreRemainder = Math.max(0, exactScore - nextScore);
   const nextHighScore = Math.max(state.highScore, nextScore);
   const nextHeartRate = clamp(130 + Math.floor(nextScore * 0.05), 120, 188);
+
+  // Body Battery, the move alert and a new PR (fitness rules).
+  let bodyBattery = state.bodyBattery;
+  let idleMs = state.idleMs ?? 0;
+  let prAnnounced = state.prAnnounced ?? false;
+  if (fitness) {
+    const before = state.bodyBattery;
+    bodyBattery = adjustBodyBattery(
+      stepBodyBattery(before, runInput, isGrounded, safeDelta),
+      bodyBatteryChange
+    );
+    // A banner set this frame (a stage clear, a power-up, a 1UP) wins.
+    const freshBanner = banner !== carriedBanner;
+    if (bodyBattery.bonked && !(before?.bonked ?? false) && !freshBanner) {
+      banner = {
+        text: `BONK! · ${pickToast("bonk", nextDistance)}`,
+        ttlMs: 2200,
+        tone: "warn",
+      };
+    }
+    // Easing on footing for too long and the watch nags. A bonked runner is
+    // forced to ease, so that never counts.
+    idleMs =
+      isGrounded && state.runInput === -1 && !bodyBattery.bonked
+        ? idleMs + safeDelta
+        : 0;
+    if (idleMs >= MOVE_ALERT_IDLE_MS) {
+      idleMs = 0;
+      if (!banner)
+        banner = { text: MOVE_ALERT_TEXT, ttlMs: 1400, tone: "warn" };
+    }
+    // A new PR waits for the watch to clear any other banner.
+    const best = state.bestAtStart ?? 0;
+    if (!prAnnounced && best > 0 && nextScore > best && !banner) {
+      prAnnounced = true;
+      banner = { text: NEW_PR_TEXT, ttlMs: 1800, tone: "good" };
+    }
+    // Gym and running toasts float up from the runner.
+    const toast = (event: ToastEvent) =>
+      popups.push({
+        x: bodyLeft,
+        y: playerTop - 14,
+        text: pickToast(event, nextScore + nextDistance),
+        ttlMs: 1100,
+      });
+    if (stageTrainingEffect !== null) toast("stage-clear");
+    else if (earned > 0) toast("kudos-life");
+    else if (power !== (state.power ?? "base") || bodyBatteryChange >= 25)
+      toast("power-up");
+  }
 
   // 4. Memory Allocations (Automatic dynamic memory pressure)
   let updatedState: GameEngineState = {
@@ -2005,6 +2274,21 @@ export function updateGameSimulation(
     stompChain,
     popups,
     banner,
+    ...(fitness
+      ? {
+          bodyBattery,
+          idleMs,
+          prAnnounced,
+          ...(stageTrainingEffect === null
+            ? {}
+            : {
+                lastTrainingEffect: stageTrainingEffect,
+                stageFoes: 0,
+                stageHits: 0,
+                stageLivesLost: 0,
+              }),
+        }
+      : {}),
   };
 
   if (runComplete) {
@@ -2045,7 +2329,7 @@ export function updateGameSimulation(
         : 5000) *
     tuning.allocIntervalScale *
     (1 - 0.6 * ramp);
-  if (now - state.lastAllocTime > allocInterval) {
+  if (!fitness && now - state.lastAllocTime > allocInterval) {
     const types: VariableType[] = ["int", "float", "string", "array"];
     const chosenType = types[Math.floor(Math.random() * types.length)];
     const allocResult = allocateVariable(updatedState, chosenType);
@@ -2115,6 +2399,7 @@ export function updateGameSimulation(
       updatedState = {
         ...updatedState,
         score: updatedState.score + SPIN_DEFEAT_SCORE,
+        stageFoes: (updatedState.stageFoes ?? 0) + 1,
         highScore: Math.max(
           updatedState.highScore,
           updatedState.score + SPIN_DEFEAT_SCORE
@@ -2147,6 +2432,7 @@ export function updateGameSimulation(
           updatedState = {
             ...updatedState,
             score: updatedState.score + BOLT_DEFEAT_SCORE,
+            stageFoes: (updatedState.stageFoes ?? 0) + 1,
             highScore: Math.max(
               updatedState.highScore,
               updatedState.score + BOLT_DEFEAT_SCORE
@@ -2203,6 +2489,7 @@ export function updateGameSimulation(
         updatedState = {
           ...updatedState,
           score: updatedState.score + points,
+          stageFoes: (updatedState.stageFoes ?? 0) + 1,
           highScore: Math.max(
             updatedState.highScore,
             updatedState.score + points
@@ -2216,7 +2503,7 @@ export function updateGameSimulation(
             {
               x: cameraX + nextX,
               y: obsY - 6,
-              text: chain > 1 ? `+${points} x${chain}` : `+${points}`,
+              text: chainLabel(updatedState, points, chain) ?? `+${points}`,
               ttlMs: 800,
             },
           ],
@@ -2228,6 +2515,7 @@ export function updateGameSimulation(
         updatedState = {
           ...updatedState,
           score: updatedState.score + HIGH_DEFEAT_SCORE,
+          stageFoes: (updatedState.stageFoes ?? 0) + 1,
           highScore: Math.max(
             updatedState.highScore,
             updatedState.score + HIGH_DEFEAT_SCORE
@@ -2253,10 +2541,11 @@ export function updateGameSimulation(
         // Dropping to Base shrinks the box from the top; the feet stay put.
         updatedState = {
           ...updatedState,
+          ...hitToll(updatedState),
           power: hit.power,
           playerY: updatedState.playerY + bodyH - playerHeightFor(hit.power),
           invulnerableMs: DAMAGE_GRACE_MS,
-          banner: { text: "OUCH · BACK TO BASE", ttlMs: 1400, tone: "warn" },
+          banner: { text: ouchText(updatedState), ttlMs: 1400, tone: "warn" },
         };
         nextObstacles.push({ ...obs, x: nextX, y: obsY, vy: obsVy });
         continue;
@@ -2289,12 +2578,12 @@ export function updateGameSimulation(
       } else if (obs.type === "watchdog") {
         crashTriggered = {
           errorType: "Watchdog Tripped",
-          file: "Garmin_Schvitz_App.mc",
+          file: "MonkeyC_Mayhem_App.mc",
           line: 42,
           stackTrace: [
             "Watchdog Tripped: App Execution > 5000ms",
             "at System.println() [Core.mc:12]",
-            "at Garmin_Schvitz_App.onTimer() [App.mc:42]",
+            "at MonkeyC_Mayhem_App.onTimer() [App.mc:42]",
           ],
           heapUsedKb: updatedState.allocatedRamKb,
           heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
@@ -2303,10 +2592,10 @@ export function updateGameSimulation(
       } else if (obs.type === "null_pointer") {
         crashTriggered = {
           errorType: "Null Pointer",
-          file: "Garmin_Schvitz_App.mc",
+          file: "MonkeyC_Mayhem_App.mc",
           line: 77,
           stackTrace: [
-            "Null Pointer Exception in Garmin_Schvitz_App.mc:77",
+            "Null Pointer Exception in MonkeyC_Mayhem_App.mc:77",
             "Attempted to access a member of null: :activeView",
             "at Ui.View.findDrawableById() [Ui.mc:104]",
           ],
@@ -2317,12 +2606,12 @@ export function updateGameSimulation(
       } else if (obs.type === "stack_overflow") {
         crashTriggered = {
           errorType: "Stack Overflow",
-          file: "Garmin_Schvitz_App.mc",
+          file: "MonkeyC_Mayhem_App.mc",
           line: 118,
           stackTrace: [
-            "Stack Overflow Error in Garmin_Schvitz_App.mc:118",
+            "Stack Overflow Error in MonkeyC_Mayhem_App.mc:118",
             "Call depth exceeded: recursive onUpdate()",
-            "at Garmin_Schvitz_App.onUpdate() [App.mc:118]",
+            "at MonkeyC_Mayhem_App.onUpdate() [App.mc:118]",
           ],
           heapUsedKb: updatedState.allocatedRamKb,
           heapLimitKb: DEVICE_PROFILES[updatedState.device].ramLimitKb,
@@ -2383,13 +2672,16 @@ export function updateGameSimulation(
         (p) => p.grabbed === undefined && Math.abs(p.x - spawnWorldX) < 160
       );
     if (maxX < 190 && !blockedSpawn) {
-      const obstacleTypes: ObstacleType[] = [
-        "null_pointer",
-        "watchdog",
-        "stack_overflow",
-        "mem_token",
-        "flash_token",
-      ];
+      // Memory and flash tokens belong to Dev Mode's heap.
+      const obstacleTypes: ObstacleType[] = fitness
+        ? ["null_pointer", "watchdog", "stack_overflow"]
+        : [
+            "null_pointer",
+            "watchdog",
+            "stack_overflow",
+            "mem_token",
+            "flash_token",
+          ];
       const chosen =
         obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
 

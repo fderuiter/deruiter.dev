@@ -10,7 +10,18 @@ import {
   type DeviceTarget,
   type GameEngineState,
 } from "@/lib/garmin-engine";
-import { batteryTone, meterTone, type MeterTone } from "./watch-face-art";
+import {
+  batteryTone,
+  meterTone,
+  stageProgress,
+  type MeterTone,
+} from "./watch-face-art";
+import { STAGE_COUNT } from "@/lib/garmin-course";
+import {
+  bodyBatteryFraction,
+  bodyBatteryLabel,
+} from "@/lib/garmin-body-battery";
+import { trainingEffectLabel } from "@/lib/garmin-culture";
 import type { WatchBezelTheme } from "./WatchHardware";
 import {
   GROUND_STRIP_FIELDS,
@@ -158,6 +169,14 @@ const THEMES: Array<{ id: WatchBezelTheme; label: string }> = [
   { id: "cyan", label: "Cyan" },
 ];
 
+const FITNESS_KEYS: Array<[string, string]> = [
+  ["▲ / Space", "Jump (hold for higher)"],
+  ["▶ / ◀", "Sprint, or ease to a jog to recharge"],
+  ["X / ⌫", "Heat bolt or cape spin"],
+  ["L", "Backlight"],
+  ["Enter", "Start, pause, run again"],
+];
+
 const KEYS: Array<[string, string]> = [
   ["▲", "Jump"],
   ["▼", "Pop heap variable"],
@@ -202,6 +221,11 @@ interface CompanionPanelProps {
   onWriteFlash: (e: React.MouseEvent) => void;
   onClearFlash: (e: React.MouseEvent) => void;
   onDrainBattery: (e: React.MouseEvent) => void;
+  /** Whether Dev Mode (the firmware rules) is on for the next run. */
+  devMode: boolean;
+  /** Whether the panel shows the fitness readouts rather than the firmware ones. */
+  fitnessView: boolean;
+  onToggleDevMode: (e: React.MouseEvent) => void;
   /** Samples recorded for the current run. */
   telemetryCount: number;
   onExportCsv: () => void;
@@ -231,6 +255,9 @@ export function CompanionPanel({
   onWriteFlash,
   onClearFlash,
   onDrainBattery,
+  devMode,
+  fitnessView,
+  onToggleDevMode,
   telemetryCount,
   onExportCsv,
   onExportFit,
@@ -247,6 +274,12 @@ export function CompanionPanel({
   const fog = Math.round(state.fogLevel * 100);
   const status = RUN_STATUS[state.gameState];
   const isPlaying = state.gameState === "playing";
+  const bb = state.bodyBattery;
+  const bbValue = Math.round(bodyBatteryFraction(bb) * 100);
+  const stage = state.stage ?? 1;
+  const progress = state.gameState === "idle" ? 0 : stageProgress(state);
+  const courseFraction = (stage - 1 + progress) / STAGE_COUNT;
+  const te = state.lastTrainingEffect;
 
   return (
     <aside
@@ -274,62 +307,121 @@ export function CompanionPanel({
           </span>
         </header>
 
-        <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3">
-          <RingGauge
-            label="RAM"
-            fraction={ramFraction}
-            tone={meterTone(ramFraction)}
-            readout={`${state.allocatedRamKb.toFixed(1)} / ${profile.ramLimitKb} KB`}
-            valueNow={state.allocatedRamKb}
-            valueMax={profile.ramLimitKb}
-            valueText={`${state.allocatedRamKb.toFixed(1)} of ${profile.ramLimitKb} KB`}
-          />
-          <RingGauge
-            label="FLASH"
-            fraction={flashFraction}
-            tone={meterTone(flashFraction)}
-            readout={`${state.allocatedFlashKb.toFixed(1)} / ${profile.flashLimitKb} KB`}
-            valueNow={state.allocatedFlashKb}
-            valueMax={profile.flashLimitKb}
-            valueText={`${state.allocatedFlashKb.toFixed(1)} of ${profile.flashLimitKb} KB`}
-          />
-          <RingGauge
-            label="BATTERY"
-            fraction={battery / 100}
-            tone={batteryTone(battery)}
-            readout={
-              battery < 15 && battery > 0
-                ? "Low power"
-                : state.isLightOn
-                  ? "Light on"
-                  : "Light off"
-            }
-            valueNow={battery}
-            valueMax={100}
-            valueText={`${battery}%`}
-          />
-        </div>
+        {fitnessView ? (
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3">
+            <RingGauge
+              label="BODY BATTERY"
+              fraction={bbValue / 100}
+              tone={bb?.bonked ? "danger" : batteryTone(bbValue)}
+              readout={bodyBatteryLabel(bb)}
+              valueNow={bbValue}
+              valueMax={100}
+              valueText={`${bbValue} of 100${bb?.bonked ? ", bonked" : ""}`}
+            />
+            <RingGauge
+              label="5K"
+              fraction={courseFraction}
+              tone="ok"
+              readout={`Stage ${stage} of ${STAGE_COUNT}`}
+              valueNow={Math.round(courseFraction * 100)}
+              valueMax={100}
+              valueText={`${Math.round(courseFraction * 100)}% of the 5K, stage ${stage} of ${STAGE_COUNT}`}
+            />
+            <RingGauge
+              label="TRAINING EFFECT"
+              fraction={(te ?? 0) / 5}
+              tone="ok"
+              readout={
+                te === undefined
+                  ? "Clear a stage"
+                  : `${te.toFixed(1)} · ${trainingEffectLabel(te)}`
+              }
+              valueNow={te ?? 0}
+              valueMax={5}
+              valueText={
+                te === undefined
+                  ? "No stage cleared yet"
+                  : `${te.toFixed(1)} of 5, ${trainingEffectLabel(te)}`
+              }
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3">
+            <RingGauge
+              label="RAM"
+              fraction={ramFraction}
+              tone={meterTone(ramFraction)}
+              readout={`${state.allocatedRamKb.toFixed(1)} / ${profile.ramLimitKb} KB`}
+              valueNow={state.allocatedRamKb}
+              valueMax={profile.ramLimitKb}
+              valueText={`${state.allocatedRamKb.toFixed(1)} of ${profile.ramLimitKb} KB`}
+            />
+            <RingGauge
+              label="FLASH"
+              fraction={flashFraction}
+              tone={meterTone(flashFraction)}
+              readout={`${state.allocatedFlashKb.toFixed(1)} / ${profile.flashLimitKb} KB`}
+              valueNow={state.allocatedFlashKb}
+              valueMax={profile.flashLimitKb}
+              valueText={`${state.allocatedFlashKb.toFixed(1)} of ${profile.flashLimitKb} KB`}
+            />
+            <RingGauge
+              label="BATTERY"
+              fraction={battery / 100}
+              tone={batteryTone(battery)}
+              readout={
+                battery < 15 && battery > 0
+                  ? "Low power"
+                  : state.isLightOn
+                    ? "Light on"
+                    : "Light off"
+              }
+              valueNow={battery}
+              valueMax={100}
+              valueText={`${battery}%`}
+            />
+          </div>
+        )}
 
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3">
-          <SensorBar
-            label="THERMAL"
-            percent={thermal}
-            tone={thermal > 40 ? "warn" : "ok"}
-          />
-          <SensorBar
-            label="CONDENSATION"
-            percent={fog}
-            tone={fog > 40 ? "danger" : "ok"}
-          />
-          <div className="text-right">
+        {fitnessView ? (
+          <div className="flex items-end justify-between gap-3">
             <div className="text-[10px] uppercase tracking-wider text-zinc-400">
-              Best
+              Kudos{" "}
+              <span className="text-sm font-bold tabular-nums text-zinc-200">
+                {state.kudos ?? 0}
+              </span>
             </div>
-            <div className="text-sm font-bold tabular-nums text-amber-300">
-              {highScore}
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-400">
+                Best
+              </div>
+              <div className="text-sm font-bold tabular-nums text-amber-300">
+                {highScore}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3">
+            <SensorBar
+              label="THERMAL"
+              percent={thermal}
+              tone={thermal > 40 ? "warn" : "ok"}
+            />
+            <SensorBar
+              label="CONDENSATION"
+              percent={fog}
+              tone={fog > 40 ? "danger" : "ok"}
+            />
+            <div className="text-right">
+              <div className="text-[10px] uppercase tracking-wider text-zinc-400">
+                Best
+              </div>
+              <div className="text-sm font-bold tabular-nums text-amber-300">
+                {highScore}
+              </div>
+            </div>
+          </div>
+        )}
 
         <p className="flex items-center gap-2 text-[10px] text-zinc-400">
           <span
@@ -454,36 +546,54 @@ export function CompanionPanel({
           <div className="grid gap-1.5">
             <button
               type="button"
-              onClick={onWriteFlash}
-              className={`${toolClass} border-amber-500/30 bg-amber-500/[0.06] text-amber-200 hover:bg-amber-500/[0.12]`}
-            >
-              Write NV Flash (+8KB)
-            </button>
-            <button
-              type="button"
-              onClick={onClearFlash}
+              role="switch"
+              aria-checked={devMode}
+              aria-label="Dev Mode"
+              onClick={onToggleDevMode}
+              title="Brings back the firmware rules: heap, garbage collection, flash, battery and fog. Applies from the next run."
               className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
             >
-              Clear Flash Storage
+              Dev Mode: {devMode ? "On" : "Off"}
+              {fitnessView === devMode && state.gameState !== "idle"
+                ? " (next run)"
+                : ""}
             </button>
-            <button
-              type="button"
-              onClick={onDrainBattery}
-              disabled={!isPlaying}
-              title={
-                isPlaying
-                  ? undefined
-                  : "Start a run first: each run begins on a full battery"
-              }
-              className={`${toolClass} border-rose-500/30 bg-rose-500/[0.06] text-rose-200 hover:bg-rose-500/[0.12]`}
-            >
-              Drain Battery (-20%)
-            </button>
+            {!fitnessView && (
+              <>
+                <button
+                  type="button"
+                  onClick={onWriteFlash}
+                  className={`${toolClass} border-amber-500/30 bg-amber-500/[0.06] text-amber-200 hover:bg-amber-500/[0.12]`}
+                >
+                  Write NV Flash (+8KB)
+                </button>
+                <button
+                  type="button"
+                  onClick={onClearFlash}
+                  className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+                >
+                  Clear Flash Storage
+                </button>
+                <button
+                  type="button"
+                  onClick={onDrainBattery}
+                  disabled={!isPlaying}
+                  title={
+                    isPlaying
+                      ? undefined
+                      : "Start a run first: each run begins on a full battery"
+                  }
+                  className={`${toolClass} border-rose-500/30 bg-rose-500/[0.06] text-rose-200 hover:bg-rose-500/[0.12]`}
+                >
+                  Drain Battery (-20%)
+                </button>
+              </>
+            )}
           </div>
         </fieldset>
 
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/[0.08] pt-3 text-[10px]">
-          {KEYS.map(([key, action]) => (
+          {(fitnessView ? FITNESS_KEYS : KEYS).map(([key, action]) => (
             <React.Fragment key={key}>
               <dt className="text-zinc-200">{key}</dt>
               <dd className="min-w-0 text-zinc-400">{action}</dd>

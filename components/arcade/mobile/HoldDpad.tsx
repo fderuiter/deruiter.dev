@@ -99,7 +99,7 @@ function DirectionButton({
       className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-cyan-400 active:bg-cyan-500/30 active:text-cyan-300`}
     >
       <Icon
-        className={`${large ? "min-[600px]:h-[calc(var(--touch-key,96px)*0.3)] min-[600px]:w-[calc(var(--touch-key,96px)*0.3)] " : ""}h-6 w-6`}
+        className={`${large ? "min-[480px]:h-[calc(var(--touch-key,80px)*0.3)] min-[480px]:w-[calc(var(--touch-key,80px)*0.3)] " : ""}h-6 w-6`}
         aria-hidden="true"
       />
     </TouchButton>
@@ -125,7 +125,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
     data-hold-dpad=""
     className={`grid grid-cols-3 gap-1 touch-none select-none ${
       large
-        ? "h-full grid-rows-3 min-[600px]:h-auto min-[600px]:w-max min-[600px]:grid-rows-none min-[600px]:gap-2"
+        ? "h-full grid-rows-3 min-[480px]:h-auto min-[480px]:w-max min-[480px]:grid-rows-none min-[480px]:gap-2"
         : ""
     } ${className}`}
   >

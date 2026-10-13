@@ -2570,7 +2570,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       </span>
       {wallShiftLabel && (
         <span
-          className="hidden min-[700px]:inline shrink-0 text-amber-300 text-[10px]"
+          className="hidden landscape:min-[700px]:inline shrink-0 text-amber-300 text-[10px]"
           data-testid="labyrinth-wall-telegraph-phone"
         >
           {wallShiftLabel}
@@ -2653,7 +2653,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     <section
       aria-label="Room status"
       data-testid="labyrinth-room-panel"
-      className="hidden min-h-0 flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-xs portrait:min-[600px]:flex portrait:min-[600px]:col-span-2 portrait:min-[600px]:row-start-2"
+      className="hidden min-h-0 flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-xs portrait:min-[480px]:flex portrait:min-[480px]:col-span-2 portrait:min-[480px]:row-start-2"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -2732,7 +2732,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         <span
           className={`shrink-0 ${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}
         >
-          EMP {empWeapon?.ammo ?? 0}/{empWeapon?.maxAmmo ?? 0}
+          {empWeapon && empWeapon.maxAmmo >= 999
+            ? `EMP ∞ · ${empWeapon.ramCost ?? 0} RAM`
+            : `EMP ${empWeapon?.ammo ?? 0}/${empWeapon?.maxAmmo ?? 0}`}
           {dronesStunned ? " · stunned" : ""}
         </span>
         {wallShiftLabel && (
@@ -2744,9 +2746,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </span>
         )}
       </div>
-      <p className="min-h-4 truncate text-amber-200" aria-hidden="true">
-        {phoneToast?.text ?? ""}
-      </p>
+      {phoneToast && (
+        <p className="truncate text-amber-200" aria-hidden="true">
+          {phoneToast.text}
+        </p>
+      )}
     </section>
   );
 
@@ -2754,7 +2758,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     <div
       role="group"
       aria-label="Tools and actions"
-      className="grid grid-cols-2 gap-1 portrait:min-[600px]:w-max portrait:min-[600px]:gap-2"
+      className="grid grid-cols-2 gap-1 portrait:min-[480px]:w-max portrait:min-[480px]:gap-2"
     >
       {[0, 1, 2].map((slotIdx) => {
         const weaponId = selectedClass.starterWeapons[slotIdx];
@@ -2779,7 +2783,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             }
             disabled={!hasAmmo}
             onPress={() => fireStarterSlot(slotIdx)}
-            className="relative flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
+            className="relative flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
           >
             {showKeyHints && (
               <span
@@ -2789,7 +2793,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 {slotIdx + 1}
               </span>
             )}
-            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)]">
+            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)]">
               {shortLabel}
             </span>
           </TouchButton>
@@ -2798,21 +2802,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       <TouchButton
         label="EMP: fire an EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Exploit: cycle to the next tool and fire it"
         onPress={cycleWeapon}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
         label="Market: open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[600px]:h-[var(--touch-key)] portrait:min-[600px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[600px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -3659,12 +3663,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneRow = (
     <DockFrame
       handedness={handedness}
-      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[600px]:grid-rows-[auto_auto_minmax(0,1fr)] portrait:min-[600px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[600px]:[--touch-key:clamp(96px,16vw,120px)]"
+      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[480px]:grid-rows-[auto_auto_minmax(0,1fr)] portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,16vw,120px)]"
     >
       {/* The controls sit in a gate: a keyboard hides them, a touch brings
           them back (ADR 0061). */}
       <div
-        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:grid portrait:min-h-0 portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[600px]:row-start-3 portrait:min-[600px]:self-end portrait:min-[600px]:justify-items-start portrait:min-[600px]:[container-type:normal] ${leftHanded ? "portrait:col-start-2" : "portrait:col-start-1"}`}
+        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:grid portrait:min-h-0 portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[480px]:row-start-3 portrait:min-[480px]:self-end portrait:min-[480px]:justify-items-start portrait:min-[480px]:[container-type:normal] ${leftHanded ? "portrait:col-start-2" : "portrait:col-start-1"}`}
       >
         <TouchControlsGate>
           <HoldDpad
@@ -3678,7 +3682,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       {canvasFrameNode}
       {phoneRoomPanel}
       <div
-        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[600px]:row-start-3 portrait:min-[600px]:h-auto portrait:min-[600px]:self-end portrait:min-[600px]:items-end portrait:min-[600px]:[container-type:normal] ${leftHanded ? "portrait:col-start-1" : "portrait:col-start-2"}`}
+        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[480px]:row-start-3 portrait:min-[480px]:h-auto portrait:min-[480px]:self-end portrait:min-[480px]:items-end portrait:min-[480px]:[container-type:normal] ${leftHanded ? "portrait:col-start-1" : "portrait:col-start-2"}`}
       >
         <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
       </div>

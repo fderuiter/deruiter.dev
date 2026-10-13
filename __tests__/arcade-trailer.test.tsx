@@ -7,7 +7,7 @@ import { ArcadeHubClient } from "@/components/arcade/ArcadeHubClient";
 
 const publicFile = (src: string) => path.resolve(process.cwd(), "public" + src);
 
-describe("arcade trailer (#1788)", () => {
+describe("arcade trailer (#1788, #2030)", () => {
   afterEach(cleanup);
 
   it("sits on the hub as a labelled section", () => {
@@ -24,7 +24,7 @@ describe("arcade trailer (#1788)", () => {
     expect(video.getAttribute("preload")).toBe("none");
     expect(video.hasAttribute("autoplay")).toBe(false);
     expect(video.getAttribute("poster")).toBe(
-      "/videos/arcade-trailer-poster.jpg"
+      "/videos/arcade-sizzle-poster.jpg"
     );
   });
 
@@ -49,11 +49,11 @@ describe("arcade trailer (#1788)", () => {
   });
 
   it("captions are valid WebVTT covering the whole trailer", () => {
-    const vtt = readFileSync(publicFile("/videos/arcade-trailer.vtt"), "utf8");
+    const vtt = readFileSync(publicFile("/videos/arcade-sizzle.vtt"), "utf8");
     expect(vtt.startsWith("WEBVTT")).toBe(true);
     const cues =
       vtt.match(/\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/g) ?? [];
     expect(cues.length).toBeGreaterThan(10);
-    expect(cues[cues.length - 1]).toContain("--> 00:00:50.033");
+    expect(cues[cues.length - 1]).toContain("--> 00:00:58.033");
   });
 });

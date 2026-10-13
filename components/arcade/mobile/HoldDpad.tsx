@@ -20,6 +20,8 @@ export interface HoldDpadProps {
    * of width. The default is the comfortable 48px.
    */
   compact?: boolean;
+  /** Keys at 80px, for a portrait tablet whose lower dock has the room. */
+  large?: boolean;
   /**
    * True while the game is not taking moves (paused, or an options sheet is
    * open). Any repeat in progress is released at once.
@@ -57,15 +59,23 @@ const CELLS: ({ dir: SwipeDirection } | null)[] = [
   null,
 ];
 
+/** The key's square size: 80px when large, 44px when compact, else 48px. */
+function keySize(compact: boolean, large: boolean): string {
+  if (large) return "h-20 w-20";
+  return compact ? "h-11 w-11" : "h-12 w-12";
+}
+
 function DirectionButton({
   direction,
   onMove,
   compact,
+  large,
   paused,
 }: {
   direction: SwipeDirection;
   onMove: (direction: SwipeDirection) => void;
   compact: boolean;
+  large: boolean;
   paused: boolean;
 }) {
   const repeat = useHoldRepeat(() => onMove(direction));
@@ -78,7 +88,7 @@ function DirectionButton({
       label={DIRECTION_LABEL[direction]}
       onPress={() => repeat.start()}
       onRelease={() => repeat.stop()}
-      className={`flex ${compact ? "h-11 w-11" : "h-12 w-12"} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-cyan-400 active:bg-cyan-500/30 active:text-cyan-300`}
+      className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-cyan-400 active:bg-cyan-500/30 active:text-cyan-300`}
     >
       <Icon className="h-6 w-6" aria-hidden="true" />
     </TouchButton>
@@ -95,6 +105,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
   onMove,
   className = "",
   compact = false,
+  large = false,
   paused = false,
 }) => (
   <div
@@ -110,13 +121,14 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
           direction={cell.dir}
           onMove={onMove}
           compact={compact}
+          large={large}
           paused={paused}
         />
       ) : (
         <div
           key={`hub-${index}`}
           aria-hidden="true"
-          className={compact ? "h-11 w-11" : "h-12 w-12"}
+          className={keySize(compact, large)}
         />
       )
     )}

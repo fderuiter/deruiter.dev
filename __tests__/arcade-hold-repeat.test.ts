@@ -1,11 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  createHoldRepeater,
-  HOLD_REPEAT_DELAY_MS,
-  HOLD_REPEAT_INTERVAL_MS,
-  swipeDirection,
-  SWIPE_THRESHOLD_PX,
-} from "@/components/arcade/mobile";
+import { createHoldRepeater, swipeDirection } from "@/components/arcade/mobile";
+
+// The timing and threshold the kit ships with (holdRepeat.ts, swipe.ts).
+const HOLD_REPEAT_DELAY_MS = 220;
+const HOLD_REPEAT_INTERVAL_MS = 140;
+const SWIPE_THRESHOLD_PX = 24;
 
 /** A fake clock: `setTimer` queues callbacks that `advance` runs in time order. */
 function fakeClock() {

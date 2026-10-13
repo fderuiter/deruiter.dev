@@ -8,11 +8,11 @@ import {
   cleanup,
   act,
 } from "@testing-library/react";
-import {
-  HoldDpad,
-  HOLD_REPEAT_DELAY_MS,
-  HOLD_REPEAT_INTERVAL_MS,
-} from "@/components/arcade/mobile";
+import { HoldDpad } from "@/components/arcade/mobile";
+
+// The hold timing the kit ships with (holdRepeat.ts).
+const HOLD_REPEAT_DELAY_MS = 220;
+const HOLD_REPEAT_INTERVAL_MS = 140;
 
 describe("HoldDpad", () => {
   beforeEach(() => {

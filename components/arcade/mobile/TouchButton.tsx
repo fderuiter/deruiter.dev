@@ -30,9 +30,9 @@ const KEYBOARD_HOLD = "keyboard";
  * the last one lifts, so two fingers on one button count once. It captures the
  * pointer on press, so a finger that slides off still releases it. A tap does
  * not take focus, so holding one key while tapping another keeps both. Every
- * hold is released when the window blurs or the page hides. It is at least 44px square and uses
- * `touch-action: none` so a hold never turns into a pan or a zoom. Enter and
- * Space work from a keyboard too.
+ * hold is released when the window blurs or the page hides. It is at least
+ * 44px square and uses `touch-action: none` so a hold never turns into a pan
+ * or a zoom. Enter and Space work from a keyboard too.
  */
 export const TouchButton: React.FC<TouchButtonProps> = ({
   label,
@@ -77,7 +77,7 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   const letGo = (id: number | string) => {
     const held = heldRef.current;
     if (!held.delete(id)) return;
-    if (held.size === 0) onRelease?.();
+    if (held.size === 0) onReleaseRef.current?.();
   };
 
   // Holds end when the page stops being the thing the player is using, not

@@ -1,6 +1,7 @@
 "use client";
 
 import React, {
+  useCallback,
   useState,
   useEffect,
   useLayoutEffect,
@@ -36,8 +37,7 @@ import {
   TouchControlsGate,
   useCabinetAutoPause,
   useOrientationMismatch,
-  PHONE_WIDTH_QUERY,
-  usePhone,
+  PHONE_ORIENTATION_QUERY,
   useTouchDevice,
   type MobileOrientation,
 } from "@/components/arcade/mobile";
@@ -169,18 +169,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // The device class is latched at Launch and held until exit, so an iPad that
   // turns across a breakpoint mid-game stays immersive instead of jumping layouts.
   const isTouchDevice = useTouchDevice();
-  const isPhone = usePhone();
   const [launchedOnTouch, setLaunchedOnTouch] = useState(false);
   const touchImmersive = isLaunched && launchedOnTouch;
-  // Orientation is a phone concern: a tablet is never asked to turn. The phone
-  // is held against the game's orientation: the cabinet is blocked behind the
-  // rotate prompt (inert siblings, focus in the prompt).
+  // Orientation is a phone concern: a tablet is never asked to turn, and a
+  // tablet that rotates does not pause (ADR 0061). One query decides the
+  // rotate prompt, the screen lock and the rotation pause: a phone by its short
+  // side, so a Split View pane of an iPad stays out of it.
+  const phoneOrientation = useMediaQuery(PHONE_ORIENTATION_QUERY);
   const orientationMismatch = useOrientationMismatch(mobileOrientation);
-  // Only a phone-width window is asked to rotate. A Split View pane of an
-  // iPad is a tablet, so it plays in whichever way it is held (#2032).
-  const phoneWidth = useMediaQuery(PHONE_WIDTH_QUERY);
+  // The phone is held against the game's orientation: the cabinet is blocked
+  // behind the rotate prompt (inert siblings, focus in the prompt).
   const rotateBlocked =
-    touchImmersive && isPhone && phoneWidth && orientationMismatch;
+    touchImmersive && phoneOrientation && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);
@@ -270,14 +270,26 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
   // The immersive touch cabinet locks page scroll while it is open and gives
   // the back of the page no overscroll bounce. Both are restored on exit.
+  // The pin's restore frame, and whether the cabinet is unmounting (navigation
+  // or the page leaving), when the scroll must be left alone.
+  const restoreFrameRef = useRef<number | null>(null);
+  const unmountingRef = useRef(false);
+  useLayoutEffect(
+    () => () => {
+      // Declared before the pin effect, so this runs first on unmount.
+      unmountingRef.current = true;
+      if (restoreFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
+      }
+    },
+    []
+  );
   useLayoutEffect(() => {
     if (!touchImmersive || isFullscreen) return;
     const body = document.body;
-    // Scroll anchoring would move the page as the cabinet replaces the preview,
-    // before the offset below is read. Switch it off for the run, and read the
-    // offset only after that, so exit returns to where the player was.
-    const previousAnchor = document.documentElement.style.overflowAnchor;
-    document.documentElement.style.overflowAnchor = "none";
+    // Scroll anchoring is switched off at launch (see handleLaunch), so the
+    // offset read here is the one the player left.
     const previousOverflow = body.style.overflow;
     const previousOverscroll =
       document.documentElement.style.overscrollBehavior;
@@ -299,12 +311,20 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       body.style.top = previousTop;
       body.style.width = previousWidth;
       document.documentElement.style.overscrollBehavior = previousOverscroll;
-      document.documentElement.style.overflowAnchor = previousAnchor;
+      if (restoreFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
+      }
+      // Navigating away or unmounting leaves the page's own scroll alone.
+      if (unmountingRef.current) return;
       // The preview lays out again after this commit, and a scroll made before
       // that can clamp to a shorter page. Restore now and again after a frame.
       const restore = () => window.scrollTo(0, offset);
       restore();
-      window.requestAnimationFrame(restore);
+      restoreFrameRef.current = window.requestAnimationFrame(() => {
+        restoreFrameRef.current = null;
+        restore();
+      });
     };
   }, [touchImmersive, isFullscreen]);
 
@@ -314,7 +334,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   useEffect(() => {
     if (
       !touchImmersive ||
-      !isPhone ||
+      !phoneOrientation ||
       !isFullscreen ||
       isPseudoFullscreen ||
       mobileOrientation === "either"
@@ -324,7 +344,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     return lockScreenOrientation(mobileOrientation);
   }, [
     touchImmersive,
-    isPhone,
+    phoneOrientation,
     isFullscreen,
     isPseudoFullscreen,
     mobileOrientation,
@@ -333,7 +353,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // Leaving the immersive cabinet restores the page offset the body pin
   // recorded on entry (see the pin effect above), so the preview is exactly
   // where the player left it. No scrollIntoView: that moved the page on exit.
-  useCabinetAutoPause(touchImmersive ? onAutoPause : undefined);
+  useCabinetAutoPause(touchImmersive ? onAutoPause : undefined, {
+    pauseOnRotate: phoneOrientation,
+  });
 
   useLayoutEffect(() => {
     const marquee = marqueeRef.current;
@@ -373,13 +395,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // cabinet, which is before the body pin can record an offset. A touch launch
   // turns it off until the cabinet closes (see the effect below).
   const anchorBeforeLaunchRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (isLaunched) return;
+  const restoreAnchor = useCallback(() => {
     const saved = anchorBeforeLaunchRef.current;
     if (saved === null) return;
     anchorBeforeLaunchRef.current = null;
     document.documentElement.style.overflowAnchor = saved;
-  }, [isLaunched]);
+  }, []);
+  useEffect(() => {
+    if (!isLaunched) restoreAnchor();
+  }, [isLaunched, restoreAnchor]);
+  // A cabinet that unmounts while launched, even mid-warmup, gives the page
+  // its scroll anchoring back.
+  useEffect(() => restoreAnchor, [restoreAnchor]);
 
   const handleLaunch = () => {
     if (isTouchDevice && anchorBeforeLaunchRef.current === null) {

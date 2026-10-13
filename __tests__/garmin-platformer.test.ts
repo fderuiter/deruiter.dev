@@ -314,7 +314,8 @@ describe("Garmin course (#1950)", () => {
     expect(s.stage).toBe(2);
     expect(s.score).toBeGreaterThanOrEqual(STAGE_CLEAR_SCORE + poleBonus(0));
     expect(s.course?.poles.some((p) => p.stage === 2)).toBe(true);
-    expect(s.banner?.text).toMatch(/STAGE 1 CLEAR/);
+    // The stage clear is an auto lap (#2018).
+    expect(s.banner?.text).toMatch(/^LAP 1 · /);
   });
 
   it("grabbing the last stage's pole completes the run", () => {

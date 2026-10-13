@@ -17,6 +17,8 @@ export const GROUND_STRIP_FIELDS = [
   "fog",
   "ram",
   "flash",
+  "time",
+  "pace",
 ] as const;
 
 export type GroundStripField = (typeof GROUND_STRIP_FIELDS)[number];
@@ -48,6 +50,8 @@ export const GROUND_STRIP_FIELD_LABELS: Record<GroundStripField, string> = {
   fog: "Fog",
   ram: "RAM",
   flash: "NV flash",
+  time: "Run time",
+  pace: "Pace",
 };
 
 /** True when `value` names a ground-strip field. */

@@ -264,7 +264,7 @@ describe("watch face data-field ring", () => {
     const { ctx, calls } = recordingCtx();
     renderWatchFace(ctx, lowBattery);
     const texts = calls.map((c) => c.text);
-    expect(texts).toContain("12345");
+    expect(texts).toContain("12345 PTS");
     expect(texts).toContain(`${lowBattery.heartRate}`);
     expect(texts).toContain("9%");
     expect(texts).toContain("31.9K");

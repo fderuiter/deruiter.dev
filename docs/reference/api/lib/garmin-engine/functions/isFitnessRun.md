@@ -8,8 +8,6 @@
 
 > **isFitnessRun**(`state`): `boolean`
 
-Whether a run plays by the fitness rules.
-
 ## Parameters
 
 ### state

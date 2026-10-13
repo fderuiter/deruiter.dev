@@ -202,7 +202,7 @@ describe("Garmin telemetry and ground strip", () => {
     expect(slot("Left").value).toBe("steps");
     expect(slot("Center").value).toBe("distance");
     expect(slot("Right").value).toBe("vars");
-    expect(slot("Left").options).toHaveLength(8);
+    expect(slot("Left").options).toHaveLength(10);
   });
 
   it("saves a changed slot, draws it, and restores the defaults on reset", async () => {

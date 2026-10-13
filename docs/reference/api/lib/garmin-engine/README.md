@@ -84,6 +84,7 @@
 - [jettisonOldestVariable](functions/jettisonOldestVariable.md)
 - [loadPersistedFlashStorage](functions/loadPersistedFlashStorage.md)
 - [paceFor](functions/paceFor.md)
+- [paceMeters](functions/paceMeters.md)
 - [pauseGame](functions/pauseGame.md)
 - [pressAction](functions/pressAction.md)
 - [pressJump](functions/pressJump.md)

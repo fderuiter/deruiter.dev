@@ -6,6 +6,6 @@
 
 # Variable: GROUND\_STRIP\_FIELDS
 
-> `const` **GROUND\_STRIP\_FIELDS**: readonly \[`"steps"`, `"distance"`, `"vars"`, `"heartRate"`, `"thermal"`, `"fog"`, `"ram"`, `"flash"`\]
+> `const` **GROUND\_STRIP\_FIELDS**: readonly \[`"steps"`, `"distance"`, `"vars"`, `"heartRate"`, `"thermal"`, `"fog"`, `"ram"`, `"flash"`, `"time"`, `"pace"`\]
 
 Fields a ground-strip slot can show.

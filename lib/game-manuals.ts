@@ -614,6 +614,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Training",
       },
       {
+        title: "Run Clock & Splits",
+        detail:
+          "The run clock counts game time from GPS lock. It stops when you pause and when the run ends. Each 1 km stage clear is an auto lap, and its banner shows that lap's split: green when it is a best split for that lap, amber when it is slower. The banner also calls your pace: WORLD RECORD PACE for a lap under 50 seconds, NEGATIVE SPLIT when a lap beats the one before, and POSITIVE SPLIT · EASE UP when it is more than 5% slower. The result card shows your finish time, your average pace and a splits table against your previous bests, with a Negative split note and New best time when you beat your best total. Bests are saved per watch on this device. Sprinting buys time but drains Body Battery, and a bonk costs more time than it saves.",
+        badge: "Splits",
+      },
+      {
         title: "Watch Messages",
         detail:
           "The watch talks back. Stomp chains, power-ups, hits, 1UPs, stage clears and the Rep Max each pop a short message, such as NEGATIVE SPLIT, CARB LOADED, DID YOU EVEN SYNC? and NEVER SKIP LEG DAY. Ease off (hold Left) on the ground for six seconds and it buzzes MOVE!",

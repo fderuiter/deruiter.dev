@@ -17,6 +17,7 @@
  * one full-screen face, with no DOM text on top of it.
  */
 import { clamp, gameFont } from "@/lib/game-utils";
+import { formatClock, formatPace, paceSecondsPerKm } from "@/lib/garmin-splits";
 import {
   DEFAULT_GROUND_STRIP,
   type GroundStripField,
@@ -76,6 +77,7 @@ import {
   type Obstacle,
   type ObstacleType,
   type VariableType,
+  paceMeters,
 } from "@/lib/garmin-engine";
 
 type Ctx = CanvasRenderingContext2D;
@@ -251,6 +253,36 @@ export function stepsFor(distanceMeters: number): number {
 
 const GROUND_STRIP_X = [90, 140, 190];
 
+/** Widest the run clock may draw across the top centre, between heart and battery. */
+const CLOCK_MAX_WIDTH = 64;
+/** Widest a lap banner's text may draw inside its pill. */
+const BANNER_TEXT_MAX_WIDTH = 180;
+
+/** `m:ss.cc` shortened to `m:ss` for a narrow ground-strip slot. */
+function shortClock(ms: number): string {
+  return formatClock(ms).replace(/\.\d+$/, "");
+}
+
+/**
+ * The largest size at or below `px`, down to `minPx`, at which `value`
+ * draws within `maxWidth`. Leaves the context's font set to that size.
+ */
+function fitTextPx(
+  ctx: Ctx,
+  value: string,
+  px: number,
+  maxWidth: number,
+  minPx: number
+): number {
+  let size = px;
+  ctx.font = faceFont(size);
+  while (size > minPx && ctx.measureText(value).width > maxWidth) {
+    size = Math.max(minPx, size - 0.5);
+    ctx.font = faceFont(size);
+  }
+  return size;
+}
+
 /** The value and unit label a ground-strip field shows for `state`. */
 function groundStripReadout(
   field: GroundStripField,
@@ -275,6 +307,15 @@ function groundStripReadout(
       return [`${state.allocatedRamKb.toFixed(1)}K`, "RAM"];
     case "flash":
       return [`${state.allocatedFlashKb.toFixed(1)}K`, "NV"];
+    case "time":
+      return [shortClock(state.runClockMs ?? 0), "TIME"];
+    case "pace":
+      return [
+        formatPace(
+          paceSecondsPerKm(state.runClockMs ?? 0, paceMeters(state))
+        ).replace("/km", ""),
+        "PACE",
+      ];
   }
 }
 
@@ -980,13 +1021,28 @@ const BANNER_TONE = {
 function drawBanner(ctx: Ctx, state: GameEngineState) {
   const banner = state.banner;
   if (!banner) return;
-  ctx.font = faceFont(7.5);
+  // A lap banner carries a split and a Training Effect; shrink it to fit.
+  const px = fitTextPx(ctx, banner.text, 7.5, BANNER_TEXT_MAX_WIDTH, 5);
   const w = Math.min(196, ctx.measureText(banner.text).width + 16);
   ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
   ctx.beginPath();
   ctx.roundRect(FACE_CENTER - w / 2, 70, w, 13, 3);
   ctx.fill();
-  text(ctx, banner.text, FACE_CENTER, 79.5, 7.5, BANNER_TONE[banner.tone]);
+  text(ctx, banner.text, FACE_CENTER, 79.5, px, BANNER_TONE[banner.tone]);
+}
+
+/**
+ * The top-centre readout during a run: the run clock, held at 0:00.00 until
+ * GPS locks, with the score on the line beneath it.
+ */
+function drawRunClock(ctx: Ctx, state: GameEngineState) {
+  const waitingForGps = (state.gpsMs ?? 0) > 0;
+  const clock = waitingForGps
+    ? formatClock(0)
+    : formatClock(state.runClockMs ?? 0);
+  const fitted = fitTextPx(ctx, clock, 20, CLOCK_MAX_WIDTH, 12);
+  text(ctx, clock, FACE_CENTER, 44, fitted, FACE_COLORS.text);
+  text(ctx, `${state.score} PTS`, FACE_CENTER, 55, 7, FACE_COLORS.dim);
 }
 
 /** Stage, lives and Kudos count, small, under the score. */
@@ -1817,9 +1873,9 @@ function drawBatteryGlyph(ctx: Ctx, x: number, y: number, percent: number) {
 }
 
 /**
- * The data fields: heart rate, score and battery across the top, RAM and NV
- * flash as arcs with readouts down the sides, and steps, distance and heap
- * variables in the ground strip below the lane.
+ * The data fields: heart rate, run clock and battery across the top, RAM and
+ * NV flash as arcs with readouts down the sides, and the ground strip below
+ * the lane (steps, distance and heap variables by default).
  */
 /** How far the runner is from this stage's start to its finish pole, 0 to 1. */
 export function stageProgress(
@@ -1848,8 +1904,7 @@ function drawFitnessRing(ctx: Ctx, state: GameEngineState) {
   drawRingArc(ctx, "ram", bbValue / 100, bbTone);
   drawRingArc(ctx, "flash", progress, "ok");
 
-  text(ctx, `${state.score}`, FACE_CENTER, 44, 20, FACE_COLORS.text);
-  text(ctx, "PTS", FACE_CENTER, 55, 7, FACE_COLORS.dim);
+  drawRunClock(ctx, state);
   drawHeart(ctx, 71, 40);
   text(
     ctx,
@@ -1876,8 +1931,12 @@ function drawFitnessRing(ctx: Ctx, state: GameEngineState) {
     "right"
   );
 
+  // A runner reads average pace off the watch (#2018).
+  const pace = formatPace(
+    paceSecondsPerKm(state.runClockMs ?? 0, paceMeters(state))
+  ).replace("/km", "");
   const fields: [string, string][] = [
-    [`${stepsFor(state.distanceMeters)}`, "STEPS"],
+    [pace, "PACE"],
     [(Math.max(0, state.distanceMeters) / 1000).toFixed(2), "KM"],
     [`${state.kudos ?? 0}`, "KUDOS"],
   ];
@@ -1911,8 +1970,7 @@ function drawDataRing(
   drawRingArc(ctx, "flash", flashFraction);
 
   // Top row.
-  text(ctx, `${state.score}`, FACE_CENTER, 44, 20, FACE_COLORS.text);
-  text(ctx, "PTS", FACE_CENTER, 55, 7, FACE_COLORS.dim);
+  drawRunClock(ctx, state);
   drawHeart(ctx, 71, 40);
   text(
     ctx,

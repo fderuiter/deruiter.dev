@@ -367,6 +367,31 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     });
   });
 
+  test("Escape resumes a paused room from the keyboard, and the walker moves", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const paused = page.getByText("PAUSED", { exact: true });
+    await expect(paused).toHaveCount(0);
+
+    await page.keyboard.press("p");
+    await expect(paused).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(paused).toHaveCount(0);
+
+    const start = await readPlayerGrid(page);
+    const keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
+    let moved = false;
+    for (let i = 0; i < keys.length && !moved; i++) {
+      await page.keyboard.press(keys[i]);
+      moved = (await readPlayerGrid(page)) !== start;
+    }
+    expect(moved, "an arrow key after Escape should move the walker").toBe(
+      true
+    );
+  });
+
   test("plays with taps only until the score or the floor changes", async ({
     page,
   }) => {

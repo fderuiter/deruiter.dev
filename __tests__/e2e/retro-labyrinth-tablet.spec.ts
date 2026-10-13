@@ -276,7 +276,9 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       .locator("[data-touch-button], [data-hold-dpad] button")
       .or(field.getByRole("button", { name: "Options", exact: true }));
     const count = await controls.count();
-    expect(count).toBeGreaterThanOrEqual(11);
+    // Ten or more: a starter slot that holds EMP is hidden, since the EMP key
+    // already fires it.
+    expect(count).toBeGreaterThanOrEqual(10);
     for (let i = 0; i < count; i++) {
       const box = await controls.nth(i).boundingBox();
       expect(box, `control ${i}`).not.toBeNull();

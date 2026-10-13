@@ -2612,7 +2612,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 {slotIdx + 1}
               </span>
             )}
-            <span className="max-w-full truncate text-sm leading-tight">
+            <span className="max-w-full truncate text-[9px] leading-tight portrait:text-sm">
               {shortLabel}
             </span>
           </TouchButton>
@@ -2621,21 +2621,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       <TouchButton
         label="EMP: fire an EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-sm font-bold text-slate-200"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] portrait:text-sm font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Exploit: cycle to the next tool and fire it"
         onPress={cycleWeapon}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-sm font-bold text-cyan-200"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] portrait:text-sm font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
         label="Market: open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-sm font-bold text-amber-300"
+        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm font-bold text-amber-300"
       >
         Market
       </TouchButton>

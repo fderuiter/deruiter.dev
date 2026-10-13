@@ -690,6 +690,13 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             inert={rotateBlocked}
             data-testid="cabinet-touch-toolbar"
             data-touch-toolbar=""
+            // A tap must not leave focus on a toolbar key: Space on a keyboard
+            // case would then toggle Fullscreen instead of reaching the game.
+            onMouseDown={(event) => {
+              if ((event.target as HTMLElement).closest("button")) {
+                event.preventDefault();
+              }
+            }}
             className="arcade-cabinet-toolbar absolute z-50 flex items-center gap-1 p-0.5 bg-black/90 rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
             style={{
               top: "calc(env(safe-area-inset-top, 0px) + 4px)",

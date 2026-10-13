@@ -3462,6 +3462,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             data-testid="duck-cabinet-actions"
             role="group"
             aria-label="Duck actions"
+            // A tap must not leave focus on a button: the game's keys ignore
+            // a focused button, so a keyboard case would go quiet (#2039).
+            onMouseDown={(event) => {
+              if ((event.target as HTMLElement).closest("button")) {
+                event.preventDefault();
+              }
+            }}
             className="flex flex-wrap items-center justify-center gap-2 font-mono"
           >
             {uiState.inBathtub ? (

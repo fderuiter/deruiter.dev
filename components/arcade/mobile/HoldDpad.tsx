@@ -59,9 +59,12 @@ const CELLS: ({ dir: SwipeDirection } | null)[] = [
   null,
 ];
 
-/** The key's square size: 80px when large, 44px when compact, else 48px. */
+/**
+ * The key's size. Large keys fill their cell of a height-filling pad, so the
+ * pad takes the whole dock. Otherwise 44px when compact, else 48px.
+ */
 function keySize(compact: boolean, large: boolean): string {
-  if (large) return "h-20 w-20";
+  if (large) return "h-full w-full";
   return compact ? "h-11 w-11" : "h-12 w-12";
 }
 
@@ -112,7 +115,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
     role="group"
     aria-label="Directional pad"
     data-hold-dpad=""
-    className={`grid grid-cols-3 gap-1 touch-none select-none ${className}`}
+    className={`grid grid-cols-3 gap-1 touch-none select-none ${large ? "h-full grid-rows-3" : ""} ${className}`}
   >
     {CELLS.map((cell, index) =>
       cell ? (

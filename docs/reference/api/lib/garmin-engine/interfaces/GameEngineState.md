@@ -40,6 +40,14 @@ Best score when the run began, so a new PR is announced once.
 
 ***
 
+### bestSplits?
+
+> `optional` **bestSplits?**: `number`[]
+
+Best split per lap on this device when the run began, for the lap banner's colour.
+
+***
+
 ### bodyBattery?
 
 > `optional` **bodyBattery?**: [`BodyBattery`](../../garmin-body-battery/interfaces/BodyBattery.md)
@@ -186,6 +194,15 @@ Foe shots fired this run, for their ids.
 
 ***
 
+### furthestMeters?
+
+> `optional` **furthestMeters?**: `number`
+
+Furthest distance reached this run, in metres. A lost life rewinds
+`distanceMeters` to the stage start, so pace is measured on this.
+
+***
+
 ### gameState
 
 > **gameState**: `"idle"` \| `"playing"` \| `"paused"` \| `"crashed"` \| `"shutdown"` \| `"summary"`
@@ -273,6 +290,22 @@ The jump key is held: the rise uses the lighter gravity.
 > `optional` **kudos?**: `number`
 
 Kudos collected this run.
+
+***
+
+### lapSplits?
+
+> `optional` **lapSplits?**: `number`[]
+
+Lap splits so far, one per cleared stage, in ms.
+
+***
+
+### lapStartMs?
+
+> `optional` **lapStartMs?**: `number`
+
+Run clock reading when the current lap began.
 
 ***
 
@@ -430,6 +463,15 @@ Which rules the run plays by. "fitness" is the default game: no heap,
 GC, flash, fog or watch battery, with Body Battery instead. "dev" is
 the original firmware challenge (Dev Mode). Absent means "dev", so
 snapshots from before #2010 keep the rules they were recorded under.
+
+***
+
+### runClockMs?
+
+> `optional` **runClockMs?**: `number`
+
+Game time of the run in ms: the sum of simulation steps while playing,
+after the GPS lock. Pauses and the end of the run stop it.
 
 ***
 

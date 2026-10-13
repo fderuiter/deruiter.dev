@@ -6,7 +6,7 @@
 
 # Function: isGroundStripField()
 
-> **isGroundStripField**(`value`): value is "steps" \| "ram" \| "distance" \| "vars" \| "heartRate" \| "thermal" \| "fog" \| "flash"
+> **isGroundStripField**(`value`): value is "steps" \| "time" \| "ram" \| "distance" \| "vars" \| "heartRate" \| "thermal" \| "fog" \| "flash" \| "pace"
 
 True when `value` names a ground-strip field.
 
@@ -18,4 +18,4 @@ True when `value` names a ground-strip field.
 
 ## Returns
 
-value is "steps" \| "ram" \| "distance" \| "vars" \| "heartRate" \| "thermal" \| "fog" \| "flash"
+value is "steps" \| "time" \| "ram" \| "distance" \| "vars" \| "heartRate" \| "thermal" \| "fog" \| "flash" \| "pace"

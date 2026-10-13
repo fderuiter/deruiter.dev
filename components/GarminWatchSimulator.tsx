@@ -53,6 +53,16 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { useGarminService } from "@/hooks/useGarminService";
 import { triggerHaptic } from "@/lib/haptics";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
+import {
+  formatClock,
+  formatDelta,
+  formatPace,
+  isNegativeSplit,
+  mergeBests,
+  paceSecondsPerKm,
+  type GarminBests,
+} from "@/lib/garmin-splits";
+import { bestsKey, loadBests, saveBests } from "@/lib/garmin-bests-store";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
@@ -82,6 +92,7 @@ import {
   causeLabel,
   isFitnessRun,
   type GameRules,
+  paceMeters,
 } from "@/lib/garmin-engine";
 import { trainingStatus } from "@/lib/garmin-culture";
 import { STAGE_COUNT } from "@/lib/garmin-course";
@@ -215,6 +226,93 @@ interface GarminWatchSimulatorProps {
    * engine module (#685). Not used by any production caller.
    */
   initialState?: GameEngineState;
+}
+
+/** The run clock for the telemetry readout, once a run has a clock. */
+function runClockReadout(s: GameEngineState): string {
+  if (s.gameState === "idle" || s.runClockMs === undefined) return "";
+  return ` Run time: ${formatClock(s.runClockMs)}.`;
+}
+
+/** Whether a run has ended, so its bests are recorded and its result card shows. */
+function isRunOver(s: GameEngineState): boolean {
+  return (
+    s.gameState === "summary" ||
+    s.gameState === "crashed" ||
+    s.gameState === "shutdown"
+  );
+}
+
+/**
+ * The run clock on the result card: finish time (or Time when unfinished),
+ * average pace, the splits table against the previous bests, and the negative
+ * split and new best notes.
+ */
+function RunSplitsSummary({
+  state,
+  previous,
+}: {
+  state: GameEngineState;
+  previous: GarminBests;
+}) {
+  const finished = state.gameState === "summary";
+  const clockMs = state.runClockMs ?? 0;
+  const splits = state.lapSplits ?? [];
+  const pace = formatPace(paceSecondsPerKm(clockMs, paceMeters(state)));
+  const newBest =
+    finished && previous.totalMs !== undefined && clockMs < previous.totalMs;
+  return (
+    <section
+      aria-label="Run clock"
+      className="mt-4 min-w-0 border-t border-white/10 pt-3 font-mono text-[11px] tabular-nums text-zinc-300"
+    >
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
+        <dt className="text-zinc-500">{finished ? "Finish time" : "Time"}</dt>
+        <dd className="text-right text-zinc-100">{formatClock(clockMs)}</dd>
+        <dt className="text-zinc-500">Average pace</dt>
+        <dd className="text-right text-zinc-100">{pace}</dd>
+      </dl>
+      {newBest && <p className="mt-2 text-emerald-400">New best time</p>}
+      {splits.length > 0 && (
+        <table className="mt-3 w-full min-w-0 text-left">
+          <caption className="mb-1 text-left text-zinc-500">
+            Splits per km
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" className="font-medium text-zinc-500">
+                Lap
+              </th>
+              <th scope="col" className="font-medium text-zinc-500">
+                Split
+              </th>
+              <th scope="col" className="text-right font-medium text-zinc-500">
+                vs best
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {splits.map((split, lap) => (
+              <tr key={lap}>
+                <th scope="row" className="font-normal text-zinc-400">
+                  {lap + 1}
+                </th>
+                <td>{formatClock(split)}</td>
+                <td className="text-right">
+                  {formatDelta(split, previous.splits[lap]) || "--"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {isNegativeSplit(splits) && (
+        <p className="mt-2 text-zinc-200">
+          Negative split: every km faster than the last.
+        </p>
+      )}
+    </section>
+  );
 }
 
 /** What the course props mean for the runner right now (#1992), for the telemetry readout. */
@@ -413,6 +511,51 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     []
   );
 
+  // A new run. The engine gets this device's best split per lap so it can
+  // colour the lap banners; the bests are read here, before the run saves.
+  const beginRun = useCallback(() => {
+    const started = startGame(
+      setRules(stateRef.current, runRules),
+      deviceTarget,
+      runTuning
+    );
+    applyTransition(() => ({
+      ...started,
+      bestSplits: loadBests(bestsKey(started.device, isFitnessRun(started)))
+        .splits,
+    }));
+  }, [applyTransition, runRules, deviceTarget, runTuning]);
+
+  // The bests the last run was judged against, read just before that run was
+  // saved, so the result card can show the difference. Keyed on the run.
+  const [runRecord, setRunRecord] = useState<{
+    seed: number;
+    previous: GarminBests;
+  } | null>(null);
+  const savedRunSeedRef = useRef<number | null>(null);
+  // Each run's bests are saved once, when it ends: the 5K is finished
+  // (summary), or the run crashed or lost power. A crash keeps its splits but
+  // never sets a total.
+  useEffect(() => {
+    if (!isRunOver(gameState)) return;
+    const seed = gameState.courseSeed ?? 0;
+    if (savedRunSeedRef.current === seed) return;
+    savedRunSeedRef.current = seed;
+    const key = bestsKey(gameState.device, isFitnessRun(gameState));
+    const previous = loadBests(key);
+    saveBests(
+      key,
+      mergeBests(
+        previous,
+        gameState.lapSplits ?? [],
+        gameState.runClockMs ?? 0,
+        gameState.gameState === "summary"
+      )
+    );
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRunRecord({ seed, previous });
+  }, [gameState]);
+
   // Audio Beep Helpers (Authentic Garmin 1200-1600Hz Piezo)
   const playBeep = useCallback(
     (freq = 1200, dur = 0.04) => {
@@ -591,9 +734,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       telemetryRef.current.reset();
       setTelemetryCount(0);
       runStartedAtRef.current = Date.now();
-      applyTransition((state) =>
-        startGame(setRules(state, runRules), deviceTarget, runTuning)
-      );
+      beginRun();
       recordEvent("garmin_simulator_start", "project_click").catch(() => {});
       playSuccess();
     } else if (current.gameState === "playing") {
@@ -601,15 +742,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (current.gameState === "paused") {
       applyTransition((state) => resumeGame(state));
     }
-  }, [
-    deviceTarget,
-    runTuning,
-    runRules,
-    playButtonTone,
-    playSuccess,
-    recordEvent,
-    applyTransition,
-  ]);
+  }, [beginRun, playButtonTone, playSuccess, recordEvent, applyTransition]);
 
   // Quick Fog Wipe (W / Touch / Mouse)
   const handleWipeFog = useCallback(
@@ -650,9 +783,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       )
     );
     setResultDismissed(false);
-    applyTransition((state) =>
-      startGame(setRules(state, runRules), deviceTarget, runTuning)
-    );
+    beginRun();
     recordEvent("garmin_simulator_start", "project_click").catch(() => {});
     playSuccess();
     announce("New run started with your setup options.", "polite");
@@ -661,16 +792,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     window.setTimeout(() => {
       containerRef.current?.focus({ preventScroll: true });
     }, 0);
-  }, [
-    setupRunRevision,
-    deviceTarget,
-    runTuning,
-    runRules,
-    applyTransition,
-    recordEvent,
-    playSuccess,
-    announce,
-  ]);
+  }, [setupRunRevision, beginRun, recordEvent, playSuccess, announce]);
 
   // Reopening Setup mid-run pauses the run underneath the wizard. Confirming
   // restarts (handled above); skipping resumes exactly where it stopped.
@@ -970,13 +1092,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (fitnessReadout) {
       const bb = s.bodyBattery;
       announce(
-        `Status: ${s.gameState}. Stage ${s.stage ?? 1} of ${STAGE_COUNT}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}.${courseReadout(s)} Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+        `Status: ${s.gameState}. Stage ${s.stage ?? 1} of ${STAGE_COUNT}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}.${courseReadout(s)} Score: ${s.score}.${runClockReadout(s)} High score: ${Math.max(s.highScore, loadedHighScore)}.`,
         "polite"
       );
       return;
     }
     announce(
-      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}.${courseReadout(s)} Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}.${courseReadout(s)} Score: ${s.score}.${runClockReadout(s)} High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
     );
   };
@@ -1669,6 +1791,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 },
               }}
             >
+              <RunSplitsSummary
+                state={gameState}
+                previous={
+                  runRecord?.seed === (gameState.courseSeed ?? 0)
+                    ? runRecord.previous
+                    : { splits: gameState.bestSplits ?? [] }
+                }
+              />
               <p className="mt-4 text-[11px] text-zinc-400">
                 Shipping a real Connect IQ app?{" "}
                 <a

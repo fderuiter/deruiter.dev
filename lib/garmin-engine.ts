@@ -38,6 +38,7 @@ import {
   type CourseProps,
   type PropFooting,
 } from "./garmin-props";
+import { beatsBest, formatClock, splitToast } from "./garmin-splits";
 import {
   BOLT_COOLDOWN_MS,
   BOLT_DEFEAT_SCORE,
@@ -115,7 +116,6 @@ import {
   pickToast,
   type ToastEvent,
   trainingEffect,
-  trainingEffectLabel,
 } from "./garmin-culture";
 
 export type DeviceTarget = "fenix" | "forerunner" | "edge";
@@ -512,6 +512,23 @@ export interface GameEngineState {
   restDayMs?: number;
   /** Set while the runner is in a Water Station's bonus room. */
   bonusRoom?: BonusRoom | null;
+  // ---- Run clock and auto lap splits (#2018).
+  /**
+   * Game time of the run in ms: the sum of simulation steps while playing,
+   * after the GPS lock. Pauses and the end of the run stop it.
+   */
+  runClockMs?: number;
+  /** Run clock reading when the current lap began. */
+  lapStartMs?: number;
+  /** Lap splits so far, one per cleared stage, in ms. */
+  lapSplits?: number[];
+  /** Best split per lap on this device when the run began, for the lap banner's colour. */
+  bestSplits?: number[];
+  /**
+   * Furthest distance reached this run, in metres. A lost life rewinds
+   * `distanceMeters` to the stage start, so pace is measured on this.
+   */
+  furthestMeters?: number;
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -532,6 +549,17 @@ export interface BonusRoom {
 export type GameRules = "fitness" | "dev";
 
 /** Whether a run plays by the fitness rules. */
+/**
+ * Metres to measure pace on: the furthest point reached this run, so a lost
+ * life that rewinds the runner never slows the pace readout.
+ */
+export function paceMeters(
+  state: Pick<GameEngineState, "distanceMeters" | "furthestMeters">
+): number {
+  const now = Number.isFinite(state.distanceMeters) ? state.distanceMeters : 0;
+  return Math.max(state.furthestMeters ?? 0, now);
+}
+
 export function isFitnessRun(state: Pick<GameEngineState, "rules">): boolean {
   return state.rules === "fitness";
 }
@@ -823,6 +851,10 @@ export function startGame(
     propClockMs: 0,
     restDayMs: 0,
     bonusRoom: null,
+    runClockMs: 0,
+    lapStartMs: 0,
+    lapSplits: [],
+    furthestMeters: 0,
     banner: fitness
       ? { text: gpsBannerText(0), ttlMs: GPS_LOCK_MS + 1800, tone: "info" }
       : { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
@@ -1708,6 +1740,29 @@ export function updateGameSimulation(
   state: GameEngineState,
   deltaMs: number
 ): GameEngineState {
+  const next = stepSimulation(state, deltaMs);
+  // The run clock counts game time while the run is live: not while paused
+  // or over, and not while the fitness run waits for GPS (#2018).
+  const clockRunning =
+    state.gameState === "playing" &&
+    !(isFitnessRun(state) && (state.gpsMs ?? 0) > 0);
+  if (!clockRunning) return next;
+  const safeDelta = Number.isFinite(deltaMs) ? clamp(deltaMs, 0, 5000) : 0;
+  return {
+    ...next,
+    runClockMs: (state.runClockMs ?? 0) + safeDelta,
+    furthestMeters: Math.max(
+      state.furthestMeters ?? 0,
+      Number.isFinite(next.distanceMeters) ? next.distanceMeters : 0
+    ),
+  };
+}
+
+/** One simulation step; {@link updateGameSimulation} adds the run clock. */
+function stepSimulation(
+  state: GameEngineState,
+  deltaMs: number
+): GameEngineState {
   const fitness = isFitnessRun(state);
   if (state.gameState !== "playing" || (!fitness && state.battery <= 0)) {
     if (state.gameState === "playing" && state.battery <= 0) {
@@ -2345,6 +2400,9 @@ export function updateGameSimulation(
 
   // The finish pole: grabbing it ends the stage, higher pays more.
   let stageCleared = false;
+  const lapClockMs = (state.runClockMs ?? 0) + safeDelta;
+  let lapSplits = state.lapSplits ?? [];
+  let lapSplit: number | null = null;
   let stageTrainingEffect: number | null = null;
   let runComplete = false;
   const poleIdx = course.poles.findIndex(
@@ -2370,6 +2428,9 @@ export function updateGameSimulation(
     });
     stageCleared = true;
     bodyBatteryChange += BODY_BATTERY_POWER_GAIN;
+    // Auto lap: the stage just cleared is a lap of the run clock.
+    lapSplit = lapClockMs - (state.lapStartMs ?? 0);
+    lapSplits = [...lapSplits, lapSplit];
     // The fitness rules grade the stage like a workout.
     if (fitness) {
       stageTrainingEffect = trainingEffect({
@@ -2390,15 +2451,30 @@ export function updateGameSimulation(
         restDayMs > 0 ? restDaySwap(next.course, true) : next.course
       );
       props = appendProps(props, next.props);
+      // The lap banner is green on a best split for the lap, amber when
+      // slower; the fitness rules add the stage's Training Effect.
       banner = {
         text:
           stageTrainingEffect === null
-            ? `STAGE ${pole.stage} CLEAR · ${stage}K NEXT`
-            : `TE ${stageTrainingEffect.toFixed(1)} · ${trainingEffectLabel(stageTrainingEffect).toUpperCase()}`,
+            ? `LAP ${pole.stage} · ${formatClock(lapSplit)}`
+            : `LAP ${pole.stage} · ${formatClock(lapSplit)} · TE ${stageTrainingEffect.toFixed(1)}`,
         ttlMs: 2200,
-        tone: "good",
+        tone: beatsBest(lapSplit, state.bestSplits?.[pole.stage - 1])
+          ? "good"
+          : "warn",
       };
     }
+  }
+  // Pace calls on the lap just run: world-record pace, a negative or a
+  // positive split.
+  const lapCall = lapSplit === null ? null : splitToast(lapSplits);
+  if (lapCall) {
+    popups.push({
+      x: bodyLeft,
+      y: nextPlayerY - 28,
+      text: lapCall,
+      ttlMs: 1600,
+    });
   }
   course = pruneCourse(course, cameraX);
   props = pruneProps(props, cameraX);
@@ -2515,6 +2591,8 @@ export function updateGameSimulation(
     propClockMs,
     restDayMs,
     bonusRoom,
+    lapSplits,
+    lapStartMs: lapSplit === null ? (state.lapStartMs ?? 0) : lapClockMs,
     ...(fitness
       ? {
           bodyBattery,

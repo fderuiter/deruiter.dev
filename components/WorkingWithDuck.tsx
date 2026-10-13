@@ -39,6 +39,7 @@ import {
   type DuckTouchSnapshot,
 } from "@/components/working-with-duck/touch-bridge";
 import { useCabinetTouch } from "@/components/arcade/mobile";
+import { fitRoomToStage } from "@/components/working-with-duck/room-fit";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconPlayerPlay,
@@ -1173,6 +1174,33 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     },
   });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // The touch cabinet's room fits its stage on both axes, the way object-fit
+  // contain does (#2039). The size is written straight to the canvas, so a
+  // resize costs no renders. Pointers map through the canvas's box
+  // (toGameCoordinates), so aim and drag stay true at any size.
+  useEffect(() => {
+    if (!cabinetTouch) return;
+    const canvas = canvasRef.current;
+    const stage = canvas?.parentElement;
+    if (!canvas || !stage || typeof ResizeObserver === "undefined") return;
+    const fit = () => {
+      const { width, height } = fitRoomToStage(
+        stage.clientWidth,
+        stage.clientHeight
+      );
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(stage);
+    return () => {
+      observer.disconnect();
+      canvas.style.width = "";
+      canvas.style.height = "";
+    };
+  }, [cabinetTouch]);
 
   // One-screen rule (#1516): the windowed canvas takes the cabinet's stage
   // budget minus Duck's own chrome, the HUD above it and the action dock
@@ -2569,9 +2597,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           aria-label="Workspace Pet Companion Simulator. Focus this container to operate simulator. Press Tab to select items, Arrow keys to drag the duck around the canvas to guide actions like potty and bath, and Q, W, E, R to issue training commands."
           tabIndex={0}
           className={
-            isFullscreen
-              ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-amber-300/60"
-              : "w-[min(100%,max(20rem,calc((var(--arcade-stage-budget,calc(100dvh-10rem))-var(--duck-chrome,14rem)-0.5rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+            cabinetTouch
+              ? "block cursor-crosshair touch-none mx-auto max-w-full max-h-full focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+              : isFullscreen
+                ? "max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--layout-dock-height,64px)))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] max-w-full aspect-[800/500] object-contain block cursor-crosshair touch-none my-auto mx-auto [@media(max-height:500px)]:max-h-[45dvh] focus:outline-none focus:ring-2 focus:ring-amber-300/60"
+                : "w-[min(100%,max(20rem,calc((var(--arcade-stage-budget,calc(100dvh-10rem))-var(--duck-chrome,14rem)-0.5rem)*1.6)))] mx-auto h-auto aspect-[800/500] cursor-crosshair block touch-none [@media(max-height:500px)]:w-auto [@media(max-height:500px)]:max-w-full [@media(max-height:500px)]:max-h-[52dvh] [@media(max-height:500px)]:mx-auto focus:outline-none focus:ring-2 focus:ring-amber-300/60"
           }
         />
 

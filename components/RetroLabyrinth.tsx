@@ -31,6 +31,7 @@ import {
   controlHint,
   DockFrame,
   HoldDpad,
+  TouchControlsGate,
   swipeDirection,
   TouchButton,
   useCabinetTouch,
@@ -86,6 +87,7 @@ import {
   resolveLabyrinthCrt,
 } from "@/components/retro-labyrinth/labyrinth-crt";
 import { triggerHaptic } from "@/lib/haptics";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
 import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
 import {
@@ -404,6 +406,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneCabinet = useCabinetTouch();
   // A phone gets the rotate prompt; a tablet keeps the orientation hint.
   const phoneDevice = usePhone();
+  // A portrait tablet has the room for larger keys under the maze.
+  const portraitView = useMediaQuery("(orientation: portrait)");
   const resumeHint = useControlHint(RESUME_HINT);
   const retryHint = useControlHint(RETRY_HINT);
   const roomClearHint = useControlHint(ROOM_CLEAR_HINT);
@@ -2592,7 +2596,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             }
             disabled={!hasAmmo}
             onPress={() => fireStarterSlot(slotIdx)}
-            className="flex h-11 w-11 portrait:h-14 portrait:w-20 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-0.5 text-amber-300 disabled:opacity-40"
+            className="flex h-11 w-11 portrait:h-16 portrait:w-24 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-0.5 text-amber-300 disabled:opacity-40"
           >
             <span className="text-[10px] leading-none">{slotIdx + 1}</span>
             <span className="max-w-full truncate text-[9px] leading-tight">
@@ -2604,21 +2608,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       <TouchButton
         label="EMP: fire an EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
-        className="flex h-11 w-11 portrait:h-14 portrait:w-20 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
+        className="flex h-11 w-11 portrait:h-16 portrait:w-24 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Exploit: cycle to the next tool and fire it"
         onPress={cycleWeapon}
-        className="flex h-11 w-11 portrait:h-14 portrait:w-20 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
+        className="flex h-11 w-11 portrait:h-16 portrait:w-24 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
         label="Market: open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-11 w-11 portrait:h-14 portrait:w-20 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
+        className="flex h-11 w-11 portrait:h-16 portrait:w-24 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -2783,7 +2787,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ref={canvasFrameRef}
         className={`arcade-labyrinth-canvas relative ${
           phoneCabinet
-            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:order-first portrait:basis-full portrait:w-full"
+            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:order-first portrait:basis-full portrait:w-full portrait:aspect-[5/3] portrait:h-auto portrait:flex-none"
             : isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
               : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
@@ -3461,18 +3465,23 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneRow = (
     <DockFrame
       handedness={handedness}
-      className="min-h-0 flex-1 portrait:flex-wrap"
+      className="min-h-0 flex-1 portrait:flex-wrap portrait:content-center portrait:gap-y-3"
     >
+      {/* The controls sit in a gate: a keyboard hides them, a touch brings
+          them back (ADR 0061). Each column keeps its own order in portrait. */}
       <div className="flex min-h-0 shrink-0 flex-col justify-center portrait:order-2">
-        <HoldDpad
-          onMove={handleDirectionalMove}
-          compact
-          paused={gameStatus !== "playing" || optionsOpen}
-        />
+        <TouchControlsGate>
+          <HoldDpad
+            onMove={handleDirectionalMove}
+            compact={!portraitView}
+            large={portraitView}
+            paused={gameStatus !== "playing" || optionsOpen}
+          />
+        </TouchControlsGate>
       </div>
       {canvasFrameNode}
       <div className="flex min-h-0 shrink-0 flex-col justify-center portrait:order-3">
-        {phoneActionGrid}
+        <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
       </div>
     </DockFrame>
   );

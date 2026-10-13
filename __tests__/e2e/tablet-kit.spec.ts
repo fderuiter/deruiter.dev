@@ -69,6 +69,28 @@ async function expectFillsViewport(page: Page, cabinet: Locator) {
   expect(box!.height).toBeCloseTo(viewport!.height, 0);
 }
 
+/** Resolves once the page's scroll offset holds still across two frames. */
+async function settleScroll(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let last = window.scrollY;
+        let still = 0;
+        const step = () => {
+          if (window.scrollY === last) {
+            still += 1;
+          } else {
+            last = window.scrollY;
+            still = 0;
+          }
+          if (still >= 2) resolve();
+          else requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      })
+  );
+}
+
 test.describe("Tablet arcade kit (iPad projects)", () => {
   // A cold game chunk on a dev server can take most of a minute to compile.
   test.setTimeout(240000);
@@ -154,19 +176,14 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         await attemptPageScroll(page);
         expect(await page.evaluate(() => window.scrollY)).toBe(pinned);
 
-        // The power tap is retried until the cabinet closes: on the iPad runs
-        // a single tap was seen to be ignored now and then.
-        const power = page.locator(
-          `${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`
-        );
-        await expect(async () => {
-          if ((await page.locator("[data-immersive]").count()) > 0) {
-            await power.tap({ timeout: 2000 });
-          }
-          await expect(page.locator("[data-immersive]")).toHaveCount(0, {
-            timeout: 2000,
-          });
-        }).toPass({ timeout: 15000 });
+        // The attempt above can leave a fling or wheel still settling. A tap
+        // then ends the fling instead of landing, so wait for the scroll to
+        // stop before the one tap.
+        await settleScroll(page);
+        await page
+          .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
+          .tap();
+        await expect(page.locator("[data-immersive]")).toHaveCount(0);
         // Exit hands the page back at the offset the player left: it returns to
         // the pinned position (no scrollIntoView jump), then scrolls freely.
         // 300 is the offset the player had before launch (see above).

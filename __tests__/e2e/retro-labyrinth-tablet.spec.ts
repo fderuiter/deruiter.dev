@@ -3,6 +3,11 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow } from "./mobile-harness";
+import {
+  planRoute,
+  STEPS,
+  type Cell,
+} from "../../components/retro-labyrinth/route-plan";
 
 // Retro Labyrinth on a touch tablet (ADR 0061, #2032). The iPad projects set
 // the viewport, so each spec plays at whatever size its project gives it, in
@@ -144,7 +149,6 @@ function parseOpenGrid(raw: string): boolean[][] {
   return raw.split("|").map((row) => [...row].map((ch) => ch === "."));
 }
 
-type Cell = { x: number; y: number };
 type RouteNode = Cell & { visited: boolean };
 
 /** The route nodes: "x,y:visited" entries joined with ";". */
@@ -155,42 +159,6 @@ function parseNodes(raw: string): RouteNode[] {
     const [x, y] = xy.split(",").map(Number);
     return { x, y, visited: flag === "1" };
   });
-}
-
-/** Each d-pad button, with the grid step it takes. Y grows downwards. */
-const STEPS: ReadonlyArray<{ button: string; dx: number; dy: number }> = [
-  { button: "Move Up", dx: 0, dy: -1 },
-  { button: "Move Down", dx: 0, dy: 1 },
-  { button: "Move Left", dx: -1, dy: 0 },
-  { button: "Move Right", dx: 1, dy: 0 },
-];
-
-/** The shortest route over open cells, excluding the start. Null if none. */
-function planRoute(open: boolean[][], from: Cell, to: Cell): Cell[] | null {
-  const key = (c: Cell) => `${c.x},${c.y}`;
-  const cameFrom = new Map<string, Cell>();
-  const seen = new Set<string>([key(from)]);
-  const queue: Cell[] = [from];
-  for (let head = 0; head < queue.length; head++) {
-    const current = queue[head];
-    if (current.x === to.x && current.y === to.y) {
-      const route: Cell[] = [];
-      let at: Cell | undefined = current;
-      while (at && key(at) !== key(from)) {
-        route.unshift(at);
-        at = cameFrom.get(key(at));
-      }
-      return route;
-    }
-    for (const step of STEPS) {
-      const next = { x: current.x + step.dx, y: current.y + step.dy };
-      if (!open[next.y]?.[next.x] || seen.has(key(next))) continue;
-      seen.add(key(next));
-      cameFrom.set(key(next), current);
-      queue.push(next);
-    }
-  }
-  return null;
 }
 
 /** The room as the status group describes it, read in one place. */
@@ -237,6 +205,14 @@ function projectSize(page: Page): string {
   return size ? `${size.width}x${size.height}` : "unknown";
 }
 
+/**
+ * Advances the game's clock. The walk installs Playwright's fake clock, so the
+ * patrols only move when this runs: a walk is the same on every run.
+ */
+async function runGameClock(page: Page, ms: number) {
+  await page.clock.runFor(ms);
+}
+
 test.describe("Retro Labyrinth on a tablet (#2032)", () => {
   // A cold game chunk on a dev server can take most of a minute to compile.
   test.setTimeout(240000);
@@ -244,6 +220,16 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(!testInfo.project.use.hasTouch, "touch projects only");
     await page.emulateMedia({ reducedMotion: "reduce" });
+    if (testInfo.title.startsWith("walks every route node")) {
+      // A seeded generator for any Math.random the cabinet reads.
+      await page.addInitScript(() => {
+        let seed = 2032;
+        Math.random = () => {
+          seed = (seed * 1664525 + 1013904223) >>> 0;
+          return seed / 4294967296;
+        };
+      });
+    }
     await page.goto(ROUTE);
   });
 
@@ -332,6 +318,53 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     } else {
       expect(dpad!.x + dpad!.width).toBeLessThanOrEqual(canvas!.x + 1);
     }
+  });
+
+  test("a key press hides the controls, and the next tap moves and shows them", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const gates = page.locator("[data-touch-controls]");
+    await expect(gates.first()).toHaveAttribute("data-touch-controls", "shown");
+
+    // Arrow keys switch the cabinet to keyboard input: the controls fade out
+    // and leave the accessibility tree, but stay hit-testable.
+    const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"];
+    let before = await readRoom(page);
+    for (let i = 0; i < keys.length; i++) {
+      await page.keyboard.press(keys[i]);
+      const now = await readRoom(page);
+      if (
+        now.player?.x !== before.player?.x ||
+        now.player?.y !== before.player?.y
+      ) {
+        break;
+      }
+    }
+    await expect(gates.first()).toHaveAttribute(
+      "data-touch-controls",
+      "hidden"
+    );
+    await expect(gates.first()).toHaveAttribute("aria-hidden", "true");
+    await expect(gates.first()).toHaveClass(/opacity-0/);
+
+    // The first tap after the key press lands on a control and moves the walker
+    // at once, and the controls come back with it.
+    before = await readRoom(page);
+    const step = STEPS.find(
+      (s) => before.open[before.player!.y + s.dy]?.[before.player!.x + s.dx]
+    );
+    expect(step, "the walker has an open neighbour").toBeDefined();
+    // The hidden controls leave the accessibility tree, so look them up with it.
+    await page
+      .getByRole("button", { name: step!.button, includeHidden: true })
+      .tap();
+    await expect(gates.first()).toHaveAttribute("data-touch-controls", "shown");
+    const after = await readRoom(page);
+    expect(after.player).toEqual({
+      x: before.player!.x + step!.dx,
+      y: before.player!.y + step!.dy,
+    });
   });
 
   test("plays with taps only until the score or the floor changes", async ({
@@ -706,15 +739,19 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     await expect(dialog).toHaveCount(0);
   });
 
-  // The full walk to the room-cleared card did not finish reliably in the
-  // tablet run: the walls move on each step and the patrols on a clock, and
-  // one attempt to make the planner wait out a closed route was not enough.
-  // It stays out of the default run until it can be made deterministic.
+  // Attempt on Playwright's fake clock (#2032): the walk ran with
+  // page.clock.install after launch, but the CRT loop's per-frame cost under
+  // runFor left the page unresponsive. One of three iPad runs finished, so the
+  // walk is kept out of the default run. The route planner and the exit lock
+  // are unit tested meanwhile (__tests__/retro-labyrinth-route-plan.test.ts).
   test.fixme("walks every route node and opens the exit", async ({
     page,
   }, testInfo) => {
     test.setTimeout(420000);
     await launchCabinet(page);
+    // The fake clock starts once the cabinet is up: React's scheduling and
+    // the launch run on real time, and only the game's patrols are driven.
+    await page.clock.install({ time: new Date("2026-10-13T12:00:00Z") });
 
     const exitRaw = await page
       .locator("[data-exit-cell]")
@@ -727,18 +764,18 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     let nodesDone = false;
     let plan: Cell[] = [];
     let retries = 0;
-    // Steps the walk may spend without a route before it gives up. Each step
-    // into an open cell shifts the walls, so the next pass sees a new maze.
+    // Each step into an open cell shifts the walls, so the next pass sees a
+    // new maze. With no route, the walker steps aside or waits on the clock.
     let stalled = 0;
-    const deadline = Date.now() + 360000;
 
-    while (!arrived && Date.now() < deadline) {
+    for (let step = 0; step < 900 && !arrived; step++) {
       const retry = page.getByRole("button", { name: /RETRY BREACH/i });
       if (await retry.isVisible()) {
         retries += 1;
         if (retries > 3)
           throw new Error("the run was lost before the walk finished");
         await retry.tap();
+        await runGameClock(page, 300);
         plan = [];
         nodesDone = false;
         stalled = 0;
@@ -751,13 +788,9 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
 
       let room = await readRoom(page);
       if (!room.player) throw new Error("the player cell is not on the page");
-
-      // A patrol close by: give it time to pass before stepping.
       if (room.threat === "amber" || room.threat === "red") {
-        await expect
-          .poll(async () => (await readRoom(page)).threat, { timeout: 4000 })
-          .toBe("none")
-          .catch(() => undefined);
+        // A patrol close by: let the clock carry it past, then look again.
+        await runGameClock(page, 1000);
         room = await readRoom(page);
         if (!room.player) throw new Error("the player cell is not on the page");
       }
@@ -770,11 +803,10 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
         ).toBe("true");
       } else if (!nodesDone) {
         nodesDone = true;
-        await expect
-          .poll(async () => (await readRoom(page)).exitLocked, {
-            timeout: 5000,
-          })
-          .toBe("false");
+        await expect(page.locator("[data-grid]").first()).toHaveAttribute(
+          "data-exit-locked",
+          "false"
+        );
         await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(
           "Exit open"
         );
@@ -805,20 +837,18 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       }
 
       if (!route || route.length === 0) {
-        // No open route: the walls move on the player's steps, so take a
-        // step to any open neighbour and plan again. With patrols on every
-        // side, wait for them to move on instead.
         stalled += 1;
         const open = STEPS.filter(
           (s) => room.open[player.y + s.dy]?.[player.x + s.dx]
         );
         if (open.length === 0) {
-          await page.waitForTimeout(400);
+          // Patrols on every side: let the clock move them on.
+          await runGameClock(page, 600);
           continue;
         }
         const pick = open[stalled % open.length];
         await page.getByRole("button", { name: pick.button }).tap();
-        await page.waitForTimeout(150);
+        await runGameClock(page, 200);
         plan = [];
         continue;
       }
@@ -832,10 +862,7 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       if (!move) throw new Error("the route left the grid's neighbours");
       await page.getByRole("button", { name: move.button }).tap();
       // A blocked step leaves the cell as it was; the next pass re-plans.
-      await expect
-        .poll(async () => playerCell(page), { timeout: 2000 })
-        .not.toEqual(player)
-        .catch(() => undefined);
+      await runGameClock(page, 200);
     }
 
     expect(arrived, "the walk should reach the room-cleared card").toBe(true);
@@ -846,9 +873,9 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     await shoot(page, testInfo, `room-cleared-${projectSize(page)}`);
 
     await page.getByRole("button", { name: /^Next Room$/ }).tap();
+    await runGameClock(page, 500);
     await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
-      "ROOM 02",
-      { timeout: 30000 }
+      "ROOM 02"
     );
     await page.getByRole("button", { name: "EMP: fire an EMP burst" }).tap();
     await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(

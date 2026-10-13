@@ -141,6 +141,7 @@ import {
   ENEMY_STEP_INTERVAL_MS,
   type AmmoGrantResult,
   updateTSPMovingWalls,
+  tspWallTelegraph,
   retroAudio,
   CRT_THEMES,
   CYBERDECK_CLASSES,
@@ -1727,8 +1728,28 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   }, [playerPosition.x, playerPosition.y, tspNodes]);
 
   // Loop State Mirroring Ref for Stable Animation Lifecycle
+  // The walls' next shift: drawn as a ghost on the maze and counted down in
+  // the HUD. Walls only exist in Room 1, so other rooms have none.
+  const wallTelegraph = useMemo(
+    () =>
+      tspWalls.length > 0
+        ? tspWallTelegraph(currentMaze, tspWalls, movesCount)
+        : null,
+    [currentMaze, tspWalls, movesCount]
+  );
+  const wallShiftLabel = wallTelegraph
+    ? wallTelegraph.stepsUntilAppear === null
+      ? "Walls steady"
+      : `Walls shift in ${wallTelegraph.stepsUntilAppear} step${
+          wallTelegraph.stepsUntilAppear === 1 ? "" : "s"
+        }`
+    : null;
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
+
   const loopStateRef = useRef({
     isMounted,
+    wallTelegraph,
+    reducedMotion,
     currentMaze,
     playerPosition,
     visibleMap,
@@ -1752,6 +1773,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   useEffect(() => {
     loopStateRef.current = {
       isMounted,
+      wallTelegraph,
+      reducedMotion,
       currentMaze,
       playerPosition,
       visibleMap,
@@ -1843,6 +1866,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       const campaignRooms = campaignRoomsRef.current;
 
       const {
+        wallTelegraph,
+        reducedMotion,
         currentMaze,
         playerPosition,
         visibleMap,
@@ -2144,6 +2169,41 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               item.y * TILE + TILE / 2
             );
           });
+
+          // Wall telegraph: drawn over the fog, so the next shift shows even in
+          // unexplored rooms: a dashed amber ghost where a wall will appear, and
+          // a dim over the walls the next move takes away (flickers unless
+          // reduced motion).
+          if (wallTelegraph) {
+            ctx.save();
+            ctx.strokeStyle = LABYRINTH_INK.amber;
+            ctx.lineWidth = TILE * 0.09;
+            ctx.setLineDash([TILE * 0.25, TILE * 0.2]);
+            ctx.globalAlpha = 0.6;
+            for (const cell of wallTelegraph.appearing) {
+              const [gx, gy] = cell.split(",").map(Number);
+              ctx.strokeRect(
+                gx * TILE + TILE * 0.12,
+                gy * TILE + TILE * 0.12,
+                TILE * 0.76,
+                TILE * 0.76
+              );
+            }
+            ctx.restore();
+            if (wallTelegraph.vanishing.length > 0) {
+              const dimOn = reducedMotion
+                ? true
+                : Math.floor(timestamp / 250) % 2 === 0;
+              ctx.save();
+              ctx.fillStyle = LABYRINTH_INK.stage;
+              ctx.globalAlpha = dimOn ? 0.7 : 0.35;
+              for (const cell of wallTelegraph.vanishing) {
+                const [gx, gy] = cell.split(",").map(Number);
+                ctx.fillRect(gx * TILE, gy * TILE, TILE, TILE);
+              }
+              ctx.restore();
+            }
+          }
 
           // Enemies, coloured by what they are doing, with CVE plates
           ctx.font = labyrinthFont(5);
@@ -2508,6 +2568,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       >
         {roomBadge}
       </span>
+      {wallShiftLabel && (
+        <span
+          className="hidden min-[700px]:inline shrink-0 text-amber-300 text-[10px]"
+          data-testid="labyrinth-wall-telegraph-phone"
+        >
+          {wallShiftLabel}
+        </span>
+      )}
       <span className="flex shrink-0 items-center gap-1">
         <span className="text-neutral-400">HP</span>
         <span className="h-2 w-10 overflow-hidden rounded-full border border-neutral-800 bg-neutral-900">
@@ -2573,8 +2641,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     </div>
   );
 
-  // The tablet's room panel: the route, the exit, the weapons, and the bars the
-  // phone HUD only hints at. CSS shows it on a portrait tablet only.
+  // The tablet's room panel, kept to a few short rows: the route and exit, the
+  // bars, the tool and EMP with the wall countdown, and the event line. CSS
+  // shows it on a portrait tablet only.
   const roomNodes = tspNodes ?? [];
   const routeVisited = roomNodes.filter((node) => node.visited).length;
   const exitLocked =
@@ -2584,14 +2653,31 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     <section
       aria-label="Room status"
       data-testid="labyrinth-room-panel"
-      className="hidden min-h-0 flex-col justify-between gap-2 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/80 p-3 font-mono text-xs portrait:min-[600px]:flex portrait:min-[600px]:col-span-2 portrait:min-[600px]:row-start-2"
+      className="hidden min-h-0 flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-xs portrait:min-[600px]:flex portrait:min-[600px]:col-span-2 portrait:min-[600px]:row-start-2"
     >
       <div className="flex items-center justify-between gap-2">
-        {roomNodes.length > 0 && (
-          <span className="font-bold uppercase tracking-wider text-zinc-400">
-            Route {routeVisited}/{roomNodes.length}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {roomNodes.length > 0 && (
+            <span className="font-bold uppercase tracking-wider text-zinc-400">
+              Route {routeVisited}/{roomNodes.length}
+            </span>
+          )}
+          <ul aria-label="Route nodes" className="flex items-center gap-1">
+            {roomNodes.map((node, index) => (
+              <li
+                key={`${node.x},${node.y}`}
+                aria-label={`Node ${index + 1} ${node.visited ? "visited" : "not visited"}`}
+                className={`flex h-6 min-w-6 items-center justify-center rounded border px-1 text-xs font-bold ${
+                  node.visited
+                    ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
+                    : "border-zinc-700 text-zinc-400"
+                }`}
+              >
+                {index + 1}
+              </li>
+            ))}
+          </ul>
+        </div>
         <span
           className={`font-bold uppercase tracking-wider ${
             exitLocked ? "text-rose-400" : "text-emerald-400"
@@ -2601,71 +2687,64 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           {exitLocked ? "Exit locked" : "Exit open"}
         </span>
       </div>
-      {roomNodes.length > 0 && (
-        <ul aria-label="Route nodes" className="flex flex-wrap gap-2">
-          {roomNodes.map((node, index) => (
-            <li
-              key={`${node.x},${node.y}`}
-              aria-label={`Node ${index + 1} ${node.visited ? "visited" : "not visited"}`}
-              className={`flex h-9 min-w-9 items-center justify-center rounded-md border px-2 text-sm font-bold ${
-                node.visited
-                  ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
-                  : "border-zinc-700 text-zinc-400"
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+        <div className="flex items-center gap-2">
+          <span className="w-7 font-bold text-zinc-400">HP</span>
+          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-900">
+            <span
+              className={`block h-full transition-[width] duration-200 ${
+                playerHp > 50
+                  ? "bg-emerald-500"
+                  : playerHp > 25
+                    ? "bg-amber-500"
+                    : "bg-rose-500"
               }`}
-            >
-              {index + 1}
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="flex items-center justify-between gap-2 text-sm">
-        <span className="text-zinc-200">
+              style={{
+                width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%`,
+              }}
+            />
+          </span>
+          <span className="w-12 text-right font-bold text-zinc-100">
+            {playerHp}/{maxPlayerHp}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-8 font-bold text-slate-400">RAM</span>
+          <span className="block h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-900">
+            <span
+              className="block h-full bg-sky-500 transition-[width] duration-200"
+              style={{ width: `${Math.max(0, (currentRam / maxRam) * 100)}%` }}
+            />
+          </span>
+          <span className="w-12 text-right font-bold text-zinc-100">
+            {currentRam}/{maxRam}
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-zinc-200">
           <span className="text-zinc-400">TOOL </span>
           {PHONE_TOOL_LABELS[activeWeaponId] ??
             WEAPON_SHORT_LABELS[activeWeaponId] ??
             weapons[activeWeaponId]?.name ??
             activeWeaponId}
         </span>
-        <span className={dronesStunned ? "text-cyan-300" : "text-amber-300"}>
+        <span
+          className={`shrink-0 ${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}
+        >
           EMP {empWeapon?.ammo ?? 0}/{empWeapon?.maxAmmo ?? 0}
-          {dronesStunned ? " · drones stunned" : ""}
+          {dronesStunned ? " · stunned" : ""}
         </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-sm font-bold">
-          <span className="text-zinc-400">HP</span>
-          <span className="text-zinc-100">
-            {playerHp}/{maxPlayerHp}
-          </span>
-        </div>
-        <span className="block h-4 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900">
+        {wallShiftLabel && (
           <span
-            className={`block h-full transition-[width] duration-200 ${
-              playerHp > 50
-                ? "bg-emerald-500"
-                : playerHp > 25
-                  ? "bg-amber-500"
-                  : "bg-rose-500"
-            }`}
-            style={{ width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%` }}
-          />
-        </span>
-      </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between text-sm font-bold">
-          <span className="text-slate-400">RAM</span>
-          <span className="text-zinc-100">
-            {currentRam}/{maxRam}
+            className="shrink-0 font-bold text-amber-300"
+            data-testid="labyrinth-wall-telegraph-panel"
+          >
+            {wallShiftLabel}
           </span>
-        </div>
-        <span className="block h-4 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900">
-          <span
-            className="block h-full bg-sky-500 transition-[width] duration-200"
-            style={{ width: `${Math.max(0, (currentRam / maxRam) * 100)}%` }}
-          />
-        </span>
+        )}
       </div>
-      <p className="min-h-5 truncate text-amber-200" aria-hidden="true">
+      <p className="min-h-4 truncate text-amber-200" aria-hidden="true">
         {phoneToast?.text ?? ""}
       </p>
     </section>
@@ -3580,7 +3659,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const phoneRow = (
     <DockFrame
       handedness={handedness}
-      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[600px]:grid-rows-[auto_minmax(0,1fr)_auto] portrait:min-[600px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[600px]:[--touch-key:clamp(96px,14vw,120px)]"
+      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[600px]:grid-rows-[auto_auto_minmax(0,1fr)] portrait:min-[600px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[600px]:[--touch-key:clamp(96px,16vw,120px)]"
     >
       {/* The controls sit in a gate: a keyboard hides them, a touch brings
           them back (ADR 0061). */}
@@ -3680,6 +3759,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 >
                   [{currentRoom.title}]
                 </span>
+                {wallShiftLabel && (
+                  <span
+                    className="text-amber-300 text-xs"
+                    data-testid="labyrinth-wall-telegraph"
+                  >
+                    {wallShiftLabel}
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">

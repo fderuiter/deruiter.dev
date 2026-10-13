@@ -7,6 +7,7 @@ import {
   tspSyncRoomToPatrols,
 } from "@/components/retro-labyrinth/room-solver";
 import { ENEMY_STEP_INTERVAL_MS, updateEnemyAI } from "@/lib/dungeon/ai";
+import { tspWallTelegraph, updateTSPMovingWalls } from "@/lib/dungeon/tsp";
 
 // Room 1 (the TSP enclave) must stay clearable: the walls and the drone
 // patrol cannot close the only route to the nodes or the exit (#2032).
@@ -51,5 +52,39 @@ describe("Room 1 stays passable", () => {
     const synced = tspSyncRoomToPatrols(room, observed);
     expect(synced).not.toBeNull();
     expect(synced!.enemies.map((e) => `${e.x},${e.y}`)).toEqual(observed[3]);
+  });
+});
+
+describe("Room 1 wall telegraph", () => {
+  const room = generateTSPRoom();
+
+  it("counts the moves to the next shift that adds a wall, within four", () => {
+    const shift = tspWallTelegraph(room.grid, room.tspMovingWalls ?? [], 0);
+    expect(shift.stepsUntilAppear).toBeGreaterThanOrEqual(1);
+    expect(shift.stepsUntilAppear).toBeLessThanOrEqual(4);
+    expect(shift.appearing.length).toBeGreaterThan(0);
+  });
+
+  it("lists the appearing cells as walls only after that shift", () => {
+    const walls = room.tspMovingWalls ?? [];
+    const shift = tspWallTelegraph(room.grid, walls, 0);
+    const steps = shift.stepsUntilAppear!;
+    const later = updateTSPMovingWalls(room.grid, walls, steps).updatedGrid;
+    for (const cell of shift.appearing) {
+      const [x, y] = cell.split(",").map(Number);
+      expect(later[y][x]).toBe("W");
+      expect(room.grid[y][x]).not.toBe("W");
+    }
+  });
+
+  it("lists walls that the next move takes away as vanishing now", () => {
+    const walls = room.tspMovingWalls ?? [];
+    const shift = tspWallTelegraph(room.grid, walls, 0);
+    const next = updateTSPMovingWalls(room.grid, walls, 1).updatedGrid;
+    for (const cell of shift.vanishing) {
+      const [x, y] = cell.split(",").map(Number);
+      expect(room.grid[y][x]).toBe("W");
+      expect(next[y][x]).not.toBe("W");
+    }
   });
 });

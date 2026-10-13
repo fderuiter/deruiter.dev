@@ -829,6 +829,7 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       observed.push(await readPatrolCells(page));
     }
     const room = tspSyncRoomToPatrols(generateTSPRoom(), observed);
+    await shoot(page, testInfo, `room-start-${projectSize(page)}`);
     expect(
       room,
       "the patrols match a state of the generated room"

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 
-export interface CabinetAutoPauseOptions {
+interface CabinetAutoPauseOptions {
   /**
    * Pause when the device rotates. Only a phone-class cabinet asks for this:
    * a tablet reflows cleanly, so rotating it must not stop a running room

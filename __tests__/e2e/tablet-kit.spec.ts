@@ -367,3 +367,142 @@ test.describe("Working With Duck on a tablet (iPad projects)", () => {
     expect(blocking).toEqual([]);
   });
 });
+
+const QUASI_ROUTE = "/arcade/quasi-puzzler";
+const QUASI_ROOT = ".qp-root.qp-touch";
+const QUASI_HAND = '[data-testid="quasi-tactic-hand-dock"]';
+const BRIEFING = '[role="dialog"][aria-labelledby="briefing-title"]';
+
+/**
+ * Launches the Quasi cabinet, retrying the Launch tap until the cabinet opens.
+ * Before Launch the button is the only control, so a retry cannot press a game
+ * control. A cold dev build can take the first tap before React has attached
+ * its handlers, which a single tap would miss.
+ */
+async function launchQuasiCabinet(page: Page) {
+  const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+  await expect(async () => {
+    if ((await page.locator(IMMERSIVE).count()) > 0) return;
+    await launch.tap({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 180000 });
+  await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 90000 });
+}
+
+test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => {
+  test.setTimeout(240000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(QUASI_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches fit to the viewport", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchQuasiCabinet(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expect(page.locator(QUASI_ROOT)).toBeVisible();
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the tactic hand stays on screen, with no page scroll", async ({
+    page,
+  }) => {
+    await launchQuasiCabinet(page);
+    const viewport = page.viewportSize();
+    const hand = await page.locator(QUASI_HAND).boundingBox();
+    expect(hand).not.toBeNull();
+    expect(hand!.y + hand!.height).toBeLessThanOrEqual(viewport!.height + 1);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("every on-screen control is at least 44px, and no text is under 12px", async ({
+    page,
+  }) => {
+    await launchQuasiCabinet(page);
+    const controls = page.locator(`${QUASI_ROOT} button:visible`);
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
+    const small: string[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const box = await controls.nth(i).boundingBox();
+      // Screen-reader-only copy is a 1px box, not a control.
+      if (!box || box.width <= 1) continue;
+      if (box.width < 44 || box.height < 44) {
+        small.push(`${i}: ${Math.round(box.width)}x${Math.round(box.height)}`);
+      }
+    }
+    expect(small).toEqual([]);
+    const tinyText = await page.evaluate((root) => {
+      const el = document.querySelector(root);
+      if (!el) return ["no quasi root"];
+      const offenders: string[] = [];
+      el.querySelectorAll<HTMLElement>("*").forEach((node) => {
+        const hasOwnText = Array.from(node.childNodes).some(
+          (child) =>
+            child.nodeType === Node.TEXT_NODE &&
+            (child.textContent ?? "").trim().length > 0
+        );
+        if (!hasOwnText) return;
+        const style = getComputedStyle(node);
+        if (style.display === "none") return;
+        if (parseFloat(style.fontSize) < 12) {
+          offenders.push(
+            `${node.tagName} ${style.fontSize} ${node.textContent?.trim().slice(0, 40)}`
+          );
+        }
+      });
+      return offenders.slice(0, 10);
+    }, QUASI_ROOT);
+    expect(tinyText).toEqual([]);
+  });
+
+  test("the Theory Briefing fits the screen, traps focus, and Escape closes it, then leaves the cabinet", async ({
+    page,
+  }) => {
+    await launchQuasiCabinet(page);
+    await page.getByRole("button", { name: /Theory Briefing/ }).tap();
+    const dialog = page.locator(BRIEFING);
+    await expect(dialog).toBeVisible();
+    const viewport = page.viewportSize();
+    const box = await dialog.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
+    await assertNoHorizontalOverflow(page);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(IMMERSIVE)).toBeHidden({ timeout: 15000 });
+  });
+
+  test("the immersive cabinet has no blocking axe violations", async ({
+    page,
+  }) => {
+    await launchQuasiCabinet(page);
+    const results = await new AxeBuilder({ page })
+      .include(IMMERSIVE)
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+      .analyze();
+    const blocking = results.violations
+      .filter((v) => BLOCKING.has(v.impact ?? ""))
+      .map(
+        (v) =>
+          `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+      );
+    expect(blocking).toEqual([]);
+  });
+});

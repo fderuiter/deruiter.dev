@@ -670,7 +670,10 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       .analyze();
     const blocking = results.violations
       .filter((v) => BLOCKING.has(v.impact ?? ""))
-      .map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+      .map(
+        (v) =>
+          `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+      );
     expect(blocking).toEqual([]);
   });
 
@@ -773,7 +776,10 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       .analyze();
     const blocking = results.violations
       .filter((v) => BLOCKING.has(v.impact ?? ""))
-      .map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`);
+      .map(
+        (v) =>
+          `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+      );
     expect(blocking).toEqual([]);
 
     const controls = dialog.locator("button");

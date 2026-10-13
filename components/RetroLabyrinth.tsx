@@ -2620,7 +2620,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       )}
       <div className="flex items-center justify-between gap-2 text-sm">
         <span className="text-zinc-200">
-          <span className="text-zinc-500">TOOL </span>
+          <span className="text-zinc-400">TOOL </span>
           {PHONE_TOOL_LABELS[activeWeaponId] ??
             WEAPON_SHORT_LABELS[activeWeaponId] ??
             weapons[activeWeaponId]?.name ??

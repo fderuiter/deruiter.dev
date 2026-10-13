@@ -507,12 +507,12 @@
   min-width: 48px;
   min-height: 48px;
 }
-/* The touch toolbar (ADR 0061) is icon-only and floats over the game: 44px
-   keys, the touch floor, so its width is exactly what the cabinet reports in
-   --cabinet-toolbar-inset. */
+/* The touch toolbar (ADR 0061) is icon-only and floats over the game: 48px
+   keys, the cabinet's touch floor (ADR 0003), so its width is exactly what the
+   cabinet reports in --cabinet-toolbar-inset. */
 .arcade-cabinet-toolbar[data-touch-toolbar] button {
-  min-width: 44px;
-  min-height: 44px;
+  min-width: 48px;
+  min-height: 48px;
 }
 .arcade-shooter-playfield {
   flex-shrink: 0;

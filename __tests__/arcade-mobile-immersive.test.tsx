@@ -761,7 +761,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
     delete (document as { fullscreenEnabled?: unknown }).fullscreenEnabled;
   });
 
-  it("is one icon-only row of 44px keys with names, floating top-right", async () => {
+  it("is one icon-only row of 48px keys with names, floating top-right", async () => {
     installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
@@ -778,7 +778,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
     ).toBe("");
     expect(
       screen.getByRole("button", { name: "Pre-Game Setup Wizard" }).className
-    ).toContain("h-11 w-11");
+    ).toContain("h-12 w-12");
   });
 
   it("hides Fullscreen when the Fullscreen API is missing (iOS)", async () => {
@@ -791,7 +791,7 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
     ).toBeNull();
     // Only Setup and Power are left, so the inset is the two-key width.
     expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
-      "calc(106px + env(safe-area-inset-right, 0px))"
+      "calc(114px + env(safe-area-inset-right, 0px))"
     );
   });
 
@@ -810,9 +810,9 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
 
     expect(
       screen.getByRole("button", { name: "Enter Fullscreen" }).className
-    ).toContain("h-11 w-11");
+    ).toContain("h-12 w-12");
     expect(cabinetEl().style.getPropertyValue("--cabinet-toolbar-inset")).toBe(
-      "calc(154px + env(safe-area-inset-right, 0px))"
+      "calc(166px + env(safe-area-inset-right, 0px))"
     );
   });
 

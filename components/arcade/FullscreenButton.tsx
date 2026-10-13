@@ -57,7 +57,7 @@ export const FullscreenButton: React.FC<FullscreenButtonProps> = ({
         onClick={onToggle}
         aria-label={label}
         title={label}
-        className={`h-11 w-11 inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:outline-none ${
+        className={`h-12 w-12 inline-flex items-center justify-center rounded-xl border transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:outline-none ${
           isFullscreen
             ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
             : "bg-neutral-900/90 hover:bg-neutral-800 text-zinc-300 border-neutral-800"

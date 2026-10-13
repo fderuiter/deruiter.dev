@@ -132,11 +132,11 @@ function findOpenGameDialog(cabinet: HTMLElement): Element | null {
 }
 
 /**
- * Width in CSS px of the touch toolbar: `count` 44px buttons, 4px gaps, the
+ * Width in CSS px of the touch toolbar: `count` 48px buttons, 4px gaps, the
  * toolbar's 2px padding and 1px borders each side.
  */
 function cabinetToolbarWidth(count: number): number {
-  return count * 44 + Math.max(0, count - 1) * 4 + 6;
+  return count * 48 + Math.max(0, count - 1) * 4 + 6;
 }
 
 export const PlayCabinet: React.FC<PlayCabinetProps> = ({
@@ -695,7 +695,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               onClick={() => setShowWizard(true)}
               aria-label="Pre-Game Setup Wizard"
               title="Pre-Game Setup Wizard"
-              className="h-11 w-11 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+              className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
             >
               <IconAdjustments className="w-4 h-4" aria-hidden="true" />
             </button>
@@ -704,7 +704,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               onClick={handleExit}
               aria-label="Reset / Power Off Cabinet"
               title="Reset / Power Off Cabinet"
-              className="h-11 w-11 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 border border-neutral-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+              className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 border border-neutral-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
             >
               <IconPower className="w-4 h-4 text-red-500" aria-hidden="true" />
             </button>

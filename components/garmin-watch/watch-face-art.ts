@@ -31,10 +31,19 @@ import {
   POLE_HEIGHT,
   PX_PER_METER,
   STAGE_COUNT,
+  STAGE_LENGTH_METERS,
   stagePoleX,
   stageStartX,
+  type CourseCeiling,
+  type CourseCurrent,
   type CourseLayout,
 } from "@/lib/garmin-course";
+import {
+  LENGTH_METERS,
+  isWaterTheme,
+  themeForStage,
+  type StageTheme,
+} from "@/lib/garmin-themes";
 import {
   bodyBatteryFraction,
   bodyBatteryLabel,
@@ -45,6 +54,7 @@ import {
   trainingStatus,
 } from "@/lib/garmin-culture";
 import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
+import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin-swim";
 import {
   CAPE_SPIN_MS,
   CAPE_SPIN_REACH,
@@ -66,6 +76,7 @@ import type {
   CourseStation,
   CourseSwitch,
 } from "@/lib/garmin-props";
+import { beltOffset } from "@/lib/garmin-props";
 import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
@@ -115,6 +126,72 @@ const FACE_COLORS = {
   dim: "#a1a1aa",
   track: "rgba(148, 163, 184, 0.22)",
 } as const;
+
+/**
+ * Scenery and identity per stage theme (#1993). The theme swaps only the
+ * identity accent (lane edge, ledges and the runner's singlet) and the world
+ * behind the lane; signal colours stay in FACE_COLORS.
+ */
+interface ThemePalette {
+  /** Identity accent: lane edge, ledge tops and the runner's singlet. */
+  accent: string;
+  /** Top of the sky, or of the water column on water stages. */
+  top: string;
+  /** Bottom of the sky, or of the water column. */
+  bottom: string;
+  /** The lane surface below the ground line: track, pool floor or sea bed. */
+  ground: string;
+}
+
+export const THEME_PALETTE: Record<StageTheme, ThemePalette> = {
+  track: {
+    accent: "#22d3ee",
+    top: "#000000",
+    bottom: "#032a33",
+    ground: "#101215",
+  },
+  pool: {
+    accent: "#67e8f9",
+    top: "#03324a",
+    bottom: "#0369a1",
+    ground: "#0c4a6e",
+  },
+  "open-water": {
+    accent: "#2dd4bf",
+    top: "#021b2e",
+    bottom: "#082f49",
+    ground: "#041a28",
+  },
+  "basement-gym": {
+    accent: "#fb7185",
+    top: "#000000",
+    bottom: "#0c0a09",
+    ground: "#18181b",
+  },
+};
+
+/** The theme the face draws: a bonus room always uses the track art. */
+export function themeOf(
+  state: Pick<GameEngineState, "stage" | "bonusRoom">
+): StageTheme {
+  return state.bonusRoom ? "track" : themeForStage(state.stage ?? 1);
+}
+
+/** Pool lengths swum on this stage so far, 0 to the stage's length count. */
+export function lengthCount(
+  state: Pick<GameEngineState, "stage" | "distanceMeters">
+): number {
+  const stage = state.stage ?? 1;
+  const into = state.distanceMeters - stageStartX(stage) / PX_PER_METER;
+  return clamp(
+    Math.floor(into / LENGTH_METERS),
+    0,
+    STAGE_LENGTH_METERS / LENGTH_METERS
+  );
+}
+
+/** Trisuit colours: a teal body with an orange hip band. */
+const TRISUIT = { body: "#0284c7", band: "#f97316", tri: "#f4f4f6" } as const;
 
 export type MeterTone = "ok" | "warn" | "danger";
 
@@ -222,6 +299,24 @@ export function runnerPose(
     frontArm: -swing * 0.9,
     backArm: swing * 0.9,
     bob: Math.abs(Math.sin(phase)) * 1.2,
+    airborne: false,
+  };
+}
+
+/**
+ * The swimmer's pose for a distance: arms windmill through a freestyle stroke
+ * and the legs flutter-kick behind. Used in place of the run cycle underwater.
+ */
+export function swimPose(distanceMeters: number): RunnerPose {
+  const d = Number.isFinite(distanceMeters) ? Math.max(0, distanceMeters) : 0;
+  const phase = ((d % STRIDE_METERS) / STRIDE_METERS) * Math.PI * 2;
+  const kick = Math.sin(phase * 2) * 0.25;
+  return {
+    frontLeg: -1.2 + kick,
+    backLeg: -1.2 - kick,
+    frontArm: Math.sin(phase) * 1.9,
+    backArm: -Math.sin(phase) * 1.9,
+    bob: Math.abs(Math.sin(phase)) * 0.8,
     airborne: false,
   };
 }
@@ -427,7 +522,61 @@ const PINES: ReadonlyArray<readonly [number, number]> = [
   [78, 15],
 ];
 
-function drawSky(ctx: Ctx, lit: boolean) {
+/** Pool lane ropes: two dashed lines of floats across the water. */
+const POOL_ROPE_YS = [122, 150] as const;
+/** Current chevron rows in the open water column. */
+const CURRENT_ROWS = [124, 150, 176] as const;
+
+/** Open Water current chevron colour, and the chevron's half-width in pixels. */
+const CURRENT_CHEVRON = "rgba(45, 212, 191, 0.3)";
+const CHEVRON_HALF = 3;
+const CHEVRON_STEP = 9;
+
+/** Pool water column and surface colours; the surface band is 35% alpha. */
+const SURFACE_BAND = "rgba(56, 189, 248, 0.35)";
+const ROPE_COLOR = "rgba(255, 255, 255, 0.25)";
+const AIR_ABOVE_WATER = "#020617";
+
+/** Gym ceiling: beams, joists and fluorescent strips. */
+const GYM_BEAM = "#18181b";
+const GYM_STRIP = "rgba(254, 249, 195, 0.5)";
+const GYM_STRIP_PERIOD = 90;
+
+function drawSky(ctx: Ctx, lit: boolean, theme: StageTheme, distance: number) {
+  if (isWaterTheme(theme)) {
+    // Air above the deck, then the water column from the surface down.
+    ctx.fillStyle = AIR_ABOVE_WATER;
+    ctx.fillRect(0, 0, CANVAS_SIZE, SWIM_SURFACE_Y);
+    const palette = THEME_PALETTE[theme];
+    const column = ctx.createLinearGradient(0, SWIM_SURFACE_Y, 0, GROUND_Y);
+    column.addColorStop(0, palette.top);
+    column.addColorStop(1, palette.bottom);
+    ctx.fillStyle = column;
+    ctx.fillRect(0, SWIM_SURFACE_Y, CANVAS_SIZE, GROUND_Y - SWIM_SURFACE_Y);
+    ctx.fillStyle = SURFACE_BAND;
+    ctx.fillRect(0, SWIM_SURFACE_Y, CANVAS_SIZE, 4);
+    return;
+  }
+  if (theme === "basement-gym") {
+    const palette = THEME_PALETTE[theme];
+    const room = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+    room.addColorStop(0, palette.top);
+    room.addColorStop(1, palette.bottom);
+    ctx.fillStyle = room;
+    ctx.fillRect(0, 0, CANVAS_SIZE, GROUND_Y);
+    // Ceiling beam across the top, joists hanging from it.
+    ctx.fillStyle = GYM_BEAM;
+    ctx.fillRect(0, 0, CANVAS_SIZE, 6);
+    for (let x = 0; x < CANVAS_SIZE; x += 40) ctx.fillRect(x, 6, 3, 8);
+    // Fluorescent strips that scroll past at track speed.
+    ctx.fillStyle = GYM_STRIP;
+    const off = parallaxOffset(distance, 1, GYM_STRIP_PERIOD);
+    for (let x = -off; x < CANVAS_SIZE; x += GYM_STRIP_PERIOD) {
+      ctx.fillRect(x + 10, 20, 56, 2.5);
+    }
+    return;
+  }
+
   const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
   sky.addColorStop(0, lit ? "#06161d" : "#000000");
   sky.addColorStop(0.6, lit ? "#0a3440" : "#011318");
@@ -446,7 +595,53 @@ function drawSky(ctx: Ctx, lit: boolean) {
   ctx.fill();
 }
 
-function drawSkyline(ctx: Ctx, distance: number) {
+/** Pool lane ropes, with floats that scroll at track speed. */
+function drawPoolLanes(ctx: Ctx, distance: number) {
+  const off = parallaxOffset(distance, 1, 24);
+  for (const y of POOL_ROPE_YS) {
+    ctx.fillStyle = ROPE_COLOR;
+    ctx.fillRect(0, y, CANVAS_SIZE, 1.2);
+    for (let x = -off; x < CANVAS_SIZE; x += 24) {
+      ctx.beginPath();
+      ctx.roundRect(x, y - 1.5, 4, 4, 1.5);
+      ctx.fill();
+    }
+  }
+}
+
+/**
+ * Open Water currents: a row of chevrons across each zone, pointing with the
+ * flow (right for a positive flow, left for a negative one).
+ */
+function drawCurrents(
+  ctx: Ctx,
+  currents: readonly CourseCurrent[],
+  camera: number
+) {
+  ctx.strokeStyle = CURRENT_CHEVRON;
+  ctx.lineWidth = 1.2;
+  for (const zone of currents) {
+    const left = zone.x - camera;
+    if (left > CANVAS_SIZE || left + zone.width < 0) continue;
+    const dir = zone.flow < 0 ? -1 : 1;
+    for (const y of CURRENT_ROWS) {
+      ctx.beginPath();
+      for (
+        let x = left + CHEVRON_STEP;
+        x < left + zone.width;
+        x += CHEVRON_STEP
+      ) {
+        ctx.moveTo(x - dir * CHEVRON_HALF, y - CHEVRON_HALF);
+        ctx.lineTo(x, y);
+        ctx.lineTo(x - dir * CHEVRON_HALF, y + CHEVRON_HALF);
+      }
+      ctx.stroke();
+    }
+  }
+}
+
+function drawSkyline(ctx: Ctx, distance: number, theme: StageTheme) {
+  if (theme !== "track") return;
   const offset = parallaxOffset(distance, 0.15, SKYLINE_TILE);
   for (let tile = -offset; tile < CANVAS_SIZE; tile += SKYLINE_TILE) {
     SKYLINE.forEach(([x, w, h], i) => {
@@ -467,7 +662,8 @@ function drawSkyline(ctx: Ctx, distance: number) {
   }
 }
 
-function drawPines(ctx: Ctx, distance: number) {
+function drawPines(ctx: Ctx, distance: number, theme: StageTheme) {
+  if (theme !== "track") return;
   const offset = parallaxOffset(distance, 0.45, PINE_TILE);
   ctx.fillStyle = "#04161a";
   for (let tile = -offset; tile < CANVAS_SIZE + PINE_TILE; tile += PINE_TILE) {
@@ -485,16 +681,31 @@ function drawPines(ctx: Ctx, distance: number) {
   }
 }
 
-function drawGround(ctx: Ctx, distance: number, course: CourseLayout) {
-  ctx.fillStyle = "#101215";
+function drawGround(
+  ctx: Ctx,
+  distance: number,
+  course: CourseLayout,
+  theme: StageTheme
+) {
+  const palette = THEME_PALETTE[theme];
+  ctx.fillStyle = palette.ground;
   ctx.fillRect(0, GROUND_Y, CANVAS_SIZE, CANVAS_SIZE - GROUND_Y);
-  // Lane edge in the identity hue, and lane dashes at track speed.
-  ctx.fillStyle = FACE_COLORS.identity;
+  // Lane edge in the theme's accent.
+  ctx.fillStyle = palette.accent;
   ctx.fillRect(0, GROUND_Y, CANVAS_SIZE, 1.5);
-  ctx.fillStyle = "rgba(148, 163, 184, 0.35)";
-  const dash = parallaxOffset(distance, 1, 24);
-  for (let x = -dash; x < CANVAS_SIZE; x += 24) {
-    ctx.fillRect(x, GROUND_Y + 5, 12, 1.5);
+  const scroll = parallaxOffset(distance, 1, 24);
+  if (theme === "pool") {
+    // Floor tiles, scrolling with the lane.
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    for (let x = -scroll; x < CANVAS_SIZE; x += 24) {
+      ctx.fillRect(x, GROUND_Y + 2, 1, CANVAS_SIZE - GROUND_Y);
+    }
+  } else if (theme !== "open-water") {
+    // Lane dashes at track speed.
+    ctx.fillStyle = "rgba(148, 163, 184, 0.35)";
+    for (let x = -scroll; x < CANVAS_SIZE; x += 24) {
+      ctx.fillRect(x, GROUND_Y + 5, 12, 1.5);
+    }
   }
   // Gaps: the lane breaks off into a dark drop with amber hazard edges.
   const camera = distance * PX_PER_METER;
@@ -515,7 +726,12 @@ function drawGround(ctx: Ctx, distance: number, course: CourseLayout) {
 // --------------------------------------------------------------- course
 
 /** One-way ledges: a slim data rail with a lit top edge. */
-function drawLedges(ctx: Ctx, course: CourseLayout, camera: number) {
+function drawLedges(
+  ctx: Ctx,
+  course: CourseLayout,
+  camera: number,
+  accent: string
+) {
   for (const l of course.ledges) {
     const left = l.x - camera;
     if (left > CANVAS_SIZE || left + l.width < 0) continue;
@@ -523,13 +739,62 @@ function drawLedges(ctx: Ctx, course: CourseLayout, camera: number) {
     ctx.beginPath();
     ctx.roundRect(left, l.y, l.width, LEDGE_THICKNESS, 1.5);
     ctx.fill();
-    ctx.fillStyle = FACE_COLORS.identity;
+    ctx.fillStyle = accent;
     ctx.fillRect(left + 1, l.y, l.width - 2, 1.2);
     ctx.fillStyle = "rgba(34, 211, 238, 0.35)";
     for (let x = left + 4; x < left + l.width - 3; x += 6) {
       ctx.fillRect(x, l.y + 2.6, 2, 1);
     }
   }
+}
+
+/**
+ * A squat-rack bar in the Basement Gym: a steel bar across the lane at the
+ * ceiling's underside, two uprights running up off the top of the screen, and
+ * a J-hook on each upright that holds the bar.
+ */
+function drawCeilingRack(ctx: Ctx, c: CourseCeiling, camera: number) {
+  const left = c.x - camera;
+  const w = c.width;
+  if (left > CANVAS_SIZE || left + w < 0) return;
+  const bottom = c.bottom;
+  ctx.fillStyle = PROP_COLORS.rack;
+  ctx.fillRect(left, bottom - 4, w, 4);
+  ctx.fillRect(left + 1, 0, 3, bottom - 4);
+  ctx.fillRect(left + w - 4, 0, 3, bottom - 4);
+  ctx.strokeStyle = PROP_COLORS.rackHook;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(left + 4, bottom - 11);
+  ctx.lineTo(left + 7, bottom - 11);
+  ctx.lineTo(left + 7, bottom - 7);
+  ctx.moveTo(left + w - 4, bottom - 11);
+  ctx.lineTo(left + w - 7, bottom - 11);
+  ctx.lineTo(left + w - 7, bottom - 7);
+  ctx.stroke();
+}
+
+/**
+ * A buoy on the open water: a dome in orange with a white stripe, on a line
+ * down to the sea bed. It bobs at the run clock.
+ */
+function drawBuoy(ctx: Ctx, belt: CourseBelt, camera: number, clockMs: number) {
+  const cx = belt.x + belt.width / 2 - camera;
+  if (cx + 8 < 0 || cx - 8 > CANVAS_SIZE) return;
+  // The same bob the engine stands the swimmer on.
+  const y = belt.y + beltOffset(belt, clockMs).dy + 4;
+  ctx.strokeStyle = ROPE_COLOR;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cx, y + 4);
+  ctx.lineTo(cx, GROUND_Y);
+  ctx.stroke();
+  ctx.fillStyle = PROP_COLORS.buoy;
+  ctx.beginPath();
+  ctx.roundRect(cx - 6, y - 4, 12, 8, 3);
+  ctx.fill();
+  ctx.fillStyle = PROP_COLORS.buoyStripe;
+  ctx.fillRect(cx - 6, y - 0.75, 12, 1.5);
 }
 
 /** The two-arrow sync glyph on a Sync Block. */
@@ -678,6 +943,10 @@ const PROP_COLORS = {
   switchBase: "#334155",
   switchPressed: "#047857",
   prPlate: "#cbd5e1",
+  rack: "#27272a",
+  rackHook: "#71717a",
+  buoy: "#fb923c",
+  buoyStripe: "#f4f4f6",
 } as const;
 
 /** The bonus room: a warm wall, dark wainscot, lockers and a bench. */
@@ -838,6 +1107,11 @@ function drawRestSwitch(
   ctx.fill();
 }
 
+/** True for a belt flagged as an open-water buoy. */
+function isBuoyBelt(belt: CourseBelt): boolean {
+  return (belt as { buoy?: boolean }).buoy === true;
+}
+
 /** Draws every course prop on the lane, skipping those off screen. */
 function drawProps(
   ctx: Ctx,
@@ -851,7 +1125,10 @@ function drawProps(
     drawWaterStation(ctx, station, camera, clockMs, groundY);
   }
   for (const belt of props.belts) {
-    drawTreadmillBelt(ctx, belt, camera, clockMs);
+    // Buoy belts are open-water markers; the flag is read defensively until
+    // CourseBelt carries it.
+    if (isBuoyBelt(belt)) drawBuoy(ctx, belt, camera, clockMs);
+    else drawTreadmillBelt(ctx, belt, camera, clockMs);
   }
   for (const sw of props.switches) drawRestSwitch(ctx, sw, camera, groundY);
 }
@@ -955,6 +1232,23 @@ function drawCape(ctx: Ctx, x: number, y: number) {
   ctx.fillRect(x + PICKUP_SIZE / 2 - 1.5, y + 1, 3, 3);
 }
 
+/** A Tri Suit: a teal one-piece with a three-band hem and a white tri mark. */
+function drawSuit(ctx: Ctx, x: number, y: number) {
+  ctx.fillStyle = TRISUIT.body;
+  ctx.beginPath();
+  ctx.roundRect(x + 2.5, y + 1, PICKUP_SIZE - 5, PICKUP_SIZE - 3, 2);
+  ctx.fill();
+  ctx.fillStyle = TRISUIT.band;
+  ctx.fillRect(x + 2.5, y + 7.5, PICKUP_SIZE - 5, 1.2);
+  ctx.fillStyle = TRISUIT.tri;
+  ctx.beginPath();
+  ctx.moveTo(x + PICKUP_SIZE / 2, y + 3);
+  ctx.lineTo(x + PICKUP_SIZE / 2 + 2.2, y + 6.4);
+  ctx.lineTo(x + PICKUP_SIZE / 2 - 2.2, y + 6.4);
+  ctx.closePath();
+  ctx.fill();
+}
+
 /** Power-ups travelling the course, behind the blocks they rise out of. */
 function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
   for (const p of pickups) {
@@ -963,6 +1257,7 @@ function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
     if (p.kind === "high") drawHigh(ctx, x, p.y);
     else if (p.kind === "heatmap") drawHeatMap(ctx, x, p.y);
     else if (p.kind === "cape") drawCape(ctx, x, p.y);
+    else if (p.kind === "suit") drawSuit(ctx, x, p.y);
     else drawShake(ctx, x, p.y);
   }
 }
@@ -1056,6 +1351,17 @@ function drawCourseHud(ctx: Ctx, state: GameEngineState) {
     6,
     FACE_COLORS.dim
   );
+  // Water stages count pool lengths on their own line, never inside a bonus room.
+  if (isUnderwater(state)) {
+    text(
+      ctx,
+      `LENGTH ${lengthCount(state)}/${STAGE_LENGTH_METERS / LENGTH_METERS}`,
+      FACE_CENTER,
+      80,
+      6,
+      FACE_COLORS.dim
+    );
+  }
   drawPaceMeter(ctx, state);
 }
 
@@ -1139,7 +1445,11 @@ function limb(
  * cyan race singlet with bib, and a watch on the wrist.
  */
 function drawRunner(ctx: Ctx, state: GameEngineState) {
-  const pose = runnerPose(state.distanceMeters, state.isGrounded);
+  // Underwater the monkey swims: a stroke in place of the run cycle.
+  const swimming = isUnderwater(state);
+  const pose = swimming
+    ? swimPose(state.distanceMeters)
+    : runnerPose(state.distanceMeters, state.isGrounded);
   const fur = state.isGcActive ? FUR_FROZEN : FUR;
   // After a hit the runner blinks while hits pass through.
   const graceMs = state.invulnerableMs ?? 0;
@@ -1215,16 +1525,23 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
   ctx.lineWidth = 2;
   limb(ctx, shoulder.x, shoulder.y, pose.backArm, 1.3, 3.8, 3.4);
 
-  // Torso: singlet in the identity hue with a white race bib; orange once
-  // the runner holds a Heat Map.
+  // Torso: singlet in the stage's accent with a white race bib; orange once
+  // the runner holds a Heat Map, teal with an orange band in a Tri Suit.
+  const trisuit = state.power === "trisuit";
   ctx.fillStyle = state.isGcActive
     ? "#a5f3fc"
     : state.power === "heatmap"
       ? HEAT.hot
-      : FACE_COLORS.identity;
+      : trisuit
+        ? TRISUIT.body
+        : THEME_PALETTE[themeOf(state)].accent;
   ctx.beginPath();
   ctx.roundRect(7.2, 7.6, 7, 7.6, 2);
   ctx.fill();
+  if (trisuit) {
+    ctx.fillStyle = TRISUIT.band;
+    ctx.fillRect(7.2, 13.2, 7, 1.4);
+  }
   ctx.fillStyle = "#f4f4f6";
   ctx.fillRect(8.4, 9.8, 4.2, 3.2);
   ctx.fillStyle = "#0d0e11";
@@ -1763,6 +2080,59 @@ function drawRepMax(ctx: Ctx, foe: Foe) {
   }
 }
 
+/**
+ * A Jellyfish: a pale bell with trailing tentacles that pulse as it drifts.
+ * It floats in the water, so stomping it does nothing.
+ */
+function drawJellyfish(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  const pulse = Math.sin((foe.phase ?? 0) * 2) * 1.2;
+  ctx.fillStyle = "rgba(224, 242, 254, 0.85)";
+  ctx.beginPath();
+  ctx.moveTo(0, h * 0.6);
+  ctx.bezierCurveTo(0, -1 - pulse, w, -1 - pulse, w, h * 0.6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = FOE_COLORS.sky;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(224, 242, 254, 0.6)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (const tx of [w * 0.2, w * 0.5, w * 0.8]) {
+    ctx.moveTo(tx, h * 0.6);
+    ctx.quadraticCurveTo(tx + pulse, h * 0.8, tx - pulse, h + 3);
+  }
+  ctx.stroke();
+}
+
+/**
+ * Lost Goggles: two dark-rimmed lenses on a strap, drifting in pairs. They
+ * sink and rise in the water column.
+ */
+function drawGoggles(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  ctx.strokeStyle = FOE_COLORS.steel;
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(0, h / 2);
+  ctx.lineTo(w, h / 2);
+  ctx.stroke();
+  ctx.strokeStyle = FOE_COLORS.dark;
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.3 + 3.2, h / 2);
+  ctx.lineTo(w * 0.7 - 3.2, h / 2);
+  ctx.stroke();
+  for (const lx of [w * 0.3, w * 0.7]) {
+    ctx.fillStyle = "rgba(56, 189, 248, 0.55)";
+    ctx.beginPath();
+    ctx.arc(lx, h / 2, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+}
+
 /** Course foes, drawn at their screen x. */
 function drawFoes(ctx: Ctx, foes: readonly Foe[], camera: number) {
   for (const f of foes) {
@@ -1770,11 +2140,29 @@ function drawFoes(ctx: Ctx, foes: readonly Foe[], camera: number) {
     if (x > CANVAS_SIZE || x + f.width < -8) continue;
     ctx.save();
     ctx.translate(x, f.y);
-    if (f.kind === "kettlebell") drawKettlebell(ctx, f);
-    else if (f.kind === "alert") drawMoveAlert(ctx, f);
-    else if (f.kind === "box") drawBoxJumper(ctx, f);
-    else if (f.kind === "lap") drawAutoLap(ctx, f);
-    else drawRepMax(ctx, f);
+    switch (f.kind) {
+      case "kettlebell":
+        drawKettlebell(ctx, f);
+        break;
+      case "alert":
+        drawMoveAlert(ctx, f);
+        break;
+      case "box":
+        drawBoxJumper(ctx, f);
+        break;
+      case "lap":
+        drawAutoLap(ctx, f);
+        break;
+      case "jellyfish":
+        drawJellyfish(ctx, f);
+        break;
+      case "goggles":
+        drawGoggles(ctx, f);
+        break;
+      case "repmax":
+        drawRepMax(ctx, f);
+        break;
+    }
     ctx.restore();
   }
 }
@@ -2252,16 +2640,24 @@ export function renderWatchFace(
 
   const course = state.course ?? EMPTY_COURSE;
   const camera = state.distanceMeters * PX_PER_METER;
+  const theme = themeOf(state);
   if (state.bonusRoom) {
     drawBonusRoomBackdrop(ctx);
   } else {
-    drawSky(ctx, state.isLightOn);
-    drawSkyline(ctx, state.distanceMeters);
-    drawPines(ctx, state.distanceMeters);
+    drawSky(ctx, state.isLightOn, theme, state.distanceMeters);
+    drawSkyline(ctx, state.distanceMeters, theme);
+    drawPines(ctx, state.distanceMeters, theme);
+    if (theme === "pool") drawPoolLanes(ctx, state.distanceMeters);
+    if (theme === "open-water" && course.currents) {
+      drawCurrents(ctx, course.currents, camera);
+    }
   }
-  drawGround(ctx, state.distanceMeters, course);
+  drawGround(ctx, state.distanceMeters, course, theme);
   drawPoles(ctx, course, camera);
-  drawLedges(ctx, course, camera);
+  drawLedges(ctx, course, camera, THEME_PALETTE[theme].accent);
+  for (const ceiling of course.ceilings ?? []) {
+    drawCeilingRack(ctx, ceiling, camera);
+  }
   if (state.props) {
     drawProps(ctx, state.props, camera, state.propClockMs ?? 0, GROUND_Y);
   }

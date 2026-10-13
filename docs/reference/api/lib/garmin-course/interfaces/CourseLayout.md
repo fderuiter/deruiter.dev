@@ -16,6 +16,22 @@ Every live feature of the course, across the current and previous stage.
 
 ***
 
+### ceilings?
+
+> `optional` **ceilings?**: [`CourseCeiling`](CourseCeiling.md)[]
+
+Basement Gym racks; absent on other themes.
+
+***
+
+### currents?
+
+> `optional` **currents?**: [`CourseCurrent`](CourseCurrent.md)[]
+
+Open Water currents; absent on other themes.
+
+***
+
 ### gaps
 
 > **gaps**: [`CourseGap`](CourseGap.md)[]

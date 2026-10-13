@@ -40,6 +40,23 @@ import {
 } from "./garmin-props";
 import { beatsBest, formatClock, splitToast } from "./garmin-splits";
 import {
+  SUIT_GRAVITY_SCALE,
+  SUIT_LAND_JUMP_VY,
+  SUIT_STROKE_MS,
+  SUIT_STROKE_VY,
+  SUIT_SWIM_PACE,
+  SWIM_GRAVITY,
+  SWIM_PACE,
+  WADE_PACE_SCALE,
+  SWIM_SINK_MAX,
+  SWIM_STROKE_MS,
+  SWIM_STROKE_VY,
+  SWIM_SURFACE_Y,
+  currentFlow,
+  isUnderwater,
+} from "./garmin-swim";
+import { isWaterTheme, themeForStage } from "./garmin-themes";
+import {
   BOLT_COOLDOWN_MS,
   BOLT_DEFEAT_SCORE,
   DAMAGE_GRACE_MS,
@@ -456,6 +473,13 @@ export interface GameEngineState {
   spinMs?: number;
   /** Milliseconds until the next spin can start. */
   spinCooldownMs?: number;
+  // ---- Water and the Tri Suit (#1993).
+  /**
+   * Milliseconds until the next swimming stroke can start. A jump press
+   * while swimming strokes only when this is zero; it counts down with the
+   * game clock and resets on a new run and on a lost life.
+   */
+  strokeCooldownMs?: number;
   // ---- Course foes (#1991).
   /** Foes placed on the course for the current stage. */
   foes?: Foe[];
@@ -696,11 +720,13 @@ function stageLayout(
   stage: number,
   seed: number
 ): { course: CourseLayout; props: CourseProps } {
+  const theme = themeForStage(stage);
   const placed = generateStageProps(
     stage,
     seed,
     GROUND_Y,
-    generateStage(stage, seed, GROUND_Y)
+    generateStage(stage, seed, GROUND_Y, theme),
+    theme
   );
   return { course: placed.layout, props: placed.props };
 }
@@ -801,7 +827,13 @@ function stageSetup(
   const { course, props } = stageLayout(stage, seed);
   // No foe starts inside a station, box or switch.
   const footings = propFootings(props, 0, GROUND_Y);
-  const foes = generateFoes(stage, seed, course, GROUND_Y).filter(
+  const foes = generateFoes(
+    stage,
+    seed,
+    course,
+    GROUND_Y,
+    themeForStage(stage)
+  ).filter(
     (f) =>
       !footings.some((p) => f.x < p.right + 8 && f.x + f.width > p.left - 8)
   );
@@ -851,6 +883,7 @@ export function startGame(
     propClockMs: 0,
     restDayMs: 0,
     bonusRoom: null,
+    strokeCooldownMs: 0,
     runClockMs: 0,
     lapStartMs: 0,
     lapSplits: [],
@@ -893,6 +926,40 @@ export function resumeGame(
 }
 
 /**
+ * A swimming stroke: a push up on the jump press, then a short wait before the
+ * next. A Tri Suit strokes harder and more often. A stroke is not remembered
+ * when it is pressed during the wait, and it leaves no coyote time behind.
+ */
+function stroke(state: GameEngineState): GameEngineState {
+  if ((state.strokeCooldownMs ?? 0) > 0) {
+    return { ...state, jumpHeld: true };
+  }
+  const suit = state.power === "trisuit";
+  return {
+    ...state,
+    playerVy: suit ? SUIT_STROKE_VY : SWIM_STROKE_VY,
+    isGrounded: false,
+    jumpHeld: true,
+    coyoteMs: 0,
+    jumpBufferMs: 0,
+    strokeCooldownMs: suit ? SUIT_STROKE_MS : SWIM_STROKE_MS,
+  };
+}
+
+/**
+ * The take-off speed on land. A Tri Suit hops at its own speed and ignores
+ * the full pace meter's bonus.
+ */
+function takeOffVy(
+  power: PowerTier | undefined,
+  paceMeter: number | undefined
+): number {
+  return power === "trisuit"
+    ? SUIT_LAND_JUMP_VY
+    : jumpForceFor(paceMeter, JUMP_FORCE);
+}
+
+/**
  * Presses jump. On footing, or within {@link COYOTE_MS} of leaving it, the
  * runner jumps at once, higher with a full pace meter; in the air the press
  * is remembered for {@link JUMP_BUFFER_MS} and fires on landing. Holding the
@@ -902,11 +969,12 @@ export function resumeGame(
  */
 export function pressJump(state: GameEngineState): GameEngineState {
   if (state.gameState !== "playing") return state;
+  if (isUnderwater(state)) return stroke(state);
   const canJump = state.isGrounded || (state.coyoteMs ?? 0) < COYOTE_MS;
   if (canJump && state.playerVy >= 0) {
     return {
       ...state,
-      playerVy: jumpForceFor(state.paceMeter, JUMP_FORCE),
+      playerVy: takeOffVy(state.power, state.paceMeter),
       isGrounded: false,
       jumpHeld: true,
       // Spent: no second coyote jump from the same edge.
@@ -933,6 +1001,10 @@ export function pressJump(state: GameEngineState): GameEngineState {
  * is a short hop and a hold is a full jump.
  */
 export function releaseJump(state: GameEngineState): GameEngineState {
+  // A stroke is never clipped: the swimmer's push runs its course.
+  if (isUnderwater(state)) {
+    return state.jumpHeld ? { ...state, jumpHeld: false } : state;
+  }
   if (!state.jumpHeld && state.playerVy >= JUMP_CUT_VY) return state;
   return {
     ...state,
@@ -1440,6 +1512,7 @@ function loseLife(
     flightMs: 0,
     spinMs: 0,
     spinCooldownMs: 0,
+    strokeCooldownMs: 0,
     ...stageSetup(stage, state.courseSeed ?? 0),
     foeShots: [],
     restDayMs: 0,
@@ -1464,6 +1537,8 @@ function foeCrashReport(
     box: "Box Jumper",
     lap: "Auto Lap",
     repmax: "Rep Max",
+    jellyfish: "Jellyfish",
+    goggles: "Lost Goggles",
     ping: "Auto Lap ping",
     dumbbell: "Rep Max dumbbell",
   };
@@ -2046,8 +2121,24 @@ function stepSimulation(
   const carry = state.isGrounded
     ? beltCarry(props, prevCameraX, prevFeetBottom, prevClockMs, propClockMs)
     : { dx: 0, dy: 0 };
-  let nextDistance =
-    state.distanceMeters + 0.25 * pace * dtRatio + carry.dx / PX_PER_METER;
+  // Swimming (#1993): stroke-paced progress plus the Open Water currents
+  // under the runner. A stroke's progress never runs backwards.
+  const swimming = isUnderwater(state);
+  const suitOn = (state.power ?? "base") === "trisuit";
+  const swimLeft = prevCameraX + PLAYER_X;
+  const currentPush = currentFlow(
+    (state.course ?? EMPTY_COURSE).currents,
+    swimLeft,
+    swimLeft + PLAYER_WIDTH
+  );
+  // Wading along the bottom is far slower than swimming, so strokes pay.
+  const swimPace =
+    (suitOn ? SUIT_SWIM_PACE : SWIM_PACE) *
+    (state.isGrounded ? WADE_PACE_SCALE : 1);
+  const progress = swimming
+    ? Math.max(0, (0.25 * pace * swimPace + currentPush) * dtRatio)
+    : 0.25 * pace * dtRatio;
+  let nextDistance = state.distanceMeters + progress + carry.dx / PX_PER_METER;
   const wall = wallAhead(
     props,
     GROUND_Y,
@@ -2127,13 +2218,27 @@ function stepSimulation(
   };
 
   const jumpHeld = state.jumpHeld ?? false;
-  const gravity = state.playerVy < 0 && jumpHeld ? GRAVITY : FALL_GRAVITY;
+  // Swimming sinks under lighter gravity, and a Tri Suit sinks slower still.
+  // On land a Tri Suit rise gets no float.
+  const landGravity =
+    state.playerVy < 0 && jumpHeld && !suitOn ? GRAVITY : FALL_GRAVITY;
+  const gravity = swimming
+    ? suitOn
+      ? SWIM_GRAVITY * SUIT_GRAVITY_SCALE
+      : SWIM_GRAVITY
+    : landGravity;
+  const fallCap = swimming ? SWIM_SINK_MAX : MAX_FALL_VY;
   let nextPlayerY = state.playerY + carry.dy + state.playerVy * dtRatio;
-  let nextPlayerVy = Math.min(MAX_FALL_VY, state.playerVy + gravity * dtRatio);
+  let nextPlayerVy = Math.min(fallCap, state.playerVy + gravity * dtRatio);
   // A Cape runner holding jump glides, and flight stops at the ceiling.
   nextPlayerVy = glideVy(nextPlayerVy, power, jumpHeld);
   if (power === "cape" && nextPlayerY < CAPE_CEILING_Y) {
     nextPlayerY = CAPE_CEILING_Y;
+    nextPlayerVy = Math.max(0, nextPlayerVy);
+  }
+  // The surface: a swimmer's head never rises above it.
+  if (swimming && nextPlayerY < SWIM_SURFACE_Y) {
+    nextPlayerY = SWIM_SURFACE_Y;
     nextPlayerVy = Math.max(0, nextPlayerVy);
   }
   let isGrounded = false;
@@ -2220,6 +2325,23 @@ function stepSimulation(
     }
   }
 
+  // Basement Gym racks (#1993): a runner rising into a rack's underside bonks
+  // off it, and a runner taller than Base whose head is under one takes a hit.
+  let rackHit = false;
+  const runnerTall = playerHeightFor(power) > playerHeightFor("base");
+  for (const c of course.ceilings ?? []) {
+    if (!(bodyRight > c.x && bodyLeft < c.x + c.width)) continue;
+    if (
+      state.playerY >= c.bottom - 1 &&
+      nextPlayerY < c.bottom &&
+      nextPlayerY < state.playerY
+    ) {
+      nextPlayerY = c.bottom;
+      nextPlayerVy = 1;
+    }
+    if (runnerTall && nextPlayerY <= c.bottom) rackHit = true;
+  }
+
   // A cape spin bumps Sync Blocks level with the runner from the side.
   if ((state.spinMs ?? 0) > 0) {
     const runnerBox = {
@@ -2258,10 +2380,13 @@ function stepSimulation(
     : stepPaceMeter(state.paceMeter, isGrounded, pace > 1, safeDelta);
 
   // Coyote time and the jump buffer.
-  let coyoteMs = isGrounded ? 0 : (state.coyoteMs ?? 0) + safeDelta;
-  let jumpBufferMs = Math.max(0, (state.jumpBufferMs ?? 0) - safeDelta);
-  if (isGrounded && (state.jumpBufferMs ?? 0) > 0) {
-    nextPlayerVy = jumpForceFor(paceMeter, JUMP_FORCE);
+  // Neither applies while swimming.
+  let coyoteMs = swimming || isGrounded ? 0 : (state.coyoteMs ?? 0) + safeDelta;
+  let jumpBufferMs = swimming
+    ? 0
+    : Math.max(0, (state.jumpBufferMs ?? 0) - safeDelta);
+  if (!swimming && isGrounded && (state.jumpBufferMs ?? 0) > 0) {
+    nextPlayerVy = takeOffVy(power, paceMeter);
     if (startsFlight(power, paceMeter)) flightMs = CAPE_FLIGHT_MS;
     isGrounded = false;
     coyoteMs = COYOTE_MS;
@@ -2269,6 +2394,10 @@ function stepSimulation(
   }
   const spinMs = Math.max(0, (state.spinMs ?? 0) - safeDelta);
   const spinCooldownMs = Math.max(0, (state.spinCooldownMs ?? 0) - safeDelta);
+  const strokeCooldownMs = Math.max(
+    0,
+    (state.strokeCooldownMs ?? 0) - safeDelta
+  );
   const stompChain = isGrounded ? 0 : (state.stompChain ?? 0);
 
   // Falling below the face through a gap costs a life.
@@ -2371,7 +2500,9 @@ function stepSimulation(
               ? "HEAT MAP · X THROWS"
               : nextPower === "cape"
                 ? "COMPRESSION CAPE · X SPINS"
-                : "PROTEIN SHAKE · BUFF",
+                : nextPower === "trisuit"
+                  ? "TRI SUIT · SWIM"
+                  : "PROTEIN SHAKE · BUFF",
           ttlMs: 1800,
           tone: "good",
         };
@@ -2451,6 +2582,11 @@ function stepSimulation(
         restDayMs > 0 ? restDaySwap(next.course, true) : next.course
       );
       props = appendProps(props, next.props);
+      // Transition: the Tri Suit comes off when the next stage is on land,
+      // so its clumsy land hop never meets the track's gaps.
+      if (power === "trisuit" && !isWaterTheme(themeForStage(stage))) {
+        power = "base";
+      }
       // The lap banner is green on a best split for the lap, amber when
       // slower; the fitness rules add the stage's Training Effect.
       banner = {
@@ -2581,6 +2717,7 @@ function stepSimulation(
     flightMs,
     spinMs,
     spinCooldownMs,
+    strokeCooldownMs,
     invulnerableMs: Math.max(0, (state.invulnerableMs ?? 0) - safeDelta),
     coyoteMs,
     jumpBufferMs,
@@ -2676,6 +2813,24 @@ function stepSimulation(
     updatedState = {
       ...allocResult.state,
       lastAllocTime: now,
+    };
+  }
+
+  // A tall runner under a rack takes a hit, once per grace window.
+  if (rackHit && (updatedState.invulnerableMs ?? 0) <= 0) {
+    // Only a tier taller than Base is hit, and every such tier survives a
+    // hit by dropping a tier, so a rack never costs a life.
+    const hit = damageTier(updatedState.power);
+    updatedState = {
+      ...updatedState,
+      ...hitToll(updatedState),
+      power: hit.power,
+      playerY:
+        updatedState.playerY +
+        playerHeightFor(updatedState.power) -
+        playerHeightFor(hit.power),
+      invulnerableMs: DAMAGE_GRACE_MS,
+      banner: { text: ouchText(updatedState), ttlMs: 1400, tone: "warn" },
     };
   }
 

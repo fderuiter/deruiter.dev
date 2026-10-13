@@ -17,6 +17,14 @@ over a gap, carrying a runner who stands on it.
 
 ***
 
+### buoy?
+
+> `optional` **buoy?**: `true`
+
+An Open Water buoy: a bobbing marker on the water, not a rig part.
+
+***
+
 ### id
 
 > **id**: `number`

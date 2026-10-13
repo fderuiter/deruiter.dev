@@ -1,3 +1,4 @@
+import { themeForStage } from "@/lib/garmin-themes";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createInitialState,
@@ -364,7 +365,8 @@ describe("lives", () => {
       stage,
       s.courseSeed ?? 0,
       GROUND_Y,
-      generateStage(stage, s.courseSeed ?? 0, GROUND_Y)
+      generateStage(stage, s.courseSeed ?? 0, GROUND_Y, themeForStage(stage)),
+      themeForStage(stage)
     );
     expect(s.course).toEqual(fresh.layout);
     expect(s.props).toEqual(fresh.props);

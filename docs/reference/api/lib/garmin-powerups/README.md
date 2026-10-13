@@ -39,6 +39,8 @@
 - [POWERUP\_SCORE](variables/POWERUP_SCORE.md)
 - [SHAKE\_SPEED](variables/SHAKE_SPEED.md)
 - [START\_LIVES](variables/START_LIVES.md)
+- [SUIT\_FLOAT\_SPEED](variables/SUIT_FLOAT_SPEED.md)
+- [SUIT\_FLOAT\_Y](variables/SUIT_FLOAT_Y.md)
 
 ## Functions
 

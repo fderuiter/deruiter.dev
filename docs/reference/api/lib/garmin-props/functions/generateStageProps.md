@@ -6,11 +6,12 @@
 
 # Function: generateStageProps()
 
-> **generateStageProps**(`stage`, `seed`, `groundY`, `layout`): `object`
+> **generateStageProps**(`stage`, `seed`, `groundY`, `layout`, `theme?`): `object`
 
 Lays out a stage's props, deterministic for (stage, seed). Returns the props
 and the layout with any ledge a belt replaces removed (everything else in
-the layout unchanged).
+the layout unchanged). Water stages keep no belts over gaps and gain buoys
+on open water; every spot clears the layout's Basement Gym racks too.
 
 ## Parameters
 
@@ -29,6 +30,10 @@ the layout unchanged).
 ### layout
 
 [`CourseLayout`](../../garmin-course/interfaces/CourseLayout.md)
+
+### theme?
+
+[`StageTheme`](../../garmin-themes/type-aliases/StageTheme.md) = `"track"`
 
 ## Returns
 

@@ -6,6 +6,6 @@
 
 # Type Alias: FoeKind
 
-> **FoeKind** = `"kettlebell"` \| `"alert"` \| `"box"` \| `"lap"` \| `"repmax"`
+> **FoeKind** = `"kettlebell"` \| `"alert"` \| `"box"` \| `"lap"` \| `"repmax"` \| `"jellyfish"` \| `"goggles"`
 
 The kinds of foe placed on the course.

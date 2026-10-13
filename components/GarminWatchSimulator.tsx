@@ -98,13 +98,32 @@ import { trainingStatus } from "@/lib/garmin-culture";
 import { STAGE_COUNT } from "@/lib/garmin-course";
 import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin-cape";
 import type { PowerTier } from "@/lib/garmin-powerups";
+import { themeForStage, type StageTheme } from "@/lib/garmin-themes";
 
 const POWER_NAMES: Record<PowerTier, string> = {
   base: "Base",
   buff: "Buff",
   heatmap: "Heat Map",
   cape: "Compression Cape",
+  trisuit: "Tri Suit",
 };
+
+/** Human names of the stage themes, for the readouts (#1993). */
+const STAGE_THEME_NAMES: Record<StageTheme, string> = {
+  track: "Track",
+  pool: "Pool",
+  "basement-gym": "Basement Gym",
+  "open-water": "Open Water",
+};
+
+/** The stage number and its theme name, e.g. "Stage 2 of 5, Pool". */
+function stageLabel(s: GameEngineState): string {
+  const stage = s.stage ?? 1;
+  const place = s.bonusRoom
+    ? "Water Station"
+    : STAGE_THEME_NAMES[themeForStage(stage)];
+  return `Stage ${stage} of ${STAGE_COUNT}, ${place}`;
+}
 
 /** Compact UTC stamp for export file names, e.g. 20261010-120000. */
 function exportStamp(startedAtMs: number): string {
@@ -1092,13 +1111,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (fitnessReadout) {
       const bb = s.bodyBattery;
       announce(
-        `Status: ${s.gameState}. Stage ${s.stage ?? 1} of ${STAGE_COUNT}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}.${courseReadout(s)} Score: ${s.score}.${runClockReadout(s)} High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+        `Status: ${s.gameState}. ${stageLabel(s)}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}.${courseReadout(s)} Score: ${s.score}.${runClockReadout(s)} High score: ${Math.max(s.highScore, loadedHighScore)}.`,
         "polite"
       );
       return;
     }
     announce(
-      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}.${courseReadout(s)} Score: ${s.score}.${runClockReadout(s)} High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      `Status: ${s.gameState}. ${stageLabel(s)}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}.${courseReadout(s)} Score: ${s.score}.${runClockReadout(s)} High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
     );
   };
@@ -1576,7 +1595,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   width={CANVAS_SIZE}
                   height={CANVAS_SIZE}
                   role="img"
-                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
+                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. ${stageLabel(gameState)}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
                     gameState.score
                   }, High Score: ${effectiveHighScore}.${courseReadout(gameState)} ${
                     fitnessView
@@ -1827,6 +1846,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           <div role="group" aria-label="Garmin Simulator Telemetry and Status">
             <output aria-live="off" htmlFor="garmin-state">
               State: {gameState.gameState}
+            </output>
+            <output aria-live="off" htmlFor="garmin-stage">
+              {stageLabel(gameState)}
             </output>
             <output aria-live="off" htmlFor="garmin-score">
               Score: {gameState.score}

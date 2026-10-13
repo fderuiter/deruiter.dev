@@ -15,7 +15,7 @@ a Runner's High. A brick is plain solid footing.
 
 ### contents
 
-> **contents**: `"cape"` \| `"kudos"` \| `"power"` \| `"high"`
+> **contents**: `"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"`
 
 ***
 

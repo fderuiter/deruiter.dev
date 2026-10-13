@@ -8,7 +8,8 @@
 
 > **playerHeightFor**(`power`): `number`
 
-Height of the runner's box for a tier.
+Height of the runner's box for a tier. The Tri Suit is Base height, so it
+walks under the Basement Gym's racks.
 
 ## Parameters
 

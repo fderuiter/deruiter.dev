@@ -239,10 +239,17 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // Escape is handled by the cabinet's capture handler below, which defers
   // to any dialog the game has open.
   const boundaryFocusRef = useRef<HTMLElement | null>(null);
-  const fullscreenFocusRef = useFocusTrap(isFullscreen && !showWizard, {
-    initialFocusRef: boundaryFocusRef,
-    returnFocus: false,
-  });
+  // The touch cabinet traps focus too: without a real Fullscreen, Tab would
+  // otherwise walk out onto the page's links behind it. A phone held against
+  // its orientation is inert behind the rotate prompt, which owns focus, so
+  // the trap waits for the prompt to go (#2039 playtest).
+  const fullscreenFocusRef = useFocusTrap(
+    (isFullscreen || touchImmersive) && !showWizard && !rotateBlocked,
+    {
+      initialFocusRef: boundaryFocusRef,
+      returnFocus: false,
+    }
+  );
 
   // Point the trap at the game on entry, and hand focus back to the game on
   // exit: the button that was focused before entering has since unmounted.
@@ -595,25 +602,32 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             target.closest("input, textarea, select, [contenteditable=true]")
           )
             return;
-          if (event.key === "Escape" && isFullscreen) {
+          // Escape leaves the cabinet: real Fullscreen exits, and the touch
+          // cabinet (no Fullscreen) closes the game the way its Exit does.
+          const escapeLeaves = isFullscreen || touchImmersive;
+          const leaveCabinet = () => {
+            if (isFullscreen) void exitFullscreen();
+            else handleExit();
+          };
+          if (event.key === "Escape" && escapeLeaves) {
             const dialog = findOpenGameDialog(event.currentTarget);
             if (dialog) {
               // Let the game handle this press. If its dialog is still open
               // afterwards, the game doesn't close it on Escape (a results
-              // screen, say), so fall back to leaving fullscreen.
+              // screen, say), so fall back to leaving the cabinet.
               setSafeTimeout(() => {
-                if (dialog.isConnected) void exitFullscreen();
+                if (dialog.isConnected) leaveCabinet();
               }, 0);
               return;
             }
           }
           if (
             (fullscreenKey && event.key.toLowerCase() === "f") ||
-            (event.key === "Escape" && isFullscreen)
+            (event.key === "Escape" && escapeLeaves)
           ) {
             event.preventDefault();
             event.stopPropagation();
-            if (event.key === "Escape") void exitFullscreen();
+            if (event.key === "Escape") leaveCabinet();
             else void toggleCabinetFullscreen();
           }
         }}

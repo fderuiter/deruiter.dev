@@ -27,6 +27,7 @@ import {
   GameSetupConfig,
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   CabinetTouchContext,
   lockScreenOrientation,
@@ -35,6 +36,7 @@ import {
   TouchControlsGate,
   useCabinetAutoPause,
   useOrientationMismatch,
+  PHONE_WIDTH_QUERY,
   usePhone,
   useTouchDevice,
   type MobileOrientation,
@@ -174,7 +176,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // is held against the game's orientation: the cabinet is blocked behind the
   // rotate prompt (inert siblings, focus in the prompt).
   const orientationMismatch = useOrientationMismatch(mobileOrientation);
-  const rotateBlocked = touchImmersive && isPhone && orientationMismatch;
+  // Only a phone-width window is asked to rotate. A Split View pane of an
+  // iPad is a tablet, so it plays in whichever way it is held (#2032).
+  const phoneWidth = useMediaQuery(PHONE_WIDTH_QUERY);
+  const rotateBlocked =
+    touchImmersive && isPhone && phoneWidth && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);

@@ -14,7 +14,11 @@ import {
   cleanup,
 } from "@testing-library/react";
 import { PlayCabinet } from "../components/arcade/PlayCabinet";
-import { PHONE_QUERY, TOUCH_DEVICE_QUERY } from "../components/arcade/mobile";
+import {
+  PHONE_QUERY,
+  PHONE_WIDTH_QUERY,
+  TOUCH_DEVICE_QUERY,
+} from "../components/arcade/mobile";
 
 const lockMock = vi.hoisted(() => vi.fn(() => () => {}));
 
@@ -330,7 +334,12 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("shows the prompt for a landscape game held in portrait", async () => {
-    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
+    installMatchMedia([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
+      ORIENTATION_PORTRAIT,
+    ]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
@@ -339,8 +348,17 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     expect(prompt.textContent).toContain("landscape");
   });
 
+  it("does not ask a Split View pane of an iPad to rotate (#2032)", async () => {
+    // A 507px pane matches the phone gate but not the phone-width query.
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    expect(screen.queryByTestId("rotate-device-prompt")).toBeNull();
+  });
+
   it("shows the prompt for a portrait game held in landscape", async () => {
-    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, PHONE_WIDTH_QUERY]);
     renderCabinet({ mobileOrientation: "portrait" });
     await launch();
 
@@ -353,6 +371,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     installMatchMedia([
       TOUCH_DEVICE_QUERY,
       PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
       "(orientation: portrait)",
     ]);
     renderCabinet({ mobileOrientation: "portrait" });
@@ -366,6 +385,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     const media = installMatchMedia([
       TOUCH_DEVICE_QUERY,
       PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
       ORIENTATION_PORTRAIT,
     ]);
     renderCabinet({ mobileOrientation: "landscape" });
@@ -378,7 +398,12 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     expect(stage?.hasAttribute("inert")).toBe(true);
     expect(dock?.hasAttribute("inert")).toBe(true);
 
-    media.set([TOUCH_DEVICE_QUERY, PHONE_QUERY, "(orientation: landscape)"]);
+    media.set([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
+      "(orientation: landscape)",
+    ]);
     // The landscape phone matches: no prompt and nothing inert.
     expect(screen.queryByTestId("rotate-device-prompt")).toBeNull();
     expect(stage?.hasAttribute("inert")).toBe(false);
@@ -389,6 +414,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     const media = installMatchMedia([
       TOUCH_DEVICE_QUERY,
       PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
       ORIENTATION_PORTRAIT,
     ]);
     renderCabinet({ mobileOrientation: "landscape" });
@@ -397,12 +423,22 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     const leave = screen.getByRole("button", { name: "Leave cabinet" });
     expect(document.activeElement).toBe(leave);
 
-    media.set([TOUCH_DEVICE_QUERY, PHONE_QUERY, "(orientation: landscape)"]);
+    media.set([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
+      "(orientation: landscape)",
+    ]);
     expect(screen.queryByTestId("rotate-device-prompt")).toBeNull();
   });
 
   it("never prompts a game that declares either orientation", async () => {
-    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
+    installMatchMedia([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
+      ORIENTATION_PORTRAIT,
+    ]);
     renderCabinet({ mobileOrientation: "either" });
     await launch();
 
@@ -419,7 +455,12 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("lets the player leave from the prompt", async () => {
-    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
+    installMatchMedia([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      PHONE_WIDTH_QUERY,
+      ORIENTATION_PORTRAIT,
+    ]);
     const onExit = vi.fn();
     renderCabinet({ mobileOrientation: "landscape", onExit });
     await launch();
@@ -486,7 +527,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("locks the orientation for a touch cabinet in real fullscreen", async () => {
-    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, PHONE_WIDTH_QUERY]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 

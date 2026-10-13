@@ -1,6 +1,7 @@
 export {
   TOUCH_DEVICE_QUERY,
   PHONE_QUERY,
+  PHONE_WIDTH_QUERY,
   useTouchDevice,
   usePhone,
 } from "./immersive";

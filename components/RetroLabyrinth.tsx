@@ -2589,7 +2589,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             }
             disabled={!hasAmmo}
             onPress={() => fireStarterSlot(slotIdx)}
-            className="flex h-11 w-11 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-0.5 text-amber-300 disabled:opacity-40"
+            className="flex h-11 w-11 portrait:h-14 portrait:w-20 flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-0.5 text-amber-300 disabled:opacity-40"
           >
             <span className="text-[10px] leading-none">{slotIdx + 1}</span>
             <span className="max-w-full truncate text-[9px] leading-tight">
@@ -2601,21 +2601,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       <TouchButton
         label="EMP: fire an EMP burst"
         onPress={() => handleFireWeapon("emp_blast")}
-        className="flex h-11 w-11 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
+        className="flex h-11 w-11 portrait:h-14 portrait:w-20 items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-[10px] font-bold text-slate-200"
       >
         EMP
       </TouchButton>
       <TouchButton
         label="Exploit: cycle to the next tool and fire it"
         onPress={cycleWeapon}
-        className="flex h-11 w-11 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
+        className="flex h-11 w-11 portrait:h-14 portrait:w-20 items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-[10px] font-bold text-cyan-200"
       >
         EXPLOIT
       </TouchButton>
       <TouchButton
         label="Market: open the darknet market"
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-11 w-11 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
+        className="flex h-11 w-11 portrait:h-14 portrait:w-20 items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -2780,7 +2780,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ref={canvasFrameRef}
         className={`arcade-labyrinth-canvas relative ${
           phoneCabinet
-            ? "min-h-0 min-w-0 flex-1 self-stretch"
+            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:order-first portrait:basis-full portrait:w-full"
             : isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
               : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
@@ -3451,9 +3451,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     </>
   );
 
+  // Landscape: movement, maze, tools in one row. Portrait (the tablet held
+  // upright): the maze takes the first full-width line and the movement and
+  // tool docks share the line below it, so the controls sit under the thumbs.
+  // Both orders hold under DockFrame's row reversal for left-handed players.
   const phoneRow = (
-    <DockFrame handedness={handedness} className="min-h-0 flex-1">
-      <div className="flex min-h-0 shrink-0 flex-col justify-center">
+    <DockFrame
+      handedness={handedness}
+      className="min-h-0 flex-1 portrait:flex-wrap"
+    >
+      <div className="flex min-h-0 shrink-0 flex-col justify-center portrait:order-2">
         <HoldDpad
           onMove={handleDirectionalMove}
           compact
@@ -3461,7 +3468,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         />
       </div>
       {canvasFrameNode}
-      <div className="flex min-h-0 shrink-0 flex-col justify-center">
+      <div className="flex min-h-0 shrink-0 flex-col justify-center portrait:order-3">
         {phoneActionGrid}
       </div>
     </DockFrame>

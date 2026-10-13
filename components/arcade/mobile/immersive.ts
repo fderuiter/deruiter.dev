@@ -19,6 +19,13 @@ export const PHONE_QUERY =
   "(pointer: coarse) and ((max-width: 743px) or (max-height: 500px))";
 
 /**
+ * A phone-width window. A Split View pane of an iPad (507px, 678px) matches
+ * PHONE_QUERY but is a tablet held upright, so it is not asked to rotate. The
+ * rotate prompt only covers windows at or under this width (#2032).
+ */
+export const PHONE_WIDTH_QUERY = "(max-width: 500px)";
+
+/**
  * Whether the device is touch-first at all, phone or tablet. SSR and the first
  * client render return false, so hydration matches the windowed cabinet.
  *

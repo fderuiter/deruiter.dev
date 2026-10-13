@@ -6,7 +6,7 @@
 
 # Function: makeFoe()
 
-> **makeFoe**(`id`, `kind`, `x`, `footY`): [`Foe`](../interfaces/Foe.md)
+> **makeFoe**(`id`, `kind`, `x`, `footY`, `placement?`): [`Foe`](../interfaces/Foe.md)
 
 A new foe of `kind` standing with its feet at `footY`.
 
@@ -27,6 +27,10 @@ A new foe of `kind` standing with its feet at `footY`.
 ### footY
 
 `number`
+
+### placement?
+
+`WaterPlacement` = `{}`
 
 ## Returns
 

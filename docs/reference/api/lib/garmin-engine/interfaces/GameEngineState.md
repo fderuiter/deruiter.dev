@@ -561,6 +561,16 @@ Stomps since the runner last touched footing; each doubles the points.
 
 ***
 
+### strokeCooldownMs?
+
+> `optional` **strokeCooldownMs?**: `number`
+
+Milliseconds until the next swimming stroke can start. A jump press
+while swimming strokes only when this is zero; it counts down with the
+game clock and resets on a new run and on a lost life.
+
+***
+
 ### thermalStress
 
 > **thermalStress**: `number`

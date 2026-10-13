@@ -10,8 +10,9 @@
 
 The tier after collecting a pickup. A Protein Shake makes a Base runner
 Buff and leaves a stronger one as it is; a Heat Map makes any runner a
-Heat Map runner, and a Compression Cape any runner a Cape runner. A
-Runner's High leaves the tier alone.
+Heat Map runner, and a Compression Cape any runner a Cape runner. A Tri
+Suit makes a Base or Buff runner a Tri Suit runner and leaves a Heat Map or
+Cape runner as it is. A Runner's High leaves the tier alone.
 
 ## Parameters
 

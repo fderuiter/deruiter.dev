@@ -596,6 +596,30 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Course",
       },
       {
+        title: "Pool & Open Water",
+        detail:
+          "Stages 2 and 4 are swum, not run. Each tap of jump (Up or Space) is a stroke that pulls you toward the surface; between strokes you sink. Wading along the bottom is slow and the water foes sit low too, so keep stroking. Each pool length is 25 metres, and a stage is 40 lengths: the LENGTH readout counts them off on the face. Open water has currents, marked by teal chevrons, that carry you with the flow or hold you back against it. Orange buoys with a white stripe mark the swim line along the open water; you can climb onto one for a breather as it bobs. Bonus rooms stay on dry land.",
+        badge: "Water",
+      },
+      {
+        title: "Basement Gym",
+        detail:
+          "Stage 3 is the Basement Gym, with low squat racks hanging over the lane. Duck under the bar and keep your jumps low: a rising runner that meets a rack's underside bonks off it and drops back down. Big forms get hurt. A runner taller than Base, such as a Buff monkey or one with a Heat Map or Cape, that ends up under a rack takes a hit. Fluorescent strips run overhead as you pass.",
+        badge: "Gym",
+      },
+      {
+        title: "Tri Suit",
+        detail:
+          "A Tri Suit is the swimmer's power-up. It comes out of the second power Sync Block on a water stage. The Tri Suit strokes faster and sinks more slowly in the water, so it is the fast way down the pool. On land it is a clumsy hopper: its take-off is a short, low hop that ignores a full pace meter. It stays at Base height, and it comes off at the transition when the next stage is back on land.",
+        badge: "Tri Suit",
+      },
+      {
+        title: "Water Foes",
+        detail:
+          "The water has its own foes. A Jellyfish drifts through the water on a bob, and it cannot be stomped: go around it, or get stung. Lost Goggles come in pairs, sinking and rising in the water column.",
+        badge: "Foes",
+      },
+      {
         title: "Power-ups & Lives",
         detail:
           "Sync Blocks give four power-ups. A Protein Shake makes the monkey Buff: taller, and able to take one hit. A Heat Map lets you throw heat bolts with X. A Compression Cape lets you glide and take off. A Runner's High makes you invincible for a short time, and flattens anything you run into. A hit drops you back to Base. At Base, a hit costs a life. You start with three lives.",

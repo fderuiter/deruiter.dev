@@ -8,7 +8,8 @@
 
 > **appendCourse**(`course`, `next`): [`CourseLayout`](../interfaces/CourseLayout.md)
 
-Adds `next` onto `course`, keeping what is still live.
+Adds `next` onto `course`, keeping what is still live. The optional
+ceilings and currents keys are carried only when either side has them.
 
 ## Parameters
 

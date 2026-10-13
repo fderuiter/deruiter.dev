@@ -1,3 +1,4 @@
+import { themeForStage } from "@/lib/garmin-themes";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   CANVAS_SIZE,
@@ -648,7 +649,13 @@ describe("foes in a run", () => {
     );
     expect(s.stage).toBe(2);
     expect(s.foes).toEqual(
-      generateFoes(2, seed, generateStage(2, seed, GROUND_Y), GROUND_Y)
+      generateFoes(
+        2,
+        seed,
+        generateStage(2, seed, GROUND_Y, themeForStage(2)),
+        GROUND_Y,
+        themeForStage(2)
+      )
     );
     expect(s.foeShots).toEqual([]);
   });

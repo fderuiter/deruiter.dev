@@ -9,6 +9,8 @@
 ## Interfaces
 
 - [CourseBlock](interfaces/CourseBlock.md)
+- [CourseCeiling](interfaces/CourseCeiling.md)
+- [CourseCurrent](interfaces/CourseCurrent.md)
 - [CourseGap](interfaces/CourseGap.md)
 - [CourseKudos](interfaces/CourseKudos.md)
 - [CourseLayout](interfaces/CourseLayout.md)

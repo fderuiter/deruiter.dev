@@ -14,7 +14,9 @@
  * A Buff runner who bumps a power block gets a Heat Map (#1989). At the Heat
  * Map tier the action key throws heat bolts that bounce along the course and
  * defeat bugs and watchdogs. A cape block gives a Buff runner the Compression
- * Cape instead (#1990), whose rules live in `lib/garmin-cape.ts`.
+ * Cape instead (#1990), whose rules live in `lib/garmin-cape.ts`. A suit
+ * block holds the Tri Suit (#1993), which swims a water stage at full pace
+ * and sinks slowly; its swim rules live in `lib/garmin-swim.ts`.
  */
 import { clamp } from "./game-utils";
 import {
@@ -25,10 +27,10 @@ import {
 } from "./garmin-course";
 
 /** The runner's power tier, from weakest to strongest. */
-export type PowerTier = "base" | "buff" | "heatmap" | "cape";
+export type PowerTier = "base" | "buff" | "heatmap" | "cape" | "trisuit";
 
 /** What a pickup grants when touched. */
-export type PickupKind = "shake" | "high" | "heatmap" | "cape";
+export type PickupKind = "shake" | "high" | "heatmap" | "cape" | "suit";
 
 /**
  * A power-up travelling the course. Positions are world pixels, like the
@@ -107,22 +109,29 @@ export const BOLT_DEFEAT_SCORE = 200;
 const BOLT_GRAVITY = 0.45;
 const BOLT_MAX_FALL = 6;
 
-/** Height of the runner's box for a tier. */
+/**
+ * Height of the runner's box for a tier. The Tri Suit is Base height, so it
+ * walks under the Basement Gym's racks.
+ */
 export function playerHeightFor(power: PowerTier | undefined): number {
-  return power === undefined || power === "base" ? BASE_HEIGHT : BUFF_HEIGHT;
+  return power === undefined || power === "base" || power === "trisuit"
+    ? BASE_HEIGHT
+    : BUFF_HEIGHT;
 }
 
 /**
  * What a Sync Block gives when bumped. A power block gives a Protein Shake
  * to a Base runner and a Heat Map to a stronger one; a cape block gives a
  * Protein Shake to a Base runner and a Compression Cape to a stronger one. A
- * Runner's High block always gives a Runner's High.
+ * suit block always gives the Tri Suit. A Runner's High block always gives a
+ * Runner's High.
  */
 export function blockReward(
   contents: CourseBlock["contents"],
   power: PowerTier | undefined
 ): PickupKind | "kudos" {
   if (contents === "high") return "high";
+  if (contents === "suit") return "suit";
   if (contents === "power" || contents === "cape") {
     if ((power ?? "base") === "base") return "shake";
     return contents === "cape" ? "cape" : "heatmap";
@@ -133,8 +142,9 @@ export function blockReward(
 /**
  * The tier after collecting a pickup. A Protein Shake makes a Base runner
  * Buff and leaves a stronger one as it is; a Heat Map makes any runner a
- * Heat Map runner, and a Compression Cape any runner a Cape runner. A
- * Runner's High leaves the tier alone.
+ * Heat Map runner, and a Compression Cape any runner a Cape runner. A Tri
+ * Suit makes a Base or Buff runner a Tri Suit runner and leaves a Heat Map or
+ * Cape runner as it is. A Runner's High leaves the tier alone.
  */
 export function collectTier(
   power: PowerTier | undefined,
@@ -143,8 +153,19 @@ export function collectTier(
   const current = power ?? "base";
   if (kind === "heatmap" || kind === "cape") return kind;
   if (kind === "shake" && current === "base") return "buff";
+  if (kind === "suit") {
+    return current === "base" || current === "buff" ? "trisuit" : current;
+  }
   return current;
 }
+
+/**
+ * Height a Tri Suit pickup floats up to: the swim surface (SWIM_SURFACE_Y in
+ * lib/garmin-swim.ts, which imports this module, so it is mirrored here).
+ */
+export const SUIT_FLOAT_Y = 96;
+/** How fast a Tri Suit pickup floats up, in pixels per frame. */
+export const SUIT_FLOAT_SPEED = 0.6;
 
 /** A pickup just bumped out of `block`, still inside it. */
 export function emergePickup(
@@ -157,7 +178,7 @@ export function emergePickup(
     kind,
     x: block.x + (BLOCK_SIZE - PICKUP_SIZE) / 2,
     y: block.y,
-    // A Heat Map and a Cape stay on their block; the rest run off.
+    // A Heat Map, a Cape and a Tri Suit stay on their block; the rest run off.
     vx: kind === "high" ? HIGH_SPEED : kind === "shake" ? SHAKE_SPEED : 0,
     vy: 0,
     emergeMs: PICKUP_EMERGE_MS,
@@ -219,6 +240,16 @@ export function stepPickups(
       const rise =
         (PICKUP_SIZE * Math.min(deltaMs, p.emergeMs)) / PICKUP_EMERGE_MS;
       next.push({ ...p, emergeMs, y: p.y - rise });
+      continue;
+    }
+    // A Tri Suit floats up through the water to the surface and waits
+    // there for a swimmer, rather than sitting on its block.
+    if (p.kind === "suit") {
+      next.push({
+        ...p,
+        vy: 0,
+        y: Math.max(SUIT_FLOAT_Y, p.y - SUIT_FLOAT_SPEED * dtRatio),
+      });
       continue;
     }
     const x = p.x + p.vx * dtRatio;

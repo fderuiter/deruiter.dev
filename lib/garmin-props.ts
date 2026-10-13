@@ -22,6 +22,8 @@ import type {
   CourseLayout,
   CourseLedge,
 } from "./garmin-course";
+import { BUOY_Y } from "./garmin-swim";
+import { isWaterTheme, type StageTheme } from "./garmin-themes";
 
 /**
  * A Water Station: a solid aid-station table standing on the lane. The
@@ -66,6 +68,8 @@ export interface CourseBelt {
   range: number;
   /** Time for one full there-and-back cycle, in ms. */
   periodMs: number;
+  /** An Open Water buoy: a bobbing marker on the water, not a rig part. */
+  buoy?: true;
 }
 
 /** The Rest Day Switch: a button on the lane; stomping it starts a rest day. */
@@ -108,6 +112,15 @@ export const BELT_THICKNESS = 6;
 /** Launch speed off a Plyo Box: a tap, and holding jump. Negative is up. */
 export const PLYO_LAUNCH_VY = -11;
 export const PLYO_HELD_VY = -14;
+/** Width of an Open Water buoy, in pixels. */
+export const BUOY_WIDTH = 30;
+/** Bob distance of a buoy up and down, in pixels. */
+export const BUOY_RANGE = 8;
+/** Time for one full buoy bob, in ms. */
+export const BUOY_PERIOD_MS = 2400;
+/** Buoys per Open Water stage, at least and at most. */
+const BUOY_MIN_COUNT = 2;
+const BUOY_COUNT_RANGE = 3;
 /** Length of a Rest Day, in ms. */
 export const REST_DAY_MS = 8000;
 /** Length of a Water Station bonus room, in pixels. */
@@ -308,13 +321,15 @@ function findDense(
 /**
  * Lays out a stage's props, deterministic for (stage, seed). Returns the props
  * and the layout with any ledge a belt replaces removed (everything else in
- * the layout unchanged).
+ * the layout unchanged). Water stages keep no belts over gaps and gain buoys
+ * on open water; every spot clears the layout's Basement Gym racks too.
  */
 export function generateStageProps(
   stage: number,
   seed: number,
   groundY: number,
-  layout: CourseLayout
+  layout: CourseLayout,
+  theme: StageTheme = "track"
 ): { props: CourseProps; layout: CourseLayout } {
   const s = clamp(
     Math.floor(Number.isFinite(stage) ? stage : 1),
@@ -338,6 +353,9 @@ export function generateStageProps(
       return false;
     }
     if (layout.kudos.some((k) => k.x >= a && k.x <= b)) return false;
+    if ((layout.ceilings ?? []).some((c) => c.x < b && c.x + c.width > a)) {
+      return false;
+    }
     return occupied.every((o) => !(o.left < b && o.right > a));
   };
 
@@ -413,10 +431,12 @@ export function generateStageProps(
     }
   }
 
-  // Treadmill Belts replace the ledge inside up to two wide gaps.
+  // Treadmill Belts replace the ledge inside up to two wide gaps. Water stages
+  // keep their gaps as they are, so no belt is laid over one.
   const belts: CourseBelt[] = [];
   const removed = new Set<CourseLedge>();
-  for (const gap of layout.gaps) {
+  const beltGaps = isWaterTheme(theme) ? [] : layout.gaps;
+  for (const gap of beltGaps) {
     if (belts.length >= 2) break;
     if (gap.width < 90) continue;
     const ledge = layout.ledges.find(
@@ -447,6 +467,29 @@ export function generateStageProps(
         }
       : flat;
     belts.push({ id: nextId++, ...belt });
+  }
+
+  // Open Water buoys: bobbing markers spread along the stage.
+  if (theme === "open-water") {
+    const buoyCount = BUOY_MIN_COUNT + Math.floor(rand() * BUOY_COUNT_RANGE);
+    const buoySegment = (hi - lo) / buoyCount;
+    for (let i = 0; i < buoyCount; i++) {
+      const from = lo + i * buoySegment;
+      const to = Math.min(from + buoySegment, hi);
+      const x = place(from, to, BUOY_WIDTH, (c) => isClear(c, BUOY_WIDTH));
+      if (x === null) continue;
+      occupied.push({ left: x, right: x + BUOY_WIDTH });
+      belts.push({
+        id: nextId++,
+        x,
+        y: BUOY_Y,
+        width: BUOY_WIDTH,
+        axis: "y",
+        range: BUOY_RANGE,
+        periodMs: BUOY_PERIOD_MS,
+        buoy: true,
+      });
+    }
   }
 
   return {
@@ -558,13 +601,16 @@ export function restDaySwap(
   }
   blocks.sort(byId);
   kudos.sort(byId);
-  return {
+  const swapped: CourseLayout = {
     gaps: course.gaps,
     ledges: course.ledges,
     blocks,
     kudos,
     poles: course.poles,
   };
+  if (course.ceilings) swapped.ceilings = course.ceilings;
+  if (course.currents) swapped.currents = course.currents;
+  return swapped;
 }
 
 /**

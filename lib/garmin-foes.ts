@@ -33,15 +33,25 @@ import {
   stageStartX,
   type CourseLayout,
 } from "./garmin-course";
+import { SWIM_SURFACE_Y } from "./garmin-swim";
+import type { StageTheme } from "./garmin-themes";
 
 /** The kinds of foe placed on the course. */
-export type FoeKind = "kettlebell" | "alert" | "box" | "lap" | "repmax";
+export type FoeKind =
+  "kettlebell" | "alert" | "box" | "lap" | "repmax" | "jellyfish" | "goggles";
 
 /**
  * What a foe is doing. A Kettlebell walks, rests as a shell or slides as a
  * kicked shell; a Move Alert flies until stomped, then walks.
  */
-export type FoeMode = "walk" | "shell" | "kicked" | "fly" | "idle";
+export type FoeMode =
+  | "walk"
+  | "shell"
+  | "kicked"
+  | "fly"
+  | "idle"
+  /** A Jellyfish floating through the water; it cannot be stomped. */
+  | "drift";
 
 /** A foe on the course. */
 export interface Foe {
@@ -86,6 +96,8 @@ export const FOE_SIZE: Record<FoeKind, { width: number; height: number }> = {
   box: { width: 14, height: 14 },
   lap: { width: 14, height: 16 },
   repmax: { width: 24, height: 30 },
+  jellyfish: { width: 14, height: 14 },
+  goggles: { width: 16, height: 8 },
 };
 /** Height of a Kettlebell's shell. */
 export const SHELL_HEIGHT = 11;
@@ -135,6 +147,16 @@ export const STOMP_WINDOW = 12;
 export const REPMAX_SCORE = 2000;
 /** Stages with a Rep Max halfway along. */
 export const REPMAX_STAGES: readonly number[] = [3, 5];
+/** The top of the water column, in world pixels: the swim surface. */
+export const WATER_TOP_Y = SWIM_SURFACE_Y;
+/** A Jellyfish's drift speed, leftward, in world pixels per frame. */
+export const JELLYFISH_SPEED = 0.35;
+/** A Jellyfish's bob height above and below its line, in pixels. */
+export const JELLYFISH_BOB = 6;
+/** A pair of Lost Goggles' sink and rise height above and below their line, in pixels. */
+export const GOGGLES_SINK = 22;
+/** A Lost Goggles pair's drift speed, leftward, in world pixels per frame. */
+export const GOGGLES_SPEED = 0.5;
 
 const GRAVITY = 0.5;
 const MAX_FALL = 9;
@@ -149,12 +171,30 @@ export const STAGE_FOE_TABLE: Record<number, readonly FoeKind[]> = {
   5: ["kettlebell", "alert", "box", "lap", "lap"],
 };
 
+/** Which foes a water stage may place, by its water theme. */
+export const WATER_FOE_TABLE: Record<
+  "pool" | "open-water",
+  readonly FoeKind[]
+> = {
+  pool: ["jellyfish", "goggles"],
+  "open-water": ["jellyfish", "goggles", "goggles"],
+};
+
+/** Optional placement for a foe that lives in the water column. */
+interface WaterPlacement {
+  /** Line the foe floats or flies on, in world pixels. */
+  waterY?: number;
+  /** Starting wave phase, in radians. */
+  phase?: number;
+}
+
 /** A new foe of `kind` standing with its feet at `footY`. */
 export function makeFoe(
   id: number,
   kind: FoeKind,
   x: number,
-  footY: number
+  footY: number,
+  placement: WaterPlacement = {}
 ): Foe {
   const { width, height } = FOE_SIZE[kind];
   const foe: Foe = {
@@ -175,6 +215,28 @@ export function makeFoe(
     const baseY = footY - 56;
     return { ...foe, mode: "fly", y: baseY, baseY, phase: 0, vx: -ALERT_SPEED };
   }
+  if (kind === "jellyfish") {
+    const baseY = placement.waterY ?? WATER_TOP_Y + 10;
+    return {
+      ...foe,
+      mode: "drift",
+      y: baseY,
+      baseY,
+      phase: 0,
+      vx: -JELLYFISH_SPEED,
+    };
+  }
+  if (kind === "goggles") {
+    const baseY = placement.waterY ?? WATER_TOP_Y + 10 + GOGGLES_SINK;
+    return {
+      ...foe,
+      mode: "fly",
+      y: baseY,
+      baseY,
+      phase: placement.phase ?? 0,
+      vx: -GOGGLES_SPEED,
+    };
+  }
   if (kind === "box") return { ...foe, mode: "idle", vx: 0, timerMs: HOP_MS };
   if (kind === "lap") {
     return { ...foe, mode: "idle", vx: 0, timerMs: LAP_MS / 2 };
@@ -192,16 +254,34 @@ export function makeFoe(
 }
 
 /**
+ * A random line inside the water column for a foe `inset` pixels tall
+ * above and below it: between just under the surface and just above the
+ * track's bottom edge, so the whole bob stays in the water.
+ */
+function waterLineY(
+  rand: () => number,
+  groundY: number,
+  inset: number
+): number {
+  const top = WATER_TOP_Y + 10 + inset;
+  // Low enough that a runner wading along the bottom meets them too.
+  const bottom = groundY - 30 - inset;
+  return top + rand() * (bottom - top);
+}
+
+/**
  * Lays out one stage's foes: three plus the stage number, picked from
  * {@link STAGE_FOE_TABLE}, spread over the stage clear of gaps, with a
  * Rep Max halfway along stages 3 and 5. A Auto Lap prefers the top
- * of a block.
+ * of a block. Water themes (pool, open water) pick from
+ * {@link WATER_FOE_TABLE} instead; a Lost Goggles slot places a pair.
  */
 export function generateFoes(
   stage: number,
   seed: number,
   course: CourseLayout,
-  groundY: number
+  groundY: number,
+  theme: StageTheme = "track"
 ): Foe[] {
   const s = clamp(
     Math.floor(Number.isFinite(stage) ? stage : 1),
@@ -209,7 +289,10 @@ export function generateFoes(
     STAGE_COUNT
   );
   const rand = courseRandom(seed * 131 + s * 104729 + 17);
-  const table = STAGE_FOE_TABLE[s];
+  const table: readonly FoeKind[] =
+    theme === "pool" || theme === "open-water"
+      ? WATER_FOE_TABLE[theme]
+      : STAGE_FOE_TABLE[s];
   const start = stageStartX(s) + 520;
   const end = stagePoleX(s) - 420;
   const count = 3 + s;
@@ -222,7 +305,11 @@ export function generateFoes(
       if (
         !isOverGap(course, nx - 4) &&
         !isOverGap(course, nx + width + 4) &&
-        !isFootingOverGap(course, nx, nx + width)
+        !isFootingOverGap(course, nx, nx + width) &&
+        // Keep foes out from under the Basement Gym racks.
+        !(course.ceilings ?? []).some(
+          (c) => nx < c.x + c.width + 16 && nx + width > c.x - 16
+        )
       ) {
         return nx;
       }
@@ -247,7 +334,17 @@ export function generateFoes(
       }
     }
     const x = clearX(Math.round(want), FOE_SIZE[kind].width);
-    if (x !== null) foes.push(makeFoe(id++, kind, x, groundY));
+    if (x === null) continue;
+    if (kind === "goggles") {
+      const waterY = waterLineY(rand, groundY, GOGGLES_SINK);
+      foes.push(makeFoe(id++, kind, x, groundY, { waterY, phase: 0 }));
+      foes.push(makeFoe(id++, kind, x, groundY, { waterY, phase: Math.PI }));
+    } else if (kind === "jellyfish") {
+      const waterY = waterLineY(rand, groundY, 0);
+      foes.push(makeFoe(id++, kind, x, groundY, { waterY }));
+    } else {
+      foes.push(makeFoe(id++, kind, x, groundY));
+    }
   }
   if (REPMAX_STAGES.includes(s)) {
     const mid = Math.round((stageStartX(s) + stagePoleX(s)) / 2);
@@ -282,6 +379,13 @@ function footingTop(
     if (right > b.x && left < b.x + BLOCK_SIZE) consider(b.y);
   }
   return landing === Infinity ? null : landing;
+}
+
+/** How far a flying or drifting foe bobs above and below its line. */
+function waveHeight(foe: Foe): number {
+  if (foe.kind === "goggles") return GOGGLES_SINK;
+  if (foe.kind === "jellyfish") return JELLYFISH_BOB;
+  return ALERT_WAVE;
 }
 
 /** Whether a foe is near enough to the face to be awake. */
@@ -331,13 +435,13 @@ export function stepFoes(
       continue;
     }
     let next: Foe = { ...f, graceMs: Math.max(0, f.graceMs - deltaMs) };
-    if (next.mode === "fly") {
+    if (next.mode === "fly" || next.mode === "drift") {
       const phase = (next.phase ?? 0) + 0.06 * dt;
       next = {
         ...next,
         phase,
         x: next.x + next.vx * dt,
-        y: (next.baseY ?? next.y) + Math.sin(phase) * ALERT_WAVE,
+        y: (next.baseY ?? next.y) + Math.sin(phase) * waveHeight(next),
       };
       nextFoes.push(next);
       continue;
@@ -491,7 +595,9 @@ export function runnerContact(
   vy: number
 ): FoeContact {
   if (!overlaps(runner, foeBox(foe))) return "none";
-  if (vy > 0 && prevBottom <= foe.y + STOMP_WINDOW) return "stomp";
+  if (vy > 0 && foe.mode !== "drift" && prevBottom <= foe.y + STOMP_WINDOW) {
+    return "stomp";
+  }
   if (foe.mode === "shell") return "kick";
   return isHarmful(foe) ? "hurt" : "none";
 }
@@ -509,6 +615,8 @@ export interface FoeHit {
  * defeated.
  */
 export function stompFoe(foe: Foe, runnerX: number): FoeHit {
+  // A Jellyfish can't be stomped: landing on it is a hurt, not a stomp.
+  if (foe.mode === "drift") return { foe, score: 0 };
   if (foe.kind === "kettlebell") {
     if (foe.mode === "walk" || foe.mode === "kicked") {
       return {

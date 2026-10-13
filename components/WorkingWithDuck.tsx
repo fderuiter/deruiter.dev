@@ -191,7 +191,8 @@ const getStoredUnlockedFacts = (): number[] => {
 function drawDogParkScene(
   ctx: CanvasRenderingContext2D,
   state: WorkingWithDuckState,
-  aimParkStart: { x: number; y: number } | null = null
+  aimParkStart: { x: number; y: number } | null = null,
+  touchHints = false
 ) {
   const park = state.parkState;
 
@@ -410,7 +411,9 @@ function drawDogParkScene(
   } else if (park.status === "thrown" || park.status === "retrieving") {
     ctx.fillStyle = "#facc15";
     ctx.fillText(
-      `🐾 Steer Duck (Mouse) · Jump Hurdles (Space) · Bones: ${park.bonesCollected}/3`,
+      touchHints
+        ? `🐾 Steer Duck (drag) · Tap Jump for hurdles · Bones: ${park.bonesCollected}/3`
+        : `🐾 Steer Duck (Mouse) · Jump Hurdles (Space) · Bones: ${park.bonesCollected}/3`,
       CANVAS_WIDTH / 2,
       34
     );
@@ -456,12 +459,13 @@ function drawCanvas(
   ctx: CanvasRenderingContext2D,
   state: WorkingWithDuckState,
   aimParkStart: { x: number; y: number } | null = null,
-  scale = 1
+  scale = 1,
+  touchHints = false
 ) {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   if (state.inDogPark) {
-    drawDogParkScene(ctx, state, aimParkStart);
+    drawDogParkScene(ctx, state, aimParkStart, touchHints);
     return;
   }
 
@@ -470,7 +474,7 @@ function drawCanvas(
     return;
   }
 
-  drawOfficeScene(ctx, state, scale);
+  drawOfficeScene(ctx, state, scale, touchHints);
 }
 
 // --- Main React Component ---
@@ -852,6 +856,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const [isMusicMuted, setIsMusicMuted] = useState(false);
 
   const { announce } = useAnnouncer();
+  // Inside the immersive touch cabinet the dock carries these controls, so the
+  // game's own copies of them are not drawn, and canvas hints name taps (ADR 0061).
+  const cabinetTouch = useCabinetTouch();
+  const canvasTouchRef = useRef(false);
+  useEffect(() => {
+    canvasTouchRef.current = cabinetTouch;
+  }, [cabinetTouch]);
   const duckService = useDuckService();
   const { dispatchCommand } = duckService;
 
@@ -1152,7 +1163,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
       applyCanvasScale(ctx, scale);
-      drawCanvas(ctx, gameStateRef.current, aimParkStartRef.current, scale);
+      drawCanvas(
+        ctx,
+        gameStateRef.current,
+        aimParkStartRef.current,
+        scale,
+        canvasTouchRef.current
+      );
     },
   });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1464,7 +1481,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         if (ctx) {
           const scale = canvasScaleRef.current;
           applyCanvasScale(ctx, scale);
-          drawCanvas(ctx, gameStateRef.current, aimParkStartRef.current, scale);
+          drawCanvas(
+            ctx,
+            gameStateRef.current,
+            aimParkStartRef.current,
+            scale,
+            canvasTouchRef.current
+          );
         }
       }
     },
@@ -1556,9 +1579,6 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   // The cabinet's control dock (touch only) reads the scene from here and
   // sends commands back through the runner.
   const touchBridge = useDuckTouchBridge();
-  // Inside the immersive touch cabinet the dock carries these controls, so the
-  // game's own copies of them are not drawn (ADR 0061).
-  const cabinetTouch = useCabinetTouch();
   useEffect(() => {
     if (!touchBridge) return;
     touchBridge.setRunner(runDuckCommand);
@@ -2517,7 +2537,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       {/* Main Canvas Screen Container */}
       <div
         ref={fxStageRef}
-        className={`relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden${cabinetTouch ? " flex min-h-0 flex-1 items-center justify-center" : ""}`}
+        className={`relative rounded-2xl border border-white/[0.08] bg-[#0d0e11] overflow-hidden${cabinetTouch ? " flex min-h-0 flex-1 flex-col items-center justify-end" : ""}`}
       >
         <div
           ref={fxFlashRef}
@@ -3875,7 +3895,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             </output>
           </div>
 
-          <div role="group" aria-label="Duck Companion Interactive Actions">
+          <div
+            role="group"
+            aria-label="Duck Companion Interactive Actions"
+            hidden={cabinetTouch}
+          >
             <button
               type="button"
               onClick={() => {

@@ -954,6 +954,8 @@ interface DuckDrawOptions {
   trickProgress?: number;
   /** The chewed prop already shows a warning, so skip Duck's own. */
   chewTargetLabelled?: boolean;
+  /** Touch cabinet: name the tap, not the key (#2039). */
+  touchHints?: boolean;
 }
 
 type Pose = "stand" | "run" | "sit" | "beg" | "sniff" | "nap" | "flop";
@@ -1676,11 +1678,20 @@ export function drawDuck(ctx: Ctx, duck: DuckSprite, options: DuckDrawOptions) {
     return;
   }
 
-  const label = STATE_LABELS[duck.state];
+  const label =
+    duck.state === "NO_TAKE_THROW" && options.touchHints
+      ? NO_TAKE_TOUCH_LABEL
+      : STATE_LABELS[duck.state];
   if (label && !(duck.state === "SNEAKY_CHEW" && options.chewTargetLabelled)) {
     pill(ctx, label[0], duck.x, duck.y - 48, label[1]);
   }
 }
+
+/** The No Take bubble in the touch cabinet, where Treat and Drop It are taps. */
+const NO_TAKE_TOUCH_LABEL: [string, string] = [
+  "No take! Tap Treat or Drop It",
+  "#7dd3fc",
+];
 
 const STATE_LABELS: Partial<Record<DuckBehaviorState, [string, string]>> = {
   NO_TAKE_THROW: ["No take! Press 4 or call Drop It", "#7dd3fc"],
@@ -1835,7 +1846,8 @@ function drawDaylight(ctx: Ctx, progress: number) {
 export function drawOfficeScene(
   ctx: Ctx,
   state: WorkingWithDuckState,
-  scale = 1
+  scale = 1,
+  touchHints = false
 ) {
   const calm = prefersReducedMotion();
   const room = typeof ctx.drawImage === "function" ? getRoom(scale) : null;
@@ -1873,7 +1885,7 @@ export function drawOfficeScene(
   }
   pill(
     ctx,
-    "Space: focus sprint",
+    touchHints ? "Work Sprint" : "Space: focus sprint",
     DESK_BOUNDS.x + 85,
     DESK_BOUNDS.y + 146,
     state.activeCodeBursts > 0 ? "#34d399" : "#a8a29e",
@@ -2104,6 +2116,7 @@ export function drawOfficeScene(
       ? 1 - state.activeTrick.timer / Math.max(1, state.activeTrick.maxTimer)
       : 0,
     chewTargetLabelled: state.activeHazardTarget !== null,
+    touchHints,
   });
 
   state.particles.forEach((p) => {

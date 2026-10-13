@@ -351,6 +351,12 @@ describe("Working With Duck: keys and touch run the same game (#2039 round 2)", 
     await mountGame(runningOffice(), false);
     expect(hasButton("Toys")).toBe(true);
     expect(hasButton("Focus Work Sprint")).toBe(true);
+    const outsideStage = container.querySelector("canvas")?.parentElement;
+    expect(outsideStage?.className).not.toContain("justify-end");
+    const outsideChips = container.querySelector(
+      '[aria-label="Duck Companion Interactive Actions"]'
+    );
+    expect(outsideChips?.hasAttribute("hidden")).toBe(false);
     expect(
       container.querySelector('[data-testid="duck-cabinet-actions"]')
     ).toBeNull();
@@ -366,5 +372,13 @@ describe("Working With Duck: keys and touch run the same game (#2039 round 2)", 
     const row = container.querySelector('[data-testid="duck-cabinet-actions"]');
     expect(row?.getAttribute("role")).toBe("group");
     expect(row?.querySelectorAll("button").length).toBeGreaterThanOrEqual(4);
+    // The stage anchors the room to its bottom, and the game's own chips
+    // (screen-reader copies of the dock) leave the layout and taps.
+    const insideStage = container.querySelector("canvas")?.parentElement;
+    expect(insideStage?.className).toContain("justify-end");
+    const insideChips = container.querySelector(
+      '[aria-label="Duck Companion Interactive Actions"]'
+    );
+    expect(insideChips?.hasAttribute("hidden")).toBe(true);
   });
 });

@@ -135,9 +135,14 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       const focusableElements = Array.from(
         container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
       ).filter(
+        // A control taken out of the Tab order (tabindex="-1", or inside an
+        // aria-hidden or inert subtree such as a hidden touch dock) is not a
+        // Tab stop, so it must not count as the first or last one: if it
+        // did, Tab from the real last stop would fall through to the page.
         (el) =>
           !el.hasAttribute("disabled") &&
-          el.getAttribute("aria-hidden") !== "true" &&
+          el.getAttribute("tabindex") !== "-1" &&
+          !el.closest('[aria-hidden="true"], [inert]') &&
           (el.offsetParent !== null ||
             typeof env.VITEST !== "undefined" ||
             el.style.display !== "none")

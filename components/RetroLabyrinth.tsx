@@ -34,6 +34,7 @@ import {
   swipeDirection,
   TouchButton,
   useCabinetTouch,
+  usePhone,
   useControlHint,
   type Handedness,
 } from "@/components/arcade/mobile";
@@ -401,6 +402,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Phone cabinet (ADR 0061): a compact layout with controls either side of
   // the maze. The options panel is a sheet there, not an inline disclosure.
   const phoneCabinet = useCabinetTouch();
+  // A phone gets the rotate prompt; a tablet keeps the orientation hint.
+  const phoneDevice = usePhone();
   const resumeHint = useControlHint(RESUME_HINT);
   const retryHint = useControlHint(RETRY_HINT);
   const roomClearHint = useControlHint(ROOM_CLEAR_HINT);
@@ -3480,7 +3483,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         phoneCabinet ? "min-h-0 flex-1 items-stretch" : "items-center my-6"
       }`}
     >
-      {!phoneCabinet && <TabletOrientationHint className="w-full" />}
+      {!phoneDevice && <TabletOrientationHint className="w-full" />}
       {!phoneCabinet && (
         <details
           className="arcade-labyrinth-options w-full"

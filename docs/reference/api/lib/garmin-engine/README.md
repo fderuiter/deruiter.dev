@@ -73,6 +73,7 @@
 
 - [allocateFlashVariable](functions/allocateFlashVariable.md)
 - [allocateVariable](functions/allocateVariable.md)
+- [canSlam](functions/canSlam.md)
 - [causeLabel](functions/causeLabel.md)
 - [clearFlashStorage](functions/clearFlashStorage.md)
 - [createInitialState](functions/createInitialState.md)
@@ -88,6 +89,7 @@
 - [pauseGame](functions/pauseGame.md)
 - [pressAction](functions/pressAction.md)
 - [pressJump](functions/pressJump.md)
+- [pressSlam](functions/pressSlam.md)
 - [releaseJump](functions/releaseJump.md)
 - [renderCanvasFrame](functions/renderCanvasFrame.md)
 - [resolveRunTuning](functions/resolveRunTuning.md)

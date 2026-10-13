@@ -83,6 +83,8 @@ import {
   releaseJump,
   setRunInput,
   pressAction,
+  canSlam,
+  pressSlam,
   CANVAS_SIZE,
   GameEngineState,
   CrashReport,
@@ -618,6 +620,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       playBeep(1200, 0.03);
     } else if ((next.spinMs ?? 0) > (current.spinMs ?? 0)) {
       playBeep(700, 0.04);
+    } else if (next.spinJump && !current.spinJump) {
+      // Spin Jump (#2023): a light rising chirp.
+      playBeep(1000, 0.03);
     }
   }, [playBeep, applyTransition]);
 
@@ -629,8 +634,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     [applyTransition]
   );
 
-  // DOWN: into a Water Station's bonus room when standing on one (#1992),
-  // otherwise Dev Mode jettisons the oldest variable.
+  // DOWN: into a Water Station's bonus room when standing on one (#1992).
+  // Otherwise a fitness run slams down in mid-air (#2023), and Dev Mode
+  // jettisons the oldest variable.
   const handleJettison = useCallback(() => {
     const current = stateRef.current;
     if (current.gameState !== "playing") return;
@@ -640,7 +646,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       applyTransition((state) => enterStation(state));
       return;
     }
-    if (isFitnessRun(current)) return;
+    if (isFitnessRun(current)) {
+      if (canSlam(current)) {
+        triggerHaptic(30);
+        playBeep(330, 0.05);
+        applyTransition((state) => pressSlam(state));
+      }
+      return;
+    }
     triggerHaptic(20);
     playBeep(650, 0.035);
     const result = jettisonOldestVariable(current);
@@ -1087,6 +1100,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     // The GC freeze itself is announced by the critical-alert effect.
     handleForceGc();
   };
+  const a11yDown = () => {
+    const before = stateRef.current;
+    handleJettison();
+    const after = stateRef.current;
+    if (!before.bonusRoom && after.bonusRoom) {
+      announce("Entered the Water Station bonus room.", "polite");
+    } else if (!before.slamming && after.slamming) {
+      announce("Burpee slam.", "polite");
+    }
+  };
   const a11yAction = () => {
     const before = stateRef.current;
     handleAction();
@@ -1095,6 +1118,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       announce("Threw a heat bolt.", "polite");
     } else if ((after.spinMs ?? 0) > (before.spinMs ?? 0)) {
       announce("Cape spin.", "polite");
+    } else if (after.spinJump && !before.spinJump) {
+      announce("Spin jump.", "polite");
     }
   };
   const a11yLight = () => {
@@ -1395,7 +1420,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           id: "down",
           label: "DOWN",
           hint: "[▼]",
-          title: "Down: enter a Water Station's bonus room (ArrowDown / DOWN)",
+          title:
+            "Down: Water Station bonus room on a station, Burpee Slam in mid-air (ArrowDown / DOWN)",
         }
       : {
           id: "down",
@@ -1437,7 +1463,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               label: "ACTION",
               hint: "[X]",
               title:
-                "Action (X / BACK): throws a heat bolt with a Heat Map, spins with the Compression Cape",
+                "Action (X / BACK): throws a heat bolt with a Heat Map, spins with the Compression Cape, Spin Jump in mid-air",
+              ariaLabel: "Action (X / BACK)",
             }
           : {
               id: "back",
@@ -1893,7 +1920,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               UP / Jump Button
             </button>
 
-            {!fitnessView && (
+            {fitnessView ? (
+              <button
+                type="button"
+                onClick={a11yDown}
+                disabled={gameState.gameState !== "playing"}
+              >
+                DOWN / Water Station or Burpee Slam Button
+              </button>
+            ) : (
               <button
                 type="button"
                 onClick={a11yJettison}
@@ -1922,12 +1957,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             <button
               type="button"
               onClick={a11yAction}
-              disabled={
-                gameState.gameState !== "playing" ||
-                (gameState.power !== "heatmap" && gameState.power !== "cape")
-              }
+              disabled={gameState.gameState !== "playing"}
             >
-              X / Throw Heat Bolt or Cape Spin Button
+              X / Throw Heat Bolt, Cape Spin or Spin Jump Button
             </button>
 
             <button type="button" onClick={a11yReadTelemetry}>

@@ -359,6 +359,14 @@ Lives left, counting the current one; absent means this is the last.
 
 ***
 
+### movesUsed?
+
+> `optional` **movesUsed?**: [`MoveName`](../../garmin-moves/type-aliases/MoveName.md)[]
+
+Moves already toasted this run, so each toast shows once per run.
+
+***
+
 ### obstacles
 
 > **obstacles**: [`Obstacle`](Obstacle.md)[]
@@ -497,11 +505,27 @@ Fractional score (0 to under 1) carried between ticks.
 
 ***
 
+### slamming?
+
+> `optional` **slamming?**: `boolean`
+
+A Burpee Slam is falling: true from the press until the landing.
+
+***
+
 ### spinCooldownMs?
 
 > `optional` **spinCooldownMs?**: `number`
 
 Milliseconds until the next spin can start.
+
+***
+
+### spinJump?
+
+> `optional` **spinJump?**: `boolean`
+
+A Spin Jump is in the air: true from the mid-air spin until the landing.
 
 ***
 
@@ -588,3 +612,21 @@ Setup-derived parameters for this run; absent means defaults.
 ### variables
 
 > **variables**: [`MemoryVariable`](MemoryVariable.md)[]
+
+***
+
+### wallJumpReady?
+
+> `optional` **wallJumpReady?**: `boolean`
+
+The current wall contact still has its Wall Jump. True on first contact
+with a wall; a wall jump uses it up, and it is armed again only after the
+runner leaves that wall or lands.
+
+***
+
+### wallSide?
+
+> `optional` **wallSide?**: `boolean`
+
+The runner is airborne and pressed against the side of a station or plyo box.

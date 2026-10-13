@@ -536,7 +536,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Action (Heat Map & Cape)",
         description:
-          "With a Heat Map, throws a heat bolt along the track. With the Compression Cape, spins to knock foes aside. Both work on Couch Potatoes, Snooze Buttons and Kettlebells. In Dev Mode, Backspace and G force garbage collection instead.",
+          "With a Heat Map, throws a heat bolt along the track. With the Compression Cape, spins to knock foes aside. Both work on Couch Potatoes, Snooze Buttons and Kettlebells. With neither, pressing it in mid-air does a Spin Jump. In Dev Mode, Backspace and G force garbage collection instead.",
         key: "X / Backspace / G",
       },
       {
@@ -552,9 +552,9 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "L",
       },
       {
-        action: "Down (Water Station)",
+        action: "Down (Water Station & Burpee Slam)",
         description:
-          "Standing on a Water Station with a down arrow over it, Down takes you into its bonus room. Anywhere else it does nothing in a normal run; in Dev Mode it pops the oldest heap variable.",
+          "Standing on a Water Station with a down arrow over it, Down takes you into its bonus room. In a fitness run, pressing Down in mid-air is a Burpee Slam that drops you straight down. Anywhere else it does nothing in a normal run; in Dev Mode it pops the oldest heap variable.",
         key: "↓",
       },
       {
@@ -576,6 +576,24 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Couch Potatoes and Snooze Buttons walk toward you. Stomp them from above; a Snooze Button pays double. Hurdles are spiked: jump over them, and never land on one.",
         badge: "Foes",
+      },
+      {
+        title: "Burpee Slam",
+        detail:
+          "In a fitness run, press Down in mid-air to slam straight down. Landing on a foe below stomps it, and landing on a PR Board or brick breaks it. A slam costs a little Body Battery. You cannot slam underwater.",
+        badge: "Slam",
+      },
+      {
+        title: "Wall Jump",
+        detail:
+          "Slide down the side of a Water Station or a Plyo Box, and press jump on the way down to leap off it. You get one wall jump per contact with a wall: leave the wall or land to get another. Sliding down a wall slows your fall.",
+        badge: "Wall",
+      },
+      {
+        title: "Spin Jump",
+        detail:
+          "In mid-air with neither a Heat Map nor a Compression Cape, press the action key for a slower, floatier jump. Bouncing off a spiky foe, such as a Move Alert or a Jellyfish, sends you back up without harm. A spin does not break blocks.",
+        badge: "Spin",
       },
       {
         title: "Course Foes",

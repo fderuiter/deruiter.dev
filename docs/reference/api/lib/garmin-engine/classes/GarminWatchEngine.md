@@ -262,6 +262,18 @@ Subscribes to a typed one-shot action event (e.g. sfx, haptic, screen shake).
 
 ***
 
+### pressSlam()
+
+> **pressSlam**(): `void`
+
+Down in the air on a fitness run: starts a Burpee Slam (#2023).
+
+#### Returns
+
+`void`
+
+***
+
 ### releaseJump()
 
 > **releaseJump**(): `void`

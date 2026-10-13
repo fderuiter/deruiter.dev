@@ -224,6 +224,7 @@
 - [lib/garmin-engine](lib/garmin-engine/README.md)
 - [lib/garmin-foes](lib/garmin-foes/README.md)
 - [lib/garmin-ground-strip](lib/garmin-ground-strip/README.md)
+- [lib/garmin-moves](lib/garmin-moves/README.md)
 - [lib/garmin-powerups](lib/garmin-powerups/README.md)
 - [lib/garmin-props](lib/garmin-props/README.md)
 - [lib/garmin-splits](lib/garmin-splits/README.md)

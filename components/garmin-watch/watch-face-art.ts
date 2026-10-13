@@ -1440,6 +1440,35 @@ function limb(
 }
 
 /**
+ * The pose for the #2023 moves: a tucked body with both arms down for a
+ * Burpee Slam, and one hand flat on the wall for a wall slide. Otherwise the
+ * usual run or jump pose.
+ */
+function movePose(state: GameEngineState): RunnerPose {
+  if (state.slamming) {
+    return {
+      frontLeg: 0.7,
+      backLeg: 0.2,
+      frontArm: 0.15,
+      backArm: -0.2,
+      bob: 0,
+      airborne: true,
+    };
+  }
+  if (state.wallSide && !state.isGrounded) {
+    return {
+      frontLeg: 1.2,
+      backLeg: 0.5,
+      frontArm: 1.45,
+      backArm: 0.4,
+      bob: 0,
+      airborne: true,
+    };
+  }
+  return runnerPose(state.distanceMeters, state.isGrounded);
+}
+
+/**
  * The monkey runner, facing right, drawn in a 20 x 24 box and scaled up
  * from the feet to fill the engine's player box when Buff: a headband, a
  * cyan race singlet with bib, and a watch on the wrist.
@@ -1447,9 +1476,7 @@ function limb(
 function drawRunner(ctx: Ctx, state: GameEngineState) {
   // Underwater the monkey swims: a stroke in place of the run cycle.
   const swimming = isUnderwater(state);
-  const pose = swimming
-    ? swimPose(state.distanceMeters)
-    : runnerPose(state.distanceMeters, state.isGrounded);
+  const pose = swimming ? swimPose(state.distanceMeters) : movePose(state);
   const fur = state.isGcActive ? FUR_FROZEN : FUR;
   // After a hit the runner blinks while hits pass through.
   const graceMs = state.invulnerableMs ?? 0;
@@ -1480,6 +1507,28 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
   ctx.ellipse(10, 24 + lift, 8 - lift / 20, 1.6, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+
+  // Burpee Slam: short speed lines above the head.
+  if (state.slamming) {
+    ctx.strokeStyle = FACE_COLORS.warn;
+    ctx.lineWidth = 1;
+    ctx.lineCap = "round";
+    for (const x of [5, 10, 15]) {
+      ctx.beginPath();
+      ctx.moveTo(x, -8);
+      ctx.lineTo(x, -4);
+      ctx.stroke();
+    }
+  }
+
+  // Spin Jump: the whole sprite turns about its centre, a time-based angle
+  // (about a turn and a half a second), and the shadow stays flat.
+  ctx.save();
+  if (state.spinJump) {
+    ctx.translate(10, 12);
+    ctx.rotate(((state.runClockMs ?? 0) / 1000) * Math.PI * 3);
+    ctx.translate(-10, -12);
+  }
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
@@ -1600,6 +1649,7 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
   ctx.lineTo(6, 0.6);
   ctx.stroke();
 
+  ctx.restore();
   ctx.restore();
 }
 

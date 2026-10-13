@@ -2619,19 +2619,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
         {/* Guided tip (#1676): clear of the targets, dismissible, never blocks a drag.
             In the touch cabinet it sits in the band above the room when the
-            stage has room for it (#2039 playtest), and at the floor end
-            otherwise, so it never covers the wall. */}
+            stage has room for it (#2039 playtest). Otherwise it keeps the
+            desktop place, over the wall, so it never hides the Back door. */}
         {visibleTip && (
           <div
             data-testid="duck-tip"
-            data-placement={tipInFlow ? "above-room" : "floor"}
+            data-placement={tipInFlow ? "above-room" : "overlay"}
             className={`pointer-events-none z-10 flex justify-center [@media(max-height:500px)]:hidden ${
               tipInFlow
                 ? "relative order-first w-full shrink-0 px-3 pb-2"
                 : `absolute inset-x-12 ${
-                    isAwayFromOffice || cabinetTouch
-                      ? "bottom-2 sm:bottom-3"
-                      : "top-2 sm:top-3"
+                    isAwayFromOffice ? "bottom-2 sm:bottom-3" : "top-2 sm:top-3"
                   }`
             }`}
           >

@@ -20,6 +20,9 @@ function Cabinet() {
       <div inert>
         <button>Inert key</button>
       </div>
+      <div hidden>
+        <button>Screen-reader copy, not rendered</button>
+      </div>
     </div>
   );
 }

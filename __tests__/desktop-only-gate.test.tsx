@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, afterEach, vi } from "vitest";
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { DesktopOnlyGate } from "../components/arcade/DesktopOnlyGate";
 import { PHONE_QUERY } from "../components/arcade/mobile";
@@ -23,19 +24,26 @@ describe("DesktopOnlyGate", () => {
   });
 
   it("server-renders both the cabinet and the notice, split by the touch media query", () => {
-    render(
+    const html = renderToStaticMarkup(
       <DesktopOnlyGate gameId="laser-loon" gameTitle="Laser Loon">
         <div data-testid="cabinet">cabinet</div>
       </DesktopOnlyGate>
     );
+    // The markup a browser receives before any script runs.
+    const container = document.createElement("div");
+    container.innerHTML = html;
 
-    const cabinetWrapper = screen.getByTestId("cabinet").parentElement;
+    const cabinetWrapper = container.querySelector(
+      '[data-testid="cabinet"]'
+    )?.parentElement;
     expect(cabinetWrapper?.className).toContain(`${GATE_QUERY}:hidden`);
 
-    const notice = screen.getByTestId("desktop-only-notice");
-    expect(notice.className).toContain("hidden");
-    expect(notice.className).toContain(`${GATE_QUERY}:block`);
-    expect(notice.textContent).toContain("Laser Loon needs a bigger screen");
+    const notice = container.querySelector(
+      '[data-testid="desktop-only-notice"]'
+    );
+    expect(notice?.className).toContain("hidden");
+    expect(notice?.className).toContain(`${GATE_QUERY}:block`);
+    expect(notice?.textContent).toContain("Laser Loon needs a bigger screen");
   });
 
   it("gates on exactly PHONE_QUERY, so tablets keep the game", () => {

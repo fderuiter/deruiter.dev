@@ -363,7 +363,9 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     await launch();
 
     const stage = document.querySelector<HTMLElement>(".arcade-cabinet-stage");
-    const dock = screen.getByTestId("test-control-dock").parentElement;
+    // The dock sits in its touch gate, which sits in the inert dock slot.
+    const dock =
+      screen.getByTestId("test-control-dock").parentElement?.parentElement;
     expect(stage?.hasAttribute("inert")).toBe(true);
     expect(dock?.hasAttribute("inert")).toBe(true);
 
@@ -550,18 +552,53 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     expect(cabinetEl().getAttribute("data-input-modality")).toBe("pen");
   });
 
-  it("hides the on-screen controls while a keyboard is in use and brings them back on touch", async () => {
+  it("keeps the on-screen controls mounted but hidden while a keyboard is in use", async () => {
     installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet();
     await launch();
 
-    expect(screen.getByTestId("test-control-dock")).toBeDefined();
+    const dock = screen.getByTestId("test-control-dock");
+    expect(dock.parentElement?.getAttribute("data-touch-controls")).toBe(
+      "shown"
+    );
 
     pressKey("ArrowLeft");
-    expect(screen.queryByTestId("test-control-dock")).toBeNull();
+    const hidden = dock.parentElement;
+    expect(screen.getByTestId("test-control-dock")).toBe(dock);
+    expect(hidden?.getAttribute("data-touch-controls")).toBe("hidden");
+    expect(hidden?.getAttribute("aria-hidden")).toBe("true");
 
     pointerDown("touch");
-    expect(screen.getByTestId("test-control-dock")).toBeDefined();
+    expect(dock.parentElement?.getAttribute("data-touch-controls")).toBe(
+      "shown"
+    );
+    expect(dock.parentElement?.getAttribute("aria-hidden")).toBeNull();
+  });
+
+  it("pins the page at its scroll position while the tablet cabinet is open", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
+    Object.defineProperty(window, "scrollY", {
+      configurable: true,
+      value: 300,
+    });
+    const scrollTo = vi.fn();
+    window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
+    try {
+      renderCabinet();
+      await launch();
+
+      expect(document.body.style.position).toBe("fixed");
+      expect(document.body.style.top).toBe("-300px");
+      expect(document.body.style.overflow).toBe("hidden");
+
+      powerOff();
+
+      expect(document.body.style.position).toBe("");
+      expect(document.body.style.top).toBe("");
+      expect(scrollTo).toHaveBeenCalledWith(0, 300);
+    } finally {
+      Reflect.deleteProperty(window, "scrollY");
+    }
   });
 
   it("keeps the controls on a desktop cabinet whatever the last input", async () => {
@@ -571,7 +608,23 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
 
     pressKey("ArrowLeft");
 
-    expect(screen.getByTestId("test-control-dock")).toBeDefined();
+    const dock = screen.getByTestId("test-control-dock");
+    expect(dock.parentElement?.getAttribute("data-touch-controls")).toBeNull();
     expect(cabinetEl().hasAttribute("data-input-modality")).toBe(false);
+  });
+
+  it("attaches no modality listeners to a desktop cabinet", async () => {
+    installMatchMedia([]);
+    const add = vi.spyOn(window, "addEventListener");
+    try {
+      renderCabinet();
+      await launch();
+      const keyListeners = add.mock.calls.filter(
+        ([type]) => type === "keydown"
+      );
+      expect(keyListeners).toHaveLength(0);
+    } finally {
+      add.mockRestore();
+    }
   });
 });

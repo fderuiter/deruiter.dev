@@ -6,6 +6,7 @@ export {
 } from "./immersive";
 export { useInputModality, type InputModality } from "./input-modality";
 export { TouchControlsGate } from "./TouchControlsGate";
+export { InputModalityAttribute } from "./InputModalityAttribute";
 export type { TouchControlsGateProps } from "./TouchControlsGate";
 export {
   useOrientationMismatch,

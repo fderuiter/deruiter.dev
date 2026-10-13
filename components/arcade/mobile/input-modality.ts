@@ -29,9 +29,35 @@ const MODIFIER_KEYS = new Set([
   "SymbolLock",
 ]);
 
-/** Fields where a key is typed text, not a control press. */
-const TEXT_ENTRY =
-  "input, textarea, select, [contenteditable]:not([contenteditable='false'])";
+/** Input types a person types text into. A checkbox, range or button is not. */
+const TEXT_INPUT_TYPES = new Set([
+  "",
+  "text",
+  "search",
+  "email",
+  "url",
+  "tel",
+  "password",
+  "number",
+]);
+
+/**
+ * Whether a key was typed into a field. Only text-like fields count, so a key
+ * on a checkbox, range or button still reads as keyboard use.
+ *
+ * @param target - Where the key landed.
+ * @returns True when the key was typed into text entry.
+ */
+function isTextEntry(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) return false;
+  if (target.closest("textarea, select")) return true;
+  if (target.closest("[contenteditable]:not([contenteditable='false'])")) {
+    return true;
+  }
+  const input = target.closest("input");
+  if (!input) return false;
+  return TEXT_INPUT_TYPES.has((input.getAttribute("type") ?? "").toLowerCase());
+}
 
 type Listener = () => void;
 
@@ -66,11 +92,13 @@ function handlePointerDown(event: PointerEvent): void {
   }
 }
 
+/**
+ * Switch Control and Full Keyboard Access send keydown events too. Those
+ * count as keyboard use on purpose: the controls hide until the next touch.
+ */
 function handleKeyDown(event: KeyboardEvent): void {
   if (MODIFIER_KEYS.has(event.key)) return;
-  if (event.target instanceof Element && event.target.closest(TEXT_ENTRY)) {
-    return;
-  }
+  if (isTextEntry(event.target)) return;
   setModality("keyboard");
 }
 

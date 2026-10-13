@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   render,
   screen,
@@ -179,26 +180,79 @@ describe("arcade mobile kit", () => {
       expect(result.current).toBe("touch");
     });
 
-    it("renders the desktop default on the server", () => {
+    it("renders the desktop default on the server, whatever the device", () => {
       installMatchMedia([COARSE]);
-      const { result } = renderHook(() => useInputModality());
-      expect(result.current).toBe("touch");
+      function Probe() {
+        return <span>{useInputModality()}</span>;
+      }
+      // Server rendering reads the server snapshot, never matchMedia.
+      expect(renderToStaticMarkup(<Probe />)).toBe("<span>mouse</span>");
     });
 
-    it("shows its children only while touch or a Pencil is in use", () => {
+    it("keeps its controls mounted and hit-testable, hidden from assistive tech, while a keyboard is in use", () => {
       installMatchMedia([COARSE]);
       render(
         <TouchControlsGate>
           <button type="button">Fire</button>
         </TouchControlsGate>
       );
-      expect(screen.getByRole("button", { name: "Fire" })).toBeDefined();
+      const fire = screen.getByRole("button", { name: "Fire" });
+      expect(
+        fire
+          .closest("[data-touch-controls]")
+          ?.getAttribute("data-touch-controls")
+      ).toBe("shown");
 
       pressKey("ArrowUp");
-      expect(screen.queryByRole("button", { name: "Fire" })).toBeNull();
+      const wrapper = fire.closest("[data-touch-controls]");
+      expect(wrapper?.getAttribute("data-touch-controls")).toBe("hidden");
+      expect(wrapper?.getAttribute("aria-hidden")).toBe("true");
+      expect(wrapper?.className).toContain("opacity-0");
+      expect(fire.getAttribute("tabindex")).toBe("-1");
 
-      pointerDown("pen");
-      expect(screen.getByRole("button", { name: "Fire" })).toBeDefined();
+      pointerDown("touch");
+      expect(
+        fire
+          .closest("[data-touch-controls]")
+          ?.getAttribute("data-touch-controls")
+      ).toBe("shown");
+      expect(fire.hasAttribute("tabindex")).toBe(false);
+    });
+
+    it("fires the first press after a key press on a real touch dock", () => {
+      installMatchMedia([COARSE]);
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(
+        <TouchControlsGate>
+          <TouchButton label="Fire" onPress={onPress} onRelease={onRelease} />
+        </TouchControlsGate>
+      );
+      const fire = screen.getByRole("button", { name: "Fire" });
+
+      pressKey("ArrowUp");
+      // The dock is still mounted, so the press lands on the control itself.
+      fireEvent.pointerDown(fire, { pointerId: 4, pointerType: "touch" });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(fire, { pointerId: 4, pointerType: "touch" });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not treat typing in a checkbox as text entry", () => {
+      installMatchMedia([COARSE]);
+      render(
+        <>
+          <input type="checkbox" aria-label="Sound" />
+          <input type="text" aria-label="Name" />
+        </>
+      );
+      const { result } = renderHook(() => useInputModality());
+      pointerDown("touch");
+      pressKey("a", screen.getByRole("checkbox", { name: "Sound" }));
+      expect(result.current).toBe("keyboard");
+      pointerDown("touch");
+      pressKey("a", screen.getByRole("textbox", { name: "Name" }));
+      expect(result.current).toBe("touch");
     });
   });
 
@@ -354,6 +408,21 @@ describe("arcade mobile kit", () => {
         pointerType: "pen",
       });
       expect(setPointerCapture).toHaveBeenCalledWith(9);
+    });
+
+    it("releases a held press when it leaves the screen", () => {
+      installMatchMedia([]);
+      const onRelease = vi.fn();
+      const { unmount } = render(
+        <TouchButton label="Fire" onPress={vi.fn()} onRelease={onRelease} />
+      );
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Fire" }), {
+        pointerId: 3,
+        pointerType: "pen",
+      });
+      expect(onRelease).not.toHaveBeenCalled();
+      unmount();
+      expect(onRelease).toHaveBeenCalledTimes(1);
     });
 
     it("answers Enter and Space from a keyboard", () => {

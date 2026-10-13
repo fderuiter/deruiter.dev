@@ -142,8 +142,10 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
   320x568 and runs an axe scan over it. Its Playwright coverage is the first real check on the kit.
 - Each game's mobile pull request carries its own gate removal, screenshots and
   axe result. Reviewers judge the game against the bar, not the kit alone.
-- Immersive mode locks body scroll with `overflow: hidden` and disables
-  overscroll. That is not a complete scroll lock on iOS Safari. The fixed,
+- Immersive mode pins the body with `position: fixed` at its scroll position,
+  with `overflow: hidden` and no overscroll, and restores the position on exit.
+  Overflow alone let a script scroll the page behind the cabinet. iOS Safari
+  still needs the fixed pin as well as the restricted `touch-action`. The fixed,
   full-viewport cabinet, with restricted `touch-action` on its root and stage,
   is what keeps the player's touches on the game.
 - Auto-pause only reports the moment to stop. Each game owns its pause screen
@@ -187,11 +189,16 @@ direction was to make every game perfect on an iPad first.
   finger on one control as one press, and the control hints read "Tap".
 - **Keyboard case modality.** `useInputModality()` returns `"touch"`, `"pen"`,
   `"keyboard"` or `"mouse"` from the last `pointerdown` type or a hardware key.
-  Modifier-only keys and keys typed into a field do not count. It starts on
+  Modifier-only keys and keys typed into a text-like field do not count.
+  Switch Control and Full Keyboard Access send keydowns and count as keyboard
+  use by design: the controls hide until the next touch. It starts on
   touch for a coarse pointer and on mouse otherwise, and it is SSR-safe through
   `useSyncExternalStore`. The immersive cabinet root carries
   `data-input-modality`, and `TouchControlsGate` hides the on-screen controls
-  while the keyboard or a trackpad is in use; the next touch brings them back.
+  while the keyboard or a trackpad is in use. The controls stay mounted and
+  hit-testable (`opacity-0`, not `inert`), so the first tap after a key press
+  lands on the control; they leave the Tab order and the accessibility tree
+  while hidden. The next touch brings them back.
   `useTouchHint` and `useControlHint` follow the modality, so a keyboard case
   reads "Press Space" and a finger reads "Tap".
 - **Split View by container width.** The cabinet root is an `@container`, so

@@ -64,6 +64,7 @@ import {
   DEFAULT_RUN_TUNING,
   startGame,
   jettisonOldestVariable,
+  enterStation,
   pauseGame,
   resumeGame,
   wipeScreenFog,
@@ -214,6 +215,19 @@ interface GarminWatchSimulatorProps {
    * engine module (#685). Not used by any production caller.
    */
   initialState?: GameEngineState;
+}
+
+/** What the course props mean for the runner right now (#1992), for the telemetry readout. */
+function courseReadout(s: GameEngineState): string {
+  if (s.bonusRoom) return " In a Water Station bonus room.";
+  const rest = s.restDayMs ?? 0;
+  const restText =
+    rest > 0 ? ` Rest Day: ${Math.ceil(rest / 1000)} seconds left.` : "";
+  const station =
+    enterStation(s) !== s
+      ? " On a Water Station: press Down to enter its bonus room."
+      : "";
+  return restText + station;
 }
 
 export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
@@ -453,10 +467,18 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     [applyTransition]
   );
 
-  // Jettison Oldest Variable (DOWN)
+  // DOWN: into a Water Station's bonus room when standing on one (#1992),
+  // otherwise Dev Mode jettisons the oldest variable.
   const handleJettison = useCallback(() => {
     const current = stateRef.current;
-    if (current.gameState !== "playing" || isFitnessRun(current)) return;
+    if (current.gameState !== "playing") return;
+    if (enterStation(current) !== current) {
+      triggerHaptic(20);
+      playBeep(880, 0.05);
+      applyTransition((state) => enterStation(state));
+      return;
+    }
+    if (isFitnessRun(current)) return;
     triggerHaptic(20);
     playBeep(650, 0.035);
     const result = jettisonOldestVariable(current);
@@ -948,13 +970,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (fitnessReadout) {
       const bb = s.bodyBattery;
       announce(
-        `Status: ${s.gameState}. Stage ${s.stage ?? 1} of ${STAGE_COUNT}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+        `Status: ${s.gameState}. Stage ${s.stage ?? 1} of ${STAGE_COUNT}. Body Battery: ${Math.round(bb?.value ?? 100)}${bb?.bonked ? ", bonked" : ""}. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Kudos: ${s.kudos ?? 0}.${courseReadout(s)} Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
         "polite"
       );
       return;
     }
     announce(
-      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}. Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
+      `Status: ${s.gameState}. Memory: ${s.allocatedRamKb.toFixed(1)} of ${currentProfile.ramLimitKb} KB. Flash: ${s.allocatedFlashKb.toFixed(1)} KB. Battery: ${Math.round(s.battery)}%. Thermal stress: ${Math.round((s.thermalStress ?? 0) * 100)}%. Condensation: ${Math.round(s.fogLevel * 100)}%. Lives: ${s.lives ?? 1}. Power: ${POWER_NAMES[s.power ?? "base"]}. Pace meter: ${paceSegments(s.paceMeter)} of ${PACE_SEGMENTS}${(s.starMs ?? 0) > 0 ? ", Runner's High" : ""}.${courseReadout(s)} Score: ${s.score}. High score: ${Math.max(s.highScore, loadedHighScore)}.`,
       "polite"
     );
   };
@@ -1232,13 +1254,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           id: "down",
           label: "DOWN",
           hint: "[▼]",
-          title: "Down (pops a heap variable in Dev Mode)",
+          title: "Down: enter a Water Station's bonus room (ArrowDown / DOWN)",
         }
       : {
           id: "down",
           label: "DOWN",
           hint: "[▼] POP",
-          title: "Jettison Variable (ArrowDown / DOWN)",
+          title:
+            "Jettison Variable, or enter a Water Station's bonus room (ArrowDown / DOWN)",
         },
     {
       id: "start",
@@ -1433,7 +1456,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   role="img"
                   aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. Stage ${gameState.stage ?? 1} of ${STAGE_COUNT}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
                     gameState.score
-                  }, High Score: ${effectiveHighScore}. ${
+                  }, High Score: ${effectiveHighScore}.${courseReadout(gameState)} ${
                     fitnessView
                       ? `Body Battery: ${Math.round(gameState.bodyBattery?.value ?? 100)}.`
                       : `Memory: ${gameState.allocatedRamKb.toFixed(

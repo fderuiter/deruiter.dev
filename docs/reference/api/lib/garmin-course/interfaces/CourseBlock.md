@@ -19,6 +19,14 @@ a Runner's High. A brick is plain solid footing.
 
 ***
 
+### fromKudos?
+
+> `optional` **fromKudos?**: `boolean`
+
+A Kudos turned into a brick by a Rest Day (#1992); it turns back after.
+
+***
+
 ### id
 
 > **id**: `number`

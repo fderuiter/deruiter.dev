@@ -58,6 +58,13 @@ import {
   type Bolt,
   type Pickup,
 } from "@/lib/garmin-powerups";
+import type {
+  CourseBelt,
+  CoursePlyo,
+  CourseProps,
+  CourseStation,
+  CourseSwitch,
+} from "@/lib/garmin-props";
 import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
@@ -524,6 +531,9 @@ function drawBlocks(ctx: Ctx, course: CourseLayout, camera: number) {
       ctx.lineTo(left + 8, b.y + 10);
       ctx.lineTo(left + 11, b.y + 10);
       ctx.stroke();
+      // The PR plate, pinned to the top-left corner of the board.
+      ctx.fillStyle = PROP_COLORS.prPlate;
+      ctx.fillRect(left + 2, b.y + 2, 5, 2.5);
       continue;
     }
     const lit = !b.used;
@@ -600,6 +610,240 @@ function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
 }
 
 /** A Protein Shake: a white shaker bottle with a cyan cap and a P band. */
+// ---------------------------------------------------------------- props
+
+/** Rest Day Switch footprint, and Treadmill Belt slab thickness. */
+const SWITCH_WIDTH = 16;
+const SWITCH_HEIGHT = 8;
+const BELT_THICKNESS = 6;
+/** Tread lines on a belt: spacing in pixels, and scroll speed in pixels/s. */
+const TREAD_GAP = 12;
+const TREAD_SPEED = 60;
+/** Water Station chevron: bob height in pixels and bob period in ms. */
+const CHEVRON_BOB_PX = 1.5;
+const CHEVRON_BOB_MS = 600;
+
+const PROP_COLORS = {
+  tableTop: "#e2e8f0",
+  tableLeg: "#64748b",
+  cup: "#f8fafc",
+  cupRim: "#94a3b8",
+  woodMain: "#a16207",
+  woodEdge: "#713f12",
+  woodMark: "#fde68a",
+  belt: "#1f2937",
+  beltTread: "rgba(226, 232, 240, 0.5)",
+  roller: "#475569",
+  switchBase: "#334155",
+  switchPressed: "#047857",
+  prPlate: "#cbd5e1",
+} as const;
+
+/** The bonus room: a warm wall, dark wainscot, lockers and a bench. */
+const ROOM_COLORS = {
+  ceiling: "#2e1f15",
+  wall: "#4a3426",
+  wainscot: "#3a2719",
+  locker: "#4b5563",
+  lockerEdge: "#374151",
+  vent: "#1f2937",
+  bench: "#8b5e3c",
+} as const;
+
+/**
+ * A Treadmill Belt's travel at `clockMs`: a triangle wave from 0 out to
+ * `range` and back over `periodMs`. A missing or bad period means no travel.
+ */
+function beltTravel(belt: CourseBelt, clockMs: number): number {
+  const period = belt.periodMs;
+  if (!Number.isFinite(period) || period <= 0) return 0;
+  const t = Number.isFinite(clockMs) ? clockMs : 0;
+  const phase = (((t % period) + period) % period) / period;
+  return belt.range * (1 - Math.abs(1 - 2 * phase));
+}
+
+/** A Water Station: a folding aid table on the lane, with paper cups. */
+function drawWaterStation(
+  ctx: Ctx,
+  station: CourseStation,
+  camera: number,
+  clockMs: number,
+  groundY: number
+) {
+  const left = station.x - camera;
+  const w = station.width;
+  if (left + w < 0 || left > CANVAS_SIZE) return;
+  const top = groundY - station.height;
+  // Two legs down to the lane, then the light table top.
+  ctx.fillStyle = PROP_COLORS.tableLeg;
+  ctx.fillRect(left + 3, top + 3, 2, groundY - top - 3);
+  ctx.fillRect(left + w - 5, top + 3, 2, groundY - top - 3);
+  ctx.fillStyle = PROP_COLORS.tableTop;
+  ctx.fillRect(left, top, w, 3);
+  // Two or three paper cups standing on the table.
+  const cups = w >= 40 ? 3 : 2;
+  for (let i = 1; i <= cups; i++) {
+    const cx = left + (i * w) / (cups + 1);
+    ctx.fillStyle = PROP_COLORS.cup;
+    ctx.beginPath();
+    ctx.moveTo(cx - 2.5, top - 5);
+    ctx.lineTo(cx + 2.5, top - 5);
+    ctx.lineTo(cx + 1.8, top);
+    ctx.lineTo(cx - 1.8, top);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = PROP_COLORS.cupRim;
+    ctx.fillRect(cx - 2.5, top - 5, 5, 1);
+  }
+  // An enterable, unused station invites a Down press with a bobbing chevron.
+  if (station.enterable && !station.used) {
+    const bob =
+      Math.sin((clockMs / CHEVRON_BOB_MS) * Math.PI * 2) * CHEVRON_BOB_PX;
+    const cx = left + w / 2;
+    const y = top - 14 + bob;
+    ctx.strokeStyle = FACE_COLORS.identity;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx - 4, y);
+    ctx.lineTo(cx, y + 4);
+    ctx.lineTo(cx + 4, y);
+    ctx.stroke();
+  }
+}
+
+/** A Plyo Box: a wooden box with darker edges and a pale plus mark. */
+function drawPlyoBox(
+  ctx: Ctx,
+  plyo: CoursePlyo,
+  camera: number,
+  groundY: number
+) {
+  const left = plyo.x - camera;
+  const w = plyo.width;
+  if (left + w < 0 || left > CANVAS_SIZE) return;
+  const top = groundY - plyo.height;
+  const h = groundY - top;
+  ctx.fillStyle = PROP_COLORS.woodMain;
+  ctx.fillRect(left, top, w, h);
+  ctx.fillStyle = PROP_COLORS.woodEdge;
+  ctx.fillRect(left, top, w, 2);
+  ctx.fillRect(left, groundY - 2, w, 2);
+  ctx.fillRect(left, top, 1.5, h);
+  ctx.fillRect(left + w - 1.5, top, 1.5, h);
+  const cx = left + w / 2;
+  const cy = top + h / 2;
+  const arm = Math.min(w, h) * 0.3;
+  ctx.fillStyle = PROP_COLORS.woodMark;
+  ctx.fillRect(cx - arm, cy - 0.6, arm * 2, 1.2);
+  ctx.fillRect(cx - 0.6, cy - arm, 1.2, arm * 2);
+}
+
+/**
+ * A Treadmill Belt: a dark slab that slides on its axis, with tread lines
+ * scrolling along it at the run clock and a roller at each end.
+ */
+function drawTreadmillBelt(
+  ctx: Ctx,
+  belt: CourseBelt,
+  camera: number,
+  clockMs: number
+) {
+  const travel = beltTravel(belt, clockMs);
+  const left = belt.x + (belt.axis === "x" ? travel : 0) - camera;
+  const top = belt.y + (belt.axis === "y" ? travel : 0);
+  const w = belt.width;
+  if (left + w < 0 || left > CANVAS_SIZE) return;
+  ctx.fillStyle = PROP_COLORS.belt;
+  ctx.fillRect(left, top, w, BELT_THICKNESS);
+  const t = Number.isFinite(clockMs) ? clockMs : 0;
+  const scroll = ((t * TREAD_SPEED) / 1000) % TREAD_GAP;
+  ctx.fillStyle = PROP_COLORS.beltTread;
+  for (let x = left + TREAD_GAP - scroll; x < left + w - 2; x += TREAD_GAP) {
+    ctx.fillRect(x, top + 1.5, 1.5, BELT_THICKNESS - 3);
+  }
+  ctx.fillStyle = PROP_COLORS.roller;
+  ctx.beginPath();
+  ctx.arc(left, top + BELT_THICKNESS / 2, 3, 0, Math.PI * 2);
+  ctx.arc(left + w, top + BELT_THICKNESS / 2, 3, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/**
+ * The Rest Day Switch: a round button on a small base. Unpressed it stands
+ * up in a calm colour; pressed it lies flat.
+ */
+function drawRestSwitch(
+  ctx: Ctx,
+  sw: CourseSwitch,
+  camera: number,
+  groundY: number
+) {
+  const left = sw.x - camera;
+  if (left + SWITCH_WIDTH < 0 || left > CANVAS_SIZE) return;
+  const cx = left + SWITCH_WIDTH / 2;
+  const baseTop = groundY - 3;
+  ctx.fillStyle = PROP_COLORS.switchBase;
+  ctx.fillRect(left, baseTop, SWITCH_WIDTH, 3);
+  if (sw.pressed) {
+    ctx.fillStyle = PROP_COLORS.switchPressed;
+    ctx.beginPath();
+    ctx.roundRect(cx - 5, baseTop - 2.5, 10, 2.5, 1.2);
+    ctx.fill();
+    return;
+  }
+  ctx.fillStyle = FACE_COLORS.good;
+  ctx.beginPath();
+  ctx.arc(cx, baseTop - 3.5, SWITCH_HEIGHT / 2 - 0.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** Draws every course prop on the lane, skipping those off screen. */
+function drawProps(
+  ctx: Ctx,
+  props: CourseProps,
+  camera: number,
+  clockMs: number,
+  groundY: number
+) {
+  for (const plyo of props.plyos) drawPlyoBox(ctx, plyo, camera, groundY);
+  for (const station of props.stations) {
+    drawWaterStation(ctx, station, camera, clockMs, groundY);
+  }
+  for (const belt of props.belts) {
+    drawTreadmillBelt(ctx, belt, camera, clockMs);
+  }
+  for (const sw of props.switches) drawRestSwitch(ctx, sw, camera, groundY);
+}
+
+/**
+ * The bonus room behind a Water Station: a warm wall, a row of lockers, a
+ * bench and a dark ceiling band. Drawn in place of the outdoor sky.
+ */
+function drawBonusRoomBackdrop(ctx: Ctx) {
+  ctx.fillStyle = ROOM_COLORS.wall;
+  ctx.fillRect(0, 0, CANVAS_SIZE, GROUND_Y);
+  ctx.fillStyle = ROOM_COLORS.ceiling;
+  ctx.fillRect(0, 0, CANVAS_SIZE, 10);
+  ctx.fillStyle = ROOM_COLORS.wainscot;
+  ctx.fillRect(0, GROUND_Y - 30, CANVAS_SIZE, 30);
+  for (let i = 0; i < 7; i++) {
+    const x = 4 + i * 40;
+    ctx.fillStyle = ROOM_COLORS.locker;
+    ctx.fillRect(x, 96, 36, GROUND_Y - 34 - 96);
+    ctx.strokeStyle = ROOM_COLORS.lockerEdge;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 0.5, 96.5, 35, GROUND_Y - 34 - 97);
+    ctx.fillStyle = ROOM_COLORS.vent;
+    ctx.fillRect(x + 12, 112, 12, 1.5);
+    ctx.fillRect(x + 12, 118, 12, 1.5);
+  }
+  // A bench along the lane edge.
+  ctx.fillStyle = ROOM_COLORS.bench;
+  ctx.fillRect(16, GROUND_Y - 26, 248, 3);
+  ctx.fillRect(24, GROUND_Y - 23, 3, 23);
+  ctx.fillRect(253, GROUND_Y - 23, 3, 23);
+}
+
 function drawShake(ctx: Ctx, x: number, y: number) {
   const s = PICKUP_SIZE;
   ctx.fillStyle = FACE_COLORS.identity;
@@ -781,6 +1025,29 @@ function drawPaceMeter(ctx: Ctx, state: GameEngineState) {
         : FACE_COLORS.track;
     ctx.fillRect(left + i * (segW + gap), 88, segW, 3);
   }
+}
+
+/** The rest-day countdown: a small pill under the course line. */
+function drawRestDayBadge(ctx: Ctx, restDayMs: number) {
+  const w = 72;
+  const h = 11;
+  const x = FACE_CENTER - w / 2;
+  const y = 96;
+  ctx.fillStyle = "#022c22";
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, h / 2);
+  ctx.fill();
+  ctx.strokeStyle = FACE_COLORS.good;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  text(
+    ctx,
+    `REST DAY ${Math.ceil(restDayMs / 1000)}s`,
+    FACE_CENTER,
+    y + 7.6,
+    6.5,
+    FACE_COLORS.good
+  );
 }
 
 // --------------------------------------------------------------- runner
@@ -1927,12 +2194,19 @@ export function renderWatchFace(
 
   const course = state.course ?? EMPTY_COURSE;
   const camera = state.distanceMeters * PX_PER_METER;
-  drawSky(ctx, state.isLightOn);
-  drawSkyline(ctx, state.distanceMeters);
-  drawPines(ctx, state.distanceMeters);
+  if (state.bonusRoom) {
+    drawBonusRoomBackdrop(ctx);
+  } else {
+    drawSky(ctx, state.isLightOn);
+    drawSkyline(ctx, state.distanceMeters);
+    drawPines(ctx, state.distanceMeters);
+  }
   drawGround(ctx, state.distanceMeters, course);
   drawPoles(ctx, course, camera);
   drawLedges(ctx, course, camera);
+  if (state.props) {
+    drawProps(ctx, state.props, camera, state.propClockMs ?? 0, GROUND_Y);
+  }
   drawPickups(ctx, state.pickups ?? [], camera);
   drawBlocks(ctx, course, camera);
   drawKudos(ctx, course, camera);
@@ -1957,6 +2231,7 @@ export function renderWatchFace(
   if (state.gameState !== "idle") {
     drawDataRing(ctx, state, strip);
     drawCourseHud(ctx, state);
+    if ((state.restDayMs ?? 0) > 0) drawRestDayBadge(ctx, state.restDayMs ?? 0);
     drawBanner(ctx, state);
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);

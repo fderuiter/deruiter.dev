@@ -53,6 +53,8 @@ export interface CourseBlock {
   kind: "sync" | "brick";
   contents: "kudos" | "power" | "cape" | "high";
   used: boolean;
+  /** A Kudos turned into a brick by a Rest Day (#1992); it turns back after. */
+  fromKudos?: boolean;
 }
 
 /** A Kudos coin. */
@@ -61,6 +63,8 @@ export interface CourseKudos {
   /** Centre. */
   x: number;
   y: number;
+  /** A brick turned into a Kudos by a Rest Day (#1992); it turns back after. */
+  fromBrick?: boolean;
 }
 
 /** The finish pole that ends a stage. */

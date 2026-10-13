@@ -19,6 +19,7 @@ import {
   type CourseBlock,
   type CourseLayout,
 } from "@/lib/garmin-course";
+import { generateStageProps } from "@/lib/garmin-props";
 import {
   BASE_HEIGHT,
   BUFF_HEIGHT,
@@ -358,7 +359,15 @@ describe("lives", () => {
     expect(s.obstacles).toHaveLength(0);
     expect(s.kudos).toBe(12);
     expect(s.invulnerableMs).toBe(DAMAGE_GRACE_MS);
-    expect(s.course).toEqual(generateStage(stage, s.courseSeed ?? 0, GROUND_Y));
+    // The stage's course, with any ledge a Treadmill Belt replaces (#1992).
+    const fresh = generateStageProps(
+      stage,
+      s.courseSeed ?? 0,
+      GROUND_Y,
+      generateStage(stage, s.courseSeed ?? 0, GROUND_Y)
+    );
+    expect(s.course).toEqual(fresh.layout);
+    expect(s.props).toEqual(fresh.props);
     expect(s.banner?.text).toMatch(/NULL POINTER · LIVES 2/);
   });
 

@@ -21,6 +21,7 @@ import {
   type GameEngineState,
 } from "@/lib/garmin-engine";
 import { EMPTY_COURSE } from "@/lib/garmin-course";
+import { EMPTY_PROPS } from "@/lib/garmin-props";
 
 // #1320: obstacle speed capped 7 seconds in, the allocation pace never
 // changed, pops and GCs were free points, and tokens only cost memory, so a
@@ -72,6 +73,7 @@ function survive(
     // A memory test: no gaps or course foes for a bot that never jumps
     // (#1950, #1991).
     course: EMPTY_COURSE,
+    props: EMPTY_PROPS,
     foes: [],
     lastAllocTime: clock,
     lastObstacleTime: clock,
@@ -105,6 +107,7 @@ describe("Garmin difficulty ramp (#1320)", () => {
       const run = {
         ...startGame(createInitialState("fenix", 0, []), "fenix"),
         distanceMeters,
+        props: EMPTY_PROPS,
         obstacles: [],
         lastObstacleTime: 0,
         lastAllocTime: clock,

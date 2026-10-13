@@ -6,10 +6,12 @@
 
 # Function: stepPaceMeter()
 
-> **stepPaceMeter**(`meter`, `grounded`, `sprinting`, `deltaMs`): `number`
+> **stepPaceMeter**(`meter`, `grounded`, `sprinting`, `deltaMs`, `fillScale?`): `number`
 
 The meter after `deltaMs`. Sprinting on the track fills it, running or
-braking on the track drains it, and in the air it holds.
+braking on the track drains it, and in the air it holds. `fillScale`
+(default 1) slows only the fill, as carrying a medicine ball does (#2024);
+the drain is untouched.
 
 ## Parameters
 
@@ -28,6 +30,10 @@ braking on the track drains it, and in the air it holds.
 ### deltaMs
 
 `number`
+
+### fillScale?
+
+`number` = `1`
 
 ## Returns
 

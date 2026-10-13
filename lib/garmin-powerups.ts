@@ -19,6 +19,7 @@
  * and sinks slowly; its swim rules live in `lib/garmin-swim.ts`.
  */
 import { clamp } from "./game-utils";
+import { BUDDY_HOP_VY, BUDDY_SPEED } from "./garmin-buddy";
 import {
   BLOCK_SIZE,
   type CourseBlock,
@@ -30,7 +31,8 @@ import {
 export type PowerTier = "base" | "buff" | "heatmap" | "cape" | "trisuit";
 
 /** What a pickup grants when touched. */
-export type PickupKind = "shake" | "high" | "heatmap" | "cape" | "suit";
+export type PickupKind =
+  "shake" | "high" | "heatmap" | "cape" | "suit" | "buddy";
 
 /**
  * A power-up travelling the course. Positions are world pixels, like the
@@ -46,6 +48,11 @@ export interface Pickup {
   vy: number;
   /** Time left rising out of its block; it doesn't move or fall until 0. */
   emergeMs: number;
+  /**
+   * Time left before the pickup is gone, for a Running Buddy that ran off
+   * after a hit (#2024). Absent for pickups that wait to be collected.
+   */
+  ttlMs?: number;
 }
 
 /** Height of the runner's box at Base, in pixels. */
@@ -124,7 +131,7 @@ export function playerHeightFor(power: PowerTier | undefined): number {
  * to a Base runner and a Heat Map to a stronger one; a cape block gives a
  * Protein Shake to a Base runner and a Compression Cape to a stronger one. A
  * suit block always gives the Tri Suit. A Runner's High block always gives a
- * Runner's High.
+ * Runner's High, and a buddy block always hatches a Running Buddy (#2024).
  */
 export function blockReward(
   contents: CourseBlock["contents"],
@@ -132,6 +139,7 @@ export function blockReward(
 ): PickupKind | "kudos" {
   if (contents === "high") return "high";
   if (contents === "suit") return "suit";
+  if (contents === "buddy") return "buddy";
   if (contents === "power" || contents === "cape") {
     if ((power ?? "base") === "base") return "shake";
     return contents === "cape" ? "cape" : "heatmap";
@@ -179,7 +187,14 @@ export function emergePickup(
     x: block.x + (BLOCK_SIZE - PICKUP_SIZE) / 2,
     y: block.y,
     // A Heat Map, a Cape and a Tri Suit stay on their block; the rest run off.
-    vx: kind === "high" ? HIGH_SPEED : kind === "shake" ? SHAKE_SPEED : 0,
+    vx:
+      kind === "high"
+        ? HIGH_SPEED
+        : kind === "shake"
+          ? SHAKE_SPEED
+          : kind === "buddy"
+            ? BUDDY_SPEED
+            : 0,
     vy: 0,
     emergeMs: PICKUP_EMERGE_MS,
   };
@@ -235,24 +250,41 @@ export function stepPickups(
   const dtRatio = deltaMs / 16.666;
   const next: Pickup[] = [];
   for (const p of pickups) {
+    // A runaway Running Buddy that wasn't caught in time is gone.
+    const ttlMs = p.ttlMs === undefined ? undefined : p.ttlMs - deltaMs;
+    if (ttlMs !== undefined && ttlMs <= 0) continue;
+    const timed = (q: Pickup): Pickup =>
+      ttlMs === undefined ? q : { ...q, ttlMs };
     if (p.emergeMs > 0) {
       const emergeMs = Math.max(0, p.emergeMs - deltaMs);
       const rise =
         (PICKUP_SIZE * Math.min(deltaMs, p.emergeMs)) / PICKUP_EMERGE_MS;
-      next.push({ ...p, emergeMs, y: p.y - rise });
+      // A hatched Running Buddy leaps off its block once it is out.
+      const leap = emergeMs === 0 && p.kind === "buddy" && ttlMs === undefined;
+      next.push(
+        timed({
+          ...p,
+          emergeMs,
+          y: p.y - rise,
+          ...(leap ? { vy: BUDDY_HOP_VY } : {}),
+        })
+      );
       continue;
     }
     // A Tri Suit floats up through the water to the surface and waits
     // there for a swimmer, rather than sitting on its block.
     if (p.kind === "suit") {
-      next.push({
-        ...p,
-        vy: 0,
-        y: Math.max(SUIT_FLOAT_Y, p.y - SUIT_FLOAT_SPEED * dtRatio),
-      });
+      next.push(
+        timed({
+          ...p,
+          vy: 0,
+          y: Math.max(SUIT_FLOAT_Y, p.y - SUIT_FLOAT_SPEED * dtRatio),
+        })
+      );
       continue;
     }
     const x = p.x + p.vx * dtRatio;
+    let vx = p.vx;
     let vy = Math.min(PICKUP_MAX_FALL, p.vy + PICKUP_GRAVITY * dtRatio);
     let y = p.y + vy * dtRatio;
     const prevBottom = p.y + PICKUP_SIZE;
@@ -270,16 +302,27 @@ export function stepPickups(
       for (const l of course.ledges) {
         if (x + PICKUP_SIZE > l.x && x < l.x + l.width) consider(l.y);
       }
+      const offBlocks = landing;
       for (const b of course.blocks) {
         if (x + PICKUP_SIZE > b.x && x < b.x + BLOCK_SIZE) consider(b.y);
       }
       if (landing !== Infinity) {
         y = landing - PICKUP_SIZE;
         vy = p.kind === "high" ? HIGH_BOUNCE_VY : 0;
+        // A hatched Running Buddy hops off its block ahead of the runner,
+        // then sits and waits where it lands on the lane or a ledge. A
+        // runaway one keeps running.
+        if (
+          p.kind === "buddy" &&
+          ttlMs === undefined &&
+          landing === offBlocks
+        ) {
+          vx = 0;
+        }
       }
     }
     if (y > canvasSize || x + PICKUP_SIZE < cameraX - 40) continue;
-    next.push({ ...p, x, y, vy });
+    next.push(timed({ ...p, x, y, vx, vy }));
   }
   return next;
 }

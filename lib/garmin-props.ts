@@ -11,6 +11,7 @@
 import { clamp } from "./game-utils";
 import {
   BLOCK_SIZE,
+  MEDBALL_SIZE,
   STAGE_COUNT,
   courseRandom,
   stagePoleX,
@@ -492,12 +493,25 @@ export function generateStageProps(
     }
   }
 
+  const trimmed: CourseLayout = {
+    ...layout,
+    ledges: layout.ledges.filter((l) => !removed.has(l)),
+  };
+  // Medicine balls (#2024) are placed before the props; any that a station,
+  // plyo box or switch now stands on are dropped, so every ball is reachable.
+  if (layout.medBalls) {
+    const spans = [
+      ...stations.map((p) => [p.x, p.x + p.width]),
+      ...plyos.map((p) => [p.x, p.x + p.width]),
+      ...switches.map((p) => [p.x, p.x + SWITCH_WIDTH]),
+    ];
+    trimmed.medBalls = layout.medBalls.filter(
+      (m) => !spans.some(([a, b]) => m.x - 4 < b && m.x + MEDBALL_SIZE + 4 > a)
+    );
+  }
   return {
     props: { stations, plyos, belts, switches },
-    layout: {
-      ...layout,
-      ledges: layout.ledges.filter((l) => !removed.has(l)),
-    },
+    layout: trimmed,
   };
 }
 
@@ -610,6 +624,7 @@ export function restDaySwap(
   };
   if (course.ceilings) swapped.ceilings = course.ceilings;
   if (course.currents) swapped.currents = course.currents;
+  if (course.medBalls) swapped.medBalls = course.medBalls;
   return swapped;
 }
 

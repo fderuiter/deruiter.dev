@@ -31,6 +31,15 @@ Time left rising out of its block; it doesn't move or fall until 0.
 
 ***
 
+### ttlMs?
+
+> `optional` **ttlMs?**: `number`
+
+Time left before the pickup is gone, for a Running Buddy that ran off
+after a hit (#2024). Absent for pickups that wait to be collected.
+
+***
+
 ### vx
 
 > **vx**: `number`

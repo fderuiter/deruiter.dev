@@ -27,6 +27,7 @@ import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   KUDOS_RADIUS,
+  MEDBALL_SIZE,
   LEDGE_THICKNESS,
   POLE_HEIGHT,
   PX_PER_METER,
@@ -37,6 +38,7 @@ import {
   type CourseCeiling,
   type CourseCurrent,
   type CourseLayout,
+  type CourseMedBall,
 } from "@/lib/garmin-course";
 import {
   LENGTH_METERS,
@@ -54,6 +56,7 @@ import {
   trainingStatus,
 } from "@/lib/garmin-culture";
 import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
+import type { ThrownBall } from "@/lib/garmin-medball";
 import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin-swim";
 import {
   CAPE_SPIN_MS,
@@ -1249,6 +1252,86 @@ function drawSuit(ctx: Ctx, x: number, y: number) {
   ctx.fill();
 }
 
+/** The Running Buddy: a tan dog with a dark nose and a white collar. */
+const BUDDY = {
+  fur: "#d97706",
+  dark: "#78350f",
+  collar: "#f4f4f6",
+  leash: "#a1a1aa",
+} as const;
+
+/** A medicine ball: a dark round weight with a light grip band across it. */
+const MED_BALL = { body: "#27272a", rim: "#71717a", grip: "#d4d4d8" } as const;
+
+/** How far a riding runner sits higher on the buddy's back, in local px. */
+const RIDE_LIFT = 6;
+/** Local y of the runner's feet on the lane (the box is BASE_HEIGHT tall). */
+const GROUND_LOCAL_FEET = BASE_HEIGHT;
+/** Local height the dog's body and legs take up under a rider. */
+const BUDDY_HEIGHT = 6;
+/** A runaway buddy blinks in its last this many ms. */
+const BUDDY_BLINK_MS = 1000;
+/** Milliseconds per blink phase while a runaway buddy blinks. */
+const BUDDY_BLINK_PHASE_MS = 100;
+
+/** A medicine ball centred on (cx, cy), radius r. */
+function drawMedBall(ctx: Ctx, cx: number, cy: number, r: number) {
+  ctx.fillStyle = MED_BALL.body;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = MED_BALL.rim;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+  ctx.fillStyle = MED_BALL.grip;
+  ctx.fillRect(cx - r + 0.6, cy - 0.7, (r - 0.6) * 2, 1.4);
+}
+
+/**
+ * The dog, facing right, drawn in local px with its back at `top` and its
+ * feet about 7 px below. It stands under a rider at the lane and, scaled
+ * down, is the pickup.
+ */
+function drawDog(ctx: Ctx, x: number, top: number) {
+  ctx.fillStyle = BUDDY.fur;
+  ctx.beginPath();
+  ctx.roundRect(x, top, 12, 5, 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 13.5, top - 1.2, 2.9, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = BUDDY.dark;
+  ctx.fillRect(x + 2.5, top + 4.5, 1.6, 2.2);
+  ctx.fillRect(x + 9, top + 4.5, 1.6, 2.2);
+  ctx.beginPath();
+  ctx.roundRect(x + 15.5, top - 1.6, 3, 2, 1);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 17.6, top - 1.6, 0.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + 15.2, top - 2.6, 0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = BUDDY.collar;
+  ctx.fillRect(x + 11.6, top, 1.2, 4.6);
+}
+
+/**
+ * The Running Buddy as a pickup: the dog scaled to fit its 12 px box on a
+ * dark tile, so it reads as a pickup like the others.
+ */
+function drawBuddyPickup(ctx: Ctx, x: number, y: number) {
+  ctx.fillStyle = MED_BALL.body;
+  ctx.beginPath();
+  ctx.roundRect(x, y, PICKUP_SIZE, PICKUP_SIZE, 2.5);
+  ctx.fill();
+  ctx.save();
+  ctx.translate(x + 0.4, y + 3.4);
+  ctx.scale(0.62, 0.62);
+  drawDog(ctx, 0, 2.6);
+  ctx.restore();
+}
+
 /** Power-ups travelling the course, behind the blocks they rise out of. */
 function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
   for (const p of pickups) {
@@ -1258,7 +1341,32 @@ function drawPickups(ctx: Ctx, pickups: readonly Pickup[], camera: number) {
     else if (p.kind === "heatmap") drawHeatMap(ctx, x, p.y);
     else if (p.kind === "cape") drawCape(ctx, x, p.y);
     else if (p.kind === "suit") drawSuit(ctx, x, p.y);
-    else drawShake(ctx, x, p.y);
+    else if (p.kind === "buddy") {
+      // A runaway buddy blinks in its last second, off on odd 100 ms phases.
+      const ttl = p.ttlMs;
+      if (
+        ttl !== undefined &&
+        ttl < BUDDY_BLINK_MS &&
+        Math.floor(ttl / BUDDY_BLINK_PHASE_MS) % 2 === 1
+      ) {
+        continue;
+      }
+      drawBuddyPickup(ctx, x, p.y);
+    } else drawShake(ctx, x, p.y);
+  }
+}
+
+/** Lane medicine balls resting on the course, drawn with the lane's features. */
+function drawMedBalls(
+  ctx: Ctx,
+  balls: readonly CourseMedBall[],
+  camera: number
+) {
+  const r = MEDBALL_SIZE / 2;
+  for (const b of balls) {
+    const x = b.x - camera;
+    if (x > CANVAS_SIZE || x + MEDBALL_SIZE < 0) continue;
+    drawMedBall(ctx, x + r, b.y + r, r);
   }
 }
 
@@ -1294,6 +1402,14 @@ function drawBolts(ctx: Ctx, bolts: readonly Bolt[], camera: number) {
     ctx.arc(cx - 0.6, b.y + r - 0.6, r / 2, 0, Math.PI * 2);
     ctx.fill();
   }
+}
+
+/** A medicine ball in flight. */
+function drawThrownBall(ctx: Ctx, ball: ThrownBall, camera: number) {
+  const r = MEDBALL_SIZE / 2;
+  const x = ball.x - camera;
+  if (x > CANVAS_SIZE || x + MEDBALL_SIZE < 0) return;
+  drawMedBall(ctx, x + r, ball.y + r, r);
 }
 
 /** Score and event labels that float up from where they happened. */
@@ -1521,6 +1637,14 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
     }
   }
 
+  // Running Buddy (#2024): the buddy trots on the lane under the runner, who
+  // sits RIDE_LIFT higher on its back inside the same box. The leash runs
+  // from the front hand to the buddy's collar (drawn after the arms).
+  const riding = state.riding === true;
+  if (riding) drawDog(ctx, 1, GROUND_LOCAL_FEET - BUDDY_HEIGHT);
+  ctx.save();
+  if (riding) ctx.translate(0, -RIDE_LIFT);
+
   // Spin Jump: the whole sprite turns about its centre, a time-based angle
   // (about a turn and a half a second), and the shadow stays flat.
   ctx.save();
@@ -1616,6 +1740,17 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
     ctx.roundRect(foot.x - 1.2, foot.y - 1.1, 4.2, 2.2, 1);
     ctx.fill();
   }
+  // A carried medicine ball sits in the front hand, under the watch.
+  if (state.carrying) drawMedBall(ctx, hand.x + 1, hand.y - 0.6, 4);
+  if (riding) {
+    ctx.strokeStyle = BUDDY.leash;
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(hand.x, hand.y);
+    // The collar is on the lane at y 18.5; this path is drawn lifted.
+    ctx.lineTo(13, GROUND_LOCAL_FEET - BUDDY_HEIGHT + 0.5 - RIDE_LIFT);
+    ctx.stroke();
+  }
   // The watch on the wrist.
   ctx.fillStyle = FACE_COLORS.identity;
   ctx.beginPath();
@@ -1649,6 +1784,7 @@ function drawRunner(ctx: Ctx, state: GameEngineState) {
   ctx.lineTo(6, 0.6);
   ctx.stroke();
 
+  ctx.restore();
   ctx.restore();
   ctx.restore();
 }
@@ -2714,6 +2850,7 @@ export function renderWatchFace(
   drawPickups(ctx, state.pickups ?? [], camera);
   drawBlocks(ctx, course, camera);
   drawKudos(ctx, course, camera);
+  if (!state.bonusRoom) drawMedBalls(ctx, course.medBalls ?? [], camera);
 
   drawFoes(ctx, state.foes ?? [], camera);
   const fitness = isFitnessRun(state);
@@ -2723,6 +2860,9 @@ export function renderWatchFace(
   drawRunner(ctx, state);
   drawSpin(ctx, state);
   drawBolts(ctx, state.bolts ?? [], camera);
+  if (state.thrownBall && !state.bonusRoom) {
+    drawThrownBall(ctx, state.thrownBall, camera);
+  }
   drawFoeShots(ctx, state.foeShots ?? [], camera);
   drawPopups(ctx, state, camera);
 

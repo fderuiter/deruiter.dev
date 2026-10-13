@@ -55,19 +55,24 @@ export function paceSegments(meter: number | undefined): number {
 
 /**
  * The meter after `deltaMs`. Sprinting on the track fills it, running or
- * braking on the track drains it, and in the air it holds.
+ * braking on the track drains it, and in the air it holds. `fillScale`
+ * (default 1) slows only the fill, as carrying a medicine ball does (#2024);
+ * the drain is untouched.
  */
 export function stepPaceMeter(
   meter: number | undefined,
   grounded: boolean,
   sprinting: boolean,
-  deltaMs: number
+  deltaMs: number,
+  fillScale: number = 1
 ): number {
   const value = Number.isFinite(meter) ? (meter as number) : 0;
   if (!grounded || !Number.isFinite(deltaMs) || deltaMs <= 0) {
     return clamp(value, 0, 1);
   }
-  const change = sprinting ? deltaMs / PACE_FILL_MS : -deltaMs / PACE_DRAIN_MS;
+  const change = sprinting
+    ? (deltaMs / PACE_FILL_MS) * fillScale
+    : -deltaMs / PACE_DRAIN_MS;
   return clamp(value + change, 0, 1);
 }
 

@@ -6,6 +6,6 @@
 
 # Type Alias: PickupKind
 
-> **PickupKind** = `"shake"` \| `"high"` \| `"heatmap"` \| `"cape"` \| `"suit"`
+> **PickupKind** = `"shake"` \| `"high"` \| `"heatmap"` \| `"cape"` \| `"suit"` \| `"buddy"`
 
 What a pickup grants when touched.

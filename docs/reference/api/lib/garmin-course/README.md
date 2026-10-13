@@ -15,6 +15,7 @@
 - [CourseKudos](interfaces/CourseKudos.md)
 - [CourseLayout](interfaces/CourseLayout.md)
 - [CourseLedge](interfaces/CourseLedge.md)
+- [CourseMedBall](interfaces/CourseMedBall.md)
 - [CoursePole](interfaces/CoursePole.md)
 
 ## Variables
@@ -23,6 +24,7 @@
 - [EMPTY\_COURSE](variables/EMPTY_COURSE.md)
 - [KUDOS\_RADIUS](variables/KUDOS_RADIUS.md)
 - [LEDGE\_THICKNESS](variables/LEDGE_THICKNESS.md)
+- [MEDBALL\_SIZE](variables/MEDBALL_SIZE.md)
 - [POLE\_HEIGHT](variables/POLE_HEIGHT.md)
 - [PX\_PER\_METER](variables/PX_PER_METER.md)
 - [STAGE\_COUNT](variables/STAGE_COUNT.md)

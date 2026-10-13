@@ -50,6 +50,14 @@ Open Water currents; absent on other themes.
 
 ***
 
+### medBalls?
+
+> `optional` **medBalls?**: [`CourseMedBall`](CourseMedBall.md)[]
+
+Medicine balls resting on the lane (#2024); absent on water stages.
+
+***
+
 ### poles
 
 > **poles**: [`CoursePole`](CoursePole.md)[]

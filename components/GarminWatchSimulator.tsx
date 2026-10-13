@@ -1121,6 +1121,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     } else if (after.spinJump && !before.spinJump) {
       announce("Spin jump.", "polite");
     }
+    // Medicine ball (#2024): picking one up and throwing it; a buddy mounts.
+    if (!before.carrying && after.carrying) {
+      announce("Medicine ball picked up.", "polite");
+    }
+    if (!before.thrownBall && after.thrownBall) {
+      announce("Threw the medicine ball.", "polite");
+    }
+    if (!before.riding && after.riding) {
+      announce("Riding your buddy.", "polite");
+    }
   };
   const a11yLight = () => {
     handleToggleLight();
@@ -1463,7 +1473,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               label: "ACTION",
               hint: "[X]",
               title:
-                "Action (X / BACK): throws a heat bolt with a Heat Map, spins with the Compression Cape, Spin Jump in mid-air",
+                "Action (X / BACK): throws a heat bolt with a Heat Map, spins with the Compression Cape, Spin Jump in mid-air; stand beside a medicine ball to pick it up, then press again to throw it",
               ariaLabel: "Action (X / BACK)",
             }
           : {

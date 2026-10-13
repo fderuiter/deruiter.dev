@@ -536,7 +536,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Action (Heat Map & Cape)",
         description:
-          "With a Heat Map, throws a heat bolt along the track. With the Compression Cape, spins to knock foes aside. Both work on Couch Potatoes, Snooze Buttons and Kettlebells. With neither, pressing it in mid-air does a Spin Jump. In Dev Mode, Backspace and G force garbage collection instead.",
+          "With a Heat Map, throws a heat bolt along the track. With the Compression Cape, spins to knock foes aside. Both work on Couch Potatoes, Snooze Buttons and Kettlebells. With neither, pressing it in mid-air does a Spin Jump. Stand beside a medicine ball to pick it up, then press again to throw it forward; a ball in hand is thrown before anything else. In Dev Mode, Backspace and G force garbage collection instead.",
         key: "X / Backspace / G",
       },
       {
@@ -594,6 +594,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "In mid-air with neither a Heat Map nor a Compression Cape, press the action key for a slower, floatier jump. Bouncing off a spiky foe, such as a Move Alert or a Jellyfish, sends you back up without harm. A spin does not break blocks.",
         badge: "Spin",
+      },
+      {
+        title: "Running Buddy",
+        detail:
+          "Bump a rare Sync Block to hatch a Running Buddy, a dog on a leash. Good boy! You ride it: you jump a little higher, and it eats the small foes it runs into (Kettlebells, Move Alerts, Box Jumpers and Auto Laps) for 200 points, with no harm to you. Stomps from above still work. A hit while riding costs the buddy, not your power tier: it runs off ahead, and a sprint can catch it again for three seconds. A buddy waits outside a Water Station's bonus room, and does not carry over to the next stage.",
+        badge: "Buddy",
+      },
+      {
+        title: "Medicine Ball",
+        detail:
+          "Medicine balls lie on the track of the land stages. Stand beside one and press the action key to pick it up, with a Med ball! call-out the first time in a run. A carried ball slows the pace meter's fill, like running with a weight. Press the action key again to throw it forward. A thrown ball knocks out the first foe it hits and breaks a brick, then stops; a ball that lands without hitting anything rests where it stops, ready to pick up again. A hit drops the ball you carry at your feet.",
+        badge: "Med Ball",
       },
       {
         title: "Course Foes",

@@ -51,6 +51,9 @@ async function attemptPageScroll(page: Page) {
     type: "touchMove",
     touchPoints: [{ x: 250, y: 200 }],
   });
+  // Hold the finger still before lifting: Chrome starts a fling from the
+  // velocity of the last moves, and a fling would eat the power-off tap.
+  await page.waitForTimeout(200);
   await cdp.send("Input.dispatchTouchEvent", {
     type: "touchEnd",
     touchPoints: [],

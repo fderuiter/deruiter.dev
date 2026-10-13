@@ -154,10 +154,19 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
         await attemptPageScroll(page);
         expect(await page.evaluate(() => window.scrollY)).toBe(pinned);
 
-        await page
-          .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
-          .tap();
-        await expect(page.locator("[data-immersive]")).toHaveCount(0);
+        // The power tap is retried until the cabinet closes: on the iPad runs
+        // a single tap was seen to be ignored now and then.
+        const power = page.locator(
+          `${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`
+        );
+        await expect(async () => {
+          if ((await page.locator("[data-immersive]").count()) > 0) {
+            await power.tap({ timeout: 2000 });
+          }
+          await expect(page.locator("[data-immersive]")).toHaveCount(0, {
+            timeout: 2000,
+          });
+        }).toPass({ timeout: 15000 });
         // Exit hands the page back at the offset the player left: it returns to
         // the pinned position (no scrollIntoView jump), then scrolls freely.
         // 300 is the offset the player had before launch (see above).

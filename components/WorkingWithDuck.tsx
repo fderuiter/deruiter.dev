@@ -2605,12 +2605,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           }
         />
 
-        {/* Guided tip (#1676): clear of the targets, dismissible, never blocks a drag */}
+        {/* Guided tip (#1676): clear of the targets, dismissible, never blocks a drag.
+            In the touch cabinet it sits at the floor end, so it never covers the wall (#2039). */}
         {visibleTip && (
           <div
             data-testid="duck-tip"
             className={`pointer-events-none absolute inset-x-12 z-10 flex justify-center [@media(max-height:500px)]:hidden ${
-              isAwayFromOffice ? "bottom-2 sm:bottom-3" : "top-2 sm:top-3"
+              isAwayFromOffice || cabinetTouch
+                ? "bottom-2 sm:bottom-3"
+                : "top-2 sm:top-3"
             }`}
           >
             <div className="flex max-w-2xl items-start gap-2 rounded-lg border border-amber-400/30 bg-[#0d0e11]/90 py-1.5 pl-2.5 pr-1 font-mono text-[11px] leading-snug text-amber-100 shadow-lg sm:text-xs">

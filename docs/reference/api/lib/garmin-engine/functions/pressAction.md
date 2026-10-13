@@ -9,7 +9,8 @@
 > **pressAction**(`state`): [`GameEngineState`](../interfaces/GameEngineState.md)
 
 The action key: a Heat Map runner throws a heat bolt and a Cape runner
-spins; at any other tier it does nothing.
+spins. Any other tier in the air starts a Spin Jump (#2023); on the ground
+it does nothing.
 
 ## Parameters
 

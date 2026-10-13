@@ -57,6 +57,19 @@ import {
 } from "./garmin-swim";
 import { isWaterTheme, themeForStage } from "./garmin-themes";
 import {
+  MOVE_TOASTS,
+  SLAM_BATTERY_COST,
+  SLAM_REACH,
+  SLAM_VY,
+  SPIN_GRAVITY,
+  SPIN_JUMP_VY,
+  SPIN_MAX_FALL,
+  WALL_JUMP_VY,
+  WALL_SLIDE_MAX_VY,
+  isSpikyFoe,
+  type MoveName,
+} from "./garmin-moves";
+import {
   BOLT_COOLDOWN_MS,
   BOLT_DEFEAT_SCORE,
   DAMAGE_GRACE_MS,
@@ -84,6 +97,7 @@ import {
 import {
   FOE_DEFEAT_SCORE,
   FOE_STOMP_SCORE,
+  STOMP_WINDOW,
   damageFoe,
   foeBox,
   generateFoes,
@@ -553,6 +567,21 @@ export interface GameEngineState {
    * `distanceMeters` to the stage start, so pace is measured on this.
    */
   furthestMeters?: number;
+  // ---- Burpee Slam, Spin Jump and Wall Jump (#2023).
+  /** A Burpee Slam is falling: true from the press until the landing. */
+  slamming?: boolean;
+  /** A Spin Jump is in the air: true from the mid-air spin until the landing. */
+  spinJump?: boolean;
+  /** The runner is airborne and pressed against the side of a station or plyo box. */
+  wallSide?: boolean;
+  /**
+   * The current wall contact still has its Wall Jump. True on first contact
+   * with a wall; a wall jump uses it up, and it is armed again only after the
+   * runner leaves that wall or lands.
+   */
+  wallJumpReady?: boolean;
+  /** Moves already toasted this run, so each toast shows once per run. */
+  movesUsed?: MoveName[];
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -760,6 +789,22 @@ function beltCarry(
 }
 
 /**
+ * Whether the runner's right edge is against the left side of a station or
+ * plyo box, with its feet below the box's top. A runner stopped by
+ * {@link wallAhead} sits exactly on that side.
+ */
+function wallContact(
+  props: CourseProps,
+  groundY: number,
+  bodyRight: number,
+  feetBottom: number
+): boolean {
+  const touches = (box: { x: number; height: number }) =>
+    Math.abs(bodyRight - box.x) <= 1.5 && feetBottom > groundY - box.height + 1;
+  return props.stations.some(touches) || props.plyos.some(touches);
+}
+
+/**
  * Down on an enterable Water Station takes the runner into its bonus room:
  * a short indoor stretch lined with Kudos that comes out further along the
  * course (#1992). Anywhere else Down does nothing here.
@@ -888,6 +933,11 @@ export function startGame(
     lapStartMs: 0,
     lapSplits: [],
     furthestMeters: 0,
+    slamming: false,
+    spinJump: false,
+    wallSide: false,
+    wallJumpReady: false,
+    movesUsed: [],
     banner: fitness
       ? { text: gpsBannerText(0), ttlMs: GPS_LOCK_MS + 1800, tone: "info" }
       : { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
@@ -970,6 +1020,15 @@ function takeOffVy(
 export function pressJump(state: GameEngineState): GameEngineState {
   if (state.gameState !== "playing") return state;
   if (isUnderwater(state)) return stroke(state);
+  // The Wall Jump only fires on the way down, so a rise can't be extended.
+  if (
+    state.wallSide &&
+    state.wallJumpReady &&
+    !state.isGrounded &&
+    state.playerVy > 0
+  ) {
+    return wallJump(state);
+  }
   const canJump = state.isGrounded || (state.coyoteMs ?? 0) < COYOTE_MS;
   if (canJump && state.playerVy >= 0) {
     return {
@@ -1057,12 +1116,108 @@ export function spinCape(state: GameEngineState): GameEngineState {
 
 /**
  * The action key: a Heat Map runner throws a heat bolt and a Cape runner
- * spins; at any other tier it does nothing.
+ * spins. Any other tier in the air starts a Spin Jump (#2023); on the ground
+ * it does nothing.
  */
 export function pressAction(state: GameEngineState): GameEngineState {
   if (state.power === "heatmap") return throwBolt(state);
   if (state.power === "cape") return spinCape(state);
-  return state;
+  return startSpinJump(state);
+}
+
+/**
+ * Toasts a move the first time it is used in the run: a popup over the
+ * runner, and the move recorded in `movesUsed`. A repeat use leaves the
+ * state as it is.
+ */
+function toastMove(state: GameEngineState, move: MoveName): GameEngineState {
+  const used = state.movesUsed ?? [];
+  if (used.includes(move)) return state;
+  const cameraX = state.distanceMeters * PX_PER_METER;
+  return {
+    ...state,
+    movesUsed: [...used, move],
+    popups: [
+      ...(state.popups ?? []),
+      {
+        x: cameraX + PLAYER_X + 3,
+        y: state.playerY - 14,
+        text: MOVE_TOASTS[move],
+        ttlMs: 1100,
+      },
+    ],
+  };
+}
+
+/**
+ * Whether the runner can start a Burpee Slam: a fitness run, in the air, on
+ * land rather than water, and not already slamming.
+ */
+export function canSlam(state: GameEngineState): boolean {
+  return (
+    state.gameState === "playing" &&
+    isFitnessRun(state) &&
+    !state.isGrounded &&
+    !isUnderwater(state) &&
+    !state.slamming
+  );
+}
+
+/**
+ * Starts a Burpee Slam: the runner drops straight down at {@link SLAM_VY}
+ * until it lands. Only in the air on a fitness run (see {@link canSlam});
+ * otherwise the state is returned unchanged.
+ */
+export function pressSlam(state: GameEngineState): GameEngineState {
+  if (!canSlam(state)) return state;
+  return toastMove(
+    { ...state, slamming: true, spinJump: false, playerVy: SLAM_VY },
+    "slam"
+  );
+}
+
+/**
+ * Whether the runner can start a Spin Jump: in the air, not already spinning
+ * or slamming, and not underwater. Heat Map and Cape runners never reach
+ * this: their action key throws or spins.
+ */
+function canSpinJump(state: GameEngineState): boolean {
+  return (
+    state.gameState === "playing" &&
+    !state.isGrounded &&
+    !isUnderwater(state) &&
+    !state.spinJump &&
+    !state.slamming
+  );
+}
+
+/**
+ * Starts a Spin Jump: no extra lift, just a floatier fall until the landing,
+ * so it can't be used as a second jump in the air.
+ */
+function startSpinJump(state: GameEngineState): GameEngineState {
+  if (!canSpinJump(state)) return state;
+  return toastMove({ ...state, spinJump: true }, "spin");
+}
+
+/**
+ * A Wall Jump: one jump off the side of a station or plyo box, then the
+ * contact's jump is spent until the runner leaves the wall.
+ */
+function wallJump(state: GameEngineState): GameEngineState {
+  return toastMove(
+    {
+      ...state,
+      playerVy: WALL_JUMP_VY,
+      wallJumpReady: false,
+      spinJump: false,
+      slamming: false,
+      jumpHeld: true,
+      jumpBufferMs: 0,
+      coyoteMs: COYOTE_MS,
+    },
+    "wall"
+  );
 }
 
 /** Sets the held pace input: 1 sprints, -1 brakes, 0 runs. */
@@ -1513,6 +1668,11 @@ function loseLife(
     spinMs: 0,
     spinCooldownMs: 0,
     strokeCooldownMs: 0,
+    // The moves end with the life; movesUsed stays, so a toast shows once per run.
+    slamming: false,
+    spinJump: false,
+    wallSide: false,
+    wallJumpReady: false,
     ...stageSetup(stage, state.courseSeed ?? 0),
     foeShots: [],
     restDayMs: 0,
@@ -1571,6 +1731,20 @@ function foeCrashReport(
  * in `obstacles` (screen coordinates).
  */
 /**
+ * Whether a foe is under a Burpee Slam's feet: it overlaps the foot span and
+ * its bottom is level with the surface the runner landed on. A drifting
+ * Jellyfish floats above that surface and is never slammed.
+ */
+function slamTarget(
+  f: Foe,
+  slam: { footLeft: number; footRight: number; top: number }
+): boolean {
+  if (f.mode === "drift") return false;
+  if (!(f.x + f.width > slam.footLeft && f.x < slam.footRight)) return false;
+  return Math.abs(f.y + f.height - slam.top) <= SLAM_REACH;
+}
+
+/**
  * The popup for a stomp in a chain: the points and the chain count, or under
  * fitness rules from the third stomp on, a running toast.
  */
@@ -1595,6 +1769,8 @@ function updateCourseFoes(
     prevBottom: number;
     spinning: boolean;
     deltaMs: number;
+    /** The Burpee Slam landing this step: its foot span and the surface it hit. */
+    slam: { footLeft: number; footRight: number; top: number } | null;
   }
 ): { state: GameEngineState; obstacles: Obstacle[]; lost: boolean } {
   const startFoes = state.foes ?? [];
@@ -1602,7 +1778,8 @@ function updateCourseFoes(
   if (startFoes.length === 0 && startShots.length === 0) {
     return { state, obstacles: obstacles.slice(), lost: false };
   }
-  const { cameraX, bodyH, prevBottom, spinning, deltaMs } = ctx;
+  const { cameraX, bodyH, prevBottom, spinning, deltaMs, slam } = ctx;
+  const spinJumping = state.spinJump === true;
   const runnerX = cameraX + PLAYER_X + PLAYER_WIDTH / 2;
   const stepped = stepFoes(
     startFoes,
@@ -1694,7 +1871,34 @@ function updateCourseFoes(
   // bounce doesn't turn a second foe landed on in the same tick into a hit.
   const landingVy = state.playerVy;
   for (const f of foes) {
+    // A Burpee Slam landing stomps the foe under the feet, with the same
+    // result a stomp has on that foe (a kettlebell rolls, a Rep Max loses a
+    // hit point).
+    if (slam && slamTarget(f, slam)) {
+      const hit = stompFoe(f, runnerX);
+      award(f, hit.score);
+      if (hit.foe) kept.push(hit.foe);
+      continue;
+    }
     const contact = runnerContact(f, runnerBox, prevBottom, landingVy);
+    // A Spin Jump coming down onto a spiky foe bounces off it: no harm, and
+    // the foe is left alone.
+    if (
+      contact !== "none" &&
+      spinJumping &&
+      isSpikyFoe(f.kind) &&
+      landingVy > 0 &&
+      prevBottom <= f.y + STOMP_WINDOW
+    ) {
+      next = {
+        ...next,
+        playerY: Math.min(next.playerY, f.y - bodyH),
+        playerVy: SPIN_JUMP_VY,
+        jumpBufferMs: 0,
+      };
+      kept.push(f);
+      continue;
+    }
     if (contact === "stomp") {
       const hit = stompFoe(f, runnerX);
       // A stomp the Rep Max shrugs off during its grace doesn't build the chain.
@@ -2218,16 +2422,30 @@ function stepSimulation(
   };
 
   const jumpHeld = state.jumpHeld ?? false;
+  // A Spin Jump floats: a lighter pull and a slower fall, until it lands.
+  // The rise is untouched, so a spin never reaches higher than the jump.
+  const spinJumping = state.spinJump === true;
+  const spinFalling = spinJumping && state.playerVy >= 0;
   // Swimming sinks under lighter gravity, and a Tri Suit sinks slower still.
   // On land a Tri Suit rise gets no float.
-  const landGravity =
-    state.playerVy < 0 && jumpHeld && !suitOn ? GRAVITY : FALL_GRAVITY;
+  const landGravity = spinFalling
+    ? SPIN_GRAVITY
+    : state.playerVy < 0 && jumpHeld && !suitOn
+      ? GRAVITY
+      : FALL_GRAVITY;
   const gravity = swimming
     ? suitOn
       ? SWIM_GRAVITY * SUIT_GRAVITY_SCALE
       : SWIM_GRAVITY
     : landGravity;
-  const fallCap = swimming ? SWIM_SINK_MAX : MAX_FALL_VY;
+  // A Burpee Slam falls at its own speed, which is also its cap.
+  const fallCap = swimming
+    ? SWIM_SINK_MAX
+    : state.slamming
+      ? SLAM_VY
+      : spinJumping
+        ? SPIN_MAX_FALL
+        : MAX_FALL_VY;
   let nextPlayerY = state.playerY + carry.dy + state.playerVy * dtRatio;
   let nextPlayerVy = Math.min(fallCap, state.playerVy + gravity * dtRatio);
   // A Cape runner holding jump glides, and flight stops at the ceiling.
@@ -2241,10 +2459,19 @@ function stepSimulation(
     nextPlayerY = SWIM_SURFACE_Y;
     nextPlayerVy = Math.max(0, nextPlayerVy);
   }
+  // Pressed against a station or plyo side, the runner slides down slowly.
+  // Only a fall is slowed; the wall is checked where the runner now stands.
+  const wallTouch =
+    !swimming && wallContact(props, GROUND_Y, bodyRight, nextPlayerY + h);
+  if (wallTouch && !state.slamming) {
+    nextPlayerVy = Math.min(nextPlayerVy, WALL_SLIDE_MAX_VY);
+  }
   let isGrounded = false;
 
   const prevBottom = state.playerY + carry.dy + h;
   const nextBottom = nextPlayerY + h;
+  // The top the runner came down onto, when it landed this step.
+  let landedTop = Infinity;
   if (nextBottom >= prevBottom) {
     // Footing: the lane where it isn't a gap, and the tops of ledges, blocks
     // and props the runner was above a moment ago. The highest one crossed
@@ -2273,6 +2500,7 @@ function stepSimulation(
       if (footRight > f.left && footLeft < f.right) consider(f.top, f);
     }
     if (landingTop !== Infinity) {
+      landedTop = landingTop;
       nextPlayerY = landingTop - h;
       nextPlayerVy = 0;
       isGrounded = true;
@@ -2318,11 +2546,36 @@ function stepSimulation(
       const block = course.blocks[bumped];
       nextPlayerY = block.y + BLOCK_SIZE;
       nextPlayerVy = 1;
+      // A Spin Jump only bonks: no break and no reward.
       // A Rest Day brick is a Kudos in disguise, so it never breaks.
-      if (block.kind === "brick" && !block.fromKudos && power !== "base")
+      if (spinJumping) {
+        // Bonk only.
+      } else if (
+        block.kind === "brick" &&
+        !block.fromKudos &&
+        power !== "base"
+      ) {
         breakBoard(bumped);
-      else bumpBlock(bumped);
+      } else bumpBlock(bumped);
     }
+  }
+
+  // A Burpee Slam that lands: the board under the feet breaks from above, and
+  // the fitness runner pays for the drop in Body Battery.
+  const slamLanded = landedTop !== Infinity && state.slamming === true;
+  if (slamLanded && fitness) {
+    bodyBatteryChange -= SLAM_BATTERY_COST;
+  }
+  if (slamLanded) {
+    const under = course.blocks.findIndex(
+      (b) =>
+        b.kind === "brick" &&
+        !b.fromKudos &&
+        b.y === landedTop &&
+        footRight > b.x &&
+        footLeft < b.x + BLOCK_SIZE
+    );
+    if (under !== -1) breakBoard(under);
   }
 
   // Basement Gym racks (#1993): a runner rising into a rack's underside bonks
@@ -2688,6 +2941,16 @@ function stepSimulation(
       toast("power-up");
   }
 
+  // The wall contact: a fresh touch arms the Wall Jump, and it stays spent
+  // while the runner keeps touching the same wall.
+  const landed = landedTop !== Infinity;
+  const wallSide = wallTouch && !isGrounded;
+  const wallJumpReady = wallSide
+    ? state.wallSide
+      ? state.wallJumpReady === true
+      : true
+    : false;
+
   // 4. Memory Allocations (Automatic dynamic memory pressure)
   let updatedState: GameEngineState = {
     ...state,
@@ -2730,6 +2993,12 @@ function stepSimulation(
     bonusRoom,
     lapSplits,
     lapStartMs: lapSplit === null ? (state.lapStartMs ?? 0) : lapClockMs,
+    // The moves end on the landing; a wall contact lasts while the runner
+    // stays in the air against it.
+    slamming: state.slamming === true && !landed,
+    spinJump: spinJumping && !landed,
+    wallSide,
+    wallJumpReady,
     ...(fitness
       ? {
           bodyBattery,
@@ -3136,6 +3405,7 @@ function stepSimulation(
     prevBottom: prevPlayerBottom,
     spinning,
     deltaMs: safeDelta,
+    slam: slamLanded ? { footLeft, footRight, top: landedTop } : null,
   });
   if (foeTick.lost) return foeTick.state;
   updatedState = foeTick.state;
@@ -3832,6 +4102,12 @@ export class GarminWatchEngine extends ArcadeEngine<
 
   public pressAction(): void {
     this.state = pressAction(this.state);
+    this.notifySubscribers();
+  }
+
+  /** Down in the air on a fitness run: starts a Burpee Slam (#2023). */
+  public pressSlam(): void {
+    this.state = pressSlam(this.state);
     this.notifySubscribers();
   }
 

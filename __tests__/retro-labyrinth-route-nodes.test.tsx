@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
 import {
@@ -32,25 +33,28 @@ vi.mock("@/hooks/useTelemetry", () => ({
 
 /** A 2D context stub so the maze loop can run in jsdom. */
 function stubCanvas() {
-  const ctx = new Proxy({} as Record<PropertyKey, unknown>, {
-    get(target, key) {
-      if (key in target) return target[key];
-      if (key === "measureText")
-        return (text: string) => ({ width: (text || "").length * 4 });
-      if (key === "createImageData")
-        return (w: number, h: number) => ({
-          width: w,
-          height: h,
-          data: new Uint8ClampedArray(w * h * 4),
-        });
-      if (key === "createRadialGradient" || key === "createLinearGradient")
-        return () => ({ addColorStop: vi.fn() });
-      return vi.fn();
-    },
-  }) as unknown as CanvasRenderingContext2D;
-  HTMLCanvasElement.prototype.getContext = vi.fn(
-    () => ctx
-  ) as unknown as HTMLCanvasElement["getContext"];
+  const ctx = fromAny<CanvasRenderingContext2D, unknown>(
+    new Proxy({} as Record<PropertyKey, unknown>, {
+      get(target, key) {
+        if (key in target) return target[key];
+        if (key === "measureText")
+          return (text: string) => ({ width: (text || "").length * 4 });
+        if (key === "createImageData")
+          return (w: number, h: number) => ({
+            width: w,
+            height: h,
+            data: new Uint8ClampedArray(w * h * 4),
+          });
+        if (key === "createRadialGradient" || key === "createLinearGradient")
+          return () => ({ addColorStop: vi.fn() });
+        return vi.fn();
+      },
+    })
+  );
+  HTMLCanvasElement.prototype.getContext = fromAny<
+    HTMLCanvasElement["getContext"],
+    unknown
+  >(vi.fn(() => ctx));
 }
 
 function renderPhoneRoom() {

@@ -42,6 +42,10 @@ export interface CourseStation {
   exitX: number;
   /** Set once its bonus room has been used. */
   used?: boolean;
+  /** Id of the Finisher Medal hidden in its bonus room (#2025). */
+  medalId?: number;
+  /** Its bonus room ends at a secret exit's pole (#2025). */
+  secretExit?: boolean;
 }
 
 /** A Plyo Box: a low box on the lane that springs the runner up on landing. */
@@ -555,8 +559,8 @@ function byId<T extends { id: number }>(a: T, b: T): number {
 }
 
 /**
- * Rest Day swap. resting=true: every brick block without fromKudos becomes a
- * Kudos, and every Kudos without fromBrick becomes a brick. resting=false
+ * Rest Day swap. resting=true: every brick block without fromKudos (except
+ * one hiding a medal) becomes a Kudos, and every Kudos without fromBrick becomes a brick. resting=false
  * reverses only the flagged ones, clearing the flags. Sync blocks, gaps,
  * ledges and poles are untouched.
  */
@@ -569,7 +573,8 @@ export function restDaySwap(
   const kudos: CourseKudos[] = [];
   if (resting) {
     for (const b of course.blocks) {
-      if (b.kind === "brick" && !b.fromKudos) {
+      // A PR Board hiding a medal stays a board (#2025).
+      if (b.kind === "brick" && !b.fromKudos && b.contents !== "medal") {
         kudos.push({ id: b.id, x: b.x + half, y: b.y + half, fromBrick: true });
       } else {
         blocks.push(b);
@@ -625,6 +630,8 @@ export function restDaySwap(
   if (course.ceilings) swapped.ceilings = course.ceilings;
   if (course.currents) swapped.currents = course.currents;
   if (course.medBalls) swapped.medBalls = course.medBalls;
+  if (course.medals) swapped.medals = course.medals;
+  if (course.checkpoints) swapped.checkpoints = course.checkpoints;
   return swapped;
 }
 

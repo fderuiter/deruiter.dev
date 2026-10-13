@@ -608,6 +608,24 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Med Ball",
       },
       {
+        title: "Aid Station",
+        detail:
+          "Halfway along each stage stands an Aid Station: a small table with a cup and a flag pole. Run past it and its flag flies green, with an Aid station! toast. Lose a life after that and you restart at the Aid Station, not at the start of the stage. Until you touch it, its flag hangs grey. A stage clear puts the Aid Station away for the next stage.",
+        badge: "Aid",
+      },
+      {
+        title: "Finisher Medals",
+        detail:
+          "Each stage hides three Finisher Medals, gold discs on a two-tone ribbon. One may sit inside a PR Board, so break the board to get it. One may wait in a Water Station's bonus room, and the rest float over a ledge, a block row or the lane, so jump for them. Grab one to score 500 points. Three slots at the top of the face show the stage's medals: gold when found. A medal is found once per run, and it stays found when a lost life lays the stage out again. The run-over screen tallies your MEDALS, out of 15.",
+        badge: "Medals",
+      },
+      {
+        title: "Secret Exits",
+        detail:
+          "Some stages hide a second finish pole at the far end of a Water Station's bonus room, past the Aid Station. Grab it to clear the stage early and skip the rest of the course to the next stage. Any medal you still need sits before that station. Each secret exit you find is recorded for the run and shown as SECRET EXITS on the run-over screen. Stage 5 has none.",
+        badge: "Exits",
+      },
+      {
         title: "Course Foes",
         detail:
           "Each stage adds its own gym foes. A Kettlebell tips over when you stomp it, then slides when you touch or kick it, and a sliding kettlebell flattens anything in its path. A Move Alert (the watch nagging you to move) flies in waves; stomp it to clip its wings. A Box Jumper hops toward you on a timer. An Auto Lap is a lap timer that buzzes lap pings at you while it is on screen. The Rep Max, a gym bro who lobs dumbbells, waits on stages 3 and 5. It takes three stomps or six hits, and pays 2,000.",

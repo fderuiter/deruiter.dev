@@ -8,8 +8,8 @@
 
 > **restDaySwap**(`course`, `resting`): [`CourseLayout`](../../garmin-course/interfaces/CourseLayout.md)
 
-Rest Day swap. resting=true: every brick block without fromKudos becomes a
-Kudos, and every Kudos without fromBrick becomes a brick. resting=false
+Rest Day swap. resting=true: every brick block without fromKudos (except
+one hiding a medal) becomes a Kudos, and every Kudos without fromBrick becomes a brick. resting=false
 reverses only the flagged ones, clearing the flags. Sync blocks, gaps,
 ledges and poles are untouched.
 

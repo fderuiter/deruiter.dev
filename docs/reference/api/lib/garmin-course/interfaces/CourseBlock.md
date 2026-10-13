@@ -16,7 +16,7 @@ plain solid footing.
 
 ### contents
 
-> **contents**: `"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"` \| `"buddy"`
+> **contents**: `"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"` \| `"buddy"` \| `"medal"`
 
 ***
 
@@ -37,6 +37,14 @@ A Kudos turned into a brick by a Rest Day (#1992); it turns back after.
 ### kind
 
 > **kind**: `"sync"` \| `"brick"`
+
+***
+
+### medalId?
+
+> `optional` **medalId?**: `number`
+
+Id of the Finisher Medal a PR Board hides; breaking it finds the medal (#2025).
 
 ***
 

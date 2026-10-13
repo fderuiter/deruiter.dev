@@ -18,6 +18,14 @@ Height on the pole the runner grabbed, 0 (bottom) to 1 (top), once touched.
 
 ***
 
+### secret?
+
+> `optional` **secret?**: `boolean`
+
+A secret exit's pole, hidden in a bonus room (#2025).
+
+***
+
 ### stage
 
 > **stage**: `number`

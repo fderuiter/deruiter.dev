@@ -9,7 +9,7 @@
 > **appendCourse**(`course`, `next`): [`CourseLayout`](../interfaces/CourseLayout.md)
 
 Adds `next` onto `course`, keeping what is still live. The optional
-ceilings, currents and medicine ball keys are carried only when either
+ceilings, currents, medicine ball, medal and checkpoint keys are carried only when either
 side has them.
 
 ## Parameters

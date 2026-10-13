@@ -104,6 +104,14 @@ Id of the carried medicine ball, reused when it is thrown and lands.
 
 ***
 
+### checkpoint?
+
+> `optional` **checkpoint?**: [`CourseCheckpoint`](../../garmin-course/interfaces/CourseCheckpoint.md) \| `null`
+
+The Aid Station touched on the current stage; reset by startGame, cleared on a stage clear, kept across lost lives (#2025).
+
+***
+
 ### consecutiveDodges
 
 > **consecutiveDodges**: `number`
@@ -375,6 +383,14 @@ Lives left, counting the current one; absent means this is the last.
 
 ***
 
+### medalsFound?
+
+> `optional` **medalsFound?**: `number`[]
+
+Finisher Medal ids found this run; reset by startGame, kept across lost lives and stages (#2025).
+
+***
+
 ### medBallToasted?
 
 > `optional` **medBallToasted?**: `boolean`
@@ -534,6 +550,14 @@ Held pace input: 1 sprints, -1 brakes, 0 runs.
 > `optional` **scoreRemainder?**: `number`
 
 Fractional score (0 to under 1) carried between ticks.
+
+***
+
+### secretExits?
+
+> `optional` **secretExits?**: `number`[]
+
+Stages whose secret exit was taken this run; reset by startGame, otherwise kept (#2025).
 
 ***
 

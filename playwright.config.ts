@@ -87,11 +87,11 @@ export default defineConfig({
       }))
     ),
     // ADR 0061: the 320px floor and a landscape phone for the immersive
-    // cabinet. Only mobile-kit.spec.ts runs here, so the rest of the suite does
-    // not multiply by two.
+    // cabinet. Only the mobile kit and Retro Labyrinth's phone spec run here,
+    // so the rest of the suite does not multiply by two.
     {
       name: "Small Phone",
-      testMatch: /mobile-kit\.spec\.ts$/,
+      testMatch: /(mobile-kit|retro-labyrinth-tablet)\.spec\.ts$/,
       use: {
         ...devices["Pixel 5"],
         viewport: { width: 320, height: 568 },
@@ -100,7 +100,7 @@ export default defineConfig({
     },
     {
       name: "Phone Landscape",
-      testMatch: /mobile-kit\.spec\.ts$/,
+      testMatch: /(mobile-kit|retro-labyrinth-tablet)\.spec\.ts$/,
       use: { ...devices["iPhone 12 landscape"] },
     },
   ],

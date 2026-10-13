@@ -34,7 +34,8 @@ export const TABLET_MATRIX: readonly MatrixSize[] = [
 /**
  * Fails when any rendered element, or the document itself, is wider than the
  * viewport. Elements inside a clipped ancestor are reported too, so a clipped
- * overflow still shows up here. Elements inside a horizontal scroller
+ * overflow still shows up here. Screen-reader-only (`.sr-only`) content is
+ * clipped by design and skipped. Elements inside a horizontal scroller
  * (`overflow-x: auto` or `scroll`, such as a card hand) are skipped: reaching
  * them by swiping is the intended design.
  *
@@ -51,6 +52,8 @@ export async function assertNoHorizontalOverflow(page: Page): Promise<void> {
       if (style.display === "none" || style.visibility === "hidden") continue;
       const box = element.getBoundingClientRect();
       if (box.width === 0 && box.height === 0) continue;
+      // Screen-reader-only content is clipped to 1px by design.
+      if (element.closest(".sr-only")) continue;
       let scroller = element.parentElement;
       while (scroller) {
         const overflowX = window.getComputedStyle(scroller).overflowX;

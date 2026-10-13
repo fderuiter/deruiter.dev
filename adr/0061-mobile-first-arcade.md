@@ -64,9 +64,9 @@ devices in the Playwright matrix and on a real iOS Safari and Android device:
 
 The kit lives in `components/arcade/mobile/` with a barrel `index.ts`. PlayCabinet
 and the tests import through the barrel. It builds on the existing controls
-rather than replacing them. TouchButton, DockFrame and the control-hint helpers
-await their first game consumer; they are here so that consumer can adopt them
-without a new kit change.
+rather than replacing them. Retro Labyrinth is the first consumer of TouchButton,
+DockFrame and HoldDpad. The remaining helpers, including the control-hint
+helpers, await their first game consumer.
 
 - **Immersive touch cabinet.** On any touch device (`TOUCH_DEVICE_QUERY`, see
   the amendment below), the cabinet goes immersive when it launches and stays
@@ -86,7 +86,10 @@ without a new kit change.
   The toolbar and the control dock keep their own taps. On leaving immersive, the
   preview scrolls back into view. Desktop never sets the attribute, so its
   markup does not change. The exit is the cabinet's Power button in the
-  immersive toolbar, which is 48px.
+  immersive toolbar. That toolbar is one row of icon-only 44px keys (Fullscreen
+  where the API exists, Setup, Power), floats top-right inside the safe area,
+  and publishes its width as `--cabinet-toolbar-inset`, so a game HUD can pad
+  for it. Fullscreen is hidden on iOS, which has no Fullscreen API.
 - **Safe areas.** The site's viewport export sets `viewportFit: "cover"`, so
   `env(safe-area-inset-*)` reports real values on notched phones. The body pads
   its left and right insets, and the fixed navbar pads its top and sides. On
@@ -109,8 +112,9 @@ without a new kit change.
   finger lifts. It releases everything on blur. It is at least 44px, has a
   required accessible name, takes `touch-action: none`, vibrates through
   `lib/haptics.ts`, and also answers Enter and Space. Its press motion is gated
-  with `motion-safe:`. `DockFrame` mirrors a pair of docks for left-handed play
-  without changing the docks themselves. `DpadActionDock`, `TwinStickAimDock`,
+  with `motion-safe:`. `DockFrame` lays a dock row out for the player's hand
+  (`handedness`), reversing the order of its two sides; Retro Labyrinth reads
+  it from its Options sheet. `DpadActionDock`, `TwinStickAimDock`,
   `BezelClusterDock`, `ActionStripDock` and `VirtualGamepad` remain the
   controls.
 - **Control hints.** `controlHint({ key, touch })` names a control both ways, and
@@ -154,6 +158,102 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
   "Phone Landscape" (iPhone 12 landscape). They run only `mobile-kit.spec.ts`, so
   the rest of the suite does not multiply.
 
+## Amendment (2026-10-12): Retro Labyrinth leaves the gate
+
+Retro Labyrinth passed the phone bar in its own change (#2003) and left
+`DesktopOnlyGate`. Its cabinet declares `mobileOrientation="landscape"` and
+`mobileLayout="fit"`, and wires `onAutoPause` to the game's pause, so a
+running room pauses on hide, blur or rotation and waits for a tap on Resume.
+
+- **Orientation.** Landscape. At 812x375 the maze is about 455x273 CSS
+  pixels, with the d-pad on the left and the actions on the right. Upright,
+  the same maze is width-bound at 343 pixels with the rest of the screen
+  empty. A phone held upright gets the rotate prompt, as the kit prescribes.
+- **Controls.** A three-by-three d-pad that repeats while held, at 44px keys
+  on the phone dock, and tool, EMP, Exploit and Market buttons at 44px on a
+  two-column grid, all built on the kit's `TouchButton`. The side columns are
+  only as wide as their keys, plus the safe-area insets.
+- **Maze size.** On the touch cabinet the maze fills the largest 5:3 box its
+  dock leaves, with a CSS width that is a multiple of 5 px and a backing store
+  at the device pixel ratio, sampled nearest-neighbour. Measured on the
+  Playwright Small Phone at 2x: 520x312 CSS px (1040x624 device px) at
+  812x375, and 310x186 CSS px (620x372 device px) at 568x320. At 568x320 the
+  side docks take the width and the 5:3 box then limits the height to 186 px,
+  so the maze is 58% of the screen height, short of the 250 px that was
+  aimed for. Reaching 250 px would need a different aspect ratio or cropping
+  the maze, and both break the art, so the shortfall is accepted. A swipe
+  across the maze moves one step, and a tap does nothing.
+- **Fractional scale and #1522.** Desktop keeps the integer scale of the
+  visual overhaul (#1522, closed), so every art pixel is the same size. The
+  phone trades that for size: a fractional scale means some art pixels are one
+  device pixel wider than others. The trade is taken because an integer scale
+  leaves a quarter of a phone screen empty, and the nearest-neighbour sampling
+  keeps the edges crisp.
+- **HUD.** One slim 44px row on the same top line as the toolbar: floor, HP,
+  score, and an Options button, padded on the right by
+  `--cabinet-toolbar-inset`. The objective is not repeated in the HUD; the
+  maze's own in-world line carries it. Options open a sheet over the maze that
+  pauses a running room. The hotbar is desktop only. Entering real fullscreen
+  asks for the landscape lock, which can resize the page and so raise one
+  auto-pause; the room then waits for Resume like any other pause.
+- **Kit additions.** `createHoldRepeater` and `useHoldRepeat`, `HoldDpad`,
+  `swipeDirection`, and `CabinetTouchContext`, which tells a game it is in
+  the immersive touch cabinet.
+- **Market.** The darknet Market is a modal dialog on every device, with a
+  focus trap, Escape to close, and focus back on the key that opened it. Its
+  list is a labelled, keyboard-focusable region; a "More below" cue shows
+  while items sit under the fold. Price buttons and Close are at least 44px on
+  a coarse pointer. Purchases go through the same handler on both devices.
+  On a coarse pointer in landscape the list is two columns, so at 568x320 all
+  five items fit without scrolling in the usual case. Each description is
+  clamped to two lines. The "More below" cue still shows while items sit under
+  the fold. Desktop and portrait phones keep one column.
+- **Patrol warning.** A live patrol within two orthogonal steps of the player
+  warns on the phone cabinet, in two levels. Amber is two steps out, and the
+  HUD reads "Patrol 2 steps out". Red is one step out, and the HUD reads
+  "Patrol adjacent". Each colours the maze frame and pulses it under
+  `motion-safe:`. Red alone buzzes once through `triggerHaptic`, on the rising
+  edge into red. The level comes from `patrolThreat`, which counts steps
+  ignoring walls, so it may warn about a patrol a wall would keep out but never
+  misses one that can reach. Stunned and frozen patrols never count. Desktop
+  has no warning, so nothing changes there.
+- **Phone tool toast.** Every EMP, Exploit and tool press on the phone shows a
+  short line in the maze frame: the tool, then what happened, such as
+  "EMP: ..." or "Scan: out of RAM". An Exploit with no tool left to fire reads
+  "Exploit: no tool has ammo". The toast is plain text with no motion, clears
+  after about 2.2 seconds, and sits in a `role="status"` live region. Desktop
+  keeps its floating in-maze text and gets no toast.
+- **Route nodes and the exit.** Every move, whether a key, a d-pad tap, a hold
+  repeat or a swipe, reaches the route nodes through one path in `tryMove`.
+  `markNodeVisited` is pure, and the component calls it outside any state
+  updater, so a node scores once and only when it is new. The in-world
+  "REACH THE EXIT" prompt is drawn once when a room loads, so the last node
+  now draws it again as it opens the exit. The status group's objective line
+  reads "REACH THE EXIT" once the exit is open, as well as while it is locked.
+- **Testing data.** The status group carries `data-grid` (one "#" or "." string
+  per row, rows joined with "|", moving walls read as walls), `data-nodes`
+  ("x,y:visited" entries joined with ";"), `data-exit-locked` ("true" or
+  "false"), `data-threat` ("red", "amber" or "none"), and the existing
+  `data-player-cell`, `data-patrol-cells` and `data-exit-cell`. These are read
+  by tests and the route walk in `__tests__/e2e/retro-labyrinth-mobile.spec.ts`,
+  which plans with a breadth-first search from the grid and never reads React
+  internals.
+- **Launch and exit.** Launch pins the page at its offset. Exit restores that
+  exact offset, so the preview returns where the player left it with no jump;
+  the earlier scroll-into-view on exit was removed.
+- **Overlay headings.** Overlay titles are level-two headings, so the page's
+  heading order stays valid under axe.
+- **Room cleared.** The room-cleared card, the Market and the phone tool
+  labels are shared components or labels with their own unit tests. The
+  phone label for the port scan reads "Scan".
+- **Hub.** The "Desktop only" badge now follows an explicit `desktopOnly`
+  flag per card. Eight games carry it (the hub lists ten cards). Retro
+  Labyrinth and Trial & Error do not, so Trial & Error no longer shows a badge
+  it never needed.
+
+The other eight gated games keep the notice until their own mobile pull
+requests land.
+
 ## Alternatives considered
 
 - **Keep the gate on all ten games indefinitely.** Honest, but it leaves the
@@ -182,7 +282,10 @@ direction was to make every game perfect on an iPad first.
 - **Immersive on every touch device.** The cabinet latches immersive at Launch
   on `TOUCH_DEVICE_QUERY` (`(pointer: coarse)`), so tablets in both orientations
   get it at every width. The rotate prompt and the Screen Orientation lock apply
-  to phones only (`PHONE_QUERY`), since `mobileOrientation` is a phone concern.
+  to phones only, since `mobileOrientation` is a phone concern. On 2026-10-13
+  the prompt, the lock and the rotation auto-pause share one short-side query,
+  `PHONE_ORIENTATION_QUERY` (`(pointer: coarse) and ((max-width: 500px) or
+  (max-height: 500px))`), and tablets do not pause on rotation.
   Desktop with a fine pointer is unchanged.
 - **Apple Pencil.** Pointer events with `pointerType` `"pen"` are treated as
   touch by the kit. `TouchButton` captures, counts and releases a Pencil and a

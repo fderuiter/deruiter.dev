@@ -41,6 +41,8 @@ interface ArcadeGameCard {
   borderHover: string;
   badgeBg: string;
   storageKey?: string;
+  /** Still behind the desktop-only gate on phones (ADR 0048, ADR 0061). */
+  desktopOnly?: boolean;
   route: string;
 }
 
@@ -98,6 +100,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     storageKey: "working_with_duck_high_score",
+    desktopOnly: true,
     route: "/arcade/working-with-duck",
   },
   {
@@ -124,6 +127,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-red-400/50",
     badgeBg: "bg-red-500/10 text-red-400 border-red-500/30",
     storageKey: "laser_loon_high_score",
+    desktopOnly: true,
     route: "/arcade/laser-loon",
   },
   {
@@ -150,6 +154,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-purple-400/50",
     badgeBg: "bg-purple-500/10 text-purple-300 border-purple-500/30",
     storageKey: "quasi_perfect_puzzler_progress_v1",
+    desktopOnly: true,
     route: "/arcade/quasi-puzzler",
   },
   {
@@ -176,6 +181,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     storageKey: "garmin_simulator_high_score",
+    desktopOnly: true,
     route: "/arcade/garmin-watch",
   },
   {
@@ -202,6 +208,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-emerald-400/50",
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
     storageKey: "clinical_chaos_highscore",
+    desktopOnly: true,
     route: "/arcade/clinical-chaos",
   },
   {
@@ -256,6 +263,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
     storageKey: "study_director_high_score",
+    desktopOnly: true,
     route: "/arcade/study-director",
   },
   {
@@ -284,6 +292,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-lime-200/50",
     badgeBg: "bg-lime-200/10 text-lime-200 border-lime-200/30",
     storageKey: "patty_drive_thru_high_score",
+    desktopOnly: true,
     route: "/arcade/patty-drive-thru",
   },
   {
@@ -312,6 +321,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-rose-300/50",
     badgeBg: "bg-rose-300/10 text-rose-300 border-rose-300/30",
     storageKey: "for_better_or_bulk_high_score",
+    desktopOnly: true,
     route: "/arcade/for-better-or-bulk",
   },
   {
@@ -338,6 +348,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-rose-400/50",
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
     storageKey: "retro_labyrinth_highscore",
+    desktopOnly: true,
     route: "/arcade/retro-labyrinth",
   },
 ];
@@ -415,11 +426,13 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
               >
                 {game.genre}
               </span>
-              <span
-                className={`${SHOW_ON_TOUCH_COMPACT_INLINE} px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-zinc-700 text-zinc-300`}
-              >
-                Desktop only
-              </span>
+              {game.desktopOnly && (
+                <span
+                  className={`${SHOW_ON_TOUCH_COMPACT_INLINE} px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-zinc-700 text-zinc-300`}
+                >
+                  Desktop only
+                </span>
+              )}
             </div>
           </div>
 

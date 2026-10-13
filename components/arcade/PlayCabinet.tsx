@@ -1,6 +1,7 @@
 "use client";
 
 import React, {
+  useCallback,
   useState,
   useEffect,
   useLayoutEffect,
@@ -27,14 +28,16 @@ import {
   GameSetupConfig,
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
+  CabinetTouchContext,
   lockScreenOrientation,
   RotateDevicePrompt,
   InputModalityAttribute,
   TouchControlsGate,
   useCabinetAutoPause,
   useOrientationMismatch,
-  usePhone,
+  PHONE_ORIENTATION_QUERY,
   useTouchDevice,
   type MobileOrientation,
 } from "@/components/arcade/mobile";
@@ -128,6 +131,14 @@ function findOpenGameDialog(cabinet: HTMLElement): Element | null {
   );
 }
 
+/**
+ * Width in CSS px of the touch toolbar: `count` 48px buttons, 4px gaps, the
+ * toolbar's 2px padding and 1px borders each side.
+ */
+function cabinetToolbarWidth(count: number): number {
+  return count * 48 + Math.max(0, count - 1) * 4 + 6;
+}
+
 export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   gameId: rawGameId,
   title,
@@ -158,14 +169,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // The device class is latched at Launch and held until exit, so an iPad that
   // turns across a breakpoint mid-game stays immersive instead of jumping layouts.
   const isTouchDevice = useTouchDevice();
-  const isPhone = usePhone();
   const [launchedOnTouch, setLaunchedOnTouch] = useState(false);
   const touchImmersive = isLaunched && launchedOnTouch;
-  // Orientation is a phone concern: a tablet is never asked to turn. The phone
-  // is held against the game's orientation: the cabinet is blocked behind the
-  // rotate prompt (inert siblings, focus in the prompt).
+  // Orientation is a phone concern: a tablet is never asked to turn, and a
+  // tablet that rotates does not pause (ADR 0061). One query decides the
+  // rotate prompt, the screen lock and the rotation pause: a phone by its short
+  // side, so a Split View pane of an iPad stays out of it.
+  const phoneOrientation = useMediaQuery(PHONE_ORIENTATION_QUERY);
   const orientationMismatch = useOrientationMismatch(mobileOrientation);
-  const rotateBlocked = touchImmersive && isPhone && orientationMismatch;
+  // The phone is held against the game's orientation: the cabinet is blocked
+  // behind the rotate prompt (inert siblings, focus in the prompt).
+  const rotateBlocked =
+    touchImmersive && phoneOrientation && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);
@@ -207,12 +222,16 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   const {
     isFullscreen,
     isPseudoFullscreen,
+    isSupported: fullscreenSupported,
     toggleFullscreen: toggleCabinetFullscreen,
     exitFullscreen,
   } = useFullscreen(cabinetRef, { enableKeyShortcut: false });
   // Real Fullscreen, pseudo-fullscreen (iOS) or the immersive touch cabinet:
   // all of them lay the cabinet out as the fullscreen layout does.
   const immersive = isFullscreen || touchImmersive;
+  // The touch toolbar's buttons: Fullscreen only where the API exists (iOS has
+  // none), plus Setup and Power.
+  const toolbarButtonCount = (fullscreenSupported ? 1 : 0) + 2;
   const { setSafeTimeout } = useSafeTimeout();
   // Entering fullscreen swaps the header, so focus would otherwise land on the
   // first toolbar button ("Exit Fullscreen"), where the game's Space key
@@ -249,36 +268,63 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     };
   }, [isFullscreen]);
 
-  // The immersive touch cabinet pins the page while it is open. Overflow
-  // hidden alone does not stop a programmatic or chained scroll, so the body
-  // is also fixed at the scroll position it had, and that position is restored
-  // on exit. The overscroll bounce is off too. Phones and tablets both pin.
-  useEffect(() => {
+  // The immersive touch cabinet locks page scroll while it is open and gives
+  // the back of the page no overscroll bounce. Both are restored on exit.
+  // The pin's restore frame, and whether the cabinet is unmounting (navigation
+  // or the page leaving), when the scroll must be left alone.
+  const restoreFrameRef = useRef<number | null>(null);
+  const unmountingRef = useRef(false);
+  useLayoutEffect(
+    () => () => {
+      // Declared before the pin effect, so this runs first on unmount.
+      unmountingRef.current = true;
+      if (restoreFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
+      }
+    },
+    []
+  );
+  useLayoutEffect(() => {
     if (!touchImmersive || isFullscreen) return;
     const body = document.body;
-    const root = document.documentElement;
-    const scrollY = window.scrollY;
-    const previous = {
-      overflow: body.style.overflow,
-      position: body.style.position,
-      top: body.style.top,
-      width: body.style.width,
-      overscroll: root.style.overscrollBehavior,
-    };
+    // Scroll anchoring is switched off at launch (see handleLaunch), so the
+    // offset read here is the one the player left.
+    const previousOverflow = body.style.overflow;
+    const previousOverscroll =
+      document.documentElement.style.overscrollBehavior;
+    const previousPosition = body.style.position;
+    const previousTop = body.style.top;
+    const previousWidth = body.style.width;
+    // Pin the page where it is. Overflow hidden alone does not stop iOS from
+    // scrolling or from restoring a scroll offset when focus moves, so the
+    // body goes fixed at its current offset and comes back to it on exit.
+    const offset = window.scrollY;
     body.style.overflow = "hidden";
     body.style.position = "fixed";
-    body.style.top = `-${scrollY}px`;
+    body.style.top = `-${offset}px`;
     body.style.width = "100%";
-    root.style.overscrollBehavior = "none";
+    document.documentElement.style.overscrollBehavior = "none";
     return () => {
-      body.style.overflow = previous.overflow;
-      body.style.position = previous.position;
-      body.style.top = previous.top;
-      body.style.width = previous.width;
-      root.style.overscrollBehavior = previous.overscroll;
-      if (scrollY !== 0 && typeof window.scrollTo === "function") {
-        window.scrollTo(0, scrollY);
+      body.style.overflow = previousOverflow;
+      body.style.position = previousPosition;
+      body.style.top = previousTop;
+      body.style.width = previousWidth;
+      document.documentElement.style.overscrollBehavior = previousOverscroll;
+      if (restoreFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFrameRef.current);
+        restoreFrameRef.current = null;
       }
+      // Navigating away or unmounting leaves the page's own scroll alone.
+      if (unmountingRef.current) return;
+      // The preview lays out again after this commit, and a scroll made before
+      // that can clamp to a shorter page. Restore now and again after a frame.
+      const restore = () => window.scrollTo(0, offset);
+      restore();
+      restoreFrameRef.current = window.requestAnimationFrame(() => {
+        restoreFrameRef.current = null;
+        restore();
+      });
     };
   }, [touchImmersive, isFullscreen]);
 
@@ -288,7 +334,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   useEffect(() => {
     if (
       !touchImmersive ||
-      !isPhone ||
+      !phoneOrientation ||
       !isFullscreen ||
       isPseudoFullscreen ||
       mobileOrientation === "either"
@@ -298,24 +344,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     return lockScreenOrientation(mobileOrientation);
   }, [
     touchImmersive,
-    isPhone,
+    phoneOrientation,
     isFullscreen,
     isPseudoFullscreen,
     mobileOrientation,
   ]);
 
-  // Leaving the immersive cabinet puts the preview back in view.
-  const previewRef = useRef<HTMLDivElement>(null);
-  const wasTouchImmersiveRef = useRef(false);
-  useEffect(() => {
-    const was = wasTouchImmersiveRef.current;
-    wasTouchImmersiveRef.current = touchImmersive;
-    if (was && !touchImmersive) {
-      previewRef.current?.scrollIntoView?.({ block: "start" });
-    }
-  }, [touchImmersive]);
-
-  useCabinetAutoPause(touchImmersive ? onAutoPause : undefined);
+  // Leaving the immersive cabinet restores the page offset the body pin
+  // recorded on entry (see the pin effect above), so the preview is exactly
+  // where the player left it. No scrollIntoView: that moved the page on exit.
+  useCabinetAutoPause(touchImmersive ? onAutoPause : undefined, {
+    pauseOnRotate: phoneOrientation,
+  });
 
   useLayoutEffect(() => {
     const marquee = marqueeRef.current;
@@ -351,7 +391,29 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     }
   };
 
+  // Scroll anchoring moves the page when the preview becomes the warming-up
+  // cabinet, which is before the body pin can record an offset. A touch launch
+  // turns it off until the cabinet closes (see the effect below).
+  const anchorBeforeLaunchRef = useRef<string | null>(null);
+  const restoreAnchor = useCallback(() => {
+    const saved = anchorBeforeLaunchRef.current;
+    if (saved === null) return;
+    anchorBeforeLaunchRef.current = null;
+    document.documentElement.style.overflowAnchor = saved;
+  }, []);
+  useEffect(() => {
+    if (!isLaunched) restoreAnchor();
+  }, [isLaunched, restoreAnchor]);
+  // A cabinet that unmounts while launched, even mid-warmup, gives the page
+  // its scroll anchoring back.
+  useEffect(() => restoreAnchor, [restoreAnchor]);
+
   const handleLaunch = () => {
+    if (isTouchDevice && anchorBeforeLaunchRef.current === null) {
+      anchorBeforeLaunchRef.current =
+        document.documentElement.style.overflowAnchor;
+      document.documentElement.style.overflowAnchor = "none";
+    }
     setLaunchedOnTouch(isTouchDevice);
     handlePrefetch();
     setIsWarmingUp(true);
@@ -573,6 +635,15 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         style={
           {
             "--layout-dock-height": controlDock ? "120px" : "0px",
+            // The touch toolbar floats top-right over the game. A game HUD
+            // pads its right side by this, so its top row never runs under
+            // the buttons. Width: the buttons, their gaps and padding, plus
+            // the toolbar's 8px inset from the edge.
+            ...(touchImmersive
+              ? {
+                  "--cabinet-toolbar-inset": `calc(${cabinetToolbarWidth(toolbarButtonCount) + 8}px + env(safe-area-inset-right, 0px))`,
+                }
+              : {}),
             // Windowed, the cabinet scrolls to sit under the site header on
             // Launch, so the stage gets the viewport minus header, marquee
             // and dock. Games already size their playfield against
@@ -600,7 +671,45 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         </div>
 
         {/* Fullscreen Mode: Floating Glassmorphic Pill Header */}
-        {immersive ? (
+        {touchImmersive ? (
+          <div
+            inert={rotateBlocked}
+            data-testid="cabinet-touch-toolbar"
+            data-touch-toolbar=""
+            className="arcade-cabinet-toolbar absolute z-50 flex items-center gap-1 p-0.5 bg-black/90 rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
+            style={{
+              top: "calc(env(safe-area-inset-top, 0px) + 4px)",
+              right: "calc(env(safe-area-inset-right, 0px) + 8px)",
+            }}
+          >
+            {fullscreenSupported && (
+              <FullscreenButton
+                isFullscreen={isFullscreen}
+                isPseudoFullscreen={isPseudoFullscreen}
+                onToggle={toggleCabinetFullscreen}
+                variant="icon"
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => setShowWizard(true)}
+              aria-label="Pre-Game Setup Wizard"
+              title="Pre-Game Setup Wizard"
+              className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+            >
+              <IconAdjustments className="w-4 h-4" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
+              onClick={handleExit}
+              aria-label="Reset / Power Off Cabinet"
+              title="Reset / Power Off Cabinet"
+              className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-zinc-400 border border-neutral-800 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:outline-none"
+            >
+              <IconPower className="w-4 h-4 text-red-500" aria-hidden="true" />
+            </button>
+          </div>
+        ) : immersive ? (
           <div
             inert={rotateBlocked}
             className="arcade-cabinet-toolbar self-end shrink-0 z-50 flex items-center gap-1.5 p-1 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
@@ -695,11 +804,15 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 : "overflow-y-auto overflow-x-hidden"
             } flex flex-col items-center justify-start bg-black ${bezelClasses}`}
           >
-            <CabinetFullscreenContext.Provider value={toggleCabinetFullscreen}>
-              <CabinetSetupContext.Provider value={setupValue}>
-                {children}
-              </CabinetSetupContext.Provider>
-            </CabinetFullscreenContext.Provider>
+            <CabinetTouchContext.Provider value={touchImmersive}>
+              <CabinetFullscreenContext.Provider
+                value={toggleCabinetFullscreen}
+              >
+                <CabinetSetupContext.Provider value={setupValue}>
+                  {children}
+                </CabinetSetupContext.Provider>
+              </CabinetFullscreenContext.Provider>
+            </CabinetTouchContext.Provider>
 
             {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
             <PreGameSetupWizard
@@ -788,7 +901,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   }
 
   return (
-    <div ref={previewRef} data-game={gameId} className="w-full">
+    <div data-game={gameId} className="w-full">
       {/* Static Retro Cabinet Preview Screen with scanlines */}
       <div
         className="w-full aspect-[16/10] min-h-[min(380px,65dvh)] rounded-2xl border border-zinc-800 bg-zinc-950 flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none"

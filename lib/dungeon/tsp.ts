@@ -8,7 +8,12 @@ import { TSPNode, TSPMovingWall } from "./types";
 /**
  * Calculates Euclidean distance between two points.
  */
-export function euclideanDist(x1: number, y1: number, x2: number, y2: number): number {
+export function euclideanDist(
+  x1: number,
+  y1: number,
+  x2: number,
+  y2: number
+): number {
   return Math.hypot(x2 - x1, y2 - y1);
 }
 
@@ -45,7 +50,12 @@ export function computeShortestTour(
     let bestDist = Infinity;
 
     for (let i = 0; i < remaining.length; i++) {
-      const d = euclideanDist(currentPos.x, currentPos.y, remaining[i].x, remaining[i].y);
+      const d = euclideanDist(
+        currentPos.x,
+        currentPos.y,
+        remaining[i].x,
+        remaining[i].y
+      );
       if (d < bestDist) {
         bestDist = d;
         bestIdx = i;
@@ -103,4 +113,55 @@ export function updateTSPMovingWalls(
   });
 
   return { updatedGrid: newGrid, updatedWalls: newWalls };
+}
+
+/** Where the airgap walls stand on a grid: every "W" cell. */
+function airgapCells(grid: string[][]): string[] {
+  const cells: string[] = [];
+  grid.forEach((row, y) =>
+    row.forEach((cell, x) => {
+      if (cell === "W") cells.push(`${x},${y}`);
+    })
+  );
+  return cells;
+}
+
+/** What the walls do next, so the player can plan a route around them. */
+export interface TspWallTelegraph {
+  /**
+   * Moves until the next shift that adds a wall cell (1 to 4, since the walls
+   * repeat every four moves), or null when no shift adds one.
+   */
+  stepsUntilAppear: number | null;
+  /** Cells that become walls on that shift ("x,y"). */
+  appearing: string[];
+  /** Walls standing now that the very next move takes away ("x,y"). */
+  vanishing: string[];
+}
+
+/**
+ * The telegraph for the walls of a Room 1 grid. It runs the same
+ * updateTSPMovingWalls rule the game runs on each move, so the drawing and the
+ * countdown always agree with what the next moves will do.
+ */
+export function tspWallTelegraph(
+  grid: string[][],
+  walls: TSPMovingWall[],
+  moveCount: number
+): TspWallTelegraph {
+  const now = airgapCells(grid);
+  const nowSet = new Set(now);
+  const after = (count: number) =>
+    new Set(airgapCells(updateTSPMovingWalls(grid, walls, count).updatedGrid));
+  const nextSet = after(moveCount + 1);
+  const vanishing = now.filter((cell) => !nextSet.has(cell));
+  for (let steps = 1; steps <= 4; steps++) {
+    const appearing = [...after(moveCount + steps)].filter(
+      (cell) => !nowSet.has(cell)
+    );
+    if (appearing.length > 0) {
+      return { stepsUntilAppear: steps, appearing, vanishing };
+    }
+  }
+  return { stepsUntilAppear: null, appearing: [], vanishing };
 }

@@ -425,18 +425,21 @@ test.describe("Real rendered touch-target dimensions (48px minimum, ADR-0003/ADR
       await launchCabinetBtn.click();
     }
 
+    // Power is on every cabinet toolbar. The touch toolbar leaves Fullscreen
+    // out where the browser has no Fullscreen API (WebKit on iOS), so that
+    // key is measured only when it is rendered.
+    const powerBtn = page.getByRole("button", { name: /Power/i }).first();
+    await expect(powerBtn).toBeVisible({ timeout: 15000 });
+    await expectAtLeastMinTouchTarget(powerBtn, "Cabinet Frame Power button");
+
     const fullscreenBtn = page
       .locator('button[aria-label*="Fullscreen"]')
       .first();
-    await expect(fullscreenBtn).toBeVisible({ timeout: 15000 });
-    await expectAtLeastMinTouchTarget(
-      fullscreenBtn,
-      "Cabinet Frame Fullscreen button"
-    );
-
-    const powerBtn = page.getByRole("button", { name: /Power/i }).first();
-    if (await powerBtn.isVisible().catch(() => false)) {
-      await expectAtLeastMinTouchTarget(powerBtn, "Cabinet Frame Power button");
+    if (await fullscreenBtn.isVisible().catch(() => false)) {
+      await expectAtLeastMinTouchTarget(
+        fullscreenBtn,
+        "Cabinet Frame Fullscreen button"
+      );
     }
   });
 });

@@ -222,7 +222,10 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
           ) {
             return;
           }
-          const target = recorded?.isConnected
+          // body is "nothing was focused", so it falls back to returnFocusTo.
+          const usable =
+            !!recorded && recorded.isConnected && recorded !== document.body;
+          const target = usable
             ? recorded
             : (returnFocusToRef.current?.current ?? recorded);
           if (target && typeof target.focus === "function") {

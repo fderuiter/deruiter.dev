@@ -90,6 +90,78 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     await assertNoHorizontalOverflow(page);
   });
 
+  test("the touch toolbar is one row of icon keys, top-right, inside the safe area", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const viewport = page.viewportSize()!;
+    const toolbar = page.getByTestId("cabinet-touch-toolbar");
+    await expect(toolbar).toBeVisible();
+
+    const box = await toolbar.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x + box!.width).toBeLessThanOrEqual(viewport.width);
+    expect(box!.y).toBeLessThan(viewport.height / 3);
+
+    // Icon-only keys at the touch floor, each with an accessible name.
+    const keys = toolbar.locator("button");
+    const count = await keys.count();
+    expect(count).toBeGreaterThanOrEqual(2);
+    for (let i = 0; i < count; i++) {
+      const key = keys.nth(i);
+      await expect(key).toHaveAttribute("aria-label", /.+/);
+      expect((await key.textContent())?.trim()).toBe("");
+      const keyBox = await key.boundingBox();
+      expect(keyBox!.width).toBeGreaterThanOrEqual(43.5);
+      expect(keyBox!.height).toBeGreaterThanOrEqual(43.5);
+    }
+
+    // Nothing the player can press sits under the toolbar at the top of the
+    // stage. Trial & Error runs the scroll layout here, so this is its top-right.
+    const overlaps = await page.evaluate(() => {
+      const bar = document
+        .querySelector('[data-testid="cabinet-touch-toolbar"]')
+        ?.getBoundingClientRect();
+      if (!bar) return ["no toolbar"];
+      const hits: string[] = [];
+      const controls = document.querySelectorAll<HTMLElement>(
+        '[data-arcade-cabinet] button, [data-arcade-cabinet] a[href], [data-arcade-cabinet] [role="button"], [data-arcade-cabinet] [role="tab"]'
+      );
+      for (const el of Array.from(controls)) {
+        if (el.closest('[data-testid="cabinet-touch-toolbar"]')) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (
+          r.right > bar.left &&
+          r.left < bar.right &&
+          r.bottom > bar.top &&
+          r.top < bar.bottom
+        ) {
+          hits.push(
+            el.getAttribute("aria-label") || el.textContent || el.tagName
+          );
+        }
+      }
+      return hits;
+    });
+    expect(overlaps, "controls under the touch toolbar").toEqual([]);
+
+    // The cabinet publishes the toolbar's width, so a game HUD can pad for it.
+    // The inset is a calc() with the safe area in it, so read it through a
+    // probe that resolves it to pixels.
+    const inset = await page.locator(IMMERSIVE).evaluate((el) => {
+      const probe = document.createElement("div");
+      probe.style.paddingRight = "var(--cabinet-toolbar-inset)";
+      el.appendChild(probe);
+      const px = parseFloat(getComputedStyle(probe).paddingRight);
+      probe.remove();
+      return px;
+    });
+    const bar = await page.getByTestId("cabinet-touch-toolbar").boundingBox();
+    expect(bar).not.toBeNull();
+    expect(inset).toBeGreaterThanOrEqual(bar!.width);
+  });
+
   test("a press inside the immersive cabinet reaches its control", async ({
     page,
   }) => {

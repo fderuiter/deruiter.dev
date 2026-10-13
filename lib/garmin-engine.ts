@@ -21,6 +21,24 @@ import {
   type CourseLayout,
 } from "./garmin-course";
 import {
+  BONUS_ROOM_LENGTH,
+  EMPTY_PROPS,
+  PR_BOARD_SCORE,
+  REST_DAY_MS,
+  appendProps,
+  beltOffset,
+  generateBonusRoom,
+  generateStageProps,
+  plyoLaunchVy,
+  propFootings,
+  pruneProps,
+  restDaySwap,
+  stationUnderFeet,
+  wallAhead,
+  type CourseProps,
+  type PropFooting,
+} from "./garmin-props";
+import {
   BOLT_COOLDOWN_MS,
   BOLT_DEFEAT_SCORE,
   DAMAGE_GRACE_MS,
@@ -485,6 +503,29 @@ export interface GameEngineState {
   stageLivesLost?: number;
   /** Training Effect of the last cleared stage. */
   lastTrainingEffect?: number;
+  // ---- Course props (#1992).
+  /** Water Stations, Plyo Boxes, Treadmill Belts and Rest Day Switches. */
+  props?: CourseProps;
+  /** Milliseconds of play this run, which drives the Treadmill Belts. */
+  propClockMs?: number;
+  /** Milliseconds left of a Rest Day, when bricks and Kudos swap. */
+  restDayMs?: number;
+  /** Set while the runner is in a Water Station's bonus room. */
+  bonusRoom?: BonusRoom | null;
+}
+
+/** A bonus room in progress: the course outside waits to be restored. */
+export interface BonusRoom {
+  /** The course and props outside the room. */
+  returnCourse: CourseLayout;
+  returnProps: CourseProps;
+  returnFoes: Foe[];
+  /** Power-ups that were travelling the course at the door. */
+  returnPickups: Pickup[];
+  /** World x the runner comes out at. */
+  exitX: number;
+  /** World x of the room's far wall; reaching it leaves the room. */
+  endX: number;
 }
 
 /** The rules a run plays by: the fitness game, or Dev Mode's firmware challenge. */
@@ -620,6 +661,126 @@ export function createInitialState(
 }
 
 /**
+ * Lays out one stage: its course with the props placed on it (#1992). A
+ * Treadmill Belt can replace a ledge, so the course comes from the props.
+ */
+function stageLayout(
+  stage: number,
+  seed: number
+): { course: CourseLayout; props: CourseProps } {
+  const placed = generateStageProps(
+    stage,
+    seed,
+    GROUND_Y,
+    generateStage(stage, seed, GROUND_Y)
+  );
+  return { course: placed.layout, props: placed.props };
+}
+
+/**
+ * How far the Treadmill Belt under the runner's feet moved between two
+ * clock readings, or nothing when they stand on no belt.
+ */
+function beltCarry(
+  props: CourseProps,
+  cameraX: number,
+  feetBottom: number,
+  fromMs: number,
+  toMs: number
+): { dx: number; dy: number } {
+  const footLeft = cameraX + PLAYER_X + 5;
+  const footRight = cameraX + PLAYER_X + PLAYER_WIDTH - 5;
+  for (const belt of props.belts) {
+    const before = beltOffset(belt, fromMs);
+    const left = belt.x + before.dx;
+    if (
+      footRight > left &&
+      footLeft < left + belt.width &&
+      Math.abs(feetBottom - (belt.y + before.dy)) <= 1
+    ) {
+      const after = beltOffset(belt, toMs);
+      return { dx: after.dx - before.dx, dy: after.dy - before.dy };
+    }
+  }
+  return { dx: 0, dy: 0 };
+}
+
+/**
+ * Down on an enterable Water Station takes the runner into its bonus room:
+ * a short indoor stretch lined with Kudos that comes out further along the
+ * course (#1992). Anywhere else Down does nothing here.
+ */
+export function enterStation(state: GameEngineState): GameEngineState {
+  if (
+    state.gameState !== "playing" ||
+    !state.isGrounded ||
+    state.bonusRoom ||
+    (state.gpsMs ?? 0) > 0
+  ) {
+    return state;
+  }
+  const props = state.props ?? EMPTY_PROPS;
+  const cameraX = state.distanceMeters * PX_PER_METER;
+  const h = playerHeightFor(state.power ?? "base");
+  const station = stationUnderFeet(
+    props,
+    cameraX + PLAYER_X + 5,
+    cameraX + PLAYER_X + PLAYER_WIDTH - 5,
+    state.playerY + h,
+    GROUND_Y
+  );
+  if (!station) return state;
+  // A Rest Day in progress ends at the door, so the course outside comes
+  // back as it was laid out.
+  const outside =
+    (state.restDayMs ?? 0) > 0
+      ? restDaySwap(state.course ?? EMPTY_COURSE, false)
+      : (state.course ?? EMPTY_COURSE);
+  return {
+    ...state,
+    bonusRoom: {
+      returnCourse: outside,
+      returnProps: {
+        ...props,
+        stations: props.stations.map((s) =>
+          s.id === station.id ? { ...s, used: true } : s
+        ),
+      },
+      returnFoes: state.foes ?? [],
+      returnPickups: state.pickups ?? [],
+      exitX: station.exitX,
+      endX: cameraX + PLAYER_X + BONUS_ROOM_LENGTH,
+    },
+    course: generateBonusRoom(cameraX, station.id, GROUND_Y),
+    props: EMPTY_PROPS,
+    foes: [],
+    foeShots: [],
+    obstacles: [],
+    pickups: [],
+    bolts: [],
+    restDayMs: 0,
+    playerY: GROUND_Y - h,
+    playerVy: 0,
+    banner: { text: "AID STATION · GRAB A GEL", ttlMs: 1600, tone: "good" },
+  };
+}
+
+/** A fresh stage's course, props and foes. */
+function stageSetup(
+  stage: number,
+  seed: number
+): { course: CourseLayout; props: CourseProps; foes: Foe[] } {
+  const { course, props } = stageLayout(stage, seed);
+  // No foe starts inside a station, box or switch.
+  const footings = propFootings(props, 0, GROUND_Y);
+  const foes = generateFoes(stage, seed, course, GROUND_Y).filter(
+    (f) =>
+      !footings.some((p) => f.x < p.right + 8 && f.x + f.width > p.left - 8)
+  );
+  return { course, props, foes };
+}
+
+/**
  * Start a new game session
  */
 export function startGame(
@@ -657,14 +818,11 @@ export function startGame(
     lastObstacleTime: now,
     courseSeed,
     lives: START_LIVES,
-    course: generateStage(1, courseSeed, GROUND_Y),
-    foes: generateFoes(
-      1,
-      courseSeed,
-      generateStage(1, courseSeed, GROUND_Y),
-      GROUND_Y
-    ),
+    ...stageSetup(1, courseSeed),
     foeShots: [],
+    propClockMs: 0,
+    restDayMs: 0,
+    bonusRoom: null,
     banner: fitness
       ? { text: gpsBannerText(0), ttlMs: GPS_LOCK_MS + 1800, tone: "info" }
       : { text: "STAGE 1 · GO!", ttlMs: 1800, tone: "info" },
@@ -1250,14 +1408,10 @@ function loseLife(
     flightMs: 0,
     spinMs: 0,
     spinCooldownMs: 0,
-    course: generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
-    foes: generateFoes(
-      stage,
-      state.courseSeed ?? 0,
-      generateStage(stage, state.courseSeed ?? 0, GROUND_Y),
-      GROUND_Y
-    ),
+    ...stageSetup(stage, state.courseSeed ?? 0),
     foeShots: [],
+    restDayMs: 0,
+    bonusRoom: null,
     lastObstacleTime: now,
     banner: {
       text: `${causeLabel(state, report.errorType)} · LIVES ${lives}`,
@@ -1827,13 +1981,42 @@ export function updateGameSimulation(
   const pace = paceFor(runInput);
   // Body Battery gained or spent this tick by Kudos, power-ups and the pole.
   let bodyBatteryChange = 0;
-  const nextDistance = state.distanceMeters + 0.25 * pace * dtRatio;
+  // Course props (#1992): the belts run on their own clock, a belt carries
+  // the runner standing on it, and the side of a station or box stops them.
+  let props = state.props ?? EMPTY_PROPS;
+  const prevClockMs = state.propClockMs ?? 0;
+  const propClockMs = prevClockMs + safeDelta;
+  const prevCameraX = state.distanceMeters * PX_PER_METER;
+  const prevFeetBottom = state.playerY + playerHeightFor(state.power ?? "base");
+  const carry = state.isGrounded
+    ? beltCarry(props, prevCameraX, prevFeetBottom, prevClockMs, propClockMs)
+    : { dx: 0, dy: 0 };
+  let nextDistance =
+    state.distanceMeters + 0.25 * pace * dtRatio + carry.dx / PX_PER_METER;
+  const wall = wallAhead(
+    props,
+    GROUND_Y,
+    prevCameraX + PLAYER_X + PLAYER_WIDTH - 3,
+    nextDistance * PX_PER_METER + PLAYER_X + PLAYER_WIDTH - 3,
+    prevFeetBottom + carry.dy
+  );
+  if (wall !== null) {
+    nextDistance = Math.max(
+      state.distanceMeters,
+      (wall - PLAYER_X - PLAYER_WIDTH + 3) / PX_PER_METER
+    );
+  }
   const cameraX = nextDistance * PX_PER_METER;
   const footLeft = cameraX + PLAYER_X + 5;
   const footRight = cameraX + PLAYER_X + PLAYER_WIDTH - 5;
   const bodyLeft = cameraX + PLAYER_X + 3;
   const bodyRight = cameraX + PLAYER_X + PLAYER_WIDTH - 3;
   let course = state.course ?? EMPTY_COURSE;
+  // A Rest Day ends: the swapped bricks and Kudos turn back.
+  let restDayMs = Math.max(0, (state.restDayMs ?? 0) - safeDelta);
+  if ((state.restDayMs ?? 0) > 0 && restDayMs === 0) {
+    course = restDaySwap(course, false);
+  }
   let score = state.score;
   let kudos = state.kudos ?? 0;
   let power: PowerTier = state.power ?? "base";
@@ -1855,6 +2038,16 @@ export function updateGameSimulation(
   }
   // The banner carried in from last frame; anything else was set this frame.
   const carriedBanner = banner;
+  // A Buff or stronger runner breaks a PR Board (a brick) from below.
+  const breakBoard = (index: number) => {
+    const block = course.blocks[index];
+    course = {
+      ...course,
+      blocks: course.blocks.filter((_, i) => i !== index),
+    };
+    score += PR_BOARD_SCORE;
+    popups.push({ x: block.x, y: block.y - 6, text: "NEW PR!", ttlMs: 900 });
+  };
   // Bumping an unused Sync Block uses it up and pays out its contents.
   const bumpBlock = (index: number) => {
     const block = course.blocks[index];
@@ -1880,7 +2073,7 @@ export function updateGameSimulation(
 
   const jumpHeld = state.jumpHeld ?? false;
   const gravity = state.playerVy < 0 && jumpHeld ? GRAVITY : FALL_GRAVITY;
-  let nextPlayerY = state.playerY + state.playerVy * dtRatio;
+  let nextPlayerY = state.playerY + carry.dy + state.playerVy * dtRatio;
   let nextPlayerVy = Math.min(MAX_FALL_VY, state.playerVy + gravity * dtRatio);
   // A Cape runner holding jump glides, and flight stops at the ceiling.
   nextPlayerVy = glideVy(nextPlayerVy, power, jumpHeld);
@@ -1890,15 +2083,18 @@ export function updateGameSimulation(
   }
   let isGrounded = false;
 
-  const prevBottom = state.playerY + h;
+  const prevBottom = state.playerY + carry.dy + h;
   const nextBottom = nextPlayerY + h;
   if (nextBottom >= prevBottom) {
-    // Footing: the lane where it isn't a gap, and the tops of ledges and
-    // blocks the runner was above a moment ago. The highest one crossed wins.
+    // Footing: the lane where it isn't a gap, and the tops of ledges, blocks
+    // and props the runner was above a moment ago. The highest one crossed
+    // wins.
     let landingTop = Infinity;
-    const consider = (top: number) => {
+    let landingProp = null as PropFooting | null;
+    const consider = (top: number, prop: PropFooting | null = null) => {
       if (prevBottom <= top + 1 && nextBottom >= top && top < landingTop) {
         landingTop = top;
+        landingProp = prop;
       }
     };
     if (
@@ -1913,10 +2109,32 @@ export function updateGameSimulation(
     for (const b of course.blocks) {
       if (footRight > b.x && footLeft < b.x + BLOCK_SIZE) consider(b.y);
     }
+    for (const f of propFootings(props, propClockMs, GROUND_Y)) {
+      if (footRight > f.left && footLeft < f.right) consider(f.top, f);
+    }
     if (landingTop !== Infinity) {
       nextPlayerY = landingTop - h;
       nextPlayerVy = 0;
       isGrounded = true;
+      if (landingProp?.kind === "plyo") {
+        // A Plyo Box springs the runner up; holding jump springs higher.
+        nextPlayerVy = plyoLaunchVy(jumpHeld);
+        isGrounded = false;
+      } else if (landingProp?.kind === "switch") {
+        // Stomping the Rest Day Switch swaps bricks and Kudos for a while.
+        const pressedId = landingProp.id;
+        props = {
+          ...props,
+          switches: props.switches.map((sw) =>
+            sw.id === pressedId ? { ...sw, pressed: true } : sw
+          ),
+        };
+        if (restDayMs === 0) course = restDaySwap(course, true);
+        restDayMs = REST_DAY_MS;
+        banner = { text: "REST DAY · RECOVERING", ttlMs: 1800, tone: "info" };
+        nextPlayerVy = STOMP_BOUNCE_VY;
+        isGrounded = false;
+      }
     }
   } else {
     // Rising: a head-first hit on a block's underside stops the rise and
@@ -1940,7 +2158,10 @@ export function updateGameSimulation(
       const block = course.blocks[bumped];
       nextPlayerY = block.y + BLOCK_SIZE;
       nextPlayerVy = 1;
-      bumpBlock(bumped);
+      // A Rest Day brick is a Kudos in disguise, so it never breaks.
+      if (block.kind === "brick" && !block.fromKudos && power !== "base")
+        breakBoard(bumped);
+      else bumpBlock(bumped);
     }
   }
 
@@ -2162,10 +2383,13 @@ export function updateGameSimulation(
       runComplete = true;
     } else {
       stage = pole.stage + 1;
+      const next = stageLayout(stage, state.courseSeed ?? 0);
+      // A Rest Day still running swaps the new stage's bricks and Kudos too.
       course = appendCourse(
         course,
-        generateStage(stage, state.courseSeed ?? 0, GROUND_Y)
+        restDayMs > 0 ? restDaySwap(next.course, true) : next.course
       );
+      props = appendProps(props, next.props);
       banner = {
         text:
           stageTrainingEffect === null
@@ -2177,6 +2401,19 @@ export function updateGameSimulation(
     }
   }
   course = pruneCourse(course, cameraX);
+  props = pruneProps(props, cameraX);
+
+  // Reaching the far wall of a bonus room puts the runner back on the
+  // course at the station's exit.
+  let bonusRoom = state.bonusRoom ?? null;
+  let roomExit: BonusRoom | null = null;
+  if (bonusRoom && cameraX + PLAYER_X >= bonusRoom.endX) {
+    roomExit = bonusRoom;
+    const exitCameraX = bonusRoom.exitX - PLAYER_X;
+    course = pruneCourse(bonusRoom.returnCourse, exitCameraX);
+    props = pruneProps(bonusRoom.returnProps, exitCameraX);
+    bonusRoom = null;
+  }
 
   // 3. Distance & Score Tracking
   // Score, distance and the stress meters accumulate fractionally so equal
@@ -2274,6 +2511,10 @@ export function updateGameSimulation(
     stompChain,
     popups,
     banner,
+    props,
+    propClockMs,
+    restDayMs,
+    bonusRoom,
     ...(fitness
       ? {
           bodyBattery,
@@ -2291,6 +2532,29 @@ export function updateGameSimulation(
       : {}),
   };
 
+  if (roomExit) {
+    // Out of the bonus room and onto the lane at the exit; the course's foes
+    // come back, and the bugs and shots wait for the next frame.
+    return {
+      ...updatedState,
+      distanceMeters: (roomExit.exitX - PLAYER_X) / PX_PER_METER,
+      playerY: GROUND_Y - bodyH,
+      playerVy: 0,
+      isGrounded: true,
+      // Foes waiting at the exit step aside so the runner lands clear.
+      foes: roomExit.returnFoes.filter(
+        (f) => f.x + f.width < roomExit.exitX - 40 || f.x > roomExit.exitX + 160
+      ),
+      // Power-ups that were out at the door come along, keeping their place
+      // relative to the runner.
+      pickups: roomExit.returnPickups.map((p) => ({
+        ...p,
+        x: p.x + roomExit.exitX - (roomExit.endX - BONUS_ROOM_LENGTH),
+      })),
+      foeShots: [],
+      obstacles: [],
+    };
+  }
   if (runComplete) {
     return {
       ...updatedState,
@@ -2307,12 +2571,7 @@ export function updateGameSimulation(
     updatedState = {
       ...updatedState,
       obstacles: [],
-      foes: generateFoes(
-        stage,
-        seed,
-        generateStage(stage, seed, GROUND_Y),
-        GROUND_Y
-      ),
+      foes: stageSetup(stage, seed).foes,
       foeShots: [],
     };
   }
@@ -2659,7 +2918,8 @@ export function updateGameSimulation(
     (1 - 0.4 * ramp);
   if (
     now - updatedState.lastObstacleTime > obstacleInterval &&
-    nextObstacles.length < 3
+    nextObstacles.length < 3 &&
+    !updatedState.bonusRoom
   ) {
     const maxX = nextObstacles.reduce((max, o) => Math.max(max, o.x), 0);
     // Nothing spawns over a gap or within reach of a finish pole.
@@ -2670,7 +2930,12 @@ export function updateGameSimulation(
       isOverGap(liveCourse, spawnWorldX + 32) ||
       liveCourse.poles.some(
         (p) => p.grabbed === undefined && Math.abs(p.x - spawnWorldX) < 160
-      );
+      ) ||
+      propFootings(
+        updatedState.props ?? EMPTY_PROPS,
+        propClockMs,
+        GROUND_Y
+      ).some((f) => f.right > spawnWorldX - 40 && f.left < spawnWorldX + 60);
     if (maxX < 190 && !blockedSpawn) {
       // Memory and flash tokens belong to Dev Mode's heap.
       const obstacleTypes: ObstacleType[] = fitness

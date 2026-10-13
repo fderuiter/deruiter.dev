@@ -72,6 +72,14 @@ Bolts thrown this run, for their ids.
 
 ***
 
+### bonusRoom?
+
+> `optional` **bonusRoom?**: [`BonusRoom`](BonusRoom.md) \| `null`
+
+Set while the runner is in a Water Station's bonus room.
+
+***
+
 ### consecutiveDodges
 
 > **consecutiveDodges**: `number`
@@ -387,6 +395,30 @@ Power tier; absent means Base.
 > `optional` **prAnnounced?**: `boolean`
 
 A new PR was announced this run.
+
+***
+
+### propClockMs?
+
+> `optional` **propClockMs?**: `number`
+
+Milliseconds of play this run, which drives the Treadmill Belts.
+
+***
+
+### props?
+
+> `optional` **props?**: [`CourseProps`](../../garmin-props/interfaces/CourseProps.md)
+
+Water Stations, Plyo Boxes, Treadmill Belts and Rest Day Switches.
+
+***
+
+### restDayMs?
+
+> `optional` **restDayMs?**: `number`
+
+Milliseconds left of a Rest Day, when bricks and Kudos swap.
 
 ***
 

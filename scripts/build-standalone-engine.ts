@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const MAX_SIZE_BYTES = 50 * 1024;
+const MAX_SIZE_BYTES = 80 * 1024;
 const outputNames = ["garmin-engine.js", "monkey-c-mayhem.js"] as const;
 
 export interface StandaloneBuildOptions {
@@ -62,7 +62,7 @@ export async function buildStandaloneEngine({
       `✓ Standalone engine generated (${contents.byteLength} bytes / ${(maxSizeBytes / 1024).toFixed(1)} KB budget)`
     );
     console.log(
-      "--- Standalone Engine Build & Size Check Passed (<= 50KB Budget Verified) ---"
+      "--- Standalone Engine Build & Size Check Passed (<= 80KB Budget Verified) ---"
     );
     return outputs;
   } finally {

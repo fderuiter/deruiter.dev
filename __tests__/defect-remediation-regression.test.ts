@@ -56,6 +56,7 @@ import {
   type GameEngineState,
 } from "@/lib/garmin-engine";
 import { EMPTY_COURSE } from "@/lib/garmin-course";
+import { EMPTY_PROPS } from "@/lib/garmin-props";
 import {
   clampBounds,
   createInitialDuckGameState,
@@ -1855,9 +1856,10 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
     let state: GameEngineState = {
       ...startGame(createInitialState("fenix", 0), "fenix"),
       isLightOn,
-      // No course gaps or course foes for a runner that never jumps
-      // (#1950, #1991).
+      // No course gaps, course foes or props for a runner that never jumps
+      // (#1950, #1991, #1992).
       course: EMPTY_COURSE,
+      props: EMPTY_PROPS,
       foes: [],
     };
     for (let i = 0; i < Math.round(seconds * hz); i++) {

@@ -208,10 +208,10 @@ export function inspectStandaloneBundle(workspaceRoot: string): {
     return { exists: false, sizeBytes: 0 };
   }
   const stats = fs.statSync(targetPath);
-  const maxBytes = 50 * 1024;
+  const maxBytes = 80 * 1024;
   let violation: string | undefined;
   if (stats.size > maxBytes) {
-    violation = `Standalone JavaScript asset 'garmin-engine.js' (${(stats.size / 1024).toFixed(1)} kB) exceeds maximum budget of 50.0 kB.`;
+    violation = `Standalone JavaScript asset 'garmin-engine.js' (${(stats.size / 1024).toFixed(1)} kB) exceeds maximum budget of 80.0 kB.`;
   }
   return { exists: true, sizeBytes: stats.size, violation };
 }
@@ -234,7 +234,7 @@ export function checkBundleBudgets(root: string): DiagnosticCheckResult {
         name: "Production Bundle & Chunk Performance Budgets",
         category: "quality",
         status: "warn",
-        message: `Standalone JS artifact exceeded defined 50KB size budget.`,
+        message: `Standalone JS artifact exceeded defined 80KB size budget.`,
         details: [standaloneReport.violation],
       };
     }

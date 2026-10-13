@@ -552,9 +552,9 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "L",
       },
       {
-        action: "Down (Dev Mode Only)",
+        action: "Down (Water Station)",
         description:
-          "Does nothing in a normal run. In Dev Mode, Down pops the oldest heap variable.",
+          "Standing on a Water Station with a down arrow over it, Down takes you into its bonus room. Anywhere else it does nothing in a normal run; in Dev Mode it pops the oldest heap variable.",
         key: "↓",
       },
       {
@@ -588,6 +588,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Each 1 km stage has gaps in the track, one-way ledges you can jump up through, and rows of blocks. Bump a Sync Block from below to release a power-up or a Kudos. Grab the finish pole to clear the stage. Clearing stage 5 completes the 5K.",
         badge: "5K",
+      },
+      {
+        title: "Course Pieces",
+        detail:
+          "Water Stations are aid tables you jump onto; their sides stop you. One with a down arrow over it opens a bonus room full of Kudos when you press Down on it, and you come out further along the course. A Rest Day ends when you go in. Plyo Boxes spring you up when you land on them, and higher if you hold jump. Treadmill Belts slide back and forth over gaps and carry you while you stand on them. Stomp a Rest Day Switch and for 8 seconds the bricks turn into Kudos and the Kudos into bricks. The bricks are PR Boards: Buff or stronger, you break them from below for a NEW PR! bonus.",
+        badge: "Course",
       },
       {
         title: "Power-ups & Lives",

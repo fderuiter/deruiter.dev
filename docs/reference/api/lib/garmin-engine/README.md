@@ -12,6 +12,7 @@
 
 ## Interfaces
 
+- [BonusRoom](interfaces/BonusRoom.md)
 - [CrashReport](interfaces/CrashReport.md)
 - [DeviceProfile](interfaces/DeviceProfile.md)
 - [FaceBanner](interfaces/FaceBanner.md)
@@ -75,6 +76,7 @@
 - [causeLabel](functions/causeLabel.md)
 - [clearFlashStorage](functions/clearFlashStorage.md)
 - [createInitialState](functions/createInitialState.md)
+- [enterStation](functions/enterStation.md)
 - [getCooldownRemainingMs](functions/getCooldownRemainingMs.md)
 - [getDifficultyRamp](functions/getDifficultyRamp.md)
 - [isCollectibleVariable](functions/isCollectibleVariable.md)

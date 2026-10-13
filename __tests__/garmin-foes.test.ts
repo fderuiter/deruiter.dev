@@ -442,14 +442,10 @@ describe("foes in a run", () => {
 
   it("a run starts with stage 1's foes", () => {
     const s = startGame(createInitialState("fenix", 0, []), "fenix");
-    expect(s.foes).toEqual(
-      generateFoes(
-        1,
-        s.courseSeed!,
-        generateStage(1, s.courseSeed!, GROUND_Y),
-        GROUND_Y
-      )
-    );
+    // Stage 1's foes, less any that would start inside a course prop (#1992).
+    const placed = generateFoes(1, s.courseSeed!, s.course!, GROUND_Y);
+    expect(s.foes!.length).toBeGreaterThan(0);
+    for (const f of s.foes!) expect(placed).toContainEqual(f);
     expect(s.foeShots).toEqual([]);
   });
 

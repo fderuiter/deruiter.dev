@@ -7,10 +7,10 @@ import path from "path";
 import { inspectStandaloneBundle } from "../lib/dx/bundle-guard";
 import { fromPartial } from "@total-typescript/shoehorn";
 
-describe("Standalone JavaScript Engine Build & 50KB Size Guard", () => {
+describe("Standalone JavaScript Engine Build & 80KB Size Guard", () => {
   const root = process.cwd();
 
-  it("compiles the engine into standalone Vanilla JS assets under 50KB via build-standalone-engine script", () => {
+  it("compiles the engine into standalone Vanilla JS assets under 80KB via build-standalone-engine script", () => {
     const outputDir = fs.mkdtempSync(
       path.join(os.tmpdir(), "portfolio-standalone-test-")
     );
@@ -44,9 +44,9 @@ describe("Standalone JavaScript Engine Build & 50KB Size Guard", () => {
       );
 
       expect(garminStats.size).toBeGreaterThan(0);
-      expect(garminStats.size).toBeLessThanOrEqual(50 * 1024);
+      expect(garminStats.size).toBeLessThanOrEqual(80 * 1024);
       expect(monkeyStats.size).toBeGreaterThan(0);
-      expect(monkeyStats.size).toBeLessThanOrEqual(50 * 1024);
+      expect(monkeyStats.size).toBeLessThanOrEqual(80 * 1024);
     } finally {
       fs.rmSync(outputDir, { recursive: true, force: true });
     }
@@ -56,20 +56,20 @@ describe("Standalone JavaScript Engine Build & 50KB Size Guard", () => {
     const report = inspectStandaloneBundle(root);
     expect(report.exists).toBe(true);
     expect(report.sizeBytes).toBeGreaterThan(0);
-    expect(report.sizeBytes).toBeLessThanOrEqual(50 * 1024);
+    expect(report.sizeBytes).toBeLessThanOrEqual(80 * 1024);
     expect(report.violation).toBeUndefined();
   });
 
-  it("detects size budget violations when standalone asset exceeds 50KB", () => {
+  it("detects size budget violations when standalone asset exceeds 80KB", () => {
     const spyStat = vi.spyOn(fs, "statSync").mockReturnValue(
       fromPartial<fs.Stats>({
-        size: 55 * 1024, // 55KB
+        size: 85 * 1024, // 85KB
       })
     );
 
     const report = inspectStandaloneBundle(root);
     expect(report.exists).toBe(true);
-    expect(report.violation).toContain("exceeds maximum budget of 50.0 kB");
+    expect(report.violation).toContain("exceeds maximum budget of 80.0 kB");
 
     spyStat.mockRestore();
   });

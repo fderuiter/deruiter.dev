@@ -10,6 +10,14 @@ A Kudos coin.
 
 ## Properties
 
+### fromBrick?
+
+> `optional` **fromBrick?**: `boolean`
+
+A brick turned into a Kudos by a Rest Day (#1992); it turns back after.
+
+***
+
 ### id
 
 > **id**: `number`

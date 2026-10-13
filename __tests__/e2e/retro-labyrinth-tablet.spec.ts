@@ -4,10 +4,12 @@ import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow } from "./mobile-harness";
 import {
-  planRoute,
-  STEPS,
-  type Cell,
-} from "../../components/retro-labyrinth/route-plan";
+  replayTspMoves,
+  solveTspRoom,
+  tspSyncRoomToPatrols,
+} from "../../components/retro-labyrinth/room-solver";
+import { STEPS, type Cell } from "../../components/retro-labyrinth/route-plan";
+import { generateTSPRoom } from "../../lib/dungeon/generator";
 
 // Retro Labyrinth on a touch tablet (ADR 0061, #2032). The iPad projects set
 // the viewport, so each spec plays at whatever size its project gives it, in
@@ -203,6 +205,37 @@ async function readRoom(page: Page) {
 function projectSize(page: Page): string {
   const size = page.viewportSize();
   return size ? `${size.width}x${size.height}` : "unknown";
+}
+
+/** The patrols' cells, in the order the game lists them. */
+async function readPatrolCells(page: Page): Promise<string[]> {
+  const raw = await page
+    .locator("[data-grid]")
+    .first()
+    .getAttribute("data-patrol-cells");
+  return (raw ?? "").split(";").filter(Boolean);
+}
+
+/**
+ * Advances the fake clock one frame at a time until the patrols move, which is
+ * one enemy tick. The game's frames add up to a tick at irregular frame counts,
+ * so the walk waits for the tick it can see instead of a fixed time.
+ */
+async function stepUntilPatrolTicks(page: Page, maxFrames = 80) {
+  const before = await readPatrolCells(page);
+  for (let frame = 0; frame < maxFrames; frame++) {
+    await page.clock.runFor(16);
+    const now = await readPatrolCells(page);
+    if (now.join(";") !== before.join(";")) return;
+  }
+  throw new Error(`no patrol tick within ${maxFrames} frames`);
+}
+
+/** The netrunner's grid cell, parsed from the status line. */
+async function readPlayerCell(page: Page): Promise<{ x: number; y: number }> {
+  const text = await readPlayerGrid(page);
+  const match = /Grid \((\d+), (\d+)\)/.exec(text);
+  return { x: Number(match?.[1]), y: Number(match?.[2]) };
 }
 
 /**
@@ -770,136 +803,49 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     await expect(dialog).toHaveCount(0);
   });
 
-  // Attempt on Playwright's fake clock (#2032): the walk ran with
-  // page.clock.install after launch, but the CRT loop's per-frame cost under
-  // runFor left the page unresponsive. One of three iPad runs finished, so the
-  // walk is kept out of the default run. The route planner and the exit lock
-  // are unit tested meanwhile (__tests__/retro-labyrinth-route-plan.test.ts).
-  test.fixme("walks every route node and opens the exit", async ({
+  test("walks Room 1 along the solved route, opens the exit and reaches Room 02", async ({
     page,
   }, testInfo) => {
-    test.setTimeout(420000);
+    test.setTimeout(300000);
+    // The patrols step on the game clock, once per ENEMY_STEP_INTERVAL_MS of
+    // play. Once the game is up the walk pauses the clock, so the patrols move
+    // only when the walk steps them: one tick per move. The live patrols have
+    // ticked in real time since the room was generated, so the walk starts the
+    // solver from the patrol cells it can see, not from the generated room.
     await launchCabinet(page);
-    // The fake clock starts once the cabinet is up: React's scheduling and
-    // the launch run on real time, and only the game's patrols are driven.
-    await page.clock.install({ time: new Date("2026-10-13T12:00:00Z") });
-
-    const exitRaw = await page
-      .locator("[data-exit-cell]")
-      .first()
-      .getAttribute("data-exit-cell");
-    const [exitX, exitY] = (exitRaw ?? "").split(",").map(Number);
-    const exit: Cell = { x: exitX, y: exitY };
-
-    let arrived = false;
-    let nodesDone = false;
-    let plan: Cell[] = [];
-    let retries = 0;
-    // Each step into an open cell shifts the walls, so the next pass sees a
-    // new maze. With no route, the walker steps aside or waits on the clock.
-    let stalled = 0;
-
-    for (let step = 0; step < 900 && !arrived; step++) {
-      const retry = page.getByRole("button", { name: /RETRY BREACH/i });
-      if (await retry.isVisible()) {
-        retries += 1;
-        if (retries > 3)
-          throw new Error("the run was lost before the walk finished");
-        await retry.tap();
-        await runGameClock(page, 300);
-        plan = [];
-        nodesDone = false;
-        stalled = 0;
-        continue;
-      }
-      if (await page.getByText("Tap Next Room").isVisible()) {
-        arrived = true;
-        break;
-      }
-
-      let room = await readRoom(page);
-      if (!room.player) throw new Error("the player cell is not on the page");
-      if (room.threat === "amber" || room.threat === "red") {
-        // A patrol close by: let the clock carry it past, then look again.
-        await runGameClock(page, 1000);
-        room = await readRoom(page);
-        if (!room.player) throw new Error("the player cell is not on the page");
-      }
-
-      const unvisited = room.nodes.filter((node) => !node.visited);
-      if (unvisited.length > 0) {
-        expect(
-          room.exitLocked,
-          "the exit stays locked while nodes remain"
-        ).toBe("true");
-      } else if (!nodesDone) {
-        nodesDone = true;
-        await expect(page.locator("[data-grid]").first()).toHaveAttribute(
-          "data-exit-locked",
-          "false"
-        );
-        await expect(page.getByTestId("labyrinth-phone-toast")).toContainText(
-          "Exit open"
-        );
-      }
-
-      const targets = unvisited.length > 0 ? unvisited : [exit];
-      const player = room.player;
-      // Keep following the current plan while its next cell is open.
-      let route: Cell[] | null =
-        plan.length > 0 &&
-        room.open[plan[0].y]?.[plan[0].x] &&
-        Math.abs(plan[0].x - player.x) + Math.abs(plan[0].y - player.y) === 1 &&
-        targets.some(
-          (t) =>
-            t.x === plan[plan.length - 1].x && t.y === plan[plan.length - 1].y
-        )
-          ? plan
-          : null;
-      for (const target of route ? [] : targets) {
-        const candidate = planRoute(
-          stalled > 8 ? room.raw : room.open,
-          player,
-          target
-        );
-        if (candidate && (!route || candidate.length < route.length)) {
-          route = candidate;
-        }
-      }
-
-      if (!route || route.length === 0) {
-        stalled += 1;
-        const open = STEPS.filter(
-          (s) => room.open[player.y + s.dy]?.[player.x + s.dx]
-        );
-        if (open.length === 0) {
-          // Patrols on every side: let the clock move them on.
-          await runGameClock(page, 600);
-          continue;
-        }
-        const pick = open[stalled % open.length];
-        await page.getByRole("button", { name: pick.button }).tap();
-        await runGameClock(page, 200);
-        plan = [];
-        continue;
-      }
-      stalled = 0;
-
-      const next = route[0];
-      plan = route.slice(1);
-      const move = STEPS.find(
-        (s) => s.dx === next.x - player.x && s.dy === next.y - player.y
-      );
-      if (!move) throw new Error("the route left the grid's neighbours");
-      await page.getByRole("button", { name: move.button }).tap();
-      // A blocked step leaves the cell as it was; the next pass re-plans.
-      await runGameClock(page, 200);
+    const start = new Date();
+    await page.clock.install({ time: start });
+    await page.clock.pauseAt(new Date(start.getTime() + 1000));
+    // Four consecutive patrol states, one tick apart, pin down the patrols.
+    const observed = [await readPatrolCells(page)];
+    for (let i = 0; i < 3; i++) {
+      await stepUntilPatrolTicks(page);
+      observed.push(await readPatrolCells(page));
     }
-
-    expect(arrived, "the walk should reach the room-cleared card").toBe(true);
-    expect(nodesDone, "the walk should visit every route node first").toBe(
-      true
-    );
+    const room = tspSyncRoomToPatrols(generateTSPRoom(), observed);
+    expect(
+      room,
+      "the patrols match a state of the generated room"
+    ).not.toBeNull();
+    const moves = solveTspRoom(room!);
+    expect(moves, "Room 1 has a clearing route").not.toBeNull();
+    for (let i = 0; i < moves!.length; i++) {
+      const expected = replayTspMoves(room!, moves!.slice(0, i + 1))!;
+      await page.getByRole("button", { name: `Move ${moves![i]}` }).tap();
+      await expect
+        .poll(() => readPlayerCell(page), `player after move ${i + 1}`)
+        .toEqual({ x: expected.px, y: expected.py });
+      // The patrols stop once the walker is on the exit, so the last move has
+      // no tick after it.
+      if (i < moves!.length - 1) {
+        await stepUntilPatrolTicks(page);
+        const patrols = await readPatrolCells(page);
+        const modelPatrols = expected.enemies.map((e) => `${e.x},${e.y}`);
+        expect(patrols, `patrols after move ${i + 1} (${moves![i]})`).toEqual(
+          modelPatrols
+        );
+      }
+    }
     await expect(page.getByText("Tap Next Room")).toBeVisible();
     await shoot(page, testInfo, `room-cleared-${projectSize(page)}`);
 

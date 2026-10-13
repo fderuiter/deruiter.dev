@@ -6,10 +6,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import {
   render,
   screen,
   fireEvent,
+  act,
   cleanup,
   renderHook,
 } from "@testing-library/react";
@@ -17,15 +19,32 @@ import {
   controlHint,
   resolveControlHint,
   useControlHint,
+  useInputModality,
   useTouchHint,
   RotateDevicePrompt,
   TouchButton,
+  TouchControlsGate,
   DockFrame,
   useCabinetAutoPause,
   lockScreenOrientation,
 } from "../components/arcade/mobile";
 
 const COARSE = "(pointer: coarse)";
+
+/** A pointerdown of the given type, as the browser dispatches it on window. */
+function pointerDown(pointerType: string) {
+  const event = new Event("pointerdown");
+  Object.defineProperty(event, "pointerType", { value: pointerType });
+  act(() => {
+    window.dispatchEvent(event);
+  });
+}
+
+function pressKey(key: string, target: EventTarget = window) {
+  act(() => {
+    target.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+  });
+}
 
 function installMatchMedia(matching: string[]) {
   window.matchMedia = vi.fn((query: string) => ({
@@ -95,6 +114,145 @@ describe("arcade mobile kit", () => {
         useControlHint(controlHint({ key: "Space", touch: "Tap" }))
       );
       expect(result.current).toBe("Press Space");
+    });
+
+    it("follows the last input: keys after a keyboard press, Tap after a touch", () => {
+      installMatchMedia([COARSE]);
+      const { result } = renderHook(() =>
+        useControlHint(controlHint({ key: "Space", touch: "Tap" }))
+      );
+      expect(result.current).toBe("Tap");
+
+      pressKey("ArrowLeft");
+      expect(result.current).toBe("Press Space");
+
+      pointerDown("touch");
+      expect(result.current).toBe("Tap");
+    });
+
+    it("reads a Pencil as touch", () => {
+      installMatchMedia([]);
+      const { result } = renderHook(() => useTouchHint());
+      expect(result.current).toBe(false);
+      pointerDown("pen");
+      expect(result.current).toBe(true);
+    });
+  });
+
+  describe("input modality", () => {
+    it("starts on touch for a coarse pointer and on mouse otherwise", () => {
+      installMatchMedia([COARSE]);
+      const { result: coarse } = renderHook(() => useInputModality());
+      expect(coarse.current).toBe("touch");
+      cleanup();
+
+      installMatchMedia([]);
+      const { result: fine } = renderHook(() => useInputModality());
+      expect(fine.current).toBe("mouse");
+    });
+
+    it("takes the modality from the last pointerdown type", () => {
+      installMatchMedia([]);
+      const { result } = renderHook(() => useInputModality());
+      pointerDown("touch");
+      expect(result.current).toBe("touch");
+      pointerDown("pen");
+      expect(result.current).toBe("pen");
+      pointerDown("mouse");
+      expect(result.current).toBe("mouse");
+    });
+
+    it("takes keyboard from a hardware key and ignores modifier-only keys", () => {
+      installMatchMedia([COARSE]);
+      const { result } = renderHook(() => useInputModality());
+      pressKey("Shift");
+      pressKey("Control");
+      expect(result.current).toBe("touch");
+      pressKey("a");
+      expect(result.current).toBe("keyboard");
+    });
+
+    it("ignores keys typed into a text field", () => {
+      installMatchMedia([COARSE]);
+      render(<input aria-label="Name" />);
+      const { result } = renderHook(() => useInputModality());
+      pressKey("a", screen.getByRole("textbox", { name: "Name" }));
+      expect(result.current).toBe("touch");
+    });
+
+    it("renders the desktop default on the server, whatever the device", () => {
+      installMatchMedia([COARSE]);
+      function Probe() {
+        return <span>{useInputModality()}</span>;
+      }
+      // Server rendering reads the server snapshot, never matchMedia.
+      expect(renderToStaticMarkup(<Probe />)).toBe("<span>mouse</span>");
+    });
+
+    it("keeps its controls mounted and hit-testable, hidden from assistive tech, while a keyboard is in use", () => {
+      installMatchMedia([COARSE]);
+      render(
+        <TouchControlsGate>
+          <button type="button">Fire</button>
+        </TouchControlsGate>
+      );
+      const fire = screen.getByRole("button", { name: "Fire" });
+      expect(
+        fire
+          .closest("[data-touch-controls]")
+          ?.getAttribute("data-touch-controls")
+      ).toBe("shown");
+
+      pressKey("ArrowUp");
+      const wrapper = fire.closest("[data-touch-controls]");
+      expect(wrapper?.getAttribute("data-touch-controls")).toBe("hidden");
+      expect(wrapper?.getAttribute("aria-hidden")).toBe("true");
+      expect(wrapper?.className).toContain("opacity-0");
+      expect(fire.getAttribute("tabindex")).toBe("-1");
+
+      pointerDown("touch");
+      expect(
+        fire
+          .closest("[data-touch-controls]")
+          ?.getAttribute("data-touch-controls")
+      ).toBe("shown");
+      expect(fire.hasAttribute("tabindex")).toBe(false);
+    });
+
+    it("fires the first press after a key press on a real touch dock", () => {
+      installMatchMedia([COARSE]);
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(
+        <TouchControlsGate>
+          <TouchButton label="Fire" onPress={onPress} onRelease={onRelease} />
+        </TouchControlsGate>
+      );
+      const fire = screen.getByRole("button", { name: "Fire" });
+
+      pressKey("ArrowUp");
+      // The dock is still mounted, so the press lands on the control itself.
+      fireEvent.pointerDown(fire, { pointerId: 4, pointerType: "touch" });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(fire, { pointerId: 4, pointerType: "touch" });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not treat typing in a checkbox as text entry", () => {
+      installMatchMedia([COARSE]);
+      render(
+        <>
+          <input type="checkbox" aria-label="Sound" />
+          <input type="text" aria-label="Name" />
+        </>
+      );
+      const { result } = renderHook(() => useInputModality());
+      pointerDown("touch");
+      pressKey("a", screen.getByRole("checkbox", { name: "Sound" }));
+      expect(result.current).toBe("keyboard");
+      pointerDown("touch");
+      pressKey("a", screen.getByRole("textbox", { name: "Name" }));
+      expect(result.current).toBe("touch");
     });
   });
 
@@ -204,6 +362,67 @@ describe("arcade mobile kit", () => {
         pointerType: "touch",
       });
       expect(onPress).toHaveBeenCalledTimes(1);
+    });
+
+    it("takes an Apple Pencil press and release like a finger", () => {
+      installMatchMedia([]);
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(
+        <TouchButton label="Fire" onPress={onPress} onRelease={onRelease} />
+      );
+      const button = screen.getByRole("button", { name: "Fire" });
+      fireEvent.pointerDown(button, { pointerId: 7, pointerType: "pen" });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(button, { pointerId: 7, pointerType: "pen" });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("counts a Pencil and a finger on one button as one press", () => {
+      installMatchMedia([]);
+      const onPress = vi.fn();
+      const onRelease = vi.fn();
+      render(
+        <TouchButton label="Fire" onPress={onPress} onRelease={onRelease} />
+      );
+      const button = screen.getByRole("button", { name: "Fire" });
+      fireEvent.pointerDown(button, { pointerId: 7, pointerType: "pen" });
+      fireEvent.pointerDown(button, { pointerId: 2, pointerType: "touch" });
+      expect(onPress).toHaveBeenCalledTimes(1);
+      fireEvent.pointerUp(button, { pointerId: 7, pointerType: "pen" });
+      expect(onRelease).not.toHaveBeenCalled();
+      fireEvent.pointerUp(button, { pointerId: 2, pointerType: "touch" });
+      expect(onRelease).toHaveBeenCalledTimes(1);
+    });
+
+    it("captures a Pencil press on the button", () => {
+      installMatchMedia([]);
+      const setPointerCapture = vi.fn();
+      Object.defineProperty(HTMLElement.prototype, "setPointerCapture", {
+        configurable: true,
+        value: setPointerCapture,
+      });
+      render(<TouchButton label="Fire" />);
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Fire" }), {
+        pointerId: 9,
+        pointerType: "pen",
+      });
+      expect(setPointerCapture).toHaveBeenCalledWith(9);
+    });
+
+    it("releases a held press when it leaves the screen", () => {
+      installMatchMedia([]);
+      const onRelease = vi.fn();
+      const { unmount } = render(
+        <TouchButton label="Fire" onPress={vi.fn()} onRelease={onRelease} />
+      );
+      fireEvent.pointerDown(screen.getByRole("button", { name: "Fire" }), {
+        pointerId: 3,
+        pointerType: "pen",
+      });
+      expect(onRelease).not.toHaveBeenCalled();
+      unmount();
+      expect(onRelease).toHaveBeenCalledTimes(1);
     });
 
     it("answers Enter and Space from a keyboard", () => {

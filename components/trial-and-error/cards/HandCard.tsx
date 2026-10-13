@@ -56,6 +56,22 @@ interface HandCardProps {
  * up, and drags by its grip to reorder. Every motion is transform or opacity.
  * What a key, tap, long press or drop means is the interaction seam's call.
  */
+/**
+ * Whether focus arrived from the keyboard. Programmatic focus and taps do not
+ * match `:focus-visible`; an engine without the selector counts as keyboard so
+ * the old behaviour holds there.
+ *
+ * @param element - The element that just took focus.
+ * @returns True for keyboard focus.
+ */
+function isKeyboardFocus(element: HTMLElement): boolean {
+  try {
+    return element.matches(":focus-visible");
+  } catch {
+    return true;
+  }
+}
+
 export function HandCard({
   view,
   index,
@@ -126,11 +142,15 @@ export function HandCard({
           setRaised(true);
           interaction.onFocus();
           // The hand scrolls sideways when it outgrows the table, so bring
-          // the card keyboard focus lands on into view (#1944).
-          e.currentTarget.scrollIntoView?.({
-            inline: "nearest",
-            block: "nearest",
-          });
+          // the card keyboard focus lands on into view (#1944). Focus that a
+          // tap or the cabinet's own focus moved here is not a reason to scroll
+          // the stage: it would push the table's HUD off the top.
+          if (isKeyboardFocus(e.currentTarget)) {
+            e.currentTarget.scrollIntoView?.({
+              inline: "nearest",
+              block: "nearest",
+            });
+          }
         }}
         onBlur={() => setRaised(false)}
         onKeyDown={interaction.onKeyDown}

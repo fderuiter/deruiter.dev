@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { triggerHaptic } from "@/lib/haptics";
 
 export interface TouchButtonProps extends Omit<
@@ -43,6 +43,23 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   ...rest
 }) => {
   const heldRef = useRef<Set<number | string>>(new Set());
+  // The release handler is read through a ref so the unmount cleanup below
+  // sees the latest one without re-running on every render.
+  const onReleaseRef = useRef(onRelease);
+  useEffect(() => {
+    onReleaseRef.current = onRelease;
+  }, [onRelease]);
+
+  // A button that leaves the screen while held must not leave the game
+  // thinking the control is still down.
+  useEffect(() => {
+    const held = heldRef.current;
+    return () => {
+      if (held.size === 0) return;
+      held.clear();
+      onReleaseRef.current?.();
+    };
+  }, []);
 
   const hold = (id: number | string) => {
     const held = heldRef.current;

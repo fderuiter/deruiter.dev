@@ -30,9 +30,12 @@ import { logger } from "@/lib/logger";
 import {
   lockScreenOrientation,
   RotateDevicePrompt,
+  InputModalityAttribute,
+  TouchControlsGate,
   useCabinetAutoPause,
   useOrientationMismatch,
-  useTouchNarrow,
+  usePhone,
+  useTouchDevice,
   type MobileOrientation,
 } from "@/components/arcade/mobile";
 import {
@@ -150,17 +153,19 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   const [isLoaded, setIsLoaded] = useState(false);
   const [isWarmingUp, setIsWarmingUp] = useState(false);
   const [bootProgress, setBootProgress] = useState(0);
-  // Touch phones and portrait tablets get the immersive cabinet once it is
+  // Any touch device, phone or tablet, gets the immersive cabinet once it is
   // launched (ADR 0061). Desktop never sets it, so its markup stays as it was.
   // The device class is latched at Launch and held until exit, so an iPad that
-  // turns across 1024px mid-game stays immersive instead of jumping layouts.
-  const isTouchNarrow = useTouchNarrow();
+  // turns across a breakpoint mid-game stays immersive instead of jumping layouts.
+  const isTouchDevice = useTouchDevice();
+  const isPhone = usePhone();
   const [launchedOnTouch, setLaunchedOnTouch] = useState(false);
   const touchImmersive = isLaunched && launchedOnTouch;
-  // The phone is held against the game's orientation: the cabinet is blocked
-  // behind the rotate prompt (inert siblings, focus in the prompt).
+  // Orientation is a phone concern: a tablet is never asked to turn. The phone
+  // is held against the game's orientation: the cabinet is blocked behind the
+  // rotate prompt (inert siblings, focus in the prompt).
   const orientationMismatch = useOrientationMismatch(mobileOrientation);
-  const rotateBlocked = touchImmersive && orientationMismatch;
+  const rotateBlocked = touchImmersive && isPhone && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);
@@ -244,18 +249,36 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     };
   }, [isFullscreen]);
 
-  // The immersive touch cabinet locks page scroll while it is open and gives
-  // the back of the page no overscroll bounce. Both are restored on exit.
+  // The immersive touch cabinet pins the page while it is open. Overflow
+  // hidden alone does not stop a programmatic or chained scroll, so the body
+  // is also fixed at the scroll position it had, and that position is restored
+  // on exit. The overscroll bounce is off too. Phones and tablets both pin.
   useEffect(() => {
     if (!touchImmersive || isFullscreen) return;
-    const previousOverflow = document.body.style.overflow;
-    const previousOverscroll =
-      document.documentElement.style.overscrollBehavior;
-    document.body.style.overflow = "hidden";
-    document.documentElement.style.overscrollBehavior = "none";
+    const body = document.body;
+    const root = document.documentElement;
+    const scrollY = window.scrollY;
+    const previous = {
+      overflow: body.style.overflow,
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overscroll: root.style.overscrollBehavior,
+    };
+    body.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    root.style.overscrollBehavior = "none";
     return () => {
-      document.body.style.overflow = previousOverflow;
-      document.documentElement.style.overscrollBehavior = previousOverscroll;
+      body.style.overflow = previous.overflow;
+      body.style.position = previous.position;
+      body.style.top = previous.top;
+      body.style.width = previous.width;
+      root.style.overscrollBehavior = previous.overscroll;
+      if (scrollY !== 0 && typeof window.scrollTo === "function") {
+        window.scrollTo(0, scrollY);
+      }
     };
   }, [touchImmersive, isFullscreen]);
 
@@ -265,6 +288,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   useEffect(() => {
     if (
       !touchImmersive ||
+      !isPhone ||
       !isFullscreen ||
       isPseudoFullscreen ||
       mobileOrientation === "either"
@@ -272,7 +296,13 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       return;
     }
     return lockScreenOrientation(mobileOrientation);
-  }, [touchImmersive, isFullscreen, isPseudoFullscreen, mobileOrientation]);
+  }, [
+    touchImmersive,
+    isPhone,
+    isFullscreen,
+    isPseudoFullscreen,
+    mobileOrientation,
+  ]);
 
   // Leaving the immersive cabinet puts the preview back in view.
   const previewRef = useRef<HTMLDivElement>(null);
@@ -322,7 +352,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   };
 
   const handleLaunch = () => {
-    setLaunchedOnTouch(isTouchNarrow);
+    setLaunchedOnTouch(isTouchDevice);
     handlePrefetch();
     setIsWarmingUp(true);
     setBootProgress(0);
@@ -530,7 +560,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         data-game={gameId}
         data-fullscreen={immersive}
         {...(touchImmersive
-          ? { "data-immersive": true, "data-mobile-layout": mobileLayout }
+          ? {
+              "data-immersive": true,
+              "data-mobile-layout": mobileLayout,
+            }
           : {})}
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
           immersive
@@ -553,6 +586,8 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           } as React.CSSProperties
         }
       >
+        {touchImmersive && <InputModalityAttribute targetRef={cabinetRef} />}
+
         {/* Accessible screen reader live status mirror */}
         <div
           role="region"
@@ -701,7 +736,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             inert={rotateBlocked}
             className="w-full mt-3 flex justify-center shrink-0"
           >
-            {controlDock}
+            {touchImmersive ? (
+              <TouchControlsGate>{controlDock}</TouchControlsGate>
+            ) : (
+              controlDock
+            )}
           </div>
         )}
 

@@ -15,6 +15,19 @@ const externalBaseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL;
  */
 const vercelBypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
 
+/**
+ * ADR 0061 tablet matrix. Chromium with touch emulation stands in for iPad
+ * Safari: each size runs in portrait and in landscape. Only the tablet specs
+ * run here, so the rest of the suite does not multiply by eight.
+ */
+const TABLET_TEST_MATCH = [/tablet-kit\.spec\.ts$/, /-tablet\.spec\.ts$/];
+const TABLET_DEVICES: ReadonlyArray<readonly [string, number, number]> = [
+  ["iPad mini", 744, 1133],
+  ["iPad Air", 820, 1180],
+  ["iPad Pro 11", 834, 1194],
+  ["iPad Pro 13", 1024, 1366],
+];
+
 export default defineConfig({
   testDir: "./__tests__/e2e",
   fullyParallel: true,
@@ -58,6 +71,21 @@ export default defineConfig({
       name: "Mobile Chrome",
       use: { ...devices["Pixel 5"] },
     },
+    ...TABLET_DEVICES.flatMap(([name, shortSide, longSide]) =>
+      [
+        { name, width: shortSide, height: longSide },
+        { name: `${name} landscape`, width: longSide, height: shortSide },
+      ].map(({ name: projectName, width, height }) => ({
+        name: projectName,
+        testMatch: TABLET_TEST_MATCH,
+        use: {
+          hasTouch: true,
+          isMobile: true,
+          deviceScaleFactor: 2,
+          viewport: { width, height },
+        },
+      }))
+    ),
     // ADR 0061: the 320px floor and a landscape phone for the immersive
     // cabinet. Only mobile-kit.spec.ts runs here, so the rest of the suite does
     // not multiply by two.

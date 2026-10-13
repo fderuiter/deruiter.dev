@@ -14,7 +14,7 @@ import {
   cleanup,
 } from "@testing-library/react";
 import { PlayCabinet } from "../components/arcade/PlayCabinet";
-import { TOUCH_NARROW_QUERY } from "../components/arcade/mobile";
+import { PHONE_QUERY, TOUCH_DEVICE_QUERY } from "../components/arcade/mobile";
 
 const lockMock = vi.hoisted(() => vi.fn(() => () => {}));
 
@@ -131,6 +131,21 @@ function cabinetEl(): HTMLElement {
   return el;
 }
 
+/** A pointerdown of the given type, as a touch screen or a Pencil sends it. */
+function pointerDown(pointerType: string) {
+  const event = new Event("pointerdown");
+  Object.defineProperty(event, "pointerType", { value: pointerType });
+  act(() => {
+    window.dispatchEvent(event);
+  });
+}
+
+function pressKey(key: string) {
+  act(() => {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key }));
+  });
+}
+
 function powerOff() {
   fireEvent.click(screen.getByTitle("Reset / Power Off Cabinet"));
 }
@@ -156,7 +171,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("goes immersive on a coarse, narrow device and locks the page", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet();
     expect(document.querySelector("[data-immersive]")).toBeNull();
 
@@ -173,7 +188,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("gives a fit-layout immersive stage overflow hidden instead of a scroll area", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet({ mobileLayout: "fit" });
     await launch();
 
@@ -184,7 +199,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("keeps the immersive stage scrollable for a game without a mobile pass", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet();
     await launch();
 
@@ -194,7 +209,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("restores page scroll and overscroll when the cabinet is powered off", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     document.body.style.overflow = "scroll";
     renderCabinet();
     await launch();
@@ -208,7 +223,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("restores page scroll and overscroll when unmounted while immersive", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     document.body.style.overflow = "auto";
     const { unmount } = renderCabinet();
     await launch();
@@ -269,7 +284,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("latches immersive at launch so a rotation across 1024px keeps it", async () => {
-    const media = installMatchMedia([TOUCH_NARROW_QUERY]);
+    const media = installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet();
     await launch();
     expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
@@ -281,7 +296,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("scrolls the preview back into view when leaving immersive", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     const scrollIntoView = vi.fn();
     HTMLElement.prototype.scrollIntoView = scrollIntoView;
     renderCabinet();
@@ -306,7 +321,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("shows the prompt for a landscape game held in portrait", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY, ORIENTATION_PORTRAIT]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
@@ -316,7 +331,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("shows the prompt for a portrait game held in landscape", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY]);
     renderCabinet({ mobileOrientation: "portrait" });
     await launch();
 
@@ -326,7 +341,11 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("shows no prompt for a portrait game held in portrait", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY, "(orientation: portrait)"]);
+    installMatchMedia([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      "(orientation: portrait)",
+    ]);
     renderCabinet({ mobileOrientation: "portrait" });
     await launch();
 
@@ -335,16 +354,22 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("blocks the cabinet behind the prompt and frees it when the phone matches", async () => {
-    const media = installMatchMedia([TOUCH_NARROW_QUERY, ORIENTATION_PORTRAIT]);
+    const media = installMatchMedia([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      ORIENTATION_PORTRAIT,
+    ]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
     const stage = document.querySelector<HTMLElement>(".arcade-cabinet-stage");
-    const dock = screen.getByTestId("test-control-dock").parentElement;
+    // The dock sits in its touch gate, which sits in the inert dock slot.
+    const dock =
+      screen.getByTestId("test-control-dock").parentElement?.parentElement;
     expect(stage?.hasAttribute("inert")).toBe(true);
     expect(dock?.hasAttribute("inert")).toBe(true);
 
-    media.set([TOUCH_NARROW_QUERY, "(orientation: landscape)"]);
+    media.set([TOUCH_DEVICE_QUERY, PHONE_QUERY, "(orientation: landscape)"]);
     // The landscape phone matches: no prompt and nothing inert.
     expect(screen.queryByTestId("rotate-device-prompt")).toBeNull();
     expect(stage?.hasAttribute("inert")).toBe(false);
@@ -352,19 +377,23 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("moves focus into the prompt on show and clears it when the phone matches", async () => {
-    const media = installMatchMedia([TOUCH_NARROW_QUERY, ORIENTATION_PORTRAIT]);
+    const media = installMatchMedia([
+      TOUCH_DEVICE_QUERY,
+      PHONE_QUERY,
+      ORIENTATION_PORTRAIT,
+    ]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
     const leave = screen.getByRole("button", { name: "Leave cabinet" });
     expect(document.activeElement).toBe(leave);
 
-    media.set([TOUCH_NARROW_QUERY, "(orientation: landscape)"]);
+    media.set([TOUCH_DEVICE_QUERY, PHONE_QUERY, "(orientation: landscape)"]);
     expect(screen.queryByTestId("rotate-device-prompt")).toBeNull();
   });
 
   it("never prompts a game that declares either orientation", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY, ORIENTATION_PORTRAIT]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
     renderCabinet({ mobileOrientation: "either" });
     await launch();
 
@@ -381,7 +410,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("lets the player leave from the prompt", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY, ORIENTATION_PORTRAIT]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY, ORIENTATION_PORTRAIT]);
     const onExit = vi.fn();
     renderCabinet({ mobileOrientation: "landscape", onExit });
     await launch();
@@ -393,7 +422,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("auto-pauses the game on blur and page hide while immersive", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     const onAutoPause = vi.fn();
     renderCabinet({ onAutoPause });
     await launch();
@@ -405,7 +434,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("auto-pauses once on a rotation while immersive", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     const onAutoPause = vi.fn();
     renderCabinet({ onAutoPause });
     await launch();
@@ -416,7 +445,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("auto-pauses when the tab is hidden", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     const onAutoPause = vi.fn();
     renderCabinet({ onAutoPause });
     await launch();
@@ -448,7 +477,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("locks the orientation for a touch cabinet in real fullscreen", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY, PHONE_QUERY]);
     renderCabinet({ mobileOrientation: "landscape" });
     await launch();
 
@@ -468,12 +497,134 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
   });
 
   it("never locks an either-orientation game", async () => {
-    installMatchMedia([TOUCH_NARROW_QUERY]);
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet({ mobileOrientation: "either" });
     await launch();
 
     setRealFullscreen(cabinetEl());
 
     expect(lockMock).not.toHaveBeenCalled();
+  });
+
+  it("goes immersive on a tablet in either orientation, not only under 1024px", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY, ORIENTATION_PORTRAIT]);
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
+    expect(cabinetEl().className).toContain("fixed inset-0");
+  });
+
+  it("never asks a tablet to turn, even for a landscape game held in portrait", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY, ORIENTATION_PORTRAIT]);
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    expect(screen.queryByTestId("rotate-device-prompt")).toBeNull();
+    const stage = document.querySelector<HTMLElement>(".arcade-cabinet-stage");
+    expect(stage?.hasAttribute("inert")).toBe(false);
+  });
+
+  it("does not lock the orientation of a tablet in real fullscreen", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
+    renderCabinet({ mobileOrientation: "landscape" });
+    await launch();
+
+    setRealFullscreen(cabinetEl());
+
+    expect(lockMock).not.toHaveBeenCalled();
+  });
+
+  it("reports the input modality on the immersive cabinet root", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
+    renderCabinet();
+    await launch();
+
+    expect(cabinetEl().getAttribute("data-input-modality")).toBe("touch");
+
+    pressKey("ArrowLeft");
+    expect(cabinetEl().getAttribute("data-input-modality")).toBe("keyboard");
+
+    pointerDown("touch");
+    expect(cabinetEl().getAttribute("data-input-modality")).toBe("touch");
+
+    pointerDown("pen");
+    expect(cabinetEl().getAttribute("data-input-modality")).toBe("pen");
+  });
+
+  it("keeps the on-screen controls mounted but hidden while a keyboard is in use", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
+    renderCabinet();
+    await launch();
+
+    const dock = screen.getByTestId("test-control-dock");
+    expect(dock.parentElement?.getAttribute("data-touch-controls")).toBe(
+      "shown"
+    );
+
+    pressKey("ArrowLeft");
+    const hidden = dock.parentElement;
+    expect(screen.getByTestId("test-control-dock")).toBe(dock);
+    expect(hidden?.getAttribute("data-touch-controls")).toBe("hidden");
+    expect(hidden?.getAttribute("aria-hidden")).toBe("true");
+
+    pointerDown("touch");
+    expect(dock.parentElement?.getAttribute("data-touch-controls")).toBe(
+      "shown"
+    );
+    expect(dock.parentElement?.getAttribute("aria-hidden")).toBeNull();
+  });
+
+  it("pins the page at its scroll position while the tablet cabinet is open", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
+    Object.defineProperty(window, "scrollY", {
+      configurable: true,
+      value: 300,
+    });
+    const scrollTo = vi.fn();
+    window.scrollTo = scrollTo as unknown as typeof window.scrollTo;
+    try {
+      renderCabinet();
+      await launch();
+
+      expect(document.body.style.position).toBe("fixed");
+      expect(document.body.style.top).toBe("-300px");
+      expect(document.body.style.overflow).toBe("hidden");
+
+      powerOff();
+
+      expect(document.body.style.position).toBe("");
+      expect(document.body.style.top).toBe("");
+      expect(scrollTo).toHaveBeenCalledWith(0, 300);
+    } finally {
+      Reflect.deleteProperty(window, "scrollY");
+    }
+  });
+
+  it("keeps the controls on a desktop cabinet whatever the last input", async () => {
+    installMatchMedia([]);
+    renderCabinet();
+    await launch();
+
+    pressKey("ArrowLeft");
+
+    const dock = screen.getByTestId("test-control-dock");
+    expect(dock.parentElement?.getAttribute("data-touch-controls")).toBeNull();
+    expect(cabinetEl().hasAttribute("data-input-modality")).toBe(false);
+  });
+
+  it("attaches no modality listeners to a desktop cabinet", async () => {
+    installMatchMedia([]);
+    const add = vi.spyOn(window, "addEventListener");
+    try {
+      renderCabinet();
+      await launch();
+      const keyListeners = add.mock.calls.filter(
+        ([type]) => type === "keydown"
+      );
+      expect(keyListeners).toHaveLength(0);
+    } finally {
+      add.mockRestore();
+    }
   });
 });

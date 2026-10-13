@@ -67,7 +67,8 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     expect(rootTouch).toBe("pan-x pan-y");
 
     // Captures are named by state. The cabinet latches immersive at launch, so
-    // it stays immersive when the viewport grows past 1023px (ADR 0061).
+    // it stays immersive when the viewport grows past the phone breakpoint
+    // (ADR 0061).
     const shots = await captureMatrix(page, "trial-and-error", SHOT_DIR);
     for (const shot of shots) {
       expect(shot.immersive, `immersive at ${shot.width}px`).toBe(true);

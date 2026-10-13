@@ -104,6 +104,8 @@ import {
 } from "@/components/working-with-duck/office-art";
 import { drawBathtubScene } from "@/components/working-with-duck/bath-art";
 
+/** Stage height the guided tip needs above the room in the touch cabinet, two or three lines. */
+const TOUCH_TIP_BAND_PX = 80;
 /** Fixed simulation step for the Duck loop: the engine is tuned to 60 ticks/sec (#600). */
 const DUCK_FIXED_STEP_MS = 1000 / 60;
 /** Most fixed steps one rendered frame may replay after a long gap. */
@@ -860,6 +862,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   // Inside the immersive touch cabinet the dock carries these controls, so the
   // game's own copies of them are not drawn, and canvas hints name taps (ADR 0061).
   const cabinetTouch = useCabinetTouch();
+  // Height the touch stage has above the room (#2039). A portrait stage is
+  // taller than the room, and the guided tip sits in that band.
+  const [roomSpare, setRoomSpare] = useState(0);
   const canvasTouchRef = useRef(false);
   useEffect(() => {
     canvasTouchRef.current = cabinetTouch;
@@ -1191,6 +1196,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       );
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
+      // The room's spare height is where the guided tip sits, in flow.
+      setRoomSpare(Math.max(0, stage.clientHeight - height));
     };
     fit();
     const observer = new ResizeObserver(fit);
@@ -1199,6 +1206,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       observer.disconnect();
       canvas.style.width = "";
       canvas.style.height = "";
+      setRoomSpare(0);
     };
   }, [cabinetTouch]);
 
@@ -2382,6 +2390,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   // A dismissed tip stays hidden until the advice changes.
   const visibleTip =
     tutorialHint && tutorialHint !== dismissedTip ? tutorialHint : null;
+  // In the touch cabinet the tip takes the band above the room when the
+  // stage has room for its lines; a landscape stage has none, so it stays at
+  // the floor end.
+  const tipInFlow = cabinetTouch && roomSpare >= TOUCH_TIP_BAND_PX;
 
   const workPercent = Math.min(
     100,
@@ -2606,14 +2618,21 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         />
 
         {/* Guided tip (#1676): clear of the targets, dismissible, never blocks a drag.
-            In the touch cabinet it sits at the floor end, so it never covers the wall (#2039). */}
+            In the touch cabinet it sits in the band above the room when the
+            stage has room for it (#2039 playtest), and at the floor end
+            otherwise, so it never covers the wall. */}
         {visibleTip && (
           <div
             data-testid="duck-tip"
-            className={`pointer-events-none absolute inset-x-12 z-10 flex justify-center [@media(max-height:500px)]:hidden ${
-              isAwayFromOffice || cabinetTouch
-                ? "bottom-2 sm:bottom-3"
-                : "top-2 sm:top-3"
+            data-placement={tipInFlow ? "above-room" : "floor"}
+            className={`pointer-events-none z-10 flex justify-center [@media(max-height:500px)]:hidden ${
+              tipInFlow
+                ? "relative order-first w-full shrink-0 px-3 pb-2"
+                : `absolute inset-x-12 ${
+                    isAwayFromOffice || cabinetTouch
+                      ? "bottom-2 sm:bottom-3"
+                      : "top-2 sm:top-3"
+                  }`
             }`}
           >
             <div className="flex max-w-2xl items-start gap-2 rounded-lg border border-amber-400/30 bg-[#0d0e11]/90 py-1.5 pl-2.5 pr-1 font-mono text-[11px] leading-snug text-amber-100 shadow-lg sm:text-xs">

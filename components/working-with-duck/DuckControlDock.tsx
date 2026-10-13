@@ -8,9 +8,15 @@ import {
   type DuckCommand,
 } from "@/components/working-with-duck/touch-bridge";
 
-/** Every key is at least 48px tall, so a fingertip lands on it. */
-const KEY =
-  "h-12 min-w-12 rounded-xl border border-zinc-700 bg-zinc-800/90 px-2 font-mono text-xs font-bold text-zinc-100 active:scale-[0.98] active:bg-amber-500/30 disabled:opacity-40 focus-visible:ring-amber-400";
+const KEY_BASE =
+  "min-w-12 rounded-xl border border-zinc-700 bg-zinc-800/90 px-2 font-mono text-xs font-bold text-zinc-100 active:scale-[0.98] active:bg-amber-500/30 disabled:opacity-40 focus-visible:ring-amber-400";
+
+/**
+ * Every key is at least 48px tall, so a fingertip lands on it. In portrait,
+ * with the height to spare, the keys grow to 64px, and the action row to 52px.
+ */
+const KEY = `h-12 portrait:min-[700px]:h-16 ${KEY_BASE}`;
+const ACTION_KEY = `h-12 portrait:min-[700px]:h-[52px] ${KEY_BASE}`;
 
 /** Keeps the keys off the bottom edge and clear of the home indicator. */
 const DOCK_PADDING = {
@@ -40,13 +46,17 @@ export function DuckControlDock() {
 
   const run = (command: DuckCommand) => bridge.run(command);
 
-  const keyButton = (label: string, command: DuckCommand) => (
+  const keyButton = (
+    label: string,
+    command: DuckCommand,
+    className: string = KEY
+  ) => (
     <TouchButton
       key={command}
       label={label}
       disabled={paused}
       onPress={() => run(command)}
-      className={KEY}
+      className={className}
     >
       {label}
     </TouchButton>
@@ -55,17 +65,18 @@ export function DuckControlDock() {
   // Resume only when the player paused it; any other pause has no control here.
   const pauseDisabled = paused && !manualPause;
   const pauseLabel = manualPause ? "Resume" : "Pause";
-  const pause = (
+  const pauseButton = (className: string) => (
     <TouchButton
       key="pause"
       label={pauseLabel}
       disabled={pauseDisabled}
       onPress={() => run("pause")}
-      className={KEY}
+      className={className}
     >
       {pauseLabel}
     </TouchButton>
   );
+  const pause = pauseButton(KEY);
 
   const root = (
     sceneName: string,
@@ -90,7 +101,12 @@ export function DuckControlDock() {
       "park",
       "",
       <DockFrame>
-        <div className={paused ? "pointer-events-none opacity-40" : undefined}>
+        {/* The dim is an inline style, so it holds whatever the stylesheet does. */}
+        <div
+          data-testid="duck-park-pad"
+          className={paused ? "pointer-events-none" : undefined}
+          style={paused ? { opacity: 0.4 } : undefined}
+        >
           <HoldDpad
             directions={["up", "down"]}
             paused={paused}
@@ -144,8 +160,8 @@ export function DuckControlDock() {
         {keyButton("Spin", "trick-spin")}
       </div>
       <div className="grid grid-cols-2 gap-2">
-        {keyButton("Work Sprint", "space")}
-        {pause}
+        {keyButton("Work Sprint", "space", ACTION_KEY)}
+        {pauseButton(ACTION_KEY)}
       </div>
     </>
   );

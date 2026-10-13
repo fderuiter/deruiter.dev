@@ -178,6 +178,40 @@ describe("DuckControlDock wiring (ADR 0061)", () => {
     expect(screen.getByRole("button", { name: "Move Up" })).toBeTruthy();
   });
 
+  describe("park pad and portrait sizes (#2039 playtest)", () => {
+    it("dims the steer pad while the sprint is paused, and not while it runs", () => {
+      renderDock({
+        scene: "park",
+        aiming: false,
+        paused: true,
+        manualPause: true,
+      });
+      const pad = screen.getByTestId("duck-park-pad");
+      expect(pad.style.opacity).toBe("0.4");
+      expect(pad.className).toContain("pointer-events-none");
+      cleanup();
+      renderDock({
+        scene: "park",
+        aiming: false,
+        paused: false,
+        manualPause: false,
+      });
+      expect(screen.getByTestId("duck-park-pad").style.opacity).toBe("");
+    });
+
+    it("grows the keys in portrait when space allows, and the action row to 52px", () => {
+      renderDock();
+      expect(screen.getByRole("button", { name: "Kong" }).className).toContain(
+        "portrait:min-[700px]:h-16"
+      );
+      const sprint = screen.getByRole("button", { name: "Work Sprint" });
+      expect(sprint.className).toContain("portrait:min-[700px]:h-[52px]");
+      expect(screen.getByRole("button", { name: "Pause" }).className).toContain(
+        "portrait:min-[700px]:h-[52px]"
+      );
+    });
+  });
+
   describe("pause reasons (the dock offers only a Resume it can deliver)", () => {
     it("offers no Resume for a pause the player did not make, and disables Pause", () => {
       const { run } = renderDock({

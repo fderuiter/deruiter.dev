@@ -6,6 +6,8 @@ import {
   LeanProofStep,
   PuzzlerLevelDef,
 } from "@/lib/quasi-perfect/types";
+import { useCabinetTouch } from "@/components/arcade/mobile";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { LeanIdeInspector } from "./LeanIdeInspector";
 import { TerminalLog } from "./TerminalLog";
 import {
@@ -37,6 +39,13 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
   // Board first (#1519): both drawers start collapsed; the latest log line
   // is shown on the proof board itself.
   const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(false);
+  const inCabinet = useCabinetTouch();
+  // On the touch cabinet the open inspector traps focus and Escape closes it
+  // (#2042). The trap is inactive on desktop, so a drawer there behaves as before.
+  const leanTrapRef = useFocusTrap<HTMLDivElement>(
+    inCabinet && isLeanInspectorOpen,
+    { onEscape: onToggleLeanInspector, returnFocus: true }
+  );
 
   return (
     <div
@@ -86,7 +95,17 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
         {isLeanInspectorOpen && (
           <div
             id="lean-ide-drawer-content"
-            className="border-t border-zinc-800/80 p-1"
+            ref={leanTrapRef}
+            // On the touch cabinet the inspector is a dialog: focus stays in
+            // it and Escape closes it (#2042). Desktop keeps a plain drawer.
+            role={inCabinet ? "dialog" : undefined}
+            aria-modal={inCabinet ? true : undefined}
+            aria-label={
+              inCabinet
+                ? "Generated Lean 4 Text and Simulator Inspector"
+                : undefined
+            }
+            className={`border-t border-zinc-800/80 p-1${inCabinet ? " max-h-[45dvh] overflow-y-auto" : ""}`}
           >
             <LeanIdeInspector
               level={level}
@@ -130,7 +149,7 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
         {isTerminalOpen && (
           <div
             id="terminal-log-drawer-content"
-            className="border-t border-zinc-800/80 p-1"
+            className={`border-t border-zinc-800/80 p-1${inCabinet ? " max-h-[30dvh] overflow-y-auto" : ""}`}
           >
             <TerminalLog logs={logs} />
           </div>

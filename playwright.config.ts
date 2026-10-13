@@ -91,7 +91,7 @@ export default defineConfig({
     // so the rest of the suite does not multiply by two.
     {
       name: "Small Phone",
-      testMatch: /(mobile-kit|retro-labyrinth-mobile)\.spec\.ts$/,
+      testMatch: /(mobile-kit|retro-labyrinth-tablet)\.spec\.ts$/,
       use: {
         ...devices["Pixel 5"],
         viewport: { width: 320, height: 568 },
@@ -100,7 +100,7 @@ export default defineConfig({
     },
     {
       name: "Phone Landscape",
-      testMatch: /(mobile-kit|retro-labyrinth-mobile)\.spec\.ts$/,
+      testMatch: /(mobile-kit|retro-labyrinth-tablet)\.spec\.ts$/,
       use: { ...devices["iPhone 12 landscape"] },
     },
   ],

@@ -348,6 +348,7 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     borderHover: "hover:border-rose-400/50",
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
     storageKey: "retro_labyrinth_highscore",
+    desktopOnly: true,
     route: "/arcade/retro-labyrinth",
   },
 ];

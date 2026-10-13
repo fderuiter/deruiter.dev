@@ -158,8 +158,9 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
           .locator(`${IMMERSIVE} button[title="Reset / Power Off Cabinet"]`)
           .tap();
         await expect(page.locator("[data-immersive]")).toHaveCount(0);
-        // Exit hands the page back: it scrolls freely again, and the preview
-        // scrolls into view as it always has.
+        // Exit hands the page back at the offset the player left: it returns to
+        // the pinned position (no scrollIntoView jump), then scrolls freely.
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(pinned);
         const reachable = await page.evaluate(() => {
           window.scrollTo(0, 600);
           return window.scrollY;

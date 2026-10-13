@@ -82,10 +82,6 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
 
   // Holds end when the page stops being the thing the player is using, not
   // when focus moves. A tap on another key must not release a held arrow.
-  const onReleaseRef = useRef(onRelease);
-  useEffect(() => {
-    onReleaseRef.current = onRelease;
-  }, [onRelease]);
   useEffect(() => {
     const release = () => {
       const held = heldRef.current;

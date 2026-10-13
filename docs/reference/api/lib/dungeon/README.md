@@ -542,6 +542,18 @@ Re-exports [TSPNode](types/interfaces/TSPNode.md)
 
 ***
 
+### tspWallTelegraph
+
+Re-exports [tspWallTelegraph](tsp/functions/tspWallTelegraph.md)
+
+***
+
+### TspWallTelegraph
+
+Re-exports [TspWallTelegraph](tsp/interfaces/TspWallTelegraph.md)
+
+***
+
 ### updateEnemyAI
 
 Re-exports [updateEnemyAI](ai/functions/updateEnemyAI.md)

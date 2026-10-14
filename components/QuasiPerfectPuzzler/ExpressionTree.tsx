@@ -8,8 +8,10 @@ import { ASTNodeView } from "./ASTNodeView";
 import {
   DEFAULT_PROOF_LAYOUT,
   countLeaves,
+  fitLevelGap,
   fitSlotWidth,
   layoutProofTree,
+  treeDepth,
   prettyMath,
 } from "./boardArt";
 import { useCalmMotion } from "./useCalmMotion";
@@ -87,8 +89,12 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
   const inCabinet = useCabinetTouch();
   const mathematicalNotation = renderASTString(goalAST);
   const [boardWidth, setBoardWidth] = useState(0);
+  // On the touch cabinet the tree region has a fixed height, so the rows close
+  // up to fit a deep goal instead of cutting off its leaves (#2042 playtest).
+  const [boardHeight, setBoardHeight] = useState(0);
   const boardRef = useResizeObserver<HTMLDivElement>((entry) => {
     setBoardWidth(Math.floor(entry.contentRect.width));
+    setBoardHeight(Math.floor(entry.contentRect.height));
   });
 
   const shortViewport = useSyncExternalStore(
@@ -98,12 +104,16 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
   );
   const layout = useMemo(() => {
     const slotWidth = fitSlotWidth(boardWidth, countLeaves(goalAST));
-    return layoutProofTree(goalAST, {
+    const options = {
       ...DEFAULT_PROOF_LAYOUT,
       slotWidth,
       ...(shortViewport ? { levelGap: SHORT_LEVEL_GAP, padding: 8 } : {}),
-    });
-  }, [goalAST, boardWidth, shortViewport]);
+    };
+    if (inCabinet) {
+      options.levelGap = fitLevelGap(boardHeight, treeDepth(goalAST), options);
+    }
+    return layoutProofTree(goalAST, options);
+  }, [goalAST, boardWidth, boardHeight, shortViewport, inCabinet]);
 
   const positions = useMemo(() => {
     const map = new Map<string, { x: number; y: number }>();

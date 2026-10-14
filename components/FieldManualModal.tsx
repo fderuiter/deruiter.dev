@@ -18,6 +18,7 @@ import {
 import { FieldManualData } from "@/types/game-manual";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { ModalContainer } from "@/components/ui/ModalContainer";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 
 /** A game action the manual offers, such as replaying a tutorial. */
 export interface FieldManualAction {
@@ -61,6 +62,10 @@ export function FieldManualModal({
   const [activeTab, setActiveTab] = useState<TabType>("objective");
   const { playHover, playAutocomplete, playSuccess } = useAudio();
   const isClient = useIsClient();
+  // Opened from a touch cabinet, the manual takes the cabinet's touch sizing:
+  // 44px controls and no text under 12px (#2042). It renders in a portal, so
+  // it carries its own class rather than inheriting the cabinet's rules.
+  const inCabinet = useCabinetTouch();
 
   // Reset tab to objective on open
   useEffect(() => {
@@ -92,7 +97,7 @@ export function FieldManualModal({
           onClose={onClose}
           titleId="manual-title"
           maxWidth="max-w-3xl"
-          className="border border-zinc-800/80 rounded-3xl shadow-2xl shadow-cyan-950/20"
+          className={`border border-zinc-800/80 rounded-3xl shadow-2xl shadow-cyan-950/20${inCabinet ? " field-manual-touch" : ""}`}
         >
           {/* Ambient Gradient Header Background */}
           <div

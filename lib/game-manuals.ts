@@ -980,8 +980,20 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Costs 2 attention. Shows the site's true queries, deviations, unsigned source, eligibility concerns and training for 10 days.",
         key: "Audit button",
       },
+      {
+        action: "Delegate the day (office)",
+        description:
+          "Asks first, then hands the rest of the day to the team and sends you home. They give each waiting message its quickest answer without writing it up, some messages slip through and land their fallout, and every teammate trusts you a little less. The overnight report says what they did.",
+        key: "Delegate button",
+      },
     ],
     rules: [
+      {
+        title: "Short or full study",
+        detail:
+          "A new office run offers two lengths beside the difficulty. The full study runs 77 days with 48 subjects at five sites. The short study is the same protocol as a 35-day pilot with 24 subjects at Sites 01 to 03: every message, follow-up and visitor still comes, closer together, and a rescue starts three days behind instead of six. With a few delegated days a short study fits in one sitting. The share card says which one you ran, and saves from before the choice load as the full study.",
+        badge: "Length",
+      },
       {
         title: "Attention is the resource",
         detail:

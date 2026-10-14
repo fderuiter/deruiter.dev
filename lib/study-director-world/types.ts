@@ -151,6 +151,11 @@ export interface OvernightReport {
   complete: boolean;
   /** How the day just ended went, from the evening wrap-up (#1837). */
   wrapUp?: OvernightLine[];
+  /**
+   * Set when the player delegated the day (#2092): what the team did with
+   * each message and what it cost.
+   */
+  delegated?: OvernightLine[];
 }
 
 /** Which way the player or a person is looking. */
@@ -693,7 +698,8 @@ export type TrustCause =
   | "heard"
   | "coffee"
   | "favour"
-  | "cover";
+  | "cover"
+  | "delegated";
 
 /** Something the player saw or was told. */
 export interface Observation {

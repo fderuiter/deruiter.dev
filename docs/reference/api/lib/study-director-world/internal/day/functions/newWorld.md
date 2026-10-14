@@ -6,9 +6,10 @@
 
 # Function: newWorld()
 
-> **newWorld**(`seed`, `difficulty`): [`WorldState`](../../../types/interfaces/WorldState.md)
+> **newWorld**(`seed`, `difficulty`, `length?`): [`WorldState`](../../../types/interfaces/WorldState.md)
 
-A new Study 24-081 run in the world, on day 1.
+A new Study 24-081 run in the world, on day 1: the full study, or the
+short one (#2092) that fits in a sitting.
 
 ## Parameters
 
@@ -18,7 +19,11 @@ A new Study 24-081 run in the world, on day 1.
 
 ### difficulty
 
-`"calm"` \| `"standard"` \| `"rescue"`
+`"standard"` \| `"calm"` \| `"rescue"`
+
+### length?
+
+`"full"` \| `"short"`
 
 ## Returns
 

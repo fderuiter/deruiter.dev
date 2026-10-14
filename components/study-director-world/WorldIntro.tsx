@@ -2,7 +2,15 @@
 
 import React, { useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { DIFFICULTIES, type Difficulty } from "@/lib/study-director";
+import {
+  DIFFICULTIES,
+  RESCUE_SLIP_DAYS,
+  STUDY_LENGTHS,
+  scaleDays,
+  studyPreset,
+  type Difficulty,
+  type StudyLength,
+} from "@/lib/study-director";
 import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
 
 const TOUCH_CONTROLS: Array<{ keys: string; action: string }> = [
@@ -29,15 +37,97 @@ const CONTROLS: Array<{ keys: string; action: string }> = [
 /**
  * What each difficulty changes in an office run, in plain terms. These are
  * the domain's own numbers (`applyDifficulty`, `WILDCARDS_PER_RUN`): the
- * office's clock, energy and focus are the same on every difficulty.
+ * office's clock, energy and focus are the same on every difficulty. A
+ * rescue starts proportionally fewer days behind on the short study.
  */
-const WHAT_CHANGES: Record<Difficulty, string> = {
-  calm: "15% more budget, a warmer sponsor, a less loaded team and two surprise events.",
-  standard:
-    "The study as written: the planned budget and timeline, and three surprise events.",
-  rescue:
-    "Six days behind, 8% of the budget already spent, more paperwork owed, a cooler sponsor, a busier team and sites, and four surprise events.",
+function whatChanges(id: Difficulty, length: StudyLength): string {
+  if (id === "calm")
+    return "15% more budget, a warmer sponsor, a less loaded team and two surprise events.";
+  if (id === "standard")
+    return "The study as written: the planned budget and timeline, and three surprise events.";
+  const behind = scaleDays(RESCUE_SLIP_DAYS, studyPreset(length).setup);
+  const days = behind === 6 ? "Six" : behind === 3 ? "Three" : `${behind}`;
+  return `${days} days behind, 8% of the budget already spent, more paperwork owed, a cooler sponsor, a busier team and sites, and four surprise events.`;
+}
+
+const LENGTH_TEXT: Record<StudyLength, { label: string; detail: string }> = {
+  short: {
+    label: "Short study",
+    detail: `${studyPreset("short").setup.durationDays} days, ${studyPreset("short").setup.subjects} subjects at ${studyPreset("short").sites.length} sites. Fits in one sitting, sooner if you delegate some days.`,
+  },
+  full: {
+    label: "Full study",
+    detail: `${studyPreset("full").setup.durationDays} days, ${studyPreset("full").setup.subjects} subjects at ${studyPreset("full").sites.length} sites. The whole story, over several sessions.`,
+  },
 };
+
+/** One radio card: a label and a line on what it means, 44px or taller. */
+function Choice({
+  name,
+  value,
+  checked,
+  label,
+  detail,
+  onChange,
+}: {
+  name: string;
+  value: string;
+  checked: boolean;
+  label: string;
+  detail: string;
+  onChange: () => void;
+}) {
+  return (
+    <label
+      className={`flex min-h-11 min-w-0 cursor-pointer gap-2 border p-2 text-xs transition-colors active:scale-[0.98] ${checked ? "border-[var(--sd-amber)] bg-[var(--sd-amber)]/10" : "border-zinc-700 hover:border-zinc-500"}`}
+    >
+      <input
+        type="radio"
+        name={name}
+        value={value}
+        checked={checked}
+        onChange={onChange}
+        className="mt-0.5 accent-amber-500"
+      />
+      <span className="min-w-0">
+        <span className="block font-bold text-[var(--sd-text)]">{label}</span>
+        <span className="block break-words text-[var(--sd-muted)]">
+          {detail}
+        </span>
+      </span>
+    </label>
+  );
+}
+
+/**
+ * Chooses how long a new office run is (#2092), short or full, beside the
+ * difficulty. Like the difficulty it is set before the study begins.
+ */
+export const LengthPicker: React.FC<{
+  value: StudyLength;
+  onChange: (value: StudyLength) => void;
+  /** Radio group name, unique on the page. */
+  name: string;
+}> = ({ value, onChange, name }) => (
+  <fieldset className="min-w-0" data-testid={`${name}-picker`}>
+    <legend className="mb-2 text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+      Study length
+    </legend>
+    <div className="grid gap-1.5">
+      {STUDY_LENGTHS.map((id) => (
+        <Choice
+          key={id}
+          name={name}
+          value={id}
+          checked={id === value}
+          label={LENGTH_TEXT[id].label}
+          detail={LENGTH_TEXT[id].detail}
+          onChange={() => onChange(id)}
+        />
+      ))}
+    </div>
+  </fieldset>
+);
 
 /**
  * Chooses how hard a new office run starts, one honest line per option. It
@@ -49,38 +139,25 @@ export const ConditionsPicker: React.FC<{
   onChange: (value: Difficulty) => void;
   /** Radio group name, unique on the page. */
   name: string;
-}> = ({ value, onChange, name }) => (
+  /** The study length the run will have, which sets a rescue's head start. */
+  length?: StudyLength;
+}> = ({ value, onChange, name, length = "full" }) => (
   <fieldset className="min-w-0" data-testid={`${name}-picker`}>
     <legend className="mb-2 text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
       Study conditions
     </legend>
     <div className="grid gap-1.5">
-      {DIFFICULTIES.map((id) => {
-        const checked = id === value;
-        return (
-          <label
-            key={id}
-            className={`flex min-w-0 cursor-pointer gap-2 border p-2 text-xs transition-colors active:scale-[0.98] ${checked ? "border-[var(--sd-amber)] bg-[var(--sd-amber)]/10" : "border-zinc-700 hover:border-zinc-500"}`}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={id}
-              checked={checked}
-              onChange={() => onChange(id)}
-              className="mt-0.5 accent-amber-500"
-            />
-            <span className="min-w-0">
-              <span className="block font-bold text-[var(--sd-text)]">
-                {DIFFICULTY_TEXT[id].label}
-              </span>
-              <span className="block break-words text-[var(--sd-muted)]">
-                {WHAT_CHANGES[id]}
-              </span>
-            </span>
-          </label>
-        );
-      })}
+      {DIFFICULTIES.map((id) => (
+        <Choice
+          key={id}
+          name={name}
+          value={id}
+          checked={id === value}
+          label={DIFFICULTY_TEXT[id].label}
+          detail={whatChanges(id, length)}
+          onChange={() => onChange(id)}
+        />
+      ))}
     </div>
   </fieldset>
 );
@@ -97,7 +174,17 @@ export const WorldIntro: React.FC<{
   /** A new, untouched run offers its difficulty here (#2058). */
   difficulty?: Difficulty;
   onDifficultyChange?: (value: Difficulty) => void;
-}> = ({ onClose, touch = false, difficulty, onDifficultyChange }) => {
+  /** And its length (#2092). */
+  length?: StudyLength;
+  onLengthChange?: (value: StudyLength) => void;
+}> = ({
+  onClose,
+  touch = false,
+  difficulty,
+  onDifficultyChange,
+  length,
+  onLengthChange,
+}) => {
   const startRef = useRef<HTMLButtonElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: startRef,
@@ -139,12 +226,22 @@ export const WorldIntro: React.FC<{
             </div>
           ))}
         </dl>
+        {length && onLengthChange ? (
+          <div className="mt-4">
+            <LengthPicker
+              name="sd-intro-length"
+              value={length}
+              onChange={onLengthChange}
+            />
+          </div>
+        ) : null}
         {difficulty && onDifficultyChange ? (
           <div className="mt-4">
             <ConditionsPicker
               name="sd-intro-difficulty"
               value={difficulty}
               onChange={onDifficultyChange}
+              length={length}
             />
           </div>
         ) : null}

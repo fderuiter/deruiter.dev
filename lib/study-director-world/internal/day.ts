@@ -1,7 +1,4 @@
 import {
-  STUDY_24_081,
-  STUDY_24_081_SITES,
-  STUDY_24_081_TEAM,
   applyDifficulty,
   beginStudy,
   createStudy,
@@ -11,8 +8,10 @@ import {
   inbox,
   phaseForDay,
   projectedFinishDay,
+  studyPreset,
   type AreaId,
   type Difficulty,
+  type StudyLength,
   type StudyState,
 } from "@/lib/study-director";
 import { fatigueFrom, weekdayFor } from "./clock";
@@ -59,12 +58,20 @@ export function createWorld(study: StudyState): WorldState {
   };
 }
 
-/** A new Study 24-081 run in the world, on day 1. */
-export function newWorld(seed: string, difficulty: Difficulty): WorldState {
+/**
+ * A new Study 24-081 run in the world, on day 1: the full study, or the
+ * short one (#2092) that fits in a sitting.
+ */
+export function newWorld(
+  seed: string,
+  difficulty: Difficulty,
+  length: StudyLength = "full"
+): WorldState {
+  const preset = studyPreset(length);
   return createWorld(
     beginStudy(
       applyDifficulty(
-        createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM),
+        createStudy(seed, preset.setup, preset.sites, preset.team),
         difficulty
       )
     )

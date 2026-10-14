@@ -414,6 +414,7 @@
 - [lib/study-director-world/internal/channels](lib/study-director-world/internal/channels/README.md)
 - [lib/study-director-world/internal/clock](lib/study-director-world/internal/clock/README.md)
 - [lib/study-director-world/internal/day](lib/study-director-world/internal/day/README.md)
+- [lib/study-director-world/internal/delegate-day](lib/study-director-world/internal/delegate-day/README.md)
 - [lib/study-director-world/internal/delegation](lib/study-director-world/internal/delegation/README.md)
 - [lib/study-director-world/internal/dialogue](lib/study-director-world/internal/dialogue/README.md)
 - [lib/study-director-world/internal/dressing](lib/study-director-world/internal/dressing/README.md)

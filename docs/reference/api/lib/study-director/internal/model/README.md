@@ -12,6 +12,8 @@
 - [AUDIT\_ATTENTION](variables/AUDIT_ATTENTION.md)
 - [AUDIT\_WINDOW\_DAYS](variables/AUDIT_WINDOW_DAYS.md)
 - [DOCUMENTATION\_ATTENTION](variables/DOCUMENTATION_ATTENTION.md)
+- [EVENT\_CALENDAR\_DAYS](variables/EVENT_CALENDAR_DAYS.md)
+- [RESCUE\_SLIP\_DAYS](variables/RESCUE_SLIP_DAYS.md)
 
 ## Functions
 
@@ -19,6 +21,7 @@
 - [applyDifficulty](functions/applyDifficulty.md)
 - [applyEffects](functions/applyEffects.md)
 - [auditSite](functions/auditSite.md)
+- [calendarScale](functions/calendarScale.md)
 - [computeMeters](functions/computeMeters.md)
 - [createStudy](functions/createStudy.md)
 - [dashboard](functions/dashboard.md)
@@ -28,5 +31,7 @@
 - [reportedSite](functions/reportedSite.md)
 - [resolveDecision](functions/resolveDecision.md)
 - [routineLoad](functions/routineLoad.md)
+- [scaleDays](functions/scaleDays.md)
 - [siteVisibility](functions/siteVisibility.md)
+- [studyLength](functions/studyLength.md)
 - [totalOpenQueries](functions/totalOpenQueries.md)

@@ -15,6 +15,7 @@
 - [beginStudy](functions/beginStudy.md)
 - [documentDecision](functions/documentDecision.md)
 - [endDay](functions/endDay.md)
+- [eventDay](functions/eventDay.md)
 - [getEvent](functions/getEvent.md)
 - [inbox](functions/inbox.md)
 - [resolveEvent](functions/resolveEvent.md)

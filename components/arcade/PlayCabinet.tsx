@@ -614,7 +614,27 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             else handleExit();
           };
           if (event.key === "Escape" && escapeLeaves) {
+            // A game that docks a panel on Escape (Protocol Drift's expanded
+            // inspector, #2045) gets the press from its own keys. Only the
+            // touch cabinet asks for this; desktop is unchanged.
+            const keyboardBoundary = getKeyboardBoundary(event.currentTarget);
+            if (
+              touchImmersive &&
+              keyboardBoundary?.getAttribute("data-escape-docks") === "true" &&
+              keyboardBoundary.contains(target)
+            ) {
+              return;
+            }
             const dialog = findOpenGameDialog(event.currentTarget);
+            // A dialog that must be accepted, not dismissed, holds the press:
+            // Escape neither closes it nor leaves the touch cabinet.
+            if (
+              dialog &&
+              touchImmersive &&
+              dialog.getAttribute("data-escape-holds") === "true"
+            ) {
+              return;
+            }
             if (dialog) {
               // Let the game handle this press. If its dialog is still open
               // afterwards, the game doesn't close it on Escape (a results

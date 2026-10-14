@@ -16,6 +16,23 @@ Facts the scorecard needs about how the run went.
 
 ***
 
+### chipCount
+
+> **chipCount**: `number`
+
+Chips in the pipeline revision that was live at lock.
+
+***
+
+### fabricatedBits
+
+> **fabricatedBits**: `number`
+
+Fabricated precision introduced over the whole run, in bits, counting
+records that were later corrected and superseded (#2054).
+
+***
+
 ### integrityPassed
 
 > **integrityPassed**: `boolean`
@@ -46,6 +63,14 @@ Facts the scorecard needs about how the run went.
 
 ***
 
+### rejectedCommands
+
+> **rejectedCommands**: `number`
+
+Commands the engine turned down during the run (#2054).
+
+***
+
 ### sites
 
 > **sites**: `Record`\<[`SiteId`](../type-aliases/SiteId.md), [`SiteState`](SiteState.md)\>
@@ -55,3 +80,11 @@ Facts the scorecard needs about how the run went.
 ### sleuthResolvedWithEvidence
 
 > **sleuthResolvedWithEvidence**: `boolean`
+
+***
+
+### wireCount
+
+> **wireCount**: `number`
+
+Wires in the pipeline revision that was live at lock.

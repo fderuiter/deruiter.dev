@@ -86,6 +86,12 @@ Re-exports [AuditTrailEvent](types/interfaces/AuditTrailEvent.md)
 
 ***
 
+### BADGE\_POINTS
+
+Re-exports [BADGE_POINTS](internal/scorecard/variables/BADGE_POINTS.md)
+
+***
+
 ### BadgeAward
 
 Re-exports [BadgeAward](types/interfaces/BadgeAward.md)
@@ -284,6 +290,66 @@ Re-exports [edgesFrom](internal/graph/functions/edgesFrom.md)
 
 ***
 
+### EFFICIENCY\_BESTS\_STORAGE\_KEY
+
+Re-exports [EFFICIENCY_BESTS_STORAGE_KEY](presets/variables/EFFICIENCY_BESTS_STORAGE_KEY.md)
+
+***
+
+### EFFICIENCY\_METRIC\_IDS
+
+Re-exports [EFFICIENCY_METRIC_IDS](presets/variables/EFFICIENCY_METRIC_IDS.md)
+
+***
+
+### EFFICIENCY\_PARS
+
+Re-exports [EFFICIENCY_PARS](presets/variables/EFFICIENCY_PARS.md)
+
+***
+
+### EFFICIENCY\_POINTS\_AT\_PAR
+
+Re-exports [EFFICIENCY_POINTS_AT_PAR](presets/variables/EFFICIENCY_POINTS_AT_PAR.md)
+
+***
+
+### EFFICIENCY\_POINTS\_CAP
+
+Re-exports [EFFICIENCY_POINTS_CAP](presets/variables/EFFICIENCY_POINTS_CAP.md)
+
+***
+
+### EfficiencyBests
+
+Re-exports [EfficiencyBests](types/type-aliases/EfficiencyBests.md)
+
+***
+
+### EfficiencyMetric
+
+Re-exports [EfficiencyMetric](types/interfaces/EfficiencyMetric.md)
+
+***
+
+### EfficiencyMetricId
+
+Re-exports [EfficiencyMetricId](types/type-aliases/EfficiencyMetricId.md)
+
+***
+
+### EfficiencyPar
+
+Re-exports [EfficiencyPar](types/interfaces/EfficiencyPar.md)
+
+***
+
+### efficiencyPoints
+
+Re-exports [efficiencyPoints](internal/scorecard/functions/efficiencyPoints.md)
+
+***
+
 ### ENTRY\_FIELD\_SPECS
 
 Re-exports [ENTRY_FIELD_SPECS](presets/variables/ENTRY_FIELD_SPECS.md)
@@ -329,6 +395,12 @@ Re-exports [EpistemicStatus](types/type-aliases/EpistemicStatus.md)
 ### evaluateBadges
 
 Re-exports [evaluateBadges](internal/scorecard/functions/evaluateBadges.md)
+
+***
+
+### evaluateEfficiency
+
+Re-exports [evaluateEfficiency](internal/scorecard/functions/evaluateEfficiency.md)
 
 ***
 
@@ -566,6 +638,12 @@ Re-exports [laneBounds](internal/graph/functions/laneBounds.md)
 
 ***
 
+### LOCK\_BASE\_POINTS
+
+Re-exports [LOCK_BASE_POINTS](internal/scorecard/variables/LOCK_BASE_POINTS.md)
+
+***
+
 ### LockAuditResult
 
 Re-exports [LockAuditResult](types/interfaces/LockAuditResult.md)
@@ -680,6 +758,12 @@ Re-exports [parseCsv](internal/export/functions/parseCsv.md)
 
 ***
 
+### parseEfficiencyBests
+
+Re-exports [parseEfficiencyBests](internal/scorecard/functions/parseEfficiencyBests.md)
+
+***
+
 ### PartialDateOutcome
 
 Re-exports [PartialDateOutcome](internal/debt/interfaces/PartialDateOutcome.md)
@@ -770,6 +854,12 @@ Re-exports [ProtocolDriftSaveFile](types/interfaces/ProtocolDriftSaveFile.md)
 
 ***
 
+### protocolDriftScore
+
+Re-exports [protocolDriftScore](internal/scorecard/functions/protocolDriftScore.md)
+
+***
+
 ### ProtocolDriftStateError
 
 Re-exports [ProtocolDriftStateError](internal/fsm/classes/ProtocolDriftStateError.md)
@@ -827,6 +917,12 @@ Re-exports [queryTransition](internal/queries/functions/queryTransition.md)
 ### RANGE\_LIMITS
 
 Re-exports [RANGE_LIMITS](presets/variables/RANGE_LIMITS.md)
+
+***
+
+### recordEfficiencyBests
+
+Re-exports [recordEfficiencyBests](internal/scorecard/functions/recordEfficiencyBests.md)
 
 ***
 
@@ -947,6 +1043,12 @@ Re-exports [SDTMVitalSignRecord](types/interfaces/SDTMVitalSignRecord.md)
 ### seededDraw
 
 Re-exports [seededDraw](internal/rng/functions/seededDraw.md)
+
+***
+
+### serializeEfficiencyBests
+
+Re-exports [serializeEfficiencyBests](internal/scorecard/functions/serializeEfficiencyBests.md)
 
 ***
 

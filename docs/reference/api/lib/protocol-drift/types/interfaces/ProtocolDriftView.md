@@ -106,6 +106,14 @@ A read-only copy of the engine state, for tests, the inspector and saves.
 
 ***
 
+### rejectedCommands
+
+> **rejectedCommands**: `number`
+
+Commands turned down so far that count against the scorecard.
+
+***
+
 ### routing
 
 > **routing**: [`RoutingRecord`](RoutingRecord.md)[]

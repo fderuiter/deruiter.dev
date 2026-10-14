@@ -78,6 +78,15 @@ The ordered command log; replaying it rebuilds the run exactly.
 
 ***
 
+### rejectedCommands?
+
+> `optional` **rejectedCommands?**: `number`
+
+Rejected commands so far. They are not in the command log, so the save
+carries the count; older saves without it restore with none (#2054).
+
+***
+
 ### savedAt
 
 > **savedAt**: `string`

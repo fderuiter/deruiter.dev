@@ -688,7 +688,45 @@ export interface ScorecardInput {
   lateBacklogRoutedV1: boolean;
   applicabilityErrors: number;
   integrityPassed: boolean;
+  /** Chips in the pipeline revision that was live at lock. */
+  chipCount: number;
+  /** Wires in the pipeline revision that was live at lock. */
+  wireCount: number;
+  /** Commands the engine turned down during the run (#2054). */
+  rejectedCommands: number;
+  /**
+   * Fabricated precision introduced over the whole run, in bits, counting
+   * records that were later corrected and superseded (#2054).
+   */
+  fabricatedBits: number;
 }
+
+/** The five efficiency measures, each better when lower (#2054). */
+export type EfficiencyMetricId =
+  "chips" | "wires" | "lockDay" | "rejectedCommands" | "fabricatedBits";
+
+/** The par for one efficiency measure and what each unit off par is worth. */
+export interface EfficiencyPar {
+  label: string;
+  par: number;
+  /** Points gained per unit under par, and lost per unit over par. */
+  pointsPerUnit: number;
+}
+
+/** One efficiency measure on the scorecard, against its par. */
+export interface EfficiencyMetric {
+  id: EfficiencyMetricId;
+  label: string;
+  actual: number;
+  par: number;
+  /** True when the run was at or under par, which earns the medal. */
+  medal: boolean;
+  /** Points this measure adds to the efficiency score. */
+  points: number;
+}
+
+/** The lowest value seen per efficiency measure in this browser. */
+export type EfficiencyBests = Partial<Record<EfficiencyMetricId, number>>;
 
 /** Systems efficiency scorecard shown after lock. */
 export interface Scorecard {
@@ -705,6 +743,22 @@ export interface Scorecard {
   meanGoodwill: number;
   badges: BadgeAward[];
   integrityPassed: boolean;
+  /** Chips in the live pipeline at lock. */
+  chipCount: number;
+  /** Wires in the live pipeline at lock. */
+  wireCount: number;
+  /** Commands the engine turned down during the run. */
+  rejectedCommands: number;
+  /** Fabricated precision introduced over the run, in bits. */
+  fabricatedBits: number;
+  /** Each efficiency measure against its par, in a fixed order. */
+  efficiency: EfficiencyMetric[];
+  /** The sum of the efficiency points. */
+  efficiencyScore: number;
+  /** Measures at or under par. */
+  medals: number;
+  /** The arcade score: base, badges, goodwill and efficiency together. */
+  score: number;
 }
 
 /** CSV and JSON files produced at lock. */
@@ -721,7 +775,13 @@ export interface DatasetExportBundle {
 
 /** Main thread to worker commands. */
 export type PDCommand =
-  | { type: "INIT"; seed: number; scenario?: ScenarioId }
+  | {
+      type: "INIT";
+      seed: number;
+      scenario?: ScenarioId;
+      /** Rejections carried over from a restored save (#2054). */
+      rejectedCommands?: number;
+    }
   | { type: "ACCEPT_BRIEF" }
   | { type: "SET_SPEED"; speed: SimSpeed }
   | { type: "SET_PAUSED"; isPaused: boolean }
@@ -858,6 +918,8 @@ export interface ProtocolDriftView {
   debt: DebtSummary;
   routing: RoutingRecord[];
   lastLockAudit: LockAuditResult | null;
+  /** Commands turned down so far that count against the scorecard. */
+  rejectedCommands: number;
 }
 
 /** How the AmendmentRouter routed one submission. */
@@ -893,4 +955,9 @@ export interface ProtocolDriftSaveFile {
   commands: PDCommand[];
   /** Hash of the ledgers, checked after replay on import. */
   stateHash: string;
+  /**
+   * Rejected commands so far. They are not in the command log, so the save
+   * carries the count; older saves without it restore with none (#2054).
+   */
+  rejectedCommands?: number;
 }

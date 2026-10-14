@@ -17,6 +17,8 @@ import { SiteRail } from "./SiteRail";
 import { Toolbox } from "./Toolbox";
 import { isTracerComplete, useProtocolDriftStore } from "./store";
 import { useWorkbenchKeys } from "./useWorkbenchKeys";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { PROTOCOL_DRIFT_AUTO_PAUSE_EVENT } from "./auto-pause";
 
 /** Container width from which the toolbox shows chip names (1280 viewport). */
 const TOOLBOX_OPEN_PX = 1000;
@@ -39,8 +41,12 @@ export function ProtocolDriftGame() {
   const [railOpen, setRailOpen] = useState<boolean | null>(null);
   const [debriefOpen, setDebriefOpen] = useState(true);
   const onKeyDown = useWorkbenchKeys();
+  // The touch cabinet (ADR 0061) lays the workbench out to fit its stage. Its
+  // panels stay open, since there is no keyboard toggle to reopen them.
+  const touch = useCabinetTouch();
 
   const ready = useProtocolDriftStore((s) => s.ready);
+  const inspectorExpanded = useProtocolDriftStore((s) => s.inspectorExpanded);
   const view = useProtocolDriftStore((s) => s.view);
   const fsm = useProtocolDriftStore((s) => s.snapshot?.fsmState);
   const waveSummary = useProtocolDriftStore((s) => s.waveSummary);
@@ -73,6 +79,18 @@ export function ProtocolDriftGame() {
     return () => observer.disconnect();
   }, []);
 
+  // The cabinet asks for a pause when the tab hides or the device turns. Only
+  // a running clock pauses; a paused or briefing game is left alone.
+  useEffect(() => {
+    const pauseIfRunning = () => {
+      const store = useProtocolDriftStore.getState();
+      if (store.snapshot?.fsmState === "RUNNING") void store.togglePause();
+    };
+    window.addEventListener(PROTOCOL_DRIFT_AUTO_PAUSE_EVENT, pauseIfRunning);
+    return () =>
+      window.removeEventListener(PROTOCOL_DRIFT_AUTO_PAUSE_EVENT, pauseIfRunning);
+  }, []);
+
   useEffect(() => {
     if (!notice) return;
     const handle = window.setTimeout(() => clearNotice(notice.id), NOTICE_MS);
@@ -91,8 +109,8 @@ export function ProtocolDriftGame() {
     return () => window.clearInterval(handle);
   }, [fsm, tick]);
 
-  const compactToolbox = !(toolboxOpen ?? roomy);
-  const compactRail = !(railOpen ?? wide);
+  const compactToolbox = !touch && !(toolboxOpen ?? roomy);
+  const compactRail = !touch && !(railOpen ?? wide);
   const showDebrief = fsm === "LOCKED" && scorecard && view && debriefOpen;
 
   return (
@@ -102,12 +120,18 @@ export function ProtocolDriftGame() {
       data-keyboard-boundary="true"
       data-game="protocol-drift"
       data-fsm={fsm ?? "BRIEF"}
+      // A touch cabinet's Escape docks the inspector before it leaves (#2045).
+      data-escape-docks={touch && inspectorExpanded ? "true" : undefined}
       onKeyDown={onKeyDown}
-      className="@container relative flex h-[max(760px,calc(100dvh-8rem))] scroll-mt-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+      className={
+        touch
+          ? "pd-touch @container relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+          : "@container relative flex h-[max(760px,calc(100dvh-8rem))] scroll-mt-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+      }
     >
       <HeaderBar />
       <ObjectiveStrip />
-      <div className="flex min-h-0 flex-1">
+      <div className={`flex min-h-0 flex-1 ${touch ? "pd-touch-body" : ""}`}>
         <Toolbox
           compact={compactToolbox}
           onToggle={() => setToolboxOpen(compactToolbox)}

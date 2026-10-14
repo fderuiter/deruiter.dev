@@ -3,6 +3,7 @@
 import React, { useEffect, useId, useRef, useState } from "react";
 import { downloadFile } from "@/lib/download";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import {
   STUDY_ID,
   formatClock,
@@ -26,15 +27,22 @@ function ModalShell({
   title,
   labelledBy,
   onEscape,
+  holdEscape,
   wide,
   children,
 }: {
   title: string;
   labelledBy: string;
   onEscape?: () => void;
+  /**
+   * A dialog that must be accepted, with no Escape path of its own. On the
+   * touch cabinet the cabinet keeps that press (#2045).
+   */
+  holdEscape?: boolean;
   wide?: boolean;
   children: React.ReactNode;
 }) {
+  const touch = useCabinetTouch();
   const initialFocus = useRef<HTMLHeadingElement | null>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: initialFocus,
@@ -47,6 +55,7 @@ function ModalShell({
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy}
+        data-escape-holds={holdEscape && touch ? "true" : undefined}
         className={`max-h-[min(100%,calc(100dvh-8rem))] w-full overflow-y-auto border border-zinc-700 bg-[#13151a] p-4 font-mono text-xs text-zinc-200 ${
           wide ? "max-w-3xl" : "max-w-xl"
         }`}
@@ -86,6 +95,7 @@ export function BriefingModal() {
     <ModalShell
       title={`Trial Briefing: Study ${STUDY_ID}`}
       labelledBy={`${id}-title`}
+      holdEscape
     >
       <p className="mb-2 text-zinc-300">
         You are the Lead Clinical Data Architect for Study {STUDY_ID}, a Phase I

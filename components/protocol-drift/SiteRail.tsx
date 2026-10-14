@@ -3,6 +3,7 @@
 import React from "react";
 import { clamp } from "@/lib/game-utils";
 import { SITE_IDS, SITE_PROFILES, type SiteId } from "@/lib/protocol-drift";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useProtocolDriftStore } from "./store";
 
 /** Right rail: live goodwill, latency and query load for each site. */
@@ -17,22 +18,27 @@ export function SiteRail({
   const snapshot = useProtocolDriftStore((s) => s.snapshot);
   const sites: readonly SiteId[] =
     view?.scenario === "tracer" ? ["SITE-A"] : SITE_IDS;
+  // The touch cabinet keeps the rail open (a strip of sites when the cabinet
+  // is narrow), so it has no collapse control there.
+  const touch = useCabinetTouch();
 
   return (
     <aside
       aria-label="Site rail"
       className={`flex min-h-0 shrink-0 flex-col gap-2 overflow-y-auto border-l border-zinc-800 bg-[#13151a] p-2 font-mono ${
         compact ? "w-14" : "w-[264px]"
-      }`}
+      }${touch ? " pd-touch-rail" : ""}`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={!compact}
-        className="min-h-8 border border-zinc-700 px-1 text-[11px] text-zinc-200 hover:border-amber-500"
-      >
-        {compact ? "Sites" : "Collapse"}
-      </button>
+      {touch ? null : (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!compact}
+          className="min-h-8 border border-zinc-700 px-1 text-[11px] text-zinc-200 hover:border-amber-500"
+        >
+          {compact ? "Sites" : "Collapse"}
+        </button>
+      )}
       {sites.map((id) => {
         const profile = SITE_PROFILES[id];
         const live = snapshot?.activeSites[id];

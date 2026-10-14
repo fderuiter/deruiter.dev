@@ -2,6 +2,7 @@
 
 import React from "react";
 import { CHIP_SPECS, type ChipKind } from "@/lib/protocol-drift";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { CHIP_DRAG_TYPE, placeChip } from "./PipelineCanvas";
 import { useProtocolDriftStore } from "./store";
 
@@ -43,22 +44,27 @@ export function Toolbox({
     fsm === "DEPLOY_READY" ||
     fsm === "PAUSED" ||
     fsm === "WAVE_REVIEW";
+  // On the touch cabinet the toolbox stays open: it is a row of chips in a
+  // narrow cabinet and a column in a wide one, so it never collapses.
+  const touch = useCabinetTouch();
 
   return (
     <nav
       aria-label="Chip toolbox"
       className={`flex min-h-0 shrink-0 flex-col gap-1.5 overflow-y-auto border-r border-zinc-800 bg-[#13151a] p-2 font-mono ${
         compact ? "w-14" : "w-[232px]"
-      }`}
+      }${touch ? " pd-touch-toolbox" : ""}`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={!compact}
-        className="min-h-8 border border-zinc-700 px-1 text-[11px] text-zinc-200 hover:border-amber-500"
-      >
-        {compact ? "Chips" : "Collapse"}
-      </button>
+      {touch ? null : (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!compact}
+          className="min-h-8 border border-zinc-700 px-1 text-[11px] text-zinc-200 hover:border-amber-500"
+        >
+          {compact ? "Chips" : "Collapse"}
+        </button>
+      )}
       {TOOLBOX_ORDER.map((kind) => {
         const spec = CHIP_SPECS[kind];
         return (

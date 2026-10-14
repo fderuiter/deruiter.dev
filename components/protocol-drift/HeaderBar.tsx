@@ -7,6 +7,7 @@ import {
   IconPlayerTrackNext,
 } from "@tabler/icons-react";
 import { STUDY_ID, trialDayOf, type SimSpeed } from "@/lib/protocol-drift";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useProtocolDriftStore } from "./store";
 
 const SPEEDS: SimSpeed[] = [1, 2, 5];
@@ -50,6 +51,7 @@ export function HeaderBar() {
   const exportSave = useProtocolDriftStore((s) => s.exportSave);
   const importSave = useProtocolDriftStore((s) => s.importSave);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const touch = useCabinetTouch();
 
   const fsm = snapshot?.fsmState ?? "BRIEF";
   const running = fsm === "RUNNING";
@@ -72,7 +74,9 @@ export function HeaderBar() {
 
   return (
     <header
-      className="flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-[#13151a] px-3 py-2"
+      className={`flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-[#13151a] px-3 py-2 ${
+        touch ? "pd-touch-header" : ""
+      }`}
       aria-label="Simulation controls"
     >
       <div className="min-w-0">

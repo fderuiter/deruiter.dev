@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 /** Every key the desk answers to, in the order a day is played. */
@@ -19,6 +20,7 @@ const SHORTCUTS: Array<{ keys: string[]; action: string }> = [
 export const ShortcutSheet: React.FC<{ onClose: () => void }> = ({
   onClose,
 }) => {
+  const touch = useCabinetTouch();
   const closeRef = React.useRef<HTMLButtonElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: closeRef,
@@ -32,6 +34,8 @@ export const ShortcutSheet: React.FC<{ onClose: () => void }> = ({
       <div
         ref={trapRef}
         role="dialog"
+        // A tap on its text focuses the sheet, so Escape stays with it (#2076).
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby="sd-shortcuts-title"
         onClick={(e) => e.stopPropagation()}
@@ -56,6 +60,12 @@ export const ShortcutSheet: React.FC<{ onClose: () => void }> = ({
             Close
           </button>
         </div>
+        {touch ? (
+          <p className="mt-3 text-xs text-zinc-300">
+            Every key has a button: tap an option, the Document box, a message,
+            End day, or Skip. These keys work too with a keyboard.
+          </p>
+        ) : null}
         <dl className="mt-4 space-y-2 text-xs">
           {SHORTCUTS.map((s) => (
             <div

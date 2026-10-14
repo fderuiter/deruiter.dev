@@ -19,7 +19,12 @@ export const FloorView: React.FC<{
   reducedMotion: boolean;
   /** Drawn over the canvas, such as names and the interaction prompt. */
   overlay?: React.ReactNode;
-}> = ({ scene, description, reducedMotion, overlay }) => {
+  /**
+   * A tap or click on the floor, as where it fell across and down the canvas
+   * (0 to 1). Only the touch cabinet passes it (#2076), to walk by tapping.
+   */
+  onTap?: (fx: number, fy: number) => void;
+}> = ({ scene, description, reducedMotion, overlay, onTap }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<FloorRenderer | null>(null);
@@ -118,7 +123,28 @@ export const FloorView: React.FC<{
   }, [scene]);
 
   return (
-    <div ref={wrapRef} className="@container relative w-full min-w-0">
+    // The click is a convenience for touch and pen; the arrows, the keys and
+    // the directory walk without it.
+    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
+    <div
+      ref={wrapRef}
+      className="@container relative w-full min-w-0"
+      onClick={
+        onTap
+          ? (event) => {
+              const canvas = canvasRef.current;
+              // The minimap and the labels sit over the canvas; only the floor walks.
+              if (!canvas || event.target !== canvas) return;
+              const box = canvas.getBoundingClientRect();
+              if (box.width <= 0 || box.height <= 0) return;
+              onTap(
+                (event.clientX - box.left) / box.width,
+                (event.clientY - box.top) / box.height
+              );
+            }
+          : undefined
+      }
+    >
       <canvas
         ref={canvasRef}
         role="img"

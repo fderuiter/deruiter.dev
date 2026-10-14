@@ -27,7 +27,7 @@ export function canRewire(fsm: string | undefined): boolean {
 }
 
 /** The pair list split into same-name pairs and the rest. */
-export interface GroupedWirePairs {
+interface GroupedWirePairs {
   matching: WirePair[];
   other: WirePair[];
 }
@@ -133,7 +133,7 @@ export function wiredPairsBetween(
  * Same-name pairs between two chips still to wire, skipping inputs that
  * already have a wire. The pair sheet stays open while any remain (#2045).
  */
-export function openMatchingPairs(
+function openMatchingPairs(
   pairs: WirePair[],
   targetId: string,
   edges: WiredEnds[]

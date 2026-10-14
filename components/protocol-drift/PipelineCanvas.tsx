@@ -124,7 +124,7 @@ function suggestPosition(
 }
 
 /** Window event sent after a touch add, so the canvas can pan to the chip. */
-export const PROTOCOL_DRIFT_CHIP_ADDED_EVENT = "protocol-drift:chip-added";
+const PROTOCOL_DRIFT_CHIP_ADDED_EVENT = "protocol-drift:chip-added";
 
 /** Empty space kept between chips when a new one is placed on touch. */
 const CHIP_GAP = 16;

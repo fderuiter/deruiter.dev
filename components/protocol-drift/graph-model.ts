@@ -33,9 +33,9 @@ const CHIP_PADDING_PX = 8;
 /** Touch: the chip title's canvas font size, so it reads at the zoom floor. */
 export const TOUCH_TITLE_PX = 15;
 /** Touch: the least a chip may be on screen, in CSS pixels. */
-export const TOUCH_MIN_CHIP_SCREEN_PX = 44;
+const TOUCH_MIN_CHIP_SCREEN_PX = 44;
 /** Touch: the least a chip title may render at, in CSS pixels. */
-export const TOUCH_MIN_TEXT_SCREEN_PX = 12;
+const TOUCH_MIN_TEXT_SCREEN_PX = 12;
 
 /**
  * The lowest zoom the touch canvas allows, computed from chip geometry: the

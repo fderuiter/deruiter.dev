@@ -20,7 +20,7 @@ const PAD = 24;
 /** Screen space kept clear under the canvas for the wire bar. */
 const BOTTOM_PAD = 64;
 
-export interface FrameSize {
+interface FrameSize {
   width: number;
   height: number;
 }
@@ -54,7 +54,7 @@ function usable(size: FrameSize): boolean {
 }
 
 /** The box that holds every chip, in canvas units. */
-export function chipsBox(nodes: ChipNode[]): {
+function chipsBox(nodes: ChipNode[]): {
   x0: number;
   y0: number;
   x1: number;

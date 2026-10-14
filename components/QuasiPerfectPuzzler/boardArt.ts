@@ -143,6 +143,42 @@ export function countLeaves(node: ASTNode): number {
 }
 
 /**
+ * Number of edges on the longest path from the node down to a leaf.
+ *
+ * @param node - The AST root.
+ * @returns 0 for a leaf.
+ */
+export function treeDepth(node: ASTNode): number {
+  if (!node.children || node.children.length === 0) return 0;
+  return 1 + Math.max(...node.children.map(treeDepth));
+}
+
+/** Smallest row gap that still leaves a clear line between 48px nodes. */
+export const MIN_LEVEL_GAP = 56;
+
+/**
+ * Row gap that fits a tree of the given depth into the given height, so a deep
+ * goal is not cut off on a short screen. It never exceeds the layout's own gap
+ * and never drops below {@link MIN_LEVEL_GAP}; the tree scrolls past that.
+ *
+ * @param availableHeight - Height in CSS px the tree may use; 0 when unknown.
+ * @param depth - Tree depth from {@link treeDepth}.
+ * @param options - The layout the gap is for.
+ * @returns The row gap in CSS px.
+ */
+export function fitLevelGap(
+  availableHeight: number,
+  depth: number,
+  options: ProofLayoutOptions
+): number {
+  if (availableHeight <= 0 || depth <= 0) return options.levelGap;
+  const fixed =
+    2 * options.padding + options.rootHeight / 2 + options.nodeHeight / 2;
+  const gap = Math.floor((availableHeight - fixed) / depth);
+  return clamp(gap, MIN_LEVEL_GAP, Math.max(MIN_LEVEL_GAP, options.levelGap));
+}
+
+/**
  * Lays an AST out top-down: each leaf takes one slot, each parent sits
  * centred over its children, and depth sets the row. The result is in
  * CSS pixels so an SVG edge layer and HTML node buttons can share it.

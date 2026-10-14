@@ -60,6 +60,7 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 import {
   IconBulb,
   IconChevronDown,
@@ -822,6 +823,9 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     [loadLevel]
   );
   const { isFullscreen, toggleFullscreen } = useFullscreen(containerRef);
+  // True inside the immersive touch cabinet (#2042). Every touch-only change
+  // below hangs off this, so a desktop cabinet keeps its markup and classes.
+  const inCabinet = useCabinetTouch();
 
   // Deep proof trees push the tactic hand below the fold on desktop screens.
   // While the game fills the view but the hand's slot is cut off at the
@@ -909,7 +913,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         isFullscreen
           ? "fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] max-w-none bg-[color:var(--qp-stage)] p-3 sm:p-6 overflow-y-auto select-none"
           : "bg-[color:var(--qp-stage)] p-3 sm:p-4"
-      }`}
+      }${inCabinet ? " qp-touch" : ""}`}
     >
       <FullscreenButton
         isFullscreen={isFullscreen}
@@ -926,7 +930,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
       <div className="relative">
         {/* 1. Compact header: level drawer, mode, campaign/sandbox, tools */}
-        <div ref={headerRowRef} className="flex flex-wrap items-center gap-2">
+        <div
+          ref={headerRowRef}
+          className={`flex flex-wrap items-center gap-2${inCabinet ? " qp-touch-header" : ""}`}
+        >
           {activeTab === "campaign" && (
             <button
               ref={levelToggleRef}
@@ -1087,7 +1094,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
 
         {/* 2. Sandbox View (if selected) */}
         {activeTab === "sandbox" ? (
-          <div className="mt-4">
+          <div className={`mt-4${inCabinet ? " qp-touch-board" : ""}`}>
             <SandboxMode />
           </div>
         ) : (
@@ -1167,7 +1174,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               data-testid="quasi-level-index"
               role="region"
               aria-label="Level map"
-              style={{ top: drawerTop }}
+              style={
+                inCabinet
+                  ? {
+                      top: drawerTop,
+                      // The cabinet's own height bounds the map; it scrolls.
+                      maxHeight: `calc(100dvh - ${drawerTop + 16}px)`,
+                      overflowY: "auto",
+                    }
+                  : { top: drawerTop }
+              }
               onKeyDown={(e) => {
                 if (e.key === "Escape") {
                   e.preventDefault();
@@ -1288,7 +1304,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           )}
 
           {/* The proof board */}
-          <div ref={fxStageRef} className="relative mt-3">
+          <div
+            ref={fxStageRef}
+            className={`relative mt-3${inCabinet ? " qp-touch-board" : ""}`}
+          >
             {subgoals.map((sg, idx) => {
               const isActive = idx === activeGoalIndex;
               return (
@@ -1478,7 +1497,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           </div>
 
           {/* Accordion Drawers for Secondary IDE Panels & Diagnostic Terminal Log */}
-          <div className="mt-4">
+          <div className={`mt-4${inCabinet ? " qp-touch-drawers" : ""}`}>
             <DiagnosticDrawers
               key={currentLevelIndex}
               level={currentLevel}

@@ -1004,6 +1004,132 @@
   border: 1px solid var(--qp-hairline);
 }
 
+/*
+ * Quasi-Puzzler on the immersive touch cabinet (ADR 0061, #2042). The section
+ * carries `qp-touch` only while useCabinetTouch() is true, so desktop markup
+ * and styles never see these rules. The cabinet fills the viewport: the header,
+ * the tactic hand and the drawers keep their natural height, and the board
+ * (`qp-touch-board`) takes the rest and scrolls inside itself, so the page
+ * never scrolls and the hand stays on screen in both orientations.
+ */
+.qp-root.qp-touch {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  /* A 16px gutter on both sides; only the header row clears the toolbar. */
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.qp-root.qp-touch > * {
+  flex-shrink: 0;
+}
+/* The header row leaves room for the cabinet's floating toolbar at the top
+   right, so its buttons never sit under it or its notification dots. */
+.qp-root.qp-touch .qp-touch-header {
+  padding-right: var(--cabinet-toolbar-inset, 0px);
+}
+/* The board region takes the spare height. Its panel fills it, the tree
+   scrolls inside the panel, and the helper line stays in the box. */
+.qp-root.qp-touch > .qp-touch-board {
+  flex: 1 1 0;
+  /* An open drawer never squeezes the board off the screen. */
+  min-height: 13rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.qp-root.qp-touch > .qp-touch-board > div:not(.hidden) {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.qp-root.qp-touch .qp-touch-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.qp-root.qp-touch .qp-touch-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+/* Centres the tree in the spare height; auto margins still scroll, not clip. */
+.qp-root.qp-touch .qp-touch-tree > * {
+  flex: none;
+  margin: auto;
+}
+/* The drawers give way first: an open drawer scrolls inside its own region
+   instead of pushing the board and the hand out of the cabinet. */
+.qp-root.qp-touch > .qp-touch-drawers {
+  flex-shrink: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* The keyboard route (an off-screen panel shown while it holds focus) floats
+   over the bottom of the cabinet instead of joining the column, so showing or
+   hiding it never moves the board under a finger mid-tap (#2042 playtest). */
+.qp-root.qp-touch > [data-testid="quasi-accessible-controls"]:focus-within {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 30;
+  max-height: 40dvh;
+  margin: 0;
+  overflow-y: auto;
+  box-shadow: 0 -16px 40px -12px rgba(0, 0, 0, 0.9);
+}
+/* Every on-screen control is at least 44px square. */
+.qp-root.qp-touch button {
+  min-height: 44px;
+  min-width: 44px;
+}
+/* No text under 12px on the cabinet. */
+.qp-root.qp-touch .text-\[9px\],
+.qp-root.qp-touch .text-\[10px\],
+.qp-root.qp-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+/* Tactic cards grow with their 12px labels, so the text is not clipped. */
+.qp-root.qp-touch .qp-card {
+  width: 7.5rem;
+  height: 9.75rem;
+}
+/* On a short landscape screen (iPad mini, iPad Air) the two drawers sit side
+   by side, without the "Expand Drawer" words (the chevron and aria-expanded
+   still say it), so the board keeps a drawer row's worth of height. */
+@media (orientation: landscape) and (max-height: 900px) {
+  .qp-root.qp-touch [data-testid="diagnostic-drawers"] {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 0.75rem;
+  }
+  .qp-root.qp-touch [data-testid="diagnostic-drawers"] > * {
+    margin: 0;
+  }
+  .qp-root.qp-touch .qp-touch-drawer-state {
+    display: none;
+  }
+  /* One line per drawer header: the title shortens rather than wrapping. */
+  .qp-root.qp-touch .qp-touch-drawer-head {
+    flex-wrap: nowrap;
+  }
+  .qp-root.qp-touch .qp-touch-drawer-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 .qp-math {
   font-family: var(--qp-math);
   font-feature-settings: "ss01";
@@ -1620,4 +1746,35 @@
   [data-fbb-cabinet] .fbb-scene-in {
     animation: none;
   }
+}
+
+/*
+ * The Pre-Game Setup Wizard on an immersive touch cabinet (#2042 playtest):
+ * an iPad held at arm's length gets no text under 12px. Desktop keeps the
+ * wizard's compact type.
+ */
+[data-arcade-cabinet][data-immersive="true"] .arcade-setup-wizard .text-\[8px\],
+[data-arcade-cabinet][data-immersive="true"] .arcade-setup-wizard .text-\[9px\],
+[data-arcade-cabinet][data-immersive="true"]
+  .arcade-setup-wizard
+  .text-\[10px\],
+[data-arcade-cabinet][data-immersive="true"]
+  .arcade-setup-wizard
+  .text-\[11px\] {
+  font-size: 0.75rem;
+}
+
+/*
+ * A game's Field Manual opened from a touch cabinet (#2042 playtest). It is
+ * portaled out of the cabinet, so FieldManualModal adds this class itself:
+ * every control is at least 44px and no text is under 12px.
+ */
+.field-manual-touch button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.field-manual-touch .text-\[9px\],
+.field-manual-touch .text-\[10px\],
+.field-manual-touch .text-\[11px\] {
+  font-size: 0.75rem;
 }

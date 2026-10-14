@@ -45,6 +45,31 @@ export interface UseFocusTrapOptions {
 // the topmost dialog exclusive ownership of Escape.
 let activeFocusTrapCount = 0;
 
+// Active traps in the order they activated. One trap owns the keyboard at a
+// time: the innermost active trap whose container holds the focused element,
+// or, when focus sits in none of them, the most recent. A dialog opened inside
+// a trapped cabinet, or portaled out of it (a Field Manual), therefore owns Tab
+// and Escape until it closes. Without this, the cabinet's trap also saw each
+// Tab and pulled focus back out of the dialog (#2042).
+interface ActiveTrap {
+  id: symbol;
+  container: React.RefObject<HTMLElement | null>;
+}
+const trapStack: ActiveTrap[] = [];
+
+function keyboardOwner(): symbol | undefined {
+  const focused =
+    typeof document !== "undefined" ? document.activeElement : null;
+  let owner: ActiveTrap | undefined;
+  for (const trap of trapStack) {
+    const el = trap.container.current;
+    if (!el || !focused || !el.contains(focused)) continue;
+    // A later trap nested inside the current owner is closer to the focus.
+    if (!owner || owner.container.current?.contains(el)) owner = trap;
+  }
+  return (owner ?? trapStack[trapStack.length - 1])?.id;
+}
+
 // Restore target of the trap that most recently deactivated, kept until the
 // next macrotask. A dialog that hands off to another (closing itself and
 // opening the next in one handler) unmounts its own focused button, so the
@@ -93,6 +118,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     preventScroll = false,
   } = options;
 
+  const trapIdRef = useRef<symbol>(Symbol("focus-trap"));
   const onEscapeRef = useRef(onEscape);
   const onKeyDownRef = useRef(onKeyDown);
   const returnFocusToRef = useRef(returnFocusTo);
@@ -106,6 +132,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       if (!active || !containerRef.current) return;
+      if (keyboardOwner() !== trapIdRef.current) return;
 
       if (event.key === "Escape" && onEscapeRef.current) {
         event.preventDefault();
@@ -187,6 +214,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
     if (!active) return;
 
     activeFocusTrapCount++;
+    const trapId = trapIdRef.current;
+    trapStack.push({ id: trapId, container: containerRef });
     const container = containerRef.current;
 
     if (typeof document !== "undefined") {
@@ -203,6 +232,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
 
     return () => {
       activeFocusTrapCount = Math.max(0, activeFocusTrapCount - 1);
+      const index = trapStack.findIndex((trap) => trap.id === trapId);
+      if (index !== -1) trapStack.splice(index, 1);
       if (typeof window !== "undefined") {
         window.removeEventListener("keydown", handleKeyDown);
       }

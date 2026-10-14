@@ -524,7 +524,7 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
       aria-labelledby="wizard-title"
       aria-describedby="wizard-desc"
       data-testid="pregame-setup-wizard-overlay"
-      className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none overflow-hidden animate-in fade-in duration-200"
+      className="arcade-setup-wizard absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none overflow-hidden animate-in fade-in duration-200"
     >
       <div
         ref={modalRef}

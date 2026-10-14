@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LevelScore, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 import { IconCheck, IconCopy, IconSparkles } from "@tabler/icons-react";
 
 interface VictoryModalProps {
@@ -49,6 +50,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
     returnFocus: true,
     initialFocusRef: primaryRef,
   });
+  // On the touch cabinet the card is at most the screen tall and scrolls, so
+  // an iPad mini in landscape still reaches every action (#2042).
+  const inCabinet = useCabinetTouch();
   const campaignDone = !!campaignStars && campaignStars.proven >= totalLevels;
   // RAM budgets per star, stated as RAM spent so they read the same in Story
   // and Hacker modes (computeLevelStars compares the hacker equivalent).
@@ -73,7 +77,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
       exit={{ opacity: 0, scale: 0.95 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
     >
-      <div className="max-w-md w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl font-mono">
+      <div
+        className={`max-w-md w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl font-mono${inCabinet ? " max-h-[calc(100dvh-2rem)] overflow-y-auto" : ""}`}
+      >
         {/* Title Badge */}
         {isSorry ? (
           <div className="arcade-result-stamp inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold mb-3">

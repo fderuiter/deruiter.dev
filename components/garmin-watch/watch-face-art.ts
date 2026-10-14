@@ -68,6 +68,7 @@ import {
   type RaceCourse,
   type RaceSetup,
 } from "@/lib/garmin-race";
+import { GHOST_FLAG, formatGap, type GhostSample } from "@/lib/garmin-ghost";
 import type { ThrownBall } from "@/lib/garmin-medball";
 import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin-swim";
 import {
@@ -1790,9 +1791,12 @@ function movePose(state: GameEngineState): RunnerPose {
  * from the feet to fill the engine's player box when Buff: a headband, a
  * cyan race singlet with bib, and a watch on the wrist.
  */
-function drawRunner(ctx: Ctx, state: GameEngineState) {
+function drawRunner(
+  ctx: Ctx,
+  state: GameEngineState,
+  swimming = isUnderwater(state)
+) {
   // Underwater the monkey swims: a stroke in place of the run cycle.
-  const swimming = isUnderwater(state);
   const pose = swimming ? swimPose(state.distanceMeters) : movePose(state);
   const fur = state.isGcActive ? FUR_FROZEN : FUR;
   // After a hit the runner blinks while hits pass through.
@@ -3158,6 +3162,13 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   );
 }
 
+/** The Virtual Partner on one frame (#2020): where it is, and where it just was. */
+interface GhostFrame {
+  sample: GhostSample;
+  /** Earlier samples for the trail, newest first; empty under reduced motion. */
+  trail: readonly GhostSample[];
+}
+
 /** Options for one frame of the watch face. */
 interface WatchFaceOptions {
   /**
@@ -3165,6 +3176,84 @@ interface WatchFaceOptions {
    * progress line still shows the event).
    */
   reducedMotion?: boolean;
+  /** The Virtual Partner to draw, if any (#2020). */
+  ghost?: GhostFrame | null;
+  /** The gap to the Virtual Partner in ms, positive when behind (#2020). */
+  ghostGapMs?: number | null;
+}
+
+/** Whether a ghost sample shares the runner's stage and room, so it can be drawn beside them. */
+function ghostBeside(state: GameEngineState, s: GhostSample): boolean {
+  const room = (s.flags & GHOST_FLAG.room) !== 0;
+  return s.stage === (state.stage ?? 1) && room === Boolean(state.bonusRoom);
+}
+
+/**
+ * The Virtual Partner (#2020): the runner's sprite, see-through, where the
+ * ghost is on the lane, with a short fading trail. It is drawn only on the
+ * runner's stage and inside the same room, and never collides.
+ */
+function drawGhost(ctx: Ctx, state: GameEngineState, frame: GhostFrame) {
+  const g = frame.sample;
+  if (!ghostBeside(state, g)) return;
+  const dx = (g.d - state.distanceMeters) * PX_PER_METER;
+  if (Math.abs(dx) > CANVAS_SIZE) return;
+  ctx.save();
+  ctx.fillStyle = FACE_COLORS.identity;
+  frame.trail.forEach((t, i) => {
+    if (!ghostBeside(state, t)) return;
+    const tx = PLAYER_X + 10 + (t.d - state.distanceMeters) * PX_PER_METER;
+    ctx.globalAlpha = 0.22 - i * 0.06;
+    ctx.beginPath();
+    ctx.arc(
+      tx,
+      t.y + playerHeightFor(t.power) / 2,
+      3 - i * 0.6,
+      0,
+      Math.PI * 2
+    );
+    ctx.fill();
+  });
+  ctx.globalAlpha = 0.4;
+  ctx.translate(dx, 0);
+  drawRunner(
+    ctx,
+    {
+      ...state,
+      playerY: g.y,
+      distanceMeters: g.d,
+      power: g.power,
+      isGrounded: (g.flags & GHOST_FLAG.grounded) !== 0,
+      slamming: (g.flags & GHOST_FLAG.slamming) !== 0,
+      wallSide: (g.flags & GHOST_FLAG.wallSide) !== 0,
+      riding: (g.flags & GHOST_FLAG.riding) !== 0,
+      spinJump: (g.flags & GHOST_FLAG.spinJump) !== 0,
+      carrying: false,
+      invulnerableMs: 0,
+      starMs: 0,
+      isGcActive: false,
+    },
+    (g.flags & GHOST_FLAG.swimming) !== 0
+  );
+  ctx.restore();
+}
+
+/** The gap to the Virtual Partner, under the race line: red behind, green ahead. */
+function drawGhostGap(ctx: Ctx, gapMs: number) {
+  const line = formatGap(gapMs);
+  const tone = line.startsWith("-")
+    ? FACE_COLORS.good
+    : line === "+0:00.0"
+      ? FACE_COLORS.text
+      : FACE_COLORS.danger;
+  ctx.font = faceFont(7, "bold");
+  const w = ctx.measureText(line).width + 12;
+  const y = 140;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
+  ctx.beginPath();
+  ctx.roundRect(FACE_CENTER - w / 2, y, w, 11, 3);
+  ctx.fill();
+  text(ctx, line, FACE_CENTER, y + 7.6, 7, tone);
 }
 
 /**
@@ -3238,6 +3327,7 @@ export function renderWatchFace(
   ctx.restore();
   if (wind?.kind === "night") drawHeadlamp(ctx);
   if (wind?.kind === "taper") drawFloatTrail(ctx, state);
+  if (options.ghost) drawGhost(ctx, state, options.ghost);
   drawRunner(ctx, state);
   drawSpin(ctx, state);
   drawBolts(ctx, state.bolts ?? [], camera);
@@ -3260,6 +3350,9 @@ export function renderWatchFace(
     drawBanner(ctx, state);
     if (wind) drawSecondWindLine(ctx, wind);
     if (state.race) drawRaceLine(ctx, state.race);
+    if (state.race && typeof options.ghostGapMs === "number") {
+      drawGhostGap(ctx, options.ghostGapMs);
+    }
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused")

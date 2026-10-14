@@ -294,6 +294,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Wardrobe Unlocks",
       },
       {
+        title: "Endless Quarters",
+        detail:
+          "Endless mode runs in quarters. Every 120 work units a new quarter starts (Q1, Q2, Q3...): the meters fill faster, impulses come sooner, and one hazard joins for the rest of the run. Q2 brings more frequent surprises, Q3 tracks mud in after every potty trip (a muddy Duck slows work until bathed), and Q4 sets Duck chewing faster, power cable first. The run ends at a time-out and scores 1,000 per quarter survived plus the work done, with its own endless best.",
+        badge: "Endless",
+      },
+      {
+        title: "Puppy Hiccups",
+        detail:
+          "From sprint 2, and in endless mode, Duck can catch the hiccups for four seconds. A trick called mid-hic slips and breaks the combo; call it in the gap between hics and it lands as normal.",
+        badge: "Surprise",
+      },
+      {
         title: "Polaroid Scrapbook",
         detail:
           "Capturing key milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",

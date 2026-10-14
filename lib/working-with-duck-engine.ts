@@ -360,6 +360,163 @@ export const SPRINTS: GameSprint[] = [
   },
 ];
 
+/** Work units an endless run ships per quarter before the next one starts. */
+export const ENDLESS_QUARTER_WORK = 120;
+
+/** Endless score for each quarter survived, on top of the work done. */
+export const ENDLESS_QUARTER_POINTS = 1000;
+
+/**
+ * A hazard an endless quarter adds to the run. Each new quarter adds the
+ * next one in `ENDLESS_HAZARD_ORDER`, and they stay for the rest of the run:
+ * surprises come more often, potty trips track mud in, and Duck chews props
+ * faster, going for the power cable first.
+ */
+export type DuckEndlessHazard = "surprises" | "mud" | "cable-chewing";
+
+/** The order in which endless quarters add their hazard. */
+export const ENDLESS_HAZARD_ORDER: readonly DuckEndlessHazard[] = [
+  "surprises",
+  "mud",
+  "cable-chewing",
+];
+
+/** How an endless quarter plays: meter rates, impulses and hazards. */
+export interface DuckEndlessPace {
+  /** The sprint level the meter rates are computed at. */
+  meterLevel: number;
+  /** Ticks between Duck's impulses (chews and flops). */
+  impulseInterval: number;
+  /** Ticks between rolls for a surprise event. */
+  surpriseInterval: number;
+  /** Hazards active this quarter. */
+  hazards: DuckEndlessHazard[];
+}
+
+/** Ticks between surprise rolls in the campaign and early endless. */
+const SURPRISE_INTERVAL_TICKS = 520;
+/** Ticks between surprise rolls once the surprises hazard is active. */
+const ENDLESS_SURPRISE_INTERVAL_TICKS = 300;
+/** Meter level added per endless quarter after the first. */
+const ENDLESS_METER_LEVEL_STEP = 0.6;
+/** Highest meter level an endless run climbs to. */
+const ENDLESS_MAX_METER_LEVEL = 12;
+/** Ticks taken off the impulse interval per endless quarter. */
+const ENDLESS_IMPULSE_STEP = 12;
+/** Shortest impulse interval an endless run reaches. */
+const ENDLESS_MIN_IMPULSE_INTERVAL = 60;
+/** Ticks Duck needs to chew a prop, normally and under cable chewing. */
+const CHEW_TICKS = 240;
+const CABLE_CHEW_TICKS = 150;
+/** Ticks the quarter banner stays up. */
+const ENDLESS_BANNER_TICKS = 240;
+/** Score bonus for reaching a new endless quarter. */
+const ENDLESS_QUARTER_BONUS = 150;
+
+/** Ticks a bout of puppy hiccups lasts (60 ticks = 1 s). */
+export const HICCUP_EVENT_TICKS = 240;
+/** Ticks from one hiccup to the next. */
+export const HICCUP_PERIOD_TICKS = 50;
+/** Ticks at the start of each period while Duck is mid-hiccup. */
+export const HICCUP_WINDOW_TICKS = 18;
+
+/**
+ * The pace of an endless quarter. Quarter 1 plays at the base sprint's
+ * rates; each later quarter raises the meter rates, shortens the impulse
+ * interval and adds one hazard.
+ */
+export function endlessPace(quarter: number, baseLevel = 5): DuckEndlessPace {
+  const wave = Number.isFinite(quarter)
+    ? Math.max(0, Math.floor(quarter) - 1)
+    : 0;
+  const base = SPRINTS.find((s) => s.level === baseLevel) || SPRINTS[0];
+  const hazards = ENDLESS_HAZARD_ORDER.slice(0, wave);
+  return {
+    meterLevel: Math.min(
+      ENDLESS_MAX_METER_LEVEL,
+      base.level + wave * ENDLESS_METER_LEVEL_STEP
+    ),
+    impulseInterval: Math.max(
+      ENDLESS_MIN_IMPULSE_INTERVAL,
+      base.impulseInterval - wave * ENDLESS_IMPULSE_STEP
+    ),
+    surpriseInterval: hazards.includes("surprises")
+      ? ENDLESS_SURPRISE_INTERVAL_TICKS
+      : SURPRISE_INTERVAL_TICKS,
+    hazards,
+  };
+}
+
+/**
+ * A quarter's name: Q1 to Q4 in the first year, then with the year in
+ * front, such as Y2 Q1.
+ */
+export function endlessQuarterLabel(quarter: number): string {
+  const q = Number.isFinite(quarter) ? Math.max(1, Math.floor(quarter)) : 1;
+  const year = Math.floor((q - 1) / 4) + 1;
+  const inYear = ((q - 1) % 4) + 1;
+  return year === 1 ? `Q${inYear}` : `Y${year} Q${inYear}`;
+}
+
+/** What the banner for a new endless quarter says changed. */
+function endlessQuarterBannerText(quarter: number): string {
+  const added = ENDLESS_HAZARD_ORDER[Math.floor(quarter) - 2];
+  switch (added) {
+    case "surprises":
+      return "Faster meters · Surprises come more often";
+    case "mud":
+      return "Faster meters · Potty trips track mud in, so bathe Duck";
+    case "cable-chewing":
+      return "Faster meters · Duck chews faster, cable first";
+    default:
+      return "Faster meters · Duck gets even busier";
+  }
+}
+
+/** Quarters an endless run has finished, so 0 while still in Q1. */
+export function endlessQuartersSurvived(state: WorkingWithDuckState): number {
+  if (state.mode !== "endless") return 0;
+  return Math.max(0, Math.floor(state.endlessQuarter ?? 1) - 1);
+}
+
+/**
+ * The endless score: a fixed amount per quarter survived plus the work done.
+ * It is 0 outside endless mode.
+ */
+export function computeEndlessScore(state: WorkingWithDuckState): number {
+  if (state.mode !== "endless") return 0;
+  const work = Number.isFinite(state.workProgress)
+    ? Math.max(0, Math.floor(state.workProgress))
+    : 0;
+  return endlessQuartersSurvived(state) * ENDLESS_QUARTER_POINTS + work;
+}
+
+/** Whether an endless run currently has the given hazard. */
+function hasEndlessHazard(
+  state: WorkingWithDuckState,
+  hazard: DuckEndlessHazard
+): boolean {
+  return (
+    state.mode === "endless" &&
+    endlessPace(state.endlessQuarter ?? 1, state.currentLevel).hazards.includes(
+      hazard
+    )
+  );
+}
+
+/**
+ * Whether Duck is mid-hiccup right now. During puppy hiccups he hiccups at
+ * the start of every period, and a trick only lands between hiccups.
+ */
+export function isDuckHiccuping(state: WorkingWithDuckState): boolean {
+  const event = state.activeSurpriseEvent;
+  if (!event || event.type !== "puppy-hiccups" || event.timer <= 0) {
+    return false;
+  }
+  const elapsed = Math.max(0, event.maxTimer - event.timer);
+  return elapsed % HICCUP_PERIOD_TICKS < HICCUP_WINDOW_TICKS;
+}
+
 export const INITIAL_HAZARDS: PortfolioHazard[] = [
   {
     id: "pitch-deck",
@@ -451,6 +608,11 @@ export interface WorkingWithDuckState {
   status: "idle" | "running" | "paused" | "failed" | "won";
   mode: "campaign" | "endless";
   currentLevel: number;
+  /**
+   * The endless quarter being played, from 1. A new quarter starts every
+   * `ENDLESS_QUARTER_WORK` work units. Always 1 in the campaign.
+   */
+  endlessQuarter: number;
   workProgress: number;
   targetWorkProgress: number;
   excitement: number; // 0 to 100
@@ -654,6 +816,7 @@ export function createInitialDuckGameState(
     status: "idle",
     mode,
     currentLevel: level,
+    endlessQuarter: 1,
     workProgress: 0,
     targetWorkProgress: mode === "endless" ? 999999 : sprint.targetWork,
     excitement: 15,
@@ -854,7 +1017,16 @@ export function stepDuckGame(
 
   const sprint =
     SPRINTS.find((s) => s.level === state.currentLevel) || SPRINTS[0];
-  const impulseRate = sprint.impulseInterval;
+  // Endless quarters (#2051) speed up the meters and impulses and add
+  // hazards; the campaign keeps each sprint's own pace.
+  const endless =
+    state.mode === "endless"
+      ? endlessPace(state.endlessQuarter ?? 1, state.currentLevel)
+      : null;
+  const impulseRate = endless?.impulseInterval ?? sprint.impulseInterval;
+  const meterLevel = endless?.meterLevel ?? state.currentLevel;
+  const surpriseInterval = endless?.surpriseInterval ?? SURPRISE_INTERVAL_TICKS;
+  const hasCableChewing = endless?.hazards.includes("cable-chewing") ?? false;
 
   // Multipliers & Calm Buff
   const nextCalmBuff = Math.max(0, state.calmBuffTimer - 1);
@@ -879,6 +1051,9 @@ export function stepDuckGame(
   // Debuff from unmopped indoor puddles (-30% speed)
   const puddlePenalty =
     state.indoorPuddles && state.indoorPuddles.length > 0 ? 0.7 : 1.0;
+  // Endless mud hazard: muddy paws slow the work (-20%) until Duck is bathed.
+  const mudPenalty =
+    endless?.hazards.includes("mud") && state.isMuddy ? 0.8 : 1.0;
 
   let nextWorkProgress = state.workProgress;
   let nextScore = state.totalScore;
@@ -888,12 +1063,30 @@ export function stepDuckGame(
   const isTraining = state.duck.state === "PERFORMING_TRICK";
 
   if (!isEmergency && !isTraining && state.duck.state !== "NAP_TIME") {
-    const workIncrement = 0.04 * effectiveMultiplier * puddlePenalty;
+    const workIncrement =
+      0.04 * effectiveMultiplier * puddlePenalty * mudPenalty;
     nextWorkProgress = Math.min(
       state.targetWorkProgress,
       state.workProgress + workIncrement
     );
-    nextScore += Math.round(1 * effectiveMultiplier * puddlePenalty);
+    nextScore += Math.round(
+      1 * effectiveMultiplier * puddlePenalty * mudPenalty
+    );
+  }
+
+  // Endless waves (#2051): every ENDLESS_QUARTER_WORK work units a new
+  // quarter starts, faster and with one more hazard.
+  const currentQuarter = Math.max(1, Math.floor(state.endlessQuarter ?? 1));
+  const quarterReached =
+    state.mode === "endless"
+      ? Math.max(
+          currentQuarter,
+          Math.floor(nextWorkProgress / ENDLESS_QUARTER_WORK) + 1
+        )
+      : currentQuarter;
+  const quarterAdvanced = quarterReached > currentQuarter;
+  if (quarterAdvanced) {
+    nextScore += ENDLESS_QUARTER_BONUS;
   }
 
   // Win condition check
@@ -916,14 +1109,13 @@ export function stepDuckGame(
 
   // Meters Natural Evolution
   const excitementRate =
-    (nextCalmBuff > 0 ? 0.02 : 0.07 + state.currentLevel * 0.018) *
+    (nextCalmBuff > 0 ? 0.02 : 0.07 + meterLevel * 0.018) *
     (state.activeAccessory === "bandana" ? 0.75 : 1);
-  const bladderRate =
-    nextCalmBuff > 0 ? 0.02 : 0.05 + state.currentLevel * 0.015;
+  const bladderRate = nextCalmBuff > 0 ? 0.02 : 0.05 + meterLevel * 0.015;
   const thirstRate =
-    (0.03 + state.currentLevel * 0.01) *
+    (0.03 + meterLevel * 0.01) *
     (state.activeAccessory === "bucket-hat" ? 0.75 : 1);
-  const hungerRate = 0.02 + state.currentLevel * 0.01;
+  const hungerRate = 0.02 + meterLevel * 0.01;
 
   let nextExcitement = clamp(state.excitement + excitementRate, 0, 100);
   let nextBladder = clamp(state.bladder + bladderRate, 0, 100);
@@ -948,6 +1140,14 @@ export function stepDuckGame(
   if (activeToast && activeToast.timer <= 0) {
     activeToast = null;
   }
+  if (quarterAdvanced) {
+    activeToast = {
+      badge: `${endlessQuarterLabel(currentQuarter)} → ${endlessQuarterLabel(quarterReached)}`,
+      text: endlessQuarterBannerText(quarterReached),
+      timer: ENDLESS_BANNER_TICKS,
+    };
+    soundCues.push("combo-fanfare");
+  }
 
   // Combo timer evolution
   const nextComboTimer = Math.max(0, state.comboTimer - 1);
@@ -960,6 +1160,8 @@ export function stepDuckGame(
         timer: state.activeSurpriseEvent.timer - 1,
       }
     : null;
+  const hiccupsEnded =
+    activeSurprise?.type === "puppy-hiccups" && activeSurprise.timer <= 0;
   if (activeSurprise && activeSurprise.timer <= 0) {
     activeSurprise = null;
   }
@@ -984,10 +1186,30 @@ export function stepDuckGame(
   const tailSpeedMultiplier = Math.max(0.1, (nextNaughtyVsGood + 100) / 100);
   duck.tailWagAngle = Math.sin(nextTicks * 0.35 * tailSpeedMultiplier) * 0.45;
 
-  // Random surprise event during calm roam
-  if (!activeSurprise && nextTicks % 520 === 0 && duck.state === "IDLE_ROAM") {
+  if (hiccupsEnded) {
+    alerts.push({
+      id: state.nextAlertId + 98,
+      x: duck.x,
+      y: duck.y - 30,
+      text: "Hiccups gone. Tricks are back on!",
+      color: "#22c55e",
+      alpha: 1,
+      vy: -1.2,
+    });
+  }
+
+  // Random surprise event during calm roam. Sprint 1 keeps its two gentle
+  // surprises; from sprint 2, and in endless, puppy hiccups join the pool.
+  if (
+    !activeSurprise &&
+    nextTicks % surpriseInterval === 0 &&
+    duck.state === "IDLE_ROAM"
+  ) {
     const roll = Math.random();
-    if (roll < 0.5) {
+    const withHiccups = state.mode === "endless" || state.currentLevel >= 2;
+    const deliveryCut = withHiccups ? 1 / 3 : 0.5;
+    const squirrelCut = withHiccups ? 2 / 3 : 1;
+    if (roll < deliveryCut) {
       activeSurprise = {
         type: "amazon-delivery",
         timer: 300,
@@ -1004,7 +1226,7 @@ export function stepDuckGame(
         alpha: 1,
         vy: -1.2,
       });
-    } else {
+    } else if (roll < squirrelCut) {
       activeSurprise = {
         type: "squirrel-window",
         timer: 300,
@@ -1021,7 +1243,31 @@ export function stepDuckGame(
         alpha: 1,
         vy: -1.2,
       });
+    } else {
+      activeSurprise = {
+        type: "puppy-hiccups",
+        timer: HICCUP_EVENT_TICKS,
+        maxTimer: HICCUP_EVENT_TICKS,
+        resolved: false,
+      };
+      alerts.push({
+        id: state.nextAlertId + 99,
+        x: duck.x,
+        y: duck.y - 30,
+        text: "Hic! Duck has the hiccups. Time tricks between hics!",
+        color: "#f59e0b",
+        alpha: 1,
+        vy: -1.2,
+      });
     }
+  }
+
+  // Each hiccup in a bout makes a sound at the start of its period.
+  if (
+    activeSurprise?.type === "puppy-hiccups" &&
+    (activeSurprise.maxTimer - activeSurprise.timer) % HICCUP_PERIOD_TICKS === 0
+  ) {
+    soundCues.push("hiccup");
   }
 
   // Thirst & Hunger Autonomous Station Visits
@@ -1137,18 +1383,25 @@ export function stepDuckGame(
       if (nextTicks - state.lastImpulseTick > impulseRate) {
         nextLastImpulseTick = nextTicks;
         const impulseChoice = Math.random();
-        if (impulseChoice < 0.45) {
+        // Endless cable chewing (#2051): chews come more often, go for the
+        // power cable while it is intact, and take less time.
+        if (impulseChoice < (hasCableChewing ? 0.6 : 0.45)) {
           // Sneaky chew event
           const unchewedHazards = hazards.filter((h) => !h.isChewed);
           const hazardPool =
             unchewedHazards.length > 0 ? unchewedHazards : hazards;
-          const randomHazard =
+          const cable = hasCableChewing
+            ? unchewedHazards.find((h) => h.id === "power-cable")
+            : undefined;
+          const pickedHazard =
             hazardPool[Math.floor(Math.random() * hazardPool.length)];
+          const randomHazard = cable ?? pickedHazard;
+          const chewTicks = hasCableChewing ? CABLE_CHEW_TICKS : CHEW_TICKS;
           duck.state = "SNEAKY_CHEW";
           duck.targetX = randomHazard.x;
           duck.targetY = randomHazard.y;
-          duck.stateTimer = 240;
-          duck.maxStateTimer = 240;
+          duck.stateTimer = chewTicks;
+          duck.maxStateTimer = chewTicks;
           activeHazardTarget = randomHazard.id;
           soundCues.push("bark");
           alerts.push({
@@ -1556,6 +1809,7 @@ export function stepDuckGame(
     ...state,
     ticks: nextTicks,
     workProgress: nextWorkProgress,
+    endlessQuarter: quarterReached,
     totalScore: nextScore,
     excitement: nextExcitement,
     bladder: nextBladder,
@@ -1719,6 +1973,33 @@ export function performTrick(
           vy: -1.2,
         },
       ],
+    };
+  }
+
+  // Puppy hiccups (#2051): a trick called mid-hiccup slips and breaks the
+  // combo. One called between hiccups lands as normal.
+  if (isDuckHiccuping(state)) {
+    const slip = "Hic! The trick slipped. Wait for the gap between hics.";
+    const shown = state.floatingAlerts.some((alert) => alert.text === slip);
+    return {
+      ...state,
+      comboStreak: 0,
+      comboTimer: 0,
+      floatingAlerts: shown
+        ? state.floatingAlerts
+        : [
+            ...state.floatingAlerts,
+            {
+              id: state.nextAlertId,
+              x: state.duck.x,
+              y: state.duck.y - 25,
+              text: slip,
+              color: "#f59e0b",
+              alpha: 1,
+              vy: -1.2,
+            },
+          ],
+      soundCueQueue: [...state.soundCueQueue, "hiccup"],
     };
   }
 
@@ -2601,9 +2882,25 @@ export function releaseDuck(state: WorkingWithDuckState): WorkingWithDuckState {
     state.duck.y >= BACK_DOOR_BOUNDS.y &&
     state.duck.y <= BACK_DOOR_BOUNDS.y + BACK_DOOR_BOUNDS.height
   ) {
+    // Endless mud hazard (#2051): Duck comes back in with muddy paws.
+    const tracksMud = hasEndlessHazard(state, "mud");
+    const mudAlerts: FloatingAlert[] = tracksMud
+      ? [
+          {
+            id: state.nextAlertId + 1,
+            x: BATHTUB_BOUNDS.x,
+            y: BATHTUB_BOUNDS.y - 10,
+            text: "🐾 Muddy paws! Bathe Duck to keep work moving",
+            color: "#f59e0b",
+            alpha: 1,
+            vy: -1.2,
+          },
+        ]
+      : [];
     return {
       ...state,
       bladder: 0,
+      isMuddy: state.isMuddy || tracksMud,
       naughtyVsGood: Math.min(100, state.naughtyVsGood + 35),
       totalScore: state.totalScore + 75,
       duck: {
@@ -2627,6 +2924,7 @@ export function releaseDuck(state: WorkingWithDuckState): WorkingWithDuckState {
           alpha: 1,
           vy: -1.5,
         },
+        ...mudAlerts,
       ],
       soundCueQueue: [...state.soundCueQueue, "ding"],
     };

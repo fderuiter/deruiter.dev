@@ -21,6 +21,7 @@ import {
   FOOD_BOWL_BOUNDS,
   RUG_BOUNDS,
   WATER_BOWL_BOUNDS,
+  isDuckHiccuping,
   type DuckAccessory,
   type DuckBehaviorState,
   type DuckTrick,
@@ -2151,6 +2152,19 @@ export function drawOfficeScene(
     chewTargetLabelled: state.activeHazardTarget !== null,
     touchHints,
   });
+
+  // Puppy hiccups (#2051): "hic!" while he hiccups, the cue in between,
+  // stacked above any state label.
+  if (state.activeSurpriseEvent?.type === "puppy-hiccups") {
+    const hic = isDuckHiccuping(state);
+    pill(
+      ctx,
+      hic ? "hic!" : "trick now",
+      state.duck.x,
+      Math.max(14, state.duck.y - 66),
+      hic ? "#fbbf24" : "#4ade80"
+    );
+  }
 
   state.particles.forEach((p) => {
     ctx.save();

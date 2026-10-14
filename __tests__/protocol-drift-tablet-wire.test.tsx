@@ -38,7 +38,10 @@ import { touchChipSpot } from "@/components/protocol-drift/PipelineCanvas";
 import { CHIP_SPECS, type ChipKind } from "@/lib/protocol-drift";
 import { installFlowMocks } from "./protocol-drift/ui-helpers";
 
-const flow = vi.hoisted(() => ({ fitView: vi.fn(), setCenter: vi.fn() }));
+const flow = vi.hoisted(() => ({
+  fitView: vi.fn(),
+  setViewport: vi.fn(),
+}));
 
 vi.mock("@xyflow/react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@xyflow/react")>();
@@ -46,9 +49,8 @@ vi.mock("@xyflow/react", async (importOriginal) => {
     ...actual,
     useReactFlow: () => ({
       fitView: flow.fitView,
-      setCenter: flow.setCenter,
-      getZoom: () => 0.8,
-      setViewport: vi.fn(),
+      getViewport: () => ({ x: 0, y: 0, zoom: 0.8 }),
+      setViewport: flow.setViewport,
       screenToFlowPosition: (p: { x: number; y: number }) => p,
     }),
   };
@@ -93,7 +95,7 @@ describe("Protocol Drift tap-to-wire on the touch cabinet (#2045)", () => {
   beforeEach(() => {
     localStorage.clear();
     flow.fitView.mockClear();
-    flow.setCenter.mockClear();
+    flow.setViewport.mockClear();
   });
   afterEach(() => {
     cleanup();
@@ -197,8 +199,10 @@ describe("Protocol Drift tap-to-wire on the touch cabinet (#2045)", () => {
     expect(root.hasAttribute("data-escape-docks")).toBe(false);
   });
 
-  it("the Fit button frames the whole pipeline with fitView", async () => {
+  it("Fit frames the chips with fitView, at the floor and with padding", async () => {
     await startDraft();
+    const [ingest] = await placeAll(["SourceIngest", "ExtractField"]);
+    flow.fitView.mockClear();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /^Fit$/ }));
     });
@@ -208,6 +212,23 @@ describe("Protocol Drift tap-to-wire on the touch cabinet (#2045)", () => {
       minZoom: touchZoomFloor(),
       maxZoom: 1,
     });
+    expect(flow.fitView.mock.calls[0][0].padding).toBeGreaterThan(0);
+    expect(flow.fitView.mock.calls[0][0].nodes).toEqual(
+      expect.arrayContaining([{ id: ingest }])
+    );
+  });
+
+  it("Fit with no chips frames the tabulation lane, never the empty world", async () => {
+    await startDraft();
+    await act(async () => {
+      store().setNodes([]);
+    });
+    flow.fitView.mockClear();
+    flow.setViewport.mockClear();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /^Fit$/ }));
+    });
+    expect(flow.fitView).not.toHaveBeenCalled();
   });
 
   it("the zoom floor keeps the shortest chip 44px and its title 12px on screen", () => {
@@ -302,7 +323,7 @@ describe("touch chip placement (#2045)", () => {
   beforeAll(() => installFlowMocks());
   beforeEach(() => {
     localStorage.clear();
-    flow.setCenter.mockClear();
+    flow.setViewport.mockClear();
   });
   afterEach(() => {
     cleanup();
@@ -342,30 +363,30 @@ describe("touch chip placement (#2045)", () => {
     }
   });
 
-  it("the toolbox add on touch pans to the new chip at the current zoom and announces it", async () => {
+  it("a toolbox add on touch frames the chips and announces the add", async () => {
     await startDraft(true);
+    flow.fitView.mockClear();
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Add SourceIngest chip" })
       );
     });
-    await waitFor(() => expect(flow.setCenter).toHaveBeenCalledTimes(1));
-    expect(flow.setCenter.mock.calls[0][2]).toMatchObject({
-      zoom: 0.8,
-      duration: 0,
-    });
+    await waitFor(() => expect(flow.fitView).toHaveBeenCalled());
+    expect(flow.fitView.mock.calls.at(-1)?.[0].nodes).toHaveLength(1);
     expect(store().notice?.text).toBe("Added SourceIngest.");
   });
 
   it("the toolbox add on desktop does not pan the canvas", async () => {
     await startDraft(false);
+    flow.fitView.mockClear();
+    flow.setViewport.mockClear();
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Add SourceIngest chip" })
       );
     });
     await waitFor(() => expect(store().nodes.length).toBeGreaterThan(0));
-    expect(flow.setCenter).not.toHaveBeenCalled();
+    expect(flow.fitView).not.toHaveBeenCalled();
   });
 });
 

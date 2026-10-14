@@ -162,6 +162,62 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     expect(root().hasAttribute("data-escape-docks")).toBe(false);
   });
 
+  it("every keyboard stop in the open inspector sheet is named, and the sheet body does not scroll", async () => {
+    await startTracer(true);
+    await click(/Expand \(I\)/);
+    const sheet = screen.getByTestId("inspector-sheet");
+    const stops = Array.from(
+      sheet.querySelectorAll<HTMLElement>(
+        'button, select, input, textarea, a[href], [tabindex]:not([tabindex="-1"])'
+      )
+    );
+    expect(stops.length).toBeGreaterThanOrEqual(2);
+    for (const stop of stops) {
+      const name =
+        stop.getAttribute("aria-label") ||
+        stop.textContent?.trim() ||
+        (stop.id
+          ? document
+              .querySelector(`label[for="${stop.id}"]`)
+              ?.textContent?.trim()
+          : "");
+      expect(name, stop.outerHTML.slice(0, 120)).toBeTruthy();
+    }
+    // The scroll boxes inside the sheet are the three named panes only.
+    const scrollers = Array.from(
+      sheet.querySelectorAll<HTMLElement>(".overflow-y-auto")
+    );
+    for (const box of scrollers) {
+      expect(box.getAttribute("role")).toBe("region");
+      expect(box.getAttribute("aria-label")).toBeTruthy();
+    }
+    // The real controls are inside the sheet: the submission select, and Replay.
+    expect(sheet.querySelector("select")).not.toBeNull();
+  });
+
+  it("an auto-pause reason stays on screen until the clock runs, after its notice has gone", async () => {
+    await startTracer(true);
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        pausedReason: "Clock paused: new issue category UNMAPPED_FIELD",
+        notice: null,
+      });
+    });
+    expect(screen.getByTestId("pause-reason").textContent).toBe(
+      "Clock paused: new issue category UNMAPPED_FIELD"
+    );
+    expect(screen.getByTestId("pause-reason").getAttribute("aria-live")).toBe(
+      "polite"
+    );
+    const running = useProtocolDriftStore.getState().snapshot;
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        snapshot: { ...running!, fsmState: "RUNNING" },
+      });
+    });
+    expect(screen.queryByTestId("pause-reason")).toBeNull();
+  });
+
   it("the inspector sheet closes on its backdrop and on its 44px close button", async () => {
     await startTracer(true);
     await click(/Expand \(I\)/);

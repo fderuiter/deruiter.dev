@@ -704,6 +704,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Toasts",
       },
       {
+        title: "Race Mode",
+        detail:
+          "Race Mode is an option in the companion panel, next to Dev Mode. A Training Run lays a random course every time; a race runs the same course every attempt, so times compare. The Saturday 5K is one fixed course. The Daily Workout is a course for the day that changes at local midnight, the same for everyone. Pick a category before the start: 5K Any% (finish as fast as you can), All Kudos (collect every Kudos on the lane), No Gear (finish at Base, with no power-ups, Runner's High or training buddy; Sync Blocks pay Kudos instead), Negative Split (every lap beats the lap before it), or All Medals (find all 15 Finisher Medals). Races run with Dev Mode off, every random choice comes from the course seed, and the simulation steps at a fixed 60 times a second, so a fast or slow monitor cannot change the game's speed. A press lands on the next step, so input timing can still vary by one step. While paused in a race, Backspace restarts it on the same course. Each result lands on this device's top 5 for its course and category, with CR for the first record set on it and PR when you beat that record. Share copies a plain-text result. Nothing goes online.",
+        badge: "Race",
+      },
+      {
         title: "Dev Mode (Optional)",
         detail:
           "Dev Mode is a toggle in the simulator controls, off by default. It brings back the original firmware challenge: a RAM heap that fills with automatic allocations, Down to pop variables, forced garbage collection that freezes the watch, NV flash that fills up, a battery that drains with thermal fog you wipe with W, and crash reports such as Null Pointer, Watchdog Tripped, Stack Overflow, Out Of Memory, Out Of Storage and Segmentation Fault. Each device tier has its own RAM limit: Fēnix 5 has 32 KB, Forerunner 245 has 64 KB, and Edge 1030 has 128 KB.",

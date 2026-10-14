@@ -60,6 +60,14 @@ import {
   trainingStatus,
 } from "@/lib/garmin-culture";
 import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
+import {
+  RACE_CATEGORY_INFO,
+  formatRaceTime,
+  judgeRace,
+  raceOutcomeOf,
+  type RaceCourse,
+  type RaceSetup,
+} from "@/lib/garmin-race";
 import type { ThrownBall } from "@/lib/garmin-medball";
 import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin-swim";
 import {
@@ -428,19 +436,49 @@ function groundStripReadout(
 
 /** What a full-screen end face says. */
 interface EndFace {
-  kind: "crash" | "power" | "complete" | "status";
+  kind: "crash" | "power" | "complete" | "status" | "race";
   headline: string;
   detail: string;
 }
 
-/**
- * The full-screen face for a run that has ended, or null while it hasn't.
+/** The race verdict on the report face: the time, or DNF / DNQ and why. */
+function raceVerdictLine(
+  race: RaceSetup,
+  state: Pick<GameEngineState, "gameState"> & Partial<GameEngineState>
+): string {
+  const verdict = judgeRace(race.category, raceOutcomeOf(state));
+  if (verdict.result === "time") {
+    return formatRaceTime(state.runClockMs ?? 0);
+  }
+  return `${verdict.result.toUpperCase()} · ${verdict.reason}`;
+}
+
+/** The best lap and the time bonked on the race report face (#2019). */
+function raceReportLine(state: GameEngineState): string {
+  const laps = state.lapSplits ?? [];
+  const best = laps.length > 0 ? formatRaceTime(Math.min(...laps)) : "--";
+  const bonked = Math.round((state.bonkedMs ?? 0) / 1000);
+  return `BEST LAP ${best} · BONKED ${bonked}s`;
+}
+
+/** The full-screen face for a run that has ended, or null while it hasn't.
  * The crash face names the real cause and where it happened.
  */
 export function endFaceFor(
   state: Pick<GameEngineState, "gameState" | "battery" | "crashReport"> &
-    Partial<Pick<GameEngineState, "rules" | "stage">>
+    Partial<GameEngineState>
 ): EndFace | null {
+  // A race ends on its report: the verdict in place of the Training Status (#2019).
+  if (
+    state.race &&
+    (state.gameState === "crashed" || state.gameState === "summary")
+  ) {
+    return {
+      kind: "race",
+      headline: "RACE REPORT",
+      detail: raceVerdictLine(state.race, state),
+    };
+  }
   // The fitness rules end on a Training Status, like a watch after a run.
   if (isFitnessRun(state)) {
     const stage = state.stage ?? 1;
@@ -2626,6 +2664,28 @@ function drawSecondWindLine(ctx: Ctx, wind: SecondWind) {
   );
 }
 
+/** Race Mode course names on the HUD pill (#2019). */
+const RACE_COURSE_SHORT: Record<RaceCourse, string> = {
+  saturday5k: "SAT 5K",
+  daily: "DAILY",
+};
+
+/**
+ * The race pill (#2019): the course and category, e.g. "SAT 5K · ANY%", under
+ * the Second Wind line and clear of the medal slots and the banner.
+ */
+function drawRaceLine(ctx: Ctx, race: RaceSetup) {
+  const line = `${RACE_COURSE_SHORT[race.course]} · ${RACE_CATEGORY_INFO[race.category].short}`;
+  const px = fitTextPx(ctx, line, 6.5, 100, 5);
+  const w = Math.min(112, ctx.measureText(line).width + 12);
+  const y = 127;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
+  ctx.beginPath();
+  ctx.roundRect(FACE_CENTER - w / 2, y, w, 11, 3);
+  ctx.fill();
+  text(ctx, line, FACE_CENTER, y + 7.4, px, FACE_COLORS.text);
+}
+
 /** Foe shots: a lap ping is a small sky diamond, a dumbbell a tumbling bar with plates. */
 function drawFoeShots(ctx: Ctx, shots: readonly FoeShot[], camera: number) {
   const r = FOE_SHOT_SIZE / 2;
@@ -3038,7 +3098,11 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
     drawEmptyBattery(ctx, FACE_CENTER, 98);
   } else if (face.kind === "crash") {
     drawIqMark(ctx, FACE_CENTER, 96);
-  } else if (face.kind === "status") {
+  } else if (
+    face.kind === "status" ||
+    // A DNF or DNQ race gets the gauge, not the finisher's tick (#2019).
+    (face.kind === "race" && face.detail.startsWith("DN"))
+  ) {
     drawStatusGauge(ctx, FACE_CENTER, 104);
   } else {
     ctx.strokeStyle = FACE_COLORS.good;
@@ -3052,13 +3116,15 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   }
   const headlinePx = face.headline.length > 14 ? 11 : 13;
   text(ctx, face.headline, FACE_CENTER, 152, headlinePx, FACE_COLORS.text);
+  // A race's verdict is its finish time, so it reads larger.
+  const raceTime = face.kind === "race" && !face.detail.startsWith("DN");
   text(
     ctx,
     face.detail,
     FACE_CENTER,
-    167,
-    7,
-    FACE_COLORS.dim,
+    raceTime ? 170 : 167,
+    raceTime ? 11 : 7,
+    raceTime ? FACE_COLORS.text : FACE_COLORS.dim,
     "center",
     "normal"
   );
@@ -3067,9 +3133,12 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   // A fitness run ends with its medal tally, and any secret exits it found (#2025).
   const medals = (state.medalsFound ?? []).length;
   const totalMedals = STAGE_COUNT * MEDALS_PER_STAGE;
-  const scoreLine = isFitnessRun(state)
-    ? `SCORE ${state.score} · MEDALS ${medals}/${totalMedals}`
-    : `SCORE ${state.score}`;
+  const scoreLine =
+    face.kind === "race"
+      ? raceReportLine(state)
+      : isFitnessRun(state)
+        ? `SCORE ${state.score} · MEDALS ${medals}/${totalMedals}`
+        : `SCORE ${state.score}`;
   text(ctx, scoreLine, FACE_CENTER, 196, 8, FACE_COLORS.text);
   const exits = (state.secretExits ?? []).length;
   if (isFitnessRun(state) && exits > 0) {
@@ -3077,7 +3146,11 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   }
   text(
     ctx,
-    isFitnessRun(state) ? "PRESS START TO RUN AGAIN" : "PRESS START TO REBOOT",
+    face.kind === "race"
+      ? "PRESS START TO RACE AGAIN"
+      : isFitnessRun(state)
+        ? "PRESS START TO RUN AGAIN"
+        : "PRESS START TO REBOOT",
     FACE_CENTER,
     214,
     7.5,
@@ -3186,6 +3259,7 @@ export function renderWatchFace(
     if ((state.restDayMs ?? 0) > 0) drawRestDayBadge(ctx, state.restDayMs ?? 0);
     drawBanner(ctx, state);
     if (wind) drawSecondWindLine(ctx, wind);
+    if (state.race) drawRaceLine(ctx, state.race);
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused")

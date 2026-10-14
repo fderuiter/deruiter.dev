@@ -80,6 +80,14 @@ Bolts thrown this run, for their ids.
 
 ***
 
+### bonkedMs?
+
+> `optional` **bonkedMs?**: `number`
+
+Time spent bonked in this race, in ms (#2019).
+
+***
+
 ### bonusRoom?
 
 > `optional` **bonusRoom?**: [`BonusRoom`](BonusRoom.md) \| `null`
@@ -239,6 +247,14 @@ Furthest distance reached this run, in metres. A lost life rewinds
 
 ***
 
+### gearTaken?
+
+> `optional` **gearTaken?**: `boolean`
+
+A power-up, gear or the training buddy was taken in this race (#2019).
+
+***
+
 ### gpsMs?
 
 > `optional` **gpsMs?**: `number`
@@ -314,6 +330,14 @@ The jump key is held: the rise uses the lighter gravity.
 > `optional` **kudos?**: `number`
 
 Kudos collected this run.
+
+***
+
+### kudosMissed?
+
+> `optional` **kudosMissed?**: `number`
+
+Free lane Kudos that went by uncollected in this race (#2019).
 
 ***
 
@@ -495,6 +519,14 @@ Water Stations, Plyo Boxes, Treadmill Belts and Rest Day Switches.
 
 ***
 
+### race?
+
+> `optional` **race?**: [`RaceSetup`](../../garmin-race/interfaces/RaceSetup.md) \| `null`
+
+The race being run (#2019): its course seed and category. Null or absent for a Training Run.
+
+***
+
 ### restDayMs?
 
 > `optional` **restDayMs?**: `number`
@@ -567,6 +599,14 @@ Block, ended by its timer, a lost life or a stage clear; null otherwise.
 > `optional` **secretExits?**: `number`[]
 
 Stages whose secret exit was taken this run; reset by startGame, otherwise kept (#2025).
+
+***
+
+### simMs?
+
+> `optional` **simMs?**: `number`
+
+Race game time in ms: advances on every playing tick, GPS lock included, and stops while paused (#2019).
 
 ***
 

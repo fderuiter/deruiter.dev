@@ -63,6 +63,37 @@ import {
   type GarminBests,
 } from "@/lib/garmin-splits";
 import { bestsKey, loadBests, saveBests } from "@/lib/garmin-bests-store";
+import { copyToClipboard } from "@/lib/clipboard";
+import {
+  FIXED_STEP_MS,
+  RACE_CATEGORY_INFO,
+  RACE_COURSE_NAMES,
+  fixedSteps,
+  formatRaceTime,
+  judgeRace,
+  raceSetup,
+  shareText,
+  type BoardEntry,
+  type RaceCategory,
+  type RaceCourse,
+  type RaceOutcome,
+  raceOutcomeOf,
+  type RaceSetup,
+  type RaceVerdict,
+} from "@/lib/garmin-race";
+import {
+  RACE_CATEGORY_KEY,
+  RACE_COURSE_KEY,
+  RACE_MODE_KEY,
+  loadBoard,
+  raceOverText,
+  raceRecordOf,
+  readRaceCategory,
+  readRaceCourse,
+  readRaceMode,
+  saveResult,
+  writeRacePref,
+} from "@/lib/garmin-race-store";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
@@ -249,6 +280,42 @@ const writeDevMode = (on: boolean) => {
   devModeListeners.forEach((listener) => listener());
 };
 
+// Race Mode (#2019): the picked mode, course and category, remembered on this
+// device like Dev Mode. Races are picked while idle or after a run ends.
+const racePrefListeners = new Set<() => void>();
+const subscribeRacePrefs = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  racePrefListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    racePrefListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+};
+const writeRacePrefAndNotify = (key: string, value: string) => {
+  writeRacePref(key, value);
+  racePrefListeners.forEach((listener) => listener());
+};
+const getRaceModeServerSnapshot = () => false;
+const getRaceCourseServerSnapshot = (): RaceCourse => "saturday5k";
+const getRaceCategoryServerSnapshot = (): RaceCategory => "any";
+
+/** The bests a run's laps are judged against: races keep their own (#2019). */
+const splitsKeyOf = (s: GameEngineState) =>
+  `${bestsKey(s.device, isFitnessRun(s))}${s.race ? ":race" : ""}`;
+
+/** A race as it ended: its outcome, verdict, board place and record (#2019). */
+interface RaceReport {
+  setup: RaceSetup;
+  outcome: RaceOutcome;
+  verdict: RaceVerdict;
+  /** 1-based place on the board, or 0 when it missed the top five. */
+  place: number;
+  record: "CR" | "PR" | null;
+  board: BoardEntry[];
+  date: Date;
+}
+
 interface GarminWatchSimulatorProps {
   /**
    * Test/debug seam only: seeds both stateRef and gameState with this exact
@@ -280,6 +347,103 @@ function isRunOver(s: GameEngineState): boolean {
  * average pace, the splits table against the previous bests, and the negative
  * split and new best notes.
  */
+/**
+ * The race report under a finished race's card (#2019): the verdict, the
+ * splits and best lap, the time bonked, this device's board with the new place,
+ * PR or CR, and a Share button.
+ */
+function RaceReportCard({
+  setup,
+  state,
+  report,
+  shareNote,
+  onShare,
+}: {
+  setup: RaceSetup;
+  state: GameEngineState;
+  report: RaceReport | null;
+  shareNote: { text: string; copied: boolean } | null;
+  onShare: () => void;
+}) {
+  const outcome = raceOutcomeOf(state);
+  const verdict = judgeRace(setup.category, outcome);
+  const splits = outcome.lapSplits;
+  const bestLap = splits.length > 0 ? Math.min(...splits) : null;
+  const bonkedS = Math.round((state.bonkedMs ?? 0) / 1000);
+  const board =
+    report?.board ?? loadBoard(setup.course, setup.category, setup.seed);
+  const verdictText =
+    verdict.result === "time"
+      ? formatRaceTime(outcome.timeMs)
+      : `${verdict.result.toUpperCase()} · ${verdict.reason}`;
+  return (
+    <section
+      aria-label="Race report"
+      className="mt-4 min-w-0 border-t border-white/10 pt-3 font-mono text-[11px] tabular-nums text-zinc-300"
+    >
+      <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+        {RACE_COURSE_NAMES[setup.course]} ·{" "}
+        {RACE_CATEGORY_INFO[setup.category].name}
+      </p>
+      <p className="mt-1 text-base font-bold text-zinc-50">{verdictText}</p>
+      <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
+        <dt className="text-zinc-400">Best lap</dt>
+        <dd>{bestLap === null ? "None" : formatRaceTime(bestLap)}</dd>
+        <dt className="text-zinc-400">Bonked</dt>
+        <dd>{bonkedS} s</dd>
+        <dt className="text-zinc-400">Laps</dt>
+        <dd className="min-w-0 break-words">
+          {splits.length > 0
+            ? splits.map((ms) => formatRaceTime(ms)).join(" · ")
+            : "None yet"}
+        </dd>
+      </dl>
+      {report && verdict.result === "time" && (
+        <p className="mt-2 text-zinc-100">
+          {report.place > 0
+            ? `Place ${report.place} on this board${report.record ? ` · ${report.record}` : ""}`
+            : "Off the board: the top five are kept"}
+        </p>
+      )}
+      <ol aria-label="This device's board" className="mt-2 grid gap-0.5">
+        {board.length === 0 && <li className="text-zinc-500">No times yet</li>}
+        {board.map((entry, i) => (
+          <li
+            key={`${entry.at}-${entry.timeMs}`}
+            aria-current={report?.place === i + 1 ? "true" : undefined}
+            className={
+              report?.place === i + 1 ? "text-amber-200" : "text-zinc-400"
+            }
+          >
+            {i + 1}. {formatRaceTime(entry.timeMs)}
+          </li>
+        ))}
+      </ol>
+      {report && (
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={onShare}
+            className="min-h-11 w-full rounded-lg border border-white/[0.08] bg-[#0d0e11] px-3 py-2 text-left text-[11px] text-zinc-200 transition-colors hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+          >
+            Share result
+          </button>
+          {shareNote && (
+            <p
+              className="mt-2 break-words text-[11px] text-zinc-300"
+              role="status"
+            >
+              {shareNote.copied
+                ? "Copied to the clipboard."
+                : `Copy this result: ${shareNote.text}`}
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
 function RunSplitsSummary({
   state,
   previous,
@@ -394,7 +558,23 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     getDevModeSnapshot,
     getDevModeServerSnapshot
   );
-  const runRules: GameRules = devMode ? "dev" : "fitness";
+  const raceMode = useSyncExternalStore(
+    subscribeRacePrefs,
+    readRaceMode,
+    getRaceModeServerSnapshot
+  );
+  const raceCourse = useSyncExternalStore(
+    subscribeRacePrefs,
+    readRaceCourse,
+    getRaceCourseServerSnapshot
+  );
+  const raceCategory = useSyncExternalStore(
+    subscribeRacePrefs,
+    readRaceCategory,
+    getRaceCategoryServerSnapshot
+  );
+  // Races run with Dev Mode off; the stored Dev Mode setting is kept.
+  const runRules: GameRules = devMode && !raceMode ? "dev" : "fitness";
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
@@ -469,6 +649,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // and whether the player put the result card away to inspect the watch.
   const [runStartBest, setRunStartBest] = useState(effectiveHighScore);
   const [resultDismissed, setResultDismissed] = useState(false);
+  const [raceReport, setRaceReport] = useState<RaceReport | null>(null);
+  // The share text of the last race when the clipboard is unavailable, or the
+  // copied note once it is copied (#2019).
+  const [shareNote, setShareNote] = useState<{
+    text: string;
+    copied: boolean;
+  } | null>(null);
   const isDraggingFogRef = useRef(false);
   // A gesture that meets fog at any point is a wipe for its whole duration,
   // so clearing the last of the fog mid-drag never turns it into a swipe
@@ -582,20 +769,57 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     []
   );
 
+  // Race refs (#2019): the fixed-step carry, and the id of the current run so a
+  // race is saved once per run.
+  const raceCarryRef = useRef(0);
+  const raceRunIdRef = useRef(0);
+  // The day the race was picked: a quick restart past midnight keeps its seed,
+  // so the share text keeps that day too.
+  const raceDayRef = useRef(new Date(0));
   // A new run. The engine gets this device's best split per lap so it can
   // colour the lap banners; the bests are read here, before the run saves.
-  const beginRun = useCallback(() => {
-    const started = startGame(
-      setRules(stateRef.current, runRules),
+  // A race takes the picked course and category, or the same race again when
+  // `restart` is given. The fixed-step carry and the race report start over.
+  const beginRun = useCallback(
+    (restart?: RaceSetup) => {
+      const today = new Date();
+      const race =
+        restart ??
+        (raceMode ? raceSetup(raceCourse, raceCategory, today) : undefined);
+      if (!restart) raceDayRef.current = today;
+      const started = startGame(
+        setRules(stateRef.current, runRules),
+        deviceTarget,
+        runTuning,
+        race
+      );
+      raceCarryRef.current = 0;
+      raceRunIdRef.current += 1;
+      setRaceReport(null);
+      setShareNote(null);
+      applyTransition(() => ({
+        ...started,
+        bestSplits: loadBests(splitsKeyOf(started)).splits,
+      }));
+      if (race && !restart) {
+        const info = RACE_CATEGORY_INFO[race.category];
+        announce(
+          `Race: ${RACE_COURSE_NAMES[race.course]}, ${info.name}. ${info.rule}`,
+          "polite"
+        );
+      }
+    },
+    [
+      applyTransition,
+      runRules,
       deviceTarget,
-      runTuning
-    );
-    applyTransition(() => ({
-      ...started,
-      bestSplits: loadBests(bestsKey(started.device, isFitnessRun(started)))
-        .splits,
-    }));
-  }, [applyTransition, runRules, deviceTarget, runTuning]);
+      runTuning,
+      raceMode,
+      raceCourse,
+      raceCategory,
+      announce,
+    ]
+  );
 
   // The bests the last run was judged against, read just before that run was
   // saved, so the result card can show the difference. Keyed on the run.
@@ -604,11 +828,56 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     previous: GarminBests;
   } | null>(null);
   const savedRunSeedRef = useRef<number | null>(null);
+  // Each race is saved once per run, keyed by the run id (declared with the
+  // race refs above beginRun): the same course is raced again and again, so
+  // its seed alone would not tell the runs apart.
+  const savedRaceRunRef = useRef(-1);
   // Each run's bests are saved once, when it ends: the 5K is finished
   // (summary), or the run crashed or lost power. A crash keeps its splits but
   // never sets a total.
   useEffect(() => {
     if (!isRunOver(gameState)) return;
+    if (gameState.race) {
+      // A race keeps its own splits, and a judged time goes on its board.
+      const runId = raceRunIdRef.current;
+      if (savedRaceRunRef.current === runId) return;
+      savedRaceRunRef.current = runId;
+      const race = gameState.race;
+      const key = splitsKeyOf(gameState);
+      saveBests(
+        key,
+        mergeBests(
+          loadBests(key),
+          gameState.lapSplits ?? [],
+          gameState.runClockMs ?? 0,
+          gameState.gameState === "summary"
+        )
+      );
+      const outcome = raceOutcomeOf(gameState);
+      const verdict = judgeRace(race.category, outcome);
+      const priorBoard = loadBoard(race.course, race.category, race.seed);
+      const date = new Date();
+      const saved =
+        verdict.result === "time"
+          ? saveResult(race, outcome.timeMs, date)
+          : null;
+      const place = saved?.place ?? 0;
+      const record =
+        verdict.result === "time"
+          ? raceRecordOf(place, outcome.timeMs, priorBoard[0]?.timeMs ?? null)
+          : null;
+      setRaceReport({
+        setup: race,
+        outcome,
+        verdict,
+        place,
+        record,
+        board: saved?.board ?? priorBoard,
+        date: raceDayRef.current,
+      });
+      announce(raceOverText(verdict, outcome, place, record), "assertive");
+      return;
+    }
     const seed = gameState.courseSeed ?? 0;
     if (savedRunSeedRef.current === seed) return;
     savedRunSeedRef.current = seed;
@@ -625,7 +894,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     );
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setRunRecord({ seed, previous });
-  }, [gameState]);
+  }, [gameState, announce]);
 
   // Audio Beep Helpers (Authentic Garmin 1200-1600Hz Piezo)
   const playBeep = useCallback(
@@ -826,6 +1095,62 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
   }, [beginRun, playButtonTone, playSuccess, recordEvent, applyTransition]);
 
+  // Quick restart (#2019): while a race is paused, Backspace runs the same
+  // race again, on the same course seed.
+  const restartRace = useCallback(() => {
+    const current = stateRef.current;
+    if (current.gameState !== "paused" || !current.race) return;
+    triggerHaptic(20);
+    playButtonTone();
+    telemetryRef.current.reset();
+    setTelemetryCount(0);
+    runStartedAtRef.current = Date.now();
+    beginRun(current.race);
+    announce("Race restarted.", "polite");
+  }, [beginRun, playButtonTone, announce]);
+
+  // Race Mode picker (#2019): set while idle or after a run ends.
+  const handleSetRaceMode = useCallback(
+    (on: boolean) => {
+      writeRacePrefAndNotify(RACE_MODE_KEY, on ? "1" : "0");
+      announce(
+        on
+          ? "Race Mode on. The next run is a race on the picked course, with Dev Mode off."
+          : "Training Run. The next run lays a random course.",
+        "polite"
+      );
+    },
+    [announce]
+  );
+  const handleSetRaceCourse = useCallback((course: RaceCourse) => {
+    writeRacePrefAndNotify(RACE_COURSE_KEY, course);
+  }, []);
+  const handleSetRaceCategory = useCallback((category: RaceCategory) => {
+    writeRacePrefAndNotify(RACE_CATEGORY_KEY, category);
+  }, []);
+
+  // Copies the race's share text, or shows it when the clipboard is unavailable.
+  const handleShareRace = useCallback(
+    async (report: RaceReport) => {
+      const text = shareText(
+        report.setup,
+        report.verdict,
+        report.outcome,
+        report.date
+      );
+      try {
+        await copyToClipboard(text);
+        setShareNote({ text, copied: true });
+        announce("Result copied.", "polite");
+        return;
+      } catch {
+        // Clipboard blocked: fall through to the visible text.
+      }
+      setShareNote({ text, copied: false });
+    },
+    [announce]
+  );
+
   // Quick Fog Wipe (W / Touch / Mouse)
   const handleWipeFog = useCallback(
     (canvasX = CANVAS_SIZE / 2, canvasY = CANVAS_SIZE / 2) => {
@@ -997,6 +1322,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       handleToggleLight();
     } else if (e.key.toLowerCase() === "w") {
       handleWipeFog();
+    } else if (
+      e.key === "Backspace" &&
+      status === "paused" &&
+      stateRef.current.race
+    ) {
+      restartRace();
     } else if (e.key === "Backspace" || e.key.toLowerCase() === "g") {
       handleForceGc();
     } else if (e.key.toLowerCase() === "x") {
@@ -1243,11 +1574,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     if (gameState.gameState === "crashed" && !hasAlertedCrashRef.current) {
       hasAlertedCrashRef.current = true;
       const errorType = gameState.crashReport?.errorType || "Out Of Memory";
-      const msg = fitnessRun
-        ? `Run over: ${causeLabel(gameState, errorType)}. Training Status: ${trainingStatus(gameState.stage ?? 1, false)}. Finisher medals: ${gameState.medalsFound?.length ?? 0} of ${STAGE_COUNT * MEDALS_PER_STAGE}.`
-        : `System crash: ${errorType}. ${gameState.crashReport?.file ? "File: " + gameState.crashReport.file : ""}`;
-      setAlertMessage(msg);
-      announce(msg, "assertive");
+      // A race announces its own end, with its verdict (see the save effect).
+      if (!gameState.race) {
+        const msg = fitnessRun
+          ? `Run over: ${causeLabel(gameState, errorType)}. Training Status: ${trainingStatus(gameState.stage ?? 1, false)}. Finisher medals: ${gameState.medalsFound?.length ?? 0} of ${STAGE_COUNT * MEDALS_PER_STAGE}.`
+          : `System crash: ${errorType}. ${gameState.crashReport?.file ? "File: " + gameState.crashReport.file : ""}`;
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setAlertMessage(msg);
+        announce(msg, "assertive");
+      }
       triggerHaptic([50, 50, 50]);
     } else if (gameState.gameState !== "crashed") {
       hasAlertedCrashRef.current = false;
@@ -1409,17 +1744,36 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       // Update simulation in mutable ref if active
       if (stateRef.current.gameState === "playing") {
         const prevStatus = stateRef.current.gameState;
+        // A race steps at a fixed 1/60 s, so a fast or slow monitor cannot
+        // change its time (#2019). Each frame runs whole steps; the rest is
+        // carried. A Training Run takes one step of the frame's delta.
+        const fixed = stateRef.current.race
+          ? fixedSteps(raceCarryRef.current, deltaMs)
+          : null;
+        if (fixed) raceCarryRef.current = fixed.carryMs;
+        const stepCount = fixed ? fixed.steps : 1;
+        const stepMs = fixed ? FIXED_STEP_MS : deltaMs;
         // On milestone status transition, sync the throttled React UI
         // immediately. Otherwise, sync low-frequency React UI throttled to
-        // 10 FPS (every 6 frames).
-        const nextState = applyTransition(
-          (state) => updateGameSimulation(state, deltaMs),
-          (next) => {
-            if (next.gameState !== prevStatus) return true;
-            frameCountRef.current++;
-            return frameCountRef.current % 6 === 0;
-          }
-        );
+        // 10 FPS (every 6 frames). Intermediate race steps sync only with the
+        // frame's last step.
+        let nextState = stateRef.current;
+        for (
+          let i = 0;
+          i < stepCount && nextState.gameState === "playing";
+          i++
+        ) {
+          const last = i === stepCount - 1;
+          nextState = applyTransition(
+            (state) => updateGameSimulation(state, stepMs),
+            (next) => {
+              if (next.gameState !== prevStatus) return true;
+              if (!last) return false;
+              frameCountRef.current++;
+              return frameCountRef.current % 6 === 0;
+            }
+          );
+        }
 
         const recorder = telemetryRef.current;
         const sampled = recorder.advance(nextState, deltaMs);
@@ -1604,16 +1958,25 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     gameState.gameState === "shutdown" ||
     gameState.gameState === "summary";
   const crashType = gameState.crashReport?.errorType ?? "Out Of Memory";
-  const endTitle =
-    gameState.gameState === "shutdown"
+  // A race's result card reports its verdict in place of the Training Status.
+  const raceVerdict =
+    gameState.race && runEnded
+      ? judgeRace(gameState.race.category, raceOutcomeOf(gameState))
+      : null;
+  const endTitle = raceVerdict
+    ? "RACE REPORT"
+    : gameState.gameState === "shutdown"
       ? "BROWNOUT SHUTDOWN"
       : gameState.gameState === "crashed"
         ? fitnessView
           ? causeLabel(gameState, crashType)
           : (CRASH_LABELS[crashType]?.title ?? "APP CRASHED")
         : "5K COMPLETE";
-  const endMessage =
-    gameState.gameState === "shutdown"
+  const endMessage = raceVerdict
+    ? raceVerdict.result === "time"
+      ? `Finished in ${formatRaceTime(gameState.runClockMs ?? 0)}. The board and your splits are below.`
+      : `${raceVerdict.result.toUpperCase()}: ${raceVerdict.reason}. The board and your splits are below.`
+    : gameState.gameState === "shutdown"
       ? `${CRASH_LABELS["Power Loss"].hint} Power loss score penalty applied (-50 PTS).`
       : gameState.gameState === "crashed"
         ? fitnessView
@@ -1927,6 +2290,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             handleToggleDevMode();
             returnFocusAfterPointerClick(e);
           }}
+          raceMode={raceMode}
+          raceCourse={raceCourse}
+          raceCategory={raceCategory}
+          raceLocked={
+            gameState.gameState === "playing" ||
+            gameState.gameState === "paused"
+          }
+          onSetRaceMode={handleSetRaceMode}
+          onSetRaceCourse={handleSetRaceCourse}
+          onSetRaceCategory={handleSetRaceCategory}
         >
           {runEnded && !resultDismissed && (
             <ResultCard
@@ -1941,7 +2314,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                       : "Crashed"
                     : "Finished"
               }
-              verdict={gameState.gameState === "summary" ? "win" : "loss"}
+              verdict={
+                raceVerdict
+                  ? raceVerdict.result === "time"
+                    ? "win"
+                    : "loss"
+                  : gameState.gameState === "summary"
+                    ? "win"
+                    : "loss"
+              }
               preventScroll
               message={endMessage}
               stats={endStats}
@@ -1960,6 +2341,17 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 },
               }}
             >
+              {gameState.race && (
+                <RaceReportCard
+                  setup={gameState.race}
+                  state={gameState}
+                  report={raceReport}
+                  shareNote={shareNote}
+                  onShare={() => {
+                    if (raceReport) void handleShareRace(raceReport);
+                  }}
+                />
+              )}
               <RunSplitsSummary
                 state={gameState}
                 previous={

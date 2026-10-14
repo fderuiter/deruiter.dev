@@ -22,6 +22,14 @@ import {
   bodyBatteryLabel,
 } from "@/lib/garmin-body-battery";
 import { trainingEffectLabel } from "@/lib/garmin-culture";
+import {
+  RACE_CATEGORIES,
+  RACE_CATEGORY_INFO,
+  RACE_COURSES,
+  RACE_COURSE_NAMES,
+  type RaceCategory,
+  type RaceCourse,
+} from "@/lib/garmin-race";
 import type { WatchBezelTheme } from "./WatchHardware";
 import {
   GROUND_STRIP_FIELDS,
@@ -205,6 +213,94 @@ const segmentClass = (selected: boolean) =>
       : "text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
   }`;
 
+/** A race choice: a 44 px target, amber when picked. */
+const raceChoiceClass =
+  "min-h-11 w-full rounded-lg border px-2.5 py-2 text-left text-[11px] transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
+
+interface ChoiceOption<T extends string> {
+  value: T;
+  label: string;
+  title?: string;
+}
+
+interface ChoiceGroupProps<T extends string> {
+  /** The accessible name of the group. */
+  label: string;
+  options: readonly ChoiceOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  disabled: boolean;
+  /** Columns on a wide panel; the group stacks when it is narrower. */
+  columns: 1 | 2;
+  describedBy?: string;
+}
+
+/**
+ * A radio group with roving focus: one tab stop, arrow keys move and pick.
+ * Each choice is a button with role radio and aria-checked.
+ */
+function ChoiceGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  disabled,
+  columns,
+  describedBy,
+}: ChoiceGroupProps<T>) {
+  const onKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const step =
+      e.key === "ArrowRight" || e.key === "ArrowDown"
+        ? 1
+        : e.key === "ArrowLeft" || e.key === "ArrowUp"
+          ? -1
+          : 0;
+    if (step === 0) return;
+    e.preventDefault();
+    const at = options.findIndex((o) => o.value === value);
+    const next = options[(at + step + options.length) % options.length];
+    onChange(next.value);
+    const group = e.currentTarget.parentElement;
+    const target = group?.querySelector<HTMLElement>(
+      `[data-value="${next.value}"]`
+    );
+    target?.focus();
+  };
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      aria-describedby={describedBy}
+      className={`grid gap-1.5 ${columns === 2 ? "grid-cols-2" : "grid-cols-1"}`}
+    >
+      {options.map((option) => {
+        const checked = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            data-value={option.value}
+            aria-checked={checked}
+            tabIndex={checked ? 0 : -1}
+            disabled={disabled}
+            title={option.title}
+            onClick={() => onChange(option.value)}
+            onKeyDown={onKeyDown}
+            className={`${raceChoiceClass} ${
+              checked
+                ? "border-amber-400/60 bg-amber-500/[0.08] text-amber-100"
+                : "border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]"
+            }`}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 const toolClass =
   "min-h-[32px] w-full rounded-lg border px-2.5 py-1.5 text-left text-[10px] transition-colors active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100";
 
@@ -226,6 +322,15 @@ interface CompanionPanelProps {
   /** Whether the panel shows the fitness readouts rather than the firmware ones. */
   fitnessView: boolean;
   onToggleDevMode: (e: React.MouseEvent) => void;
+  /** Race Mode (#2019) is picked: races run on a seeded course with Dev Mode off. */
+  raceMode: boolean;
+  raceCourse: RaceCourse;
+  raceCategory: RaceCategory;
+  /** The race picker is locked while a run is playing or paused. */
+  raceLocked: boolean;
+  onSetRaceMode: (on: boolean) => void;
+  onSetRaceCourse: (course: RaceCourse) => void;
+  onSetRaceCategory: (category: RaceCategory) => void;
   /** Samples recorded for the current run. */
   telemetryCount: number;
   onExportCsv: () => void;
@@ -258,6 +363,13 @@ export function CompanionPanel({
   devMode,
   fitnessView,
   onToggleDevMode,
+  raceMode,
+  raceCourse,
+  raceCategory,
+  raceLocked,
+  onSetRaceMode,
+  onSetRaceCourse,
+  onSetRaceCategory,
   telemetryCount,
   onExportCsv,
   onExportFit,
@@ -541,20 +653,108 @@ export function CompanionPanel({
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Run mode
+          </legend>
+          <div className="grid gap-2">
+            <ChoiceGroup<"training" | "race">
+              label="Run mode"
+              value={raceMode ? "race" : "training"}
+              disabled={raceLocked}
+              columns={2}
+              onChange={(value) => onSetRaceMode(value === "race")}
+              options={[
+                {
+                  value: "training",
+                  label: "Training Run",
+                  title: "A random course every run.",
+                },
+                {
+                  value: "race",
+                  label: "Race Mode",
+                  title:
+                    "The same seeded course every attempt, with Dev Mode off.",
+                },
+              ]}
+            />
+            {raceMode && (
+              <>
+                <p className="text-[10px] text-zinc-400">
+                  Races run with Dev Mode off.
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Course
+                </p>
+                <ChoiceGroup<RaceCourse>
+                  label="Race course"
+                  value={raceCourse}
+                  disabled={raceLocked}
+                  columns={1}
+                  onChange={onSetRaceCourse}
+                  options={RACE_COURSES.map((course) => ({
+                    value: course,
+                    label: RACE_COURSE_NAMES[course],
+                    title:
+                      course === "daily"
+                        ? "Today's course: the same for everyone, new at local midnight."
+                        : "The same course every attempt.",
+                  }))}
+                />
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Category
+                </p>
+                <ChoiceGroup<RaceCategory>
+                  label="Race category"
+                  value={raceCategory}
+                  disabled={raceLocked}
+                  columns={1}
+                  onChange={onSetRaceCategory}
+                  describedBy="race-category-rule"
+                  options={RACE_CATEGORIES.map((category) => ({
+                    value: category,
+                    label: RACE_CATEGORY_INFO[category].name,
+                  }))}
+                />
+                <p
+                  id="race-category-rule"
+                  className="text-[10px] text-zinc-400"
+                >
+                  {RACE_CATEGORY_INFO[raceCategory].rule}
+                </p>
+              </>
+            )}
+            {raceLocked && (
+              <p className="text-[10px] text-zinc-400">
+                Run mode changes once this run ends.
+              </p>
+            )}
+          </div>
+        </fieldset>
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
             Developer tools
           </legend>
           <div className="grid gap-1.5">
             <button
               type="button"
               role="switch"
-              aria-checked={devMode}
+              aria-checked={devMode && !raceMode}
               aria-label="Dev Mode"
+              aria-disabled={raceMode}
+              disabled={raceMode}
               onClick={onToggleDevMode}
-              title="Brings back the firmware rules: heap, garbage collection, flash, battery and fog. Applies from the next run."
+              title={
+                raceMode
+                  ? "Races run with Dev Mode off. Your Dev Mode setting is kept."
+                  : "Brings back the firmware rules: heap, garbage collection, flash, battery and fog. Applies from the next run."
+              }
               className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
             >
-              Dev Mode: {devMode ? "On" : "Off"}
-              {fitnessView === devMode && state.gameState !== "idle"
+              Dev Mode: {devMode && !raceMode ? "On" : "Off"}
+              {raceMode ? " (races are off)" : ""}
+              {!raceMode &&
+              fitnessView === devMode &&
+              state.gameState !== "idle"
                 ? " (next run)"
                 : ""}
             </button>

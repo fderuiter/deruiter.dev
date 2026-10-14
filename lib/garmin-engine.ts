@@ -3,6 +3,7 @@
  * Handles physics, memory allocation lifecycle, GC mechanics,
  * thermal overheating, crash reports, and 16-color pixel canvas rendering.
  */
+import type { RaceSetup } from "./garmin-race";
 import { clamp } from "./game-utils";
 import {
   BLOCK_SIZE,
@@ -17,6 +18,7 @@ import {
   isOverGap,
   poleBonus,
   pruneCourse,
+  courseRandom,
   stageStartX,
   type CourseCheckpoint,
   type CourseLayout,
@@ -656,6 +658,16 @@ export interface GameEngineState {
    * Block, ended by its timer, a lost life or a stage clear; null otherwise.
    */
   secondWind?: SecondWind | null;
+  /** The race being run (#2019): its course seed and category. Null or absent for a Training Run. */
+  race?: RaceSetup | null;
+  /** Race game time in ms: advances on every playing tick, GPS lock included, and stops while paused (#2019). */
+  simMs?: number;
+  /** Free lane Kudos that went by uncollected in this race (#2019). */
+  kudosMissed?: number;
+  /** A power-up, gear or the training buddy was taken in this race (#2019). */
+  gearTaken?: boolean;
+  /** Time spent bonked in this race, in ms (#2019). */
+  bonkedMs?: number;
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -689,6 +701,43 @@ export function paceMeters(
 
 export function isFitnessRun(state: Pick<GameEngineState, "rules">): boolean {
   return state.rules === "fitness";
+}
+
+/** The clock a state runs on: a race's simulated time (#2019), else wall time. */
+function clockNow(state: Pick<GameEngineState, "race" | "simMs">): number {
+  return state.race ? (state.simMs ?? 0) : Date.now();
+}
+
+/** The random draws of a tick: a race's seeded stream (#2019), else Math.random. */
+function randomFor(
+  state: Pick<GameEngineState, "race" | "simMs">
+): () => number {
+  return state.race
+    ? courseRandom((state.race.seed ^ Math.floor(state.simMs ?? 0)) >>> 0)
+    : Math.random;
+}
+
+/** Lane Kudos that have scrolled out behind the runner uncollected (#2019). */
+function missedKudos(course: CourseLayout, cameraX: number): number {
+  const gone = (x: number) => x <= cameraX - 40;
+  return (
+    course.kudos.filter((k) => !k.fromBrick && gone(k.x + KUDOS_RADIUS))
+      .length +
+    course.blocks.filter((b) => b.fromKudos && gone(b.x + BLOCK_SIZE)).length
+  );
+}
+
+/**
+ * A race's freshly laid stage after a lost life keeps only the lane Kudos
+ * still to come on `live`, so a Kudos already collected or counted missed is
+ * neither offered nor counted again (#2019).
+ */
+function keepLiveKudos(fresh: CourseLayout, live: CourseLayout): CourseLayout {
+  const ids = new Set([
+    ...live.kudos.map((k) => k.id),
+    ...live.blocks.filter((b) => b.fromKudos).map((b) => b.id),
+  ]);
+  return { ...fresh, kudos: fresh.kudos.filter((k) => ids.has(k.id)) };
 }
 
 /**
@@ -1037,19 +1086,24 @@ function stageSetup(
 export function startGame(
   state: GameEngineState,
   device?: DeviceTarget,
-  tuning?: GarminRunTuning
+  tuning?: GarminRunTuning,
+  race?: RaceSetup
 ): GameEngineState {
   const targetDevice = device || state.device;
   const initial = createInitialState(targetDevice, state.highScore);
   const runTuning = tuning ?? state.tuning;
-  const now = Date.now();
-  const courseSeed = Math.floor(Math.random() * 1e9);
-  const runRules = state.pendingRules ?? state.rules;
+  // A race runs its own seed on the simulated clock, under fitness rules (#2019).
+  const now = race ? 0 : Date.now();
+  const courseSeed = race ? race.seed : Math.floor(Math.random() * 1e9);
+  const runRules = race ? "fitness" : (state.pendingRules ?? state.rules);
   const fitness = runRules === "fitness";
   return {
     ...initial,
     ...(runTuning ? { tuning: runTuning } : {}),
     ...(runRules ? { rules: runRules } : {}),
+    ...(race
+      ? { race, simMs: 0, kudosMissed: 0, gearTaken: false, bonkedMs: 0 }
+      : {}),
     ...(fitness
       ? {
           bodyBattery: FRESH_BODY_BATTERY,
@@ -1106,7 +1160,7 @@ export function startGame(
  */
 export function pauseGame(
   state: GameEngineState,
-  now: number = Date.now()
+  now: number = clockNow(state)
 ): GameEngineState {
   if (state.gameState !== "playing") return state;
   return { ...state, gameState: "paused", pausedAt: now };
@@ -1119,10 +1173,11 @@ export function pauseGame(
  */
 export function resumeGame(
   state: GameEngineState,
-  now: number = Date.now()
+  now: number = clockNow(state)
 ): GameEngineState {
   if (state.gameState !== "paused") return state;
-  const pausedFor = Math.max(0, now - (state.pausedAt ?? now));
+  // A race's clock stops while paused, so nothing shifts (#2019).
+  const pausedFor = state.race ? 0 : Math.max(0, now - (state.pausedAt ?? now));
   return {
     ...state,
     gameState: "playing",
@@ -1530,7 +1585,7 @@ export function isCollectibleVariable(v: MemoryVariable): boolean {
  */
 export function jettisonOldestVariable(
   state: GameEngineState,
-  now: number = Date.now()
+  now: number = clockNow(state)
 ): {
   state: GameEngineState;
   popped?: MemoryVariable;
@@ -1580,7 +1635,7 @@ export function jettisonOldestVariable(
  */
 export function triggerGarbageCollection(
   state: GameEngineState,
-  now: number = Date.now()
+  now: number = clockNow(state)
 ): {
   state: GameEngineState;
   freedKb: number;
@@ -1610,7 +1665,7 @@ export function triggerGarbageCollection(
   // Calculate garbage memory to free (2.0 to 4.0 KB, capped by current non-essential variables)
   const tuning = state.tuning ?? DEFAULT_RUN_TUNING;
   const targetFreedKb = Number(
-    (2.0 + Math.random() * 2.0 + tuning.gcBonusFreedKb).toFixed(2)
+    (2.0 + randomFor(state)() * 2.0 + tuning.gcBonusFreedKb).toFixed(2)
   );
   let accumulatedFreed = 0;
   const remainingVars: MemoryVariable[] = [];
@@ -1657,11 +1712,11 @@ export function allocateVariable(
   const ramLimit = DEVICE_PROFILES[state.device].ramLimitKb;
 
   const newVar: MemoryVariable = {
-    id: Date.now() + Math.random(),
-    name: name || `${type}_${Math.floor(Math.random() * 900 + 100)}`,
+    id: clockNow(state) + randomFor(state)(),
+    name: name || `${type}_${Math.floor(randomFor(state)() * 900 + 100)}`,
     type,
     sizeKb,
-    allocatedAt: Date.now(),
+    allocatedAt: clockNow(state),
   };
 
   if (newRam > ramLimit) {
@@ -1713,10 +1768,10 @@ export function allocateFlashVariable(
   const flashLimit = DEVICE_PROFILES[state.device].flashLimitKb;
 
   const newVar: FlashVariable = {
-    id: Date.now() + Math.random(),
-    name: name || `nv_data_${Math.floor(Math.random() * 900 + 100)}.bin`,
+    id: clockNow(state) + randomFor(state)(),
+    name: name || `nv_data_${Math.floor(randomFor(state)() * 900 + 100)}.bin`,
     sizeKb,
-    allocatedAt: Date.now(),
+    allocatedAt: clockNow(state),
   };
 
   if (newFlash > flashLimit) {
@@ -2088,7 +2143,7 @@ function stepThrownMedBall(
 function loseLife(
   state: GameEngineState,
   report: CrashReport,
-  now: number = Date.now()
+  now: number = clockNow(state)
 ): GameEngineState {
   const lives = (state.lives ?? 1) - 1;
   const toll = hitToll(state);
@@ -2160,7 +2215,12 @@ function loseLife(
     spinJump: false,
     wallSide: false,
     wallJumpReady: false,
-    course: fresh.course,
+    course: state.race
+      ? keepLiveKudos(
+          fresh.course,
+          state.bonusRoom?.returnCourse ?? state.course ?? EMPTY_COURSE
+        )
+      : fresh.course,
     props: fresh.props,
     foes,
     foeShots: [],
@@ -2545,14 +2605,25 @@ export function updateGameSimulation(
   state: GameEngineState,
   deltaMs: number
 ): GameEngineState {
-  const next = stepSimulation(state, deltaMs);
+  const stepped = stepSimulation(state, deltaMs);
+  const safeDelta = Number.isFinite(deltaMs) ? clamp(deltaMs, 0, 5000) : 0;
+  // A race's own clocks run on every playing tick, GPS lock included (#2019).
+  const next: GameEngineState =
+    state.race && state.gameState === "playing"
+      ? {
+          ...stepped,
+          simMs: (state.simMs ?? 0) + safeDelta,
+          ...(state.bodyBattery?.bonked
+            ? { bonkedMs: (state.bonkedMs ?? 0) + safeDelta }
+            : {}),
+        }
+      : stepped;
   // The run clock counts game time while the run is live: not while paused
   // or over, and not while the fitness run waits for GPS (#2018).
   const clockRunning =
     state.gameState === "playing" &&
     !(isFitnessRun(state) && (state.gpsMs ?? 0) > 0);
   if (!clockRunning) return next;
-  const safeDelta = Number.isFinite(deltaMs) ? clamp(deltaMs, 0, 5000) : 0;
   return {
     ...next,
     runClockMs: (state.runClockMs ?? 0) + safeDelta,
@@ -2620,6 +2691,7 @@ function stepSimulation(
   deltaMs: number
 ): GameEngineState {
   const fitness = isFitnessRun(state);
+  const rand = randomFor(state);
   if (state.gameState !== "playing" || (!fitness && state.battery <= 0)) {
     if (state.gameState === "playing" && state.battery <= 0) {
       const penalty = 50;
@@ -2959,6 +3031,10 @@ function stepSimulation(
   let lives = state.lives;
   let starMs = Math.max(0, (state.starMs ?? 0) - safeDelta);
   let pickups = state.pickups ?? [];
+  // Race-only tallies (#2019): a Training Run keeps neither.
+  const racing = state.race != null;
+  let kudosMissed = state.kudosMissed ?? 0;
+  let gearTaken = state.gearTaken === true;
   // The runner's box grows when Buff; its top is playerY, its feet stay put.
   const h = playerHeightFor(power);
   let stage = state.stage ?? 1;
@@ -3023,7 +3099,12 @@ function stepSimulation(
     const blocks = course.blocks.slice();
     blocks[index] = { ...block, used: true };
     course = { ...course, blocks };
-    const reward = blockReward(block.contents, power);
+    // A No Gear race pays Kudos for gear, so no block forces gear on the
+    // runner (#2019).
+    const reward =
+      state.race?.category === "nogear"
+        ? "kudos"
+        : blockReward(block.contents, power);
     if (reward === "kudos") {
       kudos += 1;
       score += KUDOS_SCORE + SYNC_BLOCK_SCORE;
@@ -3382,6 +3463,7 @@ function stepSimulation(
         kept.push(p);
         continue;
       }
+      gearTaken = true;
       if (p.kind === "buddy") {
         // A hatched buddy scores; a runaway caught again gives no points.
         // Mounting shows "Good boy!" once; a rider has nothing more to do.
@@ -3600,6 +3682,7 @@ function stepSimulation(
       ttlMs: 1600,
     });
   }
+  if (racing && !state.bonusRoom) kudosMissed += missedKudos(course, cameraX);
   course = pruneCourse(course, cameraX);
   props = pruneProps(props, cameraX);
 
@@ -3612,6 +3695,7 @@ function stepSimulation(
   if (bonusRoom && !secretNext && cameraX + PLAYER_X >= bonusRoom.endX) {
     roomExit = bonusRoom;
     const exitCameraX = bonusRoom.exitX - PLAYER_X;
+    if (racing) kudosMissed += missedKudos(bonusRoom.returnCourse, exitCameraX);
     course = pruneCourse(bonusRoom.returnCourse, exitCameraX);
     props = pruneProps(bonusRoom.returnProps, exitCameraX);
     bonusRoom = null;
@@ -3747,6 +3831,7 @@ function stepSimulation(
     spinJump: spinJumping && !landed,
     wallSide,
     wallJumpReady,
+    ...(racing ? { kudosMissed, gearTaken } : {}),
     ...(fitness
       ? {
           bodyBattery,
@@ -3770,6 +3855,17 @@ function stepSimulation(
     // starts the next stage at its start, clear of the room's items (#2025).
     return {
       ...updatedState,
+      // The lane Kudos the shortcut skips are missed (#2019).
+      ...(racing && state.bonusRoom
+        ? {
+            kudosMissed:
+              kudosMissed +
+              missedKudos(
+                state.bonusRoom.returnCourse,
+                stageStartX(stage) + 40
+              ),
+          }
+        : {}),
       distanceMeters: stageStartX(stage) / PX_PER_METER,
       playerY: GROUND_Y - playerHeightFor(power),
       playerVy: 0,
@@ -3853,7 +3949,7 @@ function stepSimulation(
     };
   }
 
-  const now = Date.now();
+  const now = clockNow(state);
   // The app allocates faster, bugs arrive sooner and move quicker as the run
   // goes on, reaching full difficulty after DIFFICULTY_RAMP_METERS (#1320).
   const ramp = getDifficultyRamp(nextDistance);
@@ -3867,7 +3963,7 @@ function stepSimulation(
     (1 - 0.6 * ramp);
   if (!fitness && now - state.lastAllocTime > allocInterval) {
     const types: VariableType[] = ["int", "float", "string", "array"];
-    const chosenType = types[Math.floor(Math.random() * types.length)];
+    const chosenType = types[Math.floor(rand() * types.length)];
     const allocResult = allocateVariable(updatedState, chosenType);
     if (allocResult.crashed) {
       return allocResult.state;
@@ -4253,7 +4349,7 @@ function stepSimulation(
   // Early stages leave room to learn the course before the bugs crowd in.
   const stageCalm = 1 + 0.12 * (STAGE_COUNT - (updatedState.stage ?? 1));
   const obstacleInterval =
-    (1800 + Math.random() * 1200) *
+    (1800 + rand() * 1200) *
     tuning.obstacleIntervalScale *
     stageCalm *
     (1 - 0.4 * ramp);
@@ -4288,8 +4384,7 @@ function stepSimulation(
             "mem_token",
             "flash_token",
           ];
-      const chosen =
-        obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+      const chosen = obstacleTypes[Math.floor(rand() * obstacleTypes.length)];
 
       let width = 16;
       let height = 20;
@@ -4314,20 +4409,20 @@ function stepSimulation(
         y = GROUND_Y - height;
       } else if (chosen === "mem_token") {
         const types: VariableType[] = ["int", "float", "string", "array"];
-        variablePayload = types[Math.floor(Math.random() * types.length)];
+        variablePayload = types[Math.floor(rand() * types.length)];
         label = variablePayload.slice(0, 3).toUpperCase();
         width = 14;
         height = 14;
-        y = GROUND_Y - 36 - Math.floor(Math.random() * 20); // Floating in air
+        y = GROUND_Y - 36 - Math.floor(rand() * 20); // Floating in air
       } else if (chosen === "flash_token") {
         label = "NV";
         width = 14;
         height = 14;
-        y = GROUND_Y - 32 - Math.floor(Math.random() * 20);
+        y = GROUND_Y - 32 - Math.floor(rand() * 20);
       }
 
       nextObstacles.push({
-        id: Date.now() + Math.random(),
+        id: now + rand(),
         x: CANVAS_SIZE + 10,
         y,
         width,

@@ -453,6 +453,35 @@ describe("bonus room medals and secret exits", () => {
     expect(s.course?.poles.some((p) => p.stage === 2)).toBe(true);
   });
 
+  it("in a race, the lane Kudos a secret exit skips count as missed (#2019)", () => {
+    const door = station({ secretExit: true });
+    const room = enterStation(
+      atDoor(door, {
+        race: { course: "saturday5k", category: "allkudos", seed: SEED },
+        kudosMissed: 0,
+      })
+    );
+    const [pole] = room.course?.poles ?? [];
+    const bonusRoom = room.bonusRoom;
+    if (!bonusRoom) throw new Error("expected a bonus room");
+    const s = step({
+      ...room,
+      bonusRoom: {
+        ...bonusRoom,
+        returnCourse: {
+          ...bonusRoom.returnCourse,
+          kudos: [
+            { id: 1, x: 2000, y: GROUND_Y - 70 },
+            { id: 2, x: 3000, y: GROUND_Y - 70 },
+          ],
+        },
+      },
+      distanceMeters: (pole.x - PLAYER_X - PLAYER_WIDTH + 3) / PX_PER_METER,
+    });
+    expect(s.secretExits).toEqual([1]);
+    expect(s.kudosMissed).toBe(2);
+  });
+
   it("a secret pole and the room's far wall in one long frame: the secret exit wins", () => {
     const door = station({ secretExit: true });
     const room = enterStation(atDoor(door));

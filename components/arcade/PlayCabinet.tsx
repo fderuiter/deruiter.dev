@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from "react";
 import Image from "next/image";
+import "./cabinet-standby.css";
 import {
   IconPlayerPlay,
   IconPower,
@@ -1041,7 +1042,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           /* Static Screen Idle State */
           <>
             {/* Header Status Bar */}
-            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-500 z-10">
+            <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-500 z-10">
               <div className="flex items-center gap-2">
                 <div
                   className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "animate-pulse" : ""}`}
@@ -1054,7 +1055,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                     : "Cabinet Standby"}
                 </span>
               </div>
-              <span className="uppercase tracking-widest text-[9px] text-zinc-400">
+              <span className="cabinet-standby-text uppercase tracking-widest text-[9px] text-zinc-400">
                 FDR PORTFOLIO ARCADE v2.6
               </span>
             </div>
@@ -1068,7 +1069,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 {title}
               </h2>
               {subtitle && (
-                <p className="arcade-accent-text text-[10px] font-mono uppercase tracking-widest mt-2 font-bold">
+                <p className="cabinet-standby-text arcade-accent-text text-[10px] font-mono uppercase tracking-widest mt-2 font-bold">
                   {subtitle}
                 </p>
               )}

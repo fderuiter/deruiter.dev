@@ -1,0 +1,11 @@
+/*
+ * The cabinet's standby text (#2045). Its 9px and 10px labels are too small
+ * to read on a touch screen, so on a coarse pointer they lift to 12px. The
+ * rule lives beside the cabinet, not in app/arcade/arcade.css, because the
+ * Protocol Drift route does not load that stylesheet.
+ */
+@media (pointer: coarse) {
+  .cabinet-standby-text {
+    font-size: 0.75rem;
+  }
+}

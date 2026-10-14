@@ -75,6 +75,8 @@ interface ConveyorDrawOptions {
   stations: readonly { id: CDISCDomain; color: string }[];
   /** Chutes that accept the active, clean folder. */
   acceptingDomains: readonly CDISCDomain[];
+  /** The chute a GCP spot inspection watches, if any (#2053). */
+  watchedDomain?: CDISCDomain | null;
   /** Belt travel, in logical pixels; it only advances while clocks run. */
   beltOffset: number;
   now: number;
@@ -563,7 +565,8 @@ function drawChutes(
   width: number,
   g: ConveyorGeometry,
   stations: readonly { id: CDISCDomain; color: string }[],
-  accepting: readonly CDISCDomain[]
+  accepting: readonly CDISCDomain[],
+  watched: CDISCDomain | null
 ) {
   const slots = getChuteSlots(width, stations.length, g.beltLeft);
   slots.forEach((slot, i) => {
@@ -571,6 +574,25 @@ function drawChutes(
     const top = g.chuteTop;
     const half = slot.mouth / 2;
     const tube = slot.mouth * 0.42;
+
+    // GCP spot inspection: a dashed amber cordon around the watched column
+    // and an "FDA" tag above its mouth (#2053).
+    if (station.id === watched) {
+      ctx.save();
+      ctx.strokeStyle = AMBER;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(slot.x + 3, top - 4, slot.w - 6, g.floorY - top + 4);
+      ctx.restore();
+      roundRect(ctx, slot.cx - 15, top + 40, 30, 13, 3);
+      ctx.fillStyle = AMBER;
+      ctx.fill();
+      ctx.fillStyle = "#0d0e11";
+      ctx.font = monoFont(9);
+      ctx.textAlign = "center";
+      ctx.fillText("FDA", slot.cx, top + 50);
+      ctx.textAlign = "left";
+    }
 
     // Pneumatic tube down into the floor, with a cool glass highlight.
     ctx.fillStyle = "#1a1d24";
@@ -1108,9 +1130,18 @@ export function drawConveyor(
     drawBeltMotion(ctx, g, opts.beltOffset, anim, ratio);
     const chuteKey = `${size}|${fontFamily}|${stations
       .map((s) => `${s.id}${s.color}`)
-      .join(",")}|${opts.acceptingDomains.join(",")}`;
+      .join(
+        ","
+      )}|${opts.acceptingDomains.join(",")}|${opts.watchedDomain ?? ""}`;
     drawLayer(ctx, anim, "chutes", chuteKey, width, height, ratio, (layer) =>
-      drawChutes(layer, width, g, stations, opts.acceptingDomains)
+      drawChutes(
+        layer,
+        width,
+        g,
+        stations,
+        opts.acceptingDomains,
+        opts.watchedDomain ?? null
+      )
     );
     drawChuteFlashes(ctx, width, g, stations, anim, now);
     drawLayer(

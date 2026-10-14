@@ -32,6 +32,22 @@
 
 ***
 
+### signaturesApplied?
+
+> `optional` **signaturesApplied?**: `number`
+
+Signature steps already applied in this dialog.
+
+***
+
+### signaturesRequired?
+
+> `optional` **signaturesRequired?**: `number`
+
+Signature steps this CRF needs: 2 during a double-signature audit (#2053).
+
+***
+
 ### subject
 
 > **subject**: [`ClinicalSubject`](ClinicalSubject.md) \| `null`

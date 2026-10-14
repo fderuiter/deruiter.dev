@@ -20,6 +20,7 @@ import {
   StationConfig,
 } from "./types";
 import { AMENDMENT_PRESETS } from "./scenarios";
+import { getAuditYearSpawnFactor } from "./escalation";
 import { evaluateCondition, evaluateRule } from "../crf/ast-evaluator";
 import { EditCheckRule, StudyProtocol, CRFField } from "../crf/types";
 import { StudyProtocolEngine } from "../crf/study-engine";
@@ -688,17 +689,21 @@ export const SPAWN_INTERVAL_BY_PHASE: Readonly<Record<GamePhase, number>> = {
  * once and a queue with one subject left fills at twice the phase rate, so a
  * fast player works instead of waiting on the conveyor (#1327). `scale`
  * applies office modifiers to the phase rate; the empty-queue refill ignores
- * it.
+ * it. `auditYear` tightens the phase rate in endless mode (#2053).
  */
 export function getSpawnIntervalSeconds(
   phase: GamePhase,
   queueLength: number,
   scale: (seconds: number) => number = (seconds) => seconds,
-  arrivalRateMultiplier = 1.0
+  arrivalRateMultiplier = 1.0,
+  auditYear = 1
 ): number {
   const safeMult = Math.max(0.1, arrivalRateMultiplier);
   if (queueLength <= 0) return EMPTY_QUEUE_SPAWN_DELAY_SECONDS / safeMult;
-  const base = SPAWN_INTERVAL_BY_PHASE[phase] / safeMult;
+  // Endless Audit Years tighten the phase rate (#2053); year 1 leaves it.
+  const base =
+    (SPAWN_INTERVAL_BY_PHASE[phase] * getAuditYearSpawnFactor(auditYear)) /
+    safeMult;
   return scale(queueLength === 1 ? base / 2 : base);
 }
 
@@ -794,6 +799,8 @@ export function getSubmissionMode(
     submittedCount: number;
     phaseTarget: number;
     amendmentActive: boolean;
+    /** Signature steps the CRF needs; two forces the review dialog (#2053). */
+    signaturesRequired?: number;
   }
 ): "quick" | "full" {
   const { matchingDomains, unresolvedCount } = getRoutingReadiness(
@@ -805,6 +812,7 @@ export function getSubmissionMode(
     !matchingDomains.includes(targetStation) ||
     subject.isSAE ||
     context.amendmentActive ||
+    (context.signaturesRequired ?? 1) > 1 ||
     (context.gameMode === "campaign" &&
       context.submittedCount + 1 >= context.phaseTarget)
   ) {

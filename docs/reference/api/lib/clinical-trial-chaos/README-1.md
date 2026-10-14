@@ -22,6 +22,12 @@ Re-exports [ActiveSponsorRequest](sponsor/interfaces/ActiveSponsorRequest.md)
 
 ***
 
+### addOpenedStations
+
+Re-exports [addOpenedStations](escalation/functions/addOpenedStations.md)
+
+***
+
 ### adjustAuditorSuspicion
 
 Re-exports [adjustAuditorSuspicion](shift/functions/adjustAuditorSuspicion.md)
@@ -40,9 +46,27 @@ Re-exports [AMENDMENT_PRESETS](scenarios/variables/AMENDMENT_PRESETS.md)
 
 ***
 
+### AmendmentEffectsState
+
+Re-exports [AmendmentEffectsState](amendments/interfaces/AmendmentEffectsState.md)
+
+***
+
+### AmendmentOutcome
+
+Re-exports [AmendmentOutcome](types/interfaces/AmendmentOutcome.md)
+
+***
+
 ### AmendmentType
 
 Re-exports [AmendmentType](types/type-aliases/AmendmentType.md)
+
+***
+
+### annotateInspectionReport
+
+Re-exports [annotateInspectionReport](amendments/functions/annotateInspectionReport.md)
 
 ***
 
@@ -112,9 +136,27 @@ Re-exports [applySponsorSubmissionBoost](sponsor/functions/applySponsorSubmissio
 
 ***
 
+### applySpotInspectionMisroute
+
+Re-exports [applySpotInspectionMisroute](amendments/functions/applySpotInspectionMisroute.md)
+
+***
+
 ### applySubmissionScore
 
 Re-exports [applySubmissionScore](shift/functions/applySubmissionScore.md)
+
+***
+
+### AUDIT\_YEAR\_AXES
+
+Re-exports [AUDIT_YEAR_AXES](escalation/variables/AUDIT_YEAR_AXES.md)
+
+***
+
+### AUDIT\_YEAR\_LOCKS
+
+Re-exports [AUDIT_YEAR_LOCKS](escalation/variables/AUDIT_YEAR_LOCKS.md)
 
 ***
 
@@ -136,6 +178,18 @@ Re-exports [AuditorState](types/interfaces/AuditorState.md)
 
 ***
 
+### AuditYearAxis
+
+Re-exports [AuditYearAxis](escalation/type-aliases/AuditYearAxis.md)
+
+***
+
+### AuditYearEscalation
+
+Re-exports [AuditYearEscalation](escalation/type-aliases/AuditYearEscalation.md)
+
+***
+
 ### autoCleanSubject
 
 Re-exports [autoCleanSubject](shift/functions/autoCleanSubject.md)
@@ -145,6 +199,12 @@ Re-exports [autoCleanSubject](shift/functions/autoCleanSubject.md)
 ### AvatarCanvas
 
 Re-exports [AvatarCanvas](outfits/type-aliases/AvatarCanvas.md)
+
+***
+
+### beginAmendmentEffect
+
+Re-exports [beginAmendmentEffect](amendments/functions/beginAmendmentEffect.md)
 
 ***
 
@@ -250,6 +310,12 @@ Re-exports [COFFEE_BREAK_START_LOG](shift/variables/COFFEE_BREAK_START_LOG.md)
 
 ***
 
+### createAmendmentEffectsState
+
+Re-exports [createAmendmentEffectsState](amendments/functions/createAmendmentEffectsState.md)
+
+***
+
 ### createAuditLogEntry
 
 Re-exports [createAuditLogEntry](engine/functions/createAuditLogEntry.md)
@@ -304,6 +370,12 @@ Re-exports [DEFAULT_STRESS_PARAMS](scenarios/variables/DEFAULT_STRESS_PARAMS.md)
 
 ***
 
+### describeAuditYear
+
+Re-exports [describeAuditYear](escalation/functions/describeAuditYear.md)
+
+***
+
 ### describePhaseClearForm483
 
 Re-exports [describePhaseClearForm483](sponsor/functions/describePhaseClearForm483.md)
@@ -328,6 +400,18 @@ Re-exports [DIALOG_CLOCK_RATE](shift/variables/DIALOG_CLOCK_RATE.md)
 
 ***
 
+### DOUBLE\_SIGNATURE\_CRF\_COUNT
+
+Re-exports [DOUBLE_SIGNATURE_CRF_COUNT](amendments/variables/DOUBLE_SIGNATURE_CRF_COUNT.md)
+
+***
+
+### DoubleSignatureAudit
+
+Re-exports [DoubleSignatureAudit](amendments/interfaces/DoubleSignatureAudit.md)
+
+***
+
 ### drawOutfitAvatar
 
 Re-exports [drawOutfitAvatar](outfits/functions/drawOutfitAvatar.md)
@@ -343,6 +427,30 @@ Re-exports [EMPTY_QUEUE_SPAWN_DELAY_SECONDS](engine/variables/EMPTY_QUEUE_SPAWN_
 ### endCoffeeBreak
 
 Re-exports [endCoffeeBreak](shift/functions/endCoffeeBreak.md)
+
+***
+
+### ENDLESS\_BASE\_STATIONS
+
+Re-exports [ENDLESS_BASE_STATIONS](escalation/variables/ENDLESS_BASE_STATIONS.md)
+
+***
+
+### ENDLESS\_BEST\_STORAGE\_KEY
+
+Re-exports [ENDLESS_BEST_STORAGE_KEY](escalation/variables/ENDLESS_BEST_STORAGE_KEY.md)
+
+***
+
+### ENDLESS\_MAX\_STATIONS
+
+Re-exports [ENDLESS_MAX_STATIONS](escalation/variables/ENDLESS_MAX_STATIONS.md)
+
+***
+
+### EndlessBest
+
+Re-exports [EndlessBest](escalation/interfaces/EndlessBest.md)
 
 ***
 
@@ -379,6 +487,12 @@ Re-exports [fixObservation](engine/functions/fixObservation.md)
 ### formatAuditTimestamp
 
 Re-exports [formatAuditTimestamp](engine/functions/formatAuditTimestamp.md)
+
+***
+
+### formatAuditYearLog
+
+Re-exports [formatAuditYearLog](escalation/functions/formatAuditYearLog.md)
 
 ***
 
@@ -454,6 +568,48 @@ Re-exports [getAmendmentIntervalSeconds](shift/functions/getAmendmentIntervalSec
 
 ***
 
+### getAuditYear
+
+Re-exports [getAuditYear](escalation/functions/getAuditYear.md)
+
+***
+
+### getAuditYearAmendmentFactor
+
+Re-exports [getAuditYearAmendmentFactor](escalation/functions/getAuditYearAmendmentFactor.md)
+
+***
+
+### getAuditYearAxis
+
+Re-exports [getAuditYearAxis](escalation/functions/getAuditYearAxis.md)
+
+***
+
+### getAuditYearErrorChance
+
+Re-exports [getAuditYearErrorChance](escalation/functions/getAuditYearErrorChance.md)
+
+***
+
+### getAuditYearEscalation
+
+Re-exports [getAuditYearEscalation](escalation/functions/getAuditYearEscalation.md)
+
+***
+
+### getAuditYearSpawnFactor
+
+Re-exports [getAuditYearSpawnFactor](escalation/functions/getAuditYearSpawnFactor.md)
+
+***
+
+### getAuditYearStationCount
+
+Re-exports [getAuditYearStationCount](escalation/functions/getAuditYearStationCount.md)
+
+***
+
 ### getCalibrationStep
 
 Re-exports [getCalibrationStep](engine/functions/getCalibrationStep.md)
@@ -475,6 +631,12 @@ Re-exports [getFastTrackDomain](shift/functions/getFastTrackDomain.md)
 ### getFollowUpSubject
 
 Re-exports [getFollowUpSubject](sponsor/functions/getFollowUpSubject.md)
+
+***
+
+### getLocksToNextAuditYear
+
+Re-exports [getLocksToNextAuditYear](escalation/functions/getLocksToNextAuditYear.md)
 
 ***
 
@@ -517,6 +679,12 @@ Re-exports [getPhaseProgress](shift/functions/getPhaseProgress.md)
 ### getPowerUpRefusal
 
 Re-exports [getPowerUpRefusal](shift/functions/getPowerUpRefusal.md)
+
+***
+
+### getRequiredSignatureCount
+
+Re-exports [getRequiredSignatureCount](amendments/functions/getRequiredSignatureCount.md)
 
 ***
 
@@ -634,6 +802,12 @@ Re-exports [MAX_SHIFT_TICK_MS](shift/variables/MAX_SHIFT_TICK_MS.md)
 
 ***
 
+### mergeEndlessBest
+
+Re-exports [mergeEndlessBest](escalation/functions/mergeEndlessBest.md)
+
+***
+
 ### MOCK\_OBSERVATION\_TEMPLATES
 
 Re-exports [MOCK_OBSERVATION_TEMPLATES](scenarios/variables/MOCK_OBSERVATION_TEMPLATES.md)
@@ -697,6 +871,18 @@ Re-exports [OutfitPalette](outfits/interfaces/OutfitPalette.md)
 ### OUTFITS
 
 Re-exports [OUTFITS](outfits/variables/OUTFITS.md)
+
+***
+
+### parkAuditorAtStation
+
+Re-exports [parkAuditorAtStation](amendments/functions/parkAuditorAtStation.md)
+
+***
+
+### parseEndlessBest
+
+Re-exports [parseEndlessBest](escalation/functions/parseEndlessBest.md)
 
 ***
 
@@ -829,6 +1015,12 @@ Re-exports [QUERY_EXTENSION_LOG](shift/variables/QUERY_EXTENSION_LOG.md)
 ### raiseAuditorSuspicion
 
 Re-exports [raiseAuditorSuspicion](shift/functions/raiseAuditorSuspicion.md)
+
+***
+
+### recordAmendmentLock
+
+Re-exports [recordAmendmentLock](amendments/functions/recordAmendmentLock.md)
 
 ***
 
@@ -1054,6 +1246,18 @@ Re-exports [SponsorState](sponsor/interfaces/SponsorState.md)
 
 ***
 
+### SPOT\_INSPECTION\_SUSPICION\_MULTIPLIER
+
+Re-exports [SPOT_INSPECTION_SUSPICION_MULTIPLIER](amendments/variables/SPOT_INSPECTION_SUSPICION_MULTIPLIER.md)
+
+***
+
+### SpotInspection
+
+Re-exports [SpotInspection](amendments/interfaces/SpotInspection.md)
+
+***
+
 ### startCoffeeBreak
 
 Re-exports [startCoffeeBreak](shift/functions/startCoffeeBreak.md)
@@ -1105,6 +1309,18 @@ Re-exports [StressPresetId](types/type-aliases/StressPresetId.md)
 ### SubmissionScore
 
 Re-exports [SubmissionScore](shift/interfaces/SubmissionScore.md)
+
+***
+
+### summarizeAmendmentOutcomes
+
+Re-exports [summarizeAmendmentOutcomes](amendments/functions/summarizeAmendmentOutcomes.md)
+
+***
+
+### tickAmendmentEffects
+
+Re-exports [tickAmendmentEffects](amendments/functions/tickAmendmentEffects.md)
 
 ***
 

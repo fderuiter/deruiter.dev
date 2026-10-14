@@ -434,7 +434,7 @@ describe("Clinical Trial Chaos Engine - Unit Tests", () => {
   });
 
   it("generates clinical subjects across diverse domains, error probabilities, and SAE modes", () => {
-    expect(AMENDMENT_PRESETS.length).toBe(4);
+    expect(AMENDMENT_PRESETS.length).toBe(6);
 
     // Standard subject
     const subj1 = generateClinicalSubject(0.0, false, 2001, ["DM", "VS"]);
@@ -458,12 +458,14 @@ describe("Clinical Trial Chaos Engine - Unit Tests", () => {
   });
 
   it("validates AMENDMENT_PRESETS protocol amendments", () => {
-    expect(AMENDMENT_PRESETS).toHaveLength(4);
+    expect(AMENDMENT_PRESETS).toHaveLength(6);
     expect(AMENDMENT_PRESETS.map((a) => a.id)).toEqual([
       "amd-001",
       "amd-002",
       "amd-003",
       "amd-004",
+      "amd-005",
+      "amd-006",
     ]);
 
     AMENDMENT_PRESETS.forEach((amd) => {

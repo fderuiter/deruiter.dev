@@ -749,6 +749,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Ghost",
       },
       {
+        title: "Training Plan",
+        detail:
+          "Pick Training Plan as the run mode for a two-week plan laid out like a coach's calendar. Each visit opens with a Morning Report: your Training Readiness, the next workout, and your lives, continues and gear bag. Then the map: Easy Run, Tempo, Intervals and Long Run sit on paths, and clearing one opens the next. Move with the arrow keys (or UP and DOWN on the watch) and press Space or START to go; every node is also a button in the companion panel. Each workout is one stage, the same every time. A cleared workout can be run again as practice, which shows its time but never changes the plan. A Recovery Hut hides three items, an Energy Gel, a Foam Roller and a Protein Shake: pick one and it goes into the gear bag, which holds 8. Losing every life is a DNF, back to training: a continue refills your lives, and with none left the plan's score is reset instead. The map is never lost. The plan is saved on this device; New plan starts over.",
+        badge: "Plan",
+      },
+      {
+        title: "Race Day and The Wall",
+        detail:
+          "Race Day ends the plan. The lane moves at a steady race pace, so pace keys do nothing, and the run clock times it onto its own Race Day board. Near the end The Wall steps out, and the finish stays out of reach until it falls. It holds ahead of you, then charges down the lane: jump and land on top to hit it, or jump clear to dodge. It takes three hits, and each one changes its pattern: it charges faster, then throws a brick while it holds, then two. Bricks fly low, so a jump clears them. Beat it and reach the finish for the finisher medal.",
+        badge: "Boss",
+      },
+      {
         title: "Dev Mode (Optional)",
         detail:
           "Dev Mode is a toggle in the simulator controls, off by default. It brings back the original firmware challenge: a RAM heap that fills with automatic allocations, Down to pop variables, forced garbage collection that freezes the watch, NV flash that fills up, a battery that drains with thermal fog you wipe with W, and crash reports such as Null Pointer, Watchdog Tripped, Stack Overflow, Out Of Memory, Out Of Storage and Segmentation Fault. Each device tier has its own RAM limit: Fēnix 5 has 32 KB, Forerunner 245 has 64 KB, and Edge 1030 has 128 KB.",
@@ -874,11 +886,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "At the end of each shift or upon trial termination, receive a formal BIMO inspection report with NAI (No Action Indicated), VAI (Voluntary Action), or OAI (Form 483 Issued) determination.",
         badge: "BIMO Inspection",
       },
+      {
+        title: "The FDA Inspection Finale",
+        detail:
+          "When Phase 3 locks, the inspector pulls 4 to 6 CRFs you locked this campaign and asks one question about each: which value you corrected and why, where its signature is, or which station it went to. Each sponsor skeleton you took adds a harder question about that email. For a Phase 3 shortcut, admit it and cite the right regulation to halve its penalty and lower the finding a level; deny it or blame the sponsor and the finding rises a level. A Phase 1 or 2 shortcut was already charged in that phase's report, so the interview only adds to it: nothing if you disclose it, a Minor finding for the wrong regulation or no answer, a Major one if you deny it. Each record question gets 15 seconds and each skeleton 25; More time adds 15 seconds, and Untimed interview turns the timer off. Your answers set the final verdict. Endless mode has no inspection.",
+        badge: "Campaign Finale",
+      },
     ],
     proTips: [
       "Keep an eye on Serious Adverse Events (⚡ SAE): they have shorter timers and grant +300 bonus points upon compliant signature. Sign an SAE Urgent Safety Expedited, and never use that reason for a routine CRF.",
       "Charge your 'FDA Coffee Break' lifeline by maintaining clean submission streaks; deploy it when auditor suspicion climbs above 70%.",
       "Switch to the Live SDTM Studio tab during shifts to inspect generated observation rows and export authentic CDISC ODM 1.3 XML.",
+      "Notice how each CRF is signed and where it goes: the Phase 3 inspector asks about the records you locked, and three wrong answers add a Major finding for an incomplete audit trail.",
       "Toggle the procedural 8-bit synth BGM to hear dynamic tempo scaling as auditor scrutiny intensifies.",
     ],
     lore: {
@@ -961,8 +980,20 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Costs 2 attention. Shows the site's true queries, deviations, unsigned source, eligibility concerns and training for 10 days.",
         key: "Audit button",
       },
+      {
+        action: "Delegate the day (office)",
+        description:
+          "Asks first, then hands the rest of the day to the team and sends you home. They give each waiting message its quickest answer without writing it up, some messages slip through and land their fallout, and every teammate trusts you a little less. The overnight report says what they did.",
+        key: "Delegate button",
+      },
     ],
     rules: [
+      {
+        title: "Short or full study",
+        detail:
+          "A new office run offers two lengths beside the difficulty. The full study runs 77 days with 48 subjects at five sites. The short study is the same protocol as a 35-day pilot with 24 subjects at Sites 01 to 03: every message, follow-up and visitor still comes, closer together, and a rescue starts three days behind instead of six. With a few delegated days a short study fits in one sitting. The share card says which one you ran, and saves from before the choice load as the full study.",
+        badge: "Length",
+      },
       {
         title: "Attention is the resource",
         detail:
@@ -1056,7 +1087,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Get through one drive-thru shift, squeezed from four hours into three minutes, without the drive-thru times or your dignity reaching zero. Every car you serve before its ticket turns red helps; every car that gives up and drives off costs speed and comes out of your pay.",
     quickSummary:
-      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page. Or work a week of shifts, Monday to Friday: each day is different, each ends on its own diary page, and each day's score counts on its own. The five days add up to a week total, kept as your best week, and finishing all five earns a trophy.",
+      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. A few times a shift someone puts a question to you: serve the stale fries, cover Dale's short till, tell a customer the shake machine is broken. You have a few seconds to answer while the cars keep coming, and what you choose decides how the shift ends. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page. Or work a week of shifts, Monday to Friday: each day is different, each ends on its own diary page, and each day's score counts on its own. The five days add up to a week total, kept as your best week, and finishing all five earns a trophy.",
     controls: [
       {
         action: "Turn",
@@ -1107,6 +1138,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description: "Moves up one register menu, or back to its home screen.",
         key: "Backspace / Home",
       },
+      {
+        action: "Answer a question",
+        description:
+          "Picks the first or second answer when someone puts a question to you mid-shift. The buttons work too.",
+        key: "Q / E",
+      },
     ],
     rules: [
       {
@@ -1146,6 +1183,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "End of shift",
       },
       {
+        title: "Questions with no good answer",
+        detail:
+          "Three times a shift Bo, Dale or a customer asks you something, and each answer trades drive-thru speed against Dignity or pay. Nothing stops while you think; if the timer runs out, whatever happens when nobody speaks up happens. Pick More time to decide before clocking in for twice as long. Your answers are written in the diary, and they quietly add up to how much you stood with the crew: make it to close and the shift ends as the Company Man, a Silent Exit or a Walkout. Running out of speed or Dignity still ends it first.",
+        badge: "Dilemmas",
+      },
+      {
         title: "A week of shifts",
         detail:
           "Monday is a normal shift. On Tuesday the drink machine is broken, Wednesday has two rushes, Thursday is your eighteenth birthday so you can brew coffee yourself, and Fry Friday is the busiest day. Dignity and drive-thru speed carry halfway back toward their usual start into the next day, so a bad day leaves you worse off but never ends the week. The week saves after each day, so you can stop and come back.",
@@ -1158,6 +1201,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Flag Dale the moment a coffee shows up.",
       "When there are no cars, wipe something.",
       "In a week, protect your Dignity early: what you end Monday with, you start Tuesday with.",
+      "A walkout takes friends and enough Dignity left to stand up. Siding with the crew all week carries into Friday.",
     ],
     lore: {
       title: "A diary entry",
@@ -1761,6 +1805,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Rewards",
       },
       {
+        title: "Firmware Bay & Class Unlocks",
+        detail:
+          "Crypto you harvest is banked on this device across runs. Between runs, open Firmware Upgrades (on the trace card, the run-complete card or the class picker) to spend it on four permanent tracks of three tiers each, costing 300, 700 and 1,200 crypto: RAM Expansion (+8 GB max RAM per tier), Scan Accelerator (+1 hex terminal buffer slot per tier), Payload Amplifier (+0.5 tile AoE exploit radius per tier) and Chip Fabricator (+1 starting bypass chip per tier). A tier takes effect from the next run. Script Kiddie and Cryptanalyst are open from the start; clearing the FaceForge boss room unlocks the APT Specialist, and finishing a run by clearing the NEURAL_WARDEN unlocks the Hardware Hacker. Locked classes show in the picker with the milestone that opens them; a profile saved before the locks keeps all four. The APT Specialist's +25% blast radius multiplies the Payload Amplifier radius too.",
+        badge: "Meta Progression",
+      },
+      {
         title: "Locked Exits",
         detail:
           "A room with airgap route nodes keeps its EXIT locked until you step on every node, and a boss room keeps it locked until the boss is defeated. A locked exit is drawn as LOCK in red and blocks you like a wall. Boss volleys aim where you are heading, so change direction to dodge.",
@@ -1790,6 +1840,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Save Hardware Bypass Chips for the terminals in the TSP enclave and the Darknet Vault, where time limits are tight.",
       "Take the Darknet Vault on the route when you are short of crypto or HP: its market and chest restock the deck before the bosses.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
+      "A lost run still banks the crypto of every room you cleared, so a few Firmware Bay tiers make the next attempt sturdier.",
     ],
     lore: {
       title: "Red Team Infiltration & Legacy Code Archaeology",

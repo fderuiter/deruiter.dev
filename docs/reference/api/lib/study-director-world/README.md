@@ -266,6 +266,24 @@ Re-exports [delegate](internal/delegation/functions/delegate.md)
 
 ***
 
+### DELEGATED\_SLIP\_CHANCE
+
+Re-exports [DELEGATED_SLIP_CHANCE](internal/delegate-day/variables/DELEGATED_SLIP_CHANCE.md)
+
+***
+
+### DELEGATED\_TRUST\_COST
+
+Re-exports [DELEGATED_TRUST_COST](internal/delegate-day/variables/DELEGATED_TRUST_COST.md)
+
+***
+
+### delegateDay
+
+Re-exports [delegateDay](internal/delegate-day/functions/delegateDay.md)
+
+***
+
 ### DELEGATION\_VERBS
 
 Re-exports [DELEGATION_VERBS](types/variables/DELEGATION_VERBS.md)
@@ -275,6 +293,12 @@ Re-exports [DELEGATION_VERBS](types/variables/DELEGATION_VERBS.md)
 ### DelegationOutcome
 
 Re-exports [DelegationOutcome](types/interfaces/DelegationOutcome.md)
+
+***
+
+### delegationPreview
+
+Re-exports [delegationPreview](internal/delegate-day/functions/delegationPreview.md)
 
 ***
 
@@ -1355,6 +1379,12 @@ Re-exports [targetInFront](internal/interact/functions/targetInFront.md)
 ### TEAM\_INTERACTIONS
 
 Re-exports [TEAM_INTERACTIONS](internal/handlers/variables/TEAM_INTERACTIONS.md)
+
+***
+
+### teamAnswer
+
+Re-exports [teamAnswer](internal/delegate-day/functions/teamAnswer.md)
 
 ***
 

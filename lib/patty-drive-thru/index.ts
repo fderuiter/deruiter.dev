@@ -48,6 +48,7 @@ export {
 } from "./internal/look";
 export {
   BOOTH_CREW,
+  CHOICE_ENDINGS,
   CLOSING_NOTE,
   COMPANION_POST_PATH,
   DIARY_INTRO,
@@ -59,11 +60,19 @@ export {
   getShiftEnding,
 } from "./internal/diary";
 export {
+  getChoiceEnding,
+  getDilemma,
+  getDilemmaDiaryLines,
+  getDilemmaOption,
+  getDilemmaPlan,
+} from "./internal/dilemmas";
+export {
   carryMeters,
   createWeek,
   getWeekDay,
   getWeekDayConfig,
   getWeekDayDiaryLines,
+  getWeekEnding,
   getWeekDaySeed,
   getWeekNetCents,
   isWeekOver,

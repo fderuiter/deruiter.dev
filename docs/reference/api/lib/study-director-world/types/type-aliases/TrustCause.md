@@ -6,6 +6,6 @@
 
 # Type Alias: TrustCause
 
-> **TrustCause** = `"talk"` \| `"coach"` \| `"followThrough"` \| `"ignore"` \| `"override"` \| `"dump"` \| `"brushOff"` \| `"heard"` \| `"coffee"` \| `"favour"` \| `"cover"`
+> **TrustCause** = `"talk"` \| `"coach"` \| `"followThrough"` \| `"ignore"` \| `"override"` \| `"dump"` \| `"brushOff"` \| `"heard"` \| `"coffee"` \| `"favour"` \| `"cover"` \| `"delegated"`
 
 What makes trust move.

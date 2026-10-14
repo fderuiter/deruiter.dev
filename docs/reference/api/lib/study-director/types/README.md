@@ -42,6 +42,7 @@
 - [SponsorArchetype](type-aliases/SponsorArchetype.md)
 - [StudyBudget](type-aliases/StudyBudget.md)
 - [StudyDirectorProfile](type-aliases/StudyDirectorProfile.md)
+- [StudyLength](type-aliases/StudyLength.md)
 - [TeamRole](type-aliases/TeamRole.md)
 - [Urgency](type-aliases/Urgency.md)
 
@@ -51,3 +52,4 @@
 - [DIFFICULTIES](variables/DIFFICULTIES.md)
 - [METER\_IDS](variables/METER_IDS.md)
 - [PHASES](variables/PHASES.md)
+- [STUDY\_LENGTHS](variables/STUDY_LENGTHS.md)

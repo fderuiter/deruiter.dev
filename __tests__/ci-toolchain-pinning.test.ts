@@ -105,8 +105,10 @@ describe("CI Workflow Toolchain Pinning", () => {
     const pkg = JSON.parse(
       fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8")
     ) as { scripts: Record<string, string> };
+    // `next typegen` first, so the check covers the generated route types that
+    // Next's own in-build checker used to (#2100).
     expect(pkg.scripts.typecheck).toBe(
-      "node --max-old-space-size=3072 node_modules/typescript/bin/tsc --noEmit"
+      "next typegen && node --max-old-space-size=3072 node_modules/typescript/bin/tsc --noEmit"
     );
   });
 

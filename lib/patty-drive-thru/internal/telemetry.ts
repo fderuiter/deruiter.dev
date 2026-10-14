@@ -1,5 +1,6 @@
 import { isStandardScenario, SCENARIO_LIMITS } from "../presets";
 import type {
+  DilemmaChoice,
   PayStub,
   ShiftConfig,
   ShiftLogEntry,
@@ -25,6 +26,10 @@ export interface ShiftTelemetry {
   readonly scenario: ShiftScenario;
   readonly tallies: ShiftTallies;
   readonly payStub: PayStub;
+  /** The hidden Solidarity value at the end of the shift (#2087). */
+  readonly solidarity: number;
+  /** Every dilemma answered, in order (#2087). */
+  readonly dilemmas: readonly DilemmaChoice[];
   readonly events: readonly ShiftLogEntry[];
 }
 
@@ -55,6 +60,8 @@ export function buildShiftTelemetry(
     scenario: scenarioOf(shift.config),
     tallies: shift.tallies,
     payStub: computePayStub(shift),
+    solidarity: shift.solidarity,
+    dilemmas: shift.dilemmaChoices,
     events: log,
   };
 }
@@ -75,6 +82,9 @@ const CSV_COLUMNS = [
   "band",
   "outcome",
   "nodeId",
+  "dilemmaId",
+  "optionId",
+  "timedOut",
 ] as const;
 
 function cell(value: unknown): string {

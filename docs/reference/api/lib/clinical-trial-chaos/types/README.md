@@ -16,6 +16,7 @@
 - [ClinicalObservation](interfaces/ClinicalObservation.md)
 - [ClinicalSubject](interfaces/ClinicalSubject.md)
 - [GameScoreState](interfaces/GameScoreState.md)
+- [InspectionInterviewSummary](interfaces/InspectionInterviewSummary.md)
 - [PowerUpState](interfaces/PowerUpState.md)
 - [ProtocolAmendment](interfaces/ProtocolAmendment.md)
 - [RecordedRuleViolation](interfaces/RecordedRuleViolation.md)

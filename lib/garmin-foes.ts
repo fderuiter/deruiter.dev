@@ -38,7 +38,15 @@ import type { StageTheme } from "./garmin-themes";
 
 /** The kinds of foe placed on the course. */
 export type FoeKind =
-  "kettlebell" | "alert" | "box" | "lap" | "repmax" | "jellyfish" | "goggles";
+  | "kettlebell"
+  | "alert"
+  | "box"
+  | "lap"
+  | "repmax"
+  | "jellyfish"
+  | "goggles"
+  /** Race Day's boss (#1994), moved by lib/garmin-raceday.ts. */
+  | "wall";
 
 /**
  * What a foe is doing. A Kettlebell walks, rests as a shell or slides as a
@@ -67,7 +75,7 @@ export interface Foe {
   vy: number;
   /** Counts down to the next hop or shot. */
   timerMs: number;
-  /** Hit points left; only the Rep Max has more than one. */
+  /** Hit points left; only the Rep Max and The Wall have more than one. */
   hp: number;
   /** Time left in which the foe can't be hurt again (or a kicked shell can't hurt the runner). */
   graceMs: number;
@@ -79,10 +87,10 @@ export interface Foe {
   throwMs?: number;
 }
 
-/** A shot fired by a foe: an Auto Lap's lap ping or a Rep Max's dumbbell. */
+/** A shot fired by a foe: an Auto Lap's lap ping, a Rep Max's dumbbell or a brick from The Wall. */
 export interface FoeShot {
   id: number;
-  kind: "ping" | "dumbbell";
+  kind: "ping" | "dumbbell" | "brick";
   x: number;
   y: number;
   vx: number;
@@ -98,6 +106,7 @@ export const FOE_SIZE: Record<FoeKind, { width: number; height: number }> = {
   repmax: { width: 24, height: 30 },
   jellyfish: { width: 14, height: 14 },
   goggles: { width: 16, height: 8 },
+  wall: { width: 22, height: 34 },
 };
 /** Height of a Kettlebell's shell. */
 export const SHELL_HEIGHT = 11;
@@ -639,7 +648,7 @@ export function stompFoe(foe: Foe, runnerX: number): FoeHit {
       score: FOE_STOMP_SCORE,
     };
   }
-  if (foe.kind === "repmax") return damageFoe(foe, 2);
+  if (foe.kind === "repmax" || foe.kind === "wall") return damageFoe(foe, 2);
   return { foe: null, score: FOE_STOMP_SCORE };
 }
 
@@ -656,13 +665,17 @@ export function kickShell(foe: Foe, runnerX: number): Foe {
 
 /**
  * A hit from a heat bolt, a cape spin, a sliding shell or a Runner's High.
- * Ordinary foes are defeated; the Rep Max loses `amount` hit points
- * and, until it runs out, has a short grace before the next hit counts.
+ * Ordinary foes are defeated; the Rep Max loses `amount` hit points and The
+ * Wall one (#1994), and until it runs out each has a short grace before the
+ * next hit counts.
  */
 export function damageFoe(foe: Foe, amount: number): FoeHit {
-  if (foe.kind !== "repmax") return { foe: null, score: FOE_DEFEAT_SCORE };
+  const wall = foe.kind === "wall";
+  if (!wall && foe.kind !== "repmax") {
+    return { foe: null, score: FOE_DEFEAT_SCORE };
+  }
   if (foe.graceMs > 0) return { foe, score: 0 };
-  const hp = foe.hp - Math.max(1, amount);
+  const hp = foe.hp - (wall ? 1 : Math.max(1, amount));
   if (hp <= 0) return { foe: null, score: REPMAX_SCORE };
   return {
     foe: { ...foe, hp, graceMs: REPMAX_GRACE_MS },

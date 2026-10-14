@@ -4,6 +4,7 @@ import React, { useRef, useState } from "react";
 import {
   METER_IDS,
   computeMeters,
+  studyLength,
   type Difficulty,
   type FinalReport,
 } from "@/lib/study-director";
@@ -133,6 +134,19 @@ const CardArt = React.forwardRef<
       </text>
       <text x={64} y={466} fill="#a1a1aa" fontFamily={MONO} fontSize={18}>
         Sponsor rating
+      </text>
+      <text
+        x={64}
+        y={512}
+        fill="#a1a1aa"
+        fontFamily={MONO}
+        fontSize={18}
+        data-testid="share-card-length"
+      >
+        {studyLength(report.state.setup) === "short"
+          ? "Short study"
+          : "Full study"}
+        {` · ${report.state.setup.durationDays} planned days`}
       </text>
 
       <g transform="translate(800 400)">

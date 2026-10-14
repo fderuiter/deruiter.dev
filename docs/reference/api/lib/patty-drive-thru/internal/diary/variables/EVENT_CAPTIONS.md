@@ -28,6 +28,10 @@ Short captions for the shift's one-shot events.
 
 > `readonly` **coworkerReady**: `` `${string}: "Coffee's up."` ``
 
+### dilemmaTimedOut
+
+> `readonly` **dilemmaTimedOut**: `"Too slow. Somebody decided for you."` = `"Too slow. Somebody decided for you."`
+
 ### drinkDropped
 
 > `readonly` **drinkDropped**: `"The dispenser lost the drink. Ring it in again."` = `"The dispenser lost the drink. Ring it in again."`

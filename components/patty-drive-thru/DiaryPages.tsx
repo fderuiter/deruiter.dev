@@ -8,6 +8,8 @@ import {
   CLOSING_NOTE,
   COMPANION_POST_PATH,
   DIARY_INTRO,
+  DILEMMA_WINDOW_LONG_SEC,
+  DILEMMA_WINDOW_SEC,
   SCENARIO_PRESETS,
   WEEK_DAYS,
   carryMeters,
@@ -15,9 +17,11 @@ import {
   exportShiftTelemetryCsv,
   exportShiftTelemetryJson,
   formatCents,
+  getDilemmaDiaryLines,
   getShiftEnding,
   getWeekDay,
   getWeekDayDiaryLines,
+  getWeekEnding,
   getWeekNetCents,
   isStandardScenario,
   isWeekOver,
@@ -93,8 +97,14 @@ export function DiaryIntroPage({
   onStartWeek,
   onResumeWeek,
   savedWeek = null,
+  longerDilemmas = false,
+  onLongerDilemmasChange,
 }: {
   onClockIn: (scenario: ScenarioId) => void;
+  /** True when dilemmas give the longer answer window (#2087). */
+  longerDilemmas?: boolean;
+  /** Turns the longer dilemma window on or off. */
+  onLongerDilemmasChange?: (longer: boolean) => void;
   /** Starts a new week of shifts, Monday to Friday (#2086). */
   onStartWeek?: () => void;
   /** Picks a saved week back up at its next day. */
@@ -179,6 +189,25 @@ export function DiaryIntroPage({
               </label>
             ) : null}
           </fieldset>
+          {onLongerDilemmasChange ? (
+            <label className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm">
+              <input
+                type="checkbox"
+                checked={longerDilemmas}
+                onChange={(event) =>
+                  onLongerDilemmasChange(event.target.checked)
+                }
+                className="mt-1 size-4 shrink-0"
+                data-testid="pdt-longer-dilemmas"
+              />
+              <span className="min-w-0 break-words">
+                <span className="font-bold">More time to decide.</span> Now and
+                then someone puts a question to you mid-shift. Answer within{" "}
+                {DILEMMA_WINDOW_LONG_SEC} seconds instead of{" "}
+                {DILEMMA_WINDOW_SEC}.
+              </span>
+            </label>
+          ) : null}
           {resumable ? (
             <WeekResumePanel week={resumable} onResume={onResumeWeek!} />
           ) : null}
@@ -388,6 +417,7 @@ export function ShiftEndPage({
       aria-labelledby="pdt-end-title"
       data-testid="pdt-end"
       data-outcome={ending.outcome}
+      data-ending={ending.ending}
     >
       <header>
         <h2
@@ -400,6 +430,8 @@ export function ShiftEndPage({
         </h2>
         <p className="mt-2 text-sm leading-relaxed">{ending.summary}</p>
       </header>
+
+      <ChoiceLines lines={getDilemmaDiaryLines(shift.dilemmaChoices)} />
 
       <section aria-labelledby="pdt-stub-title" className="font-mono">
         <PayStubTable shift={shift} />
@@ -431,6 +463,28 @@ export function ShiftEndPage({
         <CompanionLink />
       </div>
     </article>
+  );
+}
+
+/** What the player chose during the shift, one diary line each (#2087). */
+function ChoiceLines({ lines }: { lines: readonly string[] }) {
+  if (lines.length === 0) return null;
+  return (
+    <section aria-labelledby="pdt-choices-title" data-testid="pdt-choices">
+      <h3
+        id="pdt-choices-title"
+        className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]"
+      >
+        What I did
+      </h3>
+      <ul className="mt-1 space-y-1">
+        {lines.map((line, index) => (
+          <li key={`${index}-${line}`} className="text-sm leading-relaxed">
+            {line}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -491,6 +545,7 @@ export function WeekDayEndPage({
       data-testid="pdt-day-end"
       data-day={result.day}
       data-outcome={result.outcome}
+      data-ending={ending.ending}
     >
       <header>
         <p className="font-mono text-xs uppercase tracking-wider text-[var(--pdt-paper-dim)]">
@@ -588,6 +643,7 @@ export function WeekSummaryPage({
 }: WeekSummaryPageProps) {
   const headingRef = useFocusOnMount<HTMLHeadingElement>();
   const total = scoreWeek(week);
+  const weekEnding = getWeekEnding(week);
 
   return (
     <article
@@ -607,6 +663,14 @@ export function WeekSummaryPage({
         >
           One week down
         </h2>
+        <p
+          className="mt-2 text-sm leading-relaxed"
+          data-testid="pdt-week-ending"
+          data-ending={weekEnding.ending}
+        >
+          <span className="font-bold">{weekEnding.title}.</span>{" "}
+          {weekEnding.summary}
+        </p>
       </header>
 
       <ol className="space-y-3" data-testid="pdt-week-days">

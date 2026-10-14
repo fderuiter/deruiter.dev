@@ -100,6 +100,26 @@ describe("build.js script execution", () => {
     expect(exitMock).toHaveBeenCalledWith(0);
   });
 
+  it("type-checks in its own phase before migrations and before next build (#2100)", async () => {
+    process.env.VERCEL_ENV = "preview";
+
+    await expect(require("../scripts/build.js")).rejects.toThrow(
+      "Process exited with code 0"
+    );
+
+    const calls = spawnSpy.mock.calls.map(
+      (c: any[]) => `${c[0]} ${c[1].join(" ")}`
+    );
+    const typecheckIndex = calls.indexOf("npm run typecheck");
+    expect(typecheckIndex).toBeGreaterThan(-1);
+    expect(typecheckIndex).toBeLessThan(
+      calls.findIndex((c: string) => c.includes("check:migrations"))
+    );
+    expect(typecheckIndex).toBeLessThan(
+      calls.findIndex((c: string) => c.includes("next build"))
+    );
+  });
+
   it("never executes prisma migrate deploy off Vercel, even if VERCEL_ENV is production", async () => {
     delete (process.env as any).VERCEL;
     process.env.VERCEL_ENV = "production";

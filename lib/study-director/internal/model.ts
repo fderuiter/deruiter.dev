@@ -12,6 +12,7 @@ import type {
   Phase,
   SiteAuditReport,
   SiteState,
+  StudyLength,
   StudySetup,
   StudyState,
   TeamMember,
@@ -42,6 +43,37 @@ const PHASE_BOUNDS: Array<[Phase, number]> = [
 
 const clamp = (value: number, lo = 0, hi = 100): number =>
   clampRange(value, lo, hi);
+
+/**
+ * The calendar the scripted events were written against: the full study's
+ * 77 days. Event days, follow-up gaps and visitor days are absolute on it.
+ */
+export const EVENT_CALENDAR_DAYS = 77;
+
+/** Whether a study is the short one (#2092). A setup without a length is full. */
+export function studyLength(setup: StudySetup): StudyLength {
+  return setup.length === "short" ? "short" : "full";
+}
+
+/**
+ * How much the scripted calendar is squeezed for this study: the short
+ * study's duration over the full calendar, and exactly 1 for every other
+ * study, so a full run and any custom scenario replay as they always have.
+ */
+export function calendarScale(setup: StudySetup): number {
+  return studyLength(setup) === "short"
+    ? Math.max(1, setup.durationDays) / EVENT_CALENDAR_DAYS
+    : 1;
+}
+
+/**
+ * A span of days from the full calendar, on this study's calendar: scaled
+ * and rounded, never below `min`. Unchanged when the scale is 1.
+ */
+export function scaleDays(days: number, setup: StudySetup, min = 1): number {
+  const scale = calendarScale(setup);
+  return scale === 1 ? days : Math.max(min, Math.round(days * scale));
+}
 
 /**
  * Attention the study's own upkeep takes before the player decides anything.
@@ -113,6 +145,9 @@ export function createStudy(
   };
 }
 
+/** Days a rescue study starts behind, on the full calendar. */
+export const RESCUE_SLIP_DAYS = 6;
+
 /**
  * Sets how hard the study starts. Calm has more budget, a warmer sponsor
  * and a rested team; rescue inherits a study already behind, over-spent,
@@ -139,7 +174,9 @@ export function applyDifficulty(
     return {
       ...state,
       difficulty,
-      slipDays: state.slipDays + 6,
+      // Six days behind on the full calendar; proportionally fewer on a
+      // short study (#2092).
+      slipDays: state.slipDays + scaleDays(RESCUE_SLIP_DAYS, state.setup),
       spent: state.spent + Math.round(state.setup.budget * 0.08),
       documentationDebt: clamp(state.documentationDebt + 12),
       adjust: { ...state.adjust, client: state.adjust.client - 15 },

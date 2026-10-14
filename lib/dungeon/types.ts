@@ -303,6 +303,11 @@ export interface CyberdeckProfile {
   highScore: number;
   runsCompleted: number;
   unlockedClasses: CyberdeckClassId[];
+  /**
+   * Set on profiles written once classes unlock on milestones (#2085). A save
+   * without it predates the locks and keeps every class.
+   */
+  classUnlockRules?: number;
   selectedClass: CyberdeckClassId;
   firmwareUpgrades: {
     maxRamTier: number;

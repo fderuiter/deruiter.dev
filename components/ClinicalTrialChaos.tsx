@@ -14,7 +14,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
-import { clamp } from "@/lib/game-utils";
+import { clamp, createSeededRandom } from "@/lib/game-utils";
 import { downloadFile } from "@/lib/download";
 import {
   recordArcadeMilestone,
@@ -205,7 +205,21 @@ import {
   applySpotInspectionMisroute,
   parkAuditorAtStation,
   annotateInspectionReport,
+  createInspectionRecord,
+  createInspectionRound,
+  getInspectionSeed,
+  answerInspectionQuestion,
+  advanceInspection,
+  isInspectionComplete,
+  tickInspectionTimer,
+  extendInspectionTimer,
+  setInspectionTimerEnabled,
+  type InspectionRecord,
+  type InspectionRound,
+  type InspectionSignature,
+  type SponsorSkeleton,
 } from "@/lib/clinical-trial-chaos";
+import { InspectionRoundDialog } from "@/components/clinical-trial-chaos/InspectionRoundDialog";
 
 import {
   createFloorAnimState,
@@ -572,6 +586,24 @@ export const ClinicalTrialChaos: React.FC = () => {
   const [bimoReport, setBimoReport] = useState<BIMOInspectionReport | null>(
     null
   );
+  // Campaign-finale inspection (#2089): the audit-trail record of every CRF
+  // locked this run, the sponsor skeletons of earlier phases, and the round
+  // the auditor runs once phase 3 locks.
+  const inspectionLedgerRef = useRef<InspectionRecord[]>([]);
+  const campaignSkeletonsRef = useRef<SponsorSkeleton[]>([]);
+  const [inspectionRound, setInspectionRound] =
+    useState<InspectionRound | null>(null);
+  const pendingFinaleRef = useRef<{
+    score: GameScoreState;
+    auditor: AuditorState;
+    logs: AuditLogEntry[];
+    violations: RecordedRuleViolation[];
+    protocol: StudyProtocol | null;
+    skeletons: SponsorSkeleton[];
+    /** Leading skeletons Phase 1 and 2 reports already charged. */
+    chargedSkeletons: number;
+    amendments: AmendmentEffectsState;
+  } | null>(null);
 
   // Active Authored Protocol Engine State & Rule Violations Log
   const [activeProtocol, setActiveProtocol] = useState<StudyProtocol | null>(
@@ -721,6 +753,71 @@ export const ClinicalTrialChaos: React.FC = () => {
     [soundEnabled, globalMuted]
   );
 
+  // 6b. Campaign-finale inspection (#2089). The report is filed once the
+  // interview ends, from the run state captured when phase 3 locked.
+  const fileFinaleReport = useCallback(
+    (round: InspectionRound) => {
+      const finale = pendingFinaleRef.current;
+      pendingFinaleRef.current = null;
+      setInspectionRound(null);
+      if (!finale) return;
+      const report = annotateInspectionReport(
+        buildInspectionReport(
+          finale.score,
+          finale.auditor,
+          finale.logs,
+          finale.violations,
+          finale.protocol,
+          finale.skeletons,
+          {
+            inspection: round,
+            now: new Date(),
+            chargedSkeletons: finale.chargedSkeletons,
+          }
+        ),
+        null,
+        finale.amendments
+      );
+      setBimoReport(report);
+      setLastBimoReport(report);
+      if (report.verdict.startsWith("NAI")) {
+        recordArcadeMilestone("clinical-chaos", "nai_campaign");
+      }
+      if (report.inspection?.clean) {
+        recordArcadeMilestone("clinical-chaos", "clean_inspection");
+      }
+      announce(
+        `Inspection report filed. Verdict: ${report.verdict}.`,
+        "polite"
+      );
+    },
+    [announce]
+  );
+  const handleInspectionAnswer = useCallback((optionId: string | null) => {
+    setInspectionRound((prev) =>
+      prev ? answerInspectionQuestion(prev, optionId) : prev
+    );
+  }, []);
+  const handleInspectionNext = useCallback(() => {
+    if (!inspectionRound) return;
+    const next = advanceInspection(inspectionRound);
+    if (isInspectionComplete(next)) fileFinaleReport(next);
+    else setInspectionRound(next);
+  }, [inspectionRound, fileFinaleReport]);
+  const handleInspectionExtend = useCallback(() => {
+    setInspectionRound((prev) => (prev ? extendInspectionTimer(prev) : prev));
+  }, []);
+  const handleInspectionTimerEnabled = useCallback((enabled: boolean) => {
+    setInspectionRound((prev) =>
+      prev ? setInspectionTimerEnabled(prev, enabled) : prev
+    );
+  }, []);
+  const handleInspectionTick = useCallback((seconds: number) => {
+    setInspectionRound((prev) =>
+      prev ? tickInspectionTimer(prev, seconds) : prev
+    );
+  }, []);
+
   // 7. BGM Synth Controller
   useEffect(() => {
     if (bgmEnabled && soundEnabled && !globalMuted && playState === "playing") {
@@ -743,6 +840,19 @@ export const ClinicalTrialChaos: React.FC = () => {
       setIsPaused(false);
       setAuditor(applyOfficeToAuditor(createInitialAuditorState(), office));
       ambientTimerRef.current = 0;
+      // Phases 2 and 3 continue the run, so the inspection that ends it can
+      // ask about every skeleton and every locked CRF since phase 1 (#2089).
+      if (mode === "campaign" && targetPhase > 1) {
+        campaignSkeletonsRef.current = [
+          ...campaignSkeletonsRef.current,
+          ...sponsorRef.current.skeletons,
+        ];
+      } else {
+        campaignSkeletonsRef.current = [];
+      }
+      if (targetPhase === 1) inspectionLedgerRef.current = [];
+      pendingFinaleRef.current = null;
+      setInspectionRound(null);
       const freshSponsor = createInitialSponsorState();
       sponsorRef.current = freshSponsor;
       setSponsor(freshSponsor);
@@ -1095,8 +1205,14 @@ export const ClinicalTrialChaos: React.FC = () => {
       {
         allClean,
         suspicionDelta,
-      }: { allClean: boolean; suspicionDelta: number }
+      }: { allClean: boolean; suspicionDelta: number },
+      signature: InspectionSignature
     ) => {
+      // The audit trail the finale inspection asks about (#2089).
+      inspectionLedgerRef.current = [
+        ...inspectionLedgerRef.current,
+        createInspectionRecord(subj, domain, signature),
+      ];
       queueFolderFx(
         "drop",
         subj,
@@ -1191,7 +1307,41 @@ export const ClinicalTrialChaos: React.FC = () => {
         setNextDossierCue(null);
       }
 
-      if (phaseCleared) {
+      if (phaseCleared && gameMode === "campaign" && phase === 3) {
+        // The campaign finale (#2089): the auditor interviews the site about
+        // records from this run before the report is filed.
+        setPlayState("phase_cleared");
+        playSuccess();
+        const skeletons = [
+          ...campaignSkeletonsRef.current,
+          ...sponsorRef.current.skeletons,
+        ];
+        const records = inspectionLedgerRef.current;
+        pendingFinaleRef.current = {
+          score: settledScore,
+          auditor,
+          logs: auditLogs,
+          violations: ruleViolations,
+          protocol: activeProtocol,
+          skeletons,
+          chargedSkeletons: campaignSkeletonsRef.current.length,
+          amendments: amendmentEffectsRef.current,
+        };
+        const round = createInspectionRound(
+          records,
+          skeletons,
+          createSeededRandom(getInspectionSeed(records))
+        );
+        if (round.questions.length === 0) {
+          fileFinaleReport(round);
+        } else {
+          setInspectionRound(round);
+          announce(
+            "Database locked. The FDA inspector is pulling records for a closing interview.",
+            "assertive"
+          );
+        }
+      } else if (phaseCleared) {
         setPlayState("phase_cleared");
         playSuccess();
         // Grade the phase on the tallies after this final CRF, so its clean
@@ -1210,9 +1360,6 @@ export const ClinicalTrialChaos: React.FC = () => {
         );
         setBimoReport(report);
         setLastBimoReport(report);
-        if (phase === 3 && report.verdict.startsWith("NAI")) {
-          recordArcadeMilestone("clinical-chaos", "nai_campaign");
-        }
       }
     },
     [
@@ -1237,6 +1384,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       setConveyorSubjects,
       setPowerUps,
       commitAmendmentEffects,
+      fileFinaleReport,
     ]
   );
 
@@ -1298,10 +1446,21 @@ export const ClinicalTrialChaos: React.FC = () => {
             `⚡ [FAST-TRACK 21 CFR PASS] Expedited NDA sign-off for ${cleanedSubject.subjectLabel} -> ${domain}.`,
             "COMPLIANT"
           );
-          completeSubmission(cleanedSubject, domain, {
-            allClean: true,
-            suspicionDelta: result.success ? result.suspicionDelta : 0,
-          });
+          completeSubmission(
+            cleanedSubject,
+            domain,
+            {
+              allClean: true,
+              suspicionDelta: result.success ? result.suspicionDelta : 0,
+            },
+            {
+              method: "fast-track",
+              reason: cleanedSubject.isSAE
+                ? "Urgent Safety Expedited"
+                : "Intent to Submit",
+              signatures: 1,
+            }
+          );
         }
       }
 
@@ -1399,7 +1558,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       subj: ClinicalSubject,
       reason: SignatureReason,
       domain: CDISCDomain,
-      mode: "quick" | "full"
+      mode: "quick" | "full",
+      signatures = 1
     ) => {
       if (submittedSubjectIdsRef.current.has(subj.id)) {
         setSignatureModal((prev) => ({
@@ -1425,10 +1585,17 @@ export const ClinicalTrialChaos: React.FC = () => {
           result.suspicionDelta
         );
 
-        completeSubmission(subj, domain, {
-          allClean: isSubjectFullyCompliant(subj),
-          suspicionDelta: result.suspicionDelta,
-        });
+        completeSubmission(
+          subj,
+          domain,
+          {
+            allClean: isSubjectFullyCompliant(subj),
+            suspicionDelta: result.suspicionDelta,
+          },
+          mode === "quick"
+            ? { method: "routine", reason, signatures: 0 }
+            : { method: "signed", reason, signatures }
+        );
         announce(`${subj.subjectLabel} routed to ${domain}`, "polite");
       } else {
         triggerSound("error");
@@ -1589,7 +1756,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       signatureModal.subject,
       signatureModal.selectedReason,
       targetRoutingStation,
-      "full"
+      "full",
+      signatureModal.signaturesRequired ?? 1
     );
   }, [
     signatureModal,
@@ -2324,7 +2492,8 @@ export const ClinicalTrialChaos: React.FC = () => {
     signatureDialogOpen ||
     pauseDialogOpen ||
     stressSheetOpen ||
-    bimoDialogOpen;
+    bimoDialogOpen ||
+    !!inspectionRound;
   useEffect(() => {
     const board = containerRef.current;
     if (!board || !anyTrappedDialogOpen) return;
@@ -2410,6 +2579,9 @@ export const ClinicalTrialChaos: React.FC = () => {
     ) {
       e.preventDefault();
     }
+
+    // The finale inspection owns the keyboard until its report is filed.
+    if (inspectionRound) return;
 
     // The inspection report sits on top of everything: Escape closes it and
     // no other hotkey (e.g. Enter = start shift) may act behind it.
@@ -5672,6 +5844,19 @@ export const ClinicalTrialChaos: React.FC = () => {
           </div>
         )}
 
+      {/* Campaign-finale FDA inspection interview (#2089) */}
+      {inspectionRound && (
+        <InspectionRoundDialog
+          round={inspectionRound}
+          onAnswer={handleInspectionAnswer}
+          onNext={handleInspectionNext}
+          onExtend={handleInspectionExtend}
+          onSetTimerEnabled={handleInspectionTimerEnabled}
+          onTick={handleInspectionTick}
+          returnFocusTo={containerRef}
+        />
+      )}
+
       {/* FDA BIMO Inspection Report Modal */}
       {bimoReport && (
         <div
@@ -5779,6 +5964,31 @@ export const ClinicalTrialChaos: React.FC = () => {
                   {bimoReport.summary}
                 </p>
               </div>
+
+              {bimoReport.inspection && (
+                <p
+                  data-testid="cc-bimo-interview"
+                  className={`rounded-xl border p-3 ${
+                    bimoReport.inspection.clean
+                      ? "border-emerald-500/40 bg-emerald-500/5 text-emerald-200"
+                      : "border-amber-500/40 bg-amber-500/5 text-amber-200"
+                  }`}
+                >
+                  <span className="font-bold">
+                    Closing interview: {bimoReport.inspection.recordCorrect}/
+                    {bimoReport.inspection.recordQuestions} records answered
+                    from the audit trail
+                  </span>
+                  {bimoReport.inspection.skeletonQuestions > 0 && (
+                    <span className="text-zinc-400">
+                      {" "}
+                      · {bimoReport.inspection.skeletonsDisclosed}/
+                      {bimoReport.inspection.skeletonQuestions} sponsor
+                      shortcuts disclosed
+                    </span>
+                  )}
+                </p>
+              )}
 
               {bimoReport.auditYear !== undefined && (
                 <p

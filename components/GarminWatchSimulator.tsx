@@ -24,7 +24,21 @@ import {
   WatchHardware,
   type WatchBezelTheme,
 } from "@/components/garmin-watch/WatchHardware";
-import { CompanionPanel } from "@/components/garmin-watch/CompanionPanel";
+import {
+  CompanionPanel,
+  type RunMode,
+} from "@/components/garmin-watch/CompanionPanel";
+import { TrainingPlanPanel } from "@/components/garmin-watch/TrainingPlanPanel";
+import {
+  planScreenLabel,
+  renderPlanFace,
+} from "@/components/garmin-watch/plan-face-art";
+import {
+  useTrainingPlan,
+  type PlanInput,
+} from "@/components/garmin-watch/useTrainingPlan";
+import type { PlanRun } from "@/lib/garmin-plan";
+import { stepRaceDay } from "@/lib/garmin-raceday";
 import {
   pusherAnchorPercent,
   screenBoxPercent,
@@ -85,6 +99,7 @@ import {
   type RaceVerdict,
 } from "@/lib/garmin-race";
 import {
+  PLAN_RUN_MODE,
   RACE_CATEGORY_KEY,
   RACE_COURSE_KEY,
   RACE_MODE_KEY,
@@ -93,6 +108,7 @@ import {
   raceRecordOf,
   readRaceCategory,
   readRaceCourse,
+  readPlanMode,
   readRaceMode,
   saveResult,
   writeRacePref,
@@ -328,9 +344,26 @@ const getRaceCategoryServerSnapshot = (): RaceCategory => "any";
 const getGhostOnServerSnapshot = () => true;
 const getGhostTargetServerSnapshot = (): GhostTarget => "pr";
 
-/** The bests a run's laps are judged against: races keep their own (#2019). */
+/**
+ * The bests a run's laps are judged against: races keep their own (#2019),
+ * and so does each Training Plan workout, which is one stage long (#1994).
+ */
 const splitsKeyOf = (s: GameEngineState) =>
-  `${bestsKey(s.device, isFitnessRun(s))}${s.race ? ":race" : ""}`;
+  `${bestsKey(s.device, isFitnessRun(s))}${
+    s.plan ? `:plan${s.plan.stage}` : s.race ? ":race" : ""
+  }`;
+
+/** What each key does on a Training Plan screen (#1994). */
+const PLAN_KEYS: Readonly<Record<string, PlanInput>> = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+  " ": "select",
+  Enter: "select",
+  Escape: "back",
+  Backspace: "back",
+};
 
 /** A race as it ended: its outcome, verdict, board place and record (#2019). */
 interface RaceReport {
@@ -386,7 +419,12 @@ function ghostOptions(
         .filter((t): t is GhostSample => t !== null);
   return {
     ghost: sample ? { sample, trail } : null,
-    ghostGapMs: ghostGapMs(track, paceMeters(s), clock),
+    // The ghost records world distance, so its gap is measured on it too.
+    ghostGapMs: ghostGapMs(
+      track,
+      Math.max(s.furthestMeters ?? 0, s.distanceMeters),
+      clock
+    ),
   };
 }
 
@@ -650,8 +688,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     readGhostTarget,
     getGhostTargetServerSnapshot
   );
-  // Races run with Dev Mode off; the stored Dev Mode setting is kept.
-  const runRules: GameRules = devMode && !raceMode ? "dev" : "fitness";
+  // The Training Plan (#1994) is a third run mode, stored with Race Mode's.
+  const planMode = useSyncExternalStore(
+    subscribeRacePrefs,
+    readPlanMode,
+    getRaceModeServerSnapshot
+  );
+  // Races and the plan run with Dev Mode off; the stored setting is kept.
+  const runRules: GameRules =
+    devMode && !raceMode && !planMode ? "dev" : "fitness";
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
@@ -867,18 +912,35 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // A race takes the picked course and category, or the same race again when
   // `restart` is given. The fixed-step carry and the race report start over.
   const beginRun = useCallback(
-    (restart?: RaceSetup) => {
+    (restart?: RaceSetup, workout?: { run: PlanRun; lives: number | null }) => {
       const today = new Date();
+      // Race Day is a race on its own board, on the plan's course (#1994).
       const race =
         restart ??
-        (raceMode ? raceSetup(raceCourse, raceCategory, today) : undefined);
+        (workout
+          ? workout.run.raceDay
+            ? {
+                course: "raceday" as const,
+                category: "any" as const,
+                seed: workout.run.seed,
+              }
+            : undefined
+          : raceMode
+            ? raceSetup(raceCourse, raceCategory, today)
+            : undefined);
       if (!restart) raceDayRef.current = today;
-      const started = startGame(
+      const fresh = startGame(
         setRules(stateRef.current, runRules),
         deviceTarget,
         runTuning,
-        race
+        race,
+        workout?.run
       );
+      // A workout starts with the plan's lives; practice with a fresh three.
+      const started =
+        workout && workout.lives !== null
+          ? { ...fresh, lives: workout.lives }
+          : fresh;
       raceCarryRef.current = 0;
       raceRunIdRef.current += 1;
       ghostTrackRef.current = race ? loadGhost(race) : null;
@@ -889,7 +951,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ...started,
         bestSplits: loadBests(splitsKeyOf(started)).splits,
       }));
-      if (race && !restart) {
+      if (race && !restart && !workout) {
         const info = RACE_CATEGORY_INFO[race.category];
         announce(
           `Race: ${RACE_COURSE_NAMES[race.course]}, ${info.name}. ${info.rule}`,
@@ -909,13 +971,61 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     ]
   );
 
+  // A fresh run from the watch, the result card or the Training Plan: the
+  // result card and the telemetry start over.
+  const launchRun = useCallback(
+    (workout?: { run: PlanRun; lives: number | null }) => {
+      setRunStartBest(
+        Math.max(
+          stateRef.current.highScore,
+          parseInt(getHighScoreSnapshot(), 10) || 0
+        )
+      );
+      setResultDismissed(false);
+      telemetryRef.current.reset();
+      setTelemetryCount(0);
+      runStartedAtRef.current = Date.now();
+      beginRun(undefined, workout);
+      recordEvent("garmin_simulator_start", "project_click").catch(() => {});
+      playSuccess();
+    },
+    [beginRun, recordEvent, playSuccess]
+  );
+
+  // The Training Plan (#1994): its save and the screen the watch shows
+  // between workouts. Entering a workout starts it here.
+  const startWorkout = useCallback(
+    (run: PlanRun, lives: number | null) => launchRun({ run, lives }),
+    [launchRun]
+  );
+  const plan = useTrainingPlan({ active: planMode, announce, startWorkout });
+  const planPress = plan.press;
+  const planModeRef = useRef(planMode);
+  useEffect(() => {
+    planModeRef.current = planMode;
+  }, [planMode]);
+  // Whether the watch shows a Training Plan screen rather than the run.
+  const planFaceShowing = useCallback(
+    () =>
+      planModeRef.current &&
+      plan.viewRef.current.save !== null &&
+      stateRef.current.gameState !== "playing" &&
+      stateRef.current.gameState !== "paused",
+    [plan.viewRef]
+  );
+  // A press on a Training Plan screen. False when no plan screen is showing.
+  const pressPlan = useCallback(
+    (input: PlanInput) => planFaceShowing() && planPress(input),
+    [planFaceShowing, planPress]
+  );
+
   // The bests the last run was judged against, read just before that run was
   // saved, so the result card can show the difference. Keyed on the run.
   const [runRecord, setRunRecord] = useState<{
-    seed: number;
+    key: string;
     previous: GarminBests;
   } | null>(null);
-  const savedRunSeedRef = useRef<number | null>(null);
+  const savedRunSeedRef = useRef<number | string | null>(null);
   // Each race is saved once per run, keyed by the run id (declared with the
   // race refs above beginRun): the same course is raced again and again, so
   // its seed alone would not tell the runs apart.
@@ -923,8 +1033,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // Each run's bests are saved once, when it ends: the 5K is finished
   // (summary), or the run crashed or lost power. A crash keeps its splits but
   // never sets a total.
+  const { runOver } = plan;
   useEffect(() => {
     if (!isRunOver(gameState)) return;
+    // A Training Plan workout settles on the map first (#1994).
+    if (gameState.plan) runOver(gameState);
     if (gameState.race) {
       // A race keeps its own splits, and a judged time goes on its board.
       const runId = raceRunIdRef.current;
@@ -979,9 +1092,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       return;
     }
     const seed = gameState.courseSeed ?? 0;
-    if (savedRunSeedRef.current === seed) return;
-    savedRunSeedRef.current = seed;
-    const key = bestsKey(gameState.device, isFitnessRun(gameState));
+    // Every workout runs the plan's one seed, so a workout is told apart by its run.
+    const savedKey = gameState.plan ? `plan:${raceRunIdRef.current}` : seed;
+    if (savedRunSeedRef.current === savedKey) return;
+    savedRunSeedRef.current = savedKey;
+    const key = splitsKeyOf(gameState);
     const previous = loadBests(key);
     saveBests(
       key,
@@ -993,8 +1108,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       )
     );
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRunRecord({ seed, previous });
-  }, [gameState, announce]);
+    setRunRecord({ key, previous });
+  }, [gameState, announce, runOver]);
 
   // Audio Beep Helpers (Authentic Garmin 1200-1600Hz Piezo)
   const playBeep = useCallback(
@@ -1014,7 +1129,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // just after running off an edge still counts (#1950).
   const handleJump = useCallback(() => {
     const current = stateRef.current;
-    if (current.gameState !== "playing") return;
+    if (current.gameState !== "playing") {
+      // On a Training Plan screen UP steps back through the map (#1994).
+      pressPlan("prev");
+      return;
+    }
     const next = applyTransition((state) => pressJump(state));
     if (
       current.isGrounded !== next.isGrounded ||
@@ -1023,7 +1142,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       triggerHaptic(20);
       playBeep(900, 0.03);
     }
-  }, [playBeep, applyTransition]);
+  }, [playBeep, applyTransition, pressPlan]);
 
   const handleJumpRelease = useCallback(() => {
     applyTransition((state) => releaseJump(state));
@@ -1058,7 +1177,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // jettisons the oldest variable.
   const handleJettison = useCallback(() => {
     const current = stateRef.current;
-    if (current.gameState !== "playing") return;
+    if (current.gameState !== "playing") {
+      pressPlan("next");
+      return;
+    }
     if (enterStation(current) !== current) {
       triggerHaptic(20);
       playBeep(880, 0.05);
@@ -1081,7 +1203,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       return;
     }
     applyTransition((state) => jettisonOldestVariable(state).state);
-  }, [playBeep, applyTransition, setAlertMessage]);
+  }, [playBeep, applyTransition, setAlertMessage, pressPlan]);
 
   // Trigger Backlight / Flashlight (LIGHT)
   const handleToggleLight = useCallback(() => {
@@ -1126,10 +1248,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // BACK is the action key at the Heat Map and Cape tiers and collects
   // garbage otherwise; X and G always do one each.
   const handleBack = useCallback(() => {
+    if (pressPlan("back")) return;
     const power = stateRef.current.power;
     if (power === "heatmap" || power === "cape") handleAction();
     else handleForceGc();
-  }, [handleAction, handleForceGc]);
+  }, [handleAction, handleForceGc, pressPlan]);
 
   // Save Persistent Variable to Flash NVRAM (+8KB flash, RAM untouched)
   const handleSaveFlash = useCallback(() => {
@@ -1172,34 +1295,28 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     triggerHaptic(20);
     playButtonTone();
     const current = stateRef.current;
+    // In the Training Plan, START selects on the map and its cards (#1994).
+    if (pressPlan("select")) return;
     if (
       current.gameState === "idle" ||
       current.gameState === "crashed" ||
       current.gameState === "shutdown" ||
       current.gameState === "summary"
     ) {
-      setRunStartBest(
-        Math.max(current.highScore, parseInt(getHighScoreSnapshot(), 10) || 0)
-      );
-      setResultDismissed(false);
-      telemetryRef.current.reset();
-      setTelemetryCount(0);
-      runStartedAtRef.current = Date.now();
-      beginRun();
-      recordEvent("garmin_simulator_start", "project_click").catch(() => {});
-      playSuccess();
+      launchRun();
     } else if (current.gameState === "playing") {
       applyTransition((state) => pauseGame(state));
     } else if (current.gameState === "paused") {
       applyTransition((state) => resumeGame(state));
     }
-  }, [beginRun, playButtonTone, playSuccess, recordEvent, applyTransition]);
+  }, [launchRun, playButtonTone, applyTransition, pressPlan]);
 
   // Quick restart (#2019): while a race is paused, Backspace runs the same
   // race again, on the same course seed.
   const restartRace = useCallback(() => {
     const current = stateRef.current;
-    if (current.gameState !== "paused" || !current.race) return;
+    // A workout's lives come from the plan, so it is never restarted (#1994).
+    if (current.gameState !== "paused" || !current.race || current.plan) return;
     triggerHaptic(20);
     playButtonTone();
     telemetryRef.current.reset();
@@ -1210,13 +1327,18 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   }, [beginRun, playButtonTone, announce]);
 
   // Race Mode picker (#2019): set while idle or after a run ends.
-  const handleSetRaceMode = useCallback(
-    (on: boolean) => {
-      writeRacePrefAndNotify(RACE_MODE_KEY, on ? "1" : "0");
+  const handleSetRunMode = useCallback(
+    (mode: RunMode) => {
+      writeRacePrefAndNotify(
+        RACE_MODE_KEY,
+        mode === "race" ? "1" : mode === "plan" ? PLAN_RUN_MODE : "0"
+      );
       announce(
-        on
+        mode === "race"
           ? "Race Mode on. The next run is a race on the picked course, with Dev Mode off."
-          : "Training Run. The next run lays a random course.",
+          : mode === "plan"
+            ? "Training Plan. The watch shows the Morning Report, then the map."
+            : "Training Run. The next run lays a random course.",
         "polite"
       );
     },
@@ -1411,6 +1533,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     }
 
     const status = stateRef.current.gameState;
+    // A Training Plan screen takes the arrows, Space, Enter and BACK (#1994).
+    const planInput = PLAN_KEYS[e.key];
+    if (planInput && planFaceShowing()) {
+      if (!e.repeat) plan.press(planInput);
+      return;
+    }
     if (e.key === "ArrowUp" || (e.key === " " && status === "playing")) {
       // Held keys repeat; only the first press jumps.
       if (!e.repeat) handleJump();
@@ -1874,7 +2002,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ) {
           const last = i === stepCount - 1;
           nextState = applyTransition(
-            (state) => updateGameSimulation(state, stepMs),
+            // Race Day moves The Wall after each step (#1994).
+            (state) =>
+              stepRaceDay(state, updateGameSimulation(state, stepMs), stepMs),
             (next) => {
               if (next.gameState !== prevStatus) return true;
               if (!last) return false;
@@ -1945,7 +2075,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         if (finished || (nextState.stage ?? 1) > prevStage) {
           recordArcadeMilestone("garmin-watch", "stage_cleared");
         }
-        if (finished) {
+        // A Training Plan workout is one stage, not the 5K.
+        if (finished && !nextState.plan) {
           recordArcadeMilestone("garmin-watch", "run_complete");
         }
       }
@@ -1957,14 +2088,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         if (ctx) {
           const scale = canvasScaleRef.current;
           applyCanvasScale(ctx, scale);
-          renderWatchFace(ctx, stateRef.current, groundStripRef.current, {
-            reducedMotion: reducedMotionRef.current,
-            ...ghostOptions(
-              stateRef.current,
-              ghostOnRef.current ? ghostTrackRef.current : null,
-              reducedMotionRef.current
-            ),
-          });
+          const planView = plan.viewRef.current;
+          if (planFaceShowing() && planView.save) {
+            // Between workouts the watch shows the Training Plan (#1994).
+            renderPlanFace(ctx, planView.save, planView.screen);
+          } else {
+            renderWatchFace(ctx, stateRef.current, groundStripRef.current, {
+              reducedMotion: reducedMotionRef.current,
+              ...ghostOptions(
+                stateRef.current,
+                ghostOnRef.current ? ghostTrackRef.current : null,
+                reducedMotionRef.current
+              ),
+            });
+          }
         }
       }
     },
@@ -2182,7 +2319,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   }
 
   const rebootFromCard = () => {
-    handleStartStop();
+    triggerHaptic(20);
+    playButtonTone();
+    launchRun();
     window.setTimeout(() => {
       containerRef.current?.focus({ preventScroll: true });
     }, 0);
@@ -2267,17 +2406,24 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   width={CANVAS_SIZE}
                   height={CANVAS_SIZE}
                   role="img"
-                  aria-label={`Smartwatch display simulator. Status: ${gameState.gameState}. ${stageLabel(gameState)}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
-                    gameState.score
-                  }, High Score: ${effectiveHighScore}.${courseReadout(gameState)} ${
-                    fitnessView
-                      ? `Body Battery: ${Math.round(gameState.bodyBattery?.value ?? 100)}.`
-                      : `Memory: ${gameState.allocatedRamKb.toFixed(
-                          1
-                        )} of ${currentProfile.ramLimitKb} KB. Battery: ${Math.round(
-                          gameState.battery
-                        )}%. Condensation: ${Math.round(gameState.fogLevel * 100)}%.`
-                  }`}
+                  aria-label={
+                    planMode &&
+                    plan.save &&
+                    gameState.gameState !== "playing" &&
+                    gameState.gameState !== "paused"
+                      ? `Smartwatch display simulator. ${planScreenLabel(plan.save, plan.screen)}`
+                      : `Smartwatch display simulator. Status: ${gameState.gameState}. ${stageLabel(gameState)}, lives ${gameState.lives ?? 1}${(gameState.power ?? "base") === "base" ? "" : `, ${POWER_NAMES[gameState.power ?? "base"]}`}. Score: ${
+                          gameState.score
+                        }, High Score: ${effectiveHighScore}.${courseReadout(gameState)} ${
+                          fitnessView
+                            ? `Body Battery: ${Math.round(gameState.bodyBattery?.value ?? 100)}.`
+                            : `Memory: ${gameState.allocatedRamKb.toFixed(
+                                1
+                              )} of ${currentProfile.ramLimitKb} KB. Battery: ${Math.round(
+                                gameState.battery
+                              )}%. Condensation: ${Math.round(gameState.fogLevel * 100)}%.`
+                        }`
+                  }
                   onPointerDown={handleCanvasPointerDown}
                   onPointerUp={handleCanvasPointerUp}
                   onPointerMove={handleCanvasPointerMove}
@@ -2304,7 +2450,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
 
                 {/* Idle start card. The canvas draws no text while idle, so
                     nothing shows through behind it. */}
-                {gameState.gameState === "idle" && (
+                {gameState.gameState === "idle" && !planMode && (
                   <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/65 px-[14%] text-center font-mono">
                     <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-cyan-300">
                       Monkey C Mayhem
@@ -2450,95 +2596,139 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             returnFocusAfterPointerClick(e);
           }}
           raceMode={raceMode}
+          planMode={planMode}
           raceCourse={raceCourse}
           raceCategory={raceCategory}
           raceLocked={
             gameState.gameState === "playing" ||
             gameState.gameState === "paused"
           }
-          onSetRaceMode={handleSetRaceMode}
+          onSetRunMode={handleSetRunMode}
           onSetRaceCourse={handleSetRaceCourse}
           onSetRaceCategory={handleSetRaceCategory}
           ghostOn={ghostOn}
           ghostTarget={ghostTarget}
           onSetGhostOn={handleSetGhostOn}
           onSetGhostTarget={handleSetGhostTarget}
+          planPanel={
+            <TrainingPlanPanel
+              save={plan.save}
+              locked={
+                gameState.gameState === "playing" ||
+                gameState.gameState === "paused"
+              }
+              onChoose={(id) => {
+                plan.choose(id);
+                containerRef.current?.focus({ preventScroll: true });
+              }}
+              onNewPlan={plan.startNew}
+            />
+          }
         >
-          {runEnded && !resultDismissed && (
-            <ResultCard
-              key={`${gameState.gameState}-${crashType}`}
-              title={endTitle}
-              stamp={
-                gameState.gameState === "shutdown"
-                  ? "Power loss"
-                  : gameState.gameState === "crashed"
-                    ? fitnessView
-                      ? "DNF"
-                      : "Crashed"
-                    : "Finished"
-              }
-              verdict={
-                raceVerdict
-                  ? raceVerdict.result === "time"
-                    ? "win"
-                    : "loss"
-                  : gameState.gameState === "summary"
-                    ? "win"
-                    : "loss"
-              }
-              preventScroll
-              message={endMessage}
-              stats={endStats}
-              score={gameState.score}
-              previousBest={runStartBest}
-              primary={{
-                label: fitnessView ? "Run Again" : "Reboot & Restart",
-                icon: <IconPlayerPlay className="h-4 w-4" aria-hidden="true" />,
-                onClick: rebootFromCard,
-              }}
-              secondary={{
-                label: "Inspect watch",
-                onClick: () => {
-                  setResultDismissed(true);
-                  containerRef.current?.focus({ preventScroll: true });
-                },
-              }}
-            >
-              {gameState.race && (
-                <RaceReportCard
-                  setup={gameState.race}
-                  state={gameState}
-                  report={raceReport}
-                  shareNote={shareNote}
-                  onShare={() => {
-                    if (raceReport) void handleShareRace(raceReport);
-                  }}
-                />
-              )}
-              <RunSplitsSummary
-                state={gameState}
-                previous={
-                  runRecord?.seed === (gameState.courseSeed ?? 0)
-                    ? runRecord.previous
-                    : { splits: gameState.bestSplits ?? [] }
+          {runEnded &&
+            !resultDismissed &&
+            (!gameState.plan || plan.screen.kind === "result") && (
+              <ResultCard
+                key={`${gameState.gameState}-${crashType}`}
+                title={endTitle}
+                stamp={
+                  gameState.gameState === "shutdown"
+                    ? "Power loss"
+                    : gameState.gameState === "crashed"
+                      ? fitnessView
+                        ? "DNF"
+                        : "Crashed"
+                      : "Finished"
                 }
-              />
-              <p className="mt-4 text-[11px] text-zinc-400">
-                Shipping a real Connect IQ app?{" "}
-                <a
-                  href="/schedule"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() =>
-                    recordEvent("garmin_simulator", "project_click")
+                verdict={
+                  raceVerdict
+                    ? raceVerdict.result === "time"
+                      ? "win"
+                      : "loss"
+                    : gameState.gameState === "summary"
+                      ? "win"
+                      : "loss"
+                }
+                preventScroll
+                message={endMessage}
+                stats={endStats}
+                score={gameState.score}
+                previousBest={runStartBest}
+                primary={
+                  gameState.plan
+                    ? {
+                        label: "Back to training",
+                        icon: (
+                          <IconPlayerPlay
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        ),
+                        onClick: () => {
+                          setResultDismissed(true);
+                          plan.showReport();
+                          containerRef.current?.focus({ preventScroll: true });
+                        },
+                      }
+                    : {
+                        label: fitnessView ? "Run Again" : "Reboot & Restart",
+                        icon: (
+                          <IconPlayerPlay
+                            className="h-4 w-4"
+                            aria-hidden="true"
+                          />
+                        ),
+                        onClick: rebootFromCard,
+                      }
+                }
+                secondary={{
+                  label: "Inspect watch",
+                  onClick: () => {
+                    setResultDismissed(true);
+                    containerRef.current?.focus({ preventScroll: true });
+                  },
+                }}
+              >
+                {gameState.plan && plan.screen.kind === "result" && (
+                  <p className="mt-3 text-[12px] text-zinc-200">
+                    {plan.screen.outcome.text}
+                  </p>
+                )}
+                {gameState.race && (
+                  <RaceReportCard
+                    setup={gameState.race}
+                    state={gameState}
+                    report={raceReport}
+                    shareNote={shareNote}
+                    onShare={() => {
+                      if (raceReport) void handleShareRace(raceReport);
+                    }}
+                  />
+                )}
+                <RunSplitsSummary
+                  state={gameState}
+                  previous={
+                    runRecord?.key === splitsKeyOf(gameState)
+                      ? runRecord.previous
+                      : { splits: gameState.bestSplits ?? [] }
                   }
-                  className="text-zinc-300 underline underline-offset-2 hover:text-zinc-50"
-                >
-                  Book Consultation
-                </a>
-              </p>
-            </ResultCard>
-          )}
+                />
+                <p className="mt-4 text-[11px] text-zinc-400">
+                  Shipping a real Connect IQ app?{" "}
+                  <a
+                    href="/schedule"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      recordEvent("garmin_simulator", "project_click")
+                    }
+                    className="text-zinc-300 underline underline-offset-2 hover:text-zinc-50"
+                  >
+                    Book Consultation
+                  </a>
+                </p>
+              </ResultCard>
+            )}
         </CompanionPanel>
       </div>
       {/* Off-screen Accessible DOM Fallback Subtree */}

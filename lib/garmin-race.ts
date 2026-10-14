@@ -13,14 +13,17 @@
  * watch bundle.
  */
 
-/** The race courses. */
-export type RaceCourse = "saturday5k" | "daily";
+/**
+ * The race courses. Race Day is the Training Plan's last workout (#1994): it
+ * keeps its own board, and is entered from the map rather than picked.
+ */
+export type RaceCourse = "saturday5k" | "daily" | "raceday";
 
 /** The race categories, picked before the start. */
 export type RaceCategory =
   "any" | "allkudos" | "nogear" | "negsplit" | "allmedals";
 
-/** Every course, in picker order. */
+/** Every course the race picker offers, in picker order. */
 export const RACE_COURSES: readonly RaceCourse[] = ["saturday5k", "daily"];
 
 /** Every category, in picker order. */
@@ -36,6 +39,7 @@ export const RACE_CATEGORIES: readonly RaceCategory[] = [
 export const RACE_COURSE_NAMES: Record<RaceCourse, string> = {
   saturday5k: "Saturday 5K",
   daily: "Daily Workout",
+  raceday: "Race Day",
 };
 
 /** Display names of the categories, and the rule each one sets. */
@@ -299,7 +303,7 @@ export function shareText(
     "Monkey C Mayhem",
     setup.course === "daily"
       ? `${RACE_COURSE_NAMES.daily} ${localDay(date)}`
-      : RACE_COURSE_NAMES.saturday5k,
+      : RACE_COURSE_NAMES[setup.course],
     RACE_CATEGORY_INFO[setup.category].name.replace("5K ", ""),
     verdict.result === "time"
       ? formatRaceTime(outcome.timeMs)

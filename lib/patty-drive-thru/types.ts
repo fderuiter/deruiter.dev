@@ -95,7 +95,81 @@ export type RushWindow = readonly [startFraction: number, endFraction: number];
 export interface StartMeters {
   readonly sos: number;
   readonly dignity: number;
+  /**
+   * The hidden Solidarity value (#2087), carried whole from the day before.
+   * Left out, a shift starts from the usual value; saves from before #2087
+   * have none.
+   */
+  readonly solidarity?: number;
 }
+
+/** The hand-written micro-dilemmas a shift can put to the player (#2087). */
+export type DilemmaId =
+  "stale-fries" | "short-till" | "shake-machine" | "long-break";
+
+/** Who puts a dilemma to the player, which sets its caption and voice. */
+export type DilemmaSpeaker = "manager" | "coworker" | "customer";
+
+/** One answer to a dilemma and what it costs (#2087). */
+export interface DilemmaOption {
+  readonly id: string;
+  /** The button text, a few words. */
+  readonly label: string;
+  /** Meter changes, applied at once and clamped like every other change. */
+  readonly sos: number;
+  readonly dignity: number;
+  /** The change to the hidden Solidarity value. */
+  readonly solidarity: number;
+  /** Whole cents taken out of the pay stub as a till shortage. */
+  readonly payCents: number;
+  /** The diary line this answer leaves, in the first person. */
+  readonly diary: string;
+}
+
+/** A dilemma as written: the prompt, two answers and the default. */
+export interface Dilemma {
+  readonly id: DilemmaId;
+  readonly speaker: DilemmaSpeaker;
+  /** What is said or seen, one or two sentences. */
+  readonly prompt: string;
+  readonly options: readonly [DilemmaOption, DilemmaOption];
+  /** The option taken when the timer runs out. */
+  readonly defaultOptionId: string;
+  /** The diary line when the timer ran out, said in place of the option's. */
+  readonly timeoutDiary: string;
+}
+
+/** When a planned dilemma is put to the player during a shift (#2087). */
+export interface DilemmaSlot {
+  /** Shift time in seconds at which it is offered. */
+  readonly at: number;
+  readonly dilemmaId: DilemmaId;
+}
+
+/** The dilemma waiting for an answer. The booth keeps running meanwhile. */
+export interface OpenDilemma {
+  readonly dilemmaId: DilemmaId;
+  readonly offeredAt: number;
+  /** Shift time at which the default option is taken. */
+  readonly closesAt: number;
+}
+
+/** One dilemma answered, by the player or by the clock (#2087). */
+export interface DilemmaChoice {
+  readonly dilemmaId: DilemmaId;
+  readonly optionId: string;
+  /** Shift time of the answer. */
+  readonly at: number;
+  /** True when the timer ran out and the default was taken. */
+  readonly timedOut: boolean;
+}
+
+/**
+ * How a shift ended in the diary (#2087): the meter failures, or at close
+ * one of three endings chosen from Solidarity and Dignity.
+ */
+export type ShiftEndingId =
+  "docked" | "breakdown" | "company-man" | "silent-exit" | "walkout";
 
 export interface ShiftConfig extends ShiftScenario {
   /** Any string; the same seed and actions replay to the same shift. */
@@ -112,6 +186,11 @@ export interface ShiftConfig extends ShiftScenario {
   readonly ageUnlocked?: boolean;
   /** Where Dignity and SOS start, carried from the day before (#2086). */
   readonly startMeters?: StartMeters;
+  /**
+   * Seconds the player has to answer a dilemma (#2087). Left out, the usual
+   * window; the booth passes a longer one for players who ask for more time.
+   */
+  readonly dilemmaWindowSec?: number;
 }
 
 /** The days of the week mode (#2086), Monday to Friday. */
@@ -134,6 +213,17 @@ export interface WeekDayResult {
   readonly yells: number;
   /** The standing meters when the day ended, before any carry-over. */
   readonly endMeters: StartMeters;
+  /** How the day ended in the diary; missing from saves before #2087. */
+  readonly ending?: ShiftEndingId;
+  /** The dilemmas answered that day, in order; missing before #2087. */
+  readonly choices?: readonly DayChoice[];
+}
+
+/** One dilemma answer as a day of the week keeps it (#2087). */
+export interface DayChoice {
+  readonly dilemmaId: DilemmaId;
+  readonly optionId: string;
+  readonly timedOut: boolean;
 }
 
 /**
@@ -198,6 +288,15 @@ export interface ShiftState {
   readonly nextArrivalAt: number;
   /** How many random draws this shift has consumed. */
   readonly draws: number;
+  /**
+   * The hidden Solidarity value (#2087), 0 to 100: how far the player has
+   * stood with the crew. Dilemmas move it; the booth never shows it.
+   */
+  readonly solidarity: number;
+  /** The dilemma waiting for an answer, or null. */
+  readonly dilemma: OpenDilemma | null;
+  /** Every dilemma answered so far, oldest first. */
+  readonly dilemmaChoices: readonly DilemmaChoice[];
 }
 
 /** Everything the player can do. */
@@ -209,7 +308,8 @@ export type ShiftAction =
   | { readonly type: "reenterDrink"; readonly orderId: number }
   | { readonly type: "flagCoworker"; readonly orderId: number }
   | { readonly type: "bump"; readonly orderId: number }
-  | { readonly type: "wipe" };
+  | { readonly type: "wipe" }
+  | { readonly type: "chooseDilemma"; readonly optionId: string };
 
 /** One-shot facts for audio, screen effects and the diary log. */
 export type ShiftEvent =
@@ -233,6 +333,13 @@ export type ShiftEvent =
   | { readonly type: "manager-yell" }
   | { readonly type: "wiped" }
   | { readonly type: "rush-started" }
+  | { readonly type: "dilemma-offered"; readonly dilemmaId: DilemmaId }
+  | {
+      readonly type: "dilemma-resolved";
+      readonly dilemmaId: DilemmaId;
+      readonly optionId: string;
+      readonly timedOut: boolean;
+    }
   | { readonly type: "shift-ended"; readonly outcome: ShiftOutcome };
 
 /** One event with the shift time it happened, as the booth keeps them. */

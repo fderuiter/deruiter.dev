@@ -17,6 +17,7 @@
 
 ## Type Aliases
 
+- [SkeletonDisposition](type-aliases/SkeletonDisposition.md)
 - [SponsorEvent](type-aliases/SponsorEvent.md)
 
 ## Variables

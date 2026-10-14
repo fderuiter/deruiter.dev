@@ -60,6 +60,16 @@ export function cueFor(event: ShiftEvent): SequenceNote[] | null {
         volume: 0.2,
         pan: KITCHEN_PAN,
       }));
+    case "dilemma-offered":
+      // Two soft centred taps: someone wants an answer (#2087).
+      return [0, 0.16].map((delay) => ({
+        frequency: 587,
+        duration: 0.1,
+        delay,
+        type: "triangle" as const,
+        volume: 0.25,
+        pan: 0,
+      }));
     case "coworker-ready":
       return [
         { frequency: 1568, duration: 0.18, type: "sine", pan: KITCHEN_PAN },

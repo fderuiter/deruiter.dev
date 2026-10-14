@@ -147,6 +147,15 @@ async function runBuildPipeline() {
   );
   runStep("npx", ["tsx", "scripts/verify-terms.ts"]);
 
+  // 2.6. Type Checking Phase (Phase 1.4). Runs before migrations so a type
+  // error never touches the database, and in its own process because inside
+  // `next build` the checker started while the build still held ~5.7 GB of
+  // webpack state, which with tsc's ~2.7 GB overran Vercel's 8 GB machine
+  // (#2100). next.config.ts skips Next's own check, so this phase is the
+  // build's type gate.
+  console.log("\n--- Phase 1.4: Type Checking (Standalone Process) ---");
+  runStep("npm", ["run", "typecheck"]);
+
   // 3. Pre-Build Offline Migration Validation (Phase 1.5)
   console.log(
     "\n--- Phase 1.5: Offline Migration Integrity and Safety Validation ---"

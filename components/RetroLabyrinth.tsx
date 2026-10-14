@@ -91,6 +91,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
 import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
+import { FirmwareBay } from "@/components/retro-labyrinth/FirmwareBay";
 import {
   patrolThreat,
   type ThreatLevel,
@@ -151,6 +152,16 @@ import {
   formatCampaignRoomBadge,
   saveCyberdeckProfile,
   recordCyberdeckRoomResult,
+  recordCyberdeckMilestone,
+  cyberdeckStartingStats,
+  firmwareBonuses,
+  aoeRadiusBonus,
+  isCyberdeckClassUnlocked,
+  purchaseFirmwareTier,
+  CLASS_UNLOCK_MILESTONES,
+  type CyberdeckMilestone,
+  type FirmwareTiers,
+  type FirmwareUpgradeId,
   STAGE_1_MAZE,
   EMPTY_RUN_BUILD,
   applyRunReward,
@@ -271,7 +282,8 @@ type GameStatus =
   | "timesheet"
   | "hacking"
   | "darknet_shop"
-  | "class_select";
+  | "class_select"
+  | "firmware_bay";
 
 /**
  * The floating line for an ammo pickup or purchase, naming what the player's
@@ -345,6 +357,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     useState<CyberdeckClassId>("script_kiddie");
   const selectedClass =
     CYBERDECK_CLASSES[selectedClassId] || CYBERDECK_CLASSES.script_kiddie;
+  // The firmware tiers in force for this run. Tiers bought between runs wait
+  // for the next run start, so a purchase never changes a run under way
+  // (#2085).
+  const [runFirmware, setRunFirmware] = useState<FirmwareTiers>(
+    () => profile.firmwareUpgrades
+  );
+  const runFirmwareBonus = useMemo(
+    () => firmwareBonuses(runFirmware),
+    [runFirmware]
+  );
+  const openingStats = cyberdeckStartingStats(selectedClassId, runFirmware);
+  // Firmware and the APT Specialist's passive both widen the AoE (#2085).
+  const runAoeRadiusBonus = aoeRadiusBonus(selectedClassId, runFirmware);
 
   // CRT Phosphor Theme & Calibration. Emerald phosphor is the default
   // theme (#1522). The CRT follows the cabinet's Setup Wizard filter, Soft
@@ -392,6 +417,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // means the first option) and the reward (an offer index; null skips it).
   const [pendingRoute, setPendingRoute] = useState<number | null>(null);
   const [pendingReward, setPendingReward] = useState<number | null>(null);
+  // The class a cleared room just unlocked, shown on its card (#2085).
+  const [unlockNotice, setUnlockNotice] = useState<string | null>(null);
 
   // Active room & grid
   const [currentMaze, setCurrentMaze] = useState<string[][]>(STAGE_1_MAZE);
@@ -403,8 +430,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [maxPlayerHp, setMaxPlayerHp] = useState(selectedClass.baseHp);
 
   // Cyberdeck RAM & Currency Resources
-  const [currentRam, setCurrentRam] = useState(selectedClass.baseRam);
-  const [maxRam, setMaxRam] = useState(selectedClass.baseRam);
+  const [currentRam, setCurrentRam] = useState(openingStats.ram);
+  const [maxRam, setMaxRam] = useState(openingStats.ram);
   const [cryptoBounty, setCryptoBounty] = useState(0);
   // Crypto earned in the current room. Only this counts toward the room's
   // exit bonus, so a coin never scores twice (#1668).
@@ -413,9 +440,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // entry for the rest of the run (#1668).
   const [cveFeedActive, setCveFeedActive] = useState(false);
   const cveFeedRef = useRef(false);
-  const [bypassChips, setBypassChips] = useState(
-    selectedClass.startBypassChips
-  );
+  const [bypassChips, setBypassChips] = useState(openingStats.bypassChips);
 
   // Scoring & Stats
   const [score, setScore] = useState(0);
@@ -631,6 +656,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       setGameMode(mode);
       setPendingRoute(null);
       setPendingReward(null);
+      setUnlockNotice(null);
       floatingTextsRef.current = [
         {
           id: `objective-${Date.now()}`,
@@ -727,7 +753,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // points twice (#1552), and a boss retry has the ammo to win (#1667).
   const roomEntryVitalsRef = useRef({
     hp: selectedClass.baseHp,
-    ram: selectedClass.baseRam,
+    ram: openingStats.ram,
     score: 0,
     cryptoBounty: 0,
     weapons: DEFAULT_WEAPONS,
@@ -807,11 +833,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const startRoguelikeCampaign = useCallback(() => {
     const chosenClass =
       CYBERDECK_CLASSES[selectedClassId] || CYBERDECK_CLASSES.script_kiddie;
-    setPlayerHp(chosenClass.baseHp);
-    setMaxPlayerHp(chosenClass.baseHp);
-    setCurrentRam(chosenClass.baseRam);
-    setMaxRam(chosenClass.baseRam);
-    setBypassChips(chosenClass.startBypassChips);
+    // A new run takes the firmware the profile owns now (#2085).
+    const firmware = profile.firmwareUpgrades;
+    const start = cyberdeckStartingStats(chosenClass.id, firmware);
+    setRunFirmware(firmware);
+    setPlayerHp(start.hp);
+    setMaxPlayerHp(start.hp);
+    setCurrentRam(start.ram);
+    setMaxRam(start.ram);
+    setBypassChips(start.bypassChips);
     setWeapons(DEFAULT_WEAPONS);
     if (chosenClass.starterWeapons?.[0]) {
       setActiveWeaponId(chosenClass.starterWeapons[0]);
@@ -824,15 +854,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     cveFeedRef.current = false;
     setCveFeedActive(false);
     roomEntryVitalsRef.current = {
-      hp: chosenClass.baseHp,
-      ram: chosenClass.baseRam,
+      hp: start.hp,
+      ram: start.ram,
       score: 0,
       cryptoBounty: 0,
       weapons: DEFAULT_WEAPONS,
       cveFeed: false,
     };
     loadRoom("roguelike", 0);
-  }, [selectedClassId, loadRoom]);
+  }, [selectedClassId, profile.firmwareUpgrades, loadRoom]);
 
   // The room-cleared screen's offers: the next rooms on the route and the
   // three rewards, both drawn from the run seed (#2084).
@@ -952,15 +982,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const hackTerminalPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Trigger Terminal Hacking Minigame
-  const openHackingTerminal = useCallback((difficulty: number = 2) => {
-    const puzzle = generateHexMatrixPuzzle(difficulty);
-    setHexPuzzle(puzzle);
-    setHackingFeedback(
-      "Pick from the highlighted row, then the column of that cell, then its row…"
-    );
-    setGameStatus("hacking");
-    retroAudio.playTone(600, 80, "sawtooth", 0.08);
-  }, []);
+  const openHackingTerminal = useCallback(
+    (difficulty: number = 2) => {
+      const puzzle = generateHexMatrixPuzzle(
+        difficulty,
+        runFirmwareBonus.hexBufferSlots
+      );
+      setHexPuzzle(puzzle);
+      setHackingFeedback(
+        "Pick from the highlighted row, then the column of that cell, then its row…"
+      );
+      setGameStatus("hacking");
+      retroAudio.playTone(600, 80, "sawtooth", 0.08);
+    },
+    [runFirmwareBonus.hexBufferSlots]
+  );
 
   // Handle Hex Cell Selection in Minigame
   const handleHexCellClick = useCallback(
@@ -1340,13 +1376,35 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             (gameMode === "classic" || roomIndex >= runLength - 1) &&
             !runEndRecordedRef.current;
           if (endsRun) runEndRecordedRef.current = true;
-          const updatedProf = recordCyberdeckRoomResult(profile, {
+          let updatedProf = recordCyberdeckRoomResult(profile, {
             crypto: roomCrypto,
             score: finalScore,
             endsRun,
           });
+          // Clearing FaceForge, and clearing a run's last room, unlock
+          // classes (#2085).
+          const milestones: CyberdeckMilestone[] = [];
+          if (gameMode === "roguelike") {
+            if (campaignRooms[roomIndex]?.id === "faceforge") {
+              milestones.push("faceforge_cleared");
+            }
+            if (roomIndex >= runLength - 1) milestones.push("run_completed");
+          }
+          const unlockedNow: string[] = [];
+          for (const milestone of milestones) {
+            const res = recordCyberdeckMilestone(updatedProf, milestone);
+            updatedProf = res.profile;
+            unlockedNow.push(
+              ...res.unlocked.map((id) => CYBERDECK_CLASSES[id].name)
+            );
+          }
           setProfile(updatedProf);
           saveCyberdeckProfile(updatedProf);
+          if (unlockedNow.length > 0) {
+            const notice = `Class unlocked: ${unlockedNow.join(", ")}`;
+            setUnlockNotice(notice);
+            announce(notice);
+          }
 
           recordEvent("labyrinth_solved", "project_click").catch((err) => {
             logger.error(
@@ -1388,6 +1446,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       roomCrypto,
       earnCrypto,
       profile,
+      announce,
       recordEvent,
       openHackingTerminal,
       phoneCabinet,
@@ -1411,7 +1470,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         enemies,
         boss,
         nowMs,
-        currentRam
+        currentRam,
+        runAoeRadiusBonus
       );
 
       if (phoneCabinet) {
@@ -1495,6 +1555,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       enemies,
       boss,
       currentRam,
+      runAoeRadiusBonus,
       currentTheme,
       playNote,
       playSuccess,
@@ -1809,12 +1870,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     [gameMode, boss, tspNodes]
   );
 
-  // Opening the Market or class overlay pauses a running room; closing it
-  // returns there paused, or to the result screen it was opened from (#1669).
+  // Opening the Market, class or firmware overlay pauses a running room;
+  // closing it returns there paused, or to the result screen it was opened
+  // from (#1669).
   const openOverlay = useCallback(
-    (overlay: "darknet_shop" | "class_select") => {
+    (overlay: "darknet_shop" | "class_select" | "firmware_bay") => {
       if (gameStatus === overlay) return;
-      if (gameStatus !== "darknet_shop" && gameStatus !== "class_select") {
+      if (
+        gameStatus !== "darknet_shop" &&
+        gameStatus !== "class_select" &&
+        gameStatus !== "firmware_bay"
+      ) {
         overlayReturnStatusRef.current =
           gameStatus === "playing" ? "paused" : gameStatus;
       }
@@ -1826,6 +1892,23 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     [gameStatus]
   );
 
+  // Buying a firmware tier spends banked crypto and saves at once; the tier
+  // applies from the next run start (#2085).
+  const buyFirmwareTier = useCallback(
+    (id: FirmwareUpgradeId) => {
+      const next = purchaseFirmwareTier(profile, id);
+      if (!next) return;
+      setProfile(next);
+      saveCyberdeckProfile(next);
+      retroAudio.playHackSuccess();
+      announce(
+        `Firmware upgraded to tier ${next.firmwareUpgrades[id]}. ${next.totalCrypto} crypto banked.`,
+        "polite"
+      );
+    },
+    [profile, announce]
+  );
+
   // Choosing a class gives its fresh loadout and restarts the room paused, so
   // nothing fires at the player before they look back at the board. On a
   // room-cleared screen the loadout carries into the next room instead
@@ -1833,16 +1916,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const chooseClass = useCallback(
     (classId: CyberdeckClassId) => {
       const cls = CYBERDECK_CLASSES[classId] || CYBERDECK_CLASSES.script_kiddie;
+      // A locked class waits for its milestone (#2085).
+      if (!isCyberdeckClassUnlocked(profile, cls.id)) return;
+      const start = cyberdeckStartingStats(cls.id, runFirmware);
       setSelectedClassId(cls.id);
       if (cls.starterWeapons?.[0]) {
         setActiveWeaponId(cls.starterWeapons[0]);
       }
       // Passives picked on the route stay with the run (#2084).
-      const hp = cls.baseHp + runBonuses.maxHp;
-      const ram = cls.baseRam + runBonuses.maxRam;
+      const hp = start.hp + runBonuses.maxHp;
+      const ram = start.ram + runBonuses.maxRam;
       setMaxPlayerHp(hp);
       setMaxRam(ram);
-      setBypassChips(cls.startBypassChips);
+      setBypassChips(start.bypassChips);
       if (overlayReturnStatusRef.current === "victory") {
         setPlayerHp(hp);
         setCurrentRam(ram);
@@ -1861,7 +1947,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       setGameStatus("paused");
       containerRef.current?.focus({ preventScroll: true });
     },
-    [handleRestart, runBonuses.maxHp, runBonuses.maxRam]
+    [handleRestart, profile, runFirmware, runBonuses.maxHp, runBonuses.maxRam]
   );
 
   // The Field Manual pauses a running room, the way P does (#1669).
@@ -3393,6 +3479,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   }
                 : undefined
             }
+            notice={unlockNotice}
+            onFirmware={
+              isFinalRoom && gameMode === "roguelike"
+                ? () => openOverlay("firmware_bay")
+                : undefined
+            }
             onNextRoom={() => {
               handleNextRoom();
               containerRef.current?.focus({ preventScroll: true });
@@ -3452,6 +3544,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               className="mt-2 px-3 py-1 bg-neutral-900 text-rose-300 border border-rose-800 hover:bg-rose-950 text-xs font-bold rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-28"
             >
               RETRY BREACH
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openOverlay("firmware_bay");
+              }}
+              className="mt-1 px-3 py-1 bg-neutral-900 text-amber-300 border border-amber-700/50 hover:bg-amber-950/40 text-xs font-bold rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 [@media(pointer:coarse)]:min-w-28"
+            >
+              Firmware Upgrades
             </button>
             <p className="text-xs text-neutral-500 mt-1">{retryHint}</p>
           </div>
@@ -3584,38 +3686,73 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-1.5 my-1 w-full flex-1 min-h-0 content-start overflow-y-auto">
-              {Object.values(CYBERDECK_CLASSES).map((cls) => (
-                <button
-                  key={cls.id}
-                  onClick={() => chooseClass(cls.id)}
-                  className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all cursor-pointer [@media(pointer:coarse)]:min-h-11 ${
-                    selectedClassId === cls.id
-                      ? "bg-amber-500/15 border-amber-400 text-amber-100"
-                      : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-white">
-                      {cls.icon} {cls.name}
-                    </span>
-                    <span className="text-xs text-amber-400">
-                      {cls.baseRam}GB RAM
-                    </span>
-                  </div>
-                  <div className="text-xs text-neutral-400 mt-0.5 leading-tight">
-                    {cls.passiveBonus}
-                  </div>
-                </button>
-              ))}
+              {Object.values(CYBERDECK_CLASSES).map((cls) => {
+                // A locked class names its milestone and says Locked in
+                // words, not only by dimming (#2085).
+                const locked = !isCyberdeckClassUnlocked(profile, cls.id);
+                const unlock = CLASS_UNLOCK_MILESTONES[cls.id];
+                return (
+                  <button
+                    key={cls.id}
+                    type="button"
+                    onClick={() => chooseClass(cls.id)}
+                    aria-disabled={locked || undefined}
+                    data-locked={locked ? "true" : undefined}
+                    className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all [@media(pointer:coarse)]:min-h-11 ${
+                      locked
+                        ? "bg-neutral-950 border-dashed border-neutral-700 text-neutral-400 cursor-not-allowed"
+                        : selectedClassId === cls.id
+                          ? "bg-amber-500/15 border-amber-400 text-amber-100 cursor-pointer"
+                          : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 cursor-pointer"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-1">
+                      <span
+                        className={`font-bold text-xs ${locked ? "text-neutral-300" : "text-white"}`}
+                      >
+                        {cls.icon} {cls.name}
+                      </span>
+                      <span className="text-xs text-amber-400">
+                        {locked ? "🔒 Locked" : `${cls.baseRam}GB RAM`}
+                      </span>
+                    </div>
+                    <div className="text-xs text-neutral-400 mt-0.5 leading-tight">
+                      {locked && unlock
+                        ? `Unlock: ${unlock.label}.`
+                        : cls.passiveBonus}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
 
-            <button
-              onClick={closeOverlay}
-              className="w-full py-0.5 bg-neutral-800 text-neutral-300 rounded text-xs font-bold cursor-pointer [@media(pointer:coarse)]:min-h-11"
-            >
-              Confirm Loadout & Hack
-            </button>
+            <div className="flex w-full gap-1.5">
+              <button
+                type="button"
+                onClick={() => openOverlay("firmware_bay")}
+                className="flex-1 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 rounded text-xs font-bold cursor-pointer [@media(pointer:coarse)]:min-h-11"
+              >
+                Firmware Upgrades
+              </button>
+              <button
+                type="button"
+                onClick={closeOverlay}
+                className="flex-1 py-0.5 bg-neutral-800 text-neutral-300 rounded text-xs font-bold cursor-pointer [@media(pointer:coarse)]:min-h-11"
+              >
+                Confirm Loadout & Hack
+              </button>
+            </div>
           </div>
+        )}
+
+        {/* Firmware Bay: spends banked crypto between runs (#2085). */}
+        {gameStatus === "firmware_bay" && (
+          <FirmwareBay
+            bankedCrypto={profile.totalCrypto}
+            firmware={profile.firmwareUpgrades}
+            onBuy={buyFirmwareTier}
+            onClose={closeOverlay}
+          />
         )}
 
         {/* Billable Hours Timesheet Modal (Room 4) */}

@@ -64,6 +64,13 @@ const nextConfig: NextConfig = {
   // which the file tracer cannot follow, so the assets never reached the
   // serverless bundle and Satori threw "No fonts are loaded" (#1674).
   outputFileTracingIncludes: OG_TRACING_INCLUDES,
+  // scripts/build.js type-checks in its own phase before `next build`, with
+  // route types from `next typegen`. Next's in-build checker would run the
+  // same tsc while the build still holds its webpack heap, which ran Vercel's
+  // 8 GB build machine out of memory (#2100). This skips only that duplicate.
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   experimental: {
     optimizePackageImports: ["@tabler/icons-react"],
   },

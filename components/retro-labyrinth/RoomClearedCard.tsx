@@ -42,6 +42,10 @@ interface RoomClearedCardProps {
   readonly onRestart: () => void;
   readonly route?: RouteChoiceProps;
   readonly rewards?: RewardChoiceProps;
+  /** A class this room unlocked, if any (#2085). */
+  readonly notice?: string | null;
+  /** Opens the between-runs Firmware Bay; shown when the run is over. */
+  readonly onFirmware?: () => void;
 }
 
 const TIER_LABELS: Record<RouteTier, string> = {
@@ -141,6 +145,8 @@ export function RoomClearedCard({
   onRestart,
   route,
   rewards,
+  notice,
+  onFirmware,
 }: RoomClearedCardProps) {
   const routeHeadingId = useId();
   const rewardHeadingId = useId();
@@ -204,6 +210,14 @@ export function RoomClearedCard({
             </>
           )}
         </p>
+        {notice && (
+          <p
+            className="text-xs font-bold text-amber-300 mt-1"
+            data-testid="labyrinth-unlock-notice"
+          >
+            🔓 {notice}
+          </p>
+        )}
         {showNextRoom && route && (
           <RouteMap seed={route.seed} map={route.map} />
         )}
@@ -315,6 +329,18 @@ export function RoomClearedCard({
             >
               <IconRefresh className="w-3 h-3" aria-hidden="true" />
               {isFinalRoom ? "New Run" : "Play Again"}
+            </button>
+          )}
+          {onFirmware && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onFirmware();
+              }}
+              className="inline-flex items-center gap-1 min-h-11 px-3 py-1 bg-amber-500/15 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 text-xs font-bold rounded-lg transition-all cursor-pointer [@media(pointer:fine)]:min-h-0"
+            >
+              Firmware Upgrades
             </button>
           )}
         </div>

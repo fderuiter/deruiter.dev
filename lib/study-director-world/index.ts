@@ -19,6 +19,13 @@ export {
   weekdayFor,
 } from "./internal/clock";
 export { createWorld, goHome, newWorld, startDay } from "./internal/day";
+export {
+  DELEGATED_SLIP_CHANCE,
+  DELEGATED_TRUST_COST,
+  delegateDay,
+  delegationPreview,
+  teamAnswer,
+} from "./internal/delegate-day";
 export { WORLD_SAVE_KEY, parseWorld, serializeWorld } from "./internal/save";
 export {
   CRO_FLOOR,

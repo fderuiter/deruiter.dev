@@ -2,6 +2,7 @@ import { clamp } from "@/lib/game-utils";
 import {
   DIFFICULTIES,
   type Difficulty,
+  type StudySetup,
   type StudyState,
 } from "@/lib/study-director";
 import { CRO_FLOOR, WORLD_MAPS, isWalkable } from "./floor";
@@ -66,6 +67,17 @@ function looksLikeStudy(value: unknown): value is StudyState {
  */
 function readDifficulty(value: unknown): Difficulty {
   return DIFFICULTIES.find((d) => d === value) ?? "standard";
+}
+
+/**
+ * A saved study's setup with its length read strictly (#2092): only a
+ * study saved as short stays short. Saves from before the short study have
+ * no length, and anything unrecognised is dropped: both load as the full
+ * study, which is what those runs were.
+ */
+function readSetup(setup: StudySetup): StudySetup {
+  const { length, ...rest } = setup;
+  return length === "short" ? { ...rest, length } : rest;
 }
 
 /** A saved position, if it is a free tile on its map; else the spawn. */
@@ -235,7 +247,8 @@ function readSiteVisitHistory(value: unknown): SiteVisitReport[] {
  * missing its study is dropped (returns null) rather than trusted; numbers
  * are clamped to their ranges, and a position that is not a free tile on the
  * floor (or a save from before the floor existed) starts at the lobby. A
- * study saved without a difficulty loads as standard.
+ * study saved without a difficulty loads as standard, and one saved without
+ * a length loads as the full study.
  */
 export function parseWorld(text: string | null): WorldState | null {
   if (!text) return null;
@@ -254,6 +267,7 @@ export function parseWorld(text: string | null): WorldState | null {
     version: 1,
     study: {
       ...raw.study,
+      setup: readSetup(raw.study.setup),
       budget: "clock",
       difficulty: readDifficulty(raw.study.difficulty),
     },

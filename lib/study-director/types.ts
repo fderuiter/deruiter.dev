@@ -100,6 +100,11 @@ export interface StudySetup {
   regulatoryRisk: "low" | "moderate" | "high";
   /** Operational complexity, 1 to 5. */
   complexity: number;
+  /**
+   * The short study (#2092) squeezes the scripted calendar into its own
+   * duration. Omitted means the full study, as every save made before it.
+   */
+  length?: StudyLength;
 }
 
 /** What a decision or event changes. Everything is optional. */
@@ -151,6 +156,10 @@ export interface DecisionRecord {
 /** How hard the study starts. Older saves have none, which plays as standard. */
 export const DIFFICULTIES = ["calm", "standard", "rescue"] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
+
+/** How long a study runs: the ~35-day short study or the full one (#2092). */
+export const STUDY_LENGTHS = ["short", "full"] as const;
+export type StudyLength = (typeof STUDY_LENGTHS)[number];
 
 /** How a study budgets the player's day: attention points or the world's clock. */
 export type StudyBudget = "attention" | "clock";

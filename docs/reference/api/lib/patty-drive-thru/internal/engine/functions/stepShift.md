@@ -9,7 +9,8 @@
 > **stepShift**(`state`, `dtSec`): [`StepResult`](../../../types/interfaces/StepResult.md)
 
 Advances the shift by `dtSec` seconds: new orders arrive, old ones expire,
-a flagged coworker finishes the coffee, and an idle player gets yelled at.
+a flagged coworker finishes the coffee, an idle player gets yelled at, and
+a dilemma is put to the player or takes its default answer (#2087).
 Steps longer than half a second are shortened, so a stalled tab cannot skip
 the shift.
 

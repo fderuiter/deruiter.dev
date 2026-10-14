@@ -18,6 +18,8 @@ import {
   choosePriority,
   closeVisit,
   currentMap,
+  delegateDay,
+  delegationPreview,
   describePerson,
   describeSurroundings,
   examineSelf,
@@ -54,7 +56,12 @@ import {
   type WorldRefusal,
   type WorldState,
 } from "@/lib/study-director-world";
-import type { Difficulty, StudyState } from "@/lib/study-director";
+import {
+  studyLength,
+  type Difficulty,
+  type StudyLength,
+  type StudyState,
+} from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import "@/components/study-director/study-director-touch.css";
@@ -86,7 +93,7 @@ import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
 import { useReducedMotion } from "./use-reduced-motion";
-import { ConditionsPicker, WorldIntro } from "./WorldIntro";
+import { ConditionsPicker, LengthPicker, WorldIntro } from "./WorldIntro";
 import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
 import { tapDestination } from "./tap-walk";
 import { WorldTouchControls } from "./WorldTouchControls";
@@ -160,8 +167,21 @@ function clearWorldSave(): void {
 }
 
 /** The first morning of a new run: the same seed always opens the same way. */
-function firstMorning(seed: string, difficulty: Difficulty) {
-  return startDay(newWorld(seed, difficulty));
+function firstMorning(
+  seed: string,
+  difficulty: Difficulty,
+  length: StudyLength = "full"
+) {
+  return startDay(newWorld(seed, difficulty, length));
+}
+
+/** The first morning a saved run would have had: same seed, difficulty and length. */
+function firstMorningOf(saved: WorldState) {
+  return firstMorning(
+    saved.study.seed,
+    saved.study.difficulty ?? "standard",
+    studyLength(saved.study.setup)
+  );
 }
 
 /**
@@ -169,11 +189,7 @@ function firstMorning(seed: string, difficulty: Difficulty) {
  * its difficulty can still be chosen after a reload (#2058).
  */
 function untouched(saved: WorldState): boolean {
-  const fresh = parseWorld(
-    serializeWorld(
-      firstMorning(saved.study.seed, saved.study.difficulty ?? "standard").world
-    )
-  );
+  const fresh = parseWorld(serializeWorld(firstMorningOf(saved).world));
   return fresh !== null && serializeWorld(fresh) === serializeWorld(saved);
 }
 
@@ -195,11 +211,7 @@ function openWorld(): {
     return { world: saved, digest: null, finished: true };
   }
   if (saved && saved.study.status === "running") {
-    if (untouched(saved))
-      return {
-        ...firstMorning(saved.study.seed, saved.study.difficulty ?? "standard"),
-        fresh: true,
-      };
+    if (untouched(saved)) return { ...firstMorningOf(saved), fresh: true };
     return saved.location === "home"
       ? startDay(saved)
       : { world: saved, digest: null };
@@ -273,6 +285,9 @@ export const StudyDirectorWorld: React.FC<{
   );
   const choosing = freshWorld !== null && world === freshWorld;
   const difficulty: Difficulty = world.study.difficulty ?? "standard";
+  const length: StudyLength = studyLength(world.study.setup);
+  // Delegating the day asks first: it cannot be taken back (#2092).
+  const [confirmDelegate, setConfirmDelegate] = useState(false);
   const reducedMotion = useReducedMotion();
   // The immersive touch cabinet (ADR 0061, #2076) lays the office out to fit
   // its stage; desktop markup is untouched.
@@ -363,11 +378,10 @@ export const StudyDirectorWorld: React.FC<{
   }, [world]);
   const away = report !== null;
 
-  /** Starts the untouched run again on the chosen difficulty, same seed. */
-  const chooseDifficulty = useCallback(
-    (next: Difficulty) => {
-      if (!choosing || next === difficulty) return;
-      const morning = firstMorning(world.study.seed, next);
+  /** Starts the untouched run again from its first morning, same seed. */
+  const restartFresh = useCallback(
+    (next: Difficulty, nextLength: StudyLength, said: string) => {
+      const morning = firstMorning(world.study.seed, next, nextLength);
       // A new starting point, not a change the player made: nothing to
       // toast or announce.
       lastWorld.current = morning.world;
@@ -378,9 +392,35 @@ export const StudyDirectorWorld: React.FC<{
       setFreshWorld(morning.world);
       setWorld(morning.world);
       setDigest(morning.digest);
-      setNotice(`Study conditions: ${DIFFICULTY_TEXT[next].label}.`);
+      setNotice(said);
     },
-    [choosing, difficulty, world.study.seed]
+    [world.study.seed]
+  );
+
+  /** Starts the untouched run again on the chosen difficulty, same seed. */
+  const chooseDifficulty = useCallback(
+    (next: Difficulty) => {
+      if (!choosing || next === difficulty) return;
+      restartFresh(
+        next,
+        length,
+        `Study conditions: ${DIFFICULTY_TEXT[next].label}.`
+      );
+    },
+    [choosing, difficulty, length, restartFresh]
+  );
+
+  /** Starts the untouched run again as the short or full study (#2092). */
+  const chooseLength = useCallback(
+    (next: StudyLength) => {
+      if (!choosing || next === length) return;
+      restartFresh(
+        difficulty,
+        next,
+        next === "short" ? "Short study chosen." : "Full study chosen."
+      );
+    },
+    [choosing, difficulty, length, restartFresh]
   );
   const here = useMemo(() => {
     const room = roomAt(map, world.player.x, world.player.y);
@@ -613,6 +653,33 @@ export const StudyDirectorWorld: React.FC<{
     );
   }, [world]);
 
+  /**
+   * Hands the whole day to the team (#2092): they settle the inbox without
+   * you, at a cost to trust and quality, and the overnight report says what
+   * they did.
+   */
+  const handOver = useCallback(() => {
+    setConfirmDelegate(false);
+    const result = delegateDay(world);
+    if (!result.ok) {
+      setNotice(REFUSALS[result.reason]);
+      return;
+    }
+    setActed(true);
+    if (result.visit) setVisitReport(result.visit);
+    setWorld(result.world);
+    setReport(result.report);
+    setOutcome(null);
+    setWalk(null);
+    setDigest(null);
+    setNotice(
+      result.report.complete
+        ? "The team ran the last day. The study is complete."
+        : `The team ran day ${result.report.day} without you. Overnight report for day ${result.report.day}.`
+    );
+  }, [world]);
+  const delegation = delegationPreview(world);
+
   // An outcome card (the car's Drive / Go home, a desk result) opened off the
   // top of the page after a directory walk is brought into view (#1936).
   const outcomeRef = useRef<HTMLElement>(null);
@@ -642,6 +709,7 @@ export const StudyDirectorWorld: React.FC<{
     setWorld(morning.world);
     setDigest(morning.digest);
     setReport(null);
+    setConfirmDelegate(false);
     setVisitReport(null);
     setNotice(
       `${morning.digest.weekday}, day ${morning.digest.day}. You start at ${formatClock(morning.digest.startsAt)}.`
@@ -1031,14 +1099,77 @@ export const StudyDirectorWorld: React.FC<{
           data-testid="world-conditions"
           className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
         >
-          <ConditionsPicker
-            name="sd-world-difficulty"
-            value={difficulty}
-            onChange={chooseDifficulty}
+          <LengthPicker
+            name="sd-world-length"
+            value={length}
+            onChange={chooseLength}
           />
+          <div className="mt-3">
+            <ConditionsPicker
+              name="sd-world-difficulty"
+              value={difficulty}
+              onChange={chooseDifficulty}
+              length={length}
+            />
+          </div>
           <p className="mt-2 text-[11px] text-[var(--sd-muted)]">
             Set before the study begins. Anything you do fixes it.
           </p>
+        </section>
+      ) : null}
+      {!away && delegation.available ? (
+        <section
+          aria-labelledby="sd-world-delegate"
+          data-testid="world-delegate"
+          className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
+        >
+          <h3
+            id="sd-world-delegate"
+            className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase"
+          >
+            Delegate the day
+          </h3>
+          {confirmDelegate ? (
+            <>
+              <p className="mt-1 text-xs leading-relaxed break-words text-zinc-200">
+                {delegation.messages === 0
+                  ? "Nothing is waiting. The team runs the day and you go home."
+                  : `The team answers ${delegation.messages === 1 ? "the 1 waiting message" : `the ${delegation.messages} waiting messages`} the quickest way, without writing them up. Some may slip through. Everyone trusts you a little less.`}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handOver}
+                  disabled={team.blocking}
+                  className="min-h-11 border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98] disabled:opacity-50"
+                >
+                  Hand the day to the team
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelegate(false)}
+                  className="min-h-11 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] active:scale-[0.98]"
+                >
+                  Keep working
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-[11px] break-words text-[var(--sd-muted)]">
+                Skip walking the day. The team settles the inbox and you go
+                home, at a cost.
+              </p>
+              <button
+                type="button"
+                onClick={() => setConfirmDelegate(true)}
+                disabled={team.blocking}
+                className="mt-2 min-h-11 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)] active:scale-[0.98] disabled:opacity-50"
+              >
+                Delegate the day
+              </button>
+            </>
+          )}
         </section>
       ) : null}
       {panel}
@@ -1071,6 +1202,8 @@ export const StudyDirectorWorld: React.FC<{
           touch={touch}
           difficulty={choosing ? difficulty : undefined}
           onDifficultyChange={choosing ? chooseDifficulty : undefined}
+          length={choosing ? length : undefined}
+          onLengthChange={choosing ? chooseLength : undefined}
           onClose={() => {
             markIntroSeen();
             setShowIntro(false);

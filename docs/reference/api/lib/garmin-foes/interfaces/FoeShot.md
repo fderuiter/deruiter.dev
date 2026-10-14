@@ -6,7 +6,7 @@
 
 # Interface: FoeShot
 
-A shot fired by a foe: an Auto Lap's lap ping or a Rep Max's dumbbell.
+A shot fired by a foe: an Auto Lap's lap ping, a Rep Max's dumbbell or a brick from The Wall.
 
 ## Properties
 
@@ -18,7 +18,7 @@ A shot fired by a foe: an Auto Lap's lap ping or a Rep Max's dumbbell.
 
 ### kind
 
-> **kind**: `"ping"` \| `"dumbbell"`
+> **kind**: `"brick"` \| `"ping"` \| `"dumbbell"`
 
 ***
 

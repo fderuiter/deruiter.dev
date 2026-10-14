@@ -307,6 +307,10 @@ export const OvernightCard: React.FC<{
       {report.lines.length === 0 ? (
         <p className="text-xs text-zinc-300">A quiet night.</p>
       ) : null}
+      <LineList
+        title="What the team did with your day"
+        lines={report.delegated ?? []}
+      />
       <LineList title="How today went" lines={report.wrapUp ?? []} />
       <LineList title="What changed" lines={changes} tagged />
       <LineList title="As it was" lines={steady} />

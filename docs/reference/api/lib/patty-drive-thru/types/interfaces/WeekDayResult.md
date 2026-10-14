@@ -10,6 +10,14 @@ What a finished day of the week leaves behind (#2086).
 
 ## Properties
 
+### choices?
+
+> `readonly` `optional` **choices?**: readonly [`DayChoice`](DayChoice.md)[]
+
+The dilemmas answered that day, in order; missing before #2087.
+
+***
+
 ### day
 
 > `readonly` **day**: [`WeekdayId`](../type-aliases/WeekdayId.md)
@@ -19,6 +27,14 @@ What a finished day of the week leaves behind (#2086).
 ### drinksDropped
 
 > `readonly` **drinksDropped**: `number`
+
+***
+
+### ending?
+
+> `readonly` `optional` **ending?**: [`ShiftEndingId`](../type-aliases/ShiftEndingId.md)
+
+How the day ended in the diary; missing from saves before #2087.
 
 ***
 

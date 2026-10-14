@@ -30,12 +30,13 @@ const satSetup: RaceSetup = raceSetup(
   "any",
   new Date(2026, 9, 14)
 );
-const storage = (): MockStorage =>
-  window.localStorage as unknown as MockStorage;
+let mockStorage = new MockStorage();
+const storage = (): MockStorage => mockStorage;
 
 beforeEach(() => {
+  mockStorage = new MockStorage();
   Object.defineProperty(window, "localStorage", {
-    value: new MockStorage(),
+    value: mockStorage,
     writable: true,
     configurable: true,
   });

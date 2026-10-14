@@ -1,3 +1,4 @@
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   act,
@@ -316,7 +317,7 @@ describe("Race HUD pill (#2019)", () => {
       createLinearGradient: () => ({ addColorStop: () => {} }),
       measureText: (value: string) => ({ width: value.length * 6 }),
     };
-    const ctx = new Proxy(target, {
+    const proxy = new Proxy(target, {
       get(t, key: string) {
         if (key in t) return t[key];
         return (...args: unknown[]) => {
@@ -327,7 +328,10 @@ describe("Race HUD pill (#2019)", () => {
         t[key] = value;
         return true;
       },
-    }) as unknown as Parameters<typeof renderWatchFace>[0];
+    });
+    const ctx = fromAny<Parameters<typeof renderWatchFace>[0], typeof proxy>(
+      proxy
+    );
     renderWatchFace(ctx, state);
     return drawn;
   }

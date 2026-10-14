@@ -1739,6 +1739,7 @@
  * an iPad held at arm's length gets no text under 12px. Desktop keeps the
  * wizard's compact type.
  */
+[data-arcade-cabinet][data-immersive="true"] .arcade-setup-wizard .text-\[8px\],
 [data-arcade-cabinet][data-immersive="true"] .arcade-setup-wizard .text-\[9px\],
 [data-arcade-cabinet][data-immersive="true"]
   .arcade-setup-wizard

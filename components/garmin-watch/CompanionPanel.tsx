@@ -30,6 +30,7 @@ import {
   type RaceCategory,
   type RaceCourse,
 } from "@/lib/garmin-race";
+import type { GhostTarget } from "@/lib/garmin-ghost-store";
 import type { WatchBezelTheme } from "./WatchHardware";
 import {
   GROUND_STRIP_FIELDS,
@@ -331,6 +332,12 @@ interface CompanionPanelProps {
   onSetRaceMode: (on: boolean) => void;
   onSetRaceCourse: (course: RaceCourse) => void;
   onSetRaceCategory: (category: RaceCategory) => void;
+  /** The Virtual Partner (#2020) is on: races show a ghost of the board's best. */
+  ghostOn: boolean;
+  /** Who the Virtual Partner replays. */
+  ghostTarget: GhostTarget;
+  onSetGhostOn: (on: boolean) => void;
+  onSetGhostTarget: (target: GhostTarget) => void;
   /** Samples recorded for the current run. */
   telemetryCount: number;
   onExportCsv: () => void;
@@ -370,6 +377,10 @@ export function CompanionPanel({
   onSetRaceMode,
   onSetRaceCourse,
   onSetRaceCategory,
+  ghostOn,
+  ghostTarget,
+  onSetGhostOn,
+  onSetGhostTarget,
   telemetryCount,
   onExportCsv,
   onExportFit,
@@ -720,11 +731,54 @@ export function CompanionPanel({
                 >
                   {RACE_CATEGORY_INFO[raceCategory].rule}
                 </p>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Virtual Partner
+                </p>
+                <ChoiceGroup<"on" | "off">
+                  label="Virtual Partner"
+                  value={ghostOn ? "on" : "off"}
+                  disabled={false}
+                  columns={2}
+                  onChange={(value) => onSetGhostOn(value === "on")}
+                  options={[
+                    {
+                      value: "on",
+                      label: "Ghost on",
+                      title: "A see-through runner replays your best race.",
+                    },
+                    { value: "off", label: "Ghost off" },
+                  ]}
+                />
+                {ghostOn && (
+                  <>
+                    <ChoiceGroup<GhostTarget>
+                      label="Race against"
+                      value={ghostTarget}
+                      disabled={false}
+                      columns={2}
+                      onChange={onSetGhostTarget}
+                      describedBy="ghost-target-note"
+                      options={[
+                        { value: "pr", label: "Your PR" },
+                        { value: "cr", label: "Course record" },
+                      ]}
+                    />
+                    <p
+                      id="ghost-target-note"
+                      className="text-[10px] text-zinc-400"
+                    >
+                      This device keeps one runner, so your PR is also the
+                      course record. A ghost is kept from the next race that
+                      sets the best time on its board.
+                    </p>
+                  </>
+                )}
               </>
             )}
             {raceLocked && (
               <p className="text-[10px] text-zinc-400">
-                Run mode changes once this run ends.
+                Run mode, course and category change once this run ends. The
+                Virtual Partner can change at any time.
               </p>
             )}
           </div>

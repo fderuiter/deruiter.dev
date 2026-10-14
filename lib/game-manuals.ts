@@ -729,6 +729,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Race",
       },
       {
+        title: "Virtual Partner",
+        detail:
+          "When a race sets the best time on its board, it is kept as a ghost for that course and category (a Daily Workout ghost lasts its day). The next attempt runs beside a see-through copy of that run, like the pacing partner on a running watch. Under the race line, the gap to it reads in red when you are behind (+0:02.4) and green when you are ahead (-0:01.1), and each lap banner adds the gap at that lap. The ghost is only drawn: it never touches anything and cannot change a result. Turn it on or off, or pick your PR or the course record, in the companion panel; this device keeps one runner, so both are the same run. With reduced motion the ghost has no trail. Ghosts are kept on this device only, and the oldest go first when storage is short.",
+        badge: "Ghost",
+      },
+      {
         title: "Dev Mode (Optional)",
         detail:
           "Dev Mode is a toggle in the simulator controls, off by default. It brings back the original firmware challenge: a RAM heap that fills with automatic allocations, Down to pop variables, forced garbage collection that freezes the watch, NV flash that fills up, a battery that drains with thermal fog you wipe with W, and crash reports such as Null Pointer, Watchdog Tripped, Stack Overflow, Out Of Memory, Out Of Storage and Segmentation Fault. Each device tier has its own RAM limit: Fēnix 5 has 32 KB, Forerunner 245 has 64 KB, and Edge 1030 has 128 KB.",

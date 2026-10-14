@@ -227,6 +227,8 @@
 - [lib/garmin-culture](lib/garmin-culture/README.md)
 - [lib/garmin-engine](lib/garmin-engine/README.md)
 - [lib/garmin-foes](lib/garmin-foes/README.md)
+- [lib/garmin-ghost](lib/garmin-ghost/README.md)
+- [lib/garmin-ghost-store](lib/garmin-ghost-store/README.md)
 - [lib/garmin-ground-strip](lib/garmin-ground-strip/README.md)
 - [lib/garmin-medals](lib/garmin-medals/README.md)
 - [lib/garmin-medball](lib/garmin-medball/README.md)

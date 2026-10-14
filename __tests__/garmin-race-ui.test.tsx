@@ -227,7 +227,9 @@ describe("Race Mode picker (#2019)", () => {
       true
     );
     expect(
-      screen.getByText("Run mode changes once this run ends.")
+      screen.getByText(
+        /Run mode, course and category change once this run ends\./
+      )
     ).toBeTruthy();
   });
 });

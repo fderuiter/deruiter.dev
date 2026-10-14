@@ -97,6 +97,29 @@ import {
   saveResult,
   writeRacePref,
 } from "@/lib/garmin-race-store";
+import {
+  createGhostRecorder,
+  finishGhost,
+  formatGap,
+  ghostAt,
+  ghostGapMs,
+  lapGapMs,
+  recordGhost,
+  GHOST_SAMPLE_MS,
+  type GhostRecorder,
+  type GhostSample,
+  type GhostTrack,
+} from "@/lib/garmin-ghost";
+import {
+  GHOST_ON_KEY,
+  GHOST_TARGET_KEY,
+  loadGhost,
+  readGhostOn,
+  readGhostTarget,
+  saveGhost,
+  type GhostTarget,
+} from "@/lib/garmin-ghost-store";
+import { isUnderwater } from "@/lib/garmin-swim";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
@@ -302,6 +325,8 @@ const writeRacePrefAndNotify = (key: string, value: string) => {
 const getRaceModeServerSnapshot = () => false;
 const getRaceCourseServerSnapshot = (): RaceCourse => "saturday5k";
 const getRaceCategoryServerSnapshot = (): RaceCategory => "any";
+const getGhostOnServerSnapshot = () => true;
+const getGhostTargetServerSnapshot = (): GhostTarget => "pr";
 
 /** The bests a run's laps are judged against: races keep their own (#2019). */
 const splitsKeyOf = (s: GameEngineState) =>
@@ -317,6 +342,8 @@ interface RaceReport {
   record: "CR" | "PR" | null;
   board: BoardEntry[];
   date: Date;
+  /** The finish against the Virtual Partner in ms, negative when it was beaten; null without one (#2020). */
+  partnerMs: number | null;
 }
 
 interface GarminWatchSimulatorProps {
@@ -334,6 +361,33 @@ interface GarminWatchSimulatorProps {
 function runClockReadout(s: GameEngineState): string {
   if (s.gameState === "idle" || s.runClockMs === undefined) return "";
   return ` Run time: ${formatClock(s.runClockMs)}.`;
+}
+
+/**
+ * The Virtual Partner on this frame (#2020): where the ghost is at the run
+ * clock, its trail (none under reduced motion), and the gap to it. No
+ * options outside a race, without a ghost, or before GPS locks.
+ */
+function ghostOptions(
+  s: GameEngineState,
+  track: GhostTrack | null,
+  reducedMotion: boolean
+): {
+  ghost?: { sample: GhostSample; trail: GhostSample[] } | null;
+  ghostGapMs?: number | null;
+} {
+  if (!track || !s.race || (s.gpsMs ?? 0) > 0) return {};
+  const clock = s.runClockMs ?? 0;
+  const sample = ghostAt(track, clock);
+  const trail = reducedMotion
+    ? []
+    : [1, 2, 3]
+        .map((i) => ghostAt(track, clock - i * GHOST_SAMPLE_MS * 1.2))
+        .filter((t): t is GhostSample => t !== null);
+  return {
+    ghost: sample ? { sample, trail } : null,
+    ghostGapMs: ghostGapMs(track, paceMeters(s), clock),
+  };
 }
 
 /** Whether a run has ended, so its bests are recorded and its result card shows. */
@@ -394,6 +448,15 @@ function RaceReportCard({
         <dd>{bestLap === null ? "None" : formatRaceTime(bestLap)}</dd>
         <dt className="text-zinc-400">Bonked</dt>
         <dd>{bonkedS} s</dd>
+        {report && report.partnerMs !== null && (
+          <>
+            <dt className="text-zinc-400">Virtual Partner</dt>
+            <dd>
+              {formatGap(report.partnerMs)}{" "}
+              {report.partnerMs < 0 ? "ahead" : "behind"}
+            </dd>
+          </>
+        )}
         <dt className="text-zinc-400">Laps</dt>
         <dd className="min-w-0 break-words">
           {splits.length > 0
@@ -575,6 +638,17 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     subscribeRacePrefs,
     readRaceCategory,
     getRaceCategoryServerSnapshot
+  );
+  // Virtual Partner options (#2020), kept with the race preferences.
+  const ghostOn = useSyncExternalStore(
+    subscribeRacePrefs,
+    readGhostOn,
+    getGhostOnServerSnapshot
+  );
+  const ghostTarget = useSyncExternalStore(
+    subscribeRacePrefs,
+    readGhostTarget,
+    getGhostTargetServerSnapshot
   );
   // Races run with Dev Mode off; the stored Dev Mode setting is kept.
   const runRules: GameRules = devMode && !raceMode ? "dev" : "fitness";
@@ -779,6 +853,15 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // The day the race was picked: a quick restart past midnight keeps its seed,
   // so the share text keeps that day too.
   const raceDayRef = useRef(new Date(0));
+  // Virtual Partner (#2020): the ghost this race replays, if one is stored,
+  // and this race's own recording, which becomes the ghost if it sets the
+  // board's best.
+  const ghostTrackRef = useRef<GhostTrack | null>(null);
+  const ghostRecorderRef = useRef<GhostRecorder | null>(null);
+  const ghostOnRef = useRef(ghostOn);
+  useEffect(() => {
+    ghostOnRef.current = ghostOn;
+  }, [ghostOn]);
   // A new run. The engine gets this device's best split per lap so it can
   // colour the lap banners; the bests are read here, before the run saves.
   // A race takes the picked course and category, or the same race again when
@@ -798,6 +881,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       );
       raceCarryRef.current = 0;
       raceRunIdRef.current += 1;
+      ghostTrackRef.current = race ? loadGhost(race) : null;
+      ghostRecorderRef.current = race ? createGhostRecorder() : null;
       setRaceReport(null);
       setShareNote(null);
       applyTransition(() => ({
@@ -865,6 +950,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           ? saveResult(race, outcome.timeMs, date)
           : null;
       const place = saved?.place ?? 0;
+      // A new best on the board becomes the ghost of this race.
+      const recorder = ghostRecorderRef.current;
+      if (saved && place === 1 && recorder) {
+        saveGhost(
+          race,
+          finishGhost(recorder, outcome.lapSplits, outcome.timeMs),
+          date
+        );
+      }
+      const partner = ghostTrackRef.current;
       const record =
         verdict.result === "time"
           ? raceRecordOf(place, outcome.timeMs, priorBoard[0]?.timeMs ?? null)
@@ -877,6 +972,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         record,
         board: saved?.board ?? priorBoard,
         date: raceDayRef.current,
+        partnerMs:
+          partner && outcome.finished ? outcome.timeMs - partner.timeMs : null,
       });
       announce(raceOverText(verdict, outcome, place, record), "assertive");
       return;
@@ -1130,6 +1227,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   }, []);
   const handleSetRaceCategory = useCallback((category: RaceCategory) => {
     writeRacePrefAndNotify(RACE_CATEGORY_KEY, category);
+  }, []);
+  // Virtual Partner options (#2020): the ghost is only drawn, so they can
+  // change at any time, mid-race included.
+  const handleSetGhostOn = useCallback((on: boolean) => {
+    writeRacePrefAndNotify(GHOST_ON_KEY, on ? "1" : "0");
+  }, []);
+  const handleSetGhostTarget = useCallback((target: GhostTarget) => {
+    writeRacePrefAndNotify(GHOST_TARGET_KEY, target);
   }, []);
 
   // Copies the race's share text, or shows it when the clipboard is unavailable.
@@ -1777,6 +1882,40 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               return frameCountRef.current % 6 === 0;
             }
           );
+          const recorder = ghostRecorderRef.current;
+          if (recorder)
+            recordGhost(recorder, nextState, isUnderwater(nextState));
+        }
+
+        // A lap banner in a race adds the gap to the Virtual Partner at that
+        // lap (#2020). Only the banner's text changes, which the engine never
+        // reads, so the ghost cannot change the run.
+        const ghost = ghostTrackRef.current;
+        const laps = nextState.lapSplits ?? [];
+        if (
+          ghost &&
+          ghostOnRef.current &&
+          (nextState.stage ?? 1) > prevStage &&
+          nextState.banner?.text.startsWith("LAP ")
+        ) {
+          const gap = lapGapMs(
+            ghost,
+            laps.length,
+            laps.reduce((sum, ms) => sum + ms, 0)
+          );
+          if (gap !== null) {
+            nextState = applyTransition((state) =>
+              state.banner
+                ? {
+                    ...state,
+                    banner: {
+                      ...state.banner,
+                      text: `${state.banner.text} · ${formatGap(gap)}`,
+                    },
+                  }
+                : state
+            );
+          }
         }
 
         const recorder = telemetryRef.current;
@@ -1820,6 +1959,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           applyCanvasScale(ctx, scale);
           renderWatchFace(ctx, stateRef.current, groundStripRef.current, {
             reducedMotion: reducedMotionRef.current,
+            ...ghostOptions(
+              stateRef.current,
+              ghostOnRef.current ? ghostTrackRef.current : null,
+              reducedMotionRef.current
+            ),
           });
         }
       }
@@ -2315,6 +2459,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           onSetRaceMode={handleSetRaceMode}
           onSetRaceCourse={handleSetRaceCourse}
           onSetRaceCategory={handleSetRaceCategory}
+          ghostOn={ghostOn}
+          ghostTarget={ghostTarget}
+          onSetGhostOn={handleSetGhostOn}
+          onSetGhostTarget={handleSetGhostTarget}
         >
           {runEnded && !resultDismissed && (
             <ResultCard

@@ -149,6 +149,7 @@ export function TouchWireControls() {
   const closeSheet = () => {
     setWireSheet(null);
     setWireFrom(null);
+    notify("info", "Wiring cancelled.");
   };
   const pick = (pair: WirePair) => {
     if (!wireSheet) return;
@@ -173,7 +174,6 @@ export function TouchWireControls() {
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           {pausedReason && fsm !== "RUNNING" ? (
             <span
-              aria-live="polite"
               data-testid="pause-reason"
               className="pointer-events-none max-w-full truncate border border-amber-500 bg-[#0d0e11]/95 px-2 py-1 font-mono text-xs text-amber-300"
             >

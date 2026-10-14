@@ -58,6 +58,8 @@ export function ProtocolDriftGame() {
   const lockAudit = useProtocolDriftStore((s) => s.lockAudit);
   const scorecard = useProtocolDriftStore((s) => s.scorecard);
   const notice = useProtocolDriftStore((s) => s.notice);
+  // On touch an auto-pause shows only the pill in the wire bar (#2045).
+  const pausedReason = useProtocolDriftStore((s) => s.pausedReason);
   const mode = useProtocolDriftStore((s) => s.mode);
   const init = useProtocolDriftStore((s) => s.init);
   const dispose = useProtocolDriftStore((s) => s.dispose);
@@ -195,7 +197,7 @@ export function ProtocolDriftGame() {
       <div role="status" aria-live="polite" className="sr-only">
         {notice?.text}
       </div>
-      {notice ? (
+      {notice && !(touch && notice.text === pausedReason) ? (
         <p
           key={notice.id}
           data-tone={notice.tone}

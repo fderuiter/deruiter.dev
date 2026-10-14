@@ -56,6 +56,52 @@ export function HeaderBar() {
   const fsm = snapshot?.fsmState ?? "BRIEF";
   const running = fsm === "RUNNING";
   const frozen = fsm === "LOCKED" || fsm === "LOCK_REVIEW";
+  // Touch only: why a control is disabled, shown on screen and linked to the
+  // control with aria-describedby (#2045). Null when the control is enabled.
+  const reasonFor = {
+    run: !touch
+      ? null
+      : fsm === "BRIEF"
+        ? "Accept the assignment first."
+        : frozen
+          ? "The database is locked."
+          : null,
+    step:
+      !touch || fsm === "PAUSED"
+        ? null
+        : fsm === "BRIEF"
+          ? "Accept the assignment first."
+          : frozen
+            ? "The database is locked."
+            : fsm === "RUNNING"
+              ? "Pause the clock to step."
+              : "Publish the revision before stepping.",
+    validate: !touch
+      ? null
+      : fsm === "BRIEF"
+        ? "Accept the assignment first."
+        : frozen
+          ? "The database is locked."
+          : fsm === "RUNNING"
+            ? "Pause the clock to run the local test."
+            : null,
+    publish:
+      !touch || fsm === "DEPLOY_READY"
+        ? null
+        : fsm === "BRIEF"
+          ? "Accept the assignment first."
+          : frozen
+            ? "The database is locked."
+            : fsm === "RUNNING"
+              ? "Pause the clock to publish."
+              : "Run Local Test first.",
+  };
+  const hint = (id: string, text: string | null) =>
+    touch && text ? (
+      <span id={id} className="basis-full font-mono text-xs text-zinc-300">
+        {text}
+      </span>
+    ) : null;
   const day = snapshot ? trialDayOf(snapshot.minute) : 0;
   const canLock = view?.scenario === "full" && fsm === "PAUSED" && day >= 28;
   const sdtmClear =
@@ -101,6 +147,7 @@ export function HeaderBar() {
           disabled={frozen || fsm === "BRIEF"}
           aria-label={running ? "Pause (Space)" : "Run (Space)"}
           aria-pressed={running}
+          aria-describedby={reasonFor.run ? "pd-run-hint" : undefined}
           className={NEUTRAL}
         >
           {running ? (
@@ -128,11 +175,14 @@ export function HeaderBar() {
           onClick={() => void step()}
           disabled={fsm !== "PAUSED"}
           aria-label="Step one hour (N)"
+          aria-describedby={reasonFor.step ? "pd-step-hint" : undefined}
           className={NEUTRAL}
         >
           <IconPlayerTrackNext className="h-4 w-4" aria-hidden="true" />
           <span>N</span>
         </button>
+        {hint("pd-run-hint", reasonFor.run)}
+        {hint("pd-step-hint", reasonFor.step)}
       </div>
 
       <div
@@ -144,18 +194,22 @@ export function HeaderBar() {
           type="button"
           onClick={() => void validate()}
           disabled={fsm === "BRIEF" || fsm === "RUNNING" || frozen}
+          aria-describedby={reasonFor.validate ? "pd-validate-hint" : undefined}
           className={NEUTRAL}
         >
           Run Local Test
         </button>
+        {hint("pd-validate-hint", reasonFor.validate)}
         <button
           type="button"
           onClick={() => void publish()}
           disabled={fsm !== "DEPLOY_READY"}
+          aria-describedby={reasonFor.publish ? "pd-publish-hint" : undefined}
           className={`${NEUTRAL} ${fsm === "DEPLOY_READY" ? "!border-emerald-500 !text-emerald-400" : ""}`}
         >
           Publish Revision
         </button>
+        {hint("pd-publish-hint", reasonFor.publish)}
         {canLock ? (
           <button
             type="button"

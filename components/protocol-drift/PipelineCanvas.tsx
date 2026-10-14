@@ -413,6 +413,8 @@ function CanvasInner() {
         nodesDraggable={editable}
         nodesConnectable={editable}
         elementsSelectable
+        // A finger that moves a few pixels on a chip is still a tap (#2045).
+        nodeDragThreshold={touch ? 8 : undefined}
         panOnDrag={touch}
         zoomOnScroll={false}
         zoomOnPinch={touch}

@@ -31,6 +31,7 @@ export function useWorkbenchKeys(): (event: React.KeyboardEvent) => void {
         event.preventDefault();
         event.stopPropagation();
         store.setWireFrom(null);
+        store.notify("info", "Wiring cancelled.");
         return;
       }
       if (store.inspectorExpanded) {

@@ -506,6 +506,8 @@ function ReviewPane({
               <li key={i.issueId}>
                 <button
                   type="button"
+                  // Unique, useful names: the field and the issue id (#2045).
+                  aria-label={`[${i.code}] ${i.subjectId.replace("PD-101-", "")} Day ${i.visitDay} ${i.targetField}, issue ${i.issueId}, ${STATUS_LABEL[i.status].toLowerCase()}`}
                   onClick={() =>
                     select({ issueId: i.issueId, submissionId: i.submissionId })
                   }

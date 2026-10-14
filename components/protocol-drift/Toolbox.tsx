@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { CHIP_SPECS, type ChipKind } from "@/lib/protocol-drift";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { CHIP_DRAG_TYPE, placeChip } from "./PipelineCanvas";
@@ -47,9 +47,12 @@ export function Toolbox({
   // On the touch cabinet the toolbox stays open: it is a row of chips in a
   // narrow cabinet and a column in a wide one, so it never collapses.
   const touch = useCabinetTouch();
+  const navRef = useRef<HTMLElement | null>(null);
+  const more = useScrollMore(touch ? navRef : null);
 
-  return (
+  const nav = (
     <nav
+      ref={navRef}
       aria-label="Chip toolbox"
       // A scrollable strip on touch needs a keyboard stop of its own (axe).
       tabIndex={touch ? 0 : undefined}
@@ -57,6 +60,11 @@ export function Toolbox({
         compact ? "w-14" : "w-[232px]"
       }${touch ? " pd-touch-toolbox" : ""}`}
     >
+      {touch ? (
+        <span className="shrink-0 self-center px-1 text-xs text-zinc-300 whitespace-nowrap">
+          Chips ({TOOLBOX_ORDER.length})
+        </span>
+      ) : null}
       {touch ? null : (
         <button
           type="button"
@@ -112,4 +120,97 @@ export function Toolbox({
       })}
     </nav>
   );
+
+  if (!touch) return nav;
+  // On touch an edge fade shows where the strip scrolls on (#2045).
+  return (
+    <div className="relative flex min-h-0 min-w-0 shrink-0">
+      {nav}
+      {more.axis === "x" && more.before ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 left-0 w-8"
+          style={{
+            background: "linear-gradient(to right, #13151a, transparent)",
+          }}
+        />
+      ) : null}
+      {more.axis === "x" && more.after ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-y-0 right-0 w-8"
+          style={{
+            background: "linear-gradient(to left, #13151a, transparent)",
+          }}
+        />
+      ) : null}
+      {more.axis === "y" && more.before ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-8"
+          style={{
+            background: "linear-gradient(to bottom, #13151a, transparent)",
+          }}
+        />
+      ) : null}
+      {more.axis === "y" && more.after ? (
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-8"
+          style={{
+            background: "linear-gradient(to top, #13151a, transparent)",
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Which edges of a scroll box have more content, along the axis it scrolls.
+ * One passive scroll listener, with the update frame-throttled (#2045).
+ */
+function useScrollMore(ref: React.RefObject<HTMLElement | null> | null): {
+  axis: "x" | "y" | null;
+  before: boolean;
+  after: boolean;
+} {
+  const [more, setMore] = useState<{
+    axis: "x" | "y" | null;
+    before: boolean;
+    after: boolean;
+  }>({ axis: null, before: false, after: false });
+  useEffect(() => {
+    const el = ref?.current;
+    if (!el) return;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const overX = el.scrollWidth - el.clientWidth > 2;
+      const overY = el.scrollHeight - el.clientHeight > 2;
+      const axis = overX ? "x" : overY ? "y" : null;
+      const pos = axis === "x" ? el.scrollLeft : el.scrollTop;
+      const span =
+        axis === "x"
+          ? el.scrollWidth - el.clientWidth
+          : el.scrollHeight - el.clientHeight;
+      setMore({
+        axis,
+        before: axis !== null && pos > 2,
+        after: axis !== null && pos < span - 2,
+      });
+    };
+    const schedule = () => {
+      if (!frame) frame = window.requestAnimationFrame(update);
+    };
+    update();
+    el.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    return () => {
+      el.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
+  }, [ref]);
+  return more;
 }

@@ -581,6 +581,9 @@ test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => 
 const PD_ROUTE = "/protocol-drift";
 const PD_ROOT = ".pd-touch";
 const PD_INSPECTOR = `${PD_ROOT} [data-testid="inspector"]`;
+const PD_INSPECTOR_SHEET = `${PD_ROOT} [data-testid="inspector-sheet"]`;
+const PD_CHIP = (kind: string) =>
+  `${PD_ROOT} .react-flow__node:has([data-chip-kind="${kind}"])`;
 
 /**
  * Launches the Protocol Drift cabinet. The workbench loads after the cabinet
@@ -596,6 +599,67 @@ async function launchProtocolDriftCabinet(page: Page) {
   await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 90000 });
   await expect(page.locator(PD_ROOT)).toBeVisible({ timeout: 90000 });
 }
+
+test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () => {
+  test.setTimeout(300000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(PD_ROUTE);
+  });
+
+  test("the first lane is wired, validated, published and run with taps only", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    await page
+      .getByRole("button", { name: /accept assignment/i })
+      .tap({ timeout: 15000 });
+    // Chips come from the toolbox by tap, in lane order.
+    for (const kind of [
+      "SourceIngest",
+      "ExtractField",
+      "PivotToObservation",
+      "CDISCSink",
+    ]) {
+      await page.getByRole("button", { name: `Add ${kind} chip` }).tap();
+      await expect(page.locator(PD_CHIP(kind))).toBeVisible();
+    }
+    // Tap a chip to select it, "Wire from" it, then tap the target chip.
+    const wire = async (from: string, to: string, pick?: string) => {
+      await page.locator(PD_CHIP(from)).tap();
+      await page.getByRole("button", { name: `Wire from ${from}` }).tap();
+      await page.locator(PD_CHIP(to)).tap();
+      if (pick) await page.getByRole("button", { name: pick }).tap();
+    };
+    // One valid pair wires at once.
+    await wire("SourceIngest", "ExtractField");
+    // Three valid pairs open the pair list: one tap per wire.
+    await wire("ExtractField", "PivotToObservation", "sbp to sbp");
+    await wire("ExtractField", "PivotToObservation", "dbp to dbp");
+    await wire("ExtractField", "PivotToObservation", "pulse to pulse");
+    await wire("PivotToObservation", "CDISCSink");
+    await expect(page.locator(`${PD_ROOT} .react-flow__edge`)).toHaveCount(5);
+
+    const fsm = page.locator(PD_ROOT);
+    await page.getByRole("button", { name: "Run Local Test" }).tap();
+    await expect(fsm).toHaveAttribute("data-fsm", "DEPLOY_READY");
+    await page.getByRole("button", { name: "Publish Revision" }).tap();
+    await expect(fsm).toHaveAttribute("data-fsm", "PAUSED");
+    await page.getByRole("button", { name: /^Run \(Space\)$/ }).tap();
+    await expect(fsm).toHaveAttribute("data-fsm", "RUNNING");
+    await page.getByRole("button", { name: /^Pause \(Space\)$/ }).tap();
+    await expect(fsm).toHaveAttribute("data-fsm", "PAUSED");
+    const clock = page.locator('[data-testid="sim-clock"]');
+    const before = await clock.textContent();
+    await page.getByRole("button", { name: /Step one hour/ }).tap();
+    await expect(clock).not.toHaveText(before ?? "");
+  });
+});
 
 test.describe("Protocol Drift on a tablet (iPad projects, #2045)", () => {
   test.setTimeout(240000);
@@ -655,6 +719,8 @@ test.describe("Protocol Drift on a tablet (iPad projects, #2045)", () => {
     const canvas = await page.locator(`${PD_ROOT} .react-flow`).boundingBox();
     expect(canvas).not.toBeNull();
     expect(canvas!.height).toBeGreaterThanOrEqual(200);
+    // The canvas wins the cabinet: at least 55% of its height (#2045 round 2).
+    expect(canvas!.height).toBeGreaterThanOrEqual(viewport!.height * 0.55);
     await assertNoHorizontalOverflow(page);
   });
 
@@ -739,19 +805,26 @@ test.describe("Protocol Drift on a tablet (iPad projects, #2045)", () => {
     await expect(dialog).toBeHidden();
   });
 
-  test("an expanded inspector docks on Escape, and the cabinet stays open", async ({
+  test("the inspector opens as a sheet, and Escape closes it while the cabinet stays open", async ({
     page,
   }) => {
     await launchProtocolDriftCabinet(page);
     await page
       .getByRole("button", { name: /accept assignment/i })
       .tap({ timeout: 15000 });
-    await page.getByRole("button", { name: /Expand \(I\)/ }).tap();
     await expect(page.locator(PD_INSPECTOR)).toHaveAttribute(
       "data-expanded",
-      "true"
+      "false"
     );
+    await page.getByRole("button", { name: /Expand \(I\)/ }).tap();
+    const sheet = page.locator(PD_INSPECTOR_SHEET);
+    await expect(sheet).toBeVisible();
+    const viewport = page.viewportSize();
+    const box = await sheet.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
     await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
     await expect(page.locator(PD_INSPECTOR)).toHaveAttribute(
       "data-expanded",
       "false"

@@ -137,16 +137,47 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     expect(desktopDialog.hasAttribute("data-escape-holds")).toBe(false);
   });
 
-  it("an expanded inspector docks on Escape in the touch cabinet, and the page keeps it", async () => {
+  it("the inspector is a closed bar until opened, then a sheet that Escape closes", async () => {
     await startTracer(true);
+    expect(
+      root()
+        .querySelector('[data-testid="inspector"]')
+        ?.getAttribute("data-expanded")
+    ).toBe("false");
+    expect(screen.queryByTestId("inspector-sheet")).toBeNull();
     await click(/Expand \(I\)/);
     expect(root().getAttribute("data-escape-docks")).toBe("true");
-    const expand = screen.getByRole("button", { name: /Dock \(Esc\)/ });
+    const sheet = screen.getByTestId("inspector-sheet");
+    expect(sheet.getAttribute("role")).toBe("dialog");
+    expect(sheet.getAttribute("aria-modal")).toBe("true");
+    // Escape, pressed inside the sheet, closes the sheet and keeps the cabinet.
+    const close = screen.getByRole("button", {
+      name: /Close Forensic Inspector/,
+    });
     await act(async () => {
-      fireEvent.keyDown(expand, { key: "Escape" });
+      fireEvent.keyDown(close, { key: "Escape" });
     });
     expect(useProtocolDriftStore.getState().inspectorExpanded).toBe(false);
+    expect(screen.queryByTestId("inspector-sheet")).toBeNull();
     expect(root().hasAttribute("data-escape-docks")).toBe(false);
+  });
+
+  it("the inspector sheet closes on its backdrop and on its 44px close button", async () => {
+    await startTracer(true);
+    await click(/Expand \(I\)/);
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("inspector-sheet-backdrop"));
+    });
+    expect(useProtocolDriftStore.getState().inspectorExpanded).toBe(false);
+    await click(/Expand \(I\)/);
+    const close = screen.getByRole("button", {
+      name: /Close Forensic Inspector/,
+    });
+    expect(close.className).toContain("min-h-11");
+    await act(async () => {
+      fireEvent.click(close);
+    });
+    expect(useProtocolDriftStore.getState().inspectorExpanded).toBe(false);
   });
 
   it("the inspector's expand and dock controls are at least 44px tall in the touch cabinet", async () => {

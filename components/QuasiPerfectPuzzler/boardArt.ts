@@ -58,10 +58,31 @@ export function nodeGlyph(node: ASTNode): string {
   if (node.type === "Boolean") {
     return node.value === true || node.value === "true" ? "⊤" : "⊥";
   }
+  if (node.type === "Forall") return `∀${String(node.value)}`;
+  if (node.type === "Exists") return `∃${String(node.value)}`;
   const typed = TYPE_GLYPHS[node.type];
   if (typed) return typed;
   const raw = String(node.value);
   return MATH_GLYPHS[raw] ?? raw;
+}
+
+/**
+ * What a screen reader hears for a proof-board node. Quantifiers are read as
+ * words (#2091), since "Forall node with value n" says nothing about what
+ * the binder means; every other node keeps its established label.
+ *
+ * @param node - The AST node.
+ * @param expression - The node's formula, from `renderASTString`.
+ * @returns The accessible name.
+ */
+export function nodeAccessibleLabel(node: ASTNode, expression: string): string {
+  if (node.type === "Forall") {
+    return `Universal quantifier: for all ${String(node.value)}. Expression: ${expression}`;
+  }
+  if (node.type === "Exists") {
+    return `Existential quantifier: there exists ${String(node.value)}. Expression: ${expression}`;
+  }
+  return `${node.type} node with value ${node.value}. Expression: ${expression}`;
 }
 
 /** True for nodes drawn as math variables (italic serif). */
@@ -311,6 +332,10 @@ const TACTIC_GLYPHS: Record<TacticId, string> = {
   split: "⋀",
   left: "◁",
   right: "▷",
+  use: "∃",
+  induction: "ℕ",
+  trans: "⇉",
+  gcongr: "⊴",
   sorry: "?",
 };
 

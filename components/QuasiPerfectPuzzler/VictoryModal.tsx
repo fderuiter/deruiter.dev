@@ -33,6 +33,8 @@ interface VictoryModalProps {
   variant?: PuzzlerVariantDef | null;
   /** Whether the run cleared that variant. */
   variantCleared?: boolean;
+  /** This run proved the Act 1 capstone and Act 2 is now open (#2091). */
+  actTwoUnlocked?: boolean;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
@@ -51,6 +53,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   onDismiss,
   variant = null,
   variantCleared = false,
+  actTwoUnlocked = false,
 }) => {
   const isLastLevel = currentLevelIndex >= totalLevels - 1;
   const isSorry = score.usedSorry;
@@ -208,6 +211,21 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                     Prove it in {par} or fewer for the Golfed badge.
                   </span>
                 )}
+              </div>
+            )}
+
+            {actTwoUnlocked && !isSorry && (
+              <div
+                data-testid="victory-act-two-unlocked"
+                className="mb-4 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-3 text-left text-xs text-zinc-200"
+              >
+                <p className="font-bold text-emerald-300">
+                  Act 1 complete · Act 2 unlocked
+                </p>
+                <p className="mt-1 text-zinc-300">
+                  Four new chapters are open on the level map: quantifiers,
+                  induction, inequality chains and almost perfect numbers.
+                </p>
               </div>
             )}
 

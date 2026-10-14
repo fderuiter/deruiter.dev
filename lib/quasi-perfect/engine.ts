@@ -114,6 +114,9 @@ function renderOperand(
   side: "left" | "right"
 ): string {
   const rendered = renderASTString(child);
+  // A quantifier's body runs to the end of the formula, so as an operand it
+  // always needs brackets: (∀ n, P n) → Q.
+  if (isQuantifier(child)) return `(${rendered})`;
   const outer = binaryPrecedence(parent);
   const inner = binaryPrecedence(child);
   if (!outer || !inner) return rendered;
@@ -143,6 +146,15 @@ export function renderASTString(node: ASTNode): string {
         return `¬(${inner})`;
       }
       return `¬${node.value}`;
+
+    case "Forall":
+    case "Exists": {
+      const symbol = node.type === "Forall" ? "∀" : "∃";
+      const body = node.children?.[0];
+      return body
+        ? `${symbol} ${String(node.value)}, ${renderASTString(body)}`
+        : `${symbol} ${String(node.value)}`;
+    }
 
     case "Function":
       if (node.children && node.children.length > 0) {
@@ -386,6 +398,14 @@ export function isProofComplete(ast: ASTNode): boolean {
   if (ast.type === "Equality" && ast.children?.length === 2) {
     return areNodesEqual(ast.children[0], ast.children[1]);
   }
+  // ≤ and ≥ are reflexive, and Lean's rfl closes x ≤ x as it does x = x.
+  if (
+    ast.type === "Inequality" &&
+    (ast.value === "≤" || ast.value === "≥") &&
+    ast.children?.length === 2
+  ) {
+    return areNodesEqual(ast.children[0], ast.children[1]);
+  }
   return false;
 }
 
@@ -539,6 +559,165 @@ export function areRingEquivalent(a: ASTNode, b: ASTNode): boolean {
   }
 
   return true;
+}
+
+// -------------------------------------------------------------
+// Quantifiers, substitution and pattern matching (#2091)
+// -------------------------------------------------------------
+
+/**
+ * Whether a node is a `∀` or `∃` binder.
+ *
+ * @param node - Any AST node.
+ * @returns True for `Forall` and `Exists` nodes.
+ */
+export function isQuantifier(node: ASTNode): boolean {
+  return node.type === "Forall" || node.type === "Exists";
+}
+
+let freshIdCounter = 0;
+
+/**
+ * Deep copy of a subtree with new node ids, so a term substituted into a goal
+ * in several places never shares an id with another node on the board.
+ *
+ * @param node - The subtree to copy.
+ * @param tag - A short label folded into the new ids.
+ * @returns The copy.
+ */
+export function freshCopy(node: ASTNode, tag = "t"): ASTNode {
+  freshIdCounter += 1;
+  return {
+    ...node,
+    id: `${tag}-${freshIdCounter}`,
+    metadata: node.metadata ? { ...node.metadata } : undefined,
+    children: node.children?.map((child) => freshCopy(child, tag)),
+  };
+}
+
+/**
+ * Replace every free occurrence of a variable. A binder of the same name
+ * shadows it, so the variable is left alone inside that binder's body.
+ *
+ * @param node - The term to rewrite.
+ * @param name - The variable to replace.
+ * @param replacement - The term to put in its place; each use is a fresh copy.
+ * @returns The rewritten term; untouched nodes keep their ids.
+ */
+export function substituteVariable(
+  node: ASTNode,
+  name: string,
+  replacement: ASTNode
+): ASTNode {
+  if (node.type === "Variable" && node.value === name) {
+    return freshCopy(replacement, "sub");
+  }
+  if (isQuantifier(node) && node.value === name) return node;
+  if (!node.children || node.children.length === 0) return node;
+  return {
+    ...node,
+    children: node.children.map((child) =>
+      substituteVariable(child, name, replacement)
+    ),
+  };
+}
+
+/**
+ * Whether a variable occurs free in a term.
+ *
+ * @param node - The term to search.
+ * @param name - The variable's name.
+ * @returns True when some occurrence is not bound by a quantifier.
+ */
+export function occursFree(node: ASTNode, name: string): boolean {
+  if (node.type === "Variable") return node.value === name;
+  if (isQuantifier(node) && node.value === name) return false;
+  return (node.children ?? []).some((child) => occursFree(child, name));
+}
+
+/**
+ * Peel the leading `∀` binders off a statement, so `∀ a b, a + b = b + a`
+ * gives its variables and the equation under them.
+ *
+ * @param node - A statement, quantified or not.
+ * @returns The bound variables in order and the body under them.
+ */
+export function stripForalls(node: ASTNode): {
+  variables: string[];
+  body: ASTNode;
+} {
+  const variables: string[] = [];
+  let body = node;
+  while (body.type === "Forall" && body.children?.length === 1) {
+    variables.push(String(body.value));
+    body = body.children[0];
+  }
+  return { variables, body };
+}
+
+/**
+ * First-order matching: does `term` have the shape of `pattern`, where each
+ * name in `patternVariables` may stand for any subterm (the same subterm at
+ * every occurrence)?
+ *
+ * @param pattern - The pattern, such as `a * (b + c)`.
+ * @param term - The concrete term.
+ * @param patternVariables - Names that act as holes.
+ * @param bindings - What each hole has matched so far; filled in place.
+ * @returns True on a match, with `bindings` holding each hole's term.
+ */
+export function matchPattern(
+  pattern: ASTNode,
+  term: ASTNode,
+  patternVariables: ReadonlySet<string>,
+  bindings: Map<string, ASTNode> = new Map()
+): boolean {
+  if (
+    pattern.type === "Variable" &&
+    patternVariables.has(String(pattern.value))
+  ) {
+    const name = String(pattern.value);
+    const bound = bindings.get(name);
+    if (bound) return areNodesEqual(bound, term);
+    bindings.set(name, term);
+    return true;
+  }
+  if (pattern.type !== term.type || pattern.value !== term.value) return false;
+  const pc = pattern.children ?? [];
+  const tc = term.children ?? [];
+  if (pc.length !== tc.length) return false;
+  return pc.every((child, i) =>
+    matchPattern(child, tc[i], patternVariables, bindings)
+  );
+}
+
+/**
+ * Fill a pattern's holes with the terms they matched.
+ *
+ * @param pattern - A pattern from {@link matchPattern}.
+ * @param bindings - What each hole matched.
+ * @returns The instantiated term, with fresh ids.
+ */
+export function instantiatePattern(
+  pattern: ASTNode,
+  bindings: ReadonlyMap<string, ASTNode>
+): ASTNode {
+  // Simultaneous, so a matched term that mentions another hole's name is
+  // never rewritten a second time.
+  const fill = (node: ASTNode, shadowed: ReadonlySet<string>): ASTNode => {
+    if (node.type === "Variable" && !shadowed.has(String(node.value))) {
+      const value = bindings.get(String(node.value));
+      if (value) return freshCopy(value, "inst");
+    }
+    const inner = isQuantifier(node)
+      ? new Set([...shadowed, String(node.value)])
+      : shadowed;
+    return {
+      ...freshCopy({ ...node, children: undefined }, "inst"),
+      children: node.children?.map((child) => fill(child, inner)),
+    };
+  };
+  return fill(pattern, new Set());
 }
 
 /**

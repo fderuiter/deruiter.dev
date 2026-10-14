@@ -223,6 +223,6 @@ describe("Quasi Puzzler variants (#2090)", () => {
       puzzleLevels
         .filter((l) => getLevelVariants(l).some((v) => v.kind === "banned"))
         .map((l) => l.id)
-    ).toEqual([5, 12, 13, 14, 16]);
+    ).toEqual([5, 12, 13, 14, 16, 19, 20, 25, 26, 27, 28, 30]);
   });
 });

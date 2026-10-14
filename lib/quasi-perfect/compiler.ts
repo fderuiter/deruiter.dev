@@ -31,6 +31,7 @@ export type TokenType =
   | "OPERATOR"
   | "LPAREN"
   | "RPAREN"
+  | "COMMA"
   | "EOF";
 
 export interface Token {
@@ -76,16 +77,23 @@ export function tokenizeFormula(input: string): Token[] {
       continue;
     }
 
-    // Identifiers & Keywords (e.g. a, b, P, Q, true, false)
-    if (/[a-zA-Z_]/.test(char)) {
+    // Identifiers & Keywords (e.g. a, b, P, Q, σ, true, false)
+    if (/[a-zA-Z_σ]/.test(char)) {
       let ident = "";
       const startCol = col;
-      while (i < input.length && /[a-zA-Z0-9_]/.test(input[i])) {
+      while (i < input.length && /[a-zA-Z0-9_σ]/.test(input[i])) {
         ident += input[i];
         i++;
       }
       if (ident === "true" || ident === "false") {
         tokens.push({ type: "BOOLEAN", value: ident, column: startCol });
+      } else if (ident === "forall" || ident === "exists") {
+        // ASCII spellings of the quantifiers (#2091).
+        tokens.push({
+          type: "OPERATOR",
+          value: ident === "forall" ? "∀" : "∃",
+          column: startCol,
+        });
       } else {
         tokens.push({ type: "IDENTIFIER", value: ident, column: startCol });
       }
@@ -103,12 +111,19 @@ export function tokenizeFormula(input: string): Token[] {
       i++;
       continue;
     }
+    if (char === ",") {
+      tokens.push({ type: "COMMA", value: ",", column: col });
+      i++;
+      continue;
+    }
 
     // Multi-char operators
     const next2 = input.slice(i, i + 2);
     if (
       next2 === "->" ||
       next2 === "!=" ||
+      next2 === "<=" ||
+      next2 === ">=" ||
       next2 === "/\\" ||
       next2 === "\\/"
     ) {
@@ -134,6 +149,12 @@ export function tokenizeFormula(input: string): Token[] {
         "~",
         "¬",
         "!",
+        "≤",
+        "≥",
+        "<",
+        ">",
+        "∀",
+        "∃",
       ].includes(char)
     ) {
       tokens.push({ type: "OPERATOR", value: char, column: col });
@@ -210,6 +231,42 @@ const BINARY_OPERATORS: Record<string, OpDef> = {
     nodeType: "Inequality",
     canonicalValue: "≠",
   },
+  "≤": {
+    precedence: 40,
+    associativity: "left",
+    nodeType: "Inequality",
+    canonicalValue: "≤",
+  },
+  "<=": {
+    precedence: 40,
+    associativity: "left",
+    nodeType: "Inequality",
+    canonicalValue: "≤",
+  },
+  "≥": {
+    precedence: 40,
+    associativity: "left",
+    nodeType: "Inequality",
+    canonicalValue: "≥",
+  },
+  ">=": {
+    precedence: 40,
+    associativity: "left",
+    nodeType: "Inequality",
+    canonicalValue: "≥",
+  },
+  "<": {
+    precedence: 40,
+    associativity: "left",
+    nodeType: "Inequality",
+    canonicalValue: "<",
+  },
+  ">": {
+    precedence: 40,
+    associativity: "left",
+    nodeType: "Inequality",
+    canonicalValue: ">",
+  },
   "+": {
     precedence: 50,
     associativity: "left",
@@ -274,6 +331,46 @@ export function parseFormula(input: string, idPrefix = "node"): ASTNode {
 
     let left: ASTNode;
 
+    // Quantifiers (#2091): ∀ n, body and ∃ x y, body. The body runs as far
+    // right as it can, and several names nest one binder per name.
+    if (
+      token.type === "OPERATOR" &&
+      (token.value === "∀" || token.value === "∃")
+    ) {
+      const quantifier = consume();
+      const names: string[] = [];
+      while (peek().type === "IDENTIFIER") names.push(consume().value);
+      if (names.length === 0) {
+        const next = peek();
+        throw new ParseError(
+          `Expected a variable name after '${quantifier.value}'`,
+          next.column,
+          1,
+          input
+        );
+      }
+      const comma = peek();
+      if (comma.type !== "COMMA") {
+        throw new ParseError(
+          `Expected ',' after the bound variable${names.length > 1 ? "s" : ""}`,
+          comma.column,
+          1,
+          input
+        );
+      }
+      consume();
+      let body = parseExpression(0);
+      for (const name of [...names].reverse()) {
+        body = {
+          id: generateId(idPrefix),
+          type: quantifier.value === "∀" ? "Forall" : "Exists",
+          value: name,
+          children: [body],
+        };
+      }
+      return body;
+    }
+
     // Handle Unary Prefix Operators: ~, ¬, !, -, +
     if (
       token.type === "OPERATOR" &&
@@ -326,11 +423,37 @@ export function parseFormula(input: string, idPrefix = "node"): ASTNode {
       };
     } else if (token.type === "IDENTIFIER") {
       const tok = consume();
-      left = {
-        id: generateId(idPrefix),
-        type: "Variable",
-        value: tok.value,
-      };
+      if (peek().type === "LPAREN") {
+        // Function application such as σ(n) or S(k + 1).
+        consume();
+        const args: ASTNode[] = [parseExpression(0)];
+        while (peek().type === "COMMA") {
+          consume();
+          args.push(parseExpression(0));
+        }
+        const close = peek();
+        if (close.type !== "RPAREN") {
+          throw new ParseError(
+            `Expected closing ')' but found ${close.type === "EOF" ? "end of expression" : `'${close.value}'`}`,
+            close.column,
+            1,
+            input
+          );
+        }
+        consume();
+        left = {
+          id: generateId(idPrefix),
+          type: "Function",
+          value: tok.value,
+          children: args,
+        };
+      } else {
+        left = {
+          id: generateId(idPrefix),
+          type: "Variable",
+          value: tok.value,
+        };
+      }
     } else {
       throw new ParseError(
         `Unexpected token '${token.value || token.type}'`,
@@ -418,11 +541,28 @@ export function parseHypotheses(input: string, idPrefix = "hyp"): ASTNode[] {
   const items: string[] = [];
   let current = "";
   let parenDepth = 0;
+  // A comma that ends a quantifier's binder list (∀ n, ...) is part of the
+  // hypothesis, not a separator between two.
+  let openBinders = 0;
 
   for (let i = 0; i < input.length; i++) {
     const char = input[i];
     if (char === "(") parenDepth++;
     else if (char === ")") parenDepth--;
+    else if (char === "∀" || char === "∃") openBinders++;
+    else if (
+      /^(forall|exists)\b/.test(input.slice(i)) &&
+      !/\w/.test(input[i - 1] ?? "")
+    ) {
+      openBinders++;
+    }
+
+    if (char === "," && parenDepth === 0 && openBinders > 0) {
+      openBinders--;
+      current += char;
+      continue;
+    }
+    if (char === "\n" || char === ";") openBinders = 0;
 
     if ((char === "," || char === ";" || char === "\n") && parenDepth === 0) {
       if (current.trim()) items.push(current.trim());

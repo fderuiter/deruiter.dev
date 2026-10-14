@@ -4,7 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { renderASTString } from "@/lib/quasi-perfect/engine";
 import type { ProofLayoutNode } from "./boardArt";
-import { isMathVariable, nodeGlyph } from "./boardArt";
+import { isMathVariable, nodeAccessibleLabel, nodeGlyph } from "./boardArt";
 
 interface ASTNodeViewProps {
   /** The node and where the board layout put it. */
@@ -31,6 +31,8 @@ function nodeFamily(item: ProofLayoutNode): string {
     case "Conjunction":
     case "Disjunction":
     case "Negation":
+    case "Forall":
+    case "Exists":
       return "logic";
     case "Operator":
     case "Function":
@@ -95,7 +97,7 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
         onMouseLeave={() => {
           if (isInteractive) onHoverTarget(null);
         }}
-        aria-label={`${node.type} node with value ${node.value}. Expression: ${renderASTString(node)}`}
+        aria-label={nodeAccessibleLabel(node, renderASTString(node))}
         className={`qp-node qp-focus absolute left-0 top-0 inline-flex items-center justify-center rounded-xl select-none ${
           isInteractive ? "cursor-pointer" : "cursor-default"
         } ${isTargetEligible ? "cursor-crosshair" : ""}`}

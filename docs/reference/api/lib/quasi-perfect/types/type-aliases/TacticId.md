@@ -6,4 +6,4 @@
 
 # Type Alias: TacticId
 
-> **TacticId** = `"rfl"` \| `"rw"` \| `"simp"` \| `"decide"` \| `"omega"` \| `"linarith"` \| `"intro"` \| `"apply"` \| `"exact"` \| `"cases"` \| `"ring"` \| `"norm_num"` \| `"symm"` \| `"split"` \| `"left"` \| `"right"` \| `"sorry"`
+> **TacticId** = `"rfl"` \| `"rw"` \| `"simp"` \| `"decide"` \| `"omega"` \| `"linarith"` \| `"intro"` \| `"apply"` \| `"exact"` \| `"cases"` \| `"ring"` \| `"norm_num"` \| `"symm"` \| `"split"` \| `"left"` \| `"right"` \| `"use"` \| `"induction"` \| `"trans"` \| `"gcongr"` \| `"sorry"`

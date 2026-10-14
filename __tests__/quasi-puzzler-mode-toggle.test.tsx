@@ -29,7 +29,7 @@ const ramText = () => document.body.textContent ?? "";
 /** Level 2 in Hacker Mode with one `symm` step applied (15 of 16 GB left). */
 function spendOneGigabyteInHacker() {
   render(<QuasiPerfectPuzzler />);
-  click(screen.getByRole("button", { name: /^L2/i }));
+  click(screen.getByRole("button", { name: /^L2\b/i }));
   click(screen.getByRole("button", { name: /^Hacker Mode$/i }));
   expect(ramText()).toContain("16.0 / 16 GB");
   const symm = screen

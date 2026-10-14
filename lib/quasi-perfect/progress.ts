@@ -185,3 +185,71 @@ export function resolveResumeLevelIndex(
   }
   return 0;
 }
+
+/** The first chapter of Act 2 (#2091). Chapters 1 to 3 are Act 1. */
+export const ACT_TWO_FIRST_CHAPTER = 4;
+
+/** The Act 1 capstone, whose honest proof opens Act 2. */
+export const ACT_ONE_CAPSTONE_LEVEL_ID = 18;
+
+/**
+ * Whether Act 2 is open: the Act 1 capstone has been proved without
+ * `sorry`, or the save already records chapter 4 as unlocked. A save from
+ * before Act 2 existed needs no migration; its capstone score decides.
+ *
+ * @param progress - Parsed campaign progress.
+ * @returns True once Act 2 can be played.
+ */
+export function isActTwoUnlocked(
+  progress:
+    | Pick<GameProgressState, "completedLevels" | "unlockedChapter">
+    | null
+    | undefined
+): boolean {
+  const chapter = progress?.unlockedChapter;
+  if (
+    typeof chapter === "number" &&
+    Number.isFinite(chapter) &&
+    chapter >= ACT_TWO_FIRST_CHAPTER
+  ) {
+    return true;
+  }
+  const capstone = progress?.completedLevels?.[ACT_ONE_CAPSTONE_LEVEL_ID];
+  return !!capstone && capstone.completed === true && !capstone.usedSorry;
+}
+
+/**
+ * Whether a level is still locked. Only Act 2 levels lock; every Act 1 level
+ * is open from the start, as it always was.
+ *
+ * @param progress - Parsed campaign progress.
+ * @param level - The level, or anything carrying its chapter.
+ * @returns True when the level cannot be played yet.
+ */
+export function isLevelLocked(
+  progress:
+    | Pick<GameProgressState, "completedLevels" | "unlockedChapter">
+    | null
+    | undefined,
+  level: Pick<PuzzlerLevelDef, "chapter">
+): boolean {
+  return level.chapter >= ACT_TWO_FIRST_CHAPTER && !isActTwoUnlocked(progress);
+}
+
+/**
+ * Record that Act 2 is open once the capstone is proved honestly. Progress
+ * that already records it, or does not qualify, comes back unchanged.
+ *
+ * @param progress - Campaign progress after a run was saved.
+ * @returns Progress with `unlockedChapter` raised to Act 2 when earned.
+ */
+export function withUnlockedChapter(
+  progress: GameProgressState
+): GameProgressState {
+  if (!isActTwoUnlocked(progress)) return progress;
+  const chapter = progress.unlockedChapter;
+  if (typeof chapter === "number" && chapter >= ACT_TWO_FIRST_CHAPTER) {
+    return progress;
+  }
+  return { ...progress, unlockedChapter: ACT_TWO_FIRST_CHAPTER };
+}

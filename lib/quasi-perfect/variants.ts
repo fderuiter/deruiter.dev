@@ -117,6 +117,71 @@ export const LEVEL_VARIANT_RULES: Readonly<Record<number, LevelVariantRules>> =
     },
     17: { tightRam: 6 },
     18: { tightRam: 6 },
+    // Act 2 (#2091)
+    19: {
+      tightRam: 3,
+      banned: {
+        tactic: "exact",
+        proof: ["intro", "rw"],
+        nudge:
+          "add_zero can rewrite n + 0 instead of closing the goal outright.",
+      },
+    },
+    20: {
+      tightRam: 5,
+      banned: {
+        tactic: "norm_num",
+        proof: ["use", "decide"],
+        nudge: "Once the witness is in, the claim is concrete and decidable.",
+      },
+    },
+    21: { tightRam: 4 },
+    22: { tightRam: 11 },
+    23: { tightRam: 20 },
+    24: { tightRam: 15 },
+    25: {
+      tightRam: 5,
+      banned: {
+        tactic: "trans",
+        proof: ["linarith"],
+        nudge: "A linear arithmetic solver can add the three rungs at once.",
+      },
+    },
+    26: {
+      tightRam: 5,
+      banned: {
+        tactic: "exact",
+        proof: ["trans", "trans", "rw"],
+        nudge:
+          "Chain from both ends; a rewrite that leaves c ≤ c closes itself.",
+      },
+    },
+    27: {
+      tightRam: 5,
+      banned: {
+        tactic: "gcongr",
+        proof: ["linarith"],
+        nudge: "linarith can combine h1 and h2 without cancelling the + 1.",
+      },
+    },
+    28: {
+      tightRam: 7,
+      banned: {
+        tactic: "norm_num",
+        proof: ["use", "rw", "decide"],
+        nudge: "25 ≤ 28 is concrete, so a decision procedure settles it.",
+      },
+    },
+    29: { tightRam: 7 },
+    30: {
+      tightRam: 16,
+      banned: {
+        tactic: "norm_num",
+        proof: ["induction", "rw", "simp", "rw", "rw", "rw"],
+        nudge:
+          "The base case is arithmetic the simplifier can fold, at a price.",
+      },
+    },
   };
 
 /**

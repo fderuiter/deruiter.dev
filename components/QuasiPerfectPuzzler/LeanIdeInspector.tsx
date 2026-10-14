@@ -339,7 +339,11 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                   line.trim().startsWith("split") ||
                   line.trim().startsWith("left") ||
                   line.trim().startsWith("right") ||
-                  line.trim().startsWith("constructor")
+                  line.trim().startsWith("constructor") ||
+                  line.trim().startsWith("use") ||
+                  line.trim().startsWith("induction") ||
+                  line.trim().startsWith("refine") ||
+                  line.trim().startsWith("gcongr")
                 )
                   colorClass = "qp-text-accent-strong font-semibold";
                 else if (

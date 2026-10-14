@@ -6,4 +6,4 @@
 
 # Type Alias: TokenType
 
-> **TokenType** = `"NUMBER"` \| `"BOOLEAN"` \| `"IDENTIFIER"` \| `"OPERATOR"` \| `"LPAREN"` \| `"RPAREN"` \| `"EOF"`
+> **TokenType** = `"NUMBER"` \| `"BOOLEAN"` \| `"IDENTIFIER"` \| `"OPERATOR"` \| `"LPAREN"` \| `"RPAREN"` \| `"COMMA"` \| `"EOF"`

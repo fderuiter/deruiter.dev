@@ -8,6 +8,18 @@
 
 ## References
 
+### ACT\_ONE\_CAPSTONE\_LEVEL\_ID
+
+Re-exports [ACT_ONE_CAPSTONE_LEVEL_ID](progress/variables/ACT_ONE_CAPSTONE_LEVEL_ID.md)
+
+***
+
+### ACT\_TWO\_FIRST\_CHAPTER
+
+Re-exports [ACT_TWO_FIRST_CHAPTER](progress/variables/ACT_TWO_FIRST_CHAPTER.md)
+
+***
+
 ### areAllSubgoalsClosed
 
 Re-exports [areAllSubgoalsClosed](engine/functions/areAllSubgoalsClosed.md)
@@ -98,6 +110,12 @@ Re-exports [findNodeById](engine/functions/findNodeById.md)
 
 ***
 
+### freshCopy
+
+Re-exports [freshCopy](engine/functions/freshCopy.md)
+
+***
+
 ### GameMode
 
 Re-exports [GameMode](types/type-aliases/GameMode.md)
@@ -158,6 +176,18 @@ Re-exports [gradeSandboxRun](sandbox/functions/gradeSandboxRun.md)
 
 ***
 
+### instantiatePattern
+
+Re-exports [instantiatePattern](engine/functions/instantiatePattern.md)
+
+***
+
+### isActTwoUnlocked
+
+Re-exports [isActTwoUnlocked](progress/functions/isActTwoUnlocked.md)
+
+***
+
 ### isConcreteExpression
 
 Re-exports [isConcreteExpression](engine/functions/isConcreteExpression.md)
@@ -176,9 +206,21 @@ Re-exports [isLevelGolfed](progress/functions/isLevelGolfed.md)
 
 ***
 
+### isLevelLocked
+
+Re-exports [isLevelLocked](progress/functions/isLevelLocked.md)
+
+***
+
 ### isProofComplete
 
 Re-exports [isProofComplete](engine/functions/isProofComplete.md)
+
+***
+
+### isQuantifier
+
+Re-exports [isQuantifier](engine/functions/isQuantifier.md)
 
 ***
 
@@ -230,6 +272,12 @@ Re-exports [LevelScore](types/interfaces/LevelScore.md)
 
 ***
 
+### matchPattern
+
+Re-exports [matchPattern](engine/functions/matchPattern.md)
+
+***
+
 ### mergeLevelScore
 
 Re-exports [mergeLevelScore](progress/functions/mergeLevelScore.md)
@@ -257,6 +305,12 @@ Re-exports [NodeType](types/type-aliases/NodeType.md)
 ### normalizeClearedVariants
 
 Re-exports [normalizeClearedVariants](variants/functions/normalizeClearedVariants.md)
+
+***
+
+### occursFree
+
+Re-exports [occursFree](engine/functions/occursFree.md)
 
 ***
 
@@ -410,9 +464,21 @@ Re-exports [STORY_RAM_MULTIPLIER](ram/variables/STORY_RAM_MULTIPLIER.md)
 
 ***
 
+### stripForalls
+
+Re-exports [stripForalls](engine/functions/stripForalls.md)
+
+***
+
 ### SubGoal
 
 Re-exports [SubGoal](types/interfaces/SubGoal.md)
+
+***
+
+### substituteVariable
+
+Re-exports [substituteVariable](engine/functions/substituteVariable.md)
 
 ***
 
@@ -467,3 +533,9 @@ Re-exports [tokenizeFormula](compiler/functions/tokenizeFormula.md)
 ### TokenType
 
 Re-exports [TokenType](compiler/type-aliases/TokenType.md)
+
+***
+
+### withUnlockedChapter
+
+Re-exports [withUnlockedChapter](progress/functions/withUnlockedChapter.md)

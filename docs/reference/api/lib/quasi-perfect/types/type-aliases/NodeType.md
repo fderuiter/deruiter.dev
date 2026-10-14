@@ -6,4 +6,4 @@
 
 # Type Alias: NodeType
 
-> **NodeType** = `"Equality"` \| `"Inequality"` \| `"Implication"` \| `"Conjunction"` \| `"Disjunction"` \| `"Negation"` \| `"Operator"` \| `"Variable"` \| `"Constant"` \| `"Boolean"` \| `"Function"`
+> **NodeType** = `"Equality"` \| `"Inequality"` \| `"Implication"` \| `"Conjunction"` \| `"Disjunction"` \| `"Negation"` \| `"Operator"` \| `"Variable"` \| `"Constant"` \| `"Boolean"` \| `"Function"` \| `"Forall"` \| `"Exists"`

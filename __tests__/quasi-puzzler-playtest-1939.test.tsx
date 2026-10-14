@@ -139,7 +139,7 @@ describe("Quasi Puzzler playtest fixes (#1939)", () => {
         level={lastLevel}
         totalLevels={puzzleLevels.length}
         currentLevelIndex={puzzleLevels.length - 1}
-        campaignStars={{ earned: 50, possible: 54, proven: 18 }}
+        campaignStars={{ earned: 86, possible: 90, proven: 30 }}
         onNextLevel={vi.fn()}
         onRestartLevel={vi.fn()}
         onRestartCampaign={restart}
@@ -147,8 +147,8 @@ describe("Quasi Puzzler playtest fixes (#1939)", () => {
     );
     const card = screen.getByTestId("victory-campaign-complete");
     expect(within(card).getByText("Campaign complete")).toBeTruthy();
-    expect(card.textContent).toContain("18 of 18 levels proven honestly");
-    expect(card.textContent).toContain("50 of 54 stars");
+    expect(card.textContent).toContain("30 of 30 levels proven honestly");
+    expect(card.textContent).toContain("86 of 90 stars");
     fireEvent.click(screen.getByRole("button", { name: "Back to Level 1" }));
     expect(restart).toHaveBeenCalledOnce();
     expect(screen.queryByRole("button", { name: /Next Level/ })).toBeNull();

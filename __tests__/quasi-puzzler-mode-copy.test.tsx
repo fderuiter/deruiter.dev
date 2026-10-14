@@ -50,7 +50,7 @@ describe("Quasi-Puzzler mode copy matches behavior (#1233)", () => {
 
   it("keeps the Theory Briefing budget copy in step with the mode", () => {
     render(<QuasiPerfectPuzzler />);
-    click(screen.getByRole("button", { name: /^L2/i }));
+    click(screen.getByRole("button", { name: /^L2\b/i }));
     click(screen.getByRole("button", { name: /Theory Briefing/i }));
     const rules = () => screen.getByTestId("briefing-mode-rules").textContent;
     expect(rules()).toContain("Story Mode:");
@@ -70,7 +70,7 @@ describe("Quasi-Puzzler mode copy matches behavior (#1233)", () => {
     ["hacker", 16],
   ] as const)("%s mode stops at 0 GB as its copy says", (mode, budget) => {
     render(<QuasiPerfectPuzzler />);
-    click(screen.getByRole("button", { name: /^L2/i }));
+    click(screen.getByRole("button", { name: /^L2\b/i }));
     click(
       screen.getByRole("button", {
         name: mode === "story" ? /^Story Mode$/i : /^Hacker Mode$/i,

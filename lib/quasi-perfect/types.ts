@@ -9,7 +9,14 @@ export type NodeType =
   | "Variable"
   | "Constant"
   | "Boolean"
-  | "Function";
+  | "Function"
+  /**
+   * Universal quantifier (#2091): `value` is the bound variable's name and
+   * the single child is the body, so `∀ n, n + 0 = n`.
+   */
+  | "Forall"
+  /** Existential quantifier (#2091), shaped like `Forall`. */
+  | "Exists";
 
 export interface ASTNode {
   id: string;
@@ -36,6 +43,10 @@ export type TacticId =
   | "split"
   | "left"
   | "right"
+  | "use"
+  | "induction"
+  | "trans"
+  | "gcongr"
   | "sorry";
 
 export type GameMode = "story" | "hacker";
@@ -154,6 +165,11 @@ export type PuzzlerVariantKind = "banned" | "tight-ram" | "step-limit";
 export interface GameProgressState {
   completedLevels: Record<string | number, LevelScore>;
   currentLevelIndex: number;
+  /**
+   * Highest chapter the player has opened. Act 2 (chapter 4 on) opens after
+   * an honest proof of the Act 1 capstone (#2091). Missing in older saves,
+   * which read their capstone score instead.
+   */
   unlockedChapter?: number;
   /**
    * Variants cleared per level id (#2090). Missing in progress saved before

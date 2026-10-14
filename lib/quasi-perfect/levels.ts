@@ -1,3 +1,4 @@
+import { actTwoLevels } from "./act-two-levels";
 import type { PuzzlerLevelDef, TacticId } from "./types";
 
 export const puzzleLevels: PuzzlerLevelDef[] = [
@@ -1496,6 +1497,8 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
         "Full-stack formal verification of cryptography, distributed consensus protocols, and mission-critical avionics.",
     },
   },
+  // Act 2 (#2091): chapters 4 to 7, opened by an honest proof of Level 18.
+  ...actTwoLevels,
 ];
 
 /**
@@ -1530,6 +1533,19 @@ export const LEVEL_REFERENCE_PROOFS: Readonly<
   16: ["rw", "linarith"],
   17: ["rw", "ring"],
   18: ["rw", "ring"],
+  // Act 2 (#2091)
+  19: ["intro", "exact"],
+  20: ["use", "norm_num"],
+  21: ["intro", "use"],
+  22: ["induction", "rw", "rw", "rw"],
+  23: ["induction", "rw", "norm_num", "rw", "rw", "rw", "ring"],
+  24: ["induction", "norm_num", "rw", "trans", "gcongr"],
+  25: ["trans", "trans", "exact"],
+  26: ["trans", "rw", "exact"],
+  27: ["trans", "gcongr"],
+  28: ["use", "rw", "norm_num"],
+  29: ["rw", "rw", "gcongr"],
+  30: ["induction", "rw", "norm_num", "rw", "rw", "rw"],
 };
 
 /**

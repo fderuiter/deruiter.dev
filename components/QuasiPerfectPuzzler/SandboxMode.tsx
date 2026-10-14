@@ -109,6 +109,10 @@ const OPERATOR_SHORTCUTS = [
   "∧",
   "∨",
   "¬",
+  "≤",
+  "∀",
+  "∃",
+  ",",
   "(",
   ")",
 ];
@@ -260,7 +264,11 @@ export const SandboxMode: React.FC = () => {
         ramConsumed: 0,
         message: `'${tacticKey}' requires the root goal in Sandbox. Select the GOAL node; use rw, simp or norm_num for child rewrites.`,
       };
-    } else if (tacticKey === "cases" || tacticKey === "split") {
+    } else if (
+      tacticKey === "cases" ||
+      tacticKey === "split" ||
+      tacticKey === "induction"
+    ) {
       result = {
         success: false,
         ramConsumed: 0,

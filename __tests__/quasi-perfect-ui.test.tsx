@@ -89,7 +89,9 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     expect(container.textContent).toContain("Quasi-Perfect Puzzler");
     expect(container.textContent).toContain("The Identity Crisis");
     expect(container.textContent).toContain("Chapter 1 · Equational Reasoning");
-    expect(container.textContent).toContain("18-Level 3-Chapter Curriculum");
+    expect(container.textContent).toContain(
+      "30-Level 7-Chapter Curriculum · 2 Acts"
+    );
     expect(container.textContent).toContain("rfl");
     expect(container.textContent).toContain("Generated Lean 4 Text");
     expect(container.textContent).toContain("Story Mode");
@@ -294,7 +296,7 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     expect(container.textContent).toContain("RAM Cost:");
   });
 
-  it("lays all 18 levels out on the chapter map, six per chapter", async () => {
+  it("lays all 30 levels out on the chapter map, Act 2 locked at first", async () => {
     await act(async () => {
       root = createRoot(container);
       root.render(<QuasiPerfectPuzzler />);
@@ -309,6 +311,10 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
       [1, "Ch 1: Equational", [1, 2, 3, 4, 5, 6]],
       [2, "Ch 2: Logic", [7, 8, 9, 10, 11, 12]],
       [3, "Ch 3: Quasiperfect", [13, 14, 15, 16, 17, 18]],
+      [4, "Ch 4: Quantifiers", [19, 20, 21]],
+      [5, "Ch 5: Induction", [22, 23, 24]],
+      [6, "Ch 6: Chains", [25, 26, 27]],
+      [7, "Ch 7: Almost Perfect", [28, 29, 30]],
     ];
     for (const [chapter, label] of chapterRanges) {
       const caption = index.querySelector(
@@ -325,6 +331,12 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
     );
     // The current level is marked on the map.
     expect(levelButtons[0].getAttribute("aria-current")).toBe("step");
+    // Act 1 is open; Act 2 waits for the capstone (#2091).
+    expect(levelButtons[17].getAttribute("aria-disabled")).toBeNull();
+    expect(levelButtons[18].getAttribute("aria-disabled")).toBe("true");
+    expect(
+      index.querySelector('[data-testid="level-map-locked-note"]')?.textContent
+    ).toContain("Level 18");
   });
 
   it("solves Level 11 with cases, right/left disjunction branching and exact in UI", async () => {

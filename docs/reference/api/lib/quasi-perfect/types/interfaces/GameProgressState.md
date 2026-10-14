@@ -33,3 +33,7 @@ variants existed, which reads as none cleared. Kept apart from
 ### unlockedChapter?
 
 > `optional` **unlockedChapter?**: `number`
+
+Highest chapter the player has opened. Act 2 (chapter 4 on) opens after
+an honest proof of the Act 1 capstone (#2091). Missing in older saves,
+which read their capstone score instead.

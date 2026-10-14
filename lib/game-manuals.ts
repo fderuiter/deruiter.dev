@@ -428,18 +428,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Construct formal AST proofs, discharge multi-goal branch cases, and synthesize valid Lean 4 code within language server RAM limits without conceding to the forbidden `sorry` axiom.",
     quickSummary:
-      "Apply formal proof tactics (intro, apply, exact, cases, rw, ring, norm_num, simp, omega) across a 3-chapter curriculum to discharge mathematical theorems and preserve verification morality.",
+      "Apply formal proof tactics (intro, apply, exact, cases, rw, ring, norm_num, simp, omega, use, induction, trans, gcongr) across a two-act, 7-chapter curriculum to discharge mathematical theorems and preserve verification morality.",
     controls: [
       {
         action: "Apply Proof Tactic",
         description:
-          "Click or drag tactic cards (`intro`, `apply`, `exact`, `cases`, `rw`, `ring`, `norm_num`, `simp`, `omega`, `linarith`) onto AST nodes to transform goals.",
+          "Click or drag tactic cards (`intro`, `apply`, `exact`, `cases`, `rw`, `ring`, `norm_num`, `simp`, `omega`, `linarith`, `use`, `induction`, `trans`, `gcongr`) onto AST nodes to transform goals.",
         key: "Click / Drag Tactic",
       },
       {
         action: "Branch & Multi-Goal Navigation",
         description:
-          "Tactics like `cases` split goals into multiple subgoals. Use the branch tabs to switch between active goals until all are discharged.",
+          "Tactics like `cases` and `induction` split goals into multiple subgoals. Use the branch tabs to switch between active goals until all are discharged.",
         key: "Subgoal Tabs",
       },
       {
@@ -501,8 +501,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Challenge Variants",
         detail:
-          "Prove a level without `sorry` to unlock its challenge variants under the level title. Tight RAM starts you with exactly what the cheapest proof spends, in either mode, so a single failed tactic leaves too little to finish. Step limit fails the run on the step after the level's par. On five levels a third variant bans the tactic the usual proof needs; the banned card stays in the hand marked Banned. A variant cleared honestly is saved on the level map (V cleared/total) and never changes the level's stars.",
+          "Prove a level without `sorry` to unlock its challenge variants under the level title. Tight RAM starts you with exactly what the cheapest proof spends, in either mode, so a single failed tactic leaves too little to finish. Step limit fails the run on the step after the level's par. On twelve levels a third variant bans the tactic the usual proof needs; the banned card stays in the hand marked Banned. A variant cleared honestly is saved on the level map (V cleared/total) and never changes the level's stars.",
         badge: "Replay",
+      },
+      {
+        title: "Act 2: Quantifiers, Induction & Chains",
+        detail:
+          "Prove Level 18, the Act 1 capstone, without `sorry` to open Act 2 (Levels 19–30): ∀ and ∃ goals (`intro`, `use`), induction over ℕ with a base case and a step case that carries `ih`, ≤ chains (`trans`, `gcongr`), and an almost perfect numbers arc that ends at a second capstone. Act 1 levels, stars and saves are unchanged, and a save that already proved Level 18 opens Act 2 at once.",
+        badge: "Act 2",
       },
     ],
     proTips: [
@@ -511,6 +517,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "`cases h_or` splits a disjunction into two sub-goals (h_left and h_right).",
       "`norm_num` rapidly evaluates concrete numerical arithmetic and comparisons.",
       "Targeted `rw [h]` uses far less RAM (2 GB) than full confluent search `simp` (6 GB).",
+      "`rw` with a ∀ lemma rewrites any sub-term of the lemma's shape: tap the instance you mean.",
+      "In an induction step, rearrange until the k case appears, then rewrite it with `ih`.",
     ],
     lore: {
       title: "The Curry-Howard Isomorphism & Lean 4",

@@ -24,7 +24,11 @@ import {
   getRunStartingRam,
   getStartingRam,
   getTacticBlock,
+  ACT_ONE_CAPSTONE_LEVEL_ID,
+  ACT_TWO_FIRST_CHAPTER,
+  isActTwoUnlocked,
   isGolfedRun,
+  isLevelLocked,
   isLevelGolfed,
   isStepLimitReached,
   isTacticBanned,
@@ -34,6 +38,7 @@ import {
   parseGameProgress,
   recordClearedVariant,
   resolveResumeLevelIndex,
+  withUnlockedChapter,
 } from "@/lib/quasi-perfect";
 import {
   STORAGE_CHANGE_EVENT,
@@ -91,6 +96,17 @@ import {
 } from "@tabler/icons-react";
 
 const STORAGE_KEY = "quasi_perfect_puzzler_progress_v1";
+const ACT_ONE_LEVELS = puzzleLevels.filter(
+  (lvl) => lvl.chapter < ACT_TWO_FIRST_CHAPTER
+);
+const ACT_ONE_CAPSTONE_INDEX = Math.max(
+  0,
+  puzzleLevels.findIndex((lvl) => lvl.id === ACT_ONE_CAPSTONE_LEVEL_ID)
+);
+const CURRICULUM_LABEL = `${puzzleLevels.length}-Level ${
+  new Set(puzzleLevels.map((lvl) => lvl.chapter)).size
+}-Chapter Curriculum · 2 Acts`;
+const ACT_TWO_LOCKED_MESSAGE = `Act 2 opens once Level ${ACT_ONE_CAPSTONE_LEVEL_ID}, the Act 1 capstone, is proved without sorry.`;
 const MODE_STORAGE_KEY = "quasi_perfect_puzzler_mode_v1";
 
 // SSR-safe progress subscriber: other tabs fire "storage", writes in this tab
@@ -132,7 +148,11 @@ function writeStoredProgress(progress: GameProgressState): void {
     (score) => score && !score.usedSorry && score.stars > 0
   ).length;
   recordArcadeScore("quasi-puzzler", provenCount * 100);
-  const scores = puzzleLevels.map((lvl) => progress.completedLevels?.[lvl.id]);
+  // The Act 1 trophies keep their meaning (all 18 levels); Act 2 (#2091)
+  // does not move the goalposts for them.
+  const scores = ACT_ONE_LEVELS.map(
+    (lvl) => progress.completedLevels?.[lvl.id]
+  );
   const honest = scores.every((score) => score && !score.usedSorry);
   if (honest && scores.every((score) => score && score.stars > 0)) {
     recordArcadeMilestone("quasi-puzzler", "all_levels_proven");
@@ -181,9 +201,14 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const [pendingMode, setPendingMode] = useState<GameMode | null>(null);
   // The puzzler is loaded with ssr: false, so the saved level can be read
   // before the first render instead of flashing Level 1 (#1650).
-  const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(() =>
-    resolveResumeLevelIndex(readStoredProgress(), puzzleLevels)
-  );
+  const [currentLevelIndex, setCurrentLevelIndex] = useState<number>(() => {
+    const stored = readStoredProgress();
+    const index = resolveResumeLevelIndex(stored, puzzleLevels);
+    // A locked Act 2 level (#2091) is never reopened; the capstone is.
+    return isLevelLocked(stored, puzzleLevels[index] ?? puzzleLevels[0])
+      ? ACT_ONE_CAPSTONE_INDEX
+      : index;
+  });
   const currentLevel: PuzzlerLevelDef =
     puzzleLevels[currentLevelIndex] || puzzleLevels[0];
   // The constrained variant being played, or null for the base level (#2090).
@@ -247,6 +272,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     [rawProgress]
   );
 
+  // Act 2 (#2091) opens with an honest capstone proof. The session flag keeps
+  // it open when storage is blocked and the save never lands.
+  const [sessionActTwoOpen, setSessionActTwoOpen] = useState<boolean>(false);
+  const actTwoOpen = sessionActTwoOpen || isActTwoUnlocked(parsedProgress);
+  const playableLevels = actTwoOpen ? puzzleLevels : ACT_ONE_LEVELS;
+
   // Step par and the saved Golfed badge for the level on the board (#2059).
   const currentLevelPar = getLevelPar(currentLevel);
   const currentLevelGolfed = isLevelGolfed(
@@ -257,15 +288,15 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const campaignStars = useMemo(() => {
     let earned = 0;
     let proven = 0;
-    for (const lvl of puzzleLevels) {
+    for (const lvl of playableLevels) {
       const best = parsedProgress.completedLevels?.[lvl.id];
       if (best && best.completed && !best.usedSorry && best.stars > 0) {
         earned += best.stars;
         proven += 1;
       }
     }
-    return { earned, proven, possible: puzzleLevels.length * 3 };
-  }, [parsedProgress]);
+    return { earned, proven, possible: playableLevels.length * 3 };
+  }, [parsedProgress, playableLevels]);
 
   // Escape hides the result card for this run so the solved board can be read.
   const [dismissedScoreAt, setDismissedScoreAt] = useState<number | null>(null);
@@ -286,17 +317,19 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const saveProgress = useCallback(
     (score: LevelScore) => {
       const existing = readStoredProgress();
-      writeStoredProgress({
-        ...existing,
-        currentLevelIndex,
-        completedLevels: {
-          ...existing.completedLevels,
-          [score.levelId]: mergeLevelScore(
-            existing.completedLevels[score.levelId],
-            score
-          ),
-        },
-      });
+      writeStoredProgress(
+        withUnlockedChapter({
+          ...existing,
+          currentLevelIndex,
+          completedLevels: {
+            ...existing.completedLevels,
+            [score.levelId]: mergeLevelScore(
+              existing.completedLevels[score.levelId],
+              score
+            ),
+          },
+        })
+      );
     },
     [currentLevelIndex]
   );
@@ -339,6 +372,13 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     ) => {
       const safeIndex = puzzleLevels[index] ? index : 0;
       const targetLvl = puzzleLevels[safeIndex];
+      if (
+        !sessionActTwoOpen &&
+        isLevelLocked(readStoredProgress(), targetLvl)
+      ) {
+        announce(`Level ${targetLvl.id} is locked. ${ACT_TWO_LOCKED_MESSAGE}`);
+        return;
+      }
       const activeMode = modeOverride ?? gameMode;
       const variant = getLevelVariant(targetLvl, variantKind ?? null);
       setActiveVariantKind(variant ? variant.kind : null);
@@ -380,7 +420,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         "assertive"
       );
     },
-    [gameMode, announce, saveCurrentLevelIndex]
+    [gameMode, announce, saveCurrentLevelIndex, sessionActTwoOpen]
   );
 
   const persistMode = useCallback((mode: GameMode) => {
@@ -635,6 +675,9 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             }
           } else {
             saveProgress(score);
+            if (!usedSorry && currentLevel.id === ACT_ONE_CAPSTONE_LEVEL_ID) {
+              setSessionActTwoOpen(true);
+            }
           }
 
           if (!usedSorry) {
@@ -1086,7 +1129,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <span className="hidden xl:inline">
                   Ch {currentLevel.chapter} ·{" "}
                 </span>
-                Level {currentLevel.id} of {puzzleLevels.length}
+                Level {currentLevel.id} of {playableLevels.length}
               </span>
               <IconChevronDown
                 aria-hidden="true"
@@ -1370,7 +1413,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                     Level Map
                   </span>
                   <span className="qp-chip-accent rounded-full border px-2 py-0.5 text-[10px] font-semibold">
-                    18-Level 3-Chapter Curriculum
+                    {CURRICULUM_LABEL}
                   </span>
                 </div>
                 <button
@@ -1389,6 +1432,15 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 progress={parsedProgress}
                 onSelectLevel={handleSelectLevel}
                 currentButtonRef={currentLevelButtonRef}
+                isLevelLocked={(lvl) =>
+                  !actTwoOpen && lvl.chapter >= ACT_TWO_FIRST_CHAPTER
+                }
+                lockedMessage={ACT_TWO_LOCKED_MESSAGE}
+                onLockedSelect={(lvl) =>
+                  announce(
+                    `Level ${lvl.id} is locked. ${ACT_TWO_LOCKED_MESSAGE}`
+                  )
+                }
               />
 
               <div
@@ -1740,7 +1792,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 score={currentScore}
                 savedBest={parsedProgress.completedLevels?.[currentLevel.id]}
                 level={currentLevel}
-                totalLevels={puzzleLevels.length}
+                totalLevels={playableLevels.length}
                 currentLevelIndex={currentLevelIndex}
                 leanCode={generatedLeanScript}
                 ramUsed={runStartingRam - currentScore.remainingRam}
@@ -1757,8 +1809,14 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 campaignStars={campaignStars}
                 onRestartCampaign={() => loadLevel(0)}
                 onDismiss={() => dismissResult(currentScore.timestamp)}
+                actTwoUnlocked={
+                  currentLevel.id === ACT_ONE_CAPSTONE_LEVEL_ID &&
+                  !currentScore.usedSorry &&
+                  !activeVariant &&
+                  actTwoOpen
+                }
                 onNextLevel={() => {
-                  if (currentLevelIndex < puzzleLevels.length - 1) {
+                  if (currentLevelIndex < playableLevels.length - 1) {
                     loadLevel(currentLevelIndex + 1);
                   }
                 }}

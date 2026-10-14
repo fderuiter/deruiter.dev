@@ -3,6 +3,7 @@ import {
   isWireCompatible,
   type ChipKind,
 } from "@/lib/protocol-drift";
+import type { ChipNode } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
 
 /** One output port wired to one input port (#2045 tap-to-wire). */
@@ -57,6 +58,25 @@ export function touchWirePairs(source: ChipKind, target: ChipKind): WirePair[] {
     }
   }
   return pairs;
+}
+
+/** Chips with at least one valid pair from the source, in canvas order (#2045). */
+export function wireTargetsFrom(
+  sourceId: string,
+  nodes: ChipNode[]
+): ChipNode[] {
+  const source = nodes.find((n) => n.id === sourceId);
+  if (!source) return [];
+  return nodes.filter(
+    (n) =>
+      n.id !== sourceId &&
+      touchWirePairs(source.data.kind, n.data.kind).length > 0
+  );
+}
+
+/** Chips that can start a wire to at least one other chip (#2045). */
+export function wireSourcesOf(nodes: ChipNode[]): ChipNode[] {
+  return nodes.filter((n) => wireTargetsFrom(n.id, nodes).length > 0);
 }
 
 /** Connects one pair through the store, then reports the result. */

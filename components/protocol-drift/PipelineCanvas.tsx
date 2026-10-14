@@ -387,7 +387,7 @@ function CanvasInner() {
   return (
     <div
       ref={wrapper}
-      className="absolute inset-0 min-w-0"
+      className={`absolute inset-0 min-w-0${touch ? " overflow-hidden" : ""}`}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >

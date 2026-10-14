@@ -8,10 +8,13 @@ import {
   canRewire,
   groupTouchWirePairs,
   pickTouchWire,
+  resolveTouchWire,
   touchWirePairs,
+  wireSourcesOf,
+  wireTargetsFrom,
   type WirePair,
 } from "./touch-wire";
-import { touchZoomFloor } from "./graph-model";
+import { touchZoomFloor, type ChipNode } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
 
 const ACTION =
@@ -21,6 +24,28 @@ const PLAIN =
 
 const DISABLED =
   "pointer-events-auto inline-flex min-h-11 min-w-11 items-center justify-center gap-1 border border-zinc-700 bg-[#0d0e11]/95 px-3 font-mono text-xs text-zinc-500 cursor-not-allowed";
+
+/** A chip as a 44px list button: its kind, then its id. */
+function ChipChoice({
+  chip,
+  onPick,
+}: {
+  chip: ChipNode;
+  onPick: (chip: ChipNode) => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onPick(chip)}
+        className="flex min-h-11 w-full items-center justify-between gap-2 border border-zinc-700 bg-[#0d0e11] px-3 text-left font-mono text-xs text-zinc-100 active:scale-[0.98]"
+      >
+        <span className="min-w-0 truncate font-semibold">{chip.data.kind}</span>
+        <span className="min-w-0 shrink truncate text-zinc-400">{chip.id}</span>
+      </button>
+    </li>
+  );
+}
 
 /** The pair list: same-name pairs first, the rest behind a Show all toggle. */
 function PairList({
@@ -87,9 +112,10 @@ function PairList({
 }
 
 /**
- * Tap-to-wire controls on the touch canvas (#2045). A tap selects a chip, a
- * "Wire from" action starts a wire from it, and a second tap finishes it. A
- * fit button frames the whole pipeline. Only the touch cabinet renders this.
+ * Tap-to-wire controls on the touch canvas (#2045). Wiring does not depend on
+ * what is on screen: "Wire..." lists the chips that can start a wire, and
+ * "Choose target" lists the chips a started wire can reach. Tapping chips on
+ * the canvas still works. A fit button frames the whole pipeline.
  */
 export function TouchWireControls() {
   const nodes = useProtocolDriftStore((s) => s.nodes);
@@ -100,6 +126,8 @@ export function TouchWireControls() {
   const notify = useProtocolDriftStore((s) => s.notify);
   const fsm = useProtocolDriftStore((s) => s.snapshot?.fsmState);
   const flow = useReactFlow();
+  const [sourceListOpen, setSourceListOpen] = useState(false);
+  const [targetListOpen, setTargetListOpen] = useState(false);
   const editable = canRewire(fsm);
 
   const selected = nodes.find((n) => n.selected);
@@ -113,6 +141,7 @@ export function TouchWireControls() {
 
   const cancelWire = () => {
     setWireFrom(null);
+    setTargetListOpen(false);
     notify("info", "Wiring cancelled.");
   };
   const closeSheet = () => {
@@ -123,6 +152,18 @@ export function TouchWireControls() {
     if (!wireSheet) return;
     void pickTouchWire(wireSheet.source, wireSheet.target, pair);
   };
+  const startFrom = (chip: ChipNode) => {
+    setWireFrom(chip.id);
+    setSourceListOpen(false);
+    notify("info", `Wiring from ${chip.data.kind}. Choose a target.`);
+  };
+  const chooseTarget = (chip: ChipNode) => {
+    // One pair wires at once; several hand off to the pair sheet.
+    setTargetListOpen(false);
+    if (source) void resolveTouchWire(source.id, chip.id);
+  };
+  const sources = wireSourcesOf(nodes);
+  const targets = source ? wireTargetsFrom(source.id, nodes) : [];
 
   return (
     <>
@@ -131,8 +172,15 @@ export function TouchWireControls() {
           {source ? (
             <>
               <span className="pointer-events-none min-w-0 truncate bg-[#0d0e11]/95 px-2 py-1 font-mono text-xs text-zinc-100">
-                Wiring from {source.data.kind}: tap a target chip
+                Wiring from {source.data.kind}: pick a target
               </span>
+              <button
+                type="button"
+                onClick={() => setTargetListOpen(true)}
+                className={ACTION}
+              >
+                Choose target
+              </button>
               <button
                 type="button"
                 onClick={cancelWire}
@@ -145,13 +193,7 @@ export function TouchWireControls() {
           ) : selected && editable ? (
             <button
               type="button"
-              onClick={() => {
-                setWireFrom(selected.id);
-                notify(
-                  "info",
-                  `Wiring from ${selected.data.kind}. Tap a target chip.`
-                );
-              }}
+              onClick={() => startFrom(selected)}
               className={ACTION}
             >
               Wire from {selected.data.kind}
@@ -173,6 +215,14 @@ export function TouchWireControls() {
                 Pause the clock to rewire
               </span>
             </>
+          ) : editable && sources.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setSourceListOpen(true)}
+              className={ACTION}
+            >
+              Wire…
+            </button>
           ) : null}
         </div>
         <button
@@ -190,6 +240,38 @@ export function TouchWireControls() {
           Fit
         </button>
       </div>
+      {sourceListOpen ? (
+        <TouchSheet
+          title="Wire from a chip"
+          testId="wire-source-sheet"
+          onClose={() => setSourceListOpen(false)}
+        >
+          <ul className="flex flex-col gap-2">
+            {sources.map((chip) => (
+              <ChipChoice key={chip.id} chip={chip} onPick={startFrom} />
+            ))}
+          </ul>
+        </TouchSheet>
+      ) : null}
+      {targetListOpen && source ? (
+        <TouchSheet
+          title={`Wire ${source.data.kind} to`}
+          testId="wire-target-sheet"
+          onClose={() => setTargetListOpen(false)}
+        >
+          {targets.length > 0 ? (
+            <ul className="flex flex-col gap-2">
+              {targets.map((chip) => (
+                <ChipChoice key={chip.id} chip={chip} onPick={chooseTarget} />
+              ))}
+            </ul>
+          ) : (
+            <p className="text-zinc-300">
+              No chip can take a wire from {source.data.kind}.
+            </p>
+          )}
+        </TouchSheet>
+      ) : null}
       {wireSheet && sheetSource && sheetTarget ? (
         <TouchSheet
           title={`Wire ${sheetSource.data.kind} to ${sheetTarget.data.kind}`}

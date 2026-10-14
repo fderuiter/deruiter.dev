@@ -18,6 +18,8 @@ import dynamic from "next/dynamic";
 import {
   BOOTH_CREW,
   DEFAULT_SHIFT_CONFIG,
+  DILEMMA_WINDOW_LONG_SEC,
+  getDilemma,
   getKdsTickets,
   isStandardScenario,
   isWeekOver,
@@ -52,7 +54,8 @@ import { useBooth } from "./hooks";
 import { KdsBoard } from "./KdsBoard";
 import { Register } from "./Register";
 import { ShiftCaption, ShiftHud } from "./ShiftHud";
-import { createBoothStore, type BoothStore } from "./store";
+import { DilemmaPrompt } from "./DilemmaPrompt";
+import { DILEMMA_KEYS, createBoothStore, type BoothStore } from "./store";
 import {
   clearWeekSave,
   recordWeekBest,
@@ -173,6 +176,12 @@ export function PattyDriveThruGame({
   // The scenario last picked, so "Work another shift" plays the same one.
   const scenario = useRef<ScenarioId>("standard");
 
+  // A longer dilemma timer (#2087): on by default under reduced motion, and
+  // a choice on the intro page for anyone who wants more time.
+  const [longerChoice, setLongerChoice] = useState<boolean | null>(null);
+  const longerDilemmas = longerChoice ?? reducedMotion;
+  const dilemmaWindowSec = longerDilemmas ? DILEMMA_WINDOW_LONG_SEC : undefined;
+
   const clockIn = useCallback(
     (picked?: ScenarioId) => {
       if (picked) scenario.current = picked;
@@ -180,26 +189,28 @@ export function PattyDriveThruGame({
       store.getState().clockIn({
         ...(config?.seed ? {} : { seed: seedFromUrl() ?? freshSeed() }),
         ...scenarioDialsFor(scenario.current),
+        ...(dilemmaWindowSec !== undefined ? { dilemmaWindowSec } : {}),
       });
       boundaryRef.current?.focus({ preventScroll: true });
     },
-    [store, config?.seed]
+    [store, config?.seed, dilemmaWindowSec]
   );
 
   // A week of shifts (#2086): a new one from a fresh seed, or one resumed.
   const startWeek = useCallback(
     (resume?: WeekState) => {
       setUserPaused(false);
-      store
-        .getState()
-        .clockInWeek(
-          resume
-            ? { week: resume }
-            : { seed: config?.seed ?? seedFromUrl() ?? freshSeed() }
-        );
+      store.getState().clockInWeek(
+        resume
+          ? { week: resume, dilemmaWindowSec }
+          : {
+              seed: config?.seed ?? seedFromUrl() ?? freshSeed(),
+              dilemmaWindowSec,
+            }
+      );
       boundaryRef.current?.focus({ preventScroll: true });
     },
-    [store, config?.seed]
+    [store, config?.seed, dilemmaWindowSec]
   );
 
   const nextWeekDay = useCallback(() => {
@@ -416,6 +427,19 @@ export function PattyDriveThruGame({
       heldKeys.current.add(key);
       return;
     }
+    // Q and E answer an open dilemma (#2087).
+    const dilemmaKey = DILEMMA_KEYS.indexOf(
+      key.toUpperCase() as (typeof DILEMMA_KEYS)[number]
+    );
+    if (dilemmaKey >= 0) {
+      const open = state.shift.dilemma;
+      if (open) {
+        event.preventDefault();
+        const option = getDilemma(open.dilemmaId).options[dilemmaKey];
+        state.act({ type: "chooseDilemma", optionId: option.id });
+      }
+      return;
+    }
     if (/^[1-9]$/.test(key)) {
       const ticket = getKdsTickets(state.shift)[Number(key) - 1];
       if (ticket) {
@@ -515,6 +539,8 @@ export function PattyDriveThruGame({
           onStartWeek={() => startWeek()}
           onResumeWeek={startWeek}
           savedWeek={savedWeek}
+          longerDilemmas={longerDilemmas}
+          onLongerDilemmasChange={setLongerChoice}
         />
       </div>
     );
@@ -580,6 +606,7 @@ export function PattyDriveThruGame({
             store={store}
             viewToggle={<ViewToggle view="3d" onChange={changeView} />}
           />
+          <DilemmaPrompt store={store} className="mx-auto mt-2 max-w-xl" />
         </div>
         <div
           className={`absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 p-2 sm:p-3 ${
@@ -596,8 +623,8 @@ export function PattyDriveThruGame({
             />
           ) : (
             <p className="px-3 text-center font-mono text-[11px] text-[var(--pdt-hud-text)] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
-              Enter or Tab: use the register · A / D or drag: turn · W: wipe · P
-              or Esc: pause
+              Enter or Tab: use the register · A / D or drag: turn · W: wipe · Q
+              / E: answer · P or Esc: pause
             </p>
           )}
         </div>
@@ -615,6 +642,7 @@ export function PattyDriveThruGame({
             webgl ? <ViewToggle view="flat" onChange={changeView} /> : null
           }
         />
+        <DilemmaPrompt store={store} />
         <ShiftCaption store={store} />
         <p className="font-mono text-[11px] text-[var(--pdt-hud-dim)]">
           {contextLost
@@ -627,7 +655,7 @@ export function PattyDriveThruGame({
           className="font-mono text-[11px] text-[var(--pdt-hud-text)]"
         >
           Keys: 1-6 pick a car · B bump · R re-enter drink · C flag{" "}
-          {BOOTH_CREW.coworker} · W wipe · P or Esc pause
+          {BOOTH_CREW.coworker} · W wipe · Q / E answer · P or Esc pause
         </p>
         <div className="grid min-w-0 gap-3 @3xl:grid-cols-2">
           <KdsBoard store={store} />

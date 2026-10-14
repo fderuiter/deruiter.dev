@@ -359,9 +359,10 @@ describe("Patty's Drive-Thru diary (#1814)", () => {
     expect(getShiftEnding({ ...state, tallies, outcome: "completed" })).toEqual(
       {
         outcome: "completed",
-        title: "Made it to close",
+        ending: "silent-exit",
+        title: "Silent exit",
         summary:
-          "Shift over. 1 car served, 0 of them late, 2 gave up and drove off.",
+          "I hung up the headset, clocked out and went home without saying much to anyone. 1 car served, 0 of them late, 2 gave up and drove off.",
       }
     );
     expect(

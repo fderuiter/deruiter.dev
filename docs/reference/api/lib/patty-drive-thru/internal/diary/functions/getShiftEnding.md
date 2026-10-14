@@ -9,7 +9,9 @@
 > **getShiftEnding**(`state`): `object`
 
 How the shift ended, as a heading and one paragraph. A shift that is still
-playing reads as if it closed now.
+playing reads as if it closed now. Meter failures win when they happen;
+a shift that reached close ends as the Company Man, a Silent Exit or a
+Walkout, from its Solidarity and Dignity (#2087).
 
 ## Parameters
 
@@ -20,6 +22,10 @@ playing reads as if it closed now.
 ## Returns
 
 `object`
+
+### ending
+
+> `readonly` **ending**: [`ShiftEndingId`](../../../types/type-aliases/ShiftEndingId.md)
 
 ### outcome
 

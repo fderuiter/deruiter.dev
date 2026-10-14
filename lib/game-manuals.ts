@@ -1087,7 +1087,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Get through one drive-thru shift, squeezed from four hours into three minutes, without the drive-thru times or your dignity reaching zero. Every car you serve before its ticket turns red helps; every car that gives up and drives off costs speed and comes out of your pay.",
     quickSummary:
-      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page. Or work a week of shifts, Monday to Friday: each day is different, each ends on its own diary page, and each day's score counts on its own. The five days add up to a week total, kept as your best week, and finishing all five earns a trophy.",
+      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. A few times a shift someone puts a question to you: serve the stale fries, cover Dale's short till, tell a customer the shake machine is broken. You have a few seconds to answer while the cars keep coming, and what you choose decides how the shift ends. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page. Or work a week of shifts, Monday to Friday: each day is different, each ends on its own diary page, and each day's score counts on its own. The five days add up to a week total, kept as your best week, and finishing all five earns a trophy.",
     controls: [
       {
         action: "Turn",
@@ -1138,6 +1138,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description: "Moves up one register menu, or back to its home screen.",
         key: "Backspace / Home",
       },
+      {
+        action: "Answer a question",
+        description:
+          "Picks the first or second answer when someone puts a question to you mid-shift. The buttons work too.",
+        key: "Q / E",
+      },
     ],
     rules: [
       {
@@ -1177,6 +1183,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "End of shift",
       },
       {
+        title: "Questions with no good answer",
+        detail:
+          "Three times a shift Bo, Dale or a customer asks you something, and each answer trades drive-thru speed against Dignity or pay. Nothing stops while you think; if the timer runs out, whatever happens when nobody speaks up happens. Pick More time to decide before clocking in for twice as long. Your answers are written in the diary, and they quietly add up to how much you stood with the crew: make it to close and the shift ends as the Company Man, a Silent Exit or a Walkout. Running out of speed or Dignity still ends it first.",
+        badge: "Dilemmas",
+      },
+      {
         title: "A week of shifts",
         detail:
           "Monday is a normal shift. On Tuesday the drink machine is broken, Wednesday has two rushes, Thursday is your eighteenth birthday so you can brew coffee yourself, and Fry Friday is the busiest day. Dignity and drive-thru speed carry halfway back toward their usual start into the next day, so a bad day leaves you worse off but never ends the week. The week saves after each day, so you can stop and come back.",
@@ -1189,6 +1201,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Flag Dale the moment a coffee shows up.",
       "When there are no cars, wipe something.",
       "In a week, protect your Dignity early: what you end Monday with, you start Tuesday with.",
+      "A walkout takes friends and enough Dignity left to stand up. Siding with the crew all week carries into Friday.",
     ],
     lore: {
       title: "A diary entry",

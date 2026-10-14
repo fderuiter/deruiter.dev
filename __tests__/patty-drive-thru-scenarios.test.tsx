@@ -181,13 +181,15 @@ describe("Patty's Drive-Thru telemetry (#1887)", () => {
 
   it("writes one CSV row per event and escapes cells", () => {
     const lines = exportShiftTelemetryCsv(log).split("\n");
-    expect(lines[0]).toBe("time,event,orderId,itemId,band,outcome,nodeId");
+    expect(lines[0]).toBe(
+      "time,event,orderId,itemId,band,outcome,nodeId,dilemmaId,optionId,timedOut"
+    );
     expect(lines).toHaveLength(6);
-    expect(lines[1]).toBe("2,order-arrived,1,,,,");
-    expect(lines[2]).toBe("9.12,item-rung,1,fries,,,");
-    expect(lines[3]).toBe("12,bumped,1,,green,,");
-    expect(lines[4]).toBe('15,wrong-entry,,,,,"odd,""id"""');
-    expect(lines[5]).toBe("20,manager-yell,,,,,");
+    expect(lines[1]).toBe("2,order-arrived,1,,,,,,,");
+    expect(lines[2]).toBe("9.12,item-rung,1,fries,,,,,,");
+    expect(lines[3]).toBe("12,bumped,1,,green,,,,,");
+    expect(lines[4]).toBe('15,wrong-entry,,,,,"odd,""id""",,,');
+    expect(lines[5]).toBe("20,manager-yell,,,,,,,,");
   });
 });
 

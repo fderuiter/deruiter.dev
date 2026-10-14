@@ -47,6 +47,15 @@ Shortest gap between car arrivals, in seconds.
 
 ***
 
+### dilemmaWindowSec?
+
+> `readonly` `optional` **dilemmaWindowSec?**: `number`
+
+Seconds the player has to answer a dilemma (#2087). Left out, the usual
+window; the booth passes a longer one for players who ask for more time.
+
+***
+
 ### dispenserFailChance?
 
 > `readonly` `optional` **dispenserFailChance?**: `number`

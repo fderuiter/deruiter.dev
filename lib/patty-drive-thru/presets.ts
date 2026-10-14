@@ -1,5 +1,7 @@
 import type {
   BoothFacing,
+  Dilemma,
+  DilemmaId,
   LookPreset,
   MenuItemId,
   ModifierId,
@@ -393,4 +395,164 @@ export const WEEK_DAYS: readonly WeekDayPreset[] = [
     rushWindows: [[0.25, 0.8]],
     ageUnlocked: true,
   },
+];
+
+/**
+ * Micro-dilemmas (#2087). A standard three-minute shift puts this many to
+ * the player, one roughly every quarter of the shift; shorter shifts get one
+ * per `DILEMMA_SEC_PER` seconds, so a ten-second test shift has none.
+ */
+export const DILEMMAS_PER_SHIFT = 3;
+export const DILEMMA_SEC_PER = 50;
+/** Seconds to answer before the default is taken, and the longer window. */
+export const DILEMMA_WINDOW_SEC = 8;
+export const DILEMMA_WINDOW_LONG_SEC = 16;
+/** The range a configured answer window is held to. */
+export const DILEMMA_WINDOW_LIMITS: readonly [min: number, max: number] = [
+  4, 30,
+];
+/** Where the hidden Solidarity value starts a shift. */
+export const SOLIDARITY_START = 50;
+/**
+ * Endings at close (#2087): Solidarity at or above `WALKOUT_MIN_SOLIDARITY`
+ * with Dignity at or above `WALKOUT_MIN_DIGNITY` walks out with the crew;
+ * Solidarity at or below `COMPANY_MAN_MAX_SOLIDARITY` is the Company Man;
+ * anything else clocks out quietly.
+ */
+export const WALKOUT_MIN_SOLIDARITY = 70;
+export const WALKOUT_MIN_DIGNITY = 30;
+export const COMPANY_MAN_MAX_SOLIDARITY = 30;
+
+/**
+ * The hand-written dilemmas (#2087). Each trades the meters against each
+ * other and moves the hidden Solidarity value. The default, taken when the
+ * timer runs out, is what happens if nobody says anything. Doing nothing in
+ * every one lands Solidarity in the middle, so a player who ignores them
+ * clocks out quietly.
+ */
+export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
+  "stale-fries": {
+    id: "stale-fries",
+    speaker: "manager",
+    prompt:
+      "The fries have been under the lamp for twenty minutes. Bo says they are fine.",
+    options: [
+      {
+        id: "serve",
+        label: "Serve them",
+        sos: 6,
+        dignity: -6,
+        solidarity: 0,
+        payCents: 0,
+        diary: "I served the stale fries. Nobody complained to me.",
+      },
+      {
+        id: "toss",
+        label: "Toss them",
+        sos: -6,
+        dignity: 4,
+        solidarity: 5,
+        payCents: 0,
+        diary: "I tossed the old fries and Dale dropped a fresh batch with me.",
+      },
+    ],
+    defaultOptionId: "serve",
+    timeoutDiary: "I didn't say anything, so the stale fries went out.",
+  },
+  "short-till": {
+    id: "short-till",
+    speaker: "manager",
+    prompt:
+      "Dale's drawer came up eight dollars short. Bo wants to know whose drawer it was.",
+    options: [
+      {
+        id: "cover",
+        label: "Cover it",
+        sos: 0,
+        dignity: -4,
+        solidarity: 20,
+        payCents: 800,
+        diary: "I said the drawer was mine. Eight dollars out of my check.",
+      },
+      {
+        id: "report",
+        label: "Say it was Dale's",
+        sos: 4,
+        dignity: -2,
+        solidarity: -15,
+        payCents: 0,
+        diary:
+          "I told Bo it was Dale's drawer. Dale didn't look at me for the rest of the shift.",
+      },
+    ],
+    defaultOptionId: "report",
+    timeoutDiary:
+      "I didn't answer, so Bo checked the drawer log. It was Dale's.",
+  },
+  "shake-machine": {
+    id: "shake-machine",
+    speaker: "customer",
+    prompt:
+      "A customer wants a shake. The machine works, but whoever closes has to clean it. Bo says to tell them it is broken.",
+    options: [
+      {
+        id: "broken",
+        label: "Say it's broken",
+        sos: 5,
+        dignity: -5,
+        solidarity: 5,
+        payCents: 0,
+        diary:
+          "I told a customer the shake machine was broken. It was not. Dale didn't have to clean it.",
+      },
+      {
+        id: "make",
+        label: "Make the shake",
+        sos: -5,
+        dignity: 3,
+        solidarity: -5,
+        payCents: 0,
+        diary: "I made the shake. Dale stayed late to clean the machine.",
+      },
+    ],
+    defaultOptionId: "broken",
+    timeoutDiary:
+      "I hesitated, and Bo told the customer the machine was broken.",
+  },
+  "long-break": {
+    id: "long-break",
+    speaker: "manager",
+    prompt: "Bo asks whether you saw Dale take a twenty-minute smoke break.",
+    options: [
+      {
+        id: "cover",
+        label: "Cover for Dale",
+        sos: -3,
+        dignity: 2,
+        solidarity: 10,
+        payCents: 0,
+        diary:
+          "I said Dale was in the walk-in the whole time. Bo didn't buy it.",
+      },
+      {
+        id: "tell",
+        label: "Tell Bo",
+        sos: 3,
+        dignity: -3,
+        solidarity: -15,
+        payCents: 0,
+        diary: "I told Bo about Dale's break. Bo wrote it down.",
+      },
+    ],
+    defaultOptionId: "cover",
+    timeoutDiary: "I shrugged. Bo let it go, and so did Dale.",
+  },
+};
+
+/** Every dilemma id, in the order they are written. */
+export const DILEMMA_IDS: readonly DilemmaId[] = [
+  "stale-fries",
+  "short-till",
+  "shake-machine",
+  "long-break",
 ];

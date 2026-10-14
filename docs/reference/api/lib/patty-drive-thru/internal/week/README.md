@@ -14,6 +14,7 @@
 - [getWeekDayConfig](functions/getWeekDayConfig.md)
 - [getWeekDayDiaryLines](functions/getWeekDayDiaryLines.md)
 - [getWeekDaySeed](functions/getWeekDaySeed.md)
+- [getWeekEnding](functions/getWeekEnding.md)
 - [getWeekNetCents](functions/getWeekNetCents.md)
 - [isWeekOver](functions/isWeekOver.md)
 - [parseWeekSave](functions/parseWeekSave.md)

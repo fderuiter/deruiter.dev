@@ -18,6 +18,14 @@ False for a practice scenario, whose score is not recorded.
 
 ***
 
+### dilemmas
+
+> `readonly` **dilemmas**: readonly [`DilemmaChoice`](../../../types/interfaces/DilemmaChoice.md)[]
+
+Every dilemma answered, in order (#2087).
+
+***
+
 ### durationSec
 
 > `readonly` **durationSec**: `number`
@@ -59,6 +67,14 @@ The scenario dials the shift set; empty for the standard shift.
 ### seed
 
 > `readonly` **seed**: `string`
+
+***
+
+### solidarity
+
+> `readonly` **solidarity**: `number`
+
+The hidden Solidarity value at the end of the shift (#2087).
 
 ***
 

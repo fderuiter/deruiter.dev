@@ -9,6 +9,7 @@
 ## Variables
 
 - [BOOTH\_CREW](variables/BOOTH_CREW.md)
+- [CHOICE\_ENDINGS](variables/CHOICE_ENDINGS.md)
 - [CLOSING\_NOTE](variables/CLOSING_NOTE.md)
 - [COMPANION\_POST\_PATH](variables/COMPANION_POST_PATH.md)
 - [DIARY\_INTRO](variables/DIARY_INTRO.md)

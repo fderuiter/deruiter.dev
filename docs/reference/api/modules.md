@@ -316,6 +316,7 @@
 - [lib/patrol/welch-data](lib/patrol/welch-data/README.md)
 - [lib/patty-drive-thru](lib/patty-drive-thru/README.md)
 - [lib/patty-drive-thru/internal/diary](lib/patty-drive-thru/internal/diary/README.md)
+- [lib/patty-drive-thru/internal/dilemmas](lib/patty-drive-thru/internal/dilemmas/README.md)
 - [lib/patty-drive-thru/internal/engine](lib/patty-drive-thru/internal/engine/README.md)
 - [lib/patty-drive-thru/internal/look](lib/patty-drive-thru/internal/look/README.md)
 - [lib/patty-drive-thru/internal/telemetry](lib/patty-drive-thru/internal/telemetry/README.md)

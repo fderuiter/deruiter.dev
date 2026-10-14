@@ -11,7 +11,9 @@
 import { clamp } from "../../game-utils";
 import {
   DEFAULT_SHIFT_CONFIG,
+  DILEMMAS,
   METER_START,
+  SOLIDARITY_START,
   WEEK_BAD_DAY_PENALTY,
   WEEK_CARRY_FLOOR,
   WEEK_CARRY_RECOVERY,
@@ -19,7 +21,10 @@ import {
   type WeekDayPreset,
 } from "../presets";
 import type {
+  DayChoice,
+  DilemmaId,
   ShiftConfig,
+  ShiftEndingId,
   ShiftOutcome,
   ShiftState,
   StartMeters,
@@ -27,7 +32,8 @@ import type {
   WeekState,
   WeekdayId,
 } from "../types";
-import { BOOTH_CREW } from "./diary";
+import { BOOTH_CREW, CHOICE_ENDINGS, getShiftEnding } from "./diary";
+import { getChoiceEnding, getDilemmaDiaryLines } from "./dilemmas";
 import { computePayStub } from "./engine";
 import { scoreShift } from "./view";
 
@@ -85,10 +91,13 @@ function carryOne(
 
 /**
  * The Dignity and SOS the next day starts with, given how the day before
- * ended. With no day before, the usual `METER_START`.
+ * ended. With no day before, the usual `METER_START`. The hidden Solidarity
+ * value carries whole, since it is who you have been all week rather than
+ * how tired you are (#2087); a day saved before it existed passes none on.
  */
 export function carryMeters(previous: WeekDayResult | null): StartMeters {
   if (!previous) return { sos: METER_START.sos, dignity: METER_START.dignity };
+  const solidarity = previous.endMeters.solidarity;
   return {
     sos: carryOne(previous.endMeters.sos, METER_START.sos, previous.outcome),
     dignity: carryOne(
@@ -96,6 +105,9 @@ export function carryMeters(previous: WeekDayResult | null): StartMeters {
       METER_START.dignity,
       previous.outcome
     ),
+    ...(finiteNumber(solidarity)
+      ? { solidarity: clamp(solidarity, 0, 100) }
+      : {}),
   };
 }
 
@@ -138,7 +150,17 @@ export function summarizeWeekDay(
     expired: shift.tallies.expired,
     drinksDropped: shift.tallies.drinksDropped,
     yells: shift.tallies.yells,
-    endMeters: { sos: shift.meters.sos, dignity: shift.meters.dignity },
+    endMeters: {
+      sos: shift.meters.sos,
+      dignity: shift.meters.dignity,
+      solidarity: shift.solidarity,
+    },
+    ending: getShiftEnding(shift).ending,
+    choices: shift.dilemmaChoices.map(({ dilemmaId, optionId, timedOut }) => ({
+      dilemmaId,
+      optionId,
+      timedOut,
+    })),
   };
 }
 
@@ -210,8 +232,53 @@ export function getWeekDayDiaryLines(result: WeekDayResult): string[] {
       }
       break;
   }
+  // What the player chose that day, one line per dilemma (#2087).
+  lines.push(...getDilemmaDiaryLines(result.choices ?? []));
   return lines;
 }
+
+/**
+ * How the week ends (#2087): from the Solidarity and Dignity Friday ended
+ * with, as a shift at close would. A bad Friday does not decide the week, so
+ * the meter failures are not endings here. A week saved before Solidarity
+ * existed reads from the usual starting value.
+ */
+export function getWeekEnding(week: WeekState): {
+  readonly ending: Extract<
+    ShiftEndingId,
+    "company-man" | "silent-exit" | "walkout"
+  >;
+  readonly title: string;
+  readonly summary: string;
+} {
+  const last = week.days.at(-1);
+  const ending = getChoiceEnding(
+    last?.endMeters.solidarity ?? SOLIDARITY_START,
+    last?.endMeters.dignity ?? METER_START.dignity
+  );
+  return { ending, ...WEEK_ENDINGS[ending] };
+}
+
+const WEEK_ENDINGS: Readonly<
+  Record<
+    "company-man" | "silent-exit" | "walkout",
+    { readonly title: string; readonly summary: string }
+  >
+> = {
+  "company-man": {
+    title: CHOICE_ENDINGS["company-man"].title,
+    summary: `${BOOTH_CREW.manager} put me up for shift lead. I took it. Nobody on the crew asked me to hang out after.`,
+  },
+  "silent-exit": {
+    title: CHOICE_ENDINGS["silent-exit"].title,
+    summary:
+      "I put in my two weeks on Friday and nobody made a thing of it. I kept my head down to the end.",
+  },
+  walkout: {
+    title: CHOICE_ENDINGS.walkout.title,
+    summary: `On Friday night the whole crew walked out at close. ${BOOTH_CREW.generalManager} came in on Saturday to listen.`,
+  },
+};
 
 function finiteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -236,6 +303,12 @@ function parseDay(value: unknown, index: number): WeekDayResult | null {
   const meters = raw.endMeters as Record<string, unknown> | null | undefined;
   if (!meters || !finiteNumber(meters.sos) || !finiteNumber(meters.dignity))
     return null;
+  // Saves from before #2087 have no Solidarity, ending or choices; they load
+  // without them. A value that is there but malformed is dropped.
+  const ending = ENDING_IDS.includes(raw.ending as ShiftEndingId)
+    ? (raw.ending as ShiftEndingId)
+    : undefined;
+  const choices = parseChoices(raw.choices);
   return {
     day: WEEKDAY_IDS[index],
     seed: raw.seed,
@@ -250,8 +323,41 @@ function parseDay(value: unknown, index: number): WeekDayResult | null {
     endMeters: {
       sos: clamp(meters.sos, 0, 100),
       dignity: clamp(meters.dignity, 0, 100),
+      ...(finiteNumber(meters.solidarity)
+        ? { solidarity: clamp(meters.solidarity, 0, 100) }
+        : {}),
     },
+    ...(ending ? { ending } : {}),
+    ...(choices ? { choices } : {}),
   };
+}
+
+const ENDING_IDS: readonly ShiftEndingId[] = [
+  "docked",
+  "breakdown",
+  "company-man",
+  "silent-exit",
+  "walkout",
+];
+
+/** A saved day's dilemma answers, keeping only ones that name a real answer. */
+function parseChoices(value: unknown): DayChoice[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const choices: DayChoice[] = [];
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object") continue;
+    const { dilemmaId, optionId, timedOut } = entry as Record<string, unknown>;
+    if (typeof dilemmaId !== "string" || !Object.hasOwn(DILEMMAS, dilemmaId))
+      continue;
+    const dilemma = DILEMMAS[dilemmaId as DilemmaId];
+    if (!dilemma.options.some((option) => option.id === optionId)) continue;
+    choices.push({
+      dilemmaId: dilemmaId as DilemmaId,
+      optionId: optionId as string,
+      timedOut: timedOut === true,
+    });
+  }
+  return choices;
 }
 
 /**

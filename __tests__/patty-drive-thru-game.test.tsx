@@ -209,7 +209,7 @@ describe("Patty's Drive-Thru game, flat view (#1813, #1814)", () => {
     advance(10.5);
     const end = screen.getByTestId("pdt-end");
     expect(end.getAttribute("data-outcome")).toBe("completed");
-    expect(screen.getByRole("heading", { name: "Made it to close" })).toBe(
+    expect(screen.getByRole("heading", { name: "Silent exit" })).toBe(
       document.activeElement
     );
     expect(screen.getByTestId("pdt-net-pay").textContent).toMatch(/^-?\$/);

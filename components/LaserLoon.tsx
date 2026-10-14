@@ -104,7 +104,22 @@ import {
   getActStars,
   pickKeyboardAim,
   updateMinionFire,
+  ENEMY_TYPES,
+  getActNewEnemies,
+  getEnemyWeakness,
+  type CounterHitPoint,
 } from "@/lib/laser-loon";
+
+/** Short optic names for the act intro's field guide, as the weapon bar uses. */
+const OPTIC_SHORT_NAMES: Record<LaserType, string> = {
+  "ruby-laser": "Ruby Laser",
+  "cyan-pulse": "Cyan Pulse",
+  "aurora-wave": "Aurora Wave",
+  "ice-cannon": "Cryo-Mortar",
+};
+
+/** Shortest gap between counter callouts, so rapid fire cannot spam them. */
+const COUNTER_CUE_INTERVAL_MS = 260;
 
 const emptySubscribe = () => () => {};
 
@@ -408,6 +423,22 @@ export const LaserLoon: React.FC = () => {
     [soundEnabled, playNote]
   );
 
+  // A resisted hit sounds dull and low; a weakness crit pings bright.
+  const playResistSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      playNote(130.81, 0.05);
+    } catch {}
+  }, [soundEnabled, playNote]);
+
+  const playCritSound = useCallback(() => {
+    if (!soundEnabled) return;
+    try {
+      playNote(1318.5, 0.04);
+      setTimeout(() => playNote(1760, 0.05), 30);
+    } catch {}
+  }, [soundEnabled, playNote]);
+
   // Floating text helper
   const addFloatingText = useCallback(
     (x: number, y: number, text: string, color: string) => {
@@ -445,6 +476,37 @@ export const LaserLoon: React.FC = () => {
       particlesRef.current.push(...newParticles);
     },
     []
+  );
+
+  // Weapon counter feedback (#2052): every countered hit sparks, a steel
+  // glance when resisted and an amber star pop on a weakness crit. The
+  // callout and sound are throttled so rapid fire reads, not spams.
+  const lastCounterCueRef = useRef(0);
+  const showCounterHits = useCallback(
+    (points: CounterHitPoint[]) => {
+      let cue: CounterHitPoint | undefined;
+      for (const pt of points) {
+        if (pt.counter === "weak") {
+          spawnExplosion(pt.x, pt.y, "#f59e0b", 8, false, true);
+          if (!cue || cue.counter !== "weak") cue = pt;
+        } else if (pt.counter === "resisted") {
+          spawnExplosion(pt.x, pt.y, "#94a3b8", 3);
+          if (!cue) cue = pt;
+        }
+      }
+      if (!cue) return;
+      const now = performance.now();
+      if (now - lastCounterCueRef.current < COUNTER_CUE_INTERVAL_MS) return;
+      lastCounterCueRef.current = now;
+      if (cue.counter === "weak") {
+        addFloatingText(cue.x, cue.y - 18, "CRIT!", "#f59e0b");
+        playCritSound();
+      } else {
+        addFloatingText(cue.x, cue.y - 18, "RESISTED", "#94a3b8");
+        playResistSound();
+      }
+    },
+    [spawnExplosion, addFloatingText, playCritSound, playResistSound]
   );
 
   // Launch Ice Block
@@ -628,10 +690,18 @@ export const LaserLoon: React.FC = () => {
 
   // The render loop reads the latest handlers through a ref rather than
   // restarting whenever the act or mode changes.
-  const killHandlersRef = useRef({ awardComboKill, recordCampaignKill });
+  const killHandlersRef = useRef({
+    awardComboKill,
+    recordCampaignKill,
+    showCounterHits,
+  });
   useEffect(() => {
-    killHandlersRef.current = { awardComboKill, recordCampaignKill };
-  }, [awardComboKill, recordCampaignKill]);
+    killHandlersRef.current = {
+      awardComboKill,
+      recordCampaignKill,
+      showCounterHits,
+    };
+  }, [awardComboKill, recordCampaignKill, showCounterHits]);
 
   // Trigger Ultimate Move
   const fireUltimateTremolo = useCallback(() => {
@@ -917,6 +987,7 @@ export const LaserLoon: React.FC = () => {
     hitResult.damagedPoints.forEach((pt) => {
       spawnExplosion(pt.x, pt.y, pt.color, 4);
     });
+    showCounterHits(hitResult.damagedPoints);
 
     // Update active boss HP if present
     const activeBoss = targetsRef.current.find((t) => t.isBoss);
@@ -953,6 +1024,7 @@ export const LaserLoon: React.FC = () => {
     addUltimateMeter,
     awardComboKill,
     recordCampaignKill,
+    showCounterHits,
     isHalted,
   ]);
 
@@ -1197,6 +1269,7 @@ export const LaserLoon: React.FC = () => {
       iceResult.frozenTargets.forEach((t) => {
         addFloatingText(t.x, t.y, "CRYO-FROZEN!", "#38bdf8");
       });
+      killHandlersRef.current.showCounterHits(iceResult.hitPoints);
 
       if (iceResult.killedTargets.length > 0) {
         addUltimateMeter(3);
@@ -2512,6 +2585,35 @@ export const LaserLoon: React.FC = () => {
                   </p>
                 ))}
               </div>
+
+              {/* Field guide: the optic each new enemy wants (#2052). */}
+              <section
+                data-testid="laser-loon-field-guide"
+                aria-label="Field guide: optic each new enemy wants"
+                className="mt-4 border-t border-[#1c1a17]/40 pt-3"
+              >
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#8a2c1f]">
+                  Field guide: new on the docket
+                </p>
+                <ul className="mt-1.5 grid gap-x-6 gap-y-1 text-[12px] leading-snug text-[#2a2620] sm:grid-cols-2">
+                  {getActNewEnemies(currentActNum).map((type) => {
+                    const enemy = ENEMY_TYPES.find((e) => e.type === type);
+                    const weak = getEnemyWeakness(type);
+                    if (!enemy || !weak) return null;
+                    return (
+                      <li
+                        key={type}
+                        className="flex min-w-0 items-baseline justify-between gap-2 border-b border-dotted border-[#1c1a17]/30"
+                      >
+                        <span className="min-w-0 truncate">{enemy.label}</span>
+                        <span className="shrink-0 font-mono text-[11px] font-bold uppercase">
+                          {OPTIC_SHORT_NAMES[weak]} [{WEAPONS[weak].keyNumber}]
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
 
               <div className="mt-4 flex items-center justify-between gap-4 border-t border-[#1c1a17] pt-3">
                 <span className="font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">

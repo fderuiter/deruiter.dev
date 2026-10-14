@@ -372,6 +372,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "2x Shatter Combo",
       },
       {
+        title: "Weapon Counters",
+        detail:
+          "Every enemy has one optic it is weak to (a CRIT! for double damage) and some it resists (RESISTED, half damage). Cyan Pulse shreds the swarms: Laser Mosquitoes, Runaway Pronto Pups and Red Tape. The Ruby Laser melts Glacial Hail, Deep-Fried Butter, Clipboards, Surprise Amendments and the Polar Vortex Eye. The Aurora Wave's wide sweep beats Prize Gopher Decoys, F29 Tricolor Drafts and shielded 1893 Seal Drones, which resist every other optic. The Cryo-Mortar crushes Rogue Jet-Skis and armoured Veto Stamps, which shrug off every beam. Each act's intro card names the optic its new enemies want; bosses take every weapon evenly. Any single weapon can still clear every act, just slower.",
+        badge: "Crit / Resist",
+      },
+      {
         title: "Historic Campaign Acts & Bosses",
         detail:
           "Advance through Lake Minnetonka (Mega Mosquito), State Fair (Butter Colossus), Redesign Commission (Starflake Finalist), and the Capitol Rotunda (Grand Veto Gavel).",
@@ -380,6 +386,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     proTips: [
       "Save your Haunting Loon Tremolo ultimate for boss encounters to shatter their revolving defense shields.",
+      "Swap optics with keys 1 to 4 as the enemy mix changes: matching each enemy's weakness clears an act well under par.",
       "Grab floating Tater Tot Hotdish pickups for instant zero-cooldown laser overcharge frenzy.",
       "Bouncing Cryo-Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
     ],

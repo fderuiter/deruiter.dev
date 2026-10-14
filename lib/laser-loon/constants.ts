@@ -16,6 +16,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 1,
     radius: 16,
     behavior: "sine",
+    weakTo: "cyan-pulse",
+    resists: ["ice-cannon"],
   },
   {
     type: "hailstorm",
@@ -25,6 +27,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 20,
     behavior: "linear",
+    weakTo: "ruby-laser",
+    resists: ["ice-cannon"],
   },
   {
     type: "jetski",
@@ -34,6 +38,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 24,
     behavior: "bouncing",
+    weakTo: "ice-cannon",
+    resists: ["ruby-laser", "cyan-pulse"],
   },
 
   // Act 2: State Fair Grounds
@@ -45,6 +51,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 22,
     behavior: "linear",
+    weakTo: "ruby-laser",
+    resists: ["ice-cannon"],
   },
   {
     type: "pronto-pup-rogue",
@@ -54,6 +62,7 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 18,
     behavior: "sine",
+    weakTo: "cyan-pulse",
   },
   {
     type: "livestock-decoy",
@@ -63,6 +72,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 3,
     radius: 25,
     behavior: "linear",
+    weakTo: "aurora-wave",
+    resists: ["ice-cannon"],
   },
 
   // Act 3: Redesign Commission Hearings
@@ -74,6 +85,7 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 20,
     behavior: "homing",
+    weakTo: "cyan-pulse",
   },
   {
     type: "veto-stamp",
@@ -83,6 +95,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 3,
     radius: 24,
     behavior: "bouncing",
+    weakTo: "ice-cannon",
+    resists: ["ruby-laser", "cyan-pulse", "aurora-wave"],
   },
   {
     type: "tricolor-rival",
@@ -92,6 +106,7 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 22,
     behavior: "sine",
+    weakTo: "aurora-wave",
   },
   {
     type: "clipboard",
@@ -101,6 +116,7 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 2,
     radius: 19,
     behavior: "linear",
+    weakTo: "ruby-laser",
   },
 
   // Act 4: The Capitol Dome
@@ -112,6 +128,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 3,
     radius: 26,
     behavior: "bouncing",
+    weakTo: "ruby-laser",
+    resists: ["ice-cannon"],
   },
   {
     type: "seal-guardian",
@@ -121,6 +139,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 4,
     radius: 28,
     behavior: "homing",
+    weakTo: "aurora-wave",
+    resists: ["ruby-laser", "cyan-pulse", "ice-cannon"],
   },
   {
     type: "polar-vortex",
@@ -130,6 +150,8 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     hp: 3,
     radius: 25,
     behavior: "sine",
+    weakTo: "ruby-laser",
+    resists: ["ice-cannon"],
   },
 
   // Bosses
@@ -174,6 +196,17 @@ export const ENEMY_TYPES: readonly EnemyTemplate[] = [
     behavior: "boss-orbit",
   },
 ] as const;
+
+/**
+ * Damage multiplier for a hit with the optic an enemy is weak to. A crit
+ * should feel decisive, so it doubles the hit.
+ */
+export const WEAKNESS_DAMAGE_MULTIPLIER = 2;
+/**
+ * Damage multiplier for a hit with an optic the enemy resists. Halved, never
+ * zero, so every act stays clearable with any single weapon, just slower.
+ */
+export const RESISTED_DAMAGE_MULTIPLIER = 0.5;
 
 // Backward-compatibility export for existing tests/references
 export const BUG_TYPES = ENEMY_TYPES;

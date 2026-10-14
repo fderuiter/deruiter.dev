@@ -134,6 +134,12 @@ Re-exports [COMBO_TIMEOUT_MS](constants/variables/COMBO_TIMEOUT_MS.md)
 
 ***
 
+### CounterHitPoint
+
+Re-exports [CounterHitPoint](types/interfaces/CounterHitPoint.md)
+
+***
+
 ### createExplosionParticles
 
 Re-exports [createExplosionParticles](engine/functions/createExplosionParticles.md)
@@ -200,6 +206,12 @@ Re-exports [getActAvailableEnemies](engine/functions/getActAvailableEnemies.md)
 
 ***
 
+### getActNewEnemies
+
+Re-exports [getActNewEnemies](engine/functions/getActNewEnemies.md)
+
+***
+
 ### getActProgressReadout
 
 Re-exports [getActProgressReadout](engine/functions/getActProgressReadout.md)
@@ -215,6 +227,24 @@ Re-exports [getActStars](engine/functions/getActStars.md)
 ### getBossAttackInterval
 
 Re-exports [getBossAttackInterval](engine/functions/getBossAttackInterval.md)
+
+***
+
+### getEnemyWeakness
+
+Re-exports [getEnemyWeakness](engine/functions/getEnemyWeakness.md)
+
+***
+
+### getWeaponCounter
+
+Re-exports [getWeaponCounter](engine/functions/getWeaponCounter.md)
+
+***
+
+### getWeaponDamageMultiplier
+
+Re-exports [getWeaponDamageMultiplier](engine/functions/getWeaponDamageMultiplier.md)
 
 ***
 
@@ -428,6 +458,12 @@ Re-exports [PowerUpType](types/type-aliases/PowerUpType.md)
 
 ***
 
+### RESISTED\_DAMAGE\_MULTIPLIER
+
+Re-exports [RESISTED_DAMAGE_MULTIPLIER](constants/variables/RESISTED_DAMAGE_MULTIPLIER.md)
+
+***
+
 ### resolveLoonCollision
 
 Re-exports [resolveLoonCollision](engine/functions/resolveLoonCollision.md)
@@ -542,9 +578,21 @@ Re-exports [updateTargetsPosition](engine/functions/updateTargetsPosition.md)
 
 ***
 
+### WEAKNESS\_DAMAGE\_MULTIPLIER
+
+Re-exports [WEAKNESS_DAMAGE_MULTIPLIER](constants/variables/WEAKNESS_DAMAGE_MULTIPLIER.md)
+
+***
+
 ### WeaponConfig
 
 Re-exports [WeaponConfig](constants/interfaces/WeaponConfig.md)
+
+***
+
+### WeaponCounter
+
+Re-exports [WeaponCounter](types/type-aliases/WeaponCounter.md)
 
 ***
 

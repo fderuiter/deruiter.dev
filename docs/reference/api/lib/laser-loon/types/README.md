@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [CampaignAct](interfaces/CampaignAct.md)
+- [CounterHitPoint](interfaces/CounterHitPoint.md)
 - [EnemyTemplate](interfaces/EnemyTemplate.md)
 - [FlagMuseumEntry](interfaces/FlagMuseumEntry.md)
 - [FloatingText](interfaces/FloatingText.md)
@@ -28,3 +29,4 @@
 - [LaserType](type-aliases/LaserType.md)
 - [PowerUpType](type-aliases/PowerUpType.md)
 - [TargetBugType](type-aliases/TargetBugType.md)
+- [WeaponCounter](type-aliases/WeaponCounter.md)

@@ -469,6 +469,15 @@ Power-ups travelling the course.
 
 ***
 
+### plan?
+
+> `optional` **plan?**: [`PlanRun`](../../garmin-plan/interfaces/PlanRun.md) \| `null`
+
+The Training Plan workout being run (#1994): the one stage it plays, and
+whether it is Race Day. Null or absent for any other run.
+
+***
+
 ### playerVy
 
 > **playerVy**: `number`
@@ -725,6 +734,14 @@ Setup-derived parameters for this run; absent means defaults.
 ### variables
 
 > **variables**: [`MemoryVariable`](MemoryVariable.md)[]
+
+***
+
+### wallDown?
+
+> `optional` **wallDown?**: `boolean`
+
+Race Day's boss, The Wall, is beaten this run (#1994).
 
 ***
 

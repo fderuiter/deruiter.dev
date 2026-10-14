@@ -8,4 +8,4 @@
 
 > `const` **RACE\_MODE\_KEY**: `"garmin_race_mode"` = `"garmin_race_mode"`
 
-localStorage key: "1" when Race Mode is picked, otherwise a Training Run.
+localStorage key: "1" when Race Mode is picked, "plan" for the Training Plan, otherwise a Training Run.

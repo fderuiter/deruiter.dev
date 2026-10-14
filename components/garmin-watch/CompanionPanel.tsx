@@ -325,11 +325,13 @@ interface CompanionPanelProps {
   onToggleDevMode: (e: React.MouseEvent) => void;
   /** Race Mode (#2019) is picked: races run on a seeded course with Dev Mode off. */
   raceMode: boolean;
+  /** The Training Plan (#1994) is picked: workouts on a map, with Dev Mode off. */
+  planMode: boolean;
   raceCourse: RaceCourse;
   raceCategory: RaceCategory;
   /** The race picker is locked while a run is playing or paused. */
   raceLocked: boolean;
-  onSetRaceMode: (on: boolean) => void;
+  onSetRunMode: (mode: RunMode) => void;
   onSetRaceCourse: (course: RaceCourse) => void;
   onSetRaceCategory: (category: RaceCategory) => void;
   /** The Virtual Partner (#2020) is on: races show a ghost of the board's best. */
@@ -345,9 +347,14 @@ interface CompanionPanelProps {
   groundStrip: GroundStripLayout;
   onGroundStripSlot: (slot: number, field: GroundStripField) => void;
   onGroundStripReset: () => void;
+  /** The Training Plan's map, bag and save (#1994), shown with the plan picked. */
+  planPanel?: ReactNode;
   /** Laid over the panel, e.g. the end-of-run result card. */
   children?: ReactNode;
 }
+
+/** The run modes the panel offers (#2019, #1994). */
+export type RunMode = "training" | "race" | "plan";
 
 /**
  * The phone-side "Connect IQ" companion: three glance gauges (RAM, NV flash
@@ -371,10 +378,11 @@ export function CompanionPanel({
   fitnessView,
   onToggleDevMode,
   raceMode,
+  planMode,
   raceCourse,
   raceCategory,
   raceLocked,
-  onSetRaceMode,
+  onSetRunMode,
   onSetRaceCourse,
   onSetRaceCategory,
   ghostOn,
@@ -387,9 +395,12 @@ export function CompanionPanel({
   groundStrip,
   onGroundStripSlot,
   onGroundStripReset,
+  planPanel,
   children,
 }: CompanionPanelProps) {
   const profile = DEVICE_PROFILES[deviceTarget];
+  // Races and the Training Plan always run by the fitness rules.
+  const fitnessOnly = raceMode || planMode;
   const ramFraction = state.allocatedRamKb / profile.ramLimitKb;
   const flashFraction = state.allocatedFlashKb / profile.flashLimitKb;
   const battery = Math.round(state.battery);
@@ -667,12 +678,12 @@ export function CompanionPanel({
             Run mode
           </legend>
           <div className="grid gap-2">
-            <ChoiceGroup<"training" | "race">
+            <ChoiceGroup<RunMode>
               label="Run mode"
-              value={raceMode ? "race" : "training"}
+              value={planMode ? "plan" : raceMode ? "race" : "training"}
               disabled={raceLocked}
               columns={2}
-              onChange={(value) => onSetRaceMode(value === "race")}
+              onChange={onSetRunMode}
               options={[
                 {
                   value: "training",
@@ -684,6 +695,12 @@ export function CompanionPanel({
                   label: "Race Mode",
                   title:
                     "The same seeded course every attempt, with Dev Mode off.",
+                },
+                {
+                  value: "plan",
+                  label: "Training Plan",
+                  title:
+                    "Workouts on a map, Recovery Huts and Race Day, saved on this device.",
                 },
               ]}
             />
@@ -775,6 +792,7 @@ export function CompanionPanel({
                 )}
               </>
             )}
+            {planMode && planPanel}
             {raceLocked && (
               <p className="text-[10px] text-zinc-400">
                 Run mode, course and category change once this run ends. The
@@ -792,21 +810,22 @@ export function CompanionPanel({
             <button
               type="button"
               role="switch"
-              aria-checked={devMode && !raceMode}
+              aria-checked={devMode && !fitnessOnly}
               aria-label="Dev Mode"
-              aria-disabled={raceMode}
-              disabled={raceMode}
+              aria-disabled={fitnessOnly}
+              disabled={fitnessOnly}
               onClick={onToggleDevMode}
               title={
-                raceMode
-                  ? "Races run with Dev Mode off. Your Dev Mode setting is kept."
+                fitnessOnly
+                  ? `${planMode ? "The Training Plan runs" : "Races run"} with Dev Mode off. Your Dev Mode setting is kept.`
                   : "Brings back the firmware rules: heap, garbage collection, flash, battery and fog. Applies from the next run."
               }
               className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
             >
-              Dev Mode: {devMode && !raceMode ? "On" : "Off"}
+              Dev Mode: {devMode && !fitnessOnly ? "On" : "Off"}
               {raceMode ? " (races are off)" : ""}
-              {!raceMode &&
+              {planMode ? " (off in the plan)" : ""}
+              {!fitnessOnly &&
               fitnessView === devMode &&
               state.gameState !== "idle"
                 ? " (next run)"

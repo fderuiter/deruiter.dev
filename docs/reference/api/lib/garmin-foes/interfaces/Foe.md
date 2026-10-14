@@ -36,7 +36,7 @@ Time left in which the foe can't be hurt again (or a kicked shell can't hurt the
 
 > **hp**: `number`
 
-Hit points left; only the Rep Max has more than one.
+Hit points left; only the Rep Max and The Wall have more than one.
 
 ***
 

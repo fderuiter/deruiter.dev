@@ -8,4 +8,4 @@
 
 > `const` **RACE\_COURSES**: readonly [`RaceCourse`](../type-aliases/RaceCourse.md)[]
 
-Every course, in picker order.
+Every course the race picker offers, in picker order.

@@ -26,7 +26,7 @@ import { safeGetRawItem, safeSetRawItem } from "./safe-storage";
 
 /** localStorage key holding every board, as one JSON object of board key to entries. */
 export const RACE_BOARDS_KEY = "garmin_race_boards";
-/** localStorage key: "1" when Race Mode is picked, otherwise a Training Run. */
+/** localStorage key: "1" when Race Mode is picked, "plan" for the Training Plan, otherwise a Training Run. */
 export const RACE_MODE_KEY = "garmin_race_mode";
 /** localStorage key holding the picked race course. */
 export const RACE_COURSE_KEY = "garmin_race_course";
@@ -162,6 +162,18 @@ export function raceOverText(
       ? "off the board"
       : `place ${place} on this board${record === "CR" ? ", course record" : record === "PR" ? ", new personal record" : ""}`;
   return `Race over: ${formatRaceTime(outcome.timeMs)}, ${where}.`;
+}
+
+/** RACE_MODE_KEY's value when the Training Plan (#1994) is the picked run mode. */
+export const PLAN_RUN_MODE = "plan";
+
+/** Whether the Training Plan (#1994) is the picked run mode. */
+export function readPlanMode(): boolean {
+  try {
+    return safeGetRawItem(RACE_MODE_KEY) === PLAN_RUN_MODE;
+  } catch {
+    return false;
+  }
 }
 
 /** The race mode the player picked, false for a Training Run. */

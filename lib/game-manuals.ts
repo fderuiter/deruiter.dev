@@ -735,6 +735,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Ghost",
       },
       {
+        title: "Training Plan",
+        detail:
+          "Pick Training Plan as the run mode for a two-week plan laid out like a coach's calendar. Each visit opens with a Morning Report: your Training Readiness, the next workout, and your lives, continues and gear bag. Then the map: Easy Run, Tempo, Intervals and Long Run sit on paths, and clearing one opens the next. Move with the arrow keys (or UP and DOWN on the watch) and press Space or START to go; every node is also a button in the companion panel. Each workout is one stage, the same every time. A cleared workout can be run again as practice, which shows its time but never changes the plan. A Recovery Hut hides three items, an Energy Gel, a Foam Roller and a Protein Shake: pick one and it goes into the gear bag, which holds 8. Losing every life is a DNF, back to training: a continue refills your lives, and with none left the plan's score is reset instead. The map is never lost. The plan is saved on this device; New plan starts over.",
+        badge: "Plan",
+      },
+      {
+        title: "Race Day and The Wall",
+        detail:
+          "Race Day ends the plan. The lane moves at a steady race pace, so pace keys do nothing, and the run clock times it onto its own Race Day board. Near the end The Wall steps out, and the finish stays out of reach until it falls. It holds ahead of you, then charges down the lane: jump and land on top to hit it, or jump clear to dodge. It takes three hits, and each one changes its pattern: it charges faster, then throws a brick while it holds, then two. Bricks fly low, so a jump clears them. Beat it and reach the finish for the finisher medal.",
+        badge: "Boss",
+      },
+      {
         title: "Dev Mode (Optional)",
         detail:
           "Dev Mode is a toggle in the simulator controls, off by default. It brings back the original firmware challenge: a RAM heap that fills with automatic allocations, Down to pop variables, forced garbage collection that freezes the watch, NV flash that fills up, a battery that drains with thermal fog you wipe with W, and crash reports such as Null Pointer, Watchdog Tripped, Stack Overflow, Out Of Memory, Out Of Storage and Segmentation Fault. Each device tier has its own RAM limit: Fēnix 5 has 32 KB, Forerunner 245 has 64 KB, and Edge 1030 has 128 KB.",

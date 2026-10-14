@@ -9,13 +9,14 @@
 > **paceMeters**(`state`): `number`
 
 Metres to measure pace on: the furthest point reached this run, so a lost
-life that rewinds the runner never slows the pace readout.
+life that rewinds the runner never slows the pace readout. A Training Plan
+workout counts from the start of its stage (#1994).
 
 ## Parameters
 
 ### state
 
-`Pick`\<[`GameEngineState`](../interfaces/GameEngineState.md), `"distanceMeters"` \| `"furthestMeters"`\>
+`Pick`\<[`GameEngineState`](../interfaces/GameEngineState.md), `"distanceMeters"` \| `"furthestMeters"` \| `"plan"`\>
 
 ## Returns
 

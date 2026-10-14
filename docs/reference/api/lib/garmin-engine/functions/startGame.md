@@ -6,7 +6,7 @@
 
 # Function: startGame()
 
-> **startGame**(`state`, `device?`, `tuning?`, `race?`): [`GameEngineState`](../interfaces/GameEngineState.md)
+> **startGame**(`state`, `device?`, `tuning?`, `race?`, `plan?`): [`GameEngineState`](../interfaces/GameEngineState.md)
 
 Start a new game session
 
@@ -27,6 +27,10 @@ Start a new game session
 ### race?
 
 [`RaceSetup`](../../garmin-race/interfaces/RaceSetup.md)
+
+### plan?
+
+[`PlanRun`](../../garmin-plan/interfaces/PlanRun.md)
 
 ## Returns
 

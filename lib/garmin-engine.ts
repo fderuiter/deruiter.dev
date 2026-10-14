@@ -3,6 +3,7 @@
  * Handles physics, memory allocation lifecycle, GC mechanics,
  * thermal overheating, crash reports, and 16-color pixel canvas rendering.
  */
+import type { PlanRun } from "./garmin-plan";
 import type { RaceSetup } from "./garmin-race";
 import { clamp } from "./game-utils";
 import {
@@ -668,6 +669,13 @@ export interface GameEngineState {
   gearTaken?: boolean;
   /** Time spent bonked in this race, in ms (#2019). */
   bonkedMs?: number;
+  /**
+   * The Training Plan workout being run (#1994): the one stage it plays, and
+   * whether it is Race Day. Null or absent for any other run.
+   */
+  plan?: PlanRun | null;
+  /** Race Day's boss, The Wall, is beaten this run (#1994). */
+  wallDown?: boolean;
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -690,13 +698,16 @@ export type GameRules = "fitness" | "dev";
 /** Whether a run plays by the fitness rules. */
 /**
  * Metres to measure pace on: the furthest point reached this run, so a lost
- * life that rewinds the runner never slows the pace readout.
+ * life that rewinds the runner never slows the pace readout. A Training Plan
+ * workout counts from the start of its stage (#1994).
  */
 export function paceMeters(
-  state: Pick<GameEngineState, "distanceMeters" | "furthestMeters">
+  state: Pick<GameEngineState, "distanceMeters" | "furthestMeters" | "plan">
 ): number {
   const now = Number.isFinite(state.distanceMeters) ? state.distanceMeters : 0;
-  return Math.max(state.furthestMeters ?? 0, now);
+  const start = state.plan ? stageStartX(state.plan.stage) / PX_PER_METER : 0;
+  const reached = Math.max(state.furthestMeters ?? 0, now);
+  return Math.max(0, reached - start);
 }
 
 export function isFitnessRun(state: Pick<GameEngineState, "rules">): boolean {
@@ -1087,14 +1098,18 @@ export function startGame(
   state: GameEngineState,
   device?: DeviceTarget,
   tuning?: GarminRunTuning,
-  race?: RaceSetup
+  race?: RaceSetup,
+  plan?: PlanRun
 ): GameEngineState {
   const targetDevice = device || state.device;
   const initial = createInitialState(targetDevice, state.highScore);
   const runTuning = tuning ?? state.tuning;
   // A race runs its own seed on the simulated clock, under fitness rules (#2019).
   const now = race ? 0 : Date.now();
-  const courseSeed = race ? race.seed : Math.floor(Math.random() * 1e9);
+  const courseSeed =
+    race?.seed ?? plan?.seed ?? Math.floor(Math.random() * 1e9);
+  // A Training Plan workout plays its one stage (#1994).
+  const stage = plan?.stage ?? 1;
   const runRules = race ? "fitness" : (state.pendingRules ?? state.rules);
   const fitness = runRules === "fitness";
   return {
@@ -1123,7 +1138,10 @@ export function startGame(
     lastObstacleTime: now,
     courseSeed,
     lives: START_LIVES,
-    ...stageSetup(1, courseSeed, []),
+    ...(plan
+      ? { plan, stage, distanceMeters: stageStartX(stage) / PX_PER_METER }
+      : {}),
+    ...stageSetup(stage, courseSeed, []),
     // A new run has found no medals, touched no Aid Station and taken no
     // secret exit (#2025).
     medalsFound: [],
@@ -2250,6 +2268,8 @@ function foeCrashReport(
     goggles: "Lost Goggles",
     ping: "Auto Lap ping",
     dumbbell: "Rep Max dumbbell",
+    wall: "The Wall",
+    brick: "Wall brick",
   };
   const dropped = source === "kettlebell";
   return {
@@ -2434,7 +2454,7 @@ function updateCourseFoes(
     (slam !== null && slamTarget(f, slam)) ||
     runnerContact(f, runnerBox, prevBottom, landingVy) !== "none";
   for (const f of foes) {
-    if (funRun && f.kind !== "repmax" && touching(f)) {
+    if (funRun && f.kind !== "repmax" && f.kind !== "wall" && touching(f)) {
       highFives += 1;
       score += KUDOS_SCORE;
       popups.push({ x: f.x, y: f.y - 6, text: "HIGH FIVE!", ttlMs: 800 });
@@ -2961,7 +2981,8 @@ function stepSimulation(
   const runInput = fitness
     ? effectiveRunInput(state.bodyBattery, state.runInput)
     : state.runInput;
-  const pace = paceFor(runInput);
+  // Race Day scrolls at a steady race pace (#1994).
+  const pace = state.plan?.raceDay ? 1 : paceFor(runInput);
   // Body Battery gained or spent this tick by Kudos, power-ups and the pole.
   let bodyBatteryChange = 0;
   // Course props (#1992): the belts run on their own clock, a belt carries
@@ -3580,7 +3601,9 @@ function stepSimulation(
   if (poleIdx !== -1) {
     const pole = course.poles[poleIdx];
     // Only a stage's own pole is a secret exit; the last stage has none.
-    const secret = pole.secret === true && pole.stage < STAGE_COUNT;
+    // A Training Plan workout ends at its own pole (#1994).
+    const lastStage = state.plan?.stage ?? STAGE_COUNT;
+    const secret = pole.secret === true && pole.stage < lastStage;
     const height = clamp(
       (GROUND_Y - (nextPlayerY + bodyH / 2)) / POLE_HEIGHT,
       0,
@@ -3620,7 +3643,7 @@ function stepSimulation(
       text: `MEDALS ${stageMedalCount(medalsFound, pole.stage)}/${MEDALS_PER_STAGE}`,
       ttlMs: 1600,
     });
-    if (pole.stage >= STAGE_COUNT) {
+    if (pole.stage >= lastStage) {
       runComplete = true;
     } else {
       stage = pole.stage + 1;

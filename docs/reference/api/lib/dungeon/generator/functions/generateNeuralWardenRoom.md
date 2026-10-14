@@ -8,7 +8,8 @@
 
 > **generateNeuralWardenRoom**(): [`DungeonRoom`](../../types/interfaces/DungeonRoom.md)
 
-Creates Final Mainframe AI Sovereign Boss Room (Neural Warden)
+Creates the Final Mainframe AI Sovereign Boss Room (Neural Warden), the
+campaign's last room
 
 ## Returns
 

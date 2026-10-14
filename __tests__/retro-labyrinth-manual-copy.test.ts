@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import fs from "fs";
 import path from "path";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { CYBERDECK_CLASSES, DEFAULT_WEAPONS } from "@/lib/dungeon";
+import {
+  CYBERDECK_CLASSES,
+  DEFAULT_WEAPONS,
+  generateRoguelikeCampaign,
+} from "@/lib/dungeon";
 
 // #1179: the cabinet card and field manual describe the loadout the game
 // actually gives you.
@@ -49,5 +53,36 @@ describe("Retro Labyrinth manual copy (#1179)", () => {
     expect(tip).toBeDefined();
     expect(tip).not.toContain("[1]");
     expect(tip).toContain(`key ${slot}`);
+  });
+});
+
+// #2048: the manual claimed procedural subnets and cellular automata
+// generation. The rooms are hand-built and always play in the same order.
+describe("Retro Labyrinth manual describes the real campaign (#2048)", () => {
+  const manual = GAME_MANUALS["retro-labyrinth"];
+  const copy = JSON.stringify(manual);
+
+  it("makes no procedural or cellular-automata generation claim", () => {
+    expect(copy).not.toMatch(/procedural/i);
+    expect(copy).not.toMatch(/cellular/i);
+  });
+
+  it("names the seven rooms in the order the campaign plays them", () => {
+    const rule = manual.rules.find((r) => r.badge === "Campaign");
+    expect(rule).toBeDefined();
+    const names = [
+      "DMZ Gateway",
+      "Active Directory",
+      "BlinkBrowse",
+      "TSP",
+      "Darknet Vault",
+      "FaceForge",
+      "NEURAL_WARDEN",
+    ];
+    const positions = names.map((name) => rule!.detail.indexOf(name));
+    expect(positions.every((p) => p >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    expect(rule!.detail).toContain("seven rooms");
+    expect(generateRoguelikeCampaign()).toHaveLength(names.length);
   });
 });

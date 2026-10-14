@@ -8,7 +8,7 @@
 
 > **generateTSPRoom**(): [`DungeonRoom`](../../types/interfaces/DungeonRoom.md)
 
-Creates Room 1 / Tier 3: Traveling-Salesman-Problem / Zero-Trust Enclave
+Creates Tier 3: Traveling-Salesman-Problem / Zero-Trust Enclave
 
 ## Returns
 

@@ -8,7 +8,7 @@
 
 > **updateTSPMovingWalls**(`grid`, `walls`, `moveCount`): `object`
 
-Updates dynamic moving walls for Room 1 (TSP).
+Updates dynamic moving walls for the TSP room.
 Shifting barriers cycle on player movement count or step parity.
 
 ## Parameters

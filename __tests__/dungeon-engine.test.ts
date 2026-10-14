@@ -33,15 +33,19 @@ import {
 } from "@/lib/dungeon/metaprogression";
 
 describe("Roguelike Dungeon Generator & Rooms", () => {
-  it("should generate the full campaign with 4 distinct themed rooms", () => {
+  it("should generate the full campaign with 7 distinct themed rooms (#2048)", () => {
     const rooms = generateRoguelikeCampaign();
-    expect(rooms).toHaveLength(4);
+    expect(rooms).toHaveLength(7);
     expect(rooms.map((r) => r.id)).toEqual([
-      "tsp",
-      "faceforge",
+      "dmz_gateway",
+      "active_directory",
       "blinkbrowse",
+      "tsp",
       "billable_hours",
+      "faceforge",
+      "neural_warden",
     ]);
+    expect(rooms.map((r) => r.index)).toEqual([1, 2, 3, 4, 5, 6, 7]);
   });
 
   it("should generate Room 1 (TSP) with valid dimensions, nodes, and moving walls", () => {

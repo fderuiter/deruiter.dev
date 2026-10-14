@@ -8,7 +8,7 @@
 
 > **generateFaceForgeRoom**(): [`DungeonRoom`](../../types/interfaces/DungeonRoom.md)
 
-Creates Room 2 / Tier 5: FaceForge / Neural Warden 3D Boss Arena
+Creates Tier 5: FaceForge 3D Boss Arena, the campaign's first boss
 
 ## Returns
 

@@ -5,7 +5,7 @@ import type { Enemy, TSPMovingWall, TSPNode } from "../../lib/dungeon/types";
 /** A d-pad direction, named as its button is ("Move Up" and so on). */
 export type Move = "Up" | "Down" | "Left" | "Right";
 
-/** The part of a Room 1 (TSP) state the solver reads. */
+/** The part of a campaign room the solver reads (any room; route nodes and moving walls are optional). */
 interface TspRoomState {
   grid: string[][];
   tspMovingWalls?: TSPMovingWall[];

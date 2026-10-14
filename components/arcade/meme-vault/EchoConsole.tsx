@@ -11,17 +11,21 @@ import type { EchoRound } from "@/lib/meme-echo";
 interface EchoConsoleProps {
   round: EchoRound | null;
   best: number;
+  /** True after a pad was pressed while the vault was still playing. */
+  early?: boolean;
   onStart: () => void;
   onStop: () => void;
   /** Why the pads are silent, or null when sound is on. */
   silentReason: React.ReactNode;
 }
 
-function statusLine(round: EchoRound | null): string {
+function statusLine(round: EchoRound | null, early: boolean): string {
   if (!round)
     return "Press Start Echo, watch the pads light, then repeat them.";
   switch (round.phase) {
     case "showing":
+      if (early)
+        return `Watch to the end first: ${round.sequence.length} ${round.sequence.length === 1 ? "pad" : "pads"}, then repeat.`;
       return `Watch: ${round.sequence.length} ${round.sequence.length === 1 ? "pad" : "pads"}.`;
     case "input":
       return `Your turn: pad ${round.inputIndex + 1} of ${round.sequence.length}.`;
@@ -38,6 +42,7 @@ function statusLine(round: EchoRound | null): string {
 export function EchoConsole({
   round,
   best,
+  early = false,
   onStart,
   onStop,
   silentReason,
@@ -60,10 +65,14 @@ export function EchoConsole({
               Echo
             </h3>
             <p
-              className="font-sans text-xs text-zinc-400 break-words"
+              className={`font-sans text-xs break-words ${
+                early && round?.phase === "showing"
+                  ? "text-amber-300"
+                  : "text-zinc-400"
+              }`}
               data-testid="meme-echo-status"
             >
-              {statusLine(round)}
+              {statusLine(round, early)}
             </p>
           </div>
         </div>

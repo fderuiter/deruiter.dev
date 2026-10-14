@@ -183,6 +183,21 @@ describe("Meme Vault pads by touch (#2071)", () => {
     tap(pad(shown));
     expect(screen.getByTestId("meme-echo-streak").textContent).toBe("1");
   });
+
+  it("tells a player who taps during the playback to wait", () => {
+    renderVault();
+    fireEvent.click(screen.getByRole("button", { name: "Start Echo" }));
+    meme.playMemeSound.mockClear();
+    tap(pad(3));
+    expect(meme.playMemeSound).not.toHaveBeenCalled();
+    expect(status()).toMatch(/^Watch to the end first: 1 pad, then repeat\.$/);
+    for (let i = 0; i < 200 && !status().startsWith("Your turn"); i++) {
+      act(() => {
+        vi.advanceTimersByTime(50);
+      });
+    }
+    expect(status()).toMatch(/^Your turn/);
+  });
 });
 
 describe("Echo while the page is hidden (#2071)", () => {

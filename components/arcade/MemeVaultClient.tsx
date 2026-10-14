@@ -415,6 +415,7 @@ export const MemeVaultClient: React.FC = () => {
               <EchoConsole
                 round={echo.round}
                 best={echo.best}
+                early={echo.early}
                 onStart={() => {
                   unlockMemeAudio();
                   echo.start();

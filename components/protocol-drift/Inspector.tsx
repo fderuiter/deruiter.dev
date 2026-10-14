@@ -724,6 +724,7 @@ export function Inspector() {
             title="Forensic Inspector"
             testId="inspector-sheet"
             onClose={() => setExpanded(false)}
+            scroll={false}
           >
             <div className="flex h-[calc(70dvh-4rem)] min-h-0 flex-col">
               {panes}

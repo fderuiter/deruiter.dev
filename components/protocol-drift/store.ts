@@ -97,6 +97,8 @@ interface ProtocolDriftState {
   edgeCounts: Record<string, number>;
   tokens: WireToken[];
   notice: Notice | null;
+  /** Why the clock is auto-paused; kept until it runs again (#2045). */
+  pausedReason: string | null;
   waveSummary: WaveSummary | null;
   memoOpen: boolean;
   lockAudit: LockAuditResult | null;
@@ -200,6 +202,7 @@ function initialState() {
     edgeCounts: {} as Record<string, number>,
     tokens: [] as WireToken[],
     notice: null as Notice | null,
+    pausedReason: null as string | null,
     waveSummary: null as WaveSummary | null,
     memoOpen: false,
     lockAudit: null as LockAuditResult | null,
@@ -280,11 +283,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           if (event.reason === "AMENDMENT_01") {
             patch.memoOpen = true;
           } else {
-            patch.notice = {
-              id: ++noticeId,
-              tone: "warn",
-              text: `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`,
-            };
+            const text = `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`;
+            patch.pausedReason = text;
+            patch.notice = { id: ++noticeId, tone: "warn", text };
           }
           break;
         case "LOCK_AUDIT":
@@ -315,6 +316,8 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           break;
       }
     }
+    // The pause reason stays until the clock runs again (#2045).
+    if (patch.snapshot?.fsmState === "RUNNING") patch.pausedReason = null;
     if (fresh.length > 0) {
       patch.packets = [...prior.packets, ...fresh].slice(-MAX_PACKETS);
       const counts = { ...prior.edgeCounts };

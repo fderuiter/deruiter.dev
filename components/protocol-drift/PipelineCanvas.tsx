@@ -33,13 +33,19 @@ import { useProtocolDriftStore } from "./store";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { TouchWireControls } from "./TouchWireControls";
 import { canRewire, resolveTouchWire } from "./touch-wire";
+import {
+  WORLD_WIDTH,
+  frameAfterAdd,
+  frameChips,
+  frameLane,
+  sizeOf,
+} from "./touch-frame";
 
 /** Drag payload key shared with the toolbox. */
 export const CHIP_DRAG_TYPE = "application/x-protocol-drift-chip";
 
 const nodeTypes = { chip: ChipNodeView };
 const edgeTypes = { packet: PacketEdgeView };
-const WORLD_WIDTH = 1340;
 const WORLD_TOP = 100;
 const WORLD_HEIGHT = 636;
 const FIT_MARGIN = 8;
@@ -210,18 +216,20 @@ function CanvasInner() {
   const touch = useCabinetTouch();
   const editable = canRewire(fsm);
 
-  // Touch: a chip added from the toolbox is brought into view at the current
-  // zoom, so the canvas pans rather than zooms (#2045).
+  // Touch: after a toolbox add the view frames the chips, or pans just enough
+  // to show the new chip at the current zoom (#2045).
   useEffect(() => {
     if (!touch) return;
     const onAdded = (event: Event) => {
-      const { kind, x, y } = (
+      const added = (
         event as CustomEvent<{ kind: ChipKind; x: number; y: number }>
       ).detail;
-      void flow.setCenter(x + CHIP_WIDTH / 2, y + chipHeight(kind) / 2, {
-        zoom: flow.getZoom(),
-        duration: 0,
-      });
+      frameAfterAdd(
+        flow,
+        sizeOf(wrapper.current),
+        useProtocolDriftStore.getState().nodes,
+        added
+      );
     };
     window.addEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
     return () =>
@@ -233,6 +241,14 @@ function CanvasInner() {
     const el = wrapper.current;
     if (!el) return;
     const fit = () => {
+      if (touch) {
+        // Touch frames the chips (the lane when there are none), never the
+        // empty world, so a resize keeps the pipeline in view (#2045).
+        const nodes = useProtocolDriftStore.getState().nodes;
+        if (nodes.length > 0) frameChips(flow, nodes);
+        else frameLane(flow, sizeOf(el));
+        return;
+      }
       const width = Math.floor(el.clientWidth);
       const height = Math.floor(el.clientHeight);
       if (width < 10 || height < 10) return;
@@ -241,17 +257,6 @@ function CanvasInner() {
         (width - FIT_MARGIN * 2) / WORLD_WIDTH,
         (height - FIT_MARGIN * 2) / WORLD_HEIGHT
       );
-      // On touch the whole world may not fit at a legible zoom: then the
-      // fit frames the chips at the floor and the player pans.
-      if (touch && zoom < TOUCH_MIN_ZOOM) {
-        void flow.fitView({
-          padding: 0.06,
-          duration: 0,
-          minZoom: TOUCH_MIN_ZOOM,
-          maxZoom: TOUCH_MIN_ZOOM,
-        });
-        return;
-      }
       void flow.setViewport({
         x: FIT_MARGIN,
         y: FIT_MARGIN - WORLD_TOP * zoom,

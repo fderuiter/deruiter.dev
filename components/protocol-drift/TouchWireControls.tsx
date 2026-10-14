@@ -14,7 +14,8 @@ import {
   wireTargetsFrom,
   type WirePair,
 } from "./touch-wire";
-import { touchZoomFloor, type ChipNode } from "./graph-model";
+import type { ChipNode } from "./graph-model";
+import { frameChips, frameLane, sizeOf } from "./touch-frame";
 import { useProtocolDriftStore } from "./store";
 
 const ACTION =
@@ -125,6 +126,7 @@ export function TouchWireControls() {
   const setWireSheet = useProtocolDriftStore((s) => s.setWireSheet);
   const notify = useProtocolDriftStore((s) => s.notify);
   const fsm = useProtocolDriftStore((s) => s.snapshot?.fsmState);
+  const pausedReason = useProtocolDriftStore((s) => s.pausedReason);
   const flow = useReactFlow();
   const [sourceListOpen, setSourceListOpen] = useState(false);
   const [targetListOpen, setTargetListOpen] = useState(false);
@@ -169,6 +171,15 @@ export function TouchWireControls() {
     <>
       <div className="pointer-events-none absolute inset-x-2 bottom-2 z-20 flex items-end justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {pausedReason && fsm !== "RUNNING" ? (
+            <span
+              aria-live="polite"
+              data-testid="pause-reason"
+              className="pointer-events-none max-w-full truncate border border-amber-500 bg-[#0d0e11]/95 px-2 py-1 font-mono text-xs text-amber-300"
+            >
+              {pausedReason}
+            </span>
+          ) : null}
           {source ? (
             <>
               <span className="pointer-events-none min-w-0 truncate bg-[#0d0e11]/95 px-2 py-1 font-mono text-xs text-zinc-100">
@@ -227,14 +238,12 @@ export function TouchWireControls() {
         </div>
         <button
           type="button"
-          onClick={() =>
-            void flow.fitView({
-              padding: 0.06,
-              duration: 0,
-              minZoom: touchZoomFloor(),
-              maxZoom: 1,
-            })
-          }
+          onClick={(event) => {
+            // Fit frames the chips, or the tabulation lane when there are none.
+            const size = sizeOf(event.currentTarget.closest(".react-flow"));
+            if (nodes.length > 0) frameChips(flow, nodes);
+            else frameLane(flow, size);
+          }}
           className={PLAIN}
         >
           Fit

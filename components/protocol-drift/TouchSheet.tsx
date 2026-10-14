@@ -10,6 +10,11 @@ interface TouchSheetProps {
   /** Test hook for the sheet and its backdrop. */
   testId: string;
   onClose: () => void;
+  /**
+   * False when the content scrolls itself in named regions. The body is then
+   * not a scroll box, so no unnamed keyboard stop appears above them (#2045).
+   */
+  scroll?: boolean;
   children: React.ReactNode;
 }
 
@@ -23,6 +28,7 @@ export function TouchSheet({
   title,
   testId,
   onClose,
+  scroll = true,
   children,
 }: TouchSheetProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
@@ -58,7 +64,11 @@ export function TouchSheet({
             <IconX className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-2">
+        <div
+          className={`min-h-0 flex-1 p-2 ${
+            scroll ? "overflow-y-auto overscroll-contain" : "overflow-hidden"
+          }`}
+        >
           {children}
         </div>
       </div>

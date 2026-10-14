@@ -201,6 +201,18 @@ export const LOOK_PRESETS: Readonly<
 export const SCORE_PER_SERVED = 10;
 export const SCORE_LATE_PENALTY = 5;
 export const SCORE_COMPLETED_BONUS = 50;
+/** Extra points for each order bumped while its ticket is still green (#2057). */
+export const SCORE_FAST_BUMP_BONUS = 5;
+/**
+ * The clean-order streak (#2057): every order bumped since the last wrong
+ * entry extends the streak, and each one after the first earns this many
+ * points per earlier link, up to `SCORE_STREAK_MAX_LINKS`. A re-entered drink
+ * does not break it, because the dispenser drops drinks at random.
+ */
+export const SCORE_STREAK_STEP = 2;
+export const SCORE_STREAK_MAX_LINKS = 10;
+/** Points per Dignity point still standing when the shift reaches close (#2057). */
+export const SCORE_DIGNITY_PER_POINT = 1;
 
 /** The range each scenario dial is held to, so no input can break the shift. */
 export const SCENARIO_LIMITS: Readonly<

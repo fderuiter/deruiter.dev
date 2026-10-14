@@ -23,6 +23,7 @@
 - [ShiftConfig](interfaces/ShiftConfig.md)
 - [ShiftLogEntry](interfaces/ShiftLogEntry.md)
 - [ShiftScenario](interfaces/ShiftScenario.md)
+- [ShiftScoreBreakdown](interfaces/ShiftScoreBreakdown.md)
 - [ShiftState](interfaces/ShiftState.md)
 - [ShiftTallies](interfaces/ShiftTallies.md)
 - [StepResult](interfaces/StepResult.md)

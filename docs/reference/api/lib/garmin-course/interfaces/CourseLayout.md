@@ -24,6 +24,14 @@ Basement Gym racks; absent on other themes.
 
 ***
 
+### checkpoints?
+
+> `optional` **checkpoints?**: [`CourseCheckpoint`](CourseCheckpoint.md)[]
+
+Aid Station checkpoints (#2025).
+
+***
+
 ### currents?
 
 > `optional` **currents?**: [`CourseCurrent`](CourseCurrent.md)[]
@@ -47,6 +55,14 @@ Open Water currents; absent on other themes.
 ### ledges
 
 > **ledges**: [`CourseLedge`](CourseLedge.md)[]
+
+***
+
+### medals?
+
+> `optional` **medals?**: [`CourseMedal`](CourseMedal.md)[]
+
+Finisher Medals out on the course (#2025).
 
 ***
 

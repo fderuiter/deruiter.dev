@@ -519,7 +519,7 @@ describe("enterStation", () => {
     expect(s.obstacles).toEqual([]);
     expect(s.course).toEqual(generateBonusRoom(150, door.id, GROUND_Y));
     expect(s.playerY).toBe(GROUND_Y - PLAYER_HEIGHT);
-    expect(s.banner?.text).toMatch(/AID STATION/);
+    expect(s.banner?.text).toMatch(/WATER STATION/);
   });
 
   it("walking to the far wall puts the runner back on the lane at the exit", () => {

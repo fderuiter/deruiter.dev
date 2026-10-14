@@ -98,6 +98,11 @@ import {
 } from "@/lib/garmin-engine";
 import { trainingStatus } from "@/lib/garmin-culture";
 import { STAGE_COUNT } from "@/lib/garmin-course";
+import {
+  MEDALS_PER_STAGE,
+  medalStage,
+  stageMedalCount,
+} from "@/lib/garmin-medals";
 import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin-cape";
 import type { PowerTier } from "@/lib/garmin-powerups";
 import { themeForStage, type StageTheme } from "@/lib/garmin-themes";
@@ -336,9 +341,19 @@ function RunSplitsSummary({
   );
 }
 
+/**
+ * The Finisher Medals of this stage found so far (#2025), for the canvas
+ * description and the telemetry readout.
+ */
+function medalReadout(s: GameEngineState): string {
+  const found = stageMedalCount(s.medalsFound, s.stage ?? 1);
+  return ` Finisher medals: ${found} of ${MEDALS_PER_STAGE} on this stage.`;
+}
+
 /** What the course props mean for the runner right now (#1992), for the telemetry readout. */
 function courseReadout(s: GameEngineState): string {
-  if (s.bonusRoom) return " In a Water Station bonus room.";
+  const medals = medalReadout(s);
+  if (s.bonusRoom) return `${medals} In a Water Station bonus room.`;
   const rest = s.restDayMs ?? 0;
   const restText =
     rest > 0 ? ` Rest Day: ${Math.ceil(rest / 1000)} seconds left.` : "";
@@ -346,7 +361,7 @@ function courseReadout(s: GameEngineState): string {
     enterStation(s) !== s
       ? " On a Water Station: press Down to enter its bonus room."
       : "";
-  return restText + station;
+  return medals + restText + station;
 }
 
 export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
@@ -407,6 +422,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const lastBannerRef = useRef<string | null>(null);
   const lastPaceFullRef = useRef(false);
   const lastRunStateRef = useRef<GameEngineState["gameState"]>("idle");
+  // What the last frame showed of the medals, checkpoint and secret exits (#2025).
+  // Null until the first frame, which only records the baseline, so a state
+  // that already holds medals is not announced again on mount.
+  const medalsSeenRef = useRef<{
+    medals: readonly number[];
+    checkpoint: GameEngineState["checkpoint"];
+    exits: readonly number[];
+  } | null>(null);
 
   // Hardware & Simulation State
   const [bezelTheme, setBezelTheme] = useState<WatchBezelTheme>("slate");
@@ -1194,7 +1217,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       hasAlertedCrashRef.current = true;
       const errorType = gameState.crashReport?.errorType || "Out Of Memory";
       const msg = fitnessRun
-        ? `Run over: ${causeLabel(gameState, errorType)}. Training Status: ${trainingStatus(gameState.stage ?? 1, false)}.`
+        ? `Run over: ${causeLabel(gameState, errorType)}. Training Status: ${trainingStatus(gameState.stage ?? 1, false)}. Finisher medals: ${gameState.medalsFound?.length ?? 0} of ${STAGE_COUNT * MEDALS_PER_STAGE}.`
         : `System crash: ${errorType}. ${gameState.crashReport?.file ? "File: " + gameState.crashReport.file : ""}`;
       setAlertMessage(msg);
       announce(msg, "assertive");
@@ -1257,6 +1280,44 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       announce("Pace meter full.", "polite");
     }
     lastPaceFullRef.current = paceFull;
+
+    // 8. Finisher Medals, the Aid Station and secret exits (#2025), each
+    // announced once when a frame first shows it.
+    const medalsNow = gameState.medalsFound ?? [];
+    const checkpointNow = gameState.checkpoint ?? null;
+    const exitsNow = gameState.secretExits ?? [];
+    const seen = medalsSeenRef.current ?? {
+      medals: medalsNow,
+      checkpoint: checkpointNow,
+      exits: exitsNow,
+    };
+    for (const id of medalsNow) {
+      if (seen.medals.includes(id)) continue;
+      // Count up to this medal, so each new one reads its own place.
+      const upTo = medalsNow.slice(0, medalsNow.indexOf(id) + 1);
+      announce(
+        `Finisher medal found, ${stageMedalCount(upTo, medalStage(id))} of ${MEDALS_PER_STAGE} on this stage.`,
+        "polite"
+      );
+    }
+    if (
+      checkpointNow &&
+      (seen.checkpoint?.x !== checkpointNow.x ||
+        seen.checkpoint?.stage !== checkpointNow.stage)
+    ) {
+      announce(
+        "Aid station checkpoint reached. You will restart here.",
+        "polite"
+      );
+    }
+    if (exitsNow.some((stage) => !seen.exits.includes(stage))) {
+      announce("Secret exit found. Shortcut open.", "polite");
+    }
+    medalsSeenRef.current = {
+      medals: medalsNow,
+      checkpoint: checkpointNow,
+      exits: exitsNow,
+    };
   }, [gameState, deviceTarget, announce, setAlertMessage]);
 
   // Main 60FPS Game Physics and Rendering Loop

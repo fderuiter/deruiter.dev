@@ -18,8 +18,11 @@ import {
   poleBonus,
   pruneCourse,
   stageStartX,
+  type CourseCheckpoint,
   type CourseLayout,
+  type CourseMedal,
   type CourseMedBall,
+  type CoursePole,
 } from "./garmin-course";
 import {
   BONUS_ROOM_LENGTH,
@@ -38,8 +41,24 @@ import {
   stationUnderFeet,
   wallAhead,
   type CourseProps,
+  type CourseStation,
   type PropFooting,
 } from "./garmin-props";
+import {
+  CHECKPOINT_BANNER,
+  CHECKPOINT_TOAST,
+  MEDAL_SCORE,
+  MEDALS_PER_STAGE,
+  ROOM_MEDAL_DX,
+  ROOM_MEDAL_RISE,
+  SECRET_EXIT_BANNER,
+  SECRET_POLE_INSET,
+  hideFoundMedals,
+  medalHit,
+  medalStage,
+  placeStageExtras,
+  stageMedalCount,
+} from "./garmin-medals";
 import { beatsBest, formatClock, splitToast } from "./garmin-splits";
 import {
   SUIT_GRAVITY_SCALE,
@@ -616,6 +635,12 @@ export interface GameEngineState {
   thrownBall?: ThrownBall | null;
   /** The "Med ball!" toast has shown this run. */
   medBallToasted?: boolean;
+  /** Finisher Medal ids found this run; reset by startGame, kept across lost lives and stages (#2025). */
+  medalsFound?: number[];
+  /** The Aid Station touched on the current stage; reset by startGame, cleared on a stage clear, kept across lost lives (#2025). */
+  checkpoint?: CourseCheckpoint | null;
+  /** Stages whose secret exit was taken this run; reset by startGame, otherwise kept (#2025). */
+  secretExits?: number[];
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -791,7 +816,16 @@ function stageLayout(
     generateStage(stage, seed, GROUND_Y, theme),
     theme
   );
-  return { course: placed.layout, props: placed.props };
+  // Medals, the Aid Station and any secret exit go on last (#2025).
+  return placeStageExtras(
+    placed.layout,
+    placed.props,
+    stage,
+    seed,
+    GROUND_Y,
+    theme,
+    PLAYER_WIDTH
+  );
 }
 
 /**
@@ -836,6 +870,46 @@ function wallContact(
   const touches = (box: { x: number; height: number }) =>
     Math.abs(bodyRight - box.x) <= 1.5 && feetBottom > groundY - box.height + 1;
   return props.stations.some(touches) || props.plyos.some(touches);
+}
+
+/**
+ * The bonus room behind `station` (#2025 adds its medal and secret exit): the
+ * room's medal floats over its second ledge unless already found, and a
+ * secret exit ends the room at a second pole instead of the stage's own.
+ * A room with neither is the plain room.
+ */
+function bonusRoomCourse(
+  state: GameEngineState,
+  station: CourseStation,
+  cameraX: number
+): CourseLayout {
+  const room = generateBonusRoom(cameraX, station.id, GROUND_Y);
+  const found = state.medalsFound ?? [];
+  const medals: CourseMedal[] =
+    station.medalId !== undefined && !found.includes(station.medalId)
+      ? [
+          {
+            id: station.medalId,
+            stage: medalStage(station.medalId),
+            x: cameraX + ROOM_MEDAL_DX,
+            y: GROUND_Y - ROOM_MEDAL_RISE,
+          },
+        ]
+      : [];
+  const poles: CoursePole[] = station.secretExit
+    ? [
+        {
+          x: cameraX + PLAYER_X + BONUS_ROOM_LENGTH - SECRET_POLE_INSET,
+          stage: state.stage ?? 1,
+          secret: true,
+        },
+      ]
+    : [];
+  return {
+    ...room,
+    ...(medals.length > 0 ? { medals } : {}),
+    ...(poles.length > 0 ? { poles } : {}),
+  };
 }
 
 /**
@@ -902,7 +976,7 @@ export function enterStation(state: GameEngineState): GameEngineState {
       exitX: station.exitX,
       endX: cameraX + PLAYER_X + BONUS_ROOM_LENGTH,
     },
-    course: generateBonusRoom(cameraX, station.id, GROUND_Y),
+    course: bonusRoomCourse(state, station, cameraX),
     props: EMPTY_PROPS,
     foes: [],
     foeShots: [],
@@ -912,16 +986,21 @@ export function enterStation(state: GameEngineState): GameEngineState {
     restDayMs: 0,
     playerY: GROUND_Y - h,
     playerVy: 0,
-    banner: { text: "AID STATION · GRAB A GEL", ttlMs: 1600, tone: "good" },
+    banner: { text: "WATER STATION · GRAB A GEL", ttlMs: 1600, tone: "good" },
   };
 }
 
-/** A fresh stage's course, props and foes. */
+/**
+ * A fresh stage's course, props and foes. Medals in `found` are taken out, so
+ * a stage laid out again never offers one twice (#2025).
+ */
 function stageSetup(
   stage: number,
-  seed: number
+  seed: number,
+  found: readonly number[] | undefined
 ): { course: CourseLayout; props: CourseProps; foes: Foe[] } {
-  const { course, props } = stageLayout(stage, seed);
+  const laid = stageLayout(stage, seed);
+  const { course, props } = hideFoundMedals(laid.course, laid.props, found);
   // No foe starts inside a station, box or switch.
   const footings = propFootings(props, 0, GROUND_Y);
   const foes = generateFoes(
@@ -975,7 +1054,12 @@ export function startGame(
     lastObstacleTime: now,
     courseSeed,
     lives: START_LIVES,
-    ...stageSetup(1, courseSeed),
+    ...stageSetup(1, courseSeed, []),
+    // A new run has found no medals, touched no Aid Station and taken no
+    // secret exit (#2025).
+    medalsFound: [],
+    checkpoint: null,
+    secretExits: [],
     foeShots: [],
     propClockMs: 0,
     restDayMs: 0,
@@ -1824,6 +1908,35 @@ function riderLosesBuddy(
 }
 
 /**
+ * A Finisher Medal found at world (x, y) (#2025): its id joins `found`, and
+ * the caller books the points and popup. A medal already found is not found
+ * again, so it books nothing. Shared by the free pickup, a PR Board break and
+ * a medicine ball's hit on a PR Board.
+ */
+function medalFind(
+  found: readonly number[] | undefined,
+  id: number,
+  x: number,
+  y: number
+): { found: number[]; points: number; popups: FacePopup[] } {
+  const ids = found ?? [];
+  if (ids.includes(id)) return { found: [...ids], points: 0, popups: [] };
+  const next = [...ids, id];
+  return {
+    found: next,
+    points: MEDAL_SCORE,
+    popups: [
+      {
+        x,
+        y: y - 6,
+        text: `MEDAL ${stageMedalCount(next, medalStage(id))}/${MEDALS_PER_STAGE}`,
+        ttlMs: 900,
+      },
+    ],
+  };
+}
+
+/**
  * Advances a thrown medicine ball one tick (#2024). The first foe it
  * overlaps is knocked out (a Rep Max takes two hit points, as a stomp does),
  * the first brick it overlaps breaks for the PR Board reward, and a sync
@@ -1886,6 +1999,12 @@ function stepThrownMedBallOnce(
     if (block.kind !== "brick" || block.fromKudos) {
       return { ...state, thrownBall: null };
     }
+    // A PR Board hiding a Finisher Medal gives it up too (#2025).
+    const medal =
+      block.contents === "medal" && block.medalId !== undefined
+        ? medalFind(state.medalsFound, block.medalId, block.x, block.y)
+        : null;
+    const points = PR_BOARD_SCORE + (medal?.points ?? 0);
     return {
       ...state,
       thrownBall: null,
@@ -1893,11 +2012,13 @@ function stepThrownMedBallOnce(
         ...course,
         blocks: course.blocks.filter((_, i) => i !== blockIdx),
       },
-      score: state.score + PR_BOARD_SCORE,
-      highScore: Math.max(state.highScore, state.score + PR_BOARD_SCORE),
+      score: state.score + points,
+      highScore: Math.max(state.highScore, state.score + points),
+      ...(medal ? { medalsFound: medal.found } : {}),
       popups: [
         ...(state.popups ?? []),
         { x: block.x, y: block.y - 6, text: "NEW PR!", ttlMs: 900 },
+        ...(medal?.popups ?? []),
       ],
     };
   }
@@ -1972,6 +2093,16 @@ function loseLife(
     };
   }
   const stage = state.stage ?? 1;
+  // An Aid Station touched on this stage is where the stage restarts (#2025).
+  const cp =
+    state.checkpoint && state.checkpoint.stage === stage
+      ? state.checkpoint
+      : null;
+  const fresh = stageSetup(stage, state.courseSeed ?? 0, state.medalsFound);
+  // A foe near the Aid Station is left behind, so the restart is safe.
+  const foes = cp
+    ? fresh.foes.filter((f) => !(f.x + f.width > cp.x - 40 && f.x < cp.x + 160))
+    : fresh.foes;
   return {
     ...state,
     ...fitnessToll,
@@ -1979,7 +2110,10 @@ function loseLife(
     power: "base",
     starMs: 0,
     invulnerableMs: DAMAGE_GRACE_MS,
-    distanceMeters: stageStartX(stage) / PX_PER_METER,
+    // The runner's world left lands on the Aid Station, or the stage start.
+    distanceMeters: cp
+      ? (cp.x - PLAYER_X) / PX_PER_METER
+      : stageStartX(stage) / PX_PER_METER,
     playerY: GROUND_Y - PLAYER_HEIGHT,
     playerVy: 0,
     isGrounded: true,
@@ -2007,7 +2141,9 @@ function loseLife(
     spinJump: false,
     wallSide: false,
     wallJumpReady: false,
-    ...stageSetup(stage, state.courseSeed ?? 0),
+    course: fresh.course,
+    props: fresh.props,
+    foes,
     foeShots: [],
     restDayMs: 0,
     bonusRoom: null,
@@ -2718,6 +2854,10 @@ function stepSimulation(
   }
   let score = state.score;
   let kudos = state.kudos ?? 0;
+  // Finisher Medals, the Aid Station and secret exits this run (#2025).
+  let medalsFound = state.medalsFound ?? [];
+  let checkpoint: CourseCheckpoint | null = state.checkpoint ?? null;
+  let secretExits = state.secretExits ?? [];
   let power: PowerTier = state.power ?? "base";
   // A Running Buddy under the runner (#2024); a catch below mounts it.
   let riding = state.riding === true;
@@ -2748,6 +2888,13 @@ function stepSimulation(
     };
     score += PR_BOARD_SCORE;
     popups.push({ x: block.x, y: block.y - 6, text: "NEW PR!", ttlMs: 900 });
+    // A PR Board hiding a Finisher Medal gives it up too (#2025).
+    if (block.contents === "medal" && block.medalId !== undefined) {
+      const medal = medalFind(medalsFound, block.medalId, block.x, block.y);
+      medalsFound = medal.found;
+      score += medal.points;
+      popups.push(...medal.popups);
+    }
   };
   // Bumping an unused Sync Block uses it up and pays out its contents.
   const bumpBlock = (index: number) => {
@@ -3057,6 +3204,25 @@ function stepSimulation(
     if (kept.length !== course.kudos.length)
       course = { ...course, kudos: kept };
   }
+  // Finisher Medals (#2025): the runner's box, as for Kudos, finds a medal on
+  // the course, the main course or a bonus room alike.
+  if (course.medals && course.medals.length > 0) {
+    const touched = course.medals.filter((m) =>
+      medalHit(m, bodyLeft, playerTop, bodyRight, playerBottom)
+    );
+    if (touched.length > 0) {
+      course = {
+        ...course,
+        medals: course.medals.filter((m) => !touched.includes(m)),
+      };
+      for (const m of touched) {
+        const medal = medalFind(medalsFound, m.id, m.x, m.y);
+        medalsFound = medal.found;
+        score += medal.points;
+        popups.push(...medal.popups);
+      }
+    }
+  }
   const earned = livesEarned(kudosBefore, kudos);
   if (earned > 0) {
     lives = addLives(lives, earned);
@@ -3168,8 +3334,39 @@ function stepSimulation(
   if (grownBy !== 0) nextPlayerY -= grownBy;
   const bodyH = playerHeightFor(power);
 
-  // The finish pole: grabbing it ends the stage, higher pays more.
+  // An Aid Station (#2025): touching a checkpoint of this stage marks it, so a
+  // lost life restarts the stage there. Not inside a bonus room; a checkpoint
+  // passed on the way out of one counts on the next tick. The pole below
+  // runs after this, so a stage clear's banner wins.
+  const reachedCheckpoint =
+    state.bonusRoom || !course.checkpoints
+      ? undefined
+      : course.checkpoints.find(
+          (cp) =>
+            cp.stage === stage &&
+            cp.x <= cameraX + PLAYER_X &&
+            !(checkpoint?.x === cp.x && checkpoint.stage === cp.stage)
+        );
+  if (reachedCheckpoint) {
+    checkpoint = reachedCheckpoint;
+    banner = { text: CHECKPOINT_BANNER, ttlMs: 1600, tone: "good" };
+    popups.push({
+      x: reachedCheckpoint.x,
+      y: GROUND_Y - 30,
+      text: CHECKPOINT_TOAST,
+      ttlMs: 1600,
+    });
+  }
+
+  // The finish pole: grabbing it ends the stage, higher pays more. A secret
+  // exit's pole (#2025) ends a bonus room and starts the next stage instead.
   let stageCleared = false;
+  // The next stage's layout, when a secret exit has been taken this tick.
+  let secretNext: {
+    course: CourseLayout;
+    props: CourseProps;
+    foes: Foe[];
+  } | null = null;
   const lapClockMs = (state.runClockMs ?? 0) + safeDelta;
   let lapSplits = state.lapSplits ?? [];
   let lapSplit: number | null = null;
@@ -3180,6 +3377,8 @@ function stepSimulation(
   );
   if (poleIdx !== -1) {
     const pole = course.poles[poleIdx];
+    // Only a stage's own pole is a secret exit; the last stage has none.
+    const secret = pole.secret === true && pole.stage < STAGE_COUNT;
     const height = clamp(
       (GROUND_Y - (nextPlayerY + bodyH / 2)) / POLE_HEIGHT,
       0,
@@ -3197,6 +3396,8 @@ function stepSimulation(
       ttlMs: 1200,
     });
     stageCleared = true;
+    // An Aid Station belongs to the stage just cleared (#2025).
+    checkpoint = null;
     bodyBatteryChange += BODY_BATTERY_POWER_GAIN;
     // Auto lap: the stage just cleared is a lap of the run clock.
     lapSplit = lapClockMs - (state.lapStartMs ?? 0);
@@ -3210,17 +3411,33 @@ function stepSimulation(
         poleHeight: height,
       });
     }
+    // The medals the stage just cleared held (#2025).
+    popups.push({
+      x: bodyLeft,
+      y: nextPlayerY - 46,
+      text: `MEDALS ${stageMedalCount(medalsFound, pole.stage)}/${MEDALS_PER_STAGE}`,
+      ttlMs: 1600,
+    });
     if (pole.stage >= STAGE_COUNT) {
       runComplete = true;
     } else {
       stage = pole.stage + 1;
-      const next = stageLayout(stage, state.courseSeed ?? 0);
-      // A Rest Day still running swaps the new stage's bricks and Kudos too.
-      course = appendCourse(
-        course,
-        restDayMs > 0 ? restDaySwap(next.course, true) : next.course
-      );
-      props = appendProps(props, next.props);
+      if (secret) {
+        // The room's far pole clears the stage like its own pole, records
+        // the secret exit, and the runner starts the next stage (#2025).
+        if (!secretExits.includes(pole.stage)) {
+          secretExits = [...secretExits, pole.stage];
+        }
+        secretNext = stageSetup(stage, state.courseSeed ?? 0, medalsFound);
+      } else {
+        const next = stageLayout(stage, state.courseSeed ?? 0);
+        // A Rest Day still running swaps the new stage's bricks and Kudos too.
+        course = appendCourse(
+          course,
+          restDayMs > 0 ? restDaySwap(next.course, true) : next.course
+        );
+        props = appendProps(props, next.props);
+      }
       // Transition: the Tri Suit comes off when the next stage is on land,
       // so its clumsy land hop never meets the track's gaps.
       if (power === "trisuit" && !isWaterTheme(themeForStage(stage))) {
@@ -3228,16 +3445,28 @@ function stepSimulation(
       }
       // The lap banner is green on a best split for the lap, amber when
       // slower; the fitness rules add the stage's Training Effect.
-      banner = {
-        text:
-          stageTrainingEffect === null
-            ? `LAP ${pole.stage} · ${formatClock(lapSplit)}`
-            : `LAP ${pole.stage} · ${formatClock(lapSplit)} · TE ${stageTrainingEffect.toFixed(1)}`,
-        ttlMs: 2200,
-        tone: beatsBest(lapSplit, state.bestSplits?.[pole.stage - 1])
-          ? "good"
-          : "warn",
-      };
+      const lapText =
+        stageTrainingEffect === null
+          ? `LAP ${pole.stage} · ${formatClock(lapSplit)}`
+          : `LAP ${pole.stage} · ${formatClock(lapSplit)} · TE ${stageTrainingEffect.toFixed(1)}`;
+      if (secret) {
+        // A secret exit's banner is its own; its lap goes in a popup.
+        banner = { text: SECRET_EXIT_BANNER, ttlMs: 2200, tone: "good" };
+        popups.push({
+          x: bodyLeft,
+          y: nextPlayerY - 64,
+          text: lapText,
+          ttlMs: 1600,
+        });
+      } else {
+        banner = {
+          text: lapText,
+          ttlMs: 2200,
+          tone: beatsBest(lapSplit, state.bestSplits?.[pole.stage - 1])
+            ? "good"
+            : "warn",
+        };
+      }
     }
   }
   // Pace calls on the lap just run: world-record pace, a negative or a
@@ -3258,7 +3487,9 @@ function stepSimulation(
   // course at the station's exit.
   let bonusRoom = state.bonusRoom ?? null;
   let roomExit: BonusRoom | null = null;
-  if (bonusRoom && cameraX + PLAYER_X >= bonusRoom.endX) {
+  // A secret exit has already ended the room this tick, so the room's far
+  // wall is not walked through on stale data (#2025).
+  if (bonusRoom && !secretNext && cameraX + PLAYER_X >= bonusRoom.endX) {
     roomExit = bonusRoom;
     const exitCameraX = bonusRoom.exitX - PLAYER_X;
     course = pruneCourse(bonusRoom.returnCourse, exitCameraX);
@@ -3385,6 +3616,9 @@ function stepSimulation(
     bonusRoom,
     lapSplits,
     lapStartMs: lapSplit === null ? (state.lapStartMs ?? 0) : lapClockMs,
+    medalsFound,
+    checkpoint,
+    secretExits,
     // The moves end on the landing; a wall contact lasts while the runner
     // stays in the air against it.
     slamming: state.slamming === true && !landed,
@@ -3408,6 +3642,36 @@ function stepSimulation(
       : {}),
   };
 
+  if (secretNext) {
+    // A secret exit: the room and the stage it was in are left behind (the
+    // finished stage's own pole is discarded with its course), and the runner
+    // starts the next stage at its start, clear of the room's items (#2025).
+    return {
+      ...updatedState,
+      distanceMeters: stageStartX(stage) / PX_PER_METER,
+      playerY: GROUND_Y - playerHeightFor(power),
+      playerVy: 0,
+      isGrounded: true,
+      course: secretNext.course,
+      props: secretNext.props,
+      foes: secretNext.foes,
+      obstacles: [],
+      foeShots: [],
+      pickups: [],
+      bolts: [],
+      thrownBall: null,
+      carrying: false,
+      carryingId: undefined,
+      riding: false,
+      bonusRoom: null,
+      checkpoint: null,
+      // A move in progress ends at the pole, so no slam lands on the new stage.
+      slamming: false,
+      spinJump: false,
+      wallSide: false,
+      wallJumpReady: false,
+    };
+  }
   if (roomExit) {
     // Out of the bonus room and onto the lane at the exit; the course's foes
     // come back, and the bugs and shots wait for the next frame.
@@ -3449,7 +3713,7 @@ function stepSimulation(
     updatedState = {
       ...updatedState,
       obstacles: [],
-      foes: stageSetup(stage, seed).foes,
+      foes: stageSetup(stage, seed, medalsFound).foes,
       foeShots: [],
     };
   }

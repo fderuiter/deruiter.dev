@@ -10,11 +10,13 @@
 
 - [CourseBlock](interfaces/CourseBlock.md)
 - [CourseCeiling](interfaces/CourseCeiling.md)
+- [CourseCheckpoint](interfaces/CourseCheckpoint.md)
 - [CourseCurrent](interfaces/CourseCurrent.md)
 - [CourseGap](interfaces/CourseGap.md)
 - [CourseKudos](interfaces/CourseKudos.md)
 - [CourseLayout](interfaces/CourseLayout.md)
 - [CourseLedge](interfaces/CourseLedge.md)
+- [CourseMedal](interfaces/CourseMedal.md)
 - [CourseMedBall](interfaces/CourseMedBall.md)
 - [CoursePole](interfaces/CoursePole.md)
 
@@ -24,6 +26,7 @@
 - [EMPTY\_COURSE](variables/EMPTY_COURSE.md)
 - [KUDOS\_RADIUS](variables/KUDOS_RADIUS.md)
 - [LEDGE\_THICKNESS](variables/LEDGE_THICKNESS.md)
+- [MEDAL\_SIZE](variables/MEDAL_SIZE.md)
 - [MEDBALL\_SIZE](variables/MEDBALL_SIZE.md)
 - [POLE\_HEIGHT](variables/POLE_HEIGHT.md)
 - [PX\_PER\_METER](variables/PX_PER_METER.md)

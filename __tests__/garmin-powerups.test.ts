@@ -7,6 +7,7 @@ import {
   GROUND_Y,
   PLAYER_X,
   PLAYER_HEIGHT,
+  PLAYER_WIDTH,
   FLASH_STORAGE_KEY,
   type GameEngineState,
   type Obstacle,
@@ -20,6 +21,7 @@ import {
   type CourseBlock,
   type CourseLayout,
 } from "@/lib/garmin-course";
+import { placeStageExtras } from "@/lib/garmin-medals";
 import { generateStageProps } from "@/lib/garmin-props";
 import {
   BASE_HEIGHT,
@@ -360,15 +362,25 @@ describe("lives", () => {
     expect(s.obstacles).toHaveLength(0);
     expect(s.kudos).toBe(12);
     expect(s.invulnerableMs).toBe(DAMAGE_GRACE_MS);
-    // The stage's course, with any ledge a Treadmill Belt replaces (#1992).
-    const fresh = generateStageProps(
+    // The stage's course, with any ledge a Treadmill Belt replaces (#1992)
+    // and its medals and Aid Station (#2025).
+    const placed = generateStageProps(
       stage,
       s.courseSeed ?? 0,
       GROUND_Y,
       generateStage(stage, s.courseSeed ?? 0, GROUND_Y, themeForStage(stage)),
       themeForStage(stage)
     );
-    expect(s.course).toEqual(fresh.layout);
+    const fresh = placeStageExtras(
+      placed.layout,
+      placed.props,
+      stage,
+      s.courseSeed ?? 0,
+      GROUND_Y,
+      themeForStage(stage),
+      PLAYER_WIDTH
+    );
+    expect(s.course).toEqual(fresh.course);
     expect(s.props).toEqual(fresh.props);
     expect(s.banner?.text).toMatch(/NULL POINTER · LIVES 2/);
   });

@@ -83,8 +83,10 @@ export interface CourseBlock {
   /** Top surface. */
   y: number;
   kind: "sync" | "brick";
-  contents: "kudos" | "power" | "cape" | "high" | "suit" | "buddy";
+  contents: "kudos" | "power" | "cape" | "high" | "suit" | "buddy" | "medal";
   used: boolean;
+  /** Id of the Finisher Medal a PR Board hides; breaking it finds the medal (#2025). */
+  medalId?: number;
   /** A Kudos turned into a brick by a Rest Day (#1992); it turns back after. */
   fromKudos?: boolean;
 }
@@ -105,7 +107,31 @@ export interface CoursePole {
   stage: number;
   /** Height on the pole the runner grabbed, 0 (bottom) to 1 (top), once touched. */
   grabbed?: number;
+  /** A secret exit's pole, hidden in a bonus room (#2025). */
+  secret?: boolean;
 }
+
+/**
+ * A Finisher Medal out on the course (#2025). Three hide on every stage; one
+ * may sit in a PR Board or a bonus room instead. `x`, `y` are the world-pixel
+ * top-left of a {@link MEDAL_SIZE} box.
+ */
+export interface CourseMedal {
+  id: number;
+  stage: number;
+  x: number;
+  y: number;
+}
+
+/** An Aid Station checkpoint at a stage's halfway point (#2025). */
+export interface CourseCheckpoint {
+  /** World x the runner restarts at, and touches it at. */
+  x: number;
+  stage: number;
+}
+
+/** Edge length of a Finisher Medal, in px (#2025). */
+export const MEDAL_SIZE = 10;
 
 /**
  * A low bar in the Basement Gym, such as a squat rack. `x` is the world-pixel
@@ -152,6 +178,10 @@ export interface CourseLayout {
   currents?: CourseCurrent[];
   /** Medicine balls resting on the lane (#2024); absent on water stages. */
   medBalls?: CourseMedBall[];
+  /** Finisher Medals out on the course (#2025). */
+  medals?: CourseMedal[];
+  /** Aid Station checkpoints (#2025). */
+  checkpoints?: CourseCheckpoint[];
 }
 
 /** An empty course, for idle watches and states built before #1950. */
@@ -495,6 +525,8 @@ export function pruneCourse(
   const ceilings = course.ceilings?.filter((c) => c.x + c.width > behind);
   const currents = course.currents?.filter((c) => c.x + c.width > behind);
   const medBalls = course.medBalls?.filter((b) => b.x + MEDBALL_SIZE > behind);
+  const medals = course.medals?.filter((m) => m.x + MEDAL_SIZE > behind);
+  const checkpoints = course.checkpoints?.filter((c) => c.x + 40 > behind);
   if (
     gaps.length === course.gaps.length &&
     ledges.length === course.ledges.length &&
@@ -503,7 +535,9 @@ export function pruneCourse(
     poles.length === course.poles.length &&
     (ceilings?.length ?? 0) === (course.ceilings?.length ?? 0) &&
     (currents?.length ?? 0) === (course.currents?.length ?? 0) &&
-    (medBalls?.length ?? 0) === (course.medBalls?.length ?? 0)
+    (medBalls?.length ?? 0) === (course.medBalls?.length ?? 0) &&
+    (medals?.length ?? 0) === (course.medals?.length ?? 0) &&
+    (checkpoints?.length ?? 0) === (course.checkpoints?.length ?? 0)
   ) {
     return course;
   }
@@ -511,12 +545,14 @@ export function pruneCourse(
   if (ceilings) pruned.ceilings = ceilings;
   if (currents) pruned.currents = currents;
   if (medBalls) pruned.medBalls = medBalls;
+  if (medals) pruned.medals = medals;
+  if (checkpoints) pruned.checkpoints = checkpoints;
   return pruned;
 }
 
 /**
  * Adds `next` onto `course`, keeping what is still live. The optional
- * ceilings, currents and medicine ball keys are carried only when either
+ * ceilings, currents, medicine ball, medal and checkpoint keys are carried only when either
  * side has them.
  */
 export function appendCourse(
@@ -538,6 +574,15 @@ export function appendCourse(
   }
   if (course.medBalls || next.medBalls) {
     joined.medBalls = [...(course.medBalls ?? []), ...(next.medBalls ?? [])];
+  }
+  if (course.medals || next.medals) {
+    joined.medals = [...(course.medals ?? []), ...(next.medals ?? [])];
+  }
+  if (course.checkpoints || next.checkpoints) {
+    joined.checkpoints = [
+      ...(course.checkpoints ?? []),
+      ...(next.checkpoints ?? []),
+    ];
   }
   return joined;
 }

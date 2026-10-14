@@ -27,6 +27,7 @@ import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   KUDOS_RADIUS,
+  MEDAL_SIZE,
   MEDBALL_SIZE,
   LEDGE_THICKNESS,
   POLE_HEIGHT,
@@ -36,10 +37,13 @@ import {
   stagePoleX,
   stageStartX,
   type CourseCeiling,
+  type CourseCheckpoint,
   type CourseCurrent,
+  type CoursePole,
   type CourseLayout,
   type CourseMedBall,
 } from "@/lib/garmin-course";
+import { MEDALS_PER_STAGE, stageMedalSlots } from "@/lib/garmin-medals";
 import {
   LENGTH_METERS,
   isWaterTheme,
@@ -881,11 +885,111 @@ function drawKudos(ctx: Ctx, course: CourseLayout, camera: number) {
   }
 }
 
+// ------------------------------------------------- medals & checkpoints (#2025)
+
+const MEDAL = {
+  gold: "#f59e0b",
+  rim: "#b45309",
+  shine: "#fde68a",
+  ribbonA: "#0e7490",
+  ribbonB: "#f4f4f6",
+} as const;
+
+const AID = {
+  leg: "#334155",
+  table: "#a16207",
+  cup: "#f4f4f6",
+  pole: "#cbd5e1",
+  flagDown: "#71717a",
+} as const;
+
+const SECRET_POLE = {
+  mast: "#64748b",
+  cap: "#2dd4bf",
+  base: "#134e4a",
+  flag: "#0f766e",
+  stripe: "#f4f4f6",
+} as const;
+
+/**
+ * A Finisher Medal in its MEDAL_SIZE box at (x, y): a gold disc with a darker
+ * rim, and a short two-tone ribbon hanging out above it.
+ */
+function drawMedal(ctx: Ctx, x: number, y: number) {
+  ctx.fillStyle = MEDAL.ribbonA;
+  ctx.fillRect(x + 2.5, y, 2, 4);
+  ctx.fillStyle = MEDAL.ribbonB;
+  ctx.fillRect(x + 5.5, y, 2, 4);
+  const cx = x + MEDAL_SIZE / 2;
+  const cy = y + 6.4;
+  ctx.fillStyle = MEDAL.rim;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 3.6, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = MEDAL.gold;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 2.8, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = MEDAL.shine;
+  ctx.fillRect(cx - 1.4, cy - 1.6, 1, 1);
+}
+
+/** Finisher Medals out on the course, on the lane, a ledge or a block row. */
+function drawCourseMedals(ctx: Ctx, course: CourseLayout, camera: number) {
+  for (const m of course.medals ?? []) {
+    const x = m.x - camera;
+    if (x > CANVAS_SIZE || x + MEDAL_SIZE < 0) continue;
+    drawMedal(ctx, x, m.y);
+  }
+}
+
+/**
+ * An Aid Station: a small table with a cup and a flag pole. Its flag hangs
+ * grey until the runner has touched it, then flies green.
+ */
+function drawAidStation(
+  ctx: Ctx,
+  cp: CourseCheckpoint,
+  camera: number,
+  reached: boolean
+) {
+  const x = cp.x - camera;
+  if (x > CANVAS_SIZE || x + 20 < 0) return;
+  ctx.fillStyle = AID.leg;
+  ctx.fillRect(x + 1, GROUND_Y - 7, 2, 7);
+  ctx.fillRect(x + 13, GROUND_Y - 7, 2, 7);
+  ctx.fillStyle = AID.table;
+  ctx.fillRect(x, GROUND_Y - 10, 18, 3);
+  ctx.fillStyle = AID.cup;
+  ctx.fillRect(x + 3, GROUND_Y - 15, 4, 5);
+  ctx.fillStyle = AID.pole;
+  ctx.fillRect(x + 15, GROUND_Y - 26, 1, 16);
+  ctx.fillStyle = reached ? FACE_COLORS.good : AID.flagDown;
+  ctx.fillRect(x + 16, reached ? GROUND_Y - 26 : GROUND_Y - 19, 6, 4);
+}
+
+/** The Aid Stations on the course; the touched one is the state's checkpoint. */
+function drawCheckpoints(
+  ctx: Ctx,
+  course: CourseLayout,
+  camera: number,
+  touched: CourseCheckpoint | null | undefined
+) {
+  for (const cp of course.checkpoints ?? []) {
+    const reached = touched?.x === cp.x && touched?.stage === cp.stage;
+    drawAidStation(ctx, cp, camera, reached);
+  }
+}
+
 /** Finish poles: a mast with a chequered banner that drops once grabbed. */
 function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
   for (const p of course.poles) {
     const x = p.x - camera;
     if (x - 30 > CANVAS_SIZE || x + 30 < 0) continue;
+    if (p.secret) {
+      drawSecretPole(ctx, p, x);
+      continue;
+    }
     const top = GROUND_Y - POLE_HEIGHT;
     ctx.fillStyle = "#cbd5e1";
     ctx.fillRect(x - 1, top, 2, POLE_HEIGHT);
@@ -916,6 +1020,31 @@ function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
     }
     text(ctx, `${p.stage}K`, x - 12, flagY + h + 8, 7, FACE_COLORS.good);
   }
+}
+
+/**
+ * A secret exit's pole (#2025): a steel mast with a teal cap and a small
+ * trail-marker flag on its right, so it reads apart from the finish pole.
+ */
+function drawSecretPole(ctx: Ctx, p: CoursePole, x: number) {
+  const top = GROUND_Y - POLE_HEIGHT;
+  ctx.fillStyle = SECRET_POLE.mast;
+  ctx.fillRect(x - 1, top, 2, POLE_HEIGHT);
+  ctx.fillStyle = SECRET_POLE.cap;
+  ctx.beginPath();
+  ctx.arc(x, top - 2, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = SECRET_POLE.base;
+  ctx.fillRect(x - 6, GROUND_Y - 6, 12, 6);
+  const flagY =
+    p.grabbed === undefined
+      ? top + 2
+      : Math.min(GROUND_Y - 22, GROUND_Y - p.grabbed * POLE_HEIGHT);
+  ctx.fillStyle = SECRET_POLE.flag;
+  ctx.fillRect(x + 1, flagY, 10, 9);
+  ctx.fillStyle = SECRET_POLE.stripe;
+  ctx.fillRect(x + 1, flagY + 3.5, 10, 2);
+  text(ctx, `${p.stage}K`, x + 12, flagY + 14, 7, SECRET_POLE.cap, "left");
 }
 
 /** A Protein Shake: a white shaker bottle with a cyan cap and a P band. */
@@ -1479,6 +1608,35 @@ function drawCourseHud(ctx: Ctx, state: GameEngineState) {
     );
   }
   drawPaceMeter(ctx, state);
+  drawMedalSlots(ctx, state);
+}
+
+/**
+ * Three Finisher Medal slots for the current stage, in a row above the run
+ * clock (#2025): gold when found, a grey outline while still hidden. They sit
+ * clear of the ring, the clock and the course line.
+ */
+function drawMedalSlots(ctx: Ctx, state: GameEngineState) {
+  const slots = stageMedalSlots(state.medalsFound, state.stage ?? 1);
+  const r = 3;
+  const cy = 22;
+  const gap = 9;
+  slots.forEach((found, i) => {
+    const cx = FACE_CENTER + (i - (MEDALS_PER_STAGE - 1) / 2) * gap;
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    if (found) {
+      ctx.fillStyle = MEDAL.gold;
+      ctx.fill();
+      ctx.strokeStyle = MEDAL.rim;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    } else {
+      ctx.strokeStyle = FACE_COLORS.dim;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+  });
 }
 
 /**
@@ -2791,7 +2949,17 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   );
   ctx.fillStyle = "rgba(148, 163, 184, 0.25)";
   ctx.fillRect(FACE_CENTER - 44, 180, 88, 1);
-  text(ctx, `SCORE ${state.score}`, FACE_CENTER, 196, 8, FACE_COLORS.text);
+  // A fitness run ends with its medal tally, and any secret exits it found (#2025).
+  const medals = (state.medalsFound ?? []).length;
+  const totalMedals = STAGE_COUNT * MEDALS_PER_STAGE;
+  const scoreLine = isFitnessRun(state)
+    ? `SCORE ${state.score} · MEDALS ${medals}/${totalMedals}`
+    : `SCORE ${state.score}`;
+  text(ctx, scoreLine, FACE_CENTER, 196, 8, FACE_COLORS.text);
+  const exits = (state.secretExits ?? []).length;
+  if (isFitnessRun(state) && exits > 0) {
+    text(ctx, `SECRET EXITS ${exits}`, FACE_CENTER, 205, 6, FACE_COLORS.good);
+  }
   text(
     ctx,
     isFitnessRun(state) ? "PRESS START TO RUN AGAIN" : "PRESS START TO REBOOT",
@@ -2840,6 +3008,7 @@ export function renderWatchFace(
   }
   drawGround(ctx, state.distanceMeters, course, theme);
   drawPoles(ctx, course, camera);
+  drawCheckpoints(ctx, course, camera, state.checkpoint);
   drawLedges(ctx, course, camera, THEME_PALETTE[theme].accent);
   for (const ceiling of course.ceilings ?? []) {
     drawCeilingRack(ctx, ceiling, camera);
@@ -2850,6 +3019,7 @@ export function renderWatchFace(
   drawPickups(ctx, state.pickups ?? [], camera);
   drawBlocks(ctx, course, camera);
   drawKudos(ctx, course, camera);
+  drawCourseMedals(ctx, course, camera);
   if (!state.bonusRoom) drawMedBalls(ctx, course.medBalls ?? [], camera);
 
   drawFoes(ctx, state.foes ?? [], camera);

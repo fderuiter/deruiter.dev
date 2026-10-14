@@ -492,3 +492,52 @@ describe("touch wire lists, independent of what is on screen (#2045)", () => {
     expect(screen.getByRole("button", { name: "Choose target" })).toBeTruthy();
   });
 });
+
+describe("touch live text after a wire ends (#2045)", () => {
+  beforeAll(() => installFlowMocks());
+  beforeEach(() => {
+    localStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("Escape that cancels a wire replaces the live text", async () => {
+    await startDraft(true);
+    const [ingest] = await placeAll(["SourceIngest"]);
+    await act(async () => {
+      store().setWireFrom(ingest);
+      store().notify("info", "Wiring from SourceIngest. Choose a target.");
+    });
+    await act(async () => {
+      fireEvent.keyDown(
+        document.querySelector<HTMLElement>("[data-game='protocol-drift']")!,
+        { key: "Escape" }
+      );
+    });
+    expect(store().wireFrom).toBeNull();
+    expect(store().notice?.text).toBe("Wiring cancelled.");
+  });
+
+  it("closing the pair sheet replaces the live text", async () => {
+    await startDraft(true);
+    const [, extract, pivot] = await placeAll([
+      "SourceIngest",
+      "ExtractField",
+      "PivotToObservation",
+    ]);
+    await act(async () => {
+      await resolveTouchWire(extract, pivot);
+    });
+    expect(store().wireSheet).not.toBeNull();
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", {
+          name: "Close Wire ExtractField to PivotToObservation",
+        })
+      );
+    });
+    expect(store().wireSheet).toBeNull();
+    expect(store().notice?.text).toBe("Wiring cancelled.");
+  });
+});

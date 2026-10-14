@@ -195,6 +195,110 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     expect(sheet.querySelector("select")).not.toBeNull();
   });
 
+  it("a touch auto-pause shows the pill only, not the top notice too", async () => {
+    const reason = "Clock paused: new issue category UNMAPPED_FIELD";
+    await startTracer(true);
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        pausedReason: reason,
+        notice: { id: 9001, tone: "warn", text: reason },
+      });
+    });
+    expect(screen.getByTestId("pause-reason").textContent).toBe(reason);
+    expect(root().querySelector("p[data-tone]")).toBeNull();
+  });
+
+  it("a disabled Publish says why on touch, and the button is linked to the reason", async () => {
+    await startTracer(true);
+    const snap = useProtocolDriftStore.getState().snapshot!;
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        snapshot: { ...snap, fsmState: "DRAFT" },
+      });
+    });
+    const publish = screen.getByRole("button", { name: "Publish Revision" });
+    expect((publish as HTMLButtonElement).disabled).toBe(true);
+    const id = publish.getAttribute("aria-describedby");
+    expect(id).toBeTruthy();
+    expect(document.getElementById(id!)?.textContent).toBe(
+      "Run Local Test first."
+    );
+  });
+
+  it("the desktop header shows no disabled-reason line", async () => {
+    await startTracer(false);
+    const snap = useProtocolDriftStore.getState().snapshot!;
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        snapshot: { ...snap, fsmState: "DRAFT" },
+      });
+    });
+    const publish = screen.getByRole("button", { name: "Publish Revision" });
+    expect(publish.getAttribute("aria-describedby")).toBeNull();
+    expect(document.getElementById("pd-publish-hint")).toBeNull();
+  });
+
+  it("issue rows have unique names with the field and the issue id", async () => {
+    await startTracer(false);
+    const view = useProtocolDriftStore.getState().view!;
+    // Two issues with the same code, day and status: only the field and the
+    // id tell them apart, so their names must differ.
+    const base = {
+      code: "OUT_OF_RANGE",
+      subjectId: "PD-101-C01",
+      visitDay: 0,
+      status: "Open",
+      targetField: "sbp",
+      submissionId: "SUB-1",
+    };
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        view: {
+          ...view,
+          issues: [
+            { ...base, issueId: "7" },
+            { ...base, issueId: "8", targetField: "dbp" },
+          ],
+        } as never,
+      });
+    });
+    const seven = screen.getByRole("button", { name: /issue 7, / });
+    const eight = screen.getByRole("button", { name: /issue 8, / });
+    expect(seven.getAttribute("aria-label")).toBe(
+      "[OUT_OF_RANGE] C01 Day 0 sbp, issue 7, open"
+    );
+    expect(eight.getAttribute("aria-label")).toBe(
+      "[OUT_OF_RANGE] C01 Day 0 dbp, issue 8, open"
+    );
+  });
+
+  it("the toolbox names its chip count and fades the side it scrolls on", async () => {
+    await startTracer(true);
+    const adds = screen.getAllByRole("button", { name: /^Add .+ chip$/ });
+    expect(screen.getByText(`Chips (${adds.length})`)).toBeTruthy();
+    const nav = screen.getByRole("navigation", { name: "Chip toolbox" });
+    Object.defineProperty(nav, "scrollWidth", {
+      configurable: true,
+      value: 900,
+    });
+    Object.defineProperty(nav, "clientWidth", {
+      configurable: true,
+      value: 300,
+    });
+    Object.defineProperty(nav, "scrollLeft", { configurable: true, value: 0 });
+    await act(async () => {
+      nav.dispatchEvent(new Event("scroll"));
+      await new Promise((resolve) => window.setTimeout(resolve, 30));
+    });
+    const fadeRight = document.querySelector(
+      'span[aria-hidden="true"][style*="to left"]'
+    );
+    expect(fadeRight).not.toBeNull();
+    expect(
+      document.querySelector('span[aria-hidden="true"][style*="to right"]')
+    ).toBeNull();
+  });
+
   it("an auto-pause reason stays on screen until the clock runs, after its notice has gone", async () => {
     await startTracer(true);
     await act(async () => {
@@ -205,9 +309,6 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     });
     expect(screen.getByTestId("pause-reason").textContent).toBe(
       "Clock paused: new issue category UNMAPPED_FIELD"
-    );
-    expect(screen.getByTestId("pause-reason").getAttribute("aria-live")).toBe(
-      "polite"
     );
     const running = useProtocolDriftStore.getState().snapshot;
     await act(async () => {

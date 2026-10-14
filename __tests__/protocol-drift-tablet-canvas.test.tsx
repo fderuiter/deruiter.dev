@@ -53,6 +53,8 @@ describe("Protocol Drift canvas gestures (#2045)", () => {
     expect(flowProps.current?.panOnDrag).toBe(true);
     expect(flowProps.current?.zoomOnPinch).toBe(true);
     expect(flowProps.current?.minZoom).toBe(touchZoomFloor());
+    // A few pixels of finger movement on a chip is still a tap (#2045).
+    expect(flowProps.current?.nodeDragThreshold).toBe(8);
     // Wheel zoom stays off on both, so a page scroll never zooms the world.
     expect(flowProps.current?.zoomOnScroll).toBe(false);
   });

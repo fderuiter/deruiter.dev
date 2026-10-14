@@ -26,15 +26,18 @@ import {
   groupTouchWirePairs,
   touchWirePairs,
 } from "@/components/protocol-drift/touch-wire";
+import type { ChipNode } from "@/components/protocol-drift/graph-model";
 import {
+  CHIP_WIDTH,
   TOUCH_TITLE_PX,
   chipHeight,
   touchZoomFloor,
 } from "@/components/protocol-drift/graph-model";
+import { touchChipSpot } from "@/components/protocol-drift/PipelineCanvas";
 import { CHIP_SPECS, type ChipKind } from "@/lib/protocol-drift";
 import { installFlowMocks } from "./protocol-drift/ui-helpers";
 
-const flow = vi.hoisted(() => ({ fitView: vi.fn() }));
+const flow = vi.hoisted(() => ({ fitView: vi.fn(), setCenter: vi.fn() }));
 
 vi.mock("@xyflow/react", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@xyflow/react")>();
@@ -42,6 +45,8 @@ vi.mock("@xyflow/react", async (importOriginal) => {
     ...actual,
     useReactFlow: () => ({
       fitView: flow.fitView,
+      setCenter: flow.setCenter,
+      getZoom: () => 0.8,
       setViewport: vi.fn(),
       screenToFlowPosition: (p: { x: number; y: number }) => p,
     }),
@@ -55,9 +60,9 @@ vi.mock("@/lib/audio", () => ({
 const store = () => useProtocolDriftStore.getState();
 
 /** Renders the workbench on the touch cabinet and accepts the tracer brief. */
-async function startDraft() {
+async function startDraft(touch = true) {
   render(
-    <CabinetTouchContext.Provider value={true}>
+    <CabinetTouchContext.Provider value={touch}>
       <ProtocolDriftGame />
     </CabinetTouchContext.Provider>
   );
@@ -87,6 +92,7 @@ describe("Protocol Drift tap-to-wire on the touch cabinet (#2045)", () => {
   beforeEach(() => {
     localStorage.clear();
     flow.fitView.mockClear();
+    flow.setCenter.mockClear();
   });
   afterEach(() => {
     cleanup();
@@ -288,5 +294,76 @@ describe("touch pair grouping", () => {
       { sourceHandle: "x", targetHandle: "x" },
     ]);
     expect(grouped.other).toEqual([{ sourceHandle: "a", targetHandle: "b" }]);
+  });
+});
+
+describe("touch chip placement (#2045)", () => {
+  beforeAll(() => installFlowMocks());
+  beforeEach(() => {
+    localStorage.clear();
+    flow.setCenter.mockClear();
+  });
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("a chip added on touch never overlaps a chip already on the canvas", () => {
+    const kinds = [
+      "SourceIngest",
+      "ExtractField",
+      "PivotToObservation",
+      "CDISCSink",
+      "SourceIngest",
+      "CDISCSink",
+      "ExtractField",
+    ] as const;
+    const nodes: ChipNode[] = [];
+    kinds.forEach((kind, i) => {
+      const position = touchChipSpot(kind, nodes);
+      nodes.push({
+        id: `${kind}-${i}`,
+        type: "chip",
+        position,
+        data: { kind },
+      });
+    });
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i];
+        const b = nodes[j];
+        const overlap =
+          a.position.x < b.position.x + CHIP_WIDTH &&
+          b.position.x < a.position.x + CHIP_WIDTH &&
+          a.position.y < b.position.y + chipHeight(b.data.kind) &&
+          b.position.y < a.position.y + chipHeight(a.data.kind);
+        expect(overlap, `${a.id} overlaps ${b.id}`).toBe(false);
+      }
+    }
+  });
+
+  it("the toolbox add on touch pans to the new chip at the current zoom and announces it", async () => {
+    await startDraft(true);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Add SourceIngest chip" })
+      );
+    });
+    await waitFor(() => expect(flow.setCenter).toHaveBeenCalledTimes(1));
+    expect(flow.setCenter.mock.calls[0][2]).toMatchObject({
+      zoom: 0.8,
+      duration: 0,
+    });
+    expect(store().notice?.text).toBe("Added SourceIngest.");
+  });
+
+  it("the toolbox add on desktop does not pan the canvas", async () => {
+    await startDraft(false);
+    await act(async () => {
+      fireEvent.click(
+        screen.getByRole("button", { name: "Add SourceIngest chip" })
+      );
+    });
+    await waitFor(() => expect(store().nodes.length).toBeGreaterThan(0));
+    expect(flow.setCenter).not.toHaveBeenCalled();
   });
 });

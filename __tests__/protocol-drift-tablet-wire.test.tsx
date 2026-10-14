@@ -138,8 +138,47 @@ describe("Protocol Drift tap-to-wire on the touch cabinet (#2045)", () => {
       fireEvent.click(screen.getByRole("button", { name: "sbp to sbp" }));
     });
     await waitFor(() => expect(store().edges.length).toBe(before + 1));
+    // Same-name pairs remain, so the sheet stays open and marks the wire.
+    expect(store().wireSheet).toEqual({ source: extract, target: pivot });
+    const wired = screen.getByRole("button", { name: "sbp to sbp, wired" });
+    expect((wired as HTMLButtonElement).disabled).toBe(true);
+    expect(sheet.textContent).toContain("1 of 5 matching fields wired.");
+    for (const name of ["dbp to dbp", "pulse to pulse"]) {
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name }));
+      });
+    }
+    await waitFor(() => expect(store().edges.length).toBe(before + 3));
+    // The standing pairs are still open, so Done closes the sheet.
+    expect(store().wireSheet).not.toBeNull();
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    });
     expect(store().wireSheet).toBeNull();
     expect(screen.queryByTestId("touch-wire-sheet")).toBeNull();
+  });
+
+  it("Done closes the pair sheet and keeps the wires made", async () => {
+    await startDraft();
+    const [, extract, pivot] = await placeAll([
+      "SourceIngest",
+      "ExtractField",
+      "PivotToObservation",
+    ]);
+    await act(async () => {
+      await resolveTouchWire(extract, pivot);
+    });
+    const before = store().edges.length;
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "sbp to sbp" }));
+    });
+    await waitFor(() => expect(store().edges.length).toBe(before + 1));
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Done" }));
+    });
+    expect(screen.queryByTestId("touch-wire-sheet")).toBeNull();
+    expect(store().edges.length).toBe(before + 1);
+    expect(store().notice?.text).toBe("Done wiring.");
   });
 
   it("a pair that no port accepts is reported, and nothing is wired", async () => {

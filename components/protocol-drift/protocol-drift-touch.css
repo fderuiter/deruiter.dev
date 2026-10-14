@@ -23,8 +23,17 @@
   display: none;
 }
 /* The header's top row clears the cabinet's floating toolbar. */
+/* The clock row sits beside the cabinet toolbar, so only it is kept clear of
+   the toolbar; the pipeline, gates and reasons rows below use the full width. */
 .pd-touch-header {
-  padding-right: calc(var(--cabinet-toolbar-inset, 0px) + 0.75rem);
+  column-gap: 0.5rem;
+}
+.pd-touch-header > .pd-touch-clock {
+  margin-right: calc(var(--cabinet-toolbar-inset, 0px) + 0.75rem);
+}
+.pd-touch-header > .pd-touch-row-end {
+  flex-basis: 100%;
+  height: 0;
 }
 .pd-touch-body,
 .pd-touch-body > * {

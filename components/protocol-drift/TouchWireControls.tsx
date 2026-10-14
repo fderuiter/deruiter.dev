@@ -7,6 +7,7 @@ import { TouchSheet } from "./TouchSheet";
 import {
   canRewire,
   groupTouchWirePairs,
+  wiredPairsBetween,
   pickTouchWire,
   resolveTouchWire,
   touchWirePairs,
@@ -51,26 +52,58 @@ function ChipChoice({
 /** The pair list: same-name pairs first, the rest behind a Show all toggle. */
 function PairList({
   pairs,
+  wired,
+  takenInputs,
   onPick,
+  onDone,
 }: {
   pairs: WirePair[];
+  /** Pairs already wired between these two chips. */
+  wired: WirePair[];
+  /** Target inputs that already have a wire from any chip. */
+  takenInputs: Set<string>;
   onPick: (pair: WirePair) => void;
+  onDone: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
   const { matching, other } = groupTouchWirePairs(pairs);
-  const pairButton = (pair: WirePair) => (
-    <li key={`${pair.sourceHandle}-${pair.targetHandle}`}>
-      <button
-        type="button"
-        onClick={() => onPick(pair)}
-        className="flex min-h-11 w-full items-center justify-start border border-zinc-700 bg-[#0d0e11] px-3 text-left font-mono text-xs text-zinc-100 active:scale-[0.98]"
-      >
-        {pair.sourceHandle} to {pair.targetHandle}
-      </button>
-    </li>
-  );
+  const isWired = (pair: WirePair) =>
+    wired.some(
+      (w) =>
+        w.sourceHandle === pair.sourceHandle &&
+        w.targetHandle === pair.targetHandle
+    );
+  const matchingWired = matching.filter(isWired).length;
+  const pairButton = (pair: WirePair) => {
+    const done = isWired(pair);
+    const label = `${pair.sourceHandle} to ${pair.targetHandle}`;
+    return (
+      <li key={`${pair.sourceHandle}-${pair.targetHandle}`}>
+        <button
+          type="button"
+          onClick={() => onPick(pair)}
+          disabled={done || takenInputs.has(pair.targetHandle)}
+          aria-label={done ? `${label}, wired` : label}
+          className="flex min-h-11 w-full items-center justify-between gap-2 border border-zinc-700 bg-[#0d0e11] px-3 text-left font-mono text-xs text-zinc-100 active:scale-[0.98] disabled:opacity-60"
+        >
+          <span>{label}</span>
+          {done ? (
+            <span className="text-emerald-400" aria-hidden="true">
+              Wired
+            </span>
+          ) : null}
+        </button>
+      </li>
+    );
+  };
   return (
     <div className="flex flex-col gap-3">
+      <p className="font-mono text-xs text-zinc-300" aria-live="polite">
+        Each tap adds one wire.
+        {matching.length > 1
+          ? ` ${matchingWired} of ${matching.length} matching fields wired.`
+          : ""}
+      </p>
       {matching.length > 0 ? (
         <section aria-labelledby="touch-wire-matching">
           <h3
@@ -108,6 +141,13 @@ function PairList({
           ) : null}
         </section>
       ) : null}
+      <button
+        type="button"
+        onClick={onDone}
+        className="flex min-h-11 w-full items-center justify-center border border-amber-500 bg-[#0d0e11] px-3 font-mono text-xs text-amber-400 active:scale-[0.98]"
+      >
+        Done
+      </button>
     </div>
   );
 }
@@ -146,10 +186,17 @@ export function TouchWireControls() {
     setTargetListOpen(false);
     notify("info", "Wiring cancelled.");
   };
+  const edges = useProtocolDriftStore((s) => s.edges);
+  const sheetWired = wireSheet
+    ? wiredPairsBetween(wireSheet.source, wireSheet.target, edges)
+    : [];
   const closeSheet = () => {
     setWireSheet(null);
     setWireFrom(null);
-    notify("info", "Wiring cancelled.");
+    notify(
+      "info",
+      sheetWired.length > 0 ? "Done wiring." : "Wiring cancelled."
+    );
   };
   const pick = (pair: WirePair) => {
     if (!wireSheet) return;
@@ -289,7 +336,16 @@ export function TouchWireControls() {
         >
           <PairList
             pairs={touchWirePairs(sheetSource.data.kind, sheetTarget.data.kind)}
+            wired={sheetWired}
+            takenInputs={
+              new Set(
+                edges
+                  .filter((e) => e.target === sheetTarget.id)
+                  .map((e) => e.targetHandle ?? "")
+              )
+            }
             onPick={pick}
+            onDone={closeSheet}
           />
         </TouchSheet>
       ) : null}

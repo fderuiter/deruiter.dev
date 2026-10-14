@@ -66,8 +66,9 @@ export function HeaderBar() {
         : frozen
           ? "The database is locked."
           : null,
+    // In a draft the Publish reason already names the next step.
     step:
-      !touch || fsm === "PAUSED"
+      !touch || fsm === "PAUSED" || fsm === "DRAFT"
         ? null
         : fsm === "BRIEF"
           ? "Accept the assignment first."
@@ -85,8 +86,9 @@ export function HeaderBar() {
           : fsm === "RUNNING"
             ? "Pause the clock to run the local test."
             : null,
+    // Paused after a publish there is nothing new to publish.
     publish:
-      !touch || fsm === "DEPLOY_READY"
+      !touch || fsm === "DEPLOY_READY" || fsm === "PAUSED"
         ? null
         : fsm === "BRIEF"
           ? "Accept the assignment first."
@@ -138,7 +140,7 @@ export function HeaderBar() {
       </div>
 
       <div
-        className="flex flex-wrap items-center gap-1.5"
+        className={`flex flex-wrap items-center gap-1.5${touch ? " pd-touch-clock" : ""}`}
         role="group"
         aria-label="Clock"
       >
@@ -183,6 +185,8 @@ export function HeaderBar() {
           <span>N</span>
         </button>
       </div>
+
+      {touch ? <div className="pd-touch-row-end" aria-hidden="true" /> : null}
 
       <div
         className="flex flex-wrap items-center gap-1.5"
@@ -231,20 +235,23 @@ export function HeaderBar() {
           label={`ADaM ${snapshot?.recordCounts.adamRows ?? 0} rows`}
           tone={(snapshot?.recordCounts.adamRows ?? 0) > 0 ? "ok" : "idle"}
         />
-        <GateBadge label={`FSM ${fsm}`} tone={running ? "ok" : "idle"} />
+        <GateBadge
+          label={touch ? fsm : `FSM ${fsm}`}
+          tone={running ? "ok" : "idle"}
+        />
         <button
           type="button"
           onClick={() => void exportSave()}
           className={NEUTRAL}
         >
-          Export JSON
+          {touch ? "Export" : "Export JSON"}
         </button>
         <button
           type="button"
           onClick={() => fileInput.current?.click()}
           className={NEUTRAL}
         >
-          Import JSON
+          {touch ? "Import" : "Import JSON"}
         </button>
         <input
           ref={fileInput}

@@ -83,13 +83,16 @@ export function wireSourcesOf(nodes: ChipNode[]): ChipNode[] {
 async function connectPair(
   sourceId: string,
   targetId: string,
-  pair: WirePair
-): Promise<void> {
+  pair: WirePair,
+  keepSheet = false
+): Promise<boolean> {
   const store = useProtocolDriftStore.getState();
   const source = store.nodes.find((n) => n.id === sourceId);
   const target = store.nodes.find((n) => n.id === targetId);
-  store.setWireSheet(null);
-  store.setWireFrom(null);
+  if (!keepSheet) {
+    store.setWireSheet(null);
+    store.setWireFrom(null);
+  }
   const ok = await store.connect({
     source: sourceId,
     target: targetId,
@@ -100,6 +103,46 @@ async function connectPair(
   store.notify(
     ok ? "info" : "warn",
     ok ? `Wired ${names}.` : `Could not wire ${names}.`
+  );
+  return ok;
+}
+
+/** Edges as far as wiring needs them: ends and ports. */
+interface WiredEnds {
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+}
+
+/** The pairs between two chips that are already wired (#2045). */
+export function wiredPairsBetween(
+  sourceId: string,
+  targetId: string,
+  edges: WiredEnds[]
+): WirePair[] {
+  return edges
+    .filter((e) => e.source === sourceId && e.target === targetId)
+    .map((e) => ({
+      sourceHandle: e.sourceHandle ?? "",
+      targetHandle: e.targetHandle ?? "",
+    }));
+}
+
+/**
+ * Same-name pairs between two chips still to wire, skipping inputs that
+ * already have a wire. The pair sheet stays open while any remain (#2045).
+ */
+export function openMatchingPairs(
+  pairs: WirePair[],
+  targetId: string,
+  edges: WiredEnds[]
+): WirePair[] {
+  const taken = new Set(
+    edges.filter((e) => e.target === targetId).map((e) => e.targetHandle)
+  );
+  return groupTouchWirePairs(pairs).matching.filter(
+    (p) => !taken.has(p.targetHandle)
   );
 }
 
@@ -131,6 +174,8 @@ export async function resolveTouchWire(
     await connectPair(sourceId, targetId, pairs[0]);
     return;
   }
+  // Several pairs: the sheet lists them and stays open while same-name
+  // pairs remain, so a three-field link is three taps in one sheet.
   store.setWireFrom(sourceId);
   store.setWireSheet({ source: sourceId, target: targetId });
   store.notify(
@@ -139,11 +184,28 @@ export async function resolveTouchWire(
   );
 }
 
-/** Wires the pair the player picked from the pair list. */
-export function pickTouchWire(
+/**
+ * Wires the pair the player picked from the pair list. The list stays open
+ * while same-name pairs remain to wire.
+ */
+export async function pickTouchWire(
   sourceId: string,
   targetId: string,
   pair: WirePair
 ): Promise<void> {
-  return connectPair(sourceId, targetId, pair);
+  const ok = await connectPair(sourceId, targetId, pair, true);
+  const store = useProtocolDriftStore.getState();
+  const source = store.nodes.find((n) => n.id === sourceId);
+  const target = store.nodes.find((n) => n.id === targetId);
+  const remaining =
+    ok && source && target
+      ? openMatchingPairs(
+          touchWirePairs(source.data.kind, target.data.kind),
+          targetId,
+          store.edges
+        )
+      : [];
+  if (remaining.length > 0) return;
+  store.setWireSheet(null);
+  store.setWireFrom(null);
 }

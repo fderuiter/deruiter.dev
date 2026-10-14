@@ -631,7 +631,7 @@ test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () =>
     }
     // Wiring goes through the lists, so it does not depend on which chips are
     // on screen: "Wire..." picks the source, "Choose target" picks the target.
-    const wire = async (from: string, to: string, pick?: string) => {
+    const wire = async (from: string, to: string, picks: string[] = []) => {
       await page.getByRole("button", { name: "Wire…", exact: true }).tap();
       await page
         .getByTestId("wire-source-sheet")
@@ -644,15 +644,24 @@ test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () =>
         .getByTestId("wire-target-sheet")
         .getByRole("button", { name: new RegExp(`^${to}\\b`) })
         .tap();
-      if (pick)
+      // The pair sheet stays open while same-name pairs remain; Done closes it.
+      for (const pick of picks)
         await page.getByRole("button", { name: pick, exact: true }).tap();
+      if (picks.length > 0)
+        await page
+          .getByTestId("touch-wire-sheet")
+          .getByRole("button", { name: "Done", exact: true })
+          .tap();
+      await expect(page.getByTestId("touch-wire-sheet")).toHaveCount(0);
     };
     // One valid pair wires at once.
     await wire("SourceIngest", "ExtractField");
-    // Three valid pairs open the pair list: one tap per wire.
-    await wire("ExtractField", "PivotToObservation", "sbp to sbp");
-    await wire("ExtractField", "PivotToObservation", "dbp to dbp");
-    await wire("ExtractField", "PivotToObservation", "pulse to pulse");
+    // Several valid pairs open the pair list: one tap per wire, one sheet.
+    await wire("ExtractField", "PivotToObservation", [
+      "sbp to sbp",
+      "dbp to dbp",
+      "pulse to pulse",
+    ]);
     await wire("PivotToObservation", "CDISCSink");
     await expect(page.locator(`${PD_ROOT} .react-flow__edge`)).toHaveCount(5);
 

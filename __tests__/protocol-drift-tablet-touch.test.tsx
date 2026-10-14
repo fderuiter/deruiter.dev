@@ -225,6 +225,25 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     );
   });
 
+  it("the touch header shows one reason per state, and none once published", async () => {
+    await startTracer(true);
+    const snap = useProtocolDriftStore.getState().snapshot!;
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        snapshot: { ...snap, fsmState: "DRAFT" },
+      });
+    });
+    expect(document.querySelectorAll("[id^=pd-hint-]")).toHaveLength(1);
+    await act(async () => {
+      useProtocolDriftStore.setState({
+        snapshot: { ...snap, fsmState: "PAUSED" },
+      });
+    });
+    const publish = screen.getByRole("button", { name: "Publish Revision" });
+    expect(publish.getAttribute("aria-describedby")).toBeNull();
+    expect(document.querySelector("[id^=pd-hint-]")).toBeNull();
+  });
+
   it("the desktop header shows no disabled-reason line", async () => {
     await startTracer(false);
     const snap = useProtocolDriftStore.getState().snapshot!;

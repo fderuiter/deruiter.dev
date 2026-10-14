@@ -629,11 +629,21 @@ test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () =>
       await page.getByRole("button", { name: `Add ${kind} chip` }).tap();
       await expect(page.locator(PD_CHIP(kind))).toBeVisible();
     }
-    // Tap a chip to select it, "Wire from" it, then tap the target chip.
+    // Wiring goes through the lists, so it does not depend on which chips are
+    // on screen: "Wire..." picks the source, "Choose target" picks the target.
     const wire = async (from: string, to: string, pick?: string) => {
-      await page.locator(PD_CHIP(from)).tap();
-      await page.getByRole("button", { name: `Wire from ${from}` }).tap();
-      await page.locator(PD_CHIP(to)).tap();
+      await page.getByRole("button", { name: "Wire…", exact: true }).tap();
+      await page
+        .getByTestId("wire-source-sheet")
+        .getByRole("button", { name: new RegExp(`^${from}\\b`) })
+        .tap();
+      await page
+        .getByRole("button", { name: "Choose target", exact: true })
+        .tap();
+      await page
+        .getByTestId("wire-target-sheet")
+        .getByRole("button", { name: new RegExp(`^${to}\\b`) })
+        .tap();
       if (pick)
         await page.getByRole("button", { name: pick, exact: true }).tap();
     };

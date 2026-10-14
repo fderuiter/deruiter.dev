@@ -7,6 +7,7 @@ import {
   render,
   screen,
   waitFor,
+  within,
 } from "@testing-library/react";
 import {
   afterEach,
@@ -171,7 +172,7 @@ describe("Protocol Drift tap-to-wire on the touch cabinet (#2045)", () => {
     });
     expect(store().wireFrom).toBe(ingest);
     expect(
-      screen.getByText(/Wiring from SourceIngest: tap a target chip/)
+      screen.getByText("Wiring from SourceIngest: pick a target")
     ).toBeTruthy();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Cancel wiring" }));
@@ -365,5 +366,108 @@ describe("touch chip placement (#2045)", () => {
     });
     await waitFor(() => expect(store().nodes.length).toBeGreaterThan(0));
     expect(flow.setCenter).not.toHaveBeenCalled();
+  });
+});
+
+describe("touch wire lists, independent of what is on screen (#2045)", () => {
+  beforeAll(() => installFlowMocks());
+  beforeEach(() => {
+    localStorage.clear();
+  });
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("Choose target lists only the chips with a valid pair from the source", async () => {
+    await startDraft(true);
+    const kinds = Object.keys(CHIP_SPECS) as ChipKind[];
+    const far = kinds.find(
+      (kind) =>
+        kind !== "SourceIngest" &&
+        touchWirePairs("SourceIngest", kind).length === 0
+    );
+    expect(far).toBeDefined();
+    const [ingest] = await placeAll(["SourceIngest", "ExtractField", far!]);
+    await act(async () => {
+      store().setWireFrom(ingest);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Choose target" }));
+    });
+    const sheet = screen.getByTestId("wire-target-sheet");
+    expect(
+      within(sheet).getByRole("button", { name: /^ExtractField/ })
+    ).toBeTruthy();
+    expect(
+      within(sheet).queryByRole("button", {
+        name: new RegExp(`^${far}\\b`),
+      })
+    ).toBeNull();
+  });
+
+  it("a target with one valid pair is wired at once from the list", async () => {
+    await startDraft(true);
+    const [ingest, extract] = await placeAll(["SourceIngest", "ExtractField"]);
+    const before = store().edges.length;
+    await act(async () => {
+      store().setWireFrom(ingest);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Choose target" }));
+    });
+    await act(async () => {
+      fireEvent.click(
+        within(screen.getByTestId("wire-target-sheet")).getByRole("button", {
+          name: /^ExtractField/,
+        })
+      );
+    });
+    await waitFor(() => expect(store().edges.length).toBe(before + 1));
+    expect(screen.queryByTestId("wire-target-sheet")).toBeNull();
+    expect(screen.queryByTestId("touch-wire-sheet")).toBeNull();
+    expect(store().wireFrom).toBeNull();
+    expect(extract).toBeTruthy();
+  });
+
+  it("a target with several valid pairs hands off to the pair sheet", async () => {
+    await startDraft(true);
+    const [, extract] = await placeAll([
+      "SourceIngest",
+      "ExtractField",
+      "PivotToObservation",
+    ]);
+    await act(async () => {
+      store().setWireFrom(extract);
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Choose target" }));
+    });
+    await act(async () => {
+      fireEvent.click(
+        within(screen.getByTestId("wire-target-sheet")).getByRole("button", {
+          name: /^PivotToObservation/,
+        })
+      );
+    });
+    expect(screen.queryByTestId("wire-target-sheet")).toBeNull();
+    expect(screen.getByTestId("touch-wire-sheet")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "sbp to sbp" })).toBeTruthy();
+  });
+
+  it("Wire... lists the chips that can start a wire, and picking one starts it", async () => {
+    await startDraft(true);
+    const [ingest] = await placeAll(["SourceIngest", "ExtractField"]);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Wire…" }));
+    });
+    const sheet = screen.getByTestId("wire-source-sheet");
+    await act(async () => {
+      fireEvent.click(
+        within(sheet).getByRole("button", { name: /^SourceIngest/ })
+      );
+    });
+    expect(store().wireFrom).toBe(ingest);
+    expect(screen.queryByTestId("wire-source-sheet")).toBeNull();
+    expect(screen.getByRole("button", { name: "Choose target" })).toBeTruthy();
   });
 });

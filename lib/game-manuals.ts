@@ -1697,13 +1697,13 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "SOP relics",
         detail:
-          "A relic is a person or tool on your team with a name, a description and one score modifier. The rack holds five, and each shows the phase it fires in. Hand played: it adds its modifier to every hand, or only when its condition holds, such as a Figure in the hand or no redline. Card scored: it fires on each matching output as that output scores, and the card pops; the ITT Purist scores every ITT output twice. On discard: the Blind's first discard costs no base CPU. Blind start: each Blind starts with extra CPU. Relics add to the score and never change what the SAP checks, and their order never changes the total. The shop sells relics, and defending a staged Boss offers a choice of one, which you must claim before the next Blind.",
+          "A relic is a person or tool on your team with a name, a description and one score modifier. The rack holds five, and each shows the phase it fires in. Hand played: it adds its modifier to every hand, or only when its condition holds, such as a Figure in the hand or no redline. Card scored: it fires on each matching output as that output scores, and the card pops; the ITT Purist scores every ITT output twice. On discard: the Blind's first discard costs no base CPU, or each discard this Blind adds the relic's bonus to every later hand. Blind start: each Blind starts with extra CPU, and some relics add more in each later act. Synergy relics scale with what you build up this Blind: a stale output in hand, a redline fixed or a hand already played. Relics add to the score and never change what the SAP checks, and their order never changes the total. The shop sells relics, and defending a staged Boss offers a choice of one, which you must claim before the next Blind.",
         badge: "Relic",
       },
       {
         title: "Study Budget and the shop",
         detail:
-          "Clearing a Blind cashes out Study Budget: $3k, $4k or $5k by Blind, $1k for every 2 CPU left unspent, and $1k interest per $5k already held, up to $5k. Between Blinds the shop stocks two items and two packs. A reroll costs $5k, then $1k more each time in the same visit, and anything sells for half its price, rounded down. A site from a Site Activation pack adds Chips to every later hand, and its subjects enroll after the next Blind's first hand, which stales outputs built on that population.",
+          "Clearing a Blind cashes out Study Budget: $3k, $4k or $5k by Blind, $1k for every 2 CPU left unspent, and $1k interest per $5k already held, up to $5k. Between Blinds the shop stocks two items and two packs. Each act has its own shop: Act II and Act III stock stronger relics that Act I never sells. Every relic is Common, Uncommon or Rare, marked with a dot, a diamond or a star; the shop draws commons most often, and a rare costs at least $8k. The Codex describes each relic's trigger. A reroll costs $5k, then $1k more each time in the same visit, and anything sells for half its price, rounded down. A site from a Site Activation pack adds Chips to every later hand, and its subjects enroll after the next Blind's first hand, which stales outputs built on that population.",
         badge: "Shop",
       },
       {
@@ -1715,7 +1715,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Saved runs",
         detail:
-          "The cabinet keeps the run's seed and your moves in this browser, never a blinded value, and replays them when you choose Resume run. The save is cleared when the run ends or you start a new one. A run saved before the run deck resumes with its Blinds' own decks and no shells in the shop.",
+          "The cabinet keeps the run's seed and your moves in this browser, never a blinded value, and replays them when you choose Resume run. The save is cleared when the run ends or you start a new one. A run saved before the run deck resumes with its Blinds' own decks and no shells in the shop, and a run saved before each act had its own shop resumes with the one shop every act shared.",
         badge: "Save",
       },
     ],

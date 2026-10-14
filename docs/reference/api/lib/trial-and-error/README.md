@@ -62,6 +62,12 @@ Re-exports [ACT_II_DEVIATIONS](scenarios/variables/ACT_II_DEVIATIONS.md)
 
 ***
 
+### ACT\_II\_SHOP
+
+Re-exports [ACT_II_SHOP](scenarios/variables/ACT_II_SHOP.md)
+
+***
+
 ### ACT\_III
 
 Re-exports [ACT_III](scenarios/variables/ACT_III.md)
@@ -77,6 +83,12 @@ Re-exports [ACT_III_CRISES](scenarios/variables/ACT_III_CRISES.md)
 ### ACT\_III\_DEVIATIONS
 
 Re-exports [ACT_III_DEVIATIONS](scenarios/variables/ACT_III_DEVIATIONS.md)
+
+***
+
+### ACT\_III\_SHOP
+
+Re-exports [ACT_III_SHOP](scenarios/variables/ACT_III_SHOP.md)
 
 ***
 
@@ -413,6 +425,12 @@ Re-exports [challengeHash](internal/seed/functions/challengeHash.md)
 ### challengeOrigin
 
 Re-exports [challengeOrigin](internal/seed/functions/challengeOrigin.md)
+
+***
+
+### CLASSIC\_SHOP
+
+Re-exports [CLASSIC_SHOP](scenarios/variables/CLASSIC_SHOP.md)
 
 ***
 
@@ -875,6 +893,12 @@ Re-exports [deriveTableView](internal/table/functions/deriveTableView.md)
 ### describeBlindLoss
 
 Re-exports [describeBlindLoss](internal/loss/functions/describeBlindLoss.md)
+
+***
+
+### describeRelicTrigger
+
+Re-exports [describeRelicTrigger](internal/relics/functions/describeRelicTrigger.md)
 
 ***
 
@@ -1928,6 +1952,12 @@ Re-exports [raiseQuotas](internal/quotas/functions/raiseQuotas.md)
 
 ***
 
+### RARITY\_WEIGHTS
+
+Re-exports [RARITY_WEIGHTS](internal/shop/variables/RARITY_WEIGHTS.md)
+
+***
+
 ### reconcilePackage
 
 Re-exports [reconcilePackage](internal/package/functions/reconcilePackage.md)
@@ -1976,6 +2006,18 @@ Re-exports [RELIC_RACK_FULL](internal/table/variables/RELIC_RACK_FULL.md)
 
 ***
 
+### RELIC\_RARITY\_LABELS
+
+Re-exports [RELIC_RARITY_LABELS](internal/relics/variables/RELIC_RARITY_LABELS.md)
+
+***
+
+### RELIC\_RARITY\_MIN\_PRICE
+
+Re-exports [RELIC_RARITY_MIN_PRICE](types/variables/RELIC_RARITY_MIN_PRICE.md)
+
+***
+
 ### RELIC\_SLOTS
 
 Re-exports [RELIC_SLOTS](internal/table/variables/RELIC_SLOTS.md)
@@ -1991,6 +2033,12 @@ Re-exports [RelicCard](internal/relics/interfaces/RelicCard.md)
 ### relicCardSourceId
 
 Re-exports [relicCardSourceId](internal/relics/functions/relicCardSourceId.md)
+
+***
+
+### RelicCounts
+
+Re-exports [RelicCounts](internal/relics/interfaces/RelicCounts.md)
 
 ***
 
@@ -2021,6 +2069,36 @@ Re-exports [RelicPhase](types/type-aliases/RelicPhase.md)
 ### RelicPhaseSchema
 
 Re-exports [RelicPhaseSchema](types/variables/RelicPhaseSchema.md)
+
+***
+
+### relicRarity
+
+Re-exports [relicRarity](internal/relics/functions/relicRarity.md)
+
+***
+
+### RelicRarity
+
+Re-exports [RelicRarity](types/type-aliases/RelicRarity.md)
+
+***
+
+### RelicRaritySchema
+
+Re-exports [RelicRaritySchema](types/variables/RelicRaritySchema.md)
+
+***
+
+### RelicScale
+
+Re-exports [RelicScale](types/type-aliases/RelicScale.md)
+
+***
+
+### RelicScaleSchema
+
+Re-exports [RelicScaleSchema](types/variables/RelicScaleSchema.md)
 
 ***
 
@@ -2507,6 +2585,12 @@ Re-exports [ShopEntrySchema](types/variables/ShopEntrySchema.md)
 ### ShopItemView
 
 Re-exports [ShopItemView](internal/run/interfaces/ShopItemView.md)
+
+***
+
+### ShopLibrary
+
+Re-exports [ShopLibrary](internal/run/type-aliases/ShopLibrary.md)
 
 ***
 

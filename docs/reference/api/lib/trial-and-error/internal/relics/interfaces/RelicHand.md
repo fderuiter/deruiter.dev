@@ -16,6 +16,14 @@ The hand a relic sees: its scored cards and their rule results.
 
 ***
 
+### counts?
+
+> `optional` **counts?**: [`RelicCounts`](RelicCounts.md)
+
+What scaling relics count; absent counts nothing.
+
+***
+
 ### ruleResults
 
 > **ruleResults**: readonly `object`[]

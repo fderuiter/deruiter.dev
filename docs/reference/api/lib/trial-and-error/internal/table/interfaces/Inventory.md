@@ -12,6 +12,15 @@ spends and fills it. Absent hand levels mean a fresh run's.
 
 ## Properties
 
+### act?
+
+> `optional` **act?**: `number`
+
+The run's act, from 0 (#2083), which ON_BLIND_START relics that grow
+each act read. Absent means the first.
+
+***
+
 ### budget
 
 > **budget**: `number`
@@ -64,7 +73,7 @@ What happened, in the study's words.
 
 #### reason
 
-> **reason**: `"DROPOUT"` \| `"PROTOCOL_AMENDMENT"` \| `"SCREEN_FAILURE"` \| `"PROTOCOL_DEVIATION"` \| `"SITE_ACTIVATION"` = `TransitionReasonSchema`
+> **reason**: `"SITE_ACTIVATION"` \| `"DROPOUT"` \| `"PROTOCOL_AMENDMENT"` \| `"SCREEN_FAILURE"` \| `"PROTOCOL_DEVIATION"` = `TransitionReasonSchema`
 
 #### subject?
 
@@ -152,15 +161,19 @@ SOP relics the run has earned.
 
 > **name**: `string`
 
+#### rarity?
+
+> `optional` **rarity?**: `"COMMON"` \| `"UNCOMMON"` \| `"RARE"`
+
 #### trigger?
 
-> `optional` **trigger?**: \{ `phase`: `"ON_HAND_PLAYED"`; `requires?`: `"FIGURE_IN_HAND"` \| `"NO_REDLINES"`; \} \| \{ `cardType?`: `"TABLE"` \| `"LISTING"` \| `"FIGURE"` \| `"SUBJECT_TOKEN"`; `phase`: `"ON_CARD_SCORED"`; `population?`: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"`; `qcPassedOnly?`: `boolean`; `retrigger?`: `boolean`; \} \| \{ `freeDiscards`: `number`; `phase`: `"ON_DISCARD"`; \} \| \{ `cpu`: `number`; `phase`: `"ON_BLIND_START"`; \}
+> `optional` **trigger?**: \{ `phase`: `"ON_HAND_PLAYED"`; `requires?`: `"FIGURE_IN_HAND"` \| `"NO_REDLINES"`; `scale?`: `"STALE_IN_HAND"` \| `"REDLINES_FIXED"` \| `"HANDS_PLAYED"`; \} \| \{ `cardType?`: `"TABLE"` \| `"LISTING"` \| `"FIGURE"` \| `"SUBJECT_TOKEN"`; `phase`: `"ON_CARD_SCORED"`; `population?`: `"SCREENED"` \| `"ITT"` \| `"SAFETY"` \| `"PER_PROTOCOL"` \| `"FAS"`; `qcPassedOnly?`: `boolean`; `retrigger?`: `boolean`; \} \| \{ `freeDiscards?`: `number`; `phase`: `"ON_DISCARD"`; `stacks?`: `boolean`; \} \| \{ `cpu`: `number`; `cpuPerAct?`: `number`; `phase`: `"ON_BLIND_START"`; \}
 
 ##### Union Members
 
 ###### Type Literal
 
-\{ `phase`: `"ON_HAND_PLAYED"`; `requires?`: `"FIGURE_IN_HAND"` \| `"NO_REDLINES"`; \}
+\{ `phase`: `"ON_HAND_PLAYED"`; `requires?`: `"FIGURE_IN_HAND"` \| `"NO_REDLINES"`; `scale?`: `"STALE_IN_HAND"` \| `"REDLINES_FIXED"` \| `"HANDS_PLAYED"`; \}
 
 ***
 
@@ -194,13 +207,13 @@ Only cards stamped QC ✓: every cell reviewed, no open redline.
 
 ###### Type Literal
 
-\{ `freeDiscards`: `number`; `phase`: `"ON_DISCARD"`; \}
+\{ `freeDiscards?`: `number`; `phase`: `"ON_DISCARD"`; `stacks?`: `boolean`; \}
 
 ***
 
 ###### Type Literal
 
-\{ `cpu`: `number`; `phase`: `"ON_BLIND_START"`; \}
+\{ `cpu`: `number`; `cpuPerAct?`: `number`; `phase`: `"ON_BLIND_START"`; \}
 
 ***
 

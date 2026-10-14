@@ -3,6 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CardFlip } from "@/components/trial-and-error/cards/CardFlip";
 import { CardBack } from "@/components/trial-and-error/cards/CardBack";
+import { RarityBadge } from "@/components/trial-and-error/RarityBadge";
+import type { RelicRarity } from "@/lib/trial-and-error";
 
 /** One card in a pack reveal. */
 export interface RevealCard {
@@ -16,6 +18,8 @@ export interface RevealCard {
   refusal: string | null;
   /** Shown, and confirmed, before the card is kept. */
   warning: string | null;
+  /** A relic's rarity (#2083); absent or null for anything else. */
+  rarity?: RelicRarity | null;
 }
 
 interface PackOpeningProps {
@@ -152,6 +156,7 @@ export function PackOpening({
                       <span className="font-bold text-zinc-100 break-words">
                         {card.name}
                       </span>
+                      {card.rarity && <RarityBadge rarity={card.rarity} />}
                       <span className="text-zinc-400 break-words">
                         {card.description}
                       </span>

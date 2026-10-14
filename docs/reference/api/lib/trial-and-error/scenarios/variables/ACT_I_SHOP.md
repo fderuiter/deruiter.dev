@@ -8,4 +8,4 @@
 
 > `const` **ACT\_I\_SHOP**: [`ShopCatalog`](../../types/type-aliases/ShopCatalog.md)
 
-Act I's Procurement Shop: its stock, its booster packs and its sites.
+Act I's Procurement Shop: the classic stock and Act I's synergy commons.

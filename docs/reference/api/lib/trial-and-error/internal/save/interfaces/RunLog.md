@@ -57,6 +57,16 @@ How the seed was chosen; absent means a random run.
 
 ***
 
+### shops?
+
+> `optional` **shops?**: `"CLASSIC"`
+
+CLASSIC for a run first saved before each act had its own shop (#2083):
+every act stocks the shared catalog, drawn evenly. Absent means a shop
+per act, drawn by rarity.
+
+***
+
 ### sponsorId?
 
 > `optional` **sponsorId?**: `"VIRTUAL_BIOTECH"` \| `"ONCOLOGY_PHARMA"` \| `"CARDIO_MEGA_TRIAL"` \| `"RARE_DISEASE_BIOTECH"`

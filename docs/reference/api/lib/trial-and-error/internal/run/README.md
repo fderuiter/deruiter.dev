@@ -30,6 +30,7 @@
 - [RunAction](type-aliases/RunAction.md)
 - [RunPhase](type-aliases/RunPhase.md)
 - [RunPlan](type-aliases/RunPlan.md)
+- [ShopLibrary](type-aliases/ShopLibrary.md)
 
 ## Variables
 

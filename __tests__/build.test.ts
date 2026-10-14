@@ -102,7 +102,6 @@ describe("build.js script execution", () => {
 
   it("type-checks in its own phase before migrations and before next build (#2100)", async () => {
     process.env.VERCEL_ENV = "preview";
-    process.env.DATABASE_URL = "postgresql://db:5432";
 
     await expect(require("../scripts/build.js")).rejects.toThrow(
       "Process exited with code 0"

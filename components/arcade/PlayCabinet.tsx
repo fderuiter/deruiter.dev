@@ -594,6 +594,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         onKeyDownCapture={(event) => {
           const target = event.target as HTMLElement;
           if (
+            // A key from a game overlay portaled outside the cabinet (the
+            // Field Manual) still bubbles through it in React. It belongs
+            // to that overlay, so its Escape closes the overlay, not the game.
+            !event.currentTarget.contains(target) ||
             showWizard ||
             event.repeat ||
             event.ctrlKey ||

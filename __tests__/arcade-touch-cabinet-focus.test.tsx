@@ -15,6 +15,7 @@ import {
   act,
   cleanup,
 } from "@testing-library/react";
+import { createPortal } from "react-dom";
 import { PlayCabinet } from "../components/arcade/PlayCabinet";
 import { TOUCH_DEVICE_QUERY } from "../components/arcade/mobile";
 
@@ -152,5 +153,40 @@ describe("touch cabinet focus and Escape (#2039 playtest)", () => {
       screen.getByRole("button", { name: /Launch Cabinet/i })
     ).toBeDefined();
     expect(document.querySelector("[data-immersive]")).toBeNull();
+  });
+
+  // #2042 playtest: a game's Field Manual is portaled to <body>. React still
+  // bubbles its Escape through the cabinet, which must leave it to the
+  // dialog instead of closing the game.
+  it("lets a portaled game dialog take Escape without leaving the cabinet", async () => {
+    render(
+      <PlayCabinet
+        gameId="focus-game"
+        title="Focus Game"
+        icon={<span>🎮</span>}
+        instructions="Test instructions"
+        controls={[{ key: "Space", action: "Jump" }]}
+        importComponent={() => Promise.resolve({})}
+      >
+        {createPortal(
+          <div role="dialog" aria-modal="true" aria-label="Manual">
+            <button type="button">Close manual</button>
+          </div>,
+          document.body
+        )}
+      </PlayCabinet>
+    );
+    await launch();
+    expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
+
+    const close = screen.getByRole("button", { name: "Close manual" });
+    expect(cabinetEl().contains(close)).toBe(false);
+    act(() => {
+      fireEvent.keyDown(close, { key: "Escape" });
+    });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
   });
 });

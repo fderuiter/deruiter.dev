@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  fitLevelGap,
+  treeDepth,
+  MIN_LEVEL_GAP,
   DEFAULT_PROOF_LAYOUT,
   countLeaves,
   fanPose,
@@ -292,5 +295,52 @@ describe("levelMapBadge", () => {
       "admitted"
     );
     expect(levelMapBadge(score({ stars: 9 })).stars).toBe(3);
+  });
+});
+
+describe("fitting tree rows to the touch cabinet's board (#2042)", () => {
+  const leaf = (id: string): ASTNode => ({ id, type: "Variable", value: id });
+  const plus = (id: string, a: ASTNode, b: ASTNode): ASTNode => ({
+    id,
+    type: "Operator",
+    value: "+",
+    children: [a, b],
+  });
+  // (a + b) + c = a + (b + c): three rows below the root.
+  const deep = plus(
+    "eq",
+    plus("l", plus("ab", leaf("a"), leaf("b")), leaf("c")),
+    plus("r", leaf("a2"), plus("bc", leaf("b2"), leaf("c2")))
+  );
+
+  it("measures depth in edges", () => {
+    expect(treeDepth(leaf("x"))).toBe(0);
+    expect(treeDepth(deep)).toBe(3);
+  });
+
+  it("keeps the layout's own gap when the tree already fits", () => {
+    expect(fitLevelGap(1000, 3, DEFAULT_PROOF_LAYOUT)).toBe(
+      DEFAULT_PROOF_LAYOUT.levelGap
+    );
+  });
+
+  it("closes the rows up so a deep tree fits a short board", () => {
+    const gap = fitLevelGap(300, 3, DEFAULT_PROOF_LAYOUT);
+    expect(gap).toBeLessThan(DEFAULT_PROOF_LAYOUT.levelGap);
+    const layout = layoutProofTree(deep, {
+      ...DEFAULT_PROOF_LAYOUT,
+      levelGap: gap,
+    });
+    expect(layout.height).toBeLessThanOrEqual(300);
+  });
+
+  it("never closes the rows past the minimum gap", () => {
+    expect(fitLevelGap(120, 3, DEFAULT_PROOF_LAYOUT)).toBe(MIN_LEVEL_GAP);
+  });
+
+  it("keeps the layout's gap when the height is not known yet", () => {
+    expect(fitLevelGap(0, 3, DEFAULT_PROOF_LAYOUT)).toBe(
+      DEFAULT_PROOF_LAYOUT.levelGap
+    );
   });
 });

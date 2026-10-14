@@ -218,5 +218,27 @@ export function useEchoGame({
 
   useEffect(() => clearTimers, [clearTimers]);
 
+  // A hidden page (app switch, lock screen, Split View hand-off) stops the
+  // playback timers, which a browser throttles or freezes, so the sequence
+  // never runs unseen. Coming back replays the same sequence from its start.
+  // The player's turn has no timers and stays as it was.
+  useEffect(() => {
+    let paused = false;
+    const onVisibility = () => {
+      const current = roundRef.current;
+      if (document.hidden) {
+        if (current?.phase !== "showing") return;
+        paused = true;
+        clearTimers();
+        setLitId(null);
+      } else if (paused) {
+        paused = false;
+        if (current?.phase === "showing") playBack(current, LEAD_IN_MS);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [clearTimers, playBack]);
+
   return { round, litId, best, start, stop, press };
 }

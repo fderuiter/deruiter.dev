@@ -313,7 +313,7 @@ export function FieldManualButton({
         >
           <IconBook2 className="w-4 h-4 text-[var(--game-accent,#22d3ee)]" />
           <span>{label}</span>
-          <kbd className="text-[10px] text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+          <kbd className="text-[10px] pointer-coarse:text-xs text-zinc-400 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
           </kbd>
         </button>
@@ -348,7 +348,7 @@ export function FieldManualButton({
         >
           <IconHelp className="w-4 h-4 text-[var(--game-accent,#22d3ee)] group-hover:rotate-12 transition-transform" />
           <span className="hidden sm:inline">{label}</span>
-          <kbd className="hidden sm:inline-block text-[10px] text-zinc-400 group-hover:text-zinc-300 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
+          <kbd className="hidden sm:inline-block text-[10px] pointer-coarse:text-xs text-zinc-400 group-hover:text-zinc-300 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800">
             ?
           </kbd>
         </button>

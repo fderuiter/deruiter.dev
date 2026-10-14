@@ -5,6 +5,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
   within,
 } from "@testing-library/react";
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
@@ -327,6 +328,130 @@ describe("the Training Plan panel (#1994)", () => {
   });
 });
 
+describe("the gear bag (#1995)", () => {
+  it("opens on the map with X, as a dialog that takes and gives back focus", async () => {
+    storePlan([], { bag: ["cape", "gel"] });
+    renderPlan();
+    key("Enter");
+    (watch() as HTMLElement).focus();
+    key("x");
+    const dialog = screen.getByRole("dialog", { name: "Gear bag · 2/8" });
+    expect(document.activeElement).toBe(
+      within(dialog).getByRole("heading", { name: "Gear bag · 2/8" })
+    );
+    expect(
+      within(dialog).getByRole("list", { name: "Items in the bag" })
+    ).toBeTruthy();
+    fireEvent.keyDown(document.activeElement as Element, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    // The trap gives focus back on a timeout.
+    await waitFor(() => expect(document.activeElement).toBe(watch()));
+  });
+
+  it("packs a power-up that the next workout starts with, and spends it", () => {
+    storePlan([], { bag: ["cape"] });
+    renderPlan();
+    fireEvent.click(screen.getByRole("button", { name: "Open gear bag (X)" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Pack Compression Cape" })
+    );
+    expect(loadPlan()?.packed).toEqual(["cape"]);
+    expect(loadPlan()?.bag).toEqual([]);
+    // The pressed button is gone, so focus stays in the bag on its heading.
+    expect(document.activeElement?.closest('[role="dialog"]')).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    key("Enter");
+    key(" ");
+    frames(1);
+    expect(face().getAttribute("aria-label")).toContain("Compression Cape");
+    expect(loadPlan()?.packed).toEqual([]);
+    expect(said.texts.some((t) => t.includes("Packed: Compression Cape"))).toBe(
+      true
+    );
+  });
+
+  it("leaves packed gear alone on a practice run", () => {
+    storePlan(["easy"], { bag: [], packed: ["gel"], cursor: "easy" });
+    renderPlan();
+    key("Enter");
+    key(" ");
+    expect(loadPlan()?.packed).toEqual(["gel"]);
+  });
+
+  it("takes a Rest Day from the bag to open the paths past the next workout", () => {
+    storePlan(["easy"], { bag: ["restday"] });
+    renderPlan();
+    fireEvent.click(screen.getByRole("button", { name: "Open gear bag (X)" }));
+    const take = screen.getByRole("button", { name: "Take Rest Day" });
+    expect(take.getAttribute("aria-describedby")).toBeTruthy();
+    fireEvent.click(take);
+    expect(loadPlan()?.unlocked).toEqual(["intervals", "hut-1"]);
+    expect(said.texts).toContain(
+      "Rest Day taken. Intervals and Recovery Hut are open."
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    const map = screen.getByRole("list", { name: "Training Plan map" });
+    expect(
+      within(map)
+        .getByRole("button", { name: /^Intervals,/ })
+        .hasAttribute("disabled")
+    ).toBe(false);
+  });
+
+  it("closes on Escape without taking the watch back from the map", () => {
+    storePlan([], { bag: ["gel"] });
+    renderPlan();
+    key("Enter");
+    key("x");
+    fireEvent.keyDown(document.activeElement as Element, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(face().getAttribute("aria-label")).toContain("Training Plan map");
+  });
+
+  it("is closed by a workout starting, and stays closed after it", () => {
+    storePlan([], { bag: ["gel"] });
+    renderPlan();
+    key("Enter");
+    key("x");
+    expect(screen.getByRole("dialog")).toBeTruthy();
+    // The watch still takes START while the bag is open.
+    key(" ");
+    frames(1);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    endNextStep(true);
+    // The result card is a dialog of its own; the bag stays shut.
+    expect(screen.queryByRole("dialog", { name: /Gear bag/ })).toBeNull();
+  });
+
+  it("is left alone by Race Mode: Base tier, and the packed gear stays", () => {
+    storePlan([], { bag: ["gel"], packed: ["cape"] });
+    safeSetRawItem(RACE_MODE_KEY, "1");
+    render(<GarminWatchSimulator />);
+    expect(screen.queryByRole("button", { name: /gear bag/ })).toBeNull();
+    key("Enter");
+    frames(1);
+    const label = face().getAttribute("aria-label") ?? "";
+    expect(label).toContain("Status: playing");
+    expect(label).not.toContain("Compression Cape");
+    expect(loadPlan()?.packed).toEqual(["cape"]);
+    expect(loadPlan()?.bag).toEqual(["gel"]);
+  });
+
+  it("shows why an item can't be used", () => {
+    storePlan([], { bag: ["protein"], packed: ["cape"] });
+    renderPlan();
+    fireEvent.click(screen.getByRole("button", { name: "Open gear bag (X)" }));
+    const pack = screen.getByRole("button", { name: "Pack Protein Shake" });
+    expect(pack.hasAttribute("disabled")).toBe(true);
+    const reason = document.getElementById(
+      pack.getAttribute("aria-describedby") ?? ""
+    );
+    expect(reason?.textContent).toContain(
+      "One power-up per workout: the Compression Cape is packed."
+    );
+  });
+});
+
 describe("Training Plan manual entries (#1994)", () => {
   it("describes the plan, huts, practice and The Wall", () => {
     const manual = JSON.stringify(GAME_MANUALS["garmin-watch"]);
@@ -334,5 +459,7 @@ describe("Training Plan manual entries (#1994)", () => {
     expect(manual).toContain('"title":"Race Day and The Wall"');
     expect(manual).toContain("never changes the plan");
     expect(manual).toContain("It takes three hits");
+    expect(manual).toContain('"title":"Gear Bag"');
+    expect(manual).toContain("every race starts from the Base tier");
   });
 });

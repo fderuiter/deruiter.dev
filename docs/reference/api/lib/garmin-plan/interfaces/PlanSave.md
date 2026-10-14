@@ -76,6 +76,14 @@ Training Effect of the last cleared workout, if any.
 
 ***
 
+### packed
+
+> **packed**: [`GearItem`](../type-aliases/GearItem.md)[]
+
+Items out of the bag, packed for the next workout (#1995).
+
+***
+
 ### score
 
 > **score**: `number`
@@ -89,3 +97,11 @@ Points from every workout cleared.
 > **seed**: `number`
 
 Shuffles what each hut hides.
+
+***
+
+### unlocked
+
+> **unlocked**: [`PlanNodeId`](../type-aliases/PlanNodeId.md)[]
+
+Nodes a Rest Day opened without clearing the workout before them (#1995).

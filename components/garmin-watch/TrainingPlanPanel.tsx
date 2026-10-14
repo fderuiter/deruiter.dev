@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import {
   BAG_SIZE,
   GEAR_ITEMS,
   GEAR_ITEM_NAMES,
   PLAN_NODES,
+  type GearItem,
   nextWorkout,
   nodeLabel,
   nodeStatus,
@@ -13,6 +14,7 @@ import {
   type PlanNodeId,
   type PlanSave,
 } from "@/lib/garmin-plan";
+import { GearBagDialog } from "./GearBagDialog";
 
 interface TrainingPlanPanelProps {
   /** The plan, or null before it has been read from storage. */
@@ -21,6 +23,12 @@ interface TrainingPlanPanelProps {
   locked: boolean;
   onChoose: (id: PlanNodeId) => void;
   onNewPlan: () => void;
+  /** The gear bag dialog is open (#1995). */
+  bagOpen: boolean;
+  onOpenBag: () => void;
+  onCloseBag: () => void;
+  onUseItem: (item: GearItem) => void;
+  onUnpackItem: (item: GearItem) => void;
 }
 
 const STATUS_CLASS = {
@@ -40,7 +48,17 @@ export function TrainingPlanPanel({
   locked,
   onChoose,
   onNewPlan,
+  bagOpen,
+  onOpenBag,
+  onCloseBag,
+  onUseItem,
+  onUnpackItem,
 }: TrainingPlanPanelProps) {
+  // A run starting by any route (START, the setup wizard, a workout) closes
+  // the bag, so it doesn't open again over the next result.
+  useEffect(() => {
+    if (locked && bagOpen) onCloseBag();
+  }, [locked, bagOpen, onCloseBag]);
   if (!save) {
     return <p className="text-[10px] text-zinc-400">Loading your plan…</p>;
   }
@@ -119,7 +137,7 @@ export function TrainingPlanPanel({
         })}
       </ol>
       <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-        Gear bag · {save.bag.length}/{BAG_SIZE}
+        Gear bag · {save.bag.length + save.packed.length}/{BAG_SIZE}
       </p>
       {counts.length === 0 ? (
         <p className="text-[10px] text-zinc-400">
@@ -134,6 +152,28 @@ export function TrainingPlanPanel({
             </li>
           ))}
         </ul>
+      )}
+      {save.packed.length > 0 && (
+        <p className="text-[10px] text-amber-200">
+          Packed: {save.packed.map((item) => GEAR_ITEM_NAMES[item]).join(", ")}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={onOpenBag}
+        disabled={locked}
+        aria-haspopup="dialog"
+        className="min-h-[32px] rounded-md border border-white/[0.08] bg-[#0d0e11] px-2 text-[11px] text-zinc-100 hover:bg-white/[0.04] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:opacity-50"
+      >
+        Open gear bag (X)
+      </button>
+      {bagOpen && !locked && (
+        <GearBagDialog
+          save={save}
+          onClose={onCloseBag}
+          onUseItem={onUseItem}
+          onUnpackItem={onUnpackItem}
+        />
       )}
       <button
         type="button"

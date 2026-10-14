@@ -117,7 +117,7 @@ function readinessColor(score: number): string {
 
 /** The first line of the face's plan readout: lives, continues and the bag. */
 function statusLine(save: PlanSave): string {
-  return `LIVES ${save.lives} · CONT ${save.continues} · BAG ${save.bag.length}/${BAG_SIZE}`;
+  return `LIVES ${save.lives} · CONT ${save.continues} · BAG ${save.bag.length + save.packed.length}/${BAG_SIZE}`;
 }
 
 function drawReport(ctx: Ctx, save: PlanSave) {
@@ -140,8 +140,18 @@ function drawReport(ctx: Ctx, save: PlanSave) {
       : "NEXT: A RECOVERY HUT";
   text(ctx, nextLine, CENTER, 158, 10, COLORS.warn);
   text(ctx, statusLine(save), CENTER, 178, 8, COLORS.dim, "normal");
-  text(ctx, `SCORE ${save.score}`, CENTER, 192, 8, COLORS.dim, "normal");
-  text(ctx, "SPACE / START: TO THE MAP", CENTER, 222, 7.5, COLORS.steel);
+  text(
+    ctx,
+    save.packed.length > 0
+      ? `SCORE ${save.score} · PACKED ${save.packed.map((item) => ITEM_SHORT[item]).join(" ")}`
+      : `SCORE ${save.score}`,
+    CENTER,
+    192,
+    8,
+    COLORS.dim,
+    "normal"
+  );
+  text(ctx, "SPACE: TO THE MAP · X: BAG", CENTER, 222, 7.5, COLORS.steel);
 }
 
 function drawNode(ctx: Ctx, save: PlanSave, node: PlanNode, cursor: boolean) {
@@ -224,15 +234,19 @@ function drawMap(ctx: Ctx, save: PlanSave) {
         : "SPACE: PICK AN ITEM"
       : status === "cleared"
         ? "CLEARED · SPACE: PRACTICE"
-        : "SPACE / START: GO";
+        : "SPACE: GO · X: GEAR BAG";
   text(ctx, hint, CENTER, 230, 7.5, COLORS.warn);
 }
 
 /** Short names of the hut items, to fit a box. */
 const ITEM_SHORT: Record<GearItem, string> = {
+  protein: "SHAKE",
+  heatmap: "HEAT MAP",
+  cape: "CAPE",
+  high: "HIGH",
   gel: "GEL",
-  foamroller: "ROLLER",
-  protein: "PROTEIN",
+  preworkout: "PRE",
+  restday: "REST DAY",
 };
 
 function drawHut(
@@ -351,7 +365,11 @@ export function planScreenLabel(save: PlanSave, screen: PlanScreen): string {
         : save.finished
           ? "Plan complete."
           : "Next: a Recovery Hut."
-    } Lives ${save.lives}, continues ${save.continues}, bag ${save.bag.length} of ${BAG_SIZE}.`;
+    } Lives ${save.lives}, continues ${save.continues}, bag ${save.bag.length + save.packed.length} of ${BAG_SIZE}.${
+      save.packed.length > 0
+        ? ` Packed: ${save.packed.map((item) => GEAR_ITEM_NAMES[item]).join(", ")}.`
+        : ""
+    } X opens the gear bag.`;
   }
   if (screen.kind === "map") {
     return `Training Plan map. On ${planNode(save.cursor).name}, ${planNode(save.cursor).day}.`;

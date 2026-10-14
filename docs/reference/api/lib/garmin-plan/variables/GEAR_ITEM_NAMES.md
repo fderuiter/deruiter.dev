@@ -8,4 +8,4 @@
 
 > `const` **GEAR\_ITEM\_NAMES**: `Record`\<[`GearItem`](../type-aliases/GearItem.md), `string`\>
 
-Display names of the hut items.
+Display names of the gear items.

@@ -8,7 +8,8 @@
 
 > **isOpen**(`save`, `id`): `boolean`
 
-Whether `id` is open: the start node, or on a path from a cleared node.
+Whether `id` is open: the start node, a node a Rest Day opened, or on a
+path from a cleared node.
 
 ## Parameters
 

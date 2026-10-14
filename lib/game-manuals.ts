@@ -751,8 +751,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Training Plan",
         detail:
-          "Pick Training Plan as the run mode for a two-week plan laid out like a coach's calendar. Each visit opens with a Morning Report: your Training Readiness, the next workout, and your lives, continues and gear bag. Then the map: Easy Run, Tempo, Intervals and Long Run sit on paths, and clearing one opens the next. Move with the arrow keys (or UP and DOWN on the watch) and press Space or START to go; every node is also a button in the companion panel. Each workout is one stage, the same every time. A cleared workout can be run again as practice, which shows its time but never changes the plan. A Recovery Hut hides three items, an Energy Gel, a Foam Roller and a Protein Shake: pick one and it goes into the gear bag, which holds 8. Losing every life is a DNF, back to training: a continue refills your lives, and with none left the plan's score is reset instead. The map is never lost. The plan is saved on this device; New plan starts over.",
+          "Pick Training Plan as the run mode for a two-week plan laid out like a coach's calendar. Each visit opens with a Morning Report: your Training Readiness, the next workout, and your lives, continues and gear bag. Then the map: Easy Run, Tempo, Intervals and Long Run sit on paths, and clearing one opens the next. Move with the arrow keys (or UP and DOWN on the watch) and press Space or START to go; every node is also a button in the companion panel. Each workout is one stage, the same every time. A cleared workout can be run again as practice, which shows its time but never changes the plan. A Recovery Hut hides three items: pick one and it goes into the gear bag, which holds 8. Losing every life is a DNF, back to training: a continue refills your lives, and with none left the plan's score is reset instead. The map is never lost. The plan is saved on this device; New plan starts over.",
         badge: "Plan",
+      },
+      {
+        title: "Gear Bag",
+        detail:
+          "Press X on the Morning Report or the map, or Open gear bag in the companion panel, to open the bag. Pack an item and it goes with your next new workout: a Protein Shake, Heat Map or Compression Cape starts it at that power-up (one per workout), a Runner's High starts as the GPS locks, an Energy Gel refills Body Battery the first time you bonk, and a Pre-Workout holds the pace meter full for the first 6 seconds, up to your first jump. A Rest Day is taken on the map at once: it opens the paths past your next workout without running it. Practice runs and Race Day leave packed gear in place, so every race starts from the Base tier. Packed gear still counts towards the bag's 8, and Unpack puts it back.",
+        badge: "Bag",
       },
       {
         title: "Race Day and The Wall",

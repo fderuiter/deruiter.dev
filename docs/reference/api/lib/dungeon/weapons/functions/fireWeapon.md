@@ -6,7 +6,7 @@
 
 # Function: fireWeapon()
 
-> **fireWeapon**(`weaponId`, `weapons`, `playerX`, `playerY`, `playerHp`, `maxPlayerHp`, `enemies`, `boss`, `nowMs`, `currentRam?`): [`WeaponFireResult`](../interfaces/WeaponFireResult.md)
+> **fireWeapon**(`weaponId`, `weapons`, `playerX`, `playerY`, `playerHp`, `maxPlayerHp`, `enemies`, `boss`, `nowMs`, `currentRam?`, `aoeRadiusBonus?`): [`WeaponFireResult`](../interfaces/WeaponFireResult.md)
 
 Fires a cybersecurity weapon or exploit with damage, CVE multipliers, particles, and side-effects.
 
@@ -51,6 +51,10 @@ Fires a cybersecurity weapon or exploit with damage, CVE multipliers, particles,
 ### currentRam?
 
 `number` = `32`
+
+### aoeRadiusBonus?
+
+`number` = `0`
 
 ## Returns
 

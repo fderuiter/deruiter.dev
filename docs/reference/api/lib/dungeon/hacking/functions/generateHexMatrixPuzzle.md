@@ -6,7 +6,7 @@
 
 # Function: generateHexMatrixPuzzle()
 
-> **generateHexMatrixPuzzle**(`difficulty?`): [`HexMatrixPuzzle`](../../types/interfaces/HexMatrixPuzzle.md)
+> **generateHexMatrixPuzzle**(`difficulty?`, `extraBufferSlots?`): [`HexMatrixPuzzle`](../../types/interfaces/HexMatrixPuzzle.md)
 
 Generates a procedurally solvable Hex Matrix Buffer bypass puzzle.
 Uses alternating row/column constraint rules inspired by cybernetic hacking matrices.
@@ -16,6 +16,10 @@ Uses alternating row/column constraint rules inspired by cybernetic hacking matr
 ### difficulty?
 
 `number` = `1`
+
+### extraBufferSlots?
+
+`number` = `0`
 
 ## Returns
 

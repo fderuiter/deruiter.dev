@@ -26,6 +26,12 @@ Re-exports [AmmoGrantResult](weapons/interfaces/AmmoGrantResult.md)
 
 ***
 
+### aoeRadiusBonus
+
+Re-exports [aoeRadiusBonus](metaprogression/functions/aoeRadiusBonus.md)
+
+***
+
 ### applyRunReward
 
 Re-exports [applyRunReward](rewards/functions/applyRunReward.md)
@@ -35,6 +41,12 @@ Re-exports [applyRunReward](rewards/functions/applyRunReward.md)
 ### armBossForRoomEntry
 
 Re-exports [armBossForRoomEntry](boss/functions/armBossForRoomEntry.md)
+
+***
+
+### BASE\_AOE\_RADIUS
+
+Re-exports [BASE_AOE_RADIUS](weapons/variables/BASE_AOE_RADIUS.md)
 
 ***
 
@@ -77,6 +89,18 @@ Re-exports [calculateFOV](fov/functions/calculateFOV.md)
 ### chooseRouteRoom
 
 Re-exports [chooseRouteRoom](route/functions/chooseRouteRoom.md)
+
+***
+
+### CLASS\_AOE\_RADIUS\_MULTIPLIER
+
+Re-exports [CLASS_AOE_RADIUS_MULTIPLIER](metaprogression/variables/CLASS_AOE_RADIUS_MULTIPLIER.md)
+
+***
+
+### CLASS\_UNLOCK\_MILESTONES
+
+Re-exports [CLASS_UNLOCK_MILESTONES](metaprogression/variables/CLASS_UNLOCK_MILESTONES.md)
 
 ***
 
@@ -182,6 +206,12 @@ Re-exports [CyberdeckClassId](types/type-aliases/CyberdeckClassId.md)
 
 ***
 
+### CyberdeckMilestone
+
+Re-exports [CyberdeckMilestone](metaprogression/type-aliases/CyberdeckMilestone.md)
+
+***
+
 ### CyberdeckProfile
 
 Re-exports [CyberdeckProfile](types/interfaces/CyberdeckProfile.md)
@@ -191,6 +221,18 @@ Re-exports [CyberdeckProfile](types/interfaces/CyberdeckProfile.md)
 ### CyberdeckRoomResult
 
 Re-exports [CyberdeckRoomResult](metaprogression/interfaces/CyberdeckRoomResult.md)
+
+***
+
+### cyberdeckStartingStats
+
+Re-exports [cyberdeckStartingStats](metaprogression/functions/cyberdeckStartingStats.md)
+
+***
+
+### CyberdeckStartingStats
+
+Re-exports [CyberdeckStartingStats](metaprogression/interfaces/CyberdeckStartingStats.md)
 
 ***
 
@@ -305,6 +347,78 @@ Re-exports [ExitLockState](objective/interfaces/ExitLockState.md)
 ### fireWeapon
 
 Re-exports [fireWeapon](weapons/functions/fireWeapon.md)
+
+***
+
+### FIRMWARE\_BUFFER\_SLOTS\_PER\_TIER
+
+Re-exports [FIRMWARE_BUFFER_SLOTS_PER_TIER](metaprogression/variables/FIRMWARE_BUFFER_SLOTS_PER_TIER.md)
+
+***
+
+### FIRMWARE\_CHIPS\_PER\_TIER
+
+Re-exports [FIRMWARE_CHIPS_PER_TIER](metaprogression/variables/FIRMWARE_CHIPS_PER_TIER.md)
+
+***
+
+### FIRMWARE\_MAX\_TIER
+
+Re-exports [FIRMWARE_MAX_TIER](metaprogression/variables/FIRMWARE_MAX_TIER.md)
+
+***
+
+### FIRMWARE\_RADIUS\_PER\_TIER
+
+Re-exports [FIRMWARE_RADIUS_PER_TIER](metaprogression/variables/FIRMWARE_RADIUS_PER_TIER.md)
+
+***
+
+### FIRMWARE\_RAM\_PER\_TIER
+
+Re-exports [FIRMWARE_RAM_PER_TIER](metaprogression/variables/FIRMWARE_RAM_PER_TIER.md)
+
+***
+
+### FIRMWARE\_UPGRADES
+
+Re-exports [FIRMWARE_UPGRADES](metaprogression/variables/FIRMWARE_UPGRADES.md)
+
+***
+
+### firmwareBonuses
+
+Re-exports [firmwareBonuses](metaprogression/functions/firmwareBonuses.md)
+
+***
+
+### FirmwareBonuses
+
+Re-exports [FirmwareBonuses](metaprogression/interfaces/FirmwareBonuses.md)
+
+***
+
+### firmwareTierCost
+
+Re-exports [firmwareTierCost](metaprogression/functions/firmwareTierCost.md)
+
+***
+
+### FirmwareTiers
+
+Re-exports [FirmwareTiers](metaprogression/type-aliases/FirmwareTiers.md)
+
+***
+
+### FirmwareUpgrade
+
+Re-exports [FirmwareUpgrade](metaprogression/interfaces/FirmwareUpgrade.md)
+
+***
+
+### FirmwareUpgradeId
+
+Re-exports [FirmwareUpgradeId](metaprogression/type-aliases/FirmwareUpgradeId.md)
 
 ***
 
@@ -440,6 +554,12 @@ Re-exports [HexMatrixPuzzle](types/interfaces/HexMatrixPuzzle.md)
 
 ***
 
+### isCyberdeckClassUnlocked
+
+Re-exports [isCyberdeckClassUnlocked](metaprogression/functions/isCyberdeckClassUnlocked.md)
+
+***
+
 ### isEnemyWalkable
 
 Re-exports [isEnemyWalkable](ai/functions/isEnemyWalkable.md)
@@ -497,6 +617,18 @@ Re-exports [planRoute](route/functions/planRoute.md)
 ### project3DTo2D
 
 Re-exports [project3DTo2D](boss/functions/project3DTo2D.md)
+
+***
+
+### purchaseFirmwareTier
+
+Re-exports [purchaseFirmwareTier](metaprogression/functions/purchaseFirmwareTier.md)
+
+***
+
+### recordCyberdeckMilestone
+
+Re-exports [recordCyberdeckMilestone](metaprogression/functions/recordCyberdeckMilestone.md)
 
 ***
 

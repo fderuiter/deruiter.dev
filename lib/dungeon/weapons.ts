@@ -160,6 +160,9 @@ export interface WeaponFireResult {
   critTriggered?: boolean;
 }
 
+/** Blast radius, in tiles, of the AoE exploits before any bonus. */
+export const BASE_AOE_RADIUS = 4.5;
+
 /**
  * Fires a cybersecurity weapon or exploit with damage, CVE multipliers, particles, and side-effects.
  */
@@ -173,7 +176,8 @@ export function fireWeapon(
   enemies: Enemy[],
   boss: BossState | undefined,
   nowMs: number,
-  currentRam: number = 32
+  currentRam: number = 32,
+  aoeRadiusBonus: number = 0
 ): WeaponFireResult {
   const weapon = weapons[weaponId];
   if (!weapon || weapon.ammo <= 0) {
@@ -258,7 +262,7 @@ export function fireWeapon(
     }
 
     case "buffer_overflow": {
-      const aoeRadius = 4.5;
+      const aoeRadius = BASE_AOE_RADIUS + Math.max(0, aoeRadiusBonus);
       message = "💥 Buffer Overflow payload executed! Memory corrupted!";
 
       activeSideEffect = {
@@ -407,7 +411,7 @@ export function fireWeapon(
     }
 
     case "npm_install": {
-      const aoeRadius = 4.5;
+      const aoeRadius = BASE_AOE_RADIUS + Math.max(0, aoeRadiusBonus);
       message = "📦 npm install executed! 100,000 node_modules hurled!";
 
       activeSideEffect = {

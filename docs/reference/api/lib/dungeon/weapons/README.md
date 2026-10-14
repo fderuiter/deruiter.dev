@@ -13,6 +13,7 @@
 
 ## Variables
 
+- [BASE\_AOE\_RADIUS](variables/BASE_AOE_RADIUS.md)
 - [BOSS\_DAMAGE\_WEAPON\_IDS](variables/BOSS_DAMAGE_WEAPON_IDS.md)
 - [DEFAULT\_WEAPONS](variables/DEFAULT_WEAPONS.md)
 

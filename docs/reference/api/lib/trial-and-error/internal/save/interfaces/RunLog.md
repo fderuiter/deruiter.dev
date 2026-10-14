@@ -33,6 +33,16 @@ replays in written deal order. Absent means a shuffled run.
 
 ***
 
+### decks?
+
+> `optional` **decks?**: `"AUTHORED"`
+
+AUTHORED for a run first saved before the run deck (#2082): every Blind
+deals its authored deck and the shop stocks no shells. Absent means a
+run with a run deck.
+
+***
+
 ### origin?
 
 > `optional` **origin?**: [`RunOrigin`](../../seed/type-aliases/RunOrigin.md)

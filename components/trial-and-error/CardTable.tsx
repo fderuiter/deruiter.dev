@@ -2412,6 +2412,13 @@ export function CardTable({
                     onBuy={(slot) => send({ type: "BUY", slot })}
                     onBuyPack={(slot) => send({ type: "BUY_PACK", slot })}
                     onReroll={() => send({ type: "REROLL" })}
+                    deck={runView.deck}
+                    onArchive={(cardId) =>
+                      send({ type: "ARCHIVE_CARD", cardId })
+                    }
+                    onDuplicate={(cardId) =>
+                      send({ type: "DUPLICATE_CARD", cardId })
+                    }
                   />
                 )
               )}
@@ -2814,6 +2821,7 @@ export function CardTable({
           }
           relicSlots={view.relicSlots}
           relics={view.relics}
+          deck={runView.deck}
           accessLog={view.accessLog}
           dmc={view.dmcCharter !== null}
           onClose={() => setRunInfoOpen(false)}

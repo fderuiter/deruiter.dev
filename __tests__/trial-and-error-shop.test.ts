@@ -144,7 +144,8 @@ describe("shop catalog", () => {
 
   it("prices consumables so selling returns half the price, rounded down", () => {
     for (const entry of ACT_I_SHOP.entries) {
-      if (entry.kind === "RELIC") continue;
+      // Relics are not consumables; shells join the run deck (#2082).
+      if (entry.kind === "RELIC" || entry.kind === "SHELL") continue;
       const item = (
         entry.kind === "SEAL"
           ? { id: "x", kind: "SEAL", seal: entry.seal }

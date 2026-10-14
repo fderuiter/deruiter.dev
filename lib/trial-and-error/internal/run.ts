@@ -6,11 +6,28 @@ import type {
   Pack,
   Relic,
   Scenario,
+  ShopCatalog,
   ShopEntry,
+  TlfCard,
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
 import { dealSeed, shuffledDeckOrder, type DeckDealing } from "./deal";
 import { raiseQuotas } from "./quotas";
+import {
+  ARCHIVE_PRICE,
+  DUPLICATE_PRICE,
+  EMPTY_RUN_DECK,
+  addShell,
+  archiveCard,
+  dealtScenario,
+  deckCardViews,
+  duplicateCard,
+  isEmptyDeck,
+  protectedCardIds,
+  type DeckLibrary,
+  type RunDeck,
+  type RunDeckCardView,
+} from "./run-deck";
 import { blindStartCpu } from "./relics";
 import { drawInt } from "./rng";
 import {
@@ -19,7 +36,7 @@ import {
   startingInventory,
   type RunChoice,
 } from "./run-rules";
-import { DEFAULT_SPONSOR_ID } from "./sponsors";
+import { DEFAULT_SPONSOR_ID, sponsorById, sponsorCardChips } from "./sponsors";
 import {
   DEFAULT_STAKE,
   lockedRelicSlot,
@@ -106,6 +123,10 @@ export interface ShopState {
   opened: OpenedPack | null;
   /** Items taken this visit, which keeps tray ids unique. */
   purchases: number;
+  /** The Archive service was used this visit (#2082); it serves once. */
+  archived?: true;
+  /** The Duplicate service was used this visit (#2082); it serves once. */
+  duplicated?: true;
 }
 
 /** A relic Form 483 took out of play with its slot (#950), until the act ends. */
@@ -135,6 +156,23 @@ export interface RunState {
    * SHUFFLED, the default.
    */
   dealing?: "AUTHORED";
+  /**
+   * AUTHORED for a run replayed from a save recorded before the run deck
+   * (#2082): every Blind deals its authored deck and the shop stocks no
+   * shells. Absent means the run keeps a run deck.
+   */
+  decks?: "AUTHORED";
+  /**
+   * The run deck (#2082): shells bought, copies made and cards archived,
+   * carried from Blind to Blind and act to act. Absent means no changes.
+   */
+  deck?: RunDeck;
+  /**
+   * The run deck the current Blind was dealt from. The shop changes `deck`
+   * for the next Blind; the cleared table keeps the cards it was dealt.
+   * Absent means no changes.
+   */
+  dealtDeck?: RunDeck;
   /** The next unused draw index. */
   drawIndex: number;
   /** Every seeded draw so far, in order. */
@@ -189,6 +227,55 @@ function playedPlan(
 /** The stake modifiers a run is played under. */
 function modifiersOf(run: Pick<RunState, "stake">): StakeModifiers {
   return stakeModifiers(run.stake ?? DEFAULT_STAKE);
+}
+
+/** What the run's sponsor adds to a bought shell's Chips, as to any card. */
+function shellBonus(
+  run: Pick<RunState, "sponsorId">
+): (card: TlfCard) => number {
+  const sponsor = sponsorById(run.sponsorId ?? DEFAULT_SPONSOR_ID);
+  return (card) => sponsorCardChips(sponsor, card);
+}
+
+/** The run deck, empty when the run has made no changes. */
+function deckOf(run: Pick<RunState, "deck">): RunDeck {
+  return run.deck ?? EMPTY_RUN_DECK;
+}
+
+/** The current Blind as its table was dealt (#2082). */
+function tableScenario(blind: Scenario, run: RunState): Scenario {
+  return dealtScenario(blind, run.dealtDeck, shellBonus(run));
+}
+
+/** A later Blind as the run deck deals it now (#2082). */
+function nextDeal(blind: Scenario, run: RunState): Scenario {
+  return dealtScenario(blind, run.deck, shellBonus(run));
+}
+
+/**
+ * A run starting a new Blind: the table is dealt from the run deck as it
+ * stands, so `dealtDeck` follows `deck`. Neither is kept when empty.
+ */
+function dealFields(run: RunState): RunState {
+  const next: RunState = { ...run };
+  delete next.dealtDeck;
+  if (isEmptyDeck(run.deck)) {
+    delete next.deck;
+    return next;
+  }
+  return { ...next, dealtDeck: run.deck };
+}
+
+/** The shop's catalog: without shells for a run that deals authored decks. */
+function runCatalog(
+  run: Pick<RunState, "decks">,
+  catalog: ShopCatalog
+): ShopCatalog {
+  if (run.decks !== "AUTHORED") return catalog;
+  return {
+    ...catalog,
+    entries: catalog.entries.filter((entry) => entry.kind !== "SHELL"),
+  };
 }
 
 /** How many relics the rack holds now: one fewer while Form 483 locks a slot. */
@@ -279,6 +366,10 @@ export type RunAction =
   | { type: "SKIP_PACK" }
   /** Sells a relic for half its price, rounded down. */
   | { type: "SELL_RELIC"; relicId: string }
+  /** The Archive service (#2082): removes a card from the run deck. */
+  | { type: "ARCHIVE_CARD"; cardId: string }
+  /** The Duplicate service (#2082): copies a card in the run deck. */
+  | { type: "DUPLICATE_CARD"; cardId: string }
   /** After the campaign is won, goes on into post-marketing rounds (#1088). */
   | { type: "CONTINUE_ENDLESS" }
   /** After the campaign is won, submits the package and ends the run. */
@@ -346,7 +437,7 @@ export interface ShopItemView {
 /** A pack card as the reveal shows it. */
 export interface PackCardView {
   id: string;
-  kind: "RELIC" | "GUIDANCE" | "SEAL" | "AMENDMENT" | "SITE";
+  kind: ShopEntry["kind"] | "SITE";
   name: string;
   description: string;
   picked: boolean;
@@ -354,6 +445,34 @@ export interface PackCardView {
   refusal: string | null;
   /** A site's warning: the populations its enrollment will change. */
   warning: string | null;
+}
+
+/** A shop service (#2082): what it costs, and why it cannot serve now. */
+export interface ShopServiceView {
+  price: number;
+  /** It already served this visit. */
+  used: boolean;
+  /** Why it cannot serve any card now, or null. */
+  refusal: string | null;
+  /** Why it cannot serve a particular card of the deck, by card id. */
+  cardRefusals: Record<string, string>;
+}
+
+/** The run deck as the shop and Run Info show it (#2082). */
+export interface RunDeckView {
+  /** The Blind this deck deals: the one being played, or the next one. */
+  blindName: string;
+  /** The cards that Blind deals, in written order (the deal shuffles them). */
+  cards: RunDeckCardView[];
+  size: number;
+  /** The Blind's opening hand size: the deck never drops below it. */
+  handSize: number;
+  /** Cards the run added: shells bought and copies made. */
+  added: number;
+  /** Authored cards archived. */
+  archived: number;
+  /** Added copies this Blind does not deal: their originals are not in it. */
+  waiting: number;
 }
 
 /** Everything the shop screen renders. */
@@ -373,6 +492,10 @@ export interface ShopView {
   relicSellValues: Record<string, number>;
   /** Purchases made this visit: a new pack opened is a new reveal. */
   purchases: number;
+  /** The Archive service (#2082). */
+  archive: ShopServiceView;
+  /** The Duplicate service (#2082). */
+  duplicate: ShopServiceView;
 }
 
 /** Everything a run renders, derived purely from act and state. */
@@ -406,6 +529,11 @@ export interface RunView {
   shop: ShopView | null;
   /** Endless post-marketing mode, when the plan offers it. */
   endless: EndlessView | null;
+  /**
+   * The run deck (#2082): the cards the current Blind deals, or once it is
+   * cleared, the cards the next Blind will deal.
+   */
+  deck: RunDeckView;
 }
 
 /** What a run plays: one act on its own, or a campaign's acts in order. */
@@ -654,10 +782,10 @@ function drawSlots(
   run: RunState,
   drawIndex: number
 ): { slots: ShopSlot[]; next: number } {
-  const catalog = actAt(plan, run, run.actIndex).shop;
-  if (!catalog) return { slots: [], next: drawIndex };
+  const shop = actAt(plan, run, run.actIndex).shop;
+  if (!shop) return { slots: [], next: drawIndex };
   const pool = stockPool(
-    catalog,
+    runCatalog(run, shop),
     shopRulebook(plan, run),
     run.table.relics.map((r) => r.id),
     ownedAmendmentIds(run.table)
@@ -680,11 +808,14 @@ function takeRefusal(run: RunState, entry: ShopEntry): string | null {
   if (entry.kind === "RELIC") {
     return table.relics.length >= relicCapacity(run) ? rackFull(run) : null;
   }
+  // A shell joins the run deck, which has no limit.
+  if (entry.kind === "SHELL") return null;
   return table.consumables.length >= CONSUMABLE_SLOTS ? TRAY_FULL : null;
 }
 
-/** The table with an entry in its rack or tray. */
+/** The table with an entry in its rack or tray. A shell joins the deck instead. */
 function take(table: TableState, entry: ShopEntry, trayId: string): TableState {
+  if (entry.kind === "SHELL") return table;
   if (entry.kind === "RELIC") {
     return { ...table, relics: [...table.relics, entry.relic] };
   }
@@ -719,6 +850,16 @@ function describeEntry(entry: ShopEntry): {
       description: entry.amendment.description,
     };
   }
+  if (entry.kind === "SHELL") {
+    const { shell } = entry;
+    const sets = (shell.compatiblePopulations ?? [shell.targetPopulation])
+      .map((p) => POPULATION_LABELS[p])
+      .join(" or ");
+    return {
+      name: `${shell.tableNumber} shell`,
+      description: `A blank ${entry.card.title} shell (${shell.chips} Chips) for your deck, dealt in every later Blind. Allocate ${sets} data and it compiles clean.`,
+    };
+  }
   return { name: entry.seal.name, description: entry.seal.footnote };
 }
 
@@ -743,6 +884,133 @@ function goLiveAt(table: TableState): string {
 /** What the `rerolls`-th reroll of a visit costs, with any stake surcharge. */
 function rerollCost(run: RunState, rerolls: number): number {
   return rerollPrice(rerolls) + modifiersOf(run).shopSurcharge;
+}
+
+/** A shop service of the run deck (#2082). */
+type DeckService = "ARCHIVE" | "DUPLICATE";
+
+const SERVICE_NAMES: Readonly<Record<DeckService, string>> = {
+  ARCHIVE: "Archive",
+  DUPLICATE: "Duplicate",
+};
+
+/** What a service costs this run, with any stake surcharge. */
+function servicePrice(run: RunState, service: DeckService): number {
+  return (
+    (service === "ARCHIVE" ? ARCHIVE_PRICE : DUPLICATE_PRICE) +
+    modifiersOf(run).shopSurcharge
+  );
+}
+
+/**
+ * The Blind the shop is stocking for. A shop opens only at a cash-out,
+ * which refuses when no Blind follows, so there always is one.
+ */
+function shopStop(plan: RunPlan, run: RunState): Stop {
+  return nextStop(plan, run) as Stop;
+}
+
+/** The next Blind as the run deck deals it now. */
+function nextDealOf(plan: RunPlan, run: RunState): Scenario {
+  return nextDeal(shopStop(plan, run).blind, run);
+}
+
+/** How many cards the next Blind deals under the run deck. */
+function deckSize(plan: RunPlan, run: RunState): number {
+  return nextDealOf(plan, run).deck.length;
+}
+
+/** The id a copy of a card is named after: the original, never another copy. */
+function copyRoot(run: RunState, cardId: string): string {
+  const item = deckOf(run).added.find((a) => a.id === cardId);
+  if (!item) return cardId;
+  return item.kind === "COPY" ? item.cardId : item.entry.shell.id;
+}
+
+/** Why a service cannot serve any card now, or null. */
+function serviceRefusal(run: RunState, service: DeckService): string | null {
+  const shop = run.shop;
+  const name = SERVICE_NAMES[service];
+  if (!shop) return "The shop is closed.";
+  if (run.decks === "AUTHORED") {
+    return "This run was saved before the run deck: every Blind deals its authored deck.";
+  }
+  if (shop.opened) return "Finish opening the pack first.";
+  if (service === "ARCHIVE" ? shop.archived : shop.duplicated) {
+    return `${name} serves once per shop visit.`;
+  }
+  const price = servicePrice(run, service);
+  if (run.table.budget < price) {
+    return `${name} costs $${price}k; $${run.table.budget}k left.`;
+  }
+  return null;
+}
+
+/**
+ * Why a service cannot serve this card of the next Blind's deck, or null.
+ * Called only with the shop open.
+ */
+function cardServiceRefusal(
+  plan: RunPlan,
+  run: RunState,
+  service: DeckService,
+  cardId: string
+): string | null {
+  const stop = shopStop(plan, run);
+  const dealt = nextDeal(stop.blind, run);
+  const card = dealt.deck.find((c) => c.id === cardId);
+  if (!card) return "That card is not in your deck.";
+  if (service === "DUPLICATE") return null;
+  if (protectedCardIds(stop.blind).has(cardId)) {
+    return `${card.number} is part of ${stop.blind.blind.name}'s scripted setup: it is always dealt.`;
+  }
+  if (dealt.deck.length - 1 < dealt.table.handSize) {
+    return `The deck cannot drop below ${dealt.table.handSize} cards, a full opening hand.`;
+  }
+  return null;
+}
+
+/** A service as the shop shows it. */
+function serviceView(
+  plan: RunPlan,
+  run: RunState,
+  service: DeckService
+): ShopServiceView {
+  const shop = run.shop as ShopState;
+  const cardRefusals: Record<string, string> = {};
+  for (const card of nextDealOf(plan, run).deck) {
+    const refusal = cardServiceRefusal(plan, run, service, card.id);
+    if (refusal) cardRefusals[card.id] = refusal;
+  }
+  return {
+    price: servicePrice(run, service),
+    used: Boolean(service === "ARCHIVE" ? shop.archived : shop.duplicated),
+    refusal: serviceRefusal(run, service),
+    cardRefusals,
+  };
+}
+
+/**
+ * The run deck as it deals next (#2082): the current Blind's cards while it
+ * is played, and the next Blind's once it is cleared.
+ */
+function deckView(plan: RunPlan, run: RunState): RunDeckView {
+  const bonus = shellBonus(run);
+  const stop = run.table.status === "CLEARED" ? nextStop(plan, run) : null;
+  const blind = stop?.blind ?? actBlinds(plan, run)[run.blindIndex];
+  const deck = stop ? run.deck : run.dealtDeck;
+  const cards = deckCardViews(blind, deck, bonus);
+  const dealt = new Set(cards.map((c) => c.id));
+  const changes = deck ?? EMPTY_RUN_DECK;
+  return {
+    blindName: blind.blind.name,
+    cards,
+    size: cards.length,
+    handSize: blind.table.handSize,
+    added: changes.added.length,
+    archived: changes.archived.length,
+    waiting: changes.added.filter((a) => !dealt.has(a.id)).length,
+  };
 }
 
 /** Shop actions a run in the shop routes to the shop reducer. */
@@ -821,6 +1089,32 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
           `${name} costs $${slot.entry.price}k; $${run.table.budget}k left.`
         );
       }
+      const sold = {
+        ...shop,
+        purchases: shop.purchases + 1,
+        slots: shop.slots.map((s, i) =>
+          i === action.slot ? { ...s, sold: true } : s
+        ),
+      };
+      if (slot.entry.kind === "SHELL") {
+        const table = {
+          ...run.table,
+          budget: run.table.budget - slot.entry.price,
+        };
+        const deck = addShell(
+          deckOf(run),
+          slot.entry,
+          `${slot.entry.shell.id}@shop-${runBlindNumber(plan, run)}-${shop.purchases}`
+        );
+        const size = deckSize(plan, { ...run, deck });
+        return announce(
+          run,
+          "SHOP",
+          `Bought ${name} for $${slot.entry.price}k: it joins your deck, ${size} cards next Blind. Study budget $${table.budget}k.`,
+          { deck, shop: sold },
+          table
+        );
+      }
       const full = takeRefusal(run, slot.entry);
       if (full) return refuse(full);
       const table = take(
@@ -832,14 +1126,45 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
         run,
         "SHOP",
         `Bought ${name} for $${slot.entry.price}k. Study budget $${table.budget}k.`,
+        { shop: sold },
+        table
+      );
+    }
+    case "ARCHIVE_CARD":
+    case "DUPLICATE_CARD": {
+      const service = action.type === "ARCHIVE_CARD" ? "ARCHIVE" : "DUPLICATE";
+      const refusal =
+        serviceRefusal(run, service) ??
+        cardServiceRefusal(plan, run, service, action.cardId);
+      if (refusal) return refuse(refusal);
+      const current = run.shop as ShopState;
+      const price = servicePrice(run, service);
+      const table = { ...run.table, budget: run.table.budget - price };
+      const card = nextDealOf(plan, run).deck.find(
+        (c) => c.id === action.cardId
+      ) as TlfCard;
+      const deck =
+        service === "ARCHIVE"
+          ? archiveCard(deckOf(run), card.id)
+          : duplicateCard(
+              deckOf(run),
+              card.id,
+              `${copyRoot(run, card.id)}@copy-${runBlindNumber(plan, run)}`
+            );
+      const next = { ...run, deck };
+      const size = deckSize(plan, next);
+      return announce(
+        run,
+        "SHOP",
+        service === "ARCHIVE"
+          ? `Archived ${card.number} for $${price}k: ${size} cards next Blind. Study budget $${table.budget}k.`
+          : `Duplicated ${card.number} for $${price}k: ${size} cards next Blind. Study budget $${table.budget}k.`,
         {
-          shop: {
-            ...shop,
-            purchases: shop.purchases + 1,
-            slots: shop.slots.map((s, i) =>
-              i === action.slot ? { ...s, sold: true } : s
-            ),
-          },
+          deck,
+          shop:
+            service === "ARCHIVE"
+              ? { ...current, archived: true }
+              : { ...current, duplicated: true },
         },
         table
       );
@@ -1068,6 +1393,8 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
     relicSellValues: Object.fromEntries(
       run.table.relics.map((r) => [r.id, relicSellValue(act, r.id)])
     ),
+    archive: serviceView(plan, run, "ARCHIVE"),
+    duplicate: serviceView(plan, run, "DUPLICATE"),
   };
 }
 
@@ -1263,7 +1590,8 @@ export function createRunState(
   authored: RunPlan,
   seed: string = DEFAULT_SEED,
   options: Partial<RunChoice> = {},
-  dealing: DeckDealing = "SHUFFLED"
+  dealing: DeckDealing = "SHUFFLED",
+  decks: DeckLibrary = "RUN"
 ): RunState {
   const choice = resolveRunChoice(options);
   const plan = ruledPlan(authored, choice);
@@ -1298,6 +1626,7 @@ export function createRunState(
     }),
     ...(choice.stake !== DEFAULT_STAKE && { stake: choice.stake }),
     ...(dealing === "AUTHORED" && { dealing }),
+    ...(decks === "AUTHORED" && { decks }),
     drawIndex,
     draws,
     bossIds: [boss.bossId],
@@ -1417,6 +1746,8 @@ export function advanceRun(
     case "PICK_PACK_CARD":
     case "SKIP_PACK":
     case "SELL_RELIC":
+    case "ARCHIVE_CARD":
+    case "DUPLICATE_CARD":
       return shopAction(plan, run, action);
     case "NEXT_BLIND": {
       if (run.table.status !== "CLEARED") {
@@ -1437,7 +1768,9 @@ export function advanceRun(
             ...run.table,
             budget: run.table.budget + payoutFor(plan, run).total,
           };
-      const next = stop.blind;
+      // The next Blind deals from the run deck as the shop left it.
+      const next = nextDeal(stop.blind, run);
+      const dealt = dealFields(run);
       if (stop.actIndex !== run.actIndex) {
         // A new study: its own subjects, snapshots, rulebook and outputs.
         // The last study's sites closed out with it; everything else the
@@ -1471,7 +1804,7 @@ export function advanceRun(
           modifiersOf(run)
         );
         return {
-          ...run,
+          ...dealt,
           ...lockFields(lock),
           drawIndex: opening.drawIndex,
           draws: opening.draws,
@@ -1502,7 +1835,7 @@ export function advanceRun(
         stop.blindIndex
       );
       return {
-        ...run,
+        ...dealt,
         drawIndex,
         draws,
         blindIndex: stop.blindIndex,
@@ -1526,9 +1859,12 @@ export function advanceRun(
     case "SELL_CONSUMABLE":
       // Between Blinds the table is closed; the shop takes the sale.
       if (run.table.status === "CLEARED") return shopAction(plan, run, action);
-      return { ...run, table: advanceTable(blind, run.table, action) };
+      return {
+        ...run,
+        table: advanceTable(tableScenario(blind, run), run.table, action),
+      };
     default: {
-      const table = advanceTable(blind, run.table, action);
+      const table = advanceTable(tableScenario(blind, run), run.table, action);
       // Form 483: a Boss reward cannot fill the locked slot.
       if (
         table.relics.length > run.table.relics.length &&
@@ -1549,7 +1885,7 @@ export function deriveRunView(authored: RunPlan, run: RunState): RunView {
   const plan = playedPlan(authored, run);
   const { blindIndex } = run;
   const blinds = actBlinds(plan, run);
-  const blind = blinds[blindIndex];
+  const blind = tableScenario(blinds[blindIndex], run);
   const stop = nextStop(plan, run);
   const isFinalBlind = stop === null;
   const phase: RunPhase =
@@ -1615,5 +1951,6 @@ export function deriveRunView(authored: RunPlan, run: RunState): RunView {
           campaignWon: run.endless || phase === "RUN_WON",
         }
       : null,
+    deck: deckView(plan, run),
   };
 }

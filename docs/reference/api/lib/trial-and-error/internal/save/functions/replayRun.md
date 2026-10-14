@@ -8,8 +8,8 @@
 
 > **replayRun**(`act`, `log`): [`RunState`](../../run/interfaces/RunState.md)
 
-Replays a log from its seed, sponsor, stake and deal mode. The same seed,
-choice and moves give the same run.
+Replays a log from its seed, sponsor, stake, deal mode and deck mode. The
+same seed, choice and moves give the same run.
 
 ## Parameters
 

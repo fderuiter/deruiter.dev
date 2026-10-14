@@ -1466,6 +1466,35 @@ const shopSeal = (seal: FootnoteSeal): ShopEntry => ({
 });
 
 /**
+ * A blank shell for the run deck (#2082). It is its own shell, `-LIB` after
+ * the output it plans, so it never stands in for a Blind's authored shell,
+ * and the SAP that applies is whichever study deals it.
+ */
+const shopShell = (
+  shell: TableShellSpec,
+  card: Extract<ShopEntry, { kind: "SHELL" }>["card"],
+  price: number
+): ShopEntry => ({
+  kind: "SHELL",
+  price,
+  shell: { ...shell, id: `${shell.id}-LIB`, requiredRulebookId: "SAP-ANY" },
+  card,
+});
+
+/** A safety output's blank shell for the shop, compiled on Safety data. */
+const safetyShopShell = (output: SafetyOutput, price: number): ShopEntry => {
+  const spec = SAFETY_OUTPUTS[output];
+  return shopShell(
+    {
+      ...shellOf("SAP-ANY", spec.id, `${spec.title}, blank shell`, spec.chips),
+      layout: { columns, rows: spec.rows },
+    },
+    spec.card,
+    price
+  );
+};
+
+/**
  * SAP Amendments (#1086): the shop's rulebook tier. Filing one raises a
  * non-fatal rule's stakes for the rest of the run, and stales every output
  * in hand compiled under the rulebook it supersedes.
@@ -1596,6 +1625,17 @@ export const ACT_I_SHOP: ShopCatalog = {
     shopSeal(AE_NOT_EXCLUSIVE),
     shopSeal(DATA_CUTOFF),
     shopSeal(SPONSOR_ROUNDING),
+    // Blank shells for the run deck (#2082): clean once allocated, so they
+    // cost a little more than a seal and less than the strongest relics.
+    shopShell(
+      demographicsShell("SAP-ANY"),
+      { title: "Demographics", topic: "DM", csrStage: "BASELINE" },
+      4
+    ),
+    safetyShopShell("overview", 5),
+    safetyShopShell("sae", 5),
+    safetyShopShell("cardiac", 4),
+    safetyShopShell("infections", 4),
   ],
   packs: [
     {

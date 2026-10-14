@@ -12,7 +12,7 @@ import { playBlind } from "./trial-and-error-bot";
  * A seed whose first shop stocks a SAP Amendment the run can afford once it
  * sells its seals (#1086). Changing the Act I catalog can move it.
  */
-export const AMENDMENT_SEED = "amend-15";
+export const AMENDMENT_SEED = "amend-0";
 
 /**
  * The actions that clear the Small Blind on {@link AMENDMENT_SEED}, buy the

@@ -33,6 +33,12 @@ export interface RunLog {
    * replays in written deal order. Absent means a shuffled run.
    */
   dealing?: "AUTHORED";
+  /**
+   * AUTHORED for a run first saved before the run deck (#2082): every Blind
+   * deals its authored deck and the shop stocks no shells. Absent means a
+   * run with a run deck.
+   */
+  decks?: "AUTHORED";
   actions: LoggedAction[];
   /** How the seed was chosen; absent means a random run. */
   origin?: RunOrigin;
@@ -51,9 +57,13 @@ export interface RestoredRun {
  *
  * v1 to v2 (#2055): v1 runs dealt every deck in its written order, and their
  * moves name the cards that order dealt, so they keep dealing that way.
+ *
+ * v2 to v3 (#2082): v2 runs had no run deck, and their shop moves name slots
+ * stocked from a catalog without shells, so they keep their authored decks.
  */
 const MIGRATIONS: Readonly<Record<number, (doc: unknown) => unknown>> = {
   1: (doc) => ({ ...(doc as object), version: 2, dealing: "AUTHORED" }),
+  2: (doc) => ({ ...(doc as object), version: 3, decks: "AUTHORED" }),
 };
 
 function migrate(doc: unknown): unknown | null {
@@ -81,6 +91,7 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
       sponsorId: log.sponsorId,
       stake: log.stake,
       ...(log.dealing ? { dealing: log.dealing } : {}),
+      ...(log.decks ? { decks: log.decks } : {}),
       actions: log.actions,
       ...(log.origin ? { origin: log.origin } : {}),
     })
@@ -88,8 +99,8 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
 }
 
 /**
- * Replays a log from its seed, sponsor, stake and deal mode. The same seed,
- * choice and moves give the same run.
+ * Replays a log from its seed, sponsor, stake, deal mode and deck mode. The
+ * same seed, choice and moves give the same run.
  */
 export function replayRun(act: RunPlan, log: RunLog): RunState {
   return log.actions.reduce(
@@ -98,7 +109,8 @@ export function replayRun(act: RunPlan, log: RunLog): RunState {
       act,
       log.seed,
       { sponsorId: log.sponsorId, stake: log.stake },
-      log.dealing ?? "SHUFFLED"
+      log.dealing ?? "SHUFFLED",
+      log.decks ?? "RUN"
     )
   );
 }
@@ -133,6 +145,7 @@ export function parseRunSave(
       ...(save.sponsorId !== undefined && { sponsorId: save.sponsorId }),
       ...(save.stake !== undefined && { stake: save.stake }),
       ...(save.dealing !== undefined && { dealing: save.dealing }),
+      ...(save.decks !== undefined && { decks: save.decks }),
       actions: [...save.actions, ...deselect],
       ...(save.origin ? { origin: save.origin } : {}),
     };

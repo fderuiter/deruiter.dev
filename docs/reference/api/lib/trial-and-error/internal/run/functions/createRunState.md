@@ -6,7 +6,7 @@
 
 # Function: createRunState()
 
-> **createRunState**(`authored`, `seed?`, `options?`, `dealing?`): [`RunState`](../interfaces/RunState.md)
+> **createRunState**(`authored`, `seed?`, `options?`, `dealing?`, `decks?`): [`RunState`](../interfaces/RunState.md)
 
 A fresh run for `seed`: the first act's Boss drawn from its pool, and the
 first Blind dealt with full CPU. The first Blind draws no crisis. A later
@@ -38,6 +38,10 @@ then AUTHORED deals every Blind in its written order, as it was recorded.
 ### dealing?
 
 [`DeckDealing`](../../deal/type-aliases/DeckDealing.md) = `"SHUFFLED"`
+
+### decks?
+
+[`DeckLibrary`](../../run-deck/type-aliases/DeckLibrary.md) = `"RUN"`
 
 ## Returns
 

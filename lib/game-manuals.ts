@@ -1636,9 +1636,15 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Shop",
       },
       {
+        title: "The run deck",
+        detail:
+          "Your deck is carried from Blind to Blind and act to act. Each Blind still deals the outputs its study produces, and your changes ride on top. The shop sells blank table shells: one joins your deck and is dealt in every later Blind, in this study and the next, and compiles clean once you allocate it an analysis set. Once per shop visit, Archive ($3k) takes a card out of every later deal and Duplicate ($5k) copies one. A Blind's scripted setup cannot be archived, and no deck drops below a full opening hand. The shop and Run Info list the deck the next Blind deals.",
+        badge: "Deck",
+      },
+      {
         title: "Saved runs",
         detail:
-          "The cabinet keeps the run's seed and your moves in this browser, never a blinded value, and replays them when you choose Resume run. The save is cleared when the run ends or you start a new one.",
+          "The cabinet keeps the run's seed and your moves in this browser, never a blinded value, and replays them when you choose Resume run. The save is cleared when the run ends or you start a new one. A run saved before the run deck resumes with its Blinds' own decks and no shells in the shop.",
         badge: "Save",
       },
     ],

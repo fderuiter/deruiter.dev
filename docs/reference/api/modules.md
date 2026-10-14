@@ -231,6 +231,7 @@
 - [lib/garmin-course](lib/garmin-course/README.md)
 - [lib/garmin-culture](lib/garmin-culture/README.md)
 - [lib/garmin-engine](lib/garmin-engine/README.md)
+- [lib/garmin-finisher](lib/garmin-finisher/README.md)
 - [lib/garmin-foes](lib/garmin-foes/README.md)
 - [lib/garmin-ghost](lib/garmin-ghost/README.md)
 - [lib/garmin-ghost-store](lib/garmin-ghost-store/README.md)

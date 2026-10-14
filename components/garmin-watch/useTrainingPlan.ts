@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { GameEngineState } from "@/lib/garmin-engine";
+import type { FinisherCard, GameEngineState } from "@/lib/garmin-engine";
 import { clamp } from "@/lib/game-utils";
 import {
   GEAR_ITEM_NAMES,
@@ -49,12 +49,15 @@ interface UseTrainingPlanOptions {
   announce: Announce;
   /**
    * Starts a workout: its run, the lives to start with (null for a practice
-   * run, which starts with a fresh three), and the gear packed for it.
+   * run, which starts with a fresh three), the gear packed for it, and the
+   * Finisher Cards it collects onto (null when it collects none: practice and
+   * Race Day).
    */
   startWorkout: (
     run: PlanRun,
     lives: number | null,
-    packed: readonly GearItem[]
+    packed: readonly GearItem[],
+    cards: readonly FinisherCard[] | null
   ) => void;
 }
 
@@ -103,6 +106,9 @@ export function workoutOutcome(
       lives: state.lives ?? 1,
       score: state.score,
       trainingEffect: state.lastTrainingEffect ?? null,
+      ...(Array.isArray(state.finisherCards)
+        ? { cards: state.finisherCards }
+        : {}),
     });
     if (node.kind === "raceday") {
       return {
@@ -229,14 +235,21 @@ export function useTrainingPlan({
       if (!run) return;
       const practice = status === "cleared";
       // A new workout takes the packed gear; practice and Race Day leave it.
-      const packed = loadoutApplies(id, practice) ? current.packed : [];
+      const fresh = loadoutApplies(id, practice);
+      const packed = fresh ? current.packed : [];
       runRef.current = { node: id, practice };
       commit(
         packed.length > 0 ? { ...here, packed: [] } : here,
         viewRef.current.screen
       );
       setBagOpen(false);
-      startWorkout(run, practice ? null : current.lives, packed);
+      // The Finisher Cards collect on a new workout too (#1996).
+      startWorkout(
+        run,
+        practice ? null : current.lives,
+        packed,
+        fresh ? current.cards : null
+      );
       const gear =
         packed.length > 0
           ? ` Packed: ${packed.map((item) => GEAR_ITEM_NAMES[item]).join(", ")}.`

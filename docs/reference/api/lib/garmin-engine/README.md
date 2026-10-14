@@ -29,6 +29,7 @@
 ## Type Aliases
 
 - [DeviceTarget](type-aliases/DeviceTarget.md)
+- [FinisherCard](type-aliases/FinisherCard.md)
 - [GameRules](type-aliases/GameRules.md)
 - [GarminDifficulty](type-aliases/GarminDifficulty.md)
 - [GarminLoadout](type-aliases/GarminLoadout.md)

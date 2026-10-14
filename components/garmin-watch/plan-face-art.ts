@@ -6,6 +6,7 @@
 
 import { CANVAS_SIZE } from "@/lib/garmin-engine";
 import { gameFont } from "@/lib/game-utils";
+import { FINISHER_CARD_NAMES } from "@/lib/garmin-finisher";
 import {
   BAG_SIZE,
   GEAR_ITEM_NAMES,
@@ -115,6 +116,12 @@ function readinessColor(score: number): string {
   return COLORS.danger;
 }
 
+/** The Finisher Cards held towards the next set (#1996), or null when none. */
+function cardsLine(save: PlanSave): string | null {
+  if (save.cards.length === 0) return null;
+  return `CARDS: ${save.cards.map((c) => FINISHER_CARD_NAMES[c].toUpperCase()).join(" · ")}`;
+}
+
 /** The first line of the face's plan readout: lives, continues and the bag. */
 function statusLine(save: PlanSave): string {
   return `LIVES ${save.lives} · CONT ${save.continues} · BAG ${save.bag.length + save.packed.length}/${BAG_SIZE}`;
@@ -151,6 +158,8 @@ function drawReport(ctx: Ctx, save: PlanSave) {
     COLORS.dim,
     "normal"
   );
+  const cards = cardsLine(save);
+  if (cards) text(ctx, cards, CENTER, 206, 8, COLORS.warn, "normal");
   text(ctx, "SPACE: TO THE MAP · X: BAG", CENTER, 222, 7.5, COLORS.steel);
 }
 
@@ -197,6 +206,8 @@ function drawNode(ctx: Ctx, save: PlanSave, node: PlanNode, cursor: boolean) {
 function drawMap(ctx: Ctx, save: PlanSave) {
   text(ctx, "TRAINING PLAN", CENTER, 52, 11, COLORS.identity);
   text(ctx, statusLine(save), CENTER, 68, 7.5, COLORS.dim, "normal");
+  const cards = cardsLine(save);
+  if (cards) text(ctx, cards, CENTER, 80, 7, COLORS.warn, "normal");
   text(ctx, "WK 1", 20, 115, 7, COLORS.dim, "normal");
   text(ctx, "WK 2", 20, 173, 7, COLORS.dim, "normal");
   // Paths first, under the nodes: lit once the node they leave is cleared.
@@ -354,6 +365,13 @@ export function renderPlanFace(
   ctx.restore();
 }
 
+/** The Finisher Cards held, as a sentence with a leading space, or "". */
+function cardsSentence(save: PlanSave): string {
+  return save.cards.length > 0
+    ? ` Finisher cards: ${save.cards.map((c) => FINISHER_CARD_NAMES[c]).join(", ")}.`
+    : "";
+}
+
 /** What a Training Plan screen shows, in words, for the screen's label. */
 export function planScreenLabel(save: PlanSave, screen: PlanScreen): string {
   if (screen.kind === "report") {
@@ -369,10 +387,10 @@ export function planScreenLabel(save: PlanSave, screen: PlanScreen): string {
       save.packed.length > 0
         ? ` Packed: ${save.packed.map((item) => GEAR_ITEM_NAMES[item]).join(", ")}.`
         : ""
-    } X opens the gear bag.`;
+    }${cardsSentence(save)} X opens the gear bag.`;
   }
   if (screen.kind === "map") {
-    return `Training Plan map. On ${planNode(save.cursor).name}, ${planNode(save.cursor).day}.`;
+    return `Training Plan map. On ${planNode(save.cursor).name}, ${planNode(save.cursor).day}.${cardsSentence(save)}`;
   }
   if (screen.kind === "hut") {
     return screen.picked

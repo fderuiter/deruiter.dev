@@ -14,6 +14,8 @@
  */
 
 import { courseRandom } from "./garmin-course";
+import type { FinisherCard } from "./garmin-engine";
+import { cardsOf } from "./garmin-finisher";
 import { START_LIVES } from "./garmin-powerups";
 import { clamp } from "./game-utils";
 
@@ -208,6 +210,8 @@ export interface PlanSave {
   packed: GearItem[];
   /** Nodes a Rest Day opened without clearing the workout before them (#1995). */
   unlocked: PlanNodeId[];
+  /** Finisher Cards collected towards the next set of three (#1996). */
+  cards: FinisherCard[];
   /** Race Day has been won: the finisher medal. */
   finished: boolean;
   /** DNFs since the last cleared workout. */
@@ -230,6 +234,7 @@ export function newPlan(seed: number): PlanSave {
     bag: [],
     packed: [],
     unlocked: [],
+    cards: [],
     finished: false,
     dnfs: 0,
     lastTe: null,
@@ -318,6 +323,11 @@ export interface WorkoutResult {
   score: number;
   /** The stage's Training Effect, if graded. */
   trainingEffect: number | null;
+  /**
+   * The Finisher Cards held at the finish (#1996). Unset for a run that
+   * collects none, Race Day's, which leaves the plan's cards as they are.
+   */
+  cards?: readonly FinisherCard[];
 }
 
 /**
@@ -337,6 +347,7 @@ export function clearWorkout(
     cleared: isCleared(save, id) ? save.cleared : [...save.cleared, id],
     lives: clamp(Math.floor(result.lives), 1, 99),
     score: save.score + Math.max(0, Math.floor(result.score)),
+    cards: result.cards ? cardsOf(result.cards) : save.cards,
     finished: save.finished || node.kind === "raceday",
     dnfs: 0,
     lastTe: result.trainingEffect,

@@ -761,6 +761,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Bag",
       },
       {
+        title: "Finisher Cards",
+        detail:
+          "Every finish pole carries a Finisher Card that flips through a Shoe, a Bottle and a Medal. Grab the pole and you keep the card it showed. Three cards pay out: three Shoes earn 2 lives, three Bottles 3 and three Medals 5, each with a badge, and three mixed cards give 1 life. Your cards show under the medal slots at the top of the face. A Training Run keeps its cards for that run, and the Training Plan keeps them between workouts on the map. Race Mode, Race Day and practice runs leave the cards alone. With reduced motion on, the pole shows all three cards standing still, and an outline steps from card to card to mark the one on offer.",
+        badge: "Cards",
+      },
+      {
         title: "Race Day and The Wall",
         detail:
           "Race Day ends the plan. The lane moves at a steady race pace, so pace keys do nothing, and the run clock times it onto its own Race Day board. Near the end The Wall steps out, and the finish stays out of reach until it falls. It holds ahead of you, then charges down the lane: jump and land on top to hit it, or jump clear to dodge. It takes three hits, and each one changes its pattern: it charges faster, then throws a brick while it holds, then two. Bricks fly low, so a jump clears them. Beat it and reach the finish for the finisher medal.",

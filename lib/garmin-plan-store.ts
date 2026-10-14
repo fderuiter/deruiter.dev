@@ -18,6 +18,7 @@ import {
   type PlanSave,
 } from "./garmin-plan";
 import { packableOnly } from "./garmin-bag";
+import { cardsOf } from "./garmin-finisher";
 import { START_LIVES } from "./garmin-powerups";
 import { safeGetRawItem, safeRemoveItem, safeSetRawItem } from "./safe-storage";
 
@@ -106,6 +107,7 @@ export function normalizePlan(value: unknown): PlanSave | null {
     bag,
     packed,
     unlocked: nodeIdsOf(raw.unlocked),
+    cards: cardsOf(raw.cards),
     finished: raw.finished === true,
     dnfs: wholeIn(raw.dnfs, 0, 999, 0),
     lastTe:

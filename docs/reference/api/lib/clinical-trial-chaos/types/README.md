@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [AmendmentOutcome](interfaces/AmendmentOutcome.md)
 - [AuditLogEntry](interfaces/AuditLogEntry.md)
 - [AuditorState](interfaces/AuditorState.md)
 - [BIMOFinding](interfaces/BIMOFinding.md)

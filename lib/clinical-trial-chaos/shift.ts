@@ -20,6 +20,7 @@ import {
   tickPowerUps,
   tickSubjectTimers,
 } from "./engine";
+import { getAuditYearAmendmentFactor } from "./escalation";
 import {
   applySponsorSkeletonsToReport,
   SponsorEvent,
@@ -941,13 +942,18 @@ export function tickShiftClocks(
 
 /**
  * Seconds between random protocol amendments in a phase, before the office
- * adjusts it.
+ * adjusts it. Endless Audit Years shorten it further (#2053).
  *
  * @param phase - The running phase.
- * @returns 40, 28 or 20 seconds.
+ * @param auditYear - The endless Audit Year; 1 leaves the phase rate.
+ * @returns 40, 28 or 20 seconds in year 1, less in later years.
  */
-export function getAmendmentIntervalSeconds(phase: GamePhase): number {
-  return phase === 1 ? 40 : phase === 2 ? 28 : 20;
+export function getAmendmentIntervalSeconds(
+  phase: GamePhase,
+  auditYear = 1
+): number {
+  const base = phase === 1 ? 40 : phase === 2 ? 28 : 20;
+  return base * getAuditYearAmendmentFactor(auditYear);
 }
 
 /**

@@ -40,6 +40,12 @@ readonly `Pick`\<[`StationConfig`](../../types/interfaces/StationConfig.md), `"i
 
 `number`
 
+#### signaturesRequired?
+
+`number`
+
+Signature steps the CRF needs; two forces the review dialog (#2053).
+
 #### submittedCount
 
 `number`

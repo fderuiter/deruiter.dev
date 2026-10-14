@@ -282,6 +282,23 @@ export function getAuditorX(auditor: Pick<AuditorState, "x">, width: number) {
 }
 
 /**
+ * The auditor position (0 to 1) that stands them over a chute, the inverse
+ * of `getAuditorX`, for a GCP spot inspection (#2053).
+ */
+export function getAuditorParkX(
+  width: number,
+  count: number,
+  index: number,
+  left = 0
+): number {
+  const slot = getChuteSlots(width, count, left)[index];
+  if (!slot) return 0.5;
+  const from = width * 0.14;
+  const span = width - 40 - from;
+  return span > 0 ? clamp((slot.cx - from) / span, 0, 1) : 0.5;
+}
+
+/**
  * The cone the auditor casts onto the belt, or null on a coffee break. It
  * points the way they walk; inspecting narrows it and looks straight down,
  * and its colour and strength follow suspicion.

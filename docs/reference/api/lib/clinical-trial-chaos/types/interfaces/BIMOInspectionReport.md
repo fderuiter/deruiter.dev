@@ -8,9 +8,25 @@
 
 ## Properties
 
+### amendmentOutcomes?
+
+> `optional` **amendmentOutcomes?**: [`AmendmentOutcome`](AmendmentOutcome.md)[]
+
+How lasting protocol amendments were handled this shift (#2053).
+
+***
+
 ### auditDate
 
 > **auditDate**: `string`
+
+***
+
+### auditYear?
+
+> `optional` **auditYear?**: `number`
+
+The Audit Year an endless run reached (#2053); absent for a campaign.
 
 ***
 

@@ -25,6 +25,7 @@ import type {
   AdverseEvent,
   FootnoteSeal,
   Relic,
+  RelicRarity,
   RelicTrigger,
   RowStatistic,
   SapAmendment,
@@ -37,6 +38,7 @@ import type {
   TableShellSpec,
   TlfCard,
 } from "./types";
+import { shopEntryId } from "./types";
 import { GUIDANCE_CARDS } from "./internal/guidance";
 import { raiseQuotas } from "./internal/quotas";
 import { roundRatio } from "./internal/rounding";
@@ -1440,7 +1442,8 @@ const shopRelic = (
   description: string,
   price: number,
   bonus: { chips?: number; plusMult?: number; xMult?: number },
-  trigger?: RelicTrigger
+  trigger: RelicTrigger | undefined,
+  rarity: RelicRarity
 ): ShopEntry => ({
   kind: "RELIC",
   price,
@@ -1449,6 +1452,7 @@ const shopRelic = (
     name,
     description,
     ...(trigger ? { trigger } : {}),
+    rarity,
     modifier: {
       sourceId: id,
       label: name,
@@ -1524,219 +1528,498 @@ export const SAP_AMENDMENTS = {
   },
 } as const satisfies Record<string, SapAmendment>;
 
-/** Act I's Procurement Shop: its stock, its booster packs and its sites. */
+/**
+ * The relics every act's shop stocked before each act had its own (#2083),
+ * in the order the classic catalog lists them.
+ */
+const CLASSIC_RELICS: readonly ShopEntry[] = [
+  shopRelic(
+    "REL-SENIOR-PROGRAMMER",
+    "Senior Programmer",
+    "Twenty years of PROC REPORT muscle memory: +30 Chips on every hand.",
+    4,
+    { chips: 30 },
+    undefined,
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-SECOND-REVIEWER",
+    "Second Reviewer",
+    "Reads every footnote twice, out loud: +3 Mult on every hand.",
+    6,
+    { plusMult: 3 },
+    undefined,
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-MACRO-LIBRARY",
+    "Validated Macro Library",
+    "Qualified once, reused forever: +20 Chips and +1 Mult on every hand.",
+    6,
+    { chips: 20, plusMult: 1 },
+    undefined,
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-CONFORMANCE-CHECKER",
+    "Conformance Checker",
+    "Flags the define.xml before the reviewer does: +40 Chips on every hand.",
+    7,
+    { chips: 40 },
+    undefined,
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-BIOSTAT-LEAD",
+    "Biostatistics Lead",
+    "Signs the SAP and means it: ×1.25 Mult on every hand.",
+    8,
+    { xMult: 1.25 },
+    undefined,
+    "RARE"
+  ),
+  // Triggered relics (#924): each fires only in its phase.
+  shopRelic(
+    "REL-LEAD-PROGRAMMER-MACRO",
+    "Lead Programmer Macro",
+    "One macro, every validated table: +4 Mult for each QC ✓ Table scored.",
+    6,
+    { plusMult: 4 },
+    { phase: "ON_CARD_SCORED", cardType: "TABLE", qcPassedOnly: true },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-ITT-PURIST",
+    "The ITT Purist",
+    "Randomized is analyzed: retriggers every ITT output scored.",
+    8,
+    {},
+    { phase: "ON_CARD_SCORED", population: "ITT", retrigger: true },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-SENIOR-MEDICAL-WRITER",
+    "Senior Medical Writer",
+    "A figure is worth a thousand words: +50 Chips if the hand holds a Figure.",
+    5,
+    { chips: 50 },
+    { phase: "ON_HAND_PLAYED", requires: "FIGURE_IN_HAND" },
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-DOUBLE-PROGRAMMING",
+    "Double-Programming Pipeline",
+    "Two programmers, one answer: ×1.5 Mult if the hand has no redline.",
+    8,
+    { xMult: 1.5 },
+    { phase: "ON_HAND_PLAYED", requires: "NO_REDLINES" },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-PROTOCOL-OPTIMIZATION-SOP",
+    "Protocol Optimization SOP",
+    "Streamlined triage: the first discard of every Blind costs no base CPU.",
+    5,
+    {},
+    { phase: "ON_DISCARD", freeDiscards: 1 },
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-GRID-ALLOCATION",
+    "Reserved Grid Allocation",
+    "A standing reservation on the compute grid: +1 CPU at every Blind start.",
+    6,
+    {},
+    { phase: "ON_BLIND_START", cpu: 1 },
+    "UNCOMMON"
+  ),
+];
+
+/** A classic relic's shop entry, by id. */
+const classicRelic = (id: string): ShopEntry =>
+  CLASSIC_RELICS.find((e) => shopEntryId(e) === id) as ShopEntry;
+
+/** Every shop's stock besides relics: Guidance, amendments, seals and shells. */
+const SHARED_STOCK: readonly ShopEntry[] = [
+  ...Object.values(GUIDANCE_CARDS).map((guidance): ShopEntry => ({
+    kind: "GUIDANCE",
+    price: guidance.sellValue * 2 + 1,
+    guidance,
+  })),
+  ...Object.values(SAP_AMENDMENTS).map((amendment): ShopEntry => ({
+    kind: "AMENDMENT",
+    price: amendment.sellValue * 2,
+    amendment,
+  })),
+  shopSeal(ADJUDICATED),
+  shopSeal(AE_NOT_EXCLUSIVE),
+  shopSeal(DATA_CUTOFF),
+  shopSeal(SPONSOR_ROUNDING),
+  // Blank shells for the run deck (#2082): clean once allocated, so they
+  // cost a little more than a seal and less than the strongest relics.
+  shopShell(
+    demographicsShell("SAP-ANY"),
+    { title: "Demographics", topic: "DM", csrStage: "BASELINE" },
+    4
+  ),
+  safetyShopShell("overview", 5),
+  safetyShopShell("sae", 5),
+  safetyShopShell("cardiac", 4),
+  safetyShopShell("infections", 4),
+];
+
+/** Every shop's booster packs. */
+const SHARED_PACKS: ShopCatalog["packs"] = [
+  {
+    id: "PACK-SITE-ACTIVATION",
+    kind: "SITE_ACTIVATION",
+    name: "Site Activation Pack",
+    description:
+      "New sites, new subjects, more Chips. Their enrollment reopens the snapshot.",
+    price: 4,
+    size: 3,
+    choose: 1,
+  },
+  {
+    id: "PACK-GUIDANCE",
+    kind: "GUIDANCE",
+    name: "Guidance Pack",
+    description: "Freshly harmonised guidance, still warm from the printer.",
+    price: 3,
+    size: 3,
+    choose: 1,
+  },
+  {
+    id: "PACK-RELIC",
+    kind: "RELIC",
+    name: "Relic Pack",
+    description: "Headhunted talent and validated tooling.",
+    price: 6,
+    size: 2,
+    choose: 1,
+  },
+];
+
+/** The sites every shop's Site Activation pack draws from. */
+const SHARED_SITES: ShopCatalog["sites"] = [
+  {
+    id: "SITE-104",
+    name: "Site 104, Rotterdam",
+    description:
+      "A fast-enrolling site with an eager coordinator: +20 Chips on every hand.",
+    modifier: {
+      sourceId: "SITE-104",
+      label: "Site 104",
+      chips: 20,
+      plusMult: 0,
+      xMult: 1,
+    },
+    subjects: [
+      subject("S-013", "PLACEBO", 44, "M", [...ALL]),
+      subject("S-014", "ACTIVE", 51, "F", [...ALL], [ae(GI, "Nausea", 1)]),
+    ],
+  },
+  {
+    id: "SITE-211",
+    name: "Site 211, Lyon",
+    description: "Small, careful and slow to query: +15 Chips on every hand.",
+    modifier: {
+      sourceId: "SITE-211",
+      label: "Site 211",
+      chips: 15,
+      plusMult: 0,
+      xMult: 1,
+    },
+    subjects: [subject("S-015", "ACTIVE", 38, "M", [...NO_PP])],
+  },
+  {
+    id: "SITE-305",
+    name: "Site 305, Austin",
+    description:
+      "A research-naive site that enrolls anyone breathing: +30 Chips on every hand.",
+    modifier: {
+      sourceId: "SITE-305",
+      label: "Site 305",
+      chips: 30,
+      plusMult: 0,
+      xMult: 1,
+    },
+    subjects: [
+      subject("S-016", "PLACEBO", 63, "F", [...ALL]),
+      subject(
+        "S-017",
+        "ACTIVE",
+        57,
+        "M",
+        [...ITT_ONLY],
+        [ae(NERVOUS, "Headache", 2)]
+      ),
+    ],
+  },
+  {
+    id: "SITE-412",
+    name: "Site 412, Osaka",
+    description:
+      "Immaculate source data and a translator on retainer: +1 Mult on every hand.",
+    modifier: {
+      sourceId: "SITE-412",
+      label: "Site 412",
+      chips: 0,
+      plusMult: 1,
+      xMult: 1,
+    },
+    subjects: [subject("S-018", "PLACEBO", 29, "F", [...ALL])],
+  },
+];
+
+/**
+ * The one catalog every act stocked before each act had its own shop
+ * (#2083). Runs saved then replay against it, drawn evenly, so their shop
+ * moves name the same slots; no new run stocks it.
+ */
+export const CLASSIC_SHOP: ShopCatalog = {
+  entries: [...CLASSIC_RELICS, ...SHARED_STOCK],
+  packs: SHARED_PACKS,
+  sites: SHARED_SITES,
+};
+
+// Synergy relics (#2083): each scales with something the player builds up
+// this Blind or this run, and none overrides the SAP.
+
+/** Act I's synergy commons: cheap engines a first build can start from. */
+const ACT_I_SYNERGY: readonly ShopEntry[] = [
+  shopRelic(
+    "REL-SAFETY-DATA-MANAGER",
+    "Safety Data Manager",
+    "Owns the safety database end to end: +12 Chips for each Safety output scored.",
+    4,
+    { chips: 12 },
+    { phase: "ON_CARD_SCORED", population: "SAFETY" },
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-QUERY-TRIAGE-DESK",
+    "Query Triage Desk",
+    "Every query closed is a lesson: +1 Mult on every hand for each discard made this Blind.",
+    5,
+    { plusMult: 1 },
+    { phase: "ON_DISCARD", stacks: true },
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-CHANGE-CONTROL-LOG",
+    "Change-Control Log",
+    "Documents every superseded version: +20 Chips for each stale output in hand.",
+    4,
+    { chips: 20 },
+    { phase: "ON_HAND_PLAYED", scale: "STALE_IN_HAND" },
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-QC-CHECKLIST",
+    "QC Checklist",
+    "Ticked, initialled, dated: +10 Chips on every hand for each redline fixed this Blind.",
+    4,
+    { chips: 10 },
+    { phase: "ON_HAND_PLAYED", scale: "REDLINES_FIXED" },
+    "COMMON"
+  ),
+];
+
+/** Act II's synergy relics: stronger engines, mostly uncommon. */
+const ACT_II_SYNERGY: readonly ShopEntry[] = [
+  shopRelic(
+    "REL-CAPA-COORDINATOR",
+    "CAPA Coordinator",
+    "Turns every finding into a process fix: +1 Mult on every hand for each redline fixed this Blind.",
+    6,
+    { plusMult: 1 },
+    { phase: "ON_HAND_PLAYED", scale: "REDLINES_FIXED" },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-PER-PROTOCOL-ADVOCATE",
+    "Per-Protocol Advocate",
+    "Only the compliant count: +3 Mult for each Per-Protocol output scored.",
+    6,
+    { plusMult: 3 },
+    { phase: "ON_CARD_SCORED", population: "PER_PROTOCOL" },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-PATIENT-PROFILE-REVIEWER",
+    "Patient Profile Reviewer",
+    "Reads every listing line by line: +25 Chips for each Listing scored.",
+    4,
+    { chips: 25 },
+    { phase: "ON_CARD_SCORED", cardType: "LISTING" },
+    "COMMON"
+  ),
+  shopRelic(
+    "REL-INTERIM-ANALYSIS-PLAN",
+    "Interim Analysis Plan",
+    "Each look builds on the last: +2 Mult for each hand already played this Blind.",
+    7,
+    { plusMult: 2 },
+    { phase: "ON_HAND_PLAYED", scale: "HANDS_PLAYED" },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-ELASTIC-COMPUTE",
+    "Elastic Compute Lease",
+    "Scales with the programme: +1 CPU at every Blind start, and +1 more for each act after the first.",
+    7,
+    {},
+    { phase: "ON_BLIND_START", cpu: 1, cpuPerAct: 1 },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-RAPID-TRIAGE-BOARD",
+    "Rapid Triage Board",
+    "The first discard of every Blind costs no base CPU, and each discard adds +15 Chips to every later hand.",
+    6,
+    { chips: 15 },
+    { phase: "ON_DISCARD", freeDiscards: 1, stacks: true },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-GRAPHICS-QC-PIPELINE",
+    "Graphics QC Pipeline",
+    "Every validated figure, rendered twice: retriggers each QC ✓ Figure scored.",
+    9,
+    {},
+    {
+      phase: "ON_CARD_SCORED",
+      cardType: "FIGURE",
+      qcPassedOnly: true,
+      retrigger: true,
+    },
+    "RARE"
+  ),
+];
+
+/** Act III's synergy relics: rare engines a pivotal build closes on. */
+const ACT_III_SYNERGY: readonly ShopEntry[] = [
+  shopRelic(
+    "REL-ITT-STEERING-COMMITTEE",
+    "ITT Steering Committee",
+    "The primary analysis, defended: ×1.1 Mult for each ITT output scored.",
+    9,
+    { xMult: 1.1 },
+    { phase: "ON_CARD_SCORED", population: "ITT" },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-INSPECTION-READY-AUDITOR",
+    "Inspection-Ready Auditor",
+    "Nothing left for the FDA to find: ×0.1 more Mult on every hand for each redline fixed this Blind.",
+    10,
+    { xMult: 1.1 },
+    { phase: "ON_HAND_PLAYED", scale: "REDLINES_FIXED" },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-VERSION-CONTROL-ARCHIVIST",
+    "Version-Control Archivist",
+    "Every superseded output, traceable: +4 Mult for each stale output in hand.",
+    7,
+    { plusMult: 4 },
+    { phase: "ON_HAND_PLAYED", scale: "STALE_IN_HAND" },
+    "UNCOMMON"
+  ),
+  shopRelic(
+    "REL-DEDICATED-CLUSTER",
+    "Dedicated Compute Cluster",
+    "Racked for the pivotal study: +2 CPU at every Blind start, and +1 more for each act after the first.",
+    10,
+    {},
+    { phase: "ON_BLIND_START", cpu: 2, cpuPerAct: 1 },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-LEAN-BLACK-BELT",
+    "Lean Black Belt",
+    "Cuts waste for a living: ×0.15 more Mult on every hand for each discard made this Blind.",
+    9,
+    { xMult: 1.15 },
+    { phase: "ON_DISCARD", stacks: true },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-MEDICAL-MONITOR",
+    "Medical Monitor",
+    "Reviews every safety signal personally: retriggers each Safety output scored.",
+    10,
+    {},
+    { phase: "ON_CARD_SCORED", population: "SAFETY", retrigger: true },
+    "RARE"
+  ),
+  shopRelic(
+    "REL-DATABASE-LOCK-COUNTDOWN",
+    "Database Lock Countdown",
+    "The closer the lock, the sharper the team: ×0.15 more Mult for each hand already played this Blind.",
+    9,
+    { xMult: 1.15 },
+    { phase: "ON_HAND_PLAYED", scale: "HANDS_PLAYED" },
+    "RARE"
+  ),
+];
+
+/** Act I's Procurement Shop: the classic stock and Act I's synergy commons. */
 export const ACT_I_SHOP: ShopCatalog = {
+  entries: [...CLASSIC_RELICS, ...ACT_I_SYNERGY, ...SHARED_STOCK],
+  packs: SHARED_PACKS,
+  sites: SHARED_SITES,
+};
+
+/**
+ * Act II's Procurement Shop (#2083): the classic relics past the plain flat
+ * bonuses, two of Act I's commons, and Act II's synergy relics.
+ */
+export const ACT_II_SHOP: ShopCatalog = {
   entries: [
-    shopRelic(
-      "REL-SENIOR-PROGRAMMER",
-      "Senior Programmer",
-      "Twenty years of PROC REPORT muscle memory: +30 Chips on every hand.",
-      4,
-      { chips: 30 }
-    ),
-    shopRelic(
+    ...[
       "REL-SECOND-REVIEWER",
-      "Second Reviewer",
-      "Reads every footnote twice, out loud: +3 Mult on every hand.",
-      6,
-      { plusMult: 3 }
-    ),
-    shopRelic(
       "REL-MACRO-LIBRARY",
-      "Validated Macro Library",
-      "Qualified once, reused forever: +20 Chips and +1 Mult on every hand.",
-      6,
-      { chips: 20, plusMult: 1 }
-    ),
-    shopRelic(
-      "REL-CONFORMANCE-CHECKER",
-      "Conformance Checker",
-      "Flags the define.xml before the reviewer does: +40 Chips on every hand.",
-      7,
-      { chips: 40 }
-    ),
-    shopRelic(
       "REL-BIOSTAT-LEAD",
-      "Biostatistics Lead",
-      "Signs the SAP and means it: ×1.25 Mult on every hand.",
-      8,
-      { xMult: 1.25 }
-    ),
-    // Triggered relics (#924): each fires only in its phase.
-    shopRelic(
       "REL-LEAD-PROGRAMMER-MACRO",
-      "Lead Programmer Macro",
-      "One macro, every validated table: +4 Mult for each QC ✓ Table scored.",
-      6,
-      { plusMult: 4 },
-      { phase: "ON_CARD_SCORED", cardType: "TABLE", qcPassedOnly: true }
-    ),
-    shopRelic(
       "REL-ITT-PURIST",
-      "The ITT Purist",
-      "Randomized is analyzed: retriggers every ITT output scored.",
-      8,
-      {},
-      { phase: "ON_CARD_SCORED", population: "ITT", retrigger: true }
-    ),
-    shopRelic(
       "REL-SENIOR-MEDICAL-WRITER",
-      "Senior Medical Writer",
-      "A figure is worth a thousand words: +50 Chips if the hand holds a Figure.",
-      5,
-      { chips: 50 },
-      { phase: "ON_HAND_PLAYED", requires: "FIGURE_IN_HAND" }
-    ),
-    shopRelic(
       "REL-DOUBLE-PROGRAMMING",
-      "Double-Programming Pipeline",
-      "Two programmers, one answer: ×1.5 Mult if the hand has no redline.",
-      8,
-      { xMult: 1.5 },
-      { phase: "ON_HAND_PLAYED", requires: "NO_REDLINES" }
-    ),
-    shopRelic(
       "REL-PROTOCOL-OPTIMIZATION-SOP",
-      "Protocol Optimization SOP",
-      "Streamlined triage: the first discard of every Blind costs no base CPU.",
-      5,
-      {},
-      { phase: "ON_DISCARD", freeDiscards: 1 }
-    ),
-    shopRelic(
       "REL-GRID-ALLOCATION",
-      "Reserved Grid Allocation",
-      "A standing reservation on the compute grid: +1 CPU at every Blind start.",
-      6,
-      {},
-      { phase: "ON_BLIND_START", cpu: 1 }
+    ].map(classicRelic),
+    ...ACT_I_SYNERGY.slice(0, 2),
+    ...ACT_II_SYNERGY,
+    ...SHARED_STOCK,
+  ],
+  packs: SHARED_PACKS,
+  sites: SHARED_SITES,
+};
+
+/**
+ * Act III's Procurement Shop (#2083): the strongest classic relics, Act II's
+ * uncommon and rare engines, and Act III's own. Post-marketing studies stock
+ * it too.
+ */
+export const ACT_III_SHOP: ShopCatalog = {
+  entries: [
+    ...[
+      "REL-BIOSTAT-LEAD",
+      "REL-LEAD-PROGRAMMER-MACRO",
+      "REL-ITT-PURIST",
+      "REL-SENIOR-MEDICAL-WRITER",
+      "REL-DOUBLE-PROGRAMMING",
+      "REL-GRID-ALLOCATION",
+    ].map(classicRelic),
+    ...ACT_II_SYNERGY.filter(
+      (e) => e.kind === "RELIC" && e.relic.rarity !== "COMMON"
     ),
-    ...Object.values(GUIDANCE_CARDS).map((guidance): ShopEntry => ({
-      kind: "GUIDANCE",
-      price: guidance.sellValue * 2 + 1,
-      guidance,
-    })),
-    ...Object.values(SAP_AMENDMENTS).map((amendment): ShopEntry => ({
-      kind: "AMENDMENT",
-      price: amendment.sellValue * 2,
-      amendment,
-    })),
-    shopSeal(ADJUDICATED),
-    shopSeal(AE_NOT_EXCLUSIVE),
-    shopSeal(DATA_CUTOFF),
-    shopSeal(SPONSOR_ROUNDING),
-    // Blank shells for the run deck (#2082): clean once allocated, so they
-    // cost a little more than a seal and less than the strongest relics.
-    shopShell(
-      demographicsShell("SAP-ANY"),
-      { title: "Demographics", topic: "DM", csrStage: "BASELINE" },
-      4
-    ),
-    safetyShopShell("overview", 5),
-    safetyShopShell("sae", 5),
-    safetyShopShell("cardiac", 4),
-    safetyShopShell("infections", 4),
+    ...ACT_III_SYNERGY,
+    ...SHARED_STOCK,
   ],
-  packs: [
-    {
-      id: "PACK-SITE-ACTIVATION",
-      kind: "SITE_ACTIVATION",
-      name: "Site Activation Pack",
-      description:
-        "New sites, new subjects, more Chips. Their enrollment reopens the snapshot.",
-      price: 4,
-      size: 3,
-      choose: 1,
-    },
-    {
-      id: "PACK-GUIDANCE",
-      kind: "GUIDANCE",
-      name: "Guidance Pack",
-      description: "Freshly harmonised guidance, still warm from the printer.",
-      price: 3,
-      size: 3,
-      choose: 1,
-    },
-    {
-      id: "PACK-RELIC",
-      kind: "RELIC",
-      name: "Relic Pack",
-      description: "Headhunted talent and validated tooling.",
-      price: 6,
-      size: 2,
-      choose: 1,
-    },
-  ],
-  sites: [
-    {
-      id: "SITE-104",
-      name: "Site 104, Rotterdam",
-      description:
-        "A fast-enrolling site with an eager coordinator: +20 Chips on every hand.",
-      modifier: {
-        sourceId: "SITE-104",
-        label: "Site 104",
-        chips: 20,
-        plusMult: 0,
-        xMult: 1,
-      },
-      subjects: [
-        subject("S-013", "PLACEBO", 44, "M", [...ALL]),
-        subject("S-014", "ACTIVE", 51, "F", [...ALL], [ae(GI, "Nausea", 1)]),
-      ],
-    },
-    {
-      id: "SITE-211",
-      name: "Site 211, Lyon",
-      description: "Small, careful and slow to query: +15 Chips on every hand.",
-      modifier: {
-        sourceId: "SITE-211",
-        label: "Site 211",
-        chips: 15,
-        plusMult: 0,
-        xMult: 1,
-      },
-      subjects: [subject("S-015", "ACTIVE", 38, "M", [...NO_PP])],
-    },
-    {
-      id: "SITE-305",
-      name: "Site 305, Austin",
-      description:
-        "A research-naive site that enrolls anyone breathing: +30 Chips on every hand.",
-      modifier: {
-        sourceId: "SITE-305",
-        label: "Site 305",
-        chips: 30,
-        plusMult: 0,
-        xMult: 1,
-      },
-      subjects: [
-        subject("S-016", "PLACEBO", 63, "F", [...ALL]),
-        subject(
-          "S-017",
-          "ACTIVE",
-          57,
-          "M",
-          [...ITT_ONLY],
-          [ae(NERVOUS, "Headache", 2)]
-        ),
-      ],
-    },
-    {
-      id: "SITE-412",
-      name: "Site 412, Osaka",
-      description:
-        "Immaculate source data and a translator on retainer: +1 Mult on every hand.",
-      modifier: {
-        sourceId: "SITE-412",
-        label: "Site 412",
-        chips: 0,
-        plusMult: 1,
-        xMult: 1,
-      },
-      subjects: [subject("S-018", "PLACEBO", 29, "F", [...ALL])],
-    },
-  ],
+  packs: SHARED_PACKS,
+  sites: SHARED_SITES,
 };
 
 export const ACT_I: Act = {
@@ -2514,8 +2797,9 @@ export const ACT_II_DEVIATIONS: DeviationEvent[] = [
  * Act II: the Phase II proof-of-concept study. Internal QC under the new
  * SAP, then the DMC's open session; the Boss is drawn by the run's seed
  * from a pool of two: the DMC milestone review or the FDA's End-of-Phase-2
- * Information Request. It reads the same fictional study data as Act I and
- * shares its Procurement Shop. The campaign plays it after Act I.
+ * Information Request. It reads the same fictional study data as Act I, and
+ * its Procurement Shop stocks stronger, rarer relics (#2083). The campaign
+ * plays it after Act I.
  */
 export const ACT_II: Act = {
   id: "act-2-phase-2",
@@ -2524,7 +2808,7 @@ export const ACT_II: Act = {
   bossPool: [DMC_MILESTONE_SCENARIO, FDA_IR_SCENARIO],
   crisisDeck: ACT_II_CRISES,
   deviations: { chancePercent: 50, deck: ACT_II_DEVIATIONS },
-  shop: ACT_I_SHOP,
+  shop: ACT_II_SHOP,
 };
 
 // ---------------------------------------------------------------------------
@@ -3090,8 +3374,8 @@ export const ACT_III_DEVIATIONS: DeviationEvent[] = [
  * Act III: the Phase III blinded pivotal study. A blinded data review, then
  * the sponsor's topline review after unblinding; the Boss is always CSR
  * Lock, the run's final release gate (#922). It reads the same
- * fictional study data as Acts I and II and shares their Procurement Shop.
- * The campaign plays it last.
+ * fictional study data as Acts I and II, and its Procurement Shop stocks
+ * the rarest relics (#2083). The campaign plays it last.
  */
 export const ACT_III: Act = {
   id: "act-3-phase-3",
@@ -3100,7 +3384,7 @@ export const ACT_III: Act = {
   bossPool: [CSR_LOCK_SCENARIO],
   crisisDeck: ACT_III_CRISES,
   deviations: { chancePercent: 50, deck: ACT_III_DEVIATIONS },
-  shop: ACT_I_SHOP,
+  shop: ACT_III_SHOP,
 };
 
 // ---------------------------------------------------------------------------
@@ -3178,7 +3462,7 @@ export const SAFETY_SURVEILLANCE_STUDY: Act = {
       POST_MARKETING_QUOTAS.safetyBoss
     ),
   ],
-  shop: ACT_I_SHOP,
+  shop: ACT_III_SHOP,
 };
 
 /** Post-marketing study: a post-authorisation safety study (PASS). */
@@ -3208,7 +3492,7 @@ export const PASS_STUDY: Act = {
     }),
   ],
   bossPool: [postMarketingBoss(FDA_IR_SCENARIO, POST_MARKETING_QUOTAS.irBoss)],
-  shop: ACT_I_SHOP,
+  shop: ACT_III_SHOP,
 };
 
 /**

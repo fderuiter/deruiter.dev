@@ -22,6 +22,7 @@
 - [GameEngineState](interfaces/GameEngineState.md)
 - [GarminRunTuning](interfaces/GarminRunTuning.md)
 - [GarminWatchSnapshot](interfaces/GarminWatchSnapshot.md)
+- [Loadout](interfaces/Loadout.md)
 - [MemoryVariable](interfaces/MemoryVariable.md)
 - [Obstacle](interfaces/Obstacle.md)
 

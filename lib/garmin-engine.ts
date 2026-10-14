@@ -676,6 +676,21 @@ export interface GameEngineState {
   plan?: PlanRun | null;
   /** Race Day's boss, The Wall, is beaten this run (#1994). */
   wallDown?: boolean;
+  /**
+   * Gear packed from the Training Plan's bag that is still to take effect
+   * (#1995). The engine carries it untouched; lib/garmin-bag.ts acts on it.
+   */
+  loadout?: Loadout | null;
+}
+
+/** Packed gear still to take effect in a workout (#1995). */
+export interface Loadout {
+  /** A Runner's High starts as the GPS locks. */
+  high: boolean;
+  /** An Energy Gel refills Body Battery at the first bonk. */
+  gel: boolean;
+  /** Milliseconds left of the Pre-Workout's full pace meter, after the GPS lock. */
+  preworkoutMs: number;
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */

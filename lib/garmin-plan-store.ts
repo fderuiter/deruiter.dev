@@ -17,6 +17,7 @@ import {
   type PlanNodeId,
   type PlanSave,
 } from "./garmin-plan";
+import { packableOnly } from "./garmin-bag";
 import { START_LIVES } from "./garmin-powerups";
 import { safeGetRawItem, safeRemoveItem, safeSetRawItem } from "./safe-storage";
 
@@ -28,6 +29,31 @@ export const PLAN_SAVE_VERSION = 1;
 
 function isGearItem(value: unknown): value is GearItem {
   return GEAR_ITEMS.some((item) => item === value);
+}
+
+/**
+ * A stored item as today's item: the first plans kept a Foam Roller, which
+ * became the Rest Day (#1995). Anything else unknown is dropped.
+ */
+function gearItemOf(value: unknown): GearItem | null {
+  if (value === "foamroller") return "restday";
+  return isGearItem(value) ? value : null;
+}
+
+/** The stored items that are still items, in order. */
+function gearItemsOf(value: unknown): GearItem[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map(gearItemOf)
+    .filter((item): item is GearItem => item !== null);
+}
+
+/** Nodes stored in `value`, in map order, each once. */
+function nodeIdsOf(value: unknown): PlanNodeId[] {
+  if (!Array.isArray(value)) return [];
+  return PLAN_NODES.map((n) => n.id).filter((id) =>
+    (value as unknown[]).includes(id)
+  );
 }
 
 /** A whole number in `[min, max]`, or `fallback`. */
@@ -57,20 +83,18 @@ export function normalizePlan(value: unknown): PlanSave | null {
   const raw = value as Record<string, unknown>;
   if (raw.v !== PLAN_SAVE_VERSION) return null;
   const fresh = newPlan(wholeIn(raw.seed, 0, 0xffffffff, 0));
-  const cleared = Array.isArray(raw.cleared)
-    ? PLAN_NODES.map((n) => n.id).filter((id) =>
-        (raw.cleared as unknown[]).includes(id)
-      )
-    : [];
+  const cleared = nodeIdsOf(raw.cleared);
   const huts: Partial<Record<PlanNodeId, GearItem>> = {};
   if (typeof raw.huts === "object" && raw.huts !== null) {
     for (const [id, item] of Object.entries(raw.huts)) {
-      if (isPlanNodeId(id) && isGearItem(item)) huts[id] = item;
+      const gear = gearItemOf(item);
+      if (isPlanNodeId(id) && gear) huts[id] = gear;
     }
   }
-  const bag = Array.isArray(raw.bag)
-    ? raw.bag.filter(isGearItem).slice(0, BAG_SIZE)
-    : [];
+  // Packed items are each packed once, and a Rest Day is never packed.
+  // Packed gear counts towards the bag's eight.
+  const packed = packableOnly(gearItemsOf(raw.packed)).slice(0, BAG_SIZE);
+  const bag = gearItemsOf(raw.bag).slice(0, BAG_SIZE - packed.length);
   return {
     ...fresh,
     cleared,
@@ -80,6 +104,8 @@ export function normalizePlan(value: unknown): PlanSave | null {
     continues: wholeIn(raw.continues, 0, START_CONTINUES, START_CONTINUES),
     score: wholeIn(raw.score, 0, Number.MAX_SAFE_INTEGER, 0),
     bag,
+    packed,
+    unlocked: nodeIdsOf(raw.unlocked),
     finished: raw.finished === true,
     dnfs: wholeIn(raw.dnfs, 0, 999, 0),
     lastTe:

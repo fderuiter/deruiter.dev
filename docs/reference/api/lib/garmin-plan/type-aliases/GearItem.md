@@ -6,6 +6,8 @@
 
 # Type Alias: GearItem
 
-> **GearItem** = `"gel"` \| `"foamroller"` \| `"protein"`
+> **GearItem** = `"protein"` \| `"heatmap"` \| `"cape"` \| `"high"` \| `"gel"` \| `"preworkout"` \| `"restday"`
 
-The items a Recovery Hut can hide.
+The items the gear bag holds (#1995): three power-ups that set the next
+workout's starting tier, a Runner's High, an Energy Gel, a Pre-Workout, and
+the map-only Rest Day. What each does is in lib/garmin-bag.ts.

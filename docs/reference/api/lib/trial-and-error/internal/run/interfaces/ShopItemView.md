@@ -34,6 +34,14 @@ A shop item as the shop screen shows it.
 
 ***
 
+### rarity
+
+> **rarity**: `"COMMON"` \| `"UNCOMMON"` \| `"RARE"` \| `null`
+
+A relic's rarity (#2083); null for anything else.
+
+***
+
 ### refusal
 
 > **refusal**: `string` \| `null`

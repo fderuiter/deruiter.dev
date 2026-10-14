@@ -5,12 +5,14 @@ import type {
   Endless,
   Pack,
   Relic,
+  RelicRarity,
   Scenario,
   ShopCatalog,
   ShopEntry,
   TlfCard,
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
+import { CLASSIC_SHOP } from "../scenarios";
 import { dealSeed, shuffledDeckOrder, type DeckDealing } from "./deal";
 import { raiseQuotas } from "./quotas";
 import {
@@ -28,7 +30,7 @@ import {
   type RunDeck,
   type RunDeckCardView,
 } from "./run-deck";
-import { blindStartCpu } from "./relics";
+import { blindStartCpu, relicRarity } from "./relics";
 import { drawInt } from "./rng";
 import {
   resolveRunChoice,
@@ -46,9 +48,12 @@ import {
 } from "./stakes";
 import {
   PACK_SLOTS,
+  RARITY_WEIGHTS,
   SHOP_SLOTS,
   cashOut,
   drawDistinct,
+  drawWeighted,
+  entryWeight,
   packPool,
   rerollPrice,
   sellValue,
@@ -163,6 +168,12 @@ export interface RunState {
    */
   decks?: "AUTHORED";
   /**
+   * CLASSIC for a run replayed from a save recorded before each act had its
+   * own shop (#2083): every act stocks the one catalog all acts shared, and
+   * the shop draws it evenly. Absent means a shop per act, drawn by rarity.
+   */
+  shops?: "CLASSIC";
+  /**
    * The run deck (#2082): shells bought, copies made and cards archived,
    * carried from Blind to Blind and act to act. Absent means no changes.
    */
@@ -216,12 +227,81 @@ export function runChoice(
   };
 }
 
-/** The plan as the run plays it: rewritten by its sponsor and stake. */
+/**
+ * Which catalogs a run's shops stock (#2083): PER_ACT, each act its own,
+ * drawn by rarity; or CLASSIC, the one catalog every act shared before,
+ * drawn evenly, for a run saved then.
+ */
+export type ShopLibrary = "PER_ACT" | "CLASSIC";
+
+/** Classic plans by authored plan, so a run reuses one object. */
+const classicPlans = new WeakMap<RunPlan, RunPlan>();
+
+/** An act stocking the classic catalog, if it has a shop at all. */
+function classicAct(act: Act): Act {
+  return act.shop ? { ...act, shop: CLASSIC_SHOP } : act;
+}
+
+/**
+ * The plan with every shop stocking the classic catalog (#2083), as runs
+ * saved before per-act shops played it.
+ */
+function classicPlan(plan: RunPlan): RunPlan {
+  let classic = classicPlans.get(plan);
+  if (classic) return classic;
+  if (!("acts" in plan)) {
+    classic = classicAct(plan);
+  } else {
+    const { endless } = plan;
+    classic = {
+      ...plan,
+      acts: plan.acts.map(classicAct),
+      ...(endless && {
+        endless: { ...endless, studies: endless.studies.map(classicAct) },
+      }),
+    };
+  }
+  classicPlans.set(plan, classic);
+  return classic;
+}
+
+/** The authored plan with the shops the run stocks. */
+function stockedPlan(plan: RunPlan, shops: ShopLibrary | undefined): RunPlan {
+  return shops === "CLASSIC" ? classicPlan(plan) : plan;
+}
+
+/**
+ * The plan as the run plays it: stocked with its shops, and rewritten by its
+ * sponsor and stake.
+ */
 function playedPlan(
   plan: RunPlan,
-  run: Pick<RunState, "sponsorId" | "stake">
+  run: Pick<RunState, "sponsorId" | "stake" | "shops">
 ): RunPlan {
-  return ruledPlan(plan, runChoice(run));
+  return ruledPlan(stockedPlan(plan, run.shops), runChoice(run));
+}
+
+/**
+ * Draws distinct shop stock: by rarity (#2083), or evenly for a classic run,
+ * as it drew when its moves were made.
+ */
+function drawStock<T>(
+  run: Pick<RunState, "seed" | "shops">,
+  drawIndex: number,
+  pool: readonly T[],
+  count: number,
+  weight: (item: T) => number
+): { items: T[]; next: number } {
+  return run.shops === "CLASSIC"
+    ? drawDistinct(run.seed, drawIndex, pool, count)
+    : drawWeighted(run.seed, drawIndex, pool, count, weight);
+}
+
+/** How heavily a pack card weighs: a relic by its rarity, anything else as a common. */
+function packCardWeight(card: PackCard): number {
+  return card.kind === "ENTRY"
+    ? entryWeight(card.entry)
+    : RARITY_WEIGHTS.COMMON;
 }
 
 /** The stake modifiers a run is played under. */
@@ -432,6 +512,8 @@ export interface ShopItemView {
   sold: boolean;
   /** Why it cannot be bought now, or null. */
   refusal: string | null;
+  /** A relic's rarity (#2083); null for anything else. */
+  rarity: RelicRarity | null;
 }
 
 /** A pack card as the reveal shows it. */
@@ -445,6 +527,8 @@ export interface PackCardView {
   refusal: string | null;
   /** A site's warning: the populations its enrollment will change. */
   warning: string | null;
+  /** A relic's rarity (#2083); null for anything else. */
+  rarity: RelicRarity | null;
 }
 
 /** A shop service (#2082): what it costs, and why it cannot serve now. */
@@ -790,15 +874,29 @@ function drawSlots(
     run.table.relics.map((r) => r.id),
     ownedAmendmentIds(run.table)
   );
-  const { items, next } = drawDistinct(run.seed, drawIndex, pool, SHOP_SLOTS);
+  const { items, next } = drawStock(
+    run,
+    drawIndex,
+    pool,
+    SHOP_SLOTS,
+    entryWeight
+  );
   return { slots: items.map((entry) => ({ entry, sold: false })), next };
 }
 
-/** What a relic sells for: half its shop price, rounded down. */
-function relicSellValue(act: Act, relicId: string): number {
-  const entry = act.shop?.entries.find(
-    (e) => e.kind === "RELIC" && e.relic.id === relicId
-  );
+/**
+ * What a relic sells for: half its shop price, rounded down. The current
+ * act's shop prices it first; a relic bought in an earlier act's shop
+ * (#2083) is priced there.
+ */
+function relicSellValue(plan: RunPlan, act: Act, relicId: string): number {
+  const priced = (shop: Act["shop"]) =>
+    shop?.entries.find((e) => e.kind === "RELIC" && e.relic.id === relicId);
+  const entry =
+    priced(act.shop) ??
+    [...planActs(plan), ...(endlessOf(plan)?.studies ?? [])]
+      .map((a) => priced(a.shop))
+      .find(Boolean);
   return sellValue(entry?.price ?? DEFAULT_RELIC_PRICE);
 }
 
@@ -1190,11 +1288,12 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
       );
       if (pool.length === 0)
         return refuse(`${pack.name} has nothing left to draw.`);
-      const { items, next } = drawDistinct(
-        run.seed,
+      const { items, next } = drawStock(
+        run,
         run.shopDraws,
         pool,
-        pack.size
+        pack.size,
+        packCardWeight
       );
       const table = { ...run.table, budget: run.table.budget - pack.price };
       return announce(
@@ -1273,7 +1372,7 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
       }
       const relic = run.table.relics.find((r) => r.id === action.relicId);
       if (!relic) return refuse("That relic is not in your rack.");
-      const value = relicSellValue(act, relic.id);
+      const value = relicSellValue(plan, act, relic.id);
       const table = {
         ...run.table,
         budget: run.table.budget + value,
@@ -1311,6 +1410,11 @@ function shopAction(plan: RunPlan, run: RunState, action: RunAction): RunState {
   }
 }
 
+/** A shop entry's rarity: a relic's, or null for anything else (#2083). */
+function entryRarity(entry: ShopEntry): RelicRarity | null {
+  return entry.kind === "RELIC" ? relicRarity(entry.relic) : null;
+}
+
 /** The shop as the shop screen renders it. */
 function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
   const act = actAt(plan, run, run.actIndex);
@@ -1331,6 +1435,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
         description,
         price: slot.entry.price,
         sold: slot.sold,
+        rarity: entryRarity(slot.entry),
         refusal: slot.sold
           ? "Sold."
           : (busy ??
@@ -1344,6 +1449,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
       description: `${slot.pack.description} Choose ${slot.pack.choose} of ${slot.pack.size}.`,
       price: slot.pack.price,
       sold: slot.sold,
+      rarity: null,
       refusal: slot.sold
         ? "Opened."
         : (busy ?? afford(slot.pack.name, slot.pack.price)),
@@ -1374,6 +1480,7 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
                 description: card.site.description,
                 picked,
                 refusal: picked ? "Kept." : null,
+                rarity: null,
                 warning: `Enrolls ${card.site.subjects.length} ${card.site.subjects.length === 1 ? "subject" : "subjects"} into ${populations.join(", ")} after the next Blind's first hand: outputs in hand on those populations then go stale.`,
               };
             }
@@ -1386,12 +1493,13 @@ function deriveShopView(plan: RunPlan, run: RunState): ShopView | null {
               picked,
               refusal: picked ? "Kept." : takeRefusal(run, card.entry),
               warning: null,
+              rarity: entryRarity(card.entry),
             };
           }),
         }
       : null,
     relicSellValues: Object.fromEntries(
-      run.table.relics.map((r) => [r.id, relicSellValue(act, r.id)])
+      run.table.relics.map((r) => [r.id, relicSellValue(plan, act, r.id)])
     ),
     archive: serviceView(plan, run, "ARCHIVE"),
     duplicate: serviceView(plan, run, "DUPLICATE"),
@@ -1486,7 +1594,7 @@ function startBlind(
     deckOrder
   );
   const drawn = crisis ? ` Crisis: ${crisis.name}. ${crisis.description}` : "";
-  const cpu = blindStartCpu(table.relics);
+  const cpu = blindStartCpu(table.relics, inventory?.act ?? 0);
   const bonus =
     cpu > 0
       ? ` ${table.relics
@@ -1585,16 +1693,20 @@ function endlessRefusal(plan: RunPlan, run: RunState): string | null {
  *
  * `dealing` is SHUFFLED unless a save from before #2055 is being replayed:
  * then AUTHORED deals every Blind in its written order, as it was recorded.
+ * `decks` is AUTHORED for a save from before the run deck (#2082), and
+ * `shops` is CLASSIC for a save from before each act had its own shop
+ * (#2083), so every act stocks the shared catalog, drawn evenly.
  */
 export function createRunState(
   authored: RunPlan,
   seed: string = DEFAULT_SEED,
   options: Partial<RunChoice> = {},
   dealing: DeckDealing = "SHUFFLED",
-  decks: DeckLibrary = "RUN"
+  decks: DeckLibrary = "RUN",
+  shops: ShopLibrary = "PER_ACT"
 ): RunState {
   const choice = resolveRunChoice(options);
-  const plan = ruledPlan(authored, choice);
+  const plan = ruledPlan(stockedPlan(authored, shops), choice);
   const first = planActs(plan)[0];
   const boss = drawBoss(first, 0, {
     seed,
@@ -1627,6 +1739,7 @@ export function createRunState(
     ...(choice.stake !== DEFAULT_STAKE && { stake: choice.stake }),
     ...(dealing === "AUTHORED" && { dealing }),
     ...(decks === "AUTHORED" && { decks }),
+    ...(shops === "CLASSIC" && { shops }),
     drawIndex,
     draws,
     bossIds: [boss.bossId],
@@ -1795,6 +1908,7 @@ export function advanceRun(
           ...carriedInventory(paid),
           sites: [],
           enrollments: [],
+          act: stop.actIndex,
         };
         const lock = lockRack(
           run.seed,

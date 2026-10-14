@@ -8,7 +8,7 @@
 
 > **hutItems**(`save`, `id`): [`GearItem`](../type-aliases/GearItem.md)[]
 
-The three items hut `id` hides, in slot order, shuffled by the plan's seed.
+The three items hut `id` hides, in slot order, drawn by the plan's seed.
 
 ## Parameters
 

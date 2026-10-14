@@ -7,6 +7,7 @@ import type {
   ShopView,
 } from "@/lib/trial-and-error";
 import { RunDeck } from "@/components/trial-and-error/RunDeck";
+import { RarityBadge } from "@/components/trial-and-error/RarityBadge";
 
 interface ShopProps {
   view: ShopView;
@@ -47,6 +48,7 @@ function ShopItem({
           ${item.price}k
         </span>
       </div>
+      {item.rarity && <RarityBadge rarity={item.rarity} />}
       <p className="min-w-0 text-zinc-400 break-words">{item.description}</p>
       <button
         type="button"

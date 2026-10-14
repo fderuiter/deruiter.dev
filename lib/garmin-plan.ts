@@ -155,17 +155,34 @@ export function isPlanNodeId(value: unknown): value is PlanNodeId {
   return PLAN_NODES.some((n) => n.id === value);
 }
 
-/** The items a Recovery Hut can hide. */
-export type GearItem = "gel" | "foamroller" | "protein";
+/**
+ * The items the gear bag holds (#1995): three power-ups that set the next
+ * workout's starting tier, a Runner's High, an Energy Gel, a Pre-Workout, and
+ * the map-only Rest Day. What each does is in lib/garmin-bag.ts.
+ */
+export type GearItem =
+  "protein" | "heatmap" | "cape" | "high" | "gel" | "preworkout" | "restday";
 
-/** Every hut item, in display order. */
-export const GEAR_ITEMS: readonly GearItem[] = ["gel", "foamroller", "protein"];
+/** Every gear item, in display order. */
+export const GEAR_ITEMS: readonly GearItem[] = [
+  "protein",
+  "heatmap",
+  "cape",
+  "high",
+  "gel",
+  "preworkout",
+  "restday",
+];
 
-/** Display names of the hut items. */
+/** Display names of the gear items. */
 export const GEAR_ITEM_NAMES: Record<GearItem, string> = {
-  gel: "Energy Gel",
-  foamroller: "Foam Roller",
   protein: "Protein Shake",
+  heatmap: "Heat Map",
+  cape: "Compression Cape",
+  high: "Runner's High",
+  gel: "Energy Gel",
+  preworkout: "Pre-Workout",
+  restday: "Rest Day",
 };
 
 /** The gear bag holds at most this many items. */
@@ -187,6 +204,10 @@ export interface PlanSave {
   /** Points from every workout cleared. */
   score: number;
   bag: GearItem[];
+  /** Items out of the bag, packed for the next workout (#1995). */
+  packed: GearItem[];
+  /** Nodes a Rest Day opened without clearing the workout before them (#1995). */
+  unlocked: PlanNodeId[];
   /** Race Day has been won: the finisher medal. */
   finished: boolean;
   /** DNFs since the last cleared workout. */
@@ -207,6 +228,8 @@ export function newPlan(seed: number): PlanSave {
     continues: START_CONTINUES,
     score: 0,
     bag: [],
+    packed: [],
+    unlocked: [],
     finished: false,
     dnfs: 0,
     lastTe: null,
@@ -219,9 +242,12 @@ export function isCleared(save: PlanSave, id: PlanNodeId): boolean {
   return save.cleared.includes(id);
 }
 
-/** Whether `id` is open: the start node, or on a path from a cleared node. */
+/**
+ * Whether `id` is open: the start node, a node a Rest Day opened, or on a
+ * path from a cleared node.
+ */
 export function isOpen(save: PlanSave, id: PlanNodeId): boolean {
-  if (id === START_NODE) return true;
+  if (id === START_NODE || save.unlocked.includes(id)) return true;
   return PLAN_NODES.some((n) => n.next.includes(id) && isCleared(save, n.id));
 }
 
@@ -343,7 +369,7 @@ export function dnfWorkout(save: PlanSave): DnfOutcome {
   };
 }
 
-/** The three items hut `id` hides, in slot order, shuffled by the plan's seed. */
+/** The three items hut `id` hides, in slot order, drawn by the plan's seed. */
 export function hutItems(save: PlanSave, id: PlanNodeId): GearItem[] {
   const salt = PLAN_NODES.findIndex((n) => n.id === id) + 1;
   const rand = courseRandom(save.seed + salt * 7919);
@@ -352,7 +378,7 @@ export function hutItems(save: PlanSave, id: PlanNodeId): GearItem[] {
     const j = Math.floor(rand() * (i + 1));
     [items[i], items[j]] = [items[j], items[i]];
   }
-  return items;
+  return items.slice(0, 3);
 }
 
 /** What taking a hut item did. */
@@ -386,7 +412,8 @@ export function takeHutItem(
     return { save, item: null, stored: false };
   }
   const item = hutItems(save, id)[slot];
-  const stored = save.bag.length < BAG_SIZE;
+  // Packed gear still counts towards the bag's eight (#1995).
+  const stored = save.bag.length + save.packed.length < BAG_SIZE;
   return {
     save: {
       ...save,

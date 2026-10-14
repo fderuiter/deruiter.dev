@@ -37,7 +37,8 @@ import {
   useTrainingPlan,
   type PlanInput,
 } from "@/components/garmin-watch/useTrainingPlan";
-import type { PlanRun } from "@/lib/garmin-plan";
+import { startLoadout, stepLoadout } from "@/lib/garmin-bag";
+import type { GearItem, PlanRun } from "@/lib/garmin-plan";
 import { stepRaceDay } from "@/lib/garmin-raceday";
 import {
   pusherAnchorPercent,
@@ -353,6 +354,14 @@ const splitsKeyOf = (s: GameEngineState) =>
     s.plan ? `:plan${s.plan.stage}` : s.race ? ":race" : ""
   }`;
 
+/** A Training Plan workout to start: its run, lives and packed gear (#1994, #1995). */
+interface Workout {
+  run: PlanRun;
+  /** The plan's lives, or null for practice, which starts with a fresh three. */
+  lives: number | null;
+  packed: readonly GearItem[];
+}
+
 /** What each key does on a Training Plan screen (#1994). */
 const PLAN_KEYS: Readonly<Record<string, PlanInput>> = {
   ArrowUp: "up",
@@ -363,6 +372,9 @@ const PLAN_KEYS: Readonly<Record<string, PlanInput>> = {
   Enter: "select",
   Escape: "back",
   Backspace: "back",
+  // The action key opens the gear bag (#1995).
+  x: "bag",
+  X: "bag",
 };
 
 /** A race as it ended: its outcome, verdict, board place and record (#2019). */
@@ -912,7 +924,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // A race takes the picked course and category, or the same race again when
   // `restart` is given. The fixed-step carry and the race report start over.
   const beginRun = useCallback(
-    (restart?: RaceSetup, workout?: { run: PlanRun; lives: number | null }) => {
+    (restart?: RaceSetup, workout?: Workout) => {
       const today = new Date();
       // Race Day is a race on its own board, on the plan's course (#1994).
       const race =
@@ -937,10 +949,13 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         workout?.run
       );
       // A workout starts with the plan's lives; practice with a fresh three.
-      const started =
+      // The gear packed for it goes on now (#1995).
+      const started = startLoadout(
         workout && workout.lives !== null
           ? { ...fresh, lives: workout.lives }
-          : fresh;
+          : fresh,
+        workout?.packed ?? []
+      );
       raceCarryRef.current = 0;
       raceRunIdRef.current += 1;
       ghostTrackRef.current = race ? loadGhost(race) : null;
@@ -974,7 +989,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // A fresh run from the watch, the result card or the Training Plan: the
   // result card and the telemetry start over.
   const launchRun = useCallback(
-    (workout?: { run: PlanRun; lives: number | null }) => {
+    (workout?: Workout) => {
       setRunStartBest(
         Math.max(
           stateRef.current.highScore,
@@ -995,7 +1010,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // The Training Plan (#1994): its save and the screen the watch shows
   // between workouts. Entering a workout starts it here.
   const startWorkout = useCallback(
-    (run: PlanRun, lives: number | null) => launchRun({ run, lives }),
+    (run: PlanRun, lives: number | null, packed: readonly GearItem[]) =>
+      launchRun({ run, lives, packed }),
     [launchRun]
   );
   const plan = useTrainingPlan({ active: planMode, announce, startWorkout });
@@ -2002,9 +2018,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ) {
           const last = i === stepCount - 1;
           nextState = applyTransition(
-            // Race Day moves The Wall after each step (#1994).
+            // Race Day moves The Wall after each step (#1994), and packed
+            // gear takes effect (#1995).
             (state) =>
-              stepRaceDay(state, updateGameSimulation(state, stepMs), stepMs),
+              stepLoadout(
+                state,
+                stepRaceDay(state, updateGameSimulation(state, stepMs), stepMs),
+                stepMs
+              ),
             (next) => {
               if (next.gameState !== prevStatus) return true;
               if (!last) return false;
@@ -2622,6 +2643,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 containerRef.current?.focus({ preventScroll: true });
               }}
               onNewPlan={plan.startNew}
+              bagOpen={plan.bagOpen}
+              onOpenBag={plan.openBag}
+              onCloseBag={plan.closeBag}
+              onUseItem={plan.applyItem}
+              onUnpackItem={plan.unpackItem}
             />
           }
         >

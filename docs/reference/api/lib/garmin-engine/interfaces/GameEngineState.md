@@ -407,6 +407,15 @@ Lives left, counting the current one; absent means this is the last.
 
 ***
 
+### loadout?
+
+> `optional` **loadout?**: [`Loadout`](Loadout.md) \| `null`
+
+Gear packed from the Training Plan's bag that is still to take effect
+(#1995). The engine carries it untouched; lib/garmin-bag.ts acts on it.
+
+***
+
 ### medalsFound?
 
 > `optional` **medalsFound?**: `number`[]

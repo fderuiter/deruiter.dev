@@ -312,10 +312,14 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("inspect-drawer")).toBeHidden();
 
-    // Play the draft with its supporting listing.
+    // Play the draft with its listing, the disposition table and Drafts B
+    // and C: the five cards the Small Blind always deals first (#2055) make
+    // an ITT Population Flush.
     await page.keyboard.press("Space");
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("Space");
+    for (let i = 0; i < 4; i++) {
+      await page.keyboard.press("ArrowRight");
+      await page.keyboard.press("Space");
+    }
     await page.keyboard.press("Enter");
     await page.keyboard.press("Space");
     await expect(page.getByTestId("blind-result")).toContainText(

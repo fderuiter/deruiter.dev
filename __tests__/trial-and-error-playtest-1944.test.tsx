@@ -20,6 +20,7 @@ import {
   type Act,
   type TableView,
 } from "@/lib/trial-and-error";
+import { authored, authoredPlan } from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -100,7 +101,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
   describe("hand focus after launch, Resume and New run", () => {
     it("moves focus from the cabinet to the hand once the table is up", async () => {
       const cabinet = renderInCabinet(
-        <CardTable scenario={DEMOGRAPHICS_SCENARIO} />
+        <CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />
       );
       act(() => cabinet.focus());
       expect(document.activeElement).toBe(cabinet);
@@ -109,7 +110,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
 
     it("lands the first Space on the hand instead of scrolling the page", () => {
       const cabinet = renderInCabinet(
-        <CardTable scenario={DEMOGRAPHICS_SCENARIO} />
+        <CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />
       );
       act(() => cabinet.focus());
       // fireEvent returns false when the default (the page scroll) is
@@ -119,7 +120,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
     });
 
     it("leaves focus alone outside the arcade", async () => {
-      render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+      render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
       expect(fireEvent.keyDown(document.body, { key: " " })).toBe(true);
       await new Promise((resolve) => setTimeout(resolve, 450));
       expect(document.activeElement).toBe(document.body);
@@ -129,7 +130,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
       renderInCabinet(
         <>
           <button type="button">Elsewhere</button>
-          <CardTable scenario={DEMOGRAPHICS_SCENARIO} />
+          <CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />
         </>
       );
       const elsewhere = screen.getByRole("button", { name: "Elsewhere" });
@@ -142,12 +143,16 @@ describe("Trial & Error playtest fixes (#1944)", () => {
 
     /** Plays one pair so a run is saved, then reloads onto the prompt. */
     function reloadOntoResumePrompt() {
-      const first = render(<CardTable act={runAct} seed="resume-1" persist />);
+      const first = render(
+        <CardTable act={authoredPlan(runAct)} seed="resume-1" persist />
+      );
       fireEvent.click(card("C-T14.1.1-A"));
       fireEvent.click(card("C-L16.2.4"));
       fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
       first.unmount();
-      render(<CardTable act={runAct} seed="other-seed" persist />);
+      render(
+        <CardTable act={authoredPlan(runAct)} seed="other-seed" persist />
+      );
       expect(screen.getByTestId("resume-run").className).toContain("font-mono");
     }
 
@@ -171,7 +176,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
   });
 
   it("scrolls the card keyboard focus lands on into view", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     const last = cards().at(-1)!;
     act(() => last.focus());
     expect(scrollIntoView).toHaveBeenCalledWith({
@@ -182,7 +187,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
   });
 
   it("scores a hand with a stale card as nothing until it is recompiled", () => {
-    render(<CardTable scenario={SPONSOR_SAFETY_SCENARIO} />);
+    render(<CardTable scenario={authored(SPONSOR_SAFETY_SCENARIO)} />);
     fireEvent.click(card("C-T14.1.2"));
     fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
     // S-004 has left the Safety set, so these two Safety outputs are stale.
@@ -201,7 +206,7 @@ describe("Trial & Error playtest fixes (#1944)", () => {
 
   describe("the fail screen says why", () => {
     it("names the shortfall, the best hand and the boss's debuff", () => {
-      render(<CardTable scenario={DOSE_ESCALATION_SCENARIO} />);
+      render(<CardTable scenario={authored(DOSE_ESCALATION_SCENARIO)} />);
       for (let i = 0; i < 9; i++) {
         const first = cards()[0];
         if (!first) break;

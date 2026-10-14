@@ -36,6 +36,7 @@ import {
   FAN_ALLOWANCE_REM,
   handOverlap,
 } from "@/components/trial-and-error/cards/hand-fit";
+import { AUTHORED_CAMPAIGN } from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -423,7 +424,7 @@ describe("hand physicality on the Card Table", () => {
     );
 
   it("reorders with Alt+arrows, keeps focus on the card and announces it", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const first = order()[0]!;
     act(() => card(first).focus());
     fireEvent.keyDown(card(first), { key: "ArrowRight", altKey: true });
@@ -441,7 +442,7 @@ describe("hand physicality on the Card Table", () => {
   });
 
   it("opens the card detail with ?, and Escape closes it", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     act(() => card("C-T14.1.2").focus());
     fireEvent.keyDown(card("C-T14.1.2"), { key: "?" });
     const dialog = screen.getByTestId("card-detail");
@@ -456,7 +457,7 @@ describe("hand physicality on the Card Table", () => {
   });
 
   it("on touch, a second tap on a selected card opens detail instead of deselecting", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const id = "C-L16.2.4";
     fireEvent.pointerDown(card(id), { pointerType: "touch" });
     fireEvent.click(card(id));
@@ -470,7 +471,7 @@ describe("hand physicality on the Card Table", () => {
 
   it("opens detail on a long press without also toggling selection", () => {
     vi.useFakeTimers();
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const id = "C-T14.3.1";
     fireEvent.pointerDown(card(id), {
       pointerType: "mouse",
@@ -486,7 +487,7 @@ describe("hand physicality on the Card Table", () => {
 
   it("cancels a long press when the pointer moves", () => {
     vi.useFakeTimers();
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const id = "C-T14.3.1";
     fireEvent.pointerDown(card(id), {
       pointerType: "mouse",
@@ -503,7 +504,7 @@ describe("hand physicality on the Card Table", () => {
   });
 
   it("shows face-down draw pile and spent stack counts", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     expect(screen.getByTestId("draw-pile").textContent).toContain("Deck 3");
     expect(screen.getByTestId("discard-stack").textContent).toContain(
       "Spent 0"
@@ -520,7 +521,7 @@ describe("hand physicality on the Card Table", () => {
   });
 
   it("stamps a revealed redline into the card's accessible name", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     act(() => card("C-T14.1.1-A").focus());
     fireEvent.keyDown(card("C-T14.1.1-A"), { key: "i" });
     const drawer = screen.getByTestId("inspect-drawer");
@@ -542,13 +543,13 @@ describe("hand physicality on the Card Table", () => {
 
   it("fans and tilts only with motion allowed at desktop widths", () => {
     mockMedia({ reduced: false, compact: false });
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const hand = screen.getByTestId("hand");
     const items = Array.from(hand.children) as HTMLElement[];
     expect(items[1].style.marginLeft).toBe("-1.8rem");
     cleanup();
     mockMedia({ reduced: false, compact: true });
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const compact = Array.from(
       screen.getByTestId("hand").children
     ) as HTMLElement[];

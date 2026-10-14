@@ -1431,6 +1431,13 @@ export const ScenarioSchema = z
     drawPile: z.array(StagedTableSchema).min(1),
     table: TableRulesSchema,
     deck: z.array(TlfCardSchema).min(1),
+    /**
+     * The deck's scripted setup (#2055): card ids a run always deals first,
+     * in deck order, so the setup the Blind is written around is in the
+     * opening hand. A run shuffles the rest of the deck from its seed.
+     * Absent means none.
+     */
+    pinned: z.array(identifier).optional(),
     /** Scripted population changes during this Blind, in hand order. */
     events: z.array(StudyEventSchema).optional(),
     /** Footnote seals granted to the consumable tray when the Blind starts. */
@@ -1452,6 +1459,17 @@ export const ScenarioSchema = z
     encounter: EncounterSchema.optional(),
   })
   .superRefine((scenario, ctx) => {
+    const pinned = scenario.pinned ?? [];
+    const dealt = new Set(scenario.deck.map((c) => c.id));
+    pinned.forEach((cardId, index) => {
+      if (!dealt.has(cardId)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["pinned", index],
+          message: "Each pinned card must be in the deck",
+        });
+      }
+    });
     if (scenario.encounter?.kind === "FDA_IR") {
       const ir = scenario.encounter;
       const deckIds = new Set(scenario.deck.map((c) => c.id));
@@ -2001,8 +2019,11 @@ export const RunActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("SELL_RELIC"), relicId: id }),
 ]);
 
-/** The save format's current version. */
-export const RUN_SAVE_VERSION = 1;
+/**
+ * The save format's current version. v2 (#2055) shuffles each Blind's deck;
+ * a v1 save migrates to v2 with `dealing: "AUTHORED"`.
+ */
+export const RUN_SAVE_VERSION = 2;
 
 /**
  * A saved run (#1079): the act, the seed and every move since the run
@@ -2017,6 +2038,11 @@ export const RunSaveSchema = z.object({
   sponsorId: SponsorIdSchema.optional(),
   /** The run's stake. Absent in older saves, which are stake 1. */
   stake: StakeSchema.optional(),
+  /**
+   * AUTHORED for a run first saved as v1, before decks were shuffled: it
+   * replays in written deal order. Absent means a shuffled run.
+   */
+  dealing: z.literal("AUTHORED").optional(),
   actions: z.array(RunActionSchema).max(5000),
   /**
    * How the seed was chosen (#1528). Optional, so saves from before it load

@@ -53,6 +53,16 @@ The cleared Blind's cash-out, once the sponsor has paid it.
 
 ***
 
+### dealing?
+
+> `optional` **dealing?**: `"AUTHORED"`
+
+AUTHORED for a run replayed from a save recorded before decks were
+shuffled (#2055): every Blind deals in its written order. Absent means
+SHUFFLED, the default.
+
+***
+
 ### drawIndex
 
 > **drawIndex**: `number`

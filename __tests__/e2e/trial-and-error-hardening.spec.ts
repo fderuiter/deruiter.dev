@@ -50,7 +50,11 @@ async function playPair(page: Page) {
   await page.getByRole("button", { name: /Play Hand/ }).click();
 }
 
-/** Clears the Small Blind with Draft A and its listing, by keyboard. */
+/**
+ * Clears the Small Blind by keyboard: corrects Draft A, then plays it with
+ * its listing, the disposition table and Drafts B and C, the five cards the
+ * Blind always deals first (#2055), as an ITT Population Flush.
+ */
 async function winSmallBlind(page: Page) {
   await card(page, DRAFT_A).focus();
   await page.keyboard.press("i");
@@ -69,8 +73,10 @@ async function winSmallBlind(page: Page) {
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toBeHidden();
   await page.keyboard.press("Space");
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("Space");
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Space");
+  }
   await page.keyboard.press("Enter");
   await page.keyboard.press("Space");
   await expect(page.getByTestId("blind-result")).toContainText("Blind cleared");

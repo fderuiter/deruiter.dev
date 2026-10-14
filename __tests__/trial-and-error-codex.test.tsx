@@ -22,6 +22,7 @@ import {
   type Act,
   type Codex as CodexDocument,
 } from "@/lib/trial-and-error";
+import { authored, authoredPlan } from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -238,7 +239,9 @@ describe("the Codex on the Card Table", () => {
   }
 
   it("discovers a played hand, keeps it across a reload and restores focus", async () => {
-    const first = render(<CardTable act={act} seed="codex-ui" persist />);
+    const first = render(
+      <CardTable act={authoredPlan(act)} seed="codex-ui" persist />
+    );
     fireEvent.click(card("C-T14.1.1-A"));
     fireEvent.click(card("C-L16.2.4"));
     fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
@@ -252,7 +255,7 @@ describe("the Codex on the Card Table", () => {
 
     // The reload: a new run on another seed still shows the discovery.
     storage.removeItem(`te:run-save:${act.id}`);
-    render(<CardTable act={act} seed="codex-reload" persist />);
+    render(<CardTable act={authoredPlan(act)} seed="codex-reload" persist />);
     const trigger = openCodex();
     const dialog = codexDialog()!;
     expect(screen.queryByRole("dialog", { name: "Run Info" })).toBeNull();
@@ -270,7 +273,11 @@ describe("the Codex on the Card Table", () => {
 
   it("records a finished run in the history, offered from the end screen", () => {
     render(
-      <CardTable scenario={DOSE_ESCALATION_SCENARIO} seed="lost" persist />
+      <CardTable
+        scenario={authored(DOSE_ESCALATION_SCENARIO)}
+        seed="lost"
+        persist
+      />
     );
     for (let i = 0; i < 9; i++) {
       const first = document.querySelector<HTMLButtonElement>("[data-card-id]");
@@ -289,7 +296,7 @@ describe("the Codex on the Card Table", () => {
 
   it("works without storage: no Codex is kept and nothing throws", () => {
     useStorage(undefined);
-    render(<CardTable act={act} seed="no-storage" persist />);
+    render(<CardTable act={authoredPlan(act)} seed="no-storage" persist />);
     fireEvent.click(card("C-T14.1.1-A"));
     fireEvent.click(card("C-L16.2.4"));
     fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
@@ -315,7 +322,7 @@ describe("the Codex on the Card Table", () => {
     expect(screen.queryByTestId("run-info-codex")).toBeNull();
     expect(storage.getItem(CODEX_KEY)).toBeNull();
     cleanup();
-    render(<CardTable act={act} seed="embedded" />);
+    render(<CardTable act={authoredPlan(act)} seed="embedded" />);
     fireEvent.click(screen.getByTestId("run-info-button"));
     expect(screen.queryByTestId("run-info-codex")).toBeNull();
   });

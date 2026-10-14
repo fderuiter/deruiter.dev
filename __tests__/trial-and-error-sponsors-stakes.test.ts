@@ -367,7 +367,8 @@ describe("restarts, saves and replays", () => {
   });
 
   it("an older save without a choice still loads as the default", () => {
-    const run = createRunState(C, "old");
+    // A v1 save predates the seeded shuffle (#2055): it deals in written order.
+    const run = createRunState(C, "old", {}, "AUTHORED");
     const json = JSON.stringify({
       version: 1,
       actId: C.id,
@@ -377,11 +378,16 @@ describe("restarts, saves and replays", () => {
     });
     const restored = parseRunSave(json, [C]);
     expect(restored?.run).toStrictEqual(run);
-    expect(restored?.log).toEqual({ actId: C.id, seed: "old", actions: [] });
-    // And a default log serializes without the new fields.
+    expect(restored?.log).toEqual({
+      actId: C.id,
+      seed: "old",
+      dealing: "AUTHORED",
+      actions: [],
+    });
+    // And a default log serializes without the optional fields.
     expect(
       serializeRun({ actId: C.id, seed: "old", actions: [] }, SAVED_AT)
-    ).toBe(json);
+    ).toBe(JSON.stringify({ ...JSON.parse(json), version: 2 }));
   });
 
   it("a save records the choice and resumes under it", () => {

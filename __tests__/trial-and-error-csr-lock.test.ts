@@ -227,7 +227,8 @@ describe("CSR Lock scenario (#922)", () => {
 
   it("refuses a CSR Lock deck that cannot fill every slot", () => {
     const deck = S.deck.filter((c) => c.csrStage !== "EFFICACY");
-    const parsed = ScenarioSchema.safeParse({ ...S, deck });
+    const pinned = S.pinned?.filter((id) => deck.some((c) => c.id === id));
+    const parsed = ScenarioSchema.safeParse({ ...S, deck, pinned });
     expect(parsed.success).toBe(false);
     expect(parsed.error?.issues[0].message).toMatch(/missing EFFICACY/);
   });

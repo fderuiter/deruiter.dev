@@ -82,7 +82,9 @@ describe("the post-marketing data (#1088)", () => {
 describe("raising quotas (#1088)", () => {
   it("raises a plain Blind's quota, rounded up to the next 100", () => {
     const raised = raiseQuotas(DOSE_ESCALATION_SCENARIO, 1.25);
-    expect(raised.blind.quota).toBe(up100(8500 * 1.25));
+    expect(raised.blind.quota).toBe(
+      up100(DOSE_ESCALATION_SCENARIO.blind.quota * 1.25)
+    );
     expect(raised.id).toBe(DOSE_ESCALATION_SCENARIO.id);
   });
 

@@ -118,7 +118,16 @@ How this Blind's crisis was answered, once it has been.
 
 > **deckIndex**: `number`
 
-Index of the next undealt card in the scenario deck.
+Index of the next undealt card in the deal order.
+
+***
+
+### deckOrder?
+
+> `optional` **deckOrder?**: `number`[]
+
+The order this Blind deals its deck in, as indices into the scenario
+deck (#2055). Absent means the deck's written order.
 
 ***
 
@@ -178,7 +187,7 @@ What happened, in the study's words.
 
 #### reason
 
-> **reason**: `"DROPOUT"` \| `"PROTOCOL_AMENDMENT"` \| `"SCREEN_FAILURE"` \| `"PROTOCOL_DEVIATION"` \| `"SITE_ACTIVATION"` = `TransitionReasonSchema`
+> **reason**: `"SITE_ACTIVATION"` \| `"DROPOUT"` \| `"PROTOCOL_AMENDMENT"` \| `"SCREEN_FAILURE"` \| `"PROTOCOL_DEVIATION"` = `TransitionReasonSchema`
 
 #### subject?
 

@@ -438,6 +438,7 @@
 - [lib/trial-and-error/internal/codex](lib/trial-and-error/internal/codex/README.md)
 - [lib/trial-and-error/internal/compile](lib/trial-and-error/internal/compile/README.md)
 - [lib/trial-and-error/internal/cpu](lib/trial-and-error/internal/cpu/README.md)
+- [lib/trial-and-error/internal/deal](lib/trial-and-error/internal/deal/README.md)
 - [lib/trial-and-error/internal/desk](lib/trial-and-error/internal/desk/README.md)
 - [lib/trial-and-error/internal/guidance](lib/trial-and-error/internal/guidance/README.md)
 - [lib/trial-and-error/internal/hand-input](lib/trial-and-error/internal/hand-input/README.md)

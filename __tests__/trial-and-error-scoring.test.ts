@@ -292,7 +292,8 @@ describe("Demographics QC scoring cases", () => {
     expect(result.chips.total).toBe(57);
     expect(result.mult.total).toBe(8);
     expect(result.score).toBe(456);
-    expect(result.score).toBeGreaterThanOrEqual(scenario.blind.quota);
+    // One corrected draft alone no longer clears the Small Blind (#2055).
+    expect(result.score).toBeLessThan(scenario.blind.quota);
   });
 
   it("scores the known view from visible findings only", () => {

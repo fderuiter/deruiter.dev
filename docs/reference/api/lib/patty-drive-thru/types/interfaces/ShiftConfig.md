@@ -15,6 +15,14 @@ the standard shift's value; the engine clamps whatever it is given.
 
 ## Properties
 
+### ageUnlocked?
+
+> `readonly` `optional` **ageUnlocked?**: `boolean`
+
+True once the player is eighteen, so age-locked items ring up (#2086).
+
+***
+
 ### arrivalGapMaxSec?
 
 > `readonly` `optional` **arrivalGapMaxSec?**: `number`
@@ -95,6 +103,16 @@ Idle meter points gained per second once the grace period is over.
 
 ***
 
+### rushWindows?
+
+> `readonly` `optional` **rushWindows?**: readonly [`RushWindow`](../type-aliases/RushWindow.md)[]
+
+The shift's rushes (#2086). Left out, a standard shift has the one lunch
+rush and a scenario that sets its own arrival gaps has none; an empty
+list means no rush at all.
+
+***
+
 ### seed
 
 > `readonly` **seed**: `string`
@@ -148,3 +166,11 @@ Standing lost when a late order is bumped.
 #### Inherited from
 
 [`ShiftScenario`](ShiftScenario.md).[`sosLossLate`](ShiftScenario.md#soslosslate)
+
+***
+
+### startMeters?
+
+> `readonly` `optional` **startMeters?**: [`StartMeters`](StartMeters.md)
+
+Where Dignity and SOS start, carried from the day before (#2086).

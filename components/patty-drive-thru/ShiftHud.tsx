@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { BOOTH_CREW, formatClock } from "@/lib/patty-drive-thru";
+import { BOOTH_CREW, WEEK_DAYS, formatClock } from "@/lib/patty-drive-thru";
 import { useBooth } from "./hooks";
 import type { BoothStore, CaptionSpeaker } from "./store";
 
@@ -70,6 +70,11 @@ export function ShiftHud({ store, viewToggle }: ShiftHudProps) {
   const idle = useBooth(store, (s) => Math.round(s.shift.meters.idle));
   const canWipe = useBooth(store, (s) => s.shift.time >= s.shift.wipeReadyAt);
   const act = store.getState().act;
+  // The day being worked in a week (#2086); finished days are already in
+  // the week, so today is the one after them.
+  const weekDay = useBooth(store, (s) =>
+    s.week ? (WEEK_DAYS[s.week.days.length]?.label ?? null) : null
+  );
 
   return (
     <div
@@ -78,6 +83,7 @@ export function ShiftHud({ store, viewToggle }: ShiftHudProps) {
     >
       <div className="min-w-0">
         <p className="text-[10px] uppercase tracking-wider text-[var(--pdt-hud-dim)]">
+          {weekDay ? <span data-testid="pdt-hud-day">{weekDay} · </span> : null}
           Shift left
         </p>
         <p

@@ -58,3 +58,17 @@ export {
   getManagerLine,
   getShiftEnding,
 } from "./internal/diary";
+export {
+  carryMeters,
+  createWeek,
+  getWeekDay,
+  getWeekDayConfig,
+  getWeekDayDiaryLines,
+  getWeekDaySeed,
+  getWeekNetCents,
+  isWeekOver,
+  parseWeekSave,
+  recordWeekDay,
+  scoreWeek,
+  summarizeWeekDay,
+} from "./internal/week";

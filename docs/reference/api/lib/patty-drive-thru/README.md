@@ -68,6 +68,12 @@ Re-exports [buildShiftTelemetry](internal/telemetry/functions/buildShiftTelemetr
 
 ***
 
+### carryMeters
+
+Re-exports [carryMeters](internal/week/functions/carryMeters.md)
+
+***
+
 ### CLOSING\_NOTE
 
 Re-exports [CLOSING_NOTE](internal/diary/variables/CLOSING_NOTE.md)
@@ -101,6 +107,12 @@ Re-exports [createLook](internal/look/functions/createLook.md)
 ### createShift
 
 Re-exports [createShift](internal/engine/functions/createShift.md)
+
+***
+
+### createWeek
+
+Re-exports [createWeek](internal/week/functions/createWeek.md)
 
 ***
 
@@ -284,6 +296,36 @@ Re-exports [getTimeLeft](internal/view/functions/getTimeLeft.md)
 
 ***
 
+### getWeekDay
+
+Re-exports [getWeekDay](internal/week/functions/getWeekDay.md)
+
+***
+
+### getWeekDayConfig
+
+Re-exports [getWeekDayConfig](internal/week/functions/getWeekDayConfig.md)
+
+***
+
+### getWeekDayDiaryLines
+
+Re-exports [getWeekDayDiaryLines](internal/week/functions/getWeekDayDiaryLines.md)
+
+***
+
+### getWeekDaySeed
+
+Re-exports [getWeekDaySeed](internal/week/functions/getWeekDaySeed.md)
+
+***
+
+### getWeekNetCents
+
+Re-exports [getWeekNetCents](internal/week/functions/getWeekNetCents.md)
+
+***
+
 ### HEADSET\_LINES
 
 Re-exports [HEADSET_LINES](internal/diary/variables/HEADSET_LINES.md)
@@ -347,6 +389,12 @@ Re-exports [isShiftOver](internal/engine/functions/isShiftOver.md)
 ### isStandardScenario
 
 Re-exports [isStandardScenario](presets/functions/isStandardScenario.md)
+
+***
+
+### isWeekOver
+
+Re-exports [isWeekOver](internal/week/functions/isWeekOver.md)
 
 ***
 
@@ -506,6 +554,12 @@ Re-exports [OrderItem](types/interfaces/OrderItem.md)
 
 ***
 
+### parseWeekSave
+
+Re-exports [parseWeekSave](internal/week/functions/parseWeekSave.md)
+
+***
+
 ### PayStub
 
 Re-exports [PayStub](types/interfaces/PayStub.md)
@@ -527,6 +581,12 @@ Re-exports [PosCursor](types/interfaces/PosCursor.md)
 ### PosNode
 
 Re-exports [PosNode](types/interfaces/PosNode.md)
+
+***
+
+### recordWeekDay
+
+Re-exports [recordWeekDay](internal/week/functions/recordWeekDay.md)
 
 ***
 
@@ -557,6 +617,12 @@ Re-exports [RUSH_GAP_SCALE](presets/variables/RUSH_GAP_SCALE.md)
 ### RUSH\_START\_FRACTION
 
 Re-exports [RUSH_START_FRACTION](presets/variables/RUSH_START_FRACTION.md)
+
+***
+
+### RushWindow
+
+Re-exports [RushWindow](types/type-aliases/RushWindow.md)
 
 ***
 
@@ -635,6 +701,12 @@ Re-exports [SCORE_STREAK_STEP](presets/variables/SCORE_STREAK_STEP.md)
 ### scoreShift
 
 Re-exports [scoreShift](internal/view/functions/scoreShift.md)
+
+***
+
+### scoreWeek
+
+Re-exports [scoreWeek](internal/week/functions/scoreWeek.md)
 
 ***
 
@@ -728,6 +800,18 @@ Re-exports [SOS_LOSS_LATE](presets/variables/SOS_LOSS_LATE.md)
 
 ***
 
+### STANDARD\_RUSH
+
+Re-exports [STANDARD_RUSH](presets/variables/STANDARD_RUSH.md)
+
+***
+
+### StartMeters
+
+Re-exports [StartMeters](types/interfaces/StartMeters.md)
+
+***
+
 ### stepLook
 
 Re-exports [stepLook](internal/look/functions/stepLook.md)
@@ -743,6 +827,12 @@ Re-exports [StepResult](types/interfaces/StepResult.md)
 ### stepShift
 
 Re-exports [stepShift](internal/engine/functions/stepShift.md)
+
+***
+
+### summarizeWeekDay
+
+Re-exports [summarizeWeekDay](internal/week/functions/summarizeWeekDay.md)
 
 ***
 
@@ -779,6 +869,54 @@ Re-exports [UNIFORM_DEDUCTION_CENTS](presets/variables/UNIFORM_DEDUCTION_CENTS.m
 ### WAGE\_CENTS\_PER\_HOUR
 
 Re-exports [WAGE_CENTS_PER_HOUR](presets/variables/WAGE_CENTS_PER_HOUR.md)
+
+***
+
+### WEEK\_BAD\_DAY\_PENALTY
+
+Re-exports [WEEK_BAD_DAY_PENALTY](presets/variables/WEEK_BAD_DAY_PENALTY.md)
+
+***
+
+### WEEK\_CARRY\_FLOOR
+
+Re-exports [WEEK_CARRY_FLOOR](presets/variables/WEEK_CARRY_FLOOR.md)
+
+***
+
+### WEEK\_CARRY\_RECOVERY
+
+Re-exports [WEEK_CARRY_RECOVERY](presets/variables/WEEK_CARRY_RECOVERY.md)
+
+***
+
+### WEEK\_DAYS
+
+Re-exports [WEEK_DAYS](presets/variables/WEEK_DAYS.md)
+
+***
+
+### WeekdayId
+
+Re-exports [WeekdayId](types/type-aliases/WeekdayId.md)
+
+***
+
+### WeekDayPreset
+
+Re-exports [WeekDayPreset](presets/interfaces/WeekDayPreset.md)
+
+***
+
+### WeekDayResult
+
+Re-exports [WeekDayResult](types/interfaces/WeekDayResult.md)
+
+***
+
+### WeekState
+
+Re-exports [WeekState](types/interfaces/WeekState.md)
 
 ***
 

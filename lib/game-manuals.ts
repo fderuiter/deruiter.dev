@@ -1048,7 +1048,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Get through one drive-thru shift, squeezed from four hours into three minutes, without the drive-thru times or your dignity reaching zero. Every car you serve before its ticket turns red helps; every car that gives up and drives off costs speed and comes out of your pay.",
     quickSummary:
-      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page.",
+      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page. Or work a week of shifts, Monday to Friday: each day is different, each ends on its own diary page, and each day's score counts on its own. The five days add up to a week total, kept as your best week, and finishing all five earns a trophy.",
     controls: [
       {
         action: "Turn",
@@ -1137,12 +1137,19 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "The shift ends when the clock runs out, when drive-thru speed reaches zero, or when dignity does. A pay stub takes out the uniform, a break you did not take and any till shortage.",
         badge: "End of shift",
       },
+      {
+        title: "A week of shifts",
+        detail:
+          "Monday is a normal shift. On Tuesday the drink machine is broken, Wednesday has two rushes, Thursday is your eighteenth birthday so you can brew coffee yourself, and Fry Friday is the busiest day. Dignity and drive-thru speed carry halfway back toward their usual start into the next day, so a bad day leaves you worse off but never ends the week. The week saves after each day, so you can stop and come back.",
+        badge: "Week",
+      },
     ],
     proTips: [
       "Look at the order screen before you zoom into the register.",
       "Ring the burger before you go looking for the pickles.",
       "Flag Dale the moment a coffee shows up.",
       "When there are no cars, wipe something.",
+      "In a week, protect your Dignity early: what you end Monday with, you start Tuesday with.",
     ],
     lore: {
       title: "A diary entry",

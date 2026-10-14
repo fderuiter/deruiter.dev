@@ -85,11 +85,66 @@ export interface ShiftScenario {
   readonly dispenserFailChance?: number;
 }
 
+/**
+ * A stretch of the shift when cars come faster (#1938, #2086), as fractions
+ * of the shift from 0 to 1. The start is inclusive and the end exclusive.
+ */
+export type RushWindow = readonly [startFraction: number, endFraction: number];
+
+/** The standing meters a shift can start from, for a week's carry-over (#2086). */
+export interface StartMeters {
+  readonly sos: number;
+  readonly dignity: number;
+}
+
 export interface ShiftConfig extends ShiftScenario {
   /** Any string; the same seed and actions replay to the same shift. */
   readonly seed: string;
   /** Real seconds the shift lasts. */
   readonly durationSec: number;
+  /**
+   * The shift's rushes (#2086). Left out, a standard shift has the one lunch
+   * rush and a scenario that sets its own arrival gaps has none; an empty
+   * list means no rush at all.
+   */
+  readonly rushWindows?: readonly RushWindow[];
+  /** True once the player is eighteen, so age-locked items ring up (#2086). */
+  readonly ageUnlocked?: boolean;
+  /** Where Dignity and SOS start, carried from the day before (#2086). */
+  readonly startMeters?: StartMeters;
+}
+
+/** The days of the week mode (#2086), Monday to Friday. */
+export type WeekdayId =
+  "monday" | "tuesday" | "wednesday" | "thursday" | "friday";
+
+/** What a finished day of the week leaves behind (#2086). */
+export interface WeekDayResult {
+  readonly day: WeekdayId;
+  /** The seed the day was played with, derived from the week seed. */
+  readonly seed: string;
+  readonly outcome: Exclude<ShiftOutcome, "playing">;
+  /** The day's `scoreShift` result. */
+  readonly score: number;
+  readonly netCents: number;
+  readonly served: number;
+  readonly late: number;
+  readonly expired: number;
+  readonly drinksDropped: number;
+  readonly yells: number;
+  /** The standing meters when the day ended, before any carry-over. */
+  readonly endMeters: StartMeters;
+}
+
+/**
+ * A week of shifts in progress (#2086): plain data, so it can be saved
+ * between days and a half-finished week resumed later.
+ */
+export interface WeekState {
+  readonly version: 1;
+  readonly seed: string;
+  /** The days already worked, Monday first. */
+  readonly days: readonly WeekDayResult[];
 }
 
 export interface ShiftTallies {
@@ -236,8 +291,13 @@ export interface TicketLine {
   readonly status: TicketLineStatus;
 }
 
-/** The parts of a shift the kitchen display reads. */
-export type TicketSource = Pick<ShiftState, "time" | "orders" | "pos">;
+/**
+ * The parts of a shift the kitchen display reads. The config is optional and
+ * only says whether age-locked items have unlocked (#2086).
+ */
+export type TicketSource = Pick<ShiftState, "time" | "orders" | "pos"> & {
+  readonly config?: Pick<ShiftConfig, "ageUnlocked">;
+};
 
 /** One order as the kitchen display and the POS ticket strip show it. */
 export interface KdsTicket {

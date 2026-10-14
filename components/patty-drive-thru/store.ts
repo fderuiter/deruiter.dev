@@ -8,12 +8,16 @@ import {
   applyAction,
   createLook,
   createShift,
+  createWeek,
   describeOrder,
   getHeadsetLine,
   getKdsBand,
   getManagerLine,
   getOrderAge,
+  getWeekDay,
+  getWeekDayConfig,
   isShiftOver,
+  recordWeekDay,
   stepLook,
   stepShift,
   type LookInput,
@@ -24,6 +28,7 @@ import {
   type ShiftEvent,
   type ShiftLogEntry,
   type ShiftState,
+  type WeekState,
 } from "@/lib/patty-drive-thru";
 
 /** Who a caption comes from, which sets its style and audio channel. */
@@ -55,6 +60,11 @@ export interface BoothState {
   readonly lateAnnounced: readonly number[];
   /** Every event of this shift with its time, newest last, for the export. */
   readonly log: readonly ShiftLogEntry[];
+  /**
+   * The week being worked (#2086), or null for a single shift. A finished
+   * day is added to it the moment the shift ends.
+   */
+  readonly week: WeekState | null;
 }
 
 /** The most events one shift keeps; a shift makes a few hundred at most. */
@@ -63,6 +73,12 @@ const LOG_LIMIT = 2000;
 export interface BoothActions {
   /** Starts a fresh shift from the diary intro or the end screen. */
   clockIn: (config?: Partial<ShiftConfig>) => void;
+  /**
+   * Clocks in for the next day of a week (#2086): a new week from `seed`, or
+   * the week given, such as one loaded from a save. With neither, the week
+   * already under way.
+   */
+  clockInWeek: (start?: { seed?: string; week?: WeekState }) => void;
   /** Goes back to the diary intro. */
   backToIntro: () => void;
   /** Advances the shift clock. */
@@ -226,7 +242,10 @@ export function createBoothStore(
           .join(" ");
       }
       const yelled = events.some((e) => e.type === "manager-yell");
+      const ended = isShiftOver(shift) && !isShiftOver(state.shift);
       set({
+        week:
+          ended && state.week ? recordWeekDay(state.week, shift) : state.week,
         log:
           events.length > 0
             ? [
@@ -262,17 +281,44 @@ export function createBoothStore(
       yells: 0,
       lateAnnounced: [],
       log: [],
+      week: null,
 
       clockIn: (next) => {
         // A new scenario replaces the last one's dials rather than adding to them.
         if (next) baseConfig = { ...withoutDials(baseConfig), ...next };
         set({
           phase: "shift",
+          week: null,
           shift: createShift(baseConfig),
           look: createLook(),
           registerOpen: false,
           caption: null,
           announcement: "Clocked in. The headset is on.",
+          yells: 0,
+          lateAnnounced: [],
+          log: [],
+        });
+      },
+
+      clockInWeek: (start) => {
+        const week =
+          start?.week ??
+          (start?.seed !== undefined ? createWeek(start.seed) : get().week) ??
+          createWeek();
+        const day = getWeekDay(week);
+        const dayConfig = getWeekDayConfig(
+          week,
+          baseConfig.durationSec ?? DEFAULT_SHIFT_CONFIG.durationSec
+        );
+        if (!day || !dayConfig) return;
+        set({
+          phase: "shift",
+          week,
+          shift: createShift(dayConfig),
+          look: createLook(),
+          registerOpen: false,
+          caption: null,
+          announcement: `Clocked in. ${day.label}: ${day.title}. The headset is on.`,
           yells: 0,
           lateAnnounced: [],
           log: [],

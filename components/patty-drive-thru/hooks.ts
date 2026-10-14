@@ -29,10 +29,11 @@ export function useTickets(store: BoothStore): {
 } {
   const orders = useStore(store, (s) => s.shift.orders);
   const pos = useStore(store, (s) => s.shift.pos);
+  const config = useStore(store, (s) => s.shift.config);
   const time = useStore(
     store,
     (s) =>
       Math.floor(s.shift.time * TICKET_REFRESH_PER_SEC) / TICKET_REFRESH_PER_SEC
   );
-  return { tickets: getKdsTickets({ orders, pos, time }), pos };
+  return { tickets: getKdsTickets({ orders, pos, time, config }), pos };
 }

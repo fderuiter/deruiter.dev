@@ -316,6 +316,7 @@
 - [lib/patty-drive-thru/internal/look](lib/patty-drive-thru/internal/look/README.md)
 - [lib/patty-drive-thru/internal/telemetry](lib/patty-drive-thru/internal/telemetry/README.md)
 - [lib/patty-drive-thru/internal/view](lib/patty-drive-thru/internal/view/README.md)
+- [lib/patty-drive-thru/internal/week](lib/patty-drive-thru/internal/week/README.md)
 - [lib/patty-drive-thru/presets](lib/patty-drive-thru/presets/README.md)
 - [lib/patty-drive-thru/types](lib/patty-drive-thru/types/README.md)
 - [lib/persona](lib/persona/README.md)

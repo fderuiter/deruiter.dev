@@ -4,8 +4,10 @@ import type {
   MenuItemId,
   ModifierId,
   PosNode,
+  RushWindow,
   ShiftConfig,
   ShiftScenario,
+  WeekdayId,
 } from "./types";
 
 /**
@@ -281,10 +283,19 @@ export const SCENARIO_PRESETS: readonly ScenarioPreset[] = [
   },
 ];
 
-/** True when a shift has no scenario dial set, so its score counts. */
+/**
+ * True when a shift has no scenario dial set and is not a day of the week
+ * mode, so its own score counts. A week's days add up to the week's score
+ * instead (#2086).
+ */
 export function isStandardScenario(config: Partial<ShiftConfig>): boolean {
-  return (Object.keys(SCENARIO_LIMITS) as Array<keyof ShiftScenario>).every(
-    (key) => config[key] === undefined
+  return (
+    (Object.keys(SCENARIO_LIMITS) as Array<keyof ShiftScenario>).every(
+      (key) => config[key] === undefined
+    ) &&
+    config.rushWindows === undefined &&
+    config.ageUnlocked === undefined &&
+    config.startMeters === undefined
   );
 }
 
@@ -292,3 +303,94 @@ export function isStandardScenario(config: Partial<ShiftConfig>): boolean {
 export function scenarioDialsFor(id: ScenarioId): ShiftScenario {
   return { ...SCENARIO_PRESETS.find((p) => p.id === id)?.dials };
 }
+
+/**
+ * The week mode (#2086). Each day starts Dignity and SOS this far of the way
+ * from where the day before ended back toward `METER_START`: 0.5 is halfway.
+ */
+export const WEEK_CARRY_RECOVERY = 0.5;
+/**
+ * The lowest a carried meter can start a day at, so a breakdown or a docked
+ * day starts the next one worse off without losing the week.
+ */
+export const WEEK_CARRY_FLOOR = 25;
+/** A day that ends on a breakdown or docked outcome costs this much more. */
+export const WEEK_BAD_DAY_PENALTY = 10;
+
+/** The rush every standard shift has (#1938). */
+export const STANDARD_RUSH: RushWindow = [
+  RUSH_START_FRACTION,
+  RUSH_END_FRACTION,
+];
+
+export interface WeekDayPreset {
+  readonly id: WeekdayId;
+  /** The weekday, such as "Monday". */
+  readonly label: string;
+  /** What kind of day it is, such as "Fry Friday". */
+  readonly title: string;
+  /** One line, in the diary's voice, for the day picker and the diary page. */
+  readonly blurb: string;
+  readonly dials: ShiftScenario;
+  /** The day's rushes; left out, the standard lunch rush. */
+  readonly rushWindows?: readonly RushWindow[];
+  /** True on the day the player turns eighteen and coffee unlocks. */
+  readonly ageUnlocked?: boolean;
+}
+
+/**
+ * Monday to Friday (#2086). Every day is built from the same scenario dials
+ * as the practice shifts, plus its rushes and whether coffee is unlocked.
+ * Once Thursday unlocks coffee it stays unlocked for Friday.
+ */
+export const WEEK_DAYS: readonly WeekDayPreset[] = [
+  {
+    id: "monday",
+    label: "Monday",
+    title: "A normal shift",
+    blurb: "Nothing special. One lunch rush, the usual cars.",
+    dials: {},
+    rushWindows: [STANDARD_RUSH],
+  },
+  {
+    id: "tuesday",
+    label: "Tuesday",
+    title: "The dispenser is broken",
+    blurb: "The drink machine is worse than usual. Ring the drinks twice.",
+    dials: { dispenserFailChance: 0.8 },
+    rushWindows: [STANDARD_RUSH],
+  },
+  {
+    id: "wednesday",
+    label: "Wednesday",
+    title: "Double rush",
+    blurb: "A lunch rush, a breather, then the school lets out.",
+    dials: {},
+    rushWindows: [
+      [0.15, 0.4],
+      [0.6, 0.85],
+    ],
+  },
+  {
+    id: "thursday",
+    label: "Thursday",
+    title: "Eighteen",
+    blurb: "My eighteenth birthday. I can finally brew the coffee myself.",
+    dials: {},
+    rushWindows: [STANDARD_RUSH],
+    ageUnlocked: true,
+  },
+  {
+    id: "friday",
+    label: "Friday",
+    title: "Fry Friday",
+    blurb: "Fred's fresh fries on Friday. The busiest day of the week.",
+    dials: {
+      arrivalGapMinSec: 5,
+      arrivalGapMaxSec: 11,
+      firstArrivalSec: 1,
+    },
+    rushWindows: [[0.25, 0.8]],
+    ageUnlocked: true,
+  },
+];

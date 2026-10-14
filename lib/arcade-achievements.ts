@@ -238,6 +238,19 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     conditionDescription:
       "Earn an NAI verdict on Phase 3 in Clinical Trial Chaos",
   },
+  {
+    id: "clinical_clean_inspection",
+    gameId: "clinical-chaos",
+    title: "Nothing to Hide",
+    subtitle: "Clinical Trial Chaos",
+    description:
+      "Answer every question in the campaign-finale FDA inspection from your own audit trail, and disclose every sponsor shortcut.",
+    icon: "ClipboardCheck",
+    category: "mastery",
+    milestone: "clean_inspection",
+    conditionDescription:
+      "Pass the Phase 3 FDA inspection interview without a wrong answer in Clinical Trial Chaos",
+  },
 
   // Trial & Error
   {

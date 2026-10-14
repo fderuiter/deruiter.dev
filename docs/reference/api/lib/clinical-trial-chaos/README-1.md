@@ -34,6 +34,12 @@ Re-exports [adjustAuditorSuspicion](shift/functions/adjustAuditorSuspicion.md)
 
 ***
 
+### advanceInspection
+
+Re-exports [advanceInspection](inspection/functions/advanceInspection.md)
+
+***
+
 ### ALL\_STATIONS
 
 Re-exports [ALL_STATIONS](scenarios/variables/ALL_STATIONS.md)
@@ -70,6 +76,12 @@ Re-exports [annotateInspectionReport](amendments/functions/annotateInspectionRep
 
 ***
 
+### answerInspectionQuestion
+
+Re-exports [answerInspectionQuestion](inspection/functions/answerInspectionQuestion.md)
+
+***
+
 ### appendRuleViolation
 
 Re-exports [appendRuleViolation](shift/functions/appendRuleViolation.md)
@@ -79,6 +91,12 @@ Re-exports [appendRuleViolation](shift/functions/appendRuleViolation.md)
 ### applyCorrectionScore
 
 Re-exports [applyCorrectionScore](shift/functions/applyCorrectionScore.md)
+
+***
+
+### applyInspectionToReport
+
+Re-exports [applyInspectionToReport](inspection/functions/applyInspectionToReport.md)
 
 ***
 
@@ -346,6 +364,18 @@ Re-exports [createInitialSponsorState](sponsor/functions/createInitialSponsorSta
 
 ***
 
+### createInspectionRecord
+
+Re-exports [createInspectionRecord](inspection/functions/createInspectionRecord.md)
+
+***
+
+### createInspectionRound
+
+Re-exports [createInspectionRound](inspection/functions/createInspectionRound.md)
+
+***
+
 ### createRuleViolation
 
 Re-exports [createRuleViolation](shift/functions/createRuleViolation.md)
@@ -469,6 +499,12 @@ Re-exports [exportToCDISCODMXML](engine/functions/exportToCDISCODMXML.md)
 ### exportToSDTMCSV
 
 Re-exports [exportToSDTMCSV](engine/functions/exportToSDTMCSV.md)
+
+***
+
+### extendInspectionTimer
+
+Re-exports [extendInspectionTimer](inspection/functions/extendInspectionTimer.md)
 
 ***
 
@@ -628,6 +664,12 @@ Re-exports [getComboMultiplier](shift/functions/getComboMultiplier.md)
 
 ***
 
+### getCurrentInspectionQuestion
+
+Re-exports [getCurrentInspectionQuestion](inspection/functions/getCurrentInspectionQuestion.md)
+
+***
+
 ### getFastTrackDomain
 
 Re-exports [getFastTrackDomain](shift/functions/getFastTrackDomain.md)
@@ -637,6 +679,18 @@ Re-exports [getFastTrackDomain](shift/functions/getFastTrackDomain.md)
 ### getFollowUpSubject
 
 Re-exports [getFollowUpSubject](sponsor/functions/getFollowUpSubject.md)
+
+***
+
+### getInspectionAnswer
+
+Re-exports [getInspectionAnswer](inspection/functions/getInspectionAnswer.md)
+
+***
+
+### getInspectionSeed
+
+Re-exports [getInspectionSeed](inspection/functions/getInspectionSeed.md)
 
 ***
 
@@ -736,6 +790,12 @@ Re-exports [getSignatureReasonError](engine/functions/getSignatureReasonError.md
 
 ***
 
+### getSkeletonDispositions
+
+Re-exports [getSkeletonDispositions](inspection/functions/getSkeletonDispositions.md)
+
+***
+
 ### getSpawnIntervalSeconds
 
 Re-exports [getSpawnIntervalSeconds](engine/functions/getSpawnIntervalSeconds.md)
@@ -793,6 +853,120 @@ Re-exports [hasProceduralGenerator](observation-generators/functions/hasProcedur
 ### INITIAL\_STATIONS
 
 Re-exports [INITIAL_STATIONS](scenarios/variables/INITIAL_STATIONS.md)
+
+***
+
+### INSPECTION\_EXTENSION\_SECONDS
+
+Re-exports [INSPECTION_EXTENSION_SECONDS](inspection/variables/INSPECTION_EXTENSION_SECONDS.md)
+
+***
+
+### INSPECTION\_INCOMPLETE\_TRAIL\_MISSES
+
+Re-exports [INSPECTION_INCOMPLETE_TRAIL_MISSES](inspection/variables/INSPECTION_INCOMPLETE_TRAIL_MISSES.md)
+
+***
+
+### INSPECTION\_MAX\_RECORDS
+
+Re-exports [INSPECTION_MAX_RECORDS](inspection/variables/INSPECTION_MAX_RECORDS.md)
+
+***
+
+### INSPECTION\_MIN\_RECORDS
+
+Re-exports [INSPECTION_MIN_RECORDS](inspection/variables/INSPECTION_MIN_RECORDS.md)
+
+***
+
+### INSPECTION\_MISS\_PENALTY
+
+Re-exports [INSPECTION_MISS_PENALTY](inspection/variables/INSPECTION_MISS_PENALTY.md)
+
+***
+
+### INSPECTION\_RECORD\_SECONDS
+
+Re-exports [INSPECTION_RECORD_SECONDS](inspection/variables/INSPECTION_RECORD_SECONDS.md)
+
+***
+
+### INSPECTION\_SKELETON\_SECONDS
+
+Re-exports [INSPECTION_SKELETON_SECONDS](inspection/variables/INSPECTION_SKELETON_SECONDS.md)
+
+***
+
+### InspectionAnswer
+
+Re-exports [InspectionAnswer](inspection/interfaces/InspectionAnswer.md)
+
+***
+
+### InspectionCorrection
+
+Re-exports [InspectionCorrection](inspection/interfaces/InspectionCorrection.md)
+
+***
+
+### InspectionInterviewSummary
+
+Re-exports [InspectionInterviewSummary](types/interfaces/InspectionInterviewSummary.md)
+
+***
+
+### InspectionOption
+
+Re-exports [InspectionOption](inspection/interfaces/InspectionOption.md)
+
+***
+
+### InspectionOptionOutcome
+
+Re-exports [InspectionOptionOutcome](inspection/type-aliases/InspectionOptionOutcome.md)
+
+***
+
+### InspectionQuestion
+
+Re-exports [InspectionQuestion](inspection/interfaces/InspectionQuestion.md)
+
+***
+
+### InspectionQuestionKind
+
+Re-exports [InspectionQuestionKind](inspection/type-aliases/InspectionQuestionKind.md)
+
+***
+
+### InspectionRecord
+
+Re-exports [InspectionRecord](inspection/interfaces/InspectionRecord.md)
+
+***
+
+### InspectionReportOptions
+
+Re-exports [InspectionReportOptions](shift/interfaces/InspectionReportOptions.md)
+
+***
+
+### InspectionRound
+
+Re-exports [InspectionRound](inspection/interfaces/InspectionRound.md)
+
+***
+
+### InspectionSignature
+
+Re-exports [InspectionSignature](inspection/interfaces/InspectionSignature.md)
+
+***
+
+### isInspectionComplete
+
+Re-exports [isInspectionComplete](inspection/functions/isInspectionComplete.md)
 
 ***
 
@@ -1132,6 +1306,12 @@ Re-exports [selectNextUrgentSubject](engine/functions/selectNextUrgentSubject.md
 
 ***
 
+### setInspectionTimerEnabled
+
+Re-exports [setInspectionTimerEnabled](inspection/functions/setInspectionTimerEnabled.md)
+
+***
+
 ### SettledSubmission
 
 Re-exports [SettledSubmission](shift/interfaces/SettledSubmission.md)
@@ -1183,6 +1363,12 @@ Re-exports [SignatureModalState](types/interfaces/SignatureModalState.md)
 ### SignatureReason
 
 Re-exports [SignatureReason](types/type-aliases/SignatureReason.md)
+
+***
+
+### SkeletonDisposition
+
+Re-exports [SkeletonDisposition](sponsor/type-aliases/SkeletonDisposition.md)
 
 ***
 
@@ -1360,6 +1546,12 @@ Re-exports [summarizeAmendmentOutcomes](amendments/functions/summarizeAmendmentO
 
 ***
 
+### summarizeInspection
+
+Re-exports [summarizeInspection](inspection/functions/summarizeInspection.md)
+
+***
+
 ### tickAmendmentEffects
 
 Re-exports [tickAmendmentEffects](amendments/functions/tickAmendmentEffects.md)
@@ -1369,6 +1561,12 @@ Re-exports [tickAmendmentEffects](amendments/functions/tickAmendmentEffects.md)
 ### tickAuditor
 
 Re-exports [tickAuditor](engine/functions/tickAuditor.md)
+
+***
+
+### tickInspectionTimer
+
+Re-exports [tickInspectionTimer](inspection/functions/tickInspectionTimer.md)
 
 ***
 

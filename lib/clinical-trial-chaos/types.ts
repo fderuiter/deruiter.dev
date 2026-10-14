@@ -260,4 +260,20 @@ export interface BIMOInspectionReport {
   auditYear?: number;
   /** How lasting protocol amendments were handled this shift (#2053). */
   amendmentOutcomes?: AmendmentOutcome[];
+  /** How the campaign-finale inspection interview went (#2089); absent otherwise. */
+  inspection?: InspectionInterviewSummary;
+}
+
+/** Tallies of the campaign-finale inspection interview (#2089). */
+export interface InspectionInterviewSummary {
+  /** Questions about locked CRFs. */
+  recordQuestions: number;
+  /** Record questions answered from the audit trail. */
+  recordCorrect: number;
+  /** Questions about sponsor skeletons, one per skeleton. */
+  skeletonQuestions: number;
+  /** Skeletons the player disclosed honestly. */
+  skeletonsDisclosed: number;
+  /** Every record question right and every skeleton disclosed. */
+  clean: boolean;
 }

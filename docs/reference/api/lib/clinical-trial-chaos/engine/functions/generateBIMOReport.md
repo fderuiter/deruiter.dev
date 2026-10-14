@@ -6,7 +6,7 @@
 
 # Function: generateBIMOReport()
 
-> **generateBIMOReport**(`scoreState`, `auditorState`, `_logs?`, `ruleViolations?`, `activeProtocol?`): [`BIMOInspectionReport`](../../types/interfaces/BIMOInspectionReport.md)
+> **generateBIMOReport**(`scoreState`, `auditorState`, `_logs?`, `ruleViolations?`, `activeProtocol?`, `now?`): [`BIMOInspectionReport`](../../types/interfaces/BIMOInspectionReport.md)
 
 Generates an FDA Bioresearch Monitoring (BIMO) inspection compliance report.
 
@@ -31,6 +31,13 @@ Generates an FDA Bioresearch Monitoring (BIMO) inspection compliance report.
 ### activeProtocol?
 
 [`StudyProtocol`](../../../crf/types/interfaces/StudyProtocol.md) \| `null`
+
+### now?
+
+`Date` = `...`
+
+When the inspection is filed; it sets the run id and the audit
+  date, so passing a fixed date makes the report repeatable (#2089).
 
 ## Returns
 

@@ -2119,6 +2119,95 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
     }
   });
 
+  // #2089: the campaign ends in a playable FDA inspection, not straight in
+  // the report; earlier phases still go straight to their reports.
+  it("runs the FDA inspection interview only after Phase 3 locks (#2089)", async () => {
+    vi.useFakeTimers();
+    fastTrackLifeline.alwaysCharged = true;
+    spawnFlags.alwaysFlagged = true;
+    const clickButton = async (text: string) => {
+      await act(async () => {
+        Array.from(container.querySelectorAll("button"))
+          .find((b) => b.textContent?.includes(text))
+          ?.click();
+      });
+    };
+    try {
+      await act(async () => {
+        root.render(<ClinicalTrialChaos />);
+      });
+      await clickButton("Start 3-Phase Campaign");
+      const board = container.querySelector(
+        '[data-keyboard-boundary="true"]'
+      ) as HTMLElement;
+      const lockPhase = async (done: string) => {
+        for (let i = 0; i < 60 && !container.textContent?.includes(done); i++) {
+          if (container.textContent?.includes("Waiting for the next packet")) {
+            await flush(1000);
+            continue;
+          }
+          await pressKey(board, "r");
+        }
+      };
+
+      for (const phase of [1, 2] as const) {
+        await lockPhase(`PHASE ${phase}`);
+        expect(container.textContent).toMatch(new RegExp(`PHASE ${phase} `));
+        expect(
+          container.querySelector('[data-testid="cc-inspection-round"]')
+        ).toBeNull();
+        expect(
+          container.querySelector('[data-testid="cc-bimo-report"]')
+        ).toBeTruthy();
+        await clickButton("Close Report");
+        await clickButton(`Advance to Phase ${phase + 1}`);
+      }
+
+      await lockPhase("DATABASE LOCKED");
+      const dialog = container.querySelector(
+        '[data-testid="cc-inspection-round"]'
+      ) as HTMLElement;
+      expect(dialog).toBeTruthy();
+      expect(dialog.textContent).toContain("FDA inspection: closing interview");
+      expect(
+        container.querySelector('[data-testid="cc-bimo-report"]')
+      ).toBeNull();
+      // Every question names a CRF this campaign locked.
+      expect(dialog.textContent).toMatch(/SUBJ-\d+/);
+
+      for (
+        let i = 0;
+        i < 20 &&
+        container.querySelector('[data-testid="cc-inspection-round"]');
+        i++
+      ) {
+        const current = container.querySelector(
+          '[data-testid="cc-inspection-round"]'
+        ) as HTMLElement;
+        await act(async () => {
+          current.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "1", bubbles: true })
+          );
+        });
+        await clickButton("Next question");
+        await clickButton("File the inspection report");
+      }
+      expect(
+        container.querySelector('[data-testid="cc-inspection-round"]')
+      ).toBeNull();
+      expect(
+        container.querySelector('[data-testid="cc-bimo-report"]')
+      ).toBeTruthy();
+      expect(
+        container.querySelector('[data-testid="cc-bimo-interview"]')
+          ?.textContent
+      ).toMatch(/Closing interview: \d\/[4-6] records/);
+    } finally {
+      fastTrackLifeline.alwaysCharged = false;
+      vi.useRealTimers();
+    }
+  }, 60000);
+
   // #1670: expired subjects were reported as CRFs "submitted with unresolved
   // raw data", with more "submitted" than processed.
   it("reports expired subjects as expired on the report and end panel (#1670)", async () => {

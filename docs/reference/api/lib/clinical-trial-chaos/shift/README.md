@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [InspectionReportOptions](interfaces/InspectionReportOptions.md)
 - [PhaseProgress](interfaces/PhaseProgress.md)
 - [SettledSubmission](interfaces/SettledSubmission.md)
 - [ShiftClocks](interfaces/ShiftClocks.md)

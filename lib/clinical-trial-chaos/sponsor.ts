@@ -692,37 +692,145 @@ const SKELETON_SCORE_PENALTY: Record<BIMOFinding["severity"], number> = {
 };
 
 /**
+ * How the player answered the inspector's question about one sponsor
+ * skeleton in the campaign-finale inspection (#2089):
+ *
+ * - `disclosed`: owned it and cited the right regulation. Half the penalty,
+ *   and the finding drops one severity level.
+ * - `misidentified`: owned it but cited the wrong regulation. Full penalty.
+ * - `evasive`: denied it or blamed the sponsor. Full penalty, and the finding
+ *   rises one severity level, which can escalate the verdict.
+ * - `unanswered`: the timer ran out. Full penalty.
+ */
+export type SkeletonDisposition =
+  "disclosed" | "misidentified" | "evasive" | "unanswered";
+
+const SEVERITY_ORDER: readonly BIMOFinding["severity"][] = [
+  "Minor",
+  "Major",
+  "Critical",
+];
+
+function shiftSeverity(
+  severity: BIMOFinding["severity"],
+  steps: number
+): BIMOFinding["severity"] {
+  const idx = clamp(
+    SEVERITY_ORDER.indexOf(severity) + steps,
+    0,
+    SEVERITY_ORDER.length - 1
+  );
+  return SEVERITY_ORDER[idx];
+}
+
+const DISPOSITION_NOTES: Record<SkeletonDisposition, string> = {
+  disclosed:
+    " Disclosed by the site during the inspection interview; a CAPA is open.",
+  misidentified:
+    " The site admitted it during the interview but could not name the requirement it breached.",
+  evasive: " The site denied or deflected it during the inspection interview.",
+  unanswered: " The site gave no answer when the inspector asked about it.",
+};
+
+/**
+ * Severity of the finding a skeleton already charged in an earlier phase
+ * report adds in the campaign finale (#2089): a disclosure adds nothing, a
+ * wrong regulation or a timeout a Minor finding, a denial a Major one.
+ */
+const CHARGED_SKELETON_SEVERITY: Record<
+  SkeletonDisposition,
+  BIMOFinding["severity"] | null
+> = {
+  disclosed: null,
+  misidentified: "Minor",
+  unanswered: "Minor",
+  evasive: "Major",
+};
+
+/**
  * Surfaces the player's sponsor-pleasing shortcuts as inspection findings,
  * lowering the score and escalating the verdict where warranted.
+ *
+ * @param report - The report to add the skeletons to.
+ * @param skeletons - Sponsor-pleasing shortcuts taken.
+ * @param dispositions - How each skeleton was answered in the campaign-finale
+ *   inspection, by index (#2089). Without one, a skeleton takes its full
+ *   penalty at its own severity.
+ * @param chargedCount - How many leading skeletons an earlier phase report
+ *   already charged. They are not charged again: each adds only the finding
+ *   its answer earns (none when disclosed, Minor for a wrong regulation or a
+ *   timeout, Major for a denial).
+ * @returns The report with the skeleton findings applied.
  */
 export function applySponsorSkeletonsToReport(
   report: BIMOInspectionReport,
-  skeletons: readonly SponsorSkeleton[]
+  skeletons: readonly SponsorSkeleton[],
+  dispositions: readonly SkeletonDisposition[] = [],
+  chargedCount = 0
 ): BIMOInspectionReport {
   if (skeletons.length === 0) return report;
 
-  const findings: BIMOFinding[] = skeletons.map((s, idx) => ({
-    id: `FND-SPONSOR-${idx + 1}`,
-    category: s.category,
-    severity: s.severity,
-    description: s.description,
-    regulation: s.regulation,
-  }));
-  const penalty = skeletons.reduce(
-    (sum, s) => sum + SKELETON_SCORE_PENALTY[s.severity],
-    0
-  );
+  let penalty = 0;
+  const findings: BIMOFinding[] = [];
+  skeletons.forEach((s, idx) => {
+    const disposition = dispositions[idx];
+    const id = `FND-SPONSOR-${idx + 1}`;
+    if (idx < chargedCount) {
+      const answered = disposition ?? "unanswered";
+      const severity = CHARGED_SKELETON_SEVERITY[answered];
+      if (!severity) return;
+      penalty += SKELETON_SCORE_PENALTY[severity];
+      findings.push({
+        id,
+        category: s.category,
+        severity,
+        description: `${s.description} Already cited in an earlier phase report.${DISPOSITION_NOTES[answered]}`,
+        regulation: s.regulation,
+      });
+      return;
+    }
+    const fullPenalty = SKELETON_SCORE_PENALTY[s.severity];
+    let severity = s.severity;
+    if (disposition === "disclosed") {
+      severity = shiftSeverity(s.severity, -1);
+      penalty += Math.floor(fullPenalty / 2);
+    } else {
+      if (disposition === "evasive") severity = shiftSeverity(s.severity, 1);
+      penalty += fullPenalty;
+    }
+    findings.push({
+      id,
+      category: s.category,
+      severity,
+      description: disposition
+        ? `${s.description}${DISPOSITION_NOTES[disposition]}`
+        : s.description,
+      regulation: s.regulation,
+    });
+  });
 
   let verdict = report.verdict;
   let summary = report.summary;
-  if (skeletons.some((s) => s.severity === "Critical")) {
+  if (findings.some((f) => f.severity === "Critical")) {
     verdict = "OAI (Official Action Indicated - Form 483 Issued)";
-  } else if (verdict === "NAI (No Action Indicated)") {
+  } else if (findings.length > 0 && verdict === "NAI (No Action Indicated)") {
     verdict = "VAI (Voluntary Action Indicated)";
   }
-  summary = `${summary} Inspectors also found ${skeletons.length} sponsor-pleasing shortcut${
-    skeletons.length === 1 ? "" : "s"
-  } in the correspondence archive.`;
+  const fresh = Math.max(0, skeletons.length - chargedCount);
+  if (fresh > 0) {
+    summary = `${summary} Inspectors also found ${fresh} sponsor-pleasing shortcut${
+      fresh === 1 ? "" : "s"
+    } in the correspondence archive.`;
+  }
+  if (chargedCount > 0) {
+    summary = `${summary} They also asked about ${chargedCount} shortcut${
+      chargedCount === 1 ? "" : "s"
+    } cited in earlier phase reports.`;
+  }
+  const disclosed = dispositions.filter((d) => d === "disclosed").length;
+  if (disclosed > 0) {
+    summary = `${summary} The site disclosed ${disclosed} during the interview.`;
+  }
 
   return {
     ...report,

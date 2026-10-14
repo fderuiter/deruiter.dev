@@ -6,10 +6,13 @@
 
 # Function: buildInspectionReport()
 
-> **buildInspectionReport**(`score`, `auditor`, `logs`, `violations`, `protocol`, `skeletons`): [`BIMOInspectionReport`](../../types/interfaces/BIMOInspectionReport.md)
+> **buildInspectionReport**(`score`, `auditor`, `logs`, `violations`, `protocol`, `skeletons`, `options?`): [`BIMOInspectionReport`](../../types/interfaces/BIMOInspectionReport.md)
 
 The BIMO inspection report shown when a phase clears or the shift ends,
-with the sponsor's skeletons added as findings.
+with the sponsor's skeletons added as findings. At the end of a campaign
+it also grades the inspection interview. This is the single place the
+report is built: the same run state and answers always give the same
+report for the same `now`.
 
 ## Parameters
 
@@ -48,6 +51,12 @@ The simulated study protocol, if any.
 readonly [`SponsorSkeleton`](../../sponsor/interfaces/SponsorSkeleton.md)[]
 
 Sponsor-pleasing shortcuts taken this shift.
+
+### options?
+
+[`InspectionReportOptions`](../interfaces/InspectionReportOptions.md) = `{}`
+
+The finale inspection and the filing time, if any.
 
 ## Returns
 

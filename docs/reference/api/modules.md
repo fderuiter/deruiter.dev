@@ -78,6 +78,7 @@
 - [lib/clinical-trial-chaos/arcade-engine](lib/clinical-trial-chaos/arcade-engine/README.md)
 - [lib/clinical-trial-chaos/engine](lib/clinical-trial-chaos/engine/README.md)
 - [lib/clinical-trial-chaos/escalation](lib/clinical-trial-chaos/escalation/README.md)
+- [lib/clinical-trial-chaos/inspection](lib/clinical-trial-chaos/inspection/README.md)
 - [lib/clinical-trial-chaos/observation-generators](lib/clinical-trial-chaos/observation-generators/README.md)
 - [lib/clinical-trial-chaos/offices](lib/clinical-trial-chaos/offices/README.md)
 - [lib/clinical-trial-chaos/outfits](lib/clinical-trial-chaos/outfits/README.md)

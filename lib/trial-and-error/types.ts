@@ -1233,6 +1233,25 @@ export const ShopEntrySchema = z.discriminatedUnion("kind", [
     price: z.number().int().positive(),
     amendment: SapAmendmentSchema,
   }),
+  /**
+   * A blank table shell for the run deck (#2082). Buying it adds a card
+   * built from `shell` to the deck every later Blind deals from, in this
+   * study and the next. It compiles clean against whatever snapshot the
+   * player allocates it to, so it carries no data of its own.
+   */
+  z.object({
+    kind: z.literal("SHELL"),
+    price: z.number().int().positive(),
+    /** The shell the card compiles from: a Table with a layout. */
+    shell: TableShellSpecSchema,
+    /** The card's printed title and the fields hands read. */
+    card: z.object({
+      title: z.string().min(1),
+      topic: identifier,
+      csrStage: CsrStageSchema.optional(),
+      soc: z.string().min(1).optional(),
+    }),
+  }),
 ]);
 /** One item the Procurement Shop can stock. */
 export type ShopEntry = z.infer<typeof ShopEntrySchema>;
@@ -1279,9 +1298,19 @@ export const ShopCatalogSchema = z
       }
       ids.add(id);
     };
-    catalog.entries.forEach((entry, i) =>
-      unique(shopEntryId(entry), ["entries", i])
-    );
+    catalog.entries.forEach((entry, i) => {
+      unique(shopEntryId(entry), ["entries", i]);
+      if (
+        entry.kind === "SHELL" &&
+        (entry.shell.cardType !== "TABLE" || !entry.shell.layout)
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["entries", i, "shell"],
+          message: "A shop shell is a blank Table shell with a layout",
+        });
+      }
+    });
     catalog.packs.forEach((pack, i) => unique(pack.id, ["packs", i, "id"]));
     catalog.sites.forEach((site, i) => unique(site.id, ["sites", i, "id"]));
     const subjects = new Set<string>();
@@ -1316,6 +1345,7 @@ export function shopEntryId(entry: ShopEntry): string {
   if (entry.kind === "RELIC") return entry.relic.id;
   if (entry.kind === "GUIDANCE") return entry.guidance.id;
   if (entry.kind === "AMENDMENT") return entry.amendment.id;
+  if (entry.kind === "SHELL") return entry.shell.id;
   return entry.seal.id;
 }
 
@@ -2017,13 +2047,16 @@ export const RunActionSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("PICK_PACK_CARD"), cardId: id }),
   z.object({ type: z.literal("SKIP_PACK") }),
   z.object({ type: z.literal("SELL_RELIC"), relicId: id }),
+  z.object({ type: z.literal("ARCHIVE_CARD"), cardId: id }),
+  z.object({ type: z.literal("DUPLICATE_CARD"), cardId: id }),
 ]);
 
 /**
  * The save format's current version. v2 (#2055) shuffles each Blind's deck;
- * a v1 save migrates to v2 with `dealing: "AUTHORED"`.
+ * a v1 save migrates to v2 with `dealing: "AUTHORED"`. v3 (#2082) adds the
+ * run deck; a v2 save migrates to v3 with `decks: "AUTHORED"`.
  */
-export const RUN_SAVE_VERSION = 2;
+export const RUN_SAVE_VERSION = 3;
 
 /**
  * A saved run (#1079): the act, the seed and every move since the run
@@ -2043,6 +2076,12 @@ export const RunSaveSchema = z.object({
    * replays in written deal order. Absent means a shuffled run.
    */
   dealing: z.literal("AUTHORED").optional(),
+  /**
+   * AUTHORED for a run first saved before the run deck (#2082): every Blind
+   * deals its authored deck and the shop stocks no shells, as it did when
+   * the moves were made. Absent means a run with a run deck.
+   */
+  decks: z.literal("AUTHORED").optional(),
   actions: z.array(RunActionSchema).max(5000),
   /**
    * How the seed was chosen (#1528). Optional, so saves from before it load

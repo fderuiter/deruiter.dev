@@ -6,7 +6,8 @@
 
 # Variable: RUN\_SAVE\_VERSION
 
-> `const` **RUN\_SAVE\_VERSION**: `2` = `2`
+> `const` **RUN\_SAVE\_VERSION**: `3` = `3`
 
 The save format's current version. v2 (#2055) shuffles each Blind's deck;
-a v1 save migrates to v2 with `dealing: "AUTHORED"`.
+a v1 save migrates to v2 with `dealing: "AUTHORED"`. v3 (#2082) adds the
+run deck; a v2 save migrates to v3 with `decks: "AUTHORED"`.

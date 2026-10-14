@@ -9,11 +9,13 @@ import {
   type HandLevelRow,
   type Relic,
   type RunChoice,
+  type RunDeckView,
   type RunOrigin,
 } from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { SeedShare } from "@/components/trial-and-error/SeedShare";
 import { RunChoiceBadges } from "@/components/trial-and-error/RunChoiceBadges";
+import { RunDeck } from "@/components/trial-and-error/RunDeck";
 
 interface RunInfoProps {
   /** The run's hand table at current levels, from the domain view. */
@@ -31,6 +33,8 @@ interface RunInfoProps {
   relicSlots: number;
   /** The relics the run has equipped. */
   relics?: readonly Relic[];
+  /** The run deck (#2082): what the current or next Blind deals. */
+  deck?: RunDeckView;
   /**
    * The Blind's DMC access history, shown when the Blind has a DMC or any
    * access was logged.
@@ -44,7 +48,7 @@ interface RunInfoProps {
 /**
  * Run Info (T&E-UX-05): a focus-trapped dialog with the run's hand table
  * (level, base Chips, base +Mult, times played), the equipped relics, the
- * run's sponsor and stake badges (#950) and the run seed, with Copy seed, Copy challenge link, New run (#1528) and the
+ * run deck (#2082), the run's sponsor and stake badges (#950) and the run seed, with Copy seed, Copy challenge link, New run (#1528) and the
  * Codex (#1529). It renders the domain's rows and never adds a level bonus
  * itself. Escape or Close dismisses it and focus returns to the trigger.
  */
@@ -57,6 +61,7 @@ export function RunInfo({
   onCodex,
   relicSlots,
   relics = [],
+  deck,
   accessLog = [],
   dmc = false,
   onClose,
@@ -162,6 +167,9 @@ export function RunInfo({
               </li>
             ))}
           </ul>
+        )}
+        {deck && (
+          <RunDeck deck={deck} idPrefix="run-info-deck" headingLevel={3} />
         )}
         {(dmc || accessLog.length > 0) && (
           <>

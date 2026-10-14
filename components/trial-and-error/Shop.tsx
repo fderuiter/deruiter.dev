@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
-import type { ShopItemView, ShopView } from "@/lib/trial-and-error";
+import type {
+  RunDeckView,
+  ShopItemView,
+  ShopView,
+} from "@/lib/trial-and-error";
+import { RunDeck } from "@/components/trial-and-error/RunDeck";
 
 interface ShopProps {
   view: ShopView;
@@ -9,6 +14,10 @@ interface ShopProps {
   onBuy: (slot: number) => void;
   onBuyPack: (slot: number) => void;
   onReroll: () => void;
+  /** The run deck the next Blind deals (#2082); absent hides the services. */
+  deck?: RunDeckView;
+  onArchive?: (cardId: string) => void;
+  onDuplicate?: (cardId: string) => void;
 }
 
 const BUTTON =
@@ -61,10 +70,21 @@ function ShopItem({
 
 /**
  * The Procurement Shop (#948): two single slots, two booster packs
- * and a reroll whose price climbs each time. Every price, refusal and
- * outcome comes from the domain's shop view; the component only renders it.
+ * and a reroll whose price climbs each time, then the run deck the next
+ * Blind deals with its Archive and Duplicate services (#2082). Every price,
+ * refusal and outcome comes from the domain's shop view; the component only
+ * renders it.
  */
-export function Shop({ view, budget, onBuy, onBuyPack, onReroll }: ShopProps) {
+export function Shop({
+  view,
+  budget,
+  onBuy,
+  onBuyPack,
+  onReroll,
+  deck,
+  onArchive,
+  onDuplicate,
+}: ShopProps) {
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     headingRef.current?.focus();
@@ -144,6 +164,16 @@ export function Shop({ view, budget, onBuy, onBuyPack, onReroll }: ShopProps) {
           </p>
         )}
       </div>
+      {deck && (
+        <RunDeck
+          deck={deck}
+          archive={view.archive}
+          duplicate={view.duplicate}
+          onArchive={onArchive}
+          onDuplicate={onDuplicate}
+          idPrefix="shop-deck"
+        />
+      )}
     </section>
   );
 }

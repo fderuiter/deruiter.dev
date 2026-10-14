@@ -10,6 +10,22 @@ One visit to the Procurement Shop, between a cleared Blind and the next.
 
 ## Properties
 
+### archived?
+
+> `optional` **archived?**: `true`
+
+The Archive service was used this visit (#2082); it serves once.
+
+***
+
+### duplicated?
+
+> `optional` **duplicated?**: `true`
+
+The Duplicate service was used this visit (#2082); it serves once.
+
+***
+
 ### opened
 
 > **opened**: [`OpenedPack`](OpenedPack.md) \| `null`

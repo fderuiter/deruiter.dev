@@ -10,6 +10,9 @@ Amended on 2026-09-23 for card-table presentation
 [the amendment](#amendment-2026-09-23-card-table-presentation).
 Amended again on 2026-09-23 to fix the game's narrative frame; see
 [the narrative amendment](#amendment-2026-09-23-narrative-frame).
+Amended on 2026-10-14 to build the run deck
+([#2082](https://github.com/fderuiter/deruiter.dev/issues/2082)); see
+[The run deck](#the-run-deck-2082).
 
 ## Context
 
@@ -87,7 +90,11 @@ its Straight, the FDA Information Request its questions' outputs, and the
 Act I Small Blind and the Phase II and III Blinds the setup they teach. Save
 format v2 records shuffled runs; a v1 save migrates with
 `dealing: "AUTHORED"` and replays in written order, because its moves name
-the cards that order dealt.
+the cards that order dealt. Since #2082 the shuffle orders the deck the run
+deck deals (see [The run deck](#the-run-deck-2082)), so buying, archiving
+and duplicating change the next deal, and the same seed with the same
+purchases replays it exactly. No new source of randomness is added: shells
+are stocked by the existing shop stream.
 
 ### Scoring pipeline
 
@@ -700,3 +707,62 @@ cards.
   panel. The ticket asks for the R key, but R on a focused card already
   recompiles it (T&E-03), so Run Info opens with Shift+R anywhere in the
   table and from a header button.
+
+### The run deck (#2082)
+
+The narrative amendment carries "the deck: the player's library of table
+shells" between acts, and the mechanics table says the shop's table shells
+add to it. Before #2082 neither was built: each Blind dealt only its
+authored deck. `internal/run-deck.ts` builds it.
+
+- **Shape.** Every Blind still authors the outputs its study produces,
+  because those cards carry the study's drafts, faces and Kaplan–Meier data.
+  The run deck is the player's changes layered over every deal, carried from
+  Blind to Blind and act to act on `RunState.deck`: `added` cards (bought
+  shells and copies) and `archived` authored card ids. `dealtScenario`
+  rewrites a Blind's `deck` and `shells` under it, and the run hands that
+  Blind to the table reducer, the table view and the seeded deal
+  (`shuffledDeckOrder` on `dealSeed`), so the table code is unchanged. An
+  empty run deck gives the Blind back unchanged, which keeps every existing
+  seed dealing as it did.
+- **What the current table was dealt.** The shop changes `deck` for the
+  next Blind while the cleared table still holds the cards it was dealt, so
+  `RunState.dealtDeck` records the run deck each Blind was dealt from and
+  `NEXT_BLIND` copies `deck` into it.
+- **Shells in the shop.** `ShopEntry` gains a `SHELL` kind: a blank Table
+  `TableShellSpec` with a layout, plus the card's title, topic, CSR stage and
+  SOC. Buying one adds a card built from it (`shellCard`) to every later
+  deal, in this study and the next; it compiles clean against whichever
+  snapshot and SAP the player allocates it to, so a shell bought in Act I
+  can be drawn and played in Act II. Shop shells take their own `-LIB` ids,
+  so they never shadow a Blind's authored shell. The sponsor's card Chips
+  apply to them as to any card. They are stocked through the shop's seeded
+  stream (`shopSeed`) like every other entry. Act I's catalog, which every
+  act shares, sells five: Demographics ($4k), Overview of AEs ($5k), Serious
+  AEs ($5k) and two SOC tables, Cardiac and Infections ($4k each).
+- **Services.** Once per shop visit each, priced with the stake's shop
+  surcharge: `ARCHIVE_CARD` ($3k) removes a card from every later deal (an
+  added card leaves the deck; an authored id is listed as archived), and
+  `DUPLICATE_CARD` ($5k) adds a copy. A copy of a shell is another shell; a
+  copy of an authored output is dealt by every later Blind whose own deck
+  holds the original, beside it. Copy ids name the original and the run's
+  Blind number, so they stay unique and replayable.
+- **What the deck never loses.** A Blind's pinned scripted setup, the
+  Tables its Kaplan–Meier figures are drawn from and the outputs its FDA
+  questions ask for are always dealt (`protectedCardIds`), so the ADR's
+  pinned-first rule holds whatever the player archives. Archive refuses to
+  take the next Blind's deck below its opening hand size, and a later Blind
+  that would fall short deals its earliest archived cards back, in deck
+  order, until the hand fills.
+- **Views.** `RunView.deck` lists the cards the current Blind deals, or once
+  it is cleared the next Blind's, with each card's origin (authored, bought,
+  copy) and whether it is scripted. `ShopView.archive` and
+  `ShopView.duplicate` carry each service's price, any refusal and the
+  per-card refusals. The shop and Run Info render it; a card is chosen with a
+  tap and a service applied to it, with 44px targets and no hover-only
+  action.
+- **Saves.** Save format v3 adds the run deck. A v2 save migrates with
+  `decks: "AUTHORED"`: its shop moves name slots stocked from a catalog
+  without shells, so it replays with authored decks, the shop stocks no
+  shells and the services refuse. A v1 save migrates through v2. A restart
+  or a new run always keeps a run deck.

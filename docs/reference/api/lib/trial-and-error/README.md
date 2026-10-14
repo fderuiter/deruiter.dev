@@ -164,6 +164,12 @@ Re-exports [applyTransition](internal/snapshots/functions/applyTransition.md)
 
 ***
 
+### ARCHIVE\_PRICE
+
+Re-exports [ARCHIVE_PRICE](internal/run-deck/variables/ARCHIVE_PRICE.md)
+
+***
+
 ### Arm
 
 Re-exports [Arm](types/type-aliases/Arm.md)
@@ -770,6 +776,18 @@ Re-exports [dealSeed](internal/deal/functions/dealSeed.md)
 
 ***
 
+### dealtDeck
+
+Re-exports [dealtDeck](internal/run-deck/functions/dealtDeck.md)
+
+***
+
+### dealtScenario
+
+Re-exports [dealtScenario](internal/run-deck/functions/dealtScenario.md)
+
+***
+
 ### decimalPlaces
 
 Re-exports [decimalPlaces](internal/rounding/functions/decimalPlaces.md)
@@ -779,6 +797,12 @@ Re-exports [decimalPlaces](internal/rounding/functions/decimalPlaces.md)
 ### DeckDealing
 
 Re-exports [DeckDealing](internal/deal/type-aliases/DeckDealing.md)
+
+***
+
+### DeckLibrary
+
+Re-exports [DeckLibrary](internal/run-deck/type-aliases/DeckLibrary.md)
 
 ***
 
@@ -977,6 +1001,18 @@ Re-exports [DOSE_ESCALATION_SCENARIO](scenarios/variables/DOSE_ESCALATION_SCENAR
 ### drawInt
 
 Re-exports [drawInt](../utils/prng/functions/drawInt.md)
+
+***
+
+### DUPLICATE\_PRICE
+
+Re-exports [DUPLICATE_PRICE](internal/run-deck/variables/DUPLICATE_PRICE.md)
+
+***
+
+### EMPTY\_RUN\_DECK
+
+Re-exports [EMPTY_RUN_DECK](internal/run-deck/variables/EMPTY_RUN_DECK.md)
 
 ***
 
@@ -1826,6 +1862,12 @@ Re-exports [previewAllocation](internal/table/functions/previewAllocation.md)
 
 ***
 
+### protectedCardIds
+
+Re-exports [protectedCardIds](internal/run-deck/functions/protectedCardIds.md)
+
+***
+
 ### PROVENANCE\_ALERT
 
 Re-exports [PROVENANCE_ALERT](internal/table/variables/PROVENANCE_ALERT.md)
@@ -2144,6 +2186,36 @@ Re-exports [RunChoice](internal/run-rules/interfaces/RunChoice.md)
 
 ***
 
+### RunDeck
+
+Re-exports [RunDeck](internal/run-deck/interfaces/RunDeck.md)
+
+***
+
+### RunDeckCard
+
+Re-exports [RunDeckCard](internal/run-deck/type-aliases/RunDeckCard.md)
+
+***
+
+### RunDeckCardView
+
+Re-exports [RunDeckCardView](internal/run-deck/interfaces/RunDeckCardView.md)
+
+***
+
+### RunDeckOrigin
+
+Re-exports [RunDeckOrigin](internal/run-deck/type-aliases/RunDeckOrigin.md)
+
+***
+
+### RunDeckView
+
+Re-exports [RunDeckView](internal/run/interfaces/RunDeckView.md)
+
+***
+
 ### RunDraw
 
 Re-exports [RunDraw](internal/run/interfaces/RunDraw.md)
@@ -2384,6 +2456,18 @@ Re-exports [serializeRun](internal/save/functions/serializeRun.md)
 
 ***
 
+### shellCard
+
+Re-exports [shellCard](internal/run-deck/functions/shellCard.md)
+
+***
+
+### ShellEntry
+
+Re-exports [ShellEntry](internal/run-deck/type-aliases/ShellEntry.md)
+
+***
+
 ### SHOP\_SLOTS
 
 Re-exports [SHOP_SLOTS](internal/shop/variables/SHOP_SLOTS.md)
@@ -2423,6 +2507,12 @@ Re-exports [ShopEntrySchema](types/variables/ShopEntrySchema.md)
 ### ShopItemView
 
 Re-exports [ShopItemView](internal/run/interfaces/ShopItemView.md)
+
+***
+
+### ShopServiceView
+
+Re-exports [ShopServiceView](internal/run/interfaces/ShopServiceView.md)
 
 ***
 

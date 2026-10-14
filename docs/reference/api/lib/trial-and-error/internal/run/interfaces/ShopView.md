@@ -10,6 +10,22 @@ Everything the shop screen renders.
 
 ## Properties
 
+### archive
+
+> **archive**: [`ShopServiceView`](ShopServiceView.md)
+
+The Archive service (#2082).
+
+***
+
+### duplicate
+
+> **duplicate**: [`ShopServiceView`](ShopServiceView.md)
+
+The Duplicate service (#2082).
+
+***
+
 ### items
 
 > **items**: [`ShopItemView`](ShopItemView.md)[]

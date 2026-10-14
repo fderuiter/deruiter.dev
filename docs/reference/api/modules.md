@@ -458,6 +458,7 @@
 - [lib/trial-and-error/internal/rng](lib/trial-and-error/internal/rng/README.md)
 - [lib/trial-and-error/internal/rounding](lib/trial-and-error/internal/rounding/README.md)
 - [lib/trial-and-error/internal/run](lib/trial-and-error/internal/run/README.md)
+- [lib/trial-and-error/internal/run-deck](lib/trial-and-error/internal/run-deck/README.md)
 - [lib/trial-and-error/internal/run-rules](lib/trial-and-error/internal/run-rules/README.md)
 - [lib/trial-and-error/internal/save](lib/trial-and-error/internal/save/README.md)
 - [lib/trial-and-error/internal/scenario-compression](lib/trial-and-error/internal/scenario-compression/README.md)

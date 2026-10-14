@@ -63,6 +63,35 @@ SHUFFLED, the default.
 
 ***
 
+### dealtDeck?
+
+> `optional` **dealtDeck?**: [`RunDeck`](../../run-deck/interfaces/RunDeck.md)
+
+The run deck the current Blind was dealt from. The shop changes `deck`
+for the next Blind; the cleared table keeps the cards it was dealt.
+Absent means no changes.
+
+***
+
+### deck?
+
+> `optional` **deck?**: [`RunDeck`](../../run-deck/interfaces/RunDeck.md)
+
+The run deck (#2082): shells bought, copies made and cards archived,
+carried from Blind to Blind and act to act. Absent means no changes.
+
+***
+
+### decks?
+
+> `optional` **decks?**: `"AUTHORED"`
+
+AUTHORED for a run replayed from a save recorded before the run deck
+(#2082): every Blind deals its authored deck and the shop stocks no
+shells. Absent means the run keeps a run deck.
+
+***
+
 ### drawIndex
 
 > **drawIndex**: `number`

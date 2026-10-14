@@ -341,6 +341,15 @@ The sponsor and stake the run is played under (#950), defaults filled.
 
 ***
 
+### deck
+
+> **deck**: [`RunDeckView`](RunDeckView.md)
+
+The run deck (#2082): the cards the current Blind deals, or once it is
+cleared, the cards the next Blind will deal.
+
+***
+
 ### draws
 
 > **draws**: [`RunDraw`](RunDraw.md)[]

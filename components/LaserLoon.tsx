@@ -33,7 +33,10 @@ import {
   IconHeart,
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -607,7 +610,11 @@ export const LaserLoon: React.FC = () => {
           LOON_MAX_HITS - hitsLeftRef.current
         ),
       });
+      if (hitsLeftRef.current >= LOON_MAX_HITS) {
+        recordArcadeMilestone("laser-loon", "act_no_hit");
+      }
       if (outcome === "campaign-victory") {
+        recordArcadeMilestone("laser-loon", "campaign_cleared");
         setGameState("campaign-victory");
         playSuccess();
         recordEvent("laser_loon_victory", "project_click").catch(() => {});

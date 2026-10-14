@@ -27,7 +27,10 @@ import {
   safeGetRawItem,
   safeSetRawItem,
 } from "@/lib/safe-storage";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
@@ -1387,6 +1390,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       if (sprintOver && uiState.totalScore > 0) {
         recordArcadeScore("working-with-duck", uiState.totalScore);
       }
+      if (
+        uiState.status === "won" &&
+        uiState.mode === "campaign" &&
+        uiState.currentLevel >= 5
+      ) {
+        recordArcadeMilestone("working-with-duck", "campaign_cleared");
+      }
       if (sprintOver && uiState.highScore > loadedHighScore) {
         safeSetRawItem(
           "working_with_duck_high_score",
@@ -1406,6 +1416,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     uiState.status,
     uiState.totalScore,
     uiState.unlockedFacts,
+    uiState.mode,
+    uiState.currentLevel,
     loadedHighScore,
   ]);
 

@@ -16,7 +16,10 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
 import { clamp } from "@/lib/game-utils";
 import { downloadFile } from "@/lib/download";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
   IconAlertTriangle,
@@ -1094,6 +1097,9 @@ export const ClinicalTrialChaos: React.FC = () => {
         );
         setBimoReport(report);
         setLastBimoReport(report);
+        if (phase === 3 && report.verdict.startsWith("NAI")) {
+          recordArcadeMilestone("clinical-chaos", "nai_campaign");
+        }
       }
     },
     [

@@ -51,6 +51,12 @@ export interface ArcadeTrophy {
   icon: string;
   category: "gameplay" | "milestone" | "mastery" | "cross_game";
   targetScore?: number;
+  /**
+   * A named moment in play (an act cleared, every level proven) that unlocks
+   * this trophy through recordArcadeMilestone. A trophy with a milestone and
+   * no targetScore unlocks only from play, never from a score (#2047).
+   */
+  milestone?: string;
   conditionDescription: string;
 }
 
@@ -79,6 +85,17 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     targetScore: 500,
     conditionDescription: "Reach 500+ points in Working With Duck",
   },
+  {
+    id: "duck_graduate",
+    gameId: "working-with-duck",
+    title: "Good Boy Graduate",
+    subtitle: "Working With Duck",
+    description: "Ship all five sprints with Duck still on the Good Boy list.",
+    icon: "Trophy",
+    category: "mastery",
+    milestone: "campaign_cleared",
+    conditionDescription: "Clear sprint 5 in Working With Duck",
+  },
 
   // Laser Loon
   {
@@ -103,6 +120,28 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     targetScore: 2000,
     conditionDescription: "Reach 2,000+ points in Laser Loon",
   },
+  {
+    id: "laser_loon_flawless_act",
+    gameId: "laser-loon",
+    title: "Untouched Plumage",
+    subtitle: "Laser Loon",
+    description: "Clear a campaign act without losing a single hit.",
+    icon: "Heart",
+    category: "gameplay",
+    milestone: "act_no_hit",
+    conditionDescription: "Clear a Laser Loon act without taking a hit",
+  },
+  {
+    id: "laser_loon_campaign",
+    gameId: "laser-loon",
+    title: "Veto Overridden",
+    subtitle: "Laser Loon",
+    description: "Beat all four acts and their bosses in one campaign.",
+    icon: "Trophy",
+    category: "mastery",
+    milestone: "campaign_cleared",
+    conditionDescription: "Win the Laser Loon campaign",
+  },
 
   // Quasi-Perfect Puzzler
   {
@@ -121,35 +160,46 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     gameId: "quasi-puzzler",
     title: "Formal Verifier",
     subtitle: "Quasi-Perfect Puzzler",
-    description: "Complete all formal logic proofs in the suite.",
+    description: "Prove every Story level honestly, with no sorry.",
     icon: "ShieldCheck",
     category: "mastery",
-    targetScore: 500,
-    conditionDescription: "Complete all 5 proof challenges",
+    milestone: "all_levels_proven",
+    conditionDescription: "Prove all 18 Story levels",
+  },
+  {
+    id: "quasi_all_gold",
+    gameId: "quasi-puzzler",
+    title: "Golden Lemma",
+    subtitle: "Quasi-Perfect Puzzler",
+    description: "Earn three stars on every Story level.",
+    icon: "Sparkles",
+    category: "mastery",
+    milestone: "all_gold",
+    conditionDescription: "Earn gold (3 stars) on all 18 Story levels",
   },
 
   // Garmin Watch Simulator
   {
     id: "garmin_survivor",
     gameId: "garmin-watch",
-    title: "32KB RAM Survivor",
+    title: "First Split",
     subtitle: "Monkey C Mayhem",
-    description: "Keep the watch app active without triggering an OOM crash.",
+    description: "Reach the finish pole of a 1 km stage.",
     icon: "Cpu",
     category: "gameplay",
-    targetScore: 300,
-    conditionDescription: "Reach 300+ points in Garmin Watch",
+    milestone: "stage_cleared",
+    conditionDescription: "Clear a stage in Monkey C Mayhem",
   },
   {
     id: "garmin_gc_master",
     gameId: "garmin-watch",
-    title: "Garbage Collector",
+    title: "5K Finisher",
     subtitle: "Monkey C Mayhem",
-    description: "Wipe display fog and manage heap pressure like a pro.",
+    description: "Run all five stages and cross the 5K finish line.",
     icon: "Sparkles",
     category: "mastery",
-    targetScore: 1000,
-    conditionDescription: "Reach 1,000+ points in Garmin Watch",
+    milestone: "run_complete",
+    conditionDescription: "Finish the 5K in Monkey C Mayhem",
   },
 
   // Clinical Trial Chaos
@@ -176,6 +226,18 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     targetScore: 2000,
     conditionDescription: "Reach 2,000+ points in Clinical Trial Chaos",
   },
+  {
+    id: "clinical_nai_campaign",
+    gameId: "clinical-chaos",
+    title: "No Action Indicated",
+    subtitle: "Clinical Trial Chaos",
+    description: "Finish the Phase 3 campaign with an NAI inspection verdict.",
+    icon: "ShieldCheck",
+    category: "mastery",
+    milestone: "nai_campaign",
+    conditionDescription:
+      "Earn an NAI verdict on Phase 3 in Clinical Trial Chaos",
+  },
 
   // Trial & Error
   {
@@ -186,8 +248,8 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     description: "Play Chips x Mult hands to satisfy the SAP review blind.",
     icon: "Cards",
     category: "gameplay",
-    targetScore: 200,
-    conditionDescription: "Reach 200+ points in Trial & Error",
+    milestone: "blind_cleared",
+    conditionDescription: "Clear a Blind in Trial & Error",
   },
   {
     id: "trial_error_csr_lock",
@@ -197,8 +259,19 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     description: "Guide a candidate compound through all trial phases to lock.",
     icon: "Trophy",
     category: "mastery",
-    targetScore: 1000,
-    conditionDescription: "Reach 1,000+ points in Trial & Error",
+    milestone: "run_won",
+    conditionDescription: "Win a Trial & Error run at CSR Lock",
+  },
+  {
+    id: "trial_error_act_cleared",
+    gameId: "trial-and-error",
+    title: "Committee Survived",
+    subtitle: "Trial & Error",
+    description: "Beat an act's boss Blind and move the study to the next act.",
+    icon: "ClipboardCheck",
+    category: "gameplay",
+    milestone: "act_cleared",
+    conditionDescription: "Clear an act's boss Blind in Trial & Error",
   },
 
   // Study Director
@@ -226,6 +299,17 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     targetScore: 500,
     conditionDescription: "Reach 500+ points in Study Director",
   },
+  {
+    id: "study_director_grade_a",
+    gameId: "study-director",
+    title: "Inspection Ready",
+    subtitle: "Study Director",
+    description: "Close out a study with an A regulatory grade.",
+    icon: "Trophy",
+    category: "mastery",
+    milestone: "grade_a",
+    conditionDescription: "Finish a Study Director study with grade A",
+  },
 
   // Patty's Drive-Thru
   {
@@ -250,6 +334,17 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     category: "mastery",
     targetScore: 160,
     conditionDescription: "Reach 160+ points in Patty's Drive-Thru",
+  },
+  {
+    id: "patty_drive_thru_zero_late",
+    gameId: "patty-drive-thru",
+    title: "Nobody Waited",
+    subtitle: "Patty's Drive-Thru",
+    description: "Make it to close on a standard shift with zero late orders.",
+    icon: "Headset",
+    category: "mastery",
+    milestone: "zero_late_shift",
+    conditionDescription: "Close a standard shift with no late orders",
   },
 
   // For Better or Bulk
@@ -376,6 +471,17 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     targetScore: 100,
     conditionDescription: "Unlock easter eggs in Meme Vault",
   },
+  {
+    id: "meme_vault_cleared",
+    gameId: "meme-vault",
+    title: "Vault Cleared",
+    subtitle: "Meme Vault",
+    description: "Find all six hidden trophies in and around the Meme Vault.",
+    icon: "Trophy",
+    category: "mastery",
+    targetScore: 600,
+    conditionDescription: "Find all 6 Meme Vault easter eggs",
+  },
 
   // Cross-Game Meta Achievements
   {
@@ -403,11 +509,10 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     gameId: "cross_game",
     title: "Hall of Famer",
     subtitle: "Portfolio Meta",
-    description:
-      "Accumulate a total cumulative score of 5,000+ across all games.",
+    description: "Unlock 15 game trophies across the arcade.",
     icon: "Sparkles",
     category: "cross_game",
-    conditionDescription: "Earn 5,000+ total cumulative score",
+    conditionDescription: "Unlock 15 game trophies",
   },
 ];
 
@@ -582,6 +687,9 @@ export function saveArcadeProgress(progress: ArcadeProgress): boolean {
   return ok;
 }
 
+/** Game trophies (not cross-game ones) Hall of Famer counts toward. */
+export const HALL_OF_FAME_TROPHY_COUNT = 15;
+
 /**
  * Evaluates and unlocks any earned trophies based on current high scores.
  */
@@ -589,13 +697,18 @@ export function evaluateTrophies(progress: ArcadeProgress): ArcadeTrophy[] {
   const newlyUnlocked: ArcadeTrophy[] = [];
   const now = Date.now();
 
-  const totalScore = Object.values(progress.highScores).reduce(
-    (sum, val) => sum + val,
-    0
-  );
   const gamesPlayedCount = Object.values(progress.highScores).filter(
     (val) => val > 0
   ).length;
+
+  // Scores differ wildly between games (a Trial & Error hand is worth
+  // thousands, a For Better or Bulk day about 20), so the meta trophy counts
+  // trophies instead of summing scores (#2047).
+  // Counted when reached, after this pass's game trophies (listed first).
+  const gameTrophyCount = () =>
+    ARCADE_TROPHIES.filter(
+      (t) => t.category !== "cross_game" && progress.unlockedTrophies[t.id]
+    ).length;
 
   for (const trophy of ARCADE_TROPHIES) {
     if (progress.unlockedTrophies[trophy.id]) {
@@ -612,7 +725,10 @@ export function evaluateTrophies(progress: ArcadeProgress): ArcadeTrophy[] {
         gamesPlayedCount >= 6
       ) {
         isUnlocked = true;
-      } else if (trophy.id === "arcade_legend" && totalScore >= 5000) {
+      } else if (
+        trophy.id === "arcade_legend" &&
+        gameTrophyCount() >= HALL_OF_FAME_TROPHY_COUNT
+      ) {
         isUnlocked = true;
       }
     } else {
@@ -653,6 +769,8 @@ export function unlockArcadeTrophies(
     newlyUnlocked.push(trophy);
   }
   if (newlyUnlocked.length === 0) return newlyUnlocked;
+  // A named trophy can tip a cross-game count over its line.
+  newlyUnlocked.push(...evaluateTrophies(progress));
   saveArcadeProgress(progress);
   for (const trophy of newlyUnlocked) {
     emitAppEvent("arcade_trophy_unlocked", {
@@ -663,6 +781,21 @@ export function unlockArcadeTrophies(
     });
   }
   return newlyUnlocked;
+}
+
+/**
+ * Records a named moment in a game's play (an act cleared, every level
+ * proven) and unlocks the trophies that game ties to it. Unknown milestones
+ * unlock nothing, so a game can fire them before a trophy exists (#2047).
+ */
+export function recordArcadeMilestone(
+  gameId: string,
+  milestone: string
+): ArcadeTrophy[] {
+  const ids = ARCADE_TROPHIES.filter(
+    (t) => t.gameId === gameId && t.milestone === milestone
+  ).map((t) => t.id);
+  return ids.length > 0 ? unlockArcadeTrophies(ids) : [];
 }
 
 /**

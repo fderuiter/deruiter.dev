@@ -96,12 +96,13 @@ export function HeaderBar() {
               ? "Pause the clock to publish."
               : "Run Local Test first.",
   };
-  const hint = (id: string, text: string | null) =>
-    touch && text ? (
-      <span id={id} className="basis-full font-mono text-xs text-zinc-300">
-        {text}
-      </span>
-    ) : null;
+  // One line under the controls holds each distinct reason once, so the
+  // header grows by a single row rather than one row per group (#2045).
+  const reasons = [
+    ...new Set(Object.values(reasonFor).filter((r): r is string => !!r)),
+  ];
+  const hintId = (text: string | null) =>
+    text ? `pd-hint-${reasons.indexOf(text)}` : undefined;
   const day = snapshot ? trialDayOf(snapshot.minute) : 0;
   const canLock = view?.scenario === "full" && fsm === "PAUSED" && day >= 28;
   const sdtmClear =
@@ -147,7 +148,7 @@ export function HeaderBar() {
           disabled={frozen || fsm === "BRIEF"}
           aria-label={running ? "Pause (Space)" : "Run (Space)"}
           aria-pressed={running}
-          aria-describedby={reasonFor.run ? "pd-run-hint" : undefined}
+          aria-describedby={hintId(reasonFor.run)}
           className={NEUTRAL}
         >
           {running ? (
@@ -175,14 +176,12 @@ export function HeaderBar() {
           onClick={() => void step()}
           disabled={fsm !== "PAUSED"}
           aria-label="Step one hour (N)"
-          aria-describedby={reasonFor.step ? "pd-step-hint" : undefined}
+          aria-describedby={hintId(reasonFor.step)}
           className={NEUTRAL}
         >
           <IconPlayerTrackNext className="h-4 w-4" aria-hidden="true" />
           <span>N</span>
         </button>
-        {hint("pd-run-hint", reasonFor.run)}
-        {hint("pd-step-hint", reasonFor.step)}
       </div>
 
       <div
@@ -194,22 +193,20 @@ export function HeaderBar() {
           type="button"
           onClick={() => void validate()}
           disabled={fsm === "BRIEF" || fsm === "RUNNING" || frozen}
-          aria-describedby={reasonFor.validate ? "pd-validate-hint" : undefined}
+          aria-describedby={hintId(reasonFor.validate)}
           className={NEUTRAL}
         >
           Run Local Test
         </button>
-        {hint("pd-validate-hint", reasonFor.validate)}
         <button
           type="button"
           onClick={() => void publish()}
           disabled={fsm !== "DEPLOY_READY"}
-          aria-describedby={reasonFor.publish ? "pd-publish-hint" : undefined}
+          aria-describedby={hintId(reasonFor.publish)}
           className={`${NEUTRAL} ${fsm === "DEPLOY_READY" ? "!border-emerald-500 !text-emerald-400" : ""}`}
         >
           Publish Revision
         </button>
-        {hint("pd-publish-hint", reasonFor.publish)}
         {canLock ? (
           <button
             type="button"
@@ -262,6 +259,15 @@ export function HeaderBar() {
           onChange={(e) => void onImport(e)}
         />
       </div>
+      {reasons.length > 0 ? (
+        <p className="basis-full font-mono text-xs text-zinc-300">
+          {reasons.map((text, i) => (
+            <span key={text} id={`pd-hint-${i}`} className="mr-3 inline-block">
+              {text}
+            </span>
+          ))}
+        </p>
+      ) : null}
       {validation && !validation.valid ? (
         <p
           role="alert"

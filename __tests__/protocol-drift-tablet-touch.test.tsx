@@ -235,7 +235,7 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     });
     const publish = screen.getByRole("button", { name: "Publish Revision" });
     expect(publish.getAttribute("aria-describedby")).toBeNull();
-    expect(document.getElementById("pd-publish-hint")).toBeNull();
+    expect(document.querySelector("[id^=pd-hint-]")).toBeNull();
   });
 
   it("issue rows have unique names with the field and the issue id", async () => {

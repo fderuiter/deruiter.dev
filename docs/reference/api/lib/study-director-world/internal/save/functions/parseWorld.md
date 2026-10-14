@@ -12,7 +12,8 @@ Reads a saved world run. Anything unreadable, from another version, or
 missing its study is dropped (returns null) rather than trusted; numbers
 are clamped to their ranges, and a position that is not a free tile on the
 floor (or a save from before the floor existed) starts at the lobby. A
-study saved without a difficulty loads as standard.
+study saved without a difficulty loads as standard, and one saved without
+a length loads as the full study.
 
 ## Parameters
 

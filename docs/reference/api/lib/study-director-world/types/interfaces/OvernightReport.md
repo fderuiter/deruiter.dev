@@ -24,6 +24,15 @@ True when the study finished overnight.
 
 ***
 
+### delegated?
+
+> `optional` **delegated?**: [`OvernightLine`](OvernightLine.md)[]
+
+Set when the player delegated the day (#2092): what the team did with
+each message and what it cost.
+
+***
+
 ### lines
 
 > **lines**: [`OvernightLine`](OvernightLine.md)[]

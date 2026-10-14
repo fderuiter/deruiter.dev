@@ -89,6 +89,8 @@ export const TRUST_EFFECTS: Record<TrustCause, number> = {
   coffee: 3,
   favour: 4,
   cover: -4,
+  // A whole day handed to the team without you (#2092).
+  delegated: -3,
 };
 
 /** Extra trust every kind act earns on a day the player chose people (#1837). */

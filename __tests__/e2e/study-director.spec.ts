@@ -82,6 +82,9 @@ test.describe("Study Director (/arcade/study-director)", () => {
     await expectNoBlockingViolations(page, "shortcut sheet");
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();
+    // useFocusTrap hands focus back to the desk a task after the sheet
+    // unmounts; a key pressed before then lands on <body> and is lost.
+    await expect(page.locator("[data-sd-desk]")).toBeFocused();
 
     await page.keyboard.press("d");
     await page.keyboard.press("1");

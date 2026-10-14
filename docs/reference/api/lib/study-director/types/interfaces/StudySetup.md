@@ -46,6 +46,15 @@ Operational complexity, 1 to 5.
 
 ***
 
+### length?
+
+> `optional` **length?**: `"full"` \| `"short"`
+
+The short study (#2092) squeezes the scripted calendar into its own
+duration. Omitted means the full study, as every save made before it.
+
+***
+
 ### protocolMaturity
 
 > **protocolMaturity**: `"solid"` \| `"questionable"` \| `"shaky"`
@@ -54,7 +63,7 @@ Operational complexity, 1 to 5.
 
 ### regulatoryRisk
 
-> **regulatoryRisk**: `"moderate"` \| `"high"` \| `"low"`
+> **regulatoryRisk**: `"high"` \| `"moderate"` \| `"low"`
 
 ***
 

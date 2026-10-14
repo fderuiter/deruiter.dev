@@ -86,6 +86,12 @@ Re-exports [buildRetrospectiveExport](export/functions/buildRetrospectiveExport.
 
 ***
 
+### calendarScale
+
+Re-exports [calendarScale](internal/model/functions/calendarScale.md)
+
+***
+
 ### classifyProfile
 
 Re-exports [classifyProfile](internal/endgame/functions/classifyProfile.md)
@@ -209,6 +215,18 @@ Re-exports [evaluate](internal/endgame/functions/evaluate.md)
 ### Evaluations
 
 Re-exports [Evaluations](types/interfaces/Evaluations.md)
+
+***
+
+### EVENT\_CALENDAR\_DAYS
+
+Re-exports [EVENT_CALENDAR_DAYS](internal/model/variables/EVENT_CALENDAR_DAYS.md)
+
+***
+
+### eventDay
+
+Re-exports [eventDay](internal/events/functions/eventDay.md)
 
 ***
 
@@ -404,6 +422,12 @@ Re-exports [reportedSite](internal/model/functions/reportedSite.md)
 
 ***
 
+### RESCUE\_SLIP\_DAYS
+
+Re-exports [RESCUE_SLIP_DAYS](internal/model/variables/RESCUE_SLIP_DAYS.md)
+
+***
+
 ### resolveDecision
 
 Re-exports [resolveDecision](internal/model/functions/resolveDecision.md)
@@ -437,6 +461,12 @@ Re-exports [routineLoad](internal/model/functions/routineLoad.md)
 ### runInspection
 
 Re-exports [runInspection](internal/endgame/functions/runInspection.md)
+
+***
+
+### scaleDays
+
+Re-exports [scaleDays](internal/model/functions/scaleDays.md)
 
 ***
 
@@ -488,6 +518,18 @@ Re-exports [STUDY_24_081](presets/variables/STUDY_24_081.md)
 
 ***
 
+### STUDY\_24\_081\_SHORT
+
+Re-exports [STUDY_24_081_SHORT](presets/variables/STUDY_24_081_SHORT.md)
+
+***
+
+### STUDY\_24\_081\_SHORT\_SITES
+
+Re-exports [STUDY_24_081_SHORT_SITES](presets/variables/STUDY_24_081_SHORT_SITES.md)
+
+***
+
 ### STUDY\_24\_081\_SITES
 
 Re-exports [STUDY_24_081_SITES](presets/variables/STUDY_24_081_SITES.md)
@@ -506,6 +548,12 @@ Re-exports [STUDY_EVENTS](internal/events-data/variables/STUDY_EVENTS.md)
 
 ***
 
+### STUDY\_LENGTHS
+
+Re-exports [STUDY_LENGTHS](types/variables/STUDY_LENGTHS.md)
+
+***
+
 ### StudyBudget
 
 Re-exports [StudyBudget](types/type-aliases/StudyBudget.md)
@@ -521,6 +569,24 @@ Re-exports [StudyDirectorProfile](types/type-aliases/StudyDirectorProfile.md)
 ### StudyEvent
 
 Re-exports [StudyEvent](types/interfaces/StudyEvent.md)
+
+***
+
+### studyLength
+
+Re-exports [studyLength](internal/model/functions/studyLength.md)
+
+***
+
+### StudyLength
+
+Re-exports [StudyLength](types/type-aliases/StudyLength.md)
+
+***
+
+### studyPreset
+
+Re-exports [studyPreset](presets/functions/studyPreset.md)
 
 ***
 

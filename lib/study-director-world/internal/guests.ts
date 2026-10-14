@@ -1,4 +1,9 @@
-import { applyEffects, reportedSite } from "@/lib/study-director";
+import {
+  applyEffects,
+  reportedSite,
+  scaleDays,
+  type StudySetup,
+} from "@/lib/study-director";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
 import { CRO_FLOOR, roomAt } from "./floor";
@@ -48,17 +53,27 @@ const VISITORS: Record<GuestId, GuestScene["visitor"]> = {
   },
 };
 
-/** The study day a visitor comes on: fixed by the seed, so a replay meets them on the same day. */
-export function guestDay(seed: string, id: GuestId): number {
+/**
+ * The study day a visitor comes on: fixed by the seed, so a replay meets
+ * them on the same day. A short study (#2092) passes its setup, which
+ * squeezes the visiting window onto its calendar.
+ */
+export function guestDay(
+  seed: string,
+  id: GuestId,
+  setup?: StudySetup
+): number {
   const { from, spread } = SCHEDULE[id];
-  return from + (fnv1a(`${seed}:guest:${id}`) % spread);
+  const first = setup ? scaleDays(from, setup, 2) : from;
+  const span = setup ? scaleDays(spread, setup) : spread;
+  return first + (fnv1a(`${seed}:guest:${id}`) % span);
 }
 
 /** The visitors a given day brings, in the order they arrive. */
 function dueToday(world: WorldState): GuestId[] {
-  const { seed, day } = world.study;
+  const { seed, day, setup } = world.study;
   return (Object.keys(SCHEDULE) as GuestId[])
-    .filter((id) => guestDay(seed, id) === day)
+    .filter((id) => guestDay(seed, id, setup) === day)
     .sort((a, b) => SCHEDULE[a].at - SCHEDULE[b].at);
 }
 

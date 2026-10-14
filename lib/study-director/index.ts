@@ -12,10 +12,13 @@ export {
   AUDIT_WINDOW_DAYS,
   ATTENTION_PER_DAY,
   DOCUMENTATION_ATTENTION,
+  EVENT_CALENDAR_DAYS,
+  RESCUE_SLIP_DAYS,
   advanceDay,
   applyDifficulty,
   applyEffects,
   auditSite,
+  calendarScale,
   computeMeters,
   createStudy,
   dashboard,
@@ -25,16 +28,26 @@ export {
   reportedSite,
   resolveDecision,
   routineLoad,
+  scaleDays,
   siteVisibility,
+  studyLength,
   totalOpenQueries,
 } from "./internal/model";
-export { STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM } from "./presets";
+export {
+  STUDY_24_081,
+  STUDY_24_081_SHORT,
+  STUDY_24_081_SHORT_SITES,
+  STUDY_24_081_SITES,
+  STUDY_24_081_TEAM,
+  studyPreset,
+} from "./presets";
 export { STUDY_EVENTS } from "./internal/events-data";
 export {
   WILDCARDS_PER_RUN,
   beginStudy,
   documentDecision,
   endDay,
+  eventDay,
   getEvent,
   inbox,
   resolveEvent,

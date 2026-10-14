@@ -251,3 +251,32 @@ unrelated clean summary costs integrity when the dashboard is hiding
 something. Visitors who are not met are settled as the player goes home. An
 interruption never lands on top of a waiting visitor. Which visitors were met
 or missed is saved in the world (`guests`) and read back with bounds.
+
+## Amendment 2026-10-14: the short study and delegating a day
+
+A careful full run takes several hours, so most players never reached the
+closeout (#2092). A new office run now chooses its length beside its
+difficulty. `STUDY_24_081_SHORT` is the same protocol as a 35-day pilot with
+24 subjects at Sites 01 to 03, and `newWorld(seed, difficulty, length)`
+builds either from `studyPreset(length)`.
+
+Scripted events, follow-up gaps and visitor days were written on the full
+study's 77-day calendar (`EVENT_CALENDAR_DAYS`). A setup marked
+`length: "short"` squeezes that calendar by `durationDays / 77`
+(`calendarScale`, `scaleDays`): `eventDay` places each event, `resolveEvent`
+scales a follow-up's `inDays`, `guestDay` takes the setup, and a rescue starts
+three days behind instead of six. Phases already scaled by fraction and
+wildcards by duration. Every other setup, including custom scenarios of any
+length, has a scale of exactly 1, so full runs and existing replays are
+unchanged. The length lives in the saved setup; a save without one, or with
+anything other than `short`, loads as the full study.
+
+`delegateDay` settles the whole day without walking it. The team gives each
+waiting message its least-effort option (`teamAnswer`), undocumented, unless
+a draw on the seed's own `delegate:<day>` stream lets it slide into its
+`ifIgnored` fallout (15% for critical, 30% important, 45% routine). Every
+team member loses 3 trust (`TRUST_EFFECTS.delegated`), and the day then ends
+through `goHome`, so the team's night work and the domain's day run as
+usual. The overnight report carries a `delegated` list in place of the
+evening wrap-up. Delegation is a convenience with a price, not a strategy: a
+run delegated end to end graded F at inspection on every seed tried.

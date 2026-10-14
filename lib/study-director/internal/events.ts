@@ -4,6 +4,7 @@ import {
   advanceDay,
   applyEffects,
   resolveDecision,
+  scaleDays,
 } from "./model";
 import { uniformAt } from "./rng";
 import type {
@@ -22,6 +23,16 @@ const URGENCY_ORDER: Record<Urgency, number> = {
 
 const byId = new Map(STUDY_EVENTS.map((e) => [e.id, e]));
 
+/**
+ * The first day an event can appear in this study. Event days are written
+ * on the full study's calendar; a short study (#2092) squeezes them into its
+ * own duration, so the story keeps its order and every phase still gets its
+ * messages.
+ */
+export function eventDay(state: StudyState, event: StudyEvent): number {
+  return scaleDays(event.day, state.setup);
+}
+
 /** Looks up an event by id. */
 export function getEvent(id: string): StudyEvent | undefined {
   return byId.get(id);
@@ -32,7 +43,7 @@ function isDue(state: StudyState, event: StudyEvent): boolean {
   const scheduled = state.scheduled.find((s) => s.eventId === event.id);
   if (scheduled) return state.day >= scheduled.day;
   if (event.followUp) return false;
-  if (state.day < event.day) return false;
+  if (state.day < eventDay(state, event)) return false;
   return event.trigger ? event.trigger(state) : true;
 }
 
@@ -82,9 +93,11 @@ export function resolveEvent(
       flags: [...next.flags, ...(option.flags ?? [])],
       scheduled: [
         ...next.scheduled.filter((s) => s.eventId !== eventId),
+        // Follow-up gaps shrink with the calendar, so a short study's
+        // follow-up chains still land before closeout (#2092).
         ...(option.schedule ?? []).map((s) => ({
           eventId: s.eventId,
-          day: next.day + s.inDays,
+          day: next.day + scaleDays(s.inDays, next.setup),
         })),
       ],
     },

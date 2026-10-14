@@ -1,4 +1,4 @@
-import type { SiteState, StudySetup, TeamMember } from "./types";
+import type { SiteState, StudyLength, StudySetup, TeamMember } from "./types";
 
 /** The vertical-slice study: a first-time biotech's randomized PK study. */
 export const STUDY_24_081: StudySetup = {
@@ -145,3 +145,43 @@ export const STUDY_24_081_TEAM: TeamMember[] = [
     workload: 30,
   },
 ];
+
+/**
+ * The short study (#2092): the same sponsor and protocol run as a ~35-day
+ * pilot with half the subjects at the first three sites, so a run fits in
+ * one sitting. Its scripted events keep their order on a squeezed calendar
+ * (`calendarScale`).
+ */
+export const STUDY_24_081_SHORT: StudySetup = {
+  ...STUDY_24_081,
+  design: "Randomized PK Study, pilot cohort",
+  subjects: 24,
+  durationDays: 35,
+  budget: 92_000,
+  length: "short",
+};
+
+/** The short study's sites: Sites 01 to 03, where most of the story happens. */
+export const STUDY_24_081_SHORT_SITES: SiteState[] = STUDY_24_081_SITES.slice(
+  0,
+  3
+);
+
+/** Everything a new study needs, by length. Both run with the same team. */
+export function studyPreset(length: StudyLength): {
+  setup: StudySetup;
+  sites: SiteState[];
+  team: TeamMember[];
+} {
+  return length === "short"
+    ? {
+        setup: STUDY_24_081_SHORT,
+        sites: STUDY_24_081_SHORT_SITES,
+        team: STUDY_24_081_TEAM,
+      }
+    : {
+        setup: STUDY_24_081,
+        sites: STUDY_24_081_SITES,
+        team: STUDY_24_081_TEAM,
+      };
+}

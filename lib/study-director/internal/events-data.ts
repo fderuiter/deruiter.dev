@@ -33,10 +33,11 @@ const sumSites = (
 ): number => s.sites.reduce((n, x) => n + pick(x), 0);
 
 /**
- * The slice's events, in roughly the order a study would meet them. Scripted
- * events appear on their day; triggered ones appear when the study's own
- * state calls for them; follow-ups only appear when an earlier choice
- * schedules them. Every message is fictional.
+ * The slice's events, in roughly the order a study would meet them. Each run
+ * deals a deck of them (#2093): core events always, a share of the rest, each
+ * on a day drawn from a window around the day it was written for. Triggered
+ * ones appear when the study's own state calls for them too; follow-ups only
+ * appear when an earlier choice schedules them. Every message is fictional.
  */
 export const STUDY_EVENTS: StudyEvent[] = [
   // Protocol and planning
@@ -47,6 +48,8 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Could we add exploratory biomarkers to the schedule? It shouldn't affect anything, right?",
     urgency: "important",
     day: 1,
+    window: [1, 1],
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -5 } },
     options: [
@@ -82,6 +85,8 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Need a final derivation decision for endpoint 2 before I can finish the SAP.",
     urgency: "important",
     day: 2,
+    window: [2, 3],
+    core: true,
     ttl: 4,
     ifIgnored: {
       meters: { integrity: -4 },
@@ -237,6 +242,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Subject 014 took their dose at 08:02 instead of 08:00. Is this a protocol deviation?",
     urgency: "routine",
     day: 10,
+    core: true,
     ttl: 2,
     ifIgnored: { sites: [{ siteId: "site-02", burden: 4, openQueries: 1 }] },
     options: [
@@ -271,6 +277,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Our CEO will join Friday. Could you send a status deck beforehand? Great work so far, we love the momentum!",
     urgency: "important",
     day: 14,
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -6 } },
     options: [
@@ -403,6 +410,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Yeah, analysis should take about three days.",
     urgency: "important",
     day: 30,
+    core: true,
     ttl: 4,
     ifIgnored: { meters: { timeline: -2 } },
     options: [
@@ -478,6 +486,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "We talked to our advisors: could we move the primary PK timepoint? Should be a small change.",
     urgency: "important",
     day: 35,
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -4 } },
     options: [
@@ -649,6 +658,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "We can run a cleaning blitz now or stay steady. The blitz is faster but it hits the sites hard.",
     urgency: "important",
     day: 50,
+    core: true,
     ttl: 3,
     ifIgnored: { workload: [{ memberId: "maya", delta: 10 }] },
     options: [
@@ -670,6 +680,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Our board meets soon. Can we lock the database a week earlier? Everything looks great from where we sit!",
     urgency: "important",
     day: 56,
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -3 } },
     options: [
@@ -800,6 +811,8 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "The CSR draft is ready for review, but tables still have open comments. Ship it or wait?",
     urgency: "important",
     day: 70,
+    window: [69, 71],
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -4 } },
     options: [
@@ -833,6 +846,8 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "The trial master file has gaps. Do we close it out now or fix it?",
     urgency: "important",
     day: 74,
+    window: [72, 75],
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { compliance: -8 } },
     options: [
@@ -1251,6 +1266,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Our board would be so reassured by a peek at the data. Nothing formal. A spreadsheet is fine. We promise not to look at anything important.",
     urgency: "important",
     day: 54,
+    core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -3 } },
     options: [
@@ -1353,6 +1369,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "The sponsor sent comments on version 7, and separately on version 8. Version 9 is called FINAL_v3_ACTUAL. It has comments on all of the above.",
     urgency: "routine",
     day: 72,
+    window: [72, 75],
     ttl: 3,
     ifIgnored: { workload: [{ memberId: "lee", delta: 8 }] },
     options: [
@@ -1384,6 +1401,259 @@ export const STUDY_EVENTS: StudyEvent[] = [
           },
         }
       ),
+    ],
+  },
+
+  // Late study (#2093): written past the planned end, so they only arrive in
+  // a run that has slipped. Each window sits inside one ten-day stretch, so
+  // a deck always deals at least one per stretch from day 75 to day 110.
+  {
+    id: "sponsor-lock-date",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "So when is lock, actually?",
+    body: "Our board deck says database lock happened last week. Our CFO has asked me to ask you, in writing, what day it actually is going to be.",
+    urgency: "important",
+    day: 78,
+    window: [76, 82],
+    ttl: 2,
+    ifIgnored: { meters: { client: -7 } },
+    options: [
+      opt("honest", "Give the honest date and the reasons for it", 2, 2, {
+        meters: { client: -3, integrity: 3 },
+      }),
+      opt(
+        "hopeful",
+        "Give the date it would be if everything went right",
+        0,
+        4,
+        { meters: { client: 4, integrity: -4 } },
+        { flags: ["lock-date-hopeful"] }
+      ),
+      opt("weekly", "Send a weekly lock forecast until it happens", 3, 1, {
+        meters: { client: 2 },
+        workload: [{ memberId: "maya", delta: 6 }],
+      }),
+    ],
+  },
+  {
+    id: "edc-licence-renewal",
+    from: "EDC Vendor",
+    subject: "Your EDC licence ends Friday",
+    body: "Your study's EDC licence was sold for the original timeline and ends Friday. After that the database becomes read-only, which we are told is not ideal before lock.",
+    urgency: "critical",
+    day: 81,
+    window: [78, 84],
+    ttl: 2,
+    ifIgnored: { slipDays: 3, meters: { timeline: -5 } },
+    options: [
+      opt("quarter", "Extend for three months", 1, 1, { spend: 9000 }),
+      opt("month", "Extend month to month and keep an eye on it", 2, 2, {
+        spend: 4000,
+        workload: [{ memberId: "dana", delta: 6 }],
+      }),
+      opt("sponsor", "Ask the sponsor to pay for the extension", 1, 2, {
+        spend: 1000,
+        meters: { client: -6 },
+        slipDays: 1,
+      }),
+    ],
+  },
+  {
+    id: "finance-overrun",
+    from: "Your boss",
+    subject: "Finance noticed the hours",
+    body: "Finance noticed 24-081 is well past its budgeted hours and asked me whether that is a problem. I said I would ask you whether that is a problem.",
+    urgency: "important",
+    day: 87,
+    window: [85, 91],
+    ttl: 3,
+    ifIgnored: { meters: { client: -2, team: -3 } },
+    options: [
+      opt(
+        "change-order",
+        "Raise a change order with the sponsor",
+        3,
+        3,
+        { spend: -12000, meters: { client: -5 } },
+        {
+          finding: {
+            question:
+              "The study budget was revised late in conduct. Show how the scope change was agreed with the sponsor.",
+            answer:
+              "A signed change order lists the added work, the reason for each item and the sponsor's approval.",
+            severity: "minor",
+          },
+        }
+      ),
+      opt("absorb", "Absorb it and finish the study", 1, 0, {
+        meters: { client: 3, team: -2 },
+      }),
+      opt("trim", "Trim the remaining monitoring visits", 1, 3, {
+        spend: -5000,
+        meters: { integrity: -4 },
+        sites: [{ siteId: "site-02", unsignedSource: 2 }],
+      }),
+    ],
+  },
+  {
+    id: "walt-reassigned",
+    from: "Walt (Monitor)",
+    subject: "Resourcing wants me on oncology",
+    body: "Resourcing says 24-081 was meant to be finished, so I start on the oncology study Monday. I have told them it is not finished. They said that is what everyone says.",
+    urgency: "important",
+    day: 92,
+    window: [88, 94],
+    ttl: 3,
+    ifIgnored: {
+      meters: { team: -4 },
+      workload: [{ memberId: "walt", delta: 15 }],
+    },
+    options: [
+      opt("keep", "Fight to keep Walt until close-out", 3, 1, {
+        meters: { team: 4 },
+        spend: 3000,
+      }),
+      opt("split", "Agree to split his week between the two", 1, 1, {
+        workload: [{ memberId: "walt", delta: 12 }],
+      }),
+      opt(
+        "handover",
+        "Let him go with a written handover",
+        2,
+        4,
+        {
+          meters: { integrity: -2 },
+          workload: [
+            { memberId: "walt", delta: -20 },
+            { memberId: "dana", delta: 10 },
+          ],
+        },
+        {
+          finding: {
+            question:
+              "Monitoring responsibility changed hands near close-out. Show the handover of open site actions.",
+            answer:
+              "A handover memo lists each site's open actions and who took them on.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "site-closeout-visits",
+    from: "Dana (Regulatory)",
+    subject: "Close-out visits, or close-out calls?",
+    body: "Every site still needs a close-out visit. Site 02 has asked whether a phone call counts. It does not, but they asked nicely.",
+    urgency: "routine",
+    day: 97,
+    window: [95, 101],
+    ttl: 3,
+    ifIgnored: { meters: { compliance: -4 } },
+    options: [
+      opt("visit", "Book a close-out visit at every site", 3, 0, {
+        spend: 6000,
+        meters: { compliance: 4 },
+        workload: [{ memberId: "walt", delta: 10 }],
+      }),
+      opt(
+        "remote",
+        "Do the small sites by video and visit the rest",
+        2,
+        3,
+        { spend: 2500, meters: { compliance: 1 } },
+        {
+          finding: {
+            question:
+              "Some sites were closed out remotely. Show how investigator files and drug accountability were confirmed.",
+            answer:
+              "Each remote close-out has a checklist signed by the site, with photographs of the file and the returned stock.",
+            severity: "minor",
+          },
+        }
+      ),
+      opt("later", "Close them out after the report", 0, 2, {
+        meters: { compliance: -3 },
+      }),
+    ],
+  },
+  {
+    id: "sponsor-next-study",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "About our next study",
+    body: "Despite everything, we would love you to run our next study. Same team, please. Could we start the kick-off planning this week? It overlaps a little.",
+    urgency: "routine",
+    day: 100,
+    window: [97, 104],
+    ttl: 3,
+    ifIgnored: { meters: { client: -3 } },
+    options: [
+      opt("after", "Yes, once 24-081 is closed", 1, 0, {
+        meters: { client: 2, team: 2 },
+      }),
+      opt("now", "Yes, start planning now", 2, 0, {
+        meters: { client: 6, team: -5 },
+        workload: [
+          { memberId: "priya", delta: 10 },
+          { memberId: "maya", delta: 10 },
+        ],
+      }),
+      opt("boss", "Pass it to your boss", 0, 0, {
+        meters: { client: -1 },
+      }),
+    ],
+  },
+  {
+    id: "irb-final-reports",
+    from: "Dana (Regulatory)",
+    subject: "Final reports to the IRBs",
+    body: "Each IRB wants a final study report within its own deadline, on its own form. One of them still uses a form that asks for our fax number.",
+    urgency: "important",
+    day: 106,
+    window: [105, 110],
+    ttl: 3,
+    ifIgnored: { meters: { compliance: -5 } },
+    options: [
+      opt("all", "File them all this week", 2, 0, {
+        meters: { compliance: 4 },
+        workload: [{ memberId: "dana", delta: 10 }],
+      }),
+      opt(
+        "template",
+        "Send every IRB the same summary",
+        1,
+        3,
+        { meters: { compliance: -1 } },
+        {
+          finding: {
+            question:
+              "One IRB received a final report on a form other than its own. Show its acknowledgement.",
+            answer:
+              "Each IRB's acknowledgement of the final report is filed, including the one that accepted the summary.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "archive-boxes",
+    from: "Office Manager",
+    subject: "41 boxes in the copier room",
+    body: "There are 41 boxes labelled 24-081 in the copier room. Facilities would like to know whether they are archived, or just stored very confidently.",
+    urgency: "routine",
+    day: 108,
+    window: [105, 110],
+    ttl: 3,
+    ifIgnored: { meters: { compliance: -2 } },
+    options: [
+      opt("archive", "Index them and send them to the archive", 2, 0, {
+        spend: 1500,
+        meters: { compliance: 3 },
+      }),
+      opt("shelf", "Move them to a shelf for now", 0, 2, {
+        meters: { compliance: -1 },
+      }),
     ],
   },
 
@@ -1458,7 +1728,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     id: "callback-subject-017",
     from: "Medical Monitor",
     subject: "Subject 017: serious adverse event",
-    body: "Subject 017, the one dosed on day 33 with an out-of-range creatinine, has been hospitalised with acute kidney injury. The sponsor would like to understand the enrollment decision.",
+    body: "Subject 017, the one dosed with an out-of-range creatinine, has been hospitalised with acute kidney injury. The sponsor would like to understand the enrollment decision.",
     urgency: "critical",
     day: 50,
     ttl: 2,

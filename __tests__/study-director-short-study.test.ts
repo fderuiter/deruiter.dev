@@ -80,7 +80,10 @@ describe("short study calendar", () => {
   const last = STUDY_24_081_SHORT.durationDays - 1;
 
   it("lands every scripted event inside the study, in the same order", () => {
-    const scripted = STUDY_EVENTS.filter((e) => !e.followUp);
+    // Late events (#2093) are written past the planned end, for slipped runs.
+    const scripted = STUDY_EVENTS.filter(
+      (e) => !e.followUp && e.day < EVENT_CALENDAR_DAYS
+    );
     for (const event of scripted) {
       const day = eventDay(study, event);
       expect(day).toBeGreaterThanOrEqual(1);

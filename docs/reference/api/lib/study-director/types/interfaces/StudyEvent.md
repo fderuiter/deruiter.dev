@@ -14,11 +14,21 @@
 
 ***
 
+### core?
+
+> `optional` **core?**: `boolean`
+
+Always drawn into the deck. Optional events are drawn as a subset of
+those written for the same stretch of the study.
+
+***
+
 ### day
 
 > **day**: `number`
 
-First day the event can appear.
+The day the event was written for, on the full study's calendar. Runs
+without a deck (saves from before #2093) show it on exactly this day.
 
 ***
 
@@ -109,3 +119,12 @@ Days the event stays actionable, counting its first day.
 > `optional` **wildcard?**: `boolean`
 
 A rare event drawn from the seed; scheduled at the start of a run.
+
+***
+
+### window?
+
+> `optional` **window?**: \[`number`, `number`\]
+
+The days, on the full calendar, a run's deck may draw this event's day
+from. Defaults to a short band around `day`.

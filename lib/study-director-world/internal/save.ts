@@ -1,6 +1,7 @@
 import { clamp } from "@/lib/game-utils";
 import {
   DIFFICULTIES,
+  readDeck,
   type Difficulty,
   type StudySetup,
   type StudyState,
@@ -78,6 +79,17 @@ function readDifficulty(value: unknown): Difficulty {
 function readSetup(setup: StudySetup): StudySetup {
   const { length, ...rest } = setup;
   return length === "short" ? { ...rest, length } : rest;
+}
+
+/**
+ * A saved study with its event deck (#2093) read strictly. A save from
+ * before the deck has none and keeps its fixed event days; so does one whose
+ * deck is unreadable.
+ */
+function readStudyDeck(study: StudyState): StudyState {
+  const { deck, ...rest } = study;
+  const read = readDeck(deck);
+  return read ? { ...study, deck: read } : rest;
 }
 
 /** A saved position, if it is a free tile on its map; else the spawn. */
@@ -247,8 +259,9 @@ function readSiteVisitHistory(value: unknown): SiteVisitReport[] {
  * missing its study is dropped (returns null) rather than trusted; numbers
  * are clamped to their ranges, and a position that is not a free tile on the
  * floor (or a save from before the floor existed) starts at the lobby. A
- * study saved without a difficulty loads as standard, and one saved without
- * a length loads as the full study.
+ * study saved without a difficulty loads as standard, one saved without a
+ * length loads as the full study, and one saved without an event deck keeps
+ * its fixed event days.
  */
 export function parseWorld(text: string | null): WorldState | null {
   if (!text) return null;
@@ -266,7 +279,7 @@ export function parseWorld(text: string | null): WorldState | null {
   const world: WorldState = {
     version: 1,
     study: {
-      ...raw.study,
+      ...readStudyDeck(raw.study),
       setup: readSetup(raw.study.setup),
       budget: "clock",
       difficulty: readDifficulty(raw.study.difficulty),

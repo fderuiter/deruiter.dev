@@ -3,7 +3,7 @@ import {
   safeRawStorage,
   type RawStorage,
 } from "@/lib/safe-storage";
-import type { StudyState } from "@/lib/study-director";
+import { readDeck, type StudyState } from "@/lib/study-director";
 
 const SAVE_KEY = "study_director_save_v1";
 
@@ -31,7 +31,12 @@ export function loadStudySave(): StudyState | null {
     const raw = storage()?.getItem(SAVE_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    return isStudyState(parsed) ? parsed : null;
+    if (!isStudyState(parsed)) return null;
+    // A save from before the event deck (#2093), or one whose deck is
+    // unreadable, plays its events on their fixed days.
+    const { deck, ...study } = parsed;
+    const read = readDeck(deck);
+    return read ? { ...parsed, deck: read } : study;
   } catch {
     return null;
   }

@@ -4,6 +4,7 @@ import {
   STUDY_24_081,
   STUDY_24_081_SITES,
   STUDY_24_081_TEAM,
+  beginStudy,
   createStudy,
 } from "@/lib/study-director";
 import {
@@ -82,6 +83,18 @@ describe("Study Director storage through lib/safe-storage (#1641)", () => {
     clearStudySave();
     expect(storage.getItem(SAVE_KEY)).toBeNull();
     expect(loadStudySave()).toBeNull();
+  });
+
+  it("loads a run with its deck, and one without on the fixed days (#2093)", () => {
+    const dealt = beginStudy(study());
+    saveStudy(dealt);
+    expect(loadStudySave()).toEqual(dealt);
+    const { deck: _deck, ...legacy } = dealt;
+    expect(_deck).toBeDefined();
+    storage.setItem(SAVE_KEY, JSON.stringify(legacy));
+    expect(loadStudySave()).toEqual(legacy);
+    storage.setItem(SAVE_KEY, JSON.stringify({ ...legacy, deck: [3] }));
+    expect(loadStudySave()).toEqual(legacy);
   });
 
   it("falls back to defaults when reading storage throws", () => {

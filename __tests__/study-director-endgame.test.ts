@@ -100,12 +100,22 @@ describe("study director endgame", () => {
   it("treats an ignored critical message as a major finding, but not an ignored routine one", () => {
     const s = play("ig", () => null);
     const items = inspectionReadiness(s).items;
-    expect(
-      items.some(
-        (i) => i.eventId === "edc-missing-subject" && i.outcome === "major"
-      )
-    ).toBe(true);
-    expect(items.some((i) => i.eventId === "lab-manual")).toBe(false);
+    // The deck (#2093) decides which messages a run gets, so read them off
+    // the log rather than naming them.
+    const ignored = (urgency: string) =>
+      s.log
+        .filter((r) => r.optionId === "ignored")
+        .map((r) => r.eventId)
+        .filter((id) => getEvent(id)?.urgency === urgency);
+    expect(ignored("critical").length).toBeGreaterThan(0);
+    expect(ignored("routine").length).toBeGreaterThan(0);
+    for (const id of ignored("critical"))
+      expect(
+        items.some((i) => i.eventId === id && i.outcome === "major"),
+        id
+      ).toBe(true);
+    for (const id of ignored("routine"))
+      expect(items.some((i) => i.eventId === id)).toBe(false);
   });
 
   it("grades from the number of majors and minors", () => {

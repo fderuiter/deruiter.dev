@@ -7,6 +7,7 @@ import {
   scaleDays,
 } from "./model";
 import { uniformAt } from "./rng";
+import { clamp } from "../../game-utils";
 import type {
   ActionResult,
   Difficulty,
@@ -24,13 +25,26 @@ const URGENCY_ORDER: Record<Urgency, number> = {
 const byId = new Map(STUDY_EVENTS.map((e) => [e.id, e]));
 
 /**
- * The first day an event can appear in this study. Event days are written
- * on the full study's calendar; a short study (#2092) squeezes them into its
- * own duration, so the story keeps its order and every phase still gets its
- * messages.
+ * The day an event was written for, on this study's calendar. Event days are
+ * written on the full study's calendar; a short study (#2092) squeezes them
+ * into its own duration, so the story keeps its order and every phase still
+ * gets its messages. A run with a deck (#2093) draws the day it actually
+ * arrives from a window around this one: see {@link deckDay}.
  */
 export function eventDay(state: StudyState, event: StudyEvent): number {
   return scaleDays(event.day, state.setup);
+}
+
+/**
+ * The first day an event can reach this run's inbox on its own, or null when
+ * it never does: a follow-up or wildcard (those arrive only when scheduled),
+ * or an event this run's deck did not draw. A run without a deck, as every
+ * save from before #2093, keeps each event on its written day.
+ */
+export function deckDay(state: StudyState, event: StudyEvent): number | null {
+  if (event.followUp) return null;
+  if (!state.deck) return eventDay(state, event);
+  return state.deck[event.id] ?? null;
 }
 
 /** Looks up an event by id. */
@@ -42,8 +56,8 @@ function isDue(state: StudyState, event: StudyEvent): boolean {
   if (state.handled.includes(event.id)) return false;
   const scheduled = state.scheduled.find((s) => s.eventId === event.id);
   if (scheduled) return state.day >= scheduled.day;
-  if (event.followUp) return false;
-  if (state.day < eventDay(state, event)) return false;
+  const day = deckDay(state, event);
+  if (day === null || state.day < day) return false;
   return event.trigger ? event.trigger(state) : true;
 }
 
@@ -216,7 +230,109 @@ export function scheduleWildcards(state: StudyState): StudyState {
   return { ...state, scheduled: [...state.scheduled, ...drawn] };
 }
 
-/** Starts the study on day 1 with its wildcards drawn and the first inbox ready. */
+/**
+ * Share of the optional events written for each stretch of the study that a
+ * run's deck draws (#2093), on average and never fewer than one, so two runs
+ * differ in what arrives as well as when.
+ */
+export const DECK_KEEP_SHARE = 0.75;
+
+/** Days of the full calendar in each stretch the deck draws a subset from. */
+const DECK_BAND_DAYS = 10;
+
+/** The stretch an event was written for: days 5-14, 15-24, and so on. */
+const bandOf = (event: StudyEvent): number =>
+  Math.floor((event.day - 5) / DECK_BAND_DAYS);
+
+/**
+ * The full-calendar days a deck may draw an event's day from: its own
+ * window, or a band around its written day that widens a little as the
+ * study goes on (one day either side early, at most four late).
+ */
+function windowOf(event: StudyEvent): [number, number] {
+  if (event.window) return event.window;
+  const spread = clamp(Math.round(event.day * 0.08), 1, 4);
+  return [Math.max(1, event.day - spread), event.day + spread];
+}
+
+/** Events the deck deals: everything that is not scheduled by something else. */
+const DECKABLE = STUDY_EVENTS.filter((e) => !e.followUp && !e.wildcard);
+
+/**
+ * Deals this run's event deck (#2093). Core events are always drawn; of the
+ * optional ones, each stretch of the study keeps {@link DECK_KEEP_SHARE} of
+ * what was written for it. Every drawn event gets a day inside its window,
+ * scaled to this study's calendar. A callback is drawn exactly when the
+ * event it recalls is, and always arrives after it. The deck uses its own stream of
+ * the seed, so the study's other draws and the wildcards are unchanged.
+ */
+export function drawDeck(state: StudyState): StudyState {
+  const stream = `${state.seed}:deck`;
+  const kept = new Set<string>();
+  const bands = new Map<number, string[]>();
+  for (const event of DECKABLE) {
+    // A callback is a consequence, not a draw: it comes with its parent.
+    if (event.recalls) continue;
+    if (event.core) {
+      kept.add(event.id);
+      continue;
+    }
+    const band = bandOf(event);
+    bands.set(band, [...(bands.get(band) ?? []), event.id]);
+  }
+  for (const [band, ids] of [...bands].sort((a, b) => a[0] - b[0])) {
+    // The share rarely comes out whole: the fraction left over is a chance
+    // of one more, so every stretch keeps three quarters on average.
+    const share = ids.length * DECK_KEEP_SHARE;
+    const extra = uniformAt(stream, (band + 1) * 100 + 99) < share % 1 ? 1 : 0;
+    const keep = clamp(Math.floor(share) + extra, 1, ids.length);
+    const pool = ids.slice();
+    for (let i = 0; i < keep; i += 1) {
+      const draw = uniformAt(stream, (band + 1) * 100 + i);
+      const j = i + Math.floor(draw * (pool.length - i));
+      [pool[i], pool[j]] = [pool[j], pool[i]];
+    }
+    for (const id of pool.slice(0, keep)) kept.add(id);
+  }
+  const deck: Record<string, number> = {};
+  // Callbacks come last, once the day of the event they recall is known.
+  const order = [
+    ...DECKABLE.filter((e) => !e.recalls),
+    ...DECKABLE.filter((e) => e.recalls),
+  ];
+  for (const event of order) {
+    const parent = event.recalls ? deck[event.recalls] : undefined;
+    if (event.recalls ? parent === undefined : !kept.has(event.id)) continue;
+    const [lo, hi] = windowOf(event);
+    const index = 10_000 + STUDY_EVENTS.indexOf(event);
+    const full = lo + Math.floor(uniformAt(stream, index) * (hi - lo + 1));
+    const day = scaleDays(full, state.setup);
+    deck[event.id] = parent === undefined ? day : Math.max(day, parent + 1);
+  }
+  return { ...state, deck };
+}
+
+/**
+ * Reads a saved run's deck strictly: only events that can be dealt, on whole
+ * days from 1. Anything that is not a deck reads as none, so the run plays
+ * on the fixed days, as a save from before #2093 does.
+ */
+export function readDeck(value: unknown): Record<string, number> | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return undefined;
+  const deck: Record<string, number> = {};
+  for (const event of DECKABLE) {
+    const day: unknown = (value as Record<string, unknown>)[event.id];
+    if (typeof day === "number" && Number.isInteger(day) && day >= 1)
+      deck[event.id] = day;
+  }
+  return deck;
+}
+
+/**
+ * Starts the study on day 1 with its event deck dealt, its wildcards drawn
+ * and the first inbox ready.
+ */
 export function beginStudy(state: StudyState): StudyState {
-  return markSeen(advanceDay(scheduleWildcards(state)));
+  return markSeen(advanceDay(scheduleWildcards(drawDeck(state))));
 }

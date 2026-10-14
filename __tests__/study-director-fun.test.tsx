@@ -9,6 +9,7 @@ import {
   applyDifficulty,
   beginStudy,
   createStudy,
+  deckDay,
   endDay,
   finalizeStudy,
   getEvent,
@@ -119,10 +120,19 @@ describe("difficulty", () => {
 });
 
 describe("callbacks", () => {
+  /** The first seed whose deck (#2093) deals the consent question. */
   function atConsent(): StudyState {
-    let s = beginStudy(fresh("callback"));
-    while (!inbox(s).some((e) => e.id === "cowboy-pi-consent")) s = endDay(s);
-    return s;
+    for (let i = 0; i < 50; i += 1) {
+      let s = beginStudy(fresh(`callback-${i}`));
+      if (s.deck?.["cowboy-pi-consent"] === undefined) continue;
+      while (
+        s.status === "running" &&
+        !inbox(s).some((e) => e.id === "cowboy-pi-consent")
+      )
+        s = endDay(s);
+      return s;
+    }
+    throw new Error("no seed deals the consent question");
   }
 
   it("brings back a waived consent signature, and only then", () => {
@@ -136,8 +146,11 @@ describe("callbacks", () => {
     if (!waived.ok || !firm.ok) throw new Error("setup failed");
     let a = waived.state;
     let b = firm.state;
-    while (a.day < 45) a = endDay(a);
-    while (b.day < 45) b = endDay(b);
+    const callback = getEvent("callback-consent-monitor")!;
+    const due = deckDay(a, callback)!;
+    expect(due).toBeGreaterThan(a.day);
+    while (a.day < due) a = endDay(a);
+    while (b.day < due) b = endDay(b);
     expect(inbox(a).map((e) => e.id)).toContain("callback-consent-monitor");
     expect(inbox(b).map((e) => e.id)).not.toContain("callback-consent-monitor");
   });

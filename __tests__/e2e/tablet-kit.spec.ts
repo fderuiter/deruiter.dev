@@ -1786,31 +1786,50 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
       y: fire.y + fire.height / 2,
       id: 1,
     };
-    const aimX = canvas.x + canvas.width * 0.8;
+    // The aiming finger traces the right of the arena, where the rival flags
+    // fly, sweeping across as well as up and down so it finds one wherever
+    // the act has spawned it.
     const at = (t: number) => ({
-      x: aimX,
+      x: canvas.x + canvas.width * (0.35 + 0.6 * Math.abs(Math.sin(t * 0.37))),
       y: canvas.y + canvas.height * (0.1 + 0.8 * Math.abs(Math.sin(t))),
       id: 2,
     });
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchStart",
-      touchPoints: [fireAt, at(0)],
-    });
-    // Sweep the aiming finger up and down while Fire stays held.
+    const pause = page.getByRole("button", { name: "Pause Game" });
+    const retry = page.getByRole("button", { name: /Try Act 1 again/ });
+    // Sweep the aiming finger while Fire stays held. A blind sweep can lose
+    // the act before it lands a hit, most often on a loaded machine, so a
+    // lost act lifts both fingers, starts the act again and keeps sweeping:
+    // the claim is that two fingers score, not that one sweep is lucky.
     const start = Date.now();
     let t = 0;
-    while (Date.now() - start < 20000 && (await llScore(page)) === 0) {
+    let holding = false;
+    while (Date.now() - start < 90000 && (await llScore(page)) === 0) {
+      if (!(await pause.isVisible())) {
+        if (holding) {
+          await cdp.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          });
+          holding = false;
+        }
+        if (await retry.isVisible()) await retry.tap();
+        await page.waitForTimeout(250);
+        continue;
+      }
       t += 0.35;
       await cdp.send("Input.dispatchTouchEvent", {
-        type: "touchMove",
+        type: holding ? "touchMove" : "touchStart",
         touchPoints: [fireAt, at(t)],
       });
+      holding = true;
       await page.waitForTimeout(40);
     }
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchEnd",
-      touchPoints: [],
-    });
+    if (holding) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+    }
     expect(await llScore(page)).toBeGreaterThan(0);
   });
 

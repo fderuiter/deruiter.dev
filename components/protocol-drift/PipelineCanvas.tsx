@@ -29,6 +29,7 @@ import {
   type WireEdge,
 } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 
 /** Drag payload key shared with the toolbox. */
 export const CHIP_DRAG_TYPE = "application/x-protocol-drift-chip";
@@ -39,6 +40,11 @@ const WORLD_WIDTH = 1340;
 const WORLD_TOP = 100;
 const WORLD_HEIGHT = 636;
 const FIT_MARGIN = 8;
+/**
+ * On the touch cabinet a narrow canvas fits the world below the desktop zoom
+ * floor, so the floor drops to let the fit and a pinch-out both reach it.
+ */
+const TOUCH_MIN_ZOOM = 0.3;
 
 function LaneOverlay() {
   const { tabulationTop, conservationWallY, analysisBottom } = LANE_GEOMETRY;
@@ -126,6 +132,10 @@ function CanvasInner() {
   const removeSelection = useProtocolDriftStore((s) => s.removeSelection);
   const flow = useReactFlow();
   const wrapper = useRef<HTMLDivElement | null>(null);
+  // Touch: a finger pans the empty canvas and a pinch zooms it, both inside
+  // the canvas (the page never scrolls under them). Desktop keeps the fitted,
+  // fixed view it always had.
+  const touch = useCabinetTouch();
   const editable =
     fsm === "DRAFT" ||
     fsm === "VALIDATE" ||
@@ -278,9 +288,10 @@ function CanvasInner() {
         nodesDraggable={editable}
         nodesConnectable={editable}
         elementsSelectable
-        panOnDrag={false}
+        panOnDrag={touch}
         zoomOnScroll={false}
-        zoomOnPinch={false}
+        zoomOnPinch={touch}
+        minZoom={touch ? TOUCH_MIN_ZOOM : undefined}
         zoomOnDoubleClick={false}
         preventScrolling={false}
         connectionRadius={36}

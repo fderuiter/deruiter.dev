@@ -160,6 +160,9 @@ export function InspectionRoundDialog({
         aria-labelledby="cc-inspection-title"
         aria-describedby="cc-inspection-prompt"
         data-testid="cc-inspection-round"
+        // The interview must be answered: on the touch cabinet a keyboard
+        // case's Escape neither closes it nor leaves the cabinet (#2105).
+        data-escape-holds="true"
         onKeyDown={handleKeyDown}
         className="w-full max-w-xl max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-amber-500/50 bg-zinc-950 p-5 shadow-2xl sm:p-6"
       >

@@ -2077,3 +2077,450 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
     }
   });
 });
+
+// Clinical Trial Chaos: the floor, its dock and its sheets in the touch
+// cabinet (#2105). Stations and lifelines are keys in the dock; every dialog is
+// a sheet that traps focus and closes on Escape without closing the cabinet.
+const CC_ROUTE = "/arcade/clinical-chaos";
+const CC_ROOT = ".cc-touch";
+const CC_DOCK = '[data-testid="cc-touch-dock"]';
+const CC_GATE = "[data-touch-controls]";
+const CC_BOARD = "[data-keyboard-boundary]";
+
+/** Launches the cabinet and waits for the game's touch layout. */
+async function launchChaos(page: Page) {
+  const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+  await expect(async () => {
+    if ((await page.locator(IMMERSIVE).count()) > 0) return;
+    await launch.tap({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 180000 });
+  await expect(page.locator(CC_ROOT).first()).toBeVisible({ timeout: 90000 });
+}
+
+/**
+ * Taps through to a live shift. The shift briefing is the game's one start
+ * step, so it follows Launch. The first shift opens with a calibration that
+ * holds every clock still, which keeps the whole first fix and route safe from
+ * the timers; pass `skip` to go straight to a running shift.
+ */
+async function startChaos(page: Page, skip = false) {
+  await page
+    .getByRole("button", { name: /Start 3-Phase Campaign/i })
+    .tap({ timeout: 30000 });
+  await expect(page.locator(CC_DOCK)).toBeVisible({ timeout: 15000 });
+  if (skip) {
+    await page.getByRole("button", { name: /Skip calibration/i }).tap();
+  }
+}
+
+/** The number in the HUD's "locked" tally. */
+const ccLocked = async (page: Page) => {
+  const text = await page.locator(".cc-hud").innerText();
+  return Number(/(\d+)\/5/.exec(text)?.[1] ?? 0);
+};
+
+/** Fixes every flagged field on the open dossier by tapping answers. */
+async function fixOpenDossier(page: Page) {
+  const fixIt = page.getByRole("button", { name: /Fix it/i });
+  const dialog = page.getByRole("dialog", {
+    name: /Controlled Terminology/i,
+  });
+  for (let round = 0; round < 6 && (await fixIt.isVisible()); round += 1) {
+    await fixIt.tap();
+    await expect(dialog).toBeVisible();
+    // A wrong answer is rejected and disabled, so the next open one is tried
+    // until the dialog accepts one and closes itself.
+    for (let i = 0; i < 4 && (await dialog.isVisible()); i += 1) {
+      const options = dialog.locator("button:has(kbd):not([disabled])");
+      if ((await options.count()) === 0) break;
+      await options.first().tap();
+      await page.waitForTimeout(700);
+    }
+    await expect(dialog).toBeHidden({ timeout: 10000 });
+  }
+}
+
+/** Routes the open, clean dossier by tapping the dock key that accepts it. */
+async function routeOpenDossier(page: Page) {
+  await page
+    .locator('.cc-station[data-state="accepts"]')
+    .first()
+    .tap({ timeout: 10000 });
+  const sign = page.getByRole("button", {
+    name: /Sign & Lock CRF|Countersign/i,
+  });
+  await page.waitForTimeout(300);
+  if (await sign.isVisible()) await sign.tap();
+}
+
+test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
+  test.setTimeout(300000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(CC_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches fit to the viewport", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchChaos(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the floor, meters, dossier and dock fit both orientations without scrolling", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page);
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expect(page.locator(CC_ROOT).first()).toBeVisible();
+      await expectInsideViewport(page, [
+        CC_ROOT,
+        'canvas[role="application"]',
+        '[aria-labelledby="cc-dossier-title"]',
+        CC_DOCK,
+      ]);
+      // Nothing scrolls: not the page, not the game, not the floor.
+      const overflow = await page.evaluate(() => {
+        const floor = document.querySelector<HTMLElement>(".cc-floor")!;
+        const root = document.querySelector<HTMLElement>(".cc-touch")!;
+        return [
+          document.scrollingElement!.scrollHeight - window.innerHeight,
+          floor.scrollHeight - floor.clientHeight,
+          root.scrollHeight - root.clientHeight,
+        ].map((n) => Math.max(0, n));
+      });
+      expect(overflow.every((n) => n <= 1)).toBe(true);
+      // The dock sits at the bottom edge, with no dead band under it.
+      const dock = (await page.locator(CC_DOCK).boundingBox())!;
+      expect(size.height - (dock.y + dock.height)).toBeLessThanOrEqual(24);
+      // The status row stays clear of the floating toolbar.
+      const toolbar = (await page
+        .getByTestId("cabinet-touch-toolbar")
+        .boundingBox())!;
+      const pause = (await page
+        .getByRole("button", { name: "Pause shift", exact: true })
+        .boundingBox())!;
+      const clear =
+        pause.x + pause.width <= toolbar.x + 1 ||
+        pause.y >= toolbar.y + toolbar.height - 1;
+      expect(clear).toBe(true);
+      await assertNoHorizontalOverflow(page);
+    }
+  });
+
+  test("the page cannot scroll behind the open cabinet", async ({ page }) => {
+    await launchChaos(page);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("every control is 44px and no text is under 12px: briefing, floor, tabs, sheets", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await sdTouchSizes(page, CC_ROOT);
+    await startChaos(page);
+    await sdTouchSizes(page, CC_ROOT);
+
+    await page.getByRole("button", { name: "Pause shift", exact: true }).tap();
+    await expect(
+      page.getByRole("dialog", { name: /Shift paused/i })
+    ).toBeVisible();
+    await sdTouchSizes(page, CC_ROOT);
+    await page
+      .getByRole("button", { name: "Resume shift (P)", exact: true })
+      .tap();
+
+    await page.getByRole("button", { name: /Fix it/i }).tap();
+    await expect(
+      page.getByRole("dialog", { name: /Controlled Terminology/i })
+    ).toBeVisible();
+    await sdTouchSizes(page, CC_ROOT);
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: /Stress Control Panel/i }).tap();
+    await expect(page.getByTestId("cc-stress-sheet")).toBeVisible();
+    await sdTouchSizes(page, CC_ROOT);
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("button", { name: /Live SDTM Studio|SDTM/ }).tap();
+    await expect(
+      page.getByText(/Live CDISC SDTM Dataset Studio/)
+    ).toBeVisible();
+    await sdTouchSizes(page, CC_ROOT);
+    await page.getByRole("button", { name: /Audit Trail Log|Audit/ }).tap();
+    await expect(page.getByText(/IMMUTABLE AUDIT TRAIL/)).toBeVisible();
+    await sdTouchSizes(page, CC_ROOT);
+  });
+
+  test("a shift is played by taps alone: fix a field, route it with a station key, and the lock counts", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page);
+    expect(await ccLocked(page)).toBe(0);
+    // The first dossier is the calibration's, with the clocks held still, so
+    // taps alone carry it from the flagged field to a locked CRF.
+    await fixOpenDossier(page);
+    await expect(
+      page.locator('.cc-station[data-state="accepts"]').first()
+    ).toBeVisible();
+    await routeOpenDossier(page);
+    await expect.poll(() => ccLocked(page), { timeout: 15000 }).toBe(1);
+  });
+
+  test("a lifeline key and a queue chip work by tap", async ({ page }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    const second = page.getByRole("button", { name: /^SUBJ-\d+/ }).nth(1);
+    await second.tap();
+    await expect(second).toHaveAttribute("aria-pressed", "true");
+    const coffee = page.getByRole("button", { name: /^Lifeline Q:/ });
+    await expect(coffee).toBeVisible();
+    const box = (await coffee.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(44);
+    expect(box.width).toBeGreaterThanOrEqual(44);
+  });
+
+  test("the stress sheet fits, traps focus, and Escape closes it while the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    await page.getByRole("button", { name: /Stress Control Panel/i }).tap();
+    const sheet = page.getByTestId("cc-stress-sheet");
+    await expect(sheet).toBeVisible();
+    await expectBoxInViewport(page, sheet, "stress sheet");
+    const { width, height } = page.viewportSize()!;
+    await page.setViewportSize({ width: height, height: width });
+    await expectBoxInViewport(page, sheet, "stress sheet (turned)");
+    for (let i = 0; i < 14; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () =>
+            !!document.activeElement?.closest('[data-testid="cc-stress-sheet"]')
+        )
+      ).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the fix dialog fits the screen, and Escape pressed at once after Enter closes it", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    const dialog = page.getByRole("dialog", {
+      name: /Controlled Terminology/i,
+    });
+    await page.locator(CC_BOARD).focus();
+    await page.keyboard.press("Enter");
+    // No wait: focus has not moved into the dialog yet.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeVisible();
+    await expectBoxInViewport(page, dialog, "fix dialog");
+    const { width, height } = page.viewportSize()!;
+    await page.setViewportSize({ width: height, height: width });
+    await expectBoxInViewport(page, dialog, "fix dialog (turned)");
+    for (let i = 0; i < 12; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () => !!document.activeElement?.closest('[role="dialog"]')
+        )
+      ).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("Pause stops the shift, and Escape pressed at once resumes it with the cabinet open", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    const paused = page.getByRole("dialog", { name: /Shift paused/i });
+    await page.locator(CC_BOARD).focus();
+    await page.keyboard.press("p");
+    await page.keyboard.press("Escape");
+    await expect(paused).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await page.getByRole("button", { name: "Pause shift", exact: true }).tap();
+    await expect(paused).toBeVisible();
+    await expectBoxInViewport(page, paused, "pause dialog");
+    await page.keyboard.press("Escape");
+    await expect(paused).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("Escape during a shift pauses instead of leaving the cabinet", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    await page.locator(CC_BOARD).focus();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("dialog", { name: /Shift paused/i })
+    ).toBeVisible();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("a hidden tab or a blurred window pauses a shift in progress", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    const paused = page.getByRole("dialog", { name: /Shift paused/i });
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(paused).toBeVisible();
+    await page
+      .getByRole("button", { name: "Resume shift (P)", exact: true })
+      .tap();
+    await expect(paused).toBeHidden();
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => "hidden",
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await expect(paused).toBeVisible();
+  });
+
+  test("with a keyboard case the dock hides and every shortcut works; a tap brings it back", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    const gate = page.locator(CC_GATE).first();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+    await page.locator(CC_BOARD).focus();
+    // A number key routes to its station: the first dossier still has a
+    // flagged field, so the board says to fix it first.
+    await page.keyboard.press("2");
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    await expect(page.getByText(/Resolve \d+ flagged/i).first()).toBeVisible();
+    const dialog = page.getByRole("dialog", {
+      name: /Controlled Terminology/i,
+    });
+    await page.keyboard.press("Enter");
+    await expect(dialog).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    const paused = page.getByRole("dialog", { name: /Shift paused/i });
+    await page.keyboard.press("p");
+    await expect(paused).toBeVisible();
+    await page.keyboard.press("p");
+    await expect(paused).toBeHidden();
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    await page.getByRole("button", { name: "Pause shift", exact: true }).tap();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+  });
+
+  test("the Apple Pencil works like a finger", async ({ page }) => {
+    await launchChaos(page);
+    await startChaos(page, true);
+    const cabinet = page.locator(IMMERSIVE);
+    const canvas = (await page
+      .locator('canvas[role="application"]')
+      .boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = canvas.x + canvas.width * 0.3;
+    const y = canvas.y + canvas.height * 0.55;
+    for (const type of ["mousePressed", "mouseReleased"] as const) {
+      await cdp.send("Input.dispatchMouseEvent", {
+        type,
+        x,
+        y,
+        button: "left",
+        clickCount: 1,
+        pointerType: "pen",
+      });
+    }
+    await expect(cabinet).toHaveAttribute("data-input-modality", "pen");
+    await expect(page.locator(CC_GATE).first()).toHaveAttribute(
+      "data-touch-controls",
+      "shown"
+    );
+    // The pen is a pointer like any other: it presses a dock key too.
+    await page.getByRole("button", { name: "Pause shift", exact: true }).tap();
+    await expect(
+      page.getByRole("dialog", { name: /Shift paused/i })
+    ).toBeVisible();
+  });
+
+  test("the playing cabinet has no blocking axe violations", async ({
+    page,
+  }) => {
+    await launchChaos(page);
+    await sdAxe(page);
+    await startChaos(page);
+    await sdAxe(page);
+    await page.getByRole("button", { name: /Stress Control Panel/i }).tap();
+    await expect(page.getByTestId("cc-stress-sheet")).toBeVisible();
+    await sdAxe(page);
+  });
+
+  test.describe("Split View (ADR 0061)", () => {
+    for (const width of [507, 678]) {
+      test(`${width}x1024: the notice offers Try it anyway, with no overflow`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(CC_ROUTE);
+        await expect(page.locator(NOTICE).first()).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+        const tryAnyway = page.getByRole("button", { name: /Try it anyway/i });
+        await expect(tryAnyway).toBeVisible();
+        await tryAnyway.tap();
+        await expect(
+          page.getByRole("button", { name: /Launch Cabinet/i })
+        ).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+      });
+
+      test(`${width}x1024: Try it anyway launches a cabinet that fits`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(CC_ROUTE);
+        await page.getByRole("button", { name: /Try it anyway/i }).tap();
+        await launchChaos(page);
+        await startChaos(page);
+        await expectInsideViewport(page, [
+          CC_ROOT,
+          'canvas[role="application"]',
+          CC_DOCK,
+        ]);
+        await assertNoHorizontalOverflow(page);
+      });
+    }
+  });
+});

@@ -7,6 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { requestClinicalChaosAutoPause } from "@/components/clinical-trial-chaos/auto-pause";
 import Link from "next/link";
 import {
   IconShieldCheck,
@@ -102,6 +103,14 @@ export const ClinicalChaosClient: React.FC = () => {
                 { key: "P", action: "Pause" },
               ]}
               importComponent={ClinicalTrialChaosLoader}
+              // No game key is F (1 to 8, Q W E R, arrows, Enter, Space, P,
+              // Escape), so the cabinet's F-for-fullscreen stays on (#2105).
+              // The floor, its dock and its sheets are built to fit the touch
+              // cabinet's viewport, so the stage clips rather than scrolls
+              // (ADR 0061).
+              mobileLayout="fit"
+              // A hidden tab or a backgrounded app pauses a shift in progress.
+              onAutoPause={requestClinicalChaosAutoPause}
             >
               <DynamicClinicalTrialChaos />
             </PlayCabinet>

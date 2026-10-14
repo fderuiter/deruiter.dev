@@ -135,6 +135,15 @@ describe("InspectionRoundDialog (#2089)", () => {
     ).toBeTruthy();
   });
 
+  it("holds Escape, so a keyboard case cannot leave the touch cabinet mid-interview", () => {
+    render(<Harness initial={makeRound()} onDone={vi.fn()} />);
+    expect(
+      screen
+        .getByTestId("cc-inspection-round")
+        .getAttribute("data-escape-holds")
+    ).toBe("true");
+  });
+
   it("picks an answer with the number keys", () => {
     const round = makeRound();
     render(<Harness initial={round} onDone={vi.fn()} />);

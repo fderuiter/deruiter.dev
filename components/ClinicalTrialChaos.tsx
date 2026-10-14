@@ -54,6 +54,10 @@ import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetF
 import { applyCanvasScale, computeCanvasResolution } from "@/lib/arcade";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useCabinetTouch } from "@/components/arcade/mobile";
+import { ChaosTouchDock } from "@/components/clinical-trial-chaos/ChaosTouchDock";
+import { CLINICAL_CHAOS_AUTO_PAUSE_EVENT } from "@/components/clinical-trial-chaos/auto-pause";
+import "@/components/clinical-trial-chaos/clinical-chaos-touch.css";
 
 import {
   CDISCDomain,
@@ -448,6 +452,10 @@ export const ClinicalTrialChaos: React.FC = () => {
   const { playSuccess, muted: globalMuted } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
+  // True inside the immersive touch cabinet (a tablet after Launch). Desktop
+  // and the attract screen read false, and none of the touch layout, dock or
+  // sheet behaviour below applies there (#2105).
+  const touchCabinet = useCabinetTouch();
 
   // 1. Game configuration & modes
   const [gameMode, setGameMode] = useState<GameMode>("campaign");
@@ -1884,6 +1892,9 @@ export const ClinicalTrialChaos: React.FC = () => {
   const signatureModalRef = useRef(signatureModal);
   const isPausedRef = useRef(isPaused);
   const isManualOpenRef = useRef(isManualOpen);
+  // The touch cabinet's stress sheet holds the shift still like the Field
+  // Manual does, because it covers the floor while the player sets it.
+  const stressSheetOpenRef = useRef(false);
 
   // Sync refs on every render
   useEffect(() => {
@@ -1908,9 +1919,43 @@ export const ClinicalTrialChaos: React.FC = () => {
     signatureModalRef.current = signatureModal;
     isPausedRef.current = isPaused;
     isManualOpenRef.current = isManualOpen;
+    stressSheetOpenRef.current = touchCabinet && isStressDrawerOpen;
     activeProtocolRef.current = activeProtocol;
     ruleViolationsRef.current = ruleViolations;
   });
+
+  // 16c. Pause and resume that are safe to repeat. One Escape can reach both
+  // the board's key handler and the pause dialog's own handler, so asking for
+  // a state the shift is already in does nothing instead of flipping it back.
+  const setShiftPaused = useCallback((paused: boolean) => {
+    if (playStateRef.current !== "playing") return;
+    if (isPausedRef.current === paused) return;
+    isPausedRef.current = paused;
+    if (!paused) lastTickTimeRef.current = Date.now();
+    setIsPaused(paused);
+    announceRef.current(
+      paused
+        ? "Shift paused. Every clock is stopped. Press P or Resume to continue."
+        : "Shift resumed.",
+      "assertive"
+    );
+  }, []);
+
+  // The touch cabinet asks the game to stop when the tab is hidden, the page
+  // is closing or the window loses focus (#2105). Only a shift in progress
+  // pauses, and resuming is the player's choice.
+  useEffect(() => {
+    const pauseForBackground = () => setShiftPaused(true);
+    window.addEventListener(
+      CLINICAL_CHAOS_AUTO_PAUSE_EVENT,
+      pauseForBackground
+    );
+    return () =>
+      window.removeEventListener(
+        CLINICAL_CHAOS_AUTO_PAUSE_EVENT,
+        pauseForBackground
+      );
+  }, [setShiftPaused]);
 
   // First-shift calibration (#834)
   const calibrationStep =
@@ -2026,7 +2071,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       // inside a decision still costs time (#1937).
       const clockRate = getShiftClockRate({
         userPaused: isPausedRef.current,
-        manualOpen: isManualOpenRef.current,
+        manualOpen: isManualOpenRef.current || stressSheetOpenRef.current,
         dialogOpen:
           !!validatingObsRef.current || !!signatureModalRef.current?.isOpen,
         calibrating: calibrationActiveRef.current,
@@ -2382,11 +2427,15 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 17a2. Modal dialogs (#1671): each traps Tab and Shift+Tab, closes on
   // Escape and hands focus back to the board. The board's own key handler
   // still sees their keys, so the number keys and Enter keep working.
-  const fixDialogOpen = !!validatingObs && playState === "playing";
+  // A pause (the player's, or the cabinet's when the app goes to the
+  // background) shows only the pause dialog; a fix or signature dialog that was
+  // open comes back on resume.
+  const fixDialogOpen = !!validatingObs && playState === "playing" && !isPaused;
   const signatureDialogOpen =
     signatureModal.isOpen &&
     !!signatureModal.subject &&
-    playState === "playing";
+    playState === "playing" &&
+    !isPaused;
   const pauseDialogOpen = isPaused && playState === "playing";
   const firstFixOptionRef = useRef<HTMLButtonElement | null>(null);
   const signButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -2403,7 +2452,22 @@ export const ClinicalTrialChaos: React.FC = () => {
   });
   const pauseDialogRef = useFocusTrap<HTMLDivElement>(pauseDialogOpen, {
     initialFocusRef: resumeButtonRef,
-    onEscape: togglePause,
+    onEscape: () => setShiftPaused(false),
+    returnFocusTo: containerRef,
+  });
+
+  // The touch cabinet turns the stress drawer into a sheet and traps focus in
+  // the inspection report too. Desktop keeps its non-modal drawer (#2105).
+  const stressSheetOpen = touchCabinet && isStressDrawerOpen;
+  const bimoDialogOpen = touchCabinet && !!bimoReport;
+  const closeReportButtonRef = useRef<HTMLButtonElement | null>(null);
+  const stressSheetRef = useFocusTrap<HTMLDivElement>(stressSheetOpen, {
+    onEscape: () => setIsStressDrawerOpen(false),
+    returnFocusTo: containerRef,
+  });
+  const bimoDialogRef = useFocusTrap<HTMLDivElement>(bimoDialogOpen, {
+    initialFocusRef: closeReportButtonRef,
+    onEscape: () => setBimoReport(null),
     returnFocusTo: containerRef,
   });
 
@@ -2427,6 +2491,8 @@ export const ClinicalTrialChaos: React.FC = () => {
     fixDialogOpen ||
     signatureDialogOpen ||
     pauseDialogOpen ||
+    stressSheetOpen ||
+    bimoDialogOpen ||
     !!inspectionRound;
   useEffect(() => {
     const board = containerRef.current;
@@ -2524,6 +2590,13 @@ export const ClinicalTrialChaos: React.FC = () => {
       return;
     }
 
+    // The touch cabinet's stress sheet covers the floor: Escape closes it and
+    // no other hotkey acts behind it (#2105).
+    if (touchCabinet && isStressDrawerOpen) {
+      if (key === "ESCAPE") setIsStressDrawerOpen(false);
+      return;
+    }
+
     if (playState !== "playing") {
       // Only when the board itself has focus: Enter/Space on a focused button
       // (office card, mode toggle) must activate that button, not start a shift.
@@ -2539,7 +2612,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       return;
     }
 
-    if (validatingObs) {
+    // A paused shift shows the pause dialog alone, whatever else was open.
+    if (validatingObs && !isPaused) {
       if (key === "ESCAPE") {
         setValidatingObs(null);
       } else if (!validatingObs.feedback?.isValid) {
@@ -2554,7 +2628,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       return;
     }
 
-    if (signatureModal.isOpen) {
+    if (signatureModal.isOpen && !isPaused) {
       if (key === "ESCAPE") {
         setSignatureModal((prev) => ({ ...prev, isOpen: false }));
       } else if (key === "ENTER") {
@@ -2573,7 +2647,18 @@ export const ClinicalTrialChaos: React.FC = () => {
       return;
     }
     // While paused only P, or Escape and Resume in the pause dialog, act.
-    if (isPaused) return;
+    if (isPaused) {
+      if (key === "ESCAPE") setShiftPaused(false);
+      return;
+    }
+
+    // The touch cabinet hands this key to the game while a shift runs, so a
+    // stray Escape from a keyboard case pauses the shift instead of closing the
+    // cabinet and losing it (#2105).
+    if (key === "ESCAPE" && touchCabinet) {
+      setShiftPaused(true);
+      return;
+    }
 
     // Enter performs the next step: fix the next flagged field, or route a clean CRF
     if (key === "ENTER" && activeSubject && e.target === e.currentTarget) {
@@ -3150,13 +3235,321 @@ export const ClinicalTrialChaos: React.FC = () => {
     gameOverReason
   );
 
+  // The stress panel's content, shared by the desktop drawer and the touch
+  // cabinet's sheet.
+  const stressDrawerBody = (
+    <>
+      {/* Drawer Header */}
+      <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+        <div className="flex items-center gap-2">
+          <IconBolt className="h-5 w-5 text-amber-400" />
+          <h2 id="cc-stress-title" className="text-sm font-bold text-zinc-100">
+            Stress Control & BIMO Stream
+          </h2>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsStressDrawerOpen(false)}
+          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+          aria-label="Close Stress Control Drawer"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto py-3 space-y-5 pr-1">
+        {/* 1. Stress Parameter Overrides & Presets */}
+        <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
+              ⚡ Stress Parameters
+            </h3>
+            <span className="text-[10px] text-zinc-400 font-mono">
+              21 CFR § 11 / § 812
+            </span>
+          </div>
+
+          {/* Presets */}
+          <div>
+            <label className="block text-[11px] font-medium text-zinc-400 mb-1.5">
+              Scenario Presets:
+            </label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {(Object.keys(STRESS_PRESETS) as StressPresetId[]).map((key) => {
+                const preset = STRESS_PRESETS[key];
+                const isActive =
+                  stressParams.arrivalRateMultiplier ===
+                    preset.params.arrivalRateMultiplier &&
+                  stressParams.errorChance === preset.params.errorChance &&
+                  stressParams.auditorPacingMultiplier ===
+                    preset.params.auditorPacingMultiplier;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setStressParams({ ...preset.params })}
+                    className={`min-h-[44px] rounded-lg px-2.5 py-1.5 text-left text-xs transition border ${
+                      isActive
+                        ? "border-amber-500 bg-amber-500/20 text-amber-200 font-bold"
+                        : "border-zinc-800 bg-zinc-800/50 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800"
+                    }`}
+                  >
+                    <div className="font-semibold">{preset.name}</div>
+                    <div className="text-[10px] text-zinc-400 line-clamp-1">
+                      {preset.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sliders */}
+          <div className="space-y-3 pt-2">
+            {/* Arrival Rate */}
+            <div>
+              <div className="flex justify-between text-xs font-medium mb-1">
+                <span className="text-zinc-300">Subject Arrival Rate</span>
+                <span className="tabular-nums text-amber-400 font-bold">
+                  {stressParams.arrivalRateMultiplier.toFixed(1)}x
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="3.0"
+                step="0.1"
+                value={stressParams.arrivalRateMultiplier}
+                onChange={(e) =>
+                  setStressParams((prev) => ({
+                    ...prev,
+                    arrivalRateMultiplier: parseFloat(e.target.value),
+                  }))
+                }
+                aria-label="Subject Arrival Rate Slider"
+                className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
+                <span>0.5x (Slow)</span>
+                <span>1.0x (Normal)</span>
+                <span>3.0x (Surge)</span>
+              </div>
+            </div>
+
+            {/* Error Chance */}
+            <div>
+              <div className="flex justify-between text-xs font-medium mb-1">
+                <span className="text-zinc-300">Observation Error Chance</span>
+                <span className="tabular-nums text-amber-400 font-bold">
+                  {Math.round(stressParams.errorChance * 100)}%
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1.0"
+                step="0.05"
+                value={stressParams.errorChance}
+                onChange={(e) =>
+                  setStressParams((prev) => ({
+                    ...prev,
+                    errorChance: parseFloat(e.target.value),
+                  }))
+                }
+                aria-label="Observation Error Chance Slider"
+                className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
+                <span>0% (Clean)</span>
+                <span>50% (Standard)</span>
+                <span>100% (High Error)</span>
+              </div>
+            </div>
+
+            {/* Auditor Pacing */}
+            <div>
+              <div className="flex justify-between text-xs font-medium mb-1">
+                <span className="text-zinc-300">Auditor Inspection Pacing</span>
+                <span className="tabular-nums text-amber-400 font-bold">
+                  {stressParams.auditorPacingMultiplier.toFixed(1)}x
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0.5"
+                max="3.0"
+                step="0.1"
+                value={stressParams.auditorPacingMultiplier}
+                onChange={(e) =>
+                  setStressParams((prev) => ({
+                    ...prev,
+                    auditorPacingMultiplier: parseFloat(e.target.value),
+                  }))
+                }
+                aria-label="Auditor Inspection Pacing Slider"
+                className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
+                <span>0.5x (Relaxed)</span>
+                <span>1.0x (Standard)</span>
+                <span>3.0x (Intense Patrol)</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 2. Live BIMO Compliance Stream */}
+        <section className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Live BIMO Stream
+            </h3>
+            <span className="text-[10px] tabular-nums font-mono text-zinc-400">
+              Score: {liveBimoReport.overallScore}%
+            </span>
+          </div>
+
+          {/* Score & Verdict Header */}
+          <div className="flex items-center justify-between rounded-lg bg-zinc-950 p-2.5 border border-zinc-800">
+            <div>
+              <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                Score &amp; Trend
+              </div>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-lg font-bold tabular-nums text-white">
+                  {liveBimoReport.overallScore}/100
+                </span>
+                <span
+                  className={`text-xs font-semibold flex items-center gap-0.5 ${
+                    scoreTrend === "improving"
+                      ? "text-emerald-400"
+                      : scoreTrend === "declining"
+                        ? "text-rose-400"
+                        : "text-zinc-400"
+                  }`}
+                >
+                  {scoreTrend === "improving" && "▲ Improving"}
+                  {scoreTrend === "declining" && "▼ Declining"}
+                  {scoreTrend === "stable" && "▶ Stable"}
+                </span>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
+                Verdict Status
+              </div>
+              <div
+                className={`text-xs font-bold mt-0.5 rounded px-2 py-0.5 inline-block ${
+                  liveBimoReport.verdict.startsWith("NAI")
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    : liveBimoReport.verdict.startsWith("VAI")
+                      ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                      : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                }`}
+              >
+                {liveBimoReport.verdict.split(" ")[0]}
+              </div>
+            </div>
+          </div>
+
+          {/* Warning Banner if threshold violations occur */}
+          {(liveBimoReport.verdict.startsWith("OAI") ||
+            liveBimoReport.findings.some((f) => f.severity === "Critical")) && (
+            <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 p-2.5 text-xs text-rose-200 flex items-start gap-2 animate-pulse">
+              <IconAlertTriangle className="h-5 w-5 shrink-0 text-rose-400 mt-0.5" />
+              <div>
+                <div className="font-bold text-rose-300">
+                  REGULATORY THRESHOLD VIOLATION
+                </div>
+                <div className="text-[11px] text-rose-200/80 mt-0.5">
+                  Corrective action needed now. Form 483 and clinical hold (21
+                  CFR § 312.42) risk elevated.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Findings Stream */}
+          <div>
+            <div className="text-[11px] font-semibold text-zinc-400 mb-2 flex justify-between">
+              <span>
+                Regulatory Findings ({liveBimoReport.findings.length}):
+              </span>
+              <span className="text-[10px] text-zinc-400">Live Feed</span>
+            </div>
+
+            {liveBimoReport.findings.length === 0 ? (
+              <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-center text-xs text-zinc-400">
+                <IconShieldCheck className="mx-auto h-5 w-5 text-emerald-400 mb-1" />
+                No regulatory violations detected. Site systems compliant.
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                {liveBimoReport.findings.map((f, i) => (
+                  <div
+                    key={f.id || i}
+                    className="rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 space-y-1 text-left"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-mono font-bold text-zinc-300">
+                        {f.id}
+                      </span>
+                      <span
+                        className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
+                          f.severity === "Critical"
+                            ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
+                            : f.severity === "Major"
+                              ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
+                              : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
+                        }`}
+                      >
+                        {f.severity}
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-300 leading-snug">
+                      {f.description}
+                    </p>
+                    <div className="text-[10px] text-amber-400/90 font-mono">
+                      📜 {f.regulation}
+                    </div>
+                    {f.actionableGuidance && (
+                      <div className="text-[10px] text-emerald-300/90 bg-emerald-950/40 border border-emerald-800/40 rounded p-1 mt-1">
+                        💡 <strong>Guidance:</strong> {f.actionableGuidance}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+    </>
+  );
+
+  // The touch cabinet leaves Escape to the game while a shift runs, a sheet is
+  // open or the inspection report is up: a dialog closes, the shift pauses,
+  // and the cabinet stays open. Elsewhere Escape leaves the cabinet (#2105).
+  const escapeHandledHere =
+    touchCabinet &&
+    (playState === "playing" || !!bimoReport || isStressDrawerOpen);
+
   return (
     <div
       ref={containerRef}
       data-keyboard-boundary="true"
+      data-escape-docks={escapeHandledHere ? "true" : undefined}
       tabIndex={0}
       onKeyDown={handleKeyDown}
       className={`@container relative w-full font-mono focus:outline-none transition-all ${
+        touchCabinet ? "cc-touch " : ""
+      }${
         isFullscreen
           ? "fixed inset-0 z-50 w-full h-[100dvh] max-h-[100dvh] max-w-none rounded-none border-none bg-[#0d0e11] p-3 sm:p-4 overflow-y-auto select-none"
           : "rounded-2xl border border-white/[0.08] bg-[#0d0e11] p-2.5 sm:p-4 focus-visible:ring-1 focus-visible:ring-amber-500/50"
@@ -3175,7 +3568,11 @@ export const ClinicalTrialChaos: React.FC = () => {
       <h2 id="clinical-chaos-heading" className="sr-only">
         Clinical Trial Chaos: CDISC Compliance
       </h2>
-      <div className="flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-2 text-xs">
+      <div
+        className={`flex flex-wrap items-center gap-2 border-b border-zinc-800 pb-2 text-xs${
+          touchCabinet ? " cc-hud" : ""
+        }`}
+      >
         <div className="relative flex min-h-[44px] items-center gap-2 rounded-lg border border-zinc-800 bg-[#13151a] px-2.5 sm:px-3">
           <IconTrophy className="h-4 w-4 text-amber-400" aria-hidden="true" />
           <span className="sr-only text-[10px] uppercase text-zinc-400 sm:not-sr-only">
@@ -3332,7 +3729,11 @@ export const ClinicalTrialChaos: React.FC = () => {
       </div>
 
       {/* View switcher */}
-      <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+      <div
+        className={`mt-2 flex flex-wrap items-center justify-between gap-2${
+          touchCabinet ? " cc-tabs" : ""
+        }`}
+      >
         <div className="flex gap-1 overflow-x-auto" aria-label="Game views">
           {(
             [
@@ -3462,10 +3863,18 @@ export const ClinicalTrialChaos: React.FC = () => {
         <div
           className={`mt-2 grid grid-cols-1 gap-3 ${
             playState !== "idle" ? "@3xl:grid-cols-[minmax(0,1fr)_15.5rem]" : ""
-          }`}
+          }${touchCabinet ? ` cc-floor cc-floor-${playState}` : ""}`}
         >
-          <div className="flex min-w-0 flex-col gap-2">
-            <div className="mx-auto w-full max-w-[56rem]">
+          <div
+            className={`flex min-w-0 flex-col gap-2${
+              touchCabinet ? " cc-main" : ""
+            }`}
+          >
+            <div
+              className={`mx-auto w-full max-w-[56rem]${
+                touchCabinet ? " cc-stage" : ""
+              }`}
+            >
               <div
                 ref={fxStageRef}
                 className="relative isolate overflow-hidden rounded-xl border border-white/[0.08] bg-[#0d0e11]"
@@ -3673,7 +4082,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                 />
 
                 {playState === "playing" && sponsor.activeRequest && (
-                  <div className="absolute inset-x-2 top-2 hidden max-h-[calc(100%-1rem)] overflow-y-auto rounded-xl bg-[#13151a] shadow-2xl @3xl:block">
+                  <div
+                    className={`absolute inset-x-2 top-2 max-h-[calc(100%-1rem)] overflow-y-auto rounded-xl bg-[#13151a] shadow-2xl ${
+                      touchCabinet ? "block" : "hidden @3xl:block"
+                    }`}
+                  >
                     {renderSponsorEmailCard(true)}
                   </div>
                 )}
@@ -3713,8 +4126,9 @@ export const ClinicalTrialChaos: React.FC = () => {
                 )}
               </div>
 
-              {/* Station strip: one button per chute, lined up under it. */}
-              {playState === "playing" && (
+              {/* Station strip: one button per chute, lined up under it. The
+                  touch cabinet has the same keys in its dock instead. */}
+              {playState === "playing" && !touchCabinet && (
                 <section aria-label="EDC stations" className="relative mt-1.5">
                   <h3 className="sr-only">
                     Route to station, keys 1 to {sortedStations.length}
@@ -3844,7 +4258,7 @@ export const ClinicalTrialChaos: React.FC = () => {
             {amendmentRulesBanner}
 
             {/* Narrow cabinets: the urgent sponsor email sits above the work */}
-            {playState === "playing" && sponsorEmailCard && (
+            {playState === "playing" && sponsorEmailCard && !touchCabinet && (
               <div className="@3xl:hidden">{sponsorEmailCard}</div>
             )}
 
@@ -4715,7 +5129,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                 </section>
               )}
 
-              {playState === "playing" && (
+              {playState === "playing" && !touchCabinet && (
                 <section
                   aria-label="Lifelines"
                   className="rounded-xl border border-white/[0.08] bg-[#13151a] p-2.5"
@@ -4832,9 +5246,45 @@ export const ClinicalTrialChaos: React.FC = () => {
         </div>
       )}
 
+      {/* The touch cabinet's dock: a key per station and per lifeline, at the
+          thumbs' edge of the screen (#2105). */}
+      {touchCabinet && activeTab === "conveyor" && playState === "playing" && (
+        <div className="cc-dock-wrap">
+          {routingNotice &&
+            routingNotice.subjectId === activeSubject?.id &&
+            routingNotice.unresolvedCount ===
+              routingReadiness.unresolvedCount && (
+              <p
+                className={`cc-notice rounded-lg border px-2.5 py-2 text-xs shadow-xl ${
+                  routingNotice.unresolvedCount > 0
+                    ? "border-amber-500/50 bg-[#1f1a10] text-amber-200"
+                    : "border-rose-500/60 bg-[#221214] text-rose-200"
+                }`}
+              >
+                {routingNotice.message}
+              </p>
+            )}
+          <ChaosTouchDock
+            stations={sortedStations}
+            activeSubject={activeSubject}
+            matchingDomains={routingReadiness.matchingDomains}
+            readyToRoute={flowStep === 2}
+            flashStationId={flashStationId}
+            watchedStationId={watchedStationId}
+            powerUps={powerUps}
+            onRoute={handleInitiateSubmission}
+            onLifeline={triggerPowerUp}
+          />
+        </div>
+      )}
+
       {/* TAB 2: Live CDISC SDTM Studio & Dataset Inspector */}
       {activeTab === "sdtm_studio" && (
-        <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4">
+        <div
+          className={`mt-4 rounded-xl border border-zinc-800 bg-zinc-900/80 p-4${
+            touchCabinet ? " cc-panel" : ""
+          }`}
+        >
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3 mb-4">
             <div>
               <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -4975,7 +5425,11 @@ export const ClinicalTrialChaos: React.FC = () => {
 
       {/* TAB 3: Audit Trail Log Tab */}
       {activeTab === "audit_trail" && (
-        <div className="mt-4 rounded-xl border border-zinc-800 bg-black/90 p-4">
+        <div
+          className={`mt-4 rounded-xl border border-zinc-800 bg-black/90 p-4${
+            touchCabinet ? " cc-panel" : ""
+          }`}
+        >
           <div className="flex items-center justify-between border-b border-zinc-900 pb-2 mb-3 text-xs text-zinc-400">
             <div className="flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -5069,7 +5523,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       )}
 
       {/* Multi-Choice Regulatory Validation Drawer Modal */}
-      {validatingObs && playState === "playing" && (
+      {validatingObs && playState === "playing" && !isPaused && (
         <div
           data-cc-modal="true"
           className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4"
@@ -5216,7 +5670,8 @@ export const ClinicalTrialChaos: React.FC = () => {
       {/* 21 CFR Part 11 Electronic Signature Modal */}
       {signatureModal.isOpen &&
         signatureModal.subject &&
-        playState === "playing" && (
+        playState === "playing" &&
+        !isPaused && (
           <div
             data-cc-modal="true"
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 sm:backdrop-blur-sm"
@@ -5404,8 +5859,12 @@ export const ClinicalTrialChaos: React.FC = () => {
 
       {/* FDA BIMO Inspection Report Modal */}
       {bimoReport && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div
+          data-cc-modal={touchCabinet ? "true" : undefined}
+          className="fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+        >
           <div
+            ref={bimoDialogRef}
             role="dialog"
             aria-modal="true"
             aria-labelledby="cc-report-dialog-title"
@@ -5643,6 +6102,7 @@ export const ClinicalTrialChaos: React.FC = () => {
                 </button>
               </div>
               <button
+                ref={closeReportButtonRef}
                 onClick={() => setBimoReport(null)}
                 className="min-h-[44px] px-5 py-2 rounded-xl bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider hover:bg-emerald-400 transition"
               >
@@ -5678,312 +6138,39 @@ export const ClinicalTrialChaos: React.FC = () => {
       )}
 
       {/* Interactive Stress Control Panel & Live BIMO Stream Drawer */}
-      {isStressDrawerOpen && (
+      {isStressDrawerOpen && !touchCabinet && (
         <aside
           aria-label="Interactive Stress Control Panel and Live BIMO Stream"
           className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-zinc-800 bg-zinc-950/95 p-4 text-zinc-100 backdrop-blur-md shadow-2xl transition-all sm:w-96"
         >
-          {/* Drawer Header */}
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-            <div className="flex items-center gap-2">
-              <IconBolt className="h-5 w-5 text-amber-400" />
-              <h2 className="text-sm font-bold text-zinc-100">
-                Stress Control & BIMO Stream
-              </h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsStressDrawerOpen(false)}
-              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg p-1 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-              aria-label="Close Stress Control Drawer"
-            >
-              ✕
-            </button>
-          </div>
-
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto py-3 space-y-5 pr-1">
-            {/* 1. Stress Parameter Overrides & Presets */}
-            <section className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-amber-400">
-                  ⚡ Stress Parameters
-                </h3>
-                <span className="text-[10px] text-zinc-400 font-mono">
-                  21 CFR § 11 / § 812
-                </span>
-              </div>
-
-              {/* Presets */}
-              <div>
-                <label className="block text-[11px] font-medium text-zinc-400 mb-1.5">
-                  Scenario Presets:
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  {(Object.keys(STRESS_PRESETS) as StressPresetId[]).map(
-                    (key) => {
-                      const preset = STRESS_PRESETS[key];
-                      const isActive =
-                        stressParams.arrivalRateMultiplier ===
-                          preset.params.arrivalRateMultiplier &&
-                        stressParams.errorChance ===
-                          preset.params.errorChance &&
-                        stressParams.auditorPacingMultiplier ===
-                          preset.params.auditorPacingMultiplier;
-                      return (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => setStressParams({ ...preset.params })}
-                          className={`min-h-[44px] rounded-lg px-2.5 py-1.5 text-left text-xs transition border ${
-                            isActive
-                              ? "border-amber-500 bg-amber-500/20 text-amber-200 font-bold"
-                              : "border-zinc-800 bg-zinc-800/50 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800"
-                          }`}
-                        >
-                          <div className="font-semibold">{preset.name}</div>
-                          <div className="text-[10px] text-zinc-400 line-clamp-1">
-                            {preset.description}
-                          </div>
-                        </button>
-                      );
-                    }
-                  )}
-                </div>
-              </div>
-
-              {/* Sliders */}
-              <div className="space-y-3 pt-2">
-                {/* Arrival Rate */}
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-zinc-300">Subject Arrival Rate</span>
-                    <span className="tabular-nums text-amber-400 font-bold">
-                      {stressParams.arrivalRateMultiplier.toFixed(1)}x
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="3.0"
-                    step="0.1"
-                    value={stressParams.arrivalRateMultiplier}
-                    onChange={(e) =>
-                      setStressParams((prev) => ({
-                        ...prev,
-                        arrivalRateMultiplier: parseFloat(e.target.value),
-                      }))
-                    }
-                    aria-label="Subject Arrival Rate Slider"
-                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
-                    <span>0.5x (Slow)</span>
-                    <span>1.0x (Normal)</span>
-                    <span>3.0x (Surge)</span>
-                  </div>
-                </div>
-
-                {/* Error Chance */}
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-zinc-300">
-                      Observation Error Chance
-                    </span>
-                    <span className="tabular-nums text-amber-400 font-bold">
-                      {Math.round(stressParams.errorChance * 100)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1.0"
-                    step="0.05"
-                    value={stressParams.errorChance}
-                    onChange={(e) =>
-                      setStressParams((prev) => ({
-                        ...prev,
-                        errorChance: parseFloat(e.target.value),
-                      }))
-                    }
-                    aria-label="Observation Error Chance Slider"
-                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
-                    <span>0% (Clean)</span>
-                    <span>50% (Standard)</span>
-                    <span>100% (High Error)</span>
-                  </div>
-                </div>
-
-                {/* Auditor Pacing */}
-                <div>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-zinc-300">
-                      Auditor Inspection Pacing
-                    </span>
-                    <span className="tabular-nums text-amber-400 font-bold">
-                      {stressParams.auditorPacingMultiplier.toFixed(1)}x
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0.5"
-                    max="3.0"
-                    step="0.1"
-                    value={stressParams.auditorPacingMultiplier}
-                    onChange={(e) =>
-                      setStressParams((prev) => ({
-                        ...prev,
-                        auditorPacingMultiplier: parseFloat(e.target.value),
-                      }))
-                    }
-                    aria-label="Auditor Inspection Pacing Slider"
-                    className="w-full accent-amber-500 h-1.5 bg-zinc-800 rounded-lg cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-zinc-400 mt-0.5">
-                    <span>0.5x (Relaxed)</span>
-                    <span>1.0x (Standard)</span>
-                    <span>3.0x (Intense Patrol)</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* 2. Live BIMO Compliance Stream */}
-            <section className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-900/60 p-3.5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                  </span>
-                  Live BIMO Stream
-                </h3>
-                <span className="text-[10px] tabular-nums font-mono text-zinc-400">
-                  Score: {liveBimoReport.overallScore}%
-                </span>
-              </div>
-
-              {/* Score & Verdict Header */}
-              <div className="flex items-center justify-between rounded-lg bg-zinc-950 p-2.5 border border-zinc-800">
-                <div>
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                    Score &amp; Trend
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-lg font-bold tabular-nums text-white">
-                      {liveBimoReport.overallScore}/100
-                    </span>
-                    <span
-                      className={`text-xs font-semibold flex items-center gap-0.5 ${
-                        scoreTrend === "improving"
-                          ? "text-emerald-400"
-                          : scoreTrend === "declining"
-                            ? "text-rose-400"
-                            : "text-zinc-400"
-                      }`}
-                    >
-                      {scoreTrend === "improving" && "▲ Improving"}
-                      {scoreTrend === "declining" && "▼ Declining"}
-                      {scoreTrend === "stable" && "▶ Stable"}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-right">
-                  <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                    Verdict Status
-                  </div>
-                  <div
-                    className={`text-xs font-bold mt-0.5 rounded px-2 py-0.5 inline-block ${
-                      liveBimoReport.verdict.startsWith("NAI")
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                        : liveBimoReport.verdict.startsWith("VAI")
-                          ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                          : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                    }`}
-                  >
-                    {liveBimoReport.verdict.split(" ")[0]}
-                  </div>
-                </div>
-              </div>
-
-              {/* Warning Banner if threshold violations occur */}
-              {(liveBimoReport.verdict.startsWith("OAI") ||
-                liveBimoReport.findings.some(
-                  (f) => f.severity === "Critical"
-                )) && (
-                <div className="rounded-lg border border-rose-500/40 bg-rose-950/40 p-2.5 text-xs text-rose-200 flex items-start gap-2 animate-pulse">
-                  <IconAlertTriangle className="h-5 w-5 shrink-0 text-rose-400 mt-0.5" />
-                  <div>
-                    <div className="font-bold text-rose-300">
-                      REGULATORY THRESHOLD VIOLATION
-                    </div>
-                    <div className="text-[11px] text-rose-200/80 mt-0.5">
-                      Corrective action needed now. Form 483 and clinical hold
-                      (21 CFR § 312.42) risk elevated.
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Findings Stream */}
-              <div>
-                <div className="text-[11px] font-semibold text-zinc-400 mb-2 flex justify-between">
-                  <span>
-                    Regulatory Findings ({liveBimoReport.findings.length}):
-                  </span>
-                  <span className="text-[10px] text-zinc-400">Live Feed</span>
-                </div>
-
-                {liveBimoReport.findings.length === 0 ? (
-                  <div className="rounded-lg border border-zinc-800 bg-zinc-950 p-3 text-center text-xs text-zinc-400">
-                    <IconShieldCheck className="mx-auto h-5 w-5 text-emerald-400 mb-1" />
-                    No regulatory violations detected. Site systems compliant.
-                  </div>
-                ) : (
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {liveBimoReport.findings.map((f, i) => (
-                      <div
-                        key={f.id || i}
-                        className="rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 space-y-1 text-left"
-                      >
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-mono font-bold text-zinc-300">
-                            {f.id}
-                          </span>
-                          <span
-                            className={`rounded px-1.5 py-0.2 text-[10px] font-semibold ${
-                              f.severity === "Critical"
-                                ? "bg-rose-500/20 text-rose-300 border border-rose-500/30"
-                                : f.severity === "Major"
-                                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                                  : "bg-blue-500/20 text-blue-300 border border-blue-500/30"
-                            }`}
-                          >
-                            {f.severity}
-                          </span>
-                        </div>
-                        <p className="text-xs text-zinc-300 leading-snug">
-                          {f.description}
-                        </p>
-                        <div className="text-[10px] text-amber-400/90 font-mono">
-                          📜 {f.regulation}
-                        </div>
-                        {f.actionableGuidance && (
-                          <div className="text-[10px] text-emerald-300/90 bg-emerald-950/40 border border-emerald-800/40 rounded p-1 mt-1">
-                            💡 <strong>Guidance:</strong> {f.actionableGuidance}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
-          </div>
+          {stressDrawerBody}
         </aside>
+      )}
+
+      {/* On the touch cabinet the same panel is a sheet: a bottom sheet held
+          upright, a side sheet beside the floor held sideways (#2105). */}
+      {isStressDrawerOpen && touchCabinet && (
+        <div
+          data-cc-modal="true"
+          data-testid="cc-stress-sheet-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setIsStressDrawerOpen(false);
+            }
+          }}
+          className="cc-sheet-backdrop"
+        >
+          <div
+            ref={stressSheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cc-stress-title"
+            data-testid="cc-stress-sheet"
+            className="cc-sheet flex flex-col border border-zinc-800 bg-zinc-950 p-4 text-zinc-100 shadow-2xl"
+          >
+            {stressDrawerBody}
+          </div>
+        </div>
       )}
     </div>
   );

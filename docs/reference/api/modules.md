@@ -353,6 +353,7 @@
 - [lib/quasi-perfect/sandbox](lib/quasi-perfect/sandbox/README.md)
 - [lib/quasi-perfect/tactics](lib/quasi-perfect/tactics/README.md)
 - [lib/quasi-perfect/types](lib/quasi-perfect/types/README.md)
+- [lib/quasi-perfect/variants](lib/quasi-perfect/variants/README.md)
 - [lib/redis](lib/redis/README.md)
 - [lib/retro-labyrinth](lib/retro-labyrinth/README.md)
 - [lib/retro-labyrinth/engine](lib/retro-labyrinth/engine/README.md)

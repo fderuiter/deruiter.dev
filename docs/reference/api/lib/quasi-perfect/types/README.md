@@ -23,5 +23,6 @@
 
 - [GameMode](type-aliases/GameMode.md)
 - [NodeType](type-aliases/NodeType.md)
+- [PuzzlerVariantKind](type-aliases/PuzzlerVariantKind.md)
 - [TacticFunction](type-aliases/TacticFunction.md)
 - [TacticId](type-aliases/TacticId.md)

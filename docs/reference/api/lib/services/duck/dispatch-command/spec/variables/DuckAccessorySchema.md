@@ -6,4 +6,4 @@
 
 # Variable: DuckAccessorySchema
 
-> `const` **DuckAccessorySchema**: `ZodEnum`\<\{ `bandana`: `"bandana"`; `bowtie`: `"bowtie"`; `bucket-hat`: `"bucket-hat"`; `none`: `"none"`; `rain-boots`: `"rain-boots"`; \}\>
+> `const` **DuckAccessorySchema**: `ZodEnum`\<\{ `bandana`: `"bandana"`; `bowtie`: `"bowtie"`; `bucket-hat`: `"bucket-hat"`; `graduation-hat`: `"graduation-hat"`; `none`: `"none"`; `rain-boots`: `"rain-boots"`; \}\>

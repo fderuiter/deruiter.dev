@@ -9,6 +9,7 @@ export const DuckAccessorySchema = z.enum([
   "bowtie",
   "bandana",
   "rain-boots",
+  "graduation-hat",
 ]);
 
 export const DuckCommandInputSchema = z.discriminatedUnion("type", [

@@ -1234,6 +1234,39 @@ function accessory(
     ctx.restore();
     return;
   }
+  if (kind === "graduation-hat") {
+    // Golden Graduation hat: a gold mortarboard with an amber tassel.
+    const [hx, hy] = anchors.head;
+    ctx.save();
+    ctx.translate(hx, hy - 12);
+    ctx.fillStyle = "#d97706";
+    ctx.strokeStyle = "#92400e";
+    ctx.lineWidth = 1;
+    roundRect(ctx, -7, -3, 14, 7, 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#fbbf24";
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.lineTo(15, -4);
+    ctx.lineTo(0, 2);
+    ctx.lineTo(-15, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(10, -2);
+    ctx.lineTo(10, 6);
+    ctx.stroke();
+    ctx.fillStyle = "#f59e0b";
+    ellipse(ctx, 10, 7, 1.8, 2.4);
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
   const [nx, ny] = anchors.neck;
   if (kind === "bowtie") {
     ctx.save();

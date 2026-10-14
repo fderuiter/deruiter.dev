@@ -68,6 +68,14 @@
 
 ***
 
+### bestStars
+
+> **bestStars**: [`DuckBestStars`](../type-aliases/DuckBestStars.md)
+
+Best stars per campaign sprint, carried across sprints and sessions.
+
+***
+
 ### bladder
 
 > **bladder**: `number`
@@ -391,6 +399,22 @@ Sprint tick from which the Dog Park can be opened again (#1942).
 ### soundCueQueue
 
 > **soundCueQueue**: [`SoundCue`](../type-aliases/SoundCue.md)[]
+
+***
+
+### sprintAccidents
+
+> **sprintAccidents**: `number`
+
+Indoor accidents (potty countdowns that ran out) this sprint.
+
+***
+
+### sprintStars
+
+> **sprintStars**: [`DuckSprintStars`](DuckSprintStars.md) \| `null`
+
+Stars from the sprint just cleared; null until a campaign win.
 
 ***
 

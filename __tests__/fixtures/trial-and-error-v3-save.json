@@ -1,0 +1,3478 @@
+{
+  "save": {
+    "version": 3,
+    "actId": "biostat-ops-campaign",
+    "savedAt": "2026-10-01T00:00:00.000Z",
+    "seed": "e2e-4",
+    "actions": [
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.1.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "ALLOCATE",
+        "cardId": "C-T14.1.3",
+        "population": "ITT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.1.1-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-DM-03@r1c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-DM-02@r2c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-DM-01@r2c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-DM-01@r3c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-DM-01@r4c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.1.1-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-DM-02@r2c0"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.1.1-C"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.1.3"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.1-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.1-B"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.1-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.3"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "PICK_PACK_CARD",
+        "cardId": "SITE-305"
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "RESOLVE_CRISIS",
+        "choiceId": "footnote"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.1.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.4"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.1-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.2-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.7"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.3-C"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-01@r0c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-01@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-01@r2c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-01@r3c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-01@r4c1"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-C"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-02@r2c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.5-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-04@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-04@r1c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.6-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-02@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-AE-04@r1c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "APPLY_SEAL",
+        "consumableId": "FN-ADJUDICATED@demographics-small-blind",
+        "cardId": "C-T14.3.3-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.3-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.5-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-B"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "RESOLVE_CRISIS",
+        "choiceId": "freeze"
+      },
+      {
+        "type": "ALLOCATE",
+        "cardId": "C-T14.1.3",
+        "population": "SAFETY"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.1.1"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.3"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.7"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.1-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.4-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.2-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-01@r0c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-01@r1c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-01@r2c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-01@r3c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.5-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-02@r2c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.6-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-02@r1c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.3-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-04@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-SAF-04@r1c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "APPLY_SEAL",
+        "consumableId": "FN-DATA-CUTOFF@CR-DB-MIGRATION",
+        "cardId": "C-T14.3.2.1-B"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.1-B"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.2-B"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.5-B"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.6-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.3-A"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "PICK_PACK_CARD",
+        "cardId": "REL-GRID-ALLOCATION"
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-02@r1c0"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-02@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-02@r1c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-02@r2c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-02@r4c1"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.3-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.3-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-01@r0c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-01@r1c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-01@r2c2"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-01@r3c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-B"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.3.3"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "AT_RISK@PLACEBOt8"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.3.1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "CENSOR_TICK@ACTIVE"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.3-A"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.3.3"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.3.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.3-A"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "PICK_PACK_CARD",
+        "cardId": "SITE-305"
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "RESOLVE_CRISIS",
+        "choiceId": "handover"
+      },
+      {
+        "type": "STRUCTURAL_QC",
+        "cardId": "C-T14.3.3-C"
+      },
+      {
+        "type": "STRUCTURAL_QC",
+        "cardId": "C-T14.3.1-C"
+      },
+      {
+        "type": "SET_SESSION",
+        "session": "CLOSED"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.3-C"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P2-02@r1c1"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-C"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-POOLED-A"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.3.3"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "AT_RISK@PLACEBOt8"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.3.1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "CENSOR_TICK@ACTIVE"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.3-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.3.3"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-C"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.3.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-POOLED-A"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "PICK_PACK_CARD",
+        "cardId": "GUIDE-ICH-E2A"
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "RESOLVE_CRISIS",
+        "choiceId": "report"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.8"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.1.1"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-E"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "FDA-IR-02@r1c1"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.3-E"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.1-E"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.5-E"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "FDA-IR-04@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "FDA-IR-04@r1c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.2-E"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.3.1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "PARENT_AT_RISK@PLACEBO"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "CENSOR_TICK@ACTIVE"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "PARENT_AT_RISK@ACTIVE"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.3.3"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "AT_RISK@PLACEBOt8"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "PARENT_AT_RISK@PLACEBO"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "PARENT_AT_RISK@ACTIVE"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-E"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.3.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.3-E"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.3.3"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.5-E"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "PICK_PACK_CARD",
+        "cardId": "GUIDE-FDA-TCG"
+      },
+      {
+        "type": "SKIP_PACK"
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "ALLOCATE",
+        "cardId": "T-14.3.1-LIB@shop-5-0",
+        "population": "SAFETY"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "T-14.3.1-LIB@shop-5-0"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.2.1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "AT_RISK@ACTIVEt4"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.2.1-DRY"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.2.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.2.4"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.2.2-DRY"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "T-14.3.1-LIB@shop-5-0"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.4"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.1"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.2-POOLED-F"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-POOLED-F"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.5-POOLED-F"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P3-04@r1c0"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.3-POOLED-F"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "TRACE_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P3-04@r1c0"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.7"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.5-POOLED-F"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.3-POOLED-F"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.8"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      },
+      {
+        "type": "RESOLVE_CRISIS",
+        "choiceId": "document"
+      },
+      {
+        "type": "ALLOCATE",
+        "cardId": "T-14.3.1-LIB@shop-5-0",
+        "population": "SAFETY"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.1.2"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.2.7"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-L16.1.1"
+      },
+      {
+        "type": "DISCARD"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "T-14.3.1-LIB@shop-5-0"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.1-G"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 4,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P3-02@r1c1"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-T14.3.2.2-G"
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 0,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 1,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 2,
+        "col": 2
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 0
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 1
+      },
+      {
+        "type": "INSPECT_CELL",
+        "row": 3,
+        "col": 2
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P3-04@r1c1"
+      },
+      {
+        "type": "CORRECT_FINDING",
+        "findingId": "SAP-P3-04@r1c2"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "INSPECT_CARD",
+        "cardId": "C-F14.2.1"
+      },
+      {
+        "type": "CLOSE_INSPECT"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.2.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.2.1"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-F14.2.4"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.1-G"
+      },
+      {
+        "type": "TOGGLE_SELECT",
+        "cardId": "C-T14.3.2.2-G"
+      },
+      {
+        "type": "PLAY_HAND"
+      },
+      {
+        "type": "CASH_OUT"
+      },
+      {
+        "type": "BUY_PACK",
+        "slot": 0
+      },
+      {
+        "type": "PICK_PACK_CARD",
+        "cardId": "AMD-ROUNDING-TIES"
+      },
+      {
+        "type": "SKIP_PACK"
+      },
+      {
+        "type": "BUY",
+        "slot": 0
+      },
+      {
+        "type": "REROLL"
+      },
+      {
+        "type": "BUY",
+        "slot": 1
+      },
+      {
+        "type": "NEXT_BLIND"
+      }
+    ]
+  },
+  "stock": [
+    ["GUIDE-ICH-E3", "REL-SENIOR-PROGRAMMER"],
+    ["GUIDE-ICH-E3", "REL-SENIOR-PROGRAMMER"],
+    ["T-14.3.1-LIB", "GUIDE-SDTM-IG"],
+    ["T-14.3.1-LIB", "GUIDE-SDTM-IG"],
+    ["FN-DATA-CUTOFF", "AMD-ROUNDING-TIES"],
+    ["FN-DATA-CUTOFF", "AMD-ROUNDING-TIES"],
+    ["GUIDE-ICH-E9", "REL-SENIOR-MEDICAL-WRITER"],
+    ["GUIDE-ICH-E9", "REL-SENIOR-MEDICAL-WRITER"],
+    ["REL-BIOSTAT-LEAD", "GUIDE-ADAM-IG"],
+    ["REL-BIOSTAT-LEAD", "GUIDE-ADAM-IG"],
+    ["T-14.3.1-LIB", "GUIDE-ICH-E3"],
+    ["T-14.3.1-LIB", "GUIDE-ICH-E3"],
+    ["REL-SENIOR-PROGRAMMER", "GUIDE-ICH-E2A"],
+    ["REL-SENIOR-PROGRAMMER", "GUIDE-ICH-E2A"],
+    ["GUIDE-ICH-E9", "GUIDE-ADAM-IG"],
+    ["GUIDE-ADAM-IG", "REL-PROTOCOL-OPTIMIZATION-SOP"]
+  ],
+  "blinds": [
+    {
+      "scenarioId": "sponsor-safety-big-blind",
+      "budget": 0,
+      "relics": []
+    },
+    {
+      "scenarioId": "dose-escalation-boss-blind",
+      "budget": 1,
+      "relics": []
+    },
+    {
+      "scenarioId": "phase-two-internal-qc-small-blind",
+      "budget": 0,
+      "relics": ["REL-GRID-ALLOCATION"]
+    },
+    {
+      "scenarioId": "dmc-open-session-big-blind",
+      "budget": 0,
+      "relics": ["REL-GRID-ALLOCATION"]
+    },
+    {
+      "scenarioId": "fda-information-request-boss-blind",
+      "budget": 3,
+      "relics": ["REL-GRID-ALLOCATION"]
+    },
+    {
+      "scenarioId": "blinded-data-review-small-blind",
+      "budget": 0,
+      "relics": ["REL-GRID-ALLOCATION"]
+    },
+    {
+      "scenarioId": "sponsor-topline-big-blind",
+      "budget": 3,
+      "relics": ["REL-GRID-ALLOCATION"]
+    },
+    {
+      "scenarioId": "csr-lock-boss-blind",
+      "budget": 3,
+      "relics": ["REL-GRID-ALLOCATION"]
+    }
+  ]
+}

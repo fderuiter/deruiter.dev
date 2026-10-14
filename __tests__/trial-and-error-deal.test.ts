@@ -249,14 +249,15 @@ describe("a run deals each Blind from its seed", () => {
 
 describe("saves and the deal (#2055)", () => {
   it("writes the current version, and records a written-order run's dealing", () => {
-    // v3 (#2082) added the run deck on top of v2's shuffle.
-    expect(RUN_SAVE_VERSION).toBe(3);
+    // v3 (#2082) added the run deck on top of v2's shuffle, and v4 (#2083)
+    // a shop per act.
+    expect(RUN_SAVE_VERSION).toBe(4);
     const json = serializeRun(
       { actId: BIG_ONLY.id, seed: "alpha", dealing: "AUTHORED", actions: [] },
       SAVED_AT
     );
     expect(RunSaveSchema.parse(JSON.parse(json))).toMatchObject({
-      version: 3,
+      version: 4,
       dealing: "AUTHORED",
     });
     const shuffled = serializeRun(
@@ -283,14 +284,17 @@ describe("saves and the deal (#2055)", () => {
     expect(restored?.log.dealing).toBe("AUTHORED");
     expect(restored?.run.dealing).toBe("AUTHORED");
     expect(restored?.run.table.handsPlayed).toBe(1);
-    // It migrates on through v3 (#2082), keeping its authored decks too.
+    // It migrates on through v3 (#2082) and v4 (#2083), keeping its
+    // authored decks and its classic shop too.
     expect(restored?.log.decks).toBe("AUTHORED");
+    expect(restored?.log.shops).toBe("CLASSIC");
     expect(restored?.run).toEqual(
       replayRun(BIG_ONLY, {
         actId: BIG_ONLY.id,
         seed: "alpha",
         dealing: "AUTHORED",
         decks: "AUTHORED",
+        shops: "CLASSIC",
         actions: [...actions],
       })
     );

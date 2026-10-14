@@ -13,7 +13,13 @@ import type {
 import { HandTypeSchema, SponsorIdSchema, StakeSchema } from "../types";
 import { GUIDANCE_CARDS } from "./guidance";
 import { HAND_BASE_SCORES, HAND_EXAMPLES, HAND_NAMES } from "./hands";
-import { RELIC_PHASE_LABELS, relicPhase } from "./relics";
+import {
+  RELIC_PHASE_LABELS,
+  RELIC_RARITY_LABELS,
+  describeRelicTrigger,
+  relicPhase,
+  relicRarity,
+} from "./relics";
 import {
   advanceRun,
   createRunState,
@@ -473,10 +479,14 @@ export function summarizeRun(
   log: RunLog,
   endedOn?: string
 ): RunHistoryEntry | null {
-  let run = createRunState(plan, log.seed, {
-    sponsorId: log.sponsorId,
-    stake: log.stake,
-  });
+  let run = createRunState(
+    plan,
+    log.seed,
+    { sponsorId: log.sponsorId, stake: log.stake },
+    log.dealing ?? "SHUFFLED",
+    log.decks ?? "RUN",
+    log.shops ?? "PER_ACT"
+  );
   let best: RunHistoryEntry["bestHand"] = null;
   const consider = (state: RunState) => {
     const play = state.table.lastPlay;
@@ -571,12 +581,13 @@ function sealEffect(seal: FootnoteSeal): string {
 
 function relicEntry(relic: Relic): CatalogEntry {
   const phase = RELIC_PHASE_LABELS[relicPhase(relic)];
+  const rarity = RELIC_RARITY_LABELS[relicRarity(relic)];
   return {
     id: relic.id,
     name: relic.name,
-    teaser: `An SOP relic. Trigger: ${phase}.`,
+    teaser: `An SOP relic (${rarity.toLowerCase()}). Trigger: ${phase}.`,
     description: relic.description,
-    flavor: `Trigger: ${phase}.`,
+    flavor: `${rarity}. Trigger: ${phase}. ${describeRelicTrigger(relic)}`,
   };
 }
 

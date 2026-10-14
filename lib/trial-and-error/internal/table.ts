@@ -95,6 +95,7 @@ import {
   freeDiscards,
   relicModifiers,
   type RelicCard,
+  type RelicCounts,
 } from "./relics";
 import {
   applyTransition,
@@ -242,6 +243,11 @@ export interface Inventory {
   campaign?: CampaignRecord[];
   /** SAP Amendments the run has used, in order (#1086). */
   sapAmendments?: SapAmendment[];
+  /**
+   * The run's act, from 0 (#2083), which ON_BLIND_START relics that grow
+   * each act read. Absent means the first.
+   */
+  act?: number;
 }
 
 /** One output in a locked package, as the audit summary records it. */
@@ -436,6 +442,11 @@ export interface TableState {
   answered: string[];
   /** SOP relics the run has earned; each scores in every hand. */
   relics: Relic[];
+  /**
+   * Redlines corrected this Blind (#2083), which scaling relics count.
+   * Absent means none.
+   */
+  redlinesFixed?: number;
   /** The relic taken as this Blind's encounter reward, once taken. */
   rewardClaimed: string | null;
   /** Trial sites the run has activated; each adds its Chips to every hand. */
@@ -2249,6 +2260,19 @@ function isQcPassed(
   return qcPassed(review, false, review.openFindings.length);
 }
 
+/** What scaling relics count as the Blind stands now (#2083). */
+function relicCounts(scenario: Scenario, state: TableState): RelicCounts {
+  return {
+    staleInHand: state.hand.filter((id) => {
+      const card = cardById(scenario, state, id);
+      return card !== undefined && isStale(scenario, state, card);
+    }).length,
+    redlinesFixed: state.redlinesFixed ?? 0,
+    discards: state.discards,
+    handsPlayed: state.handsPlayed,
+  };
+}
+
 function scoreCards(
   scenario: Scenario,
   state: TableState,
@@ -2377,7 +2401,11 @@ function scoreCards(
     cards: cards.map((c) => ({ id: c.id, chips: c.chips, mult: c.mult })),
     ruleResults,
     modifiers: [
-      ...relicModifiers(state.relics, { cards: relicCards, ruleResults }),
+      ...relicModifiers(state.relics, {
+        cards: relicCards,
+        ruleResults,
+        counts: relicCounts(scenario, state),
+      }),
       ...state.sites.map((s) => s.modifier),
     ],
     level: state.handLevels[handType].level,
@@ -2499,7 +2527,8 @@ export function createTableState(
       {
         type: "REPLENISH",
         available:
-          scenario.table.startingCpu + blindStartCpu(inventory.relics ?? []),
+          scenario.table.startingCpu +
+          blindStartCpu(inventory.relics ?? [], inventory.act ?? 0),
       }
     ),
     roundScore: 0,
@@ -2567,6 +2596,9 @@ export function carriedInventory(state: TableState): Inventory {
     enrollments: state.enrollments,
     campaign: state.campaign,
     sapAmendments: state.sapAmendments,
+    ...(state.opening.inventory.act !== undefined && {
+      act: state.opening.inventory.act,
+    }),
   };
 }
 
@@ -2578,7 +2610,7 @@ function freeDiscardNow(state: TableState): boolean {
 /** The ON_DISCARD relics that make a discard free, by name. */
 function freeDiscardSources(state: TableState): string {
   return state.relics
-    .filter((r) => r.trigger?.phase === "ON_DISCARD")
+    .filter((r) => freeDiscards([r]) > 0)
     .map((r) => r.name)
     .join(", ");
 }
@@ -3765,6 +3797,7 @@ function applyTableAction(
         const next = {
           ...state,
           inspections: { ...state.inspections, [card.id]: inspection },
+          redlinesFixed: (state.redlinesFixed ?? 0) + 1,
         };
         const status = figureStatus(scenario, next, card) as FigureStatus;
         return {
@@ -3788,8 +3821,13 @@ function applyTableAction(
           : correctFinding(report, current, action.findingId);
       if (!outcome.ok) return refuse(state, outcome.message);
       const resolved = new Set(outcome.inspection.resolvedFindingIds);
+      const fixed =
+        resolved.size - new Set(current?.resolvedFindingIds ?? []).size;
       return {
         ...state,
+        ...(fixed > 0 && {
+          redlinesFixed: (state.redlinesFixed ?? 0) + fixed,
+        }),
         inspections: { ...state.inspections, [card.id]: outcome.inspection },
         auditLog: state.auditLog.map((e) =>
           e.cardId === card.id && !e.superseded
@@ -4394,7 +4432,10 @@ export function deriveTableView(
     discardFree,
     cpuAllocation:
       scenario.table.startingCpu +
-      blindStartCpu(state.opening.inventory.relics ?? []),
+      blindStartCpu(
+        state.opening.inventory.relics ?? [],
+        state.opening.inventory.act ?? 0
+      ),
     firewall,
     auditLog: state.auditLog,
     figureInspection,

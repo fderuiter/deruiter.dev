@@ -2,6 +2,7 @@ import type {
   BlindTier,
   Pack,
   PopulationTransition,
+  RelicRarity,
   SapRulebook,
   ShopCatalog,
   ShopEntry,
@@ -152,6 +153,54 @@ export function drawDistinct<T>(
   while (items.length < count && remaining.length > 0) {
     const pick = drawInt(shopSeed(seed), next, remaining.length);
     items.push(remaining.splice(pick, 1)[0]);
+    next += 1;
+  }
+  return { items, next };
+}
+
+/**
+ * How often the shop draws a relic of each rarity (#2083), relative to the
+ * others: a common six times as often as a rare. Every item that is not a
+ * relic draws as a common.
+ */
+export const RARITY_WEIGHTS: Readonly<Record<RelicRarity, number>> =
+  Object.freeze({ COMMON: 6, UNCOMMON: 3, RARE: 1 });
+
+/** How heavily an entry weighs in the shop's draw (#2083). */
+export function entryWeight(entry: ShopEntry): number {
+  return RARITY_WEIGHTS[
+    entry.kind === "RELIC" ? (entry.relic.rarity ?? "COMMON") : "COMMON"
+  ];
+}
+
+/**
+ * Draws up to `count` distinct items from `pool` without replacement on the
+ * shop stream, each in proportion to its `weight`, starting at `drawIndex`
+ * (#2083). Consumes one draw per item taken, like `drawDistinct`, so the
+ * same seed and pool give the same items.
+ */
+export function drawWeighted<T>(
+  seed: string,
+  drawIndex: number,
+  pool: readonly T[],
+  count: number,
+  weight: (item: T) => number
+): { items: T[]; next: number } {
+  const remaining = pool.map((item) => ({
+    item,
+    weight: Math.max(1, Math.trunc(weight(item))),
+  }));
+  const items: T[] = [];
+  let next = drawIndex;
+  while (items.length < count && remaining.length > 0) {
+    const total = remaining.reduce((sum, r) => sum + r.weight, 0);
+    let pick = drawInt(shopSeed(seed), next, total);
+    let at = 0;
+    while (pick >= remaining[at].weight) {
+      pick -= remaining[at].weight;
+      at += 1;
+    }
+    items.push(remaining.splice(at, 1)[0].item);
     next += 1;
   }
   return { items, next };

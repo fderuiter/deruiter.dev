@@ -20,6 +20,7 @@ import {
   recordRun,
   runBlinds,
   serializeCodex,
+  shopEntryId,
   summarizeRun,
   type Act,
   type Codex,
@@ -184,8 +185,10 @@ describe("Codex discoveries", () => {
     const cards = opened.shop!.opened!.cards;
     expect(cards.length).toBeGreaterThan(0);
     const after = recordDiscoveries(emptyCodex(), act, opened, REF);
+    // A pack card the shop slots also stock was seen in the shop first.
+    const stocked = new Set(shop.shop!.slots.map((s) => shopEntryId(s.entry)));
     for (const card of cards) {
-      if (card.kind !== "ENTRY") continue;
+      if (card.kind !== "ENTRY" || stocked.has(card.id)) continue;
       const entry = card.entry;
       if (entry.kind === "RELIC") {
         expect(after.discovered.RELIC[entry.relic.id].via).toBe("PACK");

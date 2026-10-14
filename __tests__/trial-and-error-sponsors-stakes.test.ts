@@ -367,9 +367,10 @@ describe("restarts, saves and replays", () => {
   });
 
   it("an older save without a choice still loads as the default", () => {
-    // A v1 save predates the seeded shuffle (#2055) and the run deck
-    // (#2082): it deals its authored decks in written order.
-    const run = createRunState(C, "old", {}, "AUTHORED", "AUTHORED");
+    // A v1 save predates the seeded shuffle (#2055), the run deck (#2082)
+    // and per-act shops (#2083): it deals its authored decks in written
+    // order and stocks the classic shop.
+    const run = createRunState(C, "old", {}, "AUTHORED", "AUTHORED", "CLASSIC");
     const json = JSON.stringify({
       version: 1,
       actId: C.id,
@@ -384,12 +385,13 @@ describe("restarts, saves and replays", () => {
       seed: "old",
       dealing: "AUTHORED",
       decks: "AUTHORED",
+      shops: "CLASSIC",
       actions: [],
     });
     // And a default log serializes without the optional fields.
     expect(
       serializeRun({ actId: C.id, seed: "old", actions: [] }, SAVED_AT)
-    ).toBe(JSON.stringify({ ...JSON.parse(json), version: 3 }));
+    ).toBe(JSON.stringify({ ...JSON.parse(json), version: 4 }));
   });
 
   it("a save records the choice and resumes under it", () => {

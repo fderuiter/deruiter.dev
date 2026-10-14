@@ -681,21 +681,54 @@ export const RelicPhaseSchema = z.enum([
 export type RelicPhase = z.infer<typeof RelicPhaseSchema>;
 
 /**
+ * What a scaling relic counts (#2083), each something the player controls
+ * this Blind: outputs in hand gone stale, redlines corrected, or hands
+ * already played.
+ */
+export const RelicScaleSchema = z.enum([
+  "STALE_IN_HAND",
+  "REDLINES_FIXED",
+  "HANDS_PLAYED",
+]);
+/** What a scaling relic counts. */
+export type RelicScale = z.infer<typeof RelicScaleSchema>;
+
+/**
+ * How rare an SOP relic is (#2083). The shop draws commons most often and
+ * rares least, and a rare costs more.
+ */
+export const RelicRaritySchema = z.enum(["COMMON", "UNCOMMON", "RARE"]);
+/** How rare an SOP relic is. */
+export type RelicRarity = z.infer<typeof RelicRaritySchema>;
+
+/**
+ * The least a shop may charge for a relic of each rarity (#2083), in $k, so
+ * a rarer relic always costs at least as much as any common's floor.
+ */
+export const RELIC_RARITY_MIN_PRICE: Readonly<Record<RelicRarity, number>> =
+  Object.freeze({ COMMON: 3, UNCOMMON: 6, RARE: 8 });
+
+/**
  * When and on what an SOP relic fires (#924). A relic never overrides the
  * SAP: it adds to a hand's score, or eases an action's CPU cost, and every
  * rule result, redline and zero-score rule still stands.
  *
  * - ON_HAND_PLAYED: its modifier joins the hand, optionally only when the
- *   hand holds a Figure or carries no redline.
+ *   hand holds a Figure or carries no redline. With `scale` (#2083) it joins
+ *   once per thing counted, and not at all at zero.
  * - ON_CARD_SCORED: its modifier joins once for each scored card that
  *   matches, or, with `retrigger`, the card's own Chips and +Mult score again.
  * - ON_DISCARD: the Blind's first `freeDiscards` discards cost no base CPU.
- * - ON_BLIND_START: each Blind starts with `cpu` more CPU.
+ *   With `stacks` (#2083), each discard made this Blind adds its modifier
+ *   once more to every hand played after it.
+ * - ON_BLIND_START: each Blind starts with `cpu` more CPU, and `cpuPerAct`
+ *   (#2083) more again for each act the run has reached past the first.
  */
 export const RelicTriggerSchema = z.discriminatedUnion("phase", [
   z.object({
     phase: z.literal("ON_HAND_PLAYED"),
     requires: z.enum(["FIGURE_IN_HAND", "NO_REDLINES"]).optional(),
+    scale: RelicScaleSchema.optional(),
   }),
   z.object({
     phase: z.literal("ON_CARD_SCORED"),
@@ -707,11 +740,13 @@ export const RelicTriggerSchema = z.discriminatedUnion("phase", [
   }),
   z.object({
     phase: z.literal("ON_DISCARD"),
-    freeDiscards: z.number().int().positive(),
+    freeDiscards: z.number().int().positive().optional(),
+    stacks: z.boolean().optional(),
   }),
   z.object({
     phase: z.literal("ON_BLIND_START"),
     cpu: z.number().int().positive(),
+    cpuPerAct: z.number().int().positive().optional(),
   }),
 ]);
 /** When and on what an SOP relic fires. */
@@ -720,14 +755,31 @@ export type RelicTrigger = z.infer<typeof RelicTriggerSchema>;
 /**
  * An SOP relic: a person or tool on the team that the run keeps once
  * earned. Without a trigger its modifier joins every later hand's scoring.
+ * Without a rarity it draws as a common.
  */
-export const RelicSchema = z.object({
-  id: identifier,
-  name: z.string().min(1).max(60),
-  description: z.string().min(1).max(200),
-  modifier: ScoreModifierSchema,
-  trigger: RelicTriggerSchema.optional(),
-});
+export const RelicSchema = z
+  .object({
+    id: identifier,
+    name: z.string().min(1).max(60),
+    description: z.string().min(1).max(200),
+    modifier: ScoreModifierSchema,
+    trigger: RelicTriggerSchema.optional(),
+    rarity: RelicRaritySchema.optional(),
+  })
+  .superRefine((relic, ctx) => {
+    const trigger = relic.trigger;
+    if (
+      trigger?.phase === "ON_DISCARD" &&
+      trigger.freeDiscards === undefined &&
+      !trigger.stacks
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["trigger"],
+        message: "An ON_DISCARD relic frees discards or stacks on them",
+      });
+    }
+  });
 /** An SOP relic. */
 export type Relic = z.infer<typeof RelicSchema>;
 
@@ -1300,6 +1352,16 @@ export const ShopCatalogSchema = z
     };
     catalog.entries.forEach((entry, i) => {
       unique(shopEntryId(entry), ["entries", i]);
+      if (
+        entry.kind === "RELIC" &&
+        entry.price < RELIC_RARITY_MIN_PRICE[entry.relic.rarity ?? "COMMON"]
+      ) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["entries", i, "price"],
+          message: `A ${(entry.relic.rarity ?? "COMMON").toLowerCase()} relic costs at least $${RELIC_RARITY_MIN_PRICE[entry.relic.rarity ?? "COMMON"]}k`,
+        });
+      }
       if (
         entry.kind === "SHELL" &&
         (entry.shell.cardType !== "TABLE" || !entry.shell.layout)
@@ -2054,9 +2116,11 @@ export const RunActionSchema = z.discriminatedUnion("type", [
 /**
  * The save format's current version. v2 (#2055) shuffles each Blind's deck;
  * a v1 save migrates to v2 with `dealing: "AUTHORED"`. v3 (#2082) adds the
- * run deck; a v2 save migrates to v3 with `decks: "AUTHORED"`.
+ * run deck; a v2 save migrates to v3 with `decks: "AUTHORED"`. v4 (#2083)
+ * gives each act its own shop and draws relics by rarity; a v3 save
+ * migrates to v4 with `shops: "CLASSIC"`.
  */
-export const RUN_SAVE_VERSION = 3;
+export const RUN_SAVE_VERSION = 4;
 
 /**
  * A saved run (#1079): the act, the seed and every move since the run
@@ -2082,6 +2146,13 @@ export const RunSaveSchema = z.object({
    * the moves were made. Absent means a run with a run deck.
    */
   decks: z.literal("AUTHORED").optional(),
+  /**
+   * CLASSIC for a run first saved before each act had its own shop (#2083):
+   * every act stocks the one catalog all acts shared, drawn evenly, as it
+   * did when the moves were made. Absent means a shop per act, drawn by
+   * rarity.
+   */
+  shops: z.literal("CLASSIC").optional(),
   actions: z.array(RunActionSchema).max(5000),
   /**
    * How the seed was chosen (#1528). Optional, so saves from before it load

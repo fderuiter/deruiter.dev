@@ -6,15 +6,21 @@
 
 # Function: blindStartCpu()
 
-> **blindStartCpu**(`relics`): `number`
+> **blindStartCpu**(`relics`, `act?`): `number`
 
-Extra CPU each Blind starts with, from ON_BLIND_START relics.
+Extra CPU each Blind starts with, from ON_BLIND_START relics. `act` is the
+run's act, from 0: a relic with `cpuPerAct` adds that much more per act
+past the first.
 
 ## Parameters
 
 ### relics
 
 readonly `object`[]
+
+### act?
+
+`number` = `0`
 
 ## Returns
 

@@ -1,4 +1,10 @@
-import type { AreaId, Phase, StudyState, TeamRole } from "@/lib/study-director";
+import type {
+  AreaId,
+  Difficulty,
+  Phase,
+  StudyState,
+  TeamRole,
+} from "@/lib/study-director";
 
 /** Minutes after midnight the working day starts. */
 export const DAY_START = 8 * 60;
@@ -361,6 +367,8 @@ export interface HudReadout {
   budget: { spent: number; total: number };
   timeline: { day: number; total: number; slipDays: number };
   enrollment: { enrolled: number; target: number };
+  /** How hard the study started (#2058). A save from before has none: standard. */
+  difficulty: Difficulty;
 }
 
 /** The checks a site visit can include (#1690). Each costs time. */

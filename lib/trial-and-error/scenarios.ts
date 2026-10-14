@@ -495,12 +495,22 @@ export const DEMOGRAPHICS_SCENARIO: Scenario = {
   blind: {
     tier: "SMALL_BLIND",
     name: "Small Blind: Internal QC",
-    quota: 450,
+    quota: 2000,
   },
   handType: "HIGH_TABLE",
   startingCpu: 6,
   table: { startingCpu: 10, handSize: 8, maxSelection: 5 },
   deck: DEMOGRAPHICS_DECK,
+  // The review this Blind teaches: the three drafts of Table 14.1.1, their
+  // supporting listing and the disposition table are always in the opening
+  // hand. The rest of the deck is shuffled.
+  pinned: [
+    "C-T14.1.1-A",
+    "C-L16.2.4",
+    "C-T14.1.2",
+    "C-T14.1.1-B",
+    "C-T14.1.1-C",
+  ],
   rulebook: {
     id: "SAP-DM-001",
     title: "SAP §9.1 Demographics and Baseline Characteristics",
@@ -609,6 +619,20 @@ const GUIDED_DRAFT = demographicsDraft("T-14.1.1-G", "Guided draft (v0.1)", [
   ...DEMOGRAPHICS_CLEAN.slice(2),
 ]);
 
+/** The guided Blind's fixed five-card hand. */
+const GUIDED_DECK: TlfCard[] = [
+  {
+    ...demographicsCard("A"),
+    id: "C-T14.1.1-G",
+    title: "Demographics (Guided)",
+    draftId: GUIDED_DRAFT.id,
+  },
+  DM_LISTING,
+  DISPOSITION,
+  AE_LISTING,
+  SAE_LISTING,
+];
+
 /**
  * The guided first Blind (#1089): a fixed five-card hand with no crisis, no
  * draws and no shop. The Table and its Listing make a TLF Pair, and the
@@ -630,18 +654,9 @@ export const GUIDED_BLIND_SCENARIO: Scenario = {
     quota: 400,
   },
   table: { startingCpu: 10, handSize: 5, maxSelection: 5 },
-  deck: [
-    {
-      ...demographicsCard("A"),
-      id: "C-T14.1.1-G",
-      title: "Demographics (Guided)",
-      draftId: GUIDED_DRAFT.id,
-    },
-    DM_LISTING,
-    DISPOSITION,
-    AE_LISTING,
-    SAE_LISTING,
-  ],
+  deck: GUIDED_DECK,
+  // The coach marks walk this exact hand: a run never shuffles it.
+  pinned: GUIDED_DECK.map((card) => card.id),
   consumables: [],
   drawPile: [GUIDED_DRAFT],
 };
@@ -1100,7 +1115,7 @@ export const SPONSOR_SAFETY_SCENARIO: Scenario = {
   blind: {
     tier: "BIG_BLIND",
     name: "Big Blind: Sponsor Safety Review",
-    quota: 7500,
+    quota: 4500,
   },
   handType: "HIGH_TABLE",
   startingCpu: 6,
@@ -1229,7 +1244,7 @@ export const DOSE_ESCALATION_SCENARIO: Scenario = {
   blind: {
     tier: "BOSS_BLIND",
     name: "Boss Blind: Dose Escalation Committee",
-    quota: 8500,
+    quota: 5800,
   },
   boss: {
     id: "DEC-SAFETY-ONLY",
@@ -1881,6 +1896,21 @@ export const DMC_RELICS: Relic[] = [
   },
 ];
 
+/** The DMC milestone deck, dealt in this order. */
+const DMC_MILESTONE_DECK: TlfCard[] = [
+  DEMOGRAPHICS_FINAL,
+  DM_LISTING,
+  pick(DMC.cards, "overview-D"),
+  DISPOSITION,
+  pick(DMC.cards, "sae-D"),
+  kmSae("C-T14.3.3-D"),
+  AE_LISTING,
+  pick(DMC.cards, "nervous-D"),
+  kmDiscontinuation("C-T14.3.1-D"),
+  DISCONTINUED_LISTING,
+  SAE_LISTING,
+];
+
 /**
  * Boss Blind: the Data Monitoring Committee's milestone review, a staged
  * encounter under the DMC firewall. Stage 1 is the blinded study team's open
@@ -1914,21 +1944,13 @@ export const DMC_MILESTONE_SCENARIO: Scenario & { encounter: DmcDefense } = {
   handType: "HIGH_TABLE",
   startingCpu: 6,
   table: { startingCpu: 16, handSize: 8, maxSelection: 5 },
-  deck: [
-    DEMOGRAPHICS_FINAL,
-    DM_LISTING,
-    pick(DMC.cards, "overview-D"),
-    DISPOSITION,
-    pick(DMC.cards, "sae-D"),
-    kmSae("C-T14.3.3-D"),
-    AE_LISTING,
-    pick(DMC.cards, "nervous-D"),
-    kmDiscontinuation("C-T14.3.1-D"),
-    DISCONTINUED_LISTING,
-    SAE_LISTING,
-  ],
+  deck: DMC_MILESTONE_DECK,
   rulebook: DMC_RULEBOOK,
   populationSnapshot: POPULATION_SNAPSHOT,
+  // The encounter is scripted: the open report's outputs, then the closed
+  // report's Efficacy Full House (three by-arm Tables and the two Figures
+  // drawn from them), deal in written order whatever the seed.
+  pinned: DMC_MILESTONE_DECK.map((card) => card.id),
   shells: DMC_SHELLS,
   drawPile: DMC.drawPile,
   dmc: { charter: "DMC Charter §7 (closed-session procedures)" },
@@ -2035,6 +2057,9 @@ export const FDA_IR_SCENARIO: Scenario & { encounter: FdaIr } = {
   ],
   rulebook: FDA_IR_RULEBOOK,
   populationSnapshot: POPULATION_SNAPSHOT,
+  // Each question's output, and the Table its figure is drawn from, is
+  // always in the opening hand; the rest of the deck is shuffled.
+  pinned: ["C-T14.3.1-E", "C-F14.3.1", "C-T14.3.3-E"],
   shells: FDA_IR.shells,
   drawPile: FDA_IR.drawPile,
   encounter: {
@@ -2141,11 +2166,14 @@ export const PHASE_II_QC_SCENARIO: Scenario = {
   blind: {
     tier: "SMALL_BLIND",
     name: "Small Blind: Phase II Internal QC",
-    quota: 16000,
+    quota: 8000,
   },
   handType: "HIGH_TABLE",
   startingCpu: 6,
   table: { startingCpu: 10, handSize: 8, maxSelection: 5 },
+  // The Kaplan-Meier figures arrive with their parent Tables: those four
+  // are always in the opening hand, and the rest of the deck is shuffled.
+  pinned: ["C-T14.3.1-A", "C-T14.3.3-A", "C-F14.3.3", "C-F14.3.1"],
   deck: [
     pick(INTERNAL_QC.cards, "overview-A"),
     AE_LISTING,
@@ -2228,11 +2256,14 @@ export const DMC_OPEN_SESSION_SCENARIO: Scenario = {
   blind: {
     tier: "BIG_BLIND",
     name: "Big Blind: DMC Open Session",
-    quota: 11000,
+    quota: 9500,
   },
   handType: "HIGH_TABLE",
   startingCpu: 6,
   table: { startingCpu: 12, handSize: 8, maxSelection: 5 },
+  // The closed report's by-arm Tables and their Kaplan-Meier figures are
+  // always in the opening hand, and the rest of the deck is shuffled.
+  pinned: ["C-T14.3.3-C", "C-F14.3.3", "C-T14.3.1-C", "C-F14.3.1"],
   deck: [
     pick(OPEN_REPORT.cards, "overview-A"),
     AE_LISTING,
@@ -2686,11 +2717,14 @@ export const BLINDED_DATA_REVIEW_SCENARIO: Scenario = {
   blind: {
     tier: "SMALL_BLIND",
     name: "Small Blind: Blinded Data Review",
-    quota: 15000,
+    quota: 13000,
   },
   handType: "HIGH_TABLE",
   startingCpu: 6,
   table: { startingCpu: 10, handSize: 8, maxSelection: 5 },
+  // The dry-run primary Table and the two Figures drawn from it are always
+  // in the opening hand, so a Full House can be built on any seed.
+  pinned: ["C-T14.2.1-DRY", "C-F14.2.1", "C-F14.2.4"],
   deck: [
     pick(BLINDED_REVIEW.cards, "overview-F"),
     AE_LISTING,
@@ -2753,11 +2787,14 @@ export const SPONSOR_TOPLINE_SCENARIO: Scenario = {
   blind: {
     tier: "BIG_BLIND",
     name: "Big Blind: Sponsor Topline Review",
-    quota: 17000,
+    quota: 15000,
   },
   handType: "HIGH_TABLE",
   startingCpu: 6,
   table: { startingCpu: 12, handSize: 8, maxSelection: 5 },
+  // The primary Table and the two Figures drawn from it are always in the
+  // opening hand, so a Full House can be built on any seed.
+  pinned: ["C-T14.2.1", "C-F14.2.1", "C-F14.2.4"],
   deck: [
     efficacyPrimary("C-T14.2.1", "Time to Symptom Resolution"),
     pick(TOPLINE.cards, "overview-G"),
@@ -2859,6 +2896,17 @@ export const CSR_LOCK_SCENARIO: Scenario = {
   ],
   rulebook: PHASE_III_RULEBOOK,
   populationSnapshot: POPULATION_SNAPSHOT,
+  // The package's CSR Straight, with both Safety AE candidates (the clean
+  // overview and the carried-over SAE table), is always in the opening hand,
+  // so the one submission can be made on any seed. The rest is shuffled.
+  pinned: [
+    "C-T14.1.2",
+    "C-T14.1.1",
+    "C-T14.2.1",
+    "C-T14.3.3-H",
+    "C-L16.2.7",
+    "C-T14.3.1-H",
+  ],
   shells: LOCK_PACKAGE.shells,
   drawPile: LOCK_PACKAGE.drawPile,
   encounter: { kind: "CSR_LOCK", packageName: "CSR v2.0" },

@@ -13,7 +13,14 @@ import {
   type Scenario,
 } from "@/lib/trial-and-error";
 
-const scenario = DEMOGRAPHICS_SCENARIO;
+/**
+ * The QC Desk plays one staged draft per hand, so it keeps the Small Blind's
+ * original 450 quota: the Card Table's 2000 (#2055) takes a Population Flush.
+ */
+const scenario: Scenario = {
+  ...DEMOGRAPHICS_SCENARIO,
+  blind: { ...DEMOGRAPHICS_SCENARIO.blind, quota: 450 },
+};
 
 function run(
   actions: DeskAction[],

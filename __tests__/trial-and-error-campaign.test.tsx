@@ -18,6 +18,7 @@ import {
   type Campaign,
   type Scenario,
 } from "@/lib/trial-and-error";
+import { authoredPlan } from "./utils/trial-and-error-authored";
 
 vi.mock("@/hooks/useAnnouncer", () => ({
   useAnnouncer: () => ({ announce: vi.fn() }),
@@ -130,7 +131,7 @@ describe("moving between studies on the card table (#924)", () => {
   };
 
   it("names the next study, shows its act card, then plays it", async () => {
-    render(<CardTable act={MINI} seed="alpha" />);
+    render(<CardTable act={authoredPlan(MINI)} seed="alpha" />);
     expect(screen.queryByTestId("act-intro")).toBeNull();
     expect(screen.getByText(/Act I: Phase I Safety · Blind 1 of/)).toBeTruthy();
 

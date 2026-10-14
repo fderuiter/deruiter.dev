@@ -294,6 +294,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Wardrobe Unlocks",
       },
       {
+        title: "Endless Quarters",
+        detail:
+          "Endless mode runs in quarters. Every 120 work units a new quarter starts (Q1, Q2, Q3...): the meters fill faster, impulses come sooner, and one hazard joins for the rest of the run. Q2 brings more frequent surprises, Q3 tracks mud in after every potty trip (a muddy Duck slows work until bathed), and Q4 sets Duck chewing faster, power cable first. The run ends at a time-out and scores 1,000 per quarter survived plus the work done, with its own endless best.",
+        badge: "Endless",
+      },
+      {
+        title: "Puppy Hiccups",
+        detail:
+          "From sprint 2, and in endless mode, Duck can catch the hiccups for four seconds. A trick called mid-hic slips and breaks the combo; call it in the gap between hics and it lands as normal.",
+        badge: "Surprise",
+      },
+      {
         title: "Polaroid Scrapbook",
         detail:
           "Capturing key milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",
@@ -1293,6 +1305,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "The SDTM checklist needs 110 VS rows, 6 MH rows, no open queries, no fabricated debt and intact traces. The ADaM checklist needs 20 orthostatic rows with NOT EVALUABLE visits handled honestly and no stale derivations.",
         badge: "Lock",
       },
+      {
+        title: "Efficiency against par",
+        detail:
+          "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
+        badge: "Par",
+      },
     ],
     proTips: [
       "Add the regex split before Site A's narrative entry arrives on Day 7.",
@@ -1476,7 +1494,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Three acts, nine Blinds, one run",
         detail:
-          "Each Blind has its own SAP, deck and target, and its CPU refills at the start of each Blind (unspent CPU does not carry over). Clearing a Blind moves you to the next; failing one ends the run, and Restart run starts again from Act I's Small Blind.",
+          "Each Blind has its own SAP, deck and target, and its CPU refills at the start of each Blind (unspent CPU does not carry over). The run seed shuffles each Blind's deck, so the same seed deals the same cards; the few outputs a Blind is built around are always in its opening hand. Clearing a Blind moves you to the next; failing one ends the run, and Restart run starts again from Act I's Small Blind.",
         badge: "Campaign",
       },
       {
@@ -1612,7 +1630,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "FAS and ITT are different populations here; the Total column is where a denominator slip hides.",
       "In the safety Blinds, FAS and Per-Protocol drop S-008, the subject who stopped for atrial fibrillation. An N of 5 in the Active column is the tell.",
       "A Two Pair of the AE overview and the SAE table, each with its listing, is the Big Blind's workhorse.",
-      "Data keeps moving during the sponsor review. If your Safety drafts go stale, sending them back to programming (discard) is cheaper than recompiling each one, and the reruns at the bottom of the deck arrive current.",
+      "Data keeps moving during the sponsor review. If your Safety drafts go stale, sending them back to programming (discard) is cheaper than recompiling each one, and fresh draws arrive compiled against the new snapshot.",
       "Trace every flagged cell of a Table before you play it with its Listing. One unresolved trace and the pair loses its ×2.",
       "Reconcile a Kaplan–Meier Figure before you build a Full House around it. Each open discrepancy costs Mult, and only a reconciled Figure doubles it.",
       "Run structural QC on every face-down output before you convene the closed session. One peek costs the next hand its whole score.",

@@ -6,7 +6,7 @@
 
 # Function: createRunState()
 
-> **createRunState**(`authored`, `seed?`, `options?`): [`RunState`](../interfaces/RunState.md)
+> **createRunState**(`authored`, `seed?`, `options?`, `dealing?`): [`RunState`](../interfaces/RunState.md)
 
 A fresh run for `seed`: the first act's Boss drawn from its pool, and the
 first Blind dealt with full CPU. The first Blind draws no crisis. A later
@@ -17,6 +17,9 @@ exactly as the act does on its own.
 Biotech at stake 1, leave the run exactly as it plays without them. The
 sponsor's starting kit is in the first table, and the choice is kept on
 the run, which records only what differs from the defaults.
+
+`dealing` is SHUFFLED unless a save from before #2055 is being replayed:
+then AUTHORED deals every Blind in its written order, as it was recorded.
 
 ## Parameters
 
@@ -31,6 +34,10 @@ the run, which records only what differs from the defaults.
 ### options?
 
 `Partial`\<[`RunChoice`](../../run-rules/interfaces/RunChoice.md)\> = `{}`
+
+### dealing?
+
+[`DeckDealing`](../../deal/type-aliases/DeckDealing.md) = `"SHUFFLED"`
 
 ## Returns
 

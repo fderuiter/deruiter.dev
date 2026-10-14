@@ -428,9 +428,23 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
       "Lock the database and earn all three preventative badges without fabricating data.",
     icon: "Trophy",
     category: "mastery",
-    targetScore: 400,
+    // A milestone since #2054: efficiency points can pass the old 400 mark
+    // without all three badges.
+    milestone: "all_badges",
     conditionDescription:
       "Earn every Protocol Drift preventative badge at lock",
+  },
+  {
+    id: "protocol_drift_lean_lock",
+    gameId: "protocol-drift",
+    title: "Lean Pipeline",
+    subtitle: "Protocol Drift",
+    description:
+      "Lock the database with a live pipeline at or under the par chip count.",
+    icon: "Cpu",
+    category: "milestone",
+    milestone: "lock_under_par_chips",
+    conditionDescription: "Lock Protocol Drift with no more chips than par",
   },
 
   // Retro Labyrinth

@@ -213,6 +213,7 @@ describe("Trial & Error runtime schemas", () => {
     const [first, second] = DEMOGRAPHICS_SCENARIO.deck;
     const broken = ScenarioSchema.safeParse({
       ...DEMOGRAPHICS_SCENARIO,
+      pinned: undefined,
       deck: [
         first,
         { ...second, id: first.id, draftId: "T-99-MISSING", face: undefined },

@@ -93,6 +93,8 @@ import { buildScorecard } from "./scorecard";
 export interface ProtocolDriftEngineOptions {
   seed?: number;
   scenario?: ScenarioId;
+  /** Rejected commands to start from, as a restored save carries them. */
+  rejectedCommands?: number;
 }
 
 /** A running Protocol Drift simulation. */
@@ -131,6 +133,24 @@ const LOGGED_EXCLUDED = new Set<PDCommand["type"]>([
   "EXPORT_SAVE",
   "EXPORT_DATASETS",
 ]);
+
+/**
+ * Rejections the scorecard does not count (#2054): clock ticks the UI sends
+ * on its own, exports and resets are not the architect's pipeline decisions.
+ */
+const UNCOUNTED_REJECTIONS = new Set<PDCommand["type"]>([
+  "INIT",
+  "TICK",
+  "EXPORT_SAVE",
+  "EXPORT_DATASETS",
+]);
+
+/** A carried-over rejection count, or 0 when it is not a whole number. */
+function rejectionCount(value: unknown): number {
+  return typeof value === "number" && Number.isInteger(value) && value >= 0
+    ? value
+    : 0;
+}
 
 class Engine implements ProtocolDriftEngine {
   private seed: number;
@@ -179,23 +199,29 @@ class Engine implements ProtocolDriftEngine {
   private sleuthResolved = false;
   private lastLockAudit: LockAuditResult | null = null;
   private lockedAtMinute: number | null = null;
+  private rejectedCount = 0;
   private log: PDCommand[] = [];
   private events: PDWorkerEvent[] = [];
 
-  constructor(seed: number, scenario: ScenarioId) {
+  constructor(seed: number, scenario: ScenarioId, rejectedCommands = 0) {
     this.seed = seed;
     this.scenario = scenario;
-    this.reset(seed, scenario);
+    this.reset(seed, scenario, rejectedCommands);
   }
 
   // -------------------------------------------------------------------------
   // Setup
   // -------------------------------------------------------------------------
 
-  private reset(seed: number, scenario: ScenarioId): void {
+  private reset(
+    seed: number,
+    scenario: ScenarioId,
+    rejectedCommands?: number
+  ): void {
     Object.assign(this, new Engine.Blank());
     this.seed = seed;
     this.scenario = scenario;
+    this.rejectedCount = rejectionCount(rejectedCommands);
     for (const id of SITE_IDS) {
       const profile = SITE_PROFILES[id];
       this.sites[id] = {
@@ -313,6 +339,7 @@ class Engine implements ProtocolDriftEngine {
     sleuthResolved = false;
     lastLockAudit: LockAuditResult | null = null;
     lockedAtMinute: number | null = null;
+    rejectedCount = 0;
     log: PDCommand[] = [];
   };
 
@@ -332,6 +359,7 @@ class Engine implements ProtocolDriftEngine {
         error instanceof ProtocolDriftCommandError
       ) {
         accepted = false;
+        if (!UNCOUNTED_REJECTIONS.has(command.type)) this.rejectedCount += 1;
         this.events.push({
           type: "COMMAND_REJECTED",
           command: command.type,
@@ -379,6 +407,7 @@ class Engine implements ProtocolDriftEngine {
       debt: this.debt(),
       routing: Array.from(this.routing.values()),
       lastLockAudit: this.lastLockAudit,
+      rejectedCommands: this.rejectedCount,
     });
   }
 
@@ -429,7 +458,11 @@ class Engine implements ProtocolDriftEngine {
   private handle(command: PDCommand): void {
     switch (command.type) {
       case "INIT":
-        this.reset(command.seed, command.scenario ?? this.scenario);
+        this.reset(
+          command.seed,
+          command.scenario ?? this.scenario,
+          command.rejectedCommands
+        );
         return;
       case "ACCEPT_BRIEF":
         this.to("DRAFT");
@@ -1872,6 +1905,10 @@ class Engine implements ProtocolDriftEngine {
         lateBacklogRoutedV1: b24.every((r) => r?.handle === "v1"),
         applicabilityErrors: this.applicabilityErrors,
         integrityPassed: result.canLock,
+        chipCount: this.publishedGraph?.nodes.length ?? 0,
+        wireCount: this.publishedGraph?.edges.length ?? 0,
+        rejectedCommands: this.rejectedCount,
+        fabricatedBits: this.mh.reduce((sum, r) => sum + r.fabricatedBits, 0),
       }),
     });
   }
@@ -1907,6 +1944,7 @@ class Engine implements ProtocolDriftEngine {
       auditTrail: [...this.audit.list()],
       commands: this.log,
       stateHash: this.stateHash(),
+      rejectedCommands: this.rejectedCount,
     });
   }
 
@@ -1977,6 +2015,11 @@ class Engine implements ProtocolDriftEngine {
 export function createProtocolDriftEngine(
   options: number | ProtocolDriftEngineOptions = {}
 ): ProtocolDriftEngine {
-  const opts = typeof options === "number" ? { seed: options } : options;
-  return new Engine(opts.seed ?? DEFAULT_SEED, opts.scenario ?? "full");
+  const opts: ProtocolDriftEngineOptions =
+    typeof options === "number" ? { seed: options } : options;
+  return new Engine(
+    opts.seed ?? DEFAULT_SEED,
+    opts.scenario ?? "full",
+    opts.rejectedCommands ?? 0
+  );
 }

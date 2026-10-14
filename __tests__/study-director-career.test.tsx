@@ -126,6 +126,7 @@ describe("career file", () => {
       finished: 0,
       bestGrade: null,
       bestStars: 5,
+      bests: {},
       titles: { scientist: { title: "The Scientist", count: 2 } },
       history: [],
     });

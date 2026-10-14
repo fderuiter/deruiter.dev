@@ -54,7 +54,7 @@ import {
   type WorldRefusal,
   type WorldState,
 } from "@/lib/study-director-world";
-import type { StudyState } from "@/lib/study-director";
+import type { Difficulty, StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import "@/components/study-director/study-director-touch.css";
@@ -86,7 +86,8 @@ import { SiteVisitPanel, SiteVisitReportPanel } from "./SiteVisitPanel";
 import { MeetingSection, TeamOverlay, useTeamLayer } from "./TeamLayer";
 import { WorldHud } from "./WorldHud";
 import { useReducedMotion } from "./use-reduced-motion";
-import { WorldIntro } from "./WorldIntro";
+import { ConditionsPicker, WorldIntro } from "./WorldIntro";
+import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
 import { tapDestination } from "./tap-walk";
 import { WorldTouchControls } from "./WorldTouchControls";
 import { playWorldCue } from "./world-sound";
@@ -158,27 +159,53 @@ function clearWorldSave(): void {
   }
 }
 
+/** The first morning of a new run: the same seed always opens the same way. */
+function firstMorning(seed: string, difficulty: Difficulty) {
+  return startDay(newWorld(seed, difficulty));
+}
+
+/**
+ * True while a saved run is exactly its first morning, nothing done yet, so
+ * its difficulty can still be chosen after a reload (#2058).
+ */
+function untouched(saved: WorldState): boolean {
+  const fresh = parseWorld(
+    serializeWorld(
+      firstMorning(saved.study.seed, saved.study.difficulty ?? "standard").world
+    )
+  );
+  return fresh !== null && serializeWorld(fresh) === serializeWorld(saved);
+}
+
 /**
  * A saved run to resume, or a new one on its first morning. A run that
  * finished but never reached the closeout (the page was reloaded on the last
  * overnight report) comes back `finished`, so it can go there now (#1936).
+ * A run nobody has touched yet comes back `fresh`, so its difficulty can
+ * still be picked.
  */
 function openWorld(): {
   world: WorldState;
   digest: MorningDigest | null;
   finished?: boolean;
+  fresh?: boolean;
 } {
   const saved = loadWorld();
   if (saved && saved.study.status === "complete") {
     return { world: saved, digest: null, finished: true };
   }
   if (saved && saved.study.status === "running") {
+    if (untouched(saved))
+      return {
+        ...firstMorning(saved.study.seed, saved.study.difficulty ?? "standard"),
+        fresh: true,
+      };
     return saved.location === "home"
       ? startDay(saved)
       : { world: saved, digest: null };
   }
   const seed = `sdw-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
-  return startDay(newWorld(seed, "standard"));
+  return { ...firstMorning(seed, "standard"), fresh: true };
 }
 
 interface Walk {
@@ -239,6 +266,13 @@ export const StudyDirectorWorld: React.FC<{
   // First-run help (#1819); the Controls button reopens it.
   const [showIntro, setShowIntro] = useState(() => !introSeen());
   const [acted, setActed] = useState(false);
+  // The first morning of a new run, while nothing has changed it: its
+  // difficulty can still be chosen (#2058). Any change to the world ends that.
+  const [freshWorld, setFreshWorld] = useState<WorldState | null>(
+    opened.fresh ? opened.world : null
+  );
+  const choosing = freshWorld !== null && world === freshWorld;
+  const difficulty: Difficulty = world.study.difficulty ?? "standard";
   const reducedMotion = useReducedMotion();
   // The immersive touch cabinet (ADR 0061, #2076) lays the office out to fit
   // its stage; desktop markup is untouched.
@@ -328,6 +362,26 @@ export const StudyDirectorWorld: React.FC<{
     );
   }, [world]);
   const away = report !== null;
+
+  /** Starts the untouched run again on the chosen difficulty, same seed. */
+  const chooseDifficulty = useCallback(
+    (next: Difficulty) => {
+      if (!choosing || next === difficulty) return;
+      const morning = firstMorning(world.study.seed, next);
+      // A new starting point, not a change the player made: nothing to
+      // toast or announce.
+      lastWorld.current = morning.world;
+      lastHud.current = {
+        hud: hudReadout(morning.world),
+        minute: morning.world.minute,
+      };
+      setFreshWorld(morning.world);
+      setWorld(morning.world);
+      setDigest(morning.digest);
+      setNotice(`Study conditions: ${DIFFICULTY_TEXT[next].label}.`);
+    },
+    [choosing, difficulty, world.study.seed]
+  );
   const here = useMemo(() => {
     const room = roomAt(map, world.player.x, world.player.y);
     return room ? people.filter((p) => p.room === room.id) : [];
@@ -971,6 +1025,22 @@ export const StudyDirectorWorld: React.FC<{
       {inConference && !away ? (
         <MeetingSection team={team} world={world} people={people} />
       ) : null}
+      {choosing && !showIntro ? (
+        <section
+          aria-label="Study conditions"
+          data-testid="world-conditions"
+          className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
+        >
+          <ConditionsPicker
+            name="sd-world-difficulty"
+            value={difficulty}
+            onChange={chooseDifficulty}
+          />
+          <p className="mt-2 text-[11px] text-[var(--sd-muted)]">
+            Set before the study begins. Anything you do fixes it.
+          </p>
+        </section>
+      ) : null}
       {panel}
       {visitReport && !report ? (
         <SiteVisitReportPanel
@@ -999,6 +1069,8 @@ export const StudyDirectorWorld: React.FC<{
       {showIntro ? (
         <WorldIntro
           touch={touch}
+          difficulty={choosing ? difficulty : undefined}
+          onDifficultyChange={choosing ? chooseDifficulty : undefined}
           onClose={() => {
             markIntroSeen();
             setShowIntro(false);

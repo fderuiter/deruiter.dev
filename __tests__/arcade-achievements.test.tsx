@@ -129,6 +129,31 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
       unsubscribe();
     });
 
+    it("unlocks the Protocol Drift lean-lock trophy only from play (#2054)", () => {
+      const lean = ARCADE_TROPHIES.find(
+        (t) => t.id === "protocol_drift_lean_lock"
+      );
+      expect(lean).toMatchObject({
+        gameId: "protocol-drift",
+        category: "milestone",
+        milestone: "lock_under_par_chips",
+      });
+      expect(lean?.targetScore).toBeUndefined();
+      const scored = recordArcadeScore("protocol-drift", 99999).newlyUnlocked;
+      expect(scored.map((t) => t.id)).not.toContain("protocol_drift_lean_lock");
+      expect(scored.map((t) => t.id)).not.toContain(
+        "protocol_drift_defensible"
+      );
+      expect(
+        recordArcadeMilestone("protocol-drift", "lock_under_par_chips").map(
+          (t) => t.id
+        )
+      ).toEqual(["protocol_drift_lean_lock"]);
+      expect(
+        recordArcadeMilestone("protocol-drift", "all_badges").map((t) => t.id)
+      ).toEqual(["protocol_drift_defensible"]);
+    });
+
     it("ignores milestones another game or no trophy owns", () => {
       expect(recordArcadeMilestone("laser-loon", "run_won")).toEqual([]);
       expect(recordArcadeMilestone("trial-and-error", "nope")).toEqual([]);

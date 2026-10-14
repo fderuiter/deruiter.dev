@@ -114,10 +114,18 @@ export {
 } from "./internal/analysis";
 export { evaluateLockGate } from "./internal/lock";
 export {
+  BADGE_POINTS,
+  LOCK_BASE_POINTS,
   buildScorecard,
+  efficiencyPoints,
   evaluateBadges,
+  evaluateEfficiency,
+  parseEfficiencyBests,
+  protocolDriftScore,
   queryRestraintLabel,
   queryRestraintRatio,
+  recordEfficiencyBests,
+  serializeEfficiencyBests,
 } from "./internal/scorecard";
 export {
   buildDatasetExport,

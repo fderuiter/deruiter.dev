@@ -14,6 +14,7 @@ import {
   GUIDANCE_CARDS,
   type Scenario,
 } from "@/lib/trial-and-error";
+import { AUTHORED_CAMPAIGN, authored } from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -52,7 +53,7 @@ const WITH_GUIDANCE: Scenario = {
 
 describe("Run Info (T&E-UX-05)", () => {
   it("opens from its button with the hand table, relics and seed, and closes on Escape", () => {
-    render(<CardTable seed="info" />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} seed="info" />);
     // The seed lives in Run Info now, not on the Blind panel.
     expect(screen.queryByTestId("run-seed")).toBeNull();
     const button = screen.getByTestId("run-info-button");
@@ -86,7 +87,7 @@ describe("Run Info (T&E-UX-05)", () => {
   });
 
   it("opens with Shift+R from a card, while a plain R stays Recompile", () => {
-    render(<CardTable seed="keys" />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} seed="keys" />);
     const target = card(DRAFT_A);
     target.focus();
     fireEvent.keyDown(target, { key: "r" });
@@ -99,7 +100,7 @@ describe("Run Info (T&E-UX-05)", () => {
   });
 
   it("shows the selection's hand level in the live preview", () => {
-    render(<CardTable seed="preview" />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} seed="preview" />);
     fireEvent.click(card(DRAFT_A));
     expect(screen.getByTestId("hand-level").textContent).toBe("Lv.1");
   });
@@ -107,7 +108,7 @@ describe("Run Info (T&E-UX-05)", () => {
 
 describe("Guidance cards in the tray (T&E-UX-05)", () => {
   it("levels a hand up, plays the level-up plate, and updates preview and Run Info", () => {
-    render(<CardTable scenario={WITH_GUIDANCE} seed="guide" />);
+    render(<CardTable scenario={authored(WITH_GUIDANCE)} seed="guide" />);
     const [item] = screen.getAllByTestId("consumable");
     expect(item.getAttribute("data-kind")).toBe("guidance");
     expect(item.textContent).toContain("FDA Study Data TCG");
@@ -155,7 +156,7 @@ describe("Guidance cards in the tray (T&E-UX-05)", () => {
       .spyOn(window, "requestAnimationFrame")
       .mockImplementation((cb) => frames.push(cb));
     const now = vi.spyOn(performance, "now").mockReturnValue(0);
-    render(<CardTable scenario={WITH_GUIDANCE} seed="tick" />);
+    render(<CardTable scenario={authored(WITH_GUIDANCE)} seed="tick" />);
     fireEvent.click(
       within(screen.getByTestId("consumable")).getByRole("button", {
         name: /Use FDA Study Data TCG/,
@@ -183,7 +184,7 @@ describe("Guidance cards in the tray (T&E-UX-05)", () => {
   });
 
   it("sells a Guidance card for its value", () => {
-    render(<CardTable scenario={WITH_GUIDANCE} seed="sell" />);
+    render(<CardTable scenario={authored(WITH_GUIDANCE)} seed="sell" />);
     fireEvent.click(screen.getByRole("button", { name: "Sell · $1k" }));
     expect(screen.getByTestId("study-budget").textContent).toBe("Budget $1k");
     expect(announce).toHaveBeenLastCalledWith(

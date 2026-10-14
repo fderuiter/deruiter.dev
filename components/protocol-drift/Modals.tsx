@@ -8,6 +8,7 @@ import {
   STUDY_ID,
   formatClock,
   trialDayOf,
+  type EfficiencyMetric,
   type ProtocolDriftSaveFile,
   type LockAuditResult,
   type ProtocolDriftView,
@@ -540,6 +541,95 @@ function download(name: string, text: string, mime: string) {
   downloadFile(text, name, { mimeType: mime });
 }
 
+/** One efficiency value as the debrief shows it. */
+function formatMeasure(id: EfficiencyMetric["id"], value: number): string {
+  if (id === "lockDay") return `Day ${value}`;
+  if (id === "fabricatedBits") return value.toFixed(2);
+  return String(value);
+}
+
+/** Par, actual, best and medal for each efficiency measure (#2054). */
+function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
+  const record = useProtocolDriftStore((s) => s.efficiencyBests);
+  return (
+    <div className="mt-3 min-w-0">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-0 border-collapse text-left text-xs">
+          <caption className="mb-1 text-left text-zinc-100">
+            Efficiency against par: {scorecard.medals} of{" "}
+            {scorecard.efficiency.length} medals, {scorecard.efficiencyScore}{" "}
+            points
+          </caption>
+          <thead>
+            <tr className="border-b border-zinc-700 text-zinc-300">
+              <th scope="col" className="py-1 pr-2 font-normal">
+                Measure
+              </th>
+              <th scope="col" className="px-2 py-1 text-right font-normal">
+                Par
+              </th>
+              <th scope="col" className="px-2 py-1 text-right font-normal">
+                Actual
+              </th>
+              <th scope="col" className="px-2 py-1 text-right font-normal">
+                Best
+              </th>
+              <th scope="col" className="py-1 pl-2 text-right font-normal">
+                Medal
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {scorecard.efficiency.map((m) => {
+              const best = record?.bests[m.id];
+              const isNew = record?.improved.includes(m.id) ?? false;
+              return (
+                <tr key={m.id} className="border-b border-zinc-800">
+                  <th
+                    scope="row"
+                    className="min-w-0 break-words py-1 pr-2 font-normal text-zinc-200"
+                  >
+                    {m.label}
+                  </th>
+                  <td className="px-2 py-1 text-right tabular-nums text-zinc-300">
+                    {formatMeasure(m.id, m.par)}
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums text-zinc-100">
+                    {formatMeasure(m.id, m.actual)}
+                  </td>
+                  <td className="px-2 py-1 text-right tabular-nums text-zinc-100">
+                    {best === undefined ? "n/a" : formatMeasure(m.id, best)}
+                    {isNew ? (
+                      <span className="ml-1 text-amber-400">new</span>
+                    ) : null}
+                  </td>
+                  <td className="py-1 pl-2 text-right">
+                    <span
+                      className={`inline-flex items-center justify-center border px-1 ${
+                        m.medal
+                          ? "border-emerald-500/70 text-emerald-400"
+                          : "border-zinc-700 text-zinc-300"
+                      }`}
+                    >
+                      {m.medal ? "MEDAL" : "OVER PAR"}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="mt-2 text-zinc-300">
+        Arcade score{" "}
+        <b className="tabular-nums text-zinc-100">{scorecard.score}</b>: 100 for
+        the lock, 100 per badge, mean goodwill and the efficiency points. Bests
+        are kept in this browser.
+      </p>
+    </div>
+  );
+}
+
 /** Endgame regulatory debrief (Form 483 style) and the systems scorecard. */
 export function DebriefModal({
   scorecard,
@@ -636,7 +726,7 @@ export function DebriefModal({
           {scorecard.badges.map((b) => (
             <li key={b.id} className="flex min-w-0 gap-2">
               <span
-                className={`inline-flex h-5 w-14 shrink-0 items-center justify-center border text-[10px] ${
+                className={`inline-flex h-5 w-16 shrink-0 items-center justify-center border text-xs ${
                   b.earned
                     ? "border-emerald-500/70 text-emerald-400"
                     : "border-zinc-700 text-zinc-300"
@@ -650,6 +740,7 @@ export function DebriefModal({
             </li>
           ))}
         </ul>
+        <EfficiencyTable scorecard={scorecard} />
       </section>
       <section aria-label="Dataset export" className="mb-3">
         <h3 className="mb-1 text-zinc-100">Dataset Export</h3>

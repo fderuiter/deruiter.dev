@@ -44,7 +44,7 @@ describe("boss intro view (#1083)", () => {
       title: "Dose Escalation Committee",
       bossName: "Safety Set Only",
       debuff: DOSE_ESCALATION_SCENARIO.boss!.description,
-      quota: 8500,
+      quota: 5800,
       startingCpu: 10,
       stages: [],
       dueHours: null,

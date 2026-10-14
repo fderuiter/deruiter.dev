@@ -172,6 +172,15 @@ Best stars per campaign sprint, carried across sprints and sessions.
 
 ***
 
+### endlessQuarter
+
+> **endlessQuarter**: `number`
+
+The endless quarter being played, from 1. A new quarter starts every
+`ENDLESS_QUARTER_WORK` work units. Always 1 in the campaign.
+
+***
+
 ### excitement
 
 > **excitement**: `number`

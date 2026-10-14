@@ -32,6 +32,7 @@ import {
 } from "@/components/trial-and-error/useTeSound";
 import { LoudLayer } from "@/components/trial-and-error/LoudLayer";
 import { CardTable } from "@/components/trial-and-error/CardTable";
+import { AUTHORED_CAMPAIGN } from "./utils/trial-and-error-authored";
 
 vi.mock("@/hooks/useAnnouncer", () => ({
   useAnnouncer: () => ({ announce: () => {} }),
@@ -504,7 +505,7 @@ describe("the Card Table's cues and loud layer", () => {
         ] as const
       ).map((cue) => [cue, vi.spyOn(CUE_RECIPES, cue)])
     );
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     fireEvent.click(card("C-T14.1.2"));
     expect(spies.cardSelect).toHaveBeenCalledTimes(1);
     fireEvent.click(card("C-T14.1.2"));
@@ -526,7 +527,7 @@ describe("the Card Table's cues and loud layer", () => {
   });
 
   it("offers the cabinet audio switches and a site unmute", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const sfx = screen.getByRole("button", { name: "SFX" });
     expect(sfx.getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(sfx);

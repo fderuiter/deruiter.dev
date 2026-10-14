@@ -21,6 +21,7 @@ import {
   handLevelTable,
   initialHandLevels,
 } from "@/lib/trial-and-error";
+import { authored } from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -102,7 +103,7 @@ describe("hand cheat sheet domain (#1081)", () => {
 
 describe("hand cheat sheet (#1081)", () => {
   it("lists every hand strongest first with the domain's values", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     fireEvent.click(screen.getByTestId("hand-sheet-button"));
     expect(sheet()).not.toBeNull();
     expect(screen.getByRole("dialog", { name: "Hands" })).toBeTruthy();
@@ -122,7 +123,7 @@ describe("hand cheat sheet (#1081)", () => {
   });
 
   it("marks the hand the selection makes, in text", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     fireEvent.click(card(DRAFT_A));
     fireEvent.click(card(DM_LISTING));
     fireEvent.click(screen.getByTestId("hand-sheet-button"));
@@ -132,7 +133,7 @@ describe("hand cheat sheet (#1081)", () => {
   });
 
   it("greys and labels the hands a stage refuses", () => {
-    render(<CardTable scenario={DMC_MILESTONE_SCENARIO} />);
+    render(<CardTable scenario={authored(DMC_MILESTONE_SCENARIO)} />);
     fireEvent.click(screen.getByTestId("boss-intro-start"));
     fireEvent.click(screen.getByTestId("hand-sheet-button"));
     const refused = rows().filter((r) => r.dataset.refused);
@@ -151,7 +152,7 @@ describe("hand cheat sheet (#1081)", () => {
     const onWindow = vi.fn();
     window.addEventListener("keydown", onWindow);
     try {
-      render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+      render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
       const focused = card(DRAFT_A);
       focused.focus();
       pressH(focused);
@@ -172,7 +173,7 @@ describe("hand cheat sheet (#1081)", () => {
   });
 
   it("closes on Escape and returns focus to its button", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     const button = screen.getByTestId("hand-sheet-button");
     button.focus();
     fireEvent.click(button);
@@ -182,7 +183,7 @@ describe("hand cheat sheet (#1081)", () => {
   });
 
   it("ignores H with a modifier and while typing", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     fireEvent.keyDown(card(DRAFT_A), { key: "h", ctrlKey: true });
     fireEvent.keyDown(card(DRAFT_A), { key: "H", shiftKey: true });
     expect(sheet()).toBeNull();
@@ -193,7 +194,7 @@ describe("hand cheat sheet (#1081)", () => {
   });
 
   it("does not change the table when opened", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     const pips = screen.getByTestId("cpu-pips").textContent;
     const score = screen.getByTestId("round-score").textContent;
     pressH(card(DRAFT_A));

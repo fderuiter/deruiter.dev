@@ -72,6 +72,11 @@ import {
   type InventoryItem,
   DUCK_FACT_STAR_MILESTONES,
   DUCK_STAR_GOOD_BOY_THRESHOLD,
+  ENDLESS_QUARTER_WORK,
+  computeEndlessScore,
+  endlessQuarterLabel,
+  endlessQuartersSurvived,
+  isDuckHiccuping,
   createInitialDuckGameState,
   stepDuckGame,
   startDraggingDuck,
@@ -173,6 +178,18 @@ const getHighScoreSnapshot = () => {
 };
 
 const getServerSnapshot = () => "0";
+
+/** Storage key for the best endless score, kept apart from the high score (#2051). */
+const ENDLESS_BEST_KEY = "working_with_duck_endless_best";
+
+const getEndlessBestSnapshot = () => {
+  if (typeof window === "undefined") return "0";
+  try {
+    return safeGetRawItem(ENDLESS_BEST_KEY) || "0";
+  } catch {
+    return "0";
+  }
+};
 
 // Validates and loads previously earned scrapbook unlocks before any
 // initial persistence write, so a corrupted/missing/inaccessible entry
@@ -605,6 +622,8 @@ interface DuckSprintResultProps {
   sprintTitle: string;
   /** The saved best, read before this run's score is written over it. */
   storedBest: number;
+  /** The saved endless best, read before this run's endless score is saved. */
+  storedEndlessBest: number;
   onNext: () => void;
   onReplay: () => void;
   onEndless: () => void;
@@ -761,6 +780,7 @@ function DuckSprintResult({
   state,
   sprintTitle,
   storedBest,
+  storedEndlessBest,
   onNext,
   onReplay,
   onEndless,
@@ -768,6 +788,7 @@ function DuckSprintResult({
   // Captured when the card opens; the save that follows a win would
   // otherwise read as "tied your best".
   const [previousBest] = useState(storedBest);
+  const [previousEndlessBest] = useState(storedEndlessBest);
   const won = state.status === "won";
   const level = state.currentLevel;
   const workPercent = clamp(
@@ -787,6 +808,46 @@ function DuckSprintResult({
       suffix: `/${state.hazards.length}`,
     },
   ];
+
+  if (!won && state.mode === "endless") {
+    // An endless run only ends in a time-out, so its card scores the run:
+    // quarters survived plus the work done (#2051).
+    const endlessScore = computeEndlessScore(state);
+    const quarters = endlessQuartersSurvived(state);
+    return (
+      <ResultCard
+        headingId="duck-fail-dialog-heading"
+        title="Duck Got a Time-Out!"
+        stamp="Time-out"
+        verdict="loss"
+        message={`The run ended in ${endlessQuarterLabel(state.endlessQuarter)} after ${quarters} ${quarters === 1 ? "quarter" : "quarters"} survived. Each quarter brings faster meters and a new hazard.`}
+        stats={[
+          { label: "Endless score", value: endlessScore },
+          { label: "Quarters", value: quarters },
+          { label: "Work done", value: Math.floor(state.workProgress) },
+          { label: "Points", value: state.totalScore },
+        ]}
+        score={endlessScore}
+        previousBest={previousEndlessBest}
+        primary={{
+          label: "Retry Endless Run",
+          onClick: onReplay,
+          icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
+        }}
+        onEscape={onReplay}
+      >
+        <p
+          data-testid="duck-endless-best"
+          className="mt-4 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5 font-mono text-xs tabular-nums text-zinc-400"
+        >
+          Endless best{" "}
+          <span className="font-bold text-zinc-100">
+            {Math.max(endlessScore, previousEndlessBest)}
+          </span>
+        </p>
+      </ResultCard>
+    );
+  }
 
   if (!won) {
     return (
@@ -957,6 +1018,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     getServerSnapshot
   );
   const loadedHighScore = parseInt(rawHighScore, 10) || 0;
+  const rawEndlessBest = useSyncExternalStore(
+    subscribeStorage,
+    getEndlessBestSnapshot,
+    getServerSnapshot
+  );
+  const loadedEndlessBest = parseInt(rawEndlessBest, 10) || 0;
 
   const { playNote, muted, setMuted } = useAudio();
   const { recordEvent } = useTelemetry();
@@ -1565,6 +1632,18 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     loadedHighScore,
   ]);
 
+  // Save the endless best when a run ends, apart from the high score (#2051).
+  const endlessRunScore =
+    uiState.mode === "endless" && uiState.status === "failed"
+      ? computeEndlessScore(uiState)
+      : 0;
+  useEffect(() => {
+    if (endlessRunScore <= loadedEndlessBest) return;
+    try {
+      safeSetRawItem(ENDLESS_BEST_KEY, String(endlessRunScore));
+    } catch {}
+  }, [endlessRunScore, loadedEndlessBest]);
+
   // Persist the wardrobe and best stars so they survive a reload (#2050).
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2048,6 +2127,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const lastAnnouncedExcitementRef = useRef(false);
   const lastAnnouncedStatusRef = useRef<string | null>(null);
   const lastAnnouncedWorkProgressRef = useRef(0);
+  const lastAnnouncedQuarterRef = useRef(1);
+  const lastAnnouncedHiccupsRef = useRef(false);
 
   useEffect(() => {
     if (!uiState) return;
@@ -2060,7 +2141,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           "assertive"
         );
       } else if (uiState.status === "failed") {
-        announce("Sprint failed. Duck got a time-out.", "assertive");
+        announce(
+          uiState.mode === "endless"
+            ? `Run over in ${endlessQuarterLabel(uiState.endlessQuarter ?? 1)}. Duck got a time-out.`
+            : "Sprint failed. Duck got a time-out.",
+          "assertive"
+        );
       } else if (
         uiState.status === "running" &&
         lastAnnouncedStatusRef.current === "idle"
@@ -2085,6 +2171,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       }
       lastAnnouncedStatusRef.current = uiState.status;
     }
+
+    // Announce a new endless quarter and a bout of hiccups (#2051)
+    const quarter = uiState.endlessQuarter ?? 1;
+    if (
+      uiState.mode === "endless" &&
+      quarter > lastAnnouncedQuarterRef.current
+    ) {
+      announce(
+        `${endlessQuarterLabel(quarter)} begins. Duck gets faster.`,
+        "polite"
+      );
+    }
+    lastAnnouncedQuarterRef.current = quarter;
+    const hasHiccups = uiState.activeSurpriseEvent?.type === "puppy-hiccups";
+    if (hasHiccups && !lastAnnouncedHiccupsRef.current) {
+      announce("Duck has the hiccups. Time tricks between hiccups.", "polite");
+    }
+    lastAnnouncedHiccupsRef.current = hasHiccups;
 
     // Announce high bladder
     const isBladderHigh = uiState.bladder > 80;
@@ -2505,6 +2609,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   } else if (uiState.status === "running" && uiState.inBathtub) {
     tutorialHint =
       "Bath time: move your cursor over the tub to lather Duck, then Rinse until he's clean and Finish Bath. Work, Excitement and Bladder pause until you're back in the office.";
+  } else if (
+    uiState.status === "running" &&
+    uiState.activeSurpriseEvent?.type === "puppy-hiccups"
+  ) {
+    // Puppy hiccups (#2051): tricks only land in the gap between hics.
+    tutorialHint = isDuckHiccuping(uiState)
+      ? "Hic! Duck is mid-hiccup, so a trick now slips. Wait for the gap."
+      : "Duck has the hiccups. Call your trick now, in the gap between hics.";
   } else if (uiState.currentLevel === 1 && uiState.status === "running") {
     if (uiState.ticks < SPRINT_ONE_BRIEF_TICKS) {
       // The cabinet launch is the title screen (#1516), so the goal goes
@@ -2577,10 +2689,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   // the floor end.
   const tipInFlow = cabinetTouch && roomSpare >= TOUCH_TIP_BAND_PX;
 
-  const workPercent = Math.min(
-    100,
-    Math.round((uiState.workProgress / uiState.targetWorkProgress) * 100)
-  );
+  // In endless mode the Work gauge tracks the current quarter (#2051).
+  const isEndless = uiState.mode === "endless";
+  const quarterLabel = endlessQuarterLabel(uiState.endlessQuarter ?? 1);
+  const workPercent = isEndless
+    ? clamp(
+        Math.floor(
+          ((uiState.workProgress -
+            ((uiState.endlessQuarter ?? 1) - 1) * ENDLESS_QUARTER_WORK) /
+            ENDLESS_QUARTER_WORK) *
+            100
+        ),
+        0,
+        100
+      )
+    : Math.min(
+        100,
+        Math.round((uiState.workProgress / uiState.targetWorkProgress) * 100)
+      );
 
   // The most urgent state gets one word in the HUD; the tip explains it.
   const hudCallout =
@@ -2680,10 +2806,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         <ArcadeHud
           stats={[
             {
-              label: uiState.mode === "endless" ? "Mode" : "Sprint",
-              value:
-                uiState.mode === "endless" ? "Endless" : uiState.currentLevel,
+              label: isEndless ? "Mode" : "Sprint",
+              value: isEndless ? "Endless" : uiState.currentLevel,
             },
+            ...(isEndless ? [{ label: "Quarter", value: quarterLabel }] : []),
           ]}
           gauges={[
             {
@@ -2852,7 +2978,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             </h2>
             <p className="max-w-md text-[11px] sm:text-sm text-zinc-300 font-mono mb-4 sm:mb-6 leading-relaxed line-clamp-3 sm:line-clamp-none">
               {uiState.mode === "endless"
-                ? "Infinite sprints with accelerating puppy impulses. Keep Duck entertained and protect the codebase!"
+                ? `Every ${ENDLESS_QUARTER_WORK} work units a new quarter starts: faster meters and one more hazard. Survive as many quarters as you can!`
                 : currentSprint.description}
             </p>
             <p
@@ -2863,6 +2989,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               <span className="text-zinc-100 font-bold">
                 {displayedHighScore}
               </span>
+              {uiState.mode === "endless" && (
+                <>
+                  {" · "}Endless best{" "}
+                  <span className="text-zinc-100 font-bold">
+                    {loadedEndlessBest}
+                  </span>
+                </>
+              )}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
               <button
@@ -3791,6 +3925,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           state={uiState}
           sprintTitle={currentSprint.title}
           storedBest={loadedHighScore}
+          storedEndlessBest={loadedEndlessBest}
           onNext={handleAdvanceLevel}
           onReplay={restartSprint}
           onEndless={startEndlessRun}

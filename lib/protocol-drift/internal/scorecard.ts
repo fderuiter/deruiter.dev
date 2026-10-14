@@ -1,8 +1,22 @@
 /**
  * The systems efficiency scorecard and preventative badges.
  */
-import { SITE_IDS } from "../presets";
-import type { BadgeAward, Scorecard, ScorecardInput } from "../types";
+import { clamp } from "@/lib/game-utils";
+import {
+  EFFICIENCY_METRIC_IDS,
+  EFFICIENCY_PARS,
+  EFFICIENCY_POINTS_AT_PAR,
+  EFFICIENCY_POINTS_CAP,
+  SITE_IDS,
+} from "../presets";
+import type {
+  BadgeAward,
+  EfficiencyBests,
+  EfficiencyMetric,
+  EfficiencyMetricId,
+  Scorecard,
+  ScorecardInput,
+} from "../types";
 import { trialDayOf } from "./clock";
 
 /** Evidence-linked queries divided by queries sent; null when none sent. */
@@ -55,6 +69,59 @@ export function evaluateBadges(input: ScorecardInput): BadgeAward[] {
   ];
 }
 
+/** Base points every lock earns before badges, goodwill and efficiency. */
+export const LOCK_BASE_POINTS = 100;
+/** Points each earned preventative badge adds. */
+export const BADGE_POINTS = 100;
+
+/**
+ * Points one efficiency measure earns: 100 at par, plus or minus its points
+ * per unit for each unit under or over par, rounded and kept within 0 to 150.
+ */
+export function efficiencyPoints(
+  id: EfficiencyMetricId,
+  actual: number
+): number {
+  const { par, pointsPerUnit } = EFFICIENCY_PARS[id];
+  const raw = EFFICIENCY_POINTS_AT_PAR + pointsPerUnit * (par - actual);
+  return Math.round(clamp(raw, 0, EFFICIENCY_POINTS_CAP));
+}
+
+/** Measures one run against every par, in the scorecard's order. */
+export function evaluateEfficiency(
+  actuals: Record<EfficiencyMetricId, number>
+): EfficiencyMetric[] {
+  return EFFICIENCY_METRIC_IDS.map((id) => {
+    const { label, par } = EFFICIENCY_PARS[id];
+    const actual = actuals[id];
+    return {
+      id,
+      label,
+      actual,
+      par,
+      medal: actual <= par,
+      points: efficiencyPoints(id, actual),
+    };
+  });
+}
+
+/**
+ * The arcade score for a locked run: 100 for the lock, 100 per earned badge,
+ * the rounded mean goodwill, and the efficiency points.
+ */
+export function protocolDriftScore(
+  earnedBadges: number,
+  meanGoodwill: number,
+  efficiencyScore: number
+): number {
+  return (
+    LOCK_BASE_POINTS +
+    BADGE_POINTS * earnedBadges +
+    Math.round(meanGoodwill) +
+    efficiencyScore
+  );
+}
+
 /** Builds the scorecard shown after Database Lock. */
 export function buildScorecard(input: ScorecardInput): Scorecard {
   const sent = input.queries.filter((q) => q.sentAtMinute >= 0);
@@ -66,15 +133,90 @@ export function buildScorecard(input: ScorecardInput): Scorecard {
     goodwill[id] = input.sites[id].goodwill;
     total += input.sites[id].goodwill;
   }
+  const trialDurationDays = trialDayOf(input.lockedAtMinute);
+  const meanGoodwill = total / SITE_IDS.length;
+  const badges = evaluateBadges(input);
+  const efficiency = evaluateEfficiency({
+    chips: input.chipCount,
+    wires: input.wireCount,
+    lockDay: trialDurationDays,
+    rejectedCommands: input.rejectedCommands,
+    fabricatedBits: input.fabricatedBits,
+  });
+  const efficiencyScore = efficiency.reduce((sum, m) => sum + m.points, 0);
   return {
-    trialDurationDays: trialDayOf(input.lockedAtMinute),
+    trialDurationDays,
     queryRestraintRatio: ratio,
     queryRestraintLabel: queryRestraintLabel(ratio),
     queriesSent: sent.length,
     evidenceLinkedQueries: evidence,
     goodwill,
-    meanGoodwill: total / SITE_IDS.length,
-    badges: evaluateBadges(input),
+    meanGoodwill,
+    badges,
     integrityPassed: input.integrityPassed,
+    chipCount: input.chipCount,
+    wireCount: input.wireCount,
+    rejectedCommands: input.rejectedCommands,
+    fabricatedBits: input.fabricatedBits,
+    efficiency,
+    efficiencyScore,
+    medals: efficiency.filter((m) => m.medal).length,
+    score: protocolDriftScore(
+      badges.filter((b) => b.earned).length,
+      meanGoodwill,
+      efficiencyScore
+    ),
   };
+}
+
+/**
+ * Reads stored bests defensively: anything that is not JSON, not an object,
+ * or not a finite non-negative number for a known measure is dropped.
+ */
+export function parseEfficiencyBests(raw: string | null): EfficiencyBests {
+  if (!raw) return {};
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (typeof data !== "object" || data === null || Array.isArray(data)) {
+    return {};
+  }
+  const record = data as Record<string, unknown>;
+  const bests: EfficiencyBests = {};
+  for (const id of EFFICIENCY_METRIC_IDS) {
+    const value = record[id];
+    if (typeof value === "number" && Number.isFinite(value) && value >= 0) {
+      bests[id] = value;
+    }
+  }
+  return bests;
+}
+
+/** Serializes bests for storage. */
+export function serializeEfficiencyBests(bests: EfficiencyBests): string {
+  return JSON.stringify(bests);
+}
+
+/**
+ * Folds a locked run into the bests. Lower is better for every measure.
+ * Returns the merged bests (the same object when nothing improved) and the
+ * measures this run improved, including first-time entries.
+ */
+export function recordEfficiencyBests(
+  bests: EfficiencyBests,
+  scorecard: Pick<Scorecard, "efficiency">
+): { bests: EfficiencyBests; improved: EfficiencyMetricId[] } {
+  const improved: EfficiencyMetricId[] = [];
+  const next: EfficiencyBests = { ...bests };
+  for (const metric of scorecard.efficiency) {
+    const prior = bests[metric.id];
+    if (prior === undefined || metric.actual < prior) {
+      next[metric.id] = metric.actual;
+      improved.push(metric.id);
+    }
+  }
+  return { bests: improved.length > 0 ? next : bests, improved };
 }

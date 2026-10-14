@@ -10,6 +10,14 @@ Options for creating an engine.
 
 ## Properties
 
+### rejectedCommands?
+
+> `optional` **rejectedCommands?**: `number`
+
+Rejected commands to start from, as a restored save carries them.
+
+***
+
 ### scenario?
 
 > `optional` **scenario?**: [`ScenarioId`](../../../types/type-aliases/ScenarioId.md)

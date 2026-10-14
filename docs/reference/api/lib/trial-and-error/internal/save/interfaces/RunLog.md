@@ -24,6 +24,15 @@ The plan's id: the act played on its own, or the campaign.
 
 ***
 
+### dealing?
+
+> `optional` **dealing?**: `"AUTHORED"`
+
+AUTHORED for a run first saved before decks were shuffled (#2055): it
+replays in written deal order. Absent means a shuffled run.
+
+***
+
 ### origin?
 
 > `optional` **origin?**: [`RunOrigin`](../../seed/type-aliases/RunOrigin.md)

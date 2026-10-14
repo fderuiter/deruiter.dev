@@ -1,5 +1,9 @@
 import { clamp } from "@/lib/game-utils";
-import type { StudyState } from "@/lib/study-director";
+import {
+  DIFFICULTIES,
+  type Difficulty,
+  type StudyState,
+} from "@/lib/study-director";
 import { CRO_FLOOR, WORLD_MAPS, isWalkable } from "./floor";
 import { keepRecent } from "./history";
 import { readVisit } from "./sites";
@@ -53,6 +57,15 @@ function looksLikeStudy(value: unknown): value is StudyState {
     Array.isArray(value.log) &&
     isRecord(value.setup)
   );
+}
+
+/**
+ * How hard a saved study started. Saves from before the office offered a
+ * choice (#2058) have none, and anything unrecognised is not trusted: both
+ * play as standard, which is what those runs were.
+ */
+function readDifficulty(value: unknown): Difficulty {
+  return DIFFICULTIES.find((d) => d === value) ?? "standard";
 }
 
 /** A saved position, if it is a free tile on its map; else the spawn. */
@@ -221,7 +234,8 @@ function readSiteVisitHistory(value: unknown): SiteVisitReport[] {
  * Reads a saved world run. Anything unreadable, from another version, or
  * missing its study is dropped (returns null) rather than trusted; numbers
  * are clamped to their ranges, and a position that is not a free tile on the
- * floor (or a save from before the floor existed) starts at the lobby.
+ * floor (or a save from before the floor existed) starts at the lobby. A
+ * study saved without a difficulty loads as standard.
  */
 export function parseWorld(text: string | null): WorldState | null {
   if (!text) return null;
@@ -238,7 +252,11 @@ export function parseWorld(text: string | null): WorldState | null {
   const map = visit ? WORLD_MAPS[visit.mapId] : CRO_FLOOR;
   const world: WorldState = {
     version: 1,
-    study: { ...raw.study, budget: "clock" },
+    study: {
+      ...raw.study,
+      budget: "clock",
+      difficulty: readDifficulty(raw.study.difficulty),
+    },
     minute: num(raw.minute, DAY_START, 0, HARD_STOP),
     energy: num(raw.energy, 100, 0, 100),
     focus: num(raw.focus, 100, 0, 100),

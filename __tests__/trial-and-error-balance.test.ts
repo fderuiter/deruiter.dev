@@ -34,7 +34,10 @@ import {
 } from "@/lib/trial-and-error";
 import { playBlind, type BotStyle } from "./utils/trial-and-error-bot";
 
-/** Seeds vary the crisis draws. The same list gives the same table. */
+/**
+ * Seeds vary the deal order (#2055) and the crisis draws. The same list gives
+ * the same table.
+ */
 const SEEDS = [
   "fold-change",
   "e2e-4",
@@ -49,15 +52,16 @@ const STYLES: BotStyle[] = ["SLOPPY", "HASTY", "MEDIAN", "PERFECT"];
 
 /**
  * Each Blind's band: the share of seeds on which each style must clear
- * ("ALL", "MOST" = at least 75%, "FEW" = at most 25%). QC stops being
- * optional after the Small Blind: a player who never inspects clears
- * internal QC, and nothing after it.
+ * ("ALL", "MOST" = at least 75%, "SOME" = on some seeds but not all, "FEW"
+ * = at most 25%). QC stops being optional after the Small Blind: a player
+ * who never inspects clears internal QC only when the shuffle deals clean
+ * drafts, and nothing after it.
  */
-type Band = "ALL" | "MOST" | "FEW";
+type Band = "ALL" | "MOST" | "SOME" | "FEW";
 const BANDS: Record<string, Record<BotStyle, Band>> = {
   "demographics-small-blind": {
     SLOPPY: "FEW",
-    HASTY: "MOST",
+    HASTY: "SOME",
     MEDIAN: "MOST",
     PERFECT: "ALL",
   },
@@ -278,6 +282,10 @@ describe("balance harness", () => {
         if (band[style] === "ALL") expect(rate, label).toBe(1);
         if (band[style] === "MOST")
           expect(rate, label).toBeGreaterThanOrEqual(0.75);
+        if (band[style] === "SOME") {
+          expect(rate, label).toBeGreaterThan(0);
+          expect(rate, label).toBeLessThan(1);
+        }
         if (band[style] === "FEW")
           expect(rate, label).toBeLessThanOrEqual(0.25);
       }

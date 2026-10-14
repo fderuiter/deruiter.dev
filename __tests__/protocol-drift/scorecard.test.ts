@@ -76,6 +76,10 @@ describe("scorecard", () => {
       lateBacklogRoutedV1: true,
       applicabilityErrors: 1,
       integrityPassed: false,
+      chipCount: 13,
+      wireCount: 21,
+      rejectedCommands: 0,
+      fabricatedBits: 0,
     };
     expect(
       evaluateBadges(input).every((b) => !b.earned && b.reason.length > 0)

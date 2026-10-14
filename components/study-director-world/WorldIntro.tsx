@@ -2,6 +2,8 @@
 
 import React, { useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { DIFFICULTIES, type Difficulty } from "@/lib/study-director";
+import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
 
 const TOUCH_CONTROLS: Array<{ keys: string; action: string }> = [
   { keys: "Tap the floor", action: "Walk to a person, a station or a spot" },
@@ -25,6 +27,65 @@ const CONTROLS: Array<{ keys: string; action: string }> = [
 ];
 
 /**
+ * What each difficulty changes in an office run, in plain terms. These are
+ * the domain's own numbers (`applyDifficulty`, `WILDCARDS_PER_RUN`): the
+ * office's clock, energy and focus are the same on every difficulty.
+ */
+const WHAT_CHANGES: Record<Difficulty, string> = {
+  calm: "15% more budget, a warmer sponsor, a less loaded team and two surprise events.",
+  standard:
+    "The study as written: the planned budget and timeline, and three surprise events.",
+  rescue:
+    "Six days behind, 8% of the budget already spent, more paperwork owed, a cooler sponsor, a busier team and sites, and four surprise events.",
+};
+
+/**
+ * Chooses how hard a new office run starts, one honest line per option. It
+ * shows only while the run is untouched, since a difficulty is set before
+ * the study begins.
+ */
+export const ConditionsPicker: React.FC<{
+  value: Difficulty;
+  onChange: (value: Difficulty) => void;
+  /** Radio group name, unique on the page. */
+  name: string;
+}> = ({ value, onChange, name }) => (
+  <fieldset className="min-w-0" data-testid={`${name}-picker`}>
+    <legend className="mb-2 text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+      Study conditions
+    </legend>
+    <div className="grid gap-1.5">
+      {DIFFICULTIES.map((id) => {
+        const checked = id === value;
+        return (
+          <label
+            key={id}
+            className={`flex min-w-0 cursor-pointer gap-2 border p-2 text-xs transition-colors active:scale-[0.98] ${checked ? "border-[var(--sd-amber)] bg-[var(--sd-amber)]/10" : "border-zinc-700 hover:border-zinc-500"}`}
+          >
+            <input
+              type="radio"
+              name={name}
+              value={id}
+              checked={checked}
+              onChange={() => onChange(id)}
+              className="mt-0.5 accent-amber-500"
+            />
+            <span className="min-w-0">
+              <span className="block font-bold text-[var(--sd-text)]">
+                {DIFFICULTY_TEXT[id].label}
+              </span>
+              <span className="block break-words text-[var(--sd-muted)]">
+                {WHAT_CHANGES[id]}
+              </span>
+            </span>
+          </label>
+        );
+      })}
+    </div>
+  </fieldset>
+);
+
+/**
  * First-run help for the walkable office: how to move, how to act, and
  * what a day is. It is a dialog, so focus stays inside it and Escape or
  * the button closes it; the Controls button on the stage opens it again.
@@ -33,7 +94,10 @@ export const WorldIntro: React.FC<{
   onClose: () => void;
   /** True on the touch cabinet, which lists the on-screen controls. */
   touch?: boolean;
-}> = ({ onClose, touch = false }) => {
+  /** A new, untouched run offers its difficulty here (#2058). */
+  difficulty?: Difficulty;
+  onDifficultyChange?: (value: Difficulty) => void;
+}> = ({ onClose, touch = false, difficulty, onDifficultyChange }) => {
   const startRef = useRef<HTMLButtonElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: startRef,
@@ -75,6 +139,15 @@ export const WorldIntro: React.FC<{
             </div>
           ))}
         </dl>
+        {difficulty && onDifficultyChange ? (
+          <div className="mt-4">
+            <ConditionsPicker
+              name="sd-intro-difficulty"
+              value={difficulty}
+              onChange={onDifficultyChange}
+            />
+          </div>
+        ) : null}
         <button
           ref={startRef}
           type="button"

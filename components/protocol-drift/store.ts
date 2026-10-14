@@ -27,9 +27,16 @@ import {
   type StateSnapshotEvent,
   type WaveSummary,
 } from "@/lib/protocol-drift";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { downloadFile } from "@/lib/download";
 import { playProtocolCue } from "./audio";
+import {
+  saveEfficiencyBests,
+  type EfficiencyBestsRecord,
+} from "./efficiency-bests";
 import { createEngineAdapter, type EngineAdapter } from "./engine-adapter";
 import type { EngineResponse } from "./engine-core";
 import {
@@ -103,6 +110,8 @@ interface ProtocolDriftState {
   memoOpen: boolean;
   lockAudit: LockAuditResult | null;
   scorecard: Scorecard | null;
+  /** Per-measure bests including the locked run, and what it improved. */
+  efficiencyBests: EfficiencyBestsRecord | null;
   datasets: DatasetExportBundle | null;
   selection: InspectorSelection;
   inspectorExpanded: boolean;
@@ -207,6 +216,7 @@ function initialState() {
     memoOpen: false,
     lockAudit: null as LockAuditResult | null,
     scorecard: null as Scorecard | null,
+    efficiencyBests: null as EfficiencyBestsRecord | null,
     datasets: null as DatasetExportBundle | null,
     selection: { issueId: null, submissionId: null } as InspectorSelection,
     inspectorExpanded: false,
@@ -294,12 +304,16 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         case "LOCKED":
           patch.scorecard = event.scorecard;
           cue = "gatePass";
-          recordArcadeScore(
-            "protocol-drift",
-            100 +
-              event.scorecard.badges.filter((b) => b.earned).length * 100 +
-              Math.round(event.scorecard.meanGoodwill)
-          );
+          recordArcadeScore("protocol-drift", event.scorecard.score);
+          patch.efficiencyBests = saveEfficiencyBests(event.scorecard);
+          if (event.scorecard.badges.every((b) => b.earned)) {
+            recordArcadeMilestone("protocol-drift", "all_badges");
+          }
+          if (
+            event.scorecard.efficiency.some((m) => m.id === "chips" && m.medal)
+          ) {
+            recordArcadeMilestone("protocol-drift", "lock_under_par_chips");
+          }
           break;
         case "DATASETS_EXPORTED":
           patch.datasets = event.bundle;
@@ -660,7 +674,12 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       replaying = true;
       let last: EngineResponse | null = null;
       try {
-        await send({ type: "INIT", seed: save.seed, scenario: save.scenario });
+        await send({
+          type: "INIT",
+          seed: save.seed,
+          scenario: save.scenario,
+          rejectedCommands: save.rejectedCommands ?? 0,
+        });
         for (const command of save.commands) {
           if (command.type === "INIT") continue;
           last = await send(command);

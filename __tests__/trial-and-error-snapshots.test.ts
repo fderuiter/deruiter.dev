@@ -620,7 +620,7 @@ describe("study events", () => {
     const state = play(noop, [...select(DISPOSITION), { type: "PLAY_HAND" }]);
     expect(state.snapshots).toHaveLength(1);
     expect(state.lastEvent?.message).toBe(
-      "High Table scored 80 (40 Chips × 2 Mult). Round 80 of 7500."
+      "High Table scored 80 (40 Chips × 2 Mult). Round 80 of 4500."
     );
   });
 
@@ -700,8 +700,9 @@ describe("the run carries the study's snapshots between Blinds", () => {
     };
     const go = (run: ReturnType<typeof createRunState>, ...a: RunAction[]) =>
       a.reduce((r, action) => advanceRun(quick, r, action), run);
+    // Dealt in written order (#2055), so the scripted cards are in hand.
     let run = go(
-      createRunState(quick),
+      createRunState(quick, undefined, {}, "AUTHORED"),
       { type: "TOGGLE_SELECT", cardId: "C-T14.1.1-C" },
       { type: "PLAY_HAND" },
       { type: "NEXT_BLIND" },

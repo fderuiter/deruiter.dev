@@ -55,7 +55,10 @@ const MINI: Campaign = {
     {
       id: "mini-1",
       title: "Act I: Phase I Safety",
-      blinds: [withQuota(DEMOGRAPHICS_SCENARIO, 1)],
+      // The AE listing is always dealt, whatever the seed's shuffle (#2055).
+      blinds: [
+        { ...withQuota(DEMOGRAPHICS_SCENARIO, 1), pinned: ["C-L16.2.7"] },
+      ],
     },
   ],
   endless: {

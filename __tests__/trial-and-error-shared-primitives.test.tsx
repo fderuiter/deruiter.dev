@@ -11,6 +11,7 @@ import {
 import { CardTable } from "@/components/trial-and-error/CardTable";
 import { LevelUpPlate } from "@/components/trial-and-error/LevelUpPlate";
 import type { LevelUp } from "@/lib/trial-and-error";
+import { AUTHORED_CAMPAIGN } from "./utils/trial-and-error-authored";
 
 /**
  * Issue #1589: the card table's Shift+R and H shortcuts are bound through
@@ -52,7 +53,7 @@ const sheet = () => screen.queryByTestId("hand-sheet");
 
 describe("Card table shortcuts on useHotkeys (#1589)", () => {
   it("opens Run Info only on an upper-case Shift+R with no other modifier", () => {
-    render(<CardTable seed="keys" />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} seed="keys" />);
     const target = card(DRAFT_A);
     target.focus();
 
@@ -68,7 +69,7 @@ describe("Card table shortcuts on useHotkeys (#1589)", () => {
   });
 
   it("ignores Shift+R while focus is outside the table", () => {
-    render(<CardTable seed="outside" />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} seed="outside" />);
     const outside = document.createElement("button");
     document.body.appendChild(outside);
     try {
@@ -83,7 +84,7 @@ describe("Card table shortcuts on useHotkeys (#1589)", () => {
   it("still fires inside a keyboard boundary, as the raw listeners did", () => {
     render(
       <div data-keyboard-boundary="true">
-        <CardTable seed="boundary" />
+        <CardTable act={AUTHORED_CAMPAIGN} seed="boundary" />
       </div>
     );
     const target = card(DRAFT_A);
@@ -102,7 +103,7 @@ describe("Card table shortcuts on useHotkeys (#1589)", () => {
     const onWindow = vi.fn();
     window.addEventListener("keydown", onWindow);
     try {
-      render(<CardTable seed="page-h" />);
+      render(<CardTable act={AUTHORED_CAMPAIGN} seed="page-h" />);
       fireEvent.keyDown(document.body, { key: "h" });
       expect(sheet()).toBeNull();
       expect(onWindow).toHaveBeenCalledTimes(1);
@@ -113,13 +114,13 @@ describe("Card table shortcuts on useHotkeys (#1589)", () => {
   });
 
   it("opens the cheat sheet on a Caps Lock H without Shift", () => {
-    render(<CardTable seed="caps" />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} seed="caps" />);
     fireEvent.keyDown(card(DRAFT_A), { key: "H" });
     expect(sheet()).not.toBeNull();
   });
 
   it("stops listening once the table unmounts", () => {
-    const view = render(<CardTable seed="gone" />);
+    const view = render(<CardTable act={AUTHORED_CAMPAIGN} seed="gone" />);
     const target = card(DRAFT_A);
     view.unmount();
     document.body.appendChild(target);

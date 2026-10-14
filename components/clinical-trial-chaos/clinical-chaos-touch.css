@@ -211,9 +211,12 @@
   user-select: none;
   -webkit-touch-callout: none;
 }
-/* The keys grow with the screen, up to a thumb-sized pad on the 13-inch. */
-.cc-touch .cc-key {
-  min-height: clamp(3.5rem, 6.5dvh, 5.5rem);
+/* On the 13-inch held upright the keys grow to a thumb-sized pad. Smaller
+   screens need that height for the calibration notes on the first shift. */
+@media (min-height: 1300px) {
+  .cc-touch .cc-key {
+    min-height: 5rem;
+  }
 }
 .cc-touch .cc-key:active:not(:disabled) {
   transform: scale(0.98);

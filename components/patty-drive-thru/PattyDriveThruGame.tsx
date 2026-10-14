@@ -28,6 +28,7 @@ import {
 } from "@/lib/patty-drive-thru";
 import {
   getArcadeProgress,
+  recordArcadeMilestone,
   recordArcadeScore,
 } from "@/lib/arcade-achievements";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
@@ -286,6 +287,13 @@ export function PattyDriveThruGame({
             outcome: state.shift.outcome,
             served: state.shift.tallies.served,
           });
+          if (
+            state.shift.outcome === "completed" &&
+            state.shift.tallies.served > 0 &&
+            state.shift.tallies.late === 0
+          ) {
+            recordArcadeMilestone(PATTY_GAME_ID, "zero_late_shift");
+          }
         }
       }),
     [store]

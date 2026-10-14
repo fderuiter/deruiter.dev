@@ -9,7 +9,10 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import { IconPlayerPlay } from "@tabler/icons-react";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { ResultCard } from "@/components/arcade/ResultCard";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
 import {
@@ -1409,6 +1412,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       // Update simulation in mutable ref if active
       if (stateRef.current.gameState === "playing") {
         const prevStatus = stateRef.current.gameState;
+        const prevStage = stateRef.current.stage ?? 1;
         // On milestone status transition, sync the throttled React UI
         // immediately. Otherwise, sync low-frequency React UI throttled to
         // 10 FPS (every 6 frames).
@@ -1439,6 +1443,17 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             });
             recordArcadeScore("garmin-watch", nextState.highScore);
           }
+        }
+
+        // Trophies follow the course, not the score (#2047): a new stage
+        // means the last one's pole was reached, and the summary is the 5K.
+        // The loop only steps a playing run, so the summary lands once.
+        const finished = nextState.gameState === "summary";
+        if (finished || (nextState.stage ?? 1) > prevStage) {
+          recordArcadeMilestone("garmin-watch", "stage_cleared");
+        }
+        if (finished) {
+          recordArcadeMilestone("garmin-watch", "run_complete");
         }
       }
 

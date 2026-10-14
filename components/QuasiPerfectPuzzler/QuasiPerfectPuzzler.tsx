@@ -28,7 +28,10 @@ import {
   safeGetRawItem,
   safeSetRawItem,
 } from "@/lib/safe-storage";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import {
   CompilerLogEntry,
   GameMode,
@@ -115,6 +118,14 @@ function writeStoredProgress(progress: GameProgressState): void {
     (score) => score && !score.usedSorry && score.stars > 0
   ).length;
   recordArcadeScore("quasi-puzzler", provenCount * 100);
+  const scores = puzzleLevels.map((lvl) => progress.completedLevels?.[lvl.id]);
+  const honest = scores.every((score) => score && !score.usedSorry);
+  if (honest && scores.every((score) => score && score.stars > 0)) {
+    recordArcadeMilestone("quasi-puzzler", "all_levels_proven");
+  }
+  if (honest && scores.every((score) => score && score.stars >= 3)) {
+    recordArcadeMilestone("quasi-puzzler", "all_gold");
+  }
 }
 
 function isGameMode(value: string | null): value is GameMode {

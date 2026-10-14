@@ -17,8 +17,11 @@ import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
   describeModeRules,
+  getLevelPar,
   getStartingRam,
   getTacticBlock,
+  isGolfedRun,
+  isLevelGolfed,
   mergeLevelScore,
   parseGameProgress,
   resolveResumeLevelIndex,
@@ -224,6 +227,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const parsedProgress: GameProgressState = useMemo(
     () => parseGameProgress(rawProgress),
     [rawProgress]
+  );
+
+  // Step par and the saved Golfed badge for the level on the board (#2059).
+  const currentLevelPar = getLevelPar(currentLevel);
+  const currentLevelGolfed = isLevelGolfed(
+    parsedProgress.completedLevels?.[currentLevel.id]
   );
 
   // Totals for the campaign-complete card: only honest proofs count (#1939).
@@ -531,6 +540,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             usedSorry
           );
 
+          const steps = updatedSteps.length;
           const score: LevelScore = {
             levelId: currentLevel.id,
             completed: true,
@@ -539,6 +549,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             stars,
             morality: usedSorry ? -100 : 100,
             timestamp: Date.now(),
+            golfed: isGolfedRun(steps, getLevelPar(currentLevel), usedSorry),
+            steps,
           };
 
           setCurrentScore(score);
@@ -1142,6 +1154,31 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 <p className="text-xs text-zinc-400 break-words">
                   {currentLevel.description}
                 </p>
+                <p
+                  data-testid="quasi-level-targets"
+                  className="mt-1 text-[11px] text-zinc-400 break-words tabular-nums"
+                >
+                  <span className="font-bold text-amber-300">Gold</span>: use{" "}
+                  {Math.max(
+                    0,
+                    currentLevel.initialRam - currentLevel.goldRamTarget
+                  )}{" "}
+                  GB or less
+                  {currentLevelPar !== null && (
+                    <>
+                      {" · "}
+                      <span data-testid="quasi-level-par">
+                        par {currentLevelPar} tactic
+                        {currentLevelPar === 1 ? "" : "s"}
+                      </span>
+                    </>
+                  )}
+                  {currentLevelGolfed && (
+                    <span className="ml-2 rounded border border-emerald-500/40 px-1.5 text-[10px] font-bold text-emerald-300">
+                      GOLFED
+                    </span>
+                  )}
+                </p>
               </div>
 
               <RAMGauge
@@ -1561,6 +1598,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   getStartingRam(currentLevel, gameMode) -
                   currentScore.remainingRam
                 }
+                par={currentLevelPar}
                 campaignStars={campaignStars}
                 onRestartCampaign={() => loadLevel(0)}
                 onDismiss={() => dismissResult(currentScore.timestamp)}

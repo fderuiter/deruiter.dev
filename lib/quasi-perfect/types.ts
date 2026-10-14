@@ -100,7 +100,9 @@ export interface PuzzlerLevelDef {
   silverRamTarget: number;
   hypotheses: ASTNode[];
   goal: ASTNode;
-  availableTactics: (TacticId | { id: TacticId; hypothesis?: string; labelOverride?: string })[];
+  availableTactics: (
+    TacticId | { id: TacticId; hypothesis?: string; labelOverride?: string }
+  )[];
   hints: [string, string, string]; // [Tier 1 Concept, Tier 2 Target Node, Tier 3 Tactic Suggestion]
   leanTheoremName: string;
   leanTypeSignature: string;
@@ -133,6 +135,14 @@ export interface LevelScore {
   stars: number; // 0 (sorry), 1 (bronze), 2 (silver), 3 (gold)
   morality: number; // 100 for true proof, -100 for sorry
   timestamp: number;
+  /**
+   * True once the level has been proved honestly in no more tactics than its
+   * par (#2059). Missing in progress saved before the badge existed, which
+   * reads as not golfed.
+   */
+  golfed?: boolean;
+  /** Tactics the run applied; missing in older saves. */
+  steps?: number;
 }
 
 export interface GameProgressState {

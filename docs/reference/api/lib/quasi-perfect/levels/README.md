@@ -8,4 +8,9 @@
 
 ## Variables
 
+- [LEVEL\_REFERENCE\_PROOFS](variables/LEVEL_REFERENCE_PROOFS.md)
 - [puzzleLevels](variables/puzzleLevels.md)
+
+## Functions
+
+- [getLevelPar](functions/getLevelPar.md)

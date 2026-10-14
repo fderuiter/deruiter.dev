@@ -18,6 +18,8 @@ interface VictoryModalProps {
   leanCode?: string;
   /** Simulated RAM this run spent, in GB; mode-independent, like the star targets. */
   ramUsed?: number;
+  /** The level's step par in tactics, or null when it has none (#2059). */
+  par?: number | null;
   /** Best stars saved across every level, for the campaign-complete card. */
   campaignStars?: { earned: number; possible: number; proven: number };
   onNextLevel: () => void;
@@ -36,6 +38,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   currentLevelIndex,
   leanCode,
   ramUsed,
+  par = null,
   campaignStars,
   onNextLevel,
   onRestartLevel,
@@ -59,6 +62,8 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   const goldBudget = Math.max(0, level.initialRam - level.goldRamTarget);
   const silverBudget = Math.max(0, level.initialRam - level.silverRamTarget);
   const shownStars = isSorry ? 0 : score.stars;
+  const runGolfed = !isSorry && score.golfed === true;
+  const steps = score.steps;
 
   return (
     <motion.div
@@ -145,6 +150,31 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           </p>
         )}
 
+        {!isSorry && par !== null && (
+          <div
+            data-testid="victory-par"
+            className="-mt-2 mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] text-zinc-400"
+          >
+            <span className="tabular-nums">
+              {steps !== undefined &&
+                `${steps} tactic${steps === 1 ? "" : "s"} applied. `}
+              Par {par} tactic{par === 1 ? "" : "s"}.
+            </span>
+            {runGolfed ? (
+              <span
+                data-testid="victory-golfed"
+                className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300"
+              >
+                GOLFED · at or under par
+              </span>
+            ) : (
+              <span className="text-zinc-400">
+                Prove it in {par} or fewer for the Golfed badge.
+              </span>
+            )}
+          </div>
+        )}
+
         {isLastLevel && !isSorry && campaignStars && (
           <div
             data-testid="victory-campaign-complete"
@@ -190,6 +220,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           >
             Saved best: {savedBest.stars} of 3 stars,{" "}
             {savedBest.remainingRam.toFixed(1)} GB remaining
+            {savedBest.golfed === true ? ", Golfed" : ""}
             {isSorry ? " (this run did not replace it)" : ""}
           </p>
         )}

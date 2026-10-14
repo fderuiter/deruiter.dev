@@ -10,7 +10,9 @@
 
 Parse stored campaign progress without throwing. Malformed JSON, a
 non-object value or a non-object `completedLevels` all become empty
-progress. `currentLevelIndex` is passed through as stored, so
+progress. A level's `golfed` or `steps` field of the wrong type is
+dropped, so a save written before the Golfed badge (#2059) loads as it
+did and simply has no badges. `currentLevelIndex` is passed through as stored, so
 `resolveResumeLevelIndex` can tell a missing index from a corrupt one.
 
 ## Parameters

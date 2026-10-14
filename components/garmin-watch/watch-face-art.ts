@@ -2555,6 +2555,42 @@ function drawSpectator(ctx: Ctx, foe: Foe) {
   ctx.fillRect(mid + 3.8, 0, 3, 3.2);
 }
 
+/**
+ * The Wall (#1994): a stack of bricks with a scowl, flashing through its
+ * grace after a hit, with one pip per hit point left.
+ */
+function drawWall(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  if (foe.graceMs > 0 && Math.floor(foe.graceMs / 80) % 2 === 0) return;
+  ctx.fillStyle = FOE_COLORS.iron;
+  ctx.fillRect(0, 0, w, h);
+  // Bricks in courses of two, offset row by row.
+  ctx.fillStyle = FOE_COLORS.coral;
+  const rows = 5;
+  const bh = h / rows;
+  for (let r = 0; r < rows; r++) {
+    const shift = r % 2 === 0 ? 0 : -w / 4;
+    for (let c = 0; c < 3; c++) {
+      const left = Math.max(0, shift + (c * w) / 2 + 0.6);
+      const right = Math.min(w, shift + ((c + 1) * w) / 2 - 0.6);
+      if (right > left)
+        ctx.fillRect(left, r * bh + 0.6, right - left, bh - 1.2);
+    }
+  }
+  // A scowl: two eyes under a heavy brow.
+  ctx.fillStyle = FOE_COLORS.dark;
+  ctx.fillRect(4, 9, 5, 1.6);
+  ctx.fillRect(w - 9, 9, 5, 1.6);
+  ctx.fillRect(5, 11.5, 3, 3);
+  ctx.fillRect(w - 8, 11.5, 3, 3);
+  ctx.fillRect(w / 2 - 4, 20, 8, 1.6);
+  // Hit pips.
+  ctx.fillStyle = FOE_COLORS.amber;
+  for (let i = 0; i < foe.hp; i++) {
+    ctx.fillRect(w / 2 - 6.5 + i * 4.5, -6, 3, 2.5);
+  }
+}
+
 /** Course foes, drawn at their screen x. A Fun Run turns them to spectators. */
 function drawFoes(
   ctx: Ctx,
@@ -2567,7 +2603,7 @@ function drawFoes(
     if (x > CANVAS_SIZE || x + f.width < -8) continue;
     ctx.save();
     ctx.translate(x, f.y);
-    if (cheering && f.kind !== "repmax") {
+    if (cheering && f.kind !== "repmax" && f.kind !== "wall") {
       drawSpectator(ctx, f);
       ctx.restore();
       continue;
@@ -2593,6 +2629,9 @@ function drawFoes(
         break;
       case "repmax":
         drawRepMax(ctx, f);
+        break;
+      case "wall":
+        drawWall(ctx, f);
         break;
     }
     ctx.restore();
@@ -2672,6 +2711,7 @@ function drawSecondWindLine(ctx: Ctx, wind: SecondWind) {
 const RACE_COURSE_SHORT: Record<RaceCourse, string> = {
   saturday5k: "SAT 5K",
   daily: "DAILY",
+  raceday: "RACE DAY",
 };
 
 /**
@@ -2679,7 +2719,11 @@ const RACE_COURSE_SHORT: Record<RaceCourse, string> = {
  * the Second Wind line and clear of the medal slots and the banner.
  */
 function drawRaceLine(ctx: Ctx, race: RaceSetup) {
-  const line = `${RACE_COURSE_SHORT[race.course]} · ${RACE_CATEGORY_INFO[race.category].short}`;
+  // Race Day has one category, so its pill names the race alone (#1994).
+  const line =
+    race.course === "raceday"
+      ? RACE_COURSE_SHORT.raceday
+      : `${RACE_COURSE_SHORT[race.course]} · ${RACE_CATEGORY_INFO[race.category].short}`;
   const px = fitTextPx(ctx, line, 6.5, 100, 5);
   const w = Math.min(112, ctx.measureText(line).width + 12);
   const y = 127;
@@ -2690,7 +2734,7 @@ function drawRaceLine(ctx: Ctx, race: RaceSetup) {
   text(ctx, line, FACE_CENTER, y + 7.4, px, FACE_COLORS.text);
 }
 
-/** Foe shots: a lap ping is a small sky diamond, a dumbbell a tumbling bar with plates. */
+/** Foe shots: a lap ping is a small sky diamond, a dumbbell a tumbling bar with plates, a brick a small brick. */
 function drawFoeShots(ctx: Ctx, shots: readonly FoeShot[], camera: number) {
   const r = FOE_SHOT_SIZE / 2;
   for (const s of shots) {
@@ -2706,6 +2750,11 @@ function drawFoeShots(ctx: Ctx, shots: readonly FoeShot[], camera: number) {
       ctx.lineTo(cx - r, cy);
       ctx.closePath();
       ctx.fill();
+    } else if (s.kind === "brick") {
+      ctx.fillStyle = FOE_COLORS.coral;
+      ctx.fillRect(cx - r - 1, cy - r / 2, FOE_SHOT_SIZE + 2, r + 1);
+      ctx.fillStyle = FOE_COLORS.iron;
+      ctx.fillRect(cx - 0.5, cy - r / 2, 1, r + 1);
     } else {
       // A tumbling dumbbell: a bar with a plate at each end.
       const a = s.x / 6;

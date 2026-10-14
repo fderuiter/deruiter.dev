@@ -9,8 +9,9 @@
 > **damageFoe**(`foe`, `amount`): [`FoeHit`](../interfaces/FoeHit.md)
 
 A hit from a heat bolt, a cape spin, a sliding shell or a Runner's High.
-Ordinary foes are defeated; the Rep Max loses `amount` hit points
-and, until it runs out, has a short grace before the next hit counts.
+Ordinary foes are defeated; the Rep Max loses `amount` hit points and The
+Wall one (#1994), and until it runs out each has a short grace before the
+next hit counts.
 
 ## Parameters
 

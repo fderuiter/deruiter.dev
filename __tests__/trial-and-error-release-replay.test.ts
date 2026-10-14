@@ -21,7 +21,12 @@ import { playBlind } from "./utils/trial-and-error-bot";
  * pack, a reroll), so the shop's own seeded stream is part of the replay.
  */
 const C = BIOSTAT_OPS_CAMPAIGN;
-const SEED = "alpha";
+/**
+ * Any seed the bot wins on. Since decks are shuffled (#2055), "alpha" has the
+ * bot buy a site activation before the DMC milestone, whose enrollments
+ * stale the closed report it can no longer afford to recompile.
+ */
+const SEED = "bravo";
 
 interface Recorded {
   run: RunState;

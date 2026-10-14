@@ -764,9 +764,21 @@ Re-exports [dailySeed](internal/seed/functions/dailySeed.md)
 
 ***
 
+### dealSeed
+
+Re-exports [dealSeed](internal/deal/functions/dealSeed.md)
+
+***
+
 ### decimalPlaces
 
 Re-exports [decimalPlaces](internal/rounding/functions/decimalPlaces.md)
+
+***
+
+### DeckDealing
+
+Re-exports [DeckDealing](internal/deal/type-aliases/DeckDealing.md)
 
 ***
 
@@ -2429,6 +2441,12 @@ Re-exports [ShopState](internal/run/interfaces/ShopState.md)
 ### ShopView
 
 Re-exports [ShopView](internal/run/interfaces/ShopView.md)
+
+***
+
+### shuffledDeckOrder
+
+Re-exports [shuffledDeckOrder](internal/deal/functions/shuffledDeckOrder.md)
 
 ***
 

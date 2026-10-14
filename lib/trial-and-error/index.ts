@@ -245,6 +245,7 @@ export {
   getAllCodexCards,
   importScenarioJson,
 } from "./internal/scenario-compression";
+export { dealSeed, shuffledDeckOrder, type DeckDealing } from "./internal/deal";
 export {
   scoreTimeline,
   type TimelineContext,

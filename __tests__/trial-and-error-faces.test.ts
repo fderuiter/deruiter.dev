@@ -176,9 +176,12 @@ describe("face schema rules", () => {
   it("requires exactly one of face or draft, and a face that matches the card type", () => {
     const [draft, listing] = scenario.deck;
     const parse = (deck: typeof scenario.deck) =>
-      ScenarioSchema.safeParse({ ...scenario, deck }).error?.issues.map((i) =>
-        i.path.join(".")
-      );
+      // Unpinned: a cut-down deck no longer holds the pinned setup.
+      ScenarioSchema.safeParse({
+        ...scenario,
+        deck,
+        pinned: undefined,
+      }).error?.issues.map((i) => i.path.join("."));
     expect(parse([draft, { ...listing, face: undefined }])).toEqual([
       "deck.1.face",
     ]);

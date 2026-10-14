@@ -30,6 +30,8 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
 const DRAFT_A = "C-T14.1.1-A";
 const DM_LISTING = "C-L16.2.4";
+/** The first card of the Big Blind's deal on this seed (#2055). */
+const BIG_BLIND_FIRST = "C-T14.3.3-C";
 
 async function launch(page: Page) {
   await page.goto(ROUTE, { waitUntil: "domcontentloaded" });
@@ -82,7 +84,7 @@ const gridCell = (page: Page, row: number, col: number) =>
     .getByRole("gridcell")
     .nth(col);
 
-/** Clears the Small Blind with Draft A and its listing, then deals the next. */
+/** Clears the Small Blind with its Population Flush, then deals the next. */
 async function clearSmallBlind(page: Page) {
   await winSmallBlind(page);
   await page.getByRole("button", { name: "Next Blind" }).click();
@@ -92,7 +94,11 @@ async function clearSmallBlind(page: Page) {
   await answerSiteAudit(page);
 }
 
-/** Clears the Small Blind with Draft A and its listing. */
+/**
+ * Clears the Small Blind: corrects Draft A, then plays it with its listing,
+ * the disposition table and Drafts B and C, the five cards the Blind always
+ * deals first (#2055), as an ITT Population Flush.
+ */
 async function winSmallBlind(page: Page) {
   await card(page, DRAFT_A).focus();
   await page.keyboard.press("i");
@@ -111,8 +117,13 @@ async function winSmallBlind(page: Page) {
   await page.keyboard.press("Escape");
   await expect(drawer(page)).toBeHidden();
   await page.keyboard.press("Space");
-  await page.keyboard.press("ArrowRight");
-  await page.keyboard.press("Space");
+  for (let i = 0; i < 4; i++) {
+    await page.keyboard.press("ArrowRight");
+    await page.keyboard.press("Space");
+  }
+  await expect(page.getByTestId("hand-preview")).toContainText(
+    "Population Flush"
+  );
   await page.keyboard.press("Enter");
   await page.keyboard.press("Space");
   await expect(page.getByTestId("blind-result")).toContainText("Blind cleared");
@@ -159,13 +170,22 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     await expect(drawer(page)).toBeHidden();
     await expect(card(page, DRAFT_A)).toBeFocused();
 
-    // Select the TLF Pair and play it with Enter.
+    // Select the TLF Pair, then the disposition table and Drafts B and C
+    // for a Population Flush, and play it with Enter.
     await page.keyboard.press("Space");
     await page.keyboard.press("ArrowRight");
     await expect(card(page, DM_LISTING)).toBeFocused();
     await page.keyboard.press("Space");
     await expect(page.getByTestId("hand-preview")).toContainText("TLF Pair");
     await expect(page.getByTestId("unverified-flag")).toBeHidden();
+    for (const id of ["C-T14.1.2", "C-T14.1.1-B", "C-T14.1.1-C"]) {
+      await page.keyboard.press("ArrowRight");
+      await expect(card(page, id)).toBeFocused();
+      await page.keyboard.press("Space");
+    }
+    await expect(page.getByTestId("hand-preview")).toContainText(
+      "Population Flush"
+    );
     await page.keyboard.press("Enter");
 
     // The scoring timeline takes focus on its Skip control; Space skips.
@@ -177,7 +197,9 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     await expect(page.getByTestId("blind-result")).toContainText(
       "Blind cleared"
     );
-    await expect(page.getByTestId("blind-result")).toContainText("828 of 450");
+    await expect(page.getByTestId("blind-result")).toContainText(
+      "4336 of 2000"
+    );
     // Cash-out is the primary next step; Next Blind skips the shop.
     await expect(
       page.getByRole("button", { name: /^Cash out \$\d+k$/ })
@@ -209,7 +231,8 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     ).toBeEnabled();
     await expectNoBlockingViolations(page, "Big Blind crisis");
     await answerSiteAudit(page);
-    await expect(card(page, "C-T14.3.1-A")).toBeFocused();
+    // Focus lands on the first card of the seed's shuffled deal (#2055).
+    await expect(card(page, BIG_BLIND_FIRST)).toBeFocused();
     await expect(
       page.getByRole("button", { name: /Discard · 2 CPU/ })
     ).toBeVisible();
@@ -224,7 +247,7 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     await expectNoBlockingViolations(page, "Run Info");
     await page.keyboard.press("Escape");
     await expect(runInfo).toBeHidden();
-    await expect(card(page, "C-T14.3.1-A")).toBeFocused();
+    await expect(card(page, BIG_BLIND_FIRST)).toBeFocused();
   });
 
   test("stales the Safety outputs when the data moves, and recompiles one with R (T&E-03)", async ({
@@ -522,8 +545,16 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
         "true"
       );
       await correctDraftA(page);
-      await card(page, DRAFT_A).click();
-      await card(page, DM_LISTING).click();
+      // The Small Blind's pinned flush (#2055): one corrected Pair is short.
+      for (const id of [
+        DRAFT_A,
+        DM_LISTING,
+        "C-T14.1.2",
+        "C-T14.1.1-B",
+        "C-T14.1.1-C",
+      ]) {
+        await card(page, id).click();
+      }
 
       // Record what playback shows and any layout shift while it runs: at 4×
       // the final frame holds for only 150 ms, too briefly to poll for.
@@ -613,12 +644,12 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       );
       await expect(player(page)).toBeHidden();
 
-      await expect(page.getByTestId("round-score")).toHaveText("828");
+      await expect(page.getByTestId("round-score")).toHaveText("4336");
       await expect(page.getByTestId("blind-result")).toContainText(
         "Blind cleared"
       );
       await expect(page.getByTestId("blind-result")).toContainText(
-        "828 of 450"
+        "4336 of 2000"
       );
       const probe = await page.evaluate(
         () => (window as Window & { __te?: TeProbe }).__te!
@@ -1416,7 +1447,7 @@ test.describe("Trial & Error boss intro on the Act I Boss (#1083)", () => {
         "Boss: Safety Set Only"
       );
       await expect(page.getByTestId("boss-intro-terms")).toHaveText(
-        "Quota 8500 · 10 CPU"
+        "Quota 5800 · 10 CPU"
       );
       await expect(page.getByTestId("boss-intro-stages")).toHaveCount(0);
       await expect(page.getByTestId("boss-intro-start")).toBeFocused();

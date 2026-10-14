@@ -4,6 +4,7 @@ import {
   ACT_I,
   ActSchema,
   BossBlindModifierSchema,
+  DEFAULT_SEED,
   DEMOGRAPHICS_SCENARIO,
   DOSE_ESCALATION_SCENARIO,
   SPONSOR_SAFETY_SCENARIO,
@@ -14,8 +15,10 @@ import {
   runBlinds,
   createRunState,
   createTableState,
+  dealSeed,
   deriveRunView,
   deriveTableView,
+  shuffledDeckOrder,
   validate,
   type RunAction,
   type RunState,
@@ -28,6 +31,12 @@ import {
 const ACT_I_BLINDS = runBlinds(ACT_I, createRunState(ACT_I));
 /** Act I without its crisis deck, for flows that test the Blinds alone. */
 const QUIET_ACT = { ...ACT_I, crisisDeck: undefined };
+/**
+ * A quiet run dealt in written order (#2055), so the scripted lines below
+ * find their cards; seeded shuffling is covered in trial-and-error-deal.
+ */
+const authoredRun = () =>
+  createRunState(QUIET_ACT, DEFAULT_SEED, {}, "AUTHORED");
 
 const play = (
   scenario: Scenario,
@@ -62,8 +71,18 @@ function fix(scenario: Scenario, cardId: string): TableAction[] {
 /** A winning line for each Blind, within its CPU. */
 const LINES: Record<string, TableAction[]> = {
   [DEMOGRAPHICS_SCENARIO.id]: [
+    // Three corrected drafts, the listing and disposition make an ITT
+    // Population Flush.
     ...fix(DEMOGRAPHICS_SCENARIO, "C-T14.1.1-A"),
-    ...select("C-T14.1.1-A", "C-L16.2.4"),
+    ...fix(DEMOGRAPHICS_SCENARIO, "C-T14.1.1-B"),
+    ...fix(DEMOGRAPHICS_SCENARIO, "C-T14.1.1-C"),
+    ...select(
+      "C-T14.1.1-A",
+      "C-L16.2.4",
+      "C-T14.1.2",
+      "C-T14.1.1-B",
+      "C-T14.1.1-C"
+    ),
     { type: "PLAY_HAND" },
   ],
   [SPONSOR_SAFETY_SCENARIO.id]: [
@@ -103,9 +122,9 @@ describe("Act I contract", () => {
   it("ships three escalating Blinds on one Phase I snapshot", () => {
     expect(ActSchema.safeParse(ACT_I).success).toBe(true);
     expect(ACT_I_BLINDS.map((b) => [b.blind.tier, b.blind.quota])).toEqual([
-      ["SMALL_BLIND", 450],
-      ["BIG_BLIND", 7500],
-      ["BOSS_BLIND", 8500],
+      ["SMALL_BLIND", 2000],
+      ["BIG_BLIND", 4500],
+      ["BOSS_BLIND", 5800],
     ]);
     expect(ACT_I_BLINDS.map((b) => b.blind.name)).toEqual([
       "Small Blind: Internal QC",
@@ -404,7 +423,7 @@ describe("run progression", () => {
     step(run, ...(LINES[ACT_I_BLINDS[run.blindIndex].id] as RunAction[]));
 
   it("starts at the Small Blind with its intro showing", () => {
-    const view = deriveRunView(QUIET_ACT, createRunState(QUIET_ACT));
+    const view = deriveRunView(QUIET_ACT, authoredRun());
     expect(view).toMatchObject({
       blindIndex: 0,
       blindCount: 3,
@@ -417,16 +436,14 @@ describe("run progression", () => {
   });
 
   it("hides the intro once the player acts", () => {
-    const run = step(
-      createRunState(QUIET_ACT),
-      ...(select("C-T14.1.2") as RunAction[]),
-      { type: "DISCARD" }
-    );
+    const run = step(authoredRun(), ...(select("C-T14.1.2") as RunAction[]), {
+      type: "DISCARD",
+    });
     expect(deriveRunView(QUIET_ACT, run).showIntro).toBe(false);
   });
 
   it("refuses Next Blind until the Blind is cleared", () => {
-    const run = step(createRunState(QUIET_ACT), { type: "NEXT_BLIND" });
+    const run = step(authoredRun(), { type: "NEXT_BLIND" });
     expect(run.blindIndex).toBe(0);
     expect(run.table.lastEvent).toMatchObject({
       kind: "REFUSED",
@@ -435,14 +452,14 @@ describe("run progression", () => {
   });
 
   it("plays Small, Big and Boss in order to Act complete", () => {
-    let run = clearCurrent(createRunState(QUIET_ACT));
+    let run = clearCurrent(authoredRun());
     expect(deriveRunView(QUIET_ACT, run).phase).toBe("BLIND_CLEARED");
     const before = run.table.lastEvent!.sequence;
     run = step(run, { type: "NEXT_BLIND" });
     expect(run.blindIndex).toBe(1);
     expect(run.table.lastEvent).toEqual({
       kind: "BLIND_STARTED",
-      message: "Big Blind: Sponsor Safety Review. Target 7500.",
+      message: "Big Blind: Sponsor Safety Review. Target 4500.",
       sequence: before + 1,
     });
     // CPU is the milestone's allocation: it resets for each Blind.
@@ -466,7 +483,7 @@ describe("run progression", () => {
   });
 
   it("derives the table's render facts as Blinds clear and move on (#996)", () => {
-    let run = createRunState(QUIET_ACT);
+    let run = authoredRun();
     let view = deriveRunView(QUIET_ACT, run);
     expect(view.actIndex).toBe(0);
     expect(view.table).toMatchObject({
@@ -506,7 +523,7 @@ describe("run progression", () => {
   });
 
   it("ends the run when a Blind is lost, and restarts from the Small Blind", () => {
-    let run = clearCurrent(createRunState(QUIET_ACT));
+    let run = clearCurrent(authoredRun());
     run = step(run, { type: "NEXT_BLIND" });
     // Discard one card at a time until no hand can be played.
     while (run.table.status === "REVIEWING") {
@@ -526,8 +543,16 @@ describe("run progression", () => {
     expect(restarted.table.lastEvent?.message).toBe(
       "Run restarted. Small Blind: Internal QC."
     );
+    // A restart is a new run: it deals the seed's shuffle, not the old order.
     expect({ ...restarted.table, lastEvent: null }).toEqual(
-      createTableState(DEMOGRAPHICS_SCENARIO)
+      createTableState(
+        DEMOGRAPHICS_SCENARIO,
+        undefined,
+        undefined,
+        null,
+        null,
+        shuffledDeckOrder(DEMOGRAPHICS_SCENARIO, dealSeed(DEFAULT_SEED, 0, 0))
+      )
     );
   });
 
@@ -539,8 +564,8 @@ describe("run progression", () => {
       { type: "NEXT_BLIND" },
       ...(LINES[DOSE_ESCALATION_SCENARIO.id] as RunAction[]),
     ];
-    const once = step(createRunState(QUIET_ACT), ...script);
-    const twice = step(createRunState(QUIET_ACT), ...script);
+    const once = step(authoredRun(), ...script);
+    const twice = step(authoredRun(), ...script);
     expect(twice).toEqual(once);
     expect(JSON.parse(JSON.stringify(once))).toEqual(once);
   });

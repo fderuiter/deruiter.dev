@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { CardTable } from "@/components/trial-and-error/CardTable";
 import { ACT_I, type Act } from "@/lib/trial-and-error";
+import { authoredPlan } from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -81,7 +82,9 @@ function playPair() {
 
 describe("resuming a saved run", () => {
   it("saves after each move and resumes the same table after a reload", () => {
-    const first = render(<CardTable act={act} seed="resume-1" persist />);
+    const first = render(
+      <CardTable act={authoredPlan(act)} seed="resume-1" persist />
+    );
     expect(storage.getItem(KEY)).toBeNull();
     playPair();
     const saved = storage.getItem(KEY);
@@ -94,7 +97,7 @@ describe("resuming a saved run", () => {
     first.unmount();
 
     // The reload: a fresh table on a different seed finds the save.
-    render(<CardTable act={act} seed="other-seed" persist />);
+    render(<CardTable act={authoredPlan(act)} seed="other-seed" persist />);
     const prompt = screen.getByTestId("resume-run");
     expect(prompt.textContent).toContain("Act I: Phase I Safety");
     expect(prompt.textContent).toContain("resume-1");
@@ -115,10 +118,12 @@ describe("resuming a saved run", () => {
   });
 
   it("asks before a new run discards the save, and can keep it", () => {
-    const first = render(<CardTable act={act} seed="resume-2" persist />);
+    const first = render(
+      <CardTable act={authoredPlan(act)} seed="resume-2" persist />
+    );
     playPair();
     first.unmount();
-    render(<CardTable act={act} persist />);
+    render(<CardTable act={authoredPlan(act)} persist />);
     fireEvent.click(screen.getByRole("button", { name: "New run" }));
     expect(screen.getByTestId("resume-confirm-new").textContent).toContain(
       "The saved run will be discarded."
@@ -137,7 +142,7 @@ describe("resuming a saved run", () => {
 
   it("starts normally over a corrupt save and replaces it on the first move", () => {
     storage.setItem(KEY, "{not json");
-    render(<CardTable act={act} seed="resume-3" persist />);
+    render(<CardTable act={authoredPlan(act)} seed="resume-3" persist />);
     expect(screen.queryByTestId("resume-run")).toBeNull();
     fireEvent.click(card("C-T14.1.1-A"));
     expect(storage.getItem(KEY)).toContain('"seed":"resume-3"');
@@ -145,7 +150,9 @@ describe("resuming a saved run", () => {
 
   it("works as today when storage is missing or throws", () => {
     useStorage(undefined);
-    const missing = render(<CardTable act={act} seed="resume-4" persist />);
+    const missing = render(
+      <CardTable act={authoredPlan(act)} seed="resume-4" persist />
+    );
     playPair();
     expect(screen.getByTestId("round-score")).toBeTruthy();
     missing.unmount();
@@ -160,7 +167,7 @@ describe("resuming a saved run", () => {
         throw new Error("SecurityError");
       },
     });
-    render(<CardTable act={act} seed="resume-4" persist />);
+    render(<CardTable act={authoredPlan(act)} seed="resume-4" persist />);
     expect(screen.queryByTestId("resume-run")).toBeNull();
     playPair();
     expect(screen.getByTestId("round-score")).toBeTruthy();
@@ -168,7 +175,7 @@ describe("resuming a saved run", () => {
 
   it("never reads or writes a save unless asked to persist", () => {
     storage.setItem(KEY, "{}");
-    render(<CardTable act={act} seed="resume-5" />);
+    render(<CardTable act={authoredPlan(act)} seed="resume-5" />);
     expect(screen.queryByTestId("resume-run")).toBeNull();
     playPair();
     expect(storage.getItem(KEY)).toBe("{}");
@@ -186,7 +193,7 @@ describe("resuming a saved run", () => {
         ...act.blinds.slice(1),
       ],
     };
-    render(<CardTable act={short} seed="resume-6" persist />);
+    render(<CardTable act={authoredPlan(short)} seed="resume-6" persist />);
     fireEvent.click(card("C-T14.1.1-A"));
     expect(storage.getItem(KEY)).not.toBeNull();
     fireEvent.click(card("C-L16.2.4"));

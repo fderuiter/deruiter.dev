@@ -20,6 +20,10 @@ import {
   type TableAction,
   type TimelineStep,
 } from "@/lib/trial-and-error";
+import {
+  AUTHORED_CAMPAIGN,
+  ONE_PAIR_CAMPAIGN,
+} from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -107,7 +111,7 @@ function playClearingPair() {
 
 describe("ScorePlayer on the Card Table", () => {
   it("plays the timeline step by step, in the domain's order, with input locked", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     playZeroedPair();
     const steps = expectedTimeline(ZEROED_PAIR);
 
@@ -143,7 +147,7 @@ describe("ScorePlayer on the Card Table", () => {
   });
 
   it("holds the Blind's round score until the TOTAL step lands", () => {
-    render(<CardTable />);
+    render(<CardTable act={ONE_PAIR_CAMPAIGN} />);
     playClearingPair();
     expect(screen.getByTestId("round-score").textContent?.trim()).toBe("0");
     expect(screen.queryByTestId("blind-result")).toBeNull();
@@ -158,7 +162,7 @@ describe("ScorePlayer on the Card Table", () => {
   });
 
   it("catches fire and flashes CLEARED when the hand crosses the target", () => {
-    render(<CardTable />);
+    render(<CardTable act={ONE_PAIR_CAMPAIGN} />);
     playClearingPair();
     const playerEl = player()!;
     // Advance until the last step (BLIND_PROGRESS) is shown, before the hold ends.
@@ -197,7 +201,7 @@ describe("ScorePlayer on the Card Table", () => {
       );
     };
     try {
-      render(<CardTable />);
+      render(<CardTable act={AUTHORED_CAMPAIGN} />);
       playZeroedPair();
       for (let i = 0; i < 20 && !screen.queryByTestId("zero-slam"); i++) {
         advance(450);
@@ -207,7 +211,7 @@ describe("ScorePlayer on the Card Table", () => {
       animate.mockClear();
 
       mockMedia({ compact: true });
-      render(<CardTable />);
+      render(<CardTable act={AUTHORED_CAMPAIGN} />);
       playZeroedPair();
       for (let i = 0; i < 20 && !screen.queryByTestId("zero-slam"); i++) {
         advance(450);
@@ -227,14 +231,14 @@ describe("ScorePlayer on the Card Table", () => {
       announced: announce.mock.calls.map((c) => c[0]),
     });
 
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     playZeroedPair();
     elapse(10_000);
     const watched = finalState();
     cleanup();
     announce.mockClear();
 
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     playZeroedPair();
     advance(450);
     fireEvent.keyDown(screen.getByRole("button", { name: /Skip/ }), {
@@ -246,7 +250,7 @@ describe("ScorePlayer on the Card Table", () => {
     cleanup();
     announce.mockClear();
 
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     playZeroedPair();
     fireEvent.click(player()!);
     expect(player()).toBeNull();
@@ -254,7 +258,7 @@ describe("ScorePlayer on the Card Table", () => {
   });
 
   it("plays faster at 4× and remembers the choice", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const four = screen.getByRole("button", { name: "4×" });
     fireEvent.click(four);
     expect(four.getAttribute("aria-pressed")).toBe("true");
@@ -270,7 +274,7 @@ describe("ScorePlayer on the Card Table", () => {
   });
 
   it("never exceeds about 4 s at 1×, however long the timeline", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     playZeroedPair();
     elapse(4000);
     expect(player()).toBeNull();
@@ -278,7 +282,7 @@ describe("ScorePlayer on the Card Table", () => {
 
   it("under reduced motion resolves at once with one summary announcement", () => {
     mockMedia({ reduced: true });
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     playZeroedPair();
     expect(player()).toBeNull();
     expect(screen.getByTestId("last-hand")).not.toBeNull();

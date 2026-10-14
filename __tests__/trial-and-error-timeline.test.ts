@@ -256,6 +256,6 @@ describe("scoreTimeline", () => {
       "Table 14.1.1: +30 Chips, +1 Mult.",
       "Listing 16.2.4: +20 Chips.",
     ]);
-    expect(last(steps)).toMatchObject({ before: 0, after: 0, target: 450 });
+    expect(last(steps)).toMatchObject({ before: 0, after: 0, target: 2000 });
   });
 });

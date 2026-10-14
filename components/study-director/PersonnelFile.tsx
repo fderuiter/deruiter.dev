@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import { DIFFICULTIES } from "@/lib/study-director";
 import { PROFILES, importCareer, type CareerFile } from "./career";
+import { DIFFICULTY_TEXT } from "./DifficultyPicker";
 
 const Stat: React.FC<{ label: string; value: React.ReactNode }> = ({
   label,
@@ -94,6 +96,43 @@ export const PersonnelFile: React.FC<{
       </dl>
 
       <h4 className="mt-4 text-[10px] tracking-[0.14em] text-[var(--sd-muted)] uppercase">
+        Best by study conditions
+      </h4>
+      <ul
+        data-testid="study-career-bests"
+        className="mt-2 grid gap-1.5 sm:grid-cols-3"
+      >
+        {DIFFICULTIES.map((id) => {
+          const best = career.bests[id];
+          return (
+            <li
+              key={id}
+              className="flex min-w-0 items-center justify-between gap-2 border border-[var(--sd-hairline)] px-2 py-1.5 text-xs"
+            >
+              <span className="min-w-0 truncate text-zinc-300">
+                {DIFFICULTY_TEXT[id].label}
+              </span>
+              <span className="shrink-0 font-bold text-[var(--sd-text)] tabular-nums">
+                {best ? (
+                  <>
+                    {best.grade}{" "}
+                    <span
+                      aria-label={`${best.stars} of 5 stars`}
+                      className="text-[var(--sd-amber)]"
+                    >
+                      {"★".repeat(best.stars)}
+                    </span>
+                  </>
+                ) : (
+                  "None"
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+
+      <h4 className="mt-4 text-[10px] tracking-[0.14em] text-[var(--sd-muted)] uppercase">
         Titles earned, {earned} of {PROFILES.length}
       </h4>
       <ul className="mt-2 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-4">
@@ -146,6 +185,12 @@ export const PersonnelFile: React.FC<{
                 </span>
                 <span className="min-w-0 break-words text-zinc-300">
                   {run.headline}
+                  {run.difficulty ? (
+                    <span className="text-[var(--sd-muted)]">
+                      {" "}
+                      · {DIFFICULTY_TEXT[run.difficulty].label}
+                    </span>
+                  ) : null}
                 </span>
               </li>
             ))}

@@ -38,6 +38,14 @@ The clock, or "Overnight" while the player is at home between days.
 
 ***
 
+### difficulty
+
+> **difficulty**: `"standard"` \| `"calm"` \| `"rescue"`
+
+How hard the study started (#2058). A save from before has none: standard.
+
+***
+
 ### energy
 
 > **energy**: `number`

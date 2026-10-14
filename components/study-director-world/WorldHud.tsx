@@ -3,6 +3,7 @@
 import React from "react";
 import type { HudReadout } from "@/lib/study-director-world";
 import { clamp } from "@/lib/game-utils";
+import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
 import { PHASE_LABEL, dayPhase, meterTone } from "./hud-model";
 
 const money = (dollars: number) =>
@@ -57,8 +58,9 @@ const Bar: React.FC<{ label: string; value: number }> = ({ label, value }) => {
 
 /**
  * The world's HUD: day and weekday, clock, the player's energy and focus,
- * and the three things the world shows directly. There are no Integrity,
- * Compliance or Team meters: the player infers those from the office.
+ * the three things the world shows directly, and how hard the study
+ * started. There are no Integrity, Compliance or Team meters: the player
+ * infers those from the office.
  */
 export const WorldHud: React.FC<{
   hud: HudReadout;
@@ -73,7 +75,7 @@ export const WorldHud: React.FC<{
     <div className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)]">
       <dl
         data-testid="world-hud"
-        className="grid grid-cols-3 divide-[var(--sd-hairline)] lg:grid-cols-7 lg:divide-x"
+        className="grid grid-cols-3 divide-[var(--sd-hairline)] lg:grid-cols-8 lg:divide-x"
       >
         <Cell label="Day">
           {hud.day} · {hud.weekday}
@@ -110,6 +112,11 @@ export const WorldHud: React.FC<{
         </Cell>
         <Cell label="Enrollment">
           {hud.enrollment.enrolled} / {hud.enrollment.target}
+        </Cell>
+        <Cell label="Conditions">
+          <span data-testid="world-difficulty">
+            {DIFFICULTY_TEXT[hud.difficulty].label}
+          </span>
         </Cell>
       </dl>
       {goal ? (

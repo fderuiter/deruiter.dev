@@ -106,7 +106,7 @@ function FormPane({
         aria-label="Source worksheet"
         className="border border-zinc-700 bg-zinc-100 p-2 text-[11px] text-zinc-900"
       >
-        <h4 className="font-semibold">SOURCE WORKSHEET (SCAN)</h4>
+        <h3 className="font-semibold">SOURCE WORKSHEET (SCAN)</h3>
         {sheet ? (
           <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2">
             <dt>Hospital</dt>
@@ -133,7 +133,7 @@ function FormPane({
         aria-label="Electronic entry"
         className="border border-zinc-700 bg-[#0d0e11] p-2 text-[11px]"
       >
-        <h4 className="font-semibold text-zinc-100">ELECTRONIC ENTRY (eCRF)</h4>
+        <h3 className="font-semibold text-zinc-100">ELECTRONIC ENTRY (eCRF)</h3>
         {revision ? (
           <>
             <p className="text-zinc-300">
@@ -300,9 +300,9 @@ function TracePane({
       {view.vsLedger.filter((r) => r.submissionId === submissionId).length >
       0 ? (
         <div>
-          <h4 className="text-[11px] font-semibold text-zinc-100">
+          <h3 className="text-[11px] font-semibold text-zinc-100">
             SDTM VS rows
-          </h4>
+          </h3>
           <ul className="space-y-0.5 text-[11px] text-zinc-200">
             {view.vsLedger
               .filter((r) => r.submissionId === submissionId)
@@ -365,7 +365,7 @@ function Composer({ issue, view }: { issue: Issue; view: ProtocolDriftView }) {
         void send();
       }}
     >
-      <h4 className="font-semibold text-zinc-100">STRUCTURED COMPOSER</h4>
+      <h3 className="font-semibold text-zinc-100">STRUCTURED COMPOSER</h3>
       <p>
         <span className="text-zinc-300">Target </span>
         <span className="break-words text-zinc-100">
@@ -493,9 +493,9 @@ function ReviewPane({
   return (
     <div className="space-y-2 p-2">
       <section aria-label="Active issues">
-        <h4 className="text-[11px] font-semibold text-zinc-100">
+        <h3 className="text-[11px] font-semibold text-zinc-100">
           Issues ({view.issues.length})
-        </h4>
+        </h3>
         {view.issues.length === 0 ? (
           <p className="text-zinc-300">No issues raised.</p>
         ) : (

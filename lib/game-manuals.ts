@@ -837,6 +837,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "CDISC CT & MedDRA",
       },
       {
+        title: "Fresh Data Every Shift",
+        detail:
+          "Most flagged vital signs, labs and dates are generated for each subject: a true value with one data-entry error applied (a wrong or unconverted unit, a slipped decimal point, a stray zero, a US-order or impossible date). Read the raw entry and work out the error; memorising last run's answers will not help. AE coding and medication puzzles stay hand-written.",
+        badge: "Procedural Queries",
+      },
+      {
         title: "21 CFR § 11.50 Manifestation of Signatures",
         detail:
           "Electronic records require unambiguous intent ('Intent to Submit', 'Urgent Safety Expedited', etc.). Submitting unverified raw data triggers immediate audit rejection.",

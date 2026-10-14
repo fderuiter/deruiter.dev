@@ -12,6 +12,9 @@
 
 > **corruptions**: `object`[]
 
+Authored puzzles. A field with a procedural generator (#2088) may leave
+this empty; its flagged observations are then always generated.
+
 #### correctedValue
 
 > **correctedValue**: `string`

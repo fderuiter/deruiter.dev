@@ -136,22 +136,40 @@ vi.mock("@/lib/clinical-trial-chaos/engine", async (importOriginal) => {
 
 // Lets a test make every spawned subject arrive with flagged fields, so the
 // dossier lifelines always have something to act on (#1673).
-const spawnFlags = vi.hoisted(() => ({ alwaysFlagged: false }));
+// `procedural` makes every spawned subject carry one generated observation
+// (#2088) drawn from a fixed seed.
+const spawnFlags = vi.hoisted(() => ({
+  alwaysFlagged: false,
+  procedural: false,
+}));
 vi.mock("@/lib/clinical-trial-chaos/scenarios", async (importOriginal) => {
   const actual =
     await importOriginal<
       typeof import("@/lib/clinical-trial-chaos/scenarios")
     >();
+  const { generateProceduralObservation } =
+    await import("@/lib/clinical-trial-chaos/observation-generators");
+  const { createSeededRandom } = await import("@/lib/game-utils");
   return {
     ...actual,
     generateClinicalSubject: (
       ...args: Parameters<typeof actual.generateClinicalSubject>
     ) => {
       const [errorProbability, ...rest] = args;
-      return actual.generateClinicalSubject(
+      const subject = actual.generateClinicalSubject(
         spawnFlags.alwaysFlagged ? 1 : errorProbability,
         ...rest
       );
+      if (!spawnFlags.procedural) return subject;
+      const generated = generateProceduralObservation({
+        field: "Weight",
+        kind: "unit-error",
+        random: createSeededRandom(2088),
+        id: `${subject.id}-weight`,
+      });
+      return generated
+        ? { ...subject, isSAE: false, observations: [generated] }
+        : subject;
     },
   };
 });
@@ -276,6 +294,7 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
   afterEach(() => {
     fastTrackLifeline.allCharged = false;
     spawnFlags.alwaysFlagged = false;
+    spawnFlags.procedural = false;
     act(() => {
       root.unmount();
     });
@@ -1560,6 +1579,80 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
       choices().filter((b) => !(b as HTMLButtonElement).disabled).length
     ).toBe(choices().length - 1);
 
+    vi.useRealTimers();
+  });
+
+  it("presents a generated observation in the fix dialog and grades it by its rule (#2088)", async () => {
+    vi.useFakeTimers();
+    spawnFlags.procedural = true;
+    const { generateProceduralObservation } =
+      await import("@/lib/clinical-trial-chaos");
+    const { createSeededRandom } = await import("@/lib/game-utils");
+    const expected = generateProceduralObservation({
+      field: "Weight",
+      kind: "unit-error",
+      random: createSeededRandom(2088),
+      id: "expected",
+    });
+    expect(expected).not.toBeNull();
+    if (!expected) return;
+
+    await act(async () => {
+      root.render(<ClinicalTrialChaos />);
+    });
+    const endless = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent === "Endless"
+    );
+    await act(async () => {
+      endless?.click();
+    });
+    const startBtn = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent?.includes("Start Endless Sprint")
+    );
+    await act(async () => {
+      startBtn?.click();
+    });
+
+    const card = Array.from(container.querySelectorAll("span"))
+      .find((s) => s.textContent?.includes("Validate Choice"))
+      ?.closest(".cursor-pointer") as HTMLElement | null;
+    expect(card).toBeTruthy();
+    await act(async () => {
+      card?.click();
+    });
+
+    const dialog = () =>
+      container.querySelector('[aria-labelledby="cc-fix-dialog-title"]');
+    expect(dialog()?.textContent).toContain(expected.rawValue);
+    expect(dialog()?.textContent).toContain(expected.hint);
+    const choices = () =>
+      Array.from(dialog()?.querySelectorAll("button") ?? []).filter((b) =>
+        /^\d/.test(b.textContent?.trim() ?? "")
+      ) as HTMLButtonElement[];
+    expect(choices()).toHaveLength(4);
+    for (const choice of choices()) {
+      // Tablet-first: every answer is a 44px touch target.
+      expect(choice.className).toContain("min-h-[44px]");
+    }
+    const labels = choices().map((b) => b.textContent?.replace(/^\d/, ""));
+    expect([...labels].sort()).toEqual([...(expected.options ?? [])].sort());
+
+    const wrong = choices().find(
+      (b) => !b.textContent?.endsWith(expected.correctedValue ?? "")
+    );
+    await act(async () => {
+      wrong?.click();
+    });
+    expect(dialog()?.textContent).toContain("Regulatory Query");
+    expect(dialog()?.textContent).toContain(expected.explanation);
+
+    const right = choices().find((b) =>
+      b.textContent?.endsWith(expected.correctedValue ?? "")
+    );
+    await act(async () => {
+      right?.click();
+    });
+    expect(dialog()?.textContent).toContain("Standard Verified");
     vi.useRealTimers();
   });
 

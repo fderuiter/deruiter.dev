@@ -51,6 +51,14 @@ import {
 } from "@/lib/arcade";
 import { calculateFOV, hasLineOfSight } from "@/lib/dungeon";
 import {
+  generateClinicalSubject,
+  generateProceduralObservation,
+  getObservationChoices,
+  getProceduralErrorKinds,
+  getProceduralFields,
+  validateObservationChoice,
+} from "@/lib/clinical-trial-chaos";
+import {
   assignTransportPriority,
   calculateDebriefScore,
   calculateInjurySeverity,
@@ -1778,6 +1786,63 @@ describe("Patty's Drive-Thru shift engine (#1812)", () => {
         }
       ),
       { numRuns: 100 }
+    );
+  });
+});
+
+// #2088: generated fix puzzles must always have exactly one accepted choice,
+// whatever the seed, and no distractor may equal the answer.
+describe("Clinical Trial Chaos procedural observations - property fuzzing", () => {
+  const cases = getProceduralFields().flatMap((field) =>
+    getProceduralErrorKinds(field).map((kind) => ({ field, kind }))
+  );
+
+  it("accepts exactly one choice for every field, kind and seed", () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...cases),
+        fc.integer({ min: 0, max: 0xffffffff }),
+        ({ field, kind }, seed) => {
+          const obs = generateProceduralObservation({
+            field,
+            kind,
+            random: createSeededRandom(seed),
+            id: `fuzz-${seed}`,
+          });
+          expect(obs).not.toBeNull();
+          if (!obs) return;
+          const choices = getObservationChoices(obs);
+          expect(choices).toHaveLength(4);
+          const accepted = choices.filter(
+            (c) => validateObservationChoice(obs, c).isValid
+          );
+          expect(accepted).toEqual([obs.correctedValue]);
+          const lowered = choices.map((c) => c.toLowerCase());
+          expect(new Set(lowered).size).toBe(choices.length);
+        }
+      ),
+      { numRuns: 500 }
+    );
+  });
+
+  it("keeps every flagged field of a seeded subject solvable", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 0xffffffff }), (seed) => {
+        const subject = generateClinicalSubject(
+          1,
+          seed % 2 === 0,
+          6000,
+          ["DM", "VS", "AE", "LB"],
+          createSeededRandom(seed)
+        );
+        for (const obs of subject.observations) {
+          const accepted = getObservationChoices(obs).filter(
+            (c) => validateObservationChoice(obs, c).isValid
+          );
+          expect(accepted).toHaveLength(1);
+        }
+      }),
+      { numRuns: 200 }
     );
   });
 });

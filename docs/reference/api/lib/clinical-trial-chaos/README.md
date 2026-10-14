@@ -548,6 +548,12 @@ Re-exports [generateClinicalSubjectFromProtocol](scenarios/functions/generateCli
 
 ***
 
+### generateProceduralObservation
+
+Re-exports [generateProceduralObservation](observation-generators/functions/generateProceduralObservation.md)
+
+***
+
 ### generateSDTMDataset
 
 Re-exports [generateSDTMDataset](engine/functions/generateSDTMDataset.md)
@@ -674,6 +680,18 @@ Re-exports [getPowerUpRefusal](shift/functions/getPowerUpRefusal.md)
 
 ***
 
+### getProceduralErrorKinds
+
+Re-exports [getProceduralErrorKinds](observation-generators/functions/getProceduralErrorKinds.md)
+
+***
+
+### getProceduralFields
+
+Re-exports [getProceduralFields](observation-generators/functions/getProceduralFields.md)
+
+***
+
 ### getRequiredSignatureCount
 
 Re-exports [getRequiredSignatureCount](amendments/functions/getRequiredSignatureCount.md)
@@ -755,6 +773,12 @@ Re-exports [getSubmissionMode](engine/functions/getSubmissionMode.md)
 ### getViolationBreakdown
 
 Re-exports [getViolationBreakdown](shift/functions/getViolationBreakdown.md)
+
+***
+
+### hasProceduralGenerator
+
+Re-exports [hasProceduralGenerator](observation-generators/functions/hasProceduralGenerator.md)
 
 ***
 
@@ -989,6 +1013,24 @@ Re-exports [PowerUpState](types/interfaces/PowerUpState.md)
 ### PowerUpType
 
 Re-exports [PowerUpType](types/type-aliases/PowerUpType.md)
+
+***
+
+### PROCEDURAL\_OBSERVATION\_SHARE
+
+Re-exports [PROCEDURAL_OBSERVATION_SHARE](observation-generators/variables/PROCEDURAL_OBSERVATION_SHARE.md)
+
+***
+
+### ProceduralErrorKind
+
+Re-exports [ProceduralErrorKind](observation-generators/type-aliases/ProceduralErrorKind.md)
+
+***
+
+### ProceduralObservationRequest
+
+Re-exports [ProceduralObservationRequest](observation-generators/interfaces/ProceduralObservationRequest.md)
 
 ***
 

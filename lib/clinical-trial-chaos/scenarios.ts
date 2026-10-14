@@ -13,12 +13,21 @@ import {
 } from "./types";
 import { CRFField, EditCheckRule, StudyProtocol } from "../crf/types";
 import { getAuditYearStationCount } from "./escalation";
+import {
+  PROCEDURAL_OBSERVATION_SHARE,
+  generateProceduralObservation,
+  hasProceduralGenerator,
+} from "./observation-generators";
 
 export interface MockObservationTemplate {
   field: string;
   destination: CDISCDomain;
   validValues: string[];
   testCode: string;
+  /**
+   * Authored puzzles. A field with a procedural generator (#2088) may leave
+   * this empty; its flagged observations are then always generated.
+   */
   corruptions: {
     rawValue: string;
     correctedValue: string;
@@ -391,6 +400,16 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
     ],
   },
 
+  {
+    // Generated only (#2088): dates are drawn per subject, so there is no
+    // authored corruption to memorise.
+    field: "AE Start Date",
+    destination: "AE",
+    testCode: "AESTDTC",
+    validValues: ["2026-03-14", "2026-05-21", "2025-11-18", "2026-01-27"],
+    corruptions: [],
+  },
+
   // ==================== LB (Laboratory) ====================
   {
     field: "Serum Creatinine",
@@ -460,6 +479,15 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         ],
       },
     ],
+  },
+
+  {
+    // Generated only (#2088): unit, decimal-shift errors drawn per subject.
+    field: "Fasting Glucose",
+    destination: "LB",
+    testCode: "GLUC",
+    validValues: ["88 mg/dL", "94 mg/dL", "76 mg/dL", "82 mg/dL"],
+    corruptions: [],
   },
 
   // ==================== CM (Concomitant Medications) ====================
@@ -852,14 +880,31 @@ const STUDY_SITES = [
 // Seeded scenarios use SUBJ-1001..1003, so generated subjects start after them.
 let globalSubjSeq = 1004;
 
+/** Fisher-Yates shuffle of a copy, driven by `random`. */
+function shuffleWith<T>(items: readonly T[], random: () => number): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.min(i, Math.floor(random() * (i + 1)));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 /**
- * Generates a random or seeded ClinicalSubject with 2-4 observations.
+ * Generates a ClinicalSubject with 2-3 observations. Flagged observations on
+ * a field with a procedural generator are usually generated from parameters
+ * (#2088), so values and options differ from run to run; the rest come from
+ * the authored templates.
+ *
+ * @param random - Random source returning values in [0, 1); pass a seeded
+ *   one to make the subject repeatable.
  */
 export function generateClinicalSubject(
   errorProbability = 0.5,
   forceSAE = false,
   customSeq?: number,
-  activeDomains: CDISCDomain[] = ["DM", "VS", "AE", "LB"]
+  activeDomains: CDISCDomain[] = ["DM", "VS", "AE", "LB"],
+  random: () => number = Math.random
 ): ClinicalSubject {
   const seq = customSeq ?? globalSubjSeq++;
   const subjectLabel = `SUBJ-${seq}`;
@@ -877,9 +922,10 @@ export function generateClinicalSubject(
       : MOCK_OBSERVATION_TEMPLATES;
 
   // Pick 2 to 3 observations across different CDISC domains
-  const pickedTemplates = [...pool]
-    .sort(() => 0.5 - Math.random())
-    .slice(0, forceSAE ? 3 : Math.floor(Math.random() * 2) + 2);
+  const pickedTemplates = shuffleWith(pool, random).slice(
+    0,
+    forceSAE ? 3 : Math.floor(random() * 2) + 2
+  );
 
   // If forceSAE, guarantee at least one AE observation
   if (forceSAE && !pickedTemplates.some((t) => t.destination === "AE")) {
@@ -891,11 +937,26 @@ export function generateClinicalSubject(
 
   const observations: ClinicalObservation[] = pickedTemplates.map(
     (template, idx) => {
-      const hasError = Math.random() < errorProbability;
+      const hasError = random() < errorProbability;
+      const canGenerate = hasProceduralGenerator(template.field);
+      if (hasError && canGenerate) {
+        const useGenerator =
+          template.corruptions.length === 0 ||
+          random() < PROCEDURAL_OBSERVATION_SHARE;
+        const generated = useGenerator
+          ? generateProceduralObservation({
+              field: template.field,
+              random,
+              id: `obs-${seq}-${idx}`,
+              ruleId: `ast_rule_${seq}_${idx}`,
+            })
+          : null;
+        if (generated) return generated;
+      }
       if (hasError && template.corruptions.length > 0) {
         const corruption =
           template.corruptions[
-            Math.floor(Math.random() * template.corruptions.length)
+            Math.floor(random() * template.corruptions.length)
           ];
         const astRule: EditCheckRule = {
           id: `ast_rule_${seq}_${idx}`,
@@ -932,7 +993,7 @@ export function generateClinicalSubject(
       } else {
         const validVal =
           template.validValues[
-            Math.floor(Math.random() * template.validValues.length)
+            Math.floor(random() * template.validValues.length)
           ];
         const astRule: EditCheckRule = {
           id: `ast_rule_valid_${seq}_${idx}`,

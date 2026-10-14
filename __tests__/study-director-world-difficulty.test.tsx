@@ -84,7 +84,7 @@ function finished(seed: string, difficulty?: Difficulty): FinalReport {
 function withGrade(
   report: FinalReport,
   grade: "A" | "B" | "C" | "D" | "F",
-  stars: number
+  stars: FinalReport["evaluations"]["sponsor"]["stars"]
 ): FinalReport {
   return {
     ...report,

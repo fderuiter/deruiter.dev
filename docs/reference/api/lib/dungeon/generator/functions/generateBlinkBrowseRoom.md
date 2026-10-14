@@ -8,7 +8,7 @@
 
 > **generateBlinkBrowseRoom**(): [`DungeonRoom`](../../types/interfaces/DungeonRoom.md)
 
-Creates Room 3: BlinkBrowse (Eye-tracking / Cursor Steering)
+Creates BlinkBrowse (Eye-tracking / Cursor Steering)
 
 ## Returns
 

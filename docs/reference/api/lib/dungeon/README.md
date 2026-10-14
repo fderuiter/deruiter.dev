@@ -170,6 +170,12 @@ Re-exports [CyberdeckProfile](types/interfaces/CyberdeckProfile.md)
 
 ***
 
+### CyberdeckRoomResult
+
+Re-exports [CyberdeckRoomResult](metaprogression/interfaces/CyberdeckRoomResult.md)
+
+***
+
 ### DARKNET\_VENDOR\_CATALOG
 
 Re-exports [DARKNET_VENDOR_CATALOG](metaprogression/variables/DARKNET_VENDOR_CATALOG.md)
@@ -443,6 +449,12 @@ Re-exports [ParticleEffect](types/interfaces/ParticleEffect.md)
 ### project3DTo2D
 
 Re-exports [project3DTo2D](boss/functions/project3DTo2D.md)
+
+***
+
+### recordCyberdeckRoomResult
+
+Re-exports [recordCyberdeckRoomResult](metaprogression/functions/recordCyberdeckRoomResult.md)
 
 ***
 

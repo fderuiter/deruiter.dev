@@ -216,3 +216,36 @@ export function saveCyberdeckProfile(profile: CyberdeckProfile): void {
     // Gracefully handle storage quota or privacy mode errors
   }
 }
+
+/**
+ * One room's result, as the profile banks it.
+ */
+export interface CyberdeckRoomResult {
+  /** Crypto earned in the room; 0 for a lost room. */
+  crypto: number;
+  /** The run's score when the room ended. */
+  score: number;
+  /** Whether this result ends the run: the last room cleared, or the run lost. */
+  endsRun: boolean;
+}
+
+/**
+ * Folds one room's result into the persistent Cyberdeck profile. Crypto and the
+ * high score bank on every room, but `runsCompleted` counts runs, so it moves
+ * only when the result ends one. It used to move on every room exit (#2048).
+ *
+ * @param profile - The profile before the room ended.
+ * @param result - What the room earned, and whether the run is over.
+ * @returns The updated profile; the input is not changed.
+ */
+export function recordCyberdeckRoomResult(
+  profile: CyberdeckProfile,
+  result: CyberdeckRoomResult
+): CyberdeckProfile {
+  return {
+    ...profile,
+    totalCrypto: profile.totalCrypto + Math.max(0, result.crypto),
+    highScore: Math.max(profile.highScore, result.score),
+    runsCompleted: profile.runsCompleted + (result.endsRun ? 1 : 0),
+  };
+}

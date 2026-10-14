@@ -1637,14 +1637,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-cyan-500/20 via-cyan-500/5 to-transparent",
     badgeBg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
     objective:
-      "Infiltrate fortified corporate mainframe subnets as an autonomous Red Team Netrunner. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve tactile Hex Matrix buffer puzzles, and defeat the 3D Wireframe Sovereign Boss.",
+      "Breach a seven-room corporate network as a Red Team Netrunner, from the DMZ Gateway to the NEURAL_WARDEN core. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve Hex Matrix buffer puzzles, and defeat two 3D wireframe bosses: FaceForge, then the Neural Warden.",
     quickSummary:
-      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
+      "Clear seven hand-built rooms in a fixed order with WASD/Arrows, reaching each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
       {
         action: "Move Netrunner Avatar",
         description:
-          "Navigate through procedural subnet corridors and step onto discovery nodes.",
+          "Walk the room's corridors, collect pickups and step onto airgap route nodes.",
         key: "WASD / Arrow Keys",
       },
       {
@@ -1679,6 +1679,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     rules: [
       {
+        title: "The Seven-Room Campaign",
+        detail:
+          "A run is seven rooms in a fixed order: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss. The first room has an open exit and slow patrols; route nodes, moving walls and bosses come later. Clearing Room 7 completes the run.",
+        badge: "Campaign",
+      },
+      {
         title: "Locked Exits",
         detail:
           "A room with airgap route nodes keeps its EXIT locked until you step on every node, and a boss room keeps it locked until the boss is defeated. A locked exit is drawn as LOCK in red and blocks you like a wall. Boss volleys aim where you are heading, so change direction to dodge.",
@@ -1699,22 +1705,22 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "3D Wireframe Sovereign Boss Fights",
         detail:
-          "The mainframe climax pits you against the 3D Vector Kernel Warden. Dodge rotating projectile volleys and strike the core as defense shields rotate across phases.",
+          "Room 6 is the FaceForge wireframe face and Room 7, the last, is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
         badge: "3D Boss Fight",
       },
     ],
     proTips: [
       "Use Nmap Port Recon on room entry (key 2 for the default Script Kiddie) to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
-      "Save Hardware Bypass Chips for Tier 3 & 4 encrypted vaults where time limits are tight.",
+      "Save Hardware Bypass Chips for the terminals in the TSP enclave (Room 4) and the Darknet Vault (Room 5), where time limits are tight.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
     ],
     lore: {
       title: "Red Team Infiltration & Legacy Code Archaeology",
       story:
-        "Every engineer has explored legacy codebases that feel like ancient, crumbling dungeons filled with deprecated dependencies, undocumented endpoints, and zombie cron jobs. Retro Labyrinth turns code maintenance and cybersecurity into a playable roguelike using cellular automata dungeon generation, raycasted field-of-view, Web Audio 8-bit sound synthesis, and real-time 3D vector wireframe rendering.",
+        "Every engineer has explored legacy codebases that feel like ancient, crumbling dungeons filled with deprecated dependencies, undocumented endpoints, and zombie cron jobs. Retro Labyrinth turns code maintenance and cybersecurity into a seven-room roguelike. The rooms are hand-built, not generated: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave with its moving walls, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss, always in that order. Patrols, hacking terminals, raycast field-of-view, Web Audio 8-bit sound and real-time 3D vector wireframe bosses fill them in.",
       realWorldTech: [
-        "Cellular Automata",
-        "Bresenham FOV Raycasting",
+        "Hand-Built Room Campaign",
+        "Raycast Field of View",
         "CVE Vulnerability Models",
         "Hex Buffer Matrix",
         "Web Audio API",

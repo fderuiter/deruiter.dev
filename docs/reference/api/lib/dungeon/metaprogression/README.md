@@ -6,6 +6,10 @@
 
 # lib/dungeon/metaprogression
 
+## Interfaces
+
+- [CyberdeckRoomResult](interfaces/CyberdeckRoomResult.md)
+
 ## Variables
 
 - [CRT\_THEMES](variables/CRT_THEMES.md)
@@ -18,4 +22,5 @@
 ## Functions
 
 - [loadCyberdeckProfile](functions/loadCyberdeckProfile.md)
+- [recordCyberdeckRoomResult](functions/recordCyberdeckRoomResult.md)
 - [saveCyberdeckProfile](functions/saveCyberdeckProfile.md)

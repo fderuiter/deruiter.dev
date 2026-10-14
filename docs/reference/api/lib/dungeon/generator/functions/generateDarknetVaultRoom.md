@@ -8,7 +8,7 @@
 
 > **generateDarknetVaultRoom**(): [`DungeonRoom`](../../types/interfaces/DungeonRoom.md)
 
-Creates Room 4 / Tier 4: Darknet Black-Market & Admin Vault
+Creates Tier 4: Darknet Black-Market & Admin Vault
 
 ## Returns
 

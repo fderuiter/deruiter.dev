@@ -123,6 +123,13 @@
   }
 }
 
+/* On the larger iPads the floor is taller than its blocks. The dossier takes
+   the spare height, so the clipboard reaches down to the keys instead of
+   leaving an empty band above them. */
+.cc-touch .cc-floor-playing .cc-main > [aria-labelledby="cc-dossier-title"] {
+  flex-grow: 1;
+}
+
 .cc-touch .cc-main > [aria-labelledby="cc-briefing-title"] {
   padding: 0.75rem;
 }
@@ -203,6 +210,10 @@
   touch-action: manipulation;
   user-select: none;
   -webkit-touch-callout: none;
+}
+/* The keys grow with the screen, up to a thumb-sized pad on the 13-inch. */
+.cc-touch .cc-key {
+  min-height: clamp(3.5rem, 6.5dvh, 5.5rem);
 }
 .cc-touch .cc-key:active:not(:disabled) {
   transform: scale(0.98);

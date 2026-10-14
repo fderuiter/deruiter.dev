@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useId, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import { computeDriftGauge, objectiveFor, type Severity } from "./drift-gauge";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useProtocolDriftStore } from "./store";
 
 const SEVERITY_STYLE: Record<Severity, string> = {
@@ -24,11 +25,24 @@ export function ObjectiveStrip() {
   const popoverId = useId();
   const gauge = useMemo(() => (view ? computeDriftGauge(view) : null), [view]);
   const debt = view?.debt;
+  const touch = useCabinetTouch();
+  const gaugeRef = useRef<HTMLDivElement | null>(null);
+
+  // On touch the stats popover is not a hover card: the next tap anywhere
+  // outside it closes it, so it never sticks over the canvas (#2045).
+  useEffect(() => {
+    if (!touch || !open) return;
+    const closeOnOutsideTap = (event: PointerEvent) => {
+      if (!gaugeRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOnOutsideTap);
+    return () => document.removeEventListener("pointerdown", closeOnOutsideTap);
+  }, [touch, open]);
 
   return (
     <section
       aria-label="Objective and drift"
-      className="relative flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1 border-b border-zinc-800 bg-[#0d0e11] px-3 py-1.5 font-mono text-xs"
+      className={`relative flex min-h-12 flex-wrap items-center gap-x-4 gap-y-1 border-b border-zinc-800 bg-[#0d0e11] px-3 py-1.5 font-mono text-xs${touch ? " pd-touch-strip" : ""}`}
     >
       <p className="min-w-0 flex-1 basis-60 break-words text-zinc-100">
         {view ? objectiveFor(view) : "Awaiting briefing"}
@@ -68,7 +82,7 @@ export function ObjectiveStrip() {
         </li>
       </ul>
       {gauge ? (
-        <div className="relative">
+        <div className="relative" ref={gaugeRef}>
           <button
             type="button"
             aria-expanded={open}

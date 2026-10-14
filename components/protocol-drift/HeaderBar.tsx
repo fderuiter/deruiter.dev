@@ -201,6 +201,9 @@ export function HeaderBar() {
           accept="application/json,.json"
           className="sr-only"
           tabIndex={-1}
+          // On touch the visible Import button opens it, so the input is
+          // removed from focus and layout entirely (#2045).
+          hidden={touch}
           aria-label="Import save file"
           onChange={(e) => void onImport(e)}
         />

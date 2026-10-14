@@ -12,6 +12,8 @@ import {
   type ProtocolDriftView,
 } from "@/lib/protocol-drift";
 import { useProtocolDriftStore } from "./store";
+import { TouchSheet } from "./TouchSheet";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 
 const BADGE: Record<
   EpistemicStatus,
@@ -630,6 +632,7 @@ export function Inspector() {
   const expanded = useProtocolDriftStore((s) => s.inspectorExpanded);
   const setExpanded = useProtocolDriftStore((s) => s.setInspectorExpanded);
   const select = useProtocolDriftStore((s) => s.select);
+  const touch = useCabinetTouch();
 
   // Follow the newest issue the first time one appears.
   const firstIssue = view?.issues[0] ?? null;
@@ -647,6 +650,89 @@ export function Inspector() {
   if (!view) return null;
   const issue =
     view.issues.find((i) => i.issueId === selection.issueId) ?? null;
+
+  // The three panes, shared by the docked inspector and the touch sheet.
+  const panes = (
+    <div className="grid min-h-0 flex-1 grid-cols-[30fr_40fr_30fr] divide-x divide-zinc-800">
+      <div
+        data-testid="pane-form"
+        aria-label="Form View"
+        role="region"
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        <FormPane
+          view={view}
+          issue={issue}
+          submissionId={selection.submissionId}
+        />
+      </div>
+      <div
+        data-testid="pane-trace"
+        aria-label="Pipeline Trace"
+        role="region"
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        <TracePane
+          view={view}
+          submissionId={selection.submissionId}
+          onPick={(id) =>
+            select({
+              submissionId: id || null,
+              issueId:
+                view.issues.find((i) => i.submissionId === id)?.issueId ?? null,
+            })
+          }
+        />
+      </div>
+      <div
+        data-testid="pane-review"
+        aria-label="Review and Query"
+        role="region"
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        <ReviewPane view={view} issue={issue} />
+      </div>
+    </div>
+  );
+
+  if (touch) {
+    // The touch cabinet keeps the canvas: the inspector is a closed bar until
+    // it is opened, and then it is a sheet over the canvas (#2045).
+    if (!expanded) {
+      return (
+        <section
+          aria-label="Forensic Inspector"
+          data-testid="inspector"
+          data-expanded="false"
+          className="flex shrink-0 items-center justify-between gap-2 border-t border-zinc-700 bg-[#13151a] px-3 font-mono text-xs"
+        >
+          <h2 className="text-xs font-semibold tracking-wide text-zinc-100">
+            FORENSIC INSPECTOR
+          </h2>
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            aria-expanded={false}
+            className="min-h-11 border border-zinc-700 px-3 text-xs text-zinc-200 hover:border-amber-500"
+          >
+            Expand (I)
+          </button>
+        </section>
+      );
+    }
+    return (
+      <TouchSheet
+        title="Forensic Inspector"
+        testId="inspector-sheet"
+        onClose={() => setExpanded(false)}
+      >
+        <div className="flex h-[calc(70dvh-4rem)] min-h-0 flex-col">
+          {panes}
+        </div>
+      </TouchSheet>
+    );
+  }
+
   const style: React.CSSProperties = expanded
     ? { top: 112, bottom: 32 }
     : { height: "min(328px, 35vh)" };
@@ -674,47 +760,7 @@ export function Inspector() {
           {expanded ? "Dock (Esc)" : "Expand (I)"}
         </button>
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-[30fr_40fr_30fr] divide-x divide-zinc-800">
-        <div
-          data-testid="pane-form"
-          aria-label="Form View"
-          role="region"
-          className="min-h-0 min-w-0 overflow-y-auto"
-        >
-          <FormPane
-            view={view}
-            issue={issue}
-            submissionId={selection.submissionId}
-          />
-        </div>
-        <div
-          data-testid="pane-trace"
-          aria-label="Pipeline Trace"
-          role="region"
-          className="min-h-0 min-w-0 overflow-y-auto"
-        >
-          <TracePane
-            view={view}
-            submissionId={selection.submissionId}
-            onPick={(id) =>
-              select({
-                submissionId: id || null,
-                issueId:
-                  view.issues.find((i) => i.submissionId === id)?.issueId ??
-                  null,
-              })
-            }
-          />
-        </div>
-        <div
-          data-testid="pane-review"
-          aria-label="Review and Query"
-          role="region"
-          className="min-h-0 min-w-0 overflow-y-auto"
-        >
-          <ReviewPane view={view} issue={issue} />
-        </div>
-      </div>
+      {panes}
     </section>
   );
 }

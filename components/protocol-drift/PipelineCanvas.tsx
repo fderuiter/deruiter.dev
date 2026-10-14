@@ -30,6 +30,8 @@ import {
 } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { TouchWireControls } from "./TouchWireControls";
+import { resolveTouchWire } from "./touch-wire";
 
 /** Drag payload key shared with the toolbox. */
 export const CHIP_DRAG_TYPE = "application/x-protocol-drift-chip";
@@ -265,6 +267,29 @@ function CanvasInner() {
 
   const defaultEdgeOptions = useMemo(() => ({ type: "packet" as const }), []);
 
+  // Touch only: a tap on a chip while a wire is started finishes that wire
+  // (#2045). The chip the wire starts from gets a ring.
+  const wireFrom = useProtocolDriftStore((s) => s.wireFrom);
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: ChipNode) => {
+      const pending = useProtocolDriftStore.getState().wireFrom;
+      if (!pending || node.id === pending) return;
+      void resolveTouchWire(pending, node.id);
+    },
+    []
+  );
+  const flowNodes = useMemo(
+    () =>
+      touch && wireFrom
+        ? nodes.map((node) =>
+            node.id === wireFrom
+              ? { ...node, className: "pd-wire-source" }
+              : node
+          )
+        : nodes,
+    [nodes, touch, wireFrom]
+  );
+
   return (
     <div
       ref={wrapper}
@@ -273,7 +298,8 @@ function CanvasInner() {
       onDrop={onDrop}
     >
       <ReactFlow<ChipNode, WireEdge>
-        nodes={nodes}
+        nodes={flowNodes}
+        onNodeClick={touch ? onNodeClick : undefined}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -302,6 +328,7 @@ function CanvasInner() {
       >
         <LaneOverlay />
       </ReactFlow>
+      {touch ? <TouchWireControls /> : null}
     </div>
   );
 }

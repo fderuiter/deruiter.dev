@@ -49,6 +49,8 @@ export function ProtocolDriftGame() {
 
   const ready = useProtocolDriftStore((s) => s.ready);
   const inspectorExpanded = useProtocolDriftStore((s) => s.inspectorExpanded);
+  const wireFrom = useProtocolDriftStore((s) => s.wireFrom);
+  const wireSheet = useProtocolDriftStore((s) => s.wireSheet);
   const view = useProtocolDriftStore((s) => s.view);
   const fsm = useProtocolDriftStore((s) => s.snapshot?.fsmState);
   const waveSummary = useProtocolDriftStore((s) => s.waveSummary);
@@ -125,9 +127,19 @@ export function ProtocolDriftGame() {
       data-keyboard-boundary="true"
       data-game="protocol-drift"
       data-fsm={fsm ?? "BRIEF"}
-      // A touch cabinet's Escape docks the inspector before it leaves (#2045).
-      data-escape-docks={touch && inspectorExpanded ? "true" : undefined}
+      // A touch cabinet's Escape closes the open sheet or cancels a started
+      // wire before it leaves the cabinet (#2045).
+      data-escape-docks={
+        touch && (inspectorExpanded || wireFrom || wireSheet)
+          ? "true"
+          : undefined
+      }
       onKeyDown={onKeyDown}
+      // A tap clears the last notice, so a message never sits over the canvas
+      // after the next tap (#2045).
+      onPointerDownCapture={
+        touch && notice ? () => clearNotice(notice.id) : undefined
+      }
       className={
         touch
           ? "pd-touch @container relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"

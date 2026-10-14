@@ -104,6 +104,12 @@ interface ProtocolDriftState {
   datasets: DatasetExportBundle | null;
   selection: InspectorSelection;
   inspectorExpanded: boolean;
+  /**
+   * Tap-to-wire on the touch cabinet (#2045): the chip a wire starts from, and
+   * the open list of valid output-to-input pairs when a tap has more than one.
+   */
+  wireFrom: string | null;
+  wireSheet: { source: string; target: string } | null;
   revisionCount: number;
   autosavedAt: string | null;
 
@@ -137,6 +143,10 @@ interface ProtocolDriftState {
   removeSelection: (nodeIds: string[], edgeIds: string[]) => Promise<void>;
   select: (selection: Partial<InspectorSelection>) => void;
   setInspectorExpanded: (expanded: boolean) => void;
+  setWireFrom: (nodeId: string | null) => void;
+  setWireSheet: (sheet: { source: string; target: string } | null) => void;
+  /** Shows a notice; the touch wiring reports its result through it (#2045). */
+  notify: (tone: Notice["tone"], text: string) => void;
   dismissWave: () => void;
   clearNotice: (id: number) => void;
   dismissMemo: () => void;
@@ -197,6 +207,8 @@ function initialState() {
     datasets: null as DatasetExportBundle | null,
     selection: { issueId: null, submissionId: null } as InspectorSelection,
     inspectorExpanded: false,
+    wireFrom: null,
+    wireSheet: null,
     revisionCount: 0,
     autosavedAt: null as string | null,
   };
@@ -551,6 +563,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       set((state) => ({ selection: { ...state.selection, ...selection } })),
 
     setInspectorExpanded: (expanded) => set({ inspectorExpanded: expanded }),
+    setWireFrom: (nodeId) => set({ wireFrom: nodeId, wireSheet: null }),
+    setWireSheet: (sheet) => set({ wireSheet: sheet }),
+    notify: (tone, text) => say(tone, text),
     dismissWave: () => set({ waveSummary: null }),
     clearNotice: (id) => {
       if (get().notice?.id === id) set({ notice: null });

@@ -16,6 +16,12 @@ Storage helpers for achievements and meme vault unlock state
 
 > `readonly` **ACHIEVEMENTS**: `"meme_achievements_unlocked"` = `"meme_achievements_unlocked"`
 
+### ECHO\_BEST
+
+> `readonly` **ECHO\_BEST**: `"meme_vault_echo_best"` = `"meme_vault_echo_best"`
+
+Best Echo streak, a bare integer string (#2049).
+
 ### RETRO\_CHAOS\_MODE
 
 > `readonly` **RETRO\_CHAOS\_MODE**: `"retro_chaos_mode_active"` = `"retro_chaos_mode_active"`

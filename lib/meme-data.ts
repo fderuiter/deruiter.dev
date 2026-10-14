@@ -11,6 +11,7 @@ import {
 } from "@/lib/safe-storage";
 import { emitAppEvent } from "@/lib/event-bus";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
+import { isNewEchoBest, parseEchoBest } from "@/lib/meme-echo";
 
 export interface MemeQuote {
   id: string;
@@ -364,6 +365,8 @@ export const MEME_STORAGE_KEYS = {
   VAULT_UNLOCKED: "unlocked_meme_vault",
   ACHIEVEMENTS: "meme_achievements_unlocked",
   RETRO_CHAOS_MODE: "retro_chaos_mode_active",
+  /** Best Echo streak, a bare integer string (#2049). */
+  ECHO_BEST: "meme_vault_echo_best",
 } as const;
 
 export function getUnlockedAchievements(): string[] {
@@ -427,4 +430,34 @@ export function setVaultUnlocked(unlocked: boolean = true): void {
   } catch {
     // Ignore storage errors in restricted contexts
   }
+}
+
+/**
+ * The best Echo streak stored on this device, or 0. Echo keeps its own key:
+ * it does not feed the Meme Vault's arcade score, which counts trophies.
+ */
+export function getEchoBest(): number {
+  if (typeof window === "undefined") return 0;
+  try {
+    return parseEchoBest(safeGetRawItem(MEME_STORAGE_KEYS.ECHO_BEST));
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Stores `streak` as the best Echo streak when it beats the stored one.
+ * Returns true when it was a new best, even if storage is unavailable and
+ * the value could not be kept.
+ */
+export function recordEchoStreak(streak: number): boolean {
+  if (!isNewEchoBest(streak, getEchoBest())) return false;
+  if (typeof window !== "undefined") {
+    try {
+      safeSetRawItem(MEME_STORAGE_KEYS.ECHO_BEST, String(Math.floor(streak)));
+    } catch {
+      // Ignore storage errors in restricted contexts
+    }
+  }
+  return true;
 }

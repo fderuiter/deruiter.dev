@@ -251,6 +251,7 @@
 - [lib/media-registry](lib/media-registry/README.md)
 - [lib/meme-audio](lib/meme-audio/README.md)
 - [lib/meme-data](lib/meme-data/README.md)
+- [lib/meme-echo](lib/meme-echo/README.md)
 - [lib/merch-data](lib/merch-data/README.md)
 - [lib/moderation](lib/moderation/README.md)
 - [lib/navigation](lib/navigation/README.md)

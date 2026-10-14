@@ -29,6 +29,7 @@ import {
   releaseMemeAnalyser,
 } from "@/lib/meme-audio";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { FieldManualButton } from "@/components/FieldManualButton";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { useToast } from "@/hooks/useToast";
@@ -50,6 +51,8 @@ import { Oscilloscope } from "@/components/arcade/meme-vault/Oscilloscope";
 import { SamplerPads } from "@/components/arcade/meme-vault/SamplerPads";
 import { TrophyShelf } from "@/components/arcade/meme-vault/TrophyShelf";
 import { VaultHero } from "@/components/arcade/meme-vault/VaultHero";
+import { EchoConsole } from "@/components/arcade/meme-vault/EchoConsole";
+import { useEchoGame } from "@/components/arcade/meme-vault/useEchoGame";
 
 /** How long a newly unlocked trophy keeps its stamp class. */
 const STAMP_MS = 900;
@@ -180,6 +183,44 @@ export const MemeVaultClient: React.FC = () => {
     [announce]
   );
 
+  // Echo (#2049): the vault plays a sequence on the pads and the player
+  // repeats it. Its sounds go through playMemeSound, so the mute switch and
+  // the reduced-motion opt-in apply as they do to a pad press.
+  const playEchoPad = useCallback((button: SoundboardButton) => {
+    setActiveSoundLabel(button.label);
+    setAnalyser(connectMemeAnalyser());
+    playMemeSound(button.synthType);
+  }, []);
+  const playEchoFail = useCallback(() => {
+    playMemeSound("echo-fail");
+  }, []);
+  const celebrateEchoBest = useCallback(
+    (streak: number) => {
+      toast.success(`New Echo best: ${streak}`, {
+        description: `You repeated a ${streak}-pad sequence. It is kept on this device.`,
+      });
+    },
+    [toast]
+  );
+  const echo = useEchoGame({
+    pads: SOUNDBOARD_BUTTONS,
+    onPadSound: playEchoPad,
+    onFail: playEchoFail,
+    onNewBest: celebrateEchoBest,
+    announce,
+  });
+  const { press: pressEcho } = echo;
+
+  // A pad press is an Echo answer while a round runs, a sample otherwise.
+  const handlePadPress = useCallback(
+    (button: SoundboardButton) => {
+      const index = SOUNDBOARD_BUTTONS.findIndex((b) => b.id === button.id);
+      if (index >= 0 && pressEcho(index)) return;
+      handlePlaySound(button);
+    },
+    [pressEcho, handlePlaySound]
+  );
+
   // React to meme card
   const handleReaction = (id: string) => {
     setReactions((prev) => ({
@@ -264,14 +305,17 @@ export const MemeVaultClient: React.FC = () => {
           <span>Back to Arcade Hub</span>
         </Link>
 
-        <button
-          onClick={triggerChaosMode}
-          title="A shortcut to the Konami show. It awards no trophy: type the code for that."
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98]"
-        >
-          <IconSparkles className="w-4 h-4 text-amber-400" />
-          <span>Launch Retro Chaos Mode</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <FieldManualButton manualId="meme-vault" variant="inline" />
+          <button
+            onClick={triggerChaosMode}
+            title="A shortcut to the Konami show. It awards no trophy: type the code for that."
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98]"
+          >
+            <IconSparkles className="w-4 h-4 text-amber-400" />
+            <span>Launch Retro Chaos Mode</span>
+          </button>
+        </div>
       </div>
 
       <VaultHero unlocked={unlockedCount} total={totalAchievements} />
@@ -292,7 +336,7 @@ export const MemeVaultClient: React.FC = () => {
               </h2>
               <p className="text-xs text-zinc-400 font-sans">
                 Every sound is generated in your browser. Press a pad, or keys 1
-                to 8.
+                to 8, or start Echo and repeat the vault&apos;s sequence.
               </p>
             </div>
           </div>
@@ -318,7 +362,7 @@ export const MemeVaultClient: React.FC = () => {
             <div className="min-w-0 xl:order-2">
               <Oscilloscope
                 analyser={analyser}
-                isPlaying={activeSound !== null}
+                isPlaying={activeSound !== null || echo.litId !== null}
                 soundLabel={activeSoundLabel}
                 silentReason={silentReason}
               />
@@ -354,10 +398,17 @@ export const MemeVaultClient: React.FC = () => {
                   That pad played silently. {silentReason}
                 </p>
               )}
+              <EchoConsole
+                round={echo.round}
+                best={echo.best}
+                onStart={echo.start}
+                onStop={echo.stop}
+                silentReason={silentReason}
+              />
               <SamplerPads
                 pads={SOUNDBOARD_BUTTONS}
-                activeId={activeSound}
-                onPress={handlePlaySound}
+                activeId={echo.litId ?? activeSound}
+                onPress={handlePadPress}
               />
             </div>
           </div>

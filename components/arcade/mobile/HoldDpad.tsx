@@ -30,6 +30,11 @@ export interface HoldDpadProps {
    * open). Any repeat in progress is released at once.
    */
   paused?: boolean;
+  /**
+   * The arrows to draw. Defaults to all four. A game that steers on one axis
+   * passes just that pair, so no arrow is drawn that does nothing.
+   */
+  directions?: readonly SwipeDirection[];
 }
 
 const DIRECTION_LABEL: Record<SwipeDirection, string> = {
@@ -96,7 +101,7 @@ function DirectionButton({
       label={DIRECTION_LABEL[direction]}
       onPress={() => repeat.start()}
       onRelease={() => repeat.stop()}
-      className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-cyan-400 active:bg-cyan-500/30 active:text-cyan-300`}
+      className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-amber-400 active:bg-cyan-500/30 active:text-cyan-300`}
     >
       <Icon
         className={`${large ? "min-[480px]:h-[calc(var(--touch-key,80px)*0.3)] min-[480px]:w-[calc(var(--touch-key,80px)*0.3)] " : ""}h-6 w-6`}
@@ -118,6 +123,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
   compact = false,
   large = false,
   paused = false,
+  directions,
 }) => (
   <div
     role="group"
@@ -130,7 +136,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
     } ${className}`}
   >
     {CELLS.map((cell, index) =>
-      cell ? (
+      cell && (!directions || directions.includes(cell.dir)) ? (
         <DirectionButton
           key={cell.dir}
           direction={cell.dir}

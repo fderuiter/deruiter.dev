@@ -39,6 +39,7 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   onPress,
   onRelease,
   haptic = true,
+  disabled = false,
   className = "",
   style,
   children,
@@ -64,6 +65,9 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   }, []);
 
   const hold = (id: number | string) => {
+    // A disabled control takes no press. Pointer events still reach a disabled
+    // button in some engines, so the guard lives here, not only in the DOM.
+    if (disabled) return;
     const held = heldRef.current;
     if (held.has(id)) return;
     const first = held.size === 0;
@@ -106,6 +110,7 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
     <button
       type="button"
       {...rest}
+      disabled={disabled}
       aria-label={label}
       data-touch-button=""
       onPointerDown={(event) => {

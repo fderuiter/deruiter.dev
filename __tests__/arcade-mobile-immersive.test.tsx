@@ -189,6 +189,18 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     expect(screen.getByTestId("game-content")).toBeDefined();
   });
 
+  it("keeps focus off a touch toolbar key after a tap (#2039)", async () => {
+    installMatchMedia([TOUCH_DEVICE_QUERY]);
+    renderCabinet();
+    await launch();
+
+    const power = screen.getByRole("button", {
+      name: "Reset / Power Off Cabinet",
+    });
+    // fireEvent returns false when the default (moving focus) was prevented.
+    expect(fireEvent.mouseDown(power)).toBe(false);
+  });
+
   it("gives a fit-layout immersive stage overflow hidden instead of a scroll area", async () => {
     installMatchMedia([TOUCH_DEVICE_QUERY]);
     renderCabinet({ mobileLayout: "fit" });

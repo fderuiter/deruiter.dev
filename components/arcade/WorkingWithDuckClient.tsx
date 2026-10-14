@@ -1,12 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { useTouchDevice } from "@/components/arcade/mobile";
+import {
+  createDuckTouchBridge,
+  DuckTouchProvider,
+} from "@/components/working-with-duck/touch-bridge";
+import { DuckControlDock } from "@/components/working-with-duck/DuckControlDock";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -25,7 +31,7 @@ const WorkingWithDuckLoader = () =>
 const DynamicWorkingWithDuck = dynamic(WorkingWithDuckLoader, {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-500 animate-pulse">
+    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-400">
       <div className="w-8 h-8 border-2 border-amber-500/30 border-t-amber-500 rounded-full animate-spin mb-4" />
       <span>Finding Duck...</span>
     </div>
@@ -33,6 +39,18 @@ const DynamicWorkingWithDuck = dynamic(WorkingWithDuckLoader, {
 });
 
 export const WorkingWithDuckClient: React.FC = () => {
+  // One bridge per page: the game publishes its scene and runs commands
+  // through it, and the touch control dock sends them (ADR 0061).
+  const [touchBridge] = useState(createDuckTouchBridge);
+  // A touch device gets the control dock. A desktop cabinet gets none, so its
+  // markup and layout are unchanged.
+  const touchDevice = useTouchDevice();
+  // The cabinet reports the moments to stop; the game pauses a running sprint.
+  const handleAutoPause = useCallback(
+    () => touchBridge.run("auto-pause"),
+    [touchBridge]
+  );
+
   return (
     <div className="w-full min-h-dvh bg-black text-white pt-4 pb-20 px-3 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -85,25 +103,29 @@ export const WorkingWithDuckClient: React.FC = () => {
             gameId="working-with-duck"
             gameTitle="Working With Duck"
           >
-            <PlayCabinet
-              gameId="working-with-duck"
-              title="Working With Duck"
-              subtitle="Code, Toys, and Questionable Priorities"
-              icon={<IconBone className="w-8 h-8 text-amber-400" />}
-              instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
-              controls={[
-                { key: "1-3 / 4", action: "Toss Toys / Trade Treats" },
-                { key: "Space", action: "Work Sprint (Park: Jump)" },
-                { key: "W / ↑ ↓", action: "Steer in the Park" },
-                {
-                  key: "Q / W / E / R",
-                  action: "Sit / High Five / Drop It / Spin",
-                },
-              ]}
-              importComponent={WorkingWithDuckLoader}
-            >
-              <DynamicWorkingWithDuck />
-            </PlayCabinet>
+            <DuckTouchProvider bridge={touchBridge}>
+              <PlayCabinet
+                gameId="working-with-duck"
+                title="Working With Duck"
+                subtitle="Code, Toys, and Questionable Priorities"
+                icon={<IconBone className="w-8 h-8 text-amber-400" />}
+                instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
+                controls={[
+                  { key: "1-3 / 4", action: "Toss Toys / Trade Treats" },
+                  { key: "Space", action: "Work Sprint (Park: Jump)" },
+                  { key: "W / ↑ ↓", action: "Steer in the Park" },
+                  {
+                    key: "Q / W / E / R",
+                    action: "Sit / High Five / Drop It / Spin",
+                  },
+                ]}
+                importComponent={WorkingWithDuckLoader}
+                controlDock={touchDevice ? <DuckControlDock /> : undefined}
+                onAutoPause={handleAutoPause}
+              >
+                <DynamicWorkingWithDuck />
+              </PlayCabinet>
+            </DuckTouchProvider>
           </DesktopOnlyGate>
         </div>
 

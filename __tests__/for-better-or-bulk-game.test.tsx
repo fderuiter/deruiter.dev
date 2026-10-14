@@ -46,6 +46,8 @@ vi.mock("@/components/for-better-or-bulk/sfx", () => ({
 /** Lets a test end the level on the next engine step, whatever the plan. */
 const engine = vi.hoisted(() => ({
   finishNext: false,
+  /** The finish time the forced end reports; null leaves the day unfinished. */
+  finishedAt: null as number | null,
   inputs: [] as Frame[],
 }));
 
@@ -61,7 +63,13 @@ vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
       engine.finishNext = false;
       return {
         ...result,
-        state: { ...result.state, phase: "done" as const },
+        state: {
+          ...result.state,
+          phase: "done" as const,
+          ...(engine.finishedAt === null
+            ? {}
+            : { finishedAt: engine.finishedAt }),
+        },
       };
     },
   };
@@ -1240,5 +1248,72 @@ describe("the brothers' options share one resting look (round 9)", () => {
       breakButton.getAttribute("aria-describedby") ?? ""
     );
     expect(detail?.textContent).toBe("(Promise to come back for something.)");
+  });
+});
+
+describe("For Better or Bulk time challenge (#2056)", () => {
+  beforeEach(() => {
+    frame.callback = null;
+    frame.active = false;
+    engine.finishNext = false;
+    engine.finishedAt = null;
+    scores.record.mockClear();
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/arcade/for-better-or-bulk");
+  });
+
+  afterEach(() => {
+    cleanup();
+    engine.finishedAt = null;
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
+  });
+
+  /** Plays a solo standard day that ends with everything set at `finishedAt`. */
+  function finishDay(finishedAt: number) {
+    start();
+    engine.finishedAt = finishedAt;
+    engine.finishNext = true;
+    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+  }
+
+  it("records a finished solo day's time as a best that persists, and keeps the board score as placements", () => {
+    render(<ForBetterOrBulkGame />);
+    expect(screen.getByTestId("fbb-best-time").textContent).toContain(
+      "No best time yet"
+    );
+    finishDay(110);
+    expect(screen.getByTestId("fbb-run-time").textContent).toBe(
+      "Everything set at 12:51, 21 minutes under par."
+    );
+    expect(screen.getByTestId("fbb-best-time").textContent).toContain(
+      "New best"
+    );
+    expect(scores.record).toHaveBeenCalledWith(
+      "for-better-or-bulk",
+      expect.any(Number),
+      expect.anything()
+    );
+    // A reload shows the best on the setup screen.
+    cleanup();
+    render(<ForBetterOrBulkGame />);
+    expect(screen.getByTestId("fbb-best-time").textContent).toBe(
+      "Your best: 12:51."
+    );
+    finishDay(130);
+    expect(screen.getByTestId("fbb-best-time").textContent).toBe(
+      "Your best: 12:51."
+    );
+  });
+
+  it("does not record a helper day", () => {
+    render(
+      <ForBetterOrBulkGame initialSetup={{ ...DEFAULT_SETUP, assist: true }} />
+    );
+    finishDay(90);
+    expect(screen.getByTestId("fbb-no-best").textContent).toBe(
+      "Helper days don't set a best time."
+    );
+    expect(window.localStorage.getItem("fbb_best_times")).toBeNull();
   });
 });

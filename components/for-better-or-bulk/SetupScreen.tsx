@@ -12,19 +12,25 @@ import {
   CAPABILITY_PICKS,
   FOOD_PRICES,
   LANTERN_PRICE,
+  LEVEL_SECONDS,
+  RELAXED_LEVEL_SECONDS,
   ROSE_PRICES,
+  bestTimeFor,
   cartTotal,
   dailySeed,
   dollars,
+  parFor,
   validateSetup,
   type CapabilityId,
   type FoodTier,
   type RoseTier,
   type Setup,
 } from "@/lib/for-better-or-bulk";
+import { readBestTimes } from "./best-time-storage";
+import { ChallengeStrip } from "./ChallengeStrip";
 import type { ControlMode } from "./input";
 import { SEEDED_EVENT_NOTES } from "./messages";
-import { noRewardLine } from "./rewards";
+import { noBestTimeReason, noRewardLine } from "./rewards";
 
 /**
  * Keeps the page's `?seed=` in step with the seed on screen, so a reload or a
@@ -119,6 +125,8 @@ export function SetupScreen({
   // Read once, on mount: this screen only renders in the browser.
   const [todaysSeed] = useState(() => dailySeed(new Date()));
   const [mode, setMode] = useState<ControlMode>(initialMode);
+  // Read once, on mount: the screen remounts after each day, so a new best shows.
+  const [bestTimes] = useState(readBestTimes);
 
   // The helper only exists in one-player play, so co-op never carries it.
   const setup: Setup = {
@@ -129,6 +137,7 @@ export function SetupScreen({
     seed,
   };
   const total = cartTotal(setup.cart);
+  const duration = relaxed ? RELAXED_LEVEL_SECONDS : LEVEL_SECONDS;
   const check = validateSetup(setup);
 
   const toggleCapability = (id: CapabilityId) => {
@@ -365,6 +374,13 @@ export function SetupScreen({
           </div>
         ) : null}
       </fieldset>
+
+      <ChallengeStrip
+        par={parFor(setup)}
+        best={bestTimeFor(bestTimes, setup)}
+        duration={duration}
+        noBestReason={noBestTimeReason(setup.assist ?? false, false)}
+      />
 
       <div className="flex min-w-0 flex-wrap items-center gap-3 border-t border-[var(--fbb-rule)] pt-4">
         {setup.assist ? (

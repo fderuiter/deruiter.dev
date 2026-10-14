@@ -16,6 +16,7 @@ import {
   type Receipt,
   type Readiness,
 } from "@/lib/for-better-or-bulk";
+import { ChallengeStrip, type TimeChallenge } from "./ChallengeStrip";
 
 const STATUS_LABELS: Readonly<Record<Readiness, string>> = {
   ready: "Ready",
@@ -31,6 +32,11 @@ interface ReceiptViewProps {
   onPlayAgain: () => void;
   onChangePlan: () => void;
   onWatchReplay: () => void;
+  /**
+   * Par and the personal best, shown in their own strip apart from the
+   * receipt (#2056). Absent where a front end does not track them.
+   */
+  timeChallenge?: TimeChallenge | null;
 }
 
 /** Whether the viewer asked for less motion; the scroll then jumps instead of gliding. */
@@ -49,6 +55,7 @@ export function ReceiptView({
   onPlayAgain,
   onChangePlan,
   onWatchReplay,
+  timeChallenge,
 }: ReceiptViewProps) {
   const [copyNote, setCopyNote] = useState("");
   const titleRef = useRef<HTMLHeadingElement>(null);
@@ -238,6 +245,8 @@ export function ReceiptView({
           ))}
         </ul>
       </section>
+
+      {timeChallenge ? <ChallengeStrip {...timeChallenge} /> : null}
 
       <ul className="flex min-w-0 flex-col gap-1 border-t border-dashed border-[var(--fbb-rule)] pt-3 text-xs">
         <li data-testid="fbb-follow-through">

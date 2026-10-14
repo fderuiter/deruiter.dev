@@ -50,6 +50,8 @@ import {
   type SupplyKind,
   CATEGORY_LABELS,
   bankText,
+  bestTimeFor,
+  parFor,
 } from "@/lib/for-better-or-bulk";
 import {
   recordArcadeScore,
@@ -58,7 +60,9 @@ import {
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import { readBestTimes, saveBestTime } from "./best-time-storage";
 import { BrothersDialog } from "./BrothersDialog";
+import type { TimeChallenge } from "./ChallengeStrip";
 import { buildFrame, GAME_CODES, type ControlMode } from "./input";
 import { BurstLayer, RowFlash, useFbbLoud, type DomBurst } from "./bursts";
 import {
@@ -84,7 +88,7 @@ import { playSfx } from "./sfx";
 import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
-import { noRewardLine, runTrophyIds } from "./rewards";
+import { noBestTimeReason, noRewardLine, runTrophyIds } from "./rewards";
 import { SetupScreen } from "./SetupScreen";
 import {
   burstLifetime,
@@ -287,6 +291,9 @@ export function ForBetterOrBulkGame({
   const [active, setActive] = useState<PlayerId>("abbi");
   const [view, setView] = useState<GameState | null>(null);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
+  const [timeChallenge, setTimeChallenge] = useState<TimeChallenge | null>(
+    null
+  );
   const [userPaused, setUserPaused] = useState(false);
   const [toasts, setToasts] = useState<readonly Toast[]>([]);
   const [announcement, setAnnouncement] = useState("");
@@ -416,6 +423,23 @@ export function ForBetterOrBulkGame({
       }
       const trophies = runTrophyIds(state, result.stars, speed);
       if (trophies.length > 0) unlockArcadeTrophies(trophies);
+      // The time challenge sits beside the board score, which stays the
+      // placement count: a finished solo day at normal speed may set a best.
+      const noBestReason = noBestTimeReason(
+        state.setup.assist ?? false,
+        speed !== 1
+      );
+      const record =
+        state.finishedAt !== null && noBestReason === null
+          ? saveBestTime(state.setup, state.finishedAt)
+          : null;
+      setTimeChallenge({
+        par: parFor(state.setup),
+        best: record ? record.best : bestTimeFor(readBestTimes(), state.setup),
+        duration: state.duration,
+        noBestReason,
+        run: { finishedAt: state.finishedAt, record },
+      });
     },
     [speed]
   );
@@ -598,6 +622,7 @@ export function ForBetterOrBulkGame({
       setActive("abbi");
       setView(state);
       setReceipt(null);
+      setTimeChallenge(null);
       setUserPaused(false);
       setToasts([]);
       // A helper day opens with the helper's job line (Fred helps Abbi here),
@@ -947,6 +972,7 @@ export function ForBetterOrBulkGame({
       <ReceiptView
         receipt={receipt}
         runCode={share?.code ?? null}
+        timeChallenge={timeChallenge}
         onPlayAgain={() => start(setup, mode)}
         onChangePlan={() => setPhase("setup")}
         onWatchReplay={() => {

@@ -74,6 +74,36 @@ Re-exports [bankText](presets/functions/bankText.md)
 
 ***
 
+### BEST\_TIMES\_STORAGE\_KEY
+
+Re-exports [BEST_TIMES_STORAGE_KEY](internal/best-time/variables/BEST_TIMES_STORAGE_KEY.md)
+
+***
+
+### bestTimeFor
+
+Re-exports [bestTimeFor](internal/best-time/functions/bestTimeFor.md)
+
+***
+
+### bestTimeKey
+
+Re-exports [bestTimeKey](internal/best-time/functions/bestTimeKey.md)
+
+***
+
+### BestTimeRecord
+
+Re-exports [BestTimeRecord](types/interfaces/BestTimeRecord.md)
+
+***
+
+### BestTimes
+
+Re-exports [BestTimes](types/type-aliases/BestTimes.md)
+
+***
+
 ### BIN\_HOLD\_SECONDS
 
 Re-exports [BIN_HOLD_SECONDS](presets/variables/BIN_HOLD_SECONDS.md)
@@ -494,6 +524,12 @@ Re-exports [INTERRUPTIONS](presets/variables/INTERRUPTIONS.md)
 
 ***
 
+### isNewBestTime
+
+Re-exports [isNewBestTime](internal/best-time/functions/isNewBestTime.md)
+
+***
+
 ### Item
 
 Re-exports [Item](types/interfaces/Item.md)
@@ -566,6 +602,12 @@ Re-exports [MAX_SEED](internal/prng/variables/MAX_SEED.md)
 
 ***
 
+### minutesUnderPar
+
+Re-exports [minutesUnderPar](internal/best-time/functions/minutesUnderPar.md)
+
+***
+
 ### MOVE\_SPEED
 
 Re-exports [MOVE_SPEED](presets/variables/MOVE_SPEED.md)
@@ -581,6 +623,24 @@ Re-exports [nextSpotTile](internal/views/functions/nextSpotTile.md)
 ### onLevelClock
 
 Re-exports [onLevelClock](presets/functions/onLevelClock.md)
+
+***
+
+### PAR\_SECONDS
+
+Re-exports [PAR_SECONDS](internal/best-time/variables/PAR_SECONDS.md)
+
+***
+
+### parFor
+
+Re-exports [parFor](internal/best-time/functions/parFor.md)
+
+***
+
+### parseBestTimes
+
+Re-exports [parseBestTimes](internal/best-time/functions/parseBestTimes.md)
 
 ***
 
@@ -707,6 +767,12 @@ Re-exports [Receipt](types/interfaces/Receipt.md)
 ### RECEIPT\_COPY
 
 Re-exports [RECEIPT_COPY](presets/variables/RECEIPT_COPY.md)
+
+***
+
+### recordBestTime
+
+Re-exports [recordBestTime](internal/best-time/functions/recordBestTime.md)
 
 ***
 
@@ -851,6 +917,12 @@ Re-exports [SeededEventId](types/type-aliases/SeededEventId.md)
 ### seededEvents
 
 Re-exports [seededEvents](internal/level/functions/seededEvents.md)
+
+***
+
+### serializeBestTimes
+
+Re-exports [serializeBestTimes](internal/best-time/functions/serializeBestTimes.md)
 
 ***
 

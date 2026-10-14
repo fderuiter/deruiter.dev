@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [ActualNote](interfaces/ActualNote.md)
+- [BestTimeRecord](interfaces/BestTimeRecord.md)
 - [Cart](interfaces/Cart.md)
 - [CategoryProgress](interfaces/CategoryProgress.md)
 - [ChallengeResult](interfaces/ChallengeResult.md)
@@ -37,6 +38,7 @@
 
 ## Type Aliases
 
+- [BestTimes](type-aliases/BestTimes.md)
 - [CapabilityId](type-aliases/CapabilityId.md)
 - [Category](type-aliases/Category.md)
 - [ChallengeId](type-aliases/ChallengeId.md)

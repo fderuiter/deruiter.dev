@@ -102,7 +102,7 @@ export function Toolbox({
                       ? "ADaM"
                       : "SDTM"}
                 </span>
-                <span className="mt-0.5 block break-words text-[10px] leading-snug text-zinc-300">
+                <span className="pd-chip-summary mt-0.5 block break-words text-[10px] leading-snug text-zinc-300">
                   {spec.summary}
                 </span>
               </>

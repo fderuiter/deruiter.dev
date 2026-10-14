@@ -59,7 +59,7 @@
     flex: 0 0 auto;
     width: 11rem;
   }
-  .pd-touch-toolbox > button > span:nth-child(3) {
+  .pd-touch-toolbox .pd-chip-summary {
     display: none;
   }
   .pd-touch-rail > article {

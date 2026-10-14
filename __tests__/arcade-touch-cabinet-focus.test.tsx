@@ -189,4 +189,80 @@ describe("touch cabinet focus and Escape (#2039 playtest)", () => {
     });
     expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
   });
+  // #2045: a game can keep Escape on the touch cabinet while a panel is
+  // open (data-escape-docks on its keyboard boundary) or while a dialog must
+  // be accepted rather than dismissed (data-escape-holds).
+  function renderWithEscapeMarks(marks: { docks?: boolean; holds?: boolean }) {
+    return render(
+      <PlayCabinet
+        gameId="focus-game"
+        title="Focus Game"
+        icon={<span>🎮</span>}
+        instructions="Test instructions"
+        controls={[{ key: "Space", action: "Jump" }]}
+        importComponent={() => Promise.resolve({})}
+      >
+        <div
+          data-keyboard-boundary="true"
+          data-escape-docks={marks.docks ? "true" : undefined}
+        >
+          <button type="button">Game button</button>
+          {marks.holds ? (
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Briefing"
+              data-escape-holds="true"
+            >
+              <button type="button">Accept briefing</button>
+            </div>
+          ) : null}
+        </div>
+      </PlayCabinet>
+    );
+  }
+
+  it("keeps the touch cabinet open on Escape while a panel docks", async () => {
+    renderWithEscapeMarks({ docks: true });
+    await launch();
+    act(() => {
+      fireEvent.keyDown(screen.getByRole("button", { name: "Game button" }), {
+        key: "Escape",
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
+  });
+
+  it("keeps the touch cabinet open on Escape in a dialog that holds it", async () => {
+    renderWithEscapeMarks({ holds: true });
+    await launch();
+    act(() => {
+      fireEvent.keyDown(
+        screen.getByRole("button", { name: "Accept briefing" }),
+        { key: "Escape" }
+      );
+    });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(cabinetEl().getAttribute("data-immersive")).toBe("true");
+    expect(screen.getByRole("dialog", { name: "Briefing" })).toBeDefined();
+  });
+
+  it("still leaves the touch cabinet on Escape when nothing docks or holds", async () => {
+    renderWithEscapeMarks({});
+    await launch();
+    act(() => {
+      fireEvent.keyDown(screen.getByRole("button", { name: "Game button" }), {
+        key: "Escape",
+      });
+    });
+    act(() => {
+      vi.advanceTimersByTime(50);
+    });
+    expect(document.querySelector("[data-immersive]")).toBeNull();
+  });
 });

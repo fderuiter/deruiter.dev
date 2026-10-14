@@ -107,7 +107,11 @@ export function TouchMenuSheet({
         </div>
 
         <div className="mt-3 grid grid-cols-2 gap-2">
-          <button type="button" onClick={onMuseum} className={ROW}>
+          <button
+            type="button"
+            onClick={onMuseum}
+            className={`${ROW} min-h-12`}
+          >
             <IconBook className="h-4 w-4 text-amber-300" aria-hidden="true" />
             <span>Flag Museum</span>
           </button>

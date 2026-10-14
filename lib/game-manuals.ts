@@ -1305,6 +1305,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "The SDTM checklist needs 110 VS rows, 6 MH rows, no open queries, no fabricated debt and intact traces. The ADaM checklist needs 20 orthostatic rows with NOT EVALUABLE visits handled honestly and no stale derivations.",
         badge: "Lock",
       },
+      {
+        title: "Efficiency against par",
+        detail:
+          "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
+        badge: "Par",
+      },
     ],
     proTips: [
       "Add the regex split before Site A's narrative entry arrives on Day 7.",

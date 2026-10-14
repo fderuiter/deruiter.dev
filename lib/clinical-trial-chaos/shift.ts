@@ -22,6 +22,11 @@ import {
 } from "./engine";
 import { getAuditYearAmendmentFactor } from "./escalation";
 import {
+  applyInspectionToReport,
+  getSkeletonDispositions,
+  InspectionRound,
+} from "./inspection";
+import {
   applySponsorSkeletonsToReport,
   SponsorEvent,
   SponsorSkeleton,
@@ -546,9 +551,28 @@ export function formatNextDossierCue(subject: ClinicalSubject): string {
   }`;
 }
 
+/** Extra inputs to `buildInspectionReport`. */
+export interface InspectionReportOptions {
+  /**
+   * The finished campaign-finale inspection (#2089). Its skeleton answers set
+   * each skeleton's penalty and its record answers add interview findings.
+   */
+  inspection?: InspectionRound;
+  /** When the report is filed; fix it to make the report repeatable. */
+  now?: Date;
+  /**
+   * How many leading `skeletons` earlier phase reports already charged. The
+   * finale adds only the finding each one's answer earns (#2089).
+   */
+  chargedSkeletons?: number;
+}
+
 /**
  * The BIMO inspection report shown when a phase clears or the shift ends,
- * with the sponsor's skeletons added as findings.
+ * with the sponsor's skeletons added as findings. At the end of a campaign
+ * it also grades the inspection interview. This is the single place the
+ * report is built: the same run state and answers always give the same
+ * report for the same `now`.
  *
  * @param score - Score state the report grades.
  * @param auditor - Auditor state the report grades.
@@ -556,6 +580,7 @@ export function formatNextDossierCue(subject: ClinicalSubject): string {
  * @param violations - Wrong fixes recorded during the shift.
  * @param protocol - The simulated study protocol, if any.
  * @param skeletons - Sponsor-pleasing shortcuts taken this shift.
+ * @param options - The finale inspection and the filing time, if any.
  * @returns The inspection report.
  */
 export function buildInspectionReport(
@@ -564,12 +589,17 @@ export function buildInspectionReport(
   logs: AuditLogEntry[],
   violations: RecordedRuleViolation[],
   protocol: StudyProtocol | null,
-  skeletons: readonly SponsorSkeleton[]
+  skeletons: readonly SponsorSkeleton[],
+  options: InspectionReportOptions = {}
 ): BIMOInspectionReport {
-  return applySponsorSkeletonsToReport(
-    generateBIMOReport(score, auditor, logs, violations, protocol),
-    skeletons
+  const { inspection, now, chargedSkeletons = 0 } = options;
+  const report = applySponsorSkeletonsToReport(
+    generateBIMOReport(score, auditor, logs, violations, protocol, now),
+    skeletons,
+    inspection ? getSkeletonDispositions(inspection, skeletons.length) : [],
+    chargedSkeletons
   );
+  return inspection ? applyInspectionToReport(report, inspection) : report;
 }
 
 // --- Lifelines --------------------------------------------------------------

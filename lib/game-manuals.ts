@@ -886,11 +886,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "At the end of each shift or upon trial termination, receive a formal BIMO inspection report with NAI (No Action Indicated), VAI (Voluntary Action), or OAI (Form 483 Issued) determination.",
         badge: "BIMO Inspection",
       },
+      {
+        title: "The FDA Inspection Finale",
+        detail:
+          "When Phase 3 locks, the inspector pulls 4 to 6 CRFs you locked this campaign and asks one question about each: which value you corrected and why, where its signature is, or which station it went to. Each sponsor skeleton you took adds a harder question about that email. For a Phase 3 shortcut, admit it and cite the right regulation to halve its penalty and lower the finding a level; deny it or blame the sponsor and the finding rises a level. A Phase 1 or 2 shortcut was already charged in that phase's report, so the interview only adds to it: nothing if you disclose it, a Minor finding for the wrong regulation or no answer, a Major one if you deny it. Each record question gets 15 seconds and each skeleton 25; More time adds 15 seconds, and Untimed interview turns the timer off. Your answers set the final verdict. Endless mode has no inspection.",
+        badge: "Campaign Finale",
+      },
     ],
     proTips: [
       "Keep an eye on Serious Adverse Events (⚡ SAE): they have shorter timers and grant +300 bonus points upon compliant signature. Sign an SAE Urgent Safety Expedited, and never use that reason for a routine CRF.",
       "Charge your 'FDA Coffee Break' lifeline by maintaining clean submission streaks; deploy it when auditor suspicion climbs above 70%.",
       "Switch to the Live SDTM Studio tab during shifts to inspect generated observation rows and export authentic CDISC ODM 1.3 XML.",
+      "Notice how each CRF is signed and where it goes: the Phase 3 inspector asks about the records you locked, and three wrong answers add a Major finding for an incomplete audit trail.",
       "Toggle the procedural 8-bit synth BGM to hear dynamic tempo scaling as auditor scrutiny intensifies.",
     ],
     lore: {

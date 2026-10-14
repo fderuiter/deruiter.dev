@@ -988,13 +988,17 @@ export function exportToSDTMCSV(sdtmRows: SDTMRow[]): string {
 
 /**
  * Generates an FDA Bioresearch Monitoring (BIMO) inspection compliance report.
+ *
+ * @param now - When the inspection is filed; it sets the run id and the audit
+ *   date, so passing a fixed date makes the report repeatable (#2089).
  */
 export function generateBIMOReport(
   scoreState: GameScoreState,
   auditorState: AuditorState,
   _logs?: AuditLogEntry[],
   ruleViolations?: RecordedRuleViolation[],
-  activeProtocol?: StudyProtocol | null
+  activeProtocol?: StudyProtocol | null,
+  now: Date = new Date()
 ): BIMOInspectionReport {
   const totalSubmissions = scoreState.subjectsSubmitted;
   const violations = scoreState.auditViolations;
@@ -1136,8 +1140,8 @@ export function generateBIMOReport(
   }
 
   return {
-    runId: `BIMO-${Date.now().toString(36).toUpperCase()}`,
-    auditDate: new Date().toLocaleDateString("en-US", {
+    runId: `BIMO-${now.getTime().toString(36).toUpperCase()}`,
+    auditDate: now.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",

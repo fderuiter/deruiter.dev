@@ -60,6 +60,14 @@ Subjects that expired on the conveyor and were never submitted (#1670).
 
 ***
 
+### inspection?
+
+> `optional` **inspection?**: [`InspectionInterviewSummary`](InspectionInterviewSummary.md)
+
+How the campaign-finale inspection interview went (#2089); absent otherwise.
+
+***
+
 ### overallScore
 
 > **overallScore**: `number`

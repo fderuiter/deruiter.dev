@@ -467,3 +467,21 @@ export interface Receipt {
   readonly stars: number;
   readonly disclaimer: string;
 }
+
+/**
+ * Personal best finish times in level seconds, keyed by `bestTimeKey`. A game
+ * record about play speed, never a judgment of the wedding.
+ */
+export type BestTimes = Readonly<Record<string, number>>;
+
+/** A finished day's time set against the best kept before it. */
+export interface BestTimeRecord {
+  /** This day's finish, in level seconds. */
+  readonly time: number;
+  /** The best before this day, or null when this was the first finish. */
+  readonly previous: number | null;
+  /** The best after this day. */
+  readonly best: number;
+  /** Whether this day set the best. */
+  readonly isNew: boolean;
+}

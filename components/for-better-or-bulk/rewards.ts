@@ -42,3 +42,17 @@ export function runTrophyIds(
   }
   return ids;
 }
+
+/**
+ * Why a day cannot set a best time, or null when it can (#2056). The rule
+ * matches the board: the helper and the sped-up clock both make a day faster
+ * than one person playing at normal speed, so neither sets a best.
+ */
+export function noBestTimeReason(
+  assist: boolean,
+  spedUp: boolean
+): string | null {
+  if (spedUp) return "Sped-up days don't set a best time.";
+  if (assist) return "Helper days don't set a best time.";
+  return null;
+}

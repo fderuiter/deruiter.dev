@@ -1034,7 +1034,8 @@
    scrolls inside the panel, and the helper line stays in the box. */
 .qp-root.qp-touch > .qp-touch-board {
   flex: 1 1 0;
-  min-height: 0;
+  /* An open drawer never squeezes the board off the screen. */
+  min-height: 13rem;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -1063,6 +1064,14 @@
 .qp-root.qp-touch .qp-touch-tree > * {
   flex: none;
   margin: auto;
+}
+/* The drawers give way first: an open drawer scrolls inside its own region
+   instead of pushing the board and the hand out of the cabinet. */
+.qp-root.qp-touch > .qp-touch-drawers {
+  flex-shrink: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 /* Every on-screen control is at least 44px square. */
 .qp-root.qp-touch button {
@@ -1723,4 +1732,19 @@
   [data-fbb-cabinet] .fbb-scene-in {
     animation: none;
   }
+}
+
+/*
+ * The Pre-Game Setup Wizard on an immersive touch cabinet (#2042 playtest):
+ * an iPad held at arm's length gets no text under 12px. Desktop keeps the
+ * wizard's compact type.
+ */
+[data-arcade-cabinet][data-immersive="true"] .arcade-setup-wizard .text-\[9px\],
+[data-arcade-cabinet][data-immersive="true"]
+  .arcade-setup-wizard
+  .text-\[10px\],
+[data-arcade-cabinet][data-immersive="true"]
+  .arcade-setup-wizard
+  .text-\[11px\] {
+  font-size: 0.75rem;
 }

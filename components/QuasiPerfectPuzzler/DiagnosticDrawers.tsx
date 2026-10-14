@@ -15,6 +15,7 @@ import {
   IconChevronUp,
   IconCode,
   IconTerminal2,
+  IconX,
 } from "@tabler/icons-react";
 
 interface DiagnosticDrawersProps {
@@ -26,6 +27,66 @@ interface DiagnosticDrawersProps {
   onToggleLeanInspector: () => void;
   currentLevelIndex?: number;
 }
+
+interface CabinetSheetProps {
+  id: string;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}
+
+/**
+ * An open drawer on the touch cabinet (#2042). Inline, it would push the board
+ * and the tactic hand off a portrait iPad, so it opens as a bottom sheet over
+ * them instead: a modal dialog with its own close button, a backdrop that
+ * closes it, focus kept inside, and Escape to close.
+ */
+const CabinetSheet: React.FC<CabinetSheetProps> = ({
+  id,
+  title,
+  onClose,
+  children,
+}) => {
+  const trapRef = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: onClose,
+    returnFocus: true,
+  });
+  return (
+    <>
+      <div
+        aria-hidden="true"
+        data-testid="qp-sheet-backdrop"
+        onClick={onClose}
+        className="fixed inset-0 z-40 bg-black/60"
+      />
+      <div
+        id={id}
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className="fixed inset-x-0 bottom-0 z-40 flex max-h-[70dvh] flex-col rounded-t-2xl border border-b-0 border-[color:var(--qp-hairline)] bg-[color:var(--qp-panel)] shadow-[0_-16px_40px_-12px_rgba(0,0,0,0.9)] pb-[env(safe-area-inset-bottom)]"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-zinc-800/80 px-4 py-1">
+          <span className="min-w-0 truncate text-sm font-bold text-zinc-100">
+            {title}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={`Close ${title}`}
+            className="qp-focus flex min-h-11 min-w-11 items-center justify-center rounded-lg text-zinc-300 hover:bg-[color:var(--qp-raised)]"
+          >
+            <IconX className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+          {children}
+        </div>
+      </div>
+    </>
+  );
+};
 
 export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
   level,
@@ -40,12 +101,7 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
   // is shown on the proof board itself.
   const [isTerminalOpen, setIsTerminalOpen] = useState<boolean>(false);
   const inCabinet = useCabinetTouch();
-  // On the touch cabinet the open inspector traps focus and Escape closes it
-  // (#2042). The trap is inactive on desktop, so a drawer there behaves as before.
-  const leanTrapRef = useFocusTrap<HTMLDivElement>(
-    inCabinet && isLeanInspectorOpen,
-    { onEscape: onToggleLeanInspector, returnFocus: true }
-  );
+  const closeTerminal = () => setIsTerminalOpen(false);
 
   return (
     <div
@@ -98,20 +154,23 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
           </div>
         </button>
 
-        {isLeanInspectorOpen && (
+        {isLeanInspectorOpen && inCabinet && (
+          <CabinetSheet
+            id="lean-ide-drawer-content"
+            title="Generated Lean 4 Text and Simulator Inspector"
+            onClose={onToggleLeanInspector}
+          >
+            <LeanIdeInspector
+              level={level}
+              steps={proofSteps}
+              isComplete={isComplete}
+            />
+          </CabinetSheet>
+        )}
+        {isLeanInspectorOpen && !inCabinet && (
           <div
             id="lean-ide-drawer-content"
-            ref={leanTrapRef}
-            // On the touch cabinet the inspector is a dialog: focus stays in
-            // it and Escape closes it (#2042). Desktop keeps a plain drawer.
-            role={inCabinet ? "dialog" : undefined}
-            aria-modal={inCabinet ? true : undefined}
-            aria-label={
-              inCabinet
-                ? "Generated Lean 4 Text and Simulator Inspector"
-                : undefined
-            }
-            className={`border-t border-zinc-800/80 p-1${inCabinet ? " max-h-[45dvh] overflow-y-auto" : ""}`}
+            className="border-t border-zinc-800/80 p-1"
           >
             <LeanIdeInspector
               level={level}
@@ -158,10 +217,19 @@ export const DiagnosticDrawers: React.FC<DiagnosticDrawersProps> = ({
           </div>
         </button>
 
-        {isTerminalOpen && (
+        {isTerminalOpen && inCabinet && (
+          <CabinetSheet
+            id="terminal-log-drawer-content"
+            title="Local Tactic Diagnostics and TTY Feedback Log"
+            onClose={closeTerminal}
+          >
+            <TerminalLog logs={logs} />
+          </CabinetSheet>
+        )}
+        {isTerminalOpen && !inCabinet && (
           <div
             id="terminal-log-drawer-content"
-            className={`border-t border-zinc-800/80 p-1${inCabinet ? " max-h-[30dvh] overflow-y-auto" : ""}`}
+            className="border-t border-zinc-800/80 p-1"
           >
             <TerminalLog logs={logs} />
           </div>

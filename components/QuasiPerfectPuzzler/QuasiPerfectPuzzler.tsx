@@ -1497,7 +1497,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           </div>
 
           {/* Accordion Drawers for Secondary IDE Panels & Diagnostic Terminal Log */}
-          <div className="mt-4">
+          <div className={`mt-4${inCabinet ? " qp-touch-drawers" : ""}`}>
             <DiagnosticDrawers
               key={currentLevelIndex}
               level={currentLevel}

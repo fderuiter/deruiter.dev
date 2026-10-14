@@ -157,6 +157,44 @@ describe("Quasi-Puzzler on the touch cabinet (#2042)", () => {
     });
   });
 
+  describe("drawers open as bottom sheets on the touch cabinet", () => {
+    it("opens the log as a dialog with its own Close button", async () => {
+      renderGame(true);
+      click(screen.getByRole("button", { name: /Local Tactic Diagnostics/ }));
+      const sheet = await screen.findByRole("dialog", {
+        name: /Local Tactic Diagnostics/,
+      });
+      expect(sheet.className).toContain("fixed");
+      click(
+        screen.getByRole("button", { name: /Close Local Tactic Diagnostics/ })
+      );
+      await waitFor(() => {
+        expect(
+          document.getElementById("terminal-log-drawer-content")
+        ).toBeNull();
+      });
+    });
+
+    it("closes an open sheet from its backdrop", async () => {
+      renderGame(true);
+      click(screen.getByRole("button", { name: /Generated Lean 4 Text/ }));
+      await screen.findByRole("dialog", { name: /Generated Lean 4 Text/ });
+      click(screen.getByTestId("qp-sheet-backdrop"));
+      await waitFor(() => {
+        expect(document.getElementById("lean-ide-drawer-content")).toBeNull();
+      });
+    });
+
+    it("keeps plain inline drawers on desktop", () => {
+      renderGame(false);
+      click(screen.getByRole("button", { name: /Local Tactic Diagnostics/ }));
+      const content = document.getElementById("terminal-log-drawer-content");
+      expect(content).not.toBeNull();
+      expect(content!.getAttribute("role")).toBeNull();
+      expect(screen.queryByTestId("qp-sheet-backdrop")).toBeNull();
+    });
+  });
+
   describe("Lean inspector on the touch cabinet", () => {
     it("is a dialog that takes focus and closes with Escape", async () => {
       renderGame(true);

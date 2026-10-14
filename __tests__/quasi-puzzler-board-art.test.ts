@@ -299,10 +299,13 @@ describe("levelMapBadge", () => {
 });
 
 describe("fitting tree rows to the touch cabinet's board (#2042)", () => {
-  const leaf = (id: string): ASTNode =>
-    ({ id, type: "variable", value: id }) as ASTNode;
-  const plus = (id: string, a: ASTNode, b: ASTNode): ASTNode =>
-    ({ id, type: "operator", value: "+", children: [a, b] }) as ASTNode;
+  const leaf = (id: string): ASTNode => ({ id, type: "Variable", value: id });
+  const plus = (id: string, a: ASTNode, b: ASTNode): ASTNode => ({
+    id,
+    type: "Operator",
+    value: "+",
+    children: [a, b],
+  });
   // (a + b) + c = a + (b + c): three rows below the root.
   const deep = plus(
     "eq",

@@ -36,6 +36,8 @@ import {
   recordArcadeMilestone,
   recordArcadeScore,
 } from "@/lib/arcade-achievements";
+import { parseArcadeDailyTag } from "@/lib/arcade/daily";
+import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
 import {
   getMatchMediaMatches,
@@ -380,6 +382,16 @@ export function PattyDriveThruGame({
             outcome: state.shift.outcome,
             served: state.shift.tallies.served,
           });
+          // A shift on the day's Arcade Daily seed keeps its own best (#2113).
+          const dailyDate = parseArcadeDailyTag(
+            state.shift.config.seed,
+            PATTY_GAME_ID
+          );
+          if (dailyDate) {
+            recordArcadeDailyResult(PATTY_GAME_ID, dailyDate, {
+              score: scoreShift(state.shift),
+            });
+          }
           if (
             state.shift.outcome === "completed" &&
             state.shift.tallies.served > 0 &&

@@ -57,6 +57,11 @@ import {
   recordArcadeScore,
   unlockArcadeTrophies,
 } from "@/lib/arcade-achievements";
+import {
+  arcadeDailyDateOfNumber,
+  readArcadeDailyParam,
+} from "@/lib/arcade/daily";
+import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
@@ -143,12 +148,19 @@ function holdLine(work: string, mode: ControlMode, id: PlayerId): string {
 }
 
 /**
- * The day's seed from the page's `?seed=` parameter. Junk, a missing value
- * or an out-of-range number gives the standard day, seed 0.
+ * The day's seed from the page's `?seed=` parameter, or from an Arcade Daily
+ * `?daily=YYYY-MM-DD` link (#2113) when there is no seed. Junk, a missing
+ * value or an out-of-range number gives the standard day, seed 0.
  */
 function seedFromUrl(): number {
   if (typeof window === "undefined") return 0;
-  return parseSeed(new URLSearchParams(window.location.search).get("seed"));
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("seed");
+  if (raw === null) {
+    const daily = readArcadeDailyParam(window.location.search);
+    if (daily) return dailySeed(new Date(`${daily}T00:00:00Z`));
+  }
+  return parseSeed(raw);
 }
 
 /** Fastest clock the `?speed=` parameter allows. */
@@ -419,6 +431,21 @@ export function ForBetterOrBulkGame({
       if (countsForBoard(state, speed)) {
         recordArcadeScore(FBB_GAME_ID, outcome.placements, {
           title: result.title,
+        });
+      }
+      // Today's seed at normal speed is the Arcade Daily (#2113), kept
+      // apart from the board.
+      const dailyDate =
+        speed === 1
+          ? arcadeDailyDateOfNumber(
+              state.setup.seed ?? 0,
+              "for-better-or-bulk",
+              Date.now()
+            )
+          : null;
+      if (dailyDate) {
+        recordArcadeDailyResult("for-better-or-bulk", dailyDate, {
+          score: outcome.placements,
         });
       }
       const trophies = runTrophyIds(state, result.stars, speed);

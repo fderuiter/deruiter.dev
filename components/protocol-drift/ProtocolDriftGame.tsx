@@ -1,6 +1,11 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 // Scoped to `.pd-touch`, so only the touch cabinet sees these rules (#2045).
 import "./protocol-drift-touch.css";
 import { Inspector } from "./Inspector";
@@ -18,6 +23,8 @@ import { PipelineTextView } from "./PipelineTextView";
 import { SiteRail } from "./SiteRail";
 import { Toolbox } from "./Toolbox";
 import { isTracerComplete, useProtocolDriftStore } from "./store";
+import { DEFAULT_SEED } from "@/lib/protocol-drift";
+import { arcadeDailyNumber, readArcadeDailyParam } from "@/lib/arcade/daily";
 import { useWorkbenchKeys } from "./useWorkbenchKeys";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { PROTOCOL_DRIFT_AUTO_PAUSE_EVENT } from "./auto-pause";
@@ -29,6 +36,19 @@ const WIDE_CONTAINER_PX = 1400;
 const TICK_MS = 250;
 /** How long a notice stays on screen before it clears itself. */
 const NOTICE_MS = 6000;
+
+/**
+ * The study's seed from an Arcade Daily `?daily=YYYY-MM-DD` link (#2113), or
+ * the default seed when the page was opened without one.
+ */
+function seedFromUrl(): number {
+  const date = dailyFromUrl();
+  return date ? arcadeDailyNumber(date, "protocol-drift") : DEFAULT_SEED;
+}
+
+const dailyFromUrl = () => readArcadeDailyParam(window.location.search);
+const noDaily = () => null;
+const noSubscription = () => () => {};
 
 /**
  * Protocol Drift workbench: pipeline canvas, toolbox, site rail, tri-pane
@@ -66,9 +86,19 @@ export function ProtocolDriftGame() {
   const tick = useProtocolDriftStore((s) => s.tick);
   const clearNotice = useProtocolDriftStore((s) => s.clearNotice);
   const tracerDone = isTracerComplete(view);
+  const linkedDaily = useSyncExternalStore(
+    noSubscription,
+    dailyFromUrl,
+    noDaily
+  );
+  const dailyDate =
+    linkedDaily &&
+    view?.seed === arcadeDailyNumber(linkedDaily, "protocol-drift")
+      ? linkedDaily
+      : null;
 
   useEffect(() => {
-    void init();
+    void init("full", seedFromUrl());
     return () => dispose();
   }, [init, dispose]);
 
@@ -186,7 +216,10 @@ export function ProtocolDriftGame() {
       </div>
       <Inspector />
       <footer className="flex min-h-8 flex-wrap items-center gap-x-4 gap-y-0.5 border-t border-zinc-800 bg-[#0d0e11] px-3 font-mono text-[11px] text-zinc-300">
-        <span>Seed #{view?.seed ?? 48291}</span>
+        <span>
+          Seed #{view?.seed ?? DEFAULT_SEED}
+          {dailyDate ? ` · Arcade Daily ${dailyDate}` : ""}
+        </span>
         <span>[Space] Pause</span>
         <span>[N] Step</span>
         <span>[I] Inspect</span>

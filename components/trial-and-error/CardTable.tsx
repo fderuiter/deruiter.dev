@@ -9,6 +9,7 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import {
   getArcadeProgress,
   recordArcadeMilestone,
@@ -626,7 +627,14 @@ export function CardTable({
     if (log.actions.length === 0 || recordedRun.current === log) return;
     recordedRun.current = log;
     const entry = summarizeRun(act, log, utcDate(Date.now()));
-    if (entry) updateCodex((current) => recordRun(current, entry));
+    if (!entry) return;
+    updateCodex((current) => recordRun(current, entry));
+    // A Daily Protocol run is Trial & Error's Arcade Daily (#2113).
+    if (entry.origin?.kind === "DAILY") {
+      recordArcadeDailyResult("trial-and-error", entry.origin.date, {
+        score: entry.bestHand?.score ?? 0,
+      });
+    }
   }, [codexEnabled, offerResume, runOver, act, log]);
   const scenario = runView.blind;
   // The reducer state goes only to domain helpers and the tutorial; every

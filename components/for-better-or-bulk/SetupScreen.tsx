@@ -35,10 +35,12 @@ import { noBestTimeReason, noRewardLine } from "./rewards";
 /**
  * Keeps the page's `?seed=` in step with the seed on screen, so a reload or a
  * shared link shows the same day. The standard day removes the parameter.
+ * An Arcade Daily `?daily=` gives way to the seed picked here (#2113).
  */
 function writeSeedParam(seed: number): void {
   try {
     const url = new URL(window.location.href);
+    url.searchParams.delete("daily");
     if (seed === 0) url.searchParams.delete("seed");
     else url.searchParams.set("seed", String(seed));
     window.history.replaceState(window.history.state, "", url.toString());

@@ -5,8 +5,10 @@
  * an unseeded source; the only clock read is the caller's date in `dailySeed`.
  */
 
+import { ARCADE_DAILY_MAX_SEED, arcadeDailyNumber } from "@/lib/arcade/daily";
+
 /** The largest seed a setup may carry: a positive 31-bit integer. */
-export const MAX_SEED = 0x7fffffff;
+export const MAX_SEED = ARCADE_DAILY_MAX_SEED;
 
 /** Digits a seed may have in a link before it is ignored. */
 const MAX_SEED_DIGITS = 10;
@@ -34,24 +36,19 @@ export function createPrng(seed: number): Prng {
   };
 }
 
-/** FNV-1a, a 32-bit hash of a string. */
-function fnv1a(text: string): number {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
 /**
  * The seed for one calendar day, by UTC date, so everyone who plays on the
  * same day gets the same events. It is always from 1 to MAX_SEED, so a daily
  * seed is never the standard day. Throws a RangeError for an invalid Date.
+ *
+ * This is the game's Arcade Daily seed (#2113). The shared derivation keeps
+ * this game's original salt, so every day's seed is the one it always was.
  */
 export function dailySeed(utcDate: Date): number {
-  const day = utcDate.toISOString().slice(0, 10);
-  return (fnv1a(`for-better-or-bulk:${day}`) % MAX_SEED) + 1;
+  return arcadeDailyNumber(
+    utcDate.toISOString().slice(0, 10),
+    "for-better-or-bulk"
+  );
 }
 
 /**

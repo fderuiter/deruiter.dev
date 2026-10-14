@@ -25,6 +25,7 @@ import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { safeGetRawItem } from "@/lib/safe-storage";
 import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
 import { ArcadeTrailer } from "@/components/arcade/ArcadeTrailer";
+import { ArcadeDailyPanel } from "@/components/arcade/ArcadeDailyPanel";
 import { onAppEvent } from "@/lib/event-bus";
 
 interface ArcadeGameCard {
@@ -568,6 +569,8 @@ export const ArcadeHubClient: React.FC = () => {
         </div>
 
         <ArcadeTrailer />
+
+        <ArcadeDailyPanel />
 
         {/* Games Cards Grid */}
         <div

@@ -31,6 +31,8 @@ import {
   recordArcadeMilestone,
   recordArcadeScore,
 } from "@/lib/arcade-achievements";
+import { arcadeDailyDateOfNumber } from "@/lib/arcade/daily";
+import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import { downloadFile } from "@/lib/download";
 import { playProtocolCue } from "./audio";
 import {
@@ -124,7 +126,12 @@ interface ProtocolDriftState {
   revisionCount: number;
   autosavedAt: string | null;
 
-  init: (scenario?: ScenarioId) => Promise<void>;
+  /**
+   * Starts a study. A seed, such as the Arcade Daily's (#2113), is kept for
+   * later restarts and the brief's scenario switch; left out, the study
+   * keeps the seed it had, the default at first.
+   */
+  init: (scenario?: ScenarioId, seed?: number) => Promise<void>;
   dispose: () => void;
   command: (command: PDCommand) => Promise<EngineResponse | null>;
   acceptBrief: (scenario: ScenarioId) => Promise<void>;
@@ -188,6 +195,14 @@ export function isTracerComplete(view: ProtocolDriftView | null): boolean {
 let busy = false;
 /** True while a save is replaying: no cues, no autosaves. */
 let replaying = false;
+/** The seed new studies start from: the default, or a daily from the link. */
+let runSeed: number = DEFAULT_SEED;
+
+/** A locked study on the day's Arcade Daily seed keeps its own best (#2113). */
+function recordDaily(seed: number, score: number): void {
+  const date = arcadeDailyDateOfNumber(seed, "protocol-drift", Date.now());
+  if (date) recordArcadeDailyResult("protocol-drift", date, { score });
+}
 
 function edgeKey(source: string, target: string): string {
   return `${source}>${target}`;
@@ -305,6 +320,7 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           patch.scorecard = event.scorecard;
           cue = "gatePass";
           recordArcadeScore("protocol-drift", event.scorecard.score);
+          if (!replaying) recordDaily(res.view.seed, event.scorecard.score);
           patch.efficiencyBests = saveEfficiencyBests(event.scorecard);
           if (event.scorecard.badges.every((b) => b.earned)) {
             recordArcadeMilestone("protocol-drift", "all_badges");
@@ -381,11 +397,12 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
   return {
     ...initialState(),
 
-    init: async (scenario = "full") => {
+    init: async (scenario = "full", seed) => {
+      if (seed !== undefined) runSeed = seed;
       adapter?.dispose();
       adapter = createEngineAdapter();
       set({ ...initialState(), mode: adapter.mode, scenario });
-      await send({ type: "INIT", seed: DEFAULT_SEED, scenario });
+      await send({ type: "INIT", seed: runSeed, scenario });
       set({ ready: true });
     },
 
@@ -400,7 +417,7 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
     acceptBrief: async (scenario) => {
       if (get().snapshot?.fsmState !== "BRIEF") return;
       if (scenario !== get().scenario) {
-        await send({ type: "INIT", seed: DEFAULT_SEED, scenario });
+        await send({ type: "INIT", seed: runSeed, scenario });
         set({ scenario });
       }
       await send({ type: "ACCEPT_BRIEF" });

@@ -66,6 +66,23 @@ export const CAREER_KEY = "study_director_career_v1";
 const HISTORY_LIMIT = 12;
 const GRADE_ORDER: readonly Grade[] = ["F", "D", "C", "B", "A"];
 
+/**
+ * A finished study as an Arcade Daily result (#2113): the regulatory grade
+ * counts most and the sponsor's stars break ties, so an A with one star
+ * beats a B with five. Grade F with one star scores 11; A with five, 55.
+ */
+export function dailyResultFor(report: FinalReport): {
+  score: number;
+  label: string;
+} {
+  const grade = report.evaluations.regulatory.grade;
+  const stars = report.evaluations.sponsor.stars;
+  return {
+    score: (GRADE_ORDER.indexOf(grade) + 1) * 10 + stars,
+    label: `Grade ${grade}, ${stars} star${stars === 1 ? "" : "s"}`,
+  };
+}
+
 export function emptyCareer(): CareerFile {
   return {
     version: 1,

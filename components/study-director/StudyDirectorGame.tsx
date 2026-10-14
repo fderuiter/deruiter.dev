@@ -13,6 +13,8 @@ import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import "./study-director-touch.css";
 import { recordArcadeMilestone } from "@/lib/arcade-achievements";
+import { parseArcadeDailyTag } from "@/lib/arcade/daily";
+import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import {
   ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
@@ -52,6 +54,7 @@ import type { WorldState } from "@/lib/study-director-world";
 import { ReportView } from "./ReportView";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
 import {
+  dailyResultFor,
   loadCareer,
   mergeCareers,
   recordRun,
@@ -252,6 +255,9 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   // The office run behind that closeout, for its meeting archive and exports.
   const [worldRun, setWorldRun] = useState<WorldState | null>(null);
   const sharedSeed = useSyncExternalStore(subscribeHash, hashSeed, () => null);
+  const sharedDaily = sharedSeed
+    ? parseArcadeDailyTag(sharedSeed, "study-director")
+    : null;
   const worldMode =
     useSyncExternalStore(
       subscribeMode,
@@ -356,6 +362,15 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
       const result = recordRun(career, finished, verdictFor(finished).headline);
       if (finished.evaluations.regulatory.grade === "A") {
         recordArcadeMilestone("study-director", "grade_a");
+      }
+      // A study on the day's Arcade Daily seed records its own best (#2113).
+      const dailyDate = parseArcadeDailyTag(done.seed, "study-director");
+      if (dailyDate) {
+        recordArcadeDailyResult(
+          "study-director",
+          dailyDate,
+          dailyResultFor(finished)
+        );
       }
       updateCareer(result.career);
       setNews(result.news);
@@ -628,7 +643,9 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
             ) : null}
             {sharedSeed ? (
               <p className="basis-full text-[11px] text-[var(--sd-muted)]">
-                Replaying a shared study, seed{" "}
+                {sharedDaily
+                  ? `Arcade Daily study for ${sharedDaily}, seed `
+                  : "Replaying a shared study, seed "}
                 <span className="text-zinc-300">{sharedSeed}</span>.
               </p>
             ) : null}

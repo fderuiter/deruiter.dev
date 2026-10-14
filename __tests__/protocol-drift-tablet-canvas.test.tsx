@@ -31,6 +31,7 @@ vi.mock("@xyflow/react", () => ({
 }));
 
 import { PipelineCanvas } from "@/components/protocol-drift/PipelineCanvas";
+import { touchZoomFloor } from "@/components/protocol-drift/graph-model";
 
 function renderCanvas(touch: boolean) {
   return render(
@@ -51,7 +52,7 @@ describe("Protocol Drift canvas gestures (#2045)", () => {
     renderCanvas(true);
     expect(flowProps.current?.panOnDrag).toBe(true);
     expect(flowProps.current?.zoomOnPinch).toBe(true);
-    expect(flowProps.current?.minZoom).toBe(0.3);
+    expect(flowProps.current?.minZoom).toBe(touchZoomFloor());
     // Wheel zoom stays off on both, so a page scroll never zooms the world.
     expect(flowProps.current?.zoomOnScroll).toBe(false);
   });

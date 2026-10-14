@@ -14,8 +14,6 @@ import { drawInt, uniformAt } from "../../utils/prng";
 import {
   AGE_LOCKED_ITEMS,
   ARRIVAL_GAP_MAX_SEC,
-  RUSH_START_FRACTION,
-  RUSH_END_FRACTION,
   RUSH_GAP_SCALE,
   ARRIVAL_GAP_MIN_SEC,
   BREAK_ADJUSTMENT_CENTS,
@@ -49,6 +47,7 @@ import {
   SOS_GAIN_ON_TIME,
   SOS_LOSS_EXPIRED,
   SOS_LOSS_LATE,
+  STANDARD_RUSH,
   TILL_SHORT_PER_EXPIRED_CENTS,
   UNIFORM_DEDUCTION_CENTS,
   WAGE_CENTS_PER_HOUR,
@@ -62,17 +61,21 @@ import type {
   OrderItem,
   PayStub,
   PosNode,
+  RushWindow,
   ShiftAction,
   ShiftConfig,
   ShiftEvent,
   ShiftScenario,
   ShiftOutcome,
   ShiftState,
+  StartMeters,
   StepResult,
 } from "../types";
 
 const MIN_DURATION_SEC = 10;
 const MAX_DURATION_SEC = 3600;
+/** The most rushes one shift keeps; anything past this is dropped. */
+const MAX_RUSH_WINDOWS = 4;
 
 function clampMeter(value: number): number {
   return clamp(value, 0, 100);
@@ -105,6 +108,52 @@ function scenarioDials(config: Partial<ShiftConfig>): ShiftScenario {
 }
 
 /**
+ * The rushes a config asks for, each held between 0 and 1 with its start
+ * before its end. Anything that is not a list is left out, so the default
+ * applies; malformed windows are dropped (#2086).
+ */
+function rushWindowsOf(value: unknown): readonly RushWindow[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const windows: RushWindow[] = [];
+  for (const entry of value.slice(0, MAX_RUSH_WINDOWS)) {
+    if (!Array.isArray(entry) || entry.length !== 2) continue;
+    const [start, end] = entry as unknown[];
+    if (typeof start !== "number" || typeof end !== "number") continue;
+    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+    const from = clamp(start, 0, 1);
+    const to = clamp(end, 0, 1);
+    if (to > from) windows.push([from, to]);
+  }
+  return windows;
+}
+
+/**
+ * Carried-over start meters, each held between 1 and 100 so a shift never
+ * starts already lost. Anything else is left out (#2086).
+ */
+function startMetersOf(value: unknown): StartMeters | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const { sos, dignity } = value as Record<string, unknown>;
+  if (typeof sos !== "number" || !Number.isFinite(sos)) return undefined;
+  if (typeof dignity !== "number" || !Number.isFinite(dignity))
+    return undefined;
+  return { sos: clamp(sos, 1, 100), dignity: clamp(dignity, 1, 100) };
+}
+
+/** The week-mode settings a config sets, each only when it is valid (#2086). */
+function weekSettings(
+  config: Partial<ShiftConfig>
+): Pick<ShiftConfig, "rushWindows" | "ageUnlocked" | "startMeters"> {
+  const rushWindows = rushWindowsOf(config.rushWindows);
+  const startMeters = startMetersOf(config.startMeters);
+  return {
+    ...(rushWindows ? { rushWindows } : {}),
+    ...(config.ageUnlocked === true ? { ageUnlocked: true } : {}),
+    ...(startMeters ? { startMeters } : {}),
+  };
+}
+
+/**
  * Starts a shift. A missing, empty or non-string seed falls back to the
  * default, and a duration that is not a finite number is replaced by the
  * default and then held between 10 seconds and one hour. Scenario dials are
@@ -121,12 +170,13 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
       ? config.durationSec
       : DEFAULT_SHIFT_CONFIG.durationSec;
   const durationSec = clamp(rawDuration, MIN_DURATION_SEC, MAX_DURATION_SEC);
+  const week = weekSettings(config);
 
   return {
-    config: { seed, durationSec, ...scenarioDials(config) },
+    config: { seed, durationSec, ...scenarioDials(config), ...week },
     time: 0,
     outcome: "playing",
-    meters: { ...METER_START },
+    meters: { ...METER_START, ...week.startMeters },
     orders: [],
     pos: { path: [], activeOrderId: null, taps: 0 },
     tallies: {
@@ -172,9 +222,30 @@ export function isOrderReady(order: Order): boolean {
   );
 }
 
-/** True when the item needs someone 18 or older to make it. */
-export function isAgeLocked(itemId: OrderItem["itemId"]): boolean {
+/**
+ * True when the item needs someone 18 or older to make it. Pass the shift's
+ * config to account for the birthday: once `ageUnlocked` is set, nothing is
+ * locked (#2086).
+ */
+export function isAgeLocked(
+  itemId: OrderItem["itemId"],
+  config?: Pick<ShiftConfig, "ageUnlocked">
+): boolean {
+  if (config?.ageUnlocked === true) return false;
   return AGE_LOCKED_ITEMS.includes(itemId);
+}
+
+/**
+ * The rushes a shift has (#2086): the ones its config names, or else the
+ * standard lunch rush, unless a scenario set its own arrival gaps, which it
+ * then keeps exactly (#1938).
+ */
+function rushWindowsFor(config: ShiftConfig): readonly RushWindow[] {
+  if (config.rushWindows) return config.rushWindows;
+  const setsGaps =
+    config.arrivalGapMinSec !== undefined ||
+    config.arrivalGapMaxSec !== undefined;
+  return setsGaps ? [] : [STANDARD_RUSH];
 }
 
 /**
@@ -269,18 +340,21 @@ function endIfOver(state: ShiftState, events: ShiftEvent[]): ShiftState {
 }
 
 /**
- * How much the arrival gap shrinks at a point in a standard shift: halved
- * during the lunch rush, unchanged otherwise (#1938).
+ * How much the arrival gap shrinks at a point in a shift: halved during a
+ * rush, unchanged otherwise (#1938). A standard shift has one lunch rush; a
+ * day of the week can have others (#2086).
  *
  * @param timeSec - Shift time of the arrival.
  * @param durationSec - The shift's length.
+ * @param windows - The shift's rushes; the standard lunch rush by default.
  */
 export function getArrivalGapScale(
   timeSec: number,
-  durationSec: number
+  durationSec: number,
+  windows: readonly RushWindow[] = [STANDARD_RUSH]
 ): number {
   const at = durationSec > 0 ? timeSec / durationSec : 0;
-  return at >= RUSH_START_FRACTION && at < RUSH_END_FRACTION
+  return windows.some(([start, end]) => at >= start && at < end)
     ? RUSH_GAP_SCALE
     : 1;
 }
@@ -315,12 +389,11 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
   let activeOrderId = state.pos.activeOrderId;
 
   // A standard shift has a lunch rush; a practice scenario that sets its
-  // own arrival gaps keeps them exactly (#1938).
-  const hasRush =
-    state.config.arrivalGapMinSec === undefined &&
-    state.config.arrivalGapMaxSec === undefined;
-  if (hasRush) {
-    const rushAt = durationSec * RUSH_START_FRACTION;
+  // own arrival gaps keeps them exactly (#1938); a day of the week names
+  // its own rushes (#2086).
+  const rushes = rushWindowsFor(state.config);
+  for (const [from] of rushes) {
+    const rushAt = durationSec * from;
     if (start < rushAt && rushAt <= time) events.push({ type: "rush-started" });
   }
 
@@ -334,7 +407,7 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     }
     const gap =
       (gapMin + uniformAt(seed, draws++) * (gapMax - gapMin)) *
-      (hasRush ? getArrivalGapScale(nextArrivalAt, durationSec) : 1);
+      getArrivalGapScale(nextArrivalAt, durationSec, rushes);
     nextArrivalAt += gap;
   }
 
@@ -470,7 +543,7 @@ function ringLeaf(
   if (index < 0) return backHome(wrongEntry(state, leaf.id, events));
   const item = order.items[index];
 
-  if (isAgeLocked(item.itemId)) {
+  if (isAgeLocked(item.itemId, state.config)) {
     const ready = order.coworkerReadyAt;
     if (ready === null || state.time < ready) {
       events.push({ type: "locked", orderId: order.id });
@@ -639,7 +712,9 @@ export function applyAction(
       const order = findOrder(state, action.orderId);
       const needsHelp =
         order?.coworkerReadyAt === null &&
-        order.items.some((it) => isAgeLocked(it.itemId) && !it.rung);
+        order.items.some(
+          (it) => isAgeLocked(it.itemId, state.config) && !it.rung
+        );
       if (!order || !needsHelp) break;
       next = acted(
         replaceOrder(state, {

@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [ScenarioPreset](interfaces/ScenarioPreset.md)
+- [WeekDayPreset](interfaces/WeekDayPreset.md)
 
 ## Type Aliases
 
@@ -68,9 +69,14 @@
 - [SOS\_GAIN\_ON\_TIME](variables/SOS_GAIN_ON_TIME.md)
 - [SOS\_LOSS\_EXPIRED](variables/SOS_LOSS_EXPIRED.md)
 - [SOS\_LOSS\_LATE](variables/SOS_LOSS_LATE.md)
+- [STANDARD\_RUSH](variables/STANDARD_RUSH.md)
 - [TILL\_SHORT\_PER\_EXPIRED\_CENTS](variables/TILL_SHORT_PER_EXPIRED_CENTS.md)
 - [UNIFORM\_DEDUCTION\_CENTS](variables/UNIFORM_DEDUCTION_CENTS.md)
 - [WAGE\_CENTS\_PER\_HOUR](variables/WAGE_CENTS_PER_HOUR.md)
+- [WEEK\_BAD\_DAY\_PENALTY](variables/WEEK_BAD_DAY_PENALTY.md)
+- [WEEK\_CARRY\_FLOOR](variables/WEEK_CARRY_FLOOR.md)
+- [WEEK\_CARRY\_RECOVERY](variables/WEEK_CARRY_RECOVERY.md)
+- [WEEK\_DAYS](variables/WEEK_DAYS.md)
 - [WIPE\_COOLDOWN\_SEC](variables/WIPE_COOLDOWN_SEC.md)
 - [YELLOW\_AFTER\_SEC](variables/YELLOW_AFTER_SEC.md)
 

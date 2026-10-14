@@ -170,3 +170,24 @@ scenario would otherwise inflate the board and the trophies. The POS menu is
 not configurable: the clunky register is the diary's point. The booth store
 keeps a capped log of the events that happened, and the JSON and CSV exports
 read that log rather than re-simulating the shift.
+
+## Amendment (2026-10-14): a week of shifts
+
+Issue [#2086](https://github.com/fderuiter/deruiter.dev/issues/2086) adds a
+week mode: five shifts, Monday to Friday, each built from the same scenario
+dials plus three new `ShiftConfig` fields, `rushWindows` (Wednesday's double
+rush and Friday's long one), `ageUnlocked` (Thursday, the eighteenth birthday,
+lifts the coffee lockout for the rest of the week) and `startMeters` (the
+carry-over). Each day plays from a seed derived from the week's seed
+(`<week seed>:<day>`), so a week replays exactly, day by day, with
+`replayShift`. Dignity and SOS start each day halfway back from where the day
+before ended toward `METER_START`, less a small penalty after a breakdown or a
+docked day, and never below a floor, so a bad day costs the next one rather
+than the week. Each finished day records its own `scoreShift` result on the
+arcade board through the normal path, so single shifts and week days compete
+on the same terms; the week's total, the sum of the five days, is kept only
+as a local best week in the browser and shown on the summary page. Finishing
+all five days unlocks the "Worked a Full Week" milestone trophy
+(`full_week`). The finished days are saved in the browser after each day
+(`WeekState`, validated on load by `parseWeekSave`); a day left part way is
+worked again from its start.

@@ -154,6 +154,28 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
       ).toEqual(["protocol_drift_defensible"]);
     });
 
+    it("unlocks Worked a Full Week only from finishing a week (#2086)", () => {
+      const trophy = ARCADE_TROPHIES.find(
+        (t) => t.id === "patty_drive_thru_full_week"
+      );
+      expect(trophy).toMatchObject({
+        gameId: "patty-drive-thru",
+        category: "milestone",
+        milestone: "full_week",
+      });
+      expect(trophy?.targetScore).toBeUndefined();
+      const scored = recordArcadeScore("patty-drive-thru", 99999).newlyUnlocked;
+      expect(scored.map((t) => t.id)).not.toContain(
+        "patty_drive_thru_full_week"
+      );
+      expect(
+        recordArcadeMilestone("patty-drive-thru", "full_week").map((t) => t.id)
+      ).toEqual(["patty_drive_thru_full_week"]);
+      expect(recordArcadeMilestone("patty-drive-thru", "full_week")).toEqual(
+        []
+      );
+    });
+
     it("ignores milestones another game or no trophy owns", () => {
       expect(recordArcadeMilestone("laser-loon", "run_won")).toEqual([]);
       expect(recordArcadeMilestone("trial-and-error", "nope")).toEqual([]);

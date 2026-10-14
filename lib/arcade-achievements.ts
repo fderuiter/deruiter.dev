@@ -346,6 +346,18 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     milestone: "zero_late_shift",
     conditionDescription: "Close a standard shift with no late orders",
   },
+  {
+    id: "patty_drive_thru_full_week",
+    gameId: "patty-drive-thru",
+    title: "Worked a Full Week",
+    subtitle: "Patty's Drive-Thru",
+    description:
+      "Clock in Monday through Fry Friday and work all five days of a week.",
+    icon: "Headset",
+    category: "milestone",
+    milestone: "full_week",
+    conditionDescription: "Finish all five days of a Patty's Drive-Thru week",
+  },
 
   // For Better or Bulk
   {

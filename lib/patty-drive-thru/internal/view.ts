@@ -33,7 +33,7 @@ function lineStatus(
 ): TicketLineStatus {
   if (item.dropped) return "dropped";
   if (item.rung) return "rung";
-  if (isAgeLocked(item.itemId)) {
+  if (isAgeLocked(item.itemId, state.config)) {
     const ready = order.coworkerReadyAt;
     if (ready === null) return "locked";
     return state.time < ready ? "brewing" : "ready-to-ring";

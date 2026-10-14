@@ -20,11 +20,14 @@ import {
   DEFAULT_SHIFT_CONFIG,
   getKdsTickets,
   isStandardScenario,
+  isWeekOver,
   scenarioDialsFor,
   scoreShift,
+  scoreWeek,
   type ScenarioId,
   type ShiftAction,
   type ShiftConfig,
+  type WeekState,
 } from "@/lib/patty-drive-thru";
 import {
   getArcadeProgress,
@@ -39,12 +42,23 @@ import {
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { playShiftEvents } from "./booth-audio";
-import { DiaryIntroPage, ShiftEndPage } from "./DiaryPages";
+import {
+  DiaryIntroPage,
+  ShiftEndPage,
+  WeekDayEndPage,
+  WeekSummaryPage,
+} from "./DiaryPages";
 import { useBooth } from "./hooks";
 import { KdsBoard } from "./KdsBoard";
 import { Register } from "./Register";
 import { ShiftCaption, ShiftHud } from "./ShiftHud";
 import { createBoothStore, type BoothStore } from "./store";
+import {
+  clearWeekSave,
+  recordWeekBest,
+  saveWeek,
+  useWeekSave,
+} from "./week-save";
 
 /** The arcade id used for scores, trophies and the cabinet. */
 const PATTY_GAME_ID = "patty-drive-thru";
@@ -125,6 +139,8 @@ export function PattyDriveThruGame({
     s.phase === "ended" ? s.shift : null
   );
   const endedLog = useBooth(store, (s) => (s.phase === "ended" ? s.log : null));
+  const week = useBooth(store, (s) => s.week);
+  const savedWeek = useWeekSave();
 
   const webgl = useWebglSupport();
   const reducedMotion = usePrefersReducedMotion();
@@ -139,6 +155,8 @@ export function PattyDriveThruGame({
   // Setup Wizard pauses it too.
   const [userPaused, setUserPaused] = useState(false);
   const [previousBest, setPreviousBest] = useState<number | null>(null);
+  // The best week total before the one just finished (#2086).
+  const [previousWeekBest, setPreviousWeekBest] = useState<number | null>(null);
   const paused = (setup?.isSetupOpen ?? false) || userPaused;
 
   const boundaryRef = useRef<HTMLDivElement>(null);
@@ -167,6 +185,33 @@ export function PattyDriveThruGame({
     },
     [store, config?.seed]
   );
+
+  // A week of shifts (#2086): a new one from a fresh seed, or one resumed.
+  const startWeek = useCallback(
+    (resume?: WeekState) => {
+      setUserPaused(false);
+      store
+        .getState()
+        .clockInWeek(
+          resume
+            ? { week: resume }
+            : { seed: config?.seed ?? seedFromUrl() ?? freshSeed() }
+        );
+      boundaryRef.current?.focus({ preventScroll: true });
+    },
+    [store, config?.seed]
+  );
+
+  const nextWeekDay = useCallback(() => {
+    setUserPaused(false);
+    store.getState().clockInWeek();
+    boundaryRef.current?.focus({ preventScroll: true });
+  }, [store]);
+
+  const backToIntro = useCallback(() => {
+    store.getState().backToIntro();
+    boundaryRef.current?.focus({ preventScroll: true });
+  }, [store]);
 
   const openRegister = useCallback(() => {
     if (store.getState().phase !== "shift") return;
@@ -269,6 +314,43 @@ export function PattyDriveThruGame({
       engine.stopAll();
     };
   }, [store]);
+
+  // A week (#2086): each finished day records its own shift score on the
+  // arcade board, as a single shift does, so the two compete fairly. The
+  // week is saved after every day; once Friday ends, its total is kept as a
+  // local best week and the full-week trophy unlocks.
+  useEffect(
+    () =>
+      store.subscribe((state, previous) => {
+        const week = state.week;
+        if (!week || week === previous.week) return;
+        if (week.days.length === (previous.week?.days.length ?? 0)) {
+          // A new week has started: forget any older save.
+          if (week.days.length === 0) clearWeekSave();
+          return;
+        }
+        if (previous.week === null || state.phase !== "ended") {
+          // A saved week picked back up: nothing new to record.
+          saveWeek(week);
+          return;
+        }
+        const day = week.days[week.days.length - 1];
+        recordArcadeScore(PATTY_GAME_ID, day.score, {
+          mode: "week",
+          day: day.day,
+          outcome: day.outcome,
+          served: day.served,
+        });
+        if (!isWeekOver(week)) {
+          saveWeek(week);
+          return;
+        }
+        clearWeekSave();
+        setPreviousWeekBest(recordWeekBest(scoreWeek(week)));
+        recordArcadeMilestone(PATTY_GAME_ID, "full_week");
+      }),
+    [store]
+  );
 
   // Record the score once per shift, when it ends.
   useEffect(
@@ -428,7 +510,35 @@ export function PattyDriveThruGame({
   if (phase === "intro") {
     body = (
       <div className="w-full p-3 sm:p-6">
-        <DiaryIntroPage onClockIn={clockIn} />
+        <DiaryIntroPage
+          onClockIn={clockIn}
+          onStartWeek={() => startWeek()}
+          onResumeWeek={startWeek}
+          savedWeek={savedWeek}
+        />
+      </div>
+    );
+  } else if (phase === "ended" && endedShift && week) {
+    body = (
+      <div className="w-full p-3 sm:p-6">
+        {isWeekOver(week) ? (
+          <WeekSummaryPage
+            week={week}
+            shift={endedShift}
+            log={endedLog ?? []}
+            onNewWeek={() => startWeek()}
+            onBackToIntro={backToIntro}
+            previousBest={previousWeekBest}
+          />
+        ) : (
+          <WeekDayEndPage
+            shift={endedShift}
+            log={endedLog ?? []}
+            week={week}
+            onNextDay={nextWeekDay}
+            onStop={backToIntro}
+          />
+        )}
       </div>
     );
   } else if (phase === "ended" && endedShift) {

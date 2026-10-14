@@ -17,13 +17,22 @@ import {
   STORY_RAM_MULTIPLIER,
   computeLevelStars,
   describeModeRules,
+  areVariantsUnlocked,
   getLevelPar,
+  getLevelVariant,
+  getLevelVariants,
+  getRunStartingRam,
   getStartingRam,
   getTacticBlock,
   isGolfedRun,
   isLevelGolfed,
+  isStepLimitReached,
+  isTacticBanned,
+  isVariantCleared,
+  isVariantRunCleared,
   mergeLevelScore,
   parseGameProgress,
+  recordClearedVariant,
   resolveResumeLevelIndex,
 } from "@/lib/quasi-perfect";
 import {
@@ -42,6 +51,7 @@ import {
   LeanProofStep,
   LevelScore,
   PuzzlerLevelDef,
+  PuzzlerVariantKind,
   SubGoal,
 } from "@/lib/quasi-perfect/types";
 import {
@@ -61,6 +71,7 @@ import { HintSystem } from "./HintSystem";
 import { SandboxMode } from "./SandboxMode";
 import { TheoryBriefingModal } from "./TheoryBriefingModal";
 import { LevelMap } from "./LevelMap";
+import { VariantPicker } from "./VariantPicker";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
@@ -175,6 +186,13 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   );
   const currentLevel: PuzzlerLevelDef =
     puzzleLevels[currentLevelIndex] || puzzleLevels[0];
+  // The constrained variant being played, or null for the base level (#2090).
+  const [activeVariantKind, setActiveVariantKind] =
+    useState<PuzzlerVariantKind | null>(null);
+  const activeVariant = useMemo(
+    () => getLevelVariant(currentLevel, activeVariantKind),
+    [currentLevel, activeVariantKind]
+  );
 
   // Multi-Goal State
   const [subgoals, setSubgoals] = useState<SubGoal[]>(() => [
@@ -283,6 +301,17 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     [currentLevelIndex]
   );
 
+  // A cleared variant is stored on its own, never through mergeLevelScore,
+  // so it cannot change the base level's stars (#2090).
+  const saveVariantClear = useCallback(
+    (levelId: string | number, kind: PuzzlerVariantKind) => {
+      const existing = readStoredProgress();
+      if (isVariantCleared(existing, levelId, kind)) return;
+      writeStoredProgress(recordClearedVariant(existing, levelId, kind));
+    },
+    []
+  );
+
   const saveCurrentLevelIndex = useCallback((index: number) => {
     const existing = readStoredProgress();
     if (existing.currentLevelIndex === index) return;
@@ -303,10 +332,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   );
 
   const loadLevel = useCallback(
-    (index: number, modeOverride?: GameMode) => {
+    (
+      index: number,
+      modeOverride?: GameMode,
+      variantKind?: PuzzlerVariantKind | null
+    ) => {
       const safeIndex = puzzleLevels[index] ? index : 0;
       const targetLvl = puzzleLevels[safeIndex];
       const activeMode = modeOverride ?? gameMode;
+      const variant = getLevelVariant(targetLvl, variantKind ?? null);
+      setActiveVariantKind(variant ? variant.kind : null);
       setCurrentLevelIndex(safeIndex);
       saveCurrentLevelIndex(safeIndex);
       setPendingMode(null);
@@ -320,7 +355,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         },
       ]);
       setActiveGoalIndex(0);
-      setCurrentRam(getStartingRam(targetLvl, activeMode));
+      setCurrentRam(getRunStartingRam(targetLvl, activeMode, variant));
       setProofSteps([]);
       setHistory([]);
       setRedoHistory([]);
@@ -335,11 +370,13 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           id: `lvl-${targetLvl.id}-${Date.now()}`,
           timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
           type: "info",
-          text: `Loaded Chapter ${targetLvl.chapter} [${targetLvl.subtitle}]: ${targetLvl.title}. Mode: ${activeMode.toUpperCase()}.`,
+          text: `Loaded Chapter ${targetLvl.chapter} [${targetLvl.subtitle}]: ${targetLvl.title}. Mode: ${activeMode.toUpperCase()}.${variant ? ` Variant: ${variant.title}. ${variant.rule}` : ""}`,
         },
       ]);
       announce(
-        `Loaded Level ${targetLvl.id}: ${targetLvl.title}. ${targetLvl.description}`,
+        variant
+          ? `Loaded Level ${targetLvl.id} variant ${variant.title}: ${variant.rule}`
+          : `Loaded Level ${targetLvl.id}: ${targetLvl.title}. ${targetLvl.description}`,
         "assertive"
       );
     },
@@ -351,12 +388,17 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     safeSetRawItem(MODE_STORAGE_KEY, mode, { retainInMemory: false });
   }, []);
 
+  const runStartingRam = useMemo(
+    () => getRunStartingRam(currentLevel, gameMode, activeVariant),
+    [currentLevel, gameMode, activeVariant]
+  );
+
   // A proof is in progress once any RAM has been spent or a step recorded.
   const isProofInProgress =
     !levelSolved &&
     (proofSteps.length > 0 ||
       history.length > 0 ||
-      currentRam !== getStartingRam(currentLevel, gameMode));
+      currentRam !== runStartingRam);
 
   const handleToggleMode = useCallback(
     (mode: GameMode) => {
@@ -371,9 +413,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       }
       setGameMode(mode);
       persistMode(mode);
-      loadLevel(currentLevelIndex, mode);
+      loadLevel(currentLevelIndex, mode, activeVariantKind);
     },
-    [gameMode, isProofInProgress, persistMode, loadLevel, currentLevelIndex]
+    [
+      gameMode,
+      isProofInProgress,
+      persistMode,
+      loadLevel,
+      currentLevelIndex,
+      activeVariantKind,
+    ]
   );
 
   const handleConfirmModeChange = useCallback(() => {
@@ -382,8 +431,14 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     setPendingMode(null);
     setGameMode(mode);
     persistMode(mode);
-    loadLevel(currentLevelIndex, mode);
-  }, [pendingMode, persistMode, loadLevel, currentLevelIndex]);
+    loadLevel(currentLevelIndex, mode, activeVariantKind);
+  }, [
+    pendingMode,
+    persistMode,
+    loadLevel,
+    currentLevelIndex,
+    activeVariantKind,
+  ]);
 
   const handleCancelModeChange = useCallback(() => {
     setPendingMode(null);
@@ -415,6 +470,25 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       const tactic = tacticDefs[tacticId];
 
       if (!tactic) return;
+
+      // Variant rules (#2090): a banned card is never played, and a
+      // step-limit run that has used every step is over until reset.
+      if (isTacticBanned(activeVariant, tactic.id)) {
+        addLog(
+          `'${tactic.name}' is banned in this variant. Find another route, or return to the base level.`,
+          "error"
+        );
+        playNote(130.81, 0.2);
+        return;
+      }
+      if (isStepLimitReached(activeVariant, proofSteps.length, false)) {
+        addLog(
+          `Step limit of ${activeVariant?.stepLimit} reached without a proof, so '${tactic.name}' was refused. Reset the level to try again.`,
+          "error"
+        );
+        playNote(130.81, 0.2);
+        return;
+      }
 
       // Check RAM availability. At 0 GB every tactic, sorry included, is
       // refused until the level is reset (#1651).
@@ -554,12 +628,23 @@ export const QuasiPerfectPuzzler: React.FC = () => {
           };
 
           setCurrentScore(score);
-          saveProgress(score);
+          if (activeVariant) {
+            // A variant run never touches the base level's score (#2090).
+            if (isVariantRunCleared(activeVariant, steps, usedSorry)) {
+              saveVariantClear(currentLevel.id, activeVariant.kind);
+            }
+          } else {
+            saveProgress(score);
+          }
 
           if (!usedSorry) {
             playSuccess();
             announce(
-              `Simulated AST goal discharged for Level ${currentLevel.id}.`,
+              activeVariant
+                ? isVariantRunCleared(activeVariant, steps, usedSorry)
+                  ? `Variant ${activeVariant.title} cleared for Level ${currentLevel.id}.`
+                  : `Goal discharged, but variant ${activeVariant.title} was not cleared.`
+                : `Simulated AST goal discharged for Level ${currentLevel.id}.`,
               "assertive"
             );
             addLog(
@@ -581,6 +666,16 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             addLog(
               "Simulated RAM exhausted; the local tactic session has stopped. Reset the level to continue.",
               "error"
+            );
+          }
+          if (isStepLimitReached(activeVariant, updatedSteps.length, false)) {
+            addLog(
+              `Step limit reached: ${updatedSteps.length} of ${activeVariant?.stepLimit} tactics used and goals remain. The run has failed; reset to try again.`,
+              "error"
+            );
+            announce(
+              "Step limit reached. The variant run has failed; reset the level to try again.",
+              "assertive"
             );
           }
           // If current active subgoal was completed, automatically advance to next open subgoal
@@ -629,6 +724,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       playNote,
       playSuccess,
       saveProgress,
+      saveVariantClear,
+      activeVariant,
       announce,
       fx,
     ]
@@ -744,9 +841,17 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   ]);
 
   const handleResetLevel = useCallback(() => {
-    loadLevel(currentLevelIndex);
+    loadLevel(currentLevelIndex, undefined, activeVariantKind);
     playNote(261.63, 0.1);
-  }, [loadLevel, currentLevelIndex, playNote]);
+  }, [loadLevel, currentLevelIndex, activeVariantKind, playNote]);
+
+  const handleSelectVariant = useCallback(
+    (kind: PuzzlerVariantKind | null) => {
+      loadLevel(currentLevelIndex, undefined, kind);
+      playNote(392, 0.05);
+    },
+    [loadLevel, currentLevelIndex, playNote]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
     // Typing in the Sandbox fields must reach the field, not the shortcuts.
@@ -789,6 +894,13 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   };
 
   const isOOM = currentRam <= 0 && !levelSolved;
+  const stepLimitFailed = isStepLimitReached(
+    activeVariant,
+    proofSteps.length,
+    levelSolved
+  );
+  const variantsUnlocked = areVariantsUnlocked(parsedProgress, currentLevel.id);
+  const levelVariants = getLevelVariants(currentLevel);
   const modeRules = describeModeRules(gameMode, currentLevel);
 
   const generatedLeanScript = useMemo(
@@ -1094,7 +1206,8 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             >
               Your current proof steps and RAM usage will be discarded and the
               level restarts with a fresh{" "}
-              {getStartingRam(currentLevel, pendingMode)} GB budget.
+              {getRunStartingRam(currentLevel, pendingMode, activeVariant)} GB
+              budget.
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
               <button
@@ -1179,12 +1292,20 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                     </span>
                   )}
                 </p>
+                {levelVariants.length > 0 && (
+                  <VariantPicker
+                    variants={levelVariants}
+                    activeKind={activeVariant ? activeVariant.kind : null}
+                    unlocked={variantsUnlocked}
+                    isCleared={(kind) =>
+                      isVariantCleared(parsedProgress, currentLevel.id, kind)
+                    }
+                    onSelect={handleSelectVariant}
+                  />
+                )}
               </div>
 
-              <RAMGauge
-                currentRam={currentRam}
-                initialRam={getStartingRam(currentLevel, gameMode)}
-              />
+              <RAMGauge currentRam={currentRam} initialRam={runStartingRam} />
 
               <div className="flex items-center gap-1.5">
                 <button
@@ -1340,6 +1461,30 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             </div>
           )}
 
+          {/* Step-limit variant failure (#2090) */}
+          {stepLimitFailed && !isOOM && (
+            <div
+              data-testid="quasi-step-limit-failed"
+              className="mt-3 rounded-xl border border-rose-500/50 bg-rose-950/40 p-4 text-center"
+            >
+              <p className="text-sm font-bold text-rose-300">
+                STEP LIMIT REACHED
+              </p>
+              <p className="mt-1 text-xs text-zinc-400">
+                {proofSteps.length} of {activeVariant?.stepLimit} tactics used
+                and goals remain. The next tactic would be over the limit, so
+                this run has failed. Undo or reset to try again.
+              </p>
+              <button
+                type="button"
+                onClick={handleResetLevel}
+                className="qp-focus mt-3 min-h-[44px] rounded-lg bg-rose-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-rose-500 transition-colors"
+              >
+                Reset and Retry Variant
+              </button>
+            </div>
+          )}
+
           {/* Multi-Goal Branch Tabs: the split, drawn as a fork */}
           {subgoals.length > 1 && (
             <div className="mt-3">
@@ -1446,10 +1591,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                     typeof tacticItem === "string" ? tacticItem : tacticItem.id;
                   const def = tacticDefs[id];
                   const label = def?.name || id;
+                  const banned = isTacticBanned(activeVariant, id);
                   return (
                     <button
                       key={id + "-" + idx}
                       type="button"
+                      disabled={banned}
                       onClick={() => {
                         // These buttons are the screen-reader route, so they
                         // apply the tactic to the whole active goal rather
@@ -1460,6 +1607,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                       }}
                     >
                       Apply Tactic: {label} to the goal
+                      {banned ? " (banned in this variant)" : ""}
                     </button>
                   );
                 })}
@@ -1522,6 +1670,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
             >
               <TacticHand
                 availableTactics={currentLevel.availableTactics}
+                bannedTacticId={activeVariant?.bannedTactic}
                 currentRam={currentRam}
                 selectedTacticIndex={selectedTacticIndex}
                 onSelectTactic={(idx) => {
@@ -1539,7 +1688,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   playNote(523.25, 0.03);
                 }}
                 onCardDragEnd={handleCardDragEnd}
-                isProofComplete={levelSolved}
+                isProofComplete={levelSolved || stepLimitFailed}
               />
             </div>
           </div>
@@ -1594,11 +1743,17 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 totalLevels={puzzleLevels.length}
                 currentLevelIndex={currentLevelIndex}
                 leanCode={generatedLeanScript}
-                ramUsed={
-                  getStartingRam(currentLevel, gameMode) -
-                  currentScore.remainingRam
-                }
+                ramUsed={runStartingRam - currentScore.remainingRam}
                 par={currentLevelPar}
+                variant={activeVariant}
+                variantCleared={
+                  !!activeVariant &&
+                  isVariantRunCleared(
+                    activeVariant,
+                    currentScore.steps ?? 0,
+                    currentScore.usedSorry
+                  )
+                }
                 campaignStars={campaignStars}
                 onRestartCampaign={() => loadLevel(0)}
                 onDismiss={() => dismissResult(currentScore.timestamp)}

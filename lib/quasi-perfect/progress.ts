@@ -1,4 +1,5 @@
 import type { GameProgressState, LevelScore, PuzzlerLevelDef } from "./types";
+import { normalizeClearedVariants } from "./variants";
 
 /**
  * Whether a finished run earns the Golfed badge: an honest proof in no more
@@ -113,7 +114,8 @@ function normalizeCompletedLevels(
  * non-object value or a non-object `completedLevels` all become empty
  * progress. A level's `golfed` or `steps` field of the wrong type is
  * dropped, so a save written before the Golfed badge (#2059) loads as it
- * did and simply has no badges. `currentLevelIndex` is passed through as stored, so
+ * did and simply has no badges. `clearedVariants` is cleaned the same way:
+ * a save from before variants (#2090) reads as none cleared. `currentLevelIndex` is passed through as stored, so
  * `resolveResumeLevelIndex` can tell a missing index from a corrupt one.
  *
  * @param raw - The stored string, or null when nothing is stored.
@@ -143,6 +145,7 @@ export function parseGameProgress(raw: string | null): GameProgressState {
         ? normalizeCompletedLevels(completed as Record<string, unknown>)
         : {},
     currentLevelIndex: record.currentLevelIndex as number,
+    clearedVariants: normalizeClearedVariants(record.clearedVariants),
   };
 }
 

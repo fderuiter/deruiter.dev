@@ -16,6 +16,8 @@ interface HandItem {
 
 interface TacticHandProps {
   availableTactics: (TacticId | HandItem)[];
+  /** A tactic the active variant bans (#2090); its card stays, marked Banned. */
+  bannedTacticId?: TacticId;
   currentRam: number;
   selectedTacticIndex: number | null;
   onSelectTactic: (index: number) => void;
@@ -33,6 +35,7 @@ const MAX_FANNED_CARDS = 8;
 
 export const TacticHand: React.FC<TacticHandProps> = ({
   availableTactics,
+  bannedTacticId,
   currentRam,
   selectedTacticIndex,
   onSelectTactic,
@@ -45,9 +48,13 @@ export const TacticHand: React.FC<TacticHandProps> = ({
     const tactic: TacticDef = tacticDefs[tacticId] || tacticDefs.rfl;
     // The same rule the puzzler enforces: at 0 GB nothing is playable, not
     // even sorry (#1651).
+    const isBanned =
+      bannedTacticId !== undefined && tacticId === bannedTacticId;
     const isDisabled =
-      isProofComplete || getTacticBlock(tactic, currentRam) !== null;
-    return { item, tacticId, tactic, isDisabled };
+      isProofComplete ||
+      isBanned ||
+      getTacticBlock(tactic, currentRam) !== null;
+    return { item, tacticId, tactic, isDisabled, isBanned };
   });
   const playableCount = cards.filter((card) => !card.isDisabled).length;
   const fanned = cards.length <= MAX_FANNED_CARDS;
@@ -79,7 +86,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
             : "flex flex-wrap items-end justify-center gap-2 pt-4 pb-2 [@media(max-height:820px)]:pt-1"
         }
       >
-        {cards.map(({ item, tacticId, tactic, isDisabled }, idx) => {
+        {cards.map(({ item, tacticId, tactic, isDisabled, isBanned }, idx) => {
           const hypothesisTarget =
             typeof item === "object" ? item.hypothesis : undefined;
           const labelOverride =
@@ -109,6 +116,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
                   hypothesisTarget={hypothesisTarget}
                   isSelected={isSelected}
                   disabled={isDisabled}
+                  banned={isBanned}
                   compact={!fanned}
                   onSelect={() => onSelectTactic(idx)}
                   onDragStart={() => onCardDragStart(idx)}

@@ -145,8 +145,20 @@ export interface LevelScore {
   steps?: number;
 }
 
+/**
+ * A constrained replay of a level (#2090): one tactic banned, the starting
+ * RAM cut to the cheapest proof's cost, or the proof capped at the step par.
+ */
+export type PuzzlerVariantKind = "banned" | "tight-ram" | "step-limit";
+
 export interface GameProgressState {
   completedLevels: Record<string | number, LevelScore>;
   currentLevelIndex: number;
   unlockedChapter?: number;
+  /**
+   * Variants cleared per level id (#2090). Missing in progress saved before
+   * variants existed, which reads as none cleared. Kept apart from
+   * `completedLevels`, so a variant never changes a level's stars.
+   */
+  clearedVariants?: Record<string | number, PuzzlerVariantKind[]>;
 }

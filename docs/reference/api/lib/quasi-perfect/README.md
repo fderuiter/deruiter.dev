@@ -26,6 +26,12 @@ Re-exports [areRingEquivalent](engine/functions/areRingEquivalent.md)
 
 ***
 
+### areVariantsUnlocked
+
+Re-exports [areVariantsUnlocked](variants/functions/areVariantsUnlocked.md)
+
+***
+
 ### ASTNode
 
 Re-exports [ASTNode](types/interfaces/ASTNode.md)
@@ -116,6 +122,24 @@ Re-exports [getLevelPar](levels/functions/getLevelPar.md)
 
 ***
 
+### getLevelVariant
+
+Re-exports [getLevelVariant](variants/functions/getLevelVariant.md)
+
+***
+
+### getLevelVariants
+
+Re-exports [getLevelVariants](variants/functions/getLevelVariants.md)
+
+***
+
+### getRunStartingRam
+
+Re-exports [getRunStartingRam](variants/functions/getRunStartingRam.md)
+
+***
+
 ### getStartingRam
 
 Re-exports [getStartingRam](ram/functions/getStartingRam.md)
@@ -158,6 +182,30 @@ Re-exports [isProofComplete](engine/functions/isProofComplete.md)
 
 ***
 
+### isStepLimitReached
+
+Re-exports [isStepLimitReached](variants/functions/isStepLimitReached.md)
+
+***
+
+### isTacticBanned
+
+Re-exports [isTacticBanned](variants/functions/isTacticBanned.md)
+
+***
+
+### isVariantCleared
+
+Re-exports [isVariantCleared](variants/functions/isVariantCleared.md)
+
+***
+
+### isVariantRunCleared
+
+Re-exports [isVariantRunCleared](variants/functions/isVariantRunCleared.md)
+
+***
+
 ### LeanProofStep
 
 Re-exports [LeanProofStep](types/interfaces/LeanProofStep.md)
@@ -167,6 +215,12 @@ Re-exports [LeanProofStep](types/interfaces/LeanProofStep.md)
 ### LEVEL\_REFERENCE\_PROOFS
 
 Re-exports [LEVEL_REFERENCE_PROOFS](levels/variables/LEVEL_REFERENCE_PROOFS.md)
+
+***
+
+### LEVEL\_VARIANT\_RULES
+
+Re-exports [LEVEL_VARIANT_RULES](variants/variables/LEVEL_VARIANT_RULES.md)
 
 ***
 
@@ -197,6 +251,12 @@ Re-exports [MonomialMap](engine/type-aliases/MonomialMap.md)
 ### NodeType
 
 Re-exports [NodeType](types/type-aliases/NodeType.md)
+
+***
+
+### normalizeClearedVariants
+
+Re-exports [normalizeClearedVariants](variants/functions/normalizeClearedVariants.md)
 
 ***
 
@@ -242,9 +302,33 @@ Re-exports [puzzleLevels](levels/variables/puzzleLevels.md)
 
 ***
 
+### PUZZLER\_VARIANT\_KINDS
+
+Re-exports [PUZZLER_VARIANT_KINDS](variants/variables/PUZZLER_VARIANT_KINDS.md)
+
+***
+
 ### PuzzlerLevelDef
 
 Re-exports [PuzzlerLevelDef](types/interfaces/PuzzlerLevelDef.md)
+
+***
+
+### PuzzlerVariantDef
+
+Re-exports [PuzzlerVariantDef](variants/interfaces/PuzzlerVariantDef.md)
+
+***
+
+### PuzzlerVariantKind
+
+Re-exports [PuzzlerVariantKind](types/type-aliases/PuzzlerVariantKind.md)
+
+***
+
+### recordClearedVariant
+
+Re-exports [recordClearedVariant](variants/functions/recordClearedVariant.md)
 
 ***
 

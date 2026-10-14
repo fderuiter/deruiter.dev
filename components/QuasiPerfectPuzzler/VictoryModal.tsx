@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LevelScore, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
+import type { PuzzlerVariantDef } from "@/lib/quasi-perfect";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCabinetTouch } from "@/components/arcade/mobile";
 import { IconCheck, IconCopy, IconSparkles } from "@tabler/icons-react";
@@ -28,6 +29,10 @@ interface VictoryModalProps {
   onRestartCampaign?: () => void;
   /** Hides the modal so the finished proof board can be read (Escape). */
   onDismiss?: () => void;
+  /** The variant this run was played under, or null for the base level (#2090). */
+  variant?: PuzzlerVariantDef | null;
+  /** Whether the run cleared that variant. */
+  variantCleared?: boolean;
 }
 
 export const VictoryModal: React.FC<VictoryModalProps> = ({
@@ -44,6 +49,8 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   onRestartLevel,
   onRestartCampaign,
   onDismiss,
+  variant = null,
+  variantCleared = false,
 }) => {
   const isLastLevel = currentLevelIndex >= totalLevels - 1;
   const isSorry = score.usedSorry;
@@ -117,80 +124,112 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           This run
         </p>
 
-        {/* Stars Display */}
-        <div
-          role="img"
-          aria-label={`${shownStars} of 3 stars`}
-          data-testid="victory-stars"
-          className="my-4 flex justify-center items-center gap-3"
-        >
-          {[1, 2, 3].map((starIdx) => (
-            <span
-              key={starIdx}
-              aria-hidden="true"
-              className={`text-3xl ${
-                !isSorry && starIdx <= score.stars
-                  ? "text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]"
-                  : "text-zinc-700"
-              }`}
-            >
-              ★
-            </span>
-          ))}
-        </div>
-
-        {!isSorry && (
-          <p
-            data-testid="victory-star-targets"
-            className="-mt-2 mb-4 text-[11px] text-zinc-400"
-          >
-            {ramUsed !== undefined && `You used ${ramUsed.toFixed(1)} GB. `}
-            Gold: use {goldBudget} GB or less. Silver: {silverBudget} GB or
-            less.
-          </p>
-        )}
-
-        {!isSorry && par !== null && (
+        {variant && (
           <div
-            data-testid="victory-par"
-            className="-mt-2 mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] text-zinc-400"
+            data-testid="victory-variant"
+            className={`my-4 rounded-xl border p-3 text-left text-xs ${
+              variantCleared
+                ? "border-emerald-500/40 bg-emerald-500/10 text-zinc-200"
+                : "border-rose-500/40 bg-rose-500/10 text-zinc-200"
+            }`}
           >
-            <span className="tabular-nums">
+            <p
+              className={`font-bold ${variantCleared ? "text-emerald-300" : "text-rose-300"}`}
+            >
+              {variantCleared
+                ? `Variant cleared: ${variant.title}`
+                : `Variant not cleared: ${variant.title}`}
+            </p>
+            <p className="mt-1 text-zinc-300">{variant.rule}</p>
+            <p className="mt-1 text-zinc-400">
               {steps !== undefined &&
                 `${steps} tactic${steps === 1 ? "" : "s"} applied. `}
-              Par {par} tactic{par === 1 ? "" : "s"}.
-            </span>
-            {runGolfed ? (
-              <span
-                data-testid="victory-golfed"
-                className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300"
-              >
-                GOLFED · at or under par
-              </span>
-            ) : (
-              <span className="text-zinc-400">
-                Prove it in {par} or fewer for the Golfed badge.
-              </span>
-            )}
+              {variantCleared
+                ? "Saved on the level map. The base level's stars are unchanged."
+                : "A proof with sorry does not clear a variant."}
+            </p>
           </div>
         )}
 
-        {isLastLevel && !isSorry && campaignStars && (
-          <div
-            data-testid="victory-campaign-complete"
-            className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-zinc-200"
-          >
-            <p className="font-bold text-amber-300">
-              {campaignDone ? "Campaign complete" : "Final level cleared"}
-            </p>
-            <p className="mt-1 text-zinc-300">
-              {campaignStars.proven} of {totalLevels} levels proven honestly,{" "}
-              {campaignStars.earned} of {campaignStars.possible} stars.{" "}
-              {campaignDone
-                ? "Replay any level from the map to chase gold."
-                : "Open the level map to prove the levels still unsolved."}
-            </p>
-          </div>
+        {!variant && (
+          <>
+            {/* Stars Display */}
+            <div
+              role="img"
+              aria-label={`${shownStars} of 3 stars`}
+              data-testid="victory-stars"
+              className="my-4 flex justify-center items-center gap-3"
+            >
+              {[1, 2, 3].map((starIdx) => (
+                <span
+                  key={starIdx}
+                  aria-hidden="true"
+                  className={`text-3xl ${
+                    !isSorry && starIdx <= score.stars
+                      ? "text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.6)]"
+                      : "text-zinc-700"
+                  }`}
+                >
+                  ★
+                </span>
+              ))}
+            </div>
+
+            {!isSorry && (
+              <p
+                data-testid="victory-star-targets"
+                className="-mt-2 mb-4 text-[11px] text-zinc-400"
+              >
+                {ramUsed !== undefined && `You used ${ramUsed.toFixed(1)} GB. `}
+                Gold: use {goldBudget} GB or less. Silver: {silverBudget} GB or
+                less.
+              </p>
+            )}
+
+            {!isSorry && par !== null && (
+              <div
+                data-testid="victory-par"
+                className="-mt-2 mb-4 flex flex-wrap items-center justify-center gap-2 text-[11px] text-zinc-400"
+              >
+                <span className="tabular-nums">
+                  {steps !== undefined &&
+                    `${steps} tactic${steps === 1 ? "" : "s"} applied. `}
+                  Par {par} tactic{par === 1 ? "" : "s"}.
+                </span>
+                {runGolfed ? (
+                  <span
+                    data-testid="victory-golfed"
+                    className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-300"
+                  >
+                    GOLFED · at or under par
+                  </span>
+                ) : (
+                  <span className="text-zinc-400">
+                    Prove it in {par} or fewer for the Golfed badge.
+                  </span>
+                )}
+              </div>
+            )}
+
+            {isLastLevel && !isSorry && campaignStars && (
+              <div
+                data-testid="victory-campaign-complete"
+                className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-zinc-200"
+              >
+                <p className="font-bold text-amber-300">
+                  {campaignDone ? "Campaign complete" : "Final level cleared"}
+                </p>
+                <p className="mt-1 text-zinc-300">
+                  {campaignStars.proven} of {totalLevels} levels proven
+                  honestly, {campaignStars.earned} of {campaignStars.possible}{" "}
+                  stars.{" "}
+                  {campaignDone
+                    ? "Replay any level from the map to chase gold."
+                    : "Open the level map to prove the levels still unsolved."}
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {/* Score & Memory Breakdown */}
@@ -255,7 +294,11 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
             onClick={onRestartLevel}
             className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2.5 text-xs font-bold text-zinc-200 hover:bg-zinc-800 hover:border-zinc-500 transition-colors"
           >
-            {isSorry ? "Try Honest Proof" : "Replay Level"}
+            {isSorry
+              ? "Try Honest Proof"
+              : variant
+                ? "Replay Variant"
+                : "Replay Level"}
           </button>
 
           {isLastLevel ? (

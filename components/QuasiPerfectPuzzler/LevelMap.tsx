@@ -5,7 +5,13 @@ import type {
   GameProgressState,
   PuzzlerLevelDef,
 } from "@/lib/quasi-perfect/types";
-import { getLevelPar, isLevelGolfed } from "@/lib/quasi-perfect";
+import {
+  areVariantsUnlocked,
+  getLevelPar,
+  getLevelVariants,
+  isLevelGolfed,
+  isVariantCleared,
+} from "@/lib/quasi-perfect";
 import { IconGolf } from "@tabler/icons-react";
 import { layoutLevelMap, levelMapBadge } from "./boardArt";
 
@@ -27,7 +33,8 @@ const CHAPTER_LABELS: Record<number, string> = {
 /**
  * The campaign as one trail: each chapter is a row of level stops, the rows
  * joined end to end, with the stars earned under each stop and a flag for a
- * level golfed at or under its step par (#2059). Replaces the L1–L18 button
+ * level golfed at or under its step par (#2059), and a "V cleared/total"
+ * count of challenge variants once they unlock (#2090). Replaces the L1–L18 button
  * strip (#1519).
  */
 export const LevelMap: React.FC<LevelMapProps> = ({
@@ -116,6 +123,13 @@ export const LevelMap: React.FC<LevelMapProps> = ({
             const golfed = isLevelGolfed(saved);
             const par = getLevelPar(lvl);
             const badgeId = `quasi-level-badge-${lvl.id}`;
+            // Cleared challenge variants (#2090), shown once they unlock.
+            const variants = areVariantsUnlocked(progress, lvl.id)
+              ? getLevelVariants(lvl)
+              : [];
+            const variantsCleared = variants.filter((v) =>
+              isVariantCleared(progress, lvl.id, v.kind)
+            ).length;
             return (
               <li
                 key={lvl.id}
@@ -160,9 +174,25 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                       className="h-3 w-3 text-emerald-300"
                     />
                   )}
+                  {variants.length > 0 && (
+                    <span
+                      aria-hidden="true"
+                      data-testid={`quasi-level-variants-${lvl.id}`}
+                      className={`ml-0.5 text-[10px] leading-none tabular-nums ${
+                        variantsCleared === variants.length
+                          ? "text-emerald-300"
+                          : "text-zinc-400"
+                      }`}
+                    >
+                      V{variantsCleared}/{variants.length}
+                    </span>
+                  )}
                   <span className="sr-only">
                     {badge.description}
                     {golfed ? ", Golfed at or under par" : ""}
+                    {variants.length > 0
+                      ? `, ${variantsCleared} of ${variants.length} challenge variants cleared`
+                      : ""}
                   </span>
                 </span>
               </li>

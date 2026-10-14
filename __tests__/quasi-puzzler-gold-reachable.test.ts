@@ -4,9 +4,14 @@ import {
   cloneAST,
   computeLevelStars,
   getLevelPar,
+  getLevelVariants,
+  getRunStartingRam,
   isGolfedRun,
+  isStepLimitReached,
+  isVariantRunCleared,
   isProofComplete,
   LEVEL_REFERENCE_PROOFS,
+  LEVEL_VARIANT_RULES,
   puzzleLevels,
   tacticDefs,
   type ASTNode,
@@ -40,7 +45,11 @@ const nodesOf = (root: ASTNode): ASTNode[] => [
  * it succeeds on (root goal, then any goal node, then any hypothesis node),
  * and a split goal is worked through branch by branch.
  */
-function playPath(level: PuzzlerLevelDef, path: readonly TacticId[]) {
+function playPath(
+  level: PuzzlerLevelDef,
+  path: readonly TacticId[],
+  hand: PuzzlerLevelDef["availableTactics"] = level.availableTactics
+) {
   let subgoals: SubGoal[] = [
     {
       id: "root",
@@ -57,9 +66,7 @@ function playPath(level: PuzzlerLevelDef, path: readonly TacticId[]) {
   // rw [h2]); the nth use of an id takes the nth card for it.
   const seen = new Map<TacticId, number>();
   const offeredArg = (id: TacticId) => {
-    const cards = level.availableTactics.filter(
-      (t) => (typeof t === "string" ? t : t.id) === id
-    );
+    const cards = hand.filter((t) => (typeof t === "string" ? t : t.id) === id);
     const n = seen.get(id) ?? 0;
     seen.set(id, n + 1);
     const item = cards[Math.min(n, cards.length - 1)];
@@ -141,4 +148,81 @@ describe("Quasi Puzzler step par (#2059)", () => {
       expect(isGolfedRun(steps, par, true)).toBe(false);
     }
   );
+});
+
+describe("Quasi Puzzler variants (#2090)", () => {
+  it("authors variant rules for every level", () => {
+    expect(Object.keys(LEVEL_VARIANT_RULES).map(Number)).toEqual(
+      puzzleLevels.map((l) => l.id)
+    );
+  });
+
+  const cases = puzzleLevels.flatMap((level) =>
+    getLevelVariants(level).map((v) => [level.id, v.kind, level, v] as const)
+  );
+
+  it.each(cases)(
+    "level %i, %s: the reference proof clears the variant",
+    (_id, _kind, level, variant) => {
+      const hand = level.availableTactics.filter(
+        (t) => (typeof t === "string" ? t : t.id) !== variant.bannedTactic
+      );
+      for (const tactic of variant.referenceProof) {
+        expect(tactic).not.toBe("sorry");
+        expect(tactic).not.toBe(variant.bannedTactic);
+        expect(offered({ ...level, availableTactics: hand }).has(tactic)).toBe(
+          true
+        );
+      }
+      const { solved, used, steps } = playPath(
+        level,
+        variant.referenceProof,
+        hand
+      );
+      expect(solved).toBe(true);
+      // Hacker Mode is the tighter budget, so a proof that fits it fits both.
+      expect(used).toBeLessThanOrEqual(
+        getRunStartingRam(level, "hacker", variant)
+      );
+      expect(isVariantRunCleared(variant, steps, false)).toBe(true);
+      // The run never trips the step limit on its way to the proof.
+      for (let s = 0; s < steps; s++) {
+        expect(isStepLimitReached(variant, s, false)).toBe(false);
+      }
+    }
+  );
+
+  it.each(puzzleLevels.map((l) => [l.id, l] as const))(
+    "level %i: variants tighten the level rather than repeat it",
+    (_id, level) => {
+      const variants = getLevelVariants(level);
+      const kinds = variants.map((v) => v.kind);
+      expect(kinds).toContain("tight-ram");
+      expect(kinds).toContain("step-limit");
+      const tight = variants.find((v) => v.kind === "tight-ram");
+      // At or below the gold budget, in both modes.
+      const goldBudget = level.initialRam - level.goldRamTarget;
+      expect(tight?.startingRam).toBeLessThanOrEqual(goldBudget);
+      expect(getRunStartingRam(level, "story", tight)).toBe(tight?.startingRam);
+      expect(variants.find((v) => v.kind === "step-limit")?.stepLimit).toBe(
+        getLevelPar(level)
+      );
+      const banned = variants.find((v) => v.kind === "banned");
+      if (banned) {
+        // A ban only counts when it removes a tactic the usual proof needs.
+        expect(LEVEL_REFERENCE_PROOFS[Number(level.id)]).toContain(
+          banned.bannedTactic
+        );
+        expect(offered(level).has(banned.bannedTactic as TacticId)).toBe(true);
+      }
+    }
+  );
+
+  it("offers a banned-tactic variant on the levels with a second route", () => {
+    expect(
+      puzzleLevels
+        .filter((l) => getLevelVariants(l).some((v) => v.kind === "banned"))
+        .map((l) => l.id)
+    ).toEqual([5, 12, 13, 14, 16]);
+  });
 });

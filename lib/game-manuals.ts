@@ -498,6 +498,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Using `sorry` bypasses a difficult sub-goal without proving it, assigning a severe penalty to your final verification integrity score.",
         badge: "Integrity Score",
       },
+      {
+        title: "Challenge Variants",
+        detail:
+          "Prove a level without `sorry` to unlock its challenge variants under the level title. Tight RAM starts you with exactly what the cheapest proof spends, in either mode, so a single failed tactic leaves too little to finish. Step limit fails the run on the step after the level's par. On five levels a third variant bans the tactic the usual proof needs; the banned card stays in the hand marked Banned. A variant cleared honestly is saved on the level map (V cleared/total) and never changes the level's stars.",
+        badge: "Replay",
+      },
     ],
     proTips: [
       "Use `ring` to automatically prove algebraic polynomial equivalences like (a+b)² = a² + 2ab + b².",

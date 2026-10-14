@@ -19,6 +19,8 @@ interface TacticCardProps {
   ) => void;
   /** Smaller card for wide hands such as the sandbox's full deck. */
   compact?: boolean;
+  /** Banned by the active variant (#2090): shown with a text stamp. */
+  banned?: boolean;
 }
 
 const RARITY_LABEL = {
@@ -43,6 +45,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({
   onDragStart,
   onDragEnd,
   compact = false,
+  banned = false,
 }) => {
   const displayLabel = labelOverride || tactic.label || tactic.name;
   const art = tacticCardArt(tactic.id, tactic.baseRamCost);
@@ -58,13 +61,16 @@ export const TacticCard: React.FC<TacticCardProps> = ({
       data-tactic-id={tactic.id}
       data-tactic-arg={hypothesisTarget}
       data-rarity={art.rarity}
+      data-banned={banned ? "true" : undefined}
       data-selected={isSelected ? "true" : undefined}
       className={`qp-card qp-focus relative flex flex-col overflow-hidden rounded-xl font-mono select-none shadow-[0_10px_24px_-14px_rgba(0,0,0,0.9)] ${
         compact ? "h-[128px] w-[96px]" : "h-[140px] w-[108px]"
       } ${
-        disabled
-          ? "opacity-45 grayscale cursor-not-allowed"
-          : "cursor-grab active:cursor-grabbing"
+        banned
+          ? "grayscale cursor-not-allowed"
+          : disabled
+            ? "opacity-45 grayscale cursor-not-allowed"
+            : "cursor-grab active:cursor-grabbing"
       }`}
       onClick={(e) => {
         e.stopPropagation();
@@ -80,8 +86,16 @@ export const TacticCard: React.FC<TacticCardProps> = ({
           onSelect();
         }
       }}
-      aria-label={`Tactic ${displayLabel}. Costs ${tactic.baseRamCost} GB RAM. ${tactic.description}`}
+      aria-label={`Tactic ${displayLabel}.${banned ? " Banned in this variant." : ""} Costs ${tactic.baseRamCost} GB RAM. ${tactic.description}`}
     >
+      {banned && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 -rotate-12 border-y border-rose-400 bg-zinc-950/90 py-0.5 text-center text-[11px] font-bold uppercase tracking-widest text-rose-200"
+        >
+          Banned
+        </span>
+      )}
       {/* Rarity edge */}
       <span aria-hidden="true" className="qp-card-edge h-1 w-full shrink-0" />
 

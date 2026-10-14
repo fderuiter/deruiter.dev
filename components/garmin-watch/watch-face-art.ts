@@ -3086,7 +3086,7 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
 }
 
 /** Options for one frame of the watch face. */
-export interface WatchFaceOptions {
+interface WatchFaceOptions {
   /**
    * The user asks for reduced motion: Hill Repeats draws no lane tilt (its
    * progress line still shows the event).

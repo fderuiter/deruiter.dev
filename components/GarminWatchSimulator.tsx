@@ -106,6 +106,12 @@ import {
 import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin-cape";
 import type { PowerTier } from "@/lib/garmin-powerups";
 import { themeForStage, type StageTheme } from "@/lib/garmin-themes";
+import {
+  SECOND_WIND_EVENTS,
+  SECOND_WIND_MS,
+  type SecondWind,
+  type SecondWindKind,
+} from "@/lib/garmin-second-wind";
 
 const POWER_NAMES: Record<PowerTier, string> = {
   base: "Base",
@@ -342,6 +348,16 @@ function RunSplitsSummary({
 }
 
 /**
+ * What a Second Wind announces as it starts (#2026): its name, goal and time
+ * limit, e.g. "Second Wind: Taper Week. Grab 6 Kudos in 15 seconds."
+ */
+function secondWindStartText(kind: SecondWindKind): string {
+  const { name, goalText } = SECOND_WIND_EVENTS[kind];
+  const title = name.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+  return `Second Wind: ${title}. ${goalText} in ${SECOND_WIND_MS / 1000} seconds.`;
+}
+
+/**
  * The Finisher Medals of this stage found so far (#2025), for the canvas
  * description and the telemetry readout.
  */
@@ -397,6 +413,11 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // Pre-Game Setup Wizard choices from the hosting cabinet (null standalone).
   const cabinetSetup = useCabinetSetup();
   const prefersReducedMotion = usePrefersReducedMotion();
+  // The frame loop reads this ref, so the loop never restarts on a change.
+  const reducedMotionRef = useRef(prefersReducedMotion);
+  useEffect(() => {
+    reducedMotionRef.current = prefersReducedMotion;
+  }, [prefersReducedMotion]);
   const setupDifficulty = cabinetSetup?.config.difficulty;
   const setupLoadout = cabinetSetup?.config.loadout;
   const setupShake = cabinetSetup?.config.screenShake ?? "none";
@@ -430,6 +451,10 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     checkpoint: GameEngineState["checkpoint"];
     exits: readonly number[];
   } | null>(null);
+  // The Second Wind the last frame showed (#2026). Undefined until the first
+  // frame, which only records the baseline, so an event already running on
+  // mount is not announced again.
+  const windSeenRef = useRef<SecondWind | null | undefined>(undefined);
 
   // Hardware & Simulation State
   const [bezelTheme, setBezelTheme] = useState<WatchBezelTheme>("slate");
@@ -468,7 +493,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
       applyCanvasScale(ctx, scale);
-      renderWatchFace(ctx, stateRef.current, groundStripRef.current);
+      renderWatchFace(ctx, stateRef.current, groundStripRef.current, {
+        reducedMotion: reducedMotionRef.current,
+      });
     },
   });
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1318,6 +1345,29 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       checkpoint: checkpointNow,
       exits: exitsNow,
     };
+
+    // 9. Second Wind events (#2026): start, goal met and over. A goal met on
+    // the event's last tick (always so for Night Run) is gone from the state
+    // by the time it is seen, so it is read from the "OVER" banner's tone.
+    const windNow = gameState.secondWind ?? null;
+    const windWas =
+      windSeenRef.current === undefined ? windNow : windSeenRef.current;
+    if (windNow && !windWas) {
+      announce(secondWindStartText(windNow.kind), "polite");
+    }
+    const metAtEnd =
+      !windNow &&
+      windWas !== null &&
+      !windWas.cleared &&
+      gameState.banner?.tone === "good" &&
+      gameState.banner.text.endsWith(" OVER");
+    if ((windNow?.cleared && !windWas?.cleared) || metAtEnd) {
+      announce("Second Wind goal met.", "polite");
+    }
+    if (!windNow && windWas) {
+      announce("Second Wind over.", "polite");
+    }
+    windSeenRef.current = windNow;
   }, [gameState, deviceTarget, announce, setAlertMessage]);
 
   // Main 60FPS Game Physics and Rendering Loop
@@ -1399,7 +1449,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         if (ctx) {
           const scale = canvasScaleRef.current;
           applyCanvasScale(ctx, scale);
-          renderWatchFace(ctx, stateRef.current, groundStripRef.current);
+          renderWatchFace(ctx, stateRef.current, groundStripRef.current, {
+            reducedMotion: reducedMotionRef.current,
+          });
         }
       }
     },

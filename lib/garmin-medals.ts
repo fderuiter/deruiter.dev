@@ -23,6 +23,7 @@ import {
   type CourseMedal,
 } from "./garmin-course";
 import { propFootings, type CourseProps } from "./garmin-props";
+import { SECOND_WIND_KINDS } from "./garmin-second-wind";
 import { SWIM_SURFACE_Y } from "./garmin-swim";
 import { isWaterTheme, type StageTheme } from "./garmin-themes";
 
@@ -222,6 +223,27 @@ export function placeStageExtras(
     // The bonus room medal behind the first enterable station.
     const roomMedal = room ? medalId(stage, slot++) : undefined;
 
+    // A Second Wind on about half the land stages: a Sync Block that held
+    // Kudos starts a stage event whose goal pays out a medal (#2026).
+    if (!isWaterTheme(theme) && rand() < 0.5) {
+      const plain = blocks
+        .map((b, i) => ({ b, i }))
+        .filter(
+          ({ b }) => b.kind === "sync" && b.contents === "kudos" && freeX(b.x)
+        );
+      if (plain.length > 0) {
+        const { b, i } = plain[Math.floor(rand() * plain.length)];
+        blocks[i] = {
+          ...b,
+          contents: "wind",
+          medalId: medalId(stage, slot++),
+          windKind:
+            SECOND_WIND_KINDS[Math.floor(rand() * SECOND_WIND_KINDS.length)],
+        };
+        taken.push(b.x);
+      }
+    }
+
     // Free medals: over a ledge first, then a block row, in shuffled order.
     // Under water nothing floats above the surface.
     const shuffle = <T>(items: T[]): T[] => {
@@ -319,6 +341,7 @@ export function hideFoundMedals(
     if (b.medalId === undefined || !ids.has(b.medalId)) return b;
     const plain = { ...b, contents: "kudos" as const };
     delete plain.medalId;
+    delete plain.windKind;
     return plain;
   });
   const stations = props.stations.map((st) => {

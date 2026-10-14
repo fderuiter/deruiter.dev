@@ -63,6 +63,11 @@ import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
 import type { ThrownBall } from "@/lib/garmin-medball";
 import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin-swim";
 import {
+  SECOND_WIND_EVENTS,
+  hillTilt,
+  type SecondWind,
+} from "@/lib/garmin-second-wind";
+import {
   CAPE_SPIN_MS,
   CAPE_SPIN_REACH,
   PACE_SEGMENTS,
@@ -2477,13 +2482,54 @@ function drawGoggles(ctx: Ctx, foe: Foe) {
   }
 }
 
-/** Course foes, drawn at their screen x. */
-function drawFoes(ctx: Ctx, foes: readonly Foe[], camera: number) {
+/**
+ * A Fun Run spectator (#2026) in the foe's box: a small cheering fan with both
+ * arms up and a foam hand on the right one. Original art, no sign or logo.
+ */
+function drawSpectator(ctx: Ctx, foe: Foe) {
+  const { width: w, height: h } = foe;
+  const mid = w / 2;
+  // Trousers and shirt.
+  ctx.fillStyle = FOE_COLORS.iron;
+  ctx.fillRect(mid - 2.6, h * 0.6, 5.2, h * 0.4);
+  ctx.fillStyle = "#fb7185";
+  ctx.fillRect(mid - 3.2, 6.2, 6.4, h * 0.45);
+  // Head.
+  ctx.fillStyle = FOE_COLORS.skin;
+  ctx.beginPath();
+  ctx.arc(mid, 3.2, 2.5, 0, Math.PI * 2);
+  ctx.fill();
+  // Both arms raised.
+  ctx.strokeStyle = FOE_COLORS.skin;
+  ctx.lineWidth = 1.3;
+  ctx.beginPath();
+  ctx.moveTo(mid - 2.4, 8);
+  ctx.lineTo(mid - 4.6, 2.6);
+  ctx.moveTo(mid + 2.4, 8);
+  ctx.lineTo(mid + 4.6, 2.6);
+  ctx.stroke();
+  // Foam hand on the right.
+  ctx.fillStyle = FOE_COLORS.amber;
+  ctx.fillRect(mid + 3.8, 0, 3, 3.2);
+}
+
+/** Course foes, drawn at their screen x. A Fun Run turns them to spectators. */
+function drawFoes(
+  ctx: Ctx,
+  foes: readonly Foe[],
+  camera: number,
+  cheering = false
+) {
   for (const f of foes) {
     const x = f.x - camera;
     if (x > CANVAS_SIZE || x + f.width < -8) continue;
     ctx.save();
     ctx.translate(x, f.y);
+    if (cheering && f.kind !== "repmax") {
+      drawSpectator(ctx, f);
+      ctx.restore();
+      continue;
+    }
     switch (f.kind) {
       case "kettlebell":
         drawKettlebell(ctx, f);
@@ -2509,6 +2555,75 @@ function drawFoes(ctx: Ctx, foes: readonly Foe[], camera: number) {
     }
     ctx.restore();
   }
+}
+
+// ------------------------------------------------ Second Wind (#2026)
+
+/**
+ * Night Run (#2026): the play area goes dark except a soft headlamp cone
+ * just ahead of the runner. Drawn before the runner and the HUD, so both
+ * stay bright.
+ */
+function drawHeadlamp(ctx: Ctx) {
+  const cx = PLAYER_X + 40;
+  const cy = GROUND_Y - 28;
+  const lamp = ctx.createRadialGradient(cx, cy, 12, cx, cy, 104);
+  lamp.addColorStop(0, "rgba(2, 4, 10, 0)");
+  lamp.addColorStop(0.6, "rgba(2, 4, 10, 0.4)");
+  lamp.addColorStop(1, "rgba(2, 4, 10, 0.9)");
+  ctx.fillStyle = lamp;
+  ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+}
+
+/**
+ * Taper Week (#2026): a faint float trail under the runner while airborne.
+ * It is static, so it moves nothing under reduced motion either.
+ */
+function drawFloatTrail(ctx: Ctx, state: GameEngineState) {
+  if (state.isGrounded) return;
+  const feet = state.playerY + BASE_HEIGHT;
+  ctx.fillStyle = "rgba(186, 230, 253, 0.45)";
+  for (let i = 0; i < 3; i++) {
+    ctx.fillRect(PLAYER_X - 6 - i * 7, feet + 4 + i, 4, 1);
+  }
+}
+
+/**
+ * The Second Wind HUD line (#2026): the event, its progress and the seconds
+ * left. Night Run reads NO HITS until the runner takes one.
+ */
+export function secondWindHudText(wind: SecondWind): string {
+  const seconds = Math.ceil(Math.max(0, wind.msLeft) / 1000);
+  if (wind.kind === "night") {
+    return `NIGHT RUN · ${wind.progress === 0 ? "NO HITS" : "HIT"} · ${seconds}s`;
+  }
+  const { name, goal } = SECOND_WIND_EVENTS[wind.kind];
+  return `${name} ${Math.floor(wind.progress)}/${goal} · ${seconds}s`;
+}
+
+/**
+ * The Second Wind line in a small dark pill across the lane (#2026), under
+ * the pace meter and the RAM and NV readouts, clear of the banner, the
+ * medal slots, the clock and the score.
+ */
+function drawSecondWindLine(ctx: Ctx, wind: SecondWind) {
+  const line = secondWindHudText(wind);
+  const px = fitTextPx(ctx, line, 6.5, 140, 5);
+  const w = Math.min(150, ctx.measureText(line).width + 12);
+  const y = 113;
+  const h = 11;
+  ctx.fillStyle = "rgba(0, 0, 0, 0.88)";
+  ctx.beginPath();
+  ctx.roundRect(FACE_CENTER - w / 2, y, w, h, 3);
+  ctx.fill();
+  text(
+    ctx,
+    line,
+    FACE_CENTER,
+    y + 7.4,
+    px,
+    wind.kind === "night" ? FACE_COLORS.identity : FACE_COLORS.good
+  );
 }
 
 /** Foe shots: a lap ping is a small sky diamond, a dumbbell a tumbling bar with plates. */
@@ -2970,6 +3085,15 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
   );
 }
 
+/** Options for one frame of the watch face. */
+export interface WatchFaceOptions {
+  /**
+   * The user asks for reduced motion: Hill Repeats draws no lane tilt (its
+   * progress line still shows the event).
+   */
+  reducedMotion?: boolean;
+}
+
 /**
  * Draws one frame of the watch face for `state` into a context already
  * scaled to the 280 x 280 logical space.
@@ -2977,7 +3101,8 @@ function drawEndFace(ctx: Ctx, state: GameEngineState, face: EndFace) {
 export function renderWatchFace(
   ctx: Ctx,
   state: GameEngineState,
-  strip: GroundStripLayout = DEFAULT_GROUND_STRIP
+  strip: GroundStripLayout = DEFAULT_GROUND_STRIP,
+  options: WatchFaceOptions = {}
 ): void {
   ctx.save();
   ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
@@ -2995,6 +3120,7 @@ export function renderWatchFace(
   const course = state.course ?? EMPTY_COURSE;
   const camera = state.distanceMeters * PX_PER_METER;
   const theme = themeOf(state);
+  const wind = state.secondWind ?? null;
   if (state.bonusRoom) {
     drawBonusRoomBackdrop(ctx);
   } else {
@@ -3005,6 +3131,15 @@ export function renderWatchFace(
     if (theme === "open-water" && course.currents) {
       drawCurrents(ctx, course.currents, camera);
     }
+  }
+  // Hill Repeats tilts the lane about the runner's feet (#2026), and only
+  // the lane: the sky, the runner and the HUD stay level.
+  const tilting = wind?.kind === "hills" && !options.reducedMotion;
+  ctx.save();
+  if (tilting) {
+    ctx.translate(PLAYER_X, GROUND_Y);
+    ctx.rotate(hillTilt(wind, camera + PLAYER_X));
+    ctx.translate(-PLAYER_X, -GROUND_Y);
   }
   drawGround(ctx, state.distanceMeters, course, theme);
   drawPoles(ctx, course, camera);
@@ -3022,11 +3157,14 @@ export function renderWatchFace(
   drawCourseMedals(ctx, course, camera);
   if (!state.bonusRoom) drawMedBalls(ctx, course.medBalls ?? [], camera);
 
-  drawFoes(ctx, state.foes ?? [], camera);
+  drawFoes(ctx, state.foes ?? [], camera, wind?.kind === "funrun");
   const fitness = isFitnessRun(state);
   for (const obs of state.obstacles) {
     drawObstacle(ctx, obs, fitness);
   }
+  ctx.restore();
+  if (wind?.kind === "night") drawHeadlamp(ctx);
+  if (wind?.kind === "taper") drawFloatTrail(ctx, state);
   drawRunner(ctx, state);
   drawSpin(ctx, state);
   drawBolts(ctx, state.bolts ?? [], camera);
@@ -3047,6 +3185,7 @@ export function renderWatchFace(
     drawCourseHud(ctx, state);
     if ((state.restDayMs ?? 0) > 0) drawRestDayBadge(ctx, state.restDayMs ?? 0);
     drawBanner(ctx, state);
+    if (wind) drawSecondWindLine(ctx, wind);
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused")

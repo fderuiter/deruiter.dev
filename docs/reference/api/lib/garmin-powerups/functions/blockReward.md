@@ -18,7 +18,7 @@ Runner's High, and a buddy block always hatches a Running Buddy (#2024).
 
 ### contents
 
-`"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"` \| `"buddy"` \| `"medal"`
+`"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"` \| `"buddy"` \| `"medal"` \| `"wind"`
 
 ### power
 

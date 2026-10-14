@@ -78,6 +78,16 @@ import {
 } from "./garmin-swim";
 import { isWaterTheme, themeForStage } from "./garmin-themes";
 import {
+  SECOND_WIND_EVENTS,
+  SECOND_WIND_GOAL_TOAST,
+  hillSpeedScale,
+  startSecondWind,
+  stepSecondWind,
+  windGravityScale,
+  type SecondWind,
+  type SecondWindTick,
+} from "./garmin-second-wind";
+import {
   MOVE_TOASTS,
   SLAM_BATTERY_COST,
   SLAM_REACH,
@@ -641,6 +651,11 @@ export interface GameEngineState {
   checkpoint?: CourseCheckpoint | null;
   /** Stages whose secret exit was taken this run; reset by startGame, otherwise kept (#2025). */
   secretExits?: number[];
+  /**
+   * The Second Wind event running, if any (#2026). Started by a wind Sync
+   * Block, ended by its timer, a lost life or a stage clear; null otherwise.
+   */
+  secondWind?: SecondWind | null;
 }
 
 /** A bonus room in progress: the course outside waits to be restored. */
@@ -1060,6 +1075,7 @@ export function startGame(
     medalsFound: [],
     checkpoint: null,
     secretExits: [],
+    secondWind: null,
     foeShots: [],
     propClockMs: 0,
     restDayMs: 0,
@@ -2090,6 +2106,7 @@ function loseLife(
       carrying: false,
       carryingId: undefined,
       thrownBall: null,
+      secondWind: null,
     };
   }
   const stage = state.stage ?? 1;
@@ -2131,6 +2148,8 @@ function loseLife(
     carrying: false,
     carryingId: undefined,
     thrownBall: null,
+    // A Second Wind ends with the life (#2026).
+    secondWind: null,
     paceMeter: 0,
     flightMs: 0,
     spinMs: 0,
@@ -2242,11 +2261,17 @@ function updateCourseFoes(
     /** The Burpee Slam landing this step: its foot span and the surface it hit. */
     slam: { footLeft: number; footRight: number; top: number } | null;
   }
-): { state: GameEngineState; obstacles: Obstacle[]; lost: boolean } {
+): {
+  state: GameEngineState;
+  obstacles: Obstacle[];
+  lost: boolean;
+  /** Fun Run high fives this step (#2026). */
+  highFives: number;
+} {
   const startFoes = state.foes ?? [];
   const startShots = state.foeShots ?? [];
   if (startFoes.length === 0 && startShots.length === 0) {
-    return { state, obstacles: obstacles.slice(), lost: false };
+    return { state, obstacles: obstacles.slice(), lost: false, highFives: 0 };
   }
   const { cameraX, bodyH, prevBottom, spinning, deltaMs, slam } = ctx;
   const spinJumping = state.spinJump === true;
@@ -2263,10 +2288,13 @@ function updateCourseFoes(
     state.foeShotsFired ?? 0
   );
   let foes = stepped.foes;
-  let shots = stepped.shots;
+  // Fun Run (#2026): no foe shoots, and any shot in the air is cleared.
+  const funRun = state.secondWind?.kind === "funrun";
+  let shots = funRun ? [] : stepped.shots;
   let score = 0;
   const popups = [...(state.popups ?? [])];
   let defeats = 0;
+  let highFives = 0;
   const fitness = isFitnessRun(state);
   const award = (f: Foe, points: number, label = `+${points}`) => {
     if (points <= 0) return;
@@ -2340,7 +2368,18 @@ function updateCourseFoes(
   // Every foe is judged against the fall the runner came in with, so a stomp
   // bounce doesn't turn a second foe landed on in the same tick into a hit.
   const landingVy = state.playerVy;
+  // Fun Run: a foe the runner touches from any side (a slam included) is a
+  // high five, which the Rep Max never is.
+  const touching = (f: Foe) =>
+    (slam !== null && slamTarget(f, slam)) ||
+    runnerContact(f, runnerBox, prevBottom, landingVy) !== "none";
   for (const f of foes) {
+    if (funRun && f.kind !== "repmax" && touching(f)) {
+      highFives += 1;
+      score += KUDOS_SCORE;
+      popups.push({ x: f.x, y: f.y - 6, text: "HIGH FIVE!", ttlMs: 800 });
+      continue;
+    }
     // A Burpee Slam landing stomps the foe under the feet, with the same
     // result a stomp has on that foe (a kettlebell rolls, a Rep Max loses a
     // hit point).
@@ -2457,6 +2496,7 @@ function updateCourseFoes(
     ...(defeats > 0 && isFitnessRun(next)
       ? { stageFoes: (next.stageFoes ?? 0) + defeats }
       : {}),
+    kudos: (next.kudos ?? 0) + highFives,
     score: next.score + score,
     highScore: Math.max(next.highScore, next.score + score),
     popups,
@@ -2476,6 +2516,7 @@ function updateCourseFoes(
           ),
           obstacles: [],
           lost: true,
+          highFives,
         };
       }
       next = dropCarriedBall(
@@ -2491,7 +2532,7 @@ function updateCourseFoes(
       );
     }
   }
-  return { state: next, obstacles: keptObstacles, lost: false };
+  return { state: next, obstacles: keptObstacles, lost: false, highFives };
 }
 
 /** Enough damage to defeat any foe outright. */
@@ -2519,6 +2560,57 @@ export function updateGameSimulation(
       state.furthestMeters ?? 0,
       Number.isFinite(next.distanceMeters) ? next.distanceMeters : 0
     ),
+  };
+}
+
+/**
+ * Advances the Second Wind `wind` one tick on `state` (#2026): its timer and
+ * goal, the medal a met goal pays, and the banner when it ends. A stage clear
+ * (`stageCleared`) ends it quietly, so the stage's own banner stays.
+ */
+function tickSecondWind(
+  state: GameEngineState,
+  wind: SecondWind | null,
+  tick: SecondWindTick,
+  at: { x: number; y: number },
+  stageCleared: boolean
+): GameEngineState {
+  if (!wind) return state;
+  const result = stepSecondWind(wind, tick);
+  const cleared = wind.cleared || result.goalMet;
+  let medalsFound = state.medalsFound ?? [];
+  let score = state.score;
+  const popups: FacePopup[] = [...(state.popups ?? [])];
+  if (result.goalMet) {
+    if (wind.medalId !== undefined) {
+      const medal = medalFind(medalsFound, wind.medalId, at.x, at.y);
+      medalsFound = medal.found;
+      score += medal.points;
+      popups.push(...medal.popups);
+    }
+    popups.push({
+      x: at.x,
+      y: at.y - 14,
+      text: SECOND_WIND_GOAL_TOAST,
+      ttlMs: 1400,
+    });
+  }
+  let banner = state.banner ?? null;
+  if (result.ended && !stageCleared) {
+    banner = {
+      text: `${SECOND_WIND_EVENTS[wind.kind].name} OVER`,
+      ttlMs: 2200,
+      tone: cleared ? "good" : "warn",
+    };
+  }
+  return {
+    ...state,
+    secondWind: stageCleared ? null : result.wind,
+    medalsFound,
+    score,
+    highScore: Math.max(state.highScore, score),
+    popups,
+    banner,
   };
 }
 
@@ -2827,7 +2919,10 @@ function stepSimulation(
   const progress = swimming
     ? Math.max(0, (0.25 * pace * swimPace + currentPush) * dtRatio)
     : 0.25 * pace * dtRatio;
-  let nextDistance = state.distanceMeters + progress + carry.dx / PX_PER_METER;
+  // Hill Repeats (#2026) slows the climbs and quickens the descents.
+  const hillScale = hillSpeedScale(state.secondWind, prevCameraX + PLAYER_X);
+  let nextDistance =
+    state.distanceMeters + progress * hillScale + carry.dx / PX_PER_METER;
   const wall = wallAhead(
     props,
     GROUND_Y,
@@ -2868,6 +2963,8 @@ function stepSimulation(
   const h = playerHeightFor(power);
   let stage = state.stage ?? 1;
   let banner = state.banner ?? null;
+  // The Second Wind running this tick; a wind Sync Block may start one (#2026).
+  let wind: SecondWind | null = state.secondWind ?? null;
   const popups: FacePopup[] = [];
   for (const p of state.popups ?? []) {
     const ttlMs = p.ttlMs - safeDelta;
@@ -2900,6 +2997,29 @@ function stepSimulation(
   const bumpBlock = (index: number) => {
     const block = course.blocks[index];
     if (block.kind !== "sync" || block.used) return;
+    if (block.contents === "wind") {
+      // A Second Wind (#2026) starts unless one is already running, and the
+      // block stays unused until it can. Its medal is paid on the goal, and a
+      // found medal starts the event with none.
+      if (!wind) {
+        const blocks = course.blocks.slice();
+        blocks[index] = { ...block, used: true };
+        course = { ...course, blocks };
+        score += SYNC_BLOCK_SCORE;
+        const kind = block.windKind ?? "taper";
+        const medalId =
+          block.medalId !== undefined && !medalsFound.includes(block.medalId)
+            ? block.medalId
+            : undefined;
+        wind = startSecondWind(kind, stage, medalId);
+        banner = {
+          text: `${SECOND_WIND_EVENTS[kind].name} · ${SECOND_WIND_EVENTS[kind].goalText}`,
+          ttlMs: 2200,
+          tone: "good",
+        };
+      }
+      return;
+    }
     const blocks = course.blocks.slice();
     blocks[index] = { ...block, used: true };
     course = { ...course, blocks };
@@ -2935,7 +3055,7 @@ function stepSimulation(
     ? suitOn
       ? SWIM_GRAVITY * SUIT_GRAVITY_SCALE
       : SWIM_GRAVITY
-    : landGravity;
+    : landGravity * windGravityScale(state.secondWind);
   // A Burpee Slam falls at its own speed, which is also its cap.
   const fallCap = swimming
     ? SWIM_SINK_MAX
@@ -3619,6 +3739,8 @@ function stepSimulation(
     medalsFound,
     checkpoint,
     secretExits,
+    // A stage clear ends a Second Wind; otherwise it runs on (#2026).
+    secondWind: stageCleared ? null : wind,
     // The moves end on the landing; a wall contact lasts while the runner
     // stays in the air against it.
     slamming: state.slamming === true && !landed,
@@ -3673,6 +3795,19 @@ function stepSimulation(
     };
   }
   if (roomExit) {
+    updatedState = tickSecondWind(
+      updatedState,
+      wind,
+      {
+        deltaMs: safeDelta,
+        metres: Math.max(0, nextDistance - state.distanceMeters),
+        kudos: (updatedState.kudos ?? 0) - (state.kudos ?? 0),
+        highFives: 0,
+        hits: 0,
+      },
+      { x: bodyLeft, y: nextPlayerY },
+      false
+    );
     // Out of the bonus room and onto the lane at the exit; the course's foes
     // come back, and the bugs and shots wait for the next frame.
     return {
@@ -4092,6 +4227,27 @@ function stepSimulation(
   if (updatedState.thrownBall) {
     updatedState = stepThrownMedBall(updatedState, cameraX, safeDelta);
   }
+
+  // 5d. Second Wind (#2026): its timer, goal and medal, on the tick it runs.
+  // Damage restarts the grace window, which only starts from none: a hit.
+  const hits =
+    (updatedState.invulnerableMs ?? 0) === DAMAGE_GRACE_MS &&
+    (state.invulnerableMs ?? 0) - safeDelta <= 0
+      ? 1
+      : 0;
+  updatedState = tickSecondWind(
+    updatedState,
+    wind,
+    {
+      deltaMs: safeDelta,
+      metres: Math.max(0, nextDistance - state.distanceMeters),
+      kudos: (updatedState.kudos ?? 0) - (state.kudos ?? 0),
+      highFives: foeTick.highFives,
+      hits,
+    },
+    { x: bodyLeft, y: nextPlayerY },
+    stageCleared
+  );
 
   // 6. Spawn new Obstacles
   // Early stages leave room to learn the course before the bugs crowd in.

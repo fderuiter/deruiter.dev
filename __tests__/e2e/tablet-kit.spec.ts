@@ -1201,3 +1201,377 @@ test.describe("Meme Vault on a tablet (iPad projects, #2071)", () => {
     }
   });
 });
+
+// Study Director: the office and the classic desk in the touch cabinet. Both
+// views fit the stage in either orientation and play by finger and Pencil
+// (#2076).
+const SD_ROUTE = "/arcade/study-director";
+const SD_WORLD = ".sd-world-touch";
+const SD_DESK = ".sd-desk-touch";
+
+/** Launches the cabinet and waits for the office, then closes its first-run help. */
+async function launchStudyDirector(page: Page) {
+  const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+  await expect(async () => {
+    if ((await page.locator(IMMERSIVE).count()) > 0) return;
+    await launch.tap({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 180000 });
+  await expect(page.locator(SD_WORLD)).toBeVisible({ timeout: 90000 });
+}
+
+async function closeWorldIntro(page: Page) {
+  const start = page.getByRole("button", { name: /Start the day/ });
+  await expect(async () => {
+    if (await start.isVisible()) await start.tap({ timeout: 3000 });
+    await expect(page.getByTestId("world-intro")).toBeHidden({
+      timeout: 3000,
+    });
+  }).toPass({ timeout: 15000 });
+}
+
+async function openClassicDesk(page: Page) {
+  await page
+    .getByRole("button", { name: /Switch to the classic desk/ })
+    .tap({ timeout: 15000 });
+  await page
+    .getByRole("button", { name: /Start the study \(classic desk\)/ })
+    .tap({ timeout: 15000 });
+  await expect(page.locator(SD_DESK)).toBeVisible();
+}
+
+/** Every box the view draws sits inside the viewport. */
+async function expectInsideViewport(page: Page, selectors: string[]) {
+  const viewport = page.viewportSize();
+  expect(viewport).not.toBeNull();
+  for (const selector of selectors) {
+    const boxes = page.locator(selector);
+    const count = await boxes.count();
+    expect(count, `${selector} is on screen`).toBeGreaterThan(0);
+    for (let i = 0; i < count; i += 1) {
+      const box = await boxes.nth(i).boundingBox();
+      if (!box || box.width <= 1) continue;
+      expect(box.x, `${selector} ${i} left`).toBeGreaterThanOrEqual(-1);
+      expect(box.x + box.width, `${selector} ${i} right`).toBeLessThanOrEqual(
+        viewport!.width + 1
+      );
+      expect(box.y, `${selector} ${i} top`).toBeGreaterThanOrEqual(-1);
+      expect(box.y + box.height, `${selector} ${i} bottom`).toBeLessThanOrEqual(
+        viewport!.height + 1
+      );
+    }
+  }
+}
+
+/** Controls under 44px and text under 12px inside a view, art (SVG) aside. */
+async function sdTouchSizes(page: Page, root: string) {
+  const controls = page.locator(`${root} button:visible`);
+  await expect(controls.first()).toBeVisible({ timeout: 60000 });
+  const count = await controls.count();
+  const small: string[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const box = await controls.nth(i).boundingBox();
+    if (!box || box.width <= 1) continue;
+    if (box.width < 44 - 0.5 || box.height < 44 - 0.5) {
+      small.push(
+        `${i}: ${Math.round(box.width)}x${Math.round(box.height)} ${(await controls.nth(i).innerText()).slice(0, 30)}`
+      );
+    }
+  }
+  expect(small).toEqual([]);
+  const tiny = await page.evaluate((selector) => {
+    const el = document.querySelector(selector);
+    if (!el) return ["no view root"];
+    const offenders: string[] = [];
+    el.querySelectorAll<HTMLElement>("*").forEach((node) => {
+      // SVG text is art scaled by its viewBox, not page text.
+      if (node instanceof SVGElement) return;
+      const own = Array.from(node.childNodes).some(
+        (child) =>
+          child.nodeType === Node.TEXT_NODE &&
+          (child.textContent ?? "").trim().length > 0
+      );
+      if (!own) return;
+      const style = getComputedStyle(node);
+      if (style.display === "none") return;
+      if (parseFloat(style.fontSize) < 12) {
+        offenders.push(
+          `${node.tagName} ${style.fontSize} ${node.textContent?.trim().slice(0, 40)}`
+        );
+      }
+    });
+    return offenders.slice(0, 10);
+  }, root);
+  expect(tiny).toEqual([]);
+}
+
+async function sdAxe(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .include(IMMERSIVE)
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+    .analyze();
+  const blocking = results.violations
+    .filter((v) => BLOCKING.has(v.impact ?? ""))
+    .map(
+      (v) =>
+        `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+    );
+  expect(blocking).toEqual([]);
+}
+
+test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
+  test.setTimeout(300000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(SD_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches fit to the viewport", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchStudyDirector(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the office fits both orientations, with the floor taking a fair share of the height", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expect(page.locator(SD_WORLD)).toBeVisible();
+      await expectInsideViewport(page, [
+        SD_WORLD,
+        '[data-testid="world-hud"]',
+        '[data-testid="world-canvas"]',
+        '[data-testid="world-touch-controls"]',
+        '[data-testid="world-side"]',
+      ]);
+      const canvas = await page
+        .locator('[data-testid="world-canvas"]')
+        .boundingBox();
+      expect(canvas).not.toBeNull();
+      expect(canvas!.height / size.height).toBeGreaterThanOrEqual(0.35);
+      await assertNoHorizontalOverflow(page);
+    }
+  });
+
+  test("the classic desk fits both orientations: status, tabs, section and actions stay on screen", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await openClassicDesk(page);
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expectInsideViewport(page, [
+        SD_DESK,
+        '[data-testid="study-status-bar"]',
+        '[data-testid="desk-tabs"]',
+        '[data-testid="desk-section"]',
+        '[data-testid="desk-actions"]',
+      ]);
+      const section = await page
+        .locator('[data-testid="desk-section"]')
+        .boundingBox();
+      expect(section!.height / size.height).toBeGreaterThanOrEqual(0.35);
+      await assertNoHorizontalOverflow(page);
+    }
+  });
+
+  test("the page cannot scroll behind the open cabinet", async ({ page }) => {
+    await launchStudyDirector(page);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("every control in the office is 44px and no text is under 12px", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await sdTouchSizes(page, SD_WORLD);
+  });
+
+  test("every control on the classic desk is 44px and no text is under 12px", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await openClassicDesk(page);
+    await sdTouchSizes(page, SD_DESK);
+    for (const tab of ["Dashboard", "Team", "Sites", "Office"]) {
+      await page
+        .getByTestId("desk-tabs")
+        .getByRole("button", { name: tab })
+        .tap();
+      await sdTouchSizes(page, SD_DESK);
+    }
+  });
+
+  test("a tap on the floor walks, and the E button talks to a teammate", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    // Tap two tiles left of the player, who stands at the middle of the view.
+    const clock = page.getByTestId("world-clock");
+    const before = await clock.innerText();
+    const canvas = page.getByTestId("world-canvas");
+    await expect(async () => {
+      const box = (await canvas.boundingBox())!;
+      await canvas.tap({
+        position: {
+          x: box.width / 2 - (2 * box.width) / 22,
+          y: box.height / 2 + 4,
+        },
+        timeout: 5000,
+      });
+      await expect(clock).not.toHaveText(before, { timeout: 3000 });
+    }).toPass({ timeout: 15000 });
+
+    // Walk to a teammate through the directory, then talk with the E button.
+    await page
+      .getByRole("button", { name: /^Office directory/ })
+      .tap({ timeout: 15000 });
+    await page.getByRole("button", { name: /^Walk to Maya/ }).tap();
+    const use = page.getByRole("button", { name: /^Use or talk/ });
+    await expect(page.getByTestId("world-use-label")).toHaveText(/Talk to/, {
+      timeout: 30000,
+    });
+    await use.tap();
+    const dialogue = page.getByTestId("world-dialogue");
+    await expect(dialogue).toBeVisible();
+    // A tap on the box finishes the typing.
+    await dialogue.tap({ position: { x: 20, y: 20 } });
+    await expect(dialogue).toHaveAttribute("data-typing", "done");
+    const viewport = page.viewportSize()!;
+    const box = (await dialogue.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    // Escape closes the dialogue, and the cabinet stays open.
+    await page.keyboard.press("Escape");
+    await expect(dialogue).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("F shows a result card; Escape closes it while the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await page
+      .getByRole("button", { name: /^How are you\? \(F\)/ })
+      .tap({ timeout: 15000 });
+    const card = page.getByTestId("world-outcome");
+    await expect(card).toBeVisible();
+    await page.getByTestId("world-playfield").focus();
+    await page.keyboard.press("Escape");
+    await expect(card).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the first-run help is a dialog: Escape closes it and the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    const intro = page.getByTestId("world-intro");
+    await expect(intro).toBeVisible();
+    const viewport = page.viewportSize()!;
+    const box = (await intro.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    await page.keyboard.press("Escape");
+    await expect(intro).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the classic desk makes a choice and ends a day by taps alone", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await openClassicDesk(page);
+    const decision = page.getByTestId("study-decision");
+    const option = decision
+      .getByRole("button")
+      .filter({ hasNot: page.locator("[disabled]") })
+      .first();
+    await option.tap({ timeout: 15000 });
+    await expect(page.getByTestId("desk-actions")).toBeVisible();
+    await page.getByRole("button", { name: "End day" }).tap();
+    await expect(page.getByTestId("study-status-bar")).toContainText(/Day 2/);
+  });
+
+  test("the shortcut sheet opens by tap and fits; Escape closes it while the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await openClassicDesk(page);
+    await page.getByRole("button", { name: "Keyboard shortcuts" }).tap();
+    const sheet = page.getByRole("dialog", { name: "Keyboard shortcuts" });
+    await expect(sheet).toBeVisible();
+    const viewport = page.viewportSize()!;
+    const box = (await sheet.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.height).toBeLessThanOrEqual(viewport.height + 1);
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the office has no blocking axe violations", async ({ page }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await sdAxe(page);
+  });
+
+  test("the classic desk has no blocking axe violations", async ({ page }) => {
+    await launchStudyDirector(page);
+    await closeWorldIntro(page);
+    await openClassicDesk(page);
+    await sdAxe(page);
+  });
+
+  test.describe("Split View (ADR 0061)", () => {
+    for (const width of [507, 678]) {
+      test(`${width}x1024: the notice offers Try it anyway, with no overflow`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(SD_ROUTE);
+        await expect(page.locator(NOTICE).first()).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+        const tryAnyway = page.getByRole("button", { name: /Try it anyway/i });
+        await expect(tryAnyway).toBeVisible();
+        await tryAnyway.tap();
+        await expect(
+          page.getByRole("button", { name: /Launch Cabinet/i })
+        ).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+      });
+    }
+  });
+});

@@ -8,6 +8,8 @@
 
 ## Functions
 
+- [isGolfedRun](functions/isGolfedRun.md)
+- [isLevelGolfed](functions/isLevelGolfed.md)
 - [mergeLevelScore](functions/mergeLevelScore.md)
 - [parseGameProgress](functions/parseGameProgress.md)
 - [resolveResumeLevelIndex](functions/resolveResumeLevelIndex.md)

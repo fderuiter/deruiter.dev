@@ -343,6 +343,7 @@
 - [lib/quasi-perfect/levels](lib/quasi-perfect/levels/README.md)
 - [lib/quasi-perfect/progress](lib/quasi-perfect/progress/README.md)
 - [lib/quasi-perfect/ram](lib/quasi-perfect/ram/README.md)
+- [lib/quasi-perfect/sandbox](lib/quasi-perfect/sandbox/README.md)
 - [lib/quasi-perfect/tactics](lib/quasi-perfect/tactics/README.md)
 - [lib/quasi-perfect/types](lib/quasi-perfect/types/README.md)
 - [lib/redis](lib/redis/README.md)

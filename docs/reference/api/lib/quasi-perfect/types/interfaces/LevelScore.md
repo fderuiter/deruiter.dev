@@ -14,6 +14,16 @@
 
 ***
 
+### golfed?
+
+> `optional` **golfed?**: `boolean`
+
+True once the level has been proved honestly in no more tactics than its
+par (#2059). Missing in progress saved before the badge existed, which
+reads as not golfed.
+
+***
+
 ### levelId
 
 > **levelId**: `string` \| `number`
@@ -35,6 +45,14 @@
 ### stars
 
 > **stars**: `number`
+
+***
+
+### steps?
+
+> `optional` **steps?**: `number`
+
+Tactics the run applied; missing in older saves.
 
 ***
 

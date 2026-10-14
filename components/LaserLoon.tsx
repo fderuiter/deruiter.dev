@@ -1895,6 +1895,17 @@ export const LaserLoon: React.FC = () => {
     // The touch menu sheet is a dialog inside the playfield: its keys,
     // Escape included, belong to its own focus trap, not to the game.
     if (showMenu) return;
+    // The Flag Museum opened from M moves focus into itself a moment later.
+    // A press that lands before then still belongs to it: Escape or M closes
+    // the museum, and the cabinet must not take Escape as leaving the game.
+    if (showMuseum) {
+      if (e.key === "Escape" || e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowMuseum(false);
+      }
+      return;
+    }
     // Space and Enter on a dialog's button (pause menu, result card) activate
     // that button; the playfield's own shortcuts would otherwise swallow them.
     if (

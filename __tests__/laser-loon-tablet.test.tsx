@@ -376,4 +376,22 @@ describe("Laser Loon in the touch cabinet (#2081)", () => {
     fireEvent.keyDown(boundary, { key: "p" });
     expect(screen.getByText("GAME PAUSED")).toBeDefined();
   });
+
+  it("Escape straight after M closes the museum before it takes focus, and never reaches the cabinet", () => {
+    renderLoon(true);
+    startRun();
+    const boundary = document.querySelector("[data-keyboard-boundary]")!;
+    fireEvent.keyDown(boundary, { key: "m" });
+    expect(
+      screen.getByRole("dialog", { name: "Minnesota Flag Redesign Museum" })
+    ).toBeDefined();
+    const outside = vi.fn();
+    document.addEventListener("keydown", outside);
+    fireEvent.keyDown(boundary, { key: "Escape" });
+    document.removeEventListener("keydown", outside);
+    expect(
+      screen.queryByRole("dialog", { name: "Minnesota Flag Redesign Museum" })
+    ).toBeNull();
+    expect(outside).not.toHaveBeenCalled();
+  });
 });

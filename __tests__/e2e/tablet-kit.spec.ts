@@ -1763,12 +1763,23 @@ test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
   }) => {
     await launchLaserLoon(page);
     await startLaserLoonRun(page);
-    const fire = (await page
-      .getByRole("button", { name: "Fire (hold)" })
-      .boundingBox())!;
-    const canvas = (await page
-      .locator('canvas[role="application"]')
-      .boundingBox())!;
+    // The arena centres in the height the dock leaves, so measure once the
+    // layout has settled: two reads a frame apart that agree.
+    const settledBox = async (locator: Locator) => {
+      let last = await locator.boundingBox();
+      await expect(async () => {
+        await page.waitForTimeout(100);
+        const next = await locator.boundingBox();
+        const same = JSON.stringify(next) === JSON.stringify(last);
+        last = next;
+        expect(same).toBe(true);
+      }).toPass({ timeout: 15000 });
+      return last!;
+    };
+    const fire = await settledBox(
+      page.getByRole("button", { name: "Fire (hold)" })
+    );
+    const canvas = await settledBox(page.locator('canvas[role="application"]'));
     const cdp = await page.context().newCDPSession(page);
     const fireAt = {
       x: fire.x + fire.width / 2,

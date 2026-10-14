@@ -60,7 +60,10 @@ function laid(stage: number, seed: number) {
   };
 }
 
-/** Every medal id a stage's layout hides: PR Boards, rooms and free medals. */
+/**
+ * Every medal id a stage's layout hides: PR Boards, Second Wind blocks (#2026),
+ * rooms and free medals. The four sources share the stage's three medals.
+ */
 function hiddenIds(course: CourseLayout, props: CourseProps): number[] {
   return [
     ...course.blocks.flatMap((b) =>
@@ -175,7 +178,7 @@ describe("placeStageExtras", () => {
     (stage) => {
       for (const seed of SEEDS) {
         const { theme, course } = laid(stage, seed);
-        const boards = course.blocks.filter((b) => b.medalId !== undefined);
+        const boards = course.blocks.filter((b) => b.contents === "medal");
         expect(boards.length).toBeLessThanOrEqual(1);
         for (const b of boards) {
           expect(isWaterTheme(theme)).toBe(false);
@@ -297,6 +300,75 @@ describe("placeStageExtras", () => {
     }
   });
 
+  it.each(STAGES)(
+    "stage %i: a Second Wind block is a Sync Block with a kind, on land only",
+    (stage) => {
+      for (const seed of SEEDS) {
+        const { theme, course } = laid(stage, seed);
+        const winds = course.blocks.filter((b) => b.contents === "wind");
+        if (isWaterTheme(theme)) expect(winds).toHaveLength(0);
+        expect(winds.length).toBeLessThanOrEqual(1);
+        for (const b of winds) {
+          expect(b.kind).toBe("sync");
+          expect(b.fromKudos).toBeFalsy();
+          expect(b.windKind).toBeDefined();
+          expect(medalStage(b.medalId ?? -1)).toBe(stage);
+        }
+      }
+    }
+  );
+
+  it("a Second Wind block takes one of the stage's three medal slots, and no free medal copies it", () => {
+    for (const stage of STAGES) {
+      for (const seed of SEEDS) {
+        const { course, props } = laid(stage, seed);
+        const winds = course.blocks.filter((b) => b.contents === "wind");
+        for (const b of winds) {
+          const ids = hiddenIds(course, props);
+          expect(ids.filter((id) => id === b.medalId)).toHaveLength(1);
+        }
+      }
+    }
+  });
+
+  it("hides a Second Wind on about half of the land stages", () => {
+    const landStages = STAGES.filter(
+      (stage) => !isWaterTheme(themeForStage(stage))
+    );
+    const landDraws = landStages.flatMap((stage) =>
+      SEEDS.map((seed) => laid(stage, seed))
+    );
+    const withWind = landDraws.filter(({ course }) =>
+      course.blocks.some((b) => b.contents === "wind")
+    ).length;
+    const share = withWind / landDraws.length;
+    expect(share).toBeGreaterThan(0.3);
+    expect(share).toBeLessThan(0.7);
+  });
+
+  it.each(STAGES)(
+    "stage %i: a Second Wind block sits before a secret exit and out of a bonus room's skipped stretch",
+    (stage) => {
+      for (const seed of SEEDS) {
+        const { course, props } = laid(stage, seed);
+        const room = props.stations.find((st) => st.medalId !== undefined);
+        const secret = props.stations.find((st) => st.secretExit);
+        for (const b of course.blocks.filter((x) => x.contents === "wind")) {
+          if (room) {
+            const inSkip = b.x + MEDAL_SIZE > room.x && b.x < room.exitX;
+            expect(inSkip, `stage ${stage} seed ${seed}`).toBe(false);
+          }
+          if (secret) {
+            expect(
+              b.x + MEDAL_SIZE,
+              `stage ${stage} seed ${seed}`
+            ).toBeLessThanOrEqual(secret.x - 8);
+          }
+        }
+      }
+    }
+  );
+
   it("hides a PR Board medal only after a Protein Shake block, so any runner can break it", () => {
     for (const stage of STAGES) {
       for (const seed of SEEDS) {
@@ -320,25 +392,50 @@ describe("placeStageExtras", () => {
 
 describe("hideFoundMedals", () => {
   it("takes found free medals out and keeps the rest", () => {
-    const { course, props } = laid(1, SEEDS[0]);
-    const [first, ...rest] = course.medals ?? [];
+    const found = SEEDS.map((seed) => laid(1, seed)).find(
+      ({ course }) => (course.medals ?? []).length > 0
+    );
+    expect(found).toBeDefined();
+    const { course, props } = found!;
+    const [first] = course.medals ?? [];
     expect(first).toBeDefined();
     const hidden = hideFoundMedals(course, props, [first.id]);
-    expect(hidden.course.medals ?? []).toEqual(rest);
+    expect(hidden.course.medals ?? []).toEqual(
+      (course.medals ?? []).filter((m) => m.id !== first.id)
+    );
   });
 
   it("turns a found PR Board medal into a plain brick, still a brick", () => {
     const found = SEEDS.map((seed) => laid(1, seed)).find(({ course }) =>
-      course.blocks.some((b) => b.medalId !== undefined)
+      course.blocks.some((b) => b.contents === "medal")
     );
     expect(found).toBeDefined();
     const { course, props } = found!;
-    const board = course.blocks.find((b) => b.medalId !== undefined)!;
+    const board = course.blocks.find((b) => b.contents === "medal")!;
     const hidden = hideFoundMedals(course, props, [board.medalId!]);
     const plain = hidden.course.blocks.find((b) => b.id === board.id);
     expect(plain?.kind).toBe("brick");
     expect(plain?.contents).toBe("kudos");
     expect(plain?.medalId).toBeUndefined();
+  });
+
+  it("turns a found Second Wind block into a plain Kudos sync block", () => {
+    const found =
+      SEEDS.map((seed) => laid(1, seed)).find(({ course }) =>
+        course.blocks.some((b) => b.contents === "wind")
+      ) ??
+      SEEDS.map((seed) => laid(3, seed)).find(({ course }) =>
+        course.blocks.some((b) => b.contents === "wind")
+      );
+    expect(found).toBeDefined();
+    const { course, props } = found!;
+    const wind = course.blocks.find((b) => b.contents === "wind")!;
+    const hidden = hideFoundMedals(course, props, [wind.medalId!]);
+    const plain = hidden.course.blocks.find((b) => b.id === wind.id);
+    expect(plain?.kind).toBe("sync");
+    expect(plain?.contents).toBe("kudos");
+    expect(plain?.medalId).toBeUndefined();
+    expect(plain?.windKind).toBeUndefined();
   });
 
   it("clears a found station's medal from its bonus room", () => {

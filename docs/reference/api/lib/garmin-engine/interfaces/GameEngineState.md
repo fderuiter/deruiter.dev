@@ -553,6 +553,15 @@ Fractional score (0 to under 1) carried between ticks.
 
 ***
 
+### secondWind?
+
+> `optional` **secondWind?**: [`SecondWind`](../../garmin-second-wind/interfaces/SecondWind.md) \| `null`
+
+The Second Wind event running, if any (#2026). Started by a wind Sync
+Block, ended by its timer, a lost life or a stage clear; null otherwise.
+
+***
+
 ### secretExits?
 
 > `optional` **secretExits?**: `number`[]

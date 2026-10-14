@@ -8,6 +8,7 @@
  * This module only lays the course out and answers geometry questions about
  * it. The engine in `lib/garmin-engine.ts` moves the runner through it.
  */
+import type { SecondWindKind } from "./garmin-second-wind";
 import { clamp } from "./game-utils";
 import { isWaterTheme, type StageTheme } from "./garmin-themes";
 
@@ -83,10 +84,16 @@ export interface CourseBlock {
   /** Top surface. */
   y: number;
   kind: "sync" | "brick";
-  contents: "kudos" | "power" | "cape" | "high" | "suit" | "buddy" | "medal";
+  contents:
+    "kudos" | "power" | "cape" | "high" | "suit" | "buddy" | "medal" | "wind";
   used: boolean;
-  /** Id of the Finisher Medal a PR Board hides; breaking it finds the medal (#2025). */
+  /**
+   * Id of the Finisher Medal a PR Board hides, found by breaking it (#2025),
+   * or that a Second Wind block pays out when its goal is met (#2026).
+   */
   medalId?: number;
+  /** The event a Second Wind block starts (#2026). */
+  windKind?: SecondWindKind;
   /** A Kudos turned into a brick by a Rest Day (#1992); it turns back after. */
   fromKudos?: boolean;
 }

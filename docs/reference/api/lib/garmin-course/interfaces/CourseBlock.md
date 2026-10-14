@@ -16,7 +16,7 @@ plain solid footing.
 
 ### contents
 
-> **contents**: `"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"` \| `"buddy"` \| `"medal"`
+> **contents**: `"suit"` \| `"cape"` \| `"kudos"` \| `"power"` \| `"high"` \| `"buddy"` \| `"medal"` \| `"wind"`
 
 ***
 
@@ -44,13 +44,22 @@ A Kudos turned into a brick by a Rest Day (#1992); it turns back after.
 
 > `optional` **medalId?**: `number`
 
-Id of the Finisher Medal a PR Board hides; breaking it finds the medal (#2025).
+Id of the Finisher Medal a PR Board hides, found by breaking it (#2025),
+or that a Second Wind block pays out when its goal is met (#2026).
 
 ***
 
 ### used
 
 > **used**: `boolean`
+
+***
+
+### windKind?
+
+> `optional` **windKind?**: [`SecondWindKind`](../../garmin-second-wind/type-aliases/SecondWindKind.md)
+
+The event a Second Wind block starts (#2026).
 
 ***
 

@@ -230,6 +230,7 @@
 - [lib/garmin-moves](lib/garmin-moves/README.md)
 - [lib/garmin-powerups](lib/garmin-powerups/README.md)
 - [lib/garmin-props](lib/garmin-props/README.md)
+- [lib/garmin-second-wind](lib/garmin-second-wind/README.md)
 - [lib/garmin-splits](lib/garmin-splits/README.md)
 - [lib/garmin-swim](lib/garmin-swim/README.md)
 - [lib/garmin-telemetry](lib/garmin-telemetry/README.md)

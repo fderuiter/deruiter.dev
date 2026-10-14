@@ -626,6 +626,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Exits",
       },
       {
+        title: "Second Wind",
+        detail:
+          "Some stages hide a Second Wind in one of their Sync Blocks. Bump it to start a 15-second event that remixes the stage, then everything snaps back. Hill Repeats tilts the lane into climbs and descents: run 100 m to clear it. Taper Week eases gravity so every jump floats: grab 6 Kudos. Fun Run turns the foes into cheering fans, and touching one is a high five that hands out a Kudos instead of a hit: high-five 2 fans. Night Run leaves only a headlamp cone lit: take no hits. Clearing an event pays out the Finisher Medal its block holds, with a Second Wind! toast. A lost life or a stage clear ends the event early, and its medal waits for another run.",
+        badge: "Wind",
+      },
+      {
         title: "Course Foes",
         detail:
           "Each stage adds its own gym foes. A Kettlebell tips over when you stomp it, then slides when you touch or kick it, and a sliding kettlebell flattens anything in its path. A Move Alert (the watch nagging you to move) flies in waves; stomp it to clip its wings. A Box Jumper hops toward you on a timer. An Auto Lap is a lap timer that buzzes lap pings at you while it is on screen. The Rep Max, a gym bro who lobs dumbbells, waits on stages 3 and 5. It takes three stomps or six hits, and pays 2,000.",

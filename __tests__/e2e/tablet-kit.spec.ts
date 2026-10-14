@@ -577,3 +577,202 @@ test.describe("Quasi-Perfect Puzzler on a tablet (iPad projects, #2042)", () => 
     expect(blocking).toEqual([]);
   });
 });
+
+const PD_ROUTE = "/protocol-drift";
+const PD_ROOT = ".pd-touch";
+const PD_INSPECTOR = `${PD_ROOT} [data-testid="inspector"]`;
+
+/**
+ * Launches the Protocol Drift cabinet. The workbench loads after the cabinet
+ * opens, so this waits for the immersive cabinet and the briefing (#2045).
+ */
+async function launchProtocolDriftCabinet(page: Page) {
+  const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+  await expect(async () => {
+    if ((await page.locator(IMMERSIVE).count()) > 0) return;
+    await launch.tap({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 180000 });
+  await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 90000 });
+  await expect(page.locator(PD_ROOT)).toBeVisible({ timeout: 90000 });
+}
+
+test.describe("Protocol Drift on a tablet (iPad projects, #2045)", () => {
+  test.setTimeout(240000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(PD_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches fit to the viewport", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchProtocolDriftCabinet(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expect(page.locator(PD_ROOT)).toBeVisible();
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the workbench fits both orientations: header, strip, canvas, inspector and footer stay on screen", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    const viewport = page.viewportSize();
+    expect(viewport).not.toBeNull();
+    const parts = [
+      `${PD_ROOT} > header`,
+      `${PD_ROOT} > section`,
+      `${PD_ROOT} > footer`,
+      `${PD_ROOT} .react-flow`,
+      PD_INSPECTOR,
+    ];
+    for (const selector of parts) {
+      const boxes = page.locator(selector);
+      const count = await boxes.count();
+      for (let i = 0; i < count; i += 1) {
+        const box = await boxes.nth(i).boundingBox();
+        if (!box || box.width <= 1) continue;
+        expect(box.x, `${selector} ${i} left`).toBeGreaterThanOrEqual(-1);
+        expect(box.x + box.width, `${selector} ${i} right`).toBeLessThanOrEqual(
+          viewport!.width + 1
+        );
+        expect(
+          box.y + box.height,
+          `${selector} ${i} bottom`
+        ).toBeLessThanOrEqual(viewport!.height + 1);
+      }
+    }
+    const canvas = await page.locator(`${PD_ROOT} .react-flow`).boundingBox();
+    expect(canvas).not.toBeNull();
+    expect(canvas!.height).toBeGreaterThanOrEqual(200);
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the page cannot scroll behind the open cabinet", async ({ page }) => {
+    await launchProtocolDriftCabinet(page);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("the canvas keeps its pan and pinch gestures inside itself", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    const touchAction = await page
+      .locator(`${PD_ROOT} .react-flow`)
+      .evaluate((el) => getComputedStyle(el).touchAction);
+    expect(touchAction).toBe("none");
+  });
+
+  test("every on-screen control is at least 44px, and no text is under 12px", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    const controls = page.locator(`${PD_ROOT} button:visible`);
+    await expect(controls.first()).toBeVisible({ timeout: 60000 });
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
+    const small: string[] = [];
+    for (let i = 0; i < count; i += 1) {
+      const box = await controls.nth(i).boundingBox();
+      // Screen-reader-only copy is a 1px box, not a control.
+      if (!box || box.width <= 1) continue;
+      if (box.width < 44 || box.height < 44) {
+        small.push(`${i}: ${Math.round(box.width)}x${Math.round(box.height)}`);
+      }
+    }
+    expect(small).toEqual([]);
+    const tinyText = await page.evaluate((root) => {
+      const el = document.querySelector(root);
+      if (!el) return ["no workbench root"];
+      const offenders: string[] = [];
+      el.querySelectorAll<HTMLElement>("*").forEach((node) => {
+        const hasOwnText = Array.from(node.childNodes).some(
+          (child) =>
+            child.nodeType === Node.TEXT_NODE &&
+            (child.textContent ?? "").trim().length > 0
+        );
+        if (!hasOwnText) return;
+        const style = getComputedStyle(node);
+        if (style.display === "none") return;
+        if (parseFloat(style.fontSize) < 12) {
+          offenders.push(
+            `${node.tagName} ${style.fontSize} ${node.textContent?.trim().slice(0, 40)}`
+          );
+        }
+      });
+      return offenders.slice(0, 10);
+    }, PD_ROOT);
+    expect(tinyText).toEqual([]);
+  });
+
+  test("the briefing fits the screen, and Escape keeps the cabinet open", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    const dialog = page.getByRole("dialog", { name: /Trial Briefing/ });
+    await expect(dialog).toBeVisible();
+    const viewport = page.viewportSize();
+    const box = await dialog.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
+    await assertNoHorizontalOverflow(page);
+    // The briefing must be accepted, so Escape holds the press (#2045).
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeVisible();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await page
+      .getByRole("button", { name: /accept assignment/i })
+      .tap({ timeout: 15000 });
+    await expect(dialog).toBeHidden();
+  });
+
+  test("an expanded inspector docks on Escape, and the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    await page
+      .getByRole("button", { name: /accept assignment/i })
+      .tap({ timeout: 15000 });
+    await page.getByRole("button", { name: /Expand \(I\)/ }).tap();
+    await expect(page.locator(PD_INSPECTOR)).toHaveAttribute(
+      "data-expanded",
+      "true"
+    );
+    await page.keyboard.press("Escape");
+    await expect(page.locator(PD_INSPECTOR)).toHaveAttribute(
+      "data-expanded",
+      "false"
+    );
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the immersive cabinet has no blocking axe violations", async ({
+    page,
+  }) => {
+    await launchProtocolDriftCabinet(page);
+    const results = await new AxeBuilder({ page })
+      .include(IMMERSIVE)
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+      .analyze();
+    const blocking = results.violations
+      .filter((v) => BLOCKING.has(v.impact ?? ""))
+      .map(
+        (v) =>
+          `${v.id} (${v.impact}): ${v.nodes.map((n) => `${n.target.join(" ")} ${n.html.slice(0, 160)}`).join(" / ")}`
+      );
+    expect(blocking).toEqual([]);
+  });
+});

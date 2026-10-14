@@ -88,7 +88,10 @@ export function ProtocolDriftGame() {
     };
     window.addEventListener(PROTOCOL_DRIFT_AUTO_PAUSE_EVENT, pauseIfRunning);
     return () =>
-      window.removeEventListener(PROTOCOL_DRIFT_AUTO_PAUSE_EVENT, pauseIfRunning);
+      window.removeEventListener(
+        PROTOCOL_DRIFT_AUTO_PAUSE_EVENT,
+        pauseIfRunning
+      );
   }, []);
 
   useEffect(() => {

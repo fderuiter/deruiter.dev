@@ -25,6 +25,7 @@ vi.mock("@/lib/meme-audio", () => ({
   isSoundAllowed: () => false,
   connectMemeAnalyser: () => null,
   releaseMemeAnalyser: vi.fn(),
+  unlockMemeAudio: vi.fn(),
 }));
 
 // #1652: the Terminal Cowboy and Friday Deploy Survivor hints said "the

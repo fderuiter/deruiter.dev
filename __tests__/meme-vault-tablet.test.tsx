@@ -1,8 +1,7 @@
 // @vitest-environment jsdom
 //
-// #2071: Meme Vault on an iPad. A finger or Pencil presses a pad on
-// pointerdown and its trailing click is dropped; a mouse and the keyboard
-// press on click. Echo stops its playback timers while the page is hidden and
+// #2071: Meme Vault on an iPad. Every pad press is a click, so a scroll that
+// starts on a pad (pointerdown then pointercancel) plays nothing. Echo stops its playback timers while the page is hidden and
 // replays the sequence when it comes back.
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -133,76 +132,45 @@ describe("Meme Vault pads by touch (#2071)", () => {
     vi.unstubAllGlobals();
   });
 
-  it("plays a touch tap once, on pointerdown, and resumes audio on its click", () => {
+  it("plays a touch or Pencil tap once, on its click, and resumes audio", () => {
     renderVault();
-    act(() => {
-      fireEvent.pointerDown(pad(0), { pointerType: "touch", button: 0 });
-    });
+    tap(pad(0));
     expect(meme.playMemeSound).toHaveBeenCalledTimes(1);
     expect(meme.playMemeSound).toHaveBeenCalledWith(
       SOUNDBOARD_BUTTONS[0].synthType
     );
-    act(() => {
-      fireEvent.pointerUp(pad(0), { pointerType: "touch", button: 0 });
-      fireEvent.click(pad(0), { detail: 1 });
-    });
-    expect(meme.playMemeSound).toHaveBeenCalledTimes(1);
     expect(meme.unlockMemeAudio).toHaveBeenCalledTimes(1);
-  });
-
-  it("treats the Pencil like a finger", () => {
-    renderVault();
     tap(pad(1), "pen");
-    expect(meme.playMemeSound).toHaveBeenCalledTimes(1);
+    expect(meme.playMemeSound).toHaveBeenCalledTimes(2);
   });
 
-  it("plays each of two fast taps and two simultaneous touches once", () => {
+  it("does not play on pointerdown, so a scroll that starts on a pad stays silent", () => {
     renderVault();
-    tap(pad(2));
-    tap(pad(2));
-    expect(meme.playMemeSound).toHaveBeenCalledTimes(2);
-    meme.playMemeSound.mockClear();
-    act(() => {
-      fireEvent.pointerDown(pad(3), { pointerType: "touch", pointerId: 1 });
-      fireEvent.pointerDown(pad(4), { pointerType: "touch", pointerId: 2 });
-      fireEvent.pointerUp(pad(3), { pointerType: "touch", pointerId: 1 });
-      fireEvent.pointerUp(pad(4), { pointerType: "touch", pointerId: 2 });
-      fireEvent.click(pad(3), { detail: 1 });
-      fireEvent.click(pad(4), { detail: 1 });
-    });
-    expect(meme.playMemeSound.mock.calls.map(([type]) => type)).toEqual([
-      SOUNDBOARD_BUTTONS[3].synthType,
-      SOUNDBOARD_BUTTONS[4].synthType,
-    ]);
-  });
-
-  it("presses a mouse click on click, and a keyboard click, and a cancelled touch plays nothing more", () => {
-    renderVault();
-    act(() => {
-      fireEvent.pointerDown(pad(0), { pointerType: "mouse", button: 0 });
-    });
-    expect(meme.playMemeSound).not.toHaveBeenCalled();
-    act(() => {
-      fireEvent.click(pad(0), { detail: 1 });
-    });
-    expect(meme.playMemeSound).toHaveBeenCalledTimes(1);
-    // Space or Enter on a focused pad is a click with no detail.
-    act(() => {
-      fireEvent.click(pad(1), { detail: 0 });
-    });
-    expect(meme.playMemeSound).toHaveBeenCalledTimes(2);
-    // A touch that becomes a scroll presses on pointerdown only.
     act(() => {
       fireEvent.pointerDown(pad(2), { pointerType: "touch", button: 0 });
       fireEvent.pointerCancel(pad(2), { pointerType: "touch" });
     });
-    expect(meme.playMemeSound).toHaveBeenCalledTimes(3);
-    expect(meme.unlockMemeAudio).not.toHaveBeenCalled();
+    expect(meme.playMemeSound).not.toHaveBeenCalled();
+    expect(
+      document.querySelectorAll('.meme-pad[data-lit="true"]')
+    ).toHaveLength(0);
+  });
+
+  it("plays a mouse click and a keyboard click once each", () => {
+    renderVault();
+    act(() => {
+      fireEvent.click(pad(0), { detail: 1 });
+    });
+    act(() => {
+      fireEvent.click(pad(1), { detail: 0 });
+    });
+    expect(meme.playMemeSound).toHaveBeenCalledTimes(2);
   });
 
   it("answers an Echo round by touch", () => {
     renderVault();
     fireEvent.click(screen.getByRole("button", { name: "Start Echo" }));
+    expect(meme.unlockMemeAudio).toHaveBeenCalled();
     meme.playMemeSound.mockClear();
     for (let i = 0; i < 200 && !status().startsWith("Your turn"); i++) {
       act(() => {

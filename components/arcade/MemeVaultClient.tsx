@@ -215,6 +215,9 @@ export const MemeVaultClient: React.FC = () => {
   // A pad press is an Echo answer while a round runs, a sample otherwise.
   const handlePadPress = useCallback(
     (button: SoundboardButton) => {
+      // A tap or key is a gesture the browser accepts for audio, so a
+      // suspended context resumes here.
+      unlockMemeAudio();
       const index = SOUNDBOARD_BUTTONS.findIndex((b) => b.id === button.id);
       if (index >= 0 && pressEcho(index)) return;
       handlePlaySound(button);
@@ -412,7 +415,10 @@ export const MemeVaultClient: React.FC = () => {
               <EchoConsole
                 round={echo.round}
                 best={echo.best}
-                onStart={echo.start}
+                onStart={() => {
+                  unlockMemeAudio();
+                  echo.start();
+                }}
                 onStop={echo.stop}
                 silentReason={silentReason}
               />
@@ -420,7 +426,6 @@ export const MemeVaultClient: React.FC = () => {
                 pads={SOUNDBOARD_BUTTONS}
                 activeId={echo.litId ?? activeSound}
                 onPress={handlePadPress}
-                onTapEnd={() => unlockMemeAudio()}
               />
             </div>
           </div>

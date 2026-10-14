@@ -45,6 +45,7 @@ vi.mock("@/lib/meme-audio", () => ({
   isSoundAllowed: () => true,
   connectMemeAnalyser: () => null,
   releaseMemeAnalyser: vi.fn(),
+  unlockMemeAudio: vi.fn(),
 }));
 
 import { MemeVaultClient } from "@/components/arcade/MemeVaultClient";

@@ -1058,30 +1058,40 @@ test.describe("Meme Vault on a tablet (iPad projects, #2071)", () => {
     expect((await litLog(page)).length).toBeGreaterThanOrEqual(17);
   });
 
-  test("two fingers on two pads both play", async ({ page }) => {
+  test("a touch drag that starts on a pad scrolls the page and plays nothing", async ({
+    page,
+  }) => {
     await tapFirstPadUntilHydrated(page);
+    await scrollEchoIntoPlace(page);
+    await settleScroll(page);
     await watchLitPads(page);
-    const pads = page.locator(MEME_PAD);
-    await pads.nth(2).scrollIntoViewIfNeeded();
-    const a = await pads.nth(2).boundingBox();
-    const b = await pads.nth(3).boundingBox();
-    expect(a && b).toBeTruthy();
-    const points = [
-      { x: a!.x + a!.width / 2, y: a!.y + a!.height / 2, id: 1 },
-      { x: b!.x + b!.width / 2, y: b!.y + b!.height / 2, id: 2 },
-    ];
+    const before = await page.evaluate(() => window.scrollY);
+    const box = await page.locator(MEME_PAD).nth(5).boundingBox();
+    expect(box).not.toBeNull();
+    const x = box!.x + box!.width / 2;
+    const y = Math.min(
+      box!.y + box!.height / 2,
+      page.viewportSize()!.height - 40
+    );
     const cdp = await page.context().newCDPSession(page);
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchStart",
-      touchPoints: points,
+      touchPoints: [{ x, y }],
     });
+    for (let step = 1; step <= 6; step += 1) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [{ x, y: y - step * 25 }],
+      });
+    }
+    await page.waitForTimeout(150);
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchEnd",
       touchPoints: [],
     });
-    await expect
-      .poll(async () => new Set(await litLog(page)).size)
-      .toBeGreaterThanOrEqual(2);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(before);
+    expect(await litLog(page)).toEqual([]);
   });
 
   test("an Echo round starts and is answered by taps, twice in a row", async ({

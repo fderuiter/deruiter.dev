@@ -10,16 +10,7 @@ interface SamplerPadsProps {
   /** Id of the pad whose sound is playing, or null. */
   activeId: string | null;
   onPress: (pad: SoundboardButton) => void;
-  /**
-   * Called for the click a touch or Pencil tap leaves behind after its
-   * pointerdown already pressed the pad. A tap is the first user gesture the
-   * browser accepts for audio, so this is where a suspended context resumes.
-   */
-  onTapEnd?: () => void;
 }
-
-/** A click this soon after a touch or pen lift is that tap's own click. */
-const TAP_CLICK_WINDOW_MS = 700;
 
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -33,48 +24,13 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * narrow container). Each pad carries a key-cap label and a pictogram, lights
  * emerald while its sound plays, and answers to keys 1 to 8.
  */
-export function SamplerPads({
-  pads,
-  activeId,
-  onPress,
-  onTapEnd,
-}: SamplerPadsProps) {
+export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
   const onPressRef = useRef(onPress);
   const padsRef = useRef(pads);
-  // When the last touch or pen contact lifted, to recognise its click.
-  const lastTapEndRef = useRef(Number.NEGATIVE_INFINITY);
   useEffect(() => {
     onPressRef.current = onPress;
     padsRef.current = pads;
   });
-
-  // A finger or Pencil presses on pointerdown, for low latency. A mouse and
-  // the keyboard press on click, as before. The click that follows a tap is
-  // dropped, so one tap plays once.
-  const onPointerDown = (
-    event: React.PointerEvent<HTMLButtonElement>,
-    pad: SoundboardButton
-  ) => {
-    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-    if (event.button > 0) return;
-    onPress(pad);
-  };
-  const onPointerEnd = (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (event.pointerType === "touch" || event.pointerType === "pen") {
-      lastTapEndRef.current = event.timeStamp;
-    }
-  };
-  const onClick = (event: React.MouseEvent, pad: SoundboardButton) => {
-    // Keyboard and assistive clicks have detail 0 and never follow a tap.
-    const followsTap =
-      event.detail > 0 &&
-      event.timeStamp - lastTapEndRef.current < TAP_CLICK_WINDOW_MS;
-    if (followsTap) {
-      onTapEnd?.();
-      return;
-    }
-    onPress(pad);
-  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -104,9 +60,7 @@ export function SamplerPads({
             <button
               key={pad.id}
               type="button"
-              onPointerDown={(event) => onPointerDown(event, pad)}
-              onPointerUp={onPointerEnd}
-              onClick={(event) => onClick(event, pad)}
+              onClick={() => onPress(pad)}
               aria-label={`Play ${pad.label}`}
               aria-keyshortcuts={key}
               aria-describedby={`meme-pad-desc-${pad.id}`}

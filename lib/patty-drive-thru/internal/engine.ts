@@ -43,6 +43,7 @@ import {
   SCORE_STREAK_MAX_LINKS,
   SCORE_STREAK_STEP,
   SHIFT_PAID_MINUTES,
+  SOLIDARITY_START,
   SOS_GAIN_FAST,
   SOS_GAIN_ON_TIME,
   SOS_LOSS_EXPIRED,
@@ -71,6 +72,13 @@ import type {
   StartMeters,
   StepResult,
 } from "../types";
+import {
+  dilemmaWindowOf,
+  getDilemmaOption,
+  getDilemmaPayCents,
+  resolveDilemma,
+  stepDilemmas,
+} from "./dilemmas";
 
 const MIN_DURATION_SEC = 10;
 const MAX_DURATION_SEC = 3600;
@@ -137,19 +145,32 @@ function startMetersOf(value: unknown): StartMeters | undefined {
   if (typeof sos !== "number" || !Number.isFinite(sos)) return undefined;
   if (typeof dignity !== "number" || !Number.isFinite(dignity))
     return undefined;
-  return { sos: clamp(sos, 1, 100), dignity: clamp(dignity, 1, 100) };
+  const { solidarity } = value as Record<string, unknown>;
+  return {
+    sos: clamp(sos, 1, 100),
+    dignity: clamp(dignity, 1, 100),
+    // Solidarity is carried whole when a week passes it on (#2087).
+    ...(typeof solidarity === "number" && Number.isFinite(solidarity)
+      ? { solidarity: clamp(solidarity, 0, 100) }
+      : {}),
+  };
 }
 
 /** The week-mode settings a config sets, each only when it is valid (#2086). */
 function weekSettings(
   config: Partial<ShiftConfig>
-): Pick<ShiftConfig, "rushWindows" | "ageUnlocked" | "startMeters"> {
+): Pick<
+  ShiftConfig,
+  "rushWindows" | "ageUnlocked" | "startMeters" | "dilemmaWindowSec"
+> {
   const rushWindows = rushWindowsOf(config.rushWindows);
   const startMeters = startMetersOf(config.startMeters);
+  const dilemmaWindowSec = dilemmaWindowOf(config.dilemmaWindowSec);
   return {
     ...(rushWindows ? { rushWindows } : {}),
     ...(config.ageUnlocked === true ? { ageUnlocked: true } : {}),
     ...(startMeters ? { startMeters } : {}),
+    ...(dilemmaWindowSec !== undefined ? { dilemmaWindowSec } : {}),
   };
 }
 
@@ -176,7 +197,12 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
     config: { seed, durationSec, ...scenarioDials(config), ...week },
     time: 0,
     outcome: "playing",
-    meters: { ...METER_START, ...week.startMeters },
+    meters: {
+      ...METER_START,
+      ...(week.startMeters
+        ? { sos: week.startMeters.sos, dignity: week.startMeters.dignity }
+        : {}),
+    },
     orders: [],
     pos: { path: [], activeOrderId: null, taps: 0 },
     tallies: {
@@ -197,6 +223,9 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
     nextOrderId: 1,
     nextArrivalAt: scenarioDials(config).firstArrivalSec ?? FIRST_ARRIVAL_SEC,
     draws: 0,
+    solidarity: week.startMeters?.solidarity ?? SOLIDARITY_START,
+    dilemma: null,
+    dilemmaChoices: [],
   };
 }
 
@@ -279,7 +308,10 @@ export function computePayStub(state: ShiftState): PayStub {
       : 0;
   const paidMinutes = Math.round(SHIFT_PAID_MINUTES * fraction);
   const grossCents = Math.round((WAGE_CENTS_PER_HOUR * paidMinutes) / 60);
-  const tillShortCents = state.tallies.expired * TILL_SHORT_PER_EXPIRED_CENTS;
+  // A coworker's short till the player covered comes out here too (#2087).
+  const tillShortCents =
+    state.tallies.expired * TILL_SHORT_PER_EXPIRED_CENTS +
+    getDilemmaPayCents(state.dilemmaChoices ?? []);
   const netCents = Math.max(
     0,
     grossCents -
@@ -361,7 +393,8 @@ export function getArrivalGapScale(
 
 /**
  * Advances the shift by `dtSec` seconds: new orders arrive, old ones expire,
- * a flagged coworker finishes the coffee, and an idle player gets yelled at.
+ * a flagged coworker finishes the coffee, an idle player gets yelled at, and
+ * a dilemma is put to the player or takes its default answer (#2087).
  * Steps longer than half a second are shortened, so a stalled tab cannot skip
  * the shift.
  */
@@ -455,7 +488,8 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
       ? state.pos
       : { ...state.pos, activeOrderId };
 
-  const next = endIfOver(
+  // Dilemmas run on the same clock and never stop the booth (#2087).
+  const moved = stepDilemmas(
     {
       ...state,
       time,
@@ -469,6 +503,7 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     },
     events
   );
+  const next = endIfOver(moved, events);
   return { state: next, events };
 }
 
@@ -738,6 +773,15 @@ export function applyAction(
         wipeReadyAt: state.time + WIPE_COOLDOWN_SEC,
       };
       break;
+    case "chooseDilemma": {
+      const open = state.dilemma;
+      const option = open
+        ? getDilemmaOption(open.dilemmaId, action.optionId)
+        : undefined;
+      if (!option) break;
+      next = resolveDilemma(acted(state), option, false, events);
+      break;
+    }
     default:
       break;
   }

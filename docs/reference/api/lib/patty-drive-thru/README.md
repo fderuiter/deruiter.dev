@@ -74,6 +74,12 @@ Re-exports [carryMeters](internal/week/functions/carryMeters.md)
 
 ***
 
+### CHOICE\_ENDINGS
+
+Re-exports [CHOICE_ENDINGS](internal/diary/variables/CHOICE_ENDINGS.md)
+
+***
+
 ### CLOSING\_NOTE
 
 Re-exports [CLOSING_NOTE](internal/diary/variables/CLOSING_NOTE.md)
@@ -83,6 +89,12 @@ Re-exports [CLOSING_NOTE](internal/diary/variables/CLOSING_NOTE.md)
 ### COMPANION\_POST\_PATH
 
 Re-exports [COMPANION_POST_PATH](internal/diary/variables/COMPANION_POST_PATH.md)
+
+***
+
+### COMPANY\_MAN\_MAX\_SOLIDARITY
+
+Re-exports [COMPANY_MAN_MAX_SOLIDARITY](presets/variables/COMPANY_MAN_MAX_SOLIDARITY.md)
 
 ***
 
@@ -113,6 +125,12 @@ Re-exports [createShift](internal/engine/functions/createShift.md)
 ### createWeek
 
 Re-exports [createWeek](internal/week/functions/createWeek.md)
+
+***
+
+### DayChoice
+
+Re-exports [DayChoice](types/interfaces/DayChoice.md)
 
 ***
 
@@ -161,6 +179,84 @@ Re-exports [DIGNITY_LOSS_WRONG_ENTRY](presets/variables/DIGNITY_LOSS_WRONG_ENTRY
 ### DIGNITY\_LOSS\_YELL
 
 Re-exports [DIGNITY_LOSS_YELL](presets/variables/DIGNITY_LOSS_YELL.md)
+
+***
+
+### Dilemma
+
+Re-exports [Dilemma](types/interfaces/Dilemma.md)
+
+***
+
+### DILEMMA\_IDS
+
+Re-exports [DILEMMA_IDS](presets/variables/DILEMMA_IDS.md)
+
+***
+
+### DILEMMA\_SEC\_PER
+
+Re-exports [DILEMMA_SEC_PER](presets/variables/DILEMMA_SEC_PER.md)
+
+***
+
+### DILEMMA\_WINDOW\_LIMITS
+
+Re-exports [DILEMMA_WINDOW_LIMITS](presets/variables/DILEMMA_WINDOW_LIMITS.md)
+
+***
+
+### DILEMMA\_WINDOW\_LONG\_SEC
+
+Re-exports [DILEMMA_WINDOW_LONG_SEC](presets/variables/DILEMMA_WINDOW_LONG_SEC.md)
+
+***
+
+### DILEMMA\_WINDOW\_SEC
+
+Re-exports [DILEMMA_WINDOW_SEC](presets/variables/DILEMMA_WINDOW_SEC.md)
+
+***
+
+### DilemmaChoice
+
+Re-exports [DilemmaChoice](types/interfaces/DilemmaChoice.md)
+
+***
+
+### DilemmaId
+
+Re-exports [DilemmaId](types/type-aliases/DilemmaId.md)
+
+***
+
+### DilemmaOption
+
+Re-exports [DilemmaOption](types/interfaces/DilemmaOption.md)
+
+***
+
+### DILEMMAS
+
+Re-exports [DILEMMAS](presets/variables/DILEMMAS.md)
+
+***
+
+### DILEMMAS\_PER\_SHIFT
+
+Re-exports [DILEMMAS_PER_SHIFT](presets/variables/DILEMMAS_PER_SHIFT.md)
+
+***
+
+### DilemmaSlot
+
+Re-exports [DilemmaSlot](types/interfaces/DilemmaSlot.md)
+
+***
+
+### DilemmaSpeaker
+
+Re-exports [DilemmaSpeaker](types/type-aliases/DilemmaSpeaker.md)
 
 ***
 
@@ -221,6 +317,36 @@ Re-exports [formatClock](internal/view/functions/formatClock.md)
 ### getArrivalGapScale
 
 Re-exports [getArrivalGapScale](internal/engine/functions/getArrivalGapScale.md)
+
+***
+
+### getChoiceEnding
+
+Re-exports [getChoiceEnding](internal/dilemmas/functions/getChoiceEnding.md)
+
+***
+
+### getDilemma
+
+Re-exports [getDilemma](internal/dilemmas/functions/getDilemma.md)
+
+***
+
+### getDilemmaDiaryLines
+
+Re-exports [getDilemmaDiaryLines](internal/dilemmas/functions/getDilemmaDiaryLines.md)
+
+***
+
+### getDilemmaOption
+
+Re-exports [getDilemmaOption](internal/dilemmas/functions/getDilemmaOption.md)
+
+***
+
+### getDilemmaPlan
+
+Re-exports [getDilemmaPlan](internal/dilemmas/functions/getDilemmaPlan.md)
 
 ***
 
@@ -317,6 +443,12 @@ Re-exports [getWeekDayDiaryLines](internal/week/functions/getWeekDayDiaryLines.m
 ### getWeekDaySeed
 
 Re-exports [getWeekDaySeed](internal/week/functions/getWeekDaySeed.md)
+
+***
+
+### getWeekEnding
+
+Re-exports [getWeekEnding](internal/week/functions/getWeekEnding.md)
 
 ***
 
@@ -536,6 +668,12 @@ Re-exports [NO_PICKLES_CHANCE](presets/variables/NO_PICKLES_CHANCE.md)
 
 ***
 
+### OpenDilemma
+
+Re-exports [OpenDilemma](types/interfaces/OpenDilemma.md)
+
+***
+
 ### Order
 
 Re-exports [Order](types/interfaces/Order.md)
@@ -728,6 +866,12 @@ Re-exports [ShiftConfig](types/interfaces/ShiftConfig.md)
 
 ***
 
+### ShiftEndingId
+
+Re-exports [ShiftEndingId](types/type-aliases/ShiftEndingId.md)
+
+***
+
 ### ShiftEvent
 
 Re-exports [ShiftEvent](types/type-aliases/ShiftEvent.md)
@@ -773,6 +917,12 @@ Re-exports [ShiftTallies](types/interfaces/ShiftTallies.md)
 ### ShiftTelemetry
 
 Re-exports [ShiftTelemetry](internal/telemetry/interfaces/ShiftTelemetry.md)
+
+***
+
+### SOLIDARITY\_START
+
+Re-exports [SOLIDARITY_START](presets/variables/SOLIDARITY_START.md)
 
 ***
 
@@ -869,6 +1019,18 @@ Re-exports [UNIFORM_DEDUCTION_CENTS](presets/variables/UNIFORM_DEDUCTION_CENTS.m
 ### WAGE\_CENTS\_PER\_HOUR
 
 Re-exports [WAGE_CENTS_PER_HOUR](presets/variables/WAGE_CENTS_PER_HOUR.md)
+
+***
+
+### WALKOUT\_MIN\_DIGNITY
+
+Re-exports [WALKOUT_MIN_DIGNITY](presets/variables/WALKOUT_MIN_DIGNITY.md)
+
+***
+
+### WALKOUT\_MIN\_SOLIDARITY
+
+Re-exports [WALKOUT_MIN_SOLIDARITY](presets/variables/WALKOUT_MIN_SOLIDARITY.md)
 
 ***
 

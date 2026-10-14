@@ -6,7 +6,15 @@
  */
 
 import { drawInt } from "../../utils/prng";
-import type { BoothCrew, DiaryIntro, ShiftOutcome, ShiftState } from "../types";
+import { SOLIDARITY_START } from "../presets";
+import type {
+  BoothCrew,
+  DiaryIntro,
+  ShiftEndingId,
+  ShiftOutcome,
+  ShiftState,
+} from "../types";
+import { getChoiceEnding } from "./dilemmas";
 
 /** The people in the booth. */
 export const BOOTH_CREW: BoothCrew = {
@@ -60,7 +68,33 @@ export const EVENT_CAPTIONS = {
   bumped: "Bumped. Next car.",
   wiped: "You wipe the counter. It was already clean.",
   rushStarted: "Lunch rush. Here they come.",
+  dilemmaTimedOut: "Too slow. Somebody decided for you.",
 } as const;
+
+/**
+ * How each ending at close reads (#2087), chosen from Solidarity and Dignity
+ * by `getChoiceEnding`. The tallies sentence follows the summary.
+ */
+export const CHOICE_ENDINGS: Readonly<
+  Record<
+    "company-man" | "silent-exit" | "walkout",
+    { readonly title: string; readonly summary: string }
+  >
+> = {
+  "company-man": {
+    title: "Company man",
+    summary: `${BOOTH_CREW.manager} said I was management material. ${BOOTH_CREW.coworker} clocked out without saying goodbye.`,
+  },
+  "silent-exit": {
+    title: "Silent exit",
+    summary:
+      "I hung up the headset, clocked out and went home without saying much to anyone.",
+  },
+  walkout: {
+    title: "Walkout",
+    summary: `At close, ${BOOTH_CREW.coworker} and I hung up our headsets at the same time and walked out together. ${BOOTH_CREW.manager} worked the window alone.`,
+  },
+};
 
 /** The closing note, the same for every ending. */
 export const CLOSING_NOTE: readonly string[] = [
@@ -93,10 +127,13 @@ function count(value: number, one: string, many: string): string {
 
 /**
  * How the shift ended, as a heading and one paragraph. A shift that is still
- * playing reads as if it closed now.
+ * playing reads as if it closed now. Meter failures win when they happen;
+ * a shift that reached close ends as the Company Man, a Silent Exit or a
+ * Walkout, from its Solidarity and Dignity (#2087).
  */
 export function getShiftEnding(state: ShiftState): {
   readonly outcome: Exclude<ShiftOutcome, "playing">;
+  readonly ending: ShiftEndingId;
   readonly title: string;
   readonly summary: string;
 } {
@@ -104,6 +141,7 @@ export function getShiftEnding(state: ShiftState): {
   if (state.outcome === "docked") {
     return {
       outcome: "docked",
+      ending: "docked",
       title: "Pulled off the window",
       summary: `${BOOTH_CREW.manager} pulled you off the window. Corporate watches the drive-thru times, so ${BOOTH_CREW.manager} watches you.`,
     };
@@ -111,14 +149,21 @@ export function getShiftEnding(state: ShiftState): {
   if (state.outcome === "breakdown") {
     return {
       outcome: "breakdown",
+      ending: "breakdown",
       title: "The walk-in cooler",
       summary:
         "You went and stood in the walk-in cooler for a while. Everyone does eventually. Nobody talks about it.",
     };
   }
+  const ending = getChoiceEnding(
+    state.solidarity ?? SOLIDARITY_START,
+    state.meters.dignity
+  );
+  const written = CHOICE_ENDINGS[ending];
   return {
     outcome: "completed",
-    title: "Made it to close",
-    summary: `Shift over. ${count(served, "car", "cars")} served, ${late} of them late, ${expired} gave up and drove off.`,
+    ending,
+    title: written.title,
+    summary: `${written.summary} ${count(served, "car", "cars")} served, ${late} of them late, ${expired} gave up and drove off.`,
   };
 }

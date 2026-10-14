@@ -6,6 +6,6 @@
 
 # Type Alias: ShiftAction
 
-> **ShiftAction** = \{ `orderId`: `number`; `type`: `"selectOrder"`; \} \| \{ `nodeId`: `string`; `type`: `"posTap"`; \} \| \{ `type`: `"posBack"`; \} \| \{ `type`: `"posHome"`; \} \| \{ `orderId`: `number`; `type`: `"reenterDrink"`; \} \| \{ `orderId`: `number`; `type`: `"flagCoworker"`; \} \| \{ `orderId`: `number`; `type`: `"bump"`; \} \| \{ `type`: `"wipe"`; \}
+> **ShiftAction** = \{ `orderId`: `number`; `type`: `"selectOrder"`; \} \| \{ `nodeId`: `string`; `type`: `"posTap"`; \} \| \{ `type`: `"posBack"`; \} \| \{ `type`: `"posHome"`; \} \| \{ `orderId`: `number`; `type`: `"reenterDrink"`; \} \| \{ `orderId`: `number`; `type`: `"flagCoworker"`; \} \| \{ `orderId`: `number`; `type`: `"bump"`; \} \| \{ `type`: `"wipe"`; \} \| \{ `optionId`: `string`; `type`: `"chooseDilemma"`; \}
 
 Everything the player can do.

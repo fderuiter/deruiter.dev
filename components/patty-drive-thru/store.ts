@@ -10,6 +10,8 @@ import {
   createShift,
   createWeek,
   describeOrder,
+  getDilemma,
+  getDilemmaOption,
   getHeadsetLine,
   getKdsBand,
   getManagerLine,
@@ -20,6 +22,7 @@ import {
   recordWeekDay,
   stepLook,
   stepShift,
+  type DilemmaSpeaker,
   type LookInput,
   type LookPreset,
   type LookState,
@@ -78,7 +81,12 @@ export interface BoothActions {
    * the week given, such as one loaded from a save. With neither, the week
    * already under way.
    */
-  clockInWeek: (start?: { seed?: string; week?: WeekState }) => void;
+  clockInWeek: (start?: {
+    seed?: string;
+    week?: WeekState;
+    /** Seconds to answer a dilemma (#2087); kept for the rest of the week. */
+    dilemmaWindowSec?: number;
+  }) => void;
   /** Goes back to the diary intro. */
   backToIntro: () => void;
   /** Advances the shift clock. */
@@ -98,9 +106,11 @@ export interface BoothActions {
 export type BoothStore = StoreApi<BoothState & BoothActions>;
 
 const CAPTION_PRIORITY: Partial<Record<ShiftEvent["type"], number>> = {
+  "dilemma-offered": 7,
   "manager-yell": 6,
   "order-expired": 5,
   "rush-started": 5,
+  "dilemma-resolved": 5,
   locked: 4,
   "drink-dropped": 4,
   "wrong-entry": 3,
@@ -110,6 +120,16 @@ const CAPTION_PRIORITY: Partial<Record<ShiftEvent["type"], number>> = {
   "drink-reentered": 1,
   wiped: 1,
 };
+
+/** Whose voice a dilemma comes in, as a caption speaker (#2087). */
+const DILEMMA_SPEAKER: Record<DilemmaSpeaker, CaptionSpeaker> = {
+  manager: "manager",
+  coworker: "coworker",
+  customer: "headset",
+};
+
+/** The keys that answer a dilemma, first option then second (#2087). */
+export const DILEMMA_KEYS = ["Q", "E"] as const;
 
 function captionFor(
   event: ShiftEvent,
@@ -158,6 +178,18 @@ function captionFor(
       return { speaker: "booth", text: EVENT_CAPTIONS.wiped };
     case "rush-started":
       return { speaker: "manager", text: EVENT_CAPTIONS.rushStarted };
+    case "dilemma-offered": {
+      const dilemma = getDilemma(event.dilemmaId);
+      return {
+        speaker: DILEMMA_SPEAKER[dilemma.speaker],
+        text: dilemma.prompt,
+      };
+    }
+    case "dilemma-resolved":
+      // The player's own answer needs no caption; the clock's does.
+      return event.timedOut
+        ? { speaker: "booth", text: EVENT_CAPTIONS.dilemmaTimedOut }
+        : null;
     default:
       return null;
   }
@@ -188,6 +220,23 @@ function announce(events: readonly ShiftEvent[], shift: ShiftState): string {
         parts.push(`New car, order ${order.id}: ${describeOrder(order)}.`);
     } else if (event.type === "shift-ended") {
       parts.push("The shift is over.");
+    } else if (event.type === "dilemma-offered") {
+      const dilemma = getDilemma(event.dilemmaId);
+      const open = shift.dilemma;
+      const seconds = open ? Math.round(open.closesAt - open.offeredAt) : 0;
+      const [first, second] = dilemma.options;
+      parts.push(
+        `${dilemma.prompt} Press ${DILEMMA_KEYS[0]} to ${first.label.toLowerCase()}, or ${DILEMMA_KEYS[1]} to ${second.label.toLowerCase()}. ${seconds} seconds.`
+      );
+    } else if (event.type === "dilemma-resolved") {
+      const option = getDilemmaOption(event.dilemmaId, event.optionId);
+      if (option) {
+        parts.push(
+          event.timedOut
+            ? `${EVENT_CAPTIONS.dilemmaTimedOut} ${option.label}.`
+            : `You chose: ${option.label}.`
+        );
+      }
     } else {
       const caption = captionFor(event, shift);
       if (caption) parts.push(caption.text);
@@ -202,9 +251,13 @@ function lateOrders(shift: ShiftState): number[] {
     .map((order) => order.id);
 }
 
-/** A config with every scenario dial removed, keeping the seed and length. */
+/**
+ * A config with every scenario dial and the dilemma window removed, keeping
+ * the seed and length.
+ */
 function withoutDials(config: Partial<ShiftConfig>): Partial<ShiftConfig> {
   const kept: Partial<ShiftConfig> = { ...config };
+  delete (kept as Record<string, unknown>).dilemmaWindowSec;
   for (const key of Object.keys(SCENARIO_LIMITS) as Array<
     keyof typeof SCENARIO_LIMITS
   >)
@@ -224,6 +277,8 @@ export function createBoothStore(
   const listeners = new Set<(events: readonly ShiftEvent[]) => void>();
   let captionId = 0;
   let baseConfig = config;
+  // The dilemma window the week was started with (#2087).
+  let weekDilemmaWindowSec: number | undefined;
 
   return createStore<BoothState & BoothActions>()((set, get) => {
     const absorb = (shift: ShiftState, events: readonly ShiftEvent[]) => {
@@ -305,6 +360,8 @@ export function createBoothStore(
           start?.week ??
           (start?.seed !== undefined ? createWeek(start.seed) : get().week) ??
           createWeek();
+        if (start && "dilemmaWindowSec" in start)
+          weekDilemmaWindowSec = start.dilemmaWindowSec;
         const day = getWeekDay(week);
         const dayConfig = getWeekDayConfig(
           week,
@@ -314,7 +371,11 @@ export function createBoothStore(
         set({
           phase: "shift",
           week,
-          shift: createShift(dayConfig),
+          shift: createShift(
+            weekDilemmaWindowSec === undefined
+              ? dayConfig
+              : { ...dayConfig, dilemmaWindowSec: weekDilemmaWindowSec }
+          ),
           look: createLook(),
           registerOpen: false,
           caption: null,

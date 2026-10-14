@@ -2215,7 +2215,7 @@ describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
   it("leaves no static drone copy in campaign rooms (#1665)", () => {
     const code = labyrinth();
     const roguelikeBranch = code.slice(
-      code.indexOf("const campaign = generateRoguelikeCampaign();"),
+      code.indexOf("const library = generateRoguelikeCampaign();"),
       code.indexOf("const fov = calculateFOV(")
     );
     expect(roguelikeBranch).toContain("setDrones([]);");

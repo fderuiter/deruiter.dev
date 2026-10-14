@@ -183,12 +183,18 @@ describe("the map cursor (#1994)", () => {
 });
 
 describe("Recovery Huts (#1994)", () => {
-  it("hides all three items, in an order set by the plan's seed", () => {
-    for (let seed = 0; seed < 20; seed++) {
+  it("hides three different items, drawn by the plan's seed", () => {
+    const seen = new Set<string>();
+    for (let seed = 0; seed < 40; seed++) {
       const items = hutItems(newPlan(seed), "hut-1");
-      expect([...items].sort()).toEqual([...GEAR_ITEMS].sort());
+      expect(items).toHaveLength(3);
+      expect(new Set(items).size).toBe(3);
+      for (const item of items) expect(GEAR_ITEMS).toContain(item);
       expect(hutItems(newPlan(seed), "hut-1")).toEqual(items);
+      for (const item of items) seen.add(item);
     }
+    // Over many plans, every item turns up at a hut (#1995).
+    expect([...seen].sort()).toEqual([...GEAR_ITEMS].sort());
     const orders = new Set(
       Array.from({ length: 20 }, (_, s) => hutItems(newPlan(s), "hut-2").join())
     );

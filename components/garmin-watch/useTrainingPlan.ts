@@ -14,11 +14,17 @@ import {
   planNode,
   planRunFor,
   takeHutItem,
+  type GearItem,
   type MapDirection,
   type PlanNodeId,
   type PlanRun,
   type PlanSave,
 } from "@/lib/garmin-plan";
+import {
+  applyGearItem,
+  loadoutApplies,
+  unpackGearItem,
+} from "@/lib/garmin-bag";
 import { loadPlan, savePlan } from "@/lib/garmin-plan-store";
 import { formatRaceTime } from "@/lib/garmin-race";
 import {
@@ -29,9 +35,11 @@ import {
 
 /**
  * What the player pressed on a Training Plan screen: an arrow key, the watch's
- * UP or DOWN button (previous or next node), Jump or START (select), or BACK.
+ * UP or DOWN button (previous or next node), Jump or START (select), BACK, or
+ * the action key, which opens the gear bag (#1995).
  */
-export type PlanInput = MapDirection | "prev" | "next" | "select" | "back";
+export type PlanInput =
+  MapDirection | "prev" | "next" | "select" | "back" | "bag";
 
 type Announce = (text: string, politeness?: "polite" | "assertive") => void;
 
@@ -40,10 +48,14 @@ interface UseTrainingPlanOptions {
   active: boolean;
   announce: Announce;
   /**
-   * Starts a workout: its run, and the lives to start with, or null for a
-   * practice run, which starts with a fresh three.
+   * Starts a workout: its run, the lives to start with (null for a practice
+   * run, which starts with a fresh three), and the gear packed for it.
    */
-  startWorkout: (run: PlanRun, lives: number | null) => void;
+  startWorkout: (
+    run: PlanRun,
+    lives: number | null,
+    packed: readonly GearItem[]
+  ) => void;
 }
 
 /** A seed for a new plan's hut shuffles. */
@@ -151,6 +163,8 @@ export function useTrainingPlan({
 }: UseTrainingPlanOptions) {
   const [save, setSave] = useState<PlanSave | null>(null);
   const [screen, setScreen] = useState<PlanScreen>({ kind: "report" });
+  // The gear bag dialog is open (#1995).
+  const [bagOpen, setBagOpen] = useState(false);
   const viewRef = useRef<{ save: PlanSave | null; screen: PlanScreen }>({
     save: null,
     screen: { kind: "report" },
@@ -214,15 +228,25 @@ export function useTrainingPlan({
       const run = planRunFor(node);
       if (!run) return;
       const practice = status === "cleared";
+      // A new workout takes the packed gear; practice and Race Day leave it.
+      const packed = loadoutApplies(id, practice) ? current.packed : [];
       runRef.current = { node: id, practice };
-      commit(here, viewRef.current.screen);
-      startWorkout(run, practice ? null : current.lives);
+      commit(
+        packed.length > 0 ? { ...here, packed: [] } : here,
+        viewRef.current.screen
+      );
+      setBagOpen(false);
+      startWorkout(run, practice ? null : current.lives, packed);
+      const gear =
+        packed.length > 0
+          ? ` Packed: ${packed.map((item) => GEAR_ITEM_NAMES[item]).join(", ")}.`
+          : "";
       announce(
         practice
           ? `Practice: ${node.name}. Nothing on the plan changes.`
           : node.kind === "raceday"
-            ? "Race Day. A steady race pace, and The Wall before the finish."
-            : `${node.name}: stage ${run.stage}.`,
+            ? "Race Day. A steady race pace, and The Wall before the finish. Races leave the gear bag alone."
+            : `${node.name}: stage ${run.stage}.${gear}`,
         "polite"
       );
     },
@@ -238,6 +262,17 @@ export function useTrainingPlan({
         commit(next, nextScreen);
         announce(planScreenLabel(next, nextScreen), "polite");
       };
+      if (input === "bag") {
+        if (shown.kind === "report" || shown.kind === "map") {
+          setBagOpen(true);
+        } else {
+          announce(
+            "The gear bag opens from the Morning Report or the map.",
+            "polite"
+          );
+        }
+        return true;
+      }
       if (shown.kind === "report") {
         if (input === "select" || input === "back") {
           show(current, { kind: "map" });
@@ -341,9 +376,37 @@ export function useTrainingPlan({
     announce(planScreenLabel(current, { kind: "report" }), "polite");
   }, [announce, commit]);
 
+  /** Uses `item` from the gear bag: packs it, or takes the Rest Day. */
+  const applyItem = useCallback(
+    (item: GearItem) => {
+      const { save: current, screen: shown } = viewRef.current;
+      if (!current) return;
+      const use = applyGearItem(current, item);
+      if (use.used) commit(use.save, shown);
+      announce(use.text, "polite");
+    },
+    [announce, commit]
+  );
+
+  /** Puts a packed item back in the gear bag. */
+  const unpackItem = useCallback(
+    (item: GearItem) => {
+      const { save: current, screen: shown } = viewRef.current;
+      if (!current) return;
+      const use = unpackGearItem(current, item);
+      if (use.used) commit(use.save, shown);
+      announce(use.text, "polite");
+    },
+    [announce, commit]
+  );
+
+  const openBag = useCallback(() => setBagOpen(true), []);
+  const closeBag = useCallback(() => setBagOpen(false), []);
+
   /** Starts a new plan, losing the old one. */
   const startNew = useCallback(() => {
     runRef.current = null;
+    setBagOpen(false);
     const fresh = newPlan(freshSeed());
     commit(fresh, { kind: "report" });
     announce(
@@ -361,5 +424,10 @@ export function useTrainingPlan({
     runOver,
     showReport,
     startNew,
+    bagOpen,
+    openBag,
+    closeBag,
+    applyItem,
+    unpackItem,
   };
 }

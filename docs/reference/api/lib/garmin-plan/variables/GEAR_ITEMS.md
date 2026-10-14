@@ -8,4 +8,4 @@
 
 > `const` **GEAR\_ITEMS**: readonly [`GearItem`](../type-aliases/GearItem.md)[]
 
-Every hut item, in display order.
+Every gear item, in display order.

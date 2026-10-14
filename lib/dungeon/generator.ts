@@ -736,7 +736,10 @@ export function generateClassicStage2(): DungeonRoom {
 }
 
 /**
- * The roguelike campaign's rooms, in play order (#2048). The ramp opens on the
+ * The roguelike campaign's room library, in baseline order (#2048). A run
+ * routes through it with a branching map (#2084, see `./route`): it always
+ * opens on the first room and closes on the bosses, and picks its middle rooms
+ * along the way. The baseline ramp opens on the
  * DMZ Gateway (open exit, slow patrols), adds a hacking terminal in Active
  * Directory, cursor drift in BlinkBrowse, then the moving walls and route nodes
  * of the TSP enclave once the player can read a room. The Darknet Vault's
@@ -754,8 +757,9 @@ const ROGUELIKE_CAMPAIGN_ROOMS: ReadonlyArray<() => DungeonRoom> = [
 ];
 
 /**
- * Creates the full roguelike campaign: seven themed rooms, each numbered by
- * its one-based position in the run.
+ * Creates the roguelike room library: seven themed rooms, each numbered by
+ * its one-based position in the baseline order. A run plays a route through
+ * it; see `planRoute` and `drawRouteOptions`.
  */
 export function generateRoguelikeCampaign(): DungeonRoom[] {
   return ROGUELIKE_CAMPAIGN_ROOMS.map((generate, i) => ({

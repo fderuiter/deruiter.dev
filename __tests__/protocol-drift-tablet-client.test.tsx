@@ -74,7 +74,10 @@ describe("ProtocolDriftClient cabinet wiring (#2045)", () => {
 
 describe("Protocol Drift touch CSS (#2045)", () => {
   const css = fs.readFileSync(
-    path.join(process.cwd(), "app/arcade/arcade.css"),
+    path.join(
+      process.cwd(),
+      "components/protocol-drift/protocol-drift-touch.css"
+    ),
     "utf8"
   );
 

@@ -25,6 +25,8 @@ export function SiteRail({
   return (
     <aside
       aria-label="Site rail"
+      // A scrollable strip on touch needs a keyboard stop of its own (axe).
+      tabIndex={touch ? 0 : undefined}
       className={`flex min-h-0 shrink-0 flex-col gap-2 overflow-y-auto border-l border-zinc-800 bg-[#13151a] p-2 font-mono ${
         compact ? "w-14" : "w-[264px]"
       }${touch ? " pd-touch-rail" : ""}`}
@@ -62,9 +64,17 @@ export function SiteRail({
             aria-label={`${profile.name} (${id})`}
             className="min-w-0 border border-zinc-800 bg-[#0d0e11] p-2 text-[11px] text-zinc-300"
           >
-            <h3 className="break-words text-xs font-semibold text-zinc-100">
-              {id.replace("SITE-", "Site ")} · {profile.name}
-            </h3>
+            {/* On touch the site title is not a heading: the page's own h1
+                 is followed directly by these, which axe reads as a skip. */}
+            {touch ? (
+              <p className="break-words text-xs font-semibold text-zinc-100">
+                {id.replace("SITE-", "Site ")} · {profile.name}
+              </p>
+            ) : (
+              <h3 className="break-words text-xs font-semibold text-zinc-100">
+                {id.replace("SITE-", "Site ")} · {profile.name}
+              </h3>
+            )}
             <p className="mt-1 flex items-center justify-between">
               <span>Goodwill G</span>
               <b className="tabular-nums text-zinc-100">{goodwill}</b>

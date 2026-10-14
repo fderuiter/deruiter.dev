@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+// Scoped to `.pd-touch`, so only the touch cabinet sees these rules (#2045).
+import "./protocol-drift-touch.css";
 import { Inspector } from "./Inspector";
 import {
   AmendmentMemoModal,

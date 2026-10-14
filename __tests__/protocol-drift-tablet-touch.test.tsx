@@ -153,7 +153,10 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     // Controls are sized in the scoped CSS, so the touch cabinet's rule must
     // name the button class the inspector uses.
     const css = fs.readFileSync(
-      path.join(process.cwd(), "app/arcade/arcade.css"),
+      path.join(
+        process.cwd(),
+        "components/protocol-drift/protocol-drift-touch.css"
+      ),
       "utf8"
     );
     expect(css).toMatch(

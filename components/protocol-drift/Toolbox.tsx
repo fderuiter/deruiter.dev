@@ -51,6 +51,8 @@ export function Toolbox({
   return (
     <nav
       aria-label="Chip toolbox"
+      // A scrollable strip on touch needs a keyboard stop of its own (axe).
+      tabIndex={touch ? 0 : undefined}
       className={`flex min-h-0 shrink-0 flex-col gap-1.5 overflow-y-auto border-r border-zinc-800 bg-[#13151a] p-2 font-mono ${
         compact ? "w-14" : "w-[232px]"
       }${touch ? " pd-touch-toolbox" : ""}`}

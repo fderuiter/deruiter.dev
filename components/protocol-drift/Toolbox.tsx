@@ -79,7 +79,7 @@ export function Toolbox({
               event.dataTransfer.setData(CHIP_DRAG_TYPE, kind);
               event.dataTransfer.effectAllowed = "copy";
             }}
-            onClick={() => placeChip(kind)}
+            onClick={() => void placeChip(kind, { touch })}
             aria-label={`Add ${kind} chip`}
             title={`${kind}: ${spec.summary}`}
             className={`min-w-0 border border-zinc-800 bg-[#0d0e11] p-1.5 text-left text-[11px] transition-colors hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] ${

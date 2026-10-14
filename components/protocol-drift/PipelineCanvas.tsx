@@ -117,10 +117,79 @@ function suggestPosition(
   return { x, y: LANE_GEOMETRY.tabulationTop + 30 + (n % 3) * 40 };
 }
 
-/** Adds a chip at its suggested position (toolbox buttons and keyboard). */
-export function placeChip(kind: ChipKind): void {
+/** Window event sent after a touch add, so the canvas can pan to the chip. */
+export const PROTOCOL_DRIFT_CHIP_ADDED_EVENT = "protocol-drift:chip-added";
+
+/** Empty space kept between chips when a new one is placed on touch. */
+const CHIP_GAP = 16;
+
+/** True when a chip of this kind at this spot would touch a chip already there. */
+function clashes(
+  kind: ChipKind,
+  spot: { x: number; y: number },
+  nodes: ChipNode[]
+): boolean {
+  const h = chipHeight(kind);
+  return nodes.some((node) => {
+    const other = node.data.kind;
+    const otherH = chipHeight(other);
+    return (
+      spot.x < node.position.x + CHIP_WIDTH + CHIP_GAP &&
+      node.position.x < spot.x + CHIP_WIDTH + CHIP_GAP &&
+      spot.y < node.position.y + otherH + CHIP_GAP &&
+      node.position.y < spot.y + h + CHIP_GAP
+    );
+  });
+}
+
+/**
+ * Touch: the first spot for a new chip that clears every existing chip's box.
+ * It steps along the lane's row, then down to the next row, until it is clear
+ * (#2045). Desktop keeps suggestPosition.
+ */
+export function touchChipSpot(
+  kind: ChipKind,
+  nodes: ChipNode[]
+): { x: number; y: number } {
+  const base = suggestPosition(kind, nodes);
+  const stepX = CHIP_WIDTH + CHIP_GAP;
+  const stepY = chipHeight(kind) + CHIP_GAP;
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 7; col++) {
+      const spot = clampChip(kind, {
+        x: base.x + col * stepX,
+        y: base.y + row * stepY,
+      });
+      if (!clashes(kind, spot, nodes)) return spot;
+    }
+  }
+  return clampChip(kind, base);
+}
+
+/**
+ * Adds a chip (toolbox buttons and keyboard). On touch the chip takes a clear
+ * spot, the canvas pans to it at the current zoom, and the add is announced.
+ */
+export async function placeChip(
+  kind: ChipKind,
+  options: { touch?: boolean } = {}
+): Promise<void> {
   const state = useProtocolDriftStore.getState();
-  void state.addChip(kind, suggestPosition(kind, state.nodes));
+  if (!options.touch) {
+    await state.addChip(kind, suggestPosition(kind, state.nodes));
+    return;
+  }
+  const before = new Set(state.nodes.map((node) => node.id));
+  await state.addChip(kind, touchChipSpot(kind, state.nodes));
+  const latest = useProtocolDriftStore.getState();
+  const added = latest.nodes.find((node) => !before.has(node.id));
+  if (!added) return;
+  window.dispatchEvent(
+    new CustomEvent(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, {
+      detail: { kind, x: added.position.x, y: added.position.y },
+    })
+  );
+  latest.notify("info", `Added ${kind}.`);
 }
 
 function CanvasInner() {
@@ -140,6 +209,24 @@ function CanvasInner() {
   // fixed view it always had.
   const touch = useCabinetTouch();
   const editable = canRewire(fsm);
+
+  // Touch: a chip added from the toolbox is brought into view at the current
+  // zoom, so the canvas pans rather than zooms (#2045).
+  useEffect(() => {
+    if (!touch) return;
+    const onAdded = (event: Event) => {
+      const { kind, x, y } = (
+        event as CustomEvent<{ kind: ChipKind; x: number; y: number }>
+      ).detail;
+      void flow.setCenter(x + CHIP_WIDTH / 2, y + chipHeight(kind) / 2, {
+        zoom: flow.getZoom(),
+        duration: 0,
+      });
+    };
+    window.addEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
+    return () =>
+      window.removeEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
+  }, [flow, touch]);
 
   // Keep the lane geometry in view: fit the whole world, never pan or zoom.
   useEffect(() => {

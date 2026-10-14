@@ -8,6 +8,22 @@
 
 ## Properties
 
+### bestStreak
+
+> `readonly` **bestStreak**: `number`
+
+The longest clean-order streak this shift.
+
+***
+
+### cleanStreak
+
+> `readonly` **cleanStreak**: `number`
+
+Orders bumped since the last wrong entry.
+
+***
+
 ### drinksDropped
 
 > `readonly` **drinksDropped**: `number`
@@ -17,6 +33,14 @@
 ### expired
 
 > `readonly` **expired**: `number`
+
+***
+
+### fastBumps
+
+> `readonly` **fastBumps**: `number`
+
+Orders bumped while their ticket was still green (#2057).
 
 ***
 
@@ -35,6 +59,14 @@
 ### served
 
 > `readonly` **served**: `number`
+
+***
+
+### streakPoints
+
+> `readonly` **streakPoints**: `number`
+
+Points the clean-order streak has earned so far.
 
 ***
 

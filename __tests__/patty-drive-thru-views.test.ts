@@ -14,6 +14,7 @@ import {
   LOOK_YAW_LIMIT,
   MANAGER_LINES,
   SCORE_COMPLETED_BONUS,
+  SCORE_DIGNITY_PER_POINT,
   SCORE_LATE_PENALTY,
   SCORE_PER_SERVED,
   aimLook,
@@ -199,14 +200,17 @@ describe("Patty's Drive-Thru formatting and score", () => {
     expect(getTimeLeft({ ...state, time: 75 })).toBe(0);
   });
 
-  it("scores served cars, docks late ones and adds the close-out bonus", () => {
+  it("scores served cars, docks late ones and adds the close-out and Dignity bonuses", () => {
     const state = createShift({ seed: SEED });
     const tallies = { ...state.tallies, served: 4, late: 1 };
     expect(scoreShift({ ...state, tallies })).toBe(
       4 * SCORE_PER_SERVED - SCORE_LATE_PENALTY
     );
     expect(scoreShift({ ...state, tallies, outcome: "completed" })).toBe(
-      4 * SCORE_PER_SERVED - SCORE_LATE_PENALTY + SCORE_COMPLETED_BONUS
+      4 * SCORE_PER_SERVED -
+        SCORE_LATE_PENALTY +
+        SCORE_COMPLETED_BONUS +
+        state.meters.dignity * SCORE_DIGNITY_PER_POINT
     );
     expect(
       scoreShift({ ...state, tallies: { ...tallies, served: 0, late: 3 } })

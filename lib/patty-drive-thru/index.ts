@@ -37,6 +37,7 @@ export {
   getTimeLeft,
   scoreShift,
   describeShiftScore,
+  getShiftScoreBreakdown,
 } from "./internal/view";
 export {
   aimLook,

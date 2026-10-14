@@ -100,6 +100,29 @@ export interface ShiftTallies {
   readonly wrongEntries: number;
   readonly drinksDropped: number;
   readonly yells: number;
+  /** Orders bumped while their ticket was still green (#2057). */
+  readonly fastBumps: number;
+  /** Orders bumped since the last wrong entry. */
+  readonly cleanStreak: number;
+  /** The longest clean-order streak this shift. */
+  readonly bestStreak: number;
+  /** Points the clean-order streak has earned so far. */
+  readonly streakPoints: number;
+}
+
+/**
+ * The parts of a shift's arcade score (#2057), each already in points: late
+ * cars are negative, and the closing and Dignity parts are zero unless the
+ * shift reached close. `total` is their sum, never below zero.
+ */
+export interface ShiftScoreBreakdown {
+  readonly served: number;
+  readonly late: number;
+  readonly speed: number;
+  readonly streak: number;
+  readonly closing: number;
+  readonly dignity: number;
+  readonly total: number;
 }
 
 export interface ShiftState {

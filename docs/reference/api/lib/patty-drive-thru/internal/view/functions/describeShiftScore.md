@@ -8,8 +8,10 @@
 
 > **describeShiftScore**(`state`): `string`
 
-How a shift's score adds up, in one line for the end card (#1938), for
-example "16 cars x 10 - 2 late x 5 + 50 for closing".
+How a shift's score adds up, in one line for the end card (#1938, #2057),
+for example "16 cars x 10 - 2 late x 5 + 9 fast x 5 + 48 streak + 50 for
+closing + 72 Dignity". The closing and Dignity parts appear only when the
+shift reached close.
 
 ## Parameters
 

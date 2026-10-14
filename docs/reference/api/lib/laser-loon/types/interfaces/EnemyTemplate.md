@@ -50,6 +50,22 @@
 
 ***
 
+### resists?
+
+> `optional` **resists?**: readonly [`LaserType`](../type-aliases/LaserType.md)[]
+
+Optics this enemy shrugs off at reduced damage, still never immune.
+
+***
+
 ### type
 
 > **type**: [`CivicEnemyType`](../type-aliases/CivicEnemyType.md)
+
+***
+
+### weakTo?
+
+> `optional` **weakTo?**: [`LaserType`](../type-aliases/LaserType.md)
+
+The optic that lands a critical hit: double damage. Bosses have none.

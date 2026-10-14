@@ -153,11 +153,7 @@ export function ProtocolDriftGame() {
           compact={compactToolbox}
           onToggle={() => setToolboxOpen(compactToolbox)}
         />
-        <div
-          className={`flex min-h-0 min-w-0 flex-1 flex-col ${
-            touch ? "overflow-hidden" : "overflow-y-auto"
-          }`}
-        >
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <div className="relative min-h-[200px] flex-1">
             <PipelineCanvas />
             {tracerDone && !waveSummary ? (

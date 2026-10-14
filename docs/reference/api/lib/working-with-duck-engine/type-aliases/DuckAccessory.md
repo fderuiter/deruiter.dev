@@ -6,4 +6,4 @@
 
 # Type Alias: DuckAccessory
 
-> **DuckAccessory** = `"none"` \| `"bucket-hat"` \| `"bowtie"` \| `"bandana"` \| `"rain-boots"`
+> **DuckAccessory** = `"none"` \| `"bucket-hat"` \| `"bowtie"` \| `"bandana"` \| `"rain-boots"` \| `"graduation-hat"`

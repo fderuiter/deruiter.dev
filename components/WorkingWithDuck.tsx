@@ -68,7 +68,10 @@ import {
 import {
   WorkingWithDuckState,
   DuckAccessory,
+  type DuckBestStars,
   type InventoryItem,
+  DUCK_FACT_STAR_MILESTONES,
+  DUCK_STAR_GOOD_BOY_THRESHOLD,
   createInitialDuckGameState,
   stepDuckGame,
   startDraggingDuck,
@@ -189,6 +192,103 @@ const getStoredUnlockedFacts = (): number[] => {
     );
   } catch {
     return [1];
+  }
+};
+
+/** Every wearable, in wardrobe order, with the perk it gives (#2050). */
+const WARDROBE: ReadonlyArray<{
+  id: DuckAccessory;
+  name: string;
+  desc: string;
+  icon: string;
+}> = [
+  {
+    id: "none",
+    name: "Natural Fluffy Coat",
+    desc: "Pure English Cream marshmallow vibes",
+    icon: "🐾",
+  },
+  {
+    id: "bucket-hat",
+    name: "Adidas Bucket Hat",
+    desc: "Shade on his head · Thirst rises 25% slower",
+    icon: "🧢",
+  },
+  {
+    id: "bowtie",
+    name: "Tech CEO Bowtie",
+    desc: "+0.2× Multiplier boost for executive standups",
+    icon: "👔",
+  },
+  {
+    id: "bandana",
+    name: "Adventure Bandana",
+    desc: "Outdoor explorer calm · Excitement rises 25% slower",
+    icon: "🧣",
+  },
+  {
+    id: "rain-boots",
+    name: "Yellow Mud Boots",
+    desc: "100% Mud puddle immunity at the Dog Park!",
+    icon: "🥾",
+  },
+  {
+    id: "graduation-hat",
+    name: "Golden Graduation Hat",
+    desc: "Clear Sprint 5 · Good Boy drains half as fast in an emergency",
+    icon: "🎓",
+  },
+];
+
+const ACCESSORIES_KEY = "working_with_duck_accessories";
+const BEST_STARS_KEY = "working_with_duck_best_stars";
+
+const isAccessory = (value: unknown): value is DuckAccessory =>
+  WARDROBE.some((item) => item.id === value);
+
+// Unlocked and equipped accessories carry across sessions (#2050). A
+// missing, malformed or inaccessible entry falls back to the defaults, and
+// unknown ids are dropped; createInitialDuckGameState adds the sprint's own.
+const getStoredAccessories = (): {
+  unlocked: DuckAccessory[] | undefined;
+  equipped: DuckAccessory;
+} => {
+  const fallback = { unlocked: undefined, equipped: "none" as const };
+  if (typeof window === "undefined") return fallback;
+  try {
+    const parsed = safeGetItem<unknown>(ACCESSORIES_KEY);
+    if (!parsed || typeof parsed !== "object") return fallback;
+    const { unlocked, equipped } = parsed as Record<string, unknown>;
+    if (!Array.isArray(unlocked)) return fallback;
+    const valid = unlocked.filter(isAccessory);
+    return {
+      unlocked: valid,
+      equipped:
+        isAccessory(equipped) && valid.includes(equipped) ? equipped : "none",
+    };
+  } catch {
+    return fallback;
+  }
+};
+
+// Best stars per sprint, stored as a JSON object keyed by sprint level.
+const getStoredBestStars = (): DuckBestStars => {
+  if (typeof window === "undefined") return {};
+  try {
+    const parsed = safeGetItem<unknown>(BEST_STARS_KEY);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return {};
+    }
+    const best: DuckBestStars = {};
+    for (const sprint of SPRINTS) {
+      const stars = (parsed as Record<string, unknown>)[String(sprint.level)];
+      if (typeof stars === "number" && Number.isInteger(stars)) {
+        best[sprint.level] = clamp(stars, 0, 3);
+      }
+    }
+    return best;
+  } catch {
+    return {};
   }
 };
 
@@ -676,6 +776,7 @@ function DuckSprintResult({
     100
   );
   const propsSaved = state.hazards.filter((h) => !h.isChewed).length;
+  const stars = state.sprintStars;
   const stats = [
     { label: "Score", value: state.totalScore },
     { label: "Work shipped", value: workPercent, suffix: "%" },
@@ -733,6 +834,45 @@ function DuckSprintResult({
       }}
       onEscape={onNext}
     >
+      {stars && (
+        <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
+          <p
+            className="font-mono text-xs font-bold text-amber-300"
+            aria-label={`${stars.count} of 3 stars`}
+          >
+            <span aria-hidden="true">
+              {"★".repeat(stars.count)}
+              <span className="text-zinc-600">
+                {"☆".repeat(3 - stars.count)}
+              </span>
+            </span>
+            <span className="ml-2 text-[10px] uppercase tracking-wider text-zinc-400">
+              Best {Math.max(stars.count, state.bestStars[level] ?? 0)}/3
+            </span>
+          </p>
+          <ul className="mt-1.5 space-y-0.5 font-mono text-[11px]">
+            {[
+              { earned: stars.propsSaved, label: "All props saved" },
+              { earned: stars.noAccidents, label: "No accidents" },
+              {
+                earned: stars.goodBoy,
+                label: `Good Boy above ${DUCK_STAR_GOOD_BOY_THRESHOLD} at the finish (${Math.round(stars.goodBoyAtFinish)})`,
+              },
+            ].map((goal) => (
+              <li
+                key={goal.label}
+                className={goal.earned ? "text-emerald-300" : "text-zinc-500"}
+              >
+                <span aria-hidden="true">{goal.earned ? "★ " : "☆ "}</span>
+                <span className="sr-only">
+                  {goal.earned ? "Earned: " : "Missed: "}
+                </span>
+                {goal.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {fact && (
         <figure className="mt-4 flex items-center gap-3 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
           <div className="relative h-20 w-20 shrink-0 -rotate-2 overflow-hidden rounded-sm border-4 border-b-[10px] border-[#f4f4f6] bg-amber-50 shadow-lg">
@@ -821,13 +961,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const { playNote, muted, setMuted } = useAudio();
   const { recordEvent } = useTelemetry();
 
-  const createDefaultState = () =>
-    createInitialDuckGameState(
+  const createDefaultState = () => {
+    const accessories = getStoredAccessories();
+    const state = createInitialDuckGameState(
       1,
       "campaign",
-      undefined,
-      getStoredUnlockedFacts()
+      accessories.unlocked,
+      getStoredUnlockedFacts(),
+      getStoredBestStars()
     );
+    return { ...state, activeAccessory: accessories.equipped };
+  };
 
   // Core Game State Ref for 60 FPS deterministic engine
   const gameStateRef = useRef<WorkingWithDuckState>(
@@ -1420,6 +1564,28 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     uiState.currentLevel,
     loadedHighScore,
   ]);
+
+  // Persist the wardrobe and best stars so they survive a reload (#2050).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      safeSetRawItem(
+        ACCESSORIES_KEY,
+        JSON.stringify({
+          unlocked: uiState.unlockedAccessories,
+          equipped: uiState.activeAccessory,
+        })
+      );
+    } catch {}
+  }, [uiState.unlockedAccessories, uiState.activeAccessory]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (Object.keys(uiState.bestStars).length === 0) return;
+    try {
+      safeSetRawItem(BEST_STARS_KEY, JSON.stringify(uiState.bestStars));
+    } catch {}
+  }, [uiState.bestStars]);
 
   // Main 60 FPS Canvas Game Loop
   //
@@ -2375,14 +2541,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   }
 
   const restartSprint = () => {
-    applyTransition(() => {
+    applyTransition((state) => {
       const next = createInitialDuckGameState(
-        uiState.currentLevel,
-        uiState.mode,
-        undefined,
-        uiState.unlockedFacts
+        state.currentLevel,
+        state.mode,
+        state.unlockedAccessories,
+        state.unlockedFacts,
+        state.bestStars
       );
       next.status = "running";
+      next.activeAccessory = state.activeAccessory;
       return next;
     });
   };
@@ -2393,9 +2561,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         5,
         "endless",
         state.unlockedAccessories,
-        state.unlockedFacts
+        state.unlockedFacts,
+        state.bestStars
       );
       next.status = "running";
+      next.activeAccessory = state.activeAccessory;
       return next;
     });
   };
@@ -3662,50 +3832,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             </div>
 
             <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
-              {[
-                {
-                  id: "none",
-                  name: "Natural Fluffy Coat",
-                  desc: "Pure English Cream marshmallow vibes",
-                  icon: "🐾",
-                },
-                {
-                  id: "bucket-hat",
-                  name: "Adidas Bucket Hat",
-                  desc: "Fact #5 · +10 Charisma & street style",
-                  icon: "🧢",
-                },
-                {
-                  id: "bowtie",
-                  name: "Tech CEO Bowtie",
-                  desc: "+0.2× Multiplier boost for executive standups",
-                  icon: "👔",
-                },
-                {
-                  id: "bandana",
-                  name: "Adventure Bandana",
-                  desc: "Crimson polka-dot outdoor explorer gear",
-                  icon: "🧣",
-                },
-                {
-                  id: "rain-boots",
-                  name: "Yellow Mud Boots",
-                  desc: "100% Mud puddle immunity at the Dog Park!",
-                  icon: "🥾",
-                },
-              ].map((acc) => {
-                const isUnlocked = uiState.unlockedAccessories.includes(
-                  acc.id as DuckAccessory
-                );
+              {WARDROBE.map((acc) => {
+                const isUnlocked = uiState.unlockedAccessories.includes(acc.id);
                 const isSelected = uiState.activeAccessory === acc.id;
 
                 return (
                   <button
                     key={acc.id}
                     disabled={!isUnlocked}
-                    onClick={() =>
-                      handleEquipAccessory(acc.id as DuckAccessory)
-                    }
+                    onClick={() => handleEquipAccessory(acc.id)}
                     aria-checked={isSelected}
                     role="radio"
                     className={`w-full p-2.5 sm:p-3 rounded-2xl border text-left flex items-center justify-between transition-all min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
@@ -3814,6 +3949,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               const isUnlocked = uiState.unlockedFacts.includes(
                 currentFact.level
               );
+              const starsNeeded = DUCK_FACT_STAR_MILESTONES[currentFact.id];
               const activeImageSource =
                 scrapbookViewMode === "photo"
                   ? currentFact.photoUrl
@@ -3837,8 +3973,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                           Locked Milestone
                         </span>
                         <span className="text-[10px] font-sans mt-1">
-                          Complete Sprint {currentFact.level} to unlock this
-                          milestone!
+                          {starsNeeded !== undefined
+                            ? `Earn ${starsNeeded} sprint stars to unlock this milestone!`
+                            : `Complete Sprint ${currentFact.level} to unlock this milestone!`}
                         </span>
                       </div>
                     )}
@@ -3848,7 +3985,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     <h4 className="font-bold text-xs sm:text-sm text-zinc-900">
                       {isUnlocked
                         ? currentFact.title
-                        : `Sprint ${currentFact.level} Secret`}
+                        : starsNeeded !== undefined
+                          ? `${starsNeeded}-Star Secret`
+                          : `Sprint ${currentFact.level} Secret`}
                     </h4>
                     <span className="text-[10px] font-mono font-bold text-zinc-500">
                       Card {activeScrapbookIndex + 1} of {DUCK_FACTS.length}

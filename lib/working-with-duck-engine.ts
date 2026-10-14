@@ -37,7 +37,12 @@ export type DuckBehaviorState =
 export type DuckTrick = "SIT" | "HIGH_FIVE" | "DROP_IT" | "SPIN";
 
 export type DuckAccessory =
-  "none" | "bucket-hat" | "bowtie" | "bandana" | "rain-boots";
+  | "none"
+  | "bucket-hat"
+  | "bowtie"
+  | "bandana"
+  | "rain-boots"
+  | "graduation-hat";
 
 export type DuckMood =
   | "happy"
@@ -266,6 +271,39 @@ export const DUCK_FACTS: DuckFact[] = [
     caption: "Carving snowy slopes in legendary flame style.",
   },
 ];
+
+/**
+ * One sprint's three stars (#2050): every prop saved, no indoor accidents,
+ * and Good Boy above {@link DUCK_STAR_GOOD_BOY_THRESHOLD} at the finish.
+ */
+export interface DuckSprintStars {
+  propsSaved: boolean;
+  noAccidents: boolean;
+  goodBoy: boolean;
+  /** The Good Boy scale when the work shipped, before the nap bonus. */
+  goodBoyAtFinish: number;
+  /** Stars earned, 0 to 3. */
+  count: number;
+}
+
+/** Best star count (0 to 3) per campaign sprint, keyed by sprint level. */
+export type DuckBestStars = Record<number, number>;
+
+/** Good Boy must finish strictly above this for the third star. */
+export const DUCK_STAR_GOOD_BOY_THRESHOLD = 50;
+
+/**
+ * Total best stars that unlock each later scrapbook fact, keyed by fact id.
+ * Facts 1 to 5 unlock by clearing their sprint; facts 6 to 10 cannot, since
+ * the campaign stops at sprint 5, so they unlock from star milestones.
+ */
+export const DUCK_FACT_STAR_MILESTONES: Readonly<Record<number, number>> = {
+  6: 5,
+  7: 8,
+  8: 11,
+  9: 13,
+  10: 15,
+};
 
 /** Good Boy points lost per tick while an emergency goes unhandled. */
 const NEGLECT_DRAIN_PER_TICK = 0.04;
@@ -520,6 +558,12 @@ export interface WorkingWithDuckState {
 
   unlockedFacts: number[];
   latestUnlockedFact: DuckFact | null;
+  /** Indoor accidents (potty countdowns that ran out) this sprint. */
+  sprintAccidents: number;
+  /** Stars from the sprint just cleared; null until a campaign win. */
+  sprintStars: DuckSprintStars | null;
+  /** Best stars per campaign sprint, carried across sprints and sessions. */
+  bestStars: DuckBestStars;
   highScore: number;
   activeSkillToast: { badge: string; text: string; timer: number } | null;
   soundCueQueue: Array<SoundCue>;
@@ -545,13 +589,55 @@ export function clampBounds(x: number, y: number): { x: number; y: number } {
   };
 }
 
+/**
+ * Sum the best stars over the campaign sprints, counting at most three per
+ * sprint and ignoring unknown sprints or malformed counts.
+ */
+export function totalBestStars(bestStars: DuckBestStars): number {
+  return SPRINTS.reduce((total, sprint) => {
+    const stars = bestStars[sprint.level];
+    return Number.isFinite(stars)
+      ? total + clamp(Math.floor(stars), 0, 3)
+      : total;
+  }, 0);
+}
+
+/** Fact ids whose star milestone a total of `totalStars` has reached. */
+export function factsUnlockedByStars(totalStars: number): number[] {
+  return Object.entries(DUCK_FACT_STAR_MILESTONES)
+    .filter(([, needed]) => totalStars >= needed)
+    .map(([id]) => Number(id))
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Judge the three stars for a sprint at the moment its work ships. Reads
+ * the state before the win's nap bonus is applied to the Good Boy scale.
+ */
+export function computeSprintStars(
+  state: WorkingWithDuckState
+): DuckSprintStars {
+  const propsSaved = state.hazards.every((h) => !h.isChewed);
+  const noAccidents = (state.sprintAccidents ?? 0) === 0;
+  const goodBoy = state.naughtyVsGood > DUCK_STAR_GOOD_BOY_THRESHOLD;
+  return {
+    propsSaved,
+    noAccidents,
+    goodBoy,
+    goodBoyAtFinish: state.naughtyVsGood,
+    count: [propsSaved, noAccidents, goodBoy].filter(Boolean).length,
+  };
+}
+
 export function createInitialDuckGameState(
   level = 1,
   mode: "campaign" | "endless" = "campaign",
   preservedAccessories: DuckAccessory[] = ["none", "bucket-hat"],
-  preservedFacts: number[] = [1]
+  preservedFacts: number[] = [1],
+  preservedBestStars: DuckBestStars = {}
 ): WorkingWithDuckState {
   const sprint = SPRINTS.find((s) => s.level === level) || SPRINTS[0];
+  const bestStars: DuckBestStars = { ...preservedBestStars };
 
   const unlockedAcc: DuckAccessory[] = Array.from(
     new Set<DuckAccessory>([
@@ -697,12 +783,17 @@ export function createInitialDuckGameState(
 
     unlockedFacts: Array.from(
       new Set<number>(
-        [1, ...preservedFacts].filter((id) =>
-          DUCK_FACTS.some((fact) => fact.id === id)
-        )
+        [
+          1,
+          ...preservedFacts,
+          ...factsUnlockedByStars(totalBestStars(bestStars)),
+        ].filter((id) => DUCK_FACTS.some((fact) => fact.id === id))
       )
     ),
     latestUnlockedFact: null,
+    sprintAccidents: 0,
+    sprintStars: null,
+    bestStars,
     highScore: 0,
     activeSkillToast: null,
     soundCueQueue: [],
@@ -770,6 +861,9 @@ export function stepDuckGame(
   const baseMultiplier = calculateGoodBoyMultiplier(state.naughtyVsGood);
   const comboBonus =
     state.comboStreak >= 2 ? 0.3 * Math.min(3, state.comboStreak) : 0;
+  // Accessory perks (#2050): bowtie +0.2 multiplier, bandana slower
+  // excitement, bucket hat slower thirst, graduation hat half neglect drain.
+  // Rain boots work at the Dog Park (mud immunity).
   const accessoryBonus = state.activeAccessory === "bowtie" ? 0.2 : 0;
   const effectiveMultiplier =
     (nextCalmBuff > 0 ? baseMultiplier + 0.5 : baseMultiplier) +
@@ -822,10 +916,13 @@ export function stepDuckGame(
 
   // Meters Natural Evolution
   const excitementRate =
-    nextCalmBuff > 0 ? 0.02 : 0.07 + state.currentLevel * 0.018;
+    (nextCalmBuff > 0 ? 0.02 : 0.07 + state.currentLevel * 0.018) *
+    (state.activeAccessory === "bandana" ? 0.75 : 1);
   const bladderRate =
     nextCalmBuff > 0 ? 0.02 : 0.05 + state.currentLevel * 0.015;
-  const thirstRate = 0.03 + state.currentLevel * 0.01;
+  const thirstRate =
+    (0.03 + state.currentLevel * 0.01) *
+    (state.activeAccessory === "bucket-hat" ? 0.75 : 1);
   const hungerRate = 0.02 + state.currentLevel * 0.01;
 
   let nextExcitement = clamp(state.excitement + excitementRate, 0, 100);
@@ -834,12 +931,16 @@ export function stepDuckGame(
   let nextHunger = clamp(state.hunger + hungerRate, 0, 100);
   // An unhandled emergency (potty sniffing, sneaky chewing, zoomies) slowly
   // erodes the Good Boy scale, so ignoring Duck is never a winning strategy.
+  const neglectDrain =
+    NEGLECT_DRAIN_PER_TICK *
+    (state.activeAccessory === "graduation-hat" ? 0.5 : 1);
   let nextNaughtyVsGood = isEmergency
-    ? Math.max(-100, state.naughtyVsGood - NEGLECT_DRAIN_PER_TICK)
+    ? Math.max(-100, state.naughtyVsGood - neglectDrain)
     : state.naughtyVsGood;
   let nextLastImpulseTick = state.lastImpulseTick;
   const nextIndoorPuddles = state.indoorPuddles ? [...state.indoorPuddles] : [];
   let nextPuddleId = state.nextPuddleId || nextIndoorPuddles.length + 1;
+  let nextSprintAccidents = state.sprintAccidents ?? 0;
 
   let activeToast = state.activeSkillToast
     ? { ...state.activeSkillToast, timer: state.activeSkillToast.timer - 1 }
@@ -1198,6 +1299,7 @@ export function stepDuckGame(
           mopProgress: 0,
         };
         nextIndoorPuddles.push(newPuddle);
+        nextSprintAccidents += 1;
 
         alerts.push({
           id: state.nextAlertId + 3,
@@ -1473,6 +1575,7 @@ export function stepDuckGame(
     activeHazardTarget,
     indoorPuddles: nextIndoorPuddles,
     nextPuddleId,
+    sprintAccidents: nextSprintAccidents,
     particles,
     floatingAlerts: alerts,
     activeSkillToast: activeToast,
@@ -1489,10 +1592,28 @@ function handleLevelVictory(
   state: WorkingWithDuckState,
   soundCues: Array<SoundCue>
 ): WorkingWithDuckState {
+  const isCampaign = state.mode === "campaign";
+  const sprintStars = isCampaign ? computeSprintStars(state) : null;
+  const bestStars: DuckBestStars = { ...(state.bestStars ?? {}) };
+  if (sprintStars) {
+    bestStars[state.currentLevel] = Math.max(
+      bestStars[state.currentLevel] ?? 0,
+      sprintStars.count
+    );
+  }
+  const starFacts = factsUnlockedByStars(totalBestStars(bestStars));
+  const newStarFacts = starFacts.filter(
+    (id) => !state.unlockedFacts.includes(id)
+  );
+  // A fact newly reached through stars is the new photo on the card;
+  // otherwise it is the sprint's own fact, as before.
+  const latestFactId = newStarFacts.length
+    ? newStarFacts[newStarFacts.length - 1]
+    : state.currentLevel;
   const currentFact =
-    DUCK_FACTS.find((f) => f.level === state.currentLevel) || DUCK_FACTS[0];
+    DUCK_FACTS.find((f) => f.id === latestFactId) || DUCK_FACTS[0];
   const unlocked = Array.from(
-    new Set([...state.unlockedFacts, state.currentLevel])
+    new Set([...state.unlockedFacts, state.currentLevel, ...starFacts])
   );
   soundCues.push("ding");
   soundCues.push("snore");
@@ -1505,12 +1626,16 @@ function handleLevelVictory(
       state.currentLevel === 2 ? "bowtie" : "none",
       state.currentLevel === 3 ? "bandana" : "none",
       state.currentLevel === 4 ? "rain-boots" : "none",
+      // Promised by the sprint 5 brief: clearing the campaign earns the hat.
+      isCampaign && state.currentLevel === 5 ? "graduation-hat" : "none",
     ])
   );
 
   return {
     ...state,
     status: "won",
+    sprintStars,
+    bestStars,
     workProgress: state.targetWorkProgress,
     excitement: 0,
     naughtyVsGood: Math.min(100, state.naughtyVsGood + 40),
@@ -2922,19 +3047,30 @@ export function advanceToNextLevel(
         5,
         "endless",
         state.unlockedAccessories,
-        state.unlockedFacts
+        state.unlockedFacts,
+        state.bestStars
       )
     : createInitialDuckGameState(
         nextLevel,
         "campaign",
         state.unlockedAccessories,
-        state.unlockedFacts
+        state.unlockedFacts,
+        state.bestStars
       );
 
   // Progression must resume simulation immediately: callers advance from a
   // terminal "won" state and rely on this returning a "running" state so the
-  // next tick actually progresses instead of sitting idle.
-  return { ...nextState, status: "running" };
+  // next tick actually progresses instead of sitting idle. Duck keeps what
+  // he is wearing into the next sprint.
+  return {
+    ...nextState,
+    status: "running",
+    activeAccessory: nextState.unlockedAccessories.includes(
+      state.activeAccessory
+    )
+      ? state.activeAccessory
+      : "none",
+  };
 }
 
 import { ArcadeEngine } from "@/lib/arcade/core/engine";

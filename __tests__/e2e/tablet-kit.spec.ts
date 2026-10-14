@@ -634,7 +634,8 @@ test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () =>
       await page.locator(PD_CHIP(from)).tap();
       await page.getByRole("button", { name: `Wire from ${from}` }).tap();
       await page.locator(PD_CHIP(to)).tap();
-      if (pick) await page.getByRole("button", { name: pick }).tap();
+      if (pick)
+        await page.getByRole("button", { name: pick, exact: true }).tap();
     };
     // One valid pair wires at once.
     await wire("SourceIngest", "ExtractField");

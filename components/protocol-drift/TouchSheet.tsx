@@ -35,7 +35,7 @@ export function TouchSheet({
         aria-hidden="true"
         data-testid={`${testId}-backdrop`}
         onClick={onClose}
-        className="absolute inset-0 z-30 bg-black/60"
+        className="fixed inset-0 z-40 bg-black/60"
       />
       <div
         ref={trapRef}
@@ -43,7 +43,7 @@ export function TouchSheet({
         aria-modal="true"
         aria-label={title}
         data-testid={testId}
-        className="absolute inset-x-0 bottom-0 z-40 flex max-h-[70dvh] flex-col rounded-t-2xl border border-b-0 border-zinc-700 bg-[#13151a] font-mono text-xs text-zinc-200 shadow-[0_-16px_40px_-12px_rgba(0,0,0,0.9)]"
+        className="fixed inset-x-0 bottom-0 z-40 flex max-h-[70dvh] pb-[env(safe-area-inset-bottom)] flex-col rounded-t-2xl border border-b-0 border-zinc-700 bg-[#13151a] font-mono text-xs text-zinc-200 shadow-[0_-16px_40px_-12px_rgba(0,0,0,0.9)]"
       >
         <div className="flex items-center justify-between gap-3 border-b border-zinc-800 px-3">
           <h2 className="min-w-0 truncate py-1 text-sm font-semibold text-zinc-100">

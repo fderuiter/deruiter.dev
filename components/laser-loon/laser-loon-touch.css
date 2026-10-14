@@ -281,22 +281,23 @@
   opacity: 0.6;
 }
 
-/* Held upright, the arena is a 768:420 band at the top and the spare height
-   becomes a controller: the optics in a row, then a big Tremolo and Fire. */
+/* Held upright, the 768:420 arena is width-bound, so it sits centred in the
+   height above a thumb-height controller: the optics in a row, then Tremolo
+   and a wide Fire. The controller keeps a fixed height rather than growing
+   into the spare space, so no key is oversized. */
 @media (orientation: portrait) {
-  .arcade-cabinet[data-immersive="true"] .arcade-shooter.ll-touch {
-    grid-template-rows: minmax(0, 1fr) minmax(13rem, 44%);
-  }
-  .arcade-shooter-controls.ll-dock-wrap,
-  .arcade-shooter-controls.ll-dock-wrap > [data-touch-controls] {
-    height: 100%;
+  .arcade-cabinet[data-immersive="true"]
+    .arcade-shooter.ll-touch
+    .arcade-shooter-playfield
+    .ll-stage {
+    align-items: center;
   }
   .ll-touch .ll-dock {
-    height: 100%;
     flex-direction: column;
     flex-wrap: nowrap;
-    justify-content: center;
     gap: 0.75rem;
+    padding-top: 0.75rem;
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
   .ll-touch .ll-dock-optics {
     flex: 0 0 auto;
@@ -304,14 +305,11 @@
     width: 100%;
   }
   .ll-touch .ll-dock-actions {
-    flex: 1 1 auto;
-    min-height: 0;
-    max-height: 13rem;
+    flex: 0 0 auto;
     justify-content: stretch;
   }
   .ll-touch .ll-dock-actions .ll-key {
-    min-height: 4rem;
-    height: 100%;
+    min-height: 6rem;
   }
   .ll-touch .ll-tremolo {
     flex: 1 1 0;

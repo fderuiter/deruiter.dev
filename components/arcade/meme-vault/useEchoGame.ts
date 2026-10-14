@@ -44,6 +44,8 @@ interface EchoGame {
   litId: string | null;
   /** Best streak stored on this device. */
   best: number;
+  /** True after a pad was pressed while the vault was still playing. */
+  early: boolean;
   start: () => void;
   stop: () => void;
   /**
@@ -85,6 +87,8 @@ export function useEchoGame({
 }: UseEchoGameOptions): EchoGame {
   const [round, setRound] = useState<EchoRound | null>(null);
   const [litId, setLitId] = useState<string | null>(null);
+  const [early, setEarly] = useState(false);
+  const earlyRef = useRef(false);
   const best = useSyncExternalStore(
     subscribeBest,
     getEchoBest,
@@ -116,6 +120,9 @@ export function useEchoGame({
   const commit = useCallback((next: EchoRound | null) => {
     roundRef.current = next;
     setRound(next);
+    // Any change of round or phase clears the early-press nudge.
+    earlyRef.current = false;
+    setEarly(false);
   }, []);
 
   const playBack = useCallback(
@@ -171,8 +178,18 @@ export function useEchoGame({
     (padIndex: number): boolean => {
       const current = roundRef.current;
       if (!current || current.phase === "over") return false;
-      // The vault is still playing: the press is not an answer.
-      if (current.phase === "showing") return true;
+      // The vault is still playing: the press is not an answer, but the
+      // player is told to wait rather than having the tap vanish.
+      if (current.phase === "showing") {
+        if (!earlyRef.current) {
+          earlyRef.current = true;
+          setEarly(true);
+          callbacksRef.current.announce(
+            "Wait for the vault to finish, then repeat it."
+          );
+        }
+        return true;
+      }
 
       const { round: next, outcome } = submitEchoInput(current, padIndex);
       const { pads: padList, onPadSound: sound } = callbacksRef.current;
@@ -218,5 +235,27 @@ export function useEchoGame({
 
   useEffect(() => clearTimers, [clearTimers]);
 
-  return { round, litId, best, start, stop, press };
+  // A hidden page (app switch, lock screen, Split View hand-off) stops the
+  // playback timers, which a browser throttles or freezes, so the sequence
+  // never runs unseen. Coming back replays the same sequence from its start.
+  // The player's turn has no timers and stays as it was.
+  useEffect(() => {
+    let paused = false;
+    const onVisibility = () => {
+      const current = roundRef.current;
+      if (document.hidden) {
+        if (current?.phase !== "showing") return;
+        paused = true;
+        clearTimers();
+        setLitId(null);
+      } else if (paused) {
+        paused = false;
+        if (current?.phase === "showing") playBack(current, LEAD_IN_MS);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [clearTimers, playBack]);
+
+  return { round, litId, best, early, start, stop, press };
 }

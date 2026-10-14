@@ -65,16 +65,16 @@ export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
               aria-keyshortcuts={key}
               aria-describedby={`meme-pad-desc-${pad.id}`}
               data-lit={isLit ? "true" : "false"}
-              className="meme-pad group relative isolate flex min-h-[7.5rem] min-w-0 flex-col justify-between overflow-hidden rounded-lg border border-white/[0.08] bg-[#1a1d24] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_2px_0_#08090b] transition-transform duration-75 hover:border-white/[0.16] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a] active:scale-[0.98] @lg:aspect-square @lg:p-4"
+              className="meme-pad group relative isolate flex min-h-[7.5rem] min-w-0 flex-col justify-between overflow-hidden rounded-lg border border-white/[0.08] bg-[#1a1d24] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_2px_0_#08090b] transition-transform duration-75 hover:border-white/[0.16] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a] active:scale-[0.98] pointer-coarse:touch-manipulation pointer-coarse:select-none pointer-coarse:[-webkit-tap-highlight-color:transparent] pointer-coarse:[-webkit-touch-callout:none] @lg:aspect-square @lg:p-4"
             >
               {/* Emerald press glow: an opacity-only layer, lit while the
                   pad's sound plays. */}
               <span aria-hidden="true" className="meme-pad-glow" />
               <span className="relative flex items-start justify-between gap-2">
-                <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-1.5 font-mono text-[11px] font-semibold tabular-nums text-zinc-300 shadow-[0_1px_0_rgba(255,255,255,0.06)] group-data-[lit=true]:border-emerald-500/60 group-data-[lit=true]:text-emerald-300">
+                <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-1.5 font-mono text-[11px] pointer-coarse:text-xs font-semibold tabular-nums text-zinc-300 shadow-[0_1px_0_rgba(255,255,255,0.06)] group-data-[lit=true]:border-emerald-500/60 group-data-[lit=true]:text-emerald-300">
                   {key}
                 </kbd>
-                <span className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+                <span className="font-mono text-[10px] pointer-coarse:text-xs uppercase tracking-wider text-zinc-400">
                   {pad.category}
                 </span>
               </span>
@@ -89,7 +89,7 @@ export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
                 </span>
                 <span
                   id={`meme-pad-desc-${pad.id}`}
-                  className="mt-1 hidden font-sans text-[11px] leading-snug text-zinc-400 @3xl:line-clamp-2"
+                  className="mt-1 hidden font-sans text-[11px] pointer-coarse:text-xs leading-snug text-zinc-400 @3xl:line-clamp-2"
                 >
                   {pad.description}
                 </span>

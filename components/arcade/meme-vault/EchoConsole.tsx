@@ -11,17 +11,21 @@ import type { EchoRound } from "@/lib/meme-echo";
 interface EchoConsoleProps {
   round: EchoRound | null;
   best: number;
+  /** True after a pad was pressed while the vault was still playing. */
+  early?: boolean;
   onStart: () => void;
   onStop: () => void;
   /** Why the pads are silent, or null when sound is on. */
   silentReason: React.ReactNode;
 }
 
-function statusLine(round: EchoRound | null): string {
+function statusLine(round: EchoRound | null, early: boolean): string {
   if (!round)
     return "Press Start Echo, watch the pads light, then repeat them.";
   switch (round.phase) {
     case "showing":
+      if (early)
+        return `Watch to the end first: ${round.sequence.length} ${round.sequence.length === 1 ? "pad" : "pads"}, then repeat.`;
       return `Watch: ${round.sequence.length} ${round.sequence.length === 1 ? "pad" : "pads"}.`;
     case "input":
       return `Your turn: pad ${round.inputIndex + 1} of ${round.sequence.length}.`;
@@ -38,6 +42,7 @@ function statusLine(round: EchoRound | null): string {
 export function EchoConsole({
   round,
   best,
+  early = false,
   onStart,
   onStop,
   silentReason,
@@ -60,15 +65,19 @@ export function EchoConsole({
               Echo
             </h3>
             <p
-              className="font-sans text-xs text-zinc-400 break-words"
+              className={`font-sans text-xs break-words ${
+                early && round?.phase === "showing"
+                  ? "text-amber-300"
+                  : "text-zinc-400"
+              }`}
               data-testid="meme-echo-status"
             >
-              {statusLine(round)}
+              {statusLine(round, early)}
             </p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <dl className="flex gap-3 font-mono text-[11px] tabular-nums">
+          <dl className="flex gap-3 font-mono text-[11px] pointer-coarse:text-xs tabular-nums">
             <div className="flex items-baseline gap-1.5">
               <dt className="uppercase tracking-wider text-zinc-400">Streak</dt>
               <dd className="text-zinc-100" data-testid="meme-echo-streak">
@@ -86,7 +95,7 @@ export function EchoConsole({
             <button
               type="button"
               onClick={onStop}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98]"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98] pointer-coarse:min-h-11"
             >
               <IconPlayerStop aria-hidden="true" className="h-4 w-4" />
               <span>Stop Echo</span>
@@ -95,7 +104,7 @@ export function EchoConsole({
             <button
               type="button"
               onClick={onStart}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-semibold text-amber-200 transition-colors hover:border-amber-400/70 hover:text-amber-100 active:scale-[0.98]"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 text-xs font-semibold text-amber-200 transition-colors hover:border-amber-400/70 hover:text-amber-100 active:scale-[0.98] pointer-coarse:min-h-11"
             >
               <IconPlayerPlay aria-hidden="true" className="h-4 w-4" />
               <span>{round ? "Play Echo again" : "Start Echo"}</span>

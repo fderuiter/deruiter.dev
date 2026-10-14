@@ -56,6 +56,9 @@ import {
 } from "@/lib/study-director-world";
 import type { Difficulty, StudyState } from "@/lib/study-director";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import "@/components/study-director/study-director-touch.css";
+import { STUDY_DIRECTOR_AUTO_PAUSE_EVENT } from "./auto-pause";
 import { followCamera } from "./camera";
 import {
   DigestCard,
@@ -85,6 +88,8 @@ import { WorldHud } from "./WorldHud";
 import { useReducedMotion } from "./use-reduced-motion";
 import { ConditionsPicker, WorldIntro } from "./WorldIntro";
 import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
+import { tapDestination } from "./tap-walk";
+import { WorldTouchControls } from "./WorldTouchControls";
 import { playWorldCue } from "./world-sound";
 
 /** Milliseconds between steps when walking by directory or holding a key. */
@@ -205,6 +210,8 @@ function openWorld(): {
 
 interface Walk {
   entryId: string;
+  /** The place walked to, for a walk to a tapped tile the directory does not list. */
+  entry: DirectoryEntry;
   label: string;
   steps: Facing[];
   facing: Facing;
@@ -267,6 +274,9 @@ export const StudyDirectorWorld: React.FC<{
   const choosing = freshWorld !== null && world === freshWorld;
   const difficulty: Difficulty = world.study.difficulty ?? "standard";
   const reducedMotion = useReducedMotion();
+  // The immersive touch cabinet (ADR 0061, #2076) lays the office out to fit
+  // its stage; desktop markup is untouched.
+  const touch = useCabinetTouch();
   const playfieldRef = useRef<HTMLDivElement>(null);
   const lastStep = useRef(0);
 
@@ -487,6 +497,7 @@ export const StudyDirectorWorld: React.FC<{
       );
       setWalk({
         entryId: entry.id,
+        entry,
         label: entry.label,
         steps: route.steps,
         facing: route.facing,
@@ -500,6 +511,19 @@ export const StudyDirectorWorld: React.FC<{
     (entry: DirectoryEntry) =>
       routeAround(world.player, entry.target, map, people)?.minutes ?? null,
     [world.player, map, people]
+  );
+
+  /** A tap on the floor: walk to the person, station or tile under the finger. */
+  const tapFloor = useCallback(
+    (fx: number, fy: number) => {
+      const entry = tapDestination({ map, people, directory, view, fx, fy });
+      if (!entry) {
+        setNotice("There is no way to walk there.");
+        return;
+      }
+      walkTo(entry);
+    },
+    [map, people, directory, view, walkTo]
   );
 
   const plan = planFor(world);
@@ -625,6 +649,34 @@ export const StudyDirectorWorld: React.FC<{
     playfieldRef.current?.focus({ preventScroll: true });
   }, [world]);
 
+  /** An arrow button: like the key, it ends a directory walk and takes a step. */
+  const stepBy = (dir: Facing) => {
+    setWalk(null);
+    move(dir);
+  };
+  const pressUse = () => {
+    setWalk(null);
+    pressE();
+  };
+  const selfNow = () => {
+    setWalk(null);
+    lookAtSelf();
+  };
+
+  // The cabinet reports a hidden tab, a blur or a turned device: a walk in
+  // progress stops where it is. Nothing else in the office runs on its own.
+  const walking = walk !== null;
+  useEffect(() => {
+    if (!walking) return;
+    const stop = () => {
+      setWalk(null);
+      setNotice("Paused. You stopped walking.");
+    };
+    window.addEventListener(STUDY_DIRECTOR_AUTO_PAUSE_EVENT, stop);
+    return () =>
+      window.removeEventListener(STUDY_DIRECTOR_AUTO_PAUSE_EVENT, stop);
+  }, [walking]);
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (
       showIntro ||
@@ -676,7 +728,7 @@ export const StudyDirectorWorld: React.FC<{
       }
       // Someone walking their schedule moves while you walk to them, so the
       // way to a person is worked out again at every step.
-      const entry = directory.find((d) => d.id === walk.entryId);
+      const entry = directory.find((d) => d.id === walk.entryId) ?? walk.entry;
       const live =
         entry && entry.target.kind === "person"
           ? routeAround(world.player, entry.target, map, people)
@@ -822,11 +874,8 @@ export const StudyDirectorWorld: React.FC<{
     </div>
   ) : null;
 
-  return (
-    <div
-      data-sd-world=""
-      className="space-y-3 bg-[var(--sd-bg)] p-2 font-mono text-[var(--sd-text)] sm:p-3"
-    >
+  const liveRegions = (
+    <>
       <div role="status" aria-live="polite" className="sr-only">
         {notice}
       </div>
@@ -838,170 +887,188 @@ export const StudyDirectorWorld: React.FC<{
       >
         {hudNotice}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-bold tracking-[-0.01em]">
-          {map.name ? `${map.name} visit` : "The CRO floor"}
-        </h2>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            aria-pressed={showMap}
-            onClick={() => setShowMap((on) => !on)}
-            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
-          >
-            Minimap
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowIntro(true)}
-            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
-          >
-            Controls
-          </button>
-          <button
-            type="button"
-            onClick={onExit}
-            className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
-          >
-            Switch to the classic desk
-          </button>
-        </div>
-      </div>
-      <WorldHud
-        hud={hud}
-        minute={world.minute}
-        goal={report ? null : currentGoal(world, tasks, acted)}
-      />
-
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
-        <div
-          ref={playfieldRef}
-          tabIndex={0}
-          role="group"
-          aria-label={`${onSite ? `${map.name ?? "Site"} map` : "Office floor"}. Arrow keys or W A S D walk; E uses what you face; F asks how you are.`}
-          aria-describedby="sd-world-room"
-          data-keyboard-boundary="true"
-          data-testid="world-playfield"
-          onKeyDown={onKeyDown}
-          className="min-w-0 self-start outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+    </>
+  );
+  const header = (
+    <div
+      className={`flex flex-wrap items-center justify-between gap-2${touch ? " sd-world-top" : ""}`}
+    >
+      <h2 className="text-sm font-bold tracking-[-0.01em]">
+        {map.name ? `${map.name} visit` : "The CRO floor"}
+      </h2>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          aria-pressed={showMap}
+          onClick={() => setShowMap((on) => !on)}
+          className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
         >
-          <FloorView
-            scene={scene}
-            description={description}
-            reducedMotion={reducedMotion}
-            overlay={
-              <>
-                <StageLabels
-                  view={view}
-                  plates={plates}
-                  prompt={away || team.blocking ? null : prompt}
-                />
-                <FeedbackToasts items={toasts} />
-                {showMap ? (
-                  <Minimap
-                    map={map}
-                    player={world.player}
-                    people={people}
-                    view={view}
-                  />
-                ) : null}
-              </>
-            }
-          />
-        </div>
-        <div className="min-w-0 space-y-3">
-          <section
-            aria-labelledby="sd-world-where"
-            className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
-          >
-            <h3
-              id="sd-world-where"
-              className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase"
-            >
-              Where you are
-            </h3>
-            <p
-              id="sd-world-room"
-              data-testid="world-room"
-              className="mt-1 text-xs leading-relaxed break-words text-zinc-200"
-            >
-              {description}
-            </p>
-            {here.length > 0 ? (
-              <ul
-                aria-label="People here"
-                data-testid="world-people-here"
-                className="mt-2 space-y-0.5 text-[11px] text-zinc-300"
-              >
-                {here.map((p) => (
-                  <li key={p.memberId} className="break-words">
-                    {describePerson(world, p)}
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-            <p className="mt-2 text-[11px] text-[var(--sd-muted)]">
-              Arrows or WASD walk. E uses what you face or talks to whoever you
-              face. F asks how you are.
-            </p>
-            <button
-              type="button"
-              onClick={lookAtSelf}
-              disabled={away}
-              className="mt-2 min-h-[32px] border border-zinc-700 px-2 text-[11px] text-zinc-300 hover:border-[var(--sd-amber)] disabled:opacity-50"
-            >
-              How are you?
-            </button>
-          </section>
-          {away ? null : (
-            <TasksPanel
-              tasks={tasks}
-              priority={plan.priority ? PRIORITIES[plan.priority].label : null}
-            />
-          )}
-          {inConference && !away ? (
-            <MeetingSection team={team} world={world} people={people} />
-          ) : null}
-          {choosing && !showIntro ? (
-            <section
-              aria-label="Study conditions"
-              data-testid="world-conditions"
-              className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
-            >
-              <ConditionsPicker
-                name="sd-world-difficulty"
-                value={difficulty}
-                onChange={chooseDifficulty}
-              />
-              <p className="mt-2 text-[11px] text-[var(--sd-muted)]">
-                Set before the study begins. Anything you do fixes it.
-              </p>
-            </section>
-          ) : null}
-          {panel}
-          {visitReport && !report ? (
-            <SiteVisitReportPanel
-              report={visitReport}
-              onClose={() => {
-                setVisitReport(null);
-                playfieldRef.current?.focus({ preventScroll: true });
-              }}
-            />
-          ) : null}
-          {onSite ? <SiteVisitPanel world={world} /> : null}
-        </div>
+          Minimap
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowIntro(true)}
+          className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+        >
+          Controls
+        </button>
+        <button
+          type="button"
+          onClick={onExit}
+          className="min-h-12 border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)] hover:text-[var(--sd-amber)]"
+        >
+          Switch to the classic desk
+        </button>
       </div>
-
-      <OfficeDirectory
-        title={onSite ? "Site directory" : undefined}
-        entries={directory}
-        walkingTo={walk?.entryId ?? null}
-        disabled={away || team.blocking || Boolean(world.meeting)}
-        onWalk={walkTo}
-        minutesTo={minutesTo}
+    </div>
+  );
+  const hudStrip = (
+    <WorldHud
+      hud={hud}
+      minute={world.minute}
+      goal={report ? null : currentGoal(world, tasks, acted)}
+    />
+  );
+  const playfield = (
+    <div
+      ref={playfieldRef}
+      tabIndex={0}
+      role="group"
+      aria-label={`${onSite ? `${map.name ?? "Site"} map` : "Office floor"}. Arrow keys or W A S D walk; E uses what you face; F asks how you are.`}
+      aria-describedby="sd-world-room"
+      data-keyboard-boundary="true"
+      // On the touch cabinet an open result card takes the first Escape from
+      // the game's own keys, instead of the cabinet closing (#2076).
+      data-escape-docks={touch && outcome ? "true" : undefined}
+      data-testid="world-playfield"
+      onKeyDown={onKeyDown}
+      className="min-w-0 self-start outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+    >
+      <FloorView
+        scene={scene}
+        description={description}
+        reducedMotion={reducedMotion}
+        onTap={touch && !away && !team.blocking ? tapFloor : undefined}
+        overlay={
+          <>
+            <StageLabels
+              view={view}
+              plates={plates}
+              prompt={away || team.blocking ? null : prompt}
+            />
+            <FeedbackToasts items={toasts} />
+            {showMap ? (
+              <Minimap
+                map={map}
+                player={world.player}
+                people={people}
+                view={view}
+              />
+            ) : null}
+          </>
+        }
       />
+    </div>
+  );
+  const sideSections = (
+    <>
+      <section
+        aria-labelledby="sd-world-where"
+        className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
+      >
+        <h3
+          id="sd-world-where"
+          className="text-[10px] font-semibold tracking-[0.14em] text-[var(--sd-muted)] uppercase"
+        >
+          Where you are
+        </h3>
+        <p
+          id="sd-world-room"
+          data-testid="world-room"
+          className="mt-1 text-xs leading-relaxed break-words text-zinc-200"
+        >
+          {description}
+        </p>
+        {here.length > 0 ? (
+          <ul
+            aria-label="People here"
+            data-testid="world-people-here"
+            className="mt-2 space-y-0.5 text-[11px] text-zinc-300"
+          >
+            {here.map((p) => (
+              <li key={p.memberId} className="break-words">
+                {describePerson(world, p)}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="mt-2 text-[11px] text-[var(--sd-muted)]">
+          {touch
+            ? "Tap the floor to walk there. E uses what you face or talks to whoever you face. F asks how you are."
+            : "Arrows or WASD walk. E uses what you face or talks to whoever you face. F asks how you are."}
+        </p>
+        <button
+          type="button"
+          onClick={lookAtSelf}
+          disabled={away}
+          className="mt-2 min-h-[32px] border border-zinc-700 px-2 text-[11px] text-zinc-300 hover:border-[var(--sd-amber)] disabled:opacity-50"
+        >
+          How are you?
+        </button>
+      </section>
+      {away ? null : (
+        <TasksPanel
+          tasks={tasks}
+          priority={plan.priority ? PRIORITIES[plan.priority].label : null}
+        />
+      )}
+      {inConference && !away ? (
+        <MeetingSection team={team} world={world} people={people} />
+      ) : null}
+      {choosing && !showIntro ? (
+        <section
+          aria-label="Study conditions"
+          data-testid="world-conditions"
+          className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
+        >
+          <ConditionsPicker
+            name="sd-world-difficulty"
+            value={difficulty}
+            onChange={chooseDifficulty}
+          />
+          <p className="mt-2 text-[11px] text-[var(--sd-muted)]">
+            Set before the study begins. Anything you do fixes it.
+          </p>
+        </section>
+      ) : null}
+      {panel}
+      {visitReport && !report ? (
+        <SiteVisitReportPanel
+          report={visitReport}
+          onClose={() => {
+            setVisitReport(null);
+            playfieldRef.current?.focus({ preventScroll: true });
+          }}
+        />
+      ) : null}
+      {onSite ? <SiteVisitPanel world={world} /> : null}
+    </>
+  );
+  const directoryPanel = (
+    <OfficeDirectory
+      title={onSite ? "Site directory" : undefined}
+      entries={directory}
+      walkingTo={walk?.entryId ?? null}
+      disabled={away || team.blocking || Boolean(world.meeting)}
+      onWalk={walkTo}
+      minutesTo={minutesTo}
+    />
+  );
+  const overlays = (
+    <>
       {showIntro ? (
         <WorldIntro
+          touch={touch}
           difficulty={choosing ? difficulty : undefined}
           onDifficultyChange={choosing ? chooseDifficulty : undefined}
           onClose={() => {
@@ -1019,6 +1086,68 @@ export const StudyDirectorWorld: React.FC<{
           reducedMotion={reducedMotion}
         />
       )}
+    </>
+  );
+
+  // The touch cabinet is a fixed stage: the floor and its keys keep their
+  // place, and everything else scrolls in its own column or strip (#2076).
+  if (touch)
+    return (
+      <div
+        data-sd-world=""
+        className="sd-touch sd-world-touch w-full bg-[var(--sd-bg)] font-mono text-[var(--sd-text)]"
+      >
+        {liveRegions}
+        {header}
+        {hudStrip}
+        <div className="sd-world-body">
+          <div className="sd-world-stage">
+            {playfield}
+            <WorldTouchControls
+              disabled={away || team.blocking || showIntro}
+              action={
+                prompt
+                  ? prompt.text
+                      .replace(/^Press E to /, "")
+                      .replace(/^./, (c) => c.toUpperCase())
+                  : null
+              }
+              onMove={stepBy}
+              onUse={pressUse}
+              onSelf={selfNow}
+            />
+          </div>
+          <div
+            role="region"
+            aria-label="Office details"
+            tabIndex={0}
+            data-testid="world-side"
+            className="sd-world-side space-y-3"
+          >
+            {sideSections}
+            {directoryPanel}
+          </div>
+        </div>
+        {overlays}
+      </div>
+    );
+
+  return (
+    <div
+      data-sd-world=""
+      className="space-y-3 bg-[var(--sd-bg)] p-2 font-mono text-[var(--sd-text)] sm:p-3"
+    >
+      {liveRegions}
+      {header}
+      {hudStrip}
+
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">
+        {playfield}
+        <div className="min-w-0 space-y-3">{sideSections}</div>
+      </div>
+
+      {directoryPanel}
+      {overlays}
     </div>
   );
 };

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { Portrait } from "@/components/study-director/Portrait";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { TeamRole } from "@/lib/study-director";
 import type { DialogueLine } from "@/lib/study-director-world";
@@ -136,15 +137,24 @@ export const DialogueBox: React.FC<{
     returnFocusTo,
   });
   const { count, done, skip } = useTypewriter(lines, reducedMotion);
+  const touch = useCabinetTouch();
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-50 flex justify-center p-3 sm:p-4">
       <div
         ref={trapRef}
         role="dialog"
+        // A tap on its text focuses the box, so Escape stays with it (#2076).
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid={testId}
         data-typing={done ? "done" : "typing"}
+        // A tap finishes the typing, as Space does (#2076). Buttons keep
+        // their own taps.
+        onClick={(e) => {
+          if (touch && !done && !(e.target as HTMLElement).closest("button"))
+            skip();
+        }}
         onKeyDown={(e) => {
           if (!done && (e.key === " " || e.key === "Enter")) {
             e.preventDefault();
@@ -167,7 +177,7 @@ export const DialogueBox: React.FC<{
         <DialogueLines lines={lines} reveal={count} />
         {!done ? (
           <p className="text-[10px] text-[var(--sd-muted)]">
-            Space or Enter shows the rest.
+            {touch ? "Tap to show the rest." : "Space or Enter shows the rest."}
           </p>
         ) : null}
         {children}

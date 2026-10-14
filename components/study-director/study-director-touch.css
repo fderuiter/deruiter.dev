@@ -1,0 +1,228 @@
+/*
+ * Study Director on the immersive touch cabinet (ADR 0061, #2076). The office
+ * and the desk carry `sd-touch` only while useCabinetTouch() is true, so
+ * desktop markup and styles never see these rules. Both views are fixed to the
+ * cabinet's stage and never scroll as a page: the status, the controls and the
+ * day's actions keep their place, and one named region scrolls on its own.
+ */
+
+/* Every on-screen control is at least 44px. */
+.sd-touch button,
+.sd-touch summary {
+  min-height: 44px;
+}
+.sd-touch button {
+  min-width: 44px;
+}
+.sd-touch select,
+.sd-touch textarea,
+.sd-touch input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  min-height: 44px;
+}
+.sd-touch label:has(> input[type="checkbox"]),
+.sd-touch label:has(> input[type="radio"]) {
+  min-height: 44px;
+  align-items: center;
+}
+.sd-touch input[type="checkbox"],
+.sd-touch input[type="radio"] {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+/* No text under 12px on the cabinet. */
+.sd-touch .text-\[9px\],
+.sd-touch .text-\[10px\],
+.sd-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+
+/* The office and the desk fill the stage. */
+.sd-touch.sd-world-touch,
+.sd-touch.sd-desk-touch {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0.5rem;
+  overflow: hidden;
+}
+.sd-world-touch > *,
+.sd-desk-touch > * {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+/* A dialog or a sheet never outgrows the screen; it scrolls inside. */
+.sd-touch [role="dialog"] {
+  max-height: 90dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+/* Screens that scroll inside the fixed stage: the briefing before a study and
+   the report after it. They start below the cabinet's floating toolbar. */
+.sd-touch.sd-touch-scroll,
+.sd-desk-touch > .sd-touch-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding-top: 3.5rem;
+}
+
+/* ---- The office ---- */
+
+/* The header's buttons sit beside the cabinet toolbar, not under it. */
+.sd-world-top {
+  padding-right: var(--cabinet-toolbar-inset, 0px);
+}
+/* Seven readings in one row on a wide screen, two short rows on a narrow one. */
+.sd-world-touch [data-testid="world-hud"] {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (min-width: 1000px) {
+  .sd-world-touch [data-testid="world-hud"] {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+.sd-world-body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+.sd-world-stage {
+  flex-shrink: 0;
+}
+/* Everything but the floor and its keys: the room, the day's tasks, the
+   result of what you did, the meeting, the sites and the directory. */
+.sd-world-side {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+/* A tap is the floor's main control. */
+.sd-world-touch [data-testid="world-canvas"] {
+  cursor: pointer;
+}
+/* Held landscape, the floor and its keys sit beside the column. */
+@media (orientation: landscape) {
+  .sd-world-body {
+    flex-direction: row;
+  }
+  .sd-world-stage {
+    flex: 1 1 0;
+  }
+  .sd-world-side {
+    flex: 0 0 clamp(20rem, 28vw, 28rem);
+  }
+}
+
+/* ---- The classic desk ---- */
+
+/* The status bar clears the cabinet toolbar and stays short. */
+.sd-desk-touch > header {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-right: var(--cabinet-toolbar-inset, 0px);
+}
+.sd-desk-touch > header > :last-child {
+  grid-column: 1 / -1;
+  border-top-width: 1px;
+}
+@media (orientation: landscape) {
+  .sd-desk-touch > header {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .sd-desk-touch > header > :last-child {
+    grid-column: auto;
+    border-top-width: 0;
+  }
+}
+.sd-desk-tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+.sd-desk-tabs > button {
+  flex: 1 1 0;
+  padding: 0 0.5rem;
+  border: 1px solid #3f3f46;
+  font-size: 0.8125rem;
+  color: #d4d4d8;
+}
+.sd-desk-tabs > button[aria-pressed="true"] {
+  border-color: var(--sd-amber);
+  background: rgb(245 158 11 / 0.12);
+  font-weight: 700;
+  color: #fcd34d;
+}
+/* One section at a time scrolls between the tabs and the day's actions. */
+.sd-desk-scroll {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.sd-desk-scroll > * {
+  flex-shrink: 0;
+}
+.sd-desk-actions {
+  padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  border: 1px solid var(--sd-hairline);
+  background: var(--sd-surface);
+}
+/* The inbox: the list above the open message held upright, beside it held
+   landscape. Each scrolls on its own so End day never leaves the screen. */
+.sd-desk-scroll > .sd-desk-inbox {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-height: 0;
+}
+.sd-desk-list {
+  flex: 0 1 12rem;
+  min-height: 7rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.sd-desk-inbox > [data-testid="study-decision"] {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+/* The decision panel's footer is the desk's own action bar here. */
+.sd-desk-inbox > [data-testid="study-decision"] > div:last-child:empty {
+  display: none;
+}
+.sd-desk-pair {
+  display: grid;
+  gap: 0.5rem;
+}
+@media (orientation: landscape) {
+  .sd-desk-scroll > .sd-desk-inbox {
+    display: grid;
+    grid-template-columns: clamp(16rem, 28vw, 22rem) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .sd-desk-list {
+    flex: none;
+    min-height: 0;
+  }
+  .sd-desk-pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

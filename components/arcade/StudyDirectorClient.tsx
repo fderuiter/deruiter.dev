@@ -7,7 +7,6 @@ import { IconArrowLeft, IconClipboardCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
-import { useTouchDevice } from "@/components/arcade/mobile";
 import { requestStudyDirectorAutoPause } from "@/components/study-director-world/auto-pause";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
@@ -32,9 +31,6 @@ const DynamicStudyDirector = dynamic(StudyDirectorLoader, {
 });
 
 export const StudyDirectorClient: React.FC = () => {
-  // F asks how you are. A touch device with a keyboard case would otherwise
-  // have the cabinet take F for Fullscreen; desktop keeps its behaviour.
-  const touchDevice = useTouchDevice();
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -89,7 +85,9 @@ export const StudyDirectorClient: React.FC = () => {
                 { key: "Classic desk: E", action: "End the day" },
               ]}
               importComponent={StudyDirectorLoader}
-              fullscreenKey={!touchDevice}
+              // F is the game's own key ("Ask yourself how you are"), so the
+              // cabinet must not also toggle fullscreen on it.
+              fullscreenKey={false}
               // The office and the desk are built to fit the touch cabinet's
               // viewport, with their own scrolling columns (ADR 0061, #2076).
               mobileLayout="fit"

@@ -50,9 +50,9 @@ describe("StudyDirectorClient cabinet wiring (#2076)", () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
-  it("leaves F to the game on a touch device, and to the cabinet on desktop", () => {
+  it("leaves F to the game on desktop and on a touch device", () => {
     render(<StudyDirectorClient />);
-    expect(cabinetProps.current?.fullscreenKey).toBe(true);
+    expect(cabinetProps.current?.fullscreenKey).toBe(false);
     cleanup();
     touchDevice.value = true;
     render(<StudyDirectorClient />);

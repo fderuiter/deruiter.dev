@@ -91,7 +91,10 @@ export const WorldTouchControls: React.FC<{
           <span aria-hidden="true" className="border border-current px-1.5">
             E
           </span>
-          <span className="min-w-0 truncate" data-testid="world-use-label">
+          <span
+            className="line-clamp-2 min-w-0 break-words text-left leading-tight"
+            data-testid="world-use-label"
+          >
             {action ?? "Use / talk"}
           </span>
         </TouchButton>

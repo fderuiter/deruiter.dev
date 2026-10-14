@@ -1780,6 +1780,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Rewards",
       },
       {
+        title: "Firmware Bay & Class Unlocks",
+        detail:
+          "Crypto you harvest is banked on this device across runs. Between runs, open Firmware Upgrades (on the trace card, the run-complete card or the class picker) to spend it on four permanent tracks of three tiers each, costing 300, 700 and 1,200 crypto: RAM Expansion (+8 GB max RAM per tier), Scan Accelerator (+1 hex terminal buffer slot per tier), Payload Amplifier (+0.5 tile AoE exploit radius per tier) and Chip Fabricator (+1 starting bypass chip per tier). A tier takes effect from the next run. Script Kiddie and Cryptanalyst are open from the start; clearing the FaceForge boss room unlocks the APT Specialist, and finishing a run by clearing the NEURAL_WARDEN unlocks the Hardware Hacker. Locked classes show in the picker with the milestone that opens them; a profile saved before the locks keeps all four. The APT Specialist's +25% blast radius multiplies the Payload Amplifier radius too.",
+        badge: "Meta Progression",
+      },
+      {
         title: "Locked Exits",
         detail:
           "A room with airgap route nodes keeps its EXIT locked until you step on every node, and a boss room keeps it locked until the boss is defeated. A locked exit is drawn as LOCK in red and blocks you like a wall. Boss volleys aim where you are heading, so change direction to dodge.",
@@ -1809,6 +1815,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Save Hardware Bypass Chips for the terminals in the TSP enclave and the Darknet Vault, where time limits are tight.",
       "Take the Darknet Vault on the route when you are short of crypto or HP: its market and chest restock the deck before the bosses.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
+      "A lost run still banks the crypto of every room you cleared, so a few Firmware Bay tiers make the next attempt sturdier.",
     ],
     lore: {
       title: "Red Team Infiltration & Legacy Code Archaeology",

@@ -23,7 +23,8 @@ const HEX_BYTE_POOL = [
  * Uses alternating row/column constraint rules inspired by cybernetic hacking matrices.
  */
 export function generateHexMatrixPuzzle(
-  difficulty: number = 1
+  difficulty: number = 1,
+  extraBufferSlots: number = 0
 ): HexMatrixPuzzle {
   const size = difficulty > 2 ? 5 : 4;
   const grid: HexCell[][] = [];
@@ -73,7 +74,10 @@ export function generateHexMatrixPuzzle(
     isRowMove = !isRowMove;
   }
 
-  const maxBufferSize = sequenceLength + 2;
+  // Scan Accelerator firmware widens the buffer, so a scan tolerates more
+  // stray bytes before it fails (#2085).
+  const maxBufferSize =
+    sequenceLength + 2 + Math.max(0, Math.floor(extraBufferSlots));
   const timeLimit = Math.max(12, 25 - difficulty * 3);
 
   return {

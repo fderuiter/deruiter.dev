@@ -8,6 +8,15 @@
 
 ## Properties
 
+### classUnlockRules?
+
+> `optional` **classUnlockRules?**: `number`
+
+Set on profiles written once classes unlock on milestones (#2085). A save
+without it predates the locks and keeps every class.
+
+***
+
 ### firmwareUpgrades
 
 > **firmwareUpgrades**: `object`

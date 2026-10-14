@@ -17,6 +17,7 @@ const hud = (over: Partial<HudReadout> = {}): HudReadout => ({
   budget: { spent: 1000, total: 5000 },
   timeline: { day: 3, total: 100, slipDays: 0 },
   enrollment: { enrolled: 4, target: 48 },
+  difficulty: "standard",
   ...over,
 });
 

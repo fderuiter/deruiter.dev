@@ -25,13 +25,14 @@ import {
   CHIP_WIDTH,
   clampChip,
   chipHeight,
+  touchZoomFloor,
   type ChipNode,
   type WireEdge,
 } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { TouchWireControls } from "./TouchWireControls";
-import { resolveTouchWire } from "./touch-wire";
+import { canRewire, resolveTouchWire } from "./touch-wire";
 
 /** Drag payload key shared with the toolbox. */
 export const CHIP_DRAG_TYPE = "application/x-protocol-drift-chip";
@@ -43,10 +44,10 @@ const WORLD_TOP = 100;
 const WORLD_HEIGHT = 636;
 const FIT_MARGIN = 8;
 /**
- * On the touch cabinet a narrow canvas fits the world below the desktop zoom
- * floor, so the floor drops to let the fit and a pinch-out both reach it.
+ * On the touch cabinet the zoom never drops below the size at which a chip
+ * and its title stay legible (#2045), computed from the chip geometry.
  */
-const TOUCH_MIN_ZOOM = 0.3;
+const TOUCH_MIN_ZOOM = touchZoomFloor();
 
 function LaneOverlay() {
   const { tabulationTop, conservationWallY, analysisBottom } = LANE_GEOMETRY;
@@ -138,12 +139,7 @@ function CanvasInner() {
   // the canvas (the page never scrolls under them). Desktop keeps the fitted,
   // fixed view it always had.
   const touch = useCabinetTouch();
-  const editable =
-    fsm === "DRAFT" ||
-    fsm === "VALIDATE" ||
-    fsm === "DEPLOY_READY" ||
-    fsm === "PAUSED" ||
-    fsm === "WAVE_REVIEW";
+  const editable = canRewire(fsm);
 
   // Keep the lane geometry in view: fit the whole world, never pan or zoom.
   useEffect(() => {
@@ -158,6 +154,17 @@ function CanvasInner() {
         (width - FIT_MARGIN * 2) / WORLD_WIDTH,
         (height - FIT_MARGIN * 2) / WORLD_HEIGHT
       );
+      // On touch the whole world may not fit at a legible zoom: then the
+      // fit frames the chips at the floor and the player pans.
+      if (touch && zoom < TOUCH_MIN_ZOOM) {
+        void flow.fitView({
+          padding: 0.06,
+          duration: 0,
+          minZoom: TOUCH_MIN_ZOOM,
+          maxZoom: TOUCH_MIN_ZOOM,
+        });
+        return;
+      }
       void flow.setViewport({
         x: FIT_MARGIN,
         y: FIT_MARGIN - WORLD_TOP * zoom,
@@ -168,7 +175,7 @@ function CanvasInner() {
     const observer = new ResizeObserver(() => fit());
     observer.observe(el);
     return () => observer.disconnect();
-  }, [flow]);
+  }, [flow, touch]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<ChipNode>[]) => {

@@ -7,6 +7,7 @@ import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext"
 import {
   CHIP_WIDTH,
   PIN_LAYOUT,
+  TOUCH_TITLE_PX,
   chipHeight,
   type ChipNode,
 } from "./graph-model";
@@ -46,7 +47,10 @@ export function ChipNodeView({ data, selected }: NodeProps<ChipNode>) {
         className="flex items-center justify-between gap-1 border-b border-zinc-800 px-2"
         style={{ height: PIN_LAYOUT.headerPx }}
       >
-        <span className="min-w-0 truncate text-[11px] font-semibold">
+        <span
+          className="min-w-0 truncate text-[11px] font-semibold"
+          style={touch ? { fontSize: TOUCH_TITLE_PX } : undefined}
+        >
           {data.kind}
         </span>
         <span className={`shrink-0 text-[9px] ${style.tag}`}>

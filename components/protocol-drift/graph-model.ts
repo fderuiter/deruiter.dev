@@ -30,6 +30,26 @@ const PIN_ROW_PX = 18;
 const CHIP_HEADER_PX = 26;
 const CHIP_PADDING_PX = 8;
 
+/** Touch: the chip title's canvas font size, so it reads at the zoom floor. */
+export const TOUCH_TITLE_PX = 15;
+/** Touch: the least a chip may be on screen, in CSS pixels. */
+export const TOUCH_MIN_CHIP_SCREEN_PX = 44;
+/** Touch: the least a chip title may render at, in CSS pixels. */
+export const TOUCH_MIN_TEXT_SCREEN_PX = 12;
+
+/**
+ * The lowest zoom the touch canvas allows, computed from chip geometry: the
+ * shortest chip must stay 44px tall on screen, and the title must stay 12px.
+ */
+export function touchZoomFloor(): number {
+  const kinds = Object.keys(CHIP_SPECS) as ChipKind[];
+  const shortest = Math.min(...kinds.map((kind) => chipHeight(kind)));
+  return Math.max(
+    TOUCH_MIN_CHIP_SCREEN_PX / shortest,
+    TOUCH_MIN_TEXT_SCREEN_PX / TOUCH_TITLE_PX
+  );
+}
+
 /** Chip width in canvas pixels. */
 export const CHIP_WIDTH = LANE_GEOMETRY.chipWidth;
 

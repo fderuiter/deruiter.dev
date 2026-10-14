@@ -11,6 +11,34 @@ export interface WirePair {
   targetHandle: string;
 }
 
+/** States in which the pipeline may be rewired (the clock is paused). */
+const REWIRABLE = new Set([
+  "DRAFT",
+  "VALIDATE",
+  "DEPLOY_READY",
+  "PAUSED",
+  "WAVE_REVIEW",
+]);
+
+/** True when a wire may be started or finished in this FSM state (#2045). */
+export function canRewire(fsm: string | undefined): boolean {
+  return fsm !== undefined && REWIRABLE.has(fsm);
+}
+
+/** The pair list split into same-name pairs and the rest. */
+export interface GroupedWirePairs {
+  matching: WirePair[];
+  other: WirePair[];
+}
+
+/** Same-name pairs (sbp to sbp) come first; the rest are kept apart. */
+export function groupTouchWirePairs(pairs: WirePair[]): GroupedWirePairs {
+  return {
+    matching: pairs.filter((p) => p.sourceHandle === p.targetHandle),
+    other: pairs.filter((p) => p.sourceHandle !== p.targetHandle),
+  };
+}
+
 /**
  * Every output-to-input pair the canvas would accept between two chips. The
  * canvas's isValidConnection asks the same question, so a tap-wired pair is

@@ -118,6 +118,11 @@
 .pd-touch .text-\[11px\] {
   font-size: 0.75rem;
 }
+/* Header and toolbar labels (Run, Fit, Speed, Publish) are 13px on touch, so
+   they compute to at least 12px whatever the cabinet's root size. */
+.pd-touch .text-xs {
+  font-size: 0.8125rem;
+}
 /* A finger pans and pinches the canvas; the page never scrolls under it. */
 .pd-touch .react-flow {
   touch-action: none;

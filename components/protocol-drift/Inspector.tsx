@@ -696,14 +696,15 @@ export function Inspector() {
   );
 
   if (touch) {
-    // The touch cabinet keeps the canvas: the inspector is a closed bar until
-    // it is opened, and then it is a sheet over the canvas (#2045).
-    if (!expanded) {
-      return (
+    // The touch cabinet keeps the canvas: the bar stays put in the layout
+    // whether or not the sheet is open, so opening the inspector never resizes
+    // the canvas. The sheet is an overlay above the bar (#2045).
+    return (
+      <>
         <section
           aria-label="Forensic Inspector"
           data-testid="inspector"
-          data-expanded="false"
+          data-expanded={expanded ? "true" : "false"}
           className="flex shrink-0 items-center justify-between gap-2 border-t border-zinc-700 bg-[#13151a] px-3 font-mono text-xs"
         >
           <h2 className="text-xs font-semibold tracking-wide text-zinc-100">
@@ -712,24 +713,24 @@ export function Inspector() {
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            aria-expanded={false}
+            aria-expanded={expanded}
             className="min-h-11 border border-zinc-700 px-3 text-xs text-zinc-200 hover:border-amber-500"
           >
             Expand (I)
           </button>
         </section>
-      );
-    }
-    return (
-      <TouchSheet
-        title="Forensic Inspector"
-        testId="inspector-sheet"
-        onClose={() => setExpanded(false)}
-      >
-        <div className="flex h-[calc(70dvh-4rem)] min-h-0 flex-col">
-          {panes}
-        </div>
-      </TouchSheet>
+        {expanded ? (
+          <TouchSheet
+            title="Forensic Inspector"
+            testId="inspector-sheet"
+            onClose={() => setExpanded(false)}
+          >
+            <div className="flex h-[calc(70dvh-4rem)] min-h-0 flex-col">
+              {panes}
+            </div>
+          </TouchSheet>
+        ) : null}
+      </>
     );
   }
 

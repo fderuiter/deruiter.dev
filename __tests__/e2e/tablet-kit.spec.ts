@@ -1575,3 +1575,505 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
     }
   });
 });
+
+// Laser Loon: the arena, the dock and the menu sheet in the touch cabinet.
+// One finger aims and steers, the other thumb holds Fire (#2081).
+const LL_ROUTE = "/arcade/laser-loon";
+const LL_ROOT = ".ll-touch";
+const LL_DOCK = '[data-testid="loon-touch-controls"]';
+const LL_GATE = "[data-touch-controls]";
+
+/** Launches the cabinet and waits for the game's touch layout. */
+async function launchLaserLoon(page: Page) {
+  const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+  await expect(async () => {
+    if ((await page.locator(IMMERSIVE).count()) > 0) return;
+    await launch.tap({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 180000 });
+  await expect(page.locator(LL_ROOT).first()).toBeVisible({ timeout: 90000 });
+}
+
+/**
+ * Taps through to live play. The cabinet's one title screen is the attract
+ * screen, so Launch lands on the Act 1 front page; a bare game shows its own
+ * title first.
+ */
+async function startLaserLoonRun(page: Page) {
+  const engage = page.getByRole("button", { name: /Engage stage/i });
+  const title = page.getByRole("button", { name: /START CAMPAIGN/ }).first();
+  await expect(async () => {
+    if (await title.isVisible()) await title.tap({ timeout: 3000 });
+    await expect(engage).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 30000 });
+  await engage.tap({ timeout: 15000 });
+  await expect(page.getByRole("button", { name: "Pause Game" })).toBeVisible();
+}
+
+const llScore = async (page: Page) => {
+  const text = await page
+    .getByRole("group", { name: "Game status" })
+    .innerText();
+  return Number(/SCORE\s*(\d+)/i.exec(text)?.[1] ?? 0);
+};
+
+/** A box sits wholly inside the viewport. */
+async function expectBoxInViewport(
+  page: Page,
+  locator: Locator,
+  label: string
+) {
+  const viewport = page.viewportSize()!;
+  const box = await locator.boundingBox();
+  expect(box, `${label} has a box`).not.toBeNull();
+  expect(box!.x, `${label} left`).toBeGreaterThanOrEqual(-1);
+  expect(box!.y, `${label} top`).toBeGreaterThanOrEqual(-1);
+  expect(box!.x + box!.width, `${label} right`).toBeLessThanOrEqual(
+    viewport.width + 1
+  );
+  expect(box!.y + box!.height, `${label} bottom`).toBeLessThanOrEqual(
+    viewport.height + 1
+  );
+}
+
+test.describe("Laser Loon on a tablet (iPad projects, #2081)", () => {
+  test.setTimeout(300000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(LL_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches fit to the viewport", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchLaserLoon(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the arena, status strip and dock fit both orientations without page scroll", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expect(page.locator(LL_ROOT).first()).toBeVisible();
+      await expectInsideViewport(page, [
+        LL_ROOT,
+        '[aria-label="Game status"]',
+        'canvas[role="application"]',
+        LL_DOCK,
+      ]);
+      const canvas = (await page
+        .locator('canvas[role="application"]')
+        .boundingBox())!;
+      const landscape = size.width > size.height;
+      // The canvas is the biggest 768:420 box the strip and dock leave.
+      expect(canvas.width / size.width).toBeGreaterThanOrEqual(
+        landscape ? 0.55 : 0.95
+      );
+      expect(canvas.height / size.height).toBeGreaterThanOrEqual(
+        landscape ? 0.6 : 0.34
+      );
+      expect(canvas.width / canvas.height).toBeCloseTo(768 / 420, 1);
+      // The strip stays clear of the floating toolbar.
+      const toolbar = (await page
+        .getByTestId("cabinet-touch-toolbar")
+        .boundingBox())!;
+      const menu = (await page
+        .getByRole("button", { name: "Menu", exact: true })
+        .boundingBox())!;
+      expect(menu.x + menu.width).toBeLessThanOrEqual(toolbar.x + 1);
+      await assertNoHorizontalOverflow(page);
+      expect(
+        await page.evaluate(
+          () => document.scrollingElement!.scrollHeight - window.innerHeight
+        )
+      ).toBeLessThanOrEqual(1);
+    }
+  });
+
+  test("the page cannot scroll behind the open cabinet", async ({ page }) => {
+    await launchLaserLoon(page);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("every control is 44px and no text is under 12px: title, play, pause, menu, museum", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await sdTouchSizes(page, LL_ROOT);
+
+    await expect(page.getByText("The Loon Ledger")).toBeVisible();
+    await sdTouchSizes(page, LL_ROOT);
+    await page.getByRole("button", { name: /Engage stage/i }).tap();
+    await expect(
+      page.getByRole("button", { name: "Pause Game" })
+    ).toBeVisible();
+    await sdTouchSizes(page, LL_ROOT);
+
+    await page.getByRole("button", { name: "Pause Game" }).tap();
+    await expect(
+      page.getByRole("heading", { name: "GAME PAUSED" })
+    ).toBeVisible();
+    await sdTouchSizes(page, LL_ROOT);
+    await page.getByRole("button", { name: /RESUME GAME/ }).tap();
+
+    await page.getByRole("button", { name: "Menu", exact: true }).tap();
+    await expect(page.getByTestId("loon-menu-sheet")).toBeVisible();
+    await sdTouchSizes(page, LL_ROOT);
+    await page.getByRole("button", { name: "Flag Museum" }).tap();
+    await expect(
+      page.getByRole("dialog", { name: "Minnesota Flag Redesign Museum" })
+    ).toBeVisible();
+    await sdTouchSizes(page, LL_ROOT);
+  });
+
+  test("the act intro fits, and its Engage button is on screen", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    const engage = page.getByRole("button", { name: /Engage stage/i });
+    await expect(engage).toBeVisible();
+    await expectBoxInViewport(page, engage, "Engage stage");
+    const { width, height } = page.viewportSize()!;
+    await page.setViewportSize({ width: height, height: width });
+    await expectBoxInViewport(page, engage, "Engage stage (turned)");
+  });
+
+  test("a drag steers and the Fire key shoots: two fingers score on the rival flags", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    // The arena centres in the height the dock leaves, so measure once the
+    // layout has settled: two reads a frame apart that agree.
+    const settledBox = async (locator: Locator) => {
+      let last = await locator.boundingBox();
+      await expect(async () => {
+        await page.waitForTimeout(100);
+        const next = await locator.boundingBox();
+        const same = JSON.stringify(next) === JSON.stringify(last);
+        last = next;
+        expect(same).toBe(true);
+      }).toPass({ timeout: 15000 });
+      return last!;
+    };
+    const fire = await settledBox(
+      page.getByRole("button", { name: "Fire (hold)" })
+    );
+    const canvas = await settledBox(page.locator('canvas[role="application"]'));
+    const cdp = await page.context().newCDPSession(page);
+    const fireAt = {
+      x: fire.x + fire.width / 2,
+      y: fire.y + fire.height / 2,
+      id: 1,
+    };
+    // The aiming finger traces the right of the arena, where the rival flags
+    // fly, sweeping across as well as up and down so it finds one wherever
+    // the act has spawned it.
+    const at = (t: number) => ({
+      x: canvas.x + canvas.width * (0.35 + 0.6 * Math.abs(Math.sin(t * 0.37))),
+      y: canvas.y + canvas.height * (0.1 + 0.8 * Math.abs(Math.sin(t))),
+      id: 2,
+    });
+    const pause = page.getByRole("button", { name: "Pause Game" });
+    const retry = page.getByRole("button", { name: /Try Act 1 again/ });
+    // Sweep the aiming finger while Fire stays held. A blind sweep can lose
+    // the act before it lands a hit, most often on a loaded machine, so a
+    // lost act lifts both fingers, starts the act again and keeps sweeping:
+    // the claim is that two fingers score, not that one sweep is lucky.
+    const start = Date.now();
+    let t = 0;
+    let holding = false;
+    while (Date.now() - start < 90000 && (await llScore(page)) === 0) {
+      if (!(await pause.isVisible())) {
+        if (holding) {
+          await cdp.send("Input.dispatchTouchEvent", {
+            type: "touchEnd",
+            touchPoints: [],
+          });
+          holding = false;
+        }
+        if (await retry.isVisible()) await retry.tap();
+        await page.waitForTimeout(250);
+        continue;
+      }
+      t += 0.35;
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: holding ? "touchMove" : "touchStart",
+        touchPoints: [fireAt, at(t)],
+      });
+      holding = true;
+      await page.waitForTimeout(40);
+    }
+    if (holding) {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+    }
+    expect(await llScore(page)).toBeGreaterThan(0);
+  });
+
+  test("a tap on the arena aims without shooting: no score from taps alone", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    const canvas = page.locator('canvas[role="application"]');
+    const box = (await canvas.boundingBox())!;
+    for (let i = 0; i < 12; i += 1) {
+      await canvas.tap({
+        position: { x: box.width * 0.85, y: box.height * (0.15 + 0.07 * i) },
+      });
+      await page.waitForTimeout(150);
+    }
+    expect(await llScore(page)).toBe(0);
+  });
+
+  test("the optic keys select the laser", async ({ page }) => {
+    await launchLaserLoon(page);
+    const aurora = page.getByRole("button", { name: "Optic 3: Aurora" });
+    await aurora.tap();
+    await expect(aurora).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("button", { name: "Optic 1: Ruby" })
+    ).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("Pause stops the run and Escape resumes it, with the cabinet staying open", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    await page.getByRole("button", { name: "Pause Game" }).tap();
+    const dialog = page.getByRole("dialog", { name: /GAME PAUSED/ });
+    await expect(dialog).toBeVisible();
+    await expectBoxInViewport(page, dialog, "pause menu");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("Escape during play pauses instead of leaving the cabinet", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    await page.locator(".arcade-shooter-playfield").focus();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("heading", { name: "GAME PAUSED" })
+    ).toBeVisible();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the Menu sheet traps focus, fits, and Escape closes it while the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await page.getByRole("button", { name: "Menu", exact: true }).tap();
+    const sheet = page.getByTestId("loon-menu-sheet");
+    await expect(sheet).toBeVisible();
+    await expectBoxInViewport(page, sheet, "menu sheet");
+    for (let i = 0; i < 12; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () =>
+            !!document.activeElement?.closest('[data-testid="loon-menu-sheet"]')
+        )
+      ).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the Flag Museum fits, traps focus, and Escape closes it while the cabinet stays open", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await page.getByRole("button", { name: "Menu", exact: true }).tap();
+    await page.getByRole("button", { name: "Flag Museum" }).tap();
+    const museum = page.getByRole("dialog", {
+      name: "Minnesota Flag Redesign Museum",
+    });
+    await expect(museum).toBeVisible();
+    await expectBoxInViewport(page, museum, "museum");
+    const { width, height } = page.viewportSize()!;
+    await page.setViewportSize({ width: height, height: width });
+    await expectBoxInViewport(page, museum, "museum (turned)");
+    for (let i = 0; i < 12; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () => !!document.activeElement?.closest('[role="dialog"]')
+        )
+      ).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(museum).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("a hidden tab or a blurred window pauses a run in progress", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(
+      page.getByRole("heading", { name: "GAME PAUSED" })
+    ).toBeVisible();
+    await page.getByRole("button", { name: /RESUME GAME/ }).tap();
+    await expect(
+      page.getByRole("heading", { name: "GAME PAUSED" })
+    ).toBeHidden();
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => "hidden",
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await expect(
+      page.getByRole("heading", { name: "GAME PAUSED" })
+    ).toBeVisible();
+  });
+
+  test("with a keyboard case the dock hides and every shortcut works; a tap brings it back", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    const gate = page.locator(LL_GATE).first();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+    await page.locator(".arcade-shooter-playfield").focus();
+    await page.keyboard.press("3");
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    await expect(
+      page.getByRole("button", { name: "Optic 3: Aurora", includeHidden: true })
+    ).toHaveAttribute("aria-pressed", "true");
+    const museum = page.getByRole("dialog", {
+      name: "Minnesota Flag Redesign Museum",
+    });
+    await page.keyboard.press("m");
+    await expect(museum).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(museum).toBeHidden();
+    await page.locator(".arcade-shooter-playfield").focus();
+    // Space engages the act, P pauses and resumes it.
+    await page.keyboard.press("Space");
+    await expect(
+      page.getByRole("button", { name: "Pause Game" })
+    ).toBeVisible();
+    const paused = page.getByRole("heading", { name: "GAME PAUSED" });
+    await page.keyboard.press("p");
+    await expect(paused).toBeVisible();
+    await page.keyboard.press("p");
+    await expect(paused).toBeHidden();
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    await page.getByRole("button", { name: "Pause Game" }).tap();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+  });
+
+  test("the Apple Pencil works like a finger", async ({ page }) => {
+    await launchLaserLoon(page);
+    await startLaserLoonRun(page);
+    const cabinet = page.locator(IMMERSIVE);
+    const canvas = (await page
+      .locator('canvas[role="application"]')
+      .boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = canvas.x + canvas.width * 0.6;
+    const y = canvas.y + canvas.height * 0.5;
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mousePressed",
+      x,
+      y,
+      button: "left",
+      clickCount: 1,
+      pointerType: "pen",
+    });
+    await cdp.send("Input.dispatchMouseEvent", {
+      type: "mouseReleased",
+      x,
+      y,
+      button: "left",
+      clickCount: 1,
+      pointerType: "pen",
+    });
+    await expect(cabinet).toHaveAttribute("data-input-modality", "pen");
+    await expect(page.locator(LL_GATE).first()).toHaveAttribute(
+      "data-touch-controls",
+      "shown"
+    );
+    expect(await llScore(page)).toBe(0);
+  });
+
+  test("the playing cabinet has no blocking axe violations", async ({
+    page,
+  }) => {
+    await launchLaserLoon(page);
+    await sdAxe(page);
+    await startLaserLoonRun(page);
+    await sdAxe(page);
+    await page.getByRole("button", { name: "Menu", exact: true }).tap();
+    await expect(page.getByTestId("loon-menu-sheet")).toBeVisible();
+    await sdAxe(page);
+  });
+
+  test.describe("Split View (ADR 0061)", () => {
+    for (const width of [507, 678]) {
+      test(`${width}x1024: the notice offers Try it anyway, with no overflow`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(LL_ROUTE);
+        await expect(page.locator(NOTICE).first()).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+        const tryAnyway = page.getByRole("button", { name: /Try it anyway/i });
+        await expect(tryAnyway).toBeVisible();
+        await tryAnyway.tap();
+        await expect(
+          page.getByRole("button", { name: /Launch Cabinet/i })
+        ).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+      });
+
+      test(`${width}x1024: Try it anyway launches a cabinet that fits`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(LL_ROUTE);
+        await page.getByRole("button", { name: /Try it anyway/i }).tap();
+        await launchLaserLoon(page);
+        await startLaserLoonRun(page);
+        await expectInsideViewport(page, [
+          LL_ROOT,
+          'canvas[role="application"]',
+          LL_DOCK,
+        ]);
+        await assertNoHorizontalOverflow(page);
+      });
+    }
+  });
+});

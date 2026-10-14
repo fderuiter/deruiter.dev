@@ -31,7 +31,12 @@ export function TouchSheet({
   scroll = true,
   children,
 }: TouchSheetProps) {
+  // Focus moves into the sheet on open, so keyboard and screen reader users
+  // start inside the dialog rather than on the control that opened it.
+  const closeRef = React.useRef<HTMLButtonElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
+    initialFocusRef: closeRef,
+    preventScroll: true,
     onEscape: onClose,
     returnFocus: true,
   });
@@ -56,6 +61,7 @@ export function TouchSheet({
             {title}
           </h2>
           <button
+            ref={closeRef}
             type="button"
             onClick={onClose}
             aria-label={`Close ${title}`}

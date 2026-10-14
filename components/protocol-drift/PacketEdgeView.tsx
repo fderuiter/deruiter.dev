@@ -7,6 +7,7 @@ import {
   getBezierPath,
   type EdgeProps,
 } from "@xyflow/react";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useProtocolDriftStore } from "./store";
 
 const QUERY = "(prefers-reduced-motion: reduce)";
@@ -58,6 +59,8 @@ export function PacketEdgeView({
   selected,
 }: EdgeProps) {
   const reduced = useReducedMotion();
+  // On touch a wire is a finger-wide tap target, not a 20-unit hairline.
+  const touch = useCabinetTouch();
   const allTokens = useProtocolDriftStore((s) => s.tokens);
   const count = useProtocolDriftStore(
     (s) => s.edgeCounts[`${source}>${target}`] ?? 0
@@ -107,6 +110,7 @@ export function PacketEdgeView({
       <BaseEdge
         id={id}
         path={path}
+        interactionWidth={touch ? 56 : undefined}
         style={{
           stroke: selected ? "#f59e0b" : "#94a3b8",
           strokeWidth: selected ? 2 : 1.25,

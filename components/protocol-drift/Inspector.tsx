@@ -728,7 +728,7 @@ export function Inspector() {
             onClose={() => setExpanded(false)}
             scroll={false}
           >
-            <div className="flex h-[min(calc(70dvh-4rem),30rem)] min-h-0 flex-col">
+            <div className="flex h-[min(calc(55dvh-4rem),30rem)] min-h-0 flex-col">
               {panes}
             </div>
           </TouchSheet>

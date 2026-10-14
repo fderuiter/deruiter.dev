@@ -8,6 +8,7 @@ import {
   fireEvent,
   render,
   screen,
+  waitFor,
 } from "@testing-library/react";
 import {
   afterEach,
@@ -154,6 +155,8 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     const close = screen.getByRole("button", {
       name: /Close Forensic Inspector/,
     });
+    // Opening moves focus into the sheet.
+    await waitFor(() => expect(document.activeElement).toBe(close));
     await act(async () => {
       fireEvent.keyDown(close, { key: "Escape" });
     });

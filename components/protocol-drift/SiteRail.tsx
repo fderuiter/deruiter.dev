@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { clamp } from "@/lib/game-utils";
 import { SITE_IDS, SITE_PROFILES, type SiteId } from "@/lib/protocol-drift";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { TouchSheet } from "./TouchSheet";
 import { useProtocolDriftStore } from "./store";
 
 /** Right rail: live goodwill, latency and query load for each site. */
@@ -17,22 +19,111 @@ export function SiteRail({
   const snapshot = useProtocolDriftStore((s) => s.snapshot);
   const sites: readonly SiteId[] =
     view?.scenario === "tracer" ? ["SITE-A"] : SITE_IDS;
+  // The touch cabinet keeps the rail open (a strip of sites when the cabinet
+  // is narrow), so it has no collapse control there.
+  const touch = useCabinetTouch();
+  const [openSite, setOpenSite] = useState<SiteId | null>(null);
+
+  if (touch) {
+    // The touch cabinet keeps the canvas: each site is a compact tile with its
+    // goodwill, and a tap opens the full site card in a sheet (#2045).
+    const open = openSite ? SITE_PROFILES[openSite] : null;
+    const openLive = openSite ? snapshot?.activeSites[openSite] : undefined;
+    return (
+      <aside
+        aria-label="Site rail"
+        className="pd-touch-rail flex min-h-0 shrink-0 gap-1 overflow-hidden border-l border-zinc-800 bg-[#13151a] p-1 font-mono"
+      >
+        {sites.map((id) => {
+          const profile = SITE_PROFILES[id];
+          const live = snapshot?.activeSites[id];
+          const goodwill = Math.round(
+            live?.goodwill ?? profile.initialGoodwill
+          );
+          const tone = goodwill < 40 ? "bg-amber-500" : "bg-emerald-500";
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setOpenSite(id)}
+              aria-label={`${profile.name} (${id}), goodwill ${goodwill}. Open details`}
+              className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1 border border-zinc-800 bg-[#0d0e11] px-2 py-1 text-left text-xs text-zinc-100 active:scale-[0.98]"
+            >
+              <span className="font-semibold">
+                {id.replace("SITE-", "Site ")}
+              </span>
+              <span className="tabular-nums text-zinc-300">G {goodwill}</span>
+              <span
+                aria-hidden="true"
+                className="block h-1.5 w-full bg-zinc-800"
+              >
+                <span
+                  className={`block h-full ${tone}`}
+                  style={{ width: `${clamp(goodwill, 0, 100)}%` }}
+                />
+              </span>
+            </button>
+          );
+        })}
+        {open && openSite ? (
+          <TouchSheet
+            title={`${open.name} (${openSite})`}
+            testId="site-sheet"
+            onClose={() => setOpenSite(null)}
+          >
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-zinc-200">
+              <dt>Goodwill G</dt>
+              <dd className="text-right tabular-nums text-zinc-100">
+                {Math.round(openLive?.goodwill ?? open.initialGoodwill)}
+              </dd>
+              <dt>Latency</dt>
+              <dd className="text-right tabular-nums text-zinc-100">
+                {openLive?.latencyHours ?? open.baseLatencyHours}h
+              </dd>
+              <dt>Base latency</dt>
+              <dd className="text-right tabular-nums">
+                {open.baseLatencyHours}h
+              </dd>
+              <dt>Attention A</dt>
+              <dd className="text-right tabular-nums">
+                {Math.round(openLive?.attention ?? 100)}
+              </dd>
+              <dt>Open queries</dt>
+              <dd className="text-right tabular-nums text-zinc-100">
+                {openLive?.openQueries ?? 0}
+              </dd>
+              <dt>Form</dt>
+              <dd className="text-right text-zinc-100">
+                {openLive?.version ?? "v1"}
+              </dd>
+              <dt>v2 activates</dt>
+              <dd className="text-right tabular-nums">
+                Day {open.amendmentActivationDay}
+              </dd>
+            </dl>
+          </TouchSheet>
+        ) : null}
+      </aside>
+    );
+  }
 
   return (
     <aside
       aria-label="Site rail"
       className={`flex min-h-0 shrink-0 flex-col gap-2 overflow-y-auto border-l border-zinc-800 bg-[#13151a] p-2 font-mono ${
         compact ? "w-14" : "w-[264px]"
-      }`}
+      }${touch ? " pd-touch-rail" : ""}`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={!compact}
-        className="min-h-8 border border-zinc-700 px-1 text-[11px] text-zinc-200 hover:border-amber-500"
-      >
-        {compact ? "Sites" : "Collapse"}
-      </button>
+      {touch ? null : (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={!compact}
+          className="min-h-8 border border-zinc-700 px-1 text-[11px] text-zinc-200 hover:border-amber-500"
+        >
+          {compact ? "Sites" : "Collapse"}
+        </button>
+      )}
       {sites.map((id) => {
         const profile = SITE_PROFILES[id];
         const live = snapshot?.activeSites[id];
@@ -56,9 +147,17 @@ export function SiteRail({
             aria-label={`${profile.name} (${id})`}
             className="min-w-0 border border-zinc-800 bg-[#0d0e11] p-2 text-[11px] text-zinc-300"
           >
-            <h3 className="break-words text-xs font-semibold text-zinc-100">
-              {id.replace("SITE-", "Site ")} · {profile.name}
-            </h3>
+            {/* On touch the site title is not a heading: the page's own h1
+                 is followed directly by these, which axe reads as a skip. */}
+            {touch ? (
+              <p className="break-words text-xs font-semibold text-zinc-100">
+                {id.replace("SITE-", "Site ")} · {profile.name}
+              </p>
+            ) : (
+              <h3 className="break-words text-xs font-semibold text-zinc-100">
+                {id.replace("SITE-", "Site ")} · {profile.name}
+              </h3>
+            )}
             <p className="mt-1 flex items-center justify-between">
               <span>Goodwill G</span>
               <b className="tabular-nums text-zinc-100">{goodwill}</b>

@@ -7,6 +7,7 @@ import {
   IconPlayerTrackNext,
 } from "@tabler/icons-react";
 import { STUDY_ID, trialDayOf, type SimSpeed } from "@/lib/protocol-drift";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { useProtocolDriftStore } from "./store";
 
 const SPEEDS: SimSpeed[] = [1, 2, 5];
@@ -50,10 +51,60 @@ export function HeaderBar() {
   const exportSave = useProtocolDriftStore((s) => s.exportSave);
   const importSave = useProtocolDriftStore((s) => s.importSave);
   const fileInput = useRef<HTMLInputElement | null>(null);
+  const touch = useCabinetTouch();
 
   const fsm = snapshot?.fsmState ?? "BRIEF";
   const running = fsm === "RUNNING";
   const frozen = fsm === "LOCKED" || fsm === "LOCK_REVIEW";
+  // Touch only: why a control is disabled, shown on screen and linked to the
+  // control with aria-describedby (#2045). Null when the control is enabled.
+  const reasonFor = {
+    run: !touch
+      ? null
+      : fsm === "BRIEF"
+        ? "Accept the assignment first."
+        : frozen
+          ? "The database is locked."
+          : null,
+    // In a draft the Publish reason already names the next step.
+    step:
+      !touch || fsm === "PAUSED" || fsm === "DRAFT"
+        ? null
+        : fsm === "BRIEF"
+          ? "Accept the assignment first."
+          : frozen
+            ? "The database is locked."
+            : fsm === "RUNNING"
+              ? "Pause the clock to step."
+              : "Publish the revision before stepping.",
+    validate: !touch
+      ? null
+      : fsm === "BRIEF"
+        ? "Accept the assignment first."
+        : frozen
+          ? "The database is locked."
+          : fsm === "RUNNING"
+            ? "Pause the clock to run the local test."
+            : null,
+    // Paused after a publish there is nothing new to publish.
+    publish:
+      !touch || fsm === "DEPLOY_READY" || fsm === "PAUSED"
+        ? null
+        : fsm === "BRIEF"
+          ? "Accept the assignment first."
+          : frozen
+            ? "The database is locked."
+            : fsm === "RUNNING"
+              ? "Pause the clock to publish."
+              : "Run Local Test first.",
+  };
+  // One line under the controls holds each distinct reason once, so the
+  // header grows by a single row rather than one row per group (#2045).
+  const reasons = [
+    ...new Set(Object.values(reasonFor).filter((r): r is string => !!r)),
+  ];
+  const hintId = (text: string | null) =>
+    text ? `pd-hint-${reasons.indexOf(text)}` : undefined;
   const day = snapshot ? trialDayOf(snapshot.minute) : 0;
   const canLock = view?.scenario === "full" && fsm === "PAUSED" && day >= 28;
   const sdtmClear =
@@ -72,7 +123,9 @@ export function HeaderBar() {
 
   return (
     <header
-      className="flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-[#13151a] px-3 py-2"
+      className={`flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-[#13151a] px-3 py-2${
+        touch ? " pd-touch-header" : ""
+      }`}
       aria-label="Simulation controls"
     >
       <div className="min-w-0">
@@ -87,7 +140,7 @@ export function HeaderBar() {
       </div>
 
       <div
-        className="flex flex-wrap items-center gap-1.5"
+        className={`flex flex-wrap items-center gap-1.5${touch ? " pd-touch-clock" : ""}`}
         role="group"
         aria-label="Clock"
       >
@@ -97,6 +150,7 @@ export function HeaderBar() {
           disabled={frozen || fsm === "BRIEF"}
           aria-label={running ? "Pause (Space)" : "Run (Space)"}
           aria-pressed={running}
+          aria-describedby={hintId(reasonFor.run)}
           className={NEUTRAL}
         >
           {running ? (
@@ -124,12 +178,15 @@ export function HeaderBar() {
           onClick={() => void step()}
           disabled={fsm !== "PAUSED"}
           aria-label="Step one hour (N)"
+          aria-describedby={hintId(reasonFor.step)}
           className={NEUTRAL}
         >
           <IconPlayerTrackNext className="h-4 w-4" aria-hidden="true" />
           <span>N</span>
         </button>
       </div>
+
+      {touch ? <div className="pd-touch-row-end" aria-hidden="true" /> : null}
 
       <div
         className="flex flex-wrap items-center gap-1.5"
@@ -140,6 +197,7 @@ export function HeaderBar() {
           type="button"
           onClick={() => void validate()}
           disabled={fsm === "BRIEF" || fsm === "RUNNING" || frozen}
+          aria-describedby={hintId(reasonFor.validate)}
           className={NEUTRAL}
         >
           Run Local Test
@@ -148,6 +206,7 @@ export function HeaderBar() {
           type="button"
           onClick={() => void publish()}
           disabled={fsm !== "DEPLOY_READY"}
+          aria-describedby={hintId(reasonFor.publish)}
           className={`${NEUTRAL} ${fsm === "DEPLOY_READY" ? "!border-emerald-500 !text-emerald-400" : ""}`}
         >
           Publish Revision
@@ -176,20 +235,23 @@ export function HeaderBar() {
           label={`ADaM ${snapshot?.recordCounts.adamRows ?? 0} rows`}
           tone={(snapshot?.recordCounts.adamRows ?? 0) > 0 ? "ok" : "idle"}
         />
-        <GateBadge label={`FSM ${fsm}`} tone={running ? "ok" : "idle"} />
+        <GateBadge
+          label={touch ? fsm : `FSM ${fsm}`}
+          tone={running ? "ok" : "idle"}
+        />
         <button
           type="button"
           onClick={() => void exportSave()}
           className={NEUTRAL}
         >
-          Export JSON
+          {touch ? "Export" : "Export JSON"}
         </button>
         <button
           type="button"
           onClick={() => fileInput.current?.click()}
           className={NEUTRAL}
         >
-          Import JSON
+          {touch ? "Import" : "Import JSON"}
         </button>
         <input
           ref={fileInput}
@@ -197,10 +259,22 @@ export function HeaderBar() {
           accept="application/json,.json"
           className="sr-only"
           tabIndex={-1}
+          // On touch the visible Import button opens it, so the input is
+          // removed from focus and layout entirely (#2045).
+          hidden={touch}
           aria-label="Import save file"
           onChange={(e) => void onImport(e)}
         />
       </div>
+      {reasons.length > 0 ? (
+        <p className="basis-full font-mono text-xs text-zinc-300">
+          {reasons.map((text, i) => (
+            <span key={text} id={`pd-hint-${i}`} className="mr-3 inline-block">
+              {text}
+            </span>
+          ))}
+        </p>
+      ) : null}
       {validation && !validation.valid ? (
         <p
           role="alert"

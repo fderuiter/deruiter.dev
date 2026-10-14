@@ -9,6 +9,7 @@ import React, {
   useRef,
 } from "react";
 import Image from "next/image";
+import "./cabinet-standby.css";
 import {
   IconPlayerPlay,
   IconPower,
@@ -614,7 +615,27 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             else handleExit();
           };
           if (event.key === "Escape" && escapeLeaves) {
+            // A game that docks a panel on Escape (Protocol Drift's expanded
+            // inspector, #2045) gets the press from its own keys. Only the
+            // touch cabinet asks for this; desktop is unchanged.
+            const keyboardBoundary = getKeyboardBoundary(event.currentTarget);
+            if (
+              touchImmersive &&
+              keyboardBoundary?.getAttribute("data-escape-docks") === "true" &&
+              keyboardBoundary.contains(target)
+            ) {
+              return;
+            }
             const dialog = findOpenGameDialog(event.currentTarget);
+            // A dialog that must be accepted, not dismissed, holds the press:
+            // Escape neither closes it nor leaves the touch cabinet.
+            if (
+              dialog &&
+              touchImmersive &&
+              dialog.getAttribute("data-escape-holds") === "true"
+            ) {
+              return;
+            }
             if (dialog) {
               // Let the game handle this press. If its dialog is still open
               // afterwards, the game doesn't close it on Escape (a results
@@ -1021,7 +1042,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           /* Static Screen Idle State */
           <>
             {/* Header Status Bar */}
-            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-500 z-10">
+            <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-500 z-10">
               <div className="flex items-center gap-2">
                 <div
                   className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "animate-pulse" : ""}`}
@@ -1034,7 +1055,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                     : "Cabinet Standby"}
                 </span>
               </div>
-              <span className="uppercase tracking-widest text-[9px] text-zinc-400">
+              <span className="cabinet-standby-text uppercase tracking-widest text-[9px] text-zinc-400">
                 FDR PORTFOLIO ARCADE v2.6
               </span>
             </div>
@@ -1048,7 +1069,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 {title}
               </h2>
               {subtitle && (
-                <p className="arcade-accent-text text-[10px] font-mono uppercase tracking-widest mt-2 font-bold">
+                <p className="cabinet-standby-text arcade-accent-text text-[10px] font-mono uppercase tracking-widest mt-2 font-bold">
                   {subtitle}
                 </p>
               )}

@@ -108,7 +108,7 @@ export function DesktopOnlyGate({
               unoptimized
               className="block aspect-[16/10] h-auto w-full object-cover"
             />
-            <figcaption className="absolute bottom-2 left-2 rounded-md border border-zinc-700 bg-[#0d0e11]/90 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-zinc-300">
+            <figcaption className="block border-t border-zinc-800 bg-[#0d0e11] px-3 py-1.5 font-mono text-[10px] uppercase tracking-wider text-zinc-300">
               Desktop gameplay
             </figcaption>
           </figure>

@@ -6,6 +6,7 @@ import { IconShieldCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { requestProtocolDriftAutoPause } from "@/components/protocol-drift/auto-pause";
 
 // React Flow and the engine adapter load only when the cabinet launches, so
 // the arcade hub and the shared bundle never pay for them.
@@ -67,6 +68,11 @@ export const ProtocolDriftClient: React.FC = () => (
               { key: "Tab", action: "Move through chips, wires and panes" },
             ]}
             importComponent={ProtocolDriftLoader}
+            // The workbench is built to fit the touch cabinet's viewport, so
+            // its stage clips rather than scrolls (ADR 0061, #2045).
+            mobileLayout="fit"
+            // A hidden tab, a blur or a turned device pauses a running clock.
+            onAutoPause={requestProtocolDriftAutoPause}
           >
             <DynamicProtocolDrift />
           </PlayCabinet>

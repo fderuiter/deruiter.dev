@@ -97,6 +97,8 @@ interface ProtocolDriftState {
   edgeCounts: Record<string, number>;
   tokens: WireToken[];
   notice: Notice | null;
+  /** Why the clock is auto-paused; kept until it runs again (#2045). */
+  pausedReason: string | null;
   waveSummary: WaveSummary | null;
   memoOpen: boolean;
   lockAudit: LockAuditResult | null;
@@ -104,6 +106,12 @@ interface ProtocolDriftState {
   datasets: DatasetExportBundle | null;
   selection: InspectorSelection;
   inspectorExpanded: boolean;
+  /**
+   * Tap-to-wire on the touch cabinet (#2045): the chip a wire starts from, and
+   * the open list of valid output-to-input pairs when a tap has more than one.
+   */
+  wireFrom: string | null;
+  wireSheet: { source: string; target: string } | null;
   revisionCount: number;
   autosavedAt: string | null;
 
@@ -137,6 +145,10 @@ interface ProtocolDriftState {
   removeSelection: (nodeIds: string[], edgeIds: string[]) => Promise<void>;
   select: (selection: Partial<InspectorSelection>) => void;
   setInspectorExpanded: (expanded: boolean) => void;
+  setWireFrom: (nodeId: string | null) => void;
+  setWireSheet: (sheet: { source: string; target: string } | null) => void;
+  /** Shows a notice; the touch wiring reports its result through it (#2045). */
+  notify: (tone: Notice["tone"], text: string) => void;
   dismissWave: () => void;
   clearNotice: (id: number) => void;
   dismissMemo: () => void;
@@ -190,6 +202,7 @@ function initialState() {
     edgeCounts: {} as Record<string, number>,
     tokens: [] as WireToken[],
     notice: null as Notice | null,
+    pausedReason: null as string | null,
     waveSummary: null as WaveSummary | null,
     memoOpen: false,
     lockAudit: null as LockAuditResult | null,
@@ -197,6 +210,8 @@ function initialState() {
     datasets: null as DatasetExportBundle | null,
     selection: { issueId: null, submissionId: null } as InspectorSelection,
     inspectorExpanded: false,
+    wireFrom: null,
+    wireSheet: null,
     revisionCount: 0,
     autosavedAt: null as string | null,
   };
@@ -268,11 +283,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           if (event.reason === "AMENDMENT_01") {
             patch.memoOpen = true;
           } else {
-            patch.notice = {
-              id: ++noticeId,
-              tone: "warn",
-              text: `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`,
-            };
+            const text = `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`;
+            patch.pausedReason = text;
+            patch.notice = { id: ++noticeId, tone: "warn", text };
           }
           break;
         case "LOCK_AUDIT":
@@ -303,6 +316,8 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           break;
       }
     }
+    // The pause reason stays until the clock runs again (#2045).
+    if (patch.snapshot?.fsmState === "RUNNING") patch.pausedReason = null;
     if (fresh.length > 0) {
       patch.packets = [...prior.packets, ...fresh].slice(-MAX_PACKETS);
       const counts = { ...prior.edgeCounts };
@@ -551,6 +566,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       set((state) => ({ selection: { ...state.selection, ...selection } })),
 
     setInspectorExpanded: (expanded) => set({ inspectorExpanded: expanded }),
+    setWireFrom: (nodeId) => set({ wireFrom: nodeId, wireSheet: null }),
+    setWireSheet: (sheet) => set({ wireSheet: sheet }),
+    notify: (tone, text) => say(tone, text),
     dismissWave: () => set({ waveSummary: null }),
     clearNotice: (id) => {
       if (get().notice?.id === id) set({ notice: null });

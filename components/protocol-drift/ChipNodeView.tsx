@@ -3,9 +3,11 @@
 import React from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { CHIP_SPECS, type ChipLane } from "@/lib/protocol-drift";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import {
   CHIP_WIDTH,
   PIN_LAYOUT,
+  TOUCH_TITLE_PX,
   chipHeight,
   type ChipNode,
 } from "./graph-model";
@@ -29,6 +31,9 @@ export function ChipNodeView({ data, selected }: NodeProps<ChipNode>) {
   const rows = Math.max(spec.inputs.length, spec.outputs.length);
   const pinTop = (index: number) =>
     PIN_LAYOUT.headerPx + index * PIN_LAYOUT.rowPx + PIN_LAYOUT.rowPx / 2;
+  // On touch a drag that starts on a chip moves the chip, never the world:
+  // the nopan class stops the canvas from panning under it (#2045).
+  const touch = useCabinetTouch();
 
   return (
     <div
@@ -36,13 +41,16 @@ export function ChipNodeView({ data, selected }: NodeProps<ChipNode>) {
       style={{ width: CHIP_WIDTH, height: chipHeight(data.kind) }}
       className={`relative border bg-[#13151a] font-mono text-zinc-100 ${style.border} ${
         selected ? "ring-1 ring-amber-500" : ""
-      }`}
+      }${touch ? " nopan" : ""}`}
     >
       <div
         className="flex items-center justify-between gap-1 border-b border-zinc-800 px-2"
         style={{ height: PIN_LAYOUT.headerPx }}
       >
-        <span className="min-w-0 truncate text-[11px] font-semibold">
+        <span
+          className="min-w-0 truncate text-[11px] font-semibold"
+          style={touch ? { fontSize: TOUCH_TITLE_PX } : undefined}
+        >
           {data.kind}
         </span>
         <span className={`shrink-0 text-[9px] ${style.tag}`}>

@@ -1,0 +1,144 @@
+/*
+ * Protocol Drift on the immersive touch cabinet (ADR 0061, #2045). The
+ * workbench carries `pd-touch` only while useCabinetTouch() is true, so desktop
+ * markup and styles never see these rules. The canvas is the main surface: the
+ * header and the objective line keep their height, the inspector is a closed
+ * bar (it opens as a sheet), and the canvas takes the rest. The toolbox and the
+ * site rail sit at the sides in a wide cabinet (landscape), and become strips
+ * above and below the canvas in a narrow one (portrait). The page never scrolls.
+ */
+.pd-touch {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+.pd-touch > header,
+.pd-touch > section,
+.pd-touch > footer {
+  flex-shrink: 0;
+}
+/* The keyboard hints in the footer mean nothing to a finger: the on-screen
+   buttons carry the same actions, and the canvas gets the height. */
+.pd-touch > footer {
+  display: none;
+}
+/* The header's top row clears the cabinet's floating toolbar. */
+/* The clock row sits beside the cabinet toolbar, so only it is kept clear of
+   the toolbar; the pipeline, gates and reasons rows below use the full width. */
+.pd-touch-header {
+  column-gap: 0.5rem;
+}
+.pd-touch-header > .pd-touch-clock {
+  margin-right: calc(var(--cabinet-toolbar-inset, 0px) + 0.75rem);
+}
+.pd-touch-header > .pd-touch-row-end {
+  flex-basis: 100%;
+  height: 0;
+}
+.pd-touch-body,
+.pd-touch-body > * {
+  min-height: 0;
+}
+/* The objective and drift strip is one line: the objective truncates, and the
+   debt counters and gauge segments fold away (the gauge button stays). */
+.pd-touch-strip {
+  flex-wrap: nowrap;
+  max-height: 44px;
+  overflow: hidden;
+  gap: 0.5rem;
+}
+.pd-touch-strip > p {
+  min-width: 0;
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pd-touch-strip > ul {
+  display: none;
+}
+.pd-touch-strip button > span:not(:first-child) {
+  display: none;
+}
+/* Toolbox chips show their name and lane only: the summary line is clipped in
+   a side column, so it is hidden at every touch layout. */
+.pd-touch-toolbox .pd-chip-summary {
+  display: none;
+}
+/* The chip a wire starts from wears a ring (#2045 tap-to-wire). */
+.pd-touch .react-flow__node.pd-wire-source {
+  outline: 2px solid #f59e0b;
+  outline-offset: 3px;
+}
+/* Wide cabinet (landscape): the site rail is a column of compact tiles. */
+.pd-touch-rail {
+  width: 7.5rem;
+  flex-direction: column;
+}
+/* Narrow cabinet (portrait): the toolbox and the rail become strips above and
+   below the canvas. */
+@media (max-width: 899px) {
+  .pd-touch-body {
+    flex-direction: column;
+  }
+  .pd-touch-toolbox,
+  .pd-touch-rail {
+    width: 100%;
+    flex-direction: row;
+    flex-shrink: 0;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+  }
+  .pd-touch-toolbox {
+    border-right: 0;
+    border-bottom: 1px solid #27272a;
+  }
+  .pd-touch-rail {
+    border-left: 0;
+    border-top: 1px solid #27272a;
+    overflow: hidden;
+  }
+  .pd-touch-toolbox > button {
+    flex: 0 0 auto;
+    width: 11rem;
+  }
+}
+/* Every on-screen control is at least 44px. */
+.pd-touch button,
+.pd-touch summary {
+  min-height: 44px;
+}
+.pd-touch button {
+  min-width: 44px;
+}
+.pd-touch select,
+.pd-touch textarea {
+  min-height: 44px;
+}
+.pd-touch label:has(> input[type="radio"]) {
+  min-height: 44px;
+  align-items: center;
+}
+/* No text under 12px on the cabinet, canvas labels included. */
+.pd-touch .text-\[9px\],
+.pd-touch .text-\[10px\],
+.pd-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+/* Header and toolbar labels (Run, Fit, Speed, Publish) are 13px on touch, so
+   they compute to at least 12px whatever the cabinet's root size. */
+.pd-touch .text-xs {
+  font-size: 0.8125rem;
+}
+/* A finger pans and pinches the canvas; the page never scrolls under it. */
+.pd-touch .react-flow {
+  touch-action: none;
+}
+/* Ports keep their 10px dot, with an invisible 44px hit area around it. */
+.pd-touch .react-flow__handle::after {
+  content: "";
+  position: absolute;
+  inset: -17px;
+}

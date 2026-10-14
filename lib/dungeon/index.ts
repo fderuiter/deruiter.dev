@@ -11,3 +11,5 @@ export * from "./audio";
 export * from "./objective";
 export * from "./room-label";
 export * from "./scoring";
+export * from "./route";
+export * from "./rewards";

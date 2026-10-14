@@ -843,6 +843,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "CDISC CT & MedDRA",
       },
       {
+        title: "Fresh Data Every Shift",
+        detail:
+          "Most flagged vital signs, labs and dates are generated for each subject: a true value with one data-entry error applied (a wrong or unconverted unit, a slipped decimal point, a stray zero, a US-order or impossible date). Read the raw entry and work out the error; memorising last run's answers will not help. AE coding and medication puzzles stay hand-written.",
+        badge: "Procedural Queries",
+      },
+      {
         title: "21 CFR § 11.50 Manifestation of Signatures",
         detail:
           "Electronic records require unambiguous intent ('Intent to Submit', 'Urgent Safety Expedited', etc.). Submitting unverified raw data triggers immediate audit rejection.",
@@ -1674,9 +1680,9 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-cyan-500/20 via-cyan-500/5 to-transparent",
     badgeBg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
     objective:
-      "Breach a seven-room corporate network as a Red Team Netrunner, from the DMZ Gateway to the NEURAL_WARDEN core. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve Hex Matrix buffer puzzles, and defeat two 3D wireframe bosses: FaceForge, then the Neural Warden.",
+      "Breach a corporate network as a Red Team Netrunner, routing from the DMZ Gateway to the NEURAL_WARDEN core and picking a reward after every room. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve Hex Matrix buffer puzzles, and defeat two 3D wireframe bosses: FaceForge, then the Neural Warden.",
     quickSummary:
-      "Clear seven hand-built rooms in a fixed order with WASD/Arrows, reaching each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
+      "Clear six hand-built rooms with WASD/Arrows, reaching each room's EXIT once its objective is done, then choose the next room on the route map and pick a weapon, a heal or a passive. Keys 1 to 3 fire your Cyberdeck class's tools, keys 4 and 5 the weapons you pick up on the route (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
       {
         action: "Move Netrunner Avatar",
@@ -1687,8 +1693,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Deploy Cyber Exploits",
         description:
-          "Fire the three tools your Cyberdeck class starts with, in hotbar order. Script Kiddie: npm install (AoE), Nmap Port Recon (expose CVEs), EMP. Other classes carry Buffer Overflow (burst crit), Airgap 0-Day (piercer), MitM Spoof (confuse) or Ransomware (freeze and bounty).",
-        key: "1, 2, 3 Keys",
+          "Keys 1 to 3 fire the three tools your Cyberdeck class starts with, in hotbar order. Script Kiddie: npm install (AoE), Nmap Port Recon (expose CVEs), EMP. Other classes carry Buffer Overflow (burst crit), Airgap 0-Day (piercer), MitM Spoof (confuse) or Ransomware (freeze and bounty). Keys 4 and 5 fire weapons picked as route rewards.",
+        key: "1 to 5 Keys",
       },
       {
         action: "EMP Kernel Surge",
@@ -1704,7 +1710,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Continue or Retry",
         description:
-          "On the room-cleared screen, Enter moves to the next room and R retries this one. After a trace, Enter or R retries the room.",
+          "On the room-cleared screen, tap or Tab to a next room and a reward, then Enter (or Next Room) moves on; the first room is chosen unless you pick the other, and the reward can be left. R retries this room. After a trace, Enter or R retries the room.",
         key: "Enter / R",
       },
       {
@@ -1716,10 +1722,16 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     rules: [
       {
-        title: "The Seven-Room Campaign",
+        title: "The Route Map",
         detail:
-          "A run is seven rooms in a fixed order: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss. The first room has an open exit and slow patrols; route nodes, moving walls and bosses come later. Clearing Room 7 completes the run.",
+          "The network has seven rooms: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss. A run is six of them. It always opens on the DMZ Gateway and ends on FaceForge, then the NEURAL_WARDEN. After each of the first rooms you choose between two next rooms: Active Directory or a middle room first, then two of the rooms left, so one middle room or the Darknet Vault rest stop is skipped. Each run has a seed, shown on the map, and the same seed draws the same choices and rewards. Clearing the NEURAL_WARDEN completes the run.",
         badge: "Campaign",
+      },
+      {
+        title: "Room Rewards",
+        detail:
+          "Every cleared room before the last offers three rewards; pick one or none. A weapon joins your loadout in slot 4 or 5 at full ammo (with a full loadout it becomes an Ammo Cache that refills every tool). A Patch Kit restores 40 HP. A passive lasts the rest of the run and stacks: Overclocked Bus (+1 RAM regen per step), Chip Cache (+1 bypass chip on entering each room), Hardened Shell (+20 max HP) or DDR5 Bank (+16 max RAM).",
+        badge: "Rewards",
       },
       {
         title: "Locked Exits",
@@ -1742,21 +1754,23 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "3D Wireframe Sovereign Boss Fights",
         detail:
-          "Room 6 is the FaceForge wireframe face and Room 7, the last, is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
+          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
         badge: "3D Boss Fight",
       },
     ],
     proTips: [
       "Use Nmap Port Recon on room entry (key 2 for the default Script Kiddie) to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
-      "Save Hardware Bypass Chips for the terminals in the TSP enclave (Room 4) and the Darknet Vault (Room 5), where time limits are tight.",
+      "Save Hardware Bypass Chips for the terminals in the TSP enclave and the Darknet Vault, where time limits are tight.",
+      "Take the Darknet Vault on the route when you are short of crypto or HP: its market and chest restock the deck before the bosses.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
     ],
     lore: {
       title: "Red Team Infiltration & Legacy Code Archaeology",
       story:
-        "Every engineer has explored legacy codebases that feel like ancient, crumbling dungeons filled with deprecated dependencies, undocumented endpoints, and zombie cron jobs. Retro Labyrinth turns code maintenance and cybersecurity into a seven-room roguelike. The rooms are hand-built, not generated: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave with its moving walls, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss, always in that order. Patrols, hacking terminals, raycast field-of-view, Web Audio 8-bit sound and real-time 3D vector wireframe bosses fill them in.",
+        "Every engineer has explored legacy codebases that feel like ancient, crumbling dungeons filled with deprecated dependencies, undocumented endpoints, and zombie cron jobs. Retro Labyrinth turns code maintenance and cybersecurity into a roguelike over seven rooms. The rooms are hand-built, not generated: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave with its moving walls, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss. A seeded route map picks which middle rooms a run visits. Patrols, hacking terminals, raycast field-of-view, Web Audio 8-bit sound and real-time 3D vector wireframe bosses fill them in.",
       realWorldTech: [
         "Hand-Built Room Campaign",
+        "Seeded PRNG Route Map",
         "Raycast Field of View",
         "CVE Vulnerability Models",
         "Hex Buffer Matrix",

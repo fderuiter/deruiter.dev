@@ -152,6 +152,21 @@ import {
   saveCyberdeckProfile,
   recordCyberdeckRoomResult,
   STAGE_1_MAZE,
+  EMPTY_RUN_BUILD,
+  applyRunReward,
+  chooseRouteRoom,
+  createRunSeed,
+  describeRouteMap,
+  drawRouteOptions,
+  drawRunRewards,
+  routeRooms,
+  routeRunLength,
+  runBuildBonuses,
+  runLoadout,
+  RUN_PASSIVES,
+  startRunRoute,
+  type RunBuild,
+  type RunRoute,
 } from "@/lib/dungeon";
 
 const MAZE = STAGE_1_MAZE;
@@ -355,9 +370,28 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   );
   const [stage, setStage] = useState<number>(1);
   const [roomIndex, setRoomIndex] = useState<number>(0);
-  const [campaignRooms, setCampaignRooms] = useState<DungeonRoom[]>(() =>
+  // The room library a run routes through, and the route taken so far: its
+  // seed and the rooms entered (#2084). The mount effect replaces this
+  // placeholder route with a freshly seeded one.
+  const [roomLibrary, setRoomLibrary] = useState<DungeonRoom[]>(() =>
     generateRoguelikeCampaign()
   );
+  const [runRoute, setRunRoute] = useState<RunRoute>(() =>
+    startRunRoute(createRunSeed(0))
+  );
+  // The rooms of this run in play order; the current room is roomIndex.
+  const campaignRooms = useMemo(
+    () => routeRooms(roomLibrary, runRoute),
+    [roomLibrary, runRoute]
+  );
+  const runLength = routeRunLength(roomLibrary);
+  // What the run's reward picks have added to the class (#2084).
+  const [runBuild, setRunBuild] = useState<RunBuild>(EMPTY_RUN_BUILD);
+  const runBonuses = useMemo(() => runBuildBonuses(runBuild), [runBuild]);
+  // The room-cleared screen's picks: the next room (a library position; null
+  // means the first option) and the reward (an offer index; null skips it).
+  const [pendingRoute, setPendingRoute] = useState<number | null>(null);
+  const [pendingReward, setPendingReward] = useState<number | null>(null);
 
   // Active room & grid
   const [currentMaze, setCurrentMaze] = useState<string[][]>(STAGE_1_MAZE);
@@ -443,14 +477,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // Combat & Weapons
   const [weapons, setWeapons] =
     useState<Record<WeaponId, Weapon>>(DEFAULT_WEAPONS);
+  // The class tools, then any weapons picked as route rewards (#2084).
+  const loadout = useMemo(
+    () => runLoadout(selectedClass.starterWeapons, runBuild),
+    [selectedClass.starterWeapons, runBuild]
+  );
   const [rawActiveWeaponId, setActiveWeaponId] = useState<WeaponId>(() => {
     return selectedClass.starterWeapons?.[0] || "npm_install";
   });
-  const activeWeaponId = selectedClass.starterWeapons.includes(
-    rawActiveWeaponId
-  )
+  const activeWeaponId = loadout.includes(rawActiveWeaponId)
     ? rawActiveWeaponId
-    : selectedClass.starterWeapons[0] || "npm_install";
+    : loadout[0] || "npm_install";
   const [dronesStunned, setDronesStunned] = useState(false);
   const [activeSideEffect, setActiveSideEffect] =
     useState<ActiveSideEffect | null>(null);
@@ -583,9 +620,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const handleBlur = () => setIsFocused(false);
 
   // Initialize or Switch to a specific Room / Stage
+  // A roguelike room is entered along a route; leaving the route out starts a
+  // freshly seeded one.
   const loadRoom = useCallback(
-    (mode: "roguelike" | "classic", targetStageOrIndex: number) => {
+    (
+      mode: "roguelike" | "classic",
+      targetStageOrIndex: number,
+      route?: RunRoute
+    ) => {
       setGameMode(mode);
+      setPendingRoute(null);
+      setPendingReward(null);
       floatingTextsRef.current = [
         {
           id: `objective-${Date.now()}`,
@@ -622,11 +667,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setVisibleMap(Array.from({ length: 9 }, () => Array(15).fill(true)));
         setExploredMap(Array.from({ length: 9 }, () => Array(15).fill(true)));
       } else {
-        const campaign = generateRoguelikeCampaign();
-        setCampaignRooms(campaign);
-        const idx = clamp(targetStageOrIndex, 0, campaign.length - 1);
+        const library = generateRoguelikeCampaign();
+        const activeRoute = route ?? startRunRoute(createRunSeed());
+        setRoomLibrary(library);
+        setRunRoute(activeRoute);
+        const rooms = routeRooms(library, activeRoute);
+        const idx = clamp(targetStageOrIndex, 0, rooms.length - 1);
         setRoomIndex(idx);
-        const currentRoom = campaign[idx];
+        const currentRoom = rooms[idx];
         setStage(idx + 1);
         setCurrentMaze(currentRoom.grid);
         setPlayerPosition({ x: currentRoom.startX, y: currentRoom.startY });
@@ -751,9 +799,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     if (gameMode === "classic") {
       loadRoom("classic", stage);
     } else {
-      loadRoom("roguelike", roomIndex);
+      loadRoom("roguelike", roomIndex, runRoute);
     }
-  }, [gameMode, stage, roomIndex, loadRoom]);
+  }, [gameMode, stage, roomIndex, runRoute, loadRoom]);
 
   // Start Roguelike Campaign with chosen Cyberdeck Class
   const startRoguelikeCampaign = useCallback(() => {
@@ -771,6 +819,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     setScore(0);
     setCryptoBounty(0);
     setClearedRooms([]);
+    setRunBuild(EMPTY_RUN_BUILD);
     runEndRecordedRef.current = false;
     cveFeedRef.current = false;
     setCveFeedActive(false);
@@ -785,38 +834,103 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     loadRoom("roguelike", 0);
   }, [selectedClassId, loadRoom]);
 
-  // Advance to next room in roguelike campaign. After the last room the run
-  // is complete, and continuing starts a new run from Room 01 (#1668).
+  // The room-cleared screen's offers: the next rooms on the route and the
+  // three rewards, both drawn from the run seed (#2084).
+  const routeOptions = useMemo(
+    () =>
+      gameMode === "roguelike" ? drawRouteOptions(roomLibrary, runRoute) : [],
+    [gameMode, roomLibrary, runRoute]
+  );
+  const rewardOffer = useMemo(
+    () => drawRunRewards(runRoute.seed, roomIndex, loadout),
+    [runRoute.seed, roomIndex, loadout]
+  );
+  const selectedRoute =
+    pendingRoute !== null && routeOptions.includes(pendingRoute)
+      ? pendingRoute
+      : routeOptions[0];
+
+  // Advance along the route to the chosen room, taking the chosen reward.
+  // After the last room the run is complete, and continuing starts a new run
+  // from Room 01 (#1668).
   const handleNextRoom = useCallback(() => {
-    if (roomIndex >= campaignRooms.length - 1) {
+    if (roomIndex >= runLength - 1 || selectedRoute === undefined) {
       startRoguelikeCampaign();
       return;
+    }
+    const reward = pendingReward === null ? null : rewardOffer[pendingReward];
+    let nextBuild = runBuild;
+    let nextWeapons = weapons;
+    let hp = playerHp;
+    let nextMaxHp = maxPlayerHp;
+    let ram = currentRam;
+    let nextMaxRam = maxRam;
+    if (reward) {
+      nextBuild = applyRunReward(runBuild, reward);
+      if (reward.kind === "weapon") {
+        // A new tool comes at full ammo; a full loadout's cache refills it.
+        const refilled = reward.weaponId ? [reward.weaponId] : loadout;
+        nextWeapons = { ...weapons };
+        for (const id of refilled) {
+          nextWeapons[id] = {
+            ...nextWeapons[id],
+            ammo: nextWeapons[id].maxAmmo,
+          };
+        }
+      } else if (reward.kind === "heal") {
+        hp = Math.min(nextMaxHp, hp + reward.hp);
+      } else {
+        const passive = RUN_PASSIVES[reward.passiveId];
+        nextMaxHp += passive.maxHp ?? 0;
+        hp += passive.maxHp ?? 0;
+        nextMaxRam += passive.maxRam ?? 0;
+        ram += passive.maxRam ?? 0;
+      }
     }
     // Rooms open with at least half health, so a boss fight that ended at
     // 5 HP doesn't make every later room (and every retry of it) a one-hit
     // death (#1943).
-    const entryHp = Math.max(playerHp, Math.ceil(maxPlayerHp / 2));
+    const entryHp = Math.max(hp, Math.ceil(nextMaxHp / 2));
+    const chipsPerRoom = runBuildBonuses(nextBuild).chipsPerRoom;
+    setRunBuild(nextBuild);
+    setWeapons(nextWeapons);
+    setMaxPlayerHp(nextMaxHp);
     setPlayerHp(entryHp);
+    setMaxRam(nextMaxRam);
+    setCurrentRam(ram);
+    if (chipsPerRoom > 0) setBypassChips((b) => b + chipsPerRoom);
     setClearedRooms((rooms) => [
       ...rooms,
       { moves: movesCount, crypto: roomCrypto },
     ]);
     roomEntryVitalsRef.current = {
       hp: entryHp,
-      ram: currentRam,
+      ram,
       score,
       cryptoBounty,
-      weapons,
+      weapons: nextWeapons,
       cveFeed: cveFeedActive,
     };
-    loadRoom("roguelike", roomIndex + 1);
+    loadRoom(
+      "roguelike",
+      roomIndex + 1,
+      chooseRouteRoom(roomLibrary, runRoute, selectedRoute)
+    );
   }, [
     roomIndex,
-    campaignRooms.length,
+    runLength,
+    selectedRoute,
+    pendingReward,
+    rewardOffer,
+    runBuild,
+    loadout,
+    roomLibrary,
+    runRoute,
     loadRoom,
     startRoguelikeCampaign,
     playerHp,
     maxPlayerHp,
+    maxRam,
     movesCount,
     roomCrypto,
     currentRam,
@@ -934,7 +1048,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         // 0-Day ammo, or the same damage in a weapon this class can fire.
         const grant = grantAmmoForLoadout(
           weapons,
-          selectedClass.starterWeapons,
+          loadout,
           "zero_day",
           2,
           false
@@ -963,7 +1077,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       cryptoBounty,
       maxPlayerHp,
       weapons,
-      selectedClass.starterWeapons,
+      loadout,
       playerPosition.x,
       playerPosition.y,
     ]
@@ -1039,7 +1153,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setMovesCount(nextMoves);
 
         // Regenerate Cyberdeck RAM
-        setCurrentRam((r) => Math.min(maxRam, r + selectedClass.ramRegen));
+        setCurrentRam((r) =>
+          Math.min(maxRam, r + selectedClass.ramRegen + runBonuses.ramRegen)
+        );
 
         // Audio step pulse
         retroAudio.playStep();
@@ -1116,7 +1232,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           retroAudio.playPickup();
           playNote(784, 0.1);
           let pickupText = pickup.name;
-          const loadout = selectedClass.starterWeapons;
           if (pickup.itemId === "node_modules") {
             const grant = grantAmmoForLoadout(
               weapons,
@@ -1222,7 +1337,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           // One that was lost and retried was counted when it was lost, so
           // it isn't counted again here (#2048).
           const endsRun =
-            (gameMode === "classic" || roomIndex >= campaignRooms.length - 1) &&
+            (gameMode === "classic" || roomIndex >= runLength - 1) &&
             !runEndRecordedRef.current;
           if (endsRun) runEndRecordedRef.current = true;
           const updatedProf = recordCyberdeckRoomResult(profile, {
@@ -1266,6 +1381,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       maxPlayerHp,
       maxRam,
       selectedClass,
+      loadout,
+      runBonuses.ramRegen,
+      runLength,
       currentTheme,
       roomCrypto,
       earnCrypto,
@@ -1465,7 +1583,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         } else if (gameStatus === "victory" && lowerKey === "r") {
           e.preventDefault();
           handleRestart();
-        } else if (gameStatus === "victory" && e.key === "Enter") {
+        } else if (
+          gameStatus === "victory" &&
+          e.key === "Enter" &&
+          !(e.target instanceof HTMLButtonElement)
+        ) {
+          // A focused button (a route or reward pick) answers Enter itself.
           e.preventDefault();
           if (gameMode === "roguelike") {
             // After the last room this starts a new run (#1668).
@@ -1538,7 +1661,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         key === "5"
       ) {
         const slotIdx = parseInt(key, 10) - 1;
-        const weaponId = selectedClass.starterWeapons[slotIdx];
+        const weaponId = loadout[slotIdx];
         if (weaponId && weapons[weaponId] && weapons[weaponId].ammo > 0) {
           setActiveWeaponId(weaponId);
           handleFireWeapon(weaponId);
@@ -1567,7 +1690,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       activeSideEffect,
       gameStatus,
       gameMode,
-      selectedClass,
+      loadout,
       weapons,
       handleFireWeapon,
       handleSubmitTimesheet,
@@ -1602,7 +1725,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   );
 
   const cycleWeapon = useCallback(() => {
-    const starterWeapons = selectedClass.starterWeapons;
+    const starterWeapons = loadout;
     if (!starterWeapons || starterWeapons.length === 0) return;
     const currentIdx = starterWeapons.indexOf(activeWeaponId);
 
@@ -1621,7 +1744,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     }
     if (phoneCabinet) showPhoneToast("Exploit: no tool has ammo");
   }, [
-    selectedClass.starterWeapons,
+    loadout,
     activeWeaponId,
     weapons,
     handleFireWeapon,
@@ -1714,12 +1837,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       if (cls.starterWeapons?.[0]) {
         setActiveWeaponId(cls.starterWeapons[0]);
       }
-      setMaxPlayerHp(cls.baseHp);
-      setMaxRam(cls.baseRam);
+      // Passives picked on the route stay with the run (#2084).
+      const hp = cls.baseHp + runBonuses.maxHp;
+      const ram = cls.baseRam + runBonuses.maxRam;
+      setMaxPlayerHp(hp);
+      setMaxRam(ram);
       setBypassChips(cls.startBypassChips);
       if (overlayReturnStatusRef.current === "victory") {
-        setPlayerHp(cls.baseHp);
-        setCurrentRam(cls.baseRam);
+        setPlayerHp(hp);
+        setCurrentRam(ram);
         setWeapons(DEFAULT_WEAPONS);
         setGameStatus("victory");
         containerRef.current?.focus({ preventScroll: true });
@@ -1727,15 +1853,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       }
       roomEntryVitalsRef.current = {
         ...roomEntryVitalsRef.current,
-        hp: cls.baseHp,
-        ram: cls.baseRam,
+        hp,
+        ram,
         weapons: DEFAULT_WEAPONS,
       };
       handleRestart();
       setGameStatus("paused");
       containerRef.current?.focus({ preventScroll: true });
     },
-    [handleRestart]
+    [handleRestart, runBonuses.maxHp, runBonuses.maxRam]
   );
 
   // The Field Manual pauses a running room, the way P does (#1669).
@@ -2509,22 +2635,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // fire, and the Market card says so (#1667).
   const marketAmmoNote = (category: string) => {
     if (category !== "weapon") return null;
-    if (selectedClass.starterWeapons.includes("zero_day")) return null;
-    const grant = grantAmmoForLoadout(
-      weapons,
-      selectedClass.starterWeapons,
-      "zero_day",
-      2,
-      false
-    );
+    if (loadout.includes("zero_day")) return null;
+    const grant = grantAmmoForLoadout(weapons, loadout, "zero_day", 2, false);
     return grant.weaponId
       ? ` Your class has no 0-Day slot, so you get ${describeAmmoGrants([grant])} instead.`
       : " Your class has no weapon that can use it.";
   };
 
-  const isFinalRoom =
-    gameMode === "roguelike" && roomIndex >= campaignRooms.length - 1;
+  const isFinalRoom = gameMode === "roguelike" && roomIndex >= runLength - 1;
   const runMoves = [...clearedRooms.map((r) => r.moves), movesCount];
+  const routeMap =
+    gameStatus === "victory" && gameMode === "roguelike"
+      ? describeRouteMap(roomLibrary, runRoute)
+      : [];
   const runCrypto =
     clearedRooms.reduce((sum, r) => sum + r.crypto, 0) + roomCrypto;
 
@@ -2564,7 +2687,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   // A class tool slot fires only with ammo left, as the hotbar does.
   const fireStarterSlot = (slotIdx: number) => {
-    const weaponId = selectedClass.starterWeapons[slotIdx];
+    const weaponId = loadout[slotIdx];
     if (weaponId && weapons[weaponId] && weapons[weaponId].ammo > 0) {
       setActiveWeaponId(weaponId);
       handleFireWeapon(weaponId);
@@ -2790,7 +2913,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       className="grid grid-cols-2 gap-1 portrait:min-[480px]:w-max portrait:min-[480px]:gap-2"
     >
       {[0, 1, 2].map((slotIdx) => {
-        const weaponId = selectedClass.starterWeapons[slotIdx];
+        const weaponId = loadout[slotIdx];
         // A starter slot holding EMP would duplicate the EMP key, so the key
         // stands for it alone.
         if (weaponId === "emp_blast") return null;
@@ -3239,7 +3362,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         {gameStatus === "victory" && (
           <RoomClearedCard
             isFinalRoom={isFinalRoom}
-            campaignRoomCount={campaignRooms.length}
+            campaignRoomCount={runLength}
             runMoves={runMoves}
             runCrypto={runCrypto}
             movesCount={movesCount}
@@ -3248,6 +3371,28 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             highScore={effectiveHighScore}
             showNextRoom={gameMode === "roguelike" && !isFinalRoom}
             hint={isFinalRoom ? finalRoomHint : roomClearHint}
+            route={
+              gameMode === "roguelike"
+                ? {
+                    seed: runRoute.seed,
+                    map: routeMap,
+                    options:
+                      routeMap.find((step) => step.state === "choice")?.rooms ??
+                      [],
+                    selected: selectedRoute,
+                    onSelect: setPendingRoute,
+                  }
+                : undefined
+            }
+            rewards={
+              gameMode === "roguelike"
+                ? {
+                    offer: rewardOffer,
+                    selected: pendingReward,
+                    onSelect: setPendingReward,
+                  }
+                : undefined
+            }
             onNextRoom={() => {
               handleNextRoom();
               containerRef.current?.focus({ preventScroll: true });
@@ -3592,7 +3737,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           <div className="flex items-center gap-1 flex-wrap">
             {[0, 1, 2, 3, 4].map((slotIdx) => {
               const keyNum = slotIdx + 1;
-              const weaponId = selectedClass.starterWeapons[slotIdx];
+              const weaponId = loadout[slotIdx];
               const weapon = weaponId ? weapons[weaponId] : null;
               const isActive = weaponId ? activeWeaponId === weaponId : false;
               const hasAmmo = weapon ? weapon.ammo > 0 : false;
@@ -3662,7 +3807,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           {/* Controls string */}
           <div className="text-neutral-400 uppercase tracking-wider hidden md:block">
-            WASD / ARROWS · 1-3: TOOLS · SPACE: EMP · P / ESC: PAUSE · C: CRT
+            WASD / ARROWS · 1-{loadout.length}: TOOLS · SPACE: EMP · P / ESC:
+            PAUSE · C: CRT
           </div>
         </div>
 
@@ -3791,7 +3937,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     className="shrink-0 text-neutral-500 tabular-nums"
                     data-testid="labyrinth-room-count"
                   >
-                    Room {roomIndex + 1} of {campaignRooms.length}
+                    Room {roomIndex + 1} of {runLength}
                   </span>
                 )}
                 <span

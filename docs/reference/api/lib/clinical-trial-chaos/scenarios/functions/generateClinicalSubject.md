@@ -6,9 +6,12 @@
 
 # Function: generateClinicalSubject()
 
-> **generateClinicalSubject**(`errorProbability?`, `forceSAE?`, `customSeq?`, `activeDomains?`): [`ClinicalSubject`](../../types/interfaces/ClinicalSubject.md)
+> **generateClinicalSubject**(`errorProbability?`, `forceSAE?`, `customSeq?`, `activeDomains?`, `random?`): [`ClinicalSubject`](../../types/interfaces/ClinicalSubject.md)
 
-Generates a random or seeded ClinicalSubject with 2-4 observations.
+Generates a ClinicalSubject with 2-3 observations. Flagged observations on
+a field with a procedural generator are usually generated from parameters
+(#2088), so values and options differ from run to run; the rest come from
+the authored templates.
 
 ## Parameters
 
@@ -27,6 +30,13 @@ Generates a random or seeded ClinicalSubject with 2-4 observations.
 ### activeDomains?
 
 [`CDISCDomain`](../../types/type-aliases/CDISCDomain.md)[] = `...`
+
+### random?
+
+() => `number`
+
+Random source returning values in [0, 1); pass a seeded
+  one to make the subject repeatable.
 
 ## Returns
 

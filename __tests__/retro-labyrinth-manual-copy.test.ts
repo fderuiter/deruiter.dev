@@ -6,7 +6,9 @@ import { GAME_MANUALS } from "@/lib/game-manuals";
 import {
   CYBERDECK_CLASSES,
   DEFAULT_WEAPONS,
+  RUN_LOADOUT_SLOTS,
   generateRoguelikeCampaign,
+  routeRunLength,
 } from "@/lib/dungeon";
 
 // #1179: the cabinet card and field manual describe the loadout the game
@@ -34,14 +36,16 @@ describe("Retro Labyrinth manual copy (#1179)", () => {
     expect(cabinet).not.toContain("Wield Weapon");
   });
 
-  it("binds only as many number keys as a class has starter tools", () => {
+  // #2084: route rewards add up to two weapons after the class's three.
+  it("binds as many number keys as a loadout has slots", () => {
     const deploy = GAME_MANUALS["retro-labyrinth"].controls.find((c) =>
       c.action.includes("Exploits")
     );
     for (const cls of Object.values(CYBERDECK_CLASSES)) {
       expect(cls.starterWeapons).toHaveLength(3);
     }
-    expect(deploy?.key).toBe("1, 2, 3 Keys");
+    expect(RUN_LOADOUT_SLOTS).toBe(5);
+    expect(deploy?.key).toBe("1 to 5 Keys");
   });
 
   // #1667: Nmap Port Recon is key 2 for the default class, not key 1.
@@ -67,7 +71,8 @@ describe("Retro Labyrinth manual describes the real campaign (#2048)", () => {
     expect(copy).not.toMatch(/cellular/i);
   });
 
-  it("names the seven rooms in the order the campaign plays them", () => {
+  // #2084: the rooms are a library a seeded route runs through.
+  it("names the seven rooms and the six-room route through them", () => {
     const rule = manual.rules.find((r) => r.badge === "Campaign");
     expect(rule).toBeDefined();
     const names = [
@@ -83,6 +88,17 @@ describe("Retro Labyrinth manual describes the real campaign (#2048)", () => {
     expect(positions.every((p) => p >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
     expect(rule!.detail).toContain("seven rooms");
+    expect(rule!.detail).toContain("A run is six of them");
+    expect(rule!.detail).toContain("seed");
     expect(generateRoguelikeCampaign()).toHaveLength(names.length);
+    expect(routeRunLength(generateRoguelikeCampaign())).toBe(6);
+  });
+
+  it("describes the reward pick", () => {
+    const rule = manual.rules.find((r) => r.badge === "Rewards");
+    expect(rule?.detail).toMatch(/weapon/i);
+    expect(rule?.detail).toContain("Patch Kit");
+    expect(rule?.detail).toContain("passive");
+    expect(copy).not.toMatch(/fixed order/i);
   });
 });

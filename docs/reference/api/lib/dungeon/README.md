@@ -26,6 +26,12 @@ Re-exports [AmmoGrantResult](weapons/interfaces/AmmoGrantResult.md)
 
 ***
 
+### applyRunReward
+
+Re-exports [applyRunReward](rewards/functions/applyRunReward.md)
+
+***
+
 ### armBossForRoomEntry
 
 Re-exports [armBossForRoomEntry](boss/functions/armBossForRoomEntry.md)
@@ -65,6 +71,12 @@ Re-exports [BossState](types/interfaces/BossState.md)
 ### calculateFOV
 
 Re-exports [calculateFOV](fov/functions/calculateFOV.md)
+
+***
+
+### chooseRouteRoom
+
+Re-exports [chooseRouteRoom](route/functions/chooseRouteRoom.md)
 
 ***
 
@@ -113,6 +125,12 @@ Re-exports [createNeuralWardenBoss](boss/functions/createNeuralWardenBoss.md)
 ### createOctahedronMesh
 
 Re-exports [createOctahedronMesh](boss/functions/createOctahedronMesh.md)
+
+***
+
+### createRunSeed
+
+Re-exports [createRunSeed](route/functions/createRunSeed.md)
 
 ***
 
@@ -200,6 +218,24 @@ Re-exports [DEFAULT_WEAPONS](weapons/variables/DEFAULT_WEAPONS.md)
 
 ***
 
+### describeRouteMap
+
+Re-exports [describeRouteMap](route/functions/describeRouteMap.md)
+
+***
+
+### drawRouteOptions
+
+Re-exports [drawRouteOptions](route/functions/drawRouteOptions.md)
+
+***
+
+### drawRunRewards
+
+Re-exports [drawRunRewards](rewards/functions/drawRunRewards.md)
+
+***
+
 ### DungeonRoom
 
 Re-exports [DungeonRoom](types/interfaces/DungeonRoom.md)
@@ -209,6 +245,12 @@ Re-exports [DungeonRoom](types/interfaces/DungeonRoom.md)
 ### Edge3D
 
 Re-exports [Edge3D](types/interfaces/Edge3D.md)
+
+***
+
+### EMPTY\_RUN\_BUILD
+
+Re-exports [EMPTY_RUN_BUILD](rewards/variables/EMPTY_RUN_BUILD.md)
 
 ***
 
@@ -446,6 +488,12 @@ Re-exports [ParticleEffect](types/interfaces/ParticleEffect.md)
 
 ***
 
+### planRoute
+
+Re-exports [planRoute](route/functions/planRoute.md)
+
+***
+
 ### project3DTo2D
 
 Re-exports [project3DTo2D](boss/functions/project3DTo2D.md)
@@ -488,6 +536,18 @@ Re-exports [RetroAudioEngine](audio/classes/RetroAudioEngine.md)
 
 ***
 
+### REWARD\_HEAL\_HP
+
+Re-exports [REWARD_HEAL_HP](rewards/variables/REWARD_HEAL_HP.md)
+
+***
+
+### REWARD\_WEAPON\_POOL
+
+Re-exports [REWARD_WEAPON_POOL](rewards/variables/REWARD_WEAPON_POOL.md)
+
+***
+
 ### RoomThemeId
 
 Re-exports [RoomThemeId](types/type-aliases/RoomThemeId.md)
@@ -497,6 +557,114 @@ Re-exports [RoomThemeId](types/type-aliases/RoomThemeId.md)
 ### rotate3D
 
 Re-exports [rotate3D](boss/functions/rotate3D.md)
+
+***
+
+### RouteMapRoom
+
+Re-exports [RouteMapRoom](route/interfaces/RouteMapRoom.md)
+
+***
+
+### RouteMapStep
+
+Re-exports [RouteMapStep](route/interfaces/RouteMapStep.md)
+
+***
+
+### RoutePlan
+
+Re-exports [RoutePlan](route/interfaces/RoutePlan.md)
+
+***
+
+### routeRoomName
+
+Re-exports [routeRoomName](route/functions/routeRoomName.md)
+
+***
+
+### routeRooms
+
+Re-exports [routeRooms](route/functions/routeRooms.md)
+
+***
+
+### routeRunLength
+
+Re-exports [routeRunLength](route/functions/routeRunLength.md)
+
+***
+
+### RouteTier
+
+Re-exports [RouteTier](route/type-aliases/RouteTier.md)
+
+***
+
+### routeTierOf
+
+Re-exports [routeTierOf](route/functions/routeTierOf.md)
+
+***
+
+### RUN\_LOADOUT\_SLOTS
+
+Re-exports [RUN_LOADOUT_SLOTS](rewards/variables/RUN_LOADOUT_SLOTS.md)
+
+***
+
+### RUN\_PASSIVES
+
+Re-exports [RUN_PASSIVES](rewards/variables/RUN_PASSIVES.md)
+
+***
+
+### RunBuild
+
+Re-exports [RunBuild](rewards/interfaces/RunBuild.md)
+
+***
+
+### runBuildBonuses
+
+Re-exports [runBuildBonuses](rewards/functions/runBuildBonuses.md)
+
+***
+
+### RunBuildBonuses
+
+Re-exports [RunBuildBonuses](rewards/interfaces/RunBuildBonuses.md)
+
+***
+
+### runLoadout
+
+Re-exports [runLoadout](rewards/functions/runLoadout.md)
+
+***
+
+### RunPassive
+
+Re-exports [RunPassive](rewards/interfaces/RunPassive.md)
+
+***
+
+### RunPassiveId
+
+Re-exports [RunPassiveId](rewards/type-aliases/RunPassiveId.md)
+
+***
+
+### RunReward
+
+Re-exports [RunReward](rewards/type-aliases/RunReward.md)
+
+***
+
+### RunRoute
+
+Re-exports [RunRoute](route/interfaces/RunRoute.md)
 
 ***
 
@@ -521,6 +689,12 @@ Re-exports [STAGE_1_MAZE](generator/variables/STAGE_1_MAZE.md)
 ### STAGE\_2\_MAZE
 
 Re-exports [STAGE_2_MAZE](generator/variables/STAGE_2_MAZE.md)
+
+***
+
+### startRunRoute
+
+Re-exports [startRunRoute](route/functions/startRunRoute.md)
 
 ***
 

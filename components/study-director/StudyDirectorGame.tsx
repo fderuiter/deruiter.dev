@@ -10,6 +10,8 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import "./study-director-touch.css";
 import { recordArcadeMilestone } from "@/lib/arcade-achievements";
 import {
   ATTENTION_PER_DAY,
@@ -63,7 +65,17 @@ import { PersonnelFile } from "./PersonnelFile";
 import { SharePanel } from "./ShareCard";
 import { DifficultyPicker } from "./DifficultyPicker";
 
-/** The walkable world (ADR 0055), loaded only when `#mode=world` asks for it. */
+/** The desk's sections on the touch cabinet: one at a time, never a long page (#2076). */
+const DESK_TABS = [
+  { id: "inbox", label: "Inbox" },
+  { id: "dashboard", label: "Dashboard" },
+  { id: "team", label: "Team" },
+  { id: "sites", label: "Sites" },
+  { id: "office", label: "Office" },
+] as const;
+
+type DeskTab = (typeof DESK_TABS)[number]["id"];
+
 /** "1 new message", "3 new messages" (#1936). */
 function messageCount(n: number, noun: string): string {
   return `${n} ${noun}${n === 1 ? "" : "s"}`;
@@ -190,12 +202,35 @@ function hashDifficulty(): Difficulty | null {
 }
 
 /**
+ * A screen that scrolls inside the touch cabinet's fixed stage: the briefing
+ * before a study and the report after it. It clears the cabinet's floating
+ * toolbar and is focusable, so a keyboard can scroll it (#2076).
+ */
+const TouchScroll: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
+  <div
+    role="region"
+    aria-label={label}
+    tabIndex={0}
+    className="sd-touch sd-touch-scroll w-full"
+  >
+    {children}
+  </div>
+);
+
+/**
  * The Study Director desk: dashboard, inbox, team, sites and a decision
  * panel. All rules live in `lib/study-director`; this is a thin adapter.
  */
 export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   officeFirst = false,
 }) => {
+  // The immersive touch cabinet (ADR 0061, #2076) lays the desk out to fit
+  // its stage; desktop markup is untouched.
+  const touch = useCabinetTouch();
+  const [deskTab, setDeskTab] = useState<DeskTab>("inbox");
   const [state, setState] = useState<StudyState | null>(null);
   const [saved, setSaved] = useState<StudyState | null>(() => loadStudySave());
   const [scenario, setScenario] = useState<StudyScenario>(DEFAULT_SCENARIO);
@@ -253,12 +288,14 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   useEffect(() => {
     if (!active) return;
     rootRef.current?.focus({ preventScroll: true });
+    // The touch cabinet covers the page, so the page has nothing to scroll to.
+    if (touch) return;
     const top = rootRef.current?.getBoundingClientRect().top;
     if (top !== undefined) {
       // Clear the fixed site header so the day and attention readout stay visible.
       window.scrollTo({ top: window.scrollY + top - 88, behavior: "instant" });
     }
-  }, [active]);
+  }, [active, touch]);
 
   const events = useMemo(() => (state ? inbox(state) : []), [state]);
   const selected: StudyEvent | undefined =
@@ -284,6 +321,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
 
   const start = useCallback((next: StudyState) => {
     setFromWorld(false);
+    setDeskTab("inbox");
     setState(next);
     setBaseline(computeMeters(next));
     setOutcome(null);
@@ -437,6 +475,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   const finishDay = useCallback(() => {
     if (!state) return;
     setAlert("");
+    setDeskTab("inbox");
     const next = endDay(state);
     const night = reportNight(state, next);
     setState(next);
@@ -454,6 +493,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   const skipQuietDays = useCallback(() => {
     if (!state) return;
     setAlert("");
+    setDeskTab("inbox");
     let next = endDay(state);
     let skipped = 1;
     while (
@@ -548,7 +588,7 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
     );
 
   if (!state) {
-    return (
+    const briefing = (
       <BriefingView
         setup={scenario.setup}
         sites={scenario.sites}
@@ -604,6 +644,11 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
         }
       />
     );
+    return touch ? (
+      <TouchScroll label="Study briefing">{briefing}</TouchScroll>
+    ) : (
+      briefing
+    );
   }
 
   const running = state.status === "running";
@@ -642,9 +687,13 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
         >
           {criticalOpen > 0
             ? `${criticalOpen} critical message${criticalOpen === 1 ? "" : "s"} will lapse if you end the day.`
-            : events.length === 0
-              ? "Nothing is waiting. Keys: E end day, N skip to the next message, ? all keys."
-              : "Keys: 1-5 choose, D document, J/K move, E end day, ? all keys."}
+            : touch
+              ? events.length === 0
+                ? "Nothing is waiting. End the day or skip ahead."
+                : "Tap a message, then an option. End the day when you are done."
+              : events.length === 0
+                ? "Nothing is waiting. Keys: E end day, N skip to the next message, ? all keys."
+                : "Keys: 1-5 choose, D document, J/K move, E end day, ? all keys."}
         </p>
         {alert ? (
           <p className="mt-0.5 text-[11px] font-semibold text-red-400">
@@ -686,6 +735,144 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
       </div>
     </div>
   );
+
+  // The touch cabinet is a fixed stage: the status, the section tabs and the
+  // day's actions keep their place, and one section scrolls between them
+  // (#2076). Its pieces are the desk's own.
+  if (touch) {
+    const sections: Record<DeskTab, React.ReactNode> = {
+      inbox: (
+        <div className="sd-desk-inbox">
+          <div className="sd-desk-list">
+            <InboxPanel
+              state={state}
+              events={events}
+              selectedId={selected?.id}
+              onSelect={setSelectedId}
+            />
+          </div>
+          <DecisionPanel
+            state={state}
+            event={running ? selected : undefined}
+            documented={documented}
+            onDocumentedChange={setDocumented}
+            onChoose={choose}
+            banner={
+              outcome ? (
+                <OutcomeStrip
+                  outcome={outcome}
+                  onDismiss={() => setOutcome(null)}
+                />
+              ) : null
+            }
+            footer={null}
+          />
+        </div>
+      ),
+      dashboard: (
+        <div className="sd-desk-pair">
+          <DashboardPanel state={state} />
+          <MetersPanel state={state} baseline={baseline} />
+        </div>
+      ),
+      team: <TeamPanel state={state} />,
+      sites: (
+        <SitesPanel
+          state={state}
+          canAudit={running && state.attention >= AUDIT_ATTENTION}
+          onAudit={audit}
+        />
+      ),
+      office: scene ? (
+        <OfficeScene
+          scene={scene}
+          headline={running ? dailyHeadline(state) : undefined}
+        />
+      ) : null,
+    };
+    const tabLabel = DESK_TABS.find((t) => t.id === deskTab)?.label ?? "";
+    return (
+      <div
+        ref={rootRef}
+        tabIndex={0}
+        data-keyboard-boundary="true"
+        // An open result strip takes the first Escape from the desk's own
+        // keys, instead of the cabinet closing.
+        data-escape-docks={outcome ? "true" : undefined}
+        data-sd-desk=""
+        onKeyDown={handleKeyDown}
+        className="sd-touch sd-desk-touch w-full bg-[var(--sd-bg)] font-mono text-[var(--sd-text)] outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+      >
+        <div role="status" aria-live="polite" className="sr-only">
+          {notice}
+        </div>
+        {showShortcuts ? (
+          <ShortcutSheet onClose={() => setShowShortcuts(false)} />
+        ) : null}
+        {report ? (
+          <div
+            role="region"
+            aria-label="Study report"
+            tabIndex={0}
+            className="sd-touch-scroll"
+          >
+            <ReportView
+              report={report}
+              world={fromWorld ? worldRun : null}
+              onRestart={restart}
+              share={
+                <SharePanel report={report} news={news} office={fromWorld} />
+              }
+            />
+          </div>
+        ) : (
+          <>
+            <StatusBar state={state} />
+            <PhaseTimeline state={state} />
+            <nav
+              aria-label="Desk sections"
+              className="sd-desk-tabs"
+              data-testid="desk-tabs"
+            >
+              {DESK_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  aria-pressed={deskTab === tab.id}
+                  onClick={() => setDeskTab(tab.id)}
+                >
+                  {tab.label}
+                  {tab.id === "inbox" && events.length > 0
+                    ? ` (${events.length})`
+                    : ""}
+                </button>
+              ))}
+            </nav>
+            <div
+              role="region"
+              aria-label={`${tabLabel} section`}
+              tabIndex={0}
+              data-testid="desk-section"
+              className="sd-desk-scroll"
+            >
+              {deskTab !== "inbox" && outcome ? (
+                <OutcomeStrip
+                  outcome={outcome}
+                  onDismiss={() => setOutcome(null)}
+                />
+              ) : null}
+              {sections[deskTab]}
+            </div>
+            {running ? (
+              <div className="sd-desk-actions" data-testid="desk-actions">
+                {actions}
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

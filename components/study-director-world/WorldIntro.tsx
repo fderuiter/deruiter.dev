@@ -3,6 +3,20 @@
 import React, { useRef } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
+const TOUCH_CONTROLS: Array<{ keys: string; action: string }> = [
+  { keys: "Tap the floor", action: "Walk to a person, a station or a spot" },
+  {
+    keys: "Arrow buttons",
+    action: "Walk one tile at a time; hold to keep going",
+  },
+  {
+    keys: "E button",
+    action: "Use what you face, or talk to whoever is there",
+  },
+  { keys: "F button", action: "Ask yourself how it is going" },
+  { keys: "Office directory", action: "Walk to a place without steering" },
+];
+
 const CONTROLS: Array<{ keys: string; action: string }> = [
   { keys: "W A S D or arrow keys", action: "Walk around the floor" },
   { keys: "E", action: "Use what you face, or talk to whoever is there" },
@@ -15,7 +29,11 @@ const CONTROLS: Array<{ keys: string; action: string }> = [
  * what a day is. It is a dialog, so focus stays inside it and Escape or
  * the button closes it; the Controls button on the stage opens it again.
  */
-export const WorldIntro: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const WorldIntro: React.FC<{
+  onClose: () => void;
+  /** True on the touch cabinet, which lists the on-screen controls. */
+  touch?: boolean;
+}> = ({ onClose, touch = false }) => {
   const startRef = useRef<HTMLButtonElement>(null);
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: startRef,
@@ -29,6 +47,8 @@ export const WorldIntro: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <div
         ref={trapRef}
         role="dialog"
+        // A tap on its text focuses the box, so Escape stays with it (#2076).
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby="sd-world-intro-title"
         data-testid="world-intro"
@@ -43,7 +63,7 @@ export const WorldIntro: React.FC<{ onClose: () => void }> = ({ onClose }) => {
           the phone, and go home when you run out of day. Everything is fine.
         </p>
         <dl className="mt-4 space-y-2 text-xs">
-          {CONTROLS.map((row) => (
+          {(touch ? TOUCH_CONTROLS : CONTROLS).map((row) => (
             <div
               key={row.keys}
               className="grid grid-cols-[minmax(0,9rem)_minmax(0,1fr)] gap-3"

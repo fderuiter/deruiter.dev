@@ -224,6 +224,8 @@ export const Overlay: React.FC<{
       <div
         ref={trapRef}
         role={role}
+        // A tap on its text focuses the window, so Escape stays with it (#2076).
+        tabIndex={-1}
         aria-modal="true"
         aria-labelledby={titleId}
         data-testid={testId}

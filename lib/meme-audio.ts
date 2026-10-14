@@ -88,7 +88,8 @@ export type MemeSoundType =
   | "modem"
   | "fda-siren"
   | "level-up"
-  | "fanfare";
+  | "fanfare"
+  | "echo-fail";
 
 export function getMemeSoundDuration(type: MemeSoundType): number {
   switch (type) {
@@ -105,6 +106,8 @@ export function getMemeSoundDuration(type: MemeSoundType): number {
       return 380;
     case "fda-siren":
       return 280;
+    case "echo-fail":
+      return 520;
     case "laser":
     case "matrix-glitch":
     default:
@@ -112,18 +115,7 @@ export function getMemeSoundDuration(type: MemeSoundType): number {
   }
 }
 
-export function playMemeSound(
-  type:
-    | "bark"
-    | "laser"
-    | "friday-alarm"
-    | "matrix-glitch"
-    | "teapot-whistle"
-    | "modem"
-    | "fda-siren"
-    | "level-up"
-    | "fanfare"
-): void {
+export function playMemeSound(type: MemeSoundType): void {
   const engine = getSoundEngine();
   if (!engine.isSoundAllowed()) return;
 
@@ -275,6 +267,19 @@ export function playMemeSound(
         type: "sawtooth",
         volume: 0.3,
       });
+      break;
+    }
+
+    case "echo-fail": {
+      // Echo's fail sting (#2049): a falling two-note buzz, lower and
+      // flatter than any pad so a miss never sounds like a sample.
+      engine.playSequence(
+        [
+          { frequency: 311.13, duration: 0.16, delay: 0 },
+          { frequency: 207.65, duration: 0.3, delay: 0.17 },
+        ],
+        { defaultType: "square", volume: 0.16 }
+      );
       break;
     }
 

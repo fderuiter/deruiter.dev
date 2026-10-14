@@ -201,7 +201,7 @@ describe("Laser Loon copy (#1940)", () => {
 
   it("documents flying and pausing in the controls strip", () => {
     expect(source).toMatch(/WASD or arrows to fly/);
-    expect(source).toMatch(/P or Esc to\s+pause/);
+    expect(source).toMatch(/P or Esc\s+to\s+pause/);
   });
 
   it("shows the best-score line only on run-ending cards", () => {

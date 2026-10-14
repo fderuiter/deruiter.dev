@@ -9,6 +9,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { useTouchHint } from "@/components/arcade/mobile";
 
 type RunEndingAction = "restart" | "exit";
 
@@ -38,6 +39,8 @@ export function PauseMenu({
   onExit,
 }: PauseMenuProps) {
   const [pending, setPending] = useState<RunEndingAction | null>(null);
+  // After a finger or the Pencil the keys read as taps (#2081).
+  const touchHint = useTouchHint();
   const cancelRef = useRef<HTMLButtonElement>(null);
   const restartRef = useRef<HTMLButtonElement>(null);
   const exitRef = useRef<HTMLButtonElement>(null);
@@ -122,7 +125,7 @@ export function PauseMenu({
             onClick={cancel}
             className="min-h-[44px] min-w-[44px] w-full px-6 py-3 bg-red-500 hover:bg-red-400 text-white rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
           >
-            <span>KEEP THIS RUN [ESC]</span>
+            <span>KEEP THIS RUN{touchHint ? "" : " [ESC]"}</span>
           </button>
           <button
             type="button"
@@ -150,7 +153,7 @@ export function PauseMenu({
             className="min-h-[44px] min-w-[44px] w-full px-6 py-3 bg-red-500 hover:bg-red-400 text-white rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all flex items-center justify-center gap-2 cursor-pointer focus-visible:ring-2 focus-visible:ring-white focus-visible:outline-none"
           >
             <IconPlayerPlay className="w-4 h-4 fill-current" />
-            <span>RESUME GAME [P / SPACE]</span>
+            <span>RESUME GAME{touchHint ? "" : " [P / SPACE]"}</span>
           </button>
 
           <button
@@ -176,10 +179,21 @@ export function PauseMenu({
       )}
 
       <div className="mt-6 pt-4 border-t border-neutral-800 w-full text-[10px] font-mono text-neutral-500 flex justify-around flex-wrap gap-2">
-        <span>WASD: Move</span>
-        <span>Click: Fire</span>
-        <span>1-4: Optics</span>
-        <span>U: Tremolo</span>
+        {touchHint ? (
+          <>
+            <span>Drag: Aim</span>
+            <span>Hold Fire: Shoot</span>
+            <span>1-4: Optics</span>
+            <span>Tremolo: Ultimate</span>
+          </>
+        ) : (
+          <>
+            <span>WASD: Move</span>
+            <span>Click: Fire</span>
+            <span>1-4: Optics</span>
+            <span>U: Tremolo</span>
+          </>
+        )}
       </div>
     </div>
   );

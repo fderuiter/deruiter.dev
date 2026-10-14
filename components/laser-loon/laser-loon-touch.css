@@ -1,0 +1,343 @@
+/*
+ * Laser Loon on the immersive touch cabinet (ADR 0061, #2081). The game root
+ * carries `ll-touch` only while useCabinetTouch() is true, so desktop markup
+ * and styles never see these rules. The arena, the status strip and the dock
+ * share the cabinet's stage without any page scroll: the arena takes the
+ * height the strip and the dock leave, and the canvas keeps its 768:420 shape.
+ */
+
+/* ---- Sizes: every control 44px or more, no text under 12px ---- */
+.ll-touch button,
+.ll-touch summary {
+  min-height: 44px;
+}
+.ll-touch button {
+  min-width: 44px;
+}
+.ll-touch .text-\[9px\],
+.ll-touch .text-\[10px\],
+.ll-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+
+/* ---- The stage: arena over dock ---- */
+.arcade-cabinet[data-immersive="true"] .arcade-shooter.ll-touch {
+  margin: 0;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 0;
+  justify-items: stretch;
+}
+.arcade-cabinet[data-immersive="true"] .arcade-shooter.ll-touch > * {
+  min-width: 0;
+}
+
+/* The playfield holds the status strip and the arena, and every overlay
+   (start, story, pause, results, menu) sits over both. */
+.arcade-cabinet[data-immersive="true"]
+  .arcade-shooter.ll-touch
+  .arcade-shooter-playfield {
+  justify-content: flex-start;
+  background: #0d0e11;
+}
+
+/* The status strip spans the playfield and keeps clear of the floating
+   toolbar at the cabinet's top right. */
+.arcade-cabinet[data-immersive="true"]
+  .arcade-shooter.ll-touch
+  .arcade-shooter-playfield
+  .arcade-hud {
+  width: 100%;
+  min-height: 3.5rem;
+  padding-right: calc(var(--cabinet-toolbar-inset, 0px) + 0.25rem);
+  column-gap: 0.75rem;
+  flex-shrink: 0;
+}
+.ll-touch .ll-hud-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.ll-touch .ll-hud-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.75rem;
+  background: rgba(24, 24, 27, 0.9);
+  padding: 0 0.75rem;
+  color: #f4f4f6;
+  font-weight: 700;
+}
+.ll-touch .ll-hud-action:focus-visible {
+  outline: 2px solid var(--game-accent, #2dd4bf);
+  outline-offset: 2px;
+}
+
+/* The arena band: whatever height the strip leaves. The canvas is the
+   largest 768:420 box that fits it, so nothing is cropped or scrolled. */
+.arcade-cabinet[data-immersive="true"]
+  .arcade-shooter.ll-touch
+  .arcade-shooter-playfield
+  .ll-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  container-type: size;
+}
+.arcade-cabinet[data-immersive="true"]
+  .arcade-shooter.ll-touch
+  .arcade-shooter-playfield
+  .ll-stage
+  canvas {
+  width: min(100cqw, calc(100cqh * 768 / 420));
+  height: auto;
+  max-height: 100%;
+  margin: 0 auto;
+}
+
+/* Overlays (title, story, pause, results) cover the arena and start under the
+   status strip, whose height LaserLoon measures into --ll-hud-h. Menu and
+   Pause therefore stay in reach on every screen, and a card is never under
+   the floating toolbar. The menu sheet covers the strip too. */
+.ll-touch .arcade-shooter-playfield > .absolute.inset-0 {
+  top: var(--ll-hud-h, 3.5rem);
+}
+.ll-touch .arcade-shooter-playfield > .absolute.inset-0.ll-sheet-backdrop {
+  top: 0;
+}
+
+/* Overlays scroll inside the arena, never the page. */
+.ll-touch [role="dialog"] {
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.ll-touch .arcade-shooter-pause,
+.ll-touch .arcade-shooter-start,
+.ll-touch .arcade-shooter-story {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+/* The Flag Museum fills the cabinet; its card never outgrows the screen and
+   its close key stays in reach while the card scrolls. */
+.ll-touch .ll-museum-card {
+  max-height: 92dvh;
+}
+.ll-touch .ll-museum-close {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  width: 2.75rem;
+  margin: 0 0 -2.75rem auto;
+}
+
+/* The menu sheet rises from the arena's bottom edge. */
+.ll-touch .ll-sheet {
+  max-height: 100%;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
+.ll-touch .ll-sheet-button {
+  min-height: 48px;
+  min-width: 48px;
+}
+
+/* ---- The dock ---- */
+.arcade-shooter-controls.ll-dock-wrap {
+  display: block;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  max-height: none;
+  overflow: visible;
+}
+.ll-touch .ll-dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0d0e11;
+  touch-action: none;
+}
+.ll-touch .ll-dock-optics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.375rem;
+  flex: 1 1 18rem;
+  max-width: 28rem;
+}
+.ll-touch .ll-dock-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1 1 16rem;
+  justify-content: flex-end;
+}
+.ll-touch .ll-key {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 4rem;
+  overflow: hidden;
+  border: 1px solid #3f3f46;
+  border-radius: 1rem;
+  background: #1c1c20;
+  color: #e4e4e7;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.ll-touch .ll-key:disabled {
+  opacity: 0.55;
+}
+.ll-touch .ll-key-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+.ll-touch .ll-optic {
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.25rem;
+}
+.ll-touch .ll-optic-key {
+  font-size: 1rem;
+  font-weight: 800;
+}
+.ll-touch .ll-optic[aria-pressed="true"] {
+  color: #fff;
+}
+.ll-touch .ll-tone-ruby[aria-pressed="true"] {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.28);
+}
+.ll-touch .ll-tone-pulse[aria-pressed="true"] {
+  border-color: #22d3ee;
+  background: rgba(34, 211, 238, 0.24);
+}
+.ll-touch .ll-tone-aurora[aria-pressed="true"] {
+  border-color: #34d399;
+  background: rgba(52, 211, 153, 0.24);
+}
+.ll-touch .ll-tone-cryo[aria-pressed="true"] {
+  border-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.26);
+}
+.ll-touch .ll-tremolo {
+  flex: 0 1 8.5rem;
+  min-width: 6.5rem;
+  border-color: #155e75;
+}
+.ll-touch .ll-tremolo[data-ready="true"] {
+  border-color: #22d3ee;
+  color: #ecfeff;
+}
+.ll-touch .ll-tremolo-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  background: rgba(34, 211, 238, 0.28);
+}
+.ll-touch .ll-tremolo-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.ll-touch .ll-tremolo .ll-key-icon {
+  position: relative;
+}
+.ll-touch .ll-fire {
+  flex: 1 1 9rem;
+  max-width: 14rem;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.ll-touch .ll-fire:active {
+  background: rgba(239, 68, 68, 0.55);
+}
+.ll-touch .ll-fire[data-live="false"] {
+  opacity: 0.6;
+}
+
+/* Held upright, the arena is a 768:420 band at the top and the spare height
+   becomes a controller: the optics in a row, then a big Tremolo and Fire. */
+@media (orientation: portrait) {
+  .arcade-cabinet[data-immersive="true"] .arcade-shooter.ll-touch {
+    grid-template-rows: minmax(0, 1fr) minmax(13rem, 44%);
+  }
+  .arcade-shooter-controls.ll-dock-wrap,
+  .arcade-shooter-controls.ll-dock-wrap > [data-touch-controls] {
+    height: 100%;
+  }
+  .ll-touch .ll-dock {
+    height: 100%;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  .ll-touch .ll-dock-optics {
+    flex: 0 0 auto;
+    max-width: none;
+    width: 100%;
+  }
+  .ll-touch .ll-dock-actions {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 13rem;
+    justify-content: stretch;
+  }
+  .ll-touch .ll-dock-actions .ll-key {
+    min-height: 4rem;
+    height: 100%;
+  }
+  .ll-touch .ll-tremolo {
+    flex: 1 1 0;
+    max-width: none;
+  }
+  .ll-touch .ll-fire {
+    flex: 1.6 1 0;
+    max-width: none;
+    font-size: 1.25rem;
+  }
+  .ll-touch .ll-fire .ll-key-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+  }
+}
+@media (orientation: portrait) and (min-height: 900px) {
+  .ll-touch .ll-optic {
+    min-height: 5rem;
+  }
+  .ll-touch .ll-optic-key {
+    font-size: 1.25rem;
+  }
+}
+/* A wide dock keeps its optics left and its actions right. */
+@media (min-width: 900px) and (orientation: landscape) {
+  .ll-touch .ll-dock-optics {
+    flex: 0 1 30rem;
+  }
+}

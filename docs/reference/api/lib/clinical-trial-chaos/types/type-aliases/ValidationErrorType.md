@@ -6,4 +6,4 @@
 
 # Type Alias: ValidationErrorType
 
-> **ValidationErrorType** = `"unit-error"` \| `"missing-digit"` \| `"invalid-date"` \| `"negative-value"` \| `"range-outlier"` \| `"casing-mismatch"` \| `"unapproved-conmed"` \| `"dose-calculation-error"` \| `"disposition-date-mismatch"`
+> **ValidationErrorType** = `"unit-error"` \| `"missing-digit"` \| `"decimal-shift"` \| `"invalid-date"` \| `"negative-value"` \| `"range-outlier"` \| `"casing-mismatch"` \| `"unapproved-conmed"` \| `"dose-calculation-error"` \| `"disposition-date-mismatch"`

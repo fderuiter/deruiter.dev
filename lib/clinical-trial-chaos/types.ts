@@ -5,6 +5,7 @@ export type CDISCDomain = "DM" | "VS" | "AE" | "LB" | "CM" | "EX" | "DS" | "MH";
 export type ValidationErrorType =
   | "unit-error"
   | "missing-digit"
+  | "decimal-shift"
   | "invalid-date"
   | "negative-value"
   | "range-outlier"

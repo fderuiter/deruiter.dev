@@ -164,6 +164,18 @@ Re-exports [DecisionRecord](types/interfaces/DecisionRecord.md)
 
 ***
 
+### DECK\_KEEP\_SHARE
+
+Re-exports [DECK_KEEP_SHARE](internal/events/variables/DECK_KEEP_SHARE.md)
+
+***
+
+### deckDay
+
+Re-exports [deckDay](internal/events/functions/deckDay.md)
+
+***
+
 ### DEFAULT\_SCENARIO
 
 Re-exports [DEFAULT_SCENARIO](scenario/variables/DEFAULT_SCENARIO.md)
@@ -191,6 +203,12 @@ Re-exports [DOCUMENTATION_ATTENTION](internal/model/variables/DOCUMENTATION_ATTE
 ### documentDecision
 
 Re-exports [documentDecision](internal/events/functions/documentDecision.md)
+
+***
+
+### drawDeck
+
+Re-exports [drawDeck](internal/events/functions/drawDeck.md)
 
 ***
 
@@ -407,6 +425,12 @@ Re-exports [projectedFinishDay](internal/model/functions/projectedFinishDay.md)
 ### ProtocolMaturitySchema
 
 Re-exports [ProtocolMaturitySchema](scenario/variables/ProtocolMaturitySchema.md)
+
+***
+
+### readDeck
+
+Re-exports [readDeck](internal/events/functions/readDeck.md)
 
 ***
 

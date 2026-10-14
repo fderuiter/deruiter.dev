@@ -196,8 +196,15 @@ export interface StudyState {
   log: DecisionRecord[];
   /** Story flags set by decisions, read by later events. */
   flags: string[];
-  /** Follow-up events scheduled by earlier decisions. */
+  /** Follow-up events scheduled by earlier decisions, and drawn wildcards. */
   scheduled: Array<{ eventId: string; day: number }>;
+  /**
+   * This run's event deck (#2093): the day, on this study's calendar, each
+   * drawn event can first appear. An event missing from it never arrives,
+   * unless an earlier decision schedules it. Saves made before the deck have
+   * none, and their events keep the fixed days they were written with.
+   */
+  deck?: Record<string, number>;
   /** Day each event first reached the inbox. */
   seen: Record<string, number>;
   /** Events that were answered or expired. */
@@ -238,8 +245,21 @@ export interface StudyEvent {
   subject: string;
   body: string;
   urgency: Urgency;
-  /** First day the event can appear. */
+  /**
+   * The day the event was written for, on the full study's calendar. Runs
+   * without a deck (saves from before #2093) show it on exactly this day.
+   */
   day: number;
+  /**
+   * The days, on the full calendar, a run's deck may draw this event's day
+   * from. Defaults to a short band around `day`.
+   */
+  window?: [number, number];
+  /**
+   * Always drawn into the deck. Optional events are drawn as a subset of
+   * those written for the same stretch of the study.
+   */
+  core?: boolean;
   /** Days the event stays actionable, counting its first day. */
   ttl: number;
   /** Extra condition that must hold for the event to appear. */

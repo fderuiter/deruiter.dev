@@ -22,6 +22,12 @@ const start = (seed = "s1") =>
     createStudy(seed, STUDY_24_081, STUDY_24_081_SITES, STUDY_24_081_TEAM)
   );
 
+/** A run on the fixed calendar, as a save from before the deck (#2093). */
+const fixedStart = (seed = "s1"): StudyState => ({
+  ...start(seed),
+  deck: undefined,
+});
+
 type Policy = (
   state: StudyState,
   eventId: string
@@ -53,7 +59,14 @@ describe("study director events", () => {
       expect(event.options.length).toBeGreaterThanOrEqual(2);
       expect(event.options.length).toBeLessThanOrEqual(5);
       expect(event.day).toBeGreaterThanOrEqual(1);
-      expect(event.day).toBeLessThanOrEqual(STUDY_24_081.durationDays);
+      // Late events (#2093) are written for slipped runs, up to day 110.
+      expect(event.day).toBeLessThanOrEqual(110);
+      if (event.window) {
+        expect(event.window[0]).toBeGreaterThanOrEqual(1);
+        expect(event.window[0]).toBeLessThanOrEqual(event.day);
+        expect(event.window[1]).toBeGreaterThanOrEqual(event.day);
+        expect(event.window[1]).toBeLessThanOrEqual(110);
+      }
       expect(event.ttl).toBeGreaterThanOrEqual(1);
       const optionIds = event.options.map((o) => o.id);
       expect(new Set(optionIds).size).toBe(optionIds.length);
@@ -127,7 +140,7 @@ describe("study director events", () => {
   });
 
   it("lists critical events before routine ones", () => {
-    let s = start();
+    let s = fixedStart();
     while (s.day < 24) s = endDay(s);
     const urgencies = inbox(s).map((e) => e.urgency);
     expect(urgencies).toEqual(
@@ -218,7 +231,7 @@ describe("study director events", () => {
   });
 
   it("fires the veteran's warning only when the study calls for it", () => {
-    let s = start("q");
+    let s = fixedStart("q");
     while (s.day < 28) s = endDay(s);
     const calm = {
       ...s,

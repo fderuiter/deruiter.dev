@@ -93,7 +93,7 @@ describe("StudyDirectorGame", () => {
     );
     expect(screen.getByText(/Day [2-9] \/ 77/)).toBeTruthy();
     expect(screen.getByRole("region", { name: "Inbox" }).textContent).toMatch(
-      /1 open/
+      /[1-9] open/
     );
   });
 
@@ -115,7 +115,10 @@ describe("StudyDirectorGame", () => {
     const root = document.querySelector(
       '[data-keyboard-boundary="true"]'
     ) as HTMLElement;
-    for (let i = 0; i < 23; i += 1) fireEvent.keyDown(root, { key: "e" });
+    // The deck (#2093) moves each message within a few days, and the seed
+    // here is fresh, so end days until the first critical message is open.
+    for (let i = 0; i < 70 && !screen.queryByText(/critical message/i); i += 1)
+      fireEvent.keyDown(root, { key: "e" });
     expect(screen.getByText(/critical message/i)).toBeTruthy();
   });
 

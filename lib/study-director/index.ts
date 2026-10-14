@@ -43,13 +43,17 @@ export {
 } from "./presets";
 export { STUDY_EVENTS } from "./internal/events-data";
 export {
+  DECK_KEEP_SHARE,
   WILDCARDS_PER_RUN,
   beginStudy,
+  deckDay,
   documentDecision,
+  drawDeck,
   endDay,
   eventDay,
   getEvent,
   inbox,
+  readDeck,
   resolveEvent,
   scheduleWildcards,
 } from "./internal/events";

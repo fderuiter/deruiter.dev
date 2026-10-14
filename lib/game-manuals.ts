@@ -997,8 +997,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Short or full study",
         detail:
-          "A new office run offers two lengths beside the difficulty. The full study runs 77 days with 48 subjects at five sites. The short study is the same protocol as a 35-day pilot with 24 subjects at Sites 01 to 03: every message, follow-up and visitor still comes, closer together, and a rescue starts three days behind instead of six. With a few delegated days a short study fits in one sitting. The share card says which one you ran, and saves from before the choice load as the full study.",
+          "A new office run offers two lengths beside the difficulty. The full study runs 77 days with 48 subjects at five sites. The short study is the same protocol as a 35-day pilot with 24 subjects at Sites 01 to 03: the same deck of messages, follow-ups and visitors comes, closer together, and a rescue starts three days behind instead of six. With a few delegated days a short study fits in one sitting. The share card says which one you ran, and saves from before the choice load as the full study.",
         badge: "Length",
+      },
+      {
+        title: "A different inbox every run",
+        detail:
+          "Each run deals its own deck of messages from the seed. The key moments always come: the protocol questions, first dosing, the analysis plan, database lock and the report. About three quarters of the other messages written for each stretch of the study arrive, each a few days either side of its usual day, so two runs differ in what lands as well as when. Follow-ups and callbacks only come after the decision that caused them, and never without it. A study that slips past its planned end gets mail of its own: the lock date, licences, finance, close-out visits and the boxes in the copier room. The same seed and the same decisions give the same inbox, and a save from before the deck keeps its messages on their old days.",
+        badge: "Deck",
       },
       {
         title: "Attention is the resource",

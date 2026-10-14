@@ -40,9 +40,20 @@ domain records attention costs without enforcing them.
 
 ***
 
+### deck?
+
+> `optional` **deck?**: `Record`\<`string`, `number`\>
+
+This run's event deck (#2093): the day, on this study's calendar, each
+drawn event can first appear. An event missing from it never arrives,
+unless an earlier decision schedules it. Saves made before the deck have
+none, and their events keep the fixed days they were written with.
+
+***
+
 ### difficulty?
 
-> `optional` **difficulty?**: `"calm"` \| `"standard"` \| `"rescue"`
+> `optional` **difficulty?**: `"standard"` \| `"calm"` \| `"rescue"`
 
 ***
 
@@ -104,7 +115,7 @@ Attention today's routine work took before any decision.
 
 > **scheduled**: `object`[]
 
-Follow-up events scheduled by earlier decisions.
+Follow-up events scheduled by earlier decisions, and drawn wildcards.
 
 #### day
 

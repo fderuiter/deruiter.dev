@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import dynamic from "next/dynamic";
 import { safeIsAvailable, safeRawStorage } from "@/lib/safe-storage";
+import { recordArcadeMilestone } from "@/lib/arcade-achievements";
 import {
   ATTENTION_PER_DAY,
   AUDIT_ATTENTION,
@@ -315,6 +316,9 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
       if (done.status !== "complete") return;
       const finished = finalizeStudy(done);
       const result = recordRun(career, finished, verdictFor(finished).headline);
+      if (finished.evaluations.regulatory.grade === "A") {
+        recordArcadeMilestone("study-director", "grade_a");
+      }
       updateCareer(result.career);
       setNews(result.news);
     },

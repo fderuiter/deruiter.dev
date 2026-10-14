@@ -150,6 +150,7 @@ import {
   RETRO_LABYRINTH_HIGH_SCORE_KEY,
   formatCampaignRoomBadge,
   saveCyberdeckProfile,
+  recordCyberdeckRoomResult,
   STAGE_1_MAZE,
 } from "@/lib/dungeon";
 
@@ -685,9 +686,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     cveFeed: false,
   });
 
+  // Whether the current run has been counted in runsCompleted. A run counts
+  // once, when it is cleared or first lost; retrying a lost room continues the
+  // same run (#2048).
+  const runEndRecordedRef = useRef(false);
+
   // Switch Stage (classic support)
   const switchStage = useCallback(
     (stgNum: number) => {
+      runEndRecordedRef.current = false;
       roomEntryVitalsRef.current = {
         ...roomEntryVitalsRef.current,
         score,
@@ -715,6 +722,21 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     safeSetRawItem(RETRO_LABYRINTH_HIGH_SCORE_KEY, score.toString());
     recordArcadeScore("retro-labyrinth", score);
   }, [gameStatus, score, effectiveHighScore]);
+
+  // A lost run counts toward runsCompleted once, however many times its room
+  // is retried afterwards (#2048).
+  useEffect(() => {
+    if (gameStatus !== "caught" || runEndRecordedRef.current) return;
+    runEndRecordedRef.current = true;
+    const updatedProf = recordCyberdeckRoomResult(profile, {
+      crypto: 0,
+      score,
+      endsRun: true,
+    });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setProfile(updatedProf);
+    saveCyberdeckProfile(updatedProf);
+  }, [gameStatus, profile, score]);
 
   // Restart current stage
   const handleRestart = useCallback(() => {
@@ -749,6 +771,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     setScore(0);
     setCryptoBounty(0);
     setClearedRooms([]);
+    runEndRecordedRef.current = false;
     cveFeedRef.current = false;
     setCveFeedActive(false);
     roomEntryVitalsRef.current = {
@@ -1195,12 +1218,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             recordArcadeScore("retro-labyrinth", finalScore);
           }
 
-          const updatedProf: CyberdeckProfile = {
-            ...profile,
-            totalCrypto: profile.totalCrypto + roomCrypto,
-            highScore: Math.max(profile.highScore, finalScore),
-            runsCompleted: profile.runsCompleted + 1,
-          };
+          // A run ends on its last room (a classic stage is a run of one).
+          // One that was lost and retried was counted when it was lost, so
+          // it isn't counted again here (#2048).
+          const endsRun =
+            (gameMode === "classic" || roomIndex >= campaignRooms.length - 1) &&
+            !runEndRecordedRef.current;
+          if (endsRun) runEndRecordedRef.current = true;
+          const updatedProf = recordCyberdeckRoomResult(profile, {
+            crypto: roomCrypto,
+            score: finalScore,
+            endsRun,
+          });
           setProfile(updatedProf);
           saveCyberdeckProfile(updatedProf);
 
@@ -1729,7 +1758,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   // Loop State Mirroring Ref for Stable Animation Lifecycle
   // The walls' next shift: drawn as a ghost on the maze and counted down in
-  // the HUD. Walls only exist in Room 1, so other rooms have none.
+  // the HUD. Walls only exist in the TSP room, so other rooms have none.
   const wallTelegraph = useMemo(
     () =>
       tspWalls.length > 0
@@ -3757,6 +3786,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     ? formatCampaignRoomBadge(currentRoom.badge, roomIndex)
                     : currentRoom.badge}
                 </span>
+                {gameMode === "roguelike" && (
+                  <span
+                    className="shrink-0 text-neutral-500 tabular-nums"
+                    data-testid="labyrinth-room-count"
+                  >
+                    Room {roomIndex + 1} of {campaignRooms.length}
+                  </span>
+                )}
                 <span
                   className="text-zinc-400 text-xs hidden sm:inline truncate max-w-[150px]"
                   title={currentRoom.title}

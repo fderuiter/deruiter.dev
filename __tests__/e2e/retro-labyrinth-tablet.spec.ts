@@ -9,7 +9,7 @@ import {
   tspSyncRoomToPatrols,
 } from "../../components/retro-labyrinth/room-solver";
 import { STEPS, type Cell } from "../../components/retro-labyrinth/route-plan";
-import { generateTSPRoom } from "../../lib/dungeon/generator";
+import { generateRoguelikeCampaign } from "../../lib/dungeon/generator";
 
 // Retro Labyrinth on a touch tablet (ADR 0061, #2032). The iPad projects set
 // the viewport, so each spec plays at whatever size its project gives it, in
@@ -677,12 +677,16 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     expect(blocking).toEqual([]);
   });
 
-  test("the exit stays locked while route nodes remain", async ({ page }) => {
+  test("room 1 opens with its exit unlocked and no route nodes", async ({
+    page,
+  }) => {
+    // Since #2048 the run opens on the DMZ Gateway; route nodes and the exit
+    // lock arrive with the TSP room, fourth in the run.
     await launchCabinet(page);
     const group = page.locator("[data-grid]").first();
-    await expect(group).toHaveAttribute("data-exit-locked", "true");
+    await expect(group).toHaveAttribute("data-exit-locked", "false");
     const nodes = parseNodes((await group.getAttribute("data-nodes")) ?? "");
-    expect(nodes.filter((node) => !node.visited).length).toBeGreaterThan(0);
+    expect(nodes).toEqual([]);
     await expect(page.getByText("Tap Next Room")).toHaveCount(0);
   });
 
@@ -809,7 +813,7 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     await expect(dialog).toHaveCount(0);
   });
 
-  test("walks Room 1 along the solved route, opens the exit and reaches Room 02", async ({
+  test("walks Room 1 along the solved route to the exit and reaches Room 02", async ({
     page,
   }, testInfo) => {
     test.setTimeout(300000);
@@ -828,7 +832,9 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
       await stepUntilPatrolTicks(page);
       observed.push(await readPatrolCells(page));
     }
-    const room = tspSyncRoomToPatrols(generateTSPRoom(), observed);
+    // Room 1 is the DMZ Gateway since #2048: no route nodes or moving walls,
+    // two patrols to walk around.
+    const room = tspSyncRoomToPatrols(generateRoguelikeCampaign()[0], observed);
     await shoot(page, testInfo, `room-start-${projectSize(page)}`);
     expect(
       room,

@@ -11,6 +11,7 @@ import React, {
 import { createPortal } from "react-dom";
 import {
   getArcadeProgress,
+  recordArcadeMilestone,
   recordArcadeScore,
 } from "@/lib/arcade-achievements";
 import { AnimatePresence, Reorder } from "framer-motion";
@@ -694,6 +695,25 @@ export function CardTable({
       recordArcadeScore("trial-and-error", view.roundScore);
     }
   }, [view.roundScore]);
+
+  // Trophies follow progress through the run, not the round score: one
+  // Small Blind hand already scores thousands (#2047).
+  const bossBlind = scenario.blind.tier === "BOSS_BLIND";
+  const campaignRun = runView.act.count > 1;
+  useEffect(() => {
+    if (runView.phase === "BLIND_CLEARED") {
+      recordArcadeMilestone("trial-and-error", "blind_cleared");
+      if (bossBlind && campaignRun) {
+        recordArcadeMilestone("trial-and-error", "act_cleared");
+      }
+    } else if (runView.phase === "RUN_WON") {
+      recordArcadeMilestone("trial-and-error", "blind_cleared");
+      // A single-act table (the guided Blind, a custom deck) is not a run.
+      if (!campaignRun) return;
+      recordArcadeMilestone("trial-and-error", "act_cleared");
+      recordArcadeMilestone("trial-and-error", "run_won");
+    }
+  }, [runView.phase, bossBlind, campaignRun]);
 
   const [detailId, setDetailId] = useState<string | null>(null);
   const [runInfoOpen, setRunInfoOpen] = useState(false);

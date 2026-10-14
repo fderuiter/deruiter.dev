@@ -11,3 +11,5 @@ export * from "./offices";
 export * from "./sponsor";
 export * from "./outfits";
 export * from "./sound-effects";
+export * from "./escalation";
+export * from "./amendments";

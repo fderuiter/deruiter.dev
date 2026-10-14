@@ -176,13 +176,14 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(
       stamped.some((source) => source.width === 14 && source.height === 14)
     ).toBe(true);
-    // Room 1 opens with its route nodes unvisited, so the exit is marked
-    // locked and the prompt names the objective instead (#1321).
-    expect(drawn).toContain("LOCK");
-    expect(drawn).toContain("VISIT THE ROUTE NODES (0/4) >>");
+    // Room 1, the DMZ Gateway, has no route nodes or boss, so its exit is
+    // open from the start and the prompt points at it (#2048).
+    expect(drawn).toContain("EXIT");
+    expect(drawn).not.toContain("LOCK");
+    expect(drawn).toContain("REACH THE EXIT >>");
   });
 
-  it("names what still locks the exit in the objective line (#1321)", async () => {
+  it("names the open exit as room 1's objective (#2048)", async () => {
     await act(async () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
@@ -190,10 +191,35 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     const objective = container.querySelector(
       '[data-testid="labyrinth-objective"]'
     );
-    expect(objective?.textContent).toBe("VISIT THE ROUTE NODES (0/4)");
-    expect(container.textContent).toContain("then guide your netrunner");
-    // The exit tile reads LOCK until then, so the copy says it unlocks (#1552).
-    expect(container.textContent).toContain("to unlock the EXIT");
+    expect(objective?.textContent).toBe("REACH THE EXIT");
+  });
+
+  it("names what still locks the exit in the objective line (#1321)", async () => {
+    // Route nodes live in the TSP room, the fourth room since #2048, so this
+    // run starts there.
+    const realCampaign = dungeon.generateRoguelikeCampaign;
+    const campaignSpy = vi
+      .spyOn(dungeon, "generateRoguelikeCampaign")
+      .mockImplementation(() => {
+        const rooms = realCampaign();
+        const tsp = rooms.findIndex((room) => room.id === "tsp");
+        return [rooms[tsp], ...rooms.filter((_, i) => i !== tsp)];
+      });
+    try {
+      await act(async () => {
+        root.render(<RetroLabyrinth isMounted={true} />);
+      });
+
+      const objective = container.querySelector(
+        '[data-testid="labyrinth-objective"]'
+      );
+      expect(objective?.textContent).toBe("VISIT THE ROUTE NODES (0/4)");
+      expect(container.textContent).toContain("then guide your netrunner");
+      // The exit tile reads LOCK until then, so the copy says it unlocks (#1552).
+      expect(container.textContent).toContain("to unlock the EXIT");
+    } finally {
+      campaignSpy.mockRestore();
+    }
   });
 
   it("should render ASCII fallback when isMounted is false", async () => {
@@ -385,8 +411,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     const crypto = container.querySelector('[title="Crypto"]');
     expect(crypto?.textContent).toContain("0 Crypto");
     expect(crypto?.textContent).not.toContain("Chips");
-    expect(container.textContent).toContain("ROOM 01 :: AIRGAP ENCLAVE");
-    expect(container.textContent).not.toContain("TIER 03");
+    expect(container.textContent).toContain("ROOM 01 :: DMZ PERIMETER");
+    expect(container.textContent).not.toContain("TIER 01");
   });
 
   it("pauses on P and resumes on P or Enter (#1322)", async () => {

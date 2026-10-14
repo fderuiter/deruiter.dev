@@ -88,12 +88,19 @@ describe("Labyrinth exits wait for the room objective (#1321)", () => {
     }
   });
 
-  it("starts the first two campaign rooms with a locked exit", () => {
-    const [room1, room2] = generateRoguelikeCampaign();
-    expect(getExitLockState(room1.boss, room1.tspNodes).locked).toBe(true);
-    expect(getExitLockState(room2.boss, room2.tspNodes).objective).toBe(
-      "DEFEAT THE BOSS"
-    );
+  it("opens on an unlocked room and locks the route-node and boss rooms (#2048)", () => {
+    const campaign = generateRoguelikeCampaign();
+    const lockOf = (id: string) => {
+      const room = campaign.find((r) => r.id === id)!;
+      return getExitLockState(room.boss, room.tspNodes);
+    };
+    // The first room is the gentle one: nothing locks its exit.
+    expect(
+      getExitLockState(campaign[0].boss, campaign[0].tspNodes).locked
+    ).toBe(false);
+    expect(lockOf("tsp").locked).toBe(true);
+    expect(lockOf("faceforge").objective).toBe("DEFEAT THE BOSS");
+    expect(lockOf("neural_warden").objective).toBe("DEFEAT THE BOSS");
   });
 });
 

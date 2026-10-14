@@ -5,6 +5,8 @@ import type {
   GameProgressState,
   PuzzlerLevelDef,
 } from "@/lib/quasi-perfect/types";
+import { getLevelPar, isLevelGolfed } from "@/lib/quasi-perfect";
+import { IconGolf } from "@tabler/icons-react";
 import { layoutLevelMap, levelMapBadge } from "./boardArt";
 
 interface LevelMapProps {
@@ -24,8 +26,9 @@ const CHAPTER_LABELS: Record<number, string> = {
 
 /**
  * The campaign as one trail: each chapter is a row of level stops, the rows
- * joined end to end, with the stars earned under each stop. Replaces the
- * L1–L18 button strip (#1519).
+ * joined end to end, with the stars earned under each stop and a flag for a
+ * level golfed at or under its step par (#2059). Replaces the L1–L18 button
+ * strip (#1519).
  */
 export const LevelMap: React.FC<LevelMapProps> = ({
   levels,
@@ -108,7 +111,10 @@ export const LevelMap: React.FC<LevelMapProps> = ({
             const lvl = levels[pos.index];
             if (!lvl) return null;
             const isCurrent = pos.index === currentLevelIndex;
-            const badge = levelMapBadge(progress.completedLevels?.[lvl.id]);
+            const saved = progress.completedLevels?.[lvl.id];
+            const badge = levelMapBadge(saved);
+            const golfed = isLevelGolfed(saved);
+            const par = getLevelPar(lvl);
             const badgeId = `quasi-level-badge-${lvl.id}`;
             return (
               <li
@@ -122,7 +128,7 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                   onClick={() => onSelectLevel(pos.index)}
                   aria-current={isCurrent ? "step" : undefined}
                   aria-describedby={badgeId}
-                  title={lvl.title}
+                  title={par !== null ? `${lvl.title} · par ${par}` : lvl.title}
                   data-state={badge.state}
                   data-current={isCurrent ? "true" : undefined}
                   className="qp-map-node qp-focus min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full px-1.5 text-xs font-bold tabular-nums transition-colors hover:border-[color:var(--qp-accent)] active:scale-[0.98]"
@@ -131,7 +137,8 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                 </button>
                 <span
                   id={badgeId}
-                  className={`mt-1 text-xs leading-none tracking-[0.08em] ${
+                  data-golfed={golfed ? "true" : undefined}
+                  className={`mt-1 flex items-center gap-0.5 text-xs leading-none tracking-[0.08em] ${
                     badge.state === "admitted"
                       ? "text-rose-300"
                       : badge.state === "solved"
@@ -146,7 +153,17 @@ export const LevelMap: React.FC<LevelMapProps> = ({
                         ? "★".repeat(badge.stars) + "☆".repeat(3 - badge.stars)
                         : "☆☆☆"}
                   </span>
-                  <span className="sr-only">{badge.description}</span>
+                  {golfed && (
+                    <IconGolf
+                      aria-hidden="true"
+                      data-testid={`quasi-level-golfed-${lvl.id}`}
+                      className="h-3 w-3 text-emerald-300"
+                    />
+                  )}
+                  <span className="sr-only">
+                    {badge.description}
+                    {golfed ? ", Golfed at or under par" : ""}
+                  </span>
                 </span>
               </li>
             );

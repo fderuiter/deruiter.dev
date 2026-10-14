@@ -15,5 +15,6 @@
 - [getKdsTicket](functions/getKdsTicket.md)
 - [getKdsTickets](functions/getKdsTickets.md)
 - [getPosBreadcrumb](functions/getPosBreadcrumb.md)
+- [getShiftScoreBreakdown](functions/getShiftScoreBreakdown.md)
 - [getTimeLeft](functions/getTimeLeft.md)
 - [scoreShift](functions/scoreShift.md)

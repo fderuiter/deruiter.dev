@@ -44,6 +44,24 @@ export interface EnemyTemplate {
   radius: number;
   isBoss?: boolean;
   behavior?: "linear" | "sine" | "homing" | "bouncing" | "boss-orbit";
+  /** The optic that lands a critical hit: double damage. Bosses have none. */
+  weakTo?: LaserType;
+  /** Optics this enemy shrugs off at reduced damage, still never immune. */
+  resists?: readonly LaserType[];
+}
+
+/**
+ * How a weapon's hit lands on an enemy: a weakness crit, a resisted glance,
+ * or plain neutral damage.
+ */
+export type WeaponCounter = "weak" | "resisted" | "neutral";
+
+/** Where a hit landed, whose colour to spark, and how it was countered. */
+export interface CounterHitPoint {
+  x: number;
+  y: number;
+  color: string;
+  counter: WeaponCounter;
 }
 
 // Backwards compatibility alias

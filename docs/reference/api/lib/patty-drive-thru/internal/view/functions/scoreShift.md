@@ -8,8 +8,9 @@
 
 > **scoreShift**(`state`): `number`
 
-The arcade score for a shift: points per car served, less for late ones,
-plus a bonus for making it to close. Never negative.
+The arcade score for a shift: the total of `getShiftScoreBreakdown`, which
+rewards cars served, speed, clean orders and the Dignity kept to close, and
+docks late cars. Never negative.
 
 ## Parameters
 

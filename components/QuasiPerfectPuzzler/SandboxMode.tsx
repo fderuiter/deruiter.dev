@@ -1,7 +1,24 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, {
+  useCallback,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { ASTNode } from "@/lib/quasi-perfect/types";
+import {
+  SANDBOX_PRESETS,
+  gradeSandboxRun,
+  parseSandboxProgress,
+  recordSandboxProof,
+  type SandboxMedal,
+} from "@/lib/quasi-perfect/sandbox";
+import {
+  STORAGE_CHANGE_EVENT,
+  safeGetRawItem,
+  safeSetRawItem,
+} from "@/lib/safe-storage";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
 import {
   cloneAST,
@@ -28,127 +45,34 @@ import {
   IconX,
 } from "@tabler/icons-react";
 
-const SANDBOX_PRESETS: {
-  name: string;
-  description: string;
-  goal: ASTNode;
-  hypotheses: ASTNode[];
-}[] = [
-  {
-    name: "Binomial Expansion (a + b)²",
-    description: "Verify polynomial identity using ring.",
-    goal: {
-      id: "sb-goal-1",
-      type: "Equality",
-      value: "=",
-      children: [
-        {
-          id: "sb-pow",
-          type: "Operator",
-          value: "^",
-          children: [
-            {
-              id: "sb-add",
-              type: "Operator",
-              value: "+",
-              children: [
-                { id: "sb-a", type: "Variable", value: "a" },
-                { id: "sb-b", type: "Variable", value: "b" },
-              ],
-            },
-            { id: "sb-2", type: "Constant", value: 2 },
-          ],
-        },
-        {
-          id: "sb-exp",
-          type: "Operator",
-          value: "+",
-          children: [
-            {
-              id: "sb-a2",
-              type: "Operator",
-              value: "^",
-              children: [
-                { id: "sb-a-r", type: "Variable", value: "a" },
-                { id: "sb-2-r", type: "Constant", value: 2 },
-              ],
-            },
-            {
-              id: "sb-mid",
-              type: "Operator",
-              value: "+",
-              children: [
-                {
-                  id: "sb-2ab",
-                  type: "Operator",
-                  value: "*",
-                  children: [
-                    {
-                      id: "sb-2a",
-                      type: "Operator",
-                      value: "*",
-                      children: [
-                        { id: "sb-c2", type: "Constant", value: 2 },
-                        { id: "sb-va", type: "Variable", value: "a" },
-                      ],
-                    },
-                    { id: "sb-vb", type: "Variable", value: "b" },
-                  ],
-                },
-                {
-                  id: "sb-b2",
-                  type: "Operator",
-                  value: "^",
-                  children: [
-                    { id: "sb-b-r", type: "Variable", value: "b" },
-                    { id: "sb-2-r2", type: "Constant", value: 2 },
-                  ],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    },
-    hypotheses: [],
-  },
-  {
-    name: "Tautology P → P",
-    description: "Practice intro and exact logic tactics.",
-    goal: {
-      id: "sb-goal-2",
-      type: "Implication",
-      value: "→",
-      children: [
-        { id: "sb-P1", type: "Variable", value: "P" },
-        { id: "sb-P2", type: "Variable", value: "P" },
-      ],
-    },
-    hypotheses: [],
-  },
-  {
-    name: "Arithmetic Decidability (3 + 7 = 10)",
-    description: "Verify concrete numerical evaluation with decide / norm_num.",
-    goal: {
-      id: "sb-goal-3",
-      type: "Equality",
-      value: "=",
-      children: [
-        {
-          id: "sb-add37",
-          type: "Operator",
-          value: "+",
-          children: [
-            { id: "c3", type: "Constant", value: 3 },
-            { id: "c7", type: "Constant", value: 7 },
-          ],
-        },
-        { id: "c10", type: "Constant", value: 10 },
-      ],
-    },
-    hypotheses: [],
-  },
-];
+const SANDBOX_STORAGE_KEY = "quasi_perfect_puzzler_sandbox_v1";
+
+// Same pattern as the campaign progress: other tabs fire "storage", writes in
+// this tab go through lib/safe-storage, which fires STORAGE_CHANGE_EVENT.
+function subscribeSandboxProgress(callback: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener(STORAGE_CHANGE_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(STORAGE_CHANGE_EVENT, callback);
+  };
+}
+
+function getSandboxSnapshot(): string {
+  if (typeof window === "undefined") return "{}";
+  return safeGetRawItem(SANDBOX_STORAGE_KEY) || "{}";
+}
+
+function getSandboxServerSnapshot(): string {
+  return "{}";
+}
+
+const MEDAL_LABEL: Record<SandboxMedal, string> = {
+  gold: "Gold",
+  silver: "Silver",
+  bronze: "Bronze",
+};
 
 const FORMULA_SHORTCUTS = [
   {
@@ -216,12 +140,34 @@ export const SandboxMode: React.FC = () => {
     null
   );
 
+  // RAM the current preset attempt has spent, failed tactics included, and
+  // whether it was admitted with sorry. Sandbox never blocks on RAM; these
+  // only grade the attempt against the preset's targets (#2059).
+  const [ramUsed, setRamUsed] = useState<number>(0);
+  const [usedSorry, setUsedSorry] = useState<boolean>(false);
+
+  const rawSandboxProgress = useSyncExternalStore(
+    subscribeSandboxProgress,
+    getSandboxSnapshot,
+    getSandboxServerSnapshot
+  );
+  const sandboxProgress = parseSandboxProgress(rawSandboxProgress);
+
+  const saveSandboxProof = useCallback((presetId: string, spent: number) => {
+    const existing = parseSandboxProgress(safeGetRawItem(SANDBOX_STORAGE_KEY));
+    const next = recordSandboxProof(existing, presetId, spent);
+    if (next === existing) return;
+    safeSetRawItem(SANDBOX_STORAGE_KEY, JSON.stringify(next), {
+      retainInMemory: false,
+    });
+  }, []);
+
   const [logs, setLogs] = useState<CompilerLogEntry[]>([
     {
       id: "sb-init",
       timestamp: "00:00:01",
       type: "info",
-      text: "Interactive Sandbox Mode active. Unlimited RAM. Test any tactic freely or compile custom infix formulas.",
+      text: "Interactive Sandbox Mode active. Unlimited RAM: no tactic is refused, but presets grade the RAM you spend against gold and silver targets. Test any tactic freely or compile custom infix formulas.",
     },
   ]);
 
@@ -248,6 +194,8 @@ export const SandboxMode: React.FC = () => {
     setCurrentHypotheses(p.hypotheses.map(cloneAST));
     setSelectedTargetId(null);
     setSelectedTacticIndex(null);
+    setRamUsed(0);
+    setUsedSorry(false);
     setLogs((prev) => [
       ...prev,
       {
@@ -270,6 +218,8 @@ export const SandboxMode: React.FC = () => {
     setCurrentHypotheses(parsedHypothesesList);
     setSelectedTargetId(null);
     setSelectedTacticIndex(null);
+    setRamUsed(0);
+    setUsedSorry(false);
 
     setLogs((prev) => [
       ...prev,
@@ -320,8 +270,18 @@ export const SandboxMode: React.FC = () => {
       result = tactic.execute(targetNode, currentGoal, currentHypotheses);
     }
 
+    const spent = ramUsed + result.ramConsumed;
+    setRamUsed(spent);
+    const sorryNow = usedSorry || (result.success && tacticKey === "sorry");
+    if (sorryNow !== usedSorry) setUsedSorry(sorryNow);
+
     if (result.success && result.newAST) {
       setCurrentGoal(result.newAST);
+      const preset =
+        selectedPresetIdx !== null ? SANDBOX_PRESETS[selectedPresetIdx] : null;
+      if (preset && !sorryNow && isProofComplete(result.newAST)) {
+        saveSandboxProof(preset.id, spent);
+      }
       if (result.newHypotheses) {
         setCurrentHypotheses(result.newHypotheses);
       }
@@ -351,6 +311,19 @@ export const SandboxMode: React.FC = () => {
   };
 
   const isComplete = isProofComplete(currentGoal);
+  const activePreset =
+    selectedPresetIdx !== null ? SANDBOX_PRESETS[selectedPresetIdx] : null;
+  const activeRecord = activePreset
+    ? sandboxProgress[activePreset.id]
+    : undefined;
+  const bestMedal =
+    activePreset && activeRecord
+      ? gradeSandboxRun(activePreset, activeRecord.bestRamUsed, false)
+      : null;
+  const runMedal =
+    activePreset && isComplete
+      ? gradeSandboxRun(activePreset, ramUsed, usedSorry)
+      : null;
   const allTacticIds = Object.keys(tacticDefs) as (keyof typeof tacticDefs)[];
 
   return (
@@ -377,20 +350,32 @@ export const SandboxMode: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {SANDBOX_PRESETS.map((preset, idx) => (
-            <button
-              key={preset.name}
-              type="button"
-              onClick={() => loadPreset(idx)}
-              className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all ${
-                idx === selectedPresetIdx
-                  ? "qp-btn-primary"
-                  : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
-              }`}
-            >
-              Preset {idx + 1}
-            </button>
-          ))}
+          {SANDBOX_PRESETS.map((preset, idx) => {
+            const verified = !!sandboxProgress[preset.id]?.verified;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => loadPreset(idx)}
+                data-verified={verified ? "true" : undefined}
+                title={verified ? `${preset.name} (verified)` : preset.name}
+                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-[0.98] ${
+                  idx === selectedPresetIdx
+                    ? "qp-btn-primary"
+                    : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                }`}
+              >
+                <span>Preset {idx + 1}</span>
+                {verified && (
+                  <IconCheck
+                    aria-hidden="true"
+                    data-testid={`sandbox-preset-verified-${preset.id}`}
+                    className="w-3 h-3 text-emerald-400"
+                  />
+                )}
+              </button>
+            );
+          })}
           <button
             type="button"
             onClick={() => setIsDrawerOpen((prev) => !prev)}
@@ -596,6 +581,49 @@ export const SandboxMode: React.FC = () => {
           </span>
         )}
       </div>
+
+      {/* Preset goals: RAM targets, this attempt, and the saved verified mark */}
+      {activePreset && (
+        <div
+          data-testid="sandbox-goals"
+          className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2 text-[11px] text-zinc-400"
+        >
+          <span className="tabular-nums">
+            <span className="font-bold text-amber-300">Gold</span>: use{" "}
+            {activePreset.goldRamBudget} GB or less ·{" "}
+            <span className="font-bold text-zinc-200">Silver</span>:{" "}
+            {activePreset.silverRamBudget} GB or less
+          </span>
+          <span
+            data-testid="sandbox-ram-used"
+            className="tabular-nums text-zinc-300"
+          >
+            This attempt: {ramUsed} GB
+            {runMedal ? ` · ${MEDAL_LABEL[runMedal]}` : ""}
+            {isComplete && usedSorry ? " · admitted with sorry, no medal" : ""}
+          </span>
+          <span
+            data-testid="sandbox-verified"
+            data-verified={activeRecord ? "true" : "false"}
+            title="Proved without sorry in the local simulator. No Lean kernel check is run."
+            className={`ml-auto flex items-center gap-1 font-bold ${
+              activeRecord ? "text-emerald-400" : "text-zinc-400"
+            }`}
+          >
+            {activeRecord ? (
+              <>
+                <IconCheck aria-hidden="true" className="w-3.5 h-3.5" />
+                <span>
+                  Verified · best {activeRecord.bestRamUsed} GB
+                  {bestMedal ? ` (${MEDAL_LABEL[bestMedal]})` : ""}
+                </span>
+              </>
+            ) : (
+              <span>Not verified yet</span>
+            )}
+          </span>
+        </div>
+      )}
 
       {/* Main Canvas */}
       <ExpressionTree

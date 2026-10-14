@@ -16,7 +16,10 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { cloneDeep } from "@/lib/utils";
 import { clamp } from "@/lib/game-utils";
 import { downloadFile } from "@/lib/download";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import {
   IconAlertTriangle,
@@ -180,6 +183,24 @@ import {
   describeSponsorEvent,
   describePhaseClearForm483,
   SHIFT_END_LOGS,
+  getAuditYear,
+  getLocksToNextAuditYear,
+  getAuditYearErrorChance,
+  formatAuditYearLog,
+  describeAuditYear,
+  addOpenedStations,
+  ENDLESS_BEST_STORAGE_KEY,
+  parseEndlessBest,
+  mergeEndlessBest,
+  type AmendmentEffectsState,
+  createAmendmentEffectsState,
+  beginAmendmentEffect,
+  getRequiredSignatureCount,
+  recordAmendmentLock,
+  tickAmendmentEffects,
+  applySpotInspectionMisroute,
+  parkAuditorAtStation,
+  annotateInspectionReport,
 } from "@/lib/clinical-trial-chaos";
 
 import {
@@ -195,6 +216,7 @@ import {
   FOLDER_FX_MS,
   getChuteIndexAt,
   getChuteSlots,
+  getAuditorParkX,
   getConveyorLogicalSize,
   getFolderIndexAt,
   getSlotX,
@@ -223,6 +245,8 @@ import {
 } from "@/lib/clinical-trial-chaos/sound-effects";
 
 const emptySubscribe = () => () => {};
+/** How fast the auditor walks to a spot inspection, in floor widths per second. */
+const SPOT_WALK_SPEED = 0.6;
 
 const subscribeHighScore = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
@@ -237,6 +261,29 @@ const getHighScoreSnapshot = () => {
   }
 };
 const getHighScoreServerSnapshot = () => "0";
+// The endless best lives under its own key, apart from the campaign score
+// (#2053). Reads go through the guarded storage helpers.
+const getEndlessBestSnapshot = () => {
+  try {
+    return safeGetRawItem(ENDLESS_BEST_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+};
+const getEndlessBestServerSnapshot = () => "";
+const persistEndlessBest = (score: number, auditYear: number) => {
+  try {
+    const { best, improved } = mergeEndlessBest(
+      parseEndlessBest(safeGetRawItem(ENDLESS_BEST_STORAGE_KEY)),
+      score,
+      auditYear
+    );
+    if (improved)
+      safeSetRawItem(ENDLESS_BEST_STORAGE_KEY, JSON.stringify(best));
+  } catch {
+    // Storage unavailable: the best simply is not remembered.
+  }
+};
 
 const QUICK_DISPATCH_GUARD_MS = 400;
 
@@ -379,6 +426,11 @@ export const ClinicalTrialChaos: React.FC = () => {
     getHighScoreServerSnapshot
   );
   const loadedHighScore = parseInt(rawHighScore, 10) || 0;
+  const rawEndlessBest = useSyncExternalStore(
+    subscribeHighScore,
+    getEndlessBestSnapshot,
+    getEndlessBestServerSnapshot
+  );
   const { playSuccess, muted: globalMuted } = useAudio();
   const { recordEvent } = useTelemetry();
   const { announce } = useAnnouncer();
@@ -420,6 +472,18 @@ export const ClinicalTrialChaos: React.FC = () => {
     createInitialScoreState
   );
   const effectiveHighScore = Math.max(scoreState.highScore, loadedHighScore);
+  // Endless Audit Years (#2053): every few locks raise one difficulty axis.
+  const auditYear =
+    gameMode === "endless" ? getAuditYear(scoreState.subjectsSubmitted) : 1;
+  const endlessBest = useMemo(
+    () =>
+      mergeEndlessBest(
+        parseEndlessBest(rawEndlessBest),
+        gameMode === "endless" ? scoreState.score : 0,
+        auditYear
+      ).best,
+    [rawEndlessBest, gameMode, scoreState.score, auditYear]
+  );
   // The game loop advances the auditor, the subject countdowns and the
   // lifeline timers between renders; their refs hold the latest values.
   const [auditor, setAuditor, auditorRef] = useLoopOwnedState<AuditorState>(
@@ -437,6 +501,15 @@ export const ClinicalTrialChaos: React.FC = () => {
     useLoopOwnedState<PowerUpInventory>(createInitialPowerUpInventory);
   const [activeAmendment, setActiveAmendment] =
     useState<ProtocolAmendment | null>(null);
+  // Lasting amendment rules (#2053): the ref is the source of truth, which
+  // the loop advances every frame; the state mirrors it on each event.
+  const [amendmentEffects, setAmendmentEffects] =
+    useState<AmendmentEffectsState>(createAmendmentEffectsState);
+  const amendmentEffectsRef = useRef<AmendmentEffectsState>(amendmentEffects);
+  const commitAmendmentEffects = useCallback((next: AmendmentEffectsState) => {
+    amendmentEffectsRef.current = next;
+    setAmendmentEffects(next);
+  }, []);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
 
   // 3. Modals & Interactive States
@@ -669,6 +742,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       const phaseStations = getStationsForPhase(targetPhase, mode);
       setStations(phaseStations);
       setActiveAmendment(null);
+      commitAmendmentEffects(createAmendmentEffectsState());
       setSelectedSubjectId(null);
       submittedSubjectIdsRef.current.clear();
       setRoutingNotice(null);
@@ -805,6 +879,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       setAuditor,
       setConveyorSubjects,
       setPowerUps,
+      commitAmendmentEffects,
     ]
   );
 
@@ -1036,6 +1111,35 @@ export const ClinicalTrialChaos: React.FC = () => {
         settledScore.highScore.toString()
       );
       recordArcadeScore("clinical-chaos", settledScore.highScore);
+      // Endless Audit Years (#2053): crossing a year boundary raises the
+      // next axis, opens any new station and is kept as the endless best.
+      if (gameMode === "endless") {
+        const prevYear = getAuditYear(scoreState.subjectsSubmitted);
+        const nextYear = getAuditYear(settledScore.subjectsSubmitted);
+        persistEndlessBest(settledScore.score, nextYear);
+        if (nextYear > prevYear) {
+          addAuditLog(formatAuditYearLog(nextYear), "WARN");
+          setStations((prev) =>
+            addOpenedStations(prev, getStationsForPhase(1, "endless", nextYear))
+          );
+          announce(
+            `Audit Year ${nextYear}. ${describeAuditYear(nextYear)}`,
+            "polite"
+          );
+        }
+      }
+      // A double-signature audit counts each lock as countersigned (#2053).
+      const amendmentLock = recordAmendmentLock(amendmentEffectsRef.current);
+      if (amendmentLock.state !== amendmentEffectsRef.current) {
+        commitAmendmentEffects(amendmentLock.state);
+      }
+      if (amendmentLock.auditClosed) {
+        addAuditLog(
+          "[21 CFR 11.50] Double-signature audit closed: every CRF in scope carries an author signature and an independent reviewer countersignature.",
+          "COMPLIANT"
+        );
+        announce("Double-signature audit closed.", "polite");
+      }
       setPowerUps((pu) =>
         chargePowerUps(
           pu,
@@ -1084,16 +1188,23 @@ export const ClinicalTrialChaos: React.FC = () => {
         playSuccess();
         // Grade the phase on the tallies after this final CRF, so its clean
         // count is included (#1609).
-        const report = buildInspectionReport(
-          settledScore,
-          auditor,
-          auditLogs,
-          ruleViolations,
-          activeProtocol,
-          sponsorRef.current.skeletons
+        const report = annotateInspectionReport(
+          buildInspectionReport(
+            settledScore,
+            auditor,
+            auditLogs,
+            ruleViolations,
+            activeProtocol,
+            sponsorRef.current.skeletons
+          ),
+          null,
+          amendmentEffectsRef.current
         );
         setBimoReport(report);
         setLastBimoReport(report);
+        if (phase === 3 && report.verdict.startsWith("NAI")) {
+          recordArcadeMilestone("clinical-chaos", "nai_campaign");
+        }
       }
     },
     [
@@ -1113,9 +1224,11 @@ export const ClinicalTrialChaos: React.FC = () => {
       pushScorePop,
       playSuccess,
       announce,
+      addAuditLog,
       setAuditor,
       setConveyorSubjects,
       setPowerUps,
+      commitAmendmentEffects,
     ]
   );
 
@@ -1342,10 +1455,28 @@ export const ClinicalTrialChaos: React.FC = () => {
         fx.shake(4);
         fx.flash("#ef4444");
 
+        // GCP spot inspection (#2053): a misroute to the watched station is
+        // seen first-hand, so it counts double toward suspicion.
+        let suspicionDelta = result.suspicionDelta;
+        if (!result.reasonMismatch) {
+          const inspected = applySpotInspectionMisroute(
+            amendmentEffectsRef.current,
+            domain,
+            result.suspicionDelta
+          );
+          if (inspected.doubled) {
+            commitAmendmentEffects(inspected.state);
+            suspicionDelta = inspected.suspicionDelta;
+            addAuditLog(
+              `[GCP SPOT INSPECTION] The FDA investigator watched ${subj.subjectLabel} misrouted at the ${domain} station. Suspicion counts double (+${suspicionDelta}%).`,
+              "CRITICAL",
+              suspicionDelta - result.suspicionDelta
+            );
+          }
+        }
+
         setScoreState((prev) => breakCombo(prev));
-        setAuditor((prev) =>
-          raiseAuditorSuspicion(prev, result.suspicionDelta)
-        );
+        setAuditor((prev) => raiseAuditorSuspicion(prev, suspicionDelta));
       }
       setSignatureModal((prev) => ({ ...prev, isOpen: false, subject: null }));
     },
@@ -1359,6 +1490,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       announce,
       stations,
       setAuditor,
+      commitAmendmentEffects,
     ]
   );
 
@@ -1386,12 +1518,14 @@ export const ClinicalTrialChaos: React.FC = () => {
         return;
       }
       setRoutingNotice(null);
+      const signaturesRequired = getRequiredSignatureCount(amendmentEffects);
       if (
         getSubmissionMode(activeSubject, domain, stations, {
           gameMode,
           submittedCount: scoreState.subjectsSubmitted,
           phaseTarget: PHASE_TARGETS[phase],
           amendmentActive: !!activeAmendment?.active,
+          signaturesRequired,
         }) === "quick"
       ) {
         lastQuickDispatchAtRef.current = Date.now();
@@ -1407,6 +1541,8 @@ export const ClinicalTrialChaos: React.FC = () => {
         selectedReason: "Intent to Submit",
         passwordInput: "••••••••",
         requiresReason: true,
+        signaturesRequired,
+        signaturesApplied: 0,
       });
     },
     [
@@ -1417,6 +1553,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       scoreState.subjectsSubmitted,
       phase,
       activeAmendment,
+      amendmentEffects,
       submitDossier,
     ]
   );
@@ -1424,13 +1561,36 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 16. Confirm the exceptional packet through the same submission path.
   const handleConfirmSignature = useCallback(() => {
     if (!signatureModal.subject) return;
+    // Double-signature audit (#2053): the first step applies the author's
+    // signature and keeps the dialog open for the reviewer's countersignature.
+    const applied = (signatureModal.signaturesApplied ?? 0) + 1;
+    if (applied < (signatureModal.signaturesRequired ?? 1)) {
+      triggerSound("sign");
+      addAuditLog(
+        `[21 CFR 11.50] Author signature applied to ${signatureModal.subject.subjectLabel} (${signatureModal.selectedReason}). Awaiting an independent reviewer countersignature.`,
+        "INFO"
+      );
+      setSignatureModal((prev) => ({ ...prev, signaturesApplied: applied }));
+      announce(
+        "Author signature applied. Sign again as the independent reviewer to lock the CRF.",
+        "polite"
+      );
+      return;
+    }
     submitDossier(
       signatureModal.subject,
       signatureModal.selectedReason,
       targetRoutingStation,
       "full"
     );
-  }, [signatureModal, targetRoutingStation, submitDossier]);
+  }, [
+    signatureModal,
+    targetRoutingStation,
+    submitDossier,
+    triggerSound,
+    addAuditLog,
+    announce,
+  ]);
 
   // 16. Canvas 2D floor scene renderer (#1521)
   const hotkeyStations = useMemo(
@@ -1442,6 +1602,7 @@ export const ClinicalTrialChaos: React.FC = () => {
     const readiness = getRoutingReadiness(activeSubject, stations);
     return readiness.unresolvedCount === 0 ? readiness.matchingDomains : [];
   }, [playState, activeSubject, stations]);
+  const watchedStationId = amendmentEffects.spotInspection?.stationId ?? null;
   const renderConveyorCanvas = useCallback(
     (
       ctx: CanvasRenderingContext2D,
@@ -1458,6 +1619,7 @@ export const ClinicalTrialChaos: React.FC = () => {
         outfit,
         stations: hotkeyStations,
         acceptingDomains,
+        watchedDomain: watchedStationId,
         beltOffset: beltOffsetRef.current,
         now: performance.now(),
         calm: still || prefersCalmMotion(),
@@ -1471,6 +1633,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       outfit,
       hotkeyStations,
       acceptingDomains,
+      watchedStationId,
     ]
   );
 
@@ -1526,6 +1689,8 @@ export const ClinicalTrialChaos: React.FC = () => {
   // 16b. Mirroring Refs for Stable Game Loop
   const playStateRef = useRef(playState);
   const phaseRef = useRef(phase);
+  const gameModeRef = useRef(gameMode);
+  const announceRef = useRef(announce);
   const officeRef = useRef(office);
   const selectedSubjectIdRef = useRef(selectedSubjectId);
   const stationsRef = useRef(stations);
@@ -1556,6 +1721,8 @@ export const ClinicalTrialChaos: React.FC = () => {
   useEffect(() => {
     playStateRef.current = playState;
     phaseRef.current = phase;
+    gameModeRef.current = gameMode;
+    announceRef.current = announce;
     officeRef.current = office;
     selectedSubjectIdRef.current = selectedSubjectId;
     stationsRef.current = stations;
@@ -1662,13 +1829,24 @@ export const ClinicalTrialChaos: React.FC = () => {
         setGameOverReason(reason);
         setPlayState("game_over");
         addAuditLogRef.current(SHIFT_END_LOGS[reason], "CRITICAL");
-        const report = buildInspectionReport(
-          scoreStateRef.current,
-          auditorRef.current,
-          auditLogsRef.current,
-          ruleViolationsRef.current,
-          activeProtocolRef.current,
-          sponsorRef.current.skeletons
+        const endless = gameModeRef.current === "endless";
+        const yearReached = getAuditYear(
+          scoreStateRef.current.subjectsSubmitted
+        );
+        if (endless) {
+          persistEndlessBest(scoreStateRef.current.score, yearReached);
+        }
+        const report = annotateInspectionReport(
+          buildInspectionReport(
+            scoreStateRef.current,
+            auditorRef.current,
+            auditLogsRef.current,
+            ruleViolationsRef.current,
+            activeProtocolRef.current,
+            sponsorRef.current.skeletons
+          ),
+          endless ? yearReached : null,
+          amendmentEffectsRef.current
         );
         setBimoReport(report);
         setLastBimoReport(report);
@@ -1695,6 +1873,7 @@ export const ClinicalTrialChaos: React.FC = () => {
 
       let uiNeedsSync = false;
 
+      const preTickAuditorX = auditorRef.current.x;
       // 1-4. Deadlines, auditor patrol, lifeline durations and the running
       // amendment advance through the shared shift rules (#901).
       const tick = tickShiftClocks(
@@ -1711,6 +1890,64 @@ export const ClinicalTrialChaos: React.FC = () => {
       conveyorSubjectsRef.current = tick.subjects;
       auditorRef.current = tick.auditor;
       powerUpsRef.current = tick.powerUps;
+      const loopAuditYear =
+        gameModeRef.current === "endless"
+          ? getAuditYear(scoreStateRef.current.subjectsSubmitted)
+          : 1;
+
+      // GCP spot inspection (#2053): the window runs on the shift clock and
+      // the auditor stands at the watched chute until it closes.
+      const effectsTick = tickAmendmentEffects(
+        amendmentEffectsRef.current,
+        deltaSeconds
+      );
+      if (effectsTick.inspectionEnded) {
+        uiNeedsSync = true;
+        commitAmendmentEffects(effectsTick.state);
+        const ended = effectsTick.inspectionEnded;
+        auditorRef.current = {
+          ...auditorRef.current,
+          behavior:
+            auditorRef.current.behavior === "inspecting"
+              ? "patrolling"
+              : auditorRef.current.behavior,
+          targetStationId: undefined,
+        };
+        addAuditLogRef.current(
+          `[GCP SPOT INSPECTION] The FDA investigator left the ${ended.stationId} station: ${
+            ended.misroutes === 0
+              ? "no misroutes observed."
+              : `${ended.misroutes} misroute${ended.misroutes === 1 ? "" : "s"} observed.`
+          }`,
+          ended.misroutes === 0 ? "COMPLIANT" : "WARN"
+        );
+        announceRef.current(
+          `Spot inspection over. The investigator left the ${ended.stationId} station.`,
+          "polite"
+        );
+      } else {
+        amendmentEffectsRef.current = effectsTick.state;
+      }
+      const inspection = amendmentEffectsRef.current.spotInspection;
+      if (inspection) {
+        const sortedFloor = [...stationsRef.current].sort(
+          (a, b) => a.positionIndex - b.positionIndex
+        );
+        const view = conveyorViewRef.current;
+        const parkX = getAuditorParkX(
+          view.width,
+          sortedFloor.length,
+          sortedFloor.findIndex((st) => st.id === inspection.stationId),
+          getConveyorGeometry(view.width, view.height).beltLeft
+        );
+        // Walk over rather than teleport: at most SPOT_WALK_SPEED per second.
+        const step = SPOT_WALK_SPEED * deltaSeconds;
+        auditorRef.current = parkAuditorAtStation(
+          auditorRef.current,
+          preTickAuditorX + clamp(parkX - preTickAuditorX, -step, step),
+          inspection.stationId
+        );
+      }
 
       if (!prefersCalmMotion())
         beltOffsetRef.current += deltaSeconds * BELT_SPEED;
@@ -1762,7 +1999,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       // 5. Random Protocol Amendments
       amendmentTimerRef.current += deltaSeconds;
       const amendmentInterval = applyOfficeAmendmentInterval(
-        getAmendmentIntervalSeconds(phaseRef.current),
+        getAmendmentIntervalSeconds(phaseRef.current, loopAuditYear),
         officeRef.current
       );
       if (amendmentTimerRef.current > amendmentInterval) {
@@ -1776,7 +2013,36 @@ export const ClinicalTrialChaos: React.FC = () => {
           "WARN"
         );
 
-        if (newAmendment.type === "station-scramble") {
+        if (
+          newAmendment.type === "double-signature-audit" ||
+          newAmendment.type === "gcp-spot-inspection"
+        ) {
+          const nextEffects = beginAmendmentEffect(
+            amendmentEffectsRef.current,
+            newAmendment,
+            stationsRef.current.map((st) => st.id)
+          );
+          commitAmendmentEffects(nextEffects);
+          if (
+            nextEffects.spotInspection &&
+            newAmendment.type === "gcp-spot-inspection"
+          ) {
+            const watched = nextEffects.spotInspection.stationId;
+            addAuditLogRef.current(
+              `[GCP SPOT INSPECTION] An FDA investigator is observing the ${watched} station for ${Math.round(nextEffects.spotInspection.durationSeconds)}s. A misroute there counts double.`,
+              "WARN"
+            );
+            announceRef.current(
+              `Spot inspection: the FDA investigator is watching the ${watched} station. A misroute there counts double.`,
+              "assertive"
+            );
+          } else if (newAmendment.type === "double-signature-audit") {
+            announceRef.current(
+              "Double-signature audit: the next 3 CRFs each need an author signature and a reviewer countersignature.",
+              "assertive"
+            );
+          }
+        } else if (newAmendment.type === "station-scramble") {
           setStations((st) => scrambleStations(st));
         } else if (newAmendment.type === "sae-priority-rush") {
           const saeSubj = applyOfficeToSubject(
@@ -1803,7 +2069,8 @@ export const ClinicalTrialChaos: React.FC = () => {
         phaseRef.current,
         conveyorSubjectsRef.current.length,
         (seconds) => applyOfficeSpawnInterval(seconds, officeRef.current),
-        stressParamsRef.current.arrivalRateMultiplier
+        stressParamsRef.current.arrivalRateMultiplier,
+        loopAuditYear
       );
       if (
         spawnTimerRef.current > spawnInterval &&
@@ -1811,7 +2078,10 @@ export const ClinicalTrialChaos: React.FC = () => {
       ) {
         uiNeedsSync = true;
         spawnTimerRef.current = 0;
-        const baseErrorChance = stressParamsRef.current.errorChance;
+        const baseErrorChance = getAuditYearErrorChance(
+          stressParamsRef.current.errorChance,
+          loopAuditYear
+        );
         const errorChance = applyOfficeErrorChance(
           baseErrorChance,
           officeRef.current
@@ -2506,6 +2776,54 @@ export const ClinicalTrialChaos: React.FC = () => {
       </div>
     ) : null;
 
+  // Lasting amendment rules (#2053), shown for as long as they are in force,
+  // which can outlast the amendment's own banner.
+  const doubleSignatureLeft = amendmentEffects.doubleSignature
+    ? amendmentEffects.doubleSignature.required -
+      amendmentEffects.doubleSignature.countersigned
+    : 0;
+  const amendmentRulesBanner =
+    playState === "playing" &&
+    (amendmentEffects.spotInspection || doubleSignatureLeft > 0) ? (
+      <div
+        role="status"
+        data-testid="cc-amendment-rules"
+        className="space-y-1 rounded-xl border border-amber-500/40 bg-[#13151a] px-3 py-2 text-[11px]"
+      >
+        {amendmentEffects.spotInspection && (
+          <p className="flex min-w-0 items-start gap-2 text-zinc-300 break-words">
+            <span className="shrink-0 rounded bg-amber-500 px-1 text-[9px] font-bold uppercase text-[#0d0e11]">
+              FDA
+            </span>
+            <span className="min-w-0">
+              <span className="font-bold text-amber-300">
+                GCP spot inspection at the{" "}
+                {amendmentEffects.spotInspection.stationId} station.
+              </span>{" "}
+              The investigator checks every CRF routed there against source. A
+              misroute there counts double.
+            </span>
+          </p>
+        )}
+        {doubleSignatureLeft > 0 && (
+          <p className="flex min-w-0 items-start gap-2 text-zinc-300 break-words">
+            <IconLock
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400"
+              aria-hidden="true"
+            />
+            <span className="min-w-0">
+              <span className="font-bold text-amber-300">
+                Double-signature audit: {doubleSignatureLeft} CRF
+                {doubleSignatureLeft === 1 ? "" : "s"} left.
+              </span>{" "}
+              Each needs an author signature and an independent reviewer
+              countersignature (21 CFR 11.50).
+            </span>
+          </p>
+        )}
+      </div>
+    ) : null;
+
   // The two ways to lose, as segmented gauges with their losing zone marked.
   const GAUGE_SEGMENTS = 20;
   const suspicionLit = Math.round(
@@ -2693,7 +3011,9 @@ export const ClinicalTrialChaos: React.FC = () => {
             {scoreState.score}
           </span>
           <span className="hidden text-[10px] tabular-nums text-zinc-400 sm:inline">
-            Best {effectiveHighScore}
+            {gameMode === "endless"
+              ? `Best ${endlessBest.score} · Y${endlessBest.auditYear}`
+              : `Best ${effectiveHighScore}`}
           </span>
           {scorePops.map((pop) => (
             <span
@@ -2739,6 +3059,15 @@ export const ClinicalTrialChaos: React.FC = () => {
           <span className="text-[10px] uppercase text-zinc-400">
             {gameMode === "campaign" ? `Phase ${phase}/3` : "Endless"}
           </span>
+          {gameMode === "endless" && (
+            <span
+              data-testid="cc-audit-year"
+              className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-amber-300"
+              title={`Every few locked CRFs start a new Audit Year and the floor gets harder. ${getLocksToNextAuditYear(scoreState.subjectsSubmitted)} more to the next.`}
+            >
+              Audit Year {auditYear}
+            </span>
+          )}
           {gameMode === "campaign" && (
             <span
               className="flex items-center gap-1"
@@ -2946,6 +3275,9 @@ export const ClinicalTrialChaos: React.FC = () => {
       )}
       {activeTab !== "conveyor" && amendmentBanner && (
         <div className="mt-3">{amendmentBanner}</div>
+      )}
+      {activeTab !== "conveyor" && amendmentRulesBanner && (
+        <div className="mt-3">{amendmentRulesBanner}</div>
       )}
 
       {/* TAB 1: the floor (#1521). The belt and its chutes fill the top, the
@@ -3248,13 +3580,20 @@ export const ClinicalTrialChaos: React.FC = () => {
                         routingReadiness.matchingDomains.includes(station.id);
                       const accepts = matches && flowStep === 2;
                       const isFlashing = flashStationId === station.id;
+                      const isWatched = watchedStationId === station.id;
                       return (
                         <button
                           key={station.id}
                           type="button"
                           onClick={() => handleInitiateSubmission(station.id)}
-                          title={`${station.label}: ${station.name}`}
+                          title={`${station.label}: ${station.name}${
+                            isWatched
+                              ? " (GCP spot inspection: a misroute here counts double)"
+                              : ""
+                          }`}
                           className={`group relative min-h-[48px] min-w-0 overflow-hidden rounded-lg border px-2 pb-1.5 pt-2 text-left transition active:scale-[0.98] ${
+                            isWatched ? "ring-2 ring-inset ring-amber-500 " : ""
+                          }${
                             isFlashing
                               ? "border-emerald-400 bg-emerald-500/20"
                               : accepts
@@ -3281,6 +3620,19 @@ export const ClinicalTrialChaos: React.FC = () => {
                                 <span className="sr-only">{station.label}</span>
                               </h4>
                             </span>
+                            {isWatched && (
+                              <span
+                                data-testid="cc-watched-station"
+                                className="shrink-0 rounded bg-amber-500 px-1 text-[9px] font-bold uppercase text-[#0d0e11]"
+                              >
+                                FDA
+                                <span className="sr-only">
+                                  {" "}
+                                  inspector watching: a misroute here counts
+                                  double
+                                </span>
+                              </span>
+                            )}
                             <span
                               className="shrink-0 text-[10px] font-bold tabular-nums text-emerald-400"
                               title="CRFs submitted here"
@@ -3315,6 +3667,7 @@ export const ClinicalTrialChaos: React.FC = () => {
             </div>
 
             {amendmentBanner}
+            {amendmentRulesBanner}
 
             {/* Narrow cabinets: the urgent sponsor email sits above the work */}
             {playState === "playing" && sponsorEmailCard && (
@@ -4002,6 +4355,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                         gameMode === "campaign" ? "Campaign score" : "Score",
                       value: scoreState.score,
                       tone: "text-white",
+                      // Endless keeps its own best, apart from the campaign (#2053).
+                      detail:
+                        gameMode === "endless"
+                          ? `Audit Year ${auditYear} · endless best ${endlessBest.score} (Year ${endlessBest.auditYear})`
+                          : undefined,
                     },
                     {
                       label: "CRFs locked",
@@ -4705,6 +5063,15 @@ export const ClinicalTrialChaos: React.FC = () => {
                   >
                     21 CFR Part 11 Electronic Signature
                   </h2>
+                  {(signatureModal.signaturesRequired ?? 1) > 1 && (
+                    <span
+                      data-testid="cc-sign-step"
+                      className="rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-300"
+                    >
+                      {(signatureModal.signaturesApplied ?? 0) + 1}/
+                      {signatureModal.signaturesRequired}
+                    </span>
+                  )}
                 </div>
                 <span className="shrink-0 rounded border border-white/[0.08] bg-[#0d0e11] px-2 py-0.5 font-mono text-[10px] text-zinc-300">
                   {targetRoutingStation} EDC LOCK
@@ -4729,6 +5096,13 @@ export const ClinicalTrialChaos: React.FC = () => {
                   </p>
                 </div>
 
+                {(signatureModal.signaturesRequired ?? 1) > 1 && (
+                  <p className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-[11px] text-amber-200">
+                    {(signatureModal.signaturesApplied ?? 0) === 0
+                      ? "Double-signature audit: sign first as the author. An independent reviewer then countersigns before the CRF locks."
+                      : "Author signature applied. Countersign as the independent reviewer to lock the CRF."}
+                  </p>
+                )}
                 <div role="group" aria-labelledby="cc-sign-reason-label">
                   <p
                     id="cc-sign-reason-label"
@@ -4827,7 +5201,13 @@ export const ClinicalTrialChaos: React.FC = () => {
                   onClick={handleConfirmSignature}
                   className="flex min-h-[44px] items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-[#0d0e11] transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 active:scale-[0.98]"
                 >
-                  <IconShieldCheck className="h-4 w-4" /> Sign &amp; Lock CRF
+                  <IconShieldCheck className="h-4 w-4" />{" "}
+                  {(signatureModal.signaturesRequired ?? 1) > 1 &&
+                  (signatureModal.signaturesApplied ?? 0) === 0
+                    ? "Apply Author Signature"
+                    : (signatureModal.signaturesRequired ?? 1) > 1
+                      ? "Countersign & Lock CRF"
+                      : "Sign & Lock CRF"}{" "}
                   (Enter)
                 </button>
               </div>
@@ -4938,6 +5318,55 @@ export const ClinicalTrialChaos: React.FC = () => {
                   {bimoReport.summary}
                 </p>
               </div>
+
+              {bimoReport.auditYear !== undefined && (
+                <p
+                  data-testid="cc-bimo-audit-year"
+                  className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-amber-200"
+                >
+                  <span className="font-bold">
+                    Endless audit: Audit Year {bimoReport.auditYear}
+                  </span>{" "}
+                  <span className="text-zinc-400">
+                    · endless best {endlessBest.score} (Year{" "}
+                    {endlessBest.auditYear})
+                  </span>
+                </p>
+              )}
+
+              {bimoReport.amendmentOutcomes &&
+                bimoReport.amendmentOutcomes.length > 0 && (
+                  <div data-testid="cc-bimo-amendments">
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase block mb-1.5">
+                      Protocol Amendments ({bimoReport.amendmentOutcomes.length}
+                      )
+                    </span>
+                    <ul className="space-y-1.5">
+                      {bimoReport.amendmentOutcomes.map((outcome, idx) => (
+                        <li
+                          key={`${outcome.type}-${idx}`}
+                          className="flex items-start gap-2 rounded-lg border border-zinc-800 bg-zinc-900/60 p-2.5"
+                        >
+                          <span
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                              outcome.resolved
+                                ? "bg-emerald-500/15 text-emerald-300"
+                                : "bg-rose-500/15 text-rose-300"
+                            }`}
+                          >
+                            {outcome.resolved ? "MET" : "NOT MET"}
+                          </span>
+                          <span className="min-w-0 break-words text-zinc-300">
+                            <span className="font-bold text-white">
+                              {outcome.title}:
+                            </span>{" "}
+                            {outcome.summary}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
               {bimoReport.findings.length > 0 && (
                 <div>

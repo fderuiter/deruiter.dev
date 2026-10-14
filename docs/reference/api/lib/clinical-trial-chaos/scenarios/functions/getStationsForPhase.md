@@ -6,7 +6,10 @@
 
 # Function: getStationsForPhase()
 
-> **getStationsForPhase**(`phase`, `mode?`): [`StationConfig`](../../types/interfaces/StationConfig.md)[]
+> **getStationsForPhase**(`phase`, `mode?`, `auditYear?`): [`StationConfig`](../../types/interfaces/StationConfig.md)[]
+
+Stations open for a phase. Endless mode opens six and adds one with each
+station step of the Audit Year rotation, up to all eight (#2053).
 
 ## Parameters
 
@@ -17,6 +20,10 @@
 ### mode?
 
 [`GameMode`](../../types/type-aliases/GameMode.md) = `"campaign"`
+
+### auditYear?
+
+`number` = `1`
 
 ## Returns
 

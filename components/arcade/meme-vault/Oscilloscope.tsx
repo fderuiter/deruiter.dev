@@ -139,7 +139,7 @@ export function Oscilloscope({
       data-testid="meme-oscilloscope"
       data-live={live ? "true" : "false"}
     >
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[11px] tabular-nums">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 font-mono text-[11px] pointer-coarse:text-xs tabular-nums">
         <span className="flex min-w-0 items-center gap-2 text-zinc-300">
           <span
             aria-hidden="true"

@@ -729,6 +729,11 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         });
         expect(panel()).toBeNull();
         expect(container.textContent).not.toContain("Skip calibration");
+        // Endless shows its Audit Year and its own best (#2053).
+        expect(
+          container.querySelector('[data-testid="cc-audit-year"]')?.textContent
+        ).toBe("Audit Year 1");
+        expect(container.textContent).toContain("Best 0 · Y1");
       } finally {
         vi.useRealTimers();
       }

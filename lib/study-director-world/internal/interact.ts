@@ -279,5 +279,6 @@ export function hudReadout(world: WorldState): HudReadout {
       enrolled: study.sites.reduce((sum, s) => sum + s.enrolled, 0),
       target: study.setup.subjects,
     },
+    difficulty: study.difficulty ?? "standard",
   };
 }

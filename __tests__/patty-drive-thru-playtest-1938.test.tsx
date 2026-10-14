@@ -188,7 +188,9 @@ describe("end card (#1938)", () => {
       outcome: "docked",
       tallies: { ...shift.tallies, served: 3, late: 2 },
     } as ShiftState;
-    expect(describeShiftScore(tallied)).toBe("3 cars x 10 - 2 late x 5");
+    expect(describeShiftScore(tallied)).toBe(
+      "3 cars x 10 - 2 late x 5 + 0 fast x 5 + 0 streak"
+    );
   });
 });
 

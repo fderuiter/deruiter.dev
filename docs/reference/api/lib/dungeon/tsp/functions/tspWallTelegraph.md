@@ -8,7 +8,7 @@
 
 > **tspWallTelegraph**(`grid`, `walls`, `moveCount`): [`TspWallTelegraph`](../interfaces/TspWallTelegraph.md)
 
-The telegraph for the walls of a Room 1 grid. It runs the same
+The telegraph for the walls of a TSP room grid. It runs the same
 updateTSPMovingWalls rule the game runs on each move, so the drawing and the
 countdown always agree with what the next moves will do.
 

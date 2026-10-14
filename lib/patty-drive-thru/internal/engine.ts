@@ -42,6 +42,8 @@ import {
   POS_MENU,
   RED_AFTER_SEC,
   SCENARIO_LIMITS,
+  SCORE_STREAK_MAX_LINKS,
+  SCORE_STREAK_STEP,
   SHIFT_PAID_MINUTES,
   SOS_GAIN_FAST,
   SOS_GAIN_ON_TIME,
@@ -135,6 +137,10 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
       wrongEntries: 0,
       drinksDropped: 0,
       yells: 0,
+      fastBumps: 0,
+      cleanStreak: 0,
+      bestStreak: 0,
+      streakPoints: 0,
     },
     lastActionAt: 0,
     wipeReadyAt: 0,
@@ -428,7 +434,11 @@ function wrongEntry(
       ...state.meters,
       dignity: clampMeter(state.meters.dignity - DIGNITY_LOSS_WRONG_ENTRY),
     },
-    tallies: { ...state.tallies, wrongEntries: state.tallies.wrongEntries + 1 },
+    tallies: {
+      ...state.tallies,
+      wrongEntries: state.tallies.wrongEntries + 1,
+      cleanStreak: 0,
+    },
   };
 }
 
@@ -540,6 +550,7 @@ function applyBump(
         : -(state.config.sosLossLate ?? SOS_LOSS_LATE);
   events.push({ type: "bumped", orderId: order.id, band });
   const base = acted(state);
+  const streak = base.tallies.cleanStreak + 1;
   return {
     ...base,
     orders: base.orders.filter((o) => o.id !== order.id),
@@ -548,6 +559,12 @@ function applyBump(
       ...base.tallies,
       served: base.tallies.served + 1,
       late: base.tallies.late + (band === "red" ? 1 : 0),
+      fastBumps: base.tallies.fastBumps + (band === "green" ? 1 : 0),
+      cleanStreak: streak,
+      bestStreak: Math.max(base.tallies.bestStreak, streak),
+      streakPoints:
+        base.tallies.streakPoints +
+        SCORE_STREAK_STEP * Math.min(streak - 1, SCORE_STREAK_MAX_LINKS),
     },
     pos:
       base.pos.activeOrderId === order.id
@@ -608,6 +625,8 @@ export function applyAction(
       const index = order ? order.items.findIndex((it) => it.dropped) : -1;
       if (!order || index < 0) break;
       events.push({ type: "drink-reentered", orderId: order.id });
+      // The dispenser drops drinks at random, so re-entering one is not the
+      // player's mistake and leaves the clean-order streak alone (#2057).
       next = acted(
         replaceOrder(
           state,

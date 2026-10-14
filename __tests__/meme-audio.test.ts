@@ -14,6 +14,7 @@ import {
   releaseMemeAnalyser,
   MEME_SCOPE_FFT_SIZE,
   useMemeAudioCleanup,
+  unlockMemeAudio,
   type MemeSoundType,
 } from "@/lib/meme-audio";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
@@ -511,6 +512,36 @@ describe("Meme Audio & SoundEngine Core Integration (__tests__/meme-audio.test.t
         ctx?.destination
       );
       getSoundEngine().setOutputTap(null);
+    });
+  });
+  describe("5. Audio unlock (#2071)", () => {
+    const engineContext = () => {
+      const ctx = getSoundEngine().getAudioContext();
+      if (!ctx) throw new Error("no audio context");
+      return ctx as unknown as {
+        state: string;
+        resume: ReturnType<typeof vi.fn>;
+      };
+    };
+
+    it("resumes a suspended context from a tap", () => {
+      const ctx = engineContext();
+      ctx.state = "suspended";
+      ctx.resume.mockClear();
+      unlockMemeAudio();
+      expect(ctx.resume).toHaveBeenCalled();
+    });
+
+    it("leaves a running context alone and does nothing while muted", () => {
+      const ctx = engineContext();
+      ctx.state = "running";
+      ctx.resume.mockClear();
+      unlockMemeAudio();
+      expect(ctx.resume).not.toHaveBeenCalled();
+      getSoundEngine().setMuted(true);
+      ctx.state = "suspended";
+      unlockMemeAudio();
+      expect(ctx.resume).not.toHaveBeenCalled();
     });
   });
 });

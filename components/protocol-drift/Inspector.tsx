@@ -12,6 +12,8 @@ import {
   type ProtocolDriftView,
 } from "@/lib/protocol-drift";
 import { useProtocolDriftStore } from "./store";
+import { TouchSheet } from "./TouchSheet";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 
 const BADGE: Record<
   EpistemicStatus,
@@ -106,7 +108,7 @@ function FormPane({
         aria-label="Source worksheet"
         className="border border-zinc-700 bg-zinc-100 p-2 text-[11px] text-zinc-900"
       >
-        <h4 className="font-semibold">SOURCE WORKSHEET (SCAN)</h4>
+        <h3 className="font-semibold">SOURCE WORKSHEET (SCAN)</h3>
         {sheet ? (
           <dl className="mt-1 grid grid-cols-[auto_1fr] gap-x-2">
             <dt>Hospital</dt>
@@ -133,7 +135,7 @@ function FormPane({
         aria-label="Electronic entry"
         className="border border-zinc-700 bg-[#0d0e11] p-2 text-[11px]"
       >
-        <h4 className="font-semibold text-zinc-100">ELECTRONIC ENTRY (eCRF)</h4>
+        <h3 className="font-semibold text-zinc-100">ELECTRONIC ENTRY (eCRF)</h3>
         {revision ? (
           <>
             <p className="text-zinc-300">
@@ -300,9 +302,9 @@ function TracePane({
       {view.vsLedger.filter((r) => r.submissionId === submissionId).length >
       0 ? (
         <div>
-          <h4 className="text-[11px] font-semibold text-zinc-100">
+          <h3 className="text-[11px] font-semibold text-zinc-100">
             SDTM VS rows
-          </h4>
+          </h3>
           <ul className="space-y-0.5 text-[11px] text-zinc-200">
             {view.vsLedger
               .filter((r) => r.submissionId === submissionId)
@@ -365,7 +367,7 @@ function Composer({ issue, view }: { issue: Issue; view: ProtocolDriftView }) {
         void send();
       }}
     >
-      <h4 className="font-semibold text-zinc-100">STRUCTURED COMPOSER</h4>
+      <h3 className="font-semibold text-zinc-100">STRUCTURED COMPOSER</h3>
       <p>
         <span className="text-zinc-300">Target </span>
         <span className="break-words text-zinc-100">
@@ -493,9 +495,9 @@ function ReviewPane({
   return (
     <div className="space-y-2 p-2">
       <section aria-label="Active issues">
-        <h4 className="text-[11px] font-semibold text-zinc-100">
+        <h3 className="text-[11px] font-semibold text-zinc-100">
           Issues ({view.issues.length})
-        </h4>
+        </h3>
         {view.issues.length === 0 ? (
           <p className="text-zinc-300">No issues raised.</p>
         ) : (
@@ -504,6 +506,8 @@ function ReviewPane({
               <li key={i.issueId}>
                 <button
                   type="button"
+                  // Unique, useful names: the field and the issue id (#2045).
+                  aria-label={`[${i.code}] ${i.subjectId.replace("PD-101-", "")} Day ${i.visitDay} ${i.targetField}, issue ${i.issueId}, ${STATUS_LABEL[i.status].toLowerCase()}`}
                   onClick={() =>
                     select({ issueId: i.issueId, submissionId: i.submissionId })
                   }
@@ -630,6 +634,7 @@ export function Inspector() {
   const expanded = useProtocolDriftStore((s) => s.inspectorExpanded);
   const setExpanded = useProtocolDriftStore((s) => s.setInspectorExpanded);
   const select = useProtocolDriftStore((s) => s.select);
+  const touch = useCabinetTouch();
 
   // Follow the newest issue the first time one appears.
   const firstIssue = view?.issues[0] ?? null;
@@ -647,6 +652,91 @@ export function Inspector() {
   if (!view) return null;
   const issue =
     view.issues.find((i) => i.issueId === selection.issueId) ?? null;
+
+  // The three panes, shared by the docked inspector and the touch sheet.
+  const panes = (
+    <div className="grid min-h-0 flex-1 grid-cols-[30fr_40fr_30fr] divide-x divide-zinc-800">
+      <div
+        data-testid="pane-form"
+        aria-label="Form View"
+        role="region"
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        <FormPane
+          view={view}
+          issue={issue}
+          submissionId={selection.submissionId}
+        />
+      </div>
+      <div
+        data-testid="pane-trace"
+        aria-label="Pipeline Trace"
+        role="region"
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        <TracePane
+          view={view}
+          submissionId={selection.submissionId}
+          onPick={(id) =>
+            select({
+              submissionId: id || null,
+              issueId:
+                view.issues.find((i) => i.submissionId === id)?.issueId ?? null,
+            })
+          }
+        />
+      </div>
+      <div
+        data-testid="pane-review"
+        aria-label="Review and Query"
+        role="region"
+        className="min-h-0 min-w-0 overflow-y-auto"
+      >
+        <ReviewPane view={view} issue={issue} />
+      </div>
+    </div>
+  );
+
+  if (touch) {
+    // The touch cabinet keeps the canvas: the bar stays put in the layout
+    // whether or not the sheet is open, so opening the inspector never resizes
+    // the canvas. The sheet is an overlay above the bar (#2045).
+    return (
+      <>
+        <section
+          aria-label="Forensic Inspector"
+          data-testid="inspector"
+          data-expanded={expanded ? "true" : "false"}
+          className="flex shrink-0 items-center justify-between gap-2 border-t border-zinc-700 bg-[#13151a] px-3 font-mono text-xs"
+        >
+          <h2 className="text-xs font-semibold tracking-wide text-zinc-100">
+            FORENSIC INSPECTOR
+          </h2>
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            aria-expanded={expanded}
+            className="min-h-11 border border-zinc-700 px-3 text-xs text-zinc-200 hover:border-amber-500"
+          >
+            Expand (I)
+          </button>
+        </section>
+        {expanded ? (
+          <TouchSheet
+            title="Forensic Inspector"
+            testId="inspector-sheet"
+            onClose={() => setExpanded(false)}
+            scroll={false}
+          >
+            <div className="flex h-[min(calc(50dvh-4rem),24rem)] min-h-0 flex-col">
+              {panes}
+            </div>
+          </TouchSheet>
+        ) : null}
+      </>
+    );
+  }
+
   const style: React.CSSProperties = expanded
     ? { top: 112, bottom: 32 }
     : { height: "min(328px, 35vh)" };
@@ -674,47 +764,7 @@ export function Inspector() {
           {expanded ? "Dock (Esc)" : "Expand (I)"}
         </button>
       </div>
-      <div className="grid min-h-0 flex-1 grid-cols-[30fr_40fr_30fr] divide-x divide-zinc-800">
-        <div
-          data-testid="pane-form"
-          aria-label="Form View"
-          role="region"
-          className="min-h-0 min-w-0 overflow-y-auto"
-        >
-          <FormPane
-            view={view}
-            issue={issue}
-            submissionId={selection.submissionId}
-          />
-        </div>
-        <div
-          data-testid="pane-trace"
-          aria-label="Pipeline Trace"
-          role="region"
-          className="min-h-0 min-w-0 overflow-y-auto"
-        >
-          <TracePane
-            view={view}
-            submissionId={selection.submissionId}
-            onPick={(id) =>
-              select({
-                submissionId: id || null,
-                issueId:
-                  view.issues.find((i) => i.submissionId === id)?.issueId ??
-                  null,
-              })
-            }
-          />
-        </div>
-        <div
-          data-testid="pane-review"
-          aria-label="Review and Query"
-          role="region"
-          className="min-h-0 min-w-0 overflow-y-auto"
-        >
-          <ReviewPane view={view} issue={issue} />
-        </div>
-      </div>
+      {panes}
     </section>
   );
 }

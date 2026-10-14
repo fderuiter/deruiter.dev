@@ -5,9 +5,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   recordArcadeScore,
+  recordArcadeMilestone,
+  unlockArcadeTrophies,
   getArcadeProgress,
   parseScoreValue,
+  ARCADE_TROPHIES,
   ARCADE_UNIFIED_PROGRESS_KEY,
+  HALL_OF_FAME_TROPHY_COUNT,
 } from "@/lib/arcade-achievements";
 import { onAppEvent } from "@/lib/event-bus";
 import {
@@ -106,7 +110,102 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
       // 3 games played >= 3 -> Arcade Triathlete meta trophy unlocked
       const unlockedIds = Object.keys(res3.progress.unlockedTrophies);
       expect(unlockedIds).toContain("arcade_triathlon");
-      expect(unlockedIds).toContain("arcade_legend");
+      // Big scores alone no longer make a Hall of Famer (#2047).
+      expect(unlockedIds).not.toContain("arcade_legend");
+    });
+  });
+
+  describe("Milestone trophies (#2047)", () => {
+    it("unlocks a trophy from its game's milestone, once", () => {
+      const handler = vi.fn();
+      const unsubscribe = onAppEvent("arcade_trophy_unlocked", handler);
+
+      const first = recordArcadeMilestone("trial-and-error", "run_won");
+      const again = recordArcadeMilestone("trial-and-error", "run_won");
+
+      expect(first.map((t) => t.id)).toEqual(["trial_error_csr_lock"]);
+      expect(again).toEqual([]);
+      expect(handler).toHaveBeenCalledTimes(1);
+      unsubscribe();
+    });
+
+    it("unlocks the Protocol Drift lean-lock trophy only from play (#2054)", () => {
+      const lean = ARCADE_TROPHIES.find(
+        (t) => t.id === "protocol_drift_lean_lock"
+      );
+      expect(lean).toMatchObject({
+        gameId: "protocol-drift",
+        category: "milestone",
+        milestone: "lock_under_par_chips",
+      });
+      expect(lean?.targetScore).toBeUndefined();
+      const scored = recordArcadeScore("protocol-drift", 99999).newlyUnlocked;
+      expect(scored.map((t) => t.id)).not.toContain("protocol_drift_lean_lock");
+      expect(scored.map((t) => t.id)).not.toContain(
+        "protocol_drift_defensible"
+      );
+      expect(
+        recordArcadeMilestone("protocol-drift", "lock_under_par_chips").map(
+          (t) => t.id
+        )
+      ).toEqual(["protocol_drift_lean_lock"]);
+      expect(
+        recordArcadeMilestone("protocol-drift", "all_badges").map((t) => t.id)
+      ).toEqual(["protocol_drift_defensible"]);
+    });
+
+    it("ignores milestones another game or no trophy owns", () => {
+      expect(recordArcadeMilestone("laser-loon", "run_won")).toEqual([]);
+      expect(recordArcadeMilestone("trial-and-error", "nope")).toEqual([]);
+    });
+
+    it("does not unlock Trial & Error trophies from a first-Blind score", () => {
+      const { newlyUnlocked } = recordArcadeScore("trial-and-error", 5200);
+      expect(newlyUnlocked.map((t) => t.id)).not.toContain(
+        "trial_error_csr_lock"
+      );
+      expect(newlyUnlocked.map((t) => t.id)).not.toContain(
+        "trial_error_first_blind"
+      );
+    });
+
+    it("does not unlock Garmin or Quasi milestone trophies from score", () => {
+      const garmin = recordArcadeScore("garmin-watch", 99999).newlyUnlocked;
+      const quasi = recordArcadeScore("quasi-puzzler", 1800).newlyUnlocked;
+      const ids = [...garmin, ...quasi].map((t) => t.id);
+      expect(ids).not.toContain("garmin_gc_master");
+      expect(ids).not.toContain("quasi_master_prover");
+    });
+
+    it("keeps trophies unlocked under the old score rules", () => {
+      const progress = getArcadeProgress();
+      progress.unlockedTrophies.trial_error_csr_lock = 1;
+      recordArcadeScore("trial-and-error", 10);
+      expect(
+        getArcadeProgress().unlockedTrophies.trial_error_csr_lock
+      ).toBeDefined();
+    });
+
+    it("names Hall of Famer once enough game trophies are unlocked", () => {
+      const gameTrophies = ARCADE_TROPHIES.filter(
+        (t) => t.category !== "cross_game"
+      ).map((t) => t.id);
+      expect(
+        unlockArcadeTrophies(
+          gameTrophies.slice(0, HALL_OF_FAME_TROPHY_COUNT - 1)
+        ).map((t) => t.id)
+      ).not.toContain("arcade_legend");
+      expect(
+        unlockArcadeTrophies([gameTrophies[HALL_OF_FAME_TROPHY_COUNT - 1]]).map(
+          (t) => t.id
+        )
+      ).toContain("arcade_legend");
+    });
+
+    it("gives every milestone trophy a play-based condition", () => {
+      for (const trophy of ARCADE_TROPHIES.filter((t) => t.milestone)) {
+        expect(trophy.conditionDescription).not.toMatch(/points/i);
+      }
     });
   });
 

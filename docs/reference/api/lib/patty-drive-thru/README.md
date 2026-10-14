@@ -272,6 +272,12 @@ Re-exports [getShiftEnding](internal/diary/functions/getShiftEnding.md)
 
 ***
 
+### getShiftScoreBreakdown
+
+Re-exports [getShiftScoreBreakdown](internal/view/functions/getShiftScoreBreakdown.md)
+
+***
+
 ### getTimeLeft
 
 Re-exports [getTimeLeft](internal/view/functions/getTimeLeft.md)
@@ -590,6 +596,18 @@ Re-exports [SCORE_COMPLETED_BONUS](presets/variables/SCORE_COMPLETED_BONUS.md)
 
 ***
 
+### SCORE\_DIGNITY\_PER\_POINT
+
+Re-exports [SCORE_DIGNITY_PER_POINT](presets/variables/SCORE_DIGNITY_PER_POINT.md)
+
+***
+
+### SCORE\_FAST\_BUMP\_BONUS
+
+Re-exports [SCORE_FAST_BUMP_BONUS](presets/variables/SCORE_FAST_BUMP_BONUS.md)
+
+***
+
 ### SCORE\_LATE\_PENALTY
 
 Re-exports [SCORE_LATE_PENALTY](presets/variables/SCORE_LATE_PENALTY.md)
@@ -599,6 +617,18 @@ Re-exports [SCORE_LATE_PENALTY](presets/variables/SCORE_LATE_PENALTY.md)
 ### SCORE\_PER\_SERVED
 
 Re-exports [SCORE_PER_SERVED](presets/variables/SCORE_PER_SERVED.md)
+
+***
+
+### SCORE\_STREAK\_MAX\_LINKS
+
+Re-exports [SCORE_STREAK_MAX_LINKS](presets/variables/SCORE_STREAK_MAX_LINKS.md)
+
+***
+
+### SCORE\_STREAK\_STEP
+
+Re-exports [SCORE_STREAK_STEP](presets/variables/SCORE_STREAK_STEP.md)
 
 ***
 
@@ -647,6 +677,12 @@ Re-exports [ShiftOutcome](types/type-aliases/ShiftOutcome.md)
 ### ShiftScenario
 
 Re-exports [ShiftScenario](types/interfaces/ShiftScenario.md)
+
+***
+
+### ShiftScoreBreakdown
+
+Re-exports [ShiftScoreBreakdown](types/interfaces/ShiftScoreBreakdown.md)
 
 ***
 

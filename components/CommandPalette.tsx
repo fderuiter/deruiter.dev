@@ -944,17 +944,17 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         url: "/arcade/retro-labyrinth",
         icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
         badge: "Dungeon Roguelike",
-        status: "Procedural Maze",
+        status: "7-Room Campaign",
         description:
           "Explore an abandoned codebase as a shifting dungeon. Fight bugs, navigate moving walls, and face a wireframe boss.",
         techStack: [
           "TSP Algorithms",
           "Raycasting 3D",
-          "Procedural Generation",
+          "Hand-Built Rooms",
           "Canvas 2D",
         ],
         highlights: [
-          "Dynamic graph-based maze generation",
+          "Seven hand-built rooms ending in two wireframe bosses",
           "Wireframe 3D vector boss rendering",
           "CRT phosphor scanline post-processing",
         ],

@@ -28,6 +28,11 @@ export interface RunLog {
   sponsorId?: RunChoice["sponsorId"];
   /** The run's stake (#950). Absent means stake 1. */
   stake?: RunChoice["stake"];
+  /**
+   * AUTHORED for a run first saved before decks were shuffled (#2055): it
+   * replays in written deal order. Absent means a shuffled run.
+   */
+  dealing?: "AUTHORED";
   actions: LoggedAction[];
   /** How the seed was chosen; absent means a random run. */
   origin?: RunOrigin;
@@ -41,12 +46,15 @@ export interface RestoredRun {
 }
 
 /**
- * Upgrades an older save document one version at a time. Only v1 exists, so
- * the table is empty; a later version adds `{ 1: (v1) => v2 }` and bumps
- * `RUN_SAVE_VERSION`. A document with no path to the current version is
- * rejected.
+ * Upgrades an older save document one version at a time. A document with no
+ * path to the current version is rejected.
+ *
+ * v1 to v2 (#2055): v1 runs dealt every deck in its written order, and their
+ * moves name the cards that order dealt, so they keep dealing that way.
  */
-const MIGRATIONS: Readonly<Record<number, (doc: unknown) => unknown>> = {};
+const MIGRATIONS: Readonly<Record<number, (doc: unknown) => unknown>> = {
+  1: (doc) => ({ ...(doc as object), version: 2, dealing: "AUTHORED" }),
+};
 
 function migrate(doc: unknown): unknown | null {
   let current = doc;
@@ -72,6 +80,7 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
       seed: log.seed,
       sponsorId: log.sponsorId,
       stake: log.stake,
+      ...(log.dealing ? { dealing: log.dealing } : {}),
       actions: log.actions,
       ...(log.origin ? { origin: log.origin } : {}),
     })
@@ -79,16 +88,18 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
 }
 
 /**
- * Replays a log from its seed, sponsor and stake. The same seed, choice and
- * moves give the same run.
+ * Replays a log from its seed, sponsor, stake and deal mode. The same seed,
+ * choice and moves give the same run.
  */
 export function replayRun(act: RunPlan, log: RunLog): RunState {
   return log.actions.reduce(
     (run, action) => advanceRun(act, run, action),
-    createRunState(act, log.seed, {
-      sponsorId: log.sponsorId,
-      stake: log.stake,
-    })
+    createRunState(
+      act,
+      log.seed,
+      { sponsorId: log.sponsorId, stake: log.stake },
+      log.dealing ?? "SHUFFLED"
+    )
   );
 }
 
@@ -121,6 +132,7 @@ export function parseRunSave(
       seed: save.seed,
       ...(save.sponsorId !== undefined && { sponsorId: save.sponsorId }),
       ...(save.stake !== undefined && { stake: save.stake }),
+      ...(save.dealing !== undefined && { dealing: save.dealing }),
       actions: [...save.actions, ...deselect],
       ...(save.origin ? { origin: save.origin } : {}),
     };

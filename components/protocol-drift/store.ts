@@ -27,9 +27,16 @@ import {
   type StateSnapshotEvent,
   type WaveSummary,
 } from "@/lib/protocol-drift";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { downloadFile } from "@/lib/download";
 import { playProtocolCue } from "./audio";
+import {
+  saveEfficiencyBests,
+  type EfficiencyBestsRecord,
+} from "./efficiency-bests";
 import { createEngineAdapter, type EngineAdapter } from "./engine-adapter";
 import type { EngineResponse } from "./engine-core";
 import {
@@ -97,13 +104,23 @@ interface ProtocolDriftState {
   edgeCounts: Record<string, number>;
   tokens: WireToken[];
   notice: Notice | null;
+  /** Why the clock is auto-paused; kept until it runs again (#2045). */
+  pausedReason: string | null;
   waveSummary: WaveSummary | null;
   memoOpen: boolean;
   lockAudit: LockAuditResult | null;
   scorecard: Scorecard | null;
+  /** Per-measure bests including the locked run, and what it improved. */
+  efficiencyBests: EfficiencyBestsRecord | null;
   datasets: DatasetExportBundle | null;
   selection: InspectorSelection;
   inspectorExpanded: boolean;
+  /**
+   * Tap-to-wire on the touch cabinet (#2045): the chip a wire starts from, and
+   * the open list of valid output-to-input pairs when a tap has more than one.
+   */
+  wireFrom: string | null;
+  wireSheet: { source: string; target: string } | null;
   revisionCount: number;
   autosavedAt: string | null;
 
@@ -137,6 +154,10 @@ interface ProtocolDriftState {
   removeSelection: (nodeIds: string[], edgeIds: string[]) => Promise<void>;
   select: (selection: Partial<InspectorSelection>) => void;
   setInspectorExpanded: (expanded: boolean) => void;
+  setWireFrom: (nodeId: string | null) => void;
+  setWireSheet: (sheet: { source: string; target: string } | null) => void;
+  /** Shows a notice; the touch wiring reports its result through it (#2045). */
+  notify: (tone: Notice["tone"], text: string) => void;
   dismissWave: () => void;
   clearNotice: (id: number) => void;
   dismissMemo: () => void;
@@ -190,13 +211,17 @@ function initialState() {
     edgeCounts: {} as Record<string, number>,
     tokens: [] as WireToken[],
     notice: null as Notice | null,
+    pausedReason: null as string | null,
     waveSummary: null as WaveSummary | null,
     memoOpen: false,
     lockAudit: null as LockAuditResult | null,
     scorecard: null as Scorecard | null,
+    efficiencyBests: null as EfficiencyBestsRecord | null,
     datasets: null as DatasetExportBundle | null,
     selection: { issueId: null, submissionId: null } as InspectorSelection,
     inspectorExpanded: false,
+    wireFrom: null,
+    wireSheet: null,
     revisionCount: 0,
     autosavedAt: null as string | null,
   };
@@ -268,11 +293,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           if (event.reason === "AMENDMENT_01") {
             patch.memoOpen = true;
           } else {
-            patch.notice = {
-              id: ++noticeId,
-              tone: "warn",
-              text: `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`,
-            };
+            const text = `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`;
+            patch.pausedReason = text;
+            patch.notice = { id: ++noticeId, tone: "warn", text };
           }
           break;
         case "LOCK_AUDIT":
@@ -281,12 +304,16 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         case "LOCKED":
           patch.scorecard = event.scorecard;
           cue = "gatePass";
-          recordArcadeScore(
-            "protocol-drift",
-            100 +
-              event.scorecard.badges.filter((b) => b.earned).length * 100 +
-              Math.round(event.scorecard.meanGoodwill)
-          );
+          recordArcadeScore("protocol-drift", event.scorecard.score);
+          patch.efficiencyBests = saveEfficiencyBests(event.scorecard);
+          if (event.scorecard.badges.every((b) => b.earned)) {
+            recordArcadeMilestone("protocol-drift", "all_badges");
+          }
+          if (
+            event.scorecard.efficiency.some((m) => m.id === "chips" && m.medal)
+          ) {
+            recordArcadeMilestone("protocol-drift", "lock_under_par_chips");
+          }
           break;
         case "DATASETS_EXPORTED":
           patch.datasets = event.bundle;
@@ -303,6 +330,8 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           break;
       }
     }
+    // The pause reason stays until the clock runs again (#2045).
+    if (patch.snapshot?.fsmState === "RUNNING") patch.pausedReason = null;
     if (fresh.length > 0) {
       patch.packets = [...prior.packets, ...fresh].slice(-MAX_PACKETS);
       const counts = { ...prior.edgeCounts };
@@ -551,6 +580,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       set((state) => ({ selection: { ...state.selection, ...selection } })),
 
     setInspectorExpanded: (expanded) => set({ inspectorExpanded: expanded }),
+    setWireFrom: (nodeId) => set({ wireFrom: nodeId, wireSheet: null }),
+    setWireSheet: (sheet) => set({ wireSheet: sheet }),
+    notify: (tone, text) => say(tone, text),
     dismissWave: () => set({ waveSummary: null }),
     clearNotice: (id) => {
       if (get().notice?.id === id) set({ notice: null });
@@ -642,7 +674,12 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       replaying = true;
       let last: EngineResponse | null = null;
       try {
-        await send({ type: "INIT", seed: save.seed, scenario: save.scenario });
+        await send({
+          type: "INIT",
+          seed: save.seed,
+          scenario: save.scenario,
+          rejectedCommands: save.rejectedCommands ?? 0,
+        });
         for (const command of save.commands) {
           if (command.type === "INIT") continue;
           last = await send(command);

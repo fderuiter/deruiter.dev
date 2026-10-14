@@ -25,6 +25,12 @@ import {
 } from "@/lib/trial-and-error";
 import { SMALL_BLIND_WITH_KM } from "./utils/trial-and-error-km";
 import { BLINDED, DMC_SCENARIO } from "./utils/trial-and-error-dmc";
+import {
+  AUTHORED_CAMPAIGN,
+  ONE_PAIR_CAMPAIGN,
+  authored,
+  authoredPlan,
+} from "./utils/trial-and-error-authored";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -97,10 +103,10 @@ async function openInspect(id: string) {
 
 describe("CardTable", () => {
   it("deals a hand of 8 with one roving tab stop and an empty relic rack", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     expect(cards()).toHaveLength(8);
     expect(cards().filter((c) => c.tabIndex === 0)).toEqual([card(DRAFT_A)]);
-    expect(screen.getByTestId("round-target").textContent).toBe("450");
+    expect(screen.getByTestId("round-target").textContent).toBe("2000");
     expect(screen.getByTestId("cpu-counter").textContent).toBe("10/10");
     expect(screen.getByTestId("hands-affordable").textContent).toBe("5");
     const rack = screen.getByTestId("relic-rack");
@@ -110,7 +116,7 @@ describe("CardTable", () => {
   });
 
   it("moves with arrows and Home/End, and selects with Space", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     card(DRAFT_A).focus();
     fireEvent.keyDown(card(DRAFT_A), { key: "ArrowRight" });
     expect(document.activeElement).toBe(card(DM_LISTING));
@@ -143,7 +149,7 @@ describe("CardTable", () => {
   });
 
   it("plays with Enter, revealing the hidden fatal defect, and keeps focus in the hand", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     fireEvent.keyDown(card(DRAFT_A), { key: " " });
     fireEvent.keyDown(card(DRAFT_A), { key: "ArrowRight" });
     fireEvent.keyDown(card(DM_LISTING), { key: " " });
@@ -158,7 +164,7 @@ describe("CardTable", () => {
   });
 
   it("discards with D and ignores keys from a nested element or with modifiers", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     fireEvent.keyDown(card(DRAFT_A), { key: " " });
     fireEvent.keyDown(card(DRAFT_A), { key: "d", ctrlKey: true });
     expect(screen.getByTestId("cpu-counter").textContent).toBe("10/10");
@@ -172,7 +178,7 @@ describe("CardTable", () => {
   });
 
   it("announces refusals, such as inspecting a card with no reviewable cells", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     card("C-T14.1.2").focus();
     fireEvent.keyDown(card("C-T14.1.2"), { key: "i" });
     expect(drawer()).toBeNull();
@@ -184,7 +190,7 @@ describe("CardTable", () => {
   });
 
   it("marks a Table and its supporting Listing as a pair on both faces", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     expect(within(card(DRAFT_A)).getByTestId("pair-link")).toBeTruthy();
     expect(within(card(DM_LISTING)).getByTestId("pair-link")).toBeTruthy();
     expect(card(DRAFT_A).getAttribute("aria-label")).toContain(
@@ -193,7 +199,7 @@ describe("CardTable", () => {
   });
 
   it("traces a flagged cell to its Listing with T and cycles the matched rows", async () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     fireEvent.click(card(DRAFT_A));
     await openInspect(DRAFT_A);
     fireEvent.click(gridCell(2, 2));
@@ -232,7 +238,7 @@ describe("CardTable", () => {
   });
 
   it("opens a focus-trapped Inspect drawer that reviews cells and closes with Escape", async () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     await openInspect(DRAFT_A);
     expect(screen.getByTestId("cpu-counter").textContent).toBe("9/10");
     const dialog = screen.getByRole("dialog");
@@ -260,7 +266,7 @@ describe("CardTable", () => {
   });
 
   it("persists corrections between openings and reopens without charging CPU", async () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     await openInspect(DRAFT_A);
     fireEvent.click(gridCell(1, 2));
     fireEvent.click(screen.getByRole("button", { name: /Close Inspect/ }));
@@ -274,7 +280,7 @@ describe("CardTable", () => {
   });
 
   it("focuses a clicked cell without scrolling, so narrow-width taps land (#956)", async () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     await openInspect(DRAFT_A);
     const target = gridCell(1, 2);
     const focusSpy = vi.spyOn(target, "focus");
@@ -294,7 +300,7 @@ describe("CardTable", () => {
 
   it("clears the Blind by inspecting, correcting and playing, then moves to the next Blind", async () => {
     // Seed "early" draws the Site Audit for the Big Blind.
-    render(<CardTable seed="early" />);
+    render(<CardTable act={ONE_PAIR_CAMPAIGN} seed="early" />);
     expect(screen.getByTestId("blind-intro").textContent).toContain(
       "Phase I, first data review."
     );
@@ -320,7 +326,7 @@ describe("CardTable", () => {
     expect(result.textContent).toContain("Blind cleared");
     expect(result.textContent).toContain("828 of 450");
     expect(result.textContent).toContain(
-      "Next: Big Blind: Sponsor Safety Review · target 7500"
+      "Next: Big Blind: Sponsor Safety Review · target 4500"
     );
     // Cash-out is the primary next step; Next Blind skips the shop.
     expect(document.activeElement).toBe(
@@ -334,14 +340,14 @@ describe("CardTable", () => {
     expect(screen.getByTestId("blind-name").textContent).toBe(
       "Big Blind: Sponsor Safety Review"
     );
-    expect(screen.getByTestId("round-target").textContent).toBe("7500");
+    expect(screen.getByTestId("round-target").textContent).toBe("4500");
     expect(screen.getByTestId("round-score").textContent?.trim()).toBe("0");
     expect(screen.getByTestId("cpu-counter").textContent).toBe("10/10");
     expect(screen.getByTestId("blind-intro").textContent).toContain(
       "safety physician"
     );
     expect(lastAnnouncement()).toContain(
-      "Big Blind: Sponsor Safety Review. Target 7500. Crisis: Site Audit."
+      "Big Blind: Sponsor Safety Review. Target 4500. Crisis: Site Audit."
     );
     // The crisis must be answered first, so focus goes to its first choice.
     const crisis = screen.getByTestId("crisis");
@@ -379,7 +385,7 @@ describe("CardTable", () => {
   });
 
   it("shows the boss debuff on disabled cards and ends the run on a loss", async () => {
-    render(<CardTable scenario={DOSE_ESCALATION_SCENARIO} />);
+    render(<CardTable scenario={authored(DOSE_ESCALATION_SCENARIO)} />);
     expect(screen.getByTestId("boss-modifier").textContent).toContain(
       "Boss: Safety Set Only"
     );
@@ -415,7 +421,9 @@ describe("CardTable", () => {
 
   it("enforces a crisis hand limit on the Blind panel and ends the Blind when it runs out", () => {
     const emergency = ACT_I_CRISES.find((c) => c.id === "CR-EMERGENCY-REVIEW")!;
-    render(<CardTable act={crisisAct(emergency)} seed="ui-limit" />);
+    render(
+      <CardTable act={authoredPlan(crisisAct(emergency))} seed="ui-limit" />
+    );
     reachBigBlind();
     expect(screen.queryByTestId("hand-limit")).toBeNull();
     fireEvent.click(
@@ -429,7 +437,7 @@ describe("CardTable", () => {
     expect(screen.getByTestId("hand-limit").textContent).toBe("2 left");
     expect(screen.getByTestId("hands-affordable").textContent).toBe("2");
 
-    // Two single uninspected cards score far short of 7500. A card the first
+    // Two single uninspected cards score far short of 4500. A card the first
     // hand's snapshot change staled, or an empty shell, cannot be played.
     for (const left of ["1 left", "0 left"]) {
       const playable = cards().find(
@@ -471,7 +479,9 @@ describe("CardTable", () => {
         },
       ],
     };
-    render(<CardTable act={crisisAct(firewall)} seed="ui-firewall" />);
+    render(
+      <CardTable act={authoredPlan(crisisAct(firewall))} seed="ui-firewall" />
+    );
     reachBigBlind();
     const target = "C-T14.3.1-A";
     expect(card(target).textContent).not.toContain(FIREWALL_CELL);
@@ -493,7 +503,7 @@ describe("CardTable", () => {
       ...DEMOGRAPHICS_SCENARIO,
       blind: { ...DEMOGRAPHICS_SCENARIO.blind, quota: 1 },
     };
-    render(<CardTable scenario={quick} />);
+    render(<CardTable scenario={authored(quick)} />);
     fireEvent.click(card("C-T14.1.1-C"));
     fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
     expect(screen.getByTestId("blind-result").textContent).toContain(
@@ -505,7 +515,7 @@ describe("CardTable", () => {
   });
 
   it("uses the Inspect button for the focused card and labels it as reopenable", async () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const inspectButton = screen.getByRole("button", {
       name: /Inspect Table 14.1.1 · 1 CPU/,
     });
@@ -539,7 +549,7 @@ describe("CardTable population snapshots (T&E-03)", () => {
 
   /** The sponsor review after its first hand: S-004 has left the Safety set. */
   function renderAfterDataChange() {
-    render(<CardTable scenario={SPONSOR_SAFETY_SCENARIO} />);
+    render(<CardTable scenario={authored(SPONSOR_SAFETY_SCENARIO)} />);
     expect(screen.getByTestId("current-snapshot").textContent).toBe(
       "SNAP-P1-v1"
     );
@@ -655,7 +665,7 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
 
   /** Sends A, B and the DM listing back, which deals the blank shell. */
   function renderWithBlank() {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     for (const id of [DRAFT_A, "C-T14.1.1-B", DM_LISTING]) {
       fireEvent.click(card(id));
     }
@@ -762,7 +772,7 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
   });
 
   it("affixes a seal dropped on a card, or clicked onto one", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     const data = new Map<string, string>();
     const dataTransfer = {
       types: [] as string[],
@@ -790,7 +800,7 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
   });
 
   it("sells a seal into the study budget", () => {
-    render(<CardTable />);
+    render(<CardTable act={AUTHORED_CAMPAIGN} />);
     expect(screen.getByTestId("study-budget").textContent).toBe("Budget $0k");
     fireEvent.click(within(tray()).getByRole("button", { name: "Sell · $2k" }));
     expect(lastAnnouncement()).toBe(
@@ -805,7 +815,7 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
       ...DEMOGRAPHICS_SCENARIO,
       table: { ...DEMOGRAPHICS_SCENARIO.table, startingCpu: 2 },
     };
-    render(<CardTable scenario={poor} />);
+    render(<CardTable scenario={authored(poor)} />);
     const pips = () =>
       Array.from(
         screen
@@ -840,7 +850,7 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
 
 describe("CardTable play blocker line (#1078)", () => {
   it("says why Play Hand is disabled, describes the button, and clears when playable", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     const playButton = () => screen.getByRole("button", { name: /Play Hand/ });
     const line = () => screen.queryByTestId("play-blocker");
     expect(line()?.textContent).toBe(
@@ -857,7 +867,7 @@ describe("CardTable play blocker line (#1078)", () => {
   });
 
   it("sits below the controls, outside the hand", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     expect(
       screen.getByTestId("hand").contains(screen.getByTestId("play-blocker"))
     ).toBe(false);
@@ -868,7 +878,7 @@ describe("CardTable Kaplan–Meier figures (T&E-07)", () => {
   const FIG = "C-F14.1.2";
 
   it("shows the dependency, then reconciles every KM finding to turn ×2 on", async () => {
-    render(<CardTable scenario={SMALL_BLIND_WITH_KM} />);
+    render(<CardTable scenario={authored(SMALL_BLIND_WITH_KM)} />);
     const badge = within(card(FIG)).getByTestId("figure-xmult");
     expect(badge.hasAttribute("data-active")).toBe(false);
     expect(badge.getAttribute("title")).toBe(
@@ -922,7 +932,7 @@ describe("CardTable DMC blinding firewall (T&E-08)", () => {
   };
 
   it("deals blinded outputs face down and asks before unblinding one", async () => {
-    render(<CardTable scenario={DMC_SCENARIO} />);
+    render(<CardTable scenario={authored(DMC_SCENARIO)} />);
     expect(screen.getByTestId("session-badge").textContent).toBe("OPEN");
     for (const id of BLINDED) {
       expect(card(id).hasAttribute("data-face-down")).toBe(true);
@@ -955,7 +965,7 @@ describe("CardTable DMC blinding firewall (T&E-08)", () => {
   });
 
   it("convenes the closed session after structural QC, and logs every access", async () => {
-    render(<CardTable scenario={DMC_SCENARIO} />);
+    render(<CardTable scenario={authored(DMC_SCENARIO)} />);
     const toggle = () =>
       screen.getByTestId("session-toggle") as HTMLButtonElement;
     expect(toggle().disabled).toBe(true);
@@ -1006,7 +1016,7 @@ describe("CardTable DMC milestone Boss", () => {
   };
 
   it("opens on the boss intro card, dismissed with Escape", async () => {
-    render(<CardTable scenario={boss} />);
+    render(<CardTable scenario={authored(boss)} />);
     const intro = screen.getByTestId("boss-intro");
     expect(intro.getAttribute("role")).toBe("dialog");
     expect(intro.textContent).toContain("Boss: Blinding Firewall");
@@ -1019,7 +1029,7 @@ describe("CardTable DMC milestone Boss", () => {
   });
 
   it("says what the active stage accepts under the hand preview", () => {
-    render(<CardTable scenario={boss} />);
+    render(<CardTable scenario={authored(boss)} />);
     fireEvent.click(screen.getByTestId("boss-intro-start"));
     const line = () => screen.getByTestId("stage-accepts");
     expect(line().textContent).toBe(
@@ -1045,12 +1055,12 @@ describe("CardTable DMC milestone Boss", () => {
   });
 
   it("shows no stage line outside a staged Boss", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    render(<CardTable scenario={authored(DEMOGRAPHICS_SCENARIO)} />);
     expect(screen.queryByTestId("stage-accepts")).toBeNull();
   });
 
   it("tracks both stages, then offers one SOP relic for the rack", async () => {
-    render(<CardTable scenario={boss} />);
+    render(<CardTable scenario={authored(boss)} />);
     fireEvent.click(screen.getByTestId("boss-intro-start"));
     expect(screen.queryByTestId("boss-intro")).toBeNull();
     expect(stages().map((s) => s.getAttribute("data-status"))).toEqual([
@@ -1111,13 +1121,13 @@ describe("CardTable boss intro on every Boss Blind (#1083)", () => {
   const intro = () => screen.queryByTestId("boss-intro");
 
   it("opens the Act I Boss on its Safety Set Only debuff, quota and CPU", async () => {
-    render(<CardTable scenario={DOSE_ESCALATION_SCENARIO} />);
+    render(<CardTable scenario={authored(DOSE_ESCALATION_SCENARIO)} />);
     expect(intro()!.getAttribute("role")).toBe("dialog");
     expect(screen.getByTestId("boss-intro-debuff").textContent).toBe(
       `Boss: Safety Set Only${DOSE_ESCALATION_SCENARIO.boss!.description}`
     );
     expect(screen.getByTestId("boss-intro-terms").textContent).toBe(
-      "Quota 8500 · 10 CPU"
+      "Quota 5800 · 10 CPU"
     );
     expect(screen.queryByTestId("boss-intro-stages")).toBeNull();
     const start = screen.getByTestId("boss-intro-start");
@@ -1129,7 +1139,7 @@ describe("CardTable boss intro on every Boss Blind (#1083)", () => {
   });
 
   it("is dismissed by Escape on the Act I Boss", async () => {
-    render(<CardTable scenario={DOSE_ESCALATION_SCENARIO} />);
+    render(<CardTable scenario={authored(DOSE_ESCALATION_SCENARIO)} />);
     await waitFor(() =>
       expect(document.activeElement).toBe(
         screen.getByTestId("boss-intro-start")
@@ -1141,7 +1151,7 @@ describe("CardTable boss intro on every Boss Blind (#1083)", () => {
   });
 
   it("still lists the DMC milestone's two stages", () => {
-    render(<CardTable scenario={DMC_MILESTONE_SCENARIO} />);
+    render(<CardTable scenario={authored(DMC_MILESTONE_SCENARIO)} />);
     const stages = screen.getByTestId("boss-intro-stages");
     expect(stages.querySelectorAll("li")).toHaveLength(2);
     expect(stages.textContent).toContain("open session");
@@ -1150,7 +1160,7 @@ describe("CardTable boss intro on every Boss Blind (#1083)", () => {
 
   it("never opens on a Small or Big Blind", () => {
     for (const scenario of [DEMOGRAPHICS_SCENARIO, SPONSOR_SAFETY_SCENARIO]) {
-      const { unmount } = render(<CardTable scenario={scenario} />);
+      const { unmount } = render(<CardTable scenario={authored(scenario)} />);
       expect(intro()).toBeNull();
       unmount();
     }

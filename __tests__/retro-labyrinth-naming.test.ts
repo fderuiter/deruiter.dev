@@ -18,10 +18,13 @@ describe("Retro Labyrinth room badges (#1322)", () => {
         formatCampaignRoomBadge(room.badge, i)
       )
     ).toEqual([
-      "ROOM 01 :: AIRGAP ENCLAVE",
-      "ROOM 02 :: BOSS ARENA",
+      "ROOM 01 :: DMZ PERIMETER",
+      "ROOM 02 :: ACTIVE DIRECTORY",
       "ROOM 03 :: GAZE TRACKING",
-      "ROOM 04 :: DARKNET VAULT",
+      "ROOM 04 :: AIRGAP ENCLAVE",
+      "ROOM 05 :: DARKNET VAULT",
+      "ROOM 06 :: BOSS ARENA",
+      "ROOM 07 :: AI SOVEREIGN",
     ]);
   });
 

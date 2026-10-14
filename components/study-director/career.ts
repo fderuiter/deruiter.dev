@@ -3,7 +3,12 @@ import {
   safeRawStorage,
   type RawStorage,
 } from "@/lib/safe-storage";
-import type { FinalReport, StudyDirectorProfile } from "@/lib/study-director";
+import {
+  DIFFICULTIES,
+  type Difficulty,
+  type FinalReport,
+  type StudyDirectorProfile,
+} from "@/lib/study-director";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
 
 type Grade = FinalReport["evaluations"]["regulatory"]["grade"];
@@ -27,6 +32,17 @@ interface CareerRun {
   stars: number;
   profile: StudyDirectorProfile;
   headline: string;
+  /**
+   * How hard the study started (#2058). Runs filed before careers recorded
+   * it have none, and count only towards the overall bests.
+   */
+  difficulty?: Difficulty;
+}
+
+/** The best result on one difficulty. */
+interface DifficultyBest {
+  grade: Grade;
+  stars: number;
 }
 
 /** Progress that outlives a single study. Plain JSON, kept in this browser. */
@@ -36,6 +52,8 @@ export interface CareerFile {
   finished: number;
   bestGrade: Grade | null;
   bestStars: number;
+  /** Best grade and stars on each difficulty played since #2058. */
+  bests: Partial<Record<Difficulty, DifficultyBest>>;
   /** Title of each profile earned, and how many times. */
   titles: Partial<
     Record<StudyDirectorProfile, { title: string; count: number }>
@@ -55,6 +73,7 @@ export function emptyCareer(): CareerFile {
     finished: 0,
     bestGrade: null,
     bestStars: 0,
+    bests: {},
     titles: {},
     history: [],
   };
@@ -64,6 +83,19 @@ function betterGrade(a: Grade | null, b: Grade | null): Grade | null {
   if (a === null) return b;
   if (b === null) return a;
   return GRADE_ORDER.indexOf(a) >= GRADE_ORDER.indexOf(b) ? a : b;
+}
+
+/** Two bests on one difficulty, keeping the better grade and the most stars. */
+function betterBest(
+  a: DifficultyBest | undefined,
+  b: DifficultyBest | undefined
+): DifficultyBest | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  return {
+    grade: betterGrade(a.grade, b.grade) ?? a.grade,
+    stars: Math.max(a.stars, b.stars),
+  };
 }
 
 /** Counts a new study. Resuming a saved one does not count again. */
@@ -95,6 +127,8 @@ export function recordRun(
   const grade = report.evaluations.regulatory.grade;
   const stars = report.evaluations.sponsor.stars;
   const { profile, title } = report.profile;
+  // A study without a difficulty plays as standard (ADR 0054).
+  const difficulty = report.state.difficulty ?? "standard";
   const earned = career.titles[profile];
   const bestGrade = betterGrade(career.bestGrade, grade);
   return {
@@ -103,12 +137,16 @@ export function recordRun(
       finished: career.finished + 1,
       bestGrade,
       bestStars: Math.max(career.bestStars, stars),
+      bests: {
+        ...career.bests,
+        [difficulty]: betterBest(career.bests[difficulty], { grade, stars }),
+      },
       titles: {
         ...career.titles,
         [profile]: { title, count: (earned?.count ?? 0) + 1 },
       },
       history: [
-        { seed, grade, stars, profile, headline },
+        { seed, grade, stars, profile, headline, difficulty },
         ...career.history,
       ].slice(0, HISTORY_LIMIT),
     },
@@ -130,6 +168,36 @@ const isProfile = (v: unknown): v is StudyDirectorProfile =>
   typeof v === "string" && (PROFILES as readonly string[]).includes(v);
 const count = (v: unknown): number =>
   typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
+const asDifficulty = (v: unknown): Difficulty | undefined =>
+  DIFFICULTIES.find((d) => d === v);
+
+/**
+ * Per-difficulty bests from a stored file. A file from before #2058 has
+ * none; its runs tagged with a difficulty (none, in practice) seed them,
+ * and untagged runs are left out rather than guessed.
+ */
+function readBests(value: unknown, history: CareerRun[]): CareerFile["bests"] {
+  let bests: CareerFile["bests"] = {};
+  if (typeof value === "object" && value !== null) {
+    for (const [key, entry] of Object.entries(value)) {
+      const id = asDifficulty(key);
+      const e = entry as { grade?: unknown; stars?: unknown } | null;
+      if (id && e && isGrade(e.grade))
+        bests[id] = { grade: e.grade, stars: Math.min(5, count(e.stars)) };
+    }
+  }
+  for (const run of history) {
+    if (!run.difficulty) continue;
+    bests = {
+      ...bests,
+      [run.difficulty]: betterBest(bests[run.difficulty], {
+        grade: run.grade,
+        stars: run.stars,
+      }),
+    };
+  }
+  return bests;
+}
 
 /**
  * Reads a career file from untrusted JSON (storage or an import). Fields
@@ -160,13 +228,17 @@ export function parseCareer(value: unknown): CareerFile | null {
             isProfile(r.profile) &&
             typeof r.headline === "string"
         )
-        .map((r) => ({
-          seed: r.seed.slice(0, 80),
-          grade: r.grade,
-          stars: Math.min(5, count(r.stars)),
-          profile: r.profile,
-          headline: r.headline.slice(0, 80),
-        }))
+        .map((r) => {
+          const difficulty = asDifficulty(r.difficulty);
+          return {
+            seed: r.seed.slice(0, 80),
+            grade: r.grade,
+            stars: Math.min(5, count(r.stars)),
+            profile: r.profile,
+            headline: r.headline.slice(0, 80),
+            ...(difficulty ? { difficulty } : {}),
+          };
+        })
         .slice(0, HISTORY_LIMIT)
     : [];
   return {
@@ -175,6 +247,7 @@ export function parseCareer(value: unknown): CareerFile | null {
     finished: count(v.finished),
     bestGrade: isGrade(v.bestGrade) ? v.bestGrade : null,
     bestStars: Math.min(5, count(v.bestStars)),
+    bests: readBests(v.bests, history),
     titles,
     history,
   };
@@ -192,6 +265,11 @@ export function mergeCareers(a: CareerFile, b: CareerFile): CareerFile {
       count: Math.max(mine?.count ?? 0, other.count),
     };
   }
+  const bests: CareerFile["bests"] = {};
+  for (const id of DIFFICULTIES) {
+    const best = betterBest(a.bests[id], b.bests[id]);
+    if (best) bests[id] = best;
+  }
   const seen = new Set<string>();
   const history = [...a.history, ...b.history].filter((run) => {
     if (seen.has(run.seed)) return false;
@@ -204,6 +282,7 @@ export function mergeCareers(a: CareerFile, b: CareerFile): CareerFile {
     finished: Math.max(a.finished, b.finished),
     bestGrade: betterGrade(a.bestGrade, b.bestGrade),
     bestStars: Math.max(a.bestStars, b.bestStars),
+    bests,
     titles,
     history: history.slice(0, HISTORY_LIMIT),
   };

@@ -43,6 +43,18 @@ export {
   evaluateChallenges,
 } from "./internal/challenges";
 export {
+  BEST_TIMES_STORAGE_KEY,
+  PAR_SECONDS,
+  bestTimeFor,
+  bestTimeKey,
+  isNewBestTime,
+  minutesUnderPar,
+  parFor,
+  parseBestTimes,
+  recordBestTime,
+  serializeBestTimes,
+} from "./internal/best-time";
+export {
   MAX_RUN_CODE_LENGTH,
   MAX_RUN_TICKS,
   RUN_CODE_PREFIX,

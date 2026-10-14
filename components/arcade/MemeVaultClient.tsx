@@ -27,8 +27,10 @@ import {
   getMemeSoundDuration,
   connectMemeAnalyser,
   releaseMemeAnalyser,
+  unlockMemeAudio,
 } from "@/lib/meme-audio";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { FieldManualButton } from "@/components/FieldManualButton";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { useToast } from "@/hooks/useToast";
@@ -50,6 +52,8 @@ import { Oscilloscope } from "@/components/arcade/meme-vault/Oscilloscope";
 import { SamplerPads } from "@/components/arcade/meme-vault/SamplerPads";
 import { TrophyShelf } from "@/components/arcade/meme-vault/TrophyShelf";
 import { VaultHero } from "@/components/arcade/meme-vault/VaultHero";
+import { EchoConsole } from "@/components/arcade/meme-vault/EchoConsole";
+import { useEchoGame } from "@/components/arcade/meme-vault/useEchoGame";
 
 /** How long a newly unlocked trophy keeps its stamp class. */
 const STAMP_MS = 900;
@@ -180,6 +184,57 @@ export const MemeVaultClient: React.FC = () => {
     [announce]
   );
 
+  // Echo (#2049): the vault plays a sequence on the pads and the player
+  // repeats it. Its sounds go through playMemeSound, so the mute switch and
+  // the reduced-motion opt-in apply as they do to a pad press.
+  const playEchoPad = useCallback((button: SoundboardButton) => {
+    setActiveSoundLabel(button.label);
+    setAnalyser(connectMemeAnalyser());
+    playMemeSound(button.synthType);
+  }, []);
+  const playEchoFail = useCallback(() => {
+    playMemeSound("echo-fail");
+  }, []);
+  const celebrateEchoBest = useCallback(
+    (streak: number) => {
+      toast.success(`New Echo best: ${streak}`, {
+        description: `You repeated a ${streak}-pad sequence. It is kept on this device.`,
+      });
+    },
+    [toast]
+  );
+  const echo = useEchoGame({
+    pads: SOUNDBOARD_BUTTONS,
+    onPadSound: playEchoPad,
+    onFail: playEchoFail,
+    onNewBest: celebrateEchoBest,
+    announce,
+  });
+  const { press: pressEcho } = echo;
+
+  // A pad press is an Echo answer while a round runs, a sample otherwise.
+  const handlePadPress = useCallback(
+    (button: SoundboardButton) => {
+      // A tap or key is a gesture the browser accepts for audio, so a
+      // suspended context resumes here.
+      unlockMemeAudio();
+      const index = SOUNDBOARD_BUTTONS.findIndex((b) => b.id === button.id);
+      if (index >= 0 && pressEcho(index)) return;
+      handlePlaySound(button);
+    },
+    [pressEcho, handlePlaySound]
+  );
+
+  // The browser may suspend audio while the page is hidden; the first visible
+  // moment after that wakes it, so the next pad plays cleanly.
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) unlockMemeAudio();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, []);
+
   // React to meme card
   const handleReaction = (id: string) => {
     setReactions((prev) => ({
@@ -215,7 +270,7 @@ export const MemeVaultClient: React.FC = () => {
             setReducedMotionOptIn(true);
             setMuted(false);
           }}
-          className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+          className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
         >
           Play sound anyway
         </button>
@@ -229,7 +284,7 @@ export const MemeVaultClient: React.FC = () => {
       <button
         type="button"
         onClick={() => setMuted(false)}
-        className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300"
+        className="font-semibold text-emerald-400 underline underline-offset-2 hover:text-emerald-300 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
       >
         Turn sound on
       </button>
@@ -252,26 +307,29 @@ export const MemeVaultClient: React.FC = () => {
   return (
     <div
       data-game="meme-vault"
-      className="meme-vault w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-mono text-zinc-100"
+      className="meme-vault w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 font-mono text-zinc-100 pointer-coarse:touch-manipulation"
     >
       {/* Navigation Breadcrumb & Chaos Trigger */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <Link
           href="/arcade"
-          className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-100 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-zinc-400 hover:text-zinc-100 transition-colors pointer-coarse:min-h-11"
         >
           <IconArrowLeft className="w-4 h-4" />
           <span>Back to Arcade Hub</span>
         </Link>
 
-        <button
-          onClick={triggerChaosMode}
-          title="A shortcut to the Konami show. It awards no trophy: type the code for that."
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98]"
-        >
-          <IconSparkles className="w-4 h-4 text-amber-400" />
-          <span>Launch Retro Chaos Mode</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <FieldManualButton manualId="meme-vault" variant="inline" />
+          <button
+            onClick={triggerChaosMode}
+            title="A shortcut to the Konami show. It awards no trophy: type the code for that."
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-md bg-[#13151a] hover:bg-[#1a1d24] text-zinc-200 border border-white/[0.08] hover:border-white/[0.16] text-xs font-semibold transition-colors active:scale-[0.98] pointer-coarse:min-h-11"
+          >
+            <IconSparkles className="w-4 h-4 text-amber-400" />
+            <span>Launch Retro Chaos Mode</span>
+          </button>
+        </div>
       </div>
 
       <VaultHero unlocked={unlockedCount} total={totalAchievements} />
@@ -292,7 +350,7 @@ export const MemeVaultClient: React.FC = () => {
               </h2>
               <p className="text-xs text-zinc-400 font-sans">
                 Every sound is generated in your browser. Press a pad, or keys 1
-                to 8.
+                to 8, or start Echo and repeat the vault&apos;s sequence.
               </p>
             </div>
           </div>
@@ -301,7 +359,7 @@ export const MemeVaultClient: React.FC = () => {
               type="button"
               onClick={() => setMuted(!muted)}
               aria-pressed={!muted}
-              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98]"
+              className="inline-flex min-h-[40px] items-center gap-2 rounded-md border border-white/[0.08] bg-[#13151a] px-3 text-xs font-semibold text-zinc-300 transition-colors hover:border-white/[0.16] hover:text-zinc-100 active:scale-[0.98] pointer-coarse:min-h-11"
             >
               {muted ? (
                 <IconVolumeOff className="h-4 w-4 text-zinc-400" />
@@ -314,15 +372,15 @@ export const MemeVaultClient: React.FC = () => {
         </div>
 
         <div className="rounded-xl border border-white/[0.08] bg-[#13151a] p-3 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-5">
-            <div className="min-w-0 xl:order-2">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-5 pointer-coarse:landscape:lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] pointer-coarse:landscape:lg:gap-5">
+            <div className="min-w-0 xl:order-2 pointer-coarse:landscape:lg:order-2">
               <Oscilloscope
                 analyser={analyser}
-                isPlaying={activeSound !== null}
+                isPlaying={activeSound !== null || echo.litId !== null}
                 soundLabel={activeSoundLabel}
                 silentReason={silentReason}
               />
-              <dl className="mt-3 hidden grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.08] font-mono text-[11px] tabular-nums xl:grid">
+              <dl className="mt-3 hidden grid-cols-2 gap-px overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.08] font-mono text-[11px] pointer-coarse:text-xs tabular-nums xl:grid">
                 <div className="bg-[#0d0e11] p-2.5">
                   <dt className="uppercase tracking-wider text-zinc-400">
                     Pads
@@ -345,7 +403,7 @@ export const MemeVaultClient: React.FC = () => {
                 </div>
               </dl>
             </div>
-            <div className="min-w-0 xl:order-1">
+            <div className="min-w-0 xl:order-1 pointer-coarse:landscape:lg:order-1">
               {silentPress && silentReason && (
                 <p
                   className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-sans text-xs text-amber-200"
@@ -354,10 +412,21 @@ export const MemeVaultClient: React.FC = () => {
                   That pad played silently. {silentReason}
                 </p>
               )}
+              <EchoConsole
+                round={echo.round}
+                best={echo.best}
+                early={echo.early}
+                onStart={() => {
+                  unlockMemeAudio();
+                  echo.start();
+                }}
+                onStop={echo.stop}
+                silentReason={silentReason}
+              />
               <SamplerPads
                 pads={SOUNDBOARD_BUTTONS}
-                activeId={activeSound}
-                onPress={handlePlaySound}
+                activeId={echo.litId ?? activeSound}
+                onPress={handlePadPress}
               />
             </div>
           </div>
@@ -418,7 +487,7 @@ export const MemeVaultClient: React.FC = () => {
                 type="button"
                 aria-pressed={selectedCategory === cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded capitalize font-semibold transition-colors active:scale-95 ${
+                className={`px-3 py-1 rounded capitalize font-semibold transition-colors active:scale-95 pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-4 ${
                   selectedCategory === cat
                     ? "bg-[#1a1d24] text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.45)]"
                     : "text-zinc-400 hover:text-zinc-100"
@@ -440,7 +509,7 @@ export const MemeVaultClient: React.FC = () => {
               >
                 <div>
                   <div className="flex items-center justify-between text-xs text-zinc-400 mb-3">
-                    <span className="px-2 py-0.5 rounded-sm border border-white/[0.08] text-zinc-400 font-mono uppercase tracking-wider text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded-sm border border-white/[0.08] text-zinc-400 font-mono uppercase tracking-wider text-[10px] pointer-coarse:text-xs font-bold">
                       {q.tagline || q.category}
                     </span>
                     <CopyButton
@@ -449,7 +518,7 @@ export const MemeVaultClient: React.FC = () => {
                       copiedIcon={
                         <IconCheck className="w-4 h-4 text-emerald-400" />
                       }
-                      className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-400 hover:text-zinc-100 transition-colors cursor-pointer pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center pointer-coarse:justify-center"
                       title="Copy Quote"
                       aria-label="Copy Quote"
                       successMessage="Copied quote to clipboard"
@@ -462,7 +531,7 @@ export const MemeVaultClient: React.FC = () => {
                 </div>
 
                 <div className="flex items-center justify-between pt-3 border-t border-white/[0.06] text-xs">
-                  <cite className="text-zinc-400 text-[11px] truncate max-w-[200px] sm:max-w-xs not-italic">
+                  <cite className="text-zinc-400 text-[11px] pointer-coarse:text-xs truncate max-w-[200px] sm:max-w-xs not-italic">
                     by {q.author}
                   </cite>
                   <button
@@ -472,7 +541,7 @@ export const MemeVaultClient: React.FC = () => {
                         ? `React to quote (${rxCount})`
                         : "React to quote"
                     }
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#1a1d24] hover:border-white/[0.16] text-zinc-300 text-[11px] transition-transform active:scale-95"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-white/[0.08] bg-[#1a1d24] hover:border-white/[0.16] text-zinc-300 text-[11px] pointer-coarse:text-xs transition-transform active:scale-95 pointer-coarse:min-h-11 pointer-coarse:px-4"
                   >
                     <IconRocket
                       aria-hidden="true"
@@ -508,7 +577,7 @@ export const MemeVaultClient: React.FC = () => {
                 type="button"
                 aria-pressed={asciiTab === tab}
                 onClick={() => setAsciiTab(tab)}
-                className={`px-3 py-1 rounded uppercase tracking-wider text-[10px] font-bold transition-colors active:scale-95 ${
+                className={`px-3 py-1 rounded uppercase tracking-wider text-[10px] pointer-coarse:text-xs font-bold transition-colors active:scale-95 pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:px-4 ${
                   asciiTab === tab
                     ? "bg-[#1a1d24] text-emerald-400 shadow-[inset_0_0_0_1px_rgba(16,185,129,0.45)]"
                     : "text-zinc-400 hover:text-zinc-100"
@@ -525,7 +594,7 @@ export const MemeVaultClient: React.FC = () => {
           trophies. Type the commands in the{" "}
           <Link
             href={SANDBOX_TERMINAL_HREF}
-            className="underline underline-offset-2"
+            className="underline underline-offset-2 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
           >
             sample commands terminal
           </Link>{" "}
@@ -537,7 +606,7 @@ export const MemeVaultClient: React.FC = () => {
             text={() => getAsciiContent()}
             icon={<IconCopy className="w-4 h-4" />}
             copiedIcon={<IconCheck className="w-4 h-4 text-emerald-400" />}
-            className="absolute top-4 right-4 p-2 rounded-lg bg-[#13151a] hover:bg-[#1a1d24] text-zinc-400 hover:text-zinc-100 border border-white/[0.08] transition-colors cursor-pointer"
+            className="absolute top-4 right-4 p-2 rounded-lg bg-[#13151a] hover:bg-[#1a1d24] text-zinc-400 hover:text-zinc-100 border border-white/[0.08] transition-colors cursor-pointer pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:min-w-11 pointer-coarse:items-center pointer-coarse:justify-center"
             title="Copy ASCII Art"
             aria-label="Copy ASCII Art"
             successMessage="Copied ASCII art to clipboard"

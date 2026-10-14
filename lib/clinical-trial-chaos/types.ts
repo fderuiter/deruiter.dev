@@ -91,6 +91,16 @@ export type AmendmentType =
   | "conmed-reconciliation-rush"
   | "gcp-spot-inspection";
 
+/** How a lasting protocol amendment ended, for the BIMO report (#2053). */
+export interface AmendmentOutcome {
+  type: AmendmentType;
+  title: string;
+  /** One sentence describing how the shift handled it. */
+  summary: string;
+  /** Whether the shift met the amendment's requirement. */
+  resolved: boolean;
+}
+
 export interface ProtocolAmendment {
   id: string;
   version: string; // e.g. "Protocol v3.2.1"
@@ -137,6 +147,10 @@ export interface SignatureModalState {
   selectedReason: SignatureReason;
   passwordInput: string;
   requiresReason: boolean;
+  /** Signature steps this CRF needs: 2 during a double-signature audit (#2053). */
+  signaturesRequired?: number;
+  /** Signature steps already applied in this dialog. */
+  signaturesApplied?: number;
 }
 
 export type SignatureReason =
@@ -241,4 +255,8 @@ export interface BIMOInspectionReport {
   /** Subjects that expired on the conveyor and were never submitted (#1670). */
   expiredCRFs: number;
   summary: string;
+  /** The Audit Year an endless run reached (#2053); absent for a campaign. */
+  auditYear?: number;
+  /** How lasting protocol amendments were handled this shift (#2053). */
+  amendmentOutcomes?: AmendmentOutcome[];
 }

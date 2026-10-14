@@ -10,19 +10,9 @@
 
 ### damagedPoints
 
-> **damagedPoints**: `object`[]
+> **damagedPoints**: [`CounterHitPoint`](../../types/interfaces/CounterHitPoint.md)[]
 
-#### color
-
-> **color**: `string`
-
-#### x
-
-> **x**: `number`
-
-#### y
-
-> **y**: `number`
+Each target the ray struck, with the weapon's counter on it.
 
 ***
 

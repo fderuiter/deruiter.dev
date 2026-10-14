@@ -12,7 +12,7 @@
 
 ### type
 
-`"bark"` \| `"laser"` \| `"friday-alarm"` \| `"matrix-glitch"` \| `"teapot-whistle"` \| `"modem"` \| `"fda-siren"` \| `"level-up"` \| `"fanfare"`
+[`MemeSoundType`](../type-aliases/MemeSoundType.md)
 
 ## Returns
 

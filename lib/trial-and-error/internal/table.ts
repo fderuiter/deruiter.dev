@@ -346,8 +346,13 @@ export const AMENDMENT_STALE_ALERT = `Output compiled under a superseded SAP rul
 /** Serializable Card Table state. Contains no derived or browser data. */
 export interface TableState {
   scenarioId: string;
-  /** Index of the next undealt card in the scenario deck. */
+  /** Index of the next undealt card in the deal order. */
   deckIndex: number;
+  /**
+   * The order this Blind deals its deck in, as indices into the scenario
+   * deck (#2055). Absent means the deck's written order.
+   */
+  deckOrder?: number[];
   /** Card ids in hand, in deal order. */
   hand: string[];
   /** Selected card ids, in selection order (at most `maxSelection`). */
@@ -2425,7 +2430,7 @@ function refill(scenario: Scenario, state: TableState): TableState {
     hand.length < scenario.table.handSize &&
     index < scenario.deck.length
   ) {
-    const card = scenario.deck[index];
+    const card = scenario.deck[state.deckOrder?.[index] ?? index];
     hand.push(card.id);
     // A blank shell has no data yet: it gets provenance when it is compiled.
     if (card.shellId === undefined) provenance[card.id] = snapshotRef(current);
@@ -2450,7 +2455,8 @@ function refill(scenario: Scenario, state: TableState): TableState {
  * earlier Blinds' snapshot versions; without it the study starts at the
  * scenario's own snapshot. `inventory` is the tray, budget and hand levels
  * carried in; the Blind's granted seals, then its Guidance cards, fill any
- * free tray slots.
+ * free tray slots. `deckOrder` is the order the deck is dealt in, as indices
+ * into it; without it the deck deals in its written order.
  */
 export function createTableState(
   scenario: Scenario,
@@ -2460,7 +2466,8 @@ export function createTableState(
   },
   inventory: Inventory = EMPTY_INVENTORY,
   crisis: CrisisCard | null = null,
-  deviation: ScheduledDeviation | null = null
+  deviation: ScheduledDeviation | null = null,
+  deckOrder: readonly number[] | null = null
 ): TableState {
   const consumables = [...inventory.consumables];
   const grants: Consumable[] = [
@@ -2482,6 +2489,7 @@ export function createTableState(
   return refill(scenario, {
     scenarioId: scenario.id,
     deckIndex: 0,
+    ...(deckOrder && { deckOrder: [...deckOrder] }),
     hand: [],
     selected: [],
     inspections: {},
@@ -3003,7 +3011,8 @@ function applyTableAction(
         },
         state.opening.inventory,
         state.opening.crisis,
-        state.opening.deviation ?? null
+        state.opening.deviation ?? null,
+        state.deckOrder ?? null
       ),
       lastEvent: nextEvent(state, "RESET", `${scenario.blind.name} restarted.`),
     };

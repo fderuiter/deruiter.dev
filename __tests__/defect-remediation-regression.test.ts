@@ -2420,3 +2420,19 @@ describe("Garmin first obstacle waits for the player (#1945)", () => {
     }
   });
 });
+
+describe("Working With Duck facts 6-10 are reachable (#2050)", () => {
+  it("unlocks facts 6-10 from banked sprint stars, since the campaign stops at sprint 5", () => {
+    const perfect = { 1: 3, 2: 3, 3: 3, 4: 3, 5: 3 };
+    const state = createInitialDuckGameState(
+      1,
+      "campaign",
+      undefined,
+      [1],
+      perfect
+    );
+    expect(state.unlockedFacts).toEqual(
+      expect.arrayContaining([6, 7, 8, 9, 10])
+    );
+  });
+});

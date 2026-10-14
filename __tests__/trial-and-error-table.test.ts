@@ -126,7 +126,7 @@ describe("Card Table reducer", () => {
     expect(state.lastPlay?.evaluation.score).toBe(0);
     expect(state.lastPlay?.evaluation.zeroRule.triggered).toBe(true);
     expect(state.lastEvent?.message).toBe(
-      "TLF Pair scored 0 (80 Chips × 0 Mult). Zero-score rule triggered. Round 0 of 450."
+      "TLF Pair scored 0 (80 Chips × 0 Mult). Zero-score rule triggered. Round 0 of 2000."
     );
     expect(state.cpu).toEqual({ available: 8, spent: 2 });
     expect(state.hand).toHaveLength(8);
@@ -155,12 +155,10 @@ describe("Card Table reducer", () => {
     expect(deriveTableView(scenario, state).preview).toEqual(expected);
     const played = run([{ type: "PLAY_HAND" }], state);
     expect(played.lastPlay?.evaluation).toEqual(expected);
-    // (30 + 30 + 20 + 12) × (2 + 1 + 6 corrections) = 828 clears 450.
+    // (30 + 30 + 20 + 12) × (2 + 1 + 6 corrections) = 828, short of 2000.
     expect(played.roundScore).toBe(828);
-    expect(played.status).toBe("CLEARED");
-    expect(played.lastEvent?.message).toContain(
-      "Small Blind: Internal QC cleared."
-    );
+    expect(played.status).toBe("REVIEWING");
+    expect(played.lastEvent?.message).toContain("Round 828 of 2000.");
   });
 
   it("charges 1 CPU to open Inspect once, then reopens it for free", () => {

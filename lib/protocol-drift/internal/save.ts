@@ -52,18 +52,39 @@ export function deserializeSave(json: string): ProtocolDriftSaveFile {
       "Save file is missing seed, scenario, commands or stateHash"
     );
   }
-  return save as ProtocolDriftSaveFile;
+  const valid = save as ProtocolDriftSaveFile;
+  const rejected = valid.rejectedCommands;
+  if (
+    rejected !== undefined &&
+    !(
+      typeof rejected === "number" &&
+      Number.isInteger(rejected) &&
+      rejected >= 0
+    )
+  ) {
+    // An unreadable count is dropped rather than failing the whole save.
+    delete valid.rejectedCommands;
+  }
+  return valid;
 }
 
 /** Rebuilds an engine from a save by replaying its command log. */
 export function restoreProtocolDriftEngine(
   save: ProtocolDriftSaveFile
 ): ProtocolDriftEngine {
+  // Rejections never reach the command log, so the count rides on the save
+  // and on the replayed INIT that resets the engine (#2054).
+  const rejectedCommands = save.rejectedCommands ?? 0;
   const engine = createProtocolDriftEngine({
     seed: save.seed,
     scenario: save.scenario,
+    rejectedCommands,
   });
-  for (const command of save.commands) engine.dispatch(command);
+  for (const command of save.commands) {
+    engine.dispatch(
+      command.type === "INIT" ? { ...command, rejectedCommands } : command
+    );
+  }
   if (engine.stateHash() !== save.stateHash) {
     throw new ProtocolDriftSaveError(
       "Replayed state does not match the save's state hash"

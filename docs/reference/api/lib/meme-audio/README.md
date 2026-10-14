@@ -23,4 +23,5 @@
 - [playMemeSound](functions/playMemeSound.md)
 - [releaseMemeAnalyser](functions/releaseMemeAnalyser.md)
 - [stopAllMemeSounds](functions/stopAllMemeSounds.md)
+- [unlockMemeAudio](functions/unlockMemeAudio.md)
 - [useMemeAudioCleanup](functions/useMemeAudioCleanup.md)

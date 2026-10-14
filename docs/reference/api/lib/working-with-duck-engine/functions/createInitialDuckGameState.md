@@ -6,7 +6,7 @@
 
 # Function: createInitialDuckGameState()
 
-> **createInitialDuckGameState**(`level?`, `mode?`, `preservedAccessories?`, `preservedFacts?`): [`WorkingWithDuckState`](../interfaces/WorkingWithDuckState.md)
+> **createInitialDuckGameState**(`level?`, `mode?`, `preservedAccessories?`, `preservedFacts?`, `preservedBestStars?`): [`WorkingWithDuckState`](../interfaces/WorkingWithDuckState.md)
 
 ## Parameters
 
@@ -25,6 +25,10 @@
 ### preservedFacts?
 
 `number`[] = `...`
+
+### preservedBestStars?
+
+[`DuckBestStars`](../type-aliases/DuckBestStars.md) = `{}`
 
 ## Returns
 

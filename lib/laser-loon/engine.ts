@@ -16,6 +16,8 @@ import {
   CivicEnemyType,
   PowerUp,
   PowerUpType,
+  WeaponCounter,
+  CounterHitPoint,
 } from "./types";
 import {
   ENEMY_TYPES,
@@ -45,6 +47,8 @@ import {
   MINION_SHOT_RADIUS,
   MINION_FIRE_MIN_LEAD,
   KEYBOARD_AIM_CONE_RADIANS,
+  WEAKNESS_DAMAGE_MULTIPLIER,
+  RESISTED_DAMAGE_MULTIPLIER,
 } from "./constants";
 
 export function createInitialState(
@@ -108,6 +112,77 @@ export function getActAvailableEnemies(actNumber: number): CivicEnemyType[] {
         "tricolor-rival",
       ];
   }
+}
+
+/**
+ * The enemies an act introduces: its pool less any type an earlier act
+ * already fielded. The act intro card names the optic each one wants.
+ *
+ * @param actNumber - Campaign act, 1 to 4.
+ */
+export function getActNewEnemies(actNumber: number): CivicEnemyType[] {
+  const seen = new Set<CivicEnemyType>();
+  for (let act = 1; act < actNumber; act++) {
+    getActAvailableEnemies(act).forEach((type) => seen.add(type));
+  }
+  return getActAvailableEnemies(actNumber).filter((type) => !seen.has(type));
+}
+
+/**
+ * The optic an enemy type is weak to, or undefined for bosses and unknown
+ * types, which take every weapon at face value.
+ *
+ * @param type - Enemy type.
+ */
+export function getEnemyWeakness(type: CivicEnemyType): LaserType | undefined {
+  return ENEMY_TYPES.find((e) => e.type === type)?.weakTo;
+}
+
+/**
+ * How a weapon's hit lands on an enemy type: "weak" for its weakness,
+ * "resisted" for an optic it shrugs off, otherwise "neutral".
+ *
+ * @param type - Enemy type hit.
+ * @param laserType - Weapon that landed the hit.
+ */
+export function getWeaponCounter(
+  type: CivicEnemyType,
+  laserType: LaserType
+): WeaponCounter {
+  const template = ENEMY_TYPES.find((e) => e.type === type);
+  if (!template || template.isBoss) return "neutral";
+  if (template.weakTo === laserType) return "weak";
+  if (template.resists?.includes(laserType)) return "resisted";
+  return "neutral";
+}
+
+/**
+ * Damage multiplier for a weapon against an enemy type: doubled on a
+ * weakness, halved when resisted, otherwise 1. Never zero, so no enemy is
+ * immune to any optic.
+ *
+ * @param type - Enemy type hit.
+ * @param laserType - Weapon that landed the hit.
+ */
+export function getWeaponDamageMultiplier(
+  type: CivicEnemyType,
+  laserType: LaserType
+): number {
+  return counterMultiplier(getWeaponCounter(type, laserType));
+}
+
+/** A target's counter against a weapon; boss volley shots stay neutral. */
+function targetCounter(target: Target, laserType: LaserType): WeaponCounter {
+  return target.isProjectile
+    ? "neutral"
+    : getWeaponCounter(target.type, laserType);
+}
+
+/** Damage multiplier for a counter, as getWeaponDamageMultiplier applies it. */
+function counterMultiplier(counter: WeaponCounter): number {
+  if (counter === "weak") return WEAKNESS_DAMAGE_MULTIPLIER;
+  if (counter === "resisted") return RESISTED_DAMAGE_MULTIPLIER;
+  return 1;
 }
 
 export function spawnTarget(
@@ -395,6 +470,8 @@ export interface IceCollisionResult {
   shatteredBlocks: Array<{ x: number; y: number }>;
   killedTargets: Target[];
   frozenTargets: Target[];
+  /** Each block that struck a target, with the Cryo-Mortar's counter on it. */
+  hitPoints: CounterHitPoint[];
   pointsEarned: number;
 }
 
@@ -410,6 +487,7 @@ export function updateIceBlocksAndCollisions(
   const shatteredBlocks: Array<{ x: number; y: number }> = [];
   const killedTargets: Target[] = [];
   const frozenTargets: Target[] = [];
+  const hitPoints: CounterHitPoint[] = [];
   let pointsEarned = 0;
 
   const updatedTargets = targets.map((t) => ({ ...t }));
@@ -443,8 +521,15 @@ export function updateIceBlocksAndCollisions(
       const dist = Math.hypot(target.x - nextBlock.x, target.y - nextBlock.y);
       if (dist < target.radius + nextBlock.size * 0.5) {
         blockShattered = true;
-        const dmg = target.isBoss ? 2 : 3;
+        const counter = targetCounter(target, "ice-cannon");
+        const dmg = (target.isBoss ? 2 : 3) * counterMultiplier(counter);
         target.hp -= dmg;
+        hitPoints.push({
+          x: target.x,
+          y: target.y,
+          color: target.color,
+          counter,
+        });
         target.frozenTimer = target.isBoss ? 45 : 120; // Freeze in place
         frozenTargets.push(target);
         shatteredBlocks.push({ x: nextBlock.x, y: nextBlock.y });
@@ -468,6 +553,7 @@ export function updateIceBlocksAndCollisions(
     shatteredBlocks,
     killedTargets,
     frozenTargets,
+    hitPoints,
     pointsEarned,
   };
 }
@@ -563,7 +649,8 @@ export interface LaserHitResult {
   updatedTargets: Target[];
   hitAny: boolean;
   killedTargets: Target[];
-  damagedPoints: Array<{ x: number; y: number; color: string }>;
+  /** Each target the ray struck, with the weapon's counter on it. */
+  damagedPoints: CounterHitPoint[];
   ultimateGained: number;
 }
 
@@ -589,7 +676,7 @@ export function checkLaserRayHit(
   let hitAny = false;
   let ultimateGained = 0;
   const killedTargets: Target[] = [];
-  const damagedPoints: Array<{ x: number; y: number; color: string }> = [];
+  const damagedPoints: CounterHitPoint[] = [];
 
   const updatedTargets = targets.map((t) => {
     if (t.hp <= 0) return t;
@@ -605,8 +692,10 @@ export function checkLaserRayHit(
 
       if (distToRay < t.radius + hitExtra) {
         hitAny = true;
-        const nextHp = t.hp - damage;
-        damagedPoints.push({ x: nearX, y: nearY, color: t.color });
+        // Damage step: the weapon's counter against this enemy scales it.
+        const counter = targetCounter(t, laserType);
+        const nextHp = t.hp - damage * counterMultiplier(counter);
+        damagedPoints.push({ x: nearX, y: nearY, color: t.color, counter });
 
         if (t.isBoss) {
           ultimateGained += 4;

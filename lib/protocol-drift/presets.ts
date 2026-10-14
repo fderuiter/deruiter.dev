@@ -10,6 +10,8 @@ import type {
   CanvasEdge,
   CanvasNode,
   ChipKind,
+  EfficiencyMetricId,
+  EfficiencyPar,
   EntryFieldSpec,
   PipelineGraph,
   SiteId,
@@ -39,6 +41,47 @@ export const WAVE_VS_TOTALS: Readonly<Record<WaveIndex, number>> = {
   2: 80,
   3: 110,
 };
+/**
+ * Efficiency pars (#2054), calibrated from the reference solve: the scripted
+ * careful playthrough in the test helpers, which publishes WAVE1_GRAPH, then
+ * FULL_GRAPH (13 chips, 21 wires), dispositions every issue with evidence and
+ * locks on Day 28 with no rejected commands and no fabricated precision. A
+ * calibration test replays that solve and fails if the engine drifts from
+ * these numbers. Each measure is worth 100 points at par, gains or loses
+ * pointsPerUnit for each unit under or over, and stays between 0 and 150.
+ */
+export const EFFICIENCY_PARS: Readonly<
+  Record<EfficiencyMetricId, EfficiencyPar>
+> = {
+  chips: { label: "Chips in pipeline", par: 13, pointsPerUnit: 10 },
+  wires: { label: "Wires in pipeline", par: 21, pointsPerUnit: 5 },
+  lockDay: { label: "Lock day", par: 28, pointsPerUnit: 25 },
+  rejectedCommands: {
+    label: "Rejected commands",
+    par: 0,
+    pointsPerUnit: 10,
+  },
+  fabricatedBits: {
+    label: "Fabricated bits introduced",
+    par: 0,
+    pointsPerUnit: 10,
+  },
+};
+/** The order the scorecard lists the efficiency measures in. */
+export const EFFICIENCY_METRIC_IDS: readonly EfficiencyMetricId[] = [
+  "chips",
+  "wires",
+  "lockDay",
+  "rejectedCommands",
+  "fabricatedBits",
+];
+/** Points one efficiency measure earns at par. */
+export const EFFICIENCY_POINTS_AT_PAR = 100;
+/** Most points one efficiency measure can earn, however far under par. */
+export const EFFICIENCY_POINTS_CAP = 150;
+/** Browser storage key for the per-measure bests, beside the high score. */
+export const EFFICIENCY_BESTS_STORAGE_KEY = "protocol_drift_efficiency_bests";
+
 /** Current VS rows the Site A tracer bullet produces. */
 export const TRACER_VS_RECORDS = 18;
 

@@ -36,7 +36,9 @@ export const STAGE_2_MAZE: string[][] = [
 ];
 
 /**
- * Creates Security Tier 1: DMZ Gateway (Subnet 01)
+ * Creates Security Tier 1: DMZ Gateway, the campaign's opening room. An open
+ * exit, two slow patrols and no route nodes or terminal, so the first room
+ * teaches movement and Port Recon before anything else (#2048).
  */
 export function generateDMZGatewayRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -72,14 +74,17 @@ export function generateDMZGatewayRoom(): DungeonRoom {
       id: "dmz-zombie-1",
       type: "zombie",
       name: "Script Kiddie Bot",
-      x: 1,
-      y: 5,
+      // The bottom corridor, out of sight of the spawn. In column 1 it saw
+      // the player from four tiles and chased them before their first move,
+      // which no opening room should do (#2048).
+      x: 8,
+      y: 7,
       hp: 35,
       maxHp: 35,
       state: "patrol",
-      patrolDir: "down",
-      minY: 3,
-      maxY: 7,
+      patrolDir: "right",
+      minX: 5,
+      maxX: 11,
       symbol: "Z",
       color: "#f59e0b",
       cve: "WEAK_SSH",
@@ -127,13 +132,15 @@ export function generateDMZGatewayRoom(): DungeonRoom {
     enemies,
     items,
     securityTier: 1,
-    hasTerminal: true,
-    terminalHacked: false,
+    // The opening room teaches movement, patrols and Port Recon only; the
+    // first hacking terminal waits in Active Directory (#2048).
+    hasTerminal: false,
   };
 }
 
 /**
- * Creates Security Tier 2: Active Directory & Intranet (Subnet 02)
+ * Creates Security Tier 2: Active Directory & Intranet. Its hacking terminal
+ * sits in the dead end at (7, 7), off the route to the exit, so it is optional.
  */
 export function generateActiveDirectoryRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -144,7 +151,7 @@ export function generateActiveDirectoryRoom(): DungeonRoom {
     ["#", " ", "#", " ", "#", "#", " ", "#", " ", "#", "#", " ", "#", " ", "#"],
     ["#", " ", " ", " ", "#", " ", " ", " ", " ", " ", "#", " ", " ", " ", "#"],
     ["#", "#", "#", " ", "#", " ", "#", "#", "#", " ", "#", " ", "#", "#", "#"],
-    ["#", " ", " ", " ", " ", " ", "#", " ", " ", " ", "#", " ", " ", "E", "#"],
+    ["#", " ", " ", " ", " ", " ", "#", "H", " ", " ", "#", " ", " ", "E", "#"],
     ["#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#", "#"],
   ];
 
@@ -230,7 +237,7 @@ export function generateActiveDirectoryRoom(): DungeonRoom {
 }
 
 /**
- * Creates Room 1 / Tier 3: Traveling-Salesman-Problem / Zero-Trust Enclave
+ * Creates Tier 3: Traveling-Salesman-Problem / Zero-Trust Enclave
  */
 export function generateTSPRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -342,7 +349,7 @@ export function generateTSPRoom(): DungeonRoom {
 }
 
 /**
- * Creates Room 4 / Tier 4: Darknet Black-Market & Admin Vault
+ * Creates Tier 4: Darknet Black-Market & Admin Vault
  */
 export function generateDarknetVaultRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -401,7 +408,9 @@ export function generateDarknetVaultRoom(): DungeonRoom {
       id: "item-stash-1",
       itemId: "git_stash",
       name: "Encrypted Root Stash (+1 Zero-Day Piercer)",
-      x: 7,
+      // (7, 1) is the vault's dividing wall, so the stash could never be
+      // picked up (#2048).
+      x: 6,
       y: 1,
       symbol: "💥",
       color: "#a855f7",
@@ -434,7 +443,7 @@ export function generateDarknetVaultRoom(): DungeonRoom {
 }
 
 /**
- * Creates Room 2 / Tier 5: FaceForge / Neural Warden 3D Boss Arena
+ * Creates Tier 5: FaceForge 3D Boss Arena, the campaign's first boss
  */
 export function generateFaceForgeRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -481,7 +490,7 @@ export function generateFaceForgeRoom(): DungeonRoom {
     repo: "github.com/fderuiter/faceforge-wireframe-abandoned",
     mechanic:
       "Boss Fight: Wireframe 3D face firing untextured mesh projectiles.",
-    badge: "ROOM 02 :: BOSS ARENA",
+    badge: "TIER 05 :: BOSS ARENA",
     width: 15,
     height: 9,
     grid,
@@ -497,7 +506,8 @@ export function generateFaceForgeRoom(): DungeonRoom {
 }
 
 /**
- * Creates Final Mainframe AI Sovereign Boss Room (Neural Warden)
+ * Creates the Final Mainframe AI Sovereign Boss Room (Neural Warden), the
+ * campaign's last room
  */
 export function generateNeuralWardenRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -560,7 +570,7 @@ export function generateNeuralWardenRoom(): DungeonRoom {
 }
 
 /**
- * Creates Room 3: BlinkBrowse (Eye-tracking / Cursor Steering)
+ * Creates BlinkBrowse (Eye-tracking / Cursor Steering)
  */
 export function generateBlinkBrowseRoom(): DungeonRoom {
   const grid: string[][] = [
@@ -726,15 +736,32 @@ export function generateClassicStage2(): DungeonRoom {
 }
 
 /**
- * Creates the full roguelike campaign list of themed graveyard rooms.
+ * The roguelike campaign's rooms, in play order (#2048). The ramp opens on the
+ * DMZ Gateway (open exit, slow patrols), adds a hacking terminal in Active
+ * Directory, cursor drift in BlinkBrowse, then the moving walls and route nodes
+ * of the TSP enclave once the player can read a room. The Darknet Vault's
+ * market and chest restock the deck before the FaceForge boss, and the Neural
+ * Warden closes the run.
+ */
+const ROGUELIKE_CAMPAIGN_ROOMS: ReadonlyArray<() => DungeonRoom> = [
+  generateDMZGatewayRoom,
+  generateActiveDirectoryRoom,
+  generateBlinkBrowseRoom,
+  generateTSPRoom,
+  generateDarknetVaultRoom,
+  generateFaceForgeRoom,
+  generateNeuralWardenRoom,
+];
+
+/**
+ * Creates the full roguelike campaign: seven themed rooms, each numbered by
+ * its one-based position in the run.
  */
 export function generateRoguelikeCampaign(): DungeonRoom[] {
-  return [
-    generateTSPRoom(),
-    generateFaceForgeRoom(),
-    generateBlinkBrowseRoom(),
-    generateDarknetVaultRoom(),
-  ];
+  return ROGUELIKE_CAMPAIGN_ROOMS.map((generate, i) => ({
+    ...generate(),
+    index: i + 1,
+  }));
 }
 
 /**

@@ -294,6 +294,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Wardrobe Unlocks",
       },
       {
+        title: "Endless Quarters",
+        detail:
+          "Endless mode runs in quarters. Every 120 work units a new quarter starts (Q1, Q2, Q3...): the meters fill faster, impulses come sooner, and one hazard joins for the rest of the run. Q2 brings more frequent surprises, Q3 tracks mud in after every potty trip (a muddy Duck slows work until bathed), and Q4 sets Duck chewing faster, power cable first. The run ends at a time-out and scores 1,000 per quarter survived plus the work done, with its own endless best.",
+        badge: "Endless",
+      },
+      {
+        title: "Puppy Hiccups",
+        detail:
+          "From sprint 2, and in endless mode, Duck can catch the hiccups for four seconds. A trick called mid-hic slips and breaks the combo; call it in the gap between hics and it lands as normal.",
+        badge: "Surprise",
+      },
+      {
         title: "Polaroid Scrapbook",
         detail:
           "Capturing key milestone moments unlocks 10 high-resolution real photos and vector artwork in your persistent scrapbook.",
@@ -372,6 +384,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "2x Shatter Combo",
       },
       {
+        title: "Weapon Counters",
+        detail:
+          "Every enemy has one optic it is weak to (a CRIT! for double damage) and some it resists (RESISTED, half damage). Cyan Pulse shreds the swarms: Laser Mosquitoes, Runaway Pronto Pups and Red Tape. The Ruby Laser melts Glacial Hail, Deep-Fried Butter, Clipboards, Surprise Amendments and the Polar Vortex Eye. The Aurora Wave's wide sweep beats Prize Gopher Decoys, F29 Tricolor Drafts and shielded 1893 Seal Drones, which resist every other optic. The Cryo-Mortar crushes Rogue Jet-Skis and armoured Veto Stamps, which shrug off every beam. Each act's intro card names the optic its new enemies want; bosses take every weapon evenly. Any single weapon can still clear every act, just slower.",
+        badge: "Crit / Resist",
+      },
+      {
         title: "Historic Campaign Acts & Bosses",
         detail:
           "Advance through Lake Minnetonka (Mega Mosquito), State Fair (Butter Colossus), Redesign Commission (Starflake Finalist), and the Capitol Rotunda (Grand Veto Gavel).",
@@ -380,6 +398,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     proTips: [
       "Save your Haunting Loon Tremolo ultimate for boss encounters to shatter their revolving defense shields.",
+      "Swap optics with keys 1 to 4 as the enemy mix changes: matching each enemy's weakness clears an act well under par.",
       "Grab floating Tater Tot Hotdish pickups for instant zero-cooldown laser overcharge frenzy.",
       "Bouncing Cryo-Mortar ice blocks off the canvas floor and ceiling creates hazardous pinball walls for rival flags.",
     ],
@@ -1011,7 +1030,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     objective:
       "Get through one drive-thru shift, squeezed from four hours into three minutes, without the drive-thru times or your dignity reaching zero. Every car you serve before its ticket turns red helps; every car that gives up and drives off costs speed and comes out of your pay.",
     quickSummary:
-      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub and a closing note. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page.",
+      "Orders arrive through the headset and go up on the kitchen display, where they turn yellow, then red. Ring each one up on the register, re-enter any drink the dispenser drops, flag Dale for coffee you are too young to brew, and bump the order when it is done. If you stand still too long, Bo notices. The shift ends with a pay stub, a closing note and a score: points for every car, less for late ones, plus extra for orders bumped while still green, for a streak of orders rung without a wrong entry, and for the Dignity you still have at close. Before clocking in you can pick a practice shift (lunch rush, failing dispenser, strict management); those do not count toward your score, and any shift's data downloads as JSON or CSV from the pay stub page.",
     controls: [
       {
         action: "Turn",
@@ -1292,6 +1311,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "The SDTM checklist needs 110 VS rows, 6 MH rows, no open queries, no fabricated debt and intact traces. The ADaM checklist needs 20 orthostatic rows with NOT EVALUABLE visits handled honestly and no stale derivations.",
         badge: "Lock",
       },
+      {
+        title: "Efficiency against par",
+        detail:
+          "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
+        badge: "Par",
+      },
     ],
     proTips: [
       "Add the regex split before Site A's narrative entry arrives on Day 7.",
@@ -1475,7 +1500,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Three acts, nine Blinds, one run",
         detail:
-          "Each Blind has its own SAP, deck and target, and its CPU refills at the start of each Blind (unspent CPU does not carry over). Clearing a Blind moves you to the next; failing one ends the run, and Restart run starts again from Act I's Small Blind.",
+          "Each Blind has its own SAP, deck and target, and its CPU refills at the start of each Blind (unspent CPU does not carry over). The run seed shuffles each Blind's deck, so the same seed deals the same cards; the few outputs a Blind is built around are always in its opening hand. Clearing a Blind moves you to the next; failing one ends the run, and Restart run starts again from Act I's Small Blind.",
         badge: "Campaign",
       },
       {
@@ -1611,7 +1636,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "FAS and ITT are different populations here; the Total column is where a denominator slip hides.",
       "In the safety Blinds, FAS and Per-Protocol drop S-008, the subject who stopped for atrial fibrillation. An N of 5 in the Active column is the tell.",
       "A Two Pair of the AE overview and the SAE table, each with its listing, is the Big Blind's workhorse.",
-      "Data keeps moving during the sponsor review. If your Safety drafts go stale, sending them back to programming (discard) is cheaper than recompiling each one, and the reruns at the bottom of the deck arrive current.",
+      "Data keeps moving during the sponsor review. If your Safety drafts go stale, sending them back to programming (discard) is cheaper than recompiling each one, and fresh draws arrive compiled against the new snapshot.",
       "Trace every flagged cell of a Table before you play it with its Listing. One unresolved trace and the pair loses its ×2.",
       "Reconcile a Kaplan–Meier Figure before you build a Full House around it. Each open discrepancy costs Mult, and only a reconciled Figure doubles it.",
       "Run structural QC on every face-down output before you convene the closed session. One peek costs the next hand its whole score.",
@@ -1643,14 +1668,14 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     accentColor: "from-cyan-500/20 via-cyan-500/5 to-transparent",
     badgeBg: "bg-cyan-500/10 text-cyan-300 border-cyan-500/30",
     objective:
-      "Infiltrate fortified corporate mainframe subnets as an autonomous Red Team Netrunner. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve tactile Hex Matrix buffer puzzles, and defeat the 3D Wireframe Sovereign Boss.",
+      "Breach a seven-room corporate network as a Red Team Netrunner, from the DMZ Gateway to the NEURAL_WARDEN core. Manage Cyberdeck RAM, weaponize zero-days and offensive exploits, bypass EDR sentinels, solve Hex Matrix buffer puzzles, and defeat two 3D wireframe bosses: FaceForge, then the Neural Warden.",
     quickSummary:
-      "Navigate procedural subnets with WASD/Arrows and reach each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
+      "Clear seven hand-built rooms in a fixed order with WASD/Arrows, reaching each room's EXIT once its objective is done. Keys 1 to 3 fire your Cyberdeck class's tools (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
       {
         action: "Move Netrunner Avatar",
         description:
-          "Navigate through procedural subnet corridors and step onto discovery nodes.",
+          "Walk the room's corridors, collect pickups and step onto airgap route nodes.",
         key: "WASD / Arrow Keys",
       },
       {
@@ -1685,6 +1710,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     rules: [
       {
+        title: "The Seven-Room Campaign",
+        detail:
+          "A run is seven rooms in a fixed order: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss. The first room has an open exit and slow patrols; route nodes, moving walls and bosses come later. Clearing Room 7 completes the run.",
+        badge: "Campaign",
+      },
+      {
         title: "Locked Exits",
         detail:
           "A room with airgap route nodes keeps its EXIT locked until you step on every node, and a boss room keeps it locked until the boss is defeated. A locked exit is drawn as LOCK in red and blocks you like a wall. Boss volleys aim where you are heading, so change direction to dodge.",
@@ -1705,26 +1736,121 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "3D Wireframe Sovereign Boss Fights",
         detail:
-          "The mainframe climax pits you against the 3D Vector Kernel Warden. Dodge rotating projectile volleys and strike the core as defense shields rotate across phases.",
+          "Room 6 is the FaceForge wireframe face and Room 7, the last, is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
         badge: "3D Boss Fight",
       },
     ],
     proTips: [
       "Use Nmap Port Recon on room entry (key 2 for the default Script Kiddie) to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
-      "Save Hardware Bypass Chips for Tier 3 & 4 encrypted vaults where time limits are tight.",
+      "Save Hardware Bypass Chips for the terminals in the TSP enclave (Room 4) and the Darknet Vault (Room 5), where time limits are tight.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
     ],
     lore: {
       title: "Red Team Infiltration & Legacy Code Archaeology",
       story:
-        "Every engineer has explored legacy codebases that feel like ancient, crumbling dungeons filled with deprecated dependencies, undocumented endpoints, and zombie cron jobs. Retro Labyrinth turns code maintenance and cybersecurity into a playable roguelike using cellular automata dungeon generation, raycasted field-of-view, Web Audio 8-bit sound synthesis, and real-time 3D vector wireframe rendering.",
+        "Every engineer has explored legacy codebases that feel like ancient, crumbling dungeons filled with deprecated dependencies, undocumented endpoints, and zombie cron jobs. Retro Labyrinth turns code maintenance and cybersecurity into a seven-room roguelike. The rooms are hand-built, not generated: DMZ Gateway, Active Directory, BlinkBrowse, the TSP airgap enclave with its moving walls, the Darknet Vault, the FaceForge boss and the NEURAL_WARDEN final boss, always in that order. Patrols, hacking terminals, raycast field-of-view, Web Audio 8-bit sound and real-time 3D vector wireframe bosses fill them in.",
       realWorldTech: [
-        "Cellular Automata",
-        "Bresenham FOV Raycasting",
+        "Hand-Built Room Campaign",
+        "Raycast Field of View",
         "CVE Vulnerability Models",
         "Hex Buffer Matrix",
         "Web Audio API",
         "3D Wireframe Projection",
+      ],
+    },
+  },
+
+  "meme-vault": {
+    id: "meme-vault",
+    title: "Meme Vault",
+    subtitle:
+      "8-Pad Retro Sampler, Echo Sequence Game & Easter Egg Trophy Case",
+    genre: "Sound Toy & Memory Game",
+    badge: "Secret Room",
+    route: "/arcade/meme-vault",
+    storageKey: "meme_vault_echo_best",
+    accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
+    badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
+    objective:
+      "Play Echo: watch the vault light a sequence of pads, repeat it exactly, and see how long a sequence you can hold. Between rounds, hunt the six hidden trophies scattered across the site.",
+    quickSummary:
+      "Press Start Echo. The vault plays one pad; repeat it with keys 1 to 8 or by clicking. Each sequence you repeat adds one pad and the tempo rises gently. One wrong pad ends the round, and your best streak is kept on this device.",
+    controls: [
+      {
+        action: "Start or Stop Echo",
+        description:
+          "Tab to Start Echo and press Enter or Space, or click it. Stop Echo ends the round without recording it.",
+        key: "Enter / Space",
+      },
+      {
+        action: "Press a Pad",
+        description:
+          "Keys 1 to 8 on the top row or the numpad press the matching pad. Outside a round a pad plays its sample; during your turn it answers Echo. Keys are ignored while you type in a field or a dialog is open.",
+        key: "1 – 8",
+      },
+      {
+        action: "Sound On or Off",
+        description:
+          "The Sound toggle mutes every pad and the fail sting. With reduced motion on, sound stays off until you choose Play sound anyway. Echo still plays with lights alone.",
+        key: "Sound Toggle",
+      },
+      {
+        action: "Open this Manual",
+        description: "Open the field manual from anywhere in the room.",
+        key: "? / H",
+      },
+    ],
+    rules: [
+      {
+        title: "Watch, Then Repeat",
+        detail:
+          "Pads are ignored while the vault plays. When it finishes, it is your turn: press the same pads in the same order. Repeating the whole sequence adds 1 to your streak and the vault plays it again with one more pad.",
+        badge: "Core Loop",
+      },
+      {
+        title: "One Mistake Ends the Round",
+        detail:
+          "A wrong pad plays a low fail sting and shows your final streak. Start again for a new sequence.",
+        badge: "Fail State",
+      },
+      {
+        title: "Rising Tempo",
+        detail:
+          "Every three pads the playback gets a little quicker, down to a floor that stays readable. Longer sequences are faster, never frantic.",
+        badge: "Tempo",
+      },
+      {
+        title: "Best Streak",
+        detail:
+          "Beating your stored best shows a New Echo best toast. The best is kept in this browser and survives reloads. It is separate from the trophy count that feeds the arcade score.",
+        badge: "Record",
+      },
+      {
+        title: "The Hidden Trophy Case",
+        detail:
+          "Six trophies are hidden around the site, not just in this room. Locked shelf slots carry a hint; the manual's pro tips nudge without spoiling.",
+        badge: "Trophies",
+      },
+    ],
+    proTips: [
+      "Say the key numbers under your breath as the pads light. A spoken chunk like 3-1-7 is easier to hold than a picture.",
+      "Each pad has its own sound, so Echo can be played by ear with sound on.",
+      "One trophy rewards a sound you actually hear in this very room.",
+      "A furry friend naps somewhere you only reach by scrolling all the way down.",
+      "The terminal on one of the case studies knows a few classic UNIX jokes, and one very risky git command.",
+      "The command palette (Cmd+K) has opinions about hot drinks and an old HTTP status code.",
+      "Gamers of a certain age know a code that starts with up, up.",
+    ],
+    lore: {
+      title: "A Sampler with a Memory",
+      story:
+        "Every sound in the vault is synthesized in the browser with the Web Audio API: oscillators, filtered noise and short envelopes, with no audio files. Echo turns the sampler into a call-and-response memory game. Its sequence comes from a seeded counter-based PRNG, so a given seed always plays the same pads and the engine can be tested exactly.",
+      realWorldTech: [
+        "Web Audio API",
+        "AnalyserNode Oscilloscope",
+        "Seeded Mulberry32 PRNG",
+        "Pure State Machines",
+        "localStorage Persistence",
       ],
     },
   },

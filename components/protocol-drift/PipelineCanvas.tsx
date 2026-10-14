@@ -25,20 +25,35 @@ import {
   CHIP_WIDTH,
   clampChip,
   chipHeight,
+  touchZoomFloor,
   type ChipNode,
   type WireEdge,
 } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
+import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { TouchWireControls } from "./TouchWireControls";
+import { canRewire, resolveTouchWire } from "./touch-wire";
+import {
+  WORLD_WIDTH,
+  frameAfterAdd,
+  frameChips,
+  frameLane,
+  sizeOf,
+} from "./touch-frame";
 
 /** Drag payload key shared with the toolbox. */
 export const CHIP_DRAG_TYPE = "application/x-protocol-drift-chip";
 
 const nodeTypes = { chip: ChipNodeView };
 const edgeTypes = { packet: PacketEdgeView };
-const WORLD_WIDTH = 1340;
 const WORLD_TOP = 100;
 const WORLD_HEIGHT = 636;
 const FIT_MARGIN = 8;
+/**
+ * On the touch cabinet the zoom never drops below the size at which a chip
+ * and its title stay legible (#2045), computed from the chip geometry.
+ */
+const TOUCH_MIN_ZOOM = touchZoomFloor();
 
 function LaneOverlay() {
   const { tabulationTop, conservationWallY, analysisBottom } = LANE_GEOMETRY;
@@ -108,10 +123,79 @@ function suggestPosition(
   return { x, y: LANE_GEOMETRY.tabulationTop + 30 + (n % 3) * 40 };
 }
 
-/** Adds a chip at its suggested position (toolbox buttons and keyboard). */
-export function placeChip(kind: ChipKind): void {
+/** Window event sent after a touch add, so the canvas can pan to the chip. */
+const PROTOCOL_DRIFT_CHIP_ADDED_EVENT = "protocol-drift:chip-added";
+
+/** Empty space kept between chips when a new one is placed on touch. */
+const CHIP_GAP = 16;
+
+/** True when a chip of this kind at this spot would touch a chip already there. */
+function clashes(
+  kind: ChipKind,
+  spot: { x: number; y: number },
+  nodes: ChipNode[]
+): boolean {
+  const h = chipHeight(kind);
+  return nodes.some((node) => {
+    const other = node.data.kind;
+    const otherH = chipHeight(other);
+    return (
+      spot.x < node.position.x + CHIP_WIDTH + CHIP_GAP &&
+      node.position.x < spot.x + CHIP_WIDTH + CHIP_GAP &&
+      spot.y < node.position.y + otherH + CHIP_GAP &&
+      node.position.y < spot.y + h + CHIP_GAP
+    );
+  });
+}
+
+/**
+ * Touch: the first spot for a new chip that clears every existing chip's box.
+ * It steps along the lane's row, then down to the next row, until it is clear
+ * (#2045). Desktop keeps suggestPosition.
+ */
+export function touchChipSpot(
+  kind: ChipKind,
+  nodes: ChipNode[]
+): { x: number; y: number } {
+  const base = suggestPosition(kind, nodes);
+  const stepX = CHIP_WIDTH + CHIP_GAP;
+  const stepY = chipHeight(kind) + CHIP_GAP;
+  for (let row = 0; row < 6; row++) {
+    for (let col = 0; col < 7; col++) {
+      const spot = clampChip(kind, {
+        x: base.x + col * stepX,
+        y: base.y + row * stepY,
+      });
+      if (!clashes(kind, spot, nodes)) return spot;
+    }
+  }
+  return clampChip(kind, base);
+}
+
+/**
+ * Adds a chip (toolbox buttons and keyboard). On touch the chip takes a clear
+ * spot, the canvas pans to it at the current zoom, and the add is announced.
+ */
+export async function placeChip(
+  kind: ChipKind,
+  options: { touch?: boolean } = {}
+): Promise<void> {
   const state = useProtocolDriftStore.getState();
-  void state.addChip(kind, suggestPosition(kind, state.nodes));
+  if (!options.touch) {
+    await state.addChip(kind, suggestPosition(kind, state.nodes));
+    return;
+  }
+  const before = new Set(state.nodes.map((node) => node.id));
+  await state.addChip(kind, touchChipSpot(kind, state.nodes));
+  const latest = useProtocolDriftStore.getState();
+  const added = latest.nodes.find((node) => !before.has(node.id));
+  if (!added) return;
+  window.dispatchEvent(
+    new CustomEvent(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, {
+      detail: { kind, x: added.position.x, y: added.position.y },
+    })
+  );
+  latest.notify("info", `Added ${kind}.`);
 }
 
 function CanvasInner() {
@@ -126,18 +210,45 @@ function CanvasInner() {
   const removeSelection = useProtocolDriftStore((s) => s.removeSelection);
   const flow = useReactFlow();
   const wrapper = useRef<HTMLDivElement | null>(null);
-  const editable =
-    fsm === "DRAFT" ||
-    fsm === "VALIDATE" ||
-    fsm === "DEPLOY_READY" ||
-    fsm === "PAUSED" ||
-    fsm === "WAVE_REVIEW";
+  // Touch: a finger pans the empty canvas and a pinch zooms it, both inside
+  // the canvas (the page never scrolls under them). Desktop keeps the fitted,
+  // fixed view it always had.
+  const touch = useCabinetTouch();
+  const editable = canRewire(fsm);
+
+  // Touch: after a toolbox add the view frames the chips, or pans just enough
+  // to show the new chip at the current zoom (#2045).
+  useEffect(() => {
+    if (!touch) return;
+    const onAdded = (event: Event) => {
+      const added = (
+        event as CustomEvent<{ kind: ChipKind; x: number; y: number }>
+      ).detail;
+      frameAfterAdd(
+        flow,
+        sizeOf(wrapper.current),
+        useProtocolDriftStore.getState().nodes,
+        added
+      );
+    };
+    window.addEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
+    return () =>
+      window.removeEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
+  }, [flow, touch]);
 
   // Keep the lane geometry in view: fit the whole world, never pan or zoom.
   useEffect(() => {
     const el = wrapper.current;
     if (!el) return;
     const fit = () => {
+      if (touch) {
+        // Touch frames the chips (the lane when there are none), never the
+        // empty world, so a resize keeps the pipeline in view (#2045).
+        const nodes = useProtocolDriftStore.getState().nodes;
+        if (nodes.length > 0) frameChips(flow, nodes);
+        else frameLane(flow, sizeOf(el));
+        return;
+      }
       const width = Math.floor(el.clientWidth);
       const height = Math.floor(el.clientHeight);
       if (width < 10 || height < 10) return;
@@ -156,7 +267,7 @@ function CanvasInner() {
     const observer = new ResizeObserver(() => fit());
     observer.observe(el);
     return () => observer.disconnect();
-  }, [flow]);
+  }, [flow, touch]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<ChipNode>[]) => {
@@ -255,15 +366,39 @@ function CanvasInner() {
 
   const defaultEdgeOptions = useMemo(() => ({ type: "packet" as const }), []);
 
+  // Touch only: a tap on a chip while a wire is started finishes that wire
+  // (#2045). The chip the wire starts from gets a ring.
+  const wireFrom = useProtocolDriftStore((s) => s.wireFrom);
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: ChipNode) => {
+      const pending = useProtocolDriftStore.getState().wireFrom;
+      if (!pending || node.id === pending) return;
+      void resolveTouchWire(pending, node.id);
+    },
+    []
+  );
+  const flowNodes = useMemo(
+    () =>
+      touch && wireFrom
+        ? nodes.map((node) =>
+            node.id === wireFrom
+              ? { ...node, className: "pd-wire-source" }
+              : node
+          )
+        : nodes,
+    [nodes, touch, wireFrom]
+  );
+
   return (
     <div
       ref={wrapper}
-      className="absolute inset-0 min-w-0"
+      className={`absolute inset-0 min-w-0${touch ? " overflow-hidden" : ""}`}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
       <ReactFlow<ChipNode, WireEdge>
-        nodes={nodes}
+        nodes={flowNodes}
+        onNodeClick={touch ? onNodeClick : undefined}
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -278,9 +413,12 @@ function CanvasInner() {
         nodesDraggable={editable}
         nodesConnectable={editable}
         elementsSelectable
-        panOnDrag={false}
+        // A finger that moves a few pixels on a chip is still a tap (#2045).
+        nodeDragThreshold={touch ? 8 : undefined}
+        panOnDrag={touch}
         zoomOnScroll={false}
-        zoomOnPinch={false}
+        zoomOnPinch={touch}
+        minZoom={touch ? TOUCH_MIN_ZOOM : undefined}
         zoomOnDoubleClick={false}
         preventScrolling={false}
         connectionRadius={36}
@@ -291,6 +429,7 @@ function CanvasInner() {
       >
         <LaneOverlay />
       </ReactFlow>
+      {touch ? <TouchWireControls /> : null}
     </div>
   );
 }

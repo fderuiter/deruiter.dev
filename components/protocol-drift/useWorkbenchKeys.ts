@@ -24,7 +24,17 @@ export function useWorkbenchKeys(): (event: React.KeyboardEvent) => void {
     const target = event.target as HTMLElement | null;
     const store = useProtocolDriftStore.getState();
     if (event.key === "Escape") {
-      if (store.inspectorExpanded && !target?.closest("[role='dialog']")) {
+      if (target?.closest("[role='dialog']")) return;
+      // A started wire is cancelled first, so Escape never closes the cabinet
+      // mid-wire on the touch cabinet (#2045).
+      if (store.wireFrom) {
+        event.preventDefault();
+        event.stopPropagation();
+        store.setWireFrom(null);
+        store.notify("info", "Wiring cancelled.");
+        return;
+      }
+      if (store.inspectorExpanded) {
         event.preventDefault();
         event.stopPropagation();
         store.setInspectorExpanded(false);

@@ -27,6 +27,20 @@ vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
   };
 });
 
+// Route nodes live in the TSP room, the fourth room since #2048. Start the
+// run there so the walker meets node 1 two steps from the spawn.
+vi.mock("@/lib/dungeon", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/dungeon")>();
+  return {
+    ...actual,
+    generateRoguelikeCampaign: () => {
+      const rooms = actual.generateRoguelikeCampaign();
+      const tsp = rooms.findIndex((room) => room.id === "tsp");
+      return [rooms[tsp], ...rooms.filter((_, i) => i !== tsp)];
+    },
+  };
+});
+
 vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({ recordEvent: vi.fn().mockResolvedValue(true) }),
 }));

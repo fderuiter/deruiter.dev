@@ -36,6 +36,7 @@ const meme = vi.hoisted(() => ({
   analyser: null as AnalyserNode | null,
   playMemeSound: vi.fn(),
   releaseMemeAnalyser: vi.fn(),
+  unlockMemeAudio: vi.fn(),
 }));
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
@@ -59,6 +60,7 @@ vi.mock("@/lib/meme-audio", () => ({
   isSoundAllowed: () => true,
   connectMemeAnalyser: () => meme.analyser,
   releaseMemeAnalyser: meme.releaseMemeAnalyser,
+  unlockMemeAudio: vi.fn(),
 }));
 
 import { MemeVaultClient } from "@/components/arcade/MemeVaultClient";

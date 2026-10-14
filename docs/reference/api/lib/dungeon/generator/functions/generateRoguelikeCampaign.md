@@ -8,7 +8,8 @@
 
 > **generateRoguelikeCampaign**(): [`DungeonRoom`](../../types/interfaces/DungeonRoom.md)[]
 
-Creates the full roguelike campaign list of themed graveyard rooms.
+Creates the full roguelike campaign: seven themed rooms, each numbered by
+its one-based position in the run.
 
 ## Returns
 

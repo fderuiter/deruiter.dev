@@ -76,10 +76,13 @@ vi.mock("@/lib/clinical-trial-chaos", async (importOriginal) => {
 // rooms whose exit sits beside the start, and only runs after the first put
 // a TSP room at index 2, the room the player reaches last.
 // `lastRoomId` names that third room.
+// `tspFirst` moves the real TSP room to the front of the run: since #2048 it
+// is the fourth room, and the hover tests need to start in it.
 const labyrinthCampaign = vi.hoisted(() => ({
   openRuns: false,
   runs: 0,
   lastRoomId: "tsp",
+  tspFirst: false,
 }));
 
 // Retro Labyrinth: a stationary drone beside the start, and an enemy AI that
@@ -123,6 +126,10 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
                 : base.id,
           },
         ];
+      }
+      if (labyrinthCampaign.tspFirst) {
+        const tsp = rooms.findIndex((room) => room.id === "tsp");
+        rooms.unshift(...rooms.splice(tsp, 1));
       }
       const first = rooms[0];
       const droneX = first.startX + 1;
@@ -770,6 +777,7 @@ describe("arcade hover and timer bars (#1639)", () => {
     labyrinthCampaign.openRuns = false;
     labyrinthCampaign.runs = 0;
     labyrinthCampaign.lastRoomId = "tsp";
+    labyrinthCampaign.tspFirst = false;
     chaosClocks.fastEvents = false;
   });
 
@@ -797,7 +805,8 @@ describe("arcade hover and timer bars (#1639)", () => {
       ?.slice(1, 3);
   }
 
-  it("highlights the hovered tile in the campaign's first room, the TSP room", () => {
+  it("highlights the hovered tile in the TSP room", () => {
+    labyrinthCampaign.tspFirst = true;
     const hover = countLabyrinthHoverFills();
     const { container } = render(<RetroLabyrinth isMounted={true} />);
     vi.spyOn(Math, "random").mockReturnValue(0.5);
@@ -818,6 +827,7 @@ describe("arcade hover and timer bars (#1639)", () => {
   });
 
   it("does not steer the player towards the cursor in the TSP room", () => {
+    labyrinthCampaign.tspFirst = true;
     const { container } = render(<RetroLabyrinth isMounted={true} />);
     // Every mouse move would pass BlinkBrowse's 20% steering roll.
     vi.spyOn(Math, "random").mockReturnValue(0);

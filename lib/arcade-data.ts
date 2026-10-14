@@ -277,7 +277,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
       "3D Wireframe Normal Boss",
     ],
     techStack: [
-      "Procedural Maze Generation",
+      "Hand-Built Seven-Room Campaign",
       "3D Projection Engine",
       "CRT Shader Pipeline",
     ],

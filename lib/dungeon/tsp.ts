@@ -77,7 +77,7 @@ export function computeShortestTour(
 }
 
 /**
- * Updates dynamic moving walls for Room 1 (TSP).
+ * Updates dynamic moving walls for the TSP room.
  * Shifting barriers cycle on player movement count or step parity.
  */
 export function updateTSPMovingWalls(
@@ -140,7 +140,7 @@ export interface TspWallTelegraph {
 }
 
 /**
- * The telegraph for the walls of a Room 1 grid. It runs the same
+ * The telegraph for the walls of a TSP room grid. It runs the same
  * updateTSPMovingWalls rule the game runs on each move, so the drawing and the
  * countdown always agree with what the next moves will do.
  */

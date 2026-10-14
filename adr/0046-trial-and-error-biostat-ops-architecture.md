@@ -65,15 +65,29 @@ integer arithmetic (`roundRatio`), so a tie such as `543 / 12 = 45.25` is
 detected exactly and resolved by the scenario's declared mode (half-even,
 half-away-from-zero, or truncate). There is no universal N+1 or N+2 rule.
 
-Randomness is allowed in exactly three places: the crisis deck and the
-Boss pool (T&E-05) and shop inventory (T&E-12). All of them draw from one
-counter-based PRNG in `internal/rng.ts`: the value at a draw index is a pure
-function of the run seed and that index (FNV-1a over `seed#index`, mixed by
-Mulberry32), so there is no generator state to carry. `RunState` records the
-seed, the next draw index and a log of every draw, and the same seed plus
-the same moves replays identically. Draw piles stay fixed, scenario-ordered
-lists, and table state records the `deckIndex`. See
+Randomness is allowed in exactly four places: the crisis deck and the
+Boss pool (T&E-05), shop inventory (T&E-12) and each Blind's deal order
+(#2055). All of them draw from one counter-based PRNG in `internal/rng.ts`:
+the value at a draw index is a pure function of the run seed and that index
+(FNV-1a over `seed#index`, mixed by Mulberry32), so there is no generator
+state to carry. `RunState` records the seed, the next draw index and a log
+of every draw, and the same seed plus the same moves replays identically.
+See
 [Crisis cards, Boss pools and the seeded draw (T&E-05)](#crisis-cards-boss-pools-and-the-seeded-draw-te-05).
+
+**Seeded deal order (#2055).** A scenario's deck is an authored list, but a
+run deals each Blind in an order shuffled from the run seed
+(`shuffledDeckOrder` in `internal/deal.ts`, a Fisher-Yates shuffle on the
+stream `seed/deal/<act>/<blind>`), so the deal never shifts the Boss,
+crisis, deviation, shop or Form 483 draws. Table state records the order as
+`deckOrder` beside `deckIndex`, and `RESET` keeps it. A scenario's `pinned`
+cards are its scripted setup: they deal first, in deck order, on every seed.
+The guided Blind and the DMC milestone pin their whole deck; CSR Lock pins
+its Straight, the FDA Information Request its questions' outputs, and the
+Act I Small Blind and the Phase II and III Blinds the setup they teach. Save
+format v2 records shuffled runs; a v1 save migrates with
+`dealing: "AUTHORED"` and replays in written order, because its moves name
+the cards that order dealt.
 
 ### Scoring pipeline
 
@@ -508,9 +522,10 @@ played as three Blinds, following the narrative frame proposed in #962.
   run action, and `RESTART_RUN` returns to the Small Blind. `deriveRunView`
   reports the phase (playing, Blind cleared, run failed, act complete) and
   whether the Blind's intro card shows.
-- **Determinism.** Draw piles are fixed per Blind and nothing in the run
-  consults randomness, so a replayed action sequence reproduces every state.
-  Seeded randomness remains reserved for the crisis deck and the shop.
+- **Determinism.** Each Blind's deal order is a function of the run seed
+  (#2055), and nothing else in the run consults randomness, so a replayed
+  action sequence reproduces every state. Seeded randomness is otherwise
+  reserved for the crisis deck and the shop.
 
 ### Population snapshots and stale outputs (T&E-03)
 

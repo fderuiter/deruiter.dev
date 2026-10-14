@@ -14,6 +14,14 @@
 
 ***
 
+### hitPoints
+
+> **hitPoints**: [`CounterHitPoint`](../../types/interfaces/CounterHitPoint.md)[]
+
+Each block that struck a target, with the Cryo-Mortar's counter on it.
+
+***
+
 ### killedTargets
 
 > **killedTargets**: [`Target`](../../types/interfaces/Target.md)[]

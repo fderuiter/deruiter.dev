@@ -1,4 +1,4 @@
-import { PuzzlerLevelDef } from "./types";
+import type { PuzzlerLevelDef, TacticId } from "./types";
 
 export const puzzleLevels: PuzzlerLevelDef[] = [
   // =========================================================================
@@ -1497,3 +1497,48 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     },
   },
 ];
+
+/**
+ * The cheapest proof each level's hints describe, one tactic per step, keyed
+ * by level id. A tactic id that appears twice takes the level's cards for it
+ * in order (rw [h1] before rw [h2]).
+ *
+ * These paths are the single source for two promises. The gold RAM target
+ * must be reachable (#1939), and the step par shown on the board is each
+ * path's length (#2059). `__tests__/quasi-puzzler-gold-reachable.test.ts`
+ * plays every path through the tactic engine, so a par the board shows is a
+ * proof that exists.
+ */
+export const LEVEL_REFERENCE_PROOFS: Readonly<
+  Record<number, readonly TacticId[]>
+> = {
+  1: ["rfl"],
+  2: ["rw"],
+  3: ["rw", "rw"],
+  4: ["rw"],
+  5: ["rw"],
+  6: ["ring"],
+  7: ["intro", "exact"],
+  8: ["apply", "exact"],
+  9: ["split", "exact", "exact"],
+  10: ["apply", "apply", "exact"],
+  11: ["cases", "right", "exact", "left", "exact"],
+  12: ["norm_num"],
+  13: ["linarith"],
+  14: ["linarith"],
+  15: ["rw"],
+  16: ["rw", "linarith"],
+  17: ["rw", "ring"],
+  18: ["rw", "ring"],
+};
+
+/**
+ * Step par for a level: how many tactics its reference proof applies.
+ *
+ * @param level - The level, or anything carrying its id.
+ * @returns The par in tactics, or null for a level without a reference proof.
+ */
+export function getLevelPar(level: Pick<PuzzlerLevelDef, "id">): number | null {
+  const path = LEVEL_REFERENCE_PROOFS[Number(level.id)];
+  return path && path.length > 0 ? path.length : null;
+}

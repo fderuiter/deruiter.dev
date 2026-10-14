@@ -9,6 +9,7 @@ import type {
   ShopEntry,
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
+import { dealSeed, shuffledDeckOrder, type DeckDealing } from "./deal";
 import { raiseQuotas } from "./quotas";
 import { blindStartCpu } from "./relics";
 import { drawInt } from "./rng";
@@ -128,6 +129,12 @@ export interface RunState {
   sponsorId?: RunChoice["sponsorId"];
   /** The run's GCP-audit stake (#950). Absent means stake 1, the default. */
   stake?: RunChoice["stake"];
+  /**
+   * AUTHORED for a run replayed from a save recorded before decks were
+   * shuffled (#2055): every Blind deals in its written order. Absent means
+   * SHUFFLED, the default.
+   */
+  dealing?: "AUTHORED";
   /** The next unused draw index. */
   drawIndex: number;
   /** Every seeded draw so far, in order. */
@@ -1117,6 +1124,20 @@ function drawDeviation(
   };
 }
 
+/**
+ * The order a run's Blind deals its deck in (#2055): shuffled on the Blind's
+ * own deal stream, or null for a run that deals in written order.
+ */
+function deckOrderFor(
+  run: { seed: string; dealing?: DeckDealing },
+  scenario: Scenario,
+  actIndex: number,
+  blindIndex: number
+): number[] | null {
+  if (run.dealing === "AUTHORED") return null;
+  return shuffledDeckOrder(scenario, dealSeed(run.seed, actIndex, blindIndex));
+}
+
 /** A fresh table for a Blind, announcing it with a sequence that follows `after`. */
 function startBlind(
   scenario: Scenario,
@@ -1126,14 +1147,16 @@ function startBlind(
   after: TableEvent | null,
   kind: TableEvent["kind"],
   message: string,
-  deviation: ScheduledDeviation | null = null
+  deviation: ScheduledDeviation | null = null,
+  deckOrder: readonly number[] | null = null
 ): TableState {
   const table = createTableState(
     scenario,
     history,
     inventory,
     crisis,
-    deviation
+    deviation,
+    deckOrder
   );
   const drawn = crisis ? ` Crisis: ${crisis.name}. ${crisis.description}` : "";
   const cpu = blindStartCpu(table.relics);
@@ -1232,11 +1255,15 @@ function endlessRefusal(plan: RunPlan, run: RunState): string | null {
  * Biotech at stake 1, leave the run exactly as it plays without them. The
  * sponsor's starting kit is in the first table, and the choice is kept on
  * the run, which records only what differs from the defaults.
+ *
+ * `dealing` is SHUFFLED unless a save from before #2055 is being replayed:
+ * then AUTHORED deals every Blind in its written order, as it was recorded.
  */
 export function createRunState(
   authored: RunPlan,
   seed: string = DEFAULT_SEED,
-  options: Partial<RunChoice> = {}
+  options: Partial<RunChoice> = {},
+  dealing: DeckDealing = "SHUFFLED"
 ): RunState {
   const choice = resolveRunChoice(options);
   const plan = ruledPlan(authored, choice);
@@ -1270,6 +1297,7 @@ export function createRunState(
       sponsorId: choice.sponsorId,
     }),
     ...(choice.stake !== DEFAULT_STAKE && { stake: choice.stake }),
+    ...(dealing === "AUTHORED" && { dealing }),
     drawIndex,
     draws,
     bossIds: [boss.bossId],
@@ -1280,7 +1308,8 @@ export function createRunState(
       undefined,
       inventory,
       null,
-      deviation
+      deviation,
+      deckOrderFor({ seed, dealing }, first.blinds[0], 0, 0)
     ),
     cashOut: null,
     shop: null,
@@ -1344,7 +1373,9 @@ export function advanceRun(
           null,
           run.table.lastEvent,
           "RESET",
-          `Run restarted. ${first.blind.name}.`
+          `Run restarted. ${first.blind.name}.`,
+          null,
+          deckOrderFor(fresh, first, 0, 0)
         ),
       };
     }
@@ -1457,7 +1488,8 @@ export function advanceRun(
             run.table.lastEvent,
             "ACT_STARTED",
             `${nextAct.title}. A new ${round === null ? "study" : "post-marketing study"}: subjects, snapshots, the SAP and every output start over. ${next.blind.name}. Target ${next.blind.quota}.${lockMessage(lock)}`,
-            opening.deviation
+            opening.deviation,
+            deckOrderFor(run, next, stop.actIndex, 0)
           ),
         };
       }
@@ -1486,7 +1518,8 @@ export function advanceRun(
           run.table.lastEvent,
           "BLIND_STARTED",
           `${next.blind.name}. Target ${next.blind.quota}.`,
-          deviation
+          deviation,
+          deckOrderFor(run, next, run.actIndex, stop.blindIndex)
         ),
       };
     }

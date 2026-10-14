@@ -110,6 +110,12 @@ Re-exports [generateLeanProofScript](engine/functions/generateLeanProofScript.md
 
 ***
 
+### getLevelPar
+
+Re-exports [getLevelPar](levels/functions/getLevelPar.md)
+
+***
+
 ### getStartingRam
 
 Re-exports [getStartingRam](ram/functions/getStartingRam.md)
@@ -122,9 +128,27 @@ Re-exports [getTacticBlock](ram/functions/getTacticBlock.md)
 
 ***
 
+### gradeSandboxRun
+
+Re-exports [gradeSandboxRun](sandbox/functions/gradeSandboxRun.md)
+
+***
+
 ### isConcreteExpression
 
 Re-exports [isConcreteExpression](engine/functions/isConcreteExpression.md)
+
+***
+
+### isGolfedRun
+
+Re-exports [isGolfedRun](progress/functions/isGolfedRun.md)
+
+***
+
+### isLevelGolfed
+
+Re-exports [isLevelGolfed](progress/functions/isLevelGolfed.md)
 
 ***
 
@@ -137,6 +161,12 @@ Re-exports [isProofComplete](engine/functions/isProofComplete.md)
 ### LeanProofStep
 
 Re-exports [LeanProofStep](types/interfaces/LeanProofStep.md)
+
+***
+
+### LEVEL\_REFERENCE\_PROOFS
+
+Re-exports [LEVEL_REFERENCE_PROOFS](levels/variables/LEVEL_REFERENCE_PROOFS.md)
 
 ***
 
@@ -200,6 +230,12 @@ Re-exports [parseHypotheses](compiler/functions/parseHypotheses.md)
 
 ***
 
+### parseSandboxProgress
+
+Re-exports [parseSandboxProgress](sandbox/functions/parseSandboxProgress.md)
+
+***
+
 ### puzzleLevels
 
 Re-exports [puzzleLevels](levels/variables/puzzleLevels.md)
@@ -209,6 +245,12 @@ Re-exports [puzzleLevels](levels/variables/puzzleLevels.md)
 ### PuzzlerLevelDef
 
 Re-exports [PuzzlerLevelDef](types/interfaces/PuzzlerLevelDef.md)
+
+***
+
+### recordSandboxProof
+
+Re-exports [recordSandboxProof](sandbox/functions/recordSandboxProof.md)
 
 ***
 
@@ -239,6 +281,36 @@ Re-exports [resolveHypothesis](tactics/functions/resolveHypothesis.md)
 ### resolveResumeLevelIndex
 
 Re-exports [resolveResumeLevelIndex](progress/functions/resolveResumeLevelIndex.md)
+
+***
+
+### SANDBOX\_PRESETS
+
+Re-exports [SANDBOX_PRESETS](sandbox/variables/SANDBOX_PRESETS.md)
+
+***
+
+### SandboxMedal
+
+Re-exports [SandboxMedal](sandbox/type-aliases/SandboxMedal.md)
+
+***
+
+### SandboxPreset
+
+Re-exports [SandboxPreset](sandbox/interfaces/SandboxPreset.md)
+
+***
+
+### SandboxPresetRecord
+
+Re-exports [SandboxPresetRecord](sandbox/interfaces/SandboxPresetRecord.md)
+
+***
+
+### SandboxProgress
+
+Re-exports [SandboxProgress](sandbox/type-aliases/SandboxProgress.md)
 
 ***
 

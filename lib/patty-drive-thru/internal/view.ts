@@ -8,6 +8,8 @@ import {
   MODIFIER_LABELS,
   POS_MENU,
   SCORE_COMPLETED_BONUS,
+  SCORE_DIGNITY_PER_POINT,
+  SCORE_FAST_BUMP_BONUS,
   SCORE_LATE_PENALTY,
   SCORE_PER_SERVED,
 } from "../presets";
@@ -16,6 +18,7 @@ import type {
   Order,
   OrderItem,
   PosNode,
+  ShiftScoreBreakdown,
   ShiftState,
   TicketLine,
   TicketLineStatus,
@@ -125,30 +128,63 @@ export function formatCents(cents: number): string {
 }
 
 /**
- * The arcade score for a shift: points per car served, less for late ones,
- * plus a bonus for making it to close. Never negative.
+ * How a shift's score is made up (#2057): points per car served, a deduction
+ * per late car, a bonus per order bumped while still green, the points the
+ * clean-order streak earned, and, only for a shift that reaches close, the
+ * closing bonus plus a bonus for the Dignity still standing. Every part is
+ * read from the shift's tallies and meters, so the same shift always scores
+ * the same.
  */
-export function scoreShift(state: ShiftState): number {
-  const { served, late } = state.tallies;
-  const bonus = state.outcome === "completed" ? SCORE_COMPLETED_BONUS : 0;
-  return Math.max(
-    0,
-    served * SCORE_PER_SERVED - late * SCORE_LATE_PENALTY + bonus
-  );
+export function getShiftScoreBreakdown(state: ShiftState): ShiftScoreBreakdown {
+  const { served, late, fastBumps, streakPoints } = state.tallies;
+  const closed = state.outcome === "completed";
+  const parts = {
+    served: served * SCORE_PER_SERVED,
+    late: -late * SCORE_LATE_PENALTY,
+    speed: fastBumps * SCORE_FAST_BUMP_BONUS,
+    streak: streakPoints,
+    closing: closed ? SCORE_COMPLETED_BONUS : 0,
+    dignity: closed
+      ? Math.round(Math.max(0, state.meters.dignity) * SCORE_DIGNITY_PER_POINT)
+      : 0,
+  };
+  const sum =
+    parts.served +
+    parts.late +
+    parts.speed +
+    parts.streak +
+    parts.closing +
+    parts.dignity;
+  return { ...parts, total: Math.max(0, sum) };
 }
 
 /**
- * How a shift's score adds up, in one line for the end card (#1938), for
- * example "16 cars x 10 - 2 late x 5 + 50 for closing".
+ * The arcade score for a shift: the total of `getShiftScoreBreakdown`, which
+ * rewards cars served, speed, clean orders and the Dignity kept to close, and
+ * docks late cars. Never negative.
+ */
+export function scoreShift(state: ShiftState): number {
+  return getShiftScoreBreakdown(state).total;
+}
+
+/**
+ * How a shift's score adds up, in one line for the end card (#1938, #2057),
+ * for example "16 cars x 10 - 2 late x 5 + 9 fast x 5 + 48 streak + 50 for
+ * closing + 72 Dignity". The closing and Dignity parts appear only when the
+ * shift reached close.
  */
 export function describeShiftScore(state: ShiftState): string {
-  const { served, late } = state.tallies;
+  const { served, late, fastBumps } = state.tallies;
+  const breakdown = getShiftScoreBreakdown(state);
   const parts = [
     `${served} ${served === 1 ? "car" : "cars"} x ${SCORE_PER_SERVED}`,
+    `- ${late} late x ${SCORE_LATE_PENALTY}`,
+    `+ ${fastBumps} fast x ${SCORE_FAST_BUMP_BONUS}`,
+    `+ ${breakdown.streak} streak`,
   ];
-  if (late > 0) parts.push(`- ${late} late x ${SCORE_LATE_PENALTY}`);
   if (state.outcome === "completed") {
-    parts.push(`+ ${SCORE_COMPLETED_BONUS} for closing`);
+    parts.push(`+ ${breakdown.closing} for closing`);
+    parts.push(`+ ${breakdown.dignity} Dignity`);
   }
   return parts.join(" ");
 }

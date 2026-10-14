@@ -46,6 +46,16 @@ Trophy definition structure.
 
 ***
 
+### milestone?
+
+> `optional` **milestone?**: `string`
+
+A named moment in play (an act cleared, every level proven) that unlocks
+this trophy through recordArcadeMilestone. A trophy with a milestone and
+no targetScore unlocks only from play, never from a score (#2047).
+
+***
+
 ### subtitle
 
 > **subtitle**: `string`

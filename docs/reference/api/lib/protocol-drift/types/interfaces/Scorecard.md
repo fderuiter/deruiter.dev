@@ -16,9 +16,41 @@ Systems efficiency scorecard shown after lock.
 
 ***
 
+### chipCount
+
+> **chipCount**: `number`
+
+Chips in the live pipeline at lock.
+
+***
+
+### efficiency
+
+> **efficiency**: [`EfficiencyMetric`](EfficiencyMetric.md)[]
+
+Each efficiency measure against its par, in a fixed order.
+
+***
+
+### efficiencyScore
+
+> **efficiencyScore**: `number`
+
+The sum of the efficiency points.
+
+***
+
 ### evidenceLinkedQueries
 
 > **evidenceLinkedQueries**: `number`
+
+***
+
+### fabricatedBits
+
+> **fabricatedBits**: `number`
+
+Fabricated precision introduced over the run, in bits.
 
 ***
 
@@ -40,6 +72,14 @@ Systems efficiency scorecard shown after lock.
 
 ***
 
+### medals
+
+> **medals**: `number`
+
+Measures at or under par.
+
+***
+
 ### queriesSent
 
 > **queriesSent**: `number`
@@ -58,6 +98,30 @@ Systems efficiency scorecard shown after lock.
 
 ***
 
+### rejectedCommands
+
+> **rejectedCommands**: `number`
+
+Commands the engine turned down during the run.
+
+***
+
+### score
+
+> **score**: `number`
+
+The arcade score: base, badges, goodwill and efficiency together.
+
+***
+
 ### trialDurationDays
 
 > **trialDurationDays**: `number`
+
+***
+
+### wireCount
+
+> **wireCount**: `number`
+
+Wires in the live pipeline at lock.

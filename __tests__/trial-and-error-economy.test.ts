@@ -83,6 +83,19 @@ const v2 = () => {
   return outcome.snapshot;
 };
 
+/**
+ * Act I for flows that test the carry alone: no crisis deck, and a Small
+ * Blind at its pre-#2055 quota of 450 so three cheap hands clear it. Runs
+ * on it deal in written order, so the scripted cards are in hand.
+ */
+const CARRY_ACT = {
+  ...ACT_I,
+  crisisDeck: undefined,
+  blinds: ACT_I.blinds.map((b, i) =>
+    i === 0 ? { ...b, blind: { ...b.blind, quota: 450 } } : b
+  ),
+};
+
 describe("T&E-04 contracts", () => {
   const shell = SMALL.shells.find((s) => s.id === "T-14.1.3")!;
 
@@ -216,9 +229,8 @@ describe("CPU replenishment and costs", () => {
 
   it("starts every Blind at full CPU, whatever the last one spent", () => {
     expect(createTableState(SMALL).cpu).toEqual({ available: 10, spent: 0 });
-    // No crisis deck: these flows test the carry alone.
-    const act = { ...ACT_I, crisisDeck: undefined };
-    let r: RunState = createRunState(act);
+    const act = CARRY_ACT;
+    let r: RunState = createRunState(act, undefined, {}, "AUTHORED");
     const go = (...actions: RunAction[]) => {
       r = actions.reduce((s, a) => advanceRun(act, s, a), r);
     };
@@ -827,9 +839,8 @@ describe("Footnote seals", () => {
   });
 
   it("carries the tray and budget to the next Blind and clears them on restart", () => {
-    // No crisis deck: these flows test the carry alone.
-    const act = { ...ACT_I, crisisDeck: undefined };
-    let r: RunState = createRunState(act);
+    const act = CARRY_ACT;
+    let r: RunState = createRunState(act, undefined, {}, "AUTHORED");
     const go = (...actions: RunAction[]) => {
       r = actions.reduce((s, a) => advanceRun(act, s, a), r);
     };

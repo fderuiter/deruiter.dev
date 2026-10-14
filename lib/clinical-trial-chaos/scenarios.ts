@@ -12,6 +12,7 @@ import {
   ValidationErrorType,
 } from "./types";
 import { CRFField, EditCheckRule, StudyProtocol } from "../crf/types";
+import { getAuditYearStationCount } from "./escalation";
 
 export interface MockObservationTemplate {
   field: string;
@@ -748,12 +749,17 @@ export const ALL_STATIONS: StationConfig[] = [
 
 export const INITIAL_STATIONS: StationConfig[] = ALL_STATIONS.slice(0, 4);
 
+/**
+ * Stations open for a phase. Endless mode opens six and adds one with each
+ * station step of the Audit Year rotation, up to all eight (#2053).
+ */
 export function getStationsForPhase(
   phase: GamePhase,
-  mode: GameMode = "campaign"
+  mode: GameMode = "campaign",
+  auditYear = 1
 ): StationConfig[] {
   if (mode === "endless") {
-    return ALL_STATIONS.slice(0, 6);
+    return ALL_STATIONS.slice(0, getAuditYearStationCount(auditYear));
   }
   if (phase === 1) {
     return ALL_STATIONS.slice(0, 4);
@@ -808,6 +814,28 @@ export const AMENDMENT_PRESETS: ProtocolAmendment[] = [
     type: "conmed-reconciliation-rush",
     durationSeconds: 22,
     timeRemaining: 22,
+    active: false,
+  },
+  {
+    id: "amd-005",
+    version: "Sponsor QA Notice v1.3",
+    title: "Part 11 Double-Signature Audit",
+    description:
+      "Sponsor QA is auditing electronic signature controls: the next 3 CRFs each need the author's signature and an independent reviewer's countersignature. Under 21 CFR 11.50 every signature shows the signer's printed name, the date and time, and its meaning.",
+    type: "double-signature-audit",
+    durationSeconds: 24,
+    timeRemaining: 24,
+    active: false,
+  },
+  {
+    id: "amd-006",
+    version: "FDA BIMO Notice",
+    title: "GCP Spot Inspection",
+    description:
+      "An FDA investigator is observing one EDC station under the BIMO clinical investigator program (CPGM 7348.811), checking records against source as they arrive. A misroute at the watched station counts double.",
+    type: "gcp-spot-inspection",
+    durationSeconds: 20,
+    timeRemaining: 20,
     active: false,
   },
 ];

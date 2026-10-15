@@ -625,7 +625,7 @@ function ReviewPane({
 
 /**
  * Tri-pane Forensic Inspector: Form View (30%), Pipeline Trace (40%) and
- * Review and Query (30%). Docked at min(328px, 35vh); press I to expand it
+ * Review and Query (30%). Docked at clamp(184px, 26vh, 328px); press I to expand it
  * over the canvas and Escape to dock it again.
  */
 export function Inspector() {
@@ -739,7 +739,7 @@ export function Inspector() {
 
   const style: React.CSSProperties = expanded
     ? { top: 112, bottom: 32 }
-    : { height: "min(328px, 35vh)" };
+    : { height: "clamp(184px, 26vh, 328px)" };
 
   return (
     <section

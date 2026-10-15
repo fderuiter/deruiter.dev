@@ -149,4 +149,17 @@ describe("Garmin Dev Mode toggle (#2010)", () => {
     expect(screen.getByText(/A Couch Potato got you/)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Run Again/ })).toBeTruthy();
   });
+
+  it("keeps every gauge value on one line in the side panel (#2241)", () => {
+    render(<GarminWatchSimulator />);
+    const te = screen.getByRole("meter", { name: "TRAINING EFFECT" });
+    const lines = Array.from(te.querySelectorAll(":scope > span")).map((s) =>
+      s.textContent?.trim()
+    );
+    expect(lines).toEqual(["TRAINING EFFECT:", "0.0", "Clear a stage"]);
+    for (const meter of screen.getAllByRole("meter")) {
+      const value = meter.querySelectorAll(":scope > span")[1];
+      expect(value?.className).toContain("whitespace-nowrap");
+    }
+  });
 });

@@ -61,8 +61,11 @@ interface RingGaugeProps {
   /** 0 to 1. */
   fraction: number;
   tone: MeterTone;
-  /** Readout under the ring, e.g. "1.8 / 32 KB". */
-  readout: string;
+  /**
+   * Readout under the ring, e.g. "1.8 / 32 KB". A value never wraps; a
+   * second line, such as a Training Effect's name, wraps between words.
+   */
+  readout: string | readonly [value: string, note: string];
   valueNow: number;
   valueMax: number;
   valueText: string;
@@ -123,12 +126,19 @@ function RingGauge({
           {Math.round(f * 100)}%
         </span>
       </div>
-      <span className="mt-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+      {/* In the side panel a label breaks only between words, and every
+          label keeps two lines so the readouts line up. */}
+      <span className="mt-1.5 text-[10px] uppercase leading-tight tracking-wider text-zinc-400 @3xl:min-h-[2lh] @3xl:@max-5xl:tracking-normal">
         {label}:
       </span>
-      <span className="min-w-0 break-words text-[11px] tabular-nums text-zinc-200">
-        {readout}
+      <span className="whitespace-nowrap text-[11px] tabular-nums text-zinc-200 @3xl:@max-5xl:text-[10px]">
+        {typeof readout === "string" ? readout : readout[0]}
       </span>
+      {typeof readout !== "string" && (
+        <span className="min-w-0 text-[10px] leading-tight text-zinc-400">
+          {readout[1]}
+        </span>
+      )}
     </div>
   );
 }
@@ -478,7 +488,7 @@ export function CompanionPanel({
         </header>
 
         {fitnessView ? (
-          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3">
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3 @3xl:@max-5xl:gap-1 @3xl:@max-5xl:px-1">
             <RingGauge
               label="BODY BATTERY"
               fraction={bbValue / 100}
@@ -503,8 +513,8 @@ export function CompanionPanel({
               tone="ok"
               readout={
                 te === undefined
-                  ? "Clear a stage"
-                  : `${te.toFixed(1)} · ${trainingEffectLabel(te)}`
+                  ? ["0.0", "Clear a stage"]
+                  : [te.toFixed(1), trainingEffectLabel(te)]
               }
               valueNow={te ?? 0}
               valueMax={5}
@@ -516,7 +526,7 @@ export function CompanionPanel({
             />
           </div>
         ) : (
-          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3">
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.08] bg-[#0d0e11] px-2 py-3 @3xl:@max-5xl:gap-1 @3xl:@max-5xl:px-1">
             <RingGauge
               label="RAM"
               fraction={ramFraction}

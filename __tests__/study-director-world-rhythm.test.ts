@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { inbox } from "@/lib/study-director";
 import {
   INTERRUPTION_TIMES,
+  INTERRUPTION_WINDOW,
   PEOPLE_DAY_TARGET,
   PEOPLE_PRIORITY_BONUS,
   PRIORITIES,
@@ -153,16 +154,16 @@ describe("interruptions", () => {
     ).toMatchObject({ ok: false });
   });
 
-  it("is refused when the answer would run past the hard stop", () => {
-    const w = at(fresh(), 21 * 60 + 58);
-    const pending = pendingInterruption(w);
-    if (!pending) throw new Error("nothing pending");
-    const slow = pending.options.find((o) => o.cost.minutes >= 5);
-    if (!slow) throw new Error("no slow option");
-    expect(answerInterruption(w, slow.id)).toMatchObject({
-      ok: false,
-      reason: "too-late",
-    });
+  it("lapses once its window has passed, so nothing waits until 10 PM (#2189)", () => {
+    const w = fresh();
+    const [first] = scheduleFor(w);
+    expect(pendingInterruption(at(w, first.at))?.id).toBe(
+      first.interruption.id
+    );
+    expect(
+      pendingInterruption(at(w, first.at + INTERRUPTION_WINDOW - 1))?.id
+    ).toBe(first.interruption.id);
+    expect(pendingInterruption(at(w, 21 * 60 + 58))).toBeNull();
   });
 });
 

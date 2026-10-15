@@ -23,6 +23,7 @@ import {
   describePerson,
   describeSurroundings,
   examineSelf,
+  excuseAway,
   formatClock,
   forgivingStep,
   goHome,
@@ -675,7 +676,8 @@ export const StudyDirectorWorld: React.FC<{
         refuseWith(result.reason);
         return;
       }
-      setWorld(result.world);
+      // What came up while the visitor had you is excused (#2189).
+      setWorld(excuseAway(result.world));
       show(result.result);
       refocus();
     },

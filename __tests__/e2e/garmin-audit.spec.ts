@@ -74,4 +74,16 @@ test.describe("Monkey C Mayhem audit (#2128)", () => {
       expect(hidden).toEqual([]);
     });
   }
+  test("Enter starts a race after Race Mode is clicked (#2130)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await launchCabinet(page);
+    await page.getByRole("radio", { name: "Race Mode" }).click();
+    await expect(page.locator('[data-keyboard-boundary="true"]')).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("img", { name: /Smartwatch display simulator/i })
+    ).toHaveAttribute("aria-label", /Status: playing/);
+  });
 });

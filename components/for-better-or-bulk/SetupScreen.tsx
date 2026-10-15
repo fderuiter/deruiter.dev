@@ -30,7 +30,7 @@ import { readBestTimes } from "./best-time-storage";
 import { ChallengeStrip } from "./ChallengeStrip";
 import type { ControlMode } from "./input";
 import { SEEDED_EVENT_NOTES } from "./messages";
-import { noBestTimeReason, noRewardLine } from "./rewards";
+import { noBestTimeReason } from "./rewards";
 
 /**
  * Keeps the page's `?seed=` in step with the seed on screen, so a reload or a
@@ -392,14 +392,6 @@ export function SetupScreen({
       />
 
       <div className="flex min-w-0 flex-wrap items-center gap-3 border-t border-[var(--fbb-rule)] pt-4">
-        {setup.assist ? (
-          <p
-            className="basis-full text-xs text-[var(--fbb-dim)]"
-            data-testid="fbb-no-rewards"
-          >
-            {noRewardLine(false)}
-          </p>
-        ) : null}
         <p className="text-sm tabular-nums" data-testid="fbb-total">
           Total {dollars(total)} of {dollars(BUDGET)}{" "}
           <span className="text-xs text-[var(--fbb-dim)]">

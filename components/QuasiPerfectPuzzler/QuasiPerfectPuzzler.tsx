@@ -39,6 +39,7 @@ import {
   recordClearedVariant,
   resolveResumeLevelIndex,
   withUnlockedChapter,
+  countHonestProofs,
 } from "@/lib/quasi-perfect";
 import {
   STORAGE_CHANGE_EVENT,
@@ -146,9 +147,7 @@ function writeStoredProgress(progress: GameProgressState): void {
   });
   // A proof admitted with sorry is not a proof, so it earns neither arcade
   // score nor the first-proof trophy that the score unlocks (#1939).
-  const provenCount = Object.values(progress.completedLevels || {}).filter(
-    (score) => score && !score.usedSorry && score.stars > 0
-  ).length;
+  const provenCount = countHonestProofs(progress);
   recordArcadeScore("quasi-puzzler", provenCount * 100);
   // The Act 1 trophies keep their meaning (all 18 levels); Act 2 (#2091)
   // does not move the goalposts for them.
@@ -1745,7 +1744,14 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   const id =
                     typeof tacticItem === "string" ? tacticItem : tacticItem.id;
                   const def = tacticDefs[id];
-                  const label = def?.name || id;
+                  // The card's own label carries its argument (use 3 vs use 4,
+                  // rw [ih] vs rw [add_succ]), so the buttons stay distinct
+                  // (#2200).
+                  const label =
+                    (typeof tacticItem === "object" &&
+                      tacticItem.labelOverride) ||
+                    def?.name ||
+                    id;
                   const banned = isTacticBanned(activeVariant, id);
                   return (
                     <button

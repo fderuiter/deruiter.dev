@@ -58,9 +58,19 @@ export const COWORKER_DELAY_SEC = 4;
 export const FIRST_ARRIVAL_SEC = 2;
 /** The longest frame step the engine simulates at once. */
 export const MAX_STEP_SEC = 0.5;
-/** Orders arrive between these two gaps, in seconds. */
-export const ARRIVAL_GAP_MIN_SEC = 7;
-export const ARRIVAL_GAP_MAX_SEC = 15;
+/**
+ * Orders arrive between these two gaps, in seconds, at clock-in. Tightened
+ * from 7-15 s with the shift ramp (#2138), so a quick player is not left
+ * waiting for half the shift.
+ */
+export const ARRIVAL_GAP_MIN_SEC = 6;
+export const ARRIVAL_GAP_MAX_SEC = 12;
+/**
+ * The shift ramp (#2138): arrival gaps shrink steadily by this fraction from
+ * clock-in to close, so the shift builds instead of staying flat. A practice
+ * scenario that sets its own gaps keeps them exactly (#1938).
+ */
+export const SHIFT_RAMP = 0.3;
 /**
  * The lunch rush (#1938): between these fractions of a standard shift, the
  * arrival gaps shrink by `RUSH_GAP_SCALE`, so a quick player has work.
@@ -68,6 +78,8 @@ export const ARRIVAL_GAP_MAX_SEC = 15;
 export const RUSH_START_FRACTION = 0.35;
 export const RUSH_END_FRACTION = 0.7;
 export const RUSH_GAP_SCALE = 0.5;
+/** The dinner rush at close (#2138), on top of the lunch rush. */
+export const CLOSING_RUSH_START_FRACTION = 0.88;
 /** The orders open at once never exceed this many. */
 export const MAX_OPEN_ORDERS = 6;
 export const MAX_ITEMS_PER_ORDER = 4;
@@ -297,7 +309,8 @@ export function isStandardScenario(config: Partial<ShiftConfig>): boolean {
     ) &&
     config.rushWindows === undefined &&
     config.ageUnlocked === undefined &&
-    config.startMeters === undefined
+    config.startMeters === undefined &&
+    config.dilemmaDeck === undefined
   );
 }
 
@@ -325,6 +338,9 @@ export const STANDARD_RUSH: RushWindow = [
   RUSH_END_FRACTION,
 ];
 
+/** The dinner rush every standard shift closes on (#2138). */
+export const CLOSING_RUSH: RushWindow = [CLOSING_RUSH_START_FRACTION, 1];
+
 export interface WeekDayPreset {
   readonly id: WeekdayId;
   /** The weekday, such as "Monday". */
@@ -350,9 +366,9 @@ export const WEEK_DAYS: readonly WeekDayPreset[] = [
     id: "monday",
     label: "Monday",
     title: "A normal shift",
-    blurb: "Nothing special. One lunch rush, the usual cars.",
+    blurb: "Nothing special. The lunch rush, the dinner crowd, the usual cars.",
     dials: {},
-    rushWindows: [STANDARD_RUSH],
+    rushWindows: [STANDARD_RUSH, CLOSING_RUSH],
   },
   {
     id: "tuesday",
@@ -360,7 +376,7 @@ export const WEEK_DAYS: readonly WeekDayPreset[] = [
     title: "The dispenser is broken",
     blurb: "The drink machine is worse than usual. Ring the drinks twice.",
     dials: { dispenserFailChance: 0.8 },
-    rushWindows: [STANDARD_RUSH],
+    rushWindows: [STANDARD_RUSH, CLOSING_RUSH],
   },
   {
     id: "wednesday",
@@ -379,7 +395,7 @@ export const WEEK_DAYS: readonly WeekDayPreset[] = [
     title: "Eighteen",
     blurb: "My eighteenth birthday. I can finally brew the coffee myself.",
     dials: {},
-    rushWindows: [STANDARD_RUSH],
+    rushWindows: [STANDARD_RUSH, CLOSING_RUSH],
     ageUnlocked: true,
   },
   {
@@ -392,7 +408,7 @@ export const WEEK_DAYS: readonly WeekDayPreset[] = [
       arrivalGapMaxSec: 11,
       firstArrivalSec: 1,
     },
-    rushWindows: [[0.25, 0.8]],
+    rushWindows: [[0.25, 0.8], CLOSING_RUSH],
     ageUnlocked: true,
   },
 ];
@@ -426,23 +442,25 @@ export const COMPANY_MAN_MAX_SOLIDARITY = 30;
 /**
  * The hand-written dilemmas (#2087). Each trades the meters against each
  * other and moves the hidden Solidarity value. The default, taken when the
- * timer runs out, is what happens if nobody says anything. Doing nothing in
- * every one lands Solidarity in the middle, so a player who ignores them
- * clocks out quietly.
+ * timer runs out, is what happens if nobody says anything; it moves the
+ * meters but not Solidarity, so a player who ignores them clocks out
+ * quietly (#2139). Every dilemma has an answer worth at least 10 toward the
+ * crew and one worth at least 10 toward management, so any three a shift
+ * draws can reach either named ending.
  */
 export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "stale-fries": {
     id: "stale-fries",
     speaker: "manager",
     prompt:
-      "The fries have been under the lamp for twenty minutes. Bo says they are fine.",
+      "Those fries have been under the lamp for twenty minutes. They're fine. Bag them.",
     options: [
       {
         id: "serve",
         label: "Serve them",
         sos: 6,
         dignity: -6,
-        solidarity: 0,
+        solidarity: -10,
         payCents: 0,
         diary: "I served the stale fries. Nobody complained to me.",
       },
@@ -451,7 +469,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         label: "Toss them",
         sos: -6,
         dignity: 4,
-        solidarity: 5,
+        solidarity: 10,
         payCents: 0,
         diary: "I tossed the old fries and Dale dropped a fresh batch with me.",
       },
@@ -462,8 +480,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "short-till": {
     id: "short-till",
     speaker: "manager",
-    prompt:
-      "Dale's drawer came up eight dollars short. Bo wants to know whose drawer it was.",
+    prompt: "A drawer came up eight dollars short. Was that Dale's, or yours?",
     options: [
       {
         id: "cover",
@@ -491,16 +508,16 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   },
   "shake-machine": {
     id: "shake-machine",
-    speaker: "customer",
+    speaker: "manager",
     prompt:
-      "A customer wants a shake. The machine works, but whoever closes has to clean it. Bo says to tell them it is broken.",
+      "Car on the headset wants a shake. Tell them the machine's broken. Whoever closes has to clean it.",
     options: [
       {
         id: "broken",
         label: "Say it's broken",
         sos: 5,
         dignity: -5,
-        solidarity: 5,
+        solidarity: 10,
         payCents: 0,
         diary:
           "I told a customer the shake machine was broken. It was not. Dale didn't have to clean it.",
@@ -510,7 +527,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         label: "Make the shake",
         sos: -5,
         dignity: 3,
-        solidarity: -5,
+        solidarity: -10,
         payCents: 0,
         diary: "I made the shake. Dale stayed late to clean the machine.",
       },
@@ -522,7 +539,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "long-break": {
     id: "long-break",
     speaker: "manager",
-    prompt: "Bo asks whether you saw Dale take a twenty-minute smoke break.",
+    prompt: "Did you see Dale take a twenty-minute smoke break?",
     options: [
       {
         id: "cover",
@@ -547,12 +564,333 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
     defaultOptionId: "cover",
     timeoutDiary: "I shrugged. Bo let it go, and so did Dale.",
   },
+  "free-drink": {
+    id: "free-drink",
+    speaker: "customer",
+    prompt: "I come here every day. Throw in a free large drink?",
+    options: [
+      {
+        id: "give",
+        label: "Throw it in",
+        sos: 3,
+        dignity: 2,
+        solidarity: 10,
+        payCents: 0,
+        diary: "A regular asked for a free large drink and I gave it. Bo never counts the cups.",
+      },
+      {
+        id: "charge",
+        label: "Charge for it",
+        sos: -2,
+        dignity: 0,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I charged a regular for the large drink, by the book. They called me something I won't write down.",
+      },
+    ],
+    defaultOptionId: "charge",
+    timeoutDiary: "I didn't answer, so the drink went on their bill. They were not happy at the window.",
+  },
+  "swap-saturday": {
+    id: "swap-saturday",
+    speaker: "coworker",
+    prompt: "Can you take my Saturday? My sister graduates.",
+    options: [
+      {
+        id: "take",
+        label: "Take it",
+        sos: 0,
+        dignity: -3,
+        solidarity: 15,
+        payCents: 0,
+        diary: "I said I'd take Dale's Saturday. There goes my weekend.",
+      },
+      {
+        id: "pass",
+        label: "Can't do it",
+        sos: 0,
+        dignity: 2,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I told Dale I couldn't take Saturday. Dale said it was fine. It didn't sound fine.",
+      },
+    ],
+    defaultOptionId: "pass",
+    timeoutDiary: "I didn't answer in time, and Dale went to ask someone else.",
+  },
+  "upsell-day": {
+    id: "upsell-day",
+    speaker: "manager",
+    prompt: "Corporate is counting upsells today. Offer the large combo to every car.",
+    options: [
+      {
+        id: "push",
+        label: "Push the large",
+        sos: -3,
+        dignity: -4,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I asked every car if they wanted to make it a large. Most said no. One laughed.",
+      },
+      {
+        id: "skip",
+        label: "Skip the script",
+        sos: 3,
+        dignity: 2,
+        solidarity: 10,
+        payCents: 0,
+        diary: "I didn't push the large combos. Bo checked the numbers at close and sighed.",
+      },
+    ],
+    defaultOptionId: "push",
+    timeoutDiary: "I said nothing, so Bo stood behind me to make sure I asked every car.",
+  },
+  "onion-name": {
+    id: "onion-name",
+    speaker: "customer",
+    prompt: "There were onions on my burger. I said no onions. Who made it? I want a name.",
+    options: [
+      {
+        id: "me",
+        label: "Take the blame",
+        sos: -2,
+        dignity: -3,
+        solidarity: 10,
+        payCents: 0,
+        diary: "A customer wanted a name for the onions on their burger. I gave mine, not Dale's.",
+      },
+      {
+        id: "dale",
+        label: "Name Dale",
+        sos: 2,
+        dignity: -2,
+        solidarity: -10,
+        payCents: 0,
+        diary: "A customer wanted a name for the onions. I said Dale. Bo heard.",
+      },
+    ],
+    defaultOptionId: "me",
+    timeoutDiary: "I didn't answer, so they asked Bo for a name instead.",
+  },
+  "ice-machine": {
+    id: "ice-machine",
+    speaker: "coworker",
+    prompt: "The ice machine is leaking again. If we tell Bo, we're both mopping till close.",
+    options: [
+      {
+        id: "towel",
+        label: "Throw a towel on it",
+        sos: 3,
+        dignity: -2,
+        solidarity: 10,
+        payCents: 0,
+        diary: "Dale and I threw towels on the ice machine leak and hoped.",
+      },
+      {
+        id: "tell",
+        label: "Tell Bo",
+        sos: -3,
+        dignity: 3,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I told Bo about the ice machine. Dale mopped next to me and didn't talk.",
+      },
+    ],
+    defaultOptionId: "towel",
+    timeoutDiary: "Neither of us said anything. Dale threw a towel on it.",
+  },
+  "cold-burger": {
+    id: "cold-burger",
+    speaker: "customer",
+    prompt: "This burger is cold. Get me your manager.",
+    options: [
+      {
+        id: "bo",
+        label: "Get Bo",
+        sos: -4,
+        dignity: -3,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I got Bo for a cold burger. Bo blamed the grill, which meant Dale.",
+      },
+      {
+        id: "remake",
+        label: "Remake it yourself",
+        sos: -2,
+        dignity: 4,
+        solidarity: 10,
+        payCents: 0,
+        diary: "I remade the cold burger myself before Bo noticed. Dale owes me one.",
+      },
+    ],
+    defaultOptionId: "bo",
+    timeoutDiary: "I froze, and the customer honked until Bo came over.",
+  },
+  "bathrooms": {
+    id: "bathrooms",
+    speaker: "manager",
+    prompt: "Somebody has to clean the bathrooms. Dale told me it's your turn.",
+    options: [
+      {
+        id: "go",
+        label: "Do it anyway",
+        sos: -3,
+        dignity: -3,
+        solidarity: 10,
+        payCents: 0,
+        diary: "It was not my turn to clean the bathrooms. I cleaned them anyway, so Dale didn't have to.",
+      },
+      {
+        id: "dale",
+        label: "Say it's Dale's turn",
+        sos: 0,
+        dignity: 3,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I said it was Dale's turn for the bathrooms. It was. Dale went, slowly.",
+      },
+    ],
+    defaultOptionId: "go",
+    timeoutDiary: "I didn't argue, so the bathrooms were mine.",
+  },
+  "new-kid": {
+    id: "new-kid",
+    speaker: "coworker",
+    prompt: "The new kid is crying in the walk-in. Cover the window so I can talk to her?",
+    options: [
+      {
+        id: "cover",
+        label: "Cover the window",
+        sos: -4,
+        dignity: 3,
+        solidarity: 10,
+        payCents: 0,
+        diary: "I worked the window alone while Dale talked to the new kid. She came back out smiling.",
+      },
+      {
+        id: "busy",
+        label: "Not right now",
+        sos: 2,
+        dignity: -2,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I told Dale I couldn't cover the window. Bo would have noticed. The new kid came out on her own.",
+      },
+    ],
+    defaultOptionId: "busy",
+    timeoutDiary: "I didn't answer, and Dale stayed at the grill.",
+  },
+  "early-bump": {
+    id: "early-bump",
+    speaker: "manager",
+    prompt: "Hit bump the second they pull up. The timer looks better that way.",
+    options: [
+      {
+        id: "bump",
+        label: "Bump early",
+        sos: 5,
+        dignity: -5,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I bumped orders before the food was in the bag, so the timer looked good. Dale got yelled at for being slow.",
+      },
+      {
+        id: "honest",
+        label: "Bump when it's done",
+        sos: -4,
+        dignity: 3,
+        solidarity: 10,
+        payCents: 0,
+        diary: "I kept bumping orders when they were done. The timer looked bad. Dale noticed.",
+      },
+    ],
+    defaultOptionId: "bump",
+    timeoutDiary: "I didn't answer, so Bo reached over and bumped the order for me.",
+  },
+  "eighteen-close": {
+    id: "eighteen-close",
+    speaker: "manager",
+    prompt: "You're eighteen now. Want to close tonight? Extra hours, and you clean the shake machine.",
+    options: [
+      {
+        id: "take",
+        label: "Take the hours",
+        sos: 3,
+        dignity: -3,
+        solidarity: -10,
+        payCents: 0,
+        diary: "Bo gave me the closing hours Dale usually gets. I cleaned the shake machine at midnight.",
+      },
+      {
+        id: "decline",
+        label: "Let Dale keep them",
+        sos: 0,
+        dignity: 2,
+        solidarity: 10,
+        payCents: 0,
+        diary: "I told Bo to give the closing hours to Dale. Dale needs them more.",
+      },
+    ],
+    defaultOptionId: "take",
+    timeoutDiary: "I didn't say no fast enough, so Bo wrote me in to close.",
+  },
+  "fry-box": {
+    id: "fry-box",
+    speaker: "coworker",
+    prompt: "Bo's in the office. Want to sneak the crew a box of fries?",
+    options: [
+      {
+        id: "sneak",
+        label: "Sneak the fries",
+        sos: -2,
+        dignity: 4,
+        solidarity: 10,
+        payCents: 0,
+        diary: "Dale and I snuck the whole crew a box of fries. Best part of the week.",
+      },
+      {
+        id: "pass",
+        label: "Not worth it",
+        sos: 2,
+        dignity: 0,
+        solidarity: -10,
+        payCents: 0,
+        diary: "I didn't want to get caught sneaking fries. Dale ate them alone in the walk-in.",
+      },
+    ],
+    defaultOptionId: "pass",
+    timeoutDiary: "I hesitated, and Bo came out of the office before we could.",
+  },
 };
 
-/** Every dilemma id, in the order they are written. */
+/**
+ * The dilemmas any shift can draw, in the order they are written. A week
+ * deals these out without repeats (#2139), so there are enough to fill
+ * Monday to Wednesday and two slots each on Thursday and Friday.
+ */
 export const DILEMMA_IDS: readonly DilemmaId[] = [
   "stale-fries",
   "short-till",
   "shake-machine",
   "long-break",
+  "free-drink",
+  "swap-saturday",
+  "upsell-day",
+  "onion-name",
+  "ice-machine",
+  "cold-burger",
+  "bathrooms",
+  "new-kid",
+  "early-bump",
 ];
+
+/**
+ * The dilemma that belongs to one day of the week (#2139), which a week
+ * puts in that day's middle slot and a single shift never draws: closing
+ * hours on the eighteenth birthday, and the crew's fries on Fry Friday.
+ */
+export const WEEK_DAY_DILEMMAS: Readonly<Partial<Record<WeekdayId, DilemmaId>>> =
+  {
+    thursday: "eighteen-close",
+    friday: "fry-box",
+  };

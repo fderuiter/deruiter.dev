@@ -74,6 +74,12 @@ Re-exports [computeLevelStars](ram/functions/computeLevelStars.md)
 
 ***
 
+### countHonestProofs
+
+Re-exports [countHonestProofs](progress/functions/countHonestProofs.md)
+
+***
+
 ### describeModeRules
 
 Re-exports [describeModeRules](ram/functions/describeModeRules.md)

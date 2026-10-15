@@ -28,6 +28,7 @@ import { ArcadeTrailer } from "@/components/arcade/ArcadeTrailer";
 import { ArcadeDailyPanel } from "@/components/arcade/ArcadeDailyPanel";
 import { onAppEvent } from "@/lib/event-bus";
 import { getEchoBest } from "@/lib/meme-data";
+import { countHonestProofs, parseGameProgress } from "@/lib/quasi-perfect";
 
 interface ArcadeGameCard {
   id: string;
@@ -191,11 +192,11 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     subtitle: "Five Stages, Three Lives, One Body Battery",
     genre: "Embedded Systems",
     description:
-      "Run a 5K in five stages on three lives. Stomp Couch Potatoes, jump Hurdles, earn a Training Effect on every stage, and keep your Body Battery above zero. Dev Mode is optional.",
+      "Run a 5K in five stages on three lives: track, pool, basement gym, open water and the home straight. Pace your Body Battery or bonk, race the Saturday 5K against the coach's time, and work a Training Plan up to Race Day. Dev Mode is optional.",
     mechanics: [
-      "Circular LCD 280×280",
-      "Body Battery Drain & Recharge",
-      "Training Effect Scores",
+      "Body Battery Pacing",
+      "Race Mode Speedrun",
+      "Training Plan to Race Day",
       "Optional Dev Mode RAM Limit",
     ],
     techStack: [
@@ -395,13 +396,9 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
   let formattedScore = rawScore;
   if (game.id === "quasi-puzzler" && rawScore !== "0") {
-    try {
-      const parsed = JSON.parse(rawScore);
-      const count = Object.keys(parsed?.completedLevels || {}).length;
-      formattedScore = `${count} / 5 Proofs`;
-    } catch {
-      formattedScore = "Progress Saved";
-    }
+    // Honest proofs only; a level closed with sorry is not a proof (#2198).
+    const count = countHonestProofs(parseGameProgress(rawScore));
+    formattedScore = `${count} ${count === 1 ? "Proof" : "Proofs"}`;
   }
 
   return (

@@ -452,6 +452,18 @@ Re-exports [examineSelf](internal/dressing/functions/examineSelf.md)
 
 ***
 
+### excuseAway
+
+Re-exports [excuseAway](internal/rhythm/functions/excuseAway.md)
+
+***
+
+### ExpectedGuest
+
+Re-exports [ExpectedGuest](types/interfaces/ExpectedGuest.md)
+
+***
+
 ### exportDialogueCsv
 
 Re-exports [exportDialogueCsv](internal/history/functions/exportDialogueCsv.md)
@@ -590,6 +602,12 @@ Re-exports [GuestScene](types/interfaces/GuestScene.md)
 
 ***
 
+### guestsExpected
+
+Re-exports [guestsExpected](internal/guests/functions/guestsExpected.md)
+
+***
+
 ### guestWaiting
 
 Re-exports [guestWaiting](internal/guests/functions/guestWaiting.md)
@@ -683,6 +701,12 @@ Re-exports [Interruption](types/interfaces/Interruption.md)
 ### INTERRUPTION\_TIMES
 
 Re-exports [INTERRUPTION_TIMES](internal/rhythm/variables/INTERRUPTION_TIMES.md)
+
+***
+
+### INTERRUPTION\_WINDOW
+
+Re-exports [INTERRUPTION_WINDOW](internal/rhythm/variables/INTERRUPTION_WINDOW.md)
 
 ***
 

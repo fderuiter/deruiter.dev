@@ -99,6 +99,7 @@ import { readHideTips, subscribeHideTips, writeHideTips } from "./hint-storage";
 import { ReceiptView } from "./ReceiptView";
 import { ReplayControls, type ReplaySpeed } from "./ReplayControls";
 import { noBestTimeReason, noRewardLine, runTrophyIds } from "./rewards";
+import { scrollBelowNavbar } from "./scroll";
 import { SetupScreen } from "./SetupScreen";
 import {
   burstLifetime,
@@ -263,13 +264,6 @@ function speedFromUrl(): number {
 interface Toast {
   id: number;
   text: string;
-}
-
-/** Whether the viewer asked for less motion. Read when called, not in render. */
-function prefersReducedMotion(): boolean {
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
-  );
 }
 
 /** A checklist row whose category just completed; one flash per entry. */
@@ -680,18 +674,10 @@ export function ForBetterOrBulkGame({
         const cabinetEl = boundaryRef.current;
         cabinetEl?.focus({ preventScroll: true });
         // The header and status line sit under the sticky navbar unless the
-        // page scrolls them in; the cabinet's scroll-margin-top clears the bar.
-        // The touch cabinet already fills the screen, so nothing scrolls there.
-        if (
-          !touch &&
-          cabinetEl &&
-          typeof cabinetEl.scrollIntoView === "function"
-        ) {
-          cabinetEl.scrollIntoView({
-            block: "start",
-            behavior: prefersReducedMotion() ? "auto" : "smooth",
-          });
-        }
+        // page scrolls them in. scrollIntoView ignored the scroll margin inside
+        // the cabinet and parked the header under the bar (#2145). The touch
+        // cabinet already fills the screen, so nothing scrolls there.
+        if (!touch && cabinetEl) scrollBelowNavbar(cabinetEl);
       });
     },
     [focusAfterPaint, touch]
@@ -1206,7 +1192,7 @@ export function ForBetterOrBulkGame({
           )}
         </div>
 
-        <div className="fbb-main grid min-w-0 gap-2 @4xl:grid-cols-[minmax(0,1fr)_14rem]">
+        <div className="fbb-main grid min-w-0 gap-2 @3xl:grid-cols-[minmax(0,1fr)_12rem] @4xl:grid-cols-[minmax(0,1fr)_14rem]">
           <div className="fbb-venue relative min-w-0">
             <div className="fbb-venue-frame relative min-w-0">
               <canvas
@@ -1316,7 +1302,7 @@ export function ForBetterOrBulkGame({
                           onDone={() => removeRowFlash(f.id)}
                         />
                       ))}
-                    <span className="min-w-0 truncate">
+                    <span className="min-w-0 break-words">
                       {CATEGORY_LABELS[category]}
                     </span>
                     <span className="tabular-nums">
@@ -1466,7 +1452,7 @@ export function ForBetterOrBulkGame({
           next === null && event.target !== event.currentTarget;
         if (phase === "playing" && !removedChild) setPaused(true);
       }}
-      className={`@container relative isolate flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]${touch ? " fbb-touch" : ""}`}
+      className={`@container relative isolate flex min-h-[460px] scroll-mt-28 w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]${touch ? " fbb-touch" : ""}`}
     >
       <div
         role="status"

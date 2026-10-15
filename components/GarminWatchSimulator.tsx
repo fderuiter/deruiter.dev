@@ -101,6 +101,7 @@ import {
 import { bestsKey, loadBests, saveBests } from "@/lib/garmin-bests-store";
 import { copyToClipboard } from "@/lib/clipboard";
 import {
+  COACH_SATURDAY_MS,
   FIXED_STEP_MS,
   RACE_CATEGORY_INFO,
   RACE_COURSE_NAMES,
@@ -541,6 +542,18 @@ function RaceReportCard({
         <dd>{bestLap === null ? "None" : formatRaceTime(bestLap)}</dd>
         <dt className="text-zinc-400">Bonked</dt>
         <dd>{bonkedS} s</dd>
+        {setup.course === "saturday5k" && (
+          <>
+            <dt className="text-zinc-400">Coach</dt>
+            <dd>
+              {formatRaceTime(COACH_SATURDAY_MS)}
+              {verdict.result === "time" &&
+                (outcome.timeMs < COACH_SATURDAY_MS
+                  ? " · you beat the coach"
+                  : ` · ${formatGap(outcome.timeMs - COACH_SATURDAY_MS)} behind`)}
+            </dd>
+          </>
+        )}
         {report && report.partnerMs !== null && (
           <>
             <dt className="text-zinc-400">Virtual Partner</dt>
@@ -2853,6 +2866,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           onSetRunMode={handleSetRunMode}
           onSetRaceCourse={handleSetRaceCourse}
           onSetRaceCategory={handleSetRaceCategory}
+          onRunChoicePick={returnFocusAfterPointerClick}
           ghostOn={ghostOn}
           ghostTarget={ghostTarget}
           onSetGhostOn={handleSetGhostOn}
@@ -2978,7 +2992,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                       : { splits: gameState.bestSplits ?? [] }
                   }
                 />
-                <p className="mt-4 text-[11px] text-zinc-400">
+                {/* Left out where the panel is narrow, so the card and its
+                    buttons fit beside the watch (#2132). */}
+                <p className="mt-4 text-[11px] text-zinc-400 @3xl:@max-5xl:hidden">
                   Shipping a real Connect IQ app?{" "}
                   <a
                     href="/schedule"

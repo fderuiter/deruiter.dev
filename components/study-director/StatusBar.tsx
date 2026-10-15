@@ -68,7 +68,8 @@ export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
 
       <Readout label="Schedule">
         <p className="mt-0.5 text-base font-bold text-[var(--sd-text)] tabular-nums">
-          Day {day} / {total}
+          {/* The planned length, plus the slip: "36 / 36 +1" counted it twice (#2187). */}
+          Day {day} / {state.setup.durationDays}
           {state.slipDays > 0 ? (
             <span className="ml-1.5 text-xs font-semibold text-[var(--sd-amber)]">
               +{state.slipDays} slip
@@ -100,45 +101,48 @@ export const StatusBar: React.FC<{ state: StudyState }> = ({ state }) => {
         </div>
       </Readout>
 
-      <Readout
-        label="Attention today"
-        className="col-span-2 border-t border-[var(--sd-hairline)] lg:col-span-1 lg:border-t-0"
-      >
-        <div
-          className="mt-1 flex items-center gap-1"
-          role="img"
-          aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today${state.routine > 0 ? `, ${state.routine} taken by routine work` : ""}`}
-          title={
-            state.routine > 0
-              ? `${state.routine} attention went to routine work: open queries and unrecorded decisions.`
-              : undefined
-          }
+      {/* A closed study has no today: the closeout showed "5 left" (#2190). */}
+      {state.status === "complete" ? null : (
+        <Readout
+          label="Attention today"
+          className="col-span-2 border-t border-[var(--sd-hairline)] lg:col-span-1 lg:border-t-0"
         >
-          {Array.from({ length: ATTENTION_PER_DAY }, (_, i) => (
-            <span
-              key={i}
-              aria-hidden="true"
-              data-pip={
-                i < state.attention
-                  ? "free"
-                  : i >= ATTENTION_PER_DAY - state.routine
-                    ? "routine"
-                    : "spent"
-              }
-              className={`h-4 w-4 rounded-[3px] ${
-                i < state.attention
-                  ? "bg-[var(--sd-amber)]"
-                  : i >= ATTENTION_PER_DAY - state.routine
-                    ? "border border-dashed border-[var(--sd-steel)]"
-                    : "border border-zinc-700 bg-zinc-800"
-              }`}
-            />
-          ))}
-          <span className="ml-1.5 text-xs font-bold text-[var(--sd-text)] tabular-nums">
-            {state.attention} left
-          </span>
-        </div>
-      </Readout>
+          <div
+            className="mt-1 flex items-center gap-1"
+            role="img"
+            aria-label={`${state.attention} of ${ATTENTION_PER_DAY} attention left today${state.routine > 0 ? `, ${state.routine} taken by routine work` : ""}`}
+            title={
+              state.routine > 0
+                ? `${state.routine} attention went to routine work: open queries and unrecorded decisions.`
+                : undefined
+            }
+          >
+            {Array.from({ length: ATTENTION_PER_DAY }, (_, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                data-pip={
+                  i < state.attention
+                    ? "free"
+                    : i >= ATTENTION_PER_DAY - state.routine
+                      ? "routine"
+                      : "spent"
+                }
+                className={`h-4 w-4 rounded-[3px] ${
+                  i < state.attention
+                    ? "bg-[var(--sd-amber)]"
+                    : i >= ATTENTION_PER_DAY - state.routine
+                      ? "border border-dashed border-[var(--sd-steel)]"
+                      : "border border-zinc-700 bg-zinc-800"
+                }`}
+              />
+            ))}
+            <span className="ml-1.5 text-xs font-bold text-[var(--sd-text)] tabular-nums">
+              {state.attention} left
+            </span>
+          </div>
+        </Readout>
+      )}
     </header>
   );
 };

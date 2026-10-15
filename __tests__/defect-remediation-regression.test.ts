@@ -53,6 +53,7 @@ import {
   allocateVariable,
   wipeScreenFog,
   startGame,
+  pressJump,
   type GameEngineState,
 } from "@/lib/garmin-engine";
 import { EMPTY_COURSE } from "@/lib/garmin-course";
@@ -444,6 +445,60 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       });
       expect(again.freedKb).toBe(0);
       expect(again.state.score).toBe(g.state.score);
+    });
+  });
+
+  describe("Garmin balance pass traps (#2022)", () => {
+    // Isolated reproductions live in __tests__/garmin-balance.test.ts.
+    const raceState = (over: Partial<GameEngineState>): GameEngineState => ({
+      ...startGame(createInitialState("fenix", 0, []), "fenix", undefined, {
+        course: "daily",
+        category: "any",
+        seed: 2022,
+      }),
+      gpsMs: 0,
+      course: EMPTY_COURSE,
+      props: EMPTY_PROPS,
+      foes: [],
+      obstacles: [],
+      ...over,
+    });
+
+    it("keeps a swimmer in a pool's deep end from passing under the lane", () => {
+      const pitX = 10_600;
+      let s = raceState({
+        stage: 2,
+        course: { ...EMPTY_COURSE, gaps: [{ x: pitX, width: 60 }] },
+        distanceMeters: (pitX + 10 - 52) / 10,
+        playerY: 225,
+        playerVy: 0,
+        isGrounded: false,
+      });
+      const lives = s.lives;
+      for (let i = 0; i < 120; i++) {
+        // A light stroke now and then keeps the swimmer deep in the pit.
+        if (i % 24 === 0 && s.playerY > 240) s = pressJump(s);
+        s = updateGameSimulation(s, 1000 / 60);
+      }
+      expect(s.lives).toBe(lives);
+      expect(s.playerY).toBeGreaterThan(205);
+      // Feet right (camera + 52 + 20 - 5) never pass the gap's far edge.
+      expect(s.distanceMeters * 10 + 67).toBeLessThanOrEqual(pitX + 60.01);
+    });
+
+    it("spawns no bug while a gym rack is ahead of the runner", () => {
+      const cameraX = 22_000;
+      const s = raceState({
+        stage: 3,
+        distanceMeters: cameraX / 10,
+        course: {
+          ...EMPTY_COURSE,
+          ceilings: [{ id: 1, x: cameraX + 150, width: 120, bottom: 178 }],
+        },
+        simMs: 60_000,
+        lastObstacleTime: 0,
+      });
+      expect(updateGameSimulation(s, 1000 / 60).obstacles).toHaveLength(0);
     });
   });
 

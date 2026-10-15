@@ -950,6 +950,15 @@ Whether the Blind is being reviewed, cleared or failed.
 
 ***
 
+### stranded
+
+> **stranded**: readonly (`"HIGH_TABLE"` \| `"TLF_PAIR"` \| `"TLF_TWO_PAIR"` \| `"POPULATION_FLUSH"` \| `"CSR_STRAIGHT"` \| `"EFFICACY_FULL_HOUSE"` \| `"MEDDRA_FIVE_OF_A_KIND"`)[] \| `null`
+
+The hand types the Blind accepted, when it failed because none of them
+could be formed from the cards left (#2150); null otherwise.
+
+***
+
 ### untouched
 
 > **untouched**: `boolean`

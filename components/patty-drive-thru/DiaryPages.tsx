@@ -557,7 +557,12 @@ export function WeekDayEndPage({
           tabIndex={-1}
           className="font-mono text-2xl font-extrabold tracking-[-0.035em] focus:outline-none"
         >
-          {preset.title}: {ending.title.toLowerCase()}
+          {/* The named endings belong to Friday; a day that reached close
+              just closes (#2139). */}
+          {preset.title}:{" "}
+          {ending.outcome === "completed"
+            ? "made it to close"
+            : ending.title.toLowerCase()}
         </h2>
         <div className="mt-2 space-y-1" data-testid="pdt-day-lines">
           {getWeekDayDiaryLines(result).map((line) => (

@@ -175,6 +175,7 @@ function readPlan(value: unknown): DayPlan | undefined {
     day: Math.floor(num(value.day, 1, 1, 10_000)),
     priority: PRIORITY_IDS.find((p) => p === value.priority) ?? null,
     handled: strings(value.handled),
+    ...(Array.isArray(value.excused) ? { excused: strings(value.excused) } : {}),
   };
 }
 

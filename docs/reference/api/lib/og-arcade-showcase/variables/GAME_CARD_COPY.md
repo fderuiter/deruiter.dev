@@ -42,7 +42,7 @@ Link preview copy for every game with a shipped arcade screenshot, keyed by slug
 
 #### garmin-watch.tagline
 
-> `readonly` **tagline**: `"Keep a simulated smartwatch running inside a 32 KB memory budget, and wipe the screen when it fogs up."` = `"Keep a simulated smartwatch running inside a 32 KB memory budget, and wipe the screen when it fogs up."`
+> `readonly` **tagline**: `"A 5K platformer on a Garmin watch. Pace your Body Battery, race the Saturday 5K, and beat the coach's time."` = `"A 5K platformer on a Garmin watch. Pace your Body Battery, race the Saturday 5K, and beat the coach's time."`
 
 #### garmin-watch.title
 

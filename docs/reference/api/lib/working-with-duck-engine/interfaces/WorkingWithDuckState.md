@@ -419,6 +419,14 @@ Indoor accidents (potty countdowns that ran out) this sprint.
 
 ***
 
+### sprintParBonus?
+
+> `optional` **sprintParBonus?**: `number`
+
+Par-time bonus from the sprint just cleared; 0 until a campaign win.
+
+***
+
 ### sprintStars
 
 > **sprintStars**: [`DuckSprintStars`](DuckSprintStars.md) \| `null`

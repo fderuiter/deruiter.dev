@@ -794,6 +794,11 @@ export interface TableView {
   /** The intro card for a Boss Blind; null for every other Blind. */
   bossIntro: BossIntroView | null;
   /**
+   * The hand types the Blind accepted, when it failed because none of them
+   * could be formed from the cards left (#2150); null otherwise.
+   */
+  stranded: readonly HandType[] | null;
+  /**
    * The hand types the current encounter stage accepts, weakest first, or
    * null outside a staged encounter or once its Blind is decided. The
    * selection is classified against them, so the preview and the scored
@@ -1425,6 +1430,39 @@ function stageHands(
     dmcDefenseOf(scenario)?.stages[state.stage]?.hands ??
     (csrLockOf(scenario) ? CSR_LOCK_HANDS : undefined)
   );
+}
+
+/**
+ * The hand types the stage accepts, when the deck is spent and no hand of
+ * them can be formed from the cards left (#2150): the Blind can no longer
+ * be won, so it fails rather than waiting on a discard. Null while a hand
+ * is still possible, the deck still deals, or a blank shell could yet be
+ * allocated. Stale cards count as recompiled, and an open-session stage
+ * leaves out the closed-session outputs it cannot be shown. The FDA IR is
+ * left to its response clock, which ends it as a Clinical Hold (#921).
+ */
+function strandedHands(
+  scenario: Scenario,
+  state: TableState
+): readonly HandType[] | null {
+  if (fdaIrOf(scenario)) return null;
+  const accepts = stageHands(scenario, state);
+  if (!accepts || state.hand.length === 0) return null;
+  if (state.deckIndex < scenario.deck.length) return null;
+  const cards = state.hand.map(
+    (id) => cardById(scenario, state, id) as TlfCard
+  );
+  if (cards.some((card) => isBlank(state, card))) return null;
+  const stage = dmcDefenseOf(scenario)?.stages[state.stage];
+  const shown =
+    stage?.session === "OPEN"
+      ? cards.filter((card) => !isClosedSession(scenario, state, card))
+      : cards;
+  const best = classifyHand(
+    shown.map((card) => ({ ...card, stale: false })),
+    accepts
+  );
+  return best && accepts.includes(best.handType) ? null : accepts;
 }
 
 /**
@@ -2874,6 +2912,13 @@ function settle(
     return {
       state: { ...state, status: "FAILED" },
       outcome: `${scenario.blind.name} failed: no playable hands remain.`,
+    };
+  }
+  const stranded = strandedHands(scenario, state);
+  if (stranded) {
+    return {
+      state: { ...state, status: "FAILED" },
+      outcome: `${scenario.blind.name} failed: no ${stranded.map(handName).join(" or ")} can be formed from the cards left.`,
     };
   }
   return { state, outcome: "" };
@@ -4448,6 +4493,7 @@ export function deriveTableView(
     ),
     accessLog: state.accessLog,
     pendingViolations: state.pendingViolations,
+    stranded: state.status === "FAILED" ? strandedHands(scenario, state) : null,
     stageAccepts:
       accepts && state.status === "REVIEWING"
         ? HandTypeSchema.options.filter((h) => accepts.includes(h))

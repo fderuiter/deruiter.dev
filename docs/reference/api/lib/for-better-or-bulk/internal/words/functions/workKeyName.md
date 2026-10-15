@@ -6,10 +6,11 @@
 
 # Function: workKeyName()
 
-> **workKeyName**(`id`, `coop`): `string`
+> **workKeyName**(`id`, `coop`, `touch?`): `string`
 
 The key names a person's work button carries in a prompt or coach line.
-Co-op gives each person their own key (Fred F, Abbi Shift); solo takes either.
+Co-op gives each person their own key (Fred F, Abbi Shift); solo takes
+either. On a touch iPad the line names the dock's Work key instead.
 
 ## Parameters
 
@@ -20,6 +21,10 @@ Co-op gives each person their own key (Fred F, Abbi Shift); solo takes either.
 ### coop
 
 `boolean`
+
+### touch?
+
+`boolean` = `false`
 
 ## Returns
 

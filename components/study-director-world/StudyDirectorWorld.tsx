@@ -23,6 +23,7 @@ import {
   describePerson,
   describeSurroundings,
   examineSelf,
+  excuseAway,
   formatClock,
   forgivingStep,
   goHome,
@@ -95,6 +96,8 @@ import { WorldHud } from "./WorldHud";
 import { useReducedMotion } from "./use-reduced-motion";
 import { ConditionsPicker, LengthPicker, WorldIntro } from "./WorldIntro";
 import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
+import { KICKOFF_DAY } from "@/components/study-director/career";
+import { recordArcadeMilestone } from "@/lib/arcade-achievements";
 import { tapDestination } from "./tap-walk";
 import { WorldTouchControls } from "./WorldTouchControls";
 import { playWorldCue } from "./world-sound";
@@ -114,12 +117,36 @@ const KEY_DIRECTIONS: Record<string, Facing> = {
 };
 
 const REFUSALS: Record<WorldRefusal, string> = {
-  "too-late": "It is too late to keep working. Go to your car and go home.",
-  "too-tired": "You are too tired to keep walking. Have a coffee or go home.",
+  "too-late": "It is too late to keep working. Go home from here.",
+  "too-tired": "You are too tired to keep walking. Go home and rest.",
   "unknown-action": "That cannot be done here.",
   "study-complete": "The study is over.",
   unreachable: "There is no way through to there right now.",
 };
+
+/**
+ * Refusals that end the working day: past the hard stop or out of energy,
+ * the car may be out of reach, so the game offers to go home from where you
+ * stand instead of asking for a walk it would refuse (#2184).
+ */
+const STUCK: Partial<Record<WorldRefusal, string>> = {
+  "too-late": "Time to go home",
+  "too-tired": "Out of energy",
+};
+
+const SAID_TONE: Record<"neutral" | "good" | "bad", string> = {
+  neutral: "border-[var(--sd-hairline-strong)] text-zinc-200",
+  good: "border-[var(--sd-emerald)]/60 text-emerald-300",
+  bad: "border-[var(--sd-red)]/60 text-red-300",
+};
+
+/** A line shown on screen, as well as read out (#2185). */
+interface Said {
+  text: string;
+  tone: "neutral" | "good" | "bad";
+  /** Set when the line belongs to a directory walk, so it shows there too. */
+  walk?: boolean;
+}
 
 function loadWorld(): WorldState | null {
   try {
@@ -200,22 +227,68 @@ function untouched(saved: WorldState): boolean {
  * A run nobody has touched yet comes back `fresh`, so its difficulty can
  * still be picked.
  */
+/** A study shared by link (`#mode=world&seed=…&length=…&difficulty=…`), or null (#2191). */
+function sharedRun(): {
+  seed: string;
+  difficulty: Difficulty;
+  length: StudyLength;
+} | null {
+  const hash = window.location.hash;
+  const seed = /(?:^#|&)seed=([\w-]{1,60})(?:&|$)/.exec(hash)?.[1];
+  if (!seed) return null;
+  const difficulty =
+    (/(?:^#|&)difficulty=(calm|standard|rescue)(?:&|$)/.exec(hash)?.[1] as
+      Difficulty | undefined) ?? "standard";
+  const length =
+    (/(?:^#|&)length=(short|full)(?:&|$)/.exec(hash)?.[1] as
+      StudyLength | undefined) ?? "full";
+  return { seed, difficulty, length };
+}
+
+/** The shared seed is used once; a reload resumes the saved run. */
+function dropSharedRun(): void {
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}#mode=world`
+  );
+}
+
 function openWorld(): {
   world: WorldState;
   digest: MorningDigest | null;
   finished?: boolean;
   fresh?: boolean;
+  /** A shared link was set aside for a study already under way (#2191). */
+  sharedWaiting?: boolean;
 } {
   const saved = loadWorld();
+  const shared = sharedRun();
   if (saved && saved.study.status === "complete") {
-    return { world: saved, digest: null, finished: true };
+    return {
+      world: saved,
+      digest: null,
+      finished: true,
+      sharedWaiting: shared !== null,
+    };
   }
-  if (saved && saved.study.status === "running") {
-    if (untouched(saved)) return { ...firstMorningOf(saved), fresh: true };
-    return saved.location === "home"
-      ? startDay(saved)
-      : { world: saved, digest: null };
+  if (saved && saved.study.status === "running" && !untouched(saved)) {
+    return {
+      ...(saved.location === "home"
+        ? startDay(saved)
+        : { world: saved, digest: null }),
+      sharedWaiting: shared !== null && shared.seed !== saved.study.seed,
+    };
   }
+  if (shared) {
+    dropSharedRun();
+    return {
+      ...firstMorning(shared.seed, shared.difficulty, shared.length),
+      fresh: true,
+    };
+  }
+  if (saved && saved.study.status === "running")
+    return { ...firstMorningOf(saved), fresh: true };
   const seed = `sdw-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
   return { ...firstMorning(seed, "standard"), fresh: true };
 }
@@ -266,7 +339,9 @@ export const StudyDirectorWorld: React.FC<{
   onExit: () => void;
   /** Hands a finished study to the classic closeout: report, verdict, share card. */
   onCloseout?: (study: StudyState, world: WorldState) => void;
-}> = ({ onExit, onCloseout }) => {
+  /** Called once when a new run leaves its untouched first morning (#2191). */
+  onStart?: () => void;
+}> = ({ onExit, onCloseout, onStart }) => {
   const [opened] = useState(openWorld);
   const [world, setWorld] = useState<WorldState>(opened.world);
   const [digest, setDigest] = useState<MorningDigest | null>(opened.digest);
@@ -275,15 +350,32 @@ export const StudyDirectorWorld: React.FC<{
   const [walk, setWalk] = useState<Walk | null>(null);
   const [visitReport, setVisitReport] = useState<SiteVisitReport | null>(null);
   const [notice, setNotice] = useState("");
+  // The latest result or refusal, visible on the stage (#2185).
+  const [said, setSaid] = useState<Said | null>(null);
   // First-run help (#1819); the Controls button reopens it.
   const [showIntro, setShowIntro] = useState(() => !introSeen());
-  const [acted, setActed] = useState(false);
+  // A resumed run that has moved on from its first morning has acted
+  // already: the day-1 goal went back to "walk to the EDC" on reload (#2187).
+  const [acted, setActed] = useState(() => !opened.fresh);
   // The first morning of a new run, while nothing has changed it: its
   // difficulty can still be chosen (#2058). Any change to the world ends that.
   const [freshWorld, setFreshWorld] = useState<WorldState | null>(
     opened.fresh ? opened.world : null
   );
   const choosing = freshWorld !== null && world === freshWorld;
+  // The career counts a new run once it is under way, not when it opens.
+  const counted = useRef(false);
+  useEffect(() => {
+    if (counted.current || freshWorld === null || world === freshWorld) return;
+    counted.current = true;
+    onStart?.();
+  }, [world, freshWorld, onStart]);
+  // Three weeks in earns Study Kickoff, as its text says (#2191).
+  const studyDay = world.study.day;
+  useEffect(() => {
+    if (studyDay >= KICKOFF_DAY)
+      recordArcadeMilestone("study-director", "first_weeks");
+  }, [studyDay]);
   const difficulty: Difficulty = world.study.difficulty ?? "standard";
   const length: StudyLength = studyLength(world.study.setup);
   // Delegating the day asks first: it cannot be taken back (#2092).
@@ -303,10 +395,40 @@ export const StudyDirectorWorld: React.FC<{
     () => playfieldRef.current?.focus({ preventScroll: true }),
     []
   );
+  /** Says a line aloud and on screen (#2185). */
+  const show = useCallback(
+    (text: string, tone: Said["tone"] = "neutral", walk = false) => {
+      setNotice(text);
+      setSaid({ text, tone, walk });
+    },
+    []
+  );
+  /**
+   * A refusal, seen as well as heard. Past the hard stop or out of energy it
+   * also offers to go home from here, since the car may be out of reach
+   * (#2184).
+   */
+  const refuseWith = useCallback(
+    (reason: WorldRefusal, text: string = REFUSALS[reason], walk = false) => {
+      show(text, "bad", walk);
+      const title = STUCK[reason];
+      if (!title || world.study.status !== "running") return;
+      setWalk(null);
+      setOutcome({
+        world,
+        title,
+        lines: [text, "Going home now ends the day where you stand."],
+        tone: "bad",
+        offer: "goHome",
+      });
+    },
+    [show, world]
+  );
   const team = useTeamLayer({
     world,
     setWorld,
     announce: setNotice,
+    refuse: refuseWith,
     refocus,
   });
   const { study, coffees, fatigue } = world;
@@ -433,9 +555,26 @@ export const StudyDirectorWorld: React.FC<{
     (dir: Facing) => {
       const result = forgivingStep(world, dir, map, people);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
+      // A meeting in progress keeps you in the conference room: walking out
+      // used to leave it running with its controls gone (#2186).
+      if (
+        world.meeting &&
+        result.moved &&
+        roomAt(map, result.world.player.x, result.world.player.y)?.id !==
+          "conference"
+      ) {
+        show(
+          world.meeting.kind === "sponsor"
+            ? "The sponsor is still on the line. End the call before you leave the room."
+            : "The meeting is still going. End it before you leave the room.",
+          "bad"
+        );
+        return;
+      }
+      if (result.moved) setSaid(null);
       setWorld(result.world);
       if (result.moved)
         team.catchUp(
@@ -447,7 +586,7 @@ export const StudyDirectorWorld: React.FC<{
         if (room) setNotice(room.name);
       }
     },
-    [world, map, people, team]
+    [world, map, people, team, refuseWith, show]
   );
 
   const pressE = useCallback(() => {
@@ -528,7 +667,7 @@ export const StudyDirectorWorld: React.FC<{
     (entry: DirectoryEntry) => {
       const route = routeAround(world.player, entry.target, map, people);
       if (!route) {
-        setNotice(REFUSALS.unreachable);
+        show(REFUSALS.unreachable, "bad", true);
         return;
       }
       setOutcome(null);
@@ -543,7 +682,7 @@ export const StudyDirectorWorld: React.FC<{
         facing: route.facing,
       });
     },
-    [world.player, map, people]
+    [world.player, map, people, show]
   );
 
   /** What a directory walk would cost, worked out only for the entries shown. */
@@ -597,21 +736,22 @@ export const StudyDirectorWorld: React.FC<{
     (optionId: string) => {
       const result = meetGuest(world, optionId);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
-      setWorld(result.world);
-      setNotice(result.result);
+      // What came up while the visitor had you is excused (#2189).
+      setWorld(excuseAway(result.world));
+      show(result.result);
       refocus();
     },
-    [world, refocus]
+    [world, refocus, refuseWith, show]
   );
 
   const pickPriority = useCallback(
     (id: PriorityId) => {
       const result = choosePriority(world, id);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
       setWorld(result.world);
@@ -620,21 +760,21 @@ export const StudyDirectorWorld: React.FC<{
       );
       refocus();
     },
-    [world, refocus]
+    [world, refocus, refuseWith]
   );
 
   const answer = useCallback(
     (optionId: string) => {
       const result = answerInterruption(world, optionId);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
       setWorld(result.world);
-      setNotice(result.result);
+      show(result.result);
       refocus();
     },
-    [world, refocus]
+    [world, refocus, refuseWith, show]
   );
 
   const leave = useCallback(() => {
@@ -662,7 +802,7 @@ export const StudyDirectorWorld: React.FC<{
     setConfirmDelegate(false);
     const result = delegateDay(world);
     if (!result.ok) {
-      setNotice(REFUSALS[result.reason]);
+      refuseWith(result.reason);
       return;
     }
     setActed(true);
@@ -677,7 +817,7 @@ export const StudyDirectorWorld: React.FC<{
         ? "The team ran the last day. The study is complete."
         : `The team ran day ${result.report.day} without you. Overnight report for day ${result.report.day}.`
     );
-  }, [world]);
+  }, [world, refuseWith]);
   const delegation = delegationPreview(world);
 
   // An outcome card (the car's Drive / Go home, a desk result) opened off the
@@ -711,6 +851,7 @@ export const StudyDirectorWorld: React.FC<{
     setReport(null);
     setConfirmDelegate(false);
     setVisitReport(null);
+    setSaid(null);
     setNotice(
       `${morning.digest.weekday}, day ${morning.digest.day}. You start at ${formatClock(morning.digest.startsAt)}.`
     );
@@ -830,7 +971,7 @@ export const StudyDirectorWorld: React.FC<{
           const waited = passTime(world, 1);
           if (waited.ok) {
             setWorld(waited.world);
-            setNotice("Someone is in the way. Waiting a minute.");
+            show("Someone is in the way. Waiting a minute.", "neutral", true);
             setWalk({ ...walk, steps, facing, waits: waits + 1 });
             return;
           }
@@ -838,9 +979,8 @@ export const StudyDirectorWorld: React.FC<{
       }
       if (!result.ok || !result.moved) {
         setWalk(null);
-        setNotice(
-          result.ok ? "Someone is in the way." : REFUSALS[result.reason]
-        );
+        if (result.ok) show("Someone is in the way.", "bad", true);
+        else refuseWith(result.reason, REFUSALS[result.reason], true);
         return;
       }
       setWorld(result.world);
@@ -856,7 +996,7 @@ export const StudyDirectorWorld: React.FC<{
       setWalk({ ...walk, steps: rest, facing });
     }, STEP_MS);
     return () => window.clearTimeout(id);
-  }, [walk, world, map, people, team, directory]);
+  }, [walk, world, map, people, team, directory, show, refuseWith]);
 
   const panel = report ? (
     <OvernightCard
@@ -867,6 +1007,7 @@ export const StudyDirectorWorld: React.FC<{
       closeoutLabel={
         onCloseout ? "See the closeout" : "Switch to the classic desk"
       }
+      visit={visitReport}
     />
   ) : outcome ? (
     <section
@@ -957,6 +1098,26 @@ export const StudyDirectorWorld: React.FC<{
       </div>
     </>
   );
+  // A shared link waits while a study is under way, and says so (#2191).
+  const [sharedHeld, setSharedHeld] = useState(opened.sharedWaiting === true);
+  const sharedNotice = sharedHeld ? (
+    <div
+      data-testid="world-shared-ignored"
+      className="flex flex-wrap items-center justify-between gap-2 border border-[var(--sd-hairline)] bg-[var(--sd-surface)] px-3 py-2 text-xs"
+    >
+      <p className="min-w-0">
+        You have a study in progress, so the shared link is on hold. Finish this
+        study, then open the link again to play the shared one.
+      </p>
+      <button
+        type="button"
+        onClick={() => setSharedHeld(false)}
+        className="min-h-11 border border-[var(--sd-hairline)] px-3 active:scale-[0.98]"
+      >
+        Got it
+      </button>
+    </div>
+  ) : null;
   const header = (
     <div
       className={`flex flex-wrap items-center justify-between gap-2${touch ? " sd-world-top" : ""}`}
@@ -1025,6 +1186,16 @@ export const StudyDirectorWorld: React.FC<{
               prompt={away || team.blocking ? null : prompt}
             />
             <FeedbackToasts items={toasts} />
+            {said && !away ? (
+              <p
+                aria-hidden="true"
+                data-testid="world-said"
+                data-tone={said.tone}
+                className={`pointer-events-none absolute top-2 left-2 z-10 max-w-[48%] min-w-0 border bg-[var(--sd-surface)] px-2 py-1 text-[11px] leading-snug break-words ${SAID_TONE[said.tone]}`}
+              >
+                {said.text}
+              </p>
+            ) : null}
             {showMap ? (
               <Minimap
                 map={map}
@@ -1191,6 +1362,13 @@ export const StudyDirectorWorld: React.FC<{
       entries={directory}
       walkingTo={walk?.entryId ?? null}
       disabled={away || team.blocking || Boolean(world.meeting)}
+      note={
+        world.meeting && !away
+          ? "Closed during a meeting. End it in the conference room first."
+          : said?.walk && !away
+            ? said.text
+            : null
+      }
       onWalk={walkTo}
       minutesTo={minutesTo}
     />
@@ -1232,6 +1410,7 @@ export const StudyDirectorWorld: React.FC<{
       >
         {liveRegions}
         {header}
+        {sharedNotice}
         {hudStrip}
         <div className="sd-world-body">
           <div className="sd-world-stage">
@@ -1272,6 +1451,7 @@ export const StudyDirectorWorld: React.FC<{
     >
       {liveRegions}
       {header}
+      {sharedNotice}
       {hudStrip}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">

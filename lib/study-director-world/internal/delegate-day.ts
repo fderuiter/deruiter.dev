@@ -69,6 +69,7 @@ function slipped(study: StudyState, event: StudyEvent): StudyState {
         documented: false,
         attentionSpent: 0,
         effects: event.ifIgnored,
+        delegated: true,
       },
     ],
   };
@@ -103,7 +104,13 @@ export function delegateDay(world: WorldState): WorldResult<{
     if (!slide && option) {
       const answered = resolveEvent(study, event.id, option.id, false);
       if (answered.ok) {
-        study = answered.state;
+        // Tagged, so the closeout knows the team decided it (#2190).
+        study = {
+          ...answered.state,
+          log: answered.state.log.map((r, at) =>
+            at === answered.state.log.length - 1 ? { ...r, delegated: true } : r
+          ),
+        };
         lines.push({
           text: `${event.subject}: the team chose "${option.label}", not written up`,
           tone: "neutral",
@@ -126,7 +133,7 @@ export function delegateDay(world: WorldState): WorldResult<{
     text: `The team ran the day without you: trust -${DELEGATED_TRUST_COST} with everyone`,
     tone: "bad",
   });
-  const night = goHome(next);
+  const night = goHome(next, { delegated: true });
   return {
     ok: true,
     world: night.world,

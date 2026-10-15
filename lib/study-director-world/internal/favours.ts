@@ -51,11 +51,16 @@ export const RELATIONSHIP_LABEL: Record<RelationshipAction, string> = {
   cover: "Ask them to cover · 5 min",
 };
 
-/** What a member is like and how they take their coffee. Learned by asking. */
-const QUIRKS: Record<
-  TeamMember["archetype"],
-  { quirk: string; coffee: string }
-> = {
+interface Quirk {
+  quirk: string;
+  coffee: string;
+}
+
+/**
+ * What a member of an archetype is like and how they take their coffee: the
+ * fallback for a member a scenario adds who has no quirk of their own.
+ */
+const QUIRKS: Record<TeamMember["archetype"], Quirk> = {
   overloadedStar: {
     quirk:
       "never says no, so she over-commits. Ask what she is dropping before you give her more.",
@@ -82,6 +87,34 @@ const QUIRKS: Record<
     coffee: "an oat cappuccino",
   },
 };
+
+/**
+ * The preset team's own quirks, by member id. Several members share an
+ * archetype, so the archetype alone would give them the same words (#2193).
+ */
+const MEMBER_QUIRKS: Record<string, Quirk> = {
+  maya: QUIRKS.overloadedStar,
+  priya: QUIRKS.optimisticStatistician,
+  walt: QUIRKS.veteranMonitor,
+  dana: QUIRKS.steadyProfessional,
+  lee: {
+    quirk:
+      "writes up the same day or not at all. Give them the reason with the decision and it is in the TMF by evening.",
+    coffee: "a decaf americano, refilled twice",
+  },
+  omar: {
+    quirk:
+      "will not rerun a program on data that changed under the spec. Warn them before a data cut, not after.",
+    coffee: "a double espresso, drunk standing up",
+  },
+};
+
+/** What a member is like and how they take their coffee. Learned by asking. */
+function quirkFor(m: TeamMember): Quirk {
+  return Object.hasOwn(MEMBER_QUIRKS, m.id)
+    ? MEMBER_QUIRKS[m.id]
+    : QUIRKS[m.archetype];
+}
 
 const quirkId = (memberId: string) => `quirk:${memberId}`;
 
@@ -201,7 +234,7 @@ export function relate(
         line(
           "information",
           known
-            ? `${name} takes it: ${QUIRKS[m.archetype].coffee}, exactly right.`
+            ? `${name} takes it: ${quirkFor(m).coffee}, exactly right.`
             : `You bring ${name} a coffee. You guessed.`
         ),
         line("relationship", `${name} did not expect that.`, delta),
@@ -236,7 +269,7 @@ export function relate(
   }
 
   if (action === "askAbout") {
-    const q = QUIRKS[m.archetype];
+    const q = quirkFor(m);
     next = observe(next, {
       id: quirkId(memberId),
       day,
@@ -281,13 +314,22 @@ export function relate(
   };
 }
 
+/** How many days after a hunch its one reminder may come. */
+const HUNCH_REMINDER_DAYS = 3;
+
+const hunchKey = (memberId: string, siteId: string, day: number) =>
+  `hunch:${memberId}:${siteId}:d${day}`;
+const hunchReminderKey = (memberId: string, siteId: string) =>
+  `hunch-reminder:${memberId}:${siteId}`;
+
 /**
- * A word from the team member who trusts the player most, once they trust
- * them enough: which site is worth a look this week. It names a place, never
- * a number, and comes from the study's real state, which the dashboard may
- * not show. Null before day two or when nobody trusts the player yet.
+ * The early warning with the record that it was given: the digest line and
+ * the id to add to what the player knows, so a hunch is said once, then at
+ * most once more in other words a few days later, never every morning.
  */
-export function earlyWarning(world: WorldState): DigestLine | null {
+export function earlyWarningNote(
+  world: WorldState
+): { line: DigestLine; known: string } | null {
   if (world.study.day < 2) return null;
   const trusted = [...world.study.team]
     .map((m) => ({ m, trust: bondFor(world, m.id).trust }))
@@ -300,8 +342,46 @@ export function earlyWarning(world: WorldState): DigestLine | null {
     (a, b) => trouble(b) - trouble(a) || a.id.localeCompare(b.id)
   )[0];
   if (!worst || trouble(worst) === 0) return null;
+  const { day } = world.study;
+  const prefix = `hunch:${trusted.m.id}:${worst.id}:d`;
+  const firstDay = world.known
+    .filter((k) => k.startsWith(prefix))
+    .map((k) => Number(k.slice(prefix.length)))
+    .find((d) => Number.isFinite(d));
+  if (firstDay === undefined)
+    return {
+      line: {
+        text: `${trusted.m.name} has a feeling about ${worst.name}. Worth a look this week.`,
+        tone: "neutral",
+      },
+      known: hunchKey(trusted.m.id, worst.id, day),
+    };
+  const reminder = hunchReminderKey(trusted.m.id, worst.id);
+  const looked = (world.siteVisitHistory ?? []).some(
+    (r) => r.siteId === worst.id && r.day >= firstDay
+  );
+  if (
+    looked ||
+    day - firstDay < HUNCH_REMINDER_DAYS ||
+    world.known.includes(reminder)
+  )
+    return null;
   return {
-    text: `${trusted.m.name} has a feeling about ${worst.name}. Worth a look this week.`,
-    tone: "neutral",
+    line: {
+      text: `${trusted.m.name} mentions ${worst.name} again. Nobody has looked yet.`,
+      tone: "neutral",
+    },
+    known: reminder,
   };
+}
+
+/**
+ * A word from the team member who trusts the player most, once they trust
+ * them enough: which site is worth a look this week. It names a place, never
+ * a number, and comes from the study's real state, which the dashboard may
+ * not show. Null before day two, when nobody trusts the player yet, or when
+ * the hunch was already given and its one reminder is not due.
+ */
+export function earlyWarning(world: WorldState): DigestLine | null {
+  return earlyWarningNote(world)?.line ?? null;
 }

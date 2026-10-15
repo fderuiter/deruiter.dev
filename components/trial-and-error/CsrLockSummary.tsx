@@ -9,7 +9,8 @@ interface CsrLockSummaryProps {
   cpuSpent: number;
   /** The cabinet allows loud effects: the stamp slams and the score burns. */
   loud: boolean;
-  onAmend: () => void;
+  /** Files a protocol amendment; left out once the run has ended (#2152). */
+  onAmend?: () => void;
 }
 
 /**
@@ -54,63 +55,83 @@ export function CsrLockSummary({
           Locked after Protocol Amendment {lock.amendment}.
         </p>
       )}
-      {/* Scrolls sideways at 320px, so it takes focus for keyboard users. */}
-      <div
-        className="mt-2 overflow-x-auto"
-        role="region"
-        aria-label="Audit summary"
-        tabIndex={0}
-      >
-        <table className="w-full min-w-[18rem] border-collapse text-left tabular-nums">
-          <caption className="sr-only">
-            Audit summary: the outputs locked, in pipeline order
-          </caption>
-          <thead className="text-[10px] uppercase tracking-wider text-zinc-400">
-            <tr>
-              <th scope="col" className="py-1 pr-2 font-normal">
-                Slot
-              </th>
-              <th scope="col" className="py-1 pr-2 font-normal">
-                Output
-              </th>
-              <th scope="col" className="py-1 pr-2 font-normal">
-                Snapshot
-              </th>
-              <th scope="col" className="py-1 font-normal">
-                SAP
-              </th>
-            </tr>
-          </thead>
-          <tbody className="text-zinc-200">
-            {lock.outputs.map((output, i) => (
-              <tr key={output.cardId} className="border-t border-zinc-800">
-                <td className="py-1 pr-2">{i + 1}</td>
-                <td className="py-1 pr-2">
-                  {output.name}
-                  <span className="block text-zinc-400">{output.title}</span>
-                </td>
-                <td className="py-1 pr-2">{output.snapshotId}</td>
-                <td className="py-1">{output.rulebookId}</td>
+      {/*
+        The audit table and the Blind-by-Blind record fold away, so the
+        whole payoff fits the cabinet with the final score in view (#2152).
+      */}
+      <details className="group mt-2" data-testid="csr-details">
+        <summary className="flex min-h-[44px] cursor-pointer items-center text-[11px] font-bold uppercase tracking-wider text-zinc-300 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+          <span
+            aria-hidden="true"
+            className="mr-2 inline-block transition-transform group-open:rotate-90 motion-reduce:transition-none"
+          >
+            ▸
+          </span>
+          Audit summary and campaign record
+        </summary>
+        {/* Scrolls sideways at 320px, so it takes focus for keyboard users. */}
+        <div
+          className="mt-2 overflow-x-auto"
+          role="region"
+          aria-label="Audit summary"
+          tabIndex={0}
+        >
+          <table className="w-full min-w-[18rem] border-collapse text-left tabular-nums">
+            <caption className="sr-only">
+              Audit summary: the outputs locked, in pipeline order
+            </caption>
+            <thead className="text-[10px] uppercase tracking-wider text-zinc-400">
+              <tr>
+                <th scope="col" className="py-1 pr-2 font-normal">
+                  Slot
+                </th>
+                <th scope="col" className="py-1 pr-2 font-normal">
+                  Output
+                </th>
+                <th scope="col" className="py-1 pr-2 font-normal">
+                  Snapshot
+                </th>
+                <th scope="col" className="py-1 font-normal">
+                  SAP
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="text-zinc-200">
+              {lock.outputs.map((output, i) => (
+                <tr key={output.cardId} className="border-t border-zinc-800">
+                  <td className="py-1 pr-2">{i + 1}</td>
+                  <td className="py-1 pr-2">
+                    {output.name}
+                    <span className="block text-zinc-400">{output.title}</span>
+                  </td>
+                  <td className="py-1 pr-2">{output.snapshotId}</td>
+                  <td className="py-1">{output.rulebookId}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <dl
+          className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 tabular-nums"
+          data-testid="csr-campaign"
+        >
+          {lock.campaign.map((record) => (
+            <React.Fragment key={record.scenarioId}>
+              <dt className="min-w-0 text-zinc-400">
+                {record.blindName}
+                {record.milestone === "DMC_DEFENSE" && " · DMC defended"}
+                {record.milestone === "FDA_IR" &&
+                  ` · FDA answered, ${record.hoursToSpare} h to spare`}
+              </dt>
+              <dd className="text-zinc-200">{record.score}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+      </details>
       <dl
         className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1 tabular-nums"
-        data-testid="csr-campaign"
+        data-testid="csr-final"
       >
-        {lock.campaign.map((record) => (
-          <React.Fragment key={record.scenarioId}>
-            <dt className="min-w-0 text-zinc-400">
-              {record.blindName}
-              {record.milestone === "DMC_DEFENSE" && " · DMC defended"}
-              {record.milestone === "FDA_IR" &&
-                ` · FDA answered, ${record.hoursToSpare} h to spare`}
-            </dt>
-            <dd className="text-zinc-200">{record.score}</dd>
-          </React.Fragment>
-        ))}
         <dt className="text-zinc-400">Milestone weighting</dt>
         <dd className="text-zinc-200">+{lock.final.bonusPercent}%</dd>
         <dt className="font-bold uppercase tracking-wider text-emerald-300">
@@ -127,22 +148,24 @@ export function CsrLockSummary({
         Seed {seed} · {handsPlayed} hand{handsPlayed === 1 ? "" : "s"} ·{" "}
         {cpuSpent} CPU spent
       </p>
-      <div className="mt-3 border-t border-zinc-800 pt-2">
-        <button
-          type="button"
-          onClick={onAmend}
-          disabled={amendRefusal !== null}
-          aria-describedby="csr-amend-note"
-          className="min-h-[44px] border border-amber-500 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400"
-          data-testid="csr-amend"
-        >
-          File protocol amendment
-        </button>
-        <p id="csr-amend-note" className="mt-1 text-[11px] text-zinc-400">
-          {amendRefusal ??
-            "Unlocks the package and withdraws the lock hand; its outputs must be validated again."}
-        </p>
-      </div>
+      {onAmend && (
+        <div className="mt-3 border-t border-zinc-800 pt-2">
+          <button
+            type="button"
+            onClick={onAmend}
+            disabled={amendRefusal !== null}
+            aria-describedby="csr-amend-note"
+            className="min-h-[44px] border border-amber-500 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400"
+            data-testid="csr-amend"
+          >
+            File protocol amendment
+          </button>
+          <p id="csr-amend-note" className="mt-1 text-[11px] text-zinc-400">
+            {amendRefusal ??
+              "Unlocks the package and withdraws the lock hand; its outputs must be validated again."}
+          </p>
+        </div>
+      )}
     </section>
   );
 }

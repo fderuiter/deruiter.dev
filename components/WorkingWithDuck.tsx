@@ -139,6 +139,7 @@ const DUCK_HOTKEY_KEYS = [
   "ArrowLeft",
   "ArrowRight",
   "Enter",
+  "Escape",
 ] as const;
 
 /**
@@ -178,6 +179,54 @@ const getHighScoreSnapshot = () => {
 };
 
 const getServerSnapshot = () => "0";
+
+/**
+ * Storage key for the best score of each campaign sprint (#2159). Later
+ * sprints ship more work and so score more, so one shared high score made
+ * every sprint a "new best"; the result card compares against this instead.
+ */
+const SPRINT_BESTS_KEY = "working_with_duck_sprint_bests";
+/** Fired in this tab after a sprint best is saved; "storage" only fires in others. */
+const SPRINT_BESTS_EVENT = "duck-sprint-bests";
+
+const subscribeSprintBests = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener(SPRINT_BESTS_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(SPRINT_BESTS_EVENT, callback);
+  };
+};
+
+const getSprintBestsSnapshot = () => {
+  if (typeof window === "undefined") return "{}";
+  try {
+    return safeGetRawItem(SPRINT_BESTS_KEY) || "{}";
+  } catch {
+    return "{}";
+  }
+};
+
+const getSprintBestsServerSnapshot = () => "{}";
+
+/** Parses the stored sprint bests, dropping anything malformed. */
+function parseSprintBests(raw: string): Record<number, number> {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const bests: Record<number, number> = {};
+    for (const [level, score] of Object.entries(parsed)) {
+      const n = Number(level);
+      if (Number.isInteger(n) && typeof score === "number" && score > 0) {
+        bests[n] = score;
+      }
+    }
+    return bests;
+  } catch {
+    return {};
+  }
+}
 
 /** Storage key for the best endless score, kept apart from the high score (#2051). */
 const ENDLESS_BEST_KEY = "working_with_duck_endless_best";
@@ -521,8 +570,11 @@ function drawDogParkScene(
   ctx.font = gameFont(11, "bold");
   ctx.textAlign = "center";
   if (park.status === "aim") {
+    // The banner names the keys as well as the mouse (#2158).
     ctx.fillText(
-      "🎾 Phase 1: Click & Drag on field to Launch!",
+      touchHints
+        ? "🎾 Drag on the field and let go to throw!"
+        : "🎾 Press Space, or drag on the field, to throw!",
       CANVAS_WIDTH / 2,
       34
     );
@@ -536,7 +588,7 @@ function drawDogParkScene(
     ctx.fillText(
       touchHints
         ? `🐾 Steer Duck (drag) · Tap Jump for hurdles · Bones: ${park.bonesCollected}/3`
-        : `🐾 Steer Duck (Mouse) · Jump Hurdles (Space) · Bones: ${park.bonesCollected}/3`,
+        : `🐾 Steer Duck (Mouse, W or Arrows) · Jump (Space) · Bones: ${park.bonesCollected}/3`,
       CANVAS_WIDTH / 2,
       34
     );
@@ -755,6 +807,9 @@ function keyboardToyTarget(state: WorkingWithDuckState): {
   return { x: clamp(x + towardCenter, 40, CANVAS_WIDTH - 40), y };
 }
 
+/** Keys pressed this soon after a briefing opens are left from the last screen. */
+const BRIEFING_OPEN_GUARD_MS = 500;
+
 /** Ticks (60 = 1 s) the sprint 1 goal stays in the tip line. */
 const SPRINT_ONE_BRIEF_TICKS = 8 * 60;
 
@@ -769,8 +824,100 @@ function winVerdict(saved: number, total: number): string {
   return `The work shipped with ${saved} of ${total} props intact. The rest have tooth marks.`;
 }
 
+/** How the sprint's time compares with its par, and the bonus it earned (#2159). */
+function parLine(state: WorkingWithDuckState): string {
+  const par = SPRINTS.find((s) => s.level === state.currentLevel)?.parSeconds;
+  const seconds = Math.round(state.ticks / 60);
+  if (!par) return `Shipped in ${seconds}s`;
+  const bonus = state.sprintParBonus ?? 0;
+  return bonus > 0
+    ? `Shipped in ${seconds}s, par ${par}s: +${bonus} speed bonus`
+    : `Shipped in ${seconds}s, par ${par}s: no speed bonus`;
+}
+
 const RESULT_LINK =
   "inline-flex min-h-[48px] items-center rounded-xl border border-white/[0.08] px-3 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
+
+/** A Space or Enter press this soon after the previous one is still mashing. */
+const RESULT_MASH_GAP_MS = 400;
+/** Keyboard presses this soon after the card opens are left over from play. */
+const RESULT_OPEN_GUARD_MS = 500;
+
+/**
+ * Holds back keyboard clicks on the result card that come from play (#2157).
+ * Space is the coding key, so players mash or hold it as the sprint ships;
+ * the card opens with its primary button focused, and the next press would
+ * skip the card. A press counts only once the card has been open a moment,
+ * and only when it is not part of a run of presses or a held key.
+ */
+function ResultKeyGuard({
+  children,
+  enabled = true,
+}: {
+  children: React.ReactNode;
+  /** Off where no keys from play can be in flight, e.g. a first briefing. */
+  enabled?: boolean;
+}) {
+  const openedAtRef = useRef(0);
+  const previousPressRef = useRef(0);
+  const lastPressRef = useRef(0);
+  const heldRef = useRef(false);
+  // A Space pressed during play and released after the card opened.
+  const staleReleaseRef = useRef(false);
+
+  useEffect(() => {
+    openedAtRef.current = performance.now();
+    const isActivationKey = (event: KeyboardEvent) =>
+      event.key === " " || event.key === "Enter";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isActivationKey(event)) return;
+      if (event.repeat) {
+        heldRef.current = true;
+        return;
+      }
+      previousPressRef.current = lastPressRef.current;
+      lastPressRef.current = performance.now();
+      heldRef.current = false;
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (!isActivationKey(event)) return;
+      if (lastPressRef.current < openedAtRef.current) {
+        staleReleaseRef.current = true;
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+    };
+  }, []);
+
+  const onClickCapture = (event: React.MouseEvent) => {
+    // A pointer click has a detail of 1 or more; keyboard activation is 0.
+    if (!enabled || event.detail !== 0) return;
+    const openedAt = openedAtRef.current;
+    const pressAt = lastPressRef.current;
+    const pressedSinceOpen = pressAt >= openedAt;
+    const blocked =
+      staleReleaseRef.current ||
+      heldRef.current ||
+      (pressedSinceOpen &&
+        (pressAt - openedAt < RESULT_OPEN_GUARD_MS ||
+          pressAt - previousPressRef.current < RESULT_MASH_GAP_MS));
+    staleReleaseRef.current = false;
+    if (blocked) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  return (
+    <div className="contents" onClickCapture={onClickCapture}>
+      {children}
+    </div>
+  );
+}
 
 /**
  * The end of a sprint on the shared arcade result card: what shipped, how
@@ -835,6 +982,7 @@ function DuckSprintResult({
           icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
         }}
         onEscape={onReplay}
+        preventScroll
       >
         <p
           data-testid="duck-endless-best"
@@ -866,6 +1014,7 @@ function DuckSprintResult({
           icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
         }}
         onEscape={onReplay}
+        preventScroll
       />
     );
   }
@@ -894,7 +1043,16 @@ function DuckSprintResult({
         icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
       }}
       onEscape={onNext}
+      preventScroll
     >
+      {state.mode === "campaign" && (
+        <p
+          data-testid="duck-par-line"
+          className="mt-3 font-mono text-[11px] tabular-nums text-zinc-400"
+        >
+          {parLine(state)}
+        </p>
+      )}
       {stars && (
         <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
           <p
@@ -986,7 +1144,7 @@ function DuckSprintResult({
 // Action dock styles (#1676): graphite keys, amber for the held toy,
 // emerald for tricks, and the cabinet accent for the one primary action.
 const DOCK_BUTTON =
-  "disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
+  "disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:opacity-50 min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
 const TOY_IDLE =
   "border-white/[0.08] bg-[#13151a] text-zinc-300 hover:border-white/20 hover:text-white";
 const TOY_SELECTED = "border-amber-400/70 bg-amber-400/15 text-amber-200";
@@ -1001,7 +1159,7 @@ const DOCK_GROUP = "flex min-w-0 flex-wrap items-center gap-1";
 // dock fits two rows and the canvas keeps its height at 1024 (#1942).
 /** Actions with no dock control, in the touch cabinet's compact row (44px floor). */
 const CABINET_ACTION =
-  "disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
+  "disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:opacity-50 min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
 /** Icon-only keys in the same row; each keeps a 44px square. */
 const CABINET_ICON =
   "disabled:opacity-40 min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 flex items-center justify-center cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
@@ -1024,6 +1182,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     getServerSnapshot
   );
   const loadedEndlessBest = parseInt(rawEndlessBest, 10) || 0;
+  const rawSprintBests = useSyncExternalStore(
+    subscribeSprintBests,
+    getSprintBestsSnapshot,
+    getSprintBestsServerSnapshot
+  );
 
   const { playNote, muted, setMuted } = useAudio();
   const { recordEvent } = useTelemetry();
@@ -1135,10 +1298,22 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     [applyTransition, dispatchCommand]
   );
 
+  // The briefing's Start button, whether it takes focus when it next opens,
+  // and when it opened (#2160).
+  const briefingStartRef = useRef<HTMLButtonElement>(null);
+  const focusBriefingRef = useRef(false);
+  const briefingOpenedAtRef = useRef(0);
+  // Whether the open briefing followed a result card, whose keys may still
+  // be in flight.
+  const [briefingAfterResult, setBriefingAfterResult] = useState(false);
+
+  // The next sprint opens on its briefing with the clock stopped (#2160).
   const handleAdvanceLevel = useCallback(() => {
+    focusBriefingRef.current = true;
+    setBriefingAfterResult(true);
     applyTransition((state) => {
       const res = dispatchCommand({ type: "advance_level", state });
-      return res.success ? res.data.state : state;
+      return res.success ? { ...res.data.state, status: "idle" } : state;
     });
   }, [applyTransition, dispatchCommand]);
 
@@ -1206,18 +1381,29 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   }, [applyTransition, recordEvent]);
 
   // One title screen per game (#1516): inside a cabinet, the attract screen
-  // was the title, so Launch starts Sprint 1 at once. Sprint 1's guided hints
-  // carry its instructions, and Scrapbook, Wardrobe and the Manual stay in
-  // the action dock. Later sprints keep their briefing as a short intro.
+  // was the title, so Launch opens Sprint 1 straight into the room with no
+  // second start screen. Its clock waits for the player's first key or click
+  // (#2160), so the goal tip can be read before the meters climb. Sprints 2
+  // to 5, and endless, open on their briefing card, with the clock stopped
+  // until Start Sprint.
   const skipTitleScreen = useSkipTitleScreen();
+  const isSprintOneWaiting = (state: WorkingWithDuckState) =>
+    skipTitleScreen &&
+    state.status === "idle" &&
+    state.mode === "campaign" &&
+    state.currentLevel === 1;
+  const sprintOneWaits = isSprintOneWaiting(uiState);
 
-  const autoStartedRef = useRef(false);
+  // The briefing's Start button takes focus when a sprint hands over to the
+  // next one, so Space or Enter starts it. ResultKeyGuard keeps presses left
+  // over from the result card from starting it by accident.
   useEffect(() => {
-    if (!skipTitleScreen || autoStartedRef.current) return;
-    autoStartedRef.current = true;
-    const state = gameStateRef.current;
-    if (state.status === "idle" && state.currentLevel === 1) startSprint();
-  }, [skipTitleScreen, startSprint]);
+    if (uiState.status !== "idle") return;
+    briefingOpenedAtRef.current = performance.now();
+    if (!focusBriefingRef.current) return;
+    focusBriefingRef.current = false;
+    briefingStartRef.current?.focus({ preventScroll: true });
+  }, [uiState.status, uiState.currentLevel, uiState.mode]);
 
   const toggleManualPause = useCallback(() => {
     const currentStatus = gameStateRef.current.status;
@@ -1608,6 +1794,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       ) {
         recordArcadeMilestone("working-with-duck", "campaign_cleared");
       }
+      // A sprint best counts shipped runs only, so a time-out never sets
+      // the bar the next real run is measured against.
+      if (uiState.status === "won" && uiState.mode === "campaign") {
+        const bests = parseSprintBests(getSprintBestsSnapshot());
+        if (uiState.totalScore > (bests[uiState.currentLevel] ?? 0)) {
+          bests[uiState.currentLevel] = uiState.totalScore;
+          safeSetRawItem(SPRINT_BESTS_KEY, JSON.stringify(bests));
+          window.dispatchEvent(new Event(SPRINT_BESTS_EVENT));
+        }
+      }
+      // Trophy milestones for real play (#2159): a sprint shipped, and a
+      // sprint with all three stars.
+      if (uiState.status === "won" && uiState.mode === "campaign") {
+        recordArcadeMilestone("working-with-duck", "sprint_shipped");
+        if (uiState.sprintStars?.count === 3) {
+          recordArcadeMilestone("working-with-duck", "three_star_sprint");
+        }
+      }
       if (sprintOver && uiState.highScore > loadedHighScore) {
         safeSetRawItem(
           "working_with_duck_high_score",
@@ -1629,6 +1833,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     uiState.unlockedFacts,
     uiState.mode,
     uiState.currentLevel,
+    uiState.sprintStars,
     loadedHighScore,
   ]);
 
@@ -1807,6 +2012,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         return;
       }
       if (state.status === "paused") return;
+      // The cabinet's Sprint 1 waits for the player (#2160): the first
+      // control starts the clock.
+      if (
+        skipTitleScreen &&
+        state.status === "idle" &&
+        state.mode === "campaign" &&
+        state.currentLevel === 1
+      ) {
+        startSprint();
+        return;
+      }
 
       if (command === "toy-1" || command === "toy-2" || command === "toy-3") {
         if (!state.inDogPark && !state.inBathtub) {
@@ -1866,6 +2082,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       handleGiveTreat,
       handlePerformTrick,
       toggleManualPause,
+      skipTitleScreen,
+      startSprint,
     ]
   );
 
@@ -1924,6 +2142,25 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         return;
       }
 
+      // Escape pauses a running sprint, as in the other cabinets (#2158). An
+      // open dialog (pause overlay, wardrobe, scrapbook, result card) owns
+      // its own Escape, so the press is left to it.
+      if (e.key === "Escape") {
+        const dialogOpen = !!containerRef.current?.querySelector(
+          '[role="dialog"], [aria-modal="true"]'
+        );
+        if (
+          !textEntry &&
+          focusInGame &&
+          !dialogOpen &&
+          gameStateRef.current.status === "running"
+        ) {
+          e.preventDefault();
+          toggleManualPause();
+        }
+        return;
+      }
+
       const interactiveTag =
         target?.tagName === "BUTTON" ||
         target?.tagName === "SELECT" ||
@@ -1952,6 +2189,23 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       }
 
       const state = gameStateRef.current;
+      if (state.status === "idle") {
+        // Before a sprint starts (#2160): Space or Enter starts it from the
+        // briefing, and in the cabinet's Sprint 1 any game key starts the
+        // clock. A held key, or one pressed as the briefing opened, is left
+        // over from the last screen and is ignored.
+        const starts = isSprintOneWaiting(state)
+          ? true
+          : e.code === "Space" || e.key === "Enter";
+        if (e.code === "Space" || e.key.startsWith("Arrow")) {
+          e.preventDefault();
+        }
+        const fresh =
+          performance.now() - briefingOpenedAtRef.current >=
+          BRIEFING_OPEN_GUARD_MS;
+        if (starts && !e.repeat && fresh) startSprint();
+        return;
+      }
       if (state.status === "paused") {
         // A paused sprint is frozen (#1645): only P (handled above) acts. Swallow Space and
         // the arrows so they don't scroll the page behind the pause overlay.
@@ -2233,6 +2487,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     const { x, y } = toGameCoordinates(e.clientX, e.clientY);
 
     const state = gameStateRef.current;
+
+    // The cabinet's Sprint 1 starts its clock on the first click (#2160).
+    if (isSprintOneWaiting(state)) {
+      startSprint();
+      return;
+    }
 
     // A paused sprint ignores the canvas (#1645).
     if (state.status === "paused") return;
@@ -2601,7 +2861,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   // Guided Onboarding Hint Text
   let tutorialHint: string | null = null;
-  if (uiState.status === "running" && uiState.inDogPark) {
+  if (sprintOneWaits) {
+    // The cabinet's Sprint 1 waits for the player (#2160), so the goal can
+    // be read before the meters start to climb.
+    tutorialHint = cabinetTouch
+      ? "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit calms Duck, and the Back Door handles Bladder. Tap the room to start the clock."
+      : "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit (Q) calms Duck, and the Back Door handles Bladder. Press any game key or click the room to start the clock.";
+  } else if (uiState.status === "running" && uiState.inDogPark) {
     // Scene tips show on every sprint: the controls change with the scene.
     tutorialHint = cabinetTouch
       ? "Dog Park: drag on the field and let go to throw, steer Duck with Move Up and Move Down, and tap Jump to clear hurdles. Work, Excitement and Bladder pause until you return to the office."
@@ -2631,8 +2897,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       uiState.duck.state === "SNIFFING_POTTY" ||
       uiState.bladder > 80
     ) {
-      tutorialHint =
-        "Duck needs to go! Click and drag Duck over to the Back Door!";
+      tutorialHint = cabinetTouch
+        ? "Duck needs to go! Drag Duck over to the Back Door!"
+        : "Duck needs to go! Drag Duck to the Back Door, or move him there with the arrow keys and press Enter!";
     } else if (uiState.duck.state === "SNEAKY_CHEW") {
       tutorialHint = cabinetTouch
         ? "Duck is eyeing your work! Tap Kong or Drop It to save it!"
@@ -2668,6 +2935,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   };
 
   const startEndlessRun = () => {
+    focusBriefingRef.current = true;
+    setBriefingAfterResult(true);
     applyTransition((state) => {
       const next = createInitialDuckGameState(
         5,
@@ -2676,7 +2945,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         state.unlockedFacts,
         state.bestStars
       );
-      next.status = "running";
+      // Endless opens on its own briefing too (#2160).
+      next.status = "idle";
       next.activeAccessory = state.activeAccessory;
       return next;
     });
@@ -2730,10 +3000,22 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
   const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
+  // The campaign shows the best for this sprint; endless keeps the overall
+  // high score (#2159).
+  const loadedSprintBest =
+    parseSprintBests(rawSprintBests)[uiState.currentLevel] ?? 0;
+  const displayedBest =
+    uiState.mode === "campaign" ? loadedSprintBest : displayedHighScore;
 
   // Paused play is frozen (#1645); toys and tricks only work in the office
   // (#1647). Disabled controls point at the reason via aria-describedby.
   const isPlayFrozen = uiState.status === "paused";
+  // Seconds until the Dog Park opens again after a trip (#2158), so the
+  // button shows the wait instead of looking ready.
+  const parkCooldownSeconds = Math.max(
+    0,
+    Math.ceil(((uiState.parkReadyAtTick ?? 0) - uiState.ticks) / 60)
+  );
   const isAwayFromOffice = uiState.inDogPark || uiState.inBathtub;
   const officeOnlyDisabled = isPlayFrozen || isAwayFromOffice;
   const pausedReasonId = isPlayFrozen ? "duck-paused-reason" : undefined;
@@ -2874,7 +3156,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   data-testid="duck-hud-highscore-value"
                   className="font-bold text-zinc-100"
                 >
-                  {displayedHighScore}
+                  {displayedBest}
                 </span>
               </span>
             </span>
@@ -2960,81 +3242,90 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           </div>
         )}
 
-        {/* Start Overlay Screen */}
-        {uiState.status === "idle" && (
-          <div
-            data-testid="duck-sprint-briefing"
-            className="absolute inset-0 bg-[#0d0e11]/80 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20 overflow-y-auto"
-          >
-            <p className="arcade-accent-text mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.2em]">
-              {uiState.mode === "endless"
-                ? "Endless mode briefing"
-                : `Sprint ${uiState.currentLevel} of ${SPRINTS.length} · Briefing`}
-            </p>
-            <h2 className="mb-1 sm:mb-2 text-lg sm:text-2xl font-extrabold font-mono tracking-[-0.035em] text-zinc-50">
-              {uiState.mode === "endless"
-                ? "High Score Challenge"
-                : currentSprint.title}
-            </h2>
-            <p className="max-w-md text-[11px] sm:text-sm text-zinc-300 font-mono mb-4 sm:mb-6 leading-relaxed line-clamp-3 sm:line-clamp-none">
-              {uiState.mode === "endless"
-                ? `Every ${ENDLESS_QUARTER_WORK} work units a new quarter starts: faster meters and one more hazard. Survive as many quarters as you can!`
-                : currentSprint.description}
-            </p>
-            <p
-              data-testid="duck-start-highscore"
-              className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
+        {/* Start Overlay Screen: the sprint briefing, clock stopped (#2160) */}
+        {uiState.status === "idle" && !sprintOneWaits && (
+          <ResultKeyGuard enabled={briefingAfterResult}>
+            <div
+              data-testid="duck-sprint-briefing"
+              className="absolute inset-0 bg-[#0d0e11]/80 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20 overflow-y-auto"
             >
-              High Score{" "}
-              <span className="text-zinc-100 font-bold">
-                {displayedHighScore}
-              </span>
-              {uiState.mode === "endless" && (
-                <>
-                  {" · "}Endless best{" "}
-                  <span className="text-zinc-100 font-bold">
-                    {loadedEndlessBest}
+              <p className="arcade-accent-text mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.2em]">
+                {uiState.mode === "endless"
+                  ? "Endless mode briefing"
+                  : `Sprint ${uiState.currentLevel} of ${SPRINTS.length} · Briefing`}
+              </p>
+              <h2 className="mb-1 sm:mb-2 text-lg sm:text-2xl font-extrabold font-mono tracking-[-0.035em] text-zinc-50">
+                {uiState.mode === "endless"
+                  ? "High Score Challenge"
+                  : currentSprint.title}
+              </h2>
+              <p className="max-w-md text-[11px] sm:text-sm text-zinc-300 font-mono mb-4 sm:mb-6 leading-relaxed line-clamp-3 sm:line-clamp-none">
+                {uiState.mode === "endless"
+                  ? `Every ${ENDLESS_QUARTER_WORK} work units a new quarter starts: faster meters and one more hazard. Survive as many quarters as you can!`
+                  : currentSprint.description}
+              </p>
+              <p
+                data-testid="duck-start-highscore"
+                className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
+              >
+                {uiState.mode === "campaign"
+                  ? `Sprint ${uiState.currentLevel} best `
+                  : "High Score "}
+                <span className="text-zinc-100 font-bold">{displayedBest}</span>
+                {uiState.mode === "endless" && (
+                  <>
+                    {" · "}Endless best{" "}
+                    <span className="text-zinc-100 font-bold">
+                      {loadedEndlessBest}
+                    </span>
+                  </>
+                )}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <button
+                  ref={briefingStartRef}
+                  type="button"
+                  onClick={startSprint}
+                  className="arcade-launch-button px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border text-zinc-950 font-mono font-bold text-xs sm:text-sm transition-colors active:scale-[0.98] flex items-center gap-2 cursor-pointer min-h-[44px]"
+                >
+                  <IconPlayerPlay className="w-4 h-4 fill-current" />
+                  <span>
+                    {uiState.mode === "endless"
+                      ? "Start Endless Mode"
+                      : `Start Sprint ${uiState.currentLevel}`}
                   </span>
-                </>
+                </button>
+
+                <button
+                  onClick={openScrapbook}
+                  className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                >
+                  <IconBook className="w-4 h-4" />
+                  <span>Duck Scrapbook</span>
+                </button>
+
+                <button
+                  onClick={openWardrobe}
+                  className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                >
+                  <IconShirt aria-hidden="true" className="w-4 h-4" />
+                  <span>Wardrobe</span>
+                </button>
+
+                <FieldManualButton
+                  manualId="working-with-duck"
+                  label="Manual"
+                  onOpenChange={handleManualOpenChange}
+                  isHotkeyOwner={false}
+                />
+              </div>
+              {!cabinetTouch && (
+                <p className="mt-3 text-[10px] sm:text-[11px] font-mono text-zinc-500">
+                  The clock starts when you do. Press Space or Enter to start.
+                </p>
               )}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <button
-                onClick={startSprint}
-                className="arcade-launch-button px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border text-zinc-950 font-mono font-bold text-xs sm:text-sm transition-colors active:scale-[0.98] flex items-center gap-2 cursor-pointer min-h-[44px]"
-              >
-                <IconPlayerPlay className="w-4 h-4 fill-current" />
-                <span>
-                  {uiState.mode === "endless"
-                    ? "Start Endless Mode"
-                    : `Start Sprint ${uiState.currentLevel}`}
-                </span>
-              </button>
-
-              <button
-                onClick={openScrapbook}
-                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
-              >
-                <IconBook className="w-4 h-4" />
-                <span>Duck Scrapbook</span>
-              </button>
-
-              <button
-                onClick={openWardrobe}
-                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
-              >
-                <IconShirt aria-hidden="true" className="w-4 h-4" />
-                <span>Wardrobe</span>
-              </button>
-
-              <FieldManualButton
-                manualId="working-with-duck"
-                label="Manual"
-                onOpenChange={handleManualOpenChange}
-                isHotkeyOwner={false}
-              />
             </div>
-          </div>
+          </ResultKeyGuard>
         )}
 
         {/* Paused Overlay Screen */}
@@ -3306,14 +3597,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         disabled={isPlayFrozen}
+                        aria-disabled={parkCooldownSeconds > 0 || undefined}
                         aria-describedby={pausedReasonId}
                         onClick={() => {
                           applyTransition((state) => enterDogPark(state));
                         }}
-                        className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                        className="disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:opacity-50 p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                       >
                         <IconTrees aria-hidden="true" className="w-4 h-4" />
-                        <span>Dog Park</span>
+                        <span>
+                          {parkCooldownSeconds > 0
+                            ? `Dog Park ${parkCooldownSeconds}s`
+                            : "Dog Park"}
+                        </span>
                       </button>
 
                       <button
@@ -3682,6 +3978,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   <>
                     <button
                       disabled={isPlayFrozen}
+                      aria-disabled={parkCooldownSeconds > 0 || undefined}
                       aria-describedby={pausedReasonId}
                       onClick={() => {
                         applyTransition((state) => enterDogPark(state));
@@ -3689,7 +3986,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                       className={`${DOCK_BUTTON} border-emerald-400/40 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20`}
                     >
                       <IconTrees aria-hidden="true" className="w-4 h-4" />
-                      <span>Dog Park</span>
+                      <span>
+                        {parkCooldownSeconds > 0
+                          ? `Dog Park ${parkCooldownSeconds}s`
+                          : "Dog Park"}
+                      </span>
                     </button>
 
                     <button
@@ -3837,6 +4138,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               <>
                 <button
                   disabled={isPlayFrozen}
+                  aria-disabled={parkCooldownSeconds > 0 || undefined}
                   aria-describedby={pausedReasonId}
                   onClick={() =>
                     applyTransition((state) => enterDogPark(state))
@@ -3844,7 +4146,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   className={CABINET_ACTION}
                 >
                   <IconTrees aria-hidden="true" className="w-4 h-4" />
-                  <span>Dog Park</span>
+                  <span>
+                    {parkCooldownSeconds > 0
+                      ? `Dog Park ${parkCooldownSeconds}s`
+                      : "Dog Park"}
+                  </span>
                 </button>
                 <button
                   disabled={isPlayFrozen}
@@ -3921,15 +4227,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
       {/* Sprint result (#1677): the shared arcade card with this run's recap */}
       {(uiState.status === "won" || uiState.status === "failed") && (
-        <DuckSprintResult
-          state={uiState}
-          sprintTitle={currentSprint.title}
-          storedBest={loadedHighScore}
-          storedEndlessBest={loadedEndlessBest}
-          onNext={handleAdvanceLevel}
-          onReplay={restartSprint}
-          onEndless={startEndlessRun}
-        />
+        <ResultKeyGuard>
+          <DuckSprintResult
+            state={uiState}
+            sprintTitle={currentSprint.title}
+            storedBest={
+              uiState.mode === "campaign" ? loadedSprintBest : loadedHighScore
+            }
+            storedEndlessBest={loadedEndlessBest}
+            onNext={handleAdvanceLevel}
+            onReplay={restartSprint}
+            onEndless={startEndlessRun}
+          />
+        </ResultKeyGuard>
       )}
 
       {/* Accessory Wardrobe Modal */}

@@ -55,7 +55,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         hint: "Meters unit anomaly (expected cm)",
         explanation:
           "SDTM records height in VS (VSTESTCD HEIGHT) with the standard unit cm. 180 m would be a skyscraper; the subject is 180 cm.",
-        ctCode: "C25473",
+        ctCode: "C25347",
         options: ["180 cm", "18 cm", "1800 cm", "180 mm"],
       },
       {
@@ -65,7 +65,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         hint: "Extra zero outlier (>300cm)",
         explanation:
           "1750 cm exceeds physiological human limits. Stripping the typographical trailing zero normalizes to 175 cm.",
-        ctCode: "C25473",
+        ctCode: "C25347",
         options: ["175 cm", "17.5 cm", "1.75 cm", "175 in"],
       },
       {
@@ -75,7 +75,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         hint: "Negative height recorded",
         explanation:
           "Height measurements must be positive real numbers. Remove erroneous negative polarity sign.",
-        ctCode: "C25473",
+        ctCode: "C25347",
         options: ["168 cm", "0 cm", "N/A", "168 mm"],
       },
       {
@@ -85,7 +85,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         hint: "Imperial feet/inches format",
         explanation:
           "Convert US customary imperial measurements (5'11\") to CDISC SDTM standard unit (180 cm).",
-        ctCode: "C25473",
+        ctCode: "C25347",
         options: ["180 cm", "175 cm", "5.11 cm", "71 cm"],
       },
     ],
@@ -146,14 +146,14 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         options: ["1990-12-25", "1990-25-12", "25-12-1990", "12/25/1990"],
       },
       {
-        rawValue: "1995-02-30",
-        correctedValue: "1995-02-28",
+        rawValue: "14-FEB-1995",
+        correctedValue: "1995-02-14",
         errorType: "invalid-date",
-        hint: "Feb 30 is an invalid calendar date",
+        hint: "DD-MMM-YYYY entry (ISO 8601 YYYY-MM-DD required)",
         explanation:
-          "February has at most 29 days in leap years. 1995 is non-leap, standardizing to end of month: 1995-02-28.",
+          "14-FEB-1995 is a complete date in DD-MMM-YYYY form. SDTM --DTC variables use ISO 8601, so it is recorded as 1995-02-14.",
         ctCode: "ISO8601",
-        options: ["1995-02-28", "1995-03-01", "1995-02-29", "1995-02-03"],
+        options: ["1995-02-14", "1995-14-02", "14-02-1995", "1995-02-01"],
       },
     ],
   },
@@ -217,9 +217,9 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         rawValue: "125 psi",
         correctedValue: "125 mmHg",
         errorType: "unit-error",
-        hint: "Tire pressure unit (expected mmHg)",
+        hint: "Wrong unit picked from the list (expected mmHg)",
         explanation:
-          "Vital signs blood pressure requires millimeters of mercury (mmHg) unit code in CDISC VSORRESU.",
+          "125 psi would be over 6,000 mmHg, so the site picked the wrong unit from the list: 125 is a normal systolic reading in mmHg, the CDISC unit for blood pressure.",
         ctCode: "C25298",
         options: ["125 mmHg", "125 psi", "125 kPa", "125 bar"],
       },
@@ -265,8 +265,8 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         errorType: "range-outlier",
         hint: "Supra-physiological tachy-typo (>300 bpm)",
         explanation:
-          "720 bpm is fatal ventricular fibrillation artifact. Correct decimal entry to 72 bpm.",
-        ctCode: "C49673",
+          "No heart sustains 720 beats a minute; an extra zero was keyed. The reading is 72 bpm.",
+        ctCode: "C49677",
         options: ["72 bpm", "720 bpm", "70 bpm", "120 bpm"],
       },
       {
@@ -276,7 +276,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         hint: "Missing digit for heart rate",
         explanation:
           "7 bpm is extreme bradycardia incompatible with conscious office visit. Correct to 70 bpm.",
-        ctCode: "C49673",
+        ctCode: "C49677",
         options: ["70 bpm", "7 bpm", "77 bpm", "60 bpm"],
       },
     ],
@@ -303,7 +303,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         errorType: "range-outlier",
         hint: "Missing decimal point",
         explanation:
-          "370 °C is boiling furnace temperature. Correct missing decimal point to 37.0 °C.",
+          "No living patient is 370 °C. The decimal point was dropped from 37.0 °C.",
         ctCode: "C25206",
         options: ["37.0 °C", "370 °C", "36.0 °C", "39.0 °C"],
       },
@@ -361,18 +361,18 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
     validValues: ["Grade 1 (Mild)", "Grade 2 (Moderate)", "Grade 3 (Severe)"],
     corruptions: [
       {
-        rawValue: "Grade 9",
+        rawValue: "Grade III",
         correctedValue: "Grade 3 (Severe)",
-        errorType: "range-outlier",
-        hint: "NCI-CTCAE max severity scale is 1 to 5",
+        errorType: "casing-mismatch",
+        hint: "Roman numeral grade (CTCAE grades are 1 to 5)",
         explanation:
-          "NCI Common Terminology Criteria for Adverse Events (CTCAE v5.0) ranges from 1 to 5. Cap invalid grade 9 to Grade 3.",
+          "CTCAE v5.0 grades run from 1 to 5 and are recorded as numbers. Grade III is Grade 3 (Severe).",
         ctCode: "CTCAE:v5",
         options: [
           "Grade 3 (Severe)",
-          "Grade 9",
-          "Grade 5 (Death)",
           "Grade 1 (Mild)",
+          "Grade 5 (Death)",
+          "Grade 2 (Moderate)",
         ],
       },
     ],
@@ -388,12 +388,12 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
     ],
     corruptions: [
       {
-        rawValue: "maybe",
+        rawValue: "not serious",
         correctedValue: "No",
         errorType: "casing-mismatch",
-        hint: "Binary regulatory criteria (Yes/No required per 21 CFR § 312.32)",
+        hint: "Free text in a Y/N field",
         explanation:
-          "FDA 21 CFR § 312.32 regulatory safety reporting requires strict binary classification ('Y' / 'N').",
+          "AESER takes N or Y from the No Yes Response codelist. The site wrote 'not serious', which maps to No.",
         ctCode: "C66742",
         options: ["No", "Yes", "Pending", "Unknown"],
       },
@@ -421,10 +421,10 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         rawValue: "90 mg/dL",
         correctedValue: "0.9 mg/dL",
         errorType: "range-outlier",
-        hint: "Missing leading zero decimal",
+        hint: "Out of range: no patient survives a creatinine of 90 mg/dL",
         explanation:
-          "90 mg/dL represents severe acute renal failure artifact. Correct to normal biological reference range (0.9 mg/dL).",
-        ctCode: "C25347",
+          "No living patient has a serum creatinine of 90 mg/dL. The site dropped the decimal point from 0.90 mg/dL, so the reading is 0.9 mg/dL.",
+        ctCode: "C64547",
         options: ["0.9 mg/dL", "90 mg/dL", "9.0 mg/dL", "0.09 mg/dL"],
       },
       {
@@ -433,8 +433,8 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         errorType: "negative-value",
         hint: "Negative biochemistry concentration",
         explanation:
-          "Serum analyte concentrations cannot be negative. Normalize to 1.0 mg/dL.",
-        ctCode: "C25347",
+          "A concentration cannot be negative; the minus sign is a keying slip, so the reading is 1.0 mg/dL.",
+        ctCode: "C64547",
         options: ["1.0 mg/dL", "-1.0 mg/dL", "0.1 mg/dL", "0.0 mg/dL"],
       },
     ],
@@ -446,12 +446,12 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
     validValues: ["24 U/L", "31 U/L", "19 U/L", "40 U/L"],
     corruptions: [
       {
-        rawValue: "2400 U/L",
+        rawValue: "24 IU/L",
         correctedValue: "24 U/L",
-        errorType: "range-outlier",
-        hint: "Check sample dilution / decimal error",
+        errorType: "unit-error",
+        hint: "Non-standard unit label (CDISC unit is U/L)",
         explanation:
-          "2400 U/L suggests fulminant hepatic necrosis artifact. Correct 100x decimal scale factor to 24 U/L.",
+          "For ALT, IU/L and U/L are the same unit. The CDISC unit codelist uses U/L, so the value stays 24 U/L.",
         ctCode: "C64433",
         options: ["24 U/L", "2400 U/L", "240 U/L", "2.4 U/L"],
       },
@@ -464,19 +464,14 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
     validValues: ["6.2 x10^9/L", "7.5 x10^9/L", "5.1 x10^9/L", "8.9 x10^9/L"],
     corruptions: [
       {
-        rawValue: "6200000000000 /L",
+        rawValue: "6200000000 /L",
         correctedValue: "6.2 x10^9/L",
         errorType: "unit-error",
         hint: "Scientific notation normalization required",
         explanation:
-          "Normalize raw SI particle count to standard CDISC laboratory notation (6.2 x10^9/L).",
+          "6,200,000,000 cells per litre is 6.2 × 10^9/L, the standard notation for a white cell count.",
         ctCode: "C51948",
-        options: [
-          "6.2 x10^9/L",
-          "62 x10^9/L",
-          "6200000000000 /L",
-          "0.62 x10^9/L",
-        ],
+        options: ["6.2 x10^9/L", "62 x10^9/L", "6200000000 /L", "0.62 x10^9/L"],
       },
     ],
   },
@@ -602,10 +597,10 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         rawValue: "mouth by pill",
         correctedValue: "ORAL",
         errorType: "casing-mismatch",
-        hint: "CDISC Route of Administration codelist (C38114)",
+        hint: "CDISC Route of Administration codelist (ROUTE)",
         explanation:
-          "CDISC SDTM codelist C38114 standardizes 'by mouth' to FDA NCIt term 'ORAL'.",
-        ctCode: "C38114",
+          "The CDISC ROUTE codelist records medicine taken by mouth as 'ORAL'.",
+        ctCode: "C38288",
         options: ["ORAL", "INTRAVENOUS", "SUBCUTANEOUS", "INHALATION"],
       },
     ],
@@ -1263,7 +1258,7 @@ export const SEEDED_SCENARIOS: readonly ClinicalSubject[] = [
         hint: "Meters unit anomaly (expected cm)",
         explanation:
           "SDTM records height in VS (VSTESTCD HEIGHT) with the standard unit cm.",
-        ctCode: "C25473",
+        ctCode: "C25347",
         options: ["180 cm", "18 cm", "1800 cm", "180 mm"],
         isResolved: false,
       },

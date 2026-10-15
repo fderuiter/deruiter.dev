@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { endDay, getEvent, type StudyState } from "@/lib/study-director";
+import { endDay, getEvent, inbox, type StudyState } from "@/lib/study-director";
 import {
   CRO_FLOOR,
   DAY_START,
@@ -285,6 +285,80 @@ describe("dialogue gated by trust (#1688)", () => {
     const again = dialogueLines(first.world, "maya");
     expect(again.some((l) => /sitting on 20/.test(l.text))).toBe(false);
     expect(again.length).toBeGreaterThan(0);
+  });
+});
+
+describe("dialogue copy (#2193)", () => {
+  /** Every site clean except the patch on Site 03. */
+  const onlySite03 = (patch: Partial<StudyState["sites"][number]>) => {
+    const w = morning("copy-1");
+    return {
+      ...w,
+      study: {
+        ...w.study,
+        sites: w.study.sites.map((s) => ({
+          ...s,
+          openQueries: 0,
+          deviations: 0,
+          unsignedSource: 0,
+          eligibilityConcerns: 0,
+          ...(s.id === "site-03" ? patch : {}),
+        })),
+      },
+    };
+  };
+  const texts = (w: WorldState, id: string) =>
+    dialogueLines(trusting(w, id, 80), id)
+      .map((l) => `${l.text} ${l.fact?.text ?? ""}`)
+      .join(" ");
+
+  it("says one of a thing in the singular", () => {
+    const priya = texts(onlySite03({ eligibilityConcerns: 1 }), "priya");
+    expect(priya).toMatch(/1 subject at Site 03 may not meet/);
+    expect(priya).toMatch(/1 eligibility concern at Site 03/);
+    const walt = texts(
+      onlySite03({ unsignedSource: 1, deviations: 1 }),
+      "walt"
+    );
+    expect(walt).toMatch(/1 unsigned source document and 1 deviation\./);
+    expect(walt).toMatch(/1 unsigned source, 1 deviation\./);
+    const w = morning("copy-2");
+    const eventId = inbox(w.study)[0]?.id;
+    if (!eventId) throw new Error("no event");
+    const decided: WorldState = {
+      ...w,
+      study: {
+        ...w.study,
+        log: [
+          {
+            day: 1,
+            eventId,
+            optionId: "a",
+            label: "x",
+            documented: false,
+            attentionSpent: 0,
+            effects: {},
+          },
+        ],
+      },
+    };
+    const lee = texts(decided, "lee");
+    expect(lee).toMatch(/One of your decisions has no write-up/);
+    expect(lee).toMatch(/1 decision is not written up/);
+    expect(`${priya} ${walt} ${lee}`).not.toMatch(
+      /\b1 (subjects|deviations|decisions|documents|concerns)\b/
+    );
+  });
+
+  it("does not have a cool member seem glad right after ignoring you", () => {
+    const base = withLoad(morning("copy-3"), "maya", 98);
+    const cool = expectOk(talk(trusting(base, "maya", 10), "maya"));
+    const said = cool.lines.map((l) => l.text).join(" ");
+    expect(said).toMatch(/doesn't look up from the screen/);
+    expect(said).not.toMatch(/glad/);
+    expect(cool.lines.at(-1)?.trustDelta).toBeGreaterThan(0);
+    const warm = expectOk(talk(trusting(base, "maya", 50), "maya"));
+    expect(warm.lines.at(-1)?.text).toMatch(/seems glad you stopped by/);
   });
 });
 

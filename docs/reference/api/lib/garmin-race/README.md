@@ -22,6 +22,7 @@
 
 - [ALL\_MEDALS](variables/ALL_MEDALS.md)
 - [BOARD\_SIZE](variables/BOARD_SIZE.md)
+- [COACH\_SATURDAY\_MS](variables/COACH_SATURDAY_MS.md)
 - [COURSE\_VERSION](variables/COURSE_VERSION.md)
 - [FIXED\_STEP\_MS](variables/FIXED_STEP_MS.md)
 - [MAX\_STEPS\_PER\_FRAME](variables/MAX_STEPS_PER_FRAME.md)

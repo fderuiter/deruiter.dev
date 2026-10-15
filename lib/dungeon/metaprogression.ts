@@ -116,7 +116,8 @@ export const DARKNET_VENDOR_CATALOG: DarknetItem[] = [
     id: "ram_boost_16",
     name: "Overclocked 16GB DDR5 RAM",
     cost: 300,
-    description: "Permanently increases Cyberdeck RAM capacity by +16 GB.",
+    description:
+      "Increases Cyberdeck RAM capacity by +16 GB for the rest of this run.",
     category: "ram",
     icon: "💾",
   },

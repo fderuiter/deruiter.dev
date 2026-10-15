@@ -6,7 +6,7 @@
 
 # Variable: COURSE\_VERSION
 
-> `const` **COURSE\_VERSION**: `1` = `1`
+> `const` **COURSE\_VERSION**: `2` = `2`
 
 The version of the course generator. Bump it when a change moves anything
 on a seeded course, so old times are kept on their own board instead of

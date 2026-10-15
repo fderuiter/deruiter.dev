@@ -2,6 +2,11 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
 import type { HandLevelRow, HandType } from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
@@ -31,7 +36,11 @@ export function HandCheatSheet({
   selected,
   onClose,
 }: HandCheatSheetProps) {
-  const ref = useFocusTrap<HTMLDivElement>(true, { onEscape: onClose });
+  const portalTarget = usePortalTarget();
+  const ref = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: closeNow(onClose),
+  });
+  useClaimFocus(ref);
   const strongestFirst = [...rows].reverse();
   const onKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (
@@ -151,6 +160,6 @@ export function HandCheatSheet({
         </ol>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

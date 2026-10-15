@@ -244,9 +244,12 @@ export function classifyProfile(state: StudyState): ProfileResult {
   const documentedShare =
     answered.filter((r) => r.documented).length / Math.max(1, answered.length);
   const ignoredShare = ignored.length / total;
-  const delegations = answered.filter((r) =>
-    r.effects.workload?.some((w) => w.delta > 0)
+  // A day handed to the team is a hand-off too: delegating every day used
+  // to read "The Operator: efficient and decisive, 3 hand-offs" (#2190).
+  const delegations = answered.filter(
+    (r) => r.delegated || r.effects.workload?.some((w) => w.delta > 0)
   ).length;
+  const teamRan = state.log.filter((r) => r.delegated).length;
   const criticalAnswered = answered.filter(
     (r) => getEvent(r.eventId)?.urgency === "critical"
   ).length;
@@ -300,6 +303,11 @@ export function classifyProfile(state: StudyState): ProfileResult {
       `${Math.round(documentedShare * 100)}% of your decisions were documented.`,
       `${ignored.length} messages went unanswered.`,
       `${audits} site audit${audits === 1 ? "" : "s"}, ${delegations} hand-off${delegations === 1 ? "" : "s"} to the team.`,
+      ...(teamRan > 0
+        ? [
+            `${teamRan} decision${teamRan === 1 ? " was" : "s were"} made by the team while you were away.`,
+          ]
+        : []),
     ],
   };
 }

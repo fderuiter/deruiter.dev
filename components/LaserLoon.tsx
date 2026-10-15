@@ -73,7 +73,6 @@ import {
   FloatingText,
   PowerUp,
   PowerUpType,
-  createInitialState,
   spawnTarget as engineSpawnTarget,
   spawnBossForAct,
   spawnPowerUp as engineSpawnPowerUp,
@@ -105,7 +104,9 @@ import {
   updateBossAttack,
   isBossTelegraphing,
   BOSS_MINION_SPAWN_RATE,
-  ARCADE_GAME_DURATION_SECS,
+  getSurvivalWave,
+  formatRunClock,
+  SURVIVAL_WAVE_SECONDS,
   getActProgressReadout,
   getActStars,
   pickKeyboardAim,
@@ -127,6 +128,54 @@ const OPTIC_SHORT_NAMES: Record<LaserType, string> = {
 /** Shortest gap between counter callouts, so rapid fire cannot spam them. */
 const COUNTER_CUE_INTERVAL_MS = 260;
 
+// Screen-reader status reads words, not internal state names (#2142).
+const MODE_NAMES: Record<LaserMode, string> = {
+  campaign: "Campaign",
+  arcade: "Arcade Survival",
+  sandbox: "Zero-G Sandbox",
+};
+const GAME_STATE_NAMES = {
+  idle: "Title screen",
+  playing: "Playing",
+  "act-intro": "Act briefing",
+  "act-victory": "Act cleared",
+  "act-failed": "Act failed",
+  gameover: "Run over",
+  "campaign-victory": "Campaign won",
+} as const;
+
+// Where each survival wave takes place, for the result card.
+const SURVIVAL_WAVE_STOPS = {
+  Lake: "on Lake Minnetonka",
+  Fair: "at the State Fair",
+  Hearing: "in the Commission hearing",
+  Capitol: "under the Capitol dome",
+} as const;
+
+// The title screen names the mode it will start (#2141).
+const MODE_TITLES: Record<
+  LaserMode,
+  { heading: string; blurb: string; start: string }
+> = {
+  campaign: {
+    heading: "LASER LOON: QUEST FOR THE STATE FLAG",
+    blurb: "",
+    start: "START CAMPAIGN",
+  },
+  arcade: {
+    heading: "ARCADE SURVIVAL",
+    blurb:
+      "Three hearts and no finish line. Every 30 seconds a new wave rolls in from the next stop on the road to the Capitol, and from the second wave the enemies shoot back. How long can the loon last?",
+    start: "START SURVIVAL",
+  },
+  sandbox: {
+    heading: "ZERO-G SANDBOX",
+    blurb:
+      "No hearts, a Tremolo that never runs dry, and dials for gravity and spawns. Nothing here counts toward your best.",
+    start: "START SANDBOX",
+  },
+};
+
 const emptySubscribe = () => () => {};
 
 const subscribeHighScore = (callback: () => void) => {
@@ -134,14 +183,24 @@ const subscribeHighScore = (callback: () => void) => {
   window.addEventListener("storage", callback);
   return () => window.removeEventListener("storage", callback);
 };
-const getHighScoreSnapshot = () => {
+// Campaign and arcade keep separate bests: a four-act total and a single
+// survival run are different scales. Sandbox never saves a score (#2140).
+// The campaign keeps the original key, which the arcade hub also reads.
+const BEST_SCORE_KEYS: Partial<Record<LaserMode, string>> = {
+  campaign: "laser_loon_high_score",
+  arcade: "laser_loon_arcade_best",
+};
+const readBest = (key: string) => {
   try {
-    return safeGetRawItem("laser_loon_high_score") || "0";
+    return parseInt(safeGetRawItem(key) || "0", 10) || 0;
   } catch {
-    return "0";
+    return 0;
   }
 };
-const getHighScoreServerSnapshot = () => "0";
+// A string snapshot keeps useSyncExternalStore's comparison stable.
+const getHighScoreSnapshot = () =>
+  `${readBest("laser_loon_high_score")}|${readBest("laser_loon_arcade_best")}`;
+const getHighScoreServerSnapshot = () => "0|0";
 
 export const LaserLoon: React.FC = () => {
   const isMounted = useSyncExternalStore(
@@ -154,7 +213,9 @@ export const LaserLoon: React.FC = () => {
     getHighScoreSnapshot,
     getHighScoreServerSnapshot
   );
-  const loadedHighScore = parseInt(rawHighScore, 10) || 0;
+  const [savedCampaignBest, savedArcadeBest] = rawHighScore
+    .split("|")
+    .map((n) => parseInt(n, 10) || 0);
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
 
@@ -178,8 +239,17 @@ export const LaserLoon: React.FC = () => {
   const [bossMaxHp, setBossMaxHp] = useState(100);
   const [bossName, setBossName] = useState("");
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const effectiveHighScore = Math.max(highScore, loadedHighScore);
+  // Bests reached this session, per mode, ahead of the storage snapshot.
+  const [sessionBest, setSessionBest] = useState<
+    Partial<Record<LaserMode, number>>
+  >({});
+  const loadedHighScore =
+    mode === "campaign"
+      ? savedCampaignBest
+      : mode === "arcade"
+        ? savedArcadeBest
+        : 0;
+  const effectiveHighScore = Math.max(sessionBest[mode] ?? 0, loadedHighScore);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   // The best score before this run, for the result card's best-score line.
@@ -190,7 +260,8 @@ export const LaserLoon: React.FC = () => {
     stars: 1 | 2 | 3;
   } | null>(null);
   const [multiplier, setMultiplier] = useState(1);
-  const [timeLeft, setTimeLeft] = useState(45);
+  // Arcade Survival's clock counts up: seconds survived, in game time.
+  const [survivalSecs, setSurvivalSecs] = useState(0);
   const [ultimateMeter, setUltimateMeter] = useState(0);
   const [activePowerUpType, setActivePowerUpType] =
     useState<PowerUpType | null>(null);
@@ -218,11 +289,7 @@ export const LaserLoon: React.FC = () => {
   // The simulation also stops behind the Flag Museum, the Field Manual and the
   // menu sheet, so reading them never costs a run.
   const isHalted = isPaused || showMuseum || isManualOpen || showMenu;
-  // Arcade mode's clock reads its full length before the run starts (#1940).
-  const shownTimeLeft =
-    mode === "arcade" && gameState === "idle"
-      ? ARCADE_GAME_DURATION_SECS
-      : timeLeft;
+  const survivalWave = getSurvivalWave(survivalSecs);
 
   const { announce } = useAnnouncer();
   const isInitialPauseRef = useRef(true);
@@ -296,6 +363,9 @@ export const LaserLoon: React.FC = () => {
   const actKillsRef = useRef(0);
   // Unpaused play this act, for its par star (#1940).
   const actPlayMsRef = useRef(0);
+  // Arcade Survival's game-time clock, and its last whole second shown.
+  const survivalMsRef = useRef(0);
+  const survivalSecsRef = useRef(0);
   const actStartScoreRef = useRef(0);
   // Keyboard shots aim for the player until the pointer moves again (#1940).
   const keyboardAimRef = useRef(false);
@@ -574,20 +644,23 @@ export const LaserLoon: React.FC = () => {
   // write happens outside any setState updater (AGENTS.md §4), and the best
   // includes the saved score so a lower run never overwrites it.
   const scoreRef = useRef(0);
-  const bestScoreRef = useRef(0);
+  const bestScoreRef = useRef<Partial<Record<LaserMode, number>>>({});
   const addScore = useCallback(
     (pts: number) => {
       const next = scoreRef.current + pts;
       scoreRef.current = next;
       setScore(next);
-      if (next > Math.max(bestScoreRef.current, loadedHighScore)) {
-        bestScoreRef.current = next;
-        setHighScore(next);
-        safeSetRawItem("laser_loon_high_score", next.toString());
-        recordArcadeScore("laser-loon", next);
+      const key = BEST_SCORE_KEYS[mode];
+      if (!key) return;
+      if (next > Math.max(bestScoreRef.current[mode] ?? 0, loadedHighScore)) {
+        bestScoreRef.current = { ...bestScoreRef.current, [mode]: next };
+        setSessionBest(bestScoreRef.current);
+        safeSetRawItem(key, next.toString());
+        // The arcade hub's one Laser Loon score is the campaign best.
+        if (mode === "campaign") recordArcadeScore("laser-loon", next);
       }
     },
-    [loadedHighScore]
+    [mode, loadedHighScore]
   );
 
   const addUltimateMeter = useCallback((amount: number) => {
@@ -598,14 +671,14 @@ export const LaserLoon: React.FC = () => {
 
   // Spawner callback
   const spawnTarget = useCallback(
-    (width: number, height: number) => {
+    (width: number, height: number, rosterAct?: number) => {
       const { updatedTargets, nextId } = engineSpawnTarget(
         targetsRef.current,
         nextTargetIdRef.current,
         width,
         height,
         undefined,
-        currentActNum
+        rosterAct ?? currentActNum
       );
       targetsRef.current = updatedTargets;
       nextTargetIdRef.current = nextId;
@@ -829,6 +902,17 @@ export const LaserLoon: React.FC = () => {
     loonPosRef.current = { x: 120, y: 180, targetX: 120, targetY: 180 };
   }, []);
 
+  // A retry starts from the score the act began with, so points scored in a
+  // failed attempt never stack into the run total or the best (#2140).
+  const retryAct = useCallback(() => {
+    scoreRef.current = actStartScoreRef.current;
+    setScore(actStartScoreRef.current);
+    comboRef.current = 0;
+    setCombo(0);
+    setMultiplier(1);
+    startAct(currentActNum);
+  }, [startAct, currentActNum]);
+
   // The next act's intro starts its counter at zero, not at last act's kills.
   const advanceToNextAct = useCallback(() => {
     setActKills(0);
@@ -839,15 +923,19 @@ export const LaserLoon: React.FC = () => {
 
   // Start game session
   const startGame = useCallback(() => {
-    const fresh = createInitialState(mode);
-    setRunStartBest(Math.max(bestScoreRef.current, loadedHighScore));
+    setRunStartBest(Math.max(bestScoreRef.current[mode] ?? 0, loadedHighScore));
     scoreRef.current = 0;
     setScore(0);
     setCombo(0);
     setMaxCombo(0);
     comboRef.current = 0;
     setMultiplier(1);
-    setTimeLeft(fresh.timeLeft);
+    survivalMsRef.current = 0;
+    survivalSecsRef.current = 0;
+    setSurvivalSecs(0);
+    setHitsLeft(LOON_MAX_HITS);
+    hitsLeftRef.current = LOON_MAX_HITS;
+    invulnerableUntilRef.current = 0;
     setIsPaused(false);
     ultimateMeterRef.current = 0;
     setUltimateMeter(0);
@@ -865,6 +953,7 @@ export const LaserLoon: React.FC = () => {
       particlesRef.current = [];
       shockwavesRef.current = [];
       floatingTextsRef.current = [];
+      loonPosRef.current = { x: 120, y: 180, targetX: 120, targetY: 180 };
     }
 
     recordEvent("laser_loon_start", "project_click").catch(() => {});
@@ -944,27 +1033,6 @@ export const LaserLoon: React.FC = () => {
       lastBossActiveRef.current = false;
     }
   }, [bossActive, bossName, announce]);
-
-  // Countdown timer for arcade mode
-  useEffect(() => {
-    if (gameState !== "playing" || mode !== "arcade" || isHalted) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => Math.max(0, prev - 1));
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [gameState, mode, isHalted]);
-
-  // Handle countdown expiration outside functional state updater
-  useEffect(() => {
-    if (gameState === "playing" && mode === "arcade" && timeLeft === 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setGameState("gameover");
-      playSuccess();
-      recordEvent("laser_loon_complete", "project_click").catch(() => {});
-    }
-  }, [gameState, mode, timeLeft, playSuccess, recordEvent]);
 
   // Active Power-Up timer
   useEffect(() => {
@@ -1095,7 +1163,9 @@ export const LaserLoon: React.FC = () => {
     mode === "campaign"
       ? (CAMPAIGN_ACTS.find((a) => a.actNumber === currentActNum)
           ?.backgroundTheme ?? "lake")
-      : "lake";
+      : mode === "arcade"
+        ? (CAMPAIGN_ACTS[survivalWave.rosterAct - 1]?.backgroundTheme ?? "lake")
+        : "lake";
 
   // Main Canvas Render & Physics Loop. Frame deltas are clamped to 32 ms, as
   // the hand-rolled loop did, and normalised to 60 fps steps.
@@ -1112,6 +1182,30 @@ export const LaserLoon: React.FC = () => {
       // counts against par (#1940).
       if (gameState === "playing" && mode === "campaign") {
         actPlayMsRef.current += deltaMs;
+      }
+      // Arcade Survival ramps on the same game clock (#2141).
+      let wave = getSurvivalWave(survivalMsRef.current / 1000);
+      if (gameState === "playing" && mode === "arcade") {
+        survivalMsRef.current += deltaMs;
+        const seconds = Math.floor(survivalMsRef.current / 1000);
+        const next = getSurvivalWave(seconds);
+        if (seconds !== survivalSecsRef.current) {
+          survivalSecsRef.current = seconds;
+          setSurvivalSecs(seconds);
+        }
+        if (next.wave !== wave.wave) {
+          addFloatingText(
+            DEFAULT_CANVAS_WIDTH * 0.5,
+            80,
+            `WAVE ${next.wave + 1}: ${next.label.toUpperCase()}`,
+            "#f59e0b"
+          );
+          announce(
+            `Wave ${next.wave + 1}: ${next.label}.${next.fireLevel > 0 ? " Enemies shoot back." : ""}`,
+            "polite"
+          );
+        }
+        wave = next;
       }
 
       const width = DEFAULT_CANVAS_WIDTH;
@@ -1175,13 +1269,17 @@ export const LaserLoon: React.FC = () => {
             spawnTarget(width, height);
           }
         } else {
-          // Arcade & sandbox spawning
-          const maxTargets = mode === "arcade" ? 6 : 8;
+          // Arcade Survival ramps its crowd and rotates the act rosters;
+          // sandbox keeps a steady crowd.
+          const arcade = mode === "arcade";
+          const maxTargets = arcade ? wave.maxTargets : 8;
+          const chance = arcade ? wave.spawnChance : 0.035;
           if (
-            targetsRef.current.length < maxTargets &&
-            Math.random() < 0.035 * dt
+            targetsRef.current.filter((t) => !t.isProjectile).length <
+              maxTargets &&
+            Math.random() < chance * dt
           ) {
-            spawnTarget(width, height);
+            spawnTarget(width, height, arcade ? wave.rosterAct : undefined);
           }
         }
 
@@ -1215,8 +1313,8 @@ export const LaserLoon: React.FC = () => {
         addUltimateMeter(15);
       }
 
-      // Enemy contact costs the loon a hit in campaign play
-      if (gameState === "playing" && mode === "campaign") {
+      // Enemy contact costs the loon a hit in campaign and survival play
+      if (gameState === "playing" && mode !== "sandbox") {
         const now = Date.now();
         const contact = resolveLoonCollision({
           targets: targetsRef.current,
@@ -1246,7 +1344,14 @@ export const LaserLoon: React.FC = () => {
           }
           if (contact.hitsLeft <= 0) {
             isFiringRef.current = false;
-            setGameState("act-failed");
+            if (mode === "arcade") {
+              setGameState("gameover");
+              recordEvent("laser_loon_complete", "project_click").catch(
+                () => {}
+              );
+            } else {
+              setGameState("act-failed");
+            }
           } else {
             addFloatingText(
               loon.x,
@@ -1394,14 +1499,17 @@ export const LaserLoon: React.FC = () => {
           }
         }
         if (attack.fired) playLaserSound("ruby-laser");
+      }
 
-        // From Act 3 the minions shoot back (#1940).
+      // From Act 3, and from survival's second wave, minions shoot back
+      // (#1940, #2141).
+      if (gameState === "playing" && mode !== "sandbox") {
         const minionFire = updateMinionFire(
           targetsRef.current,
           dt,
           loon.x,
           loon.y,
-          currentActNum,
+          mode === "arcade" ? wave.fireLevel : currentActNum,
           nextTargetIdRef.current
         );
         targetsRef.current = minionFire.targets;
@@ -1973,7 +2081,9 @@ export const LaserLoon: React.FC = () => {
         gameState === "campaign-victory"
       ) {
         startGame();
-      } else if (gameState === "act-intro" || gameState === "act-failed") {
+      } else if (gameState === "act-failed") {
+        retryAct();
+      } else if (gameState === "act-intro") {
         startAct(currentActNum);
       } else if (gameState === "act-victory") {
         advanceToNextAct();
@@ -2055,6 +2165,28 @@ export const LaserLoon: React.FC = () => {
       </div>
     );
   }
+
+  // Campaign and survival share the three hearts.
+  const heartsStat = {
+    label: "Hits",
+    value: (
+      <span
+        className="flex items-center gap-0.5"
+        role="img"
+        aria-label={`Hits left: ${hitsLeft} of ${LOON_MAX_HITS}`}
+      >
+        {Array.from({ length: LOON_MAX_HITS }, (_, i) => (
+          <IconHeart
+            key={i}
+            aria-hidden="true"
+            className={`w-3.5 h-3.5 ${
+              i < hitsLeft ? "text-rose-400 fill-rose-400" : "text-neutral-600"
+            }`}
+          />
+        ))}
+      </span>
+    ),
+  };
 
   return (
     <div
@@ -2210,7 +2342,10 @@ export const LaserLoon: React.FC = () => {
         <ArcadeHud
           stats={[
             { label: "Score", value: score, accent: true },
-            { label: "Hi", value: effectiveHighScore },
+            // Sandbox never saves a score, so it shows no best.
+            ...(mode === "sandbox"
+              ? []
+              : [{ label: "Hi", value: effectiveHighScore }]),
             ...(mode === "campaign"
               ? [
                   { label: "Act", value: `${currentActNum}/4` },
@@ -2223,42 +2358,14 @@ export const LaserLoon: React.FC = () => {
                       maxHp: currentAct.bossHp,
                     }
                   ),
-                  {
-                    label: "Hits",
-                    value: (
-                      <span
-                        className="flex items-center gap-0.5"
-                        role="img"
-                        aria-label={`Hits left: ${hitsLeft} of ${LOON_MAX_HITS}`}
-                      >
-                        {Array.from({ length: LOON_MAX_HITS }, (_, i) => (
-                          <IconHeart
-                            key={i}
-                            aria-hidden="true"
-                            className={`w-3.5 h-3.5 ${
-                              i < hitsLeft
-                                ? "text-rose-400 fill-rose-400"
-                                : "text-neutral-600"
-                            }`}
-                          />
-                        ))}
-                      </span>
-                    ),
-                  },
+                  heartsStat,
                 ]
               : []),
             ...(mode === "arcade"
               ? [
-                  {
-                    label: "Time",
-                    value: (
-                      <span
-                        className={timeLeft <= 10 ? "text-rose-400" : undefined}
-                      >
-                        {shownTimeLeft}s
-                      </span>
-                    ),
-                  },
+                  { label: "Wave", value: survivalWave.label },
+                  { label: "Time", value: formatRunClock(survivalSecs) },
+                  heartsStat,
                 ]
               : []),
           ]}
@@ -2477,19 +2584,33 @@ export const LaserLoon: React.FC = () => {
           />
         )}
 
-        {/* Off-screen Accessible DOM Fallback Subtree */}
-        <div className="sr-only" aria-label="Laser Loon Accessible Subtree">
+        {/* Accessible fallback controls. They sit off screen until a
+            keyboard user tabs into them, then show as a labelled strip so
+            focus never lands on something invisible (#2142). */}
+        <div
+          aria-label="Laser Loon Accessible Subtree"
+          className="sr-only focus-within:not-sr-only focus-within:absolute focus-within:inset-x-2 focus-within:bottom-2 focus-within:z-40 focus-within:rounded-xl focus-within:border focus-within:border-neutral-700 focus-within:bg-neutral-950/95 focus-within:p-3 font-mono text-xs text-neutral-200 [&_button]:min-h-12 [&_button]:rounded-lg [&_button]:border [&_button]:border-neutral-700 [&_button]:bg-neutral-900 [&_button]:px-3 [&_button]:text-neutral-100 [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-amber-400 [&_button:disabled]:opacity-50 [&_button[aria-pressed=true]]:border-amber-500 [&_legend]:mb-2 [&_legend]:text-neutral-400"
+        >
           <fieldset>
             <legend>Laser Loon Game State and Controls</legend>
+            <p className="mb-2 text-neutral-400">
+              Keyboard controls. Tab past them to leave the game.
+            </p>
 
-            <div role="group" aria-label="Laser Loon Telemetry and Status">
+            <div
+              role="group"
+              aria-label="Laser Loon Telemetry and Status"
+              className="sr-only"
+            >
               <output htmlFor="laser-loon-score">Score: {score}</output>
               <output htmlFor="laser-loon-highscore">
                 High Score: {effectiveHighScore}
               </output>
-              <output htmlFor="laser-loon-mode">Mode: {mode}</output>
+              <output htmlFor="laser-loon-mode">
+                Mode: {MODE_NAMES[mode]}
+              </output>
               <output htmlFor="laser-loon-status">
-                Game Status: {gameState}
+                Game Status: {GAME_STATE_NAMES[gameState]}
               </output>
               <output htmlFor="laser-loon-act">
                 Act: {currentActNum} of 4
@@ -2498,9 +2619,11 @@ export const LaserLoon: React.FC = () => {
               <output htmlFor="laser-loon-multiplier">
                 Multiplier: {multiplier}x
               </output>
-              <output htmlFor="laser-loon-timer">
-                Time Remaining: {shownTimeLeft}s
-              </output>
+              {mode === "arcade" && (
+                <output htmlFor="laser-loon-timer">
+                  Time Survived: {formatRunClock(survivalSecs)}
+                </output>
+              )}
               <output htmlFor="laser-loon-ultimate">
                 Ultimate Tremolo: {ultimateMeter}%
               </output>
@@ -2515,7 +2638,11 @@ export const LaserLoon: React.FC = () => {
               )}
             </div>
 
-            <div role="group" aria-label="Laser Loon Interactive Controls">
+            <div
+              role="group"
+              aria-label="Laser Loon Interactive Controls"
+              className="flex flex-wrap gap-1.5"
+            >
               <button
                 type="button"
                 onClick={startGame}
@@ -2526,21 +2653,21 @@ export const LaserLoon: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setMode("campaign")}
+                onClick={() => chooseMode("campaign")}
                 aria-pressed={mode === "campaign"}
               >
                 Campaign Mode
               </button>
               <button
                 type="button"
-                onClick={() => setMode("arcade")}
+                onClick={() => chooseMode("arcade")}
                 aria-pressed={mode === "arcade"}
               >
                 Arcade Mode
               </button>
               <button
                 type="button"
-                onClick={() => setMode("sandbox")}
+                onClick={() => chooseMode("sandbox")}
                 aria-pressed={mode === "sandbox"}
               >
                 Sandbox Mode
@@ -2688,13 +2815,21 @@ export const LaserLoon: React.FC = () => {
               <IconTarget className="w-8 h-8" />
             </div>
             <h3 className="text-2xl font-bold text-neutral-100 font-mono tracking-tight mb-2">
-              LASER LOON: QUEST FOR THE STATE FLAG
+              {MODE_TITLES[mode].heading}
             </h3>
             <p className="text-xs text-neutral-400 max-w-md mb-6 leading-relaxed">
-              Pilot submission{" "}
-              <span className="text-red-400 font-bold">F277 Laser Loon</span>{" "}
-              across Lake Minnetonka, the State Fair, and Legislative Hearings
-              to claim glory on the State Capitol dome!
+              {mode === "campaign" ? (
+                <>
+                  Pilot submission{" "}
+                  <span className="text-red-400 font-bold">
+                    F277 Laser Loon
+                  </span>{" "}
+                  across Lake Minnetonka, the State Fair, and Legislative
+                  Hearings to claim glory on the State Capitol dome!
+                </>
+              ) : (
+                MODE_TITLES[mode].blurb
+              )}
             </p>
             <div className="flex items-center gap-3 flex-wrap justify-center">
               <button
@@ -2706,7 +2841,10 @@ export const LaserLoon: React.FC = () => {
                 className="inline-flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] px-6 py-2.5 bg-red-500 hover:bg-red-400 text-white font-mono font-bold text-sm rounded-xl shadow-[0_0_20px_rgba(239,68,68,0.4)] transition-all transform hover:scale-105 active:scale-95 cursor-pointer touch-manipulation select-none"
               >
                 <IconPlayerPlay className="w-4 h-4 fill-current" />
-                <span>START CAMPAIGN{keyTag("SPACE")}</span>
+                <span>
+                  {MODE_TITLES[mode].start}
+                  {keyTag("SPACE")}
+                </span>
               </button>
 
               <button
@@ -2889,7 +3027,7 @@ export const LaserLoon: React.FC = () => {
               label: `Try Act ${currentActNum} again${keyTag("Space")}`,
               icon: <IconRefresh className="w-4 h-4" />,
               onClick: () => {
-                startAct(currentActNum);
+                retryAct();
                 containerRef.current?.focus({ preventScroll: true });
               },
             }}
@@ -2927,12 +3065,17 @@ export const LaserLoon: React.FC = () => {
 
         {gameState === "gameover" && (
           <ResultCard
-            title="Session concluded"
-            stamp="Time"
+            title={`Survived ${formatRunClock(survivalSecs)}`}
+            stamp={`Wave ${survivalWave.wave + 1}`}
             verdict="neutral"
-            message="Vexillology obstacles and legislative hearings recorded."
+            message={`The loon went down in wave ${survivalWave.wave + 1}, ${SURVIVAL_WAVE_STOPS[survivalWave.label]}. ${
+              survivalWave.wave >= 3
+                ? "That is the whole road to the Capitol, and then some."
+                : `Last a little longer and the next wave rolls in ${SURVIVAL_WAVE_STOPS[getSurvivalWave((survivalWave.wave + 1) * SURVIVAL_WAVE_SECONDS).label]}.`
+            }`}
             stats={[
               { label: "Final score", value: score },
+              { label: "Survived", value: survivalSecs, suffix: "s" },
               { label: "Max combo", value: maxCombo, suffix: "x" },
             ]}
             score={score}

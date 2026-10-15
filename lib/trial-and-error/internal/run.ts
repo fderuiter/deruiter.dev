@@ -596,6 +596,8 @@ export interface RunView {
   /** The act card, while a new study's first Blind has not started. */
   actIntro: ActIntroView | null;
   phase: RunPhase;
+  /** The won run was submitted and ended; nothing follows (#1088). */
+  ended: boolean;
   /** The act being played, from 0; post-marketing rounds follow the campaign. */
   actIndex: number;
   /** The Blind has just started: nothing has been played or discarded. */
@@ -1978,6 +1980,10 @@ export function advanceRun(
         table: advanceTable(tableScenario(blind, run), run.table, action),
       };
     default: {
+      // A submitted run keeps its locked package (#2149).
+      if (run.ended && action.type === "AMEND_PROTOCOL") {
+        return refuse(ENDED_AMEND_REFUSAL);
+      }
       const table = advanceTable(tableScenario(blind, run), run.table, action);
       // Form 483: a Boss reward cannot fill the locked slot.
       if (
@@ -1989,6 +1995,19 @@ export function advanceRun(
       return { ...run, table };
     }
   }
+}
+
+/** Why a submitted, ended run cannot file a protocol amendment (#2149). */
+const ENDED_AMEND_REFUSAL =
+  "The run was submitted and has ended, so the package stays locked.";
+
+/** The table as an ended run shows it: its lock can no longer be amended. */
+function endedTableView(run: RunState, table: TableView): TableView {
+  if (!run.ended || !table.csrLock) return table;
+  return {
+    ...table,
+    csrLock: { ...table.csrLock, amendRefusal: ENDED_AMEND_REFUSAL },
+  };
 }
 
 /**
@@ -2041,15 +2060,18 @@ export function deriveRunView(authored: RunPlan, run: RunState): RunView {
           }
         : null,
     phase,
+    ended: run.ended,
     actIndex: run.actIndex,
     showIntro,
-    table:
+    table: endedTableView(
+      run,
       run.lockedRelicSlot === undefined
         ? deriveTableView(blind, run.table)
         : {
             ...deriveTableView(blind, run.table),
             relicSlots: relicCapacity(run),
-          },
+          }
+    ),
     seed: run.seed,
     choice: runChoice(run),
     draws: run.draws,

@@ -6,10 +6,11 @@
 
 # Function: interactKeyName()
 
-> **interactKeyName**(`id`, `coop`): `string`
+> **interactKeyName**(`id`, `coop`, `touch?`): `string`
 
 The key names a person's interact button carries in a prompt. Co-op gives
-each person their own key (Fred E, Abbi Enter); solo takes either set.
+each person their own key (Fred E, Abbi Enter); solo takes either set. On
+a touch iPad the line names the dock's Use key instead.
 
 ## Parameters
 
@@ -20,6 +21,10 @@ each person their own key (Fred E, Abbi Enter); solo takes either set.
 ### coop
 
 `boolean`
+
+### touch?
+
+`boolean` = `false`
 
 ## Returns
 

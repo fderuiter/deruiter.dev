@@ -123,7 +123,9 @@ describe("Dungeon Extended: AI State Machine, 3D Bosses, and Combat Suite", () =
       const puzzle = generateHexMatrixPuzzle(1);
       expect(puzzle.grid.length).toBe(4);
       expect(puzzle.targetSequence.length).toBeGreaterThanOrEqual(2);
-      expect(puzzle.timeRemainingSeconds).toBeGreaterThan(10);
+      expect(puzzle.maxBufferSize).toBeGreaterThan(
+        puzzle.targetSequence.length
+      );
       expect(puzzle.activeAxis).toBe("row");
     });
 

@@ -47,6 +47,16 @@ Shortest gap between car arrivals, in seconds.
 
 ***
 
+### dilemmaDeck?
+
+> `readonly` `optional` **dilemmaDeck?**: readonly [`DilemmaId`](../type-aliases/DilemmaId.md)[]
+
+The dilemmas this shift puts to the player, in order (#2139). A week
+deals each day its own so no dilemma repeats; left out, the shift draws
+from every dilemma a single shift can.
+
+***
+
 ### dilemmaWindowSec?
 
 > `readonly` `optional` **dilemmaWindowSec?**: `number`

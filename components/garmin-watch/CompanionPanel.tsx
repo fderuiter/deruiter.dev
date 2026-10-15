@@ -230,6 +230,8 @@ interface ChoiceGroupProps<T extends string> {
   options: readonly ChoiceOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Runs after a pick, with the click, so a pointer pick can hand the keyboard back to the watch. */
+  onPick?: (e: React.MouseEvent) => void;
   disabled: boolean;
   /** Columns on a wide panel; the group stacks when it is narrower. */
   columns: 1 | 2;
@@ -245,6 +247,7 @@ function ChoiceGroup<T extends string>({
   options,
   value,
   onChange,
+  onPick,
   disabled,
   columns,
   describedBy,
@@ -286,7 +289,10 @@ function ChoiceGroup<T extends string>({
             tabIndex={checked ? 0 : -1}
             disabled={disabled}
             title={option.title}
-            onClick={() => onChange(option.value)}
+            onClick={(e) => {
+              onChange(option.value);
+              onPick?.(e);
+            }}
             onKeyDown={onKeyDown}
             className={`${raceChoiceClass} ${
               checked
@@ -312,7 +318,8 @@ interface CompanionPanelProps {
   highScore: number;
   isFocused: boolean;
   isFullscreen: boolean;
-  onToggleFullscreen: () => void;
+  /** Left out in the touch cabinet, whose toolbar owns Fullscreen (#2122). */
+  onToggleFullscreen?: () => void;
   onSelectDevice: (target: DeviceTarget, e: React.MouseEvent) => void;
   onSelectTheme: (theme: WatchBezelTheme, e: React.MouseEvent) => void;
   onWriteFlash: (e: React.MouseEvent) => void;
@@ -340,6 +347,12 @@ interface CompanionPanelProps {
   ghostTarget: GhostTarget;
   onSetGhostOn: (on: boolean) => void;
   onSetGhostTarget: (target: GhostTarget) => void;
+  /**
+   * Called after a run mode, race or Virtual Partner option is clicked, so a
+   * pointer pick hands the keyboard back to the watch and Enter starts the
+   * run (#2130).
+   */
+  onRunChoicePick: (e: React.MouseEvent) => void;
   /** Samples recorded for the current run. */
   telemetryCount: number;
   onExportCsv: () => void;
@@ -391,6 +404,7 @@ export function CompanionPanel({
   ghostTarget,
   onSetGhostOn,
   onSetGhostTarget,
+  onRunChoicePick,
   telemetryCount,
   onExportCsv,
   onExportFit,
@@ -560,7 +574,10 @@ export function CompanionPanel({
           </div>
         )}
 
-        <p className="flex items-center gap-2 text-[10px] text-zinc-400">
+        <p
+          data-keyboard-status=""
+          className="flex items-center gap-2 text-[10px] text-zinc-400"
+        >
           <span
             className={`h-1.5 w-1.5 shrink-0 rounded-full ${
               isFocused ? "bg-emerald-400" : "bg-zinc-600"
@@ -687,6 +704,7 @@ export function CompanionPanel({
               disabled={raceLocked}
               columns={2}
               onChange={onSetRunMode}
+              onPick={onRunChoicePick}
               options={[
                 {
                   value: "training",
@@ -721,6 +739,7 @@ export function CompanionPanel({
                   disabled={raceLocked}
                   columns={1}
                   onChange={onSetRaceCourse}
+                  onPick={onRunChoicePick}
                   options={RACE_COURSES.map((course) => ({
                     value: course,
                     label: RACE_COURSE_NAMES[course],
@@ -739,6 +758,7 @@ export function CompanionPanel({
                   disabled={raceLocked}
                   columns={1}
                   onChange={onSetRaceCategory}
+                  onPick={onRunChoicePick}
                   describedBy="race-category-rule"
                   options={RACE_CATEGORIES.map((category) => ({
                     value: category,
@@ -760,6 +780,7 @@ export function CompanionPanel({
                   disabled={false}
                   columns={2}
                   onChange={(value) => onSetGhostOn(value === "on")}
+                  onPick={onRunChoicePick}
                   options={[
                     {
                       value: "on",
@@ -777,6 +798,7 @@ export function CompanionPanel({
                       disabled={false}
                       columns={2}
                       onChange={onSetGhostTarget}
+                      onPick={onRunChoicePick}
                       describedBy="ghost-target-note"
                       options={[
                         { value: "pr", label: "Your PR" },
@@ -881,11 +903,13 @@ export function CompanionPanel({
 
         <div className="flex flex-wrap items-center gap-2">
           <FieldManualButton manualId="garmin-watch" label="Manual" />
-          <FullscreenButton
-            isFullscreen={isFullscreen}
-            onToggle={onToggleFullscreen}
-            variant="header"
-          />
+          {onToggleFullscreen && (
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              onToggle={onToggleFullscreen}
+              variant="header"
+            />
+          )}
         </div>
       </div>
       {children}

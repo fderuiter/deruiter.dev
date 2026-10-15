@@ -721,6 +721,13 @@ export function instantiatePattern(
 }
 
 /**
+ * The line {@link generateLeanProofScript} ends an unfinished proof with.
+ * It is a Lean comment, so it never reads as a `sorry` tactic.
+ */
+export const LEAN_OPEN_GOAL_MARKER =
+  "  -- Goal open: apply a tactic to continue";
+
+/**
  * Generates an accurate, clean Lean 4 proof script for the given level and executed steps.
  */
 export function generateLeanProofScript(
@@ -734,16 +741,14 @@ export function generateLeanProofScript(
     `theorem ${level.leanTheoremName} ${level.leanTypeSignature} := by`,
   ];
 
-  if (steps.length === 0) {
-    lines.push("  sorry -- Goal open");
-  } else {
-    for (const step of steps) {
-      lines.push(`  ${step.leanLine}`);
-    }
-    if (isComplete) {
-      lines.push("  -- Q.E.D. Goal closed! 🚀");
-    }
+  for (const step of steps) {
+    lines.push(`  ${step.leanLine}`);
   }
+  // An open goal is a comment, never a `sorry` line, so the verifier can tell
+  // it apart from a goal the player admitted with the sorry tactic (#2043).
+  lines.push(
+    isComplete ? "  -- Q.E.D. Goal closed! 🚀" : LEAN_OPEN_GOAL_MARKER
+  );
 
   return lines.join("\n");
 }

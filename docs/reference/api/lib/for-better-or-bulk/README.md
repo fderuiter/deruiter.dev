@@ -1076,6 +1076,24 @@ Re-exports [Tile](types/interfaces/Tile.md)
 
 ***
 
+### TOUCH\_INTERACT\_NAME
+
+Re-exports [TOUCH_INTERACT_NAME](internal/words/variables/TOUCH_INTERACT_NAME.md)
+
+***
+
+### TOUCH\_SWAP\_NAME
+
+Re-exports [TOUCH_SWAP_NAME](internal/words/variables/TOUCH_SWAP_NAME.md)
+
+***
+
+### TOUCH\_WORK\_NAME
+
+Re-exports [TOUCH_WORK_NAME](internal/words/variables/TOUCH_WORK_NAME.md)
+
+***
+
 ### validateDecision
 
 Re-exports [validateDecision](internal/sim/functions/validateDecision.md)

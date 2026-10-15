@@ -486,12 +486,13 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   memeVault: {
     title: "Meme Vault: Soundboard and Trophies",
     description:
-      "Make some noise with a synthesized browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
+      "Play Echo, a memory game on a synthesized browser soundboard, hunt hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
     path: "/arcade/meme-vault",
     ogImageType: "image/jpeg",
     keywords: [
       "Developer Meme Vault",
       "Web Audio Soundboard",
+      "Echo Memory Game",
       "MedTech Easter Eggs",
       "Achievement Trophy Sandbox",
       "Interactive Retro Arcade",

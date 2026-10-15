@@ -318,11 +318,13 @@ function CheckRow({
   label,
   detail,
   onInspect,
+  actionLabel = "Inspect",
 }: {
   passed: boolean;
   label: string;
   detail: string;
   onInspect?: () => void;
+  actionLabel?: string;
 }) {
   return (
     <li className="flex min-w-0 items-start gap-2">
@@ -343,7 +345,7 @@ function CheckRow({
             onClick={onInspect}
             className="ml-2 min-h-6 border border-zinc-700 px-1.5 text-[10px] text-zinc-200 hover:border-amber-500"
           >
-            Inspect
+            {actionLabel}
           </button>
         ) : null}
       </span>
@@ -374,6 +376,17 @@ function locate(view: ProtocolDriftView, entityId: string) {
     const related = view.issues.find((i) => i.submissionId === mh.submissionId);
     return { issueId: related?.issueId ?? null, submissionId: mh.submissionId };
   }
+  // ADVS rows, paired or not, point back at the visit's issue (#2164).
+  const adam = [...view.adamRows, ...view.unpaired].find(
+    (r) => r.rowId === entityId
+  );
+  if (adam) {
+    const related = view.issues.find(
+      (i) => i.subjectId === adam.USUBJID && i.visitDay === adam.AVISITN
+    );
+    if (related)
+      return { issueId: related.issueId, submissionId: related.submissionId };
+  }
   return null;
 }
 
@@ -387,6 +400,8 @@ export function LockReviewModal({
 }) {
   const back = useProtocolDriftStore((s) => s.returnToWorkbench);
   const confirm = useProtocolDriftStore((s) => s.confirmLock);
+  const command = useProtocolDriftStore((s) => s.command);
+  const requestLock = useProtocolDriftStore((s) => s.requestLock);
   const select = useProtocolDriftStore((s) => s.select);
   const setExpanded = useProtocolDriftStore((s) => s.setInspectorExpanded);
   const id = useId();
@@ -401,6 +416,15 @@ export function LockReviewModal({
       setExpanded(true);
       void back();
     };
+  };
+  // Replays every stale ADVS row, paired or unpaired, and re-runs the gate,
+  // so a correction accepted after derivation never blocks the lock (#2164).
+  const replayStale = () => {
+    void (async () => {
+      await back();
+      await command({ type: "REPLAY_DERIVATIONS" });
+      await requestLock();
+    })();
   };
   return (
     <ModalShell
@@ -495,7 +519,8 @@ export function LockReviewModal({
             passed={a.staleDerivations.passed}
             label="Stale derivations"
             detail={`${a.staleDerivations.actual}`}
-            onInspect={inspectFor(["STALE_DERIVATIONS_EXIST"])}
+            onInspect={replayStale}
+            actionLabel="Replay derivations"
           />
         </ul>
       </section>

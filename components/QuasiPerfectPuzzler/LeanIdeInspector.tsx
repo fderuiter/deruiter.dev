@@ -62,7 +62,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
     success: !hasAdmittedStep,
     status: "idle",
     diagnostics: [],
-    goalState: isComplete ? "Goals closed (Local)" : "Proof in progress",
+    goalState: isComplete ? "Goals closed (Local)" : "Goal open",
   };
 
   const effectiveVerifyResult = isLiveSync ? verifyResult : idleVerifyResult;
@@ -103,8 +103,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             status: data.status || "fallback_simulated",
             diagnostics: data.diagnostics || [],
             goalState:
-              data.goalState ||
-              (isComplete ? "Goals closed ✔" : "Proof in progress"),
+              data.goalState || (isComplete ? "Goals closed ✔" : "Goal open"),
             executionTimeMs: data.executionTimeMs,
             engine: data.engine,
           });
@@ -128,9 +127,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             success: !hasAdmittedStep,
             status: "fallback_simulated",
             diagnostics: fallbackDiagnostics,
-            goalState: isComplete
-              ? "Goals closed (Fallback)"
-              : "Proof in progress",
+            goalState: isComplete ? "Goals closed (Fallback)" : "Goal open",
             engine: "fallback_simulator",
           });
         }
@@ -311,7 +308,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                   ? "Status: Goal admitted with sorry"
                   : isComplete
                     ? "Status: Goal closed ✔"
-                    : "Status: Simulating..."}
+                    : "Status: Goal open"}
               </span>
             </div>
             <pre className="text-xs text-zinc-300 font-mono leading-relaxed whitespace-pre">

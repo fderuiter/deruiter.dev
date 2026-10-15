@@ -611,7 +611,7 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
                           : "border-zinc-700 text-zinc-300"
                       }`}
                     >
-                      {m.medal ? "MEDAL" : "OVER PAR"}
+                      {m.medal ? "MEDAL" : m.waived ? "ASSISTED" : "OVER PAR"}
                     </span>
                   </td>
                 </tr>
@@ -620,6 +620,13 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
           </tbody>
         </table>
       </div>
+      {scorecard.assisted ? (
+        <p className="mt-2 text-amber-300">
+          Assisted run: a reference pipeline was loaded, so the chip and wire
+          measures earn no medal, no points and no best. Design your own
+          pipeline to score them.
+        </p>
+      ) : null}
       <p className="mt-2 text-zinc-300">
         Arcade score{" "}
         <b className="tabular-nums text-zinc-100">{scorecard.score}</b>: 100 for

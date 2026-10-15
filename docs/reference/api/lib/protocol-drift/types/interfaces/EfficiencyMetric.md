@@ -47,3 +47,12 @@ True when the run was at or under par, which earns the medal.
 > **points**: `number`
 
 Points this measure adds to the efficiency score.
+
+***
+
+### waived?
+
+> `optional` **waived?**: `boolean`
+
+True when a loaded reference pipeline did this measure's work, so it
+earns no medal, no points and no best (#2168).

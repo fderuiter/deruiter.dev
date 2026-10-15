@@ -107,6 +107,9 @@ import {
   BATHTUB_BOUNDS,
   DUCK_FACTS,
   SPRINTS,
+  STANDUP_BONUS,
+  STANDUP_START_TICK,
+  STANDUP_TICKS,
   SoundCue,
 } from "@/lib/working-with-duck-engine";
 import {
@@ -1519,6 +1522,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       status: uiState.status,
     };
   }, [fx, uiState.status, chewedCount, puddleCount, hasZoomies, hasSurprise]);
+
+  // The standup's outcome is drawn on the canvas; say it too (#2161).
+  const standupOutcome = uiState.standup;
+  useEffect(() => {
+    if (standupOutcome === "passed") {
+      announce(`Smooth standup! Plus ${STANDUP_BONUS} points.`, "polite");
+    } else if (standupOutcome === "failed") {
+      announce("Duck crashed the standup. No standup bonus.", "polite");
+    }
+  }, [standupOutcome, announce]);
 
   // Reset interruption state when session concludes or returns to idle
   useEffect(() => {
@@ -2998,6 +3011,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             }
           : null;
 
+  // The Launch Standup (#2161) keeps its countdown in the HUD after the
+  // opening toast fades, so the player can see how long Duck must behave.
+  const standupSecondsLeft =
+    uiState.standup === "live"
+      ? Math.max(
+          0,
+          Math.ceil((STANDUP_START_TICK + STANDUP_TICKS - uiState.ticks) / 60)
+        )
+      : null;
+
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
   const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
   // The campaign shows the best for this sprint; endless keeps the overall
@@ -3126,12 +3149,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             },
           ]}
           callouts={
-            hudCallout ? (
-              <span
-                className={`rounded-md border px-1.5 py-0.5 font-bold uppercase tracking-wider ${hudCallout.className}`}
-              >
-                {hudCallout.text}
-              </span>
+            hudCallout || standupSecondsLeft !== null ? (
+              <>
+                {standupSecondsLeft !== null && (
+                  <span
+                    data-testid="duck-hud-standup"
+                    className="rounded-md border border-sky-400/40 bg-sky-400/10 px-1.5 py-0.5 font-bold uppercase tracking-wider text-sky-200 tabular-nums"
+                  >
+                    Standup {standupSecondsLeft}s
+                  </span>
+                )}
+                {hudCallout && (
+                  <span
+                    className={`rounded-md border px-1.5 py-0.5 font-bold uppercase tracking-wider ${hudCallout.className}`}
+                  >
+                    {hudCallout.text}
+                  </span>
+                )}
+              </>
             ) : undefined
           }
           trailing={

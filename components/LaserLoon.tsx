@@ -267,6 +267,8 @@ export const LaserLoon: React.FC = () => {
   >("idle");
   const [currentActNum, setCurrentActNum] = useState(1);
   const [actKills, setActKills] = useState(0);
+  // Every flag downed this run, in any mode, for the end-of-run card.
+  const [runKills, setRunKills] = useState(0);
   const [hitsLeft, setHitsLeft] = useState(LOON_MAX_HITS);
   const [bossActive, setBossActive] = useState(false);
   const [bossHp, setBossHp] = useState(100);
@@ -397,6 +399,7 @@ export const LaserLoon: React.FC = () => {
   const lastBossHpRef = useRef(0);
   const bossHitFlashUntilRef = useRef(0);
   const actKillsRef = useRef(0);
+  const runKillsRef = useRef(0);
   // Unpaused play this act, for its par star (#1940).
   const actPlayMsRef = useRef(0);
   // Arcade Survival's game-time clock, and its last whole second shown.
@@ -806,6 +809,8 @@ export const LaserLoon: React.FC = () => {
 
   const recordCampaignKill = useCallback(
     (t: Target) => {
+      runKillsRef.current += 1;
+      setRunKills(runKillsRef.current);
       if (mode !== "campaign") return;
       const outcome = classifyCampaignKill(t, currentActNum);
       if (outcome === "no-credit") return;
@@ -987,6 +992,8 @@ export const LaserLoon: React.FC = () => {
     survivalMsRef.current = 0;
     survivalSecsRef.current = 0;
     setSurvivalSecs(0);
+    setRunKills(0);
+    runKillsRef.current = 0;
     setHitsLeft(LOON_MAX_HITS);
     hitsLeftRef.current = LOON_MAX_HITS;
     invulnerableUntilRef.current = 0;
@@ -3163,10 +3170,10 @@ export const LaserLoon: React.FC = () => {
           >
             <p
               data-testid="laser-loon-campaign-stars"
-              className="text-center font-mono text-xs text-neutral-300"
+              className="font-mono text-xs text-neutral-300"
             >
               {CAMPAIGN_ACTS.map((a) => (
-                <span key={a.actNumber} className="mx-1.5 inline-block">
+                <span key={a.actNumber} className="mr-3 inline-block">
                   Act {a.actNumber}{" "}
                   <span
                     className="text-amber-400"
@@ -3198,7 +3205,7 @@ export const LaserLoon: React.FC = () => {
             }`}
             stats={[
               { label: "Final score", value: score },
-              { label: "Survived", value: survivalSecs, suffix: "s" },
+              { label: "Flags downed", value: runKills },
               { label: "Max combo", value: maxCombo, suffix: "x" },
             ]}
             score={score}

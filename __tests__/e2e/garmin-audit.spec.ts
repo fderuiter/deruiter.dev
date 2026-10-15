@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 /**
  * Monkey C Mayhem 10/10 audit (#2128): desktop checks for the gaps the audit
@@ -10,6 +11,17 @@ const DESKTOP_SIZES = [
   { width: 1280, height: 800 },
   { width: 1440, height: 900 },
 ] as const;
+
+const BLOCKING = new Set(["critical", "serious", "moderate"]);
+
+async function blockingViolations(page: Page): Promise<string[]> {
+  const results = await new AxeBuilder({ page }).analyze();
+  return results.violations
+    .filter((v) => BLOCKING.has(v.impact ?? ""))
+    .map(
+      (v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`
+    );
+}
 
 async function launchCabinet(page: Page) {
   await page.goto("/arcade/garmin-watch", { waitUntil: "domcontentloaded" });
@@ -114,6 +126,33 @@ test.describe("Monkey C Mayhem audit (#2128)", () => {
       }
     });
   }
+  test("axe finds nothing serious idle, running or at game over (#2133)", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await launchCabinet(page);
+    expect(await blockingViolations(page)).toEqual([]);
+
+    await page.getByRole("switch", { name: "Dev Mode" }).click();
+    await page.locator('[data-testid="garmin-screen"]').click();
+    await page.keyboard.press("Enter");
+    await expect(
+      page.getByRole("img", { name: /Smartwatch display simulator/i })
+    ).toHaveAttribute("aria-label", /Status: playing/);
+    expect(await blockingViolations(page)).toEqual([]);
+
+    const dialog = page.getByRole("dialog");
+    await expect(async () => {
+      if (!(await dialog.count())) {
+        await page
+          .getByRole("button", { name: /Drain Battery/ })
+          .click({ timeout: 1000 });
+      }
+      await expect(dialog).toBeVisible({ timeout: 500 });
+    }).toPass({ timeout: 20000 });
+    expect(await blockingViolations(page)).toEqual([]);
+  });
+
   test("Enter starts a race after Race Mode is clicked (#2130)", async ({
     page,
   }) => {

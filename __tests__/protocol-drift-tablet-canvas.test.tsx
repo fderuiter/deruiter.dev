@@ -20,6 +20,7 @@ vi.mock("@xyflow/react", () => ({
     <>{children}</>
   ),
   ViewportPortal: () => null,
+  Controls: () => null,
   Handle: () => null,
   Position: { Left: "left", Right: "right" },
   applyEdgeChanges: (_changes: unknown, edges: unknown) => edges,
@@ -59,11 +60,11 @@ describe("Protocol Drift canvas gestures (#2045)", () => {
     expect(flowProps.current?.zoomOnScroll).toBe(false);
   });
 
-  it("desktop keeps the fitted, fixed view: no pan, no pinch, default zoom floor", () => {
+  it("desktop pans by drag and zooms by pinch or buttons, never by the page wheel (#2167)", () => {
     renderCanvas(false);
-    expect(flowProps.current?.panOnDrag).toBe(false);
-    expect(flowProps.current?.zoomOnPinch).toBe(false);
-    expect(flowProps.current?.minZoom).toBeUndefined();
+    expect(flowProps.current?.panOnDrag).toBe(true);
+    expect(flowProps.current?.zoomOnPinch).toBe(true);
+    expect(flowProps.current?.minZoom).toBe(0.2);
     expect(flowProps.current?.zoomOnScroll).toBe(false);
   });
 });

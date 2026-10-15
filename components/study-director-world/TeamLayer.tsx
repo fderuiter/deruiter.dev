@@ -7,6 +7,7 @@ import {
   relationshipOptions,
   answerCall,
   brushOff,
+  clearQueriesAtEdc,
   decide,
   delegate,
   deskView,
@@ -26,6 +27,7 @@ import {
   sponsorAgenda,
   startMeeting,
   talk,
+  workableQueries,
   type DelegationVerb,
   type RelationshipAction,
   type DialogueLine,
@@ -74,7 +76,7 @@ type Conversation =
       atDesk: boolean;
     }
   | { kind: "desk"; lines: DialogueLine[] }
-  | { kind: "edc" }
+  | { kind: "edc"; lines?: DialogueLine[] }
   | { kind: "report"; report: MeetingReport }
   | { kind: "archive" };
 
@@ -272,6 +274,17 @@ export function useTeamLayer({
     [announce, refuse, setWorld, world]
   );
 
+  const clearQueries = useCallback(() => {
+    const result = clearQueriesAtEdc(world);
+    if (!result.ok) {
+      refuse(result.reason);
+      return;
+    }
+    setWorld(result.world);
+    setConversation({ kind: "edc", lines: result.lines });
+    announce(result.lines.map((l) => l.text).join(" "));
+  }, [announce, refuse, setWorld, world]);
+
   const deskOpen = useCallback(
     (eventId: string, via: "mail" | "voicemail" | "callback") => {
       const result = openAtDesk(world, eventId, via);
@@ -374,6 +387,7 @@ export function useTeamLayer({
     verb,
     relateTo,
     writeUp,
+    clearQueries,
     deskOpen,
     phone,
     meet,
@@ -709,6 +723,7 @@ export const TeamOverlay: React.FC<{
 
   if (c.kind === "edc") {
     const rows = edcScreen(world);
+    const queries = workableQueries(world);
     return (
       <Overlay
         key="edc"
@@ -776,6 +791,22 @@ export const TeamOverlay: React.FC<{
             ))}
           </tbody>
         </table>
+        {c.lines && c.lines.length > 0 ? (
+          <DialogueLines lines={c.lines} />
+        ) : null}
+        {queries > 0 ? (
+          <OverlayButton
+            primary
+            onClick={team.clearQueries}
+            data-testid="edc-clear-queries"
+          >
+            Work the query queue ({queries} shown) · 45 min
+          </OverlayButton>
+        ) : (
+          <p className="text-[11px] text-[var(--sd-muted)]">
+            No open queries on the EDC to work.
+          </p>
+        )}
         <OverlayButton ref={closeRef} onClick={team.close}>
           Close
         </OverlayButton>

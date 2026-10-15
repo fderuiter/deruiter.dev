@@ -448,6 +448,8 @@ export function CompanionPanel({
       aria-label="Connect IQ companion"
       className="garmin-companion relative isolate w-full min-w-0 self-stretch overflow-hidden rounded-2xl border border-white/[0.08] bg-[#13151a] font-mono text-xs text-zinc-300"
     >
+      {/* Gives the result card's h3 a parent heading under the page h1 (#2133). */}
+      <h2 className="sr-only">Connect IQ companion</h2>
       <div className={cardOpen ? "hidden" : "flex flex-col gap-4 p-4"}>
         <header className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">

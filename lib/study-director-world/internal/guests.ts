@@ -6,6 +6,7 @@ import {
 } from "@/lib/study-director";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
+import { applyOfficeEffects } from "./goodwill";
 import { CRO_FLOOR, roomAt } from "./floor";
 import { adjustTrust, placePeople } from "./team";
 import type {
@@ -220,7 +221,9 @@ function sponsorChoices(): Choice[] {
         return {
           world: {
             ...world,
-            study: applyEffects(world.study, { meters: { client, integrity } }),
+            study: applyOfficeEffects(world.study, {
+              meters: { client, integrity },
+            }),
           },
           result,
         };
@@ -235,7 +238,7 @@ function sponsorChoices(): Choice[] {
         return {
           world: {
             ...world,
-            study: applyEffects(world.study, {
+            study: applyOfficeEffects(world.study, {
               meters: { client: 2, integrity: trouble ? -3 : 0 },
             }),
           },
@@ -256,7 +259,7 @@ function sponsorChoices(): Choice[] {
         if (manager) {
           next = {
             ...next,
-            study: applyEffects(next.study, {
+            study: applyOfficeEffects(next.study, {
               workload: [{ memberId: manager.id, delta: 5 }],
               meters: { client: 3 },
             }),

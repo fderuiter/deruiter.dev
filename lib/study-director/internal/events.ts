@@ -44,7 +44,33 @@ export function eventDay(state: StudyState, event: StudyEvent): number {
 export function deckDay(state: StudyState, event: StudyEvent): number | null {
   if (event.followUp) return null;
   if (!state.deck) return eventDay(state, event);
-  return state.deck[event.id] ?? null;
+  const day = state.deck[event.id];
+  return day === undefined ? null : lateMailDay(state, day);
+}
+
+/** The last day the scripted calendar writes mail for, on the full calendar. */
+const LAST_WRITTEN_DAY = 110;
+
+/**
+ * Where mail written for after the planned end lands in this run (#2192).
+ * It is written for a run that slips, out to day 110, but a run that slips
+ * ends between days 82 and 94, so most of it was never reached. It is
+ * pressed into the days this run actually has past its plan, in the order it
+ * was written; a run that slips further than the mail was written for keeps
+ * the written days. An on-time run still never sees it. The squeeze follows
+ * the run's slip as it grows, so the same deck stays live to the real end.
+ */
+function lateMailDay(state: StudyState, day: number): number {
+  const planned = state.setup.durationDays;
+  if (day <= planned) return day;
+  const written = Math.max(
+    1,
+    scaleDays(LAST_WRITTEN_DAY, state.setup) - planned
+  );
+  // The days past the plan this run has: its slip, less the day it ends on.
+  const room = state.slipDays - 1;
+  const squeeze = clamp(room / written, 0, 1);
+  return planned + Math.max(1, Math.round((day - planned) * squeeze));
 }
 
 /** Looks up an event by id. */
@@ -57,7 +83,10 @@ function isDue(state: StudyState, event: StudyEvent): boolean {
   const scheduled = state.scheduled.find((s) => s.eventId === event.id);
   if (scheduled) return state.day >= scheduled.day;
   const day = deckDay(state, event);
-  if (day === null || state.day < day) return false;
+  // Mail that has reached the inbox stays there even if a later slip moves
+  // the day its late mail is squeezed onto (#2192).
+  const arrived = state.seen[event.id] !== undefined;
+  if (day === null || (state.day < day && !arrived)) return false;
   return event.trigger ? event.trigger(state) : true;
 }
 
@@ -259,6 +288,16 @@ function windowOf(event: StudyEvent): [number, number] {
 const DECKABLE = STUDY_EVENTS.filter((e) => !e.followUp && !e.wildcard);
 
 /**
+ * The order a deck is dealt and read back in: callbacks last, once the day
+ * of the event they recall is known. Reading a save in the same order keeps
+ * its text byte for byte, whatever order the events are written in.
+ */
+const DEAL_ORDER = [
+  ...DECKABLE.filter((e) => !e.recalls),
+  ...DECKABLE.filter((e) => e.recalls),
+];
+
+/**
  * Deals this run's event deck (#2093). Core events are always drawn; of the
  * optional ones, each stretch of the study keeps {@link DECK_KEEP_SHARE} of
  * what was written for it. Every drawn event gets a day inside its window,
@@ -295,12 +334,7 @@ export function drawDeck(state: StudyState): StudyState {
     for (const id of pool.slice(0, keep)) kept.add(id);
   }
   const deck: Record<string, number> = {};
-  // Callbacks come last, once the day of the event they recall is known.
-  const order = [
-    ...DECKABLE.filter((e) => !e.recalls),
-    ...DECKABLE.filter((e) => e.recalls),
-  ];
-  for (const event of order) {
+  for (const event of DEAL_ORDER) {
     const parent = event.recalls ? deck[event.recalls] : undefined;
     if (event.recalls ? parent === undefined : !kept.has(event.id)) continue;
     const [lo, hi] = windowOf(event);
@@ -321,7 +355,7 @@ export function readDeck(value: unknown): Record<string, number> | undefined {
   if (typeof value !== "object" || value === null || Array.isArray(value))
     return undefined;
   const deck: Record<string, number> = {};
-  for (const event of DECKABLE) {
+  for (const event of DEAL_ORDER) {
     const day: unknown = (value as Record<string, unknown>)[event.id];
     if (typeof day === "number" && Number.isInteger(day) && day >= 1)
       deck[event.id] = day;

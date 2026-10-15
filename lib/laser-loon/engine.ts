@@ -1577,6 +1577,95 @@ export function getActStars(
   return stars as 1 | 2 | 3;
 }
 
+/** Storage key for each act's best stars and clear time. */
+export const LASER_LOON_STARS_KEY = "laser_loon_act_stars_v1";
+
+/** One act's best result across runs. */
+export interface ActBest {
+  /** Most stars earned on the act, 1 to 3. */
+  stars: 1 | 2 | 3;
+  /** Fastest clear, in whole seconds. */
+  bestSeconds: number;
+}
+
+/** Best results keyed by act number. */
+export type ActBestRecord = Partial<Record<number, ActBest>>;
+
+/** What a cleared act changed in the saved record. */
+export interface ActBestMerge {
+  record: ActBestRecord;
+  /** True when the act earned more stars than ever before. */
+  newStars: boolean;
+  /** True when the act was cleared faster than ever before. */
+  newTime: boolean;
+}
+
+/**
+ * Reads the saved act bests, dropping anything malformed so a damaged entry
+ * never breaks the cabinet.
+ *
+ * @param raw - The stored JSON, or null when nothing is saved.
+ */
+export function parseActBestRecord(raw: string | null): ActBestRecord {
+  if (!raw) return {};
+  let data: unknown;
+  try {
+    data = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+  const record: ActBestRecord = {};
+  for (const act of CAMPAIGN_ACTS) {
+    const entry = (data as Record<string, unknown>)[String(act.actNumber)];
+    if (!entry || typeof entry !== "object") continue;
+    const { stars, bestSeconds } = entry as Record<string, unknown>;
+    if (
+      (stars === 1 || stars === 2 || stars === 3) &&
+      typeof bestSeconds === "number" &&
+      Number.isFinite(bestSeconds) &&
+      bestSeconds >= 0
+    ) {
+      record[act.actNumber] = { stars, bestSeconds: Math.round(bestSeconds) };
+    }
+  }
+  return record;
+}
+
+/**
+ * Folds a cleared act into the saved bests, keeping the most stars and the
+ * fastest time independently.
+ *
+ * @param record - The saved bests.
+ * @param actNumber - The act just cleared.
+ * @param stars - Stars earned this clear.
+ * @param seconds - Seconds this clear took.
+ */
+export function mergeActBest(
+  record: ActBestRecord,
+  actNumber: number,
+  stars: 1 | 2 | 3,
+  seconds: number
+): ActBestMerge {
+  const previous = record[actNumber];
+  const clearSeconds = Math.max(0, Math.round(seconds));
+  const newStars = !previous || stars > previous.stars;
+  const newTime = !previous || clearSeconds < previous.bestSeconds;
+  return {
+    record: {
+      ...record,
+      [actNumber]: {
+        stars: previous ? (Math.max(previous.stars, stars) as 1 | 2 | 3) : stars,
+        bestSeconds: previous
+          ? Math.min(previous.bestSeconds, clearSeconds)
+          : clearSeconds,
+      },
+    },
+    newStars,
+    newTime,
+  };
+}
+
 /** The shape of an Arcade Survival run at a moment in time. */
 export interface SurvivalWave {
   /** Zero-based wave index. */
@@ -1622,6 +1711,18 @@ export function getSurvivalWave(elapsedSeconds: number): SurvivalWave {
         ? 0
         : Math.min(MINION_FIRE_FIRST_ACT + 3, MINION_FIRE_FIRST_ACT + wave - 1),
   };
+}
+
+/**
+ * Total stars in a record, out of three per campaign act.
+ *
+ * @param record - Saved bests, or one run's stars in the same shape.
+ */
+export function countActStars(record: ActBestRecord): number {
+  return CAMPAIGN_ACTS.reduce(
+    (sum, act) => sum + (record[act.actNumber]?.stars ?? 0),
+    0
+  );
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   type Effects,
   type TeamRole,
 } from "@/lib/study-director";
+import { applyOfficeEffects } from "./goodwill";
 import { clamp } from "@/lib/game-utils";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
@@ -128,7 +129,11 @@ function meters(
 }
 
 /** More (or, negative, less) work for whoever holds a role on the team. */
-function loadRole(world: WorldState, role: TeamRole, delta: number): WorldState {
+function loadRole(
+  world: WorldState,
+  role: TeamRole,
+  delta: number
+): WorldState {
   const member = world.study.team.find((m) => m.role === role);
   return member
     ? {
@@ -192,7 +197,7 @@ const CATALOG: readonly Catalogued[] = [
         result: "Short, plain, and true. The sponsor writes back: thank you.",
         apply: (w) => ({
           ...w,
-          study: applyEffects(w.study, { meters: { client: 2 } }),
+          study: applyOfficeEffects(w.study, { meters: { client: 2 } }),
         }),
       },
       {
@@ -337,7 +342,8 @@ const CATALOG: readonly Catalogued[] = [
         id: "order",
         label: "Order the beans",
         cost: cost(5),
-        result: "Two kilos, next-day delivery. The note gets a fourth line: thank you.",
+        result:
+          "Two kilos, next-day delivery. The note gets a fourth line: thank you.",
         apply: (w) => meters(w, { team: 1 }),
       },
       {
@@ -357,7 +363,8 @@ const CATALOG: readonly Catalogued[] = [
         id: "listen",
         label: "Take the call and triage with them",
         cost: cost(20, 1, 4),
-        result: "You pick the three things that matter. They write them on their hand.",
+        result:
+          "You pick the three things that matter. They write them on their hand.",
         apply: (w) => {
           const site = loudestSite(w);
           return site
@@ -388,14 +395,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "explain",
         label: "Walk them through it",
         cost: cost(20, 0, 5),
-        result: "Pass-throughs, site start-up, one invoice nobody expected. The box gets its sentence.",
+        result:
+          "Pass-throughs, site start-up, one invoice nobody expected. The box gets its sentence.",
         apply: (w) => meters(w, { budget: 1 }),
       },
       {
         id: "spreadsheet",
         label: "Send them the spreadsheet",
         cost: cost(3),
-        result: "They reply with a question about column K. There are forty columns.",
+        result:
+          "They reply with a question about column K. There are forty columns.",
         apply: (w) => meters(w, { budget: -1 }),
       },
     ],
@@ -409,14 +418,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "answer",
         label: "Answer it now",
         cost: cost(15, 0, 4),
-        result: "One word, changed in two places, with a note saying why. The board says thank you in capitals.",
+        result:
+          "One word, changed in two places, with a note saying why. The board says thank you in capitals.",
         apply: (w) => meters(w, { compliance: 2 }),
       },
       {
         id: "regulatory",
         label: "Flag it for regulatory",
         cost: cost(2),
-        result: "It joins regulatory's list, near the top, below four other things near the top.",
+        result:
+          "It joins regulatory's list, near the top, below four other things near the top.",
         apply: (w) => loadRole(w, "regulatory", 4),
       },
     ],
@@ -430,7 +441,8 @@ const CATALOG: readonly Catalogued[] = [
         id: "sing",
         label: "Go and sing, badly",
         cost: cost(10),
-        result: "You know the words. Everybody knows the words. The cake is mostly sugar and helps.",
+        result:
+          "You know the words. Everybody knows the words. The cake is mostly sugar and helps.",
         apply: (w) =>
           befriend(
             { ...w, energy: clamp(w.energy + 5, 0, 100) },
@@ -454,8 +466,12 @@ const CATALOG: readonly Catalogued[] = [
         id: "check",
         label: "Check it line by line",
         cost: cost(20, 0, 6),
-        result: "Two lines are for last month. You send it back with both circled.",
-        apply: (w) => ({ ...w, study: applyEffects(w.study, { spend: -1500 }) }),
+        result:
+          "Two lines are for last month. You send it back with both circled.",
+        apply: (w) => ({
+          ...w,
+          study: applyEffects(w.study, { spend: -1500 }),
+        }),
       },
       {
         id: "approve",
@@ -475,7 +491,8 @@ const CATALOG: readonly Catalogued[] = [
         id: "restart",
         label: "Let it restart",
         cost: cost(15),
-        result: "Fifteen minutes of a spinning circle. Everything opens faster afterwards.",
+        result:
+          "Fifteen minutes of a spinning circle. Everything opens faster afterwards.",
         apply: (w) => ({ ...w, focus: clamp(w.focus + 5, 0, 100) }),
       },
       {
@@ -496,14 +513,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "read",
         label: "Read it properly first",
         cost: cost(25, 0, 5),
-        result: "Page nineteen has a finding nobody escalated. You escalate it and then you sign.",
+        result:
+          "Page nineteen has a finding nobody escalated. You escalate it and then you sign.",
         apply: (w) => meters(w, { integrity: 1 }),
       },
       {
         id: "sign",
         label: "Sign the last page",
         cost: cost(2),
-        result: "Signed. Page nineteen will come up again, in somebody else's report.",
+        result:
+          "Signed. Page nineteen will come up again, in somebody else's report.",
         apply: (w) => meters(w, { compliance: -1 }),
       },
     ],
@@ -517,14 +536,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "log",
         label: "Check the shipping log first",
         cost: cost(10),
-        result: "One tube number does not match. Fixed before it leaves the building.",
+        result:
+          "One tube number does not match. Fixed before it leaves the building.",
         apply: (w) => meters(w, { integrity: 1 }),
       },
       {
         id: "sign",
         label: "Sign for it",
         cost: cost(1),
-        result: "The van leaves. The lab will tell you about tube 14 in a fortnight.",
+        result:
+          "The van leaves. The lab will tell you about tube 14 in a fortnight.",
         apply: (w) => meters(w, { integrity: -1 }),
       },
     ],
@@ -538,7 +559,8 @@ const CATALOG: readonly Catalogued[] = [
         id: "go",
         label: "Go and argue for fewer",
         cost: cost(30, 1),
-        result: "Two standing meetings are cancelled. The team gets back an hour a week.",
+        result:
+          "Two standing meetings are cancelled. The team gets back an hour a week.",
         apply: (w) => meters(w, { team: 1 }),
       },
       {
@@ -558,14 +580,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "read",
         label: "Read the tracked changes now",
         cost: cost(20, 0, 5),
-        result: "Minor, except the visit window, which is now two days shorter. You tell the sites.",
+        result:
+          "Minor, except the visit window, which is now two days shorter. You tell the sites.",
         apply: (w) => meters(w, { integrity: 1 }),
       },
       {
         id: "later",
         label: "Trust the summary",
         cost: cost(1),
-        result: "Minor. The visit window will introduce itself at the next monitoring visit.",
+        result:
+          "Minor. The visit window will introduce itself at the next monitoring visit.",
         apply: (w) => meters(w, { integrity: -1 }),
       },
     ],
@@ -579,14 +603,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "explain",
         label: "Explain it properly",
         cost: cost(15),
-        result: "You draw it on the whiteboard. Halfway through you realise you are explaining it to yourself.",
+        result:
+          "You draw it on the whiteboard. Halfway through you realise you are explaining it to yourself.",
         apply: (w) => befriend(meters(w, { team: 1 }), leastTrusting(w, 1)),
       },
       {
         id: "sop",
         label: "Point them at the SOP",
         cost: cost(1),
-        result: "The SOP is a hundred and forty pages. They come back tomorrow with eleven questions.",
+        result:
+          "The SOP is a hundred and forty pages. They come back tomorrow with eleven questions.",
       },
     ],
   },
@@ -599,14 +625,16 @@ const CATALOG: readonly Catalogued[] = [
         id: "look",
         label: "Look it over together",
         cost: cost(15, 0, 3),
-        result: "It is a sorting error, not a data error. Caught before forty queries went out.",
+        result:
+          "It is a sorting error, not a data error. Caught before forty queries went out.",
         apply: (w) => loadRole(w, "dataManager", -3),
       },
       {
         id: "later",
         label: "Not now",
         cost: cost(1),
-        result: "It goes out as it is. The replies arrive by the end of the week.",
+        result:
+          "It goes out as it is. The replies arrive by the end of the week.",
         apply: (w) => loadRole(w, "dataManager", 2),
       },
     ],
@@ -641,7 +669,8 @@ const CATALOG: readonly Catalogued[] = [
         id: "sort",
         label: "Sort the schedule yourself",
         cost: cost(15, 0, 4),
-        result: "One visit moves a week. Both sites say that works, which is not the same as it working.",
+        result:
+          "One visit moves a week. Both sites say that works, which is not the same as it working.",
         apply: (w) => loadRole(w, "monitor", -2),
       },
       {
@@ -671,8 +700,7 @@ const MIDDAY = new Set(["lunch"]);
 /** The catalog in the order this seed works through it. */
 function rotation(seed: string): Catalogued[] {
   return [...CATALOG].sort(
-    (a, b) =>
-      fnv1a(`${seed}:rhythm:${a.id}`) - fnv1a(`${seed}:rhythm:${b.id}`)
+    (a, b) => fnv1a(`${seed}:rhythm:${a.id}`) - fnv1a(`${seed}:rhythm:${b.id}`)
   );
 }
 

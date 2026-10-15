@@ -117,6 +117,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Site 03 hasn't submitted its IRB package. Their coordinator isn't answering me.",
     urgency: "important",
     day: 3,
+    window: [3, 12],
     ttl: 4,
     ifIgnored: { slipDays: 2, workload: [{ memberId: "dana", delta: 10 }] },
     options: [
@@ -139,6 +140,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Can you join the Acme proposal call at 2? You'd be great for the operations part.",
     urgency: "routine",
     day: 4,
+    window: [3, 20],
     ttl: 1,
     ifIgnored: { meters: { team: -2 } },
     options: [
@@ -156,6 +158,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Build validation will slip about four days. I can hit Friday if we deprioritize edit-check testing.",
     urgency: "important",
     day: 6,
+    window: [5, 16],
     ttl: 3,
     ifIgnored: { slipDays: 4, workload: [{ memberId: "maya", delta: 10 }] },
     options: [
@@ -203,6 +206,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "The Site 03 coordinator hasn't completed training on Amendment 1. Enrollment opens tomorrow.",
     urgency: "important",
     day: 9,
+    window: [8, 20],
     ttl: 3,
     trigger: (s) => !s.sites[2]?.trainingCurrent,
     ifIgnored: { meters: { compliance: -6 } },
@@ -242,7 +246,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Subject 014 took their dose at 08:02 instead of 08:00. Is this a protocol deviation?",
     urgency: "routine",
     day: 10,
-    core: true,
+    window: [6, 20],
     ttl: 2,
     ifIgnored: { sites: [{ siteId: "site-02", burden: 4, openQueries: 1 }] },
     options: [
@@ -261,6 +265,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Where can I find the lab manual?",
     urgency: "routine",
     day: 11,
+    window: [7, 22],
     ttl: 2,
     ifIgnored: { sites: [{ siteId: "site-01", deviations: 1 }] },
     options: [
@@ -277,6 +282,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Our CEO will join Friday. Could you send a status deck beforehand? Great work so far, we love the momentum!",
     urgency: "important",
     day: 14,
+    window: [12, 17],
     core: true,
     ttl: 3,
     ifIgnored: { meters: { client: -6 } },
@@ -880,6 +886,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Quick one. Our brand team would love the status slides in teal, not blue. Also the logo needs to be bigger. Also smaller. You know what we mean!",
     urgency: "routine",
     day: 5,
+    window: [4, 20],
     ttl: 2,
     ifIgnored: { meters: { client: -2 } },
     options: [
@@ -902,6 +909,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "I watched the first four minutes of the training video and it seems fine. Can that count?",
     urgency: "important",
     day: 8,
+    window: [6, 22],
     ttl: 3,
     ifIgnored: { meters: { compliance: -3 } },
     options: [
@@ -938,6 +946,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "I was thinking about our data flow and I would feel a lot better with forty more edit checks. It is really only a few days of work. Nights, mostly.",
     urgency: "important",
     day: 12,
+    window: [9, 22],
     ttl: 3,
     ifIgnored: { workload: [{ memberId: "maya", delta: 6 }] },
     options: [
@@ -962,6 +971,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "Our new program manager would love a quick daily sync. Fifteen minutes. Cameras on. It will replace nothing.",
     urgency: "routine",
     day: 16,
+    window: [10, 22],
     ttl: 3,
     ifIgnored: { meters: { client: -3 } },
     options: [
@@ -982,6 +992,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "The sample freezer alarm went off Saturday. It stopped Sunday, which we took as a good sign. The samples look frozen.",
     urgency: "important",
     day: 17,
+    window: [10, 24],
     ttl: 2,
     ifIgnored: {
       sites: [{ siteId: "site-01", deviations: 2 }],
@@ -1028,6 +1039,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "We should start reconciling the trial master file now. It is a lot of small work, but a very large amount of work if we wait.",
     urgency: "routine",
     day: 19,
+    window: [10, 26],
     ttl: 3,
     ifIgnored: { workload: [{ memberId: "dana", delta: 5 }] },
     options: [
@@ -1067,6 +1079,7 @@ export const STUDY_EVENTS: StudyEvent[] = [
     body: "I finished the table shells early. Please review them all. There are 212. I only need a yes or no on each.",
     urgency: "routine",
     day: 20,
+    window: [10, 26],
     ttl: 3,
     ifIgnored: { workload: [{ memberId: "omar", delta: 4 }] },
     options: [
@@ -2008,6 +2021,689 @@ export const STUDY_EVENTS: StudyEvent[] = [
       }),
       opt("expense", "Buy one yourself", 0, 0, { meters: { team: 5 } }),
       opt("tea", "Suggest tea", 0, 0, { meters: { team: -2 } }),
+    ],
+  },
+  // The first fortnight's optional mail (#2192). With only a handful of
+  // early events, two seeds shared about three quarters of their first two
+  // weeks in nearly the same order. These widen the pool the deck draws
+  // from, each on a wide window, so the opening differs from run to run.
+  {
+    id: "walt-initiation-trips",
+    from: "Walt (Monitor)",
+    subject: "Initiation visits: one trip or three?",
+    body: "I can do the three nearest site initiation visits in one long trip, or three short ones. The long one involves a motel I have opinions about.",
+    urgency: "routine",
+    day: 7,
+    window: [4, 22],
+    ttl: 3,
+    ifIgnored: { workload: [{ memberId: "walt", delta: 5 }] },
+    options: [
+      opt("trip", "One trip, and a better motel on the budget", 1, 1, {
+        spend: 900,
+        workload: [{ memberId: "walt", delta: 4 }],
+      }),
+      opt("three", "Three short trips", 1, 1, {
+        spend: 1500,
+        workload: [{ memberId: "walt", delta: 8 }],
+      }),
+      opt("remote", "Do two of them by video", 0, 3, {
+        sites: [
+          { siteId: "site-04", burden: 3 },
+          { siteId: "site-05", burden: 3 },
+        ],
+      }),
+    ],
+  },
+  {
+    id: "priya-randomisation-list",
+    from: "Priya (Biostatistician)",
+    subject: "Randomisation list sign-off",
+    body: "The randomisation list is ready and needs a second signature. The unblinded statistician who was meant to sign it has just been made blinded, by an org chart.",
+    urgency: "important",
+    day: 8,
+    window: [5, 22],
+    ttl: 3,
+    ifIgnored: { slipDays: 1, workload: [{ memberId: "priya", delta: 6 }] },
+    options: [
+      opt("vendor", "Pay the vendor's unblinded statistician to sign", 1, 1, {
+        spend: 1200,
+      }),
+      opt("wait", "Wait for a new unblinded statistician", 1, 1, {
+        slipDays: 1,
+      }),
+      opt(
+        "priya",
+        "Let Priya sign both",
+        0,
+        8,
+        { meters: { integrity: -4 } },
+        {
+          finding: {
+            question:
+              "The randomisation list was generated and approved by the same blinded statistician. Explain how the blind was protected.",
+            answer:
+              "A note to file records the independent check of the list and who held the key.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "site-two-pharmacy",
+    from: "Site 02 coordinator",
+    subject: "The pharmacy wants the dosing card in colour",
+    body: "Our pharmacy says the dosing card is hard to read in black and white. They have asked for colour, laminated, and a larger font for the word NOT.",
+    urgency: "routine",
+    day: 9,
+    window: [5, 22],
+    ttl: 2,
+    ifIgnored: { sites: [{ siteId: "site-02", deviations: 1 }] },
+    options: [
+      opt("print", "Print it in colour for every site", 1, 1, {
+        spend: 400,
+        sites: allSites({ burden: -1 }),
+      }),
+      opt("site", "Print it for Site 02 only", 0, 1, {
+        sites: [{ siteId: "site-02", burden: -2 }],
+      }),
+      opt("no", "Explain that the card is validated as it is", 1, 0, {
+        sites: [{ siteId: "site-02", burden: 2 }],
+      }),
+    ],
+  },
+  {
+    id: "dana-insurance-certificate",
+    from: "Dana (Regulatory)",
+    subject: "Site 04 insurance certificate",
+    body: "Site 04's clinical trial insurance certificate expires before their first subject would. The insurer says renewal takes two weeks, or one if somebody shouts.",
+    urgency: "important",
+    day: 10,
+    window: [6, 22],
+    ttl: 3,
+    ifIgnored: { slipDays: 1, sites: [{ siteId: "site-04", burden: 4 }] },
+    options: [
+      opt("shout", "Call the insurer yourself", 2, 1, {
+        sites: [{ siteId: "site-04", burden: -1 }],
+      }),
+      opt("dana", "Let Dana chase it", 0, 2, {
+        workload: [{ memberId: "dana", delta: 8 }],
+      }),
+      opt("hold", "Hold Site 04's start until it arrives", 1, 1, {
+        sites: [{ siteId: "site-04", burden: 3 }],
+        meters: { compliance: 2 },
+      }),
+    ],
+  },
+  {
+    id: "lee-protocol-typos",
+    from: "Lee (Medical Writer)",
+    subject: "Two typos in the protocol",
+    body: "The protocol says 'milligrams' once where it means 'micrograms', and 'Day 1' once where it means 'Day -1'. The second one matters more than it looks.",
+    urgency: "important",
+    day: 11,
+    window: [6, 22],
+    ttl: 3,
+    ifIgnored: { sites: allSites({ burden: 2 }) },
+    options: [
+      opt("letter", "Send the sites a clarification letter", 1, 1, {
+        meters: { compliance: 2 },
+      }),
+      opt("amend", "Fold them into the next amendment", 1, 2, {
+        sites: [{ siteId: "site-01", deviations: 1 }],
+      }),
+      opt("ignore", "Everyone will know what it means", 0, 4, {
+        sites: allSites({ burden: 3 }),
+        meters: { integrity: -2 },
+      }),
+    ],
+  },
+  {
+    id: "sponsor-kickoff-dinner",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "Kick-off dinner for the investigators?",
+    body: "Could we host a kick-off dinner for the investigators? Somewhere nice. Our compliance people say it is fine as long as nobody enjoys it.",
+    urgency: "routine",
+    day: 12,
+    window: [7, 24],
+    ttl: 3,
+    ifIgnored: { meters: { client: -2 } },
+    options: [
+      opt("meeting", "Make it an investigator meeting with an agenda", 2, 1, {
+        meters: { client: 3 },
+        sites: allSites({ burden: -1 }),
+        spend: 2500,
+      }),
+      opt("decline", "Suggest a video call instead", 1, 0, {
+        meters: { client: -2 },
+      }),
+      opt("dinner", "Book the nice place", 0, 3, {
+        meters: { client: 4, compliance: -2 },
+        spend: 4000,
+      }),
+    ],
+  },
+  // The cleaning, analysis and closeout stretch (#2192). Before these, the
+  // deck went quiet from about day 58 and most late days were empty. They
+  // are core, so every run's last weeks have work in them; the ones written
+  // past the planned end reach only a run that slips, squeezed into the days
+  // it actually has.
+  {
+    id: "dm-query-aging",
+    from: "Maya (Data Manager)",
+    subject: "Queries older than thirty days",
+    body: "Forty-one queries have been open for more than thirty days. Most of them are Site 03 asking what a field means. I can answer them faster with you at the EDC for an afternoon.",
+    urgency: "important",
+    day: 57,
+    window: [56, 58],
+    core: true,
+    ttl: 3,
+    ifIgnored: {
+      meters: { integrity: -3 },
+      workload: [{ memberId: "maya", delta: 6 }],
+    },
+    options: [
+      opt("sit", "Sit with Maya at the EDC for an afternoon", 2, 1, {
+        sites: [
+          { siteId: "site-03", openQueries: -4 },
+          { siteId: "site-02", openQueries: -2 },
+        ],
+        workload: [{ memberId: "maya", delta: -4 }],
+      }),
+      opt("remind", "Send every site a reminder", 1, 1, {
+        sites: allSites({ burden: 2 }),
+        meters: { integrity: 1 },
+      }),
+      opt(
+        "close",
+        "Close the stale ones as no longer relevant",
+        0,
+        8,
+        {
+          sites: [{ siteId: "site-03", openQueries: -8 }],
+          meters: { integrity: -5 },
+        },
+        {
+          finding: {
+            question:
+              "Aged queries were closed in bulk without a site response. Who decided that each one no longer applied?",
+            answer:
+              "A query closure log names the reviewer and the reason for each query.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "walt-sdv-backlog",
+    from: "Walt (Monitor)",
+    subject: "Source verification at Site 01 is behind",
+    body: "I have about two hundred pages of Site 01 source still to verify before lock. I can get through them if somebody else takes my visit reports for a fortnight.",
+    urgency: "important",
+    day: 59,
+    window: [58, 61],
+    core: true,
+    ttl: 3,
+    ifIgnored: {
+      sites: [{ siteId: "site-01", unsignedSource: 1, openQueries: 2 }],
+    },
+    options: [
+      opt("cover", "Take his visit reports yourself", 2, 1, {
+        workload: [{ memberId: "walt", delta: -6 }],
+        sites: [{ siteId: "site-01", openQueries: -2 }],
+      }),
+      opt("extra", "Bring in a contract monitor for two weeks", 1, 1, {
+        spend: 6000,
+        workload: [{ memberId: "walt", delta: -8 }],
+      }),
+      opt(
+        "sample",
+        "Verify a sample and call it done",
+        0,
+        8,
+        {
+          meters: { integrity: -4 },
+          workload: [{ memberId: "walt", delta: -4 }],
+        },
+        {
+          finding: {
+            question:
+              "Source data verification at Site 01 was reduced to a sample late in the study. Where is the risk assessment for that change?",
+            answer:
+              "The monitoring plan amendment and its risk assessment are on file.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "sponsor-topline-date",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "When do we get topline?",
+    body: "Our investors call is penciled in. Could you give us the day topline results will be ready? A rough day is fine. We will put it on a slide.",
+    urgency: "important",
+    day: 61,
+    window: [60, 63],
+    core: true,
+    ttl: 3,
+    ifIgnored: { meters: { client: -4 } },
+    options: [
+      opt("forecast", "Send a forecast with what it depends on", 2, 1, {
+        meters: { client: 2, integrity: 1 },
+      }),
+      opt("date", "Give them the planned date", 0, 3, {
+        meters: { client: 3, timeline: -2 },
+      }),
+      opt("wait", "Say you will confirm after lock", 1, 0, {
+        meters: { client: -3 },
+      }),
+    ],
+  },
+  {
+    id: "priya-blind-review",
+    from: "Priya (Biostatistician)",
+    subject: "Blind data review meeting",
+    body: "The blind data review needs a decision on twelve borderline protocol deviations: in the per-protocol set or out. I would like to decide them with you, not alone at 7 PM.",
+    urgency: "important",
+    day: 63,
+    window: [62, 64],
+    core: true,
+    ttl: 3,
+    ifIgnored: {
+      meters: { integrity: -4 },
+      workload: [{ memberId: "priya", delta: 8 }],
+    },
+    options: [
+      opt("review", "Review them together, case by case", 2, 2, {
+        meters: { integrity: 4 },
+        workload: [{ memberId: "priya", delta: 3 }],
+      }),
+      opt("priya", "Let Priya decide them", 0, 6, {
+        meters: { integrity: 1 },
+        workload: [{ memberId: "priya", delta: 6 }],
+      }),
+      opt(
+        "include",
+        "Keep everyone in: more subjects, more power",
+        0,
+        8,
+        { meters: { integrity: -5, client: 2 } },
+        {
+          finding: {
+            question:
+              "Borderline deviations were kept in the per-protocol set without a documented review. Explain each decision.",
+            answer:
+              "The blind data review minutes record each deviation and the decision taken before unblinding.",
+            severity: "major",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "omar-define-warnings",
+    from: "Omar (Programmer)",
+    subject: "212 validation warnings",
+    body: "The submission data package validates with 212 warnings. Most are harmless. Some are not. Telling them apart is about three days of my life.",
+    urgency: "important",
+    day: 65,
+    window: [64, 67],
+    core: true,
+    ttl: 3,
+    ifIgnored: {
+      meters: { integrity: -3 },
+      workload: [{ memberId: "omar", delta: 8 }],
+    },
+    options: [
+      opt("triage", "Triage them with Omar this afternoon", 2, 1, {
+        meters: { integrity: 3 },
+        workload: [{ memberId: "omar", delta: 4 }],
+      }),
+      opt("all", "Ask him to fix every one", 1, 1, {
+        slipDays: 1,
+        meters: { integrity: 4 },
+        workload: [{ memberId: "omar", delta: 10 }],
+      }),
+      opt("explain", "Write them up as explained and move on", 0, 6, {
+        meters: { integrity: -2 },
+      }),
+    ],
+  },
+  {
+    id: "dm-sae-reconciliation",
+    from: "Medical Monitor",
+    subject: "SAE reconciliation before lock",
+    body: "The safety database lists nine serious adverse events. The EDC lists eight. One of us is wrong and I would like to know which before you lock anything.",
+    urgency: "critical",
+    day: 67,
+    window: [66, 68],
+    core: true,
+    ttl: 2,
+    ifIgnored: {
+      meters: { integrity: -6, compliance: -3 },
+      sites: [{ siteId: "site-02", openQueries: 2 }],
+    },
+    options: [
+      opt("reconcile", "Reconcile them line by line today", 2, 1, {
+        meters: { integrity: 4, compliance: 2 },
+      }),
+      opt("maya", "Ask Maya to reconcile and report back", 1, 2, {
+        meters: { integrity: 2 },
+        workload: [{ memberId: "maya", delta: 8 }],
+      }),
+      opt(
+        "safety",
+        "Treat the safety database as right",
+        0,
+        8,
+        { meters: { integrity: -3 } },
+        {
+          finding: {
+            question:
+              "The safety and clinical databases disagreed on serious adverse events at lock. How was the difference resolved?",
+            answer:
+              "A signed SAE reconciliation lists every event in both databases and the resolution of the difference.",
+            severity: "major",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "maya-lock-checklist",
+    from: "Maya (Data Manager)",
+    subject: "Lock checklist needs your signature",
+    body: "The database lock checklist has thirty-one lines and thirty signatures. The last one is yours. Line 27 says all queries are closed, which is a strong word.",
+    urgency: "important",
+    day: 71,
+    window: [70, 72],
+    core: true,
+    ttl: 3,
+    ifIgnored: { slipDays: 1, meters: { timeline: -2 } },
+    options: [
+      opt("walk", "Walk the checklist line by line with Maya", 2, 1, {
+        meters: { integrity: 3, compliance: 2 },
+        workload: [{ memberId: "maya", delta: 2 }],
+      }),
+      opt("sign", "Sign it, she knows what she is doing", 0, 6, {
+        meters: { compliance: -2 },
+      }),
+      opt("hold", "Hold lock until line 27 is true", 1, 1, {
+        slipDays: 2,
+        meters: { integrity: 4, client: -2 },
+      }),
+    ],
+  },
+  {
+    id: "lee-csr-signatures",
+    from: "Lee (Medical Writer)",
+    subject: "Who signs the CSR?",
+    body: "The report needs signatures from the investigator, the sponsor's medical lead and you. One of them is on a boat. I am not saying which.",
+    urgency: "routine",
+    day: 73,
+    window: [72, 74],
+    core: true,
+    ttl: 3,
+    ifIgnored: { slipDays: 1, workload: [{ memberId: "lee", delta: 6 }] },
+    options: [
+      opt("chase", "Chase all three signatures yourself", 2, 1, {
+        meters: { timeline: 2 },
+      }),
+      opt("lee", "Let Lee chase them", 0, 2, {
+        workload: [{ memberId: "lee", delta: 8 }],
+      }),
+      opt("esign", "Set up electronic signatures for everyone", 1, 2, {
+        spend: 1500,
+        meters: { compliance: 2 },
+      }),
+    ],
+  },
+  {
+    id: "walt-final-visit",
+    from: "Walt (Monitor)",
+    subject: "Last monitoring visit report",
+    body: "My last visit report for Site 02 is ready. It says the coordinator was very helpful and the freezer log has a gap in it. Both are true.",
+    urgency: "important",
+    day: 75,
+    window: [74, 75],
+    core: true,
+    ttl: 2,
+    ifIgnored: { sites: [{ siteId: "site-02", unsignedSource: 1 }] },
+    options: [
+      opt("follow", "File it and open a follow-up on the freezer log", 1, 1, {
+        meters: { compliance: 2 },
+        workload: [{ memberId: "walt", delta: 2 }],
+      }),
+      opt("file", "File it as it is", 0, 4, { meters: { compliance: -1 } }),
+    ],
+  },
+  {
+    id: "dm-queries-reopened",
+    from: "Maya (Data Manager)",
+    subject: "Queries reopened after the freeze",
+    body: "Site 03 answered eleven queries after we froze their forms, which is either commitment or a misunderstanding. To take the answers I have to unfreeze them.",
+    urgency: "important",
+    day: 84,
+    window: [80, 88],
+    core: true,
+    ttl: 3,
+    ifIgnored: { sites: [{ siteId: "site-03", openQueries: 4 }] },
+    options: [
+      opt("unfreeze", "Unfreeze, take the answers, refreeze", 2, 1, {
+        meters: { integrity: 3 },
+        slipDays: 1,
+      }),
+      opt("keep", "Keep the freeze and note the answers", 1, 2, {
+        meters: { integrity: -1 },
+      }),
+      opt("maya", "Ask Maya to decide form by form", 0, 4, {
+        workload: [{ memberId: "maya", delta: 8 }],
+      }),
+    ],
+  },
+  {
+    id: "boss-next-assignment",
+    from: "Your boss",
+    subject: "Your next study starts Monday",
+    body: "Good news: your next study starts Monday. I know 24-081 is not quite done. I am sure it nearly is.",
+    urgency: "important",
+    day: 95,
+    window: [91, 99],
+    core: true,
+    ttl: 3,
+    ifIgnored: { meters: { team: -3 } },
+    options: [
+      opt("finish", "Say you will start when 24-081 is closed", 1, 1, {
+        meters: { team: 2 },
+      }),
+      opt("both", "Start both and work evenings", 0, 2, {
+        meters: { team: -4, timeline: 2 },
+      }),
+      opt("handover", "Hand the closeout to Dana", 1, 2, {
+        workload: [{ memberId: "dana", delta: 10 }],
+        meters: { timeline: 1 },
+      }),
+    ],
+  },
+  {
+    id: "lee-lessons-learned",
+    from: "Lee (Medical Writer)",
+    subject: "Lessons learned, before we forget them",
+    body: "Could we hold a lessons-learned meeting before everyone scatters? I have a list. Some of it is about the coffee machine.",
+    urgency: "routine",
+    day: 103,
+    window: [99, 107],
+    core: true,
+    ttl: 3,
+    ifIgnored: { meters: { team: -2 } },
+    options: [
+      opt("hold", "Hold it, and write it up", 2, 1, {
+        meters: { team: 3, compliance: 1 },
+      }),
+      opt("email", "Ask for the list by email", 0, 1, { meters: { team: -1 } }),
+    ],
+  },
+  {
+    id: "site-two-late-entry",
+    from: "Site 02 coordinator",
+    subject: "Three visits we never entered",
+    body: "Walt found three visits we did on paper and never typed in. I can enter them this week, but each one will raise queries, because past me was in a hurry.",
+    urgency: "important",
+    day: 60,
+    window: [59, 61],
+    core: true,
+    ttl: 3,
+    ifIgnored: {
+      sites: [{ siteId: "site-02", openQueries: 3, unsignedSource: 1 }],
+    },
+    options: [
+      opt("enter", "Enter them now and answer the queries as they come", 1, 1, {
+        sites: [{ siteId: "site-02", openQueries: 3, burden: 2 }],
+        meters: { integrity: 2 },
+      }),
+      opt("walt", "Ask Walt to sit with her while she enters them", 1, 1, {
+        sites: [{ siteId: "site-02", openQueries: 1 }],
+        workload: [{ memberId: "walt", delta: 6 }],
+      }),
+      opt(
+        "skip",
+        "Leave them on paper: they are not primary data",
+        0,
+        8,
+        { meters: { integrity: -4 } },
+        {
+          finding: {
+            question:
+              "Completed visits at Site 02 were never entered in the database. Explain why the data are missing from the analysis.",
+            answer:
+              "A note to file explains the late entry and the queries it raised.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "dana-deviation-log",
+    from: "Dana (Regulatory)",
+    subject: "The deviation log has two versions",
+    body: "There is the deviation log in the trial master file and the deviation log Walt keeps on his desktop. They agree on most things.",
+    urgency: "important",
+    day: 64,
+    window: [63, 65],
+    core: true,
+    ttl: 3,
+    ifIgnored: { meters: { compliance: -3 } },
+    options: [
+      opt("merge", "Merge them into one log with Dana and Walt", 2, 1, {
+        meters: { compliance: 3 },
+        workload: [
+          { memberId: "dana", delta: 3 },
+          { memberId: "walt", delta: 3 },
+        ],
+      }),
+      opt("tmf", "Keep the trial master file copy, archive Walt's", 1, 3, {
+        meters: { compliance: 1 },
+      }),
+      opt("dana", "Ask Dana to sort it out", 0, 3, {
+        workload: [{ memberId: "dana", delta: 8 }],
+      }),
+    ],
+  },
+  {
+    id: "sponsor-draft-tables",
+    from: "Arcadia Therapeutics (Sponsor)",
+    subject: "Could we see the tables before QC?",
+    body: "We know the tables are not checked yet. Could we see them anyway? We will pretend we have not.",
+    urgency: "important",
+    day: 69,
+    window: [68, 70],
+    core: true,
+    ttl: 3,
+    ifIgnored: { meters: { client: -3 } },
+    options: [
+      opt("wait", "Send them after QC, with a date", 1, 0, {
+        meters: { client: -1, integrity: 2 },
+      }),
+      opt("shells", "Send the shells with dummy numbers", 1, 1, {
+        meters: { client: 1 },
+        workload: [{ memberId: "omar", delta: 3 }],
+      }),
+      opt(
+        "send",
+        "Send the draft tables",
+        0,
+        8,
+        { meters: { client: 4, integrity: -5 } },
+        {
+          finding: {
+            question:
+              "Unvalidated outputs were sent to the sponsor before quality control. Which versions were sent, and were they corrected?",
+            answer:
+              "The transmittal log names the draft versions and the corrections sent after QC.",
+            severity: "minor",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "priya-p-value",
+    from: "Priya (Biostatistician)",
+    subject: "The p-value is 0.051",
+    body: "The primary endpoint came out at p = 0.051. Nobody has said anything yet. Somebody is going to ask whether a different covariate would help. I would like you to be the one who says no.",
+    urgency: "critical",
+    day: 74,
+    window: [73, 75],
+    core: true,
+    ttl: 2,
+    ifIgnored: { meters: { integrity: -4, client: -3 } },
+    options: [
+      opt("sap", "Report it as the plan says", 1, 0, {
+        meters: { integrity: 4, client: -3 },
+      }),
+      opt("explain", "Report it, with the planned sensitivity analyses", 2, 1, {
+        meters: { integrity: 3, client: -1 },
+        workload: [{ memberId: "priya", delta: 4 }],
+      }),
+      opt(
+        "covariate",
+        "Ask Priya to try the other covariate",
+        0,
+        10,
+        { meters: { integrity: -8, client: 3 } },
+        {
+          finding: {
+            question:
+              "The primary analysis was rerun with an unplanned covariate after the results were known. Explain.",
+            answer:
+              "The rerun is filed as an exploratory analysis; the planned result is the one reported.",
+            severity: "major",
+          },
+        }
+      ),
+    ],
+  },
+  {
+    id: "edc-archive-export",
+    from: "EDC Vendor",
+    subject: "Archive export: which format?",
+    body: "Before we decommission your study we need to know the archive format. PDF is readable by humans. XML is readable by regulators. Both is readable by your budget.",
+    urgency: "routine",
+    day: 90,
+    window: [86, 94],
+    core: true,
+    ttl: 3,
+    ifIgnored: { meters: { compliance: -2 } },
+    options: [
+      opt("both", "Both, and file the receipt", 1, 1, {
+        spend: 2500,
+        meters: { compliance: 2 },
+      }),
+      opt("xml", "XML only", 1, 2, { spend: 1200 }),
+      opt("pdf", "PDF only", 0, 4, { meters: { compliance: -2 } }),
     ],
   },
 ];

@@ -227,6 +227,23 @@ function focusHand() {
 }
 
 /**
+ * Moves focus to what a step points at, so its key works at once: the card
+ * to inspect or the button to press. A step with nothing focusable to point
+ * at focuses the coach's title instead, so focus never drops to the page
+ * (#2155).
+ */
+function focusStep(index: number) {
+  requestAnimationFrame(() => {
+    const current = TUTORIAL_STEPS[index];
+    const selector = current ? targetSelector(current.target) : null;
+    const target = selector
+      ? document.querySelector<HTMLElement>(selector)
+      : null;
+    (target ?? document.getElementById("coach-title"))?.focus();
+  });
+}
+
+/**
  * The Trial & Error table with its first-run guided Blind (#1089). A
  * first-time player is offered the guided Blind before the campaign; it can
  * be skipped at any step, and once finished or skipped it is not offered
@@ -275,9 +292,11 @@ export function TrialAndErrorTable() {
   );
 
   const next = useCallback(() => {
-    if (table)
-      setStep((current) => nextTutorialStep(TUTORIAL_STEPS, current, table));
-  }, [table]);
+    if (!table) return;
+    const after = nextTutorialStep(TUTORIAL_STEPS, step, table);
+    setStep(after);
+    focusStep(after);
+  }, [table, step]);
 
   // Each step's text is announced politely, once, as the step starts.
   useEffect(() => {

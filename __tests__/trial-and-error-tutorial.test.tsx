@@ -130,6 +130,20 @@ describe("first-run guided Blind (#1089)", () => {
     );
   });
 
+  it("moves focus to the card the next step points at (#2155)", async () => {
+    render(<TrialAndErrorTable />);
+    fireEvent.click(screen.getByRole("button", { name: "Start guided Blind" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next" }));
+    const target = TUTORIAL_STEPS[1].target;
+    expect(target.kind).toBe("CARD");
+    const cardId = target.kind === "CARD" ? target.cardId : "";
+    await waitFor(() =>
+      expect(
+        (document.activeElement as HTMLElement | null)?.dataset.cardId
+      ).toBe(cardId)
+    );
+  });
+
   it("skips from any step to the campaign and remembers it", () => {
     render(<TrialAndErrorTable />);
     fireEvent.click(screen.getByRole("button", { name: "Start guided Blind" }));

@@ -20,6 +20,14 @@
 
 ***
 
+### hitRadius?
+
+> `optional` **hitRadius?**: `number`
+
+How close to the player's tile centre the shot hits; 0.75 if unset.
+
+***
+
 ### id
 
 > **id**: `string`

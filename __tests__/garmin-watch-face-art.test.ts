@@ -26,6 +26,7 @@ import {
   runnerPose,
   stepsFor,
 } from "@/components/garmin-watch/watch-face-art";
+import { raceSetup } from "@/lib/garmin-race";
 import {
   CASE_RADIUS,
   PUSHER_ANGLES,
@@ -320,6 +321,19 @@ describe("watch face data-field ring", () => {
     const { ctx, calls } = recordingCtx();
     renderWatchFace(ctx, running({ gameState: "paused" }));
     expect(calls.map((c) => c.text)).toContain("PAUSED");
+    expect(calls.map((c) => c.text)).not.toContain("BACKSPACE: RESTART");
+  });
+
+  it("names the restart key on a paused race (#2134)", () => {
+    const { ctx, calls } = recordingCtx();
+    renderWatchFace(
+      ctx,
+      running({
+        gameState: "paused",
+        race: raceSetup("daily", "nogear", new Date(2026, 9, 14)),
+      })
+    );
+    expect(calls.map((c) => c.text)).toContain("BACKSPACE: RESTART");
   });
 });
 

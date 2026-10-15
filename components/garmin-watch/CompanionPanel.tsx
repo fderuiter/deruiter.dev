@@ -181,10 +181,15 @@ const THEMES: Array<{ id: WatchBezelTheme; label: string }> = [
 const FITNESS_KEYS: Array<[string, string]> = [
   ["▲ / Space", "Jump (hold for higher)"],
   ["▶ / ◀", "Sprint, or ease to a jog to recharge"],
-  ["X / ⌫", "Heat bolt or cape spin"],
+  ["▼", "Water Station, or Burpee Slam in mid-air"],
+  ["X / ⌫", "Heat bolt, cape spin, medicine ball"],
   ["L", "Backlight"],
+  ["P / Esc", "Pause"],
   ["Enter", "Start, pause, run again"],
 ];
+
+/** Shown under the keys in Race Mode, where BACK restarts a paused race. */
+const RACE_RESTART_KEY: [string, string] = ["⌫ (paused)", "Restart the race"];
 
 const KEYS: Array<[string, string]> = [
   ["▲", "Jump"],
@@ -192,6 +197,7 @@ const KEYS: Array<[string, string]> = [
   ["G / ⌫", "Garbage collect"],
   ["L", "Backlight (burns battery)"],
   ["W / drag", "Wipe screen fog"],
+  ["P / Esc", "Pause"],
   ["Enter", "Start, pause, reboot"],
 ];
 
@@ -738,7 +744,10 @@ export function CompanionPanel({
         </fieldset>
 
         <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/[0.08] pt-3 text-[10px]">
-          {(fitnessView ? FITNESS_KEYS : KEYS).map(([key, action]) => (
+          {[
+            ...(fitnessView ? FITNESS_KEYS : KEYS),
+            ...(raceMode ? [RACE_RESTART_KEY] : []),
+          ].map(([key, action]) => (
             <React.Fragment key={key}>
               <dt className="text-zinc-200">{key}</dt>
               <dd className="min-w-0 text-zinc-400">{action}</dd>

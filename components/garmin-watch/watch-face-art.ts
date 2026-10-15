@@ -3218,7 +3218,7 @@ function drawFog(ctx: Ctx, state: GameEngineState) {
   }
 }
 
-function drawPaused(ctx: Ctx, title: string) {
+function drawPaused(ctx: Ctx, title: string, race = false) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   text(ctx, title, FACE_CENTER, FACE_CENTER - 4, 16, FACE_COLORS.text);
@@ -3230,6 +3230,17 @@ function drawPaused(ctx: Ctx, title: string) {
     7,
     FACE_COLORS.dim
   );
+  // A paused race restarts on the same course with Backspace (#2134).
+  if (race) {
+    text(
+      ctx,
+      "BACKSPACE: RESTART",
+      FACE_CENTER,
+      FACE_CENTER + 24,
+      7,
+      FACE_COLORS.dim
+    );
+  }
 }
 
 // ------------------------------------------------------------ end faces
@@ -3559,7 +3570,11 @@ export function renderWatchFace(
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused")
-    drawPaused(ctx, isFitnessRun(state) ? AUTO_PAUSE_TEXT : "PAUSED");
+    drawPaused(
+      ctx,
+      isFitnessRun(state) ? AUTO_PAUSE_TEXT : "PAUSED",
+      Boolean(state.race)
+    );
 
   ctx.restore();
 }

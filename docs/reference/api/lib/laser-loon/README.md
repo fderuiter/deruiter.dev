@@ -74,6 +74,12 @@ Re-exports [BOSS_PROJECTILE_RADIUS](constants/variables/BOSS_PROJECTILE_RADIUS.m
 
 ***
 
+### BOSS\_SIGNATURE\_HINTS
+
+Re-exports [BOSS_SIGNATURE_HINTS](engine/variables/BOSS_SIGNATURE_HINTS.md)
+
+***
+
 ### BOSS\_TELEGRAPH\_FRAMES
 
 Re-exports [BOSS_TELEGRAPH_FRAMES](constants/variables/BOSS_TELEGRAPH_FRAMES.md)
@@ -83,6 +89,12 @@ Re-exports [BOSS_TELEGRAPH_FRAMES](constants/variables/BOSS_TELEGRAPH_FRAMES.md)
 ### BossAttackResult
 
 Re-exports [BossAttackResult](engine/interfaces/BossAttackResult.md)
+
+***
+
+### BossSignature
+
+Re-exports [BossSignature](types/type-aliases/BossSignature.md)
 
 ***
 
@@ -224,6 +236,12 @@ Re-exports [formatRunClock](engine/functions/formatRunClock.md)
 
 ***
 
+### GAVEL\_WALL\_GAP
+
+Re-exports [GAVEL_WALL_GAP](constants/variables/GAVEL_WALL_GAP.md)
+
+***
+
 ### getActAvailableEnemies
 
 Re-exports [getActAvailableEnemies](engine/functions/getActAvailableEnemies.md)
@@ -251,6 +269,12 @@ Re-exports [getActStars](engine/functions/getActStars.md)
 ### getBossAttackInterval
 
 Re-exports [getBossAttackInterval](engine/functions/getBossAttackInterval.md)
+
+***
+
+### getBossSignature
+
+Re-exports [getBossSignature](engine/functions/getBossSignature.md)
 
 ***
 
@@ -293,6 +317,12 @@ Re-exports [IceCollisionResult](engine/interfaces/IceCollisionResult.md)
 ### isBossTelegraphing
 
 Re-exports [isBossTelegraphing](engine/functions/isBossTelegraphing.md)
+
+***
+
+### isShieldFacing
+
+Re-exports [isShieldFacing](engine/functions/isShieldFacing.md)
 
 ***
 
@@ -542,6 +572,12 @@ Re-exports [spawnTarget](engine/functions/spawnTarget.md)
 
 ***
 
+### STARFLAKE\_SHIELD\_HALF\_ARC
+
+Re-exports [STARFLAKE_SHIELD_HALF_ARC](constants/variables/STARFLAKE_SHIELD_HALF_ARC.md)
+
+***
+
 ### SURVIVAL\_FULL\_HEAT\_SECONDS
 
 Re-exports [SURVIVAL_FULL_HEAT_SECONDS](constants/variables/SURVIVAL_FULL_HEAT_SECONDS.md)
@@ -557,6 +593,12 @@ Re-exports [SURVIVAL_WAVE_SECONDS](constants/variables/SURVIVAL_WAVE_SECONDS.md)
 ### SurvivalWave
 
 Re-exports [SurvivalWave](engine/interfaces/SurvivalWave.md)
+
+***
+
+### SWARM\_MAX\_MINIONS
+
+Re-exports [SWARM_MAX_MINIONS](constants/variables/SWARM_MAX_MINIONS.md)
 
 ***
 

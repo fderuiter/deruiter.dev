@@ -8,7 +8,10 @@
 
 > **scheduleFor**(`world`): [`ScheduledInterruption`](../../../types/interfaces/ScheduledInterruption.md)[]
 
-Three distinct interruptions for the day, in an order fixed by the seed.
+Three distinct interruptions for the day. Each seed works through the
+whole catalog in its own order, three a day, so none comes back within a
+week (#2189: six of them repeated from the second week); lunch always
+takes the midday slot.
 
 ## Parameters
 

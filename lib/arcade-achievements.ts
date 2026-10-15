@@ -71,19 +71,21 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     description: "Complete a work sprint while keeping Duck happy.",
     icon: "Bone",
     category: "gameplay",
-    targetScore: 100,
-    conditionDescription: "Reach 100+ points in Working With Duck",
+    milestone: "sprint_shipped",
+    conditionDescription: "Ship any sprint in Working With Duck",
   },
   {
     id: "duck_master",
     gameId: "working-with-duck",
     title: "Puppy Whisperer",
     subtitle: "Working With Duck",
-    description: "Balance deadlines and treats with elite multitasking skills.",
+    description:
+      "Ship a sprint with every prop saved, no accidents and Duck still a Good Boy.",
     icon: "Heart",
     category: "mastery",
-    targetScore: 500,
-    conditionDescription: "Reach 500+ points in Working With Duck",
+    milestone: "three_star_sprint",
+    conditionDescription:
+      "Earn all three stars on a sprint in Working With Duck",
   },
   {
     id: "duck_graduate",

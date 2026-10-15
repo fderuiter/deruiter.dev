@@ -26,6 +26,14 @@
 
 ***
 
+### parSeconds
+
+> **parSeconds**: `number`
+
+Seconds a well-run sprint takes; each second under it earns a bonus.
+
+***
+
 ### subtitle
 
 > **subtitle**: `string`

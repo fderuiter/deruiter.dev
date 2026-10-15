@@ -626,14 +626,17 @@ function ReviewPane({
 
 /**
  * Tri-pane Forensic Inspector: Form View (30%), Pipeline Trace (40%) and
- * Review and Query (30%). Docked at clamp(184px, 26vh, 328px); press I to expand it
- * over the canvas and Escape to dock it again.
+ * Review and Query (30%). Docked at clamp(168px, 22vh, 328px), or just its
+ * title bar while there is nothing to inspect; press I to expand it over the
+ * canvas and Escape to dock it again.
  */
 export function Inspector() {
   const view = useProtocolDriftStore((s) => s.view);
   const selection = useProtocolDriftStore((s) => s.selection);
   const expanded = useProtocolDriftStore((s) => s.inspectorExpanded);
   const setExpanded = useProtocolDriftStore((s) => s.setInspectorExpanded);
+  const collapsed = useProtocolDriftStore((s) => s.inspectorCollapsed);
+  const setCollapsed = useProtocolDriftStore((s) => s.setInspectorCollapsed);
   const select = useProtocolDriftStore((s) => s.select);
   const touch = useCabinetTouch();
 
@@ -738,15 +741,27 @@ export function Inspector() {
     );
   }
 
+  // Until the first issue arrives (or a submission is picked) there is
+  // nothing to inspect, so the docked inspector is just its title bar and the
+  // canvas gets the room the pipeline build needs. The player can fold it
+  // the same way while rewiring (#2274).
+  const empty = view.issues.length === 0 && !selection.submissionId;
+  const quiet = !expanded && (empty || collapsed);
+  const openCount = view.issues.filter(
+    (i) => i.status !== "Resolved" && i.status !== "AcceptedUncertainty"
+  ).length;
   const style: React.CSSProperties = expanded
     ? { top: 112, bottom: 32 }
-    : { height: "clamp(184px, 26vh, 328px)" };
+    : quiet
+      ? {}
+      : { height: "clamp(168px, 22vh, 328px)" };
 
   return (
     <section
       aria-label="Forensic Inspector"
       data-testid="inspector"
       data-expanded={expanded ? "true" : "false"}
+      data-quiet={quiet ? "true" : "false"}
       style={style}
       className={`flex min-h-0 flex-col border-t border-zinc-700 bg-[#13151a] font-mono text-xs ${
         expanded ? "absolute inset-x-0 z-20" : "shrink-0"
@@ -756,16 +771,35 @@ export function Inspector() {
         <h2 className="text-[11px] font-semibold tracking-wide text-zinc-100">
           FORENSIC INSPECTOR
         </h2>
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          aria-expanded={expanded}
-          className="min-h-8 border border-zinc-700 px-2 text-[11px] text-zinc-200 hover:border-amber-500"
-        >
-          {expanded ? "Dock (Esc)" : "Expand (I)"}
-        </button>
+        {quiet ? (
+          <p className="min-w-0 flex-1 truncate text-[11px] text-zinc-300">
+            {empty
+              ? "No issues yet. It opens on the first one."
+              : `${openCount} open ${openCount === 1 ? "issue" : "issues"}.`}
+          </p>
+        ) : null}
+        <div className="flex shrink-0 items-center gap-2">
+          {!expanded && !empty ? (
+            <button
+              type="button"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-expanded={!collapsed}
+              className="min-h-8 border border-zinc-700 px-2 text-[11px] text-zinc-200 hover:border-amber-500"
+            >
+              {collapsed ? "Open" : "Collapse"}
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
+            className="min-h-8 border border-zinc-700 px-2 text-[11px] text-zinc-200 hover:border-amber-500"
+          >
+            {expanded ? "Dock (Esc)" : "Expand (I)"}
+          </button>
+        </div>
       </div>
-      {panes}
+      {quiet ? null : panes}
     </section>
   );
 }

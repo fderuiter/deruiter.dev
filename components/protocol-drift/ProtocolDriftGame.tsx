@@ -16,7 +16,7 @@ import {
   LockReviewModal,
   WaveReviewModal,
 } from "./Modals";
-import { HeaderBar } from "./HeaderBar";
+import { GateBadges, HeaderBar, SaveButtons } from "./HeaderBar";
 import { ObjectiveStrip } from "./ObjectiveStrip";
 import { PipelineCanvas } from "./PipelineCanvas";
 import { PipelineTextView } from "./PipelineTextView";
@@ -151,6 +151,24 @@ export function ProtocolDriftGame() {
   const compactToolbox = !touch && !(toolboxOpen ?? roomy);
   const compactRail = !touch && !(railOpen ?? wide);
   const showDebrief = fsm === "LOCKED" && scorecard && view && debriefOpen;
+  const hintClass = touch ? undefined : "hidden @5xl:inline";
+  const toast = notice ? (
+    <p
+      key={notice.id}
+      data-tone={notice.tone}
+      className={`pointer-events-none absolute left-1/2 z-30 -translate-x-1/2 border bg-[#13151a] px-3 py-1.5 font-mono text-xs ${
+        touch ? "top-48 max-w-[90%]" : "bottom-3 max-w-[70%]"
+      } ${
+        notice.tone === "error"
+          ? "border-amber-500 text-amber-300"
+          : notice.tone === "warn"
+            ? "border-amber-500/60 text-amber-400"
+            : "border-slate-400/60 text-zinc-100"
+      }`}
+    >
+      {notice.text}
+    </p>
+  ) : null;
 
   return (
     <div
@@ -191,6 +209,9 @@ export function ProtocolDriftGame() {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
           <div className="relative min-h-[200px] flex-1">
             <PipelineCanvas />
+            {/* On desktop the notice sits at the foot of the canvas, clear of
+                the chips the player is wiring (#2274). */}
+            {!touch ? toast : null}
             {tracerDone && !waveSummary ? (
               <button
                 type="button"
@@ -223,32 +244,32 @@ export function ProtocolDriftGame() {
           Seed #{view?.seed ?? DEFAULT_SEED}
           {dailyDate ? ` · Arcade Daily ${dailyDate}` : ""}
         </span>
-        <span>[Space] Pause</span>
-        <span>[N] Step</span>
-        <span>[S] Skip</span>
-        <span>[I] Inspect</span>
-        <span>[Esc] Return</span>
-        <span className="ml-auto">engine: {mode ?? "starting"}</span>
+        {/* Below a 1024px cabinet the key hints give way to the gate badges;
+            each control still names its key (#2274). */}
+        <span className={hintClass}>[Space] Pause</span>
+        <span className={hintClass}>[N] Step</span>
+        <span className={hintClass}>[S] Skip</span>
+        <span className={hintClass}>[I] Inspect</span>
+        <span className={hintClass}>[Esc] Return</span>
+        {touch ? null : (
+          <span
+            role="group"
+            aria-label="Gates"
+            className="flex items-center gap-1.5 @5xl:hidden"
+          >
+            <GateBadges />
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-2">
+          {touch ? null : <SaveButtons compact />}
+        </span>
+        <span>engine: {mode ?? "starting"}</span>
       </footer>
 
       <div role="status" aria-live="polite" className="sr-only">
         {notice?.text}
       </div>
-      {notice && !(touch && notice.text === pausedReason) ? (
-        <p
-          key={notice.id}
-          data-tone={notice.tone}
-          className={`pointer-events-none absolute top-48 left-1/2 z-30 max-w-[90%] -translate-x-1/2 border bg-[#13151a] px-3 py-1.5 font-mono text-xs ${
-            notice.tone === "error"
-              ? "border-amber-500 text-amber-300"
-              : notice.tone === "warn"
-                ? "border-amber-500/60 text-amber-400"
-                : "border-slate-400/60 text-zinc-100"
-          }`}
-        >
-          {notice.text}
-        </p>
-      ) : null}
+      {touch && notice && notice.text !== pausedReason ? toast : null}
 
       {ready && fsm === "BRIEF" ? <BriefingModal /> : null}
       {fsm === "LOCK_REVIEW" && lockAudit && view ? (

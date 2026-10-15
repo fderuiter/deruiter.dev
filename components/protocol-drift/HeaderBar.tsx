@@ -38,7 +38,88 @@ function GateBadge({
   );
 }
 
-/** Header bar: study, simulation clock, transport, publish and save controls. */
+/** The SDTM, ADaM and clock-state badges. */
+export function GateBadges() {
+  const snapshot = useProtocolDriftStore((s) => s.snapshot);
+  const touch = useCabinetTouch();
+  const fsm = snapshot?.fsmState ?? "BRIEF";
+  const sdtmClear =
+    snapshot !== undefined &&
+    snapshot !== null &&
+    snapshot.openIssues === 0 &&
+    snapshot.debt.fabricatedBits === 0 &&
+    snapshot.debt.semanticLossCount === 0;
+  return (
+    <>
+      <GateBadge
+        label={`SDTM ${sdtmClear ? "CLEAR" : "OPEN"}`}
+        tone={sdtmClear ? "ok" : "warn"}
+      />
+      <GateBadge
+        label={`ADaM ${snapshot?.recordCounts.adamRows ?? 0} rows`}
+        tone={(snapshot?.recordCounts.adamRows ?? 0) > 0 ? "ok" : "idle"}
+      />
+      <GateBadge
+        label={touch ? fsm : `FSM ${fsm}`}
+        tone={fsm === "RUNNING" ? "ok" : "idle"}
+      />
+    </>
+  );
+}
+
+/**
+ * Export and Import of the JSON save: in the header on touch, in the footer
+ * on desktop (#2274).
+ */
+export function SaveButtons({ compact = false }: { compact?: boolean }) {
+  const exportSave = useProtocolDriftStore((s) => s.exportSave);
+  const importSave = useProtocolDriftStore((s) => s.importSave);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const touch = useCabinetTouch();
+  const className = compact
+    ? "min-h-6 border border-zinc-700 px-2 text-zinc-200 hover:border-amber-500 hover:text-amber-400"
+    : NEUTRAL;
+
+  const onImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    await importSave(await file.text());
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => void exportSave()}
+        className={className}
+      >
+        {touch ? "Export" : "Export JSON"}
+      </button>
+      <button
+        type="button"
+        onClick={() => fileInput.current?.click()}
+        className={className}
+      >
+        {touch ? "Import" : "Import JSON"}
+      </button>
+      <input
+        ref={fileInput}
+        type="file"
+        accept="application/json,.json"
+        className="sr-only"
+        tabIndex={-1}
+        // On touch the visible Import button opens it, so the input is
+        // removed from focus and layout entirely (#2045).
+        hidden={touch}
+        aria-label="Import save file"
+        onChange={(e) => void onImport(e)}
+      />
+    </>
+  );
+}
+
+/** Header bar: study, simulation clock, transport and publish controls. */
 export function HeaderBar() {
   const snapshot = useProtocolDriftStore((s) => s.snapshot);
   const view = useProtocolDriftStore((s) => s.view);
@@ -54,9 +135,6 @@ export function HeaderBar() {
   const validate = useProtocolDriftStore((s) => s.validate);
   const publish = useProtocolDriftStore((s) => s.publish);
   const requestLock = useProtocolDriftStore((s) => s.requestLock);
-  const exportSave = useProtocolDriftStore((s) => s.exportSave);
-  const importSave = useProtocolDriftStore((s) => s.importSave);
-  const fileInput = useRef<HTMLInputElement | null>(null);
   const touch = useCabinetTouch();
 
   const fsm = snapshot?.fsmState ?? "BRIEF";
@@ -113,20 +191,6 @@ export function HeaderBar() {
     text ? `pd-hint-${reasons.indexOf(text)}` : undefined;
   const day = snapshot ? trialDayOf(snapshot.minute) : 0;
   const canLock = view?.scenario === "full" && fsm === "PAUSED" && day >= 28;
-  const sdtmClear =
-    snapshot !== undefined &&
-    snapshot !== null &&
-    snapshot.openIssues === 0 &&
-    snapshot.debt.fabricatedBits === 0 &&
-    snapshot.debt.semanticLossCount === 0;
-
-  const onImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
-    if (!file) return;
-    await importSave(await file.text());
-  };
-
   return (
     <header
       className={`flex min-h-16 flex-wrap items-center gap-x-4 gap-y-2 border-b border-zinc-800 bg-[#13151a] px-3 py-2${
@@ -243,49 +307,18 @@ export function HeaderBar() {
         ) : null}
       </div>
 
+      {/* On desktop the save buttons sit in the footer, and below a 1024px
+          cabinet the gate badges join them there, so the header stays one
+          row and the canvas keeps the height (#2274). */}
       <div
-        className="flex flex-wrap items-center gap-1.5 @3xl:ml-auto"
+        className={`flex-wrap items-center gap-1.5 @3xl:ml-auto ${
+          touch ? "flex" : "hidden @5xl:flex"
+        }`}
         role="group"
-        aria-label="Gates and saves"
+        aria-label={touch ? "Gates and saves" : "Gates"}
       >
-        <GateBadge
-          label={`SDTM ${sdtmClear ? "CLEAR" : "OPEN"}`}
-          tone={sdtmClear ? "ok" : "warn"}
-        />
-        <GateBadge
-          label={`ADaM ${snapshot?.recordCounts.adamRows ?? 0} rows`}
-          tone={(snapshot?.recordCounts.adamRows ?? 0) > 0 ? "ok" : "idle"}
-        />
-        <GateBadge
-          label={touch ? fsm : `FSM ${fsm}`}
-          tone={running ? "ok" : "idle"}
-        />
-        <button
-          type="button"
-          onClick={() => void exportSave()}
-          className={NEUTRAL}
-        >
-          {touch ? "Export" : "Export JSON"}
-        </button>
-        <button
-          type="button"
-          onClick={() => fileInput.current?.click()}
-          className={NEUTRAL}
-        >
-          {touch ? "Import" : "Import JSON"}
-        </button>
-        <input
-          ref={fileInput}
-          type="file"
-          accept="application/json,.json"
-          className="sr-only"
-          tabIndex={-1}
-          // On touch the visible Import button opens it, so the input is
-          // removed from focus and layout entirely (#2045).
-          hidden={touch}
-          aria-label="Import save file"
-          onChange={(e) => void onImport(e)}
-        />
+        <GateBadges />
+        {touch ? <SaveButtons /> : null}
       </div>
       {reasons.length > 0 ? (
         <p className="basis-full font-mono text-xs text-zinc-300">

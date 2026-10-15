@@ -415,7 +415,7 @@ describe("touch chip placement (#2045)", () => {
     expect(store().notice?.text).toBe("Added SourceIngest.");
   });
 
-  it("the toolbox add on desktop does not pan the canvas", async () => {
+  it("the toolbox add on desktop frames the chips without a toast (#2167)", async () => {
     await startDraft(false);
     flow.fitView.mockClear();
     flow.setViewport.mockClear();
@@ -425,7 +425,8 @@ describe("touch chip placement (#2045)", () => {
       );
     });
     await waitFor(() => expect(store().nodes.length).toBeGreaterThan(0));
-    expect(flow.fitView).not.toHaveBeenCalled();
+    expect(flow.fitView).toHaveBeenCalled();
+    expect(store().notice?.text ?? "").not.toMatch(/^Added /);
   });
 });
 

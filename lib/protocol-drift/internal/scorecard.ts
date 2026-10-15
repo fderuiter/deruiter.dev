@@ -87,13 +87,27 @@ export function efficiencyPoints(
   return Math.round(clamp(raw, 0, EFFICIENCY_POINTS_CAP));
 }
 
-/** Measures one run against every par, in the scorecard's order. */
+/** The measures a loaded reference pipeline answers for the player (#2168). */
+const DESIGN_METRICS: ReadonlySet<EfficiencyMetricId> = new Set([
+  "chips",
+  "wires",
+]);
+
+/**
+ * Measures one run against every par, in the scorecard's order. In an
+ * assisted run, one that loaded a reference pipeline, the chip and wire
+ * measures are waived: no medal, no points, no best (#2168).
+ */
 export function evaluateEfficiency(
-  actuals: Record<EfficiencyMetricId, number>
+  actuals: Record<EfficiencyMetricId, number>,
+  assisted = false
 ): EfficiencyMetric[] {
   return EFFICIENCY_METRIC_IDS.map((id) => {
     const { label, par } = EFFICIENCY_PARS[id];
     const actual = actuals[id];
+    if (assisted && DESIGN_METRICS.has(id)) {
+      return { id, label, actual, par, medal: false, points: 0, waived: true };
+    }
     return {
       id,
       label,
@@ -142,7 +156,7 @@ export function buildScorecard(input: ScorecardInput): Scorecard {
     lockDay: trialDurationDays,
     rejectedCommands: input.rejectedCommands,
     fabricatedBits: input.fabricatedBits,
-  });
+  }, input.assisted === true);
   const efficiencyScore = efficiency.reduce((sum, m) => sum + m.points, 0);
   return {
     trialDurationDays,
@@ -158,6 +172,7 @@ export function buildScorecard(input: ScorecardInput): Scorecard {
     wireCount: input.wireCount,
     rejectedCommands: input.rejectedCommands,
     fabricatedBits: input.fabricatedBits,
+    assisted: input.assisted === true,
     efficiency,
     efficiencyScore,
     medals: efficiency.filter((m) => m.medal).length,
@@ -201,7 +216,8 @@ export function serializeEfficiencyBests(bests: EfficiencyBests): string {
 }
 
 /**
- * Folds a locked run into the bests. Lower is better for every measure.
+ * Folds a locked run into the bests. Lower is better for every measure;
+ * waived measures are skipped.
  * Returns the merged bests (the same object when nothing improved) and the
  * measures this run improved, including first-time entries.
  */
@@ -212,6 +228,8 @@ export function recordEfficiencyBests(
   const improved: EfficiencyMetricId[] = [];
   const next: EfficiencyBests = { ...bests };
   for (const metric of scorecard.efficiency) {
+    // A waived measure was not the player's own design (#2168).
+    if (metric.waived) continue;
     const prior = bests[metric.id];
     if (prior === undefined || metric.actual < prior) {
       next[metric.id] = metric.actual;

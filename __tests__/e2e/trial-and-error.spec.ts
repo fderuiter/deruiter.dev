@@ -1033,7 +1033,7 @@ test.describe("Trial & Error Procurement Shop", () => {
       .click();
     await expect(
       page.getByTestId("relic-rack").getByTestId("relic")
-    ).toContainText("REL-SENIOR-PROGRAMMER");
+    ).toContainText("Senior Programmer");
 
     await page
       .getByTestId("shop-packs")

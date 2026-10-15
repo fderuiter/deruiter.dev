@@ -299,6 +299,11 @@ const FIGURE_SPACE = "\u2007";
 const BUTTON_BASE =
   "min-h-[48px] px-4 py-3 border font-mono text-xs font-bold uppercase tracking-wider touch-manipulation active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:cursor-not-allowed disabled:border-zinc-700 disabled:bg-transparent disabled:text-zinc-400";
 
+/** A relic's chip label: an SOP's short code, else the relic's name (#2151). */
+function relicChipLabel(relic: { id: string; name: string }): string {
+  return relic.name.startsWith(`${relic.id} `) ? relic.id : relic.name;
+}
+
 /** A seal's effect in a few words, for the tray. */
 function sealSummary(seal: FootnoteSeal): string {
   switch (seal.effect.kind) {
@@ -1940,14 +1945,22 @@ export function CardTable({
                       </li>
                     );
                   }
+                  // The chip names the relic (#2151): an SOP keeps its short
+                  // code, any other relic its name, clamped to two lines with
+                  // the full name in the title and the accessible label.
                   const chip =
-                    "flex h-10 w-[5.25rem] min-w-0 flex-col items-center justify-center border border-emerald-500/60 bg-emerald-500/5 px-1 text-center text-[10px] font-bold uppercase leading-tight text-emerald-300 break-words";
+                    "flex min-h-11 w-full min-w-0 flex-col items-center justify-center border border-emerald-500/60 bg-emerald-500/5 px-1.5 py-1 text-center text-xs font-bold leading-tight text-emerald-300";
                   const phase = RELIC_PHASE_LABELS[relicPhase(relic)];
                   const face = (
                     <>
-                      <span className="min-w-0 break-words">{relic.id}</span>
                       <span
-                        className="text-[9px] font-normal normal-case text-zinc-400"
+                        className="line-clamp-2 min-w-0 break-words"
+                        data-testid="relic-name"
+                      >
+                        {relicChipLabel(relic)}
+                      </span>
+                      <span
+                        className="text-xs font-normal text-zinc-400"
                         data-testid="relic-phase"
                       >
                         {phase}
@@ -1958,7 +1971,7 @@ export function CardTable({
                     <li
                       key={relic.id}
                       title={`${relic.name} (${phase}): ${relic.description}`}
-                      className="min-w-0"
+                      className="min-w-0 basis-[7.5rem] grow"
                       data-testid="relic"
                     >
                       {shopView ? (

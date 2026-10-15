@@ -123,6 +123,12 @@ describe("Procurement Shop", () => {
     expect(announce).toHaveBeenLastCalledWith("That slot is empty.");
 
     const rack = screen.getByTestId("relic-rack");
+    // The chip names the relic, not its internal id (#2151).
+    if (relic.kind !== "RELIC") throw new Error("expected a relic entry");
+    expect(relic.relic.id).toMatch(/^REL-/);
+    expect(within(rack).getByTestId("relic-name").textContent).toBe(
+      relic.relic.name
+    );
     const sell = within(rack).getByTestId("relic-sell");
     sell.focus();
     fireEvent.keyDown(sell, { key: "s" });

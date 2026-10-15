@@ -19,7 +19,7 @@ export default function MemeVaultPage() {
             description: ROUTE_METADATA_CONFIGS.memeVault.description,
             url: ROUTE_METADATA_CONFIGS.memeVault.path,
             applicationCategory: "GameApplication",
-            genre: "Meme Soundboard & Trophy Room",
+            genre: "Memory Game & Trophy Room",
           }),
         }}
       />

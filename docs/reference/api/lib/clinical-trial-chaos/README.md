@@ -644,6 +644,12 @@ Re-exports [getAuditYearStationCount](escalation/functions/getAuditYearStationCo
 
 ***
 
+### getBIMOVerdictSummary
+
+Re-exports [getBIMOVerdictSummary](engine/functions/getBIMOVerdictSummary.md)
+
+***
+
 ### getCalibrationStep
 
 Re-exports [getCalibrationStep](engine/functions/getCalibrationStep.md)
@@ -1259,6 +1265,12 @@ Re-exports [replaceObservation](shift/functions/replaceObservation.md)
 ### resolveSponsorChoice
 
 Re-exports [resolveSponsorChoice](sponsor/functions/resolveSponsorChoice.md)
+
+***
+
+### restateBIMOSummary
+
+Re-exports [restateBIMOSummary](engine/functions/restateBIMOSummary.md)
 
 ***
 

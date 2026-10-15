@@ -453,7 +453,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
     id: "stale-fries",
     speaker: "manager",
     prompt:
-      "The fries have been under the lamp for twenty minutes. Bo says they are fine.",
+      "Those fries have been under the lamp for twenty minutes. They're fine. Bag them.",
     options: [
       {
         id: "serve",
@@ -480,8 +480,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "short-till": {
     id: "short-till",
     speaker: "manager",
-    prompt:
-      "Dale's drawer came up eight dollars short. Bo wants to know whose drawer it was.",
+    prompt: "A drawer came up eight dollars short. Was that Dale's, or yours?",
     options: [
       {
         id: "cover",
@@ -509,9 +508,9 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   },
   "shake-machine": {
     id: "shake-machine",
-    speaker: "customer",
+    speaker: "manager",
     prompt:
-      "A customer wants a shake. The machine works, but whoever closes has to clean it. Bo says to tell them it is broken.",
+      "Car on the headset wants a shake. Tell them the machine's broken. Whoever closes has to clean it.",
     options: [
       {
         id: "broken",
@@ -540,7 +539,7 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "long-break": {
     id: "long-break",
     speaker: "manager",
-    prompt: "Bo asks whether you saw Dale take a twenty-minute smoke break.",
+    prompt: "Did you see Dale take a twenty-minute smoke break?",
     options: [
       {
         id: "cover",

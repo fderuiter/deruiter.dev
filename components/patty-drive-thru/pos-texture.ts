@@ -122,7 +122,7 @@ export function drawPos(
     picture.tickets.forEach((ticket, index) => {
       key(
         ctx,
-        `#${ticket.orderId}${ticket.ready ? " ✓" : ""}`,
+        `${index + 1}·#${ticket.orderId}${ticket.ready ? " ✓" : ""}`,
         pad + index * 100,
         54,
         90,

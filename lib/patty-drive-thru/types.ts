@@ -144,7 +144,10 @@ export interface DilemmaOption {
 export interface Dilemma {
   readonly id: DilemmaId;
   readonly speaker: DilemmaSpeaker;
-  /** What is said or seen, one or two sentences. */
+  /**
+   * What the speaker says, one or two sentences. The speaker is shown as the
+   * prompt's label, so the prompt never names them again.
+   */
   readonly prompt: string;
   readonly options: readonly [DilemmaOption, DilemmaOption];
   /** The option taken when the timer runs out. */

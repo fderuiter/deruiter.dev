@@ -12,6 +12,22 @@ emitted without a detail.
 
 ## Properties
 
+### arcade\_daily\_updated
+
+> **arcade\_daily\_updated**: `object`
+
+An Arcade Daily result was recorded (#2113).
+
+#### date
+
+> **date**: `string`
+
+#### gameId
+
+> **gameId**: `string`
+
+***
+
 ### arcade\_score\_updated
 
 > **arcade\_score\_updated**: `object`

@@ -108,9 +108,16 @@ describe("challenge links (#1528)", () => {
 
   it("rejects a missing or invalid seed", () => {
     expect(parseChallengeHash("")).toBeNull();
-    expect(parseChallengeHash("#daily=2026-09-30")).toBeNull();
+    expect(parseChallengeHash("#daily=2026-02-30")).toBeNull();
     expect(parseChallengeHash("#seed=%20")).toBeNull();
     expect(parseChallengeHash("#seed=<script>")).toBeNull();
+  });
+
+  it("plays the day's seed from an Arcade Daily link with only a date (#2113)", () => {
+    expect(parseChallengeHash("#daily=2026-09-30")).toEqual({
+      seed: dailySeed("2026-09-30"),
+      daily: "2026-09-30",
+    });
   });
 
   it("does not let a link pass another seed off as the Daily Protocol", () => {

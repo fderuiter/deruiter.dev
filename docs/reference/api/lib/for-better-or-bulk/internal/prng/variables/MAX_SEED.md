@@ -6,6 +6,6 @@
 
 # Variable: MAX\_SEED
 
-> `const` **MAX\_SEED**: `2147483647` = `0x7fffffff`
+> `const` **MAX\_SEED**: `2147483647` = `ARCADE_DAILY_MAX_SEED`
 
 The largest seed a setup may carry: a positive 31-bit integer.

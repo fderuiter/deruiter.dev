@@ -50,6 +50,11 @@ export interface HintOptions {
    * so the two coach lines never repeat each other.
    */
   readonly coop?: boolean;
+  /**
+   * True on a touch iPad (#2123): the line names the on-screen keys (Use,
+   * Work) instead of the keyboard's.
+   */
+  readonly touch?: boolean;
 }
 
 /** The seeded events a level can schedule. */

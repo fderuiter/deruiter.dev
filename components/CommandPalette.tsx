@@ -1180,16 +1180,17 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         id: "nav-meme-vault",
         title: "Meme Vault & Soundboard",
         subtitle:
-          "Make some noise, find hidden trophies, and enjoy a few jokes about code and clinical data.",
+          "Repeat the vault's sequence in Echo, find hidden trophies, and enjoy a few jokes about code and clinical data.",
         category: "navigation",
         url: "/arcade/meme-vault",
         icon: <IconDeviceGamepad2 className="w-4 h-4 text-emerald-400" />,
         badge: "Meme Soundboard",
         status: "8-Bit Audio Active",
         description:
-          "Make some noise, find hidden trophies, and enjoy a few jokes about code and clinical data.",
-        techStack: ["Web Audio API", "CRT Shader", "React 19", "LocalStorage"],
+          "Repeat the vault's sequence in Echo, find hidden trophies, and enjoy a few jokes about code and clinical data.",
+        techStack: ["Web Audio API", "React 19", "LocalStorage"],
         highlights: [
+          "Echo: repeat a growing pad sequence",
           "8-channel synthesized retro soundboard",
           "6 collectible site achievements",
           "Interactive meme quotes & sound triggers",

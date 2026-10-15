@@ -85,6 +85,9 @@ export {
   heldName,
   interactKeyName,
   workKeyName,
+  TOUCH_INTERACT_NAME,
+  TOUCH_SWAP_NAME,
+  TOUCH_WORK_NAME,
 } from "./internal/words";
 export {
   clockLabel,

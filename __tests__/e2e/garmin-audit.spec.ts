@@ -74,6 +74,46 @@ test.describe("Monkey C Mayhem audit (#2128)", () => {
       expect(hidden).toEqual([]);
     });
   }
+  for (const size of DESKTOP_SIZES) {
+    test(`the run-over card fits beside the watch at ${size.width}px (#2132)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(size);
+      await launchCabinet(page);
+      // Dev Mode's battery drain ends a run in a few clicks.
+      await page.getByRole("switch", { name: "Dev Mode" }).click();
+      await page.locator('[data-testid="garmin-screen"]').click();
+      await page.keyboard.press("Enter");
+      const playScroll = await page.evaluate(() => window.scrollY);
+      const dialog = page.getByRole("dialog");
+      await expect(async () => {
+        if (!(await dialog.count())) {
+          await page
+            .getByRole("button", { name: /Drain Battery/ })
+            .click({ timeout: 1000 });
+        }
+        await expect(dialog).toBeVisible({ timeout: 500 });
+      }).toPass({ timeout: 20000 });
+      // Clicking the drain button scrolled the page; a player who ran out of
+      // battery would still be looking at the watch.
+      await page.evaluate((y) => window.scrollTo(0, y), playScroll);
+
+      const primary = dialog.getByRole("button", { name: /Reboot|Run Again/ });
+      await expect(primary).toBeFocused();
+      const navBottom = await page.evaluate(
+        () =>
+          document.querySelector("header")?.getBoundingClientRect().bottom ?? 0
+      );
+      for (const box of [
+        await dialog.boundingBox(),
+        await primary.boundingBox(),
+      ]) {
+        expect(box).not.toBeNull();
+        expect(box!.y).toBeGreaterThanOrEqual(navBottom);
+        expect(box!.y + box!.height).toBeLessThanOrEqual(size.height);
+      }
+    });
+  }
   test("Enter starts a race after Race Mode is clicked (#2130)", async ({
     page,
   }) => {

@@ -135,7 +135,7 @@ import {
   consumeBypassChip,
   renderWireframeMesh,
   updateEnemyAI,
-  updateFaceForgeBoss,
+  updateBoss,
   armBossForRoomEntry,
   getExitLockState,
   grantAmmoForLoadout,
@@ -2227,7 +2227,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         !boss.defeated &&
         gameMode === "roguelike"
       ) {
-        const { updatedBoss, spawnedDamage } = updateFaceForgeBoss(
+        const { updatedBoss, spawnedDamage } = updateBoss(
           boss,
           playerPosition.x,
           playerPosition.y,
@@ -2521,6 +2521,51 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           if (boss && !boss.defeated && gameMode === "roguelike") {
             const bossCenterX = boss.x * TILE + TILE / 2;
             const bossCenterY = boss.y * TILE + TILE / 2;
+            // The Neural Warden lights the lanes of its next lattice volley
+            // first, so dodging it is a read (#2178).
+            if (boss.telegraph) {
+              const reach = Math.max(cols, rows) * TILE;
+              const lanes =
+                boss.telegraph === "cross"
+                  ? [
+                      [1, 0],
+                      [-1, 0],
+                      [0, 1],
+                      [0, -1],
+                    ]
+                  : [
+                      [1, 1],
+                      [1, -1],
+                      [-1, 1],
+                      [-1, -1],
+                    ];
+              ctx.save();
+              ctx.strokeStyle = boss.mesh.color;
+              ctx.globalAlpha = 0.45;
+              ctx.lineWidth = 2;
+              ctx.setLineDash([4, 4]);
+              ctx.beginPath();
+              for (const [lx, ly] of lanes) {
+                // A lane ends at the first wall, where its shots stop.
+                let steps = 0;
+                while (
+                  steps * TILE < reach &&
+                  currentMaze[boss.y + ly * (steps + 1)]?.[
+                    boss.x + lx * (steps + 1)
+                  ] !== undefined &&
+                  currentMaze[boss.y + ly * (steps + 1)][
+                    boss.x + lx * (steps + 1)
+                  ] !== "#"
+                ) {
+                  steps++;
+                }
+                const len = (steps + 0.5) * TILE;
+                ctx.moveTo(bossCenterX, bossCenterY);
+                ctx.lineTo(bossCenterX + lx * len, bossCenterY + ly * len);
+              }
+              ctx.stroke();
+              ctx.restore();
+            }
             renderWireframeMesh(ctx, boss.mesh, bossCenterX, bossCenterY, true);
 
             boss.projectiles.forEach((p) => {

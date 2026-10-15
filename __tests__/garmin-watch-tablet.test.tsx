@@ -253,7 +253,8 @@ describe("Monkey C Mayhem in the touch cabinet (#2122)", () => {
     hold("sprint");
     expect(lastRunInput()).toBe(1);
     act(() => requestGarminAutoPause());
-    expect(pauseGame).toHaveBeenCalled();
+    // Marked as the cabinet's own pause, so the face reads AUTO PAUSE (#2239).
+    expect(pauseGame).toHaveBeenCalledWith(expect.anything(), undefined, true);
     expect(lastRunInput()).toBe(0);
     expect(face().getAttribute("aria-label")).toContain("Status: paused");
     // A second request leaves the paused run paused.

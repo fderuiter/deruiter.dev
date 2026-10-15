@@ -139,6 +139,8 @@ interface ProtocolDriftState {
   setSpeed: (speed: SimSpeed) => Promise<void>;
   step: () => Promise<void>;
   tick: (realMs: number) => Promise<void>;
+  /** Runs the clock straight to the next event the player would see (#2170). */
+  skipToNextEvent: () => Promise<void>;
   validate: () => Promise<void>;
   publish: () => Promise<void>;
   loadTemplate: (graph: {
@@ -494,6 +496,33 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       }
     },
 
+    skipToNextEvent: async () => {
+      const { view } = get();
+      const fsm = get().snapshot?.fsmState;
+      if (isTracerComplete(view)) {
+        say("info", "The tracer is complete. Start the full study to go on.");
+        return;
+      }
+      if (fsm === "DRAFT" || fsm === "VALIDATE" || fsm === "DEPLOY_READY") {
+        say("warn", "Run Local Test and Publish Revision before skipping.");
+        playProtocolCue("rejectCollision");
+        return;
+      }
+      if (fsm !== "PAUSED" && fsm !== "RUNNING") return;
+      const next = view?.nextEventMinute ?? null;
+      if (next === null) {
+        say("info", "Nothing else is scheduled.");
+        return;
+      }
+      const res = await send({
+        type: "ADVANCE_TO",
+        minute: Math.max(next, get().snapshot?.minute ?? next),
+      });
+      if (res && !res.events.some((e) => e.type === "COMMAND_REJECTED")) {
+        playProtocolCue("eventStep");
+      }
+    },
+
     tick: async (realMs) => {
       if (busy || get().snapshot?.fsmState !== "RUNNING") return;
       busy = true;
@@ -728,9 +757,17 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       try {
         restoreProtocolDriftEngine(save);
       } catch (error) {
+        // A save from an earlier build replays to a different state; say so
+        // in the player's words rather than the engine's (#2170).
+        const stale =
+          error instanceof Error && /state hash/.test(error.message);
         say(
           "error",
-          error instanceof Error ? error.message : "Save is invalid"
+          stale
+            ? "This save is from an earlier version of Protocol Drift and can't be resumed. Start a new study."
+            : error instanceof Error
+              ? error.message
+              : "Save is invalid"
         );
         return false;
       }

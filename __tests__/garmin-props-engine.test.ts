@@ -42,6 +42,7 @@ import {
   type CourseSwitch,
 } from "@/lib/garmin-props";
 import { START_LIVES } from "@/lib/garmin-powerups";
+import { STALLED_ALERT_MS, STALLED_ALERT_TEXT } from "@/lib/garmin-culture";
 
 // Course props on the Monkey C Mayhem course (#1992): Water Stations and their
 // bonus rooms, Plyo Boxes, the Rest Day Switch, Treadmill Belts and PR Boards.
@@ -185,6 +186,35 @@ describe("Water Station sides", () => {
     expect(s.distanceMeters).toBe(held);
     expect(s.isGrounded).toBe(true);
     expect(s.playerY).toBe(GROUND_Y - PLAYER_HEIGHT);
+  });
+
+  it("scores nothing while it holds the runner, and says to jump (#2232)", () => {
+    const wall = station({ x: 200 });
+    const props: CourseProps = { ...EMPTY_PROPS, stations: [wall] };
+    let s = run(
+      EMPTY_COURSE,
+      {
+        distanceMeters: 10,
+        isGrounded: true,
+        playerY: GROUND_Y - PLAYER_HEIGHT,
+        playerVy: 0,
+        banner: null,
+      },
+      props
+    );
+    s = step(s, 300);
+    const held = { distance: s.distanceMeters, score: s.score };
+    s = step(s, 30);
+    expect(s.distanceMeters).toBe(held.distance);
+    expect(s.score).toBe(held.score);
+
+    let alert = false;
+    for (let i = 0; i < Math.ceil(STALLED_ALERT_MS / 16) + 5; i++) {
+      s = step(s, 1);
+      if (s.banner?.text === STALLED_ALERT_TEXT) alert = true;
+    }
+    expect(alert).toBe(true);
+    expect(s.score).toBe(held.score);
   });
 
   it("is landed on from above: a falling runner lands on its top", () => {

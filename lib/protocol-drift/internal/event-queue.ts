@@ -86,6 +86,14 @@ export class EventQueue {
     return this.items.length;
   }
 
+  /** The minute of the first pending event of one of the given kinds. */
+  nextMinuteOf(kinds: ReadonlySet<SimEventKind>): number | null {
+    for (const event of this.items) {
+      if (kinds.has(event.kind)) return event.minute;
+    }
+    return null;
+  }
+
   /** A copy of the pending events in run order. */
   toArray(): SimEvent[] {
     return this.items.map((e) => ({ ...e }));

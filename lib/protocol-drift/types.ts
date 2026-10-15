@@ -938,6 +938,12 @@ export interface ProtocolDriftView {
   lastLockAudit: LockAuditResult | null;
   /** Commands turned down so far that count against the scorecard. */
   rejectedCommands: number;
+  /**
+   * The minute of the next event a player would notice (data arriving, a
+   * site reply, the memo or a wave's end), or null when none is scheduled.
+   * Skip to next event advances the clock to it (#2170).
+   */
+  nextEventMinute: number | null;
   /** True once the run has loaded a reference pipeline (#2168). */
   assisted: boolean;
 }

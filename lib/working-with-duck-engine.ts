@@ -167,6 +167,20 @@ export interface DuckFact {
   caption: string;
 }
 
+/**
+ * The one rule a campaign sprint adds on top of the meters (#2161), so the
+ * five sprints play differently:
+ * - `cable-alert`: Duck goes for the power cable first and chews faster.
+ * - `window-watch`: squirrels come to the window more often. Sit while one
+ *   is there for a bonus; an ignored squirrel winds Duck up.
+ * - `mud-storm`: storms muddy Duck on a timer, and muddy paws slow the work
+ *   until a bath.
+ * - `standup`: a standup meeting partway in. Keep Duck out of trouble for
+ *   its length for a bonus.
+ */
+export type DuckSprintTwist =
+  "cable-alert" | "window-watch" | "mud-storm" | "standup";
+
 export interface GameSprint {
   level: number;
   title: string;
@@ -176,6 +190,10 @@ export interface GameSprint {
   /** Seconds a well-run sprint takes; each second under it earns a bonus. */
   parSeconds: number;
   description: string;
+  /** The rule this sprint adds (#2161); sprint 1 has none. */
+  twist?: DuckSprintTwist;
+  /** One line for the briefing card naming the twist and how to answer it. */
+  twistBrief?: string;
 }
 
 export const DUCK_FACTS: DuckFact[] = [
@@ -342,6 +360,9 @@ export const SPRINTS: GameSprint[] = [
     impulseInterval: 220,
     description:
       "High-priority deliverable in flight! Protect the office power strip with Kong toys and trade treats during 'No Take, Only Throw!'.",
+    twist: "cable-alert",
+    twistBrief:
+      "Cable Alert: Duck goes for the power cable first and chews it faster. Drop It or a Kong saves it.",
   },
   {
     level: 3,
@@ -352,6 +373,9 @@ export const SPRINTS: GameSprint[] = [
     impulseInterval: 175,
     description:
       "Board meeting deadline! Excitement is rising. Run outside for fast potty breaks and practice clicker training for Good Boy multipliers.",
+    twist: "window-watch",
+    twistBrief:
+      "Window Watch: squirrels visit often. Call Sit while one is at the window for a bonus; ignore it and Duck gets wound up.",
   },
   {
     level: 4,
@@ -362,6 +386,9 @@ export const SPRINTS: GameSprint[] = [
     impulseInterval: 145,
     description:
       "Intense project crunch! Duck needs high-energy Dog Park agility runs. If he splashes into mud, scrub him clean in the Bathtub.",
+    twist: "mud-storm",
+    twistBrief:
+      "Mud Storm: storms roll in and muddy Duck. Muddy paws slow your work until you give him a bath.",
   },
   {
     level: 5,
@@ -372,6 +399,9 @@ export const SPRINTS: GameSprint[] = [
     impulseInterval: 120,
     description:
       "The major milestone release! Master all training tricks, focus work sprints, and unlock the Golden Graduation hat.",
+    twist: "standup",
+    twistBrief:
+      "Launch Standup: 20 seconds in, a 15-second standup starts. Keep Duck out of trouble (no zoomies, chews or potty runs) for a bonus.",
   },
 ];
 
@@ -517,6 +547,44 @@ function hasEndlessHazard(
       hazard
     )
   );
+}
+
+/** How long the opening twist banner stays up. */
+const TWIST_BANNER_TICKS = 360;
+/** First Cable Alert chew in the Cable Alert sprint (#2161), then its period. */
+export const CABLE_ALERT_FIRST_TICK = 300;
+export const CABLE_ALERT_INTERVAL_TICKS = 480;
+/** Ticks between squirrel visits in the Window Watch sprint (#2161). */
+const WINDOW_WATCH_SURPRISE_TICKS = 480;
+/** How much faster Excitement climbs while the Launch Standup is live. */
+export const STANDUP_EXCITEMENT_FACTOR = 1.5;
+/** Excitement Duck gains when a squirrel leaves without a Sit. */
+export const SQUIRREL_IGNORED_EXCITEMENT = 25;
+/** Good Boy Duck loses barking at a squirrel nobody answered. */
+export const SQUIRREL_IGNORED_GOOD_BOY = 15;
+/** Points for calling Sit while a squirrel is at the window. */
+export const SQUIRREL_SIT_POINTS = 400;
+/** Tick of the first mud storm in the Mud Storm sprint, then its period. */
+export const MUD_STORM_FIRST_TICK = 360;
+export const MUD_STORM_INTERVAL_TICKS = 1200;
+/** Work speed while Duck has muddy paws in the endless mud hazard. */
+const MUDDY_WORK_FACTOR = 0.8;
+/**
+ * What a code burst achieves while Duck is muddy in the Mud Storm sprint:
+ * muddy paws all over the keyboard.
+ */
+const MUD_STORM_BURST_FACTOR = 0.5;
+/** The Launch Standup window, in sprint ticks, and its bonus. */
+export const STANDUP_START_TICK = 1200;
+export const STANDUP_TICKS = 900;
+export const STANDUP_BONUS = 1500;
+
+/** The twist the current campaign sprint adds, or null (#2161). */
+export function sprintTwist(
+  state: Pick<WorkingWithDuckState, "mode" | "currentLevel">
+): DuckSprintTwist | null {
+  if (state.mode !== "campaign") return null;
+  return SPRINTS.find((s) => s.level === state.currentLevel)?.twist ?? null;
 }
 
 /**
@@ -741,6 +809,11 @@ export interface WorkingWithDuckState {
   sprintStars: DuckSprintStars | null;
   /** Par-time bonus from the sprint just cleared; 0 until a campaign win. */
   sprintParBonus?: number;
+  /**
+   * The Launch Standup in the standup sprint (#2161): `live` while it runs,
+   * then `passed` or `failed`. Absent before it starts and in other sprints.
+   */
+  standup?: "live" | "passed" | "failed";
   /** Best stars per campaign sprint, carried across sprints and sessions. */
   bestStars: DuckBestStars;
   highScore: number;
@@ -1053,8 +1126,17 @@ export function stepDuckGame(
       : null;
   const impulseRate = endless?.impulseInterval ?? sprint.impulseInterval;
   const meterLevel = endless?.meterLevel ?? state.currentLevel;
-  const surpriseInterval = endless?.surpriseInterval ?? SURPRISE_INTERVAL_TICKS;
-  const hasCableChewing = endless?.hazards.includes("cable-chewing") ?? false;
+  // Each campaign sprint after the first adds one twist (#2161), reusing
+  // the endless hazards where they fit.
+  const twist = sprintTwist(state);
+  const surpriseInterval =
+    endless?.surpriseInterval ??
+    (twist === "window-watch"
+      ? WINDOW_WATCH_SURPRISE_TICKS
+      : SURPRISE_INTERVAL_TICKS);
+  const hasCableChewing =
+    (endless?.hazards.includes("cable-chewing") ?? false) ||
+    twist === "cable-alert";
 
   // Multipliers & Calm Buff
   const nextCalmBuff = Math.max(0, state.calmBuffTimer - 1);
@@ -1079,9 +1161,10 @@ export function stepDuckGame(
   // Debuff from unmopped indoor puddles (-30% speed)
   const puddlePenalty =
     state.indoorPuddles && state.indoorPuddles.length > 0 ? 0.7 : 1.0;
-  // Endless mud hazard: muddy paws slow the work (-20%) until Duck is bathed.
+  // Endless mud hazard: muddy paws slow the work (-20%) until Duck is
+  // bathed. (The Mud Storm sprint slows code bursts instead.)
   const mudPenalty =
-    endless?.hazards.includes("mud") && state.isMuddy ? 0.8 : 1.0;
+    endless?.hazards.includes("mud") && state.isMuddy ? MUDDY_WORK_FACTOR : 1.0;
 
   let nextWorkProgress = state.workProgress;
   let nextScore = state.totalScore;
@@ -1143,7 +1226,14 @@ export function stepDuckGame(
     (state.activeAccessory === "bucket-hat" ? 0.75 : 1);
   const hungerRate = 0.02 + meterLevel * 0.01;
 
-  let nextExcitement = clamp(state.excitement + excitementRate, 0, 100);
+  // Launch Standup (#2161): voices on the call wind Duck up.
+  const standupLive = twist === "standup" && state.standup === "live";
+  let nextExcitement = clamp(
+    state.excitement +
+      excitementRate * (standupLive ? STANDUP_EXCITEMENT_FACTOR : 1),
+    0,
+    100
+  );
   let nextBladder = clamp(state.bladder + bladderRate, 0, 100);
   let nextThirst = clamp(state.thirst + thirstRate, 0, 100);
   let nextHunger = clamp(state.hunger + hungerRate, 0, 100);
@@ -1165,6 +1255,17 @@ export function stepDuckGame(
     : null;
   if (activeToast && activeToast.timer <= 0) {
     activeToast = null;
+  }
+  // Each twist sprint opens with a banner naming its twist (#2161).
+  const twistSprint = twist
+    ? SPRINTS.find((s) => s.level === state.currentLevel)
+    : undefined;
+  if (twistSprint?.twistBrief && nextTicks === 1) {
+    activeToast = {
+      badge: `Sprint ${twistSprint.level} twist`,
+      text: twistSprint.twistBrief,
+      timer: TWIST_BANNER_TICKS,
+    };
   }
   if (quarterAdvanced) {
     activeToast = {
@@ -1188,6 +1289,22 @@ export function stepDuckGame(
     : null;
   const hiccupsEnded =
     activeSurprise?.type === "puppy-hiccups" && activeSurprise.timer <= 0;
+  // Window Watch (#2161): a squirrel that leaves without a Sit winds Duck up.
+  const squirrelIgnored =
+    twist === "window-watch" &&
+    activeSurprise?.type === "squirrel-window" &&
+    activeSurprise.timer <= 0;
+  if (squirrelIgnored) {
+    nextExcitement = clamp(
+      nextExcitement + SQUIRREL_IGNORED_EXCITEMENT,
+      0,
+      100
+    );
+    nextNaughtyVsGood = Math.max(
+      -100,
+      nextNaughtyVsGood - SQUIRREL_IGNORED_GOOD_BOY
+    );
+  }
   if (activeSurprise && activeSurprise.timer <= 0) {
     activeSurprise = null;
   }
@@ -1224,17 +1341,54 @@ export function stepDuckGame(
     });
   }
 
+  if (squirrelIgnored) {
+    alerts.push({
+      id: state.nextAlertId + 97,
+      x: 400,
+      y: 60,
+      text: `🐿️ Duck barked at the squirrel! (+${SQUIRREL_IGNORED_EXCITEMENT} Excitement, -${SQUIRREL_IGNORED_GOOD_BOY} Good Boy)`,
+      color: "#f97316",
+      alpha: 1,
+      vy: -1.2,
+    });
+    soundCues.push("bark");
+  }
+
+  // Mud Storm (#2161): a storm muddies Duck on a timer. Muddy paws slow the
+  // work until a bath, so the bathtub becomes part of the plan.
+  let nextIsMuddy = state.isMuddy;
+  if (
+    twist === "mud-storm" &&
+    !state.isMuddy &&
+    nextTicks >= MUD_STORM_FIRST_TICK &&
+    (nextTicks - MUD_STORM_FIRST_TICK) % MUD_STORM_INTERVAL_TICKS === 0
+  ) {
+    nextIsMuddy = true;
+    alerts.push({
+      id: state.nextAlertId + 96,
+      x: BATHTUB_BOUNDS.x,
+      y: BATHTUB_BOUNDS.y - 10,
+      text: "🌧️ Mud storm! Muddy paws slow work until a bath",
+      color: "#f59e0b",
+      alpha: 1,
+      vy: -1.2,
+    });
+    soundCues.push("bark");
+  }
+
   // Random surprise event during calm roam. Sprint 1 keeps its two gentle
   // surprises; from sprint 2, and in endless, puppy hiccups join the pool.
+  // Window Watch brings only squirrels.
   if (
     !activeSurprise &&
     nextTicks % surpriseInterval === 0 &&
-    duck.state === "IDLE_ROAM"
+    (duck.state === "IDLE_ROAM" || twist === "window-watch")
   ) {
     const roll = Math.random();
     const withHiccups = state.mode === "endless" || state.currentLevel >= 2;
-    const deliveryCut = withHiccups ? 1 / 3 : 0.5;
-    const squirrelCut = withHiccups ? 2 / 3 : 1;
+    const windowWatch = twist === "window-watch";
+    const deliveryCut = windowWatch ? 0 : withHiccups ? 1 / 3 : 0.5;
+    const squirrelCut = windowWatch ? 1 : withHiccups ? 2 / 3 : 1;
     if (roll < deliveryCut) {
       activeSurprise = {
         type: "amazon-delivery",
@@ -1369,6 +1523,39 @@ export function stepDuckGame(
       alpha: 1,
       vy: -1.2,
     });
+  }
+
+  // Cable Alert (#2161): on a timer Duck drops what he is doing and goes
+  // for the power cable, or another prop once it is chewed.
+  if (
+    twist === "cable-alert" &&
+    nextTicks >= CABLE_ALERT_FIRST_TICK &&
+    (nextTicks - CABLE_ALERT_FIRST_TICK) % CABLE_ALERT_INTERVAL_TICKS === 0 &&
+    (duck.state === "IDLE_ROAM" ||
+      duck.state === "DRINKING_WATER" ||
+      duck.state === "EATING_KIBBLE")
+  ) {
+    const unchewed = hazards.filter((h) => !h.isChewed);
+    const target =
+      unchewed.find((h) => h.id === "power-cable") ?? unchewed[0] ?? null;
+    if (target) {
+      duck.state = "SNEAKY_CHEW";
+      duck.targetX = target.x;
+      duck.targetY = target.y;
+      duck.stateTimer = CABLE_CHEW_TICKS;
+      duck.maxStateTimer = CABLE_CHEW_TICKS;
+      activeHazardTarget = target.id;
+      soundCues.push("bark");
+      alerts.push({
+        id: state.nextAlertId + 94,
+        x: duck.x,
+        y: duck.y - 25,
+        text: `🔌 Cable Alert! Duck is going for the ${target.name}!`,
+        color: "#f97316",
+        alpha: 1,
+        vy: -1.2,
+      });
+    }
   }
 
   // Behavior State Machine Logic
@@ -1813,6 +2000,53 @@ export function stepDuckGame(
   duck.x = clamped.x;
   duck.y = clamped.y;
 
+  // Launch Standup (#2161): a window partway into the sprint in which Duck
+  // must stay out of trouble. Any emergency ends it; lasting it out pays.
+  let nextStandup = state.standup;
+  if (twist === "standup") {
+    const inTrouble =
+      duck.state === "SNIFFING_POTTY" ||
+      duck.state === "SNEAKY_CHEW" ||
+      duck.state === "ZOOMIES";
+    if (nextStandup === undefined && nextTicks >= STANDUP_START_TICK) {
+      nextStandup = "live";
+      activeToast = {
+        badge: "Launch Standup",
+        text: `Standup is live! Keep Duck out of trouble for ${STANDUP_TICKS / 60} seconds.`,
+        timer: 240,
+      };
+      soundCues.push("door-knock");
+    }
+    if (nextStandup === "live" && inTrouble) {
+      nextStandup = "failed";
+      alerts.push({
+        id: state.nextAlertId + 95,
+        x: duck.x,
+        y: duck.y - 40,
+        text: "📞 Duck crashed the standup! No standup bonus",
+        color: "#f97316",
+        alpha: 1,
+        vy: -1.2,
+      });
+    } else if (
+      nextStandup === "live" &&
+      nextTicks >= STANDUP_START_TICK + STANDUP_TICKS
+    ) {
+      nextStandup = "passed";
+      nextScore += STANDUP_BONUS;
+      alerts.push({
+        id: state.nextAlertId + 95,
+        x: 400,
+        y: 60,
+        text: `📞 Smooth standup! (+${STANDUP_BONUS} pts)`,
+        color: "#22c55e",
+        alpha: 1,
+        vy: -1.2,
+      });
+      soundCues.push("combo-fanfare");
+    }
+  }
+
   // Update Particles & Alerts
   particles = particles
     .map((p) => ({
@@ -1848,6 +2082,8 @@ export function stepDuckGame(
     comboStreak: nextComboStreak,
     comboTimer: nextComboTimer,
     activeSurpriseEvent: activeSurprise,
+    isMuddy: nextIsMuddy,
+    standup: nextStandup,
     activeTrick,
     officeStations: stations,
     duck,
@@ -2041,7 +2277,14 @@ export function performTrick(
   // when he's wound up and very little when he's already calm. Spamming
   // tricks keeps him calm and earns almost nothing. Drop It always answers
   // a real problem, so it always pays in full.
-  const need = trick === "DROP_IT" ? 1 : clamp(state.excitement / 60, 0.1, 1);
+  // A Sit while a squirrel is at the window (#2161) answers a real
+  // distraction, so it pays in full and sends the squirrel off.
+  const sitsThroughSquirrel =
+    trick === "SIT" && state.activeSurpriseEvent?.type === "squirrel-window";
+  const need =
+    trick === "DROP_IT" || sitsThroughSquirrel
+      ? 1
+      : clamp(state.excitement / 60, 0.1, 1);
   // Only a trick Duck needed extends the combo. The streak's score bonus is
   // capped at 3x, matching the multiplier bonus in stepDuckGame.
   const extendsCombo = need >= 0.5;
@@ -2108,6 +2351,19 @@ export function performTrick(
       alpha: 1,
       vy: -1.2,
     });
+    if (sitsThroughSquirrel) {
+      soundCues.push("combo-fanfare");
+      nextScore += SQUIRREL_SIT_POINTS;
+      alerts.push({
+        id: state.nextAlertId + 50,
+        x: 400,
+        y: 80,
+        text: `🐿️ Sat through the squirrel! (+${SQUIRREL_SIT_POINTS} pts)`,
+        color: "#38bdf8",
+        alpha: 1,
+        vy: -1.2,
+      });
+    }
   } else if (trick === "SPIN") {
     soundCues.push("spin-whoosh");
     nextNaughty = Math.min(100, nextNaughty + scaled(22));
@@ -2145,6 +2401,7 @@ export function performTrick(
     excitement: nextExcitement,
     comboStreak,
     comboTimer: extendsCombo ? 180 : state.comboTimer,
+    activeSurpriseEvent: sitsThroughSquirrel ? null : state.activeSurpriseEvent,
     activeTrick: {
       trick,
       timer: 60,
@@ -2192,7 +2449,12 @@ export function activeCodeBurst(
   }
 
   const effectiveMultiplier = state.multiplier;
-  const progressBoost = 0.45 * effectiveMultiplier;
+  // Mud Storm (#2161): muddy paws slow bursts too, until a bath.
+  const mudFactor =
+    sprintTwist(state) === "mud-storm" && state.isMuddy
+      ? MUD_STORM_BURST_FACTOR
+      : 1;
+  const progressBoost = 0.45 * effectiveMultiplier * mudFactor;
   const nextWork = Math.min(
     state.targetWorkProgress,
     state.workProgress + progressBoost

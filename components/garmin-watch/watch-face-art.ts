@@ -3221,6 +3221,11 @@ function drawFog(ctx: Ctx, state: GameEngineState) {
 function drawPaused(ctx: Ctx, title: string, race = false) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+  // A solid plate, so the course art behind never shows through the text.
+  ctx.fillStyle = "rgba(0, 0, 0, 0.92)";
+  ctx.beginPath();
+  ctx.roundRect(FACE_CENTER - 70, FACE_CENTER - 24, 140, race ? 56 : 44, 6);
+  ctx.fill();
   text(ctx, title, FACE_CENTER, FACE_CENTER - 4, 16, FACE_COLORS.text);
   text(
     ctx,
@@ -3572,7 +3577,7 @@ export function renderWatchFace(
   if (state.gameState === "paused")
     drawPaused(
       ctx,
-      isFitnessRun(state) ? AUTO_PAUSE_TEXT : "PAUSED",
+      state.autoPaused ? AUTO_PAUSE_TEXT : "PAUSED",
       Boolean(state.race)
     );
 

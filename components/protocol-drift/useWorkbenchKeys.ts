@@ -13,10 +13,10 @@ const CLOCK_GROUP = "[role='group'][aria-label='Clock']";
 
 /**
  * Keyboard shortcuts for the workbench root: Space pauses or runs, N steps one
- * hour, I expands the inspector and Escape docks it again. Text fields and
+ * hour, S skips to the next event (#2170), I expands the inspector and Escape docks it again. Text fields and
  * dialogs keep every key. A focused button keeps Space unless it is one of the
- * clock controls, so clicking 5x and then pressing Space still pauses; N and I
- * work over any button.
+ * clock controls, so clicking 5x and then pressing Space still pauses; N, S
+ * and I work over any button.
  */
 export function useWorkbenchKeys(): (event: React.KeyboardEvent) => void {
   return useCallback((event: React.KeyboardEvent) => {
@@ -56,6 +56,11 @@ export function useWorkbenchKeys(): (event: React.KeyboardEvent) => void {
       case "N":
         event.preventDefault();
         void store.step();
+        return;
+      case "s":
+      case "S":
+        event.preventDefault();
+        void store.skipToNextEvent();
         return;
       case "i":
       case "I":

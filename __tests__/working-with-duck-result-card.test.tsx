@@ -137,7 +137,11 @@ describe("Working With Duck sprint result card (#1677)", () => {
   }
 
   it("recaps a cleared sprint and measures the score against the best saved before it", async () => {
-    localStorage.setItem("working_with_duck_high_score", "500");
+    // The card compares against this sprint's own best (#2159).
+    localStorage.setItem(
+      "working_with_duck_sprint_bests",
+      JSON.stringify({ 2: 500 })
+    );
     await render(finished("won", { highScore: 900 }));
 
     const card = dialog("duck-win-dialog-heading");
@@ -157,7 +161,10 @@ describe("Working With Duck sprint result card (#1677)", () => {
   });
 
   it("shows how far a timed-out sprint fell short and Escape retries it", async () => {
-    localStorage.setItem("working_with_duck_high_score", "2000");
+    localStorage.setItem(
+      "working_with_duck_sprint_bests",
+      JSON.stringify({ 2: 2000 })
+    );
     await render(finished("failed", { totalScore: 300 }));
 
     const card = dialog("duck-fail-dialog-heading");

@@ -288,6 +288,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Hazard Penalty",
       },
       {
+        title: "Score and Par",
+        detail:
+          "Every unit of work shipped pays the same points, whether it ticks in on its own or comes from a coding burst, scaled by the Good Boy multiplier. Tricks, saves and bath time add to that. Each sprint has a par time, and every second you ship under it earns a speed bonus, so a fast, calm sprint beats a slow one. The result card compares your score with your best on that same sprint.",
+        badge: "Scoring",
+      },
+      {
         title: "5-Sprint Campaign & Accessories",
         detail:
           "Progress across 5 story-driven sprints to unlock wearable cosmetics: Adidas Bucket Hat, Tech CEO Bowtie, Adventure Bandana, and Yellow Mud Boots.",

@@ -84,18 +84,18 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
       const trophyHandler = vi.fn();
       const unsubscribe = onAppEvent("arcade_trophy_unlocked", trophyHandler);
 
-      // Score 150 in Working With Duck (unlocks duck_first_sprint)
-      const result = recordArcadeScore("working-with-duck", 150);
+      // Score 600 in Laser Loon (unlocks laser_loon_novice)
+      const result = recordArcadeScore("laser-loon", 600);
 
       expect(result.newlyUnlocked.length).toBeGreaterThan(0);
       expect(
-        result.newlyUnlocked.some((t) => t.id === "duck_first_sprint")
+        result.newlyUnlocked.some((t) => t.id === "laser_loon_novice")
       ).toBe(true);
       expect(trophyHandler).toHaveBeenCalledWith(
         expect.objectContaining({
-          trophyId: "duck_first_sprint",
-          gameId: "working-with-duck",
-          title: "Deadline Met",
+          trophyId: "laser_loon_novice",
+          gameId: "laser-loon",
+          title: "Flag Defender",
         })
       );
 
@@ -116,6 +116,24 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
   });
 
   describe("Milestone trophies (#2047)", () => {
+    it("unlocks Working With Duck trophies from play, not points (#2159)", () => {
+      expect(
+        recordArcadeScore("working-with-duck", 5000).newlyUnlocked.filter(
+          (t) => t.gameId === "working-with-duck"
+        )
+      ).toEqual([]);
+      expect(
+        recordArcadeMilestone("working-with-duck", "sprint_shipped").map(
+          (t) => t.id
+        )
+      ).toEqual(["duck_first_sprint"]);
+      expect(
+        recordArcadeMilestone("working-with-duck", "three_star_sprint").map(
+          (t) => t.id
+        )
+      ).toEqual(["duck_master"]);
+    });
+
     it("unlocks a trophy from its game's milestone, once", () => {
       const handler = vi.fn();
       const unsubscribe = onAppEvent("arcade_trophy_unlocked", handler);

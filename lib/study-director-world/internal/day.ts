@@ -213,7 +213,13 @@ function overnightLines(
       lines.push({ text: `${site.name} enrolled +${gained}`, tone: "good" });
   }
   const spent = after.spent - before.spent;
-  if (spent > 0) lines.push({ text: `${money(spent)} spent`, tone: "neutral" });
+  // The day's burn and the running total: "$2,390 spent" every night read
+  // like a total that never moved (#2187).
+  if (spent > 0)
+    lines.push({
+      text: `${money(spent)} spent today, ${money(after.spent)} of ${money(after.setup.budget)} so far`,
+      tone: "neutral",
+    });
   const slip = projectedFinishDay(after) - projectedFinishDay(before);
   if (slip > 0)
     lines.push({
@@ -246,7 +252,8 @@ function overnightLines(
   }
   const arrived = arrivedToday(after);
   const critical = arrived.filter((e) => e.urgency === "critical").length;
-  if (arrived.length > 0)
+  // Mail for a study that just ended will never be read (#2190).
+  if (arrived.length > 0 && after.status !== "complete")
     lines.push({
       text: `${plural(arrived.length, "new message")} arrived${critical > 0 ? `, ${critical} urgent` : ""}`,
       tone: critical > 0 ? "bad" : "neutral",

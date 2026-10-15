@@ -59,8 +59,14 @@ export function CsrLockSummary({
         The audit table and the Blind-by-Blind record fold away, so the
         whole payoff fits the cabinet with the final score in view (#2152).
       */}
-      <details className="mt-2" data-testid="csr-details">
+      <details className="group mt-2" data-testid="csr-details">
         <summary className="flex min-h-[44px] cursor-pointer items-center text-[11px] font-bold uppercase tracking-wider text-zinc-300 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400">
+          <span
+            aria-hidden="true"
+            className="mr-2 inline-block transition-transform group-open:rotate-90 motion-reduce:transition-none"
+          >
+            ▸
+          </span>
           Audit summary and campaign record
         </summary>
         {/* Scrolls sideways at 320px, so it takes focus for keyboard users. */}

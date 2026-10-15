@@ -1212,6 +1212,18 @@ export function CardTable({
     !runInfoOpen &&
     !deckBuilderOpen &&
     !handSheetOpen;
+  // The run's end card opens title first (#2152). Focus starts on its primary
+  // action at the bottom, and the page may already sit scrolled down from the
+  // won choice screen, so bring the card's top below the fixed site header.
+  const resultRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showResultCard) return;
+    const dialog = resultRef.current?.querySelector('[role="dialog"]');
+    if (!dialog) return;
+    const top = dialog.getBoundingClientRect().top;
+    const header = 96;
+    if (top < header) window.scrollTo({ top: window.scrollY + top - header });
+  }, [showResultCard, runView.ended]);
   // Why the run was lost, and the best round this browser has scored, so the
   // fail screen gives a reason to try again (#1944).
   const lossDiagnosis = showResultCard ? describeBlindLoss(view) : null;
@@ -2651,6 +2663,7 @@ export function CardTable({
           // only one focus trap is ever active. The wrapper is the layer the
           // card covers, so it has a box of its own to find and to style.
           <div
+            ref={resultRef}
             className="te-result absolute inset-0 z-30"
             data-testid="blind-result"
           >

@@ -16,6 +16,14 @@ A Training Plan in progress: everything the save keeps.
 
 ***
 
+### cards
+
+> **cards**: [`FinisherCard`](../../garmin-engine/type-aliases/FinisherCard.md)[]
+
+Finisher Cards collected towards the next set of three (#1996).
+
+***
+
 ### cleared
 
 > **cleared**: [`PlanNodeId`](../type-aliases/PlanNodeId.md)[]

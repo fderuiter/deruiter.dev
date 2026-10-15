@@ -452,6 +452,103 @@ describe("the gear bag (#1995)", () => {
   });
 });
 
+describe("Finisher Cards (#1996)", () => {
+  /** A pole grabbed on the next step: the auto lap adds a split, the run goes on. */
+  function grabPoleNextStep() {
+    vi.mocked(updateGameSimulation).mockImplementationOnce((s) => ({
+      ...s,
+      lapSplits: [...(s.lapSplits ?? []), 30_000],
+      banner: { text: "LAP 1 · 0:30.0", ttlMs: 2200, tone: "good" },
+    }));
+    // The face redraws every sixth frame, and the announcement goes with it.
+    frames(6);
+  }
+
+  it("collects the pole's card on a workout and pays a set out into the plan", () => {
+    // The run clock sits under one cycle, so the pole shows a Shoe.
+    storePlan([], { cards: ["shoe", "shoe"] });
+    renderPlan();
+    key("Enter");
+    key(" ");
+    frames(2);
+    endNextStep(true);
+    const save = loadPlan();
+    expect(save?.cards).toEqual([]);
+    expect(save?.lives).toBe(2 + 2);
+    expect(said.texts).toContain(
+      "Finisher card: Shoe. Three Shoes, badge earned: plus 2 lives."
+    );
+  });
+
+  it("keeps a card short of a set on the map and in the panel", () => {
+    renderPlan();
+    key("Enter");
+    key(" ");
+    frames(2);
+    endNextStep(true);
+    expect(loadPlan()?.cards).toEqual(["shoe"]);
+    fireEvent.click(screen.getByRole("button", { name: /Back to training/ }));
+    expect(face().getAttribute("aria-label")).toContain(
+      "Finisher cards: Shoe."
+    );
+    expect(screen.getByText(/Finisher cards · Shoe \(1\/3\)/)).toBeTruthy();
+  });
+
+  it("leaves the plan's cards alone on a practice run and on Race Day", () => {
+    storePlan(["easy"], { cards: ["medal"], cursor: "easy" });
+    renderPlan();
+    key("Enter");
+    key(" ");
+    frames(2);
+    endNextStep(true);
+    expect(loadPlan()?.cards).toEqual(["medal"]);
+    cleanup();
+
+    storePlan(["easy", "tempo", "intervals", "long"], {
+      cards: ["medal"],
+      cursor: "raceday",
+    });
+    renderPlan();
+    key("Enter");
+    key("Enter");
+    frames(2);
+    endNextStep(true);
+    expect(loadPlan()?.finished).toBe(true);
+    expect(loadPlan()?.cards).toEqual(["medal"]);
+    expect(said.texts.some((t) => t.startsWith("Finisher card"))).toBe(false);
+  });
+
+  it("collects on a Training Run, and never in Race Mode", () => {
+    render(<GarminWatchSimulator />);
+    key("Enter");
+    frames(2);
+    grabPoleNextStep();
+    expect(said.texts).toContain("Finisher card: Shoe. Cards held: Shoe.");
+    // The lap banner is still heard: only a badge banner repeats the card.
+    expect(said.texts).toContain("LAP 1 · 0:30.0");
+    expect(face().getAttribute("aria-label")).toContain(
+      "Finisher cards: Shoe."
+    );
+    // A new run after the last one ends starts with no cards.
+    endNextStep(false);
+    key("Enter");
+    frames(1);
+    expect(face().getAttribute("aria-label")).toContain("Status: playing");
+    expect(face().getAttribute("aria-label")).toContain(
+      "Finisher cards: none."
+    );
+    cleanup();
+    said.texts = [];
+
+    safeSetRawItem(RACE_MODE_KEY, "1");
+    render(<GarminWatchSimulator />);
+    key("Enter");
+    frames(2);
+    grabPoleNextStep();
+    expect(said.texts.some((t) => t.startsWith("Finisher card"))).toBe(false);
+  });
+});
+
 describe("Training Plan manual entries (#1994)", () => {
   it("describes the plan, huts, practice and The Wall", () => {
     const manual = JSON.stringify(GAME_MANUALS["garmin-watch"]);
@@ -461,5 +558,7 @@ describe("Training Plan manual entries (#1994)", () => {
     expect(manual).toContain("It takes three hits");
     expect(manual).toContain('"title":"Gear Bag"');
     expect(manual).toContain("every race starts from the Base tier");
+    expect(manual).toContain('"title":"Finisher Cards"');
+    expect(manual).toContain("three Medals 5");
   });
 });

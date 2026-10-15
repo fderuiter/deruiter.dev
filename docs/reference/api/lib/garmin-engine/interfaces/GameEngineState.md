@@ -170,6 +170,24 @@ Unrounded distance; round only when displaying.
 
 ***
 
+### finisherCards?
+
+> `optional` **finisherCards?**: [`FinisherCard`](../type-aliases/FinisherCard.md)[] \| `null`
+
+The Finisher Cards held this run (#1996), or unset when the run collects
+none. The engine carries them untouched; lib/garmin-finisher.ts acts on
+them.
+
+***
+
+### finisherNews?
+
+> `optional` **finisherNews?**: `string` \| `null`
+
+What the last card collected said, for the screen reader (#1996).
+
+***
+
 ### flashFiles?
 
 > `optional` **flashFiles?**: [`FlashVariable`](FlashVariable.md)[]

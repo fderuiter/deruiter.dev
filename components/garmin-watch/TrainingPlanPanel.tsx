@@ -14,6 +14,7 @@ import {
   type PlanNodeId,
   type PlanSave,
 } from "@/lib/garmin-plan";
+import { CARDS_PER_SET, FINISHER_CARD_NAMES } from "@/lib/garmin-finisher";
 import { GearBagDialog } from "./GearBagDialog";
 
 interface TrainingPlanPanelProps {
@@ -158,6 +159,12 @@ export function TrainingPlanPanel({
           Packed: {save.packed.map((item) => GEAR_ITEM_NAMES[item]).join(", ")}
         </p>
       )}
+      <p className="text-[10px] text-zinc-400">
+        Finisher cards ·{" "}
+        {save.cards.length === 0
+          ? "none yet. Each workout's finish pole gives one; three pay out lives."
+          : `${save.cards.map((c) => FINISHER_CARD_NAMES[c]).join(", ")} (${save.cards.length}/${CARDS_PER_SET})`}
+      </p>
       <button
         type="button"
         onClick={onOpenBag}

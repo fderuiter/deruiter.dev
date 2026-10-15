@@ -10,6 +10,15 @@ What a cleared workout carries back to the plan.
 
 ## Properties
 
+### cards?
+
+> `optional` **cards?**: readonly [`FinisherCard`](../../garmin-engine/type-aliases/FinisherCard.md)[]
+
+The Finisher Cards held at the finish (#1996). Unset for a run that
+collects none, Race Day's, which leaves the plan's cards as they are.
+
+***
+
 ### lives
 
 > **lives**: `number`

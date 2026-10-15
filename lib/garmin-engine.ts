@@ -681,7 +681,18 @@ export interface GameEngineState {
    * (#1995). The engine carries it untouched; lib/garmin-bag.ts acts on it.
    */
   loadout?: Loadout | null;
+  /**
+   * The Finisher Cards held this run (#1996), or unset when the run collects
+   * none. The engine carries them untouched; lib/garmin-finisher.ts acts on
+   * them.
+   */
+  finisherCards?: FinisherCard[] | null;
+  /** What the last card collected said, for the screen reader (#1996). */
+  finisherNews?: string | null;
 }
+
+/** A Finisher Card on a stage's finish pole (#1996). */
+export type FinisherCard = "shoe" | "bottle" | "medal";
 
 /** Packed gear still to take effect in a workout (#1995). */
 export interface Loadout {

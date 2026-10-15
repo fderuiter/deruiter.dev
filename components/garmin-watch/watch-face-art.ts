@@ -44,6 +44,7 @@ import {
   type CourseMedBall,
 } from "@/lib/garmin-course";
 import { MEDALS_PER_STAGE, stageMedalSlots } from "@/lib/garmin-medals";
+import { CARDS_PER_SET, FINISHER_CARDS, cardAt } from "@/lib/garmin-finisher";
 import {
   LENGTH_METERS,
   isWaterTheme,
@@ -105,6 +106,7 @@ import {
   PLAYER_X,
   isFitnessRun,
   type CrashReport,
+  type FinisherCard,
   type GameEngineState,
   type Obstacle,
   type ObstacleType,
@@ -1025,13 +1027,121 @@ function drawCheckpoints(
   }
 }
 
+const CARD_ART = {
+  face: "#f4f4f6",
+  edge: "#0d0e11",
+  shoe: "#ef4444",
+  sole: "#334155",
+  bottle: "#22d3ee",
+  cap: "#0e7490",
+  dim: "rgba(13, 14, 17, 0.55)",
+} as const;
+
+/**
+ * A Finisher Card's icon (#1996), centred on `cx`, `cy`, about `size` px
+ * across: a running shoe, a water bottle or a medal.
+ */
+function drawCardIcon(
+  ctx: Ctx,
+  card: FinisherCard,
+  cx: number,
+  cy: number,
+  size: number
+) {
+  const u = size / 8;
+  if (card === "shoe") {
+    ctx.fillStyle = CARD_ART.shoe;
+    ctx.fillRect(cx - 4 * u, cy - 1 * u, 7 * u, 2.5 * u);
+    ctx.fillRect(cx - 4 * u, cy - 3 * u, 3 * u, 2.5 * u);
+    ctx.fillStyle = CARD_ART.sole;
+    ctx.fillRect(cx - 4 * u, cy + 1.5 * u, 8 * u, 1.2 * u);
+    ctx.fillStyle = CARD_ART.face;
+    ctx.fillRect(cx - 1 * u, cy - 0.6 * u, 0.8 * u, 0.8 * u);
+    ctx.fillRect(cx + 0.6 * u, cy - 0.6 * u, 0.8 * u, 0.8 * u);
+    return;
+  }
+  if (card === "bottle") {
+    ctx.fillStyle = CARD_ART.cap;
+    ctx.fillRect(cx - 1 * u, cy - 4 * u, 2 * u, 1.5 * u);
+    ctx.fillStyle = CARD_ART.bottle;
+    ctx.fillRect(cx - 2 * u, cy - 2.5 * u, 4 * u, 6.5 * u);
+    ctx.fillStyle = CARD_ART.face;
+    ctx.fillRect(cx - 2 * u, cy, 4 * u, 1 * u);
+    return;
+  }
+  ctx.fillStyle = MEDAL.ribbonA;
+  ctx.fillRect(cx - 2 * u, cy - 4 * u, 1.5 * u, 3 * u);
+  ctx.fillStyle = CARD_ART.shoe;
+  ctx.fillRect(cx + 0.5 * u, cy - 4 * u, 1.5 * u, 3 * u);
+  ctx.fillStyle = MEDAL.rim;
+  ctx.beginPath();
+  ctx.arc(cx, cy + 1 * u, 2.8 * u, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = MEDAL.gold;
+  ctx.beginPath();
+  ctx.arc(cx, cy + 1 * u, 2 * u, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/** A card face: a light rounded tile, `w` x `h` from `x`, `y`. */
+function drawCardTile(ctx: Ctx, x: number, y: number, w: number, h: number) {
+  ctx.fillStyle = CARD_ART.face;
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 2);
+  ctx.fill();
+  ctx.strokeStyle = CARD_ART.edge;
+  ctx.lineWidth = 0.8;
+  ctx.stroke();
+}
+
+/** What a pole's Finisher Card shows this frame (#1996). */
+interface PoleCard {
+  card: FinisherCard;
+  /** Reduced motion: the three cards sit still, the one on offer outlined. */
+  still: boolean;
+}
+
+/**
+ * A pole's Finisher Card (#1996), to the right of the mast near the top.
+ * It flips through Shoe, Bottle and Medal; under reduced motion the three sit
+ * in a still column with the card on offer outlined in amber.
+ */
+function drawPoleCard(ctx: Ctx, x: number, top: number, shown: PoleCard) {
+  if (!shown.still) {
+    drawCardTile(ctx, x + 3, top + 4, 13, 16);
+    drawCardIcon(ctx, shown.card, x + 9.5, top + 12, 9);
+    return;
+  }
+  FINISHER_CARDS.forEach((card, i) => {
+    const y = top + 2 + i * 12;
+    drawCardTile(ctx, x + 3, y, 11, 11);
+    drawCardIcon(ctx, card, x + 8.5, y + 5.5, 7);
+    if (card === shown.card) {
+      ctx.strokeStyle = FACE_COLORS.warn;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(x + 2, y - 1, 13, 13);
+    } else {
+      ctx.fillStyle = CARD_ART.dim;
+      ctx.fillRect(x + 3, y, 11, 11);
+    }
+  });
+}
+
 /** Finish poles: a mast with a chequered banner that drops once grabbed. */
-function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
+function drawPoles(
+  ctx: Ctx,
+  course: CourseLayout,
+  camera: number,
+  card: PoleCard | null
+) {
   for (const p of course.poles) {
     const x = p.x - camera;
     if (x - 30 > CANVAS_SIZE || x + 30 < 0) continue;
+    // A pole not yet grabbed offers its Finisher Card (#1996).
+    const offer = card && p.grabbed === undefined ? card : null;
     if (p.secret) {
       drawSecretPole(ctx, p, x);
+      if (offer) drawPoleCard(ctx, x + 12, GROUND_Y - POLE_HEIGHT + 18, offer);
       continue;
     }
     const top = GROUND_Y - POLE_HEIGHT;
@@ -1063,6 +1173,7 @@ function drawPoles(ctx: Ctx, course: CourseLayout, camera: number) {
       }
     }
     text(ctx, `${p.stage}K`, x - 12, flagY + h + 8, 7, FACE_COLORS.good);
+    if (offer) drawPoleCard(ctx, x, top, offer);
   }
 }
 
@@ -1653,6 +1764,33 @@ function drawCourseHud(ctx: Ctx, state: GameEngineState) {
   }
   drawPaceMeter(ctx, state);
   drawMedalSlots(ctx, state);
+  drawCardSlots(ctx, state);
+}
+
+/**
+ * The Finisher Cards held (#1996): three small slots to the right of the
+ * medal slots, a card's icon in each filled one. A run that collects none
+ * shows none.
+ */
+function drawCardSlots(ctx: Ctx, state: GameEngineState) {
+  const held = state.finisherCards;
+  if (!Array.isArray(held)) return;
+  const w = 8;
+  const h = 10;
+  const gap = 10;
+  const top = 17;
+  for (let i = 0; i < CARDS_PER_SET; i++) {
+    const cx = FACE_CENTER + 21 + i * gap;
+    const card = held[i];
+    if (card) {
+      drawCardTile(ctx, cx - w / 2, top, w, h);
+      drawCardIcon(ctx, card, cx, top + h / 2, 6);
+    } else {
+      ctx.strokeStyle = FACE_COLORS.dim;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(cx - w / 2, top, w, h);
+    }
+  }
 }
 
 /**
@@ -3353,7 +3491,17 @@ export function renderWatchFace(
     ctx.translate(-PLAYER_X, -GROUND_Y);
   }
   drawGround(ctx, state.distanceMeters, course, theme);
-  drawPoles(ctx, course, camera);
+  drawPoles(
+    ctx,
+    course,
+    camera,
+    Array.isArray(state.finisherCards)
+      ? {
+          card: cardAt(state.runClockMs),
+          still: options.reducedMotion === true,
+        }
+      : null
+  );
   drawCheckpoints(ctx, course, camera, state.checkpoint);
   drawLedges(ctx, course, camera, THEME_PALETTE[theme].accent);
   for (const ceiling of course.ceilings ?? []) {

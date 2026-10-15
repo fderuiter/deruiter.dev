@@ -38,6 +38,11 @@ import {
   type PlanInput,
 } from "@/components/garmin-watch/useTrainingPlan";
 import { startLoadout, stepLoadout } from "@/lib/garmin-bag";
+import {
+  FINISHER_CARD_NAMES,
+  isPayoutBanner,
+  stepFinisherCard,
+} from "@/lib/garmin-finisher";
 import type { GearItem, PlanRun } from "@/lib/garmin-plan";
 import { stepRaceDay } from "@/lib/garmin-raceday";
 import {
@@ -167,6 +172,7 @@ import {
   setRules,
   causeLabel,
   isFitnessRun,
+  type FinisherCard,
   type GameRules,
   paceMeters,
 } from "@/lib/garmin-engine";
@@ -354,12 +360,17 @@ const splitsKeyOf = (s: GameEngineState) =>
     s.plan ? `:plan${s.plan.stage}` : s.race ? ":race" : ""
   }`;
 
-/** A Training Plan workout to start: its run, lives and packed gear (#1994, #1995). */
+/**
+ * A Training Plan workout to start: its run, lives, packed gear and
+ * Finisher Cards (#1994, #1995, #1996).
+ */
 interface Workout {
   run: PlanRun;
   /** The plan's lives, or null for practice, which starts with a fresh three. */
   lives: number | null;
   packed: readonly GearItem[];
+  /** The plan's cards, or null when the run collects none (practice, Race Day). */
+  cards: readonly FinisherCard[] | null;
 }
 
 /** What each key does on a Training Plan screen (#1994). */
@@ -643,7 +654,15 @@ function secondWindStartText(kind: SecondWindKind): string {
  */
 function medalReadout(s: GameEngineState): string {
   const found = stageMedalCount(s.medalsFound, s.stage ?? 1);
-  return ` Finisher medals: ${found} of ${MEDALS_PER_STAGE} on this stage.`;
+  // The Finisher Cards held, on a run that collects them (#1996).
+  const cards = Array.isArray(s.finisherCards)
+    ? ` Finisher cards: ${
+        s.finisherCards.length > 0
+          ? s.finisherCards.map((c) => FINISHER_CARD_NAMES[c]).join(", ")
+          : "none"
+      }.`
+    : "";
+  return ` Finisher medals: ${found} of ${MEDALS_PER_STAGE} on this stage.${cards}`;
 }
 
 /** What the course props mean for the runner right now (#1992), for the telemetry readout. */
@@ -755,6 +774,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const hasAlertedBatteryRef = useRef<boolean>(false);
   const hasAlertedShutdownRef = useRef<boolean>(false);
   const lastBannerRef = useRef<string | null>(null);
+  // The Finisher Cards last announced (#1996).
+  const lastCardsRef = useRef<readonly FinisherCard[] | null>(null);
   const lastPaceFullRef = useRef(false);
   const lastRunStateRef = useRef<GameEngineState["gameState"]>("idle");
   // What the last frame showed of the medals, checkpoint and secret exits (#2025).
@@ -950,12 +971,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       );
       // A workout starts with the plan's lives; practice with a fresh three.
       // The gear packed for it goes on now (#1995).
-      const started = startLoadout(
+      const loaded = startLoadout(
         workout && workout.lives !== null
           ? { ...fresh, lives: workout.lives }
           : fresh,
         workout?.packed ?? []
       );
+      // Finisher Cards (#1996): a Training Run collects its own, a workout
+      // the plan's, and a race none.
+      const cards = race ? null : workout ? workout.cards : [];
+      const started = {
+        ...loaded,
+        finisherCards: cards ? [...cards] : null,
+        finisherNews: null,
+      };
       raceCarryRef.current = 0;
       raceRunIdRef.current += 1;
       ghostTrackRef.current = race ? loadGhost(race) : null;
@@ -1010,8 +1039,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   // The Training Plan (#1994): its save and the screen the watch shows
   // between workouts. Entering a workout starts it here.
   const startWorkout = useCallback(
-    (run: PlanRun, lives: number | null, packed: readonly GearItem[]) =>
-      launchRun({ run, lives, packed }),
+    (
+      run: PlanRun,
+      lives: number | null,
+      packed: readonly GearItem[],
+      cards: readonly FinisherCard[] | null
+    ) => launchRun({ run, lives, packed, cards }),
     [launchRun]
   );
   const plan = useTrainingPlan({ active: planMode, announce, startWorkout });
@@ -1874,6 +1907,17 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       gameState.gameState === "playing" &&
       lastRunStateRef.current !== "playing";
     lastRunStateRef.current = gameState.gameState;
+    // A Finisher Card just collected (#1996) is heard with what its set
+    // paid, even when the pole ends the run; a badge banner says no more.
+    const cards = gameState.finisherCards ?? null;
+    if (cards !== lastCardsRef.current) {
+      lastCardsRef.current = cards;
+      if (!justStarted && gameState.finisherNews) {
+        announce(gameState.finisherNews, "polite");
+        // A badge banner repeats what was just said; a lap banner does not.
+        if (isPayoutBanner(bannerText)) lastBannerRef.current = bannerText;
+      }
+    }
     if (justStarted) {
       lastBannerRef.current = bannerText;
     } else if (
@@ -1996,6 +2040,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       // Update simulation in mutable ref if active
       if (stateRef.current.gameState === "playing") {
         const prevStatus = stateRef.current.gameState;
+        // The run clock on the face drawn last, so a pole grabbed in any of
+        // this frame's steps gives the card the runner saw (#1996).
+        const shownClockMs = stateRef.current.runClockMs;
         // A race steps at a fixed 1/60 s, so a fast or slow monitor cannot
         // change its time (#2019). Each frame runs whole steps; the rest is
         // carried. A Training Run takes one step of the frame's delta.
@@ -2018,13 +2065,22 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ) {
           const last = i === stepCount - 1;
           nextState = applyTransition(
-            // Race Day moves The Wall after each step (#1994), and packed
-            // gear takes effect (#1995).
+            // Race Day moves The Wall after each step (#1994), packed gear
+            // takes effect (#1995), and the pole's Finisher Card is
+            // collected (#1996).
             (state) =>
-              stepLoadout(
+              stepFinisherCard(
                 state,
-                stepRaceDay(state, updateGameSimulation(state, stepMs), stepMs),
-                stepMs
+                shownClockMs,
+                stepLoadout(
+                  state,
+                  stepRaceDay(
+                    state,
+                    updateGameSimulation(state, stepMs),
+                    stepMs
+                  ),
+                  stepMs
+                )
               ),
             (next) => {
               if (next.gameState !== prevStatus) return true;

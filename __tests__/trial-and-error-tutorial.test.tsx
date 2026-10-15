@@ -96,6 +96,15 @@ describe("first-run guided Blind (#1089)", () => {
     expect(screen.getByTestId("hand")).toBeTruthy();
   });
 
+  it("keeps the offer readable on phones and clear of the touch toolbar (#2281)", () => {
+    render(<TrialAndErrorTable />);
+    const offer = screen.getByTestId("tutorial-offer");
+    // The buttons wrap below the text instead of squeezing it to a sliver.
+    expect(offer.querySelector("div")?.className).toContain("basis-64");
+    // The right edge leaves room for the floating touch toolbar.
+    expect(offer.className).toContain("var(--cabinet-toolbar-inset,0px)");
+  });
+
   it("does not offer it to a returning player", () => {
     storage.setItem(TUTORIAL_SEEN_KEY, "1");
     render(<TrialAndErrorTable />);

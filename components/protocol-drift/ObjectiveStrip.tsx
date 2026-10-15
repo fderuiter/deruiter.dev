@@ -90,7 +90,11 @@ export function ObjectiveStrip() {
             onClick={() => setOpen((v) => !v)}
             className={`inline-flex min-h-8 items-center gap-2 border px-2 ${SEVERITY_STYLE[gauge.overall]}`}
           >
-            <span>Operational Drift</span>
+            {/* "Operational" folds away on narrower cabinets so the strip
+                stays one row at 1280 (#2274). */}
+            <span>
+              <span className="hidden @6xl:inline">Operational </span>Drift
+            </span>
             {gauge.segments.map((segment) => (
               <span
                 key={segment.id}

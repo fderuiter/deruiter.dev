@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  DESKTOP_FRAME_FLOOR,
   ensureVisible,
   fitZoomFor,
   frameAfterAdd,
@@ -22,12 +23,17 @@ function fakeFlow(viewport = { x: 0, y: 0, zoom: 0.8 }) {
   return { flow: flow as typeof flow & FrameFlow, viewport };
 }
 
-function chip(id: string, x: number, y: number): ChipNode {
+function chip(
+  id: string,
+  x: number,
+  y: number,
+  kind: ChipNode["data"]["kind"] = "SourceIngest"
+): ChipNode {
   return {
     id,
     type: "chip",
     position: { x, y },
-    data: { kind: "SourceIngest" },
+    data: { kind },
   };
 }
 
@@ -94,5 +100,50 @@ describe("touch framing (#2045)", () => {
     frameLane(flow, { width: 720, height: 200 });
     const { y, zoom } = flow.setViewport.mock.calls[0][0];
     expect(y + LANE_GEOMETRY.tabulationTop * zoom).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("desktop framing (#2274)", () => {
+  // The four tracer chips where the toolbox drops them.
+  const tracer = [
+    chip("source", 40, 142, "SourceIngest"),
+    chip("extract", 230, 182, "ExtractField"),
+    chip("pivot", 420, 222, "PivotToObservation"),
+    chip("sink", 610, 142, "CDISCSink"),
+  ];
+  // The docked 1024 canvas beside the open toolbox.
+  const DOCKED_1024 = { width: 545, height: 330 };
+
+  it("fits all four tracer chips after the fourth add, where touch would pan", () => {
+    expect(fitZoomFor(tracer, DOCKED_1024)).toBeLessThan(touchZoomFloor());
+    expect(fitZoomFor(tracer, DOCKED_1024, false)).toBeGreaterThanOrEqual(
+      DESKTOP_FRAME_FLOOR
+    );
+    const { flow } = fakeFlow({ x: 0, y: 0, zoom: 1 });
+    frameAfterAdd(
+      flow,
+      DOCKED_1024,
+      tracer,
+      { kind: "CDISCSink", x: 610, y: 142 },
+      false
+    );
+    expect(flow.setViewport).not.toHaveBeenCalled();
+    expect(flow.fitView).toHaveBeenCalledTimes(1);
+    expect(flow.fitView.mock.calls[0][0].minZoom).toBe(DESKTOP_FRAME_FLOOR);
+  });
+
+  it("still pans to the new chip when even the desktop floor cannot fit them", () => {
+    const { flow } = fakeFlow({ x: 0, y: 0, zoom: 0.8 });
+    const far = 40 + CHIP_WIDTH + 1200;
+    const nodes = [chip("a", 40, 150), chip("b", far, 150)];
+    frameAfterAdd(
+      flow,
+      SIZE,
+      nodes,
+      { kind: "SourceIngest", x: far, y: 150 },
+      false
+    );
+    expect(flow.fitView).not.toHaveBeenCalled();
+    expect(flow.setViewport).toHaveBeenCalledTimes(1);
   });
 });

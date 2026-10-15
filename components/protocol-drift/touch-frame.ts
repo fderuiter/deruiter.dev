@@ -17,8 +17,24 @@ import {
 export const WORLD_WIDTH = 1340;
 /** Screen margin kept around framed chips. */
 const PAD = 24;
-/** Screen space kept clear under the canvas for the wire bar. */
+/** Screen space kept clear under the touch canvas for the wire bar. */
 const BOTTOM_PAD = 64;
+/**
+ * Desktop: the lowest zoom the automatic framing uses. Chip titles still
+ * render at about 10px, so the whole tracer pipeline stays in view on the
+ * docked 1024 canvas beside the open toolbox (#2274).
+ */
+export const DESKTOP_FRAME_FLOOR = 0.65;
+
+/** The zoom floor the automatic framing respects. */
+function frameFloor(touch: boolean): number {
+  return touch ? touchZoomFloor() : DESKTOP_FRAME_FLOOR;
+}
+
+/** Screen space kept clear under the canvas: the wire bar only on touch. */
+function bottomPad(touch: boolean): number {
+  return touch ? BOTTOM_PAD : PAD;
+}
 
 interface FrameSize {
   width: number;
@@ -74,43 +90,56 @@ function chipsBox(nodes: ChipNode[]): {
 }
 
 /** The zoom at which every chip fits on screen, capped at 1. */
-export function fitZoomFor(nodes: ChipNode[], size: FrameSize): number {
+export function fitZoomFor(
+  nodes: ChipNode[],
+  size: FrameSize,
+  touch = true
+): number {
   if (nodes.length === 0 || !usable(size)) return 0;
   const box = chipsBox(nodes);
   return lowest([
     1,
     (size.width - PAD * 2) / Math.max(box.x1 - box.x0, 1),
-    (size.height - PAD - BOTTOM_PAD) / Math.max(box.y1 - box.y0, 1),
+    (size.height - PAD - bottomPad(touch)) / Math.max(box.y1 - box.y0, 1),
   ]);
 }
 
 /** Frames the chips at a legible zoom; centres on them when they do not fit. */
-export function frameChips(flow: FrameFlow, nodes: ChipNode[]): void {
+export function frameChips(
+  flow: FrameFlow,
+  nodes: ChipNode[],
+  touch = true
+): void {
   if (nodes.length === 0) return;
   flow.fitView({
     nodes: nodes.map((node) => ({ id: node.id })),
     padding: 0.06,
     duration: 0,
-    minZoom: touchZoomFloor(),
+    minZoom: frameFloor(touch),
     maxZoom: 1,
   });
 }
 
 /** Frames the tabulation lane when the pipeline is empty. */
-export function frameLane(flow: FrameFlow, size: FrameSize): void {
+export function frameLane(
+  flow: FrameFlow,
+  size: FrameSize,
+  touch = true
+): void {
   if (!usable(size)) return;
   const top = LANE_GEOMETRY.tabulationTop - 16;
   const bottom = LANE_GEOMETRY.conservationWallY + 16;
   const fit = lowest([
     1,
     (size.width - PAD * 2) / WORLD_WIDTH,
-    (size.height - PAD - BOTTOM_PAD) / (bottom - top),
+    (size.height - PAD - bottomPad(touch)) / (bottom - top),
   ]);
-  const zoom = Math.max(touchZoomFloor(), fit);
+  const zoom = Math.max(frameFloor(touch), fit);
   // Centre the lane when it fits; otherwise keep its top-left corner, where
   // the lane label sits and the first chip goes, on screen.
   const centredX = size.width / 2 - (WORLD_WIDTH / 2) * zoom;
-  const centredY = (size.height - BOTTOM_PAD) / 2 - ((top + bottom) / 2) * zoom;
+  const centredY =
+    (size.height - bottomPad(touch)) / 2 - ((top + bottom) / 2) * zoom;
   flow.setViewport(
     {
       x: Math.max(centredX, PAD),
@@ -125,7 +154,8 @@ export function frameLane(flow: FrameFlow, size: FrameSize): void {
 export function ensureVisible(
   flow: FrameFlow,
   size: FrameSize,
-  chip: { x: number; y: number; kind: ChipKind }
+  chip: { x: number; y: number; kind: ChipKind },
+  touch = true
 ): void {
   const viewport = flow.getViewport();
   const zoom = viewport.zoom;
@@ -139,8 +169,8 @@ export function ensureVisible(
   else if (left + width > size.width - PAD)
     dx = size.width - PAD - (left + width);
   if (top < PAD) dy = PAD - top;
-  else if (top + height > size.height - BOTTOM_PAD)
-    dy = size.height - BOTTOM_PAD - (top + height);
+  else if (top + height > size.height - bottomPad(touch))
+    dy = size.height - bottomPad(touch) - (top + height);
   if (dx !== 0 || dy !== 0) {
     flow.setViewport(
       { x: viewport.x + dx, y: viewport.y + dy, zoom },
@@ -157,15 +187,16 @@ export function frameAfterAdd(
   flow: FrameFlow,
   size: FrameSize,
   nodes: ChipNode[],
-  added: { kind: ChipKind; x: number; y: number }
+  added: { kind: ChipKind; x: number; y: number },
+  touch = true
 ): void {
   if (!usable(size)) {
-    frameChips(flow, nodes);
+    frameChips(flow, nodes, touch);
     return;
   }
-  if (fitZoomFor(nodes, size) >= touchZoomFloor()) {
-    frameChips(flow, nodes);
+  if (fitZoomFor(nodes, size, touch) >= frameFloor(touch)) {
+    frameChips(flow, nodes, touch);
     return;
   }
-  ensureVisible(flow, size, added);
+  ensureVisible(flow, size, added, touch);
 }

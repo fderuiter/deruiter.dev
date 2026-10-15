@@ -117,6 +117,8 @@ interface ProtocolDriftState {
   datasets: DatasetExportBundle | null;
   selection: InspectorSelection;
   inspectorExpanded: boolean;
+  /** Desktop: the player folded the docked inspector to its title bar (#2274). */
+  inspectorCollapsed: boolean;
   /**
    * Tap-to-wire on the touch cabinet (#2045): the chip a wire starts from, and
    * the open list of valid output-to-input pairs when a tap has more than one.
@@ -165,6 +167,7 @@ interface ProtocolDriftState {
   removeSelection: (nodeIds: string[], edgeIds: string[]) => Promise<void>;
   select: (selection: Partial<InspectorSelection>) => void;
   setInspectorExpanded: (expanded: boolean) => void;
+  setInspectorCollapsed: (collapsed: boolean) => void;
   setWireFrom: (nodeId: string | null) => void;
   setWireSheet: (sheet: { source: string; target: string } | null) => void;
   /** Shows a notice; the touch wiring reports its result through it (#2045). */
@@ -261,6 +264,7 @@ function initialState() {
     datasets: null as DatasetExportBundle | null,
     selection: { issueId: null, submissionId: null } as InspectorSelection,
     inspectorExpanded: false,
+    inspectorCollapsed: false,
     wireFrom: null,
     wireSheet: null,
     revisionCount: 0,
@@ -678,6 +682,8 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       set((state) => ({ selection: { ...state.selection, ...selection } })),
 
     setInspectorExpanded: (expanded) => set({ inspectorExpanded: expanded }),
+    setInspectorCollapsed: (collapsed) =>
+      set({ inspectorCollapsed: collapsed }),
     setWireFrom: (nodeId) => set({ wireFrom: nodeId, wireSheet: null }),
     setWireSheet: (sheet) => set({ wireSheet: sheet }),
     notify: (tone, text) => say(tone, text),

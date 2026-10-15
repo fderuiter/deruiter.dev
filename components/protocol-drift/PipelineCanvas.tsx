@@ -231,13 +231,14 @@ function CanvasInner() {
         flow,
         sizeOf(wrapper.current),
         useProtocolDriftStore.getState().nodes,
-        added
+        added,
+        touch
       );
     };
     window.addEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
     return () =>
       window.removeEventListener(PROTOCOL_DRIFT_CHIP_ADDED_EVENT, onAdded);
-  }, [flow]);
+  }, [flow, touch]);
 
   // Frame the chips (the lane when there are none) on mount and resize, so a
   // resize keeps the pipeline in view.
@@ -246,14 +247,14 @@ function CanvasInner() {
     if (!el) return;
     const fit = () => {
       const nodes = useProtocolDriftStore.getState().nodes;
-      if (nodes.length > 0) frameChips(flow, nodes);
-      else frameLane(flow, sizeOf(el));
+      if (nodes.length > 0) frameChips(flow, nodes, touch);
+      else frameLane(flow, sizeOf(el), touch);
     };
     fit();
     const observer = new ResizeObserver(() => fit());
     observer.observe(el);
     return () => observer.disconnect();
-  }, [flow]);
+  }, [flow, touch]);
 
   // A whole pipeline arriving or leaving at once (a reference load, a new
   // study, a restored save) is framed afresh; single adds are handled above.
@@ -264,9 +265,9 @@ function CanvasInner() {
     lastCount.current = chipCount;
     if (Math.abs(chipCount - before) <= 1 && before > 0) return;
     const nodesNow = useProtocolDriftStore.getState().nodes;
-    if (nodesNow.length > 0) frameChips(flow, nodesNow);
-    else frameLane(flow, sizeOf(wrapper.current));
-  }, [chipCount, flow]);
+    if (nodesNow.length > 0) frameChips(flow, nodesNow, touch);
+    else frameLane(flow, sizeOf(wrapper.current), touch);
+  }, [chipCount, flow, touch]);
 
   const onNodesChange = useCallback(
     (changes: NodeChange<ChipNode>[]) => {

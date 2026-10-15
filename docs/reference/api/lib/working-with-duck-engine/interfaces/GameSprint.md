@@ -49,3 +49,19 @@ Seconds a well-run sprint takes; each second under it earns a bonus.
 ### title
 
 > **title**: `string`
+
+***
+
+### twist?
+
+> `optional` **twist?**: [`DuckSprintTwist`](../type-aliases/DuckSprintTwist.md)
+
+The rule this sprint adds (#2161); sprint 1 has none.
+
+***
+
+### twistBrief?
+
+> `optional` **twistBrief?**: `string`
+
+One line for the briefing card naming the twist and how to answer it.

@@ -196,6 +196,8 @@ import {
   GPS_LOCK_MS,
   MOVE_ALERT_IDLE_MS,
   MOVE_ALERT_TEXT,
+  STALLED_ALERT_MS,
+  STALLED_ALERT_TEXT,
   BONK_OVER_TEXT,
   REST_DAY_OVER_TEXT,
   NEW_PR_TEXT,
@@ -3071,6 +3073,7 @@ function stepSimulation(
     nextDistance * PX_PER_METER + PLAYER_X + PLAYER_WIDTH - 3,
     prevFeetBottom + carry.dy
   );
+  let heldAtWall = wall !== null;
   if (wall !== null) {
     nextDistance = Math.max(
       state.distanceMeters,
@@ -3089,8 +3092,12 @@ function stepSimulation(
         (pit.x + pit.width - PLAYER_X - PLAYER_WIDTH + 5) / PX_PER_METER;
       const capped = Math.min(nextDistance, wall);
       nextDistance = Math.max(state.distanceMeters, capped);
+      heldAtWall = true;
     }
   }
+  // Held at a station or plyo side, or a pool's far wall: the run goes
+  // nowhere, so it scores nothing and the watch says to jump (#2232).
+  const stalled = heldAtWall && nextDistance <= state.distanceMeters;
   const cameraX = nextDistance * PX_PER_METER;
   const footLeft = cameraX + PLAYER_X + 5;
   const footRight = cameraX + PLAYER_X + PLAYER_WIDTH - 5;
@@ -3807,7 +3814,8 @@ function stepSimulation(
   // elapsed time gives equal progress at any refresh rate; only the score is
   // an integer to callers, with its remainder carried in scoreRemainder
   // (#1212). Round for display, never in the tick.
-  const exactScore = score + (state.scoreRemainder ?? 0) + dtRatio;
+  const exactScore =
+    score + (state.scoreRemainder ?? 0) + (stalled ? 0 : dtRatio);
   const nextScore = Math.floor(exactScore + 1e-9);
   const nextScoreRemainder = Math.max(0, exactScore - nextScore);
   const nextHighScore = Math.max(state.highScore, nextScore);
@@ -3837,14 +3845,19 @@ function stepSimulation(
     }
     // Easing on footing for too long and the watch nags. A bonked runner is
     // forced to ease, so that never counts.
+    // Stopped at a wall counts too, sooner, with the way past it.
     idleMs =
-      isGrounded && state.runInput === -1 && !bodyBattery.bonked
+      isGrounded && (stalled || (state.runInput === -1 && !bodyBattery.bonked))
         ? idleMs + safeDelta
         : 0;
-    if (idleMs >= MOVE_ALERT_IDLE_MS) {
+    if (idleMs >= (stalled ? STALLED_ALERT_MS : MOVE_ALERT_IDLE_MS)) {
       idleMs = 0;
       if (!banner)
-        banner = { text: MOVE_ALERT_TEXT, ttlMs: 1400, tone: "warn" };
+        banner = {
+          text: stalled ? STALLED_ALERT_TEXT : MOVE_ALERT_TEXT,
+          ttlMs: 1400,
+          tone: "warn",
+        };
     }
     // A new PR waits for the watch to clear any other banner.
     const best = state.bestAtStart ?? 0;

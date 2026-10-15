@@ -288,6 +288,7 @@ export function createFaceForgeBoss(gridX: number, gridY: number): BossState {
     attackIntervalMs: 1600,
     defeated: false,
     phaseTitle: "PHASE 1: WIREFRAME PROBE",
+    kind: "faceforge",
   };
 }
 
@@ -308,9 +309,10 @@ export function createNeuralWardenBoss(
     mesh: createOctahedronMesh("#a855f7", 26),
     projectiles: [],
     lastSalvoTime: 0,
-    attackIntervalMs: 1400,
+    attackIntervalMs: NEURAL_WARDEN_PHASES[1].attackIntervalMs,
     defeated: false,
-    phaseTitle: "PHASE 1: ZERO-TRUST PROBE",
+    phaseTitle: NEURAL_WARDEN_PHASES[1].title,
+    kind: "neural_warden",
   };
 }
 
@@ -521,42 +523,16 @@ export function updateFaceForgeBoss(
     }
   }
 
-  let damageDealtToPlayer = 0;
-  const liveProjectiles: MeshProjectile[] = [];
-
-  newProjectiles.forEach((p) => {
-    if (!p.alive) return;
-
-    const nextX = p.x + p.vx * frames;
-    const nextY = p.y + p.vy * frames;
-
-    if (nextX < 0 || nextX >= gridWidth || nextY < 0 || nextY >= gridHeight) {
-      return;
-    }
-    if (blocksShot?.(Math.round(nextX), Math.round(nextY))) return;
-
-    const distToPlayer = Math.hypot(nextX - playerX, nextY - playerY);
-    if (distToPlayer < 0.75) {
-      damageDealtToPlayer += p.damage;
-      return;
-    }
-
-    const pRotMesh: WireframeMesh = {
-      ...p.mesh,
-      rotation: {
-        x: p.mesh.rotation.x + p.mesh.rotSpeed.x * frames,
-        y: p.mesh.rotation.y + p.mesh.rotSpeed.y * frames,
-        z: p.mesh.rotation.z + p.mesh.rotSpeed.z * frames,
-      },
-    };
-
-    liveProjectiles.push({
-      ...p,
-      x: nextX,
-      y: nextY,
-      mesh: pRotMesh,
-    });
-  });
+  const { live: liveProjectiles, damage: damageDealtToPlayer } =
+    advanceBossProjectiles(
+      newProjectiles,
+      frames,
+      playerX,
+      playerY,
+      gridWidth,
+      gridHeight,
+      blocksShot
+    );
 
   const updatedBoss: BossState = {
     ...boss,
@@ -570,4 +546,283 @@ export function updateFaceForgeBoss(
   };
 
   return { updatedBoss, spawnedDamage: damageDealtToPlayer };
+}
+
+/**
+ * Moves a boss's projectiles one update along, dropping those that leave the
+ * arena, hit a wall or hit the player, and totals the damage they dealt.
+ */
+function advanceBossProjectiles(
+  projectiles: readonly MeshProjectile[],
+  frames: number,
+  playerX: number,
+  playerY: number,
+  gridWidth: number,
+  gridHeight: number,
+  blocksShot?: (col: number, row: number) => boolean
+): { live: MeshProjectile[]; damage: number } {
+  let damage = 0;
+  const live: MeshProjectile[] = [];
+  projectiles.forEach((p) => {
+    if (!p.alive) return;
+
+    const nextX = p.x + p.vx * frames;
+    const nextY = p.y + p.vy * frames;
+
+    if (nextX < 0 || nextX >= gridWidth || nextY < 0 || nextY >= gridHeight) {
+      return;
+    }
+    if (blocksShot?.(Math.round(nextX), Math.round(nextY))) return;
+
+    if (Math.hypot(nextX - playerX, nextY - playerY) < (p.hitRadius ?? 0.75)) {
+      damage += p.damage;
+      return;
+    }
+
+    live.push({
+      ...p,
+      x: nextX,
+      y: nextY,
+      mesh: {
+        ...p.mesh,
+        rotation: {
+          x: p.mesh.rotation.x + p.mesh.rotSpeed.x * frames,
+          y: p.mesh.rotation.y + p.mesh.rotSpeed.y * frames,
+          z: p.mesh.rotation.z + p.mesh.rotSpeed.z * frames,
+        },
+      },
+    });
+  });
+  return { live, damage };
+}
+
+/**
+ * The Neural Warden's three phases (#2178): each has its own title, colour,
+ * pace and attack, so the finale reads and plays differently from FaceForge.
+ */
+export const NEURAL_WARDEN_PHASES: Readonly<
+  Record<1 | 2 | 3, { title: string; color: string; attackIntervalMs: number }>
+> = {
+  1: {
+    title: "PHASE 1: ZERO-TRUST PROBE",
+    color: "#a855f7",
+    attackIntervalMs: 1500,
+  },
+  2: {
+    title: "PHASE 2: SEGMENTATION SWEEP",
+    color: "#22d3ee",
+    attackIntervalMs: 650,
+  },
+  3: {
+    title: "PHASE 3: SOVEREIGN OVERRIDE",
+    color: "#ef4444",
+    attackIntervalMs: 1100,
+  },
+};
+
+/**
+ * How long before a lattice volley its lanes are shown, so a player can step
+ * off them.
+ */
+export const NEURAL_WARDEN_TELEGRAPH_MS = 650;
+
+/** The eight lane headings of a lattice volley, as unit grid steps. */
+const LATTICE_LANES: Record<
+  NonNullable<BossState["telegraph"]>,
+  ReadonlyArray<readonly [number, number]>
+> = {
+  cross: [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ],
+  diagonal: [
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+  ],
+};
+
+/**
+ * The lattice a volley fires: phase 1 alternates the + and the X, phase 3
+ * picks the lanes the player stands nearest, so standing still never works.
+ */
+function wardenLattice(
+  boss: BossState,
+  phase: 1 | 2 | 3,
+  salvoCount: number,
+  playerX: number,
+  playerY: number
+): NonNullable<BossState["telegraph"]> {
+  if (phase === 3) {
+    const dx = Math.abs(playerX - boss.x);
+    const dy = Math.abs(playerY - boss.y);
+    const offCross = Math.min(dx, dy);
+    const offDiagonal = Math.abs(dx - dy) / Math.SQRT2;
+    return offDiagonal < offCross ? "diagonal" : "cross";
+  }
+  return salvoCount % 2 === 0 ? "cross" : "diagonal";
+}
+
+/**
+ * Updates the Neural Warden (#2178). It shares FaceForge's arena, projectile
+ * rules and opening hold, but fights differently:
+ *
+ * - Phase 1 fires lattice volleys down four lanes at once, alternating the +
+ *   and the X; the lanes light up `NEURAL_WARDEN_TELEGRAPH_MS` before each
+ *   volley, so stepping off them is a read, not luck.
+ * - Phase 2 sweeps: a two-ended beam that turns 30 degrees every shot, so the
+ *   safe spot keeps moving round the boss.
+ * - Phase 3 aims its lattice at the lanes nearest the player, and follows
+ *   every lattice with a fast shot at where the player is heading.
+ *
+ * Same parameters and result as `updateFaceForgeBoss`.
+ */
+export function updateNeuralWardenBoss(
+  boss: BossState,
+  playerX: number,
+  playerY: number,
+  nowMs: number,
+  gridWidth: number,
+  gridHeight: number,
+  playerHeading?: { dx: number; dy: number },
+  frameDeltaMs: number = BOSS_REFERENCE_FRAME_MS,
+  blocksShot?: (col: number, row: number) => boolean
+): {
+  updatedBoss: BossState;
+  spawnedDamage: number;
+} {
+  if (boss.defeated) return { updatedBoss: boss, spawnedDamage: 0 };
+
+  const frames = Math.max(0, frameDeltaMs) / BOSS_REFERENCE_FRAME_MS;
+  const hpRatio = boss.hp / boss.maxHp;
+  const phase: 1 | 2 | 3 = hpRatio <= 0.34 ? 3 : hpRatio <= 0.67 ? 2 : 1;
+  const spec = NEURAL_WARDEN_PHASES[phase];
+  const spin = phase === 2 ? 1.8 : 1;
+
+  const mesh: WireframeMesh = {
+    ...boss.mesh,
+    color: spec.color,
+    rotation: {
+      x: boss.mesh.rotation.x + boss.mesh.rotSpeed.x * frames * spin,
+      y: boss.mesh.rotation.y + boss.mesh.rotSpeed.y * frames * spin,
+      z: boss.mesh.rotation.z + boss.mesh.rotSpeed.z * frames * spin,
+    },
+  };
+
+  const salvoCount = boss.salvoCount ?? 0;
+  const holding =
+    boss.holdFireUntilMs !== undefined && nowMs < boss.holdFireUntilMs;
+  const sinceSalvo = nowMs - boss.lastSalvoTime;
+  const fires = !holding && sinceSalvo >= spec.attackIntervalMs;
+  const firesLattice = phase !== 2;
+  const lattice = firesLattice
+    ? wardenLattice(boss, phase, salvoCount, playerX, playerY)
+    : undefined;
+
+  let phaseTitle = holding ? "BOOTING :: FIND COVER" : spec.title;
+  let telegraph: BossState["telegraph"];
+  if (
+    !holding &&
+    lattice &&
+    !fires &&
+    sinceSalvo >= spec.attackIntervalMs - NEURAL_WARDEN_TELEGRAPH_MS
+  ) {
+    telegraph = lattice;
+    phaseTitle = `${spec.title} :: LANES LOCKING`;
+  }
+
+  const projectiles = [...boss.projectiles];
+  if (fires && lattice) {
+    const speed = phase === 3 ? 0.13 : 0.1;
+    LATTICE_LANES[lattice].forEach(([lx, ly], lane) => {
+      const norm = Math.hypot(lx, ly);
+      // Two shots per lane, one behind the other: a beam, not a bullet.
+      for (let k = 0; k < 2; k++) {
+        projectiles.push({
+          id: `warden-lane-${nowMs}-${lane}-${k}`,
+          x: boss.x - (lx / norm) * k * 0.6,
+          y: boss.y - (ly / norm) * k * 0.6,
+          vx: (lx / norm) * speed,
+          vy: (ly / norm) * speed,
+          mesh: createOctahedronMesh(spec.color, 6),
+          damage: phase === 3 ? 20 : 16,
+          alive: true,
+          // A lane is exactly as wide as its telegraph: the tile beside a
+          // diagonal lane is safe (#2178).
+          hitRadius: 0.5,
+        });
+      }
+    });
+    if (phase === 3) {
+      const aim = getBossAimPoint(boss, playerX, playerY, playerHeading);
+      const angle = Math.atan2(aim.y - boss.y, aim.x - boss.x);
+      projectiles.push({
+        id: `warden-seeker-${nowMs}`,
+        x: boss.x,
+        y: boss.y,
+        vx: Math.cos(angle) * 0.16,
+        vy: Math.sin(angle) * 0.16,
+        mesh: createTetrahedronMesh("#f43f5e", 7),
+        damage: 18,
+        alive: true,
+      });
+    }
+  } else if (fires) {
+    // Phase 2: a two-ended beam that turns 30 degrees a shot.
+    const angle = (salvoCount * Math.PI) / 6;
+    [angle, angle + Math.PI].forEach((a, end) => {
+      projectiles.push({
+        id: `warden-sweep-${nowMs}-${end}`,
+        x: boss.x,
+        y: boss.y,
+        vx: Math.cos(a) * 0.12,
+        vy: Math.sin(a) * 0.12,
+        mesh: createCubeMesh(spec.color, 6),
+        damage: 15,
+        alive: true,
+      });
+    });
+  }
+
+  const { live, damage } = advanceBossProjectiles(
+    projectiles,
+    frames,
+    playerX,
+    playerY,
+    gridWidth,
+    gridHeight,
+    blocksShot
+  );
+
+  return {
+    updatedBoss: {
+      ...boss,
+      phase,
+      mesh,
+      attackIntervalMs: spec.attackIntervalMs,
+      projectiles: live,
+      lastSalvoTime: fires ? nowMs : boss.lastSalvoTime,
+      salvoCount: fires ? salvoCount + 1 : salvoCount,
+      phaseTitle,
+      telegraph,
+    },
+    spawnedDamage: damage,
+  };
+}
+
+/**
+ * Updates whichever boss a room holds: the Neural Warden by its own rules,
+ * every other boss by FaceForge's (#2178).
+ *
+ * Same parameters and result as `updateFaceForgeBoss`.
+ */
+export function updateBoss(
+  ...args: Parameters<typeof updateFaceForgeBoss>
+): ReturnType<typeof updateFaceForgeBoss> {
+  return args[0].kind === "neural_warden"
+    ? updateNeuralWardenBoss(...args)
+    : updateFaceForgeBoss(...args);
 }

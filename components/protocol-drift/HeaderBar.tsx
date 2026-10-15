@@ -4,11 +4,12 @@ import React, { useRef } from "react";
 import {
   IconPlayerPause,
   IconPlayerPlay,
+  IconPlayerSkipForward,
   IconPlayerTrackNext,
 } from "@tabler/icons-react";
 import { STUDY_ID, trialDayOf, type SimSpeed } from "@/lib/protocol-drift";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
-import { useProtocolDriftStore } from "./store";
+import { isTracerComplete, useProtocolDriftStore } from "./store";
 
 const SPEEDS: SimSpeed[] = [1, 2, 5];
 const BUTTON =
@@ -45,6 +46,11 @@ export function HeaderBar() {
   const togglePause = useProtocolDriftStore((s) => s.togglePause);
   const setSpeed = useProtocolDriftStore((s) => s.setSpeed);
   const step = useProtocolDriftStore((s) => s.step);
+  const skip = useProtocolDriftStore((s) => s.skipToNextEvent);
+  const nextEvent = useProtocolDriftStore(
+    (s) => s.view?.nextEventMinute ?? null
+  );
+  const tracerDone = useProtocolDriftStore((s) => isTracerComplete(s.view));
   const validate = useProtocolDriftStore((s) => s.validate);
   const publish = useProtocolDriftStore((s) => s.publish);
   const requestLock = useProtocolDriftStore((s) => s.requestLock);
@@ -183,6 +189,21 @@ export function HeaderBar() {
         >
           <IconPlayerTrackNext className="h-4 w-4" aria-hidden="true" />
           <span>N</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void skip()}
+          disabled={
+            (fsm !== "PAUSED" && fsm !== "RUNNING") ||
+            nextEvent === null ||
+            tracerDone
+          }
+          aria-label="Skip to next event (S)"
+          title="Skip to next event (S)"
+          className={NEUTRAL}
+        >
+          <IconPlayerSkipForward className="h-4 w-4" aria-hidden="true" />
+          <span>Skip</span>
         </button>
       </div>
 

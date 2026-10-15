@@ -96,6 +96,16 @@ True once the run has loaded a reference pipeline (#2168).
 
 ***
 
+### nextEventMinute
+
+> **nextEventMinute**: `number` \| `null`
+
+The minute of the next event a player would notice (data arriving, a
+site reply, the memo or a wave's end), or null when none is scheduled.
+Skip to next event advances the clock to it (#2170).
+
+***
+
 ### publishedGraph
 
 > **publishedGraph**: [`PipelineGraph`](PipelineGraph.md) \| `null`

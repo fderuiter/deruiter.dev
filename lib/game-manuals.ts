@@ -300,6 +300,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Wardrobe Unlocks",
       },
       {
+        title: "Sprint Twists",
+        detail:
+          "Sprints 2 to 5 each add one twist, named on the opening banner. Sprint 2, Cable Alert: every few seconds Duck goes for the power cable, so answer with Drop It (E) or a Kong (2). Sprint 3, Window Watch: squirrels visit the window; call Sit (Q) while one is there for 400 points, or Duck barks, winds up and loses Good Boy. Sprint 4, Mud Storm: storms muddy Duck, and muddy paws halve your coding bursts until a bath. Sprint 5, Launch Standup: 20 seconds in, Excitement climbs faster for 15 seconds; get through it with no zoomies, chews or potty runs for a 1,500 bonus.",
+        badge: "Campaign",
+      },
+      {
         title: "Endless Quarters",
         detail:
           "Endless mode runs in quarters. Every 120 work units a new quarter starts (Q1, Q2, Q3...): the meters fill faster, impulses come sooner, and one hazard joins for the rest of the run. Q2 brings more frequent surprises, Q3 tracks mud in after every potty trip (a muddy Duck slows work until bathed), and Q4 sets Duck chewing faster, power cable first. The run ends at a time-out and scores 1,000 per quarter survived plus the work done, with its own endless best.",
@@ -1917,7 +1923,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "3D Wireframe Sovereign Boss Fights",
         detail:
-          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
+          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. FaceForge fans and rings its shots at you. The NEURAL_WARDEN fights differently: in phase 1 it lights four lanes (a + or an X) just before it fires down them, in phase 2 it sweeps a turning two-ended beam, and in phase 3 it fires the lanes you stand nearest plus a fast seeker. Walls stop every shot. Dodge the volleys and hit it with your tools.",
         badge: "3D Boss Fight",
       },
     ],

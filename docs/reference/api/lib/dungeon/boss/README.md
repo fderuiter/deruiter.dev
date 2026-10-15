@@ -11,6 +11,8 @@
 - [BOSS\_MAX\_LEAD\_TILES](variables/BOSS_MAX_LEAD_TILES.md)
 - [BOSS\_OPENING\_GRACE\_MS](variables/BOSS_OPENING_GRACE_MS.md)
 - [BOSS\_REFERENCE\_FRAME\_MS](variables/BOSS_REFERENCE_FRAME_MS.md)
+- [NEURAL\_WARDEN\_PHASES](variables/NEURAL_WARDEN_PHASES.md)
+- [NEURAL\_WARDEN\_TELEGRAPH\_MS](variables/NEURAL_WARDEN_TELEGRAPH_MS.md)
 
 ## Functions
 
@@ -25,4 +27,6 @@
 - [project3DTo2D](functions/project3DTo2D.md)
 - [renderWireframeMesh](functions/renderWireframeMesh.md)
 - [rotate3D](functions/rotate3D.md)
+- [updateBoss](functions/updateBoss.md)
 - [updateFaceForgeBoss](functions/updateFaceForgeBoss.md)
+- [updateNeuralWardenBoss](functions/updateNeuralWardenBoss.md)

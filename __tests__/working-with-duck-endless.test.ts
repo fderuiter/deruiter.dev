@@ -155,6 +155,9 @@ describe("endless waves (#2051)", () => {
       ...base,
       status: "running",
       workProgress: 200,
+      // Past sprint 5's opening twist banner (#2161).
+      ticks: 10,
+      lastImpulseTick: 10,
     });
     expect(next.endlessQuarter).toBe(1);
     expect(next.activeSkillToast).toBeNull();

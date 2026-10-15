@@ -435,6 +435,15 @@ Stars from the sprint just cleared; null until a campaign win.
 
 ***
 
+### standup?
+
+> `optional` **standup?**: `"passed"` \| `"failed"` \| `"live"`
+
+The Launch Standup in the standup sprint (#2161): `live` while it runs,
+then `passed` or `failed`. Absent before it starts and in other sprints.
+
+***
+
 ### status
 
 > **status**: `"idle"` \| `"running"` \| `"failed"` \| `"paused"` \| `"won"`

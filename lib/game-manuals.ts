@@ -300,6 +300,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Wardrobe Unlocks",
       },
       {
+        title: "Sprint Twists",
+        detail:
+          "Sprints 2 to 5 each add one twist, named on the opening banner. Sprint 2, Cable Alert: every few seconds Duck goes for the power cable, so answer with Drop It (E) or a Kong (2). Sprint 3, Window Watch: squirrels visit the window; call Sit (Q) while one is there for 400 points, or Duck barks, winds up and loses Good Boy. Sprint 4, Mud Storm: storms muddy Duck, and muddy paws halve your coding bursts until a bath. Sprint 5, Launch Standup: 20 seconds in, Excitement climbs faster for 15 seconds; get through it with no zoomies, chews or potty runs for a 1,500 bonus.",
+        badge: "Campaign",
+      },
+      {
         title: "Endless Quarters",
         detail:
           "Endless mode runs in quarters. Every 120 work units a new quarter starts (Q1, Q2, Q3...): the meters fill faster, impulses come sooner, and one hazard joins for the rest of the run. Q2 brings more frequent surprises, Q3 tracks mud in after every potty trip (a muddy Duck slows work until bathed), and Q4 sets Duck chewing faster, power cable first. The run ends at a time-out and scores 1,000 per quarter survived plus the work done, with its own endless best.",

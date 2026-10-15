@@ -2,8 +2,8 @@
  * Body Battery for Monkey C Mayhem (#2010).
  *
  * Body Battery is the Garmin wellness gauge the runner carries. Running on
- * footing drains it, sprinting drains it faster, and braking on footing
- * recharges it. Hits cost charge, while Kudos, power-ups and stage clears
+ * footing drains it, sprinting drains it faster wherever the runner is, in
+ * the air or in the water too, and braking on footing recharges it. Hits cost charge, while Kudos, power-ups and stage clears
  * refill it. A runner whose battery reaches 0 bonks: it cannot sprint, and
  * recharges at a steady pace or a jog, until the battery climbs back to
  * {@link BONK_RECOVER_AT}. The run never ends from Body Battery.
@@ -19,7 +19,7 @@ export const BODY_BATTERY_MAX = 100;
 /** Charge lost per second running on footing. */
 export const BODY_BATTERY_RUN_DRAIN_PER_S = 0.35;
 /** Charge lost per second sprinting on footing. */
-export const BODY_BATTERY_SPRINT_DRAIN_PER_S = 1.4;
+export const BODY_BATTERY_SPRINT_DRAIN_PER_S = 1.8;
 /** Charge gained per second braking (easy jog) on footing. */
 export const BODY_BATTERY_REST_GAIN_PER_S = 0.8;
 /** Charge lost to a hit. */
@@ -70,7 +70,7 @@ function runInput(input: -1 | 0 | 1 | undefined): -1 | 0 | 1 {
   return 0;
 }
 
-/** input: 1 sprint, 0 run, -1 brake (the engine's run input). In the air nothing changes. Hitting 0 sets bonked. Recovering to >= BONK_RECOVER_AT clears it. While bonked, a steady pace recharges like braking. */
+/** input: 1 sprint, 0 run, -1 brake (the engine's run input). In the air only a sprint changes it: a sprint costs charge wherever the runner is (#2022). Hitting 0 sets bonked. Recovering to >= BONK_RECOVER_AT clears it. While bonked, a steady pace recharges like braking. */
 export function stepBodyBattery(
   bb: BodyBattery | undefined,
   input: -1 | 0 | 1 | undefined,
@@ -78,12 +78,15 @@ export function stepBodyBattery(
   deltaMs: number
 ): BodyBattery {
   const current = normalize(bb);
-  if (!grounded || !Number.isFinite(deltaMs) || deltaMs <= 0) {
+  if (!Number.isFinite(deltaMs) || deltaMs <= 0) {
     return current;
   }
   const seconds = deltaMs / 1000;
   const mode = runInput(input);
   const sprinting = mode === 1 && !current.bonked;
+  if (!grounded && !sprinting) {
+    return current;
+  }
   // A bonked runner can't sprint, and recharges at an easy or steady pace.
   const resting = mode === -1 || (current.bonked && mode === 0);
   const value = resting

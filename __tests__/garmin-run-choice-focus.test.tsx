@@ -127,6 +127,23 @@ describe("Garmin run choices hand the keyboard back after a click (#2130)", () =
     }
   );
 
+  it("lists pause, Down and, in a race, the restart key in the legend (#2134)", async () => {
+    await render();
+    const legend = () =>
+      Array.from(container.querySelectorAll("aside dt")).map((dt) =>
+        dt.textContent?.trim()
+      );
+    expect(legend()).toEqual(expect.arrayContaining(["▼", "P / Esc", "L"]));
+    await act(async () => {
+      pointerClick(radio(container, "Training Run"));
+    });
+    expect(legend()).not.toContain("⌫ (paused)");
+    await act(async () => {
+      pointerClick(radio(container, "Race Mode"));
+    });
+    expect(legend()).toContain("⌫ (paused)");
+  });
+
   it("keeps focus on an option picked from the keyboard", async () => {
     await render();
     const race = radio(container, "Race Mode");

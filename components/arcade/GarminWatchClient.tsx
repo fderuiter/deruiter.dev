@@ -96,7 +96,7 @@ export const GarminWatchClient: React.FC = () => {
               title="Monkey C Mayhem: A Garmin 5K Platformer"
               subtitle="Five Stages, Three Lives, One Body Battery"
               icon={<IconDeviceWatch className="w-8 h-8" />}
-              instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
+              instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Down in mid-air is a Burpee Slam and X in mid-air a Spin Jump; press Jump in mid-air against a station or plyo box to Wall Jump, and stand beside a medicine ball and press X to pick it up, then X again to throw it. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
               controls={[
                 { key: "Enter", action: "Start / Pause" },
                 { key: "UP / Space", action: "Jump (hold = higher)" },
@@ -104,6 +104,8 @@ export const GarminWatchClient: React.FC = () => {
                 { key: "X / Backspace", action: "Heat Bolt / Cape Spin" },
                 { key: "↓", action: "Enter a Water Station / Slam" },
                 { key: "P / Esc", action: "Pause" },
+                { key: "Backspace (race paused)", action: "Restart the race" },
+                { key: "L", action: "Backlight" },
                 { key: "W (Dev Mode)", action: "Wipe Fog" },
               ]}
               importComponent={GarminWatchSimulatorLoader}

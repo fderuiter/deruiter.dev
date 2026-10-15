@@ -3,7 +3,13 @@
 // text says (#2191).
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+} from "@testing-library/react";
 import { fromPartial } from "@total-typescript/shoehorn";
 import { type DecisionRecord, type StudyState } from "@/lib/study-director";
 import {
@@ -22,6 +28,7 @@ import {
 } from "@/components/study-director/career";
 import { seedLink } from "@/components/study-director/ShareCard";
 import { StudyDirectorGame } from "@/components/study-director/StudyDirectorGame";
+import { StudyDirectorWorld } from "@/components/study-director-world/StudyDirectorWorld";
 
 const ORIGIN = "https://deruiter.dev";
 
@@ -65,6 +72,101 @@ describe("Study Director audit: the share link (#2191)", () => {
     expect(text).toContain("rescue");
     // The seed is used once, so a reload resumes the saved run.
     expect(window.location.hash).toBe("#mode=world");
+  });
+
+  it("opens the shared office study when the office mounts twice (#2251)", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/#mode=world&seed=twice-2251&length=short&difficulty=rescue"
+    );
+    render(
+      <React.StrictMode>
+        <StudyDirectorGame officeFirst />
+      </React.StrictMode>
+    );
+    await screen.findByTestId("world-playfield");
+    // The cabinet's launch mounts the game again, after the link is gone.
+    cleanup();
+    expect(window.location.hash).toBe("#mode=world");
+    render(
+      <React.StrictMode>
+        <StudyDirectorGame officeFirst />
+      </React.StrictMode>
+    );
+    await screen.findByTestId("world-playfield");
+    const saved = JSON.parse(
+      globalThis.localStorage.getItem(WORLD_SAVE_KEY) ?? "{}"
+    );
+    expect(saved.study.seed).toBe("twice-2251");
+    expect(saved.study.difficulty).toBe("rescue");
+    expect(saved.study.day).toBe(1);
+    expect(JSON.stringify(saved.study.setup)).toContain("short");
+  });
+
+  it("keeps the shared office study when its first render is thrown away (#2251)", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/#mode=world&seed=discard-2251&length=short&difficulty=rescue"
+    );
+    // A sibling still loading suspends the boundary, so React renders the
+    // office, discards that render and renders it again once the sibling is in.
+    let ready = false;
+    let release = () => {};
+    const loading = new Promise<void>((resolve) => {
+      release = () => {
+        ready = true;
+        resolve();
+      };
+    });
+    const Loading: React.FC = () => {
+      if (!ready) throw loading;
+      return null;
+    };
+    render(
+      <React.Suspense fallback={<p>Loading</p>}>
+        <StudyDirectorWorld onExit={() => {}} />
+        <Loading />
+      </React.Suspense>
+    );
+    await act(async () => {
+      release();
+      await loading;
+    });
+    await screen.findByTestId("world-playfield");
+    const saved = JSON.parse(
+      globalThis.localStorage.getItem(WORLD_SAVE_KEY) ?? "{}"
+    );
+    expect(saved.study.seed).toBe("discard-2251");
+    expect(saved.study.difficulty).toBe("rescue");
+    expect(saved.study.day).toBe(1);
+  });
+
+  it("starts the shared desk study on the desk (#2251)", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/#mode=desk&seed=desk-2251&difficulty=rescue"
+    );
+    render(
+      <React.StrictMode>
+        <StudyDirectorGame officeFirst />
+      </React.StrictMode>
+    );
+    fireEvent.click(
+      await screen.findByRole("button", {
+        name: "Start the study (classic desk)",
+      })
+    );
+    expect(screen.queryByTestId("world-playfield")).toBeNull();
+    expect(window.location.hash).toBe("#mode=desk");
+    const saved = JSON.parse(
+      globalThis.localStorage.getItem("study_director_save_v1") ?? "{}"
+    );
+    expect(saved.seed).toBe("desk-2251");
+    expect(saved.difficulty).toBe("rescue");
+    expect(saved.day).toBe(1);
   });
 
   it("says so when a study in progress holds the link", async () => {

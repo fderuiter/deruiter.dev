@@ -8,6 +8,24 @@
 
 ## References
 
+### ActBest
+
+Re-exports [ActBest](engine/interfaces/ActBest.md)
+
+***
+
+### ActBestMerge
+
+Re-exports [ActBestMerge](engine/interfaces/ActBestMerge.md)
+
+***
+
+### ActBestRecord
+
+Re-exports [ActBestRecord](engine/type-aliases/ActBestRecord.md)
+
+***
+
 ### ActProgressReadout
 
 Re-exports [ActProgressReadout](engine/interfaces/ActProgressReadout.md)
@@ -125,6 +143,12 @@ Re-exports [classifyCampaignKill](engine/functions/classifyCampaignKill.md)
 ### COMBO\_TIMEOUT\_MS
 
 Re-exports [COMBO_TIMEOUT_MS](constants/variables/COMBO_TIMEOUT_MS.md)
+
+***
+
+### countActStars
+
+Re-exports [countActStars](engine/functions/countActStars.md)
 
 ***
 
@@ -278,6 +302,12 @@ Re-exports [KEYBOARD_AIM_CONE_RADIANS](constants/variables/KEYBOARD_AIM_CONE_RAD
 
 ***
 
+### LASER\_LOON\_STARS\_KEY
+
+Re-exports [LASER_LOON_STARS_KEY](engine/variables/LASER_LOON_STARS_KEY.md)
+
+***
+
 ### LaserHitResult
 
 Re-exports [LaserHitResult](engine/interfaces/LaserHitResult.md)
@@ -386,6 +416,12 @@ Re-exports [MAX_MULTIPLIER](constants/variables/MAX_MULTIPLIER.md)
 
 ***
 
+### mergeActBest
+
+Re-exports [mergeActBest](engine/functions/mergeActBest.md)
+
+***
+
 ### MINION\_FIRE\_BASE\_FRAMES
 
 Re-exports [MINION_FIRE_BASE_FRAMES](constants/variables/MINION_FIRE_BASE_FRAMES.md)
@@ -431,6 +467,12 @@ Re-exports [MINION_SHOT_SPEED](constants/variables/MINION_SHOT_SPEED.md)
 ### MinionFireResult
 
 Re-exports [MinionFireResult](engine/interfaces/MinionFireResult.md)
+
+***
+
+### parseActBestRecord
+
+Re-exports [parseActBestRecord](engine/functions/parseActBestRecord.md)
 
 ***
 

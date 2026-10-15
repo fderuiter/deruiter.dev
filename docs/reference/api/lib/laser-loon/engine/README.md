@@ -12,6 +12,8 @@
 
 ## Interfaces
 
+- [ActBest](interfaces/ActBest.md)
+- [ActBestMerge](interfaces/ActBestMerge.md)
 - [ActProgressReadout](interfaces/ActProgressReadout.md)
 - [BossAttackResult](interfaces/BossAttackResult.md)
 - [IceCollisionResult](interfaces/IceCollisionResult.md)
@@ -25,13 +27,19 @@
 
 ## Type Aliases
 
+- [ActBestRecord](type-aliases/ActBestRecord.md)
 - [CampaignKillOutcome](type-aliases/CampaignKillOutcome.md)
+
+## Variables
+
+- [LASER\_LOON\_STARS\_KEY](variables/LASER_LOON_STARS_KEY.md)
 
 ## Functions
 
 - [calculateNextComboAndMultiplier](functions/calculateNextComboAndMultiplier.md)
 - [checkLaserRayHit](functions/checkLaserRayHit.md)
 - [classifyCampaignKill](functions/classifyCampaignKill.md)
+- [countActStars](functions/countActStars.md)
 - [createExplosionParticles](functions/createExplosionParticles.md)
 - [createIceBlock](functions/createIceBlock.md)
 - [createInitialState](functions/createInitialState.md)
@@ -46,6 +54,8 @@
 - [getWeaponCounter](functions/getWeaponCounter.md)
 - [getWeaponDamageMultiplier](functions/getWeaponDamageMultiplier.md)
 - [isBossTelegraphing](functions/isBossTelegraphing.md)
+- [mergeActBest](functions/mergeActBest.md)
+- [parseActBestRecord](functions/parseActBestRecord.md)
 - [pickKeyboardAim](functions/pickKeyboardAim.md)
 - [resolveLoonCollision](functions/resolveLoonCollision.md)
 - [spawnBossForAct](functions/spawnBossForAct.md)

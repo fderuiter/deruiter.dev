@@ -86,10 +86,39 @@ describe("Garmin Dev Mode toggle (#2010)", () => {
     expect(screen.getByRole("img", { name: /Memory:/ })).toBeTruthy();
   });
 
+  it("reads out a fitness run's own numbers, and firmware only in Dev Mode (#2240)", () => {
+    const { unmount } = render(
+      <GarminWatchSimulator
+        initialState={fitnessRun({
+          runClockMs: 83_450,
+          distanceMeters: 1234,
+          lives: 2,
+          kudos: 7,
+        })}
+      />
+    );
+    expect(screen.getByText("Run Time: 1:23.45")).toBeTruthy();
+    expect(screen.getByText("Distance: 1.23 km")).toBeTruthy();
+    expect(screen.getByText("Lives: 2")).toBeTruthy();
+    expect(screen.getByText("Kudos: 7")).toBeTruthy();
+    expect(
+      screen.queryByText(/RAM Memory:|Thermal Stress:|Condensation Fog:/)
+    ).toBeNull();
+    unmount();
+
+    window.localStorage.setItem("garmin_dev_mode", "1");
+    render(<GarminWatchSimulator />);
+    expect(screen.getByText(/RAM Memory:/)).toBeTruthy();
+    expect(screen.getByText(/Battery Level:/)).toBeTruthy();
+    expect(screen.queryByText(/^Run Time:/)).toBeNull();
+  });
+
   it("ignores Down and turns Backspace into the action key in a fitness run", () => {
     const state = allocateVariable(fitnessRun(), "array", "probe").state;
     render(<GarminWatchSimulator initialState={state} />);
-    const ramBefore = screen.getByText(/RAM Memory:/).textContent;
+    // A pop or a GC would score; the fitness readouts carry no RAM (#2240).
+    const scoreBefore = screen.getByText(/^Score:/).textContent;
+    expect(screen.queryByText(/RAM Memory:/)).toBeNull();
     fireEvent.keyDown(watch(), { key: "ArrowDown" });
     fireEvent.keyDown(watch(), { key: "Backspace" });
     fireEvent.keyDown(watch(), { key: "g" });
@@ -100,7 +129,7 @@ describe("Garmin Dev Mode toggle (#2010)", () => {
     const said = mockAnnounce.mock.calls.map((c) => c[0] as string).join(" ");
     expect(said).toMatch(/Body Battery: 100/);
     expect(said).not.toMatch(/Garbage collection active/);
-    expect(screen.getByText(/RAM Memory:/).textContent).toBe(ramBefore);
+    expect(screen.getByText(/^Score:/).textContent).toBe(scoreBefore);
   });
 
   it("names a fitness crash by its gym cause on the result card", () => {

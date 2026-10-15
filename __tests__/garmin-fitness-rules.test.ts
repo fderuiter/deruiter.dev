@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { EMPTY_PROPS } from "@/lib/garmin-props";
 import {
   causeLabel,
   createInitialState,
@@ -43,6 +44,8 @@ function fitnessRun(overrides: Partial<GameEngineState> = {}): GameEngineState {
       "fenix"
     ),
     course: EMPTY_COURSE,
+    // No stations: a runner held at one would get the stall alert (#2232).
+    props: EMPTY_PROPS,
     foes: [],
     foeShots: [],
     obstacles: [],

@@ -230,6 +230,8 @@ interface ChoiceGroupProps<T extends string> {
   options: readonly ChoiceOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Runs after a pick, with the click, so a pointer pick can hand the keyboard back to the watch. */
+  onPick?: (e: React.MouseEvent) => void;
   disabled: boolean;
   /** Columns on a wide panel; the group stacks when it is narrower. */
   columns: 1 | 2;
@@ -245,6 +247,7 @@ function ChoiceGroup<T extends string>({
   options,
   value,
   onChange,
+  onPick,
   disabled,
   columns,
   describedBy,
@@ -286,7 +289,10 @@ function ChoiceGroup<T extends string>({
             tabIndex={checked ? 0 : -1}
             disabled={disabled}
             title={option.title}
-            onClick={() => onChange(option.value)}
+            onClick={(e) => {
+              onChange(option.value);
+              onPick?.(e);
+            }}
             onKeyDown={onKeyDown}
             className={`${raceChoiceClass} ${
               checked
@@ -341,6 +347,12 @@ interface CompanionPanelProps {
   ghostTarget: GhostTarget;
   onSetGhostOn: (on: boolean) => void;
   onSetGhostTarget: (target: GhostTarget) => void;
+  /**
+   * Called after a run mode, race or Virtual Partner option is clicked, so a
+   * pointer pick hands the keyboard back to the watch and Enter starts the
+   * run (#2130).
+   */
+  onRunChoicePick: (e: React.MouseEvent) => void;
   /** Samples recorded for the current run. */
   telemetryCount: number;
   onExportCsv: () => void;
@@ -392,6 +404,7 @@ export function CompanionPanel({
   ghostTarget,
   onSetGhostOn,
   onSetGhostTarget,
+  onRunChoicePick,
   telemetryCount,
   onExportCsv,
   onExportFit,
@@ -691,6 +704,7 @@ export function CompanionPanel({
               disabled={raceLocked}
               columns={2}
               onChange={onSetRunMode}
+              onPick={onRunChoicePick}
               options={[
                 {
                   value: "training",
@@ -725,6 +739,7 @@ export function CompanionPanel({
                   disabled={raceLocked}
                   columns={1}
                   onChange={onSetRaceCourse}
+                  onPick={onRunChoicePick}
                   options={RACE_COURSES.map((course) => ({
                     value: course,
                     label: RACE_COURSE_NAMES[course],
@@ -743,6 +758,7 @@ export function CompanionPanel({
                   disabled={raceLocked}
                   columns={1}
                   onChange={onSetRaceCategory}
+                  onPick={onRunChoicePick}
                   describedBy="race-category-rule"
                   options={RACE_CATEGORIES.map((category) => ({
                     value: category,
@@ -764,6 +780,7 @@ export function CompanionPanel({
                   disabled={false}
                   columns={2}
                   onChange={(value) => onSetGhostOn(value === "on")}
+                  onPick={onRunChoicePick}
                   options={[
                     {
                       value: "on",
@@ -781,6 +798,7 @@ export function CompanionPanel({
                       disabled={false}
                       columns={2}
                       onChange={onSetGhostTarget}
+                      onPick={onRunChoicePick}
                       describedBy="ghost-target-note"
                       options={[
                         { value: "pr", label: "Your PR" },

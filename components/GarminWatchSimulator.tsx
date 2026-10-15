@@ -2853,6 +2853,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           onSetRunMode={handleSetRunMode}
           onSetRaceCourse={handleSetRaceCourse}
           onSetRaceCategory={handleSetRaceCategory}
+          onRunChoicePick={returnFocusAfterPointerClick}
           ghostOn={ghostOn}
           ghostTarget={ghostTarget}
           onSetGhostOn={handleSetGhostOn}

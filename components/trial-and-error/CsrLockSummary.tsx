@@ -9,7 +9,8 @@ interface CsrLockSummaryProps {
   cpuSpent: number;
   /** The cabinet allows loud effects: the stamp slams and the score burns. */
   loud: boolean;
-  onAmend: () => void;
+  /** Files a protocol amendment; left out once the run has ended (#2152). */
+  onAmend?: () => void;
 }
 
 /**
@@ -141,22 +142,24 @@ export function CsrLockSummary({
         Seed {seed} · {handsPlayed} hand{handsPlayed === 1 ? "" : "s"} ·{" "}
         {cpuSpent} CPU spent
       </p>
-      <div className="mt-3 border-t border-zinc-800 pt-2">
-        <button
-          type="button"
-          onClick={onAmend}
-          disabled={amendRefusal !== null}
-          aria-describedby="csr-amend-note"
-          className="min-h-[44px] border border-amber-500 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400"
-          data-testid="csr-amend"
-        >
-          File protocol amendment
-        </button>
-        <p id="csr-amend-note" className="mt-1 text-[11px] text-zinc-400">
-          {amendRefusal ??
-            "Unlocks the package and withdraws the lock hand; its outputs must be validated again."}
-        </p>
-      </div>
+      {onAmend && (
+        <div className="mt-3 border-t border-zinc-800 pt-2">
+          <button
+            type="button"
+            onClick={onAmend}
+            disabled={amendRefusal !== null}
+            aria-describedby="csr-amend-note"
+            className="min-h-[44px] border border-amber-500 px-3 text-[10px] font-bold uppercase tracking-wider text-amber-300 touch-manipulation hover:bg-amber-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98] disabled:cursor-not-allowed disabled:border-zinc-700 disabled:text-zinc-400"
+            data-testid="csr-amend"
+          >
+            File protocol amendment
+          </button>
+          <p id="csr-amend-note" className="mt-1 text-[11px] text-zinc-400">
+            {amendRefusal ??
+              "Unlocks the package and withdraws the lock hand; its outputs must be validated again."}
+          </p>
+        </div>
+      )}
     </section>
   );
 }

@@ -356,6 +356,14 @@ cleared, the cards the next Blind will deal.
 
 ***
 
+### ended
+
+> **ended**: `boolean`
+
+The won run was submitted and ended; nothing follows (#1088).
+
+***
+
 ### endless
 
 > **endless**: [`EndlessView`](EndlessView.md) \| `null`

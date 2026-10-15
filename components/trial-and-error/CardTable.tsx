@@ -2730,13 +2730,17 @@ export function CardTable({
                   handsPlayed={view.handsPlayed}
                   cpuSpent={view.cpu.spent}
                   loud={loudEffectsEnabled}
-                  onAmend={() => {
-                    setFocusIndex(0);
-                    send(
-                      { type: "AMEND_PROTOCOL" },
-                      { kind: "hand", index: 0 }
-                    );
-                  }}
+                  onAmend={
+                    runView.ended
+                      ? undefined
+                      : () => {
+                          setFocusIndex(0);
+                          send(
+                            { type: "AMEND_PROTOCOL" },
+                            { kind: "hand", index: 0 }
+                          );
+                        }
+                  }
                 />
               )}
               {view.reward && (

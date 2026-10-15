@@ -255,7 +255,7 @@ export const ReportView: React.FC<{
               />
               <Figure
                 label="Timeline variance"
-                value={`${ev.company.timelineVarianceDays > 0 ? "+" : ""}${ev.company.timelineVarianceDays} days`}
+                value={`${ev.company.timelineVarianceDays > 0 ? "+" : ""}${ev.company.timelineVarianceDays} ${Math.abs(ev.company.timelineVarianceDays) === 1 ? "day" : "days"}`}
                 bad={ev.company.timelineVarianceDays > 0}
               />
             </dl>

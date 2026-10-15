@@ -21,7 +21,7 @@ export function describeBlindLoss(view: TableView): string | null {
   );
   parts.push(
     best
-      ? `${short} short. Your best hand was a ${best.name} (${best.score}).`
+      ? `${short} short. Your best hand was ${/^[AEIOU]/i.test(best.name) ? "an" : "a"} ${best.name} (${best.score}).`
       : `${short} short. No hand was played.`
   );
   const limits = view.modifiers.filter(

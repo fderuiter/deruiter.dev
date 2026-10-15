@@ -1917,7 +1917,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "3D Wireframe Sovereign Boss Fights",
         detail:
-          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
+          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. FaceForge fans and rings its shots at you. The NEURAL_WARDEN fights differently: in phase 1 it lights four lanes (a + or an X) just before it fires down them, in phase 2 it sweeps a turning two-ended beam, and in phase 3 it fires the lanes you stand nearest plus a fast seeker. Walls stop every shot. Dodge the volleys and hit it with your tools.",
         badge: "3D Boss Fight",
       },
     ],

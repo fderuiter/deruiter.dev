@@ -195,7 +195,7 @@ test.describe("Study Director world: a day with a rhythm (#1837, #1838)", () => 
 
     // Late afternoon: going home shows how the day went.
     await reloadWith(page, { minute: 16 * 60 + 20 });
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     await activate(page.getByRole("button", { name: "Go home" }));
     const overnight = page.getByTestId("world-overnight");

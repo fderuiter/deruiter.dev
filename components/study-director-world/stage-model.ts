@@ -14,6 +14,7 @@ import {
   type TilePoint,
   type WorldMap,
   type WorldState,
+  workableQueries,
 } from "@/lib/study-director-world";
 
 /** People and stations this many steps away get a nameplate. */
@@ -226,12 +227,14 @@ export function todaysTasks(world: WorldState): WorldTask[] {
     "{n} decisions to write up",
     "Phone in your office"
   );
-  const queries = world.study.sites.reduce((n, s) => n + s.openQueries, 0);
+  // What the EDC shows and can be worked, not the true count: the true
+  // number is what the dashboard hides, and a task for queries nobody can
+  // work pointed at an empty queue (#2253).
   count(
     "queries",
-    queries,
-    "1 open query at the sites",
-    "{n} open queries at the sites",
+    world.study.status === "running" ? workableQueries(world) : 0,
+    "1 query shown in the EDC",
+    "{n} queries shown in the EDC",
     "EDC workstation"
   );
   return tasks;

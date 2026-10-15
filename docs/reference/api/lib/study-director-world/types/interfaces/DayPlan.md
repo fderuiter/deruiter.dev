@@ -35,3 +35,11 @@ Ids of today's interruptions the player has dealt with.
 ### priority
 
 > **priority**: `"desk"` \| `"sites"` \| `"people"` \| `null`
+
+***
+
+### queriesClosed?
+
+> `optional` **queriesClosed?**: `number`
+
+Queries the player closed at the EDC today, for the wrap-up (#2253).

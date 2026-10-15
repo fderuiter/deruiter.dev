@@ -123,7 +123,7 @@ test.describe("Study Director world: a working day (#1688, #1689)", () => {
     await expect(desk).toBeHidden();
 
     // Go home: walk to the car, confirm, read the report, drive in.
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     await activate(page.getByRole("button", { name: "Go home" }));
     await expect(page.getByText("Overnight, day 1")).toBeVisible();

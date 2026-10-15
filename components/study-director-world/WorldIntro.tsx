@@ -23,6 +23,10 @@ const TOUCH_CONTROLS: Array<{ keys: string; action: string }> = [
     keys: "E button",
     action: "Use what you face, or talk to whoever is there",
   },
+  {
+    keys: "E button at the EDC",
+    action: "Work the query queue the sites have entered",
+  },
   { keys: "F button", action: "Ask yourself how it is going" },
   { keys: "Office directory", action: "Walk to a place without steering" },
 ];
@@ -30,6 +34,10 @@ const TOUCH_CONTROLS: Array<{ keys: string; action: string }> = [
 const CONTROLS: Array<{ keys: string; action: string }> = [
   { keys: "W A S D or arrow keys", action: "Walk around the floor" },
   { keys: "E", action: "Use what you face, or talk to whoever is there" },
+  {
+    keys: "E at the EDC",
+    action: "Work the query queue the sites have entered",
+  },
   { keys: "F", action: "Ask yourself how it is going" },
   { keys: "Office directory", action: "Walk to a place without steering" },
 ];
@@ -211,7 +219,8 @@ export const WorldIntro: React.FC<{
         <p className="mt-2 text-xs leading-relaxed text-zinc-300">
           You run one clinical study. Each day starts at 8:00 and every action
           costs minutes and energy. Walk the floor, talk to your team, answer
-          the phone, and go home when you run out of day. Everything is fine.
+          the phone, work the queries at the EDC, and go home when you run out
+          of day. Everything is fine.
         </p>
         <dl className="mt-4 space-y-2 text-xs">
           {(touch ? TOUCH_CONTROLS : CONTROLS).map((row) => (

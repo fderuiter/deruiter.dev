@@ -13,6 +13,7 @@ import type {
   PersonPlacement,
   RoomCondition,
   RoomId,
+  Station,
   StationId,
   WorldMap,
   WorldState,
@@ -210,6 +211,17 @@ export function officeDirectory(
   ];
 }
 
+/**
+ * A station as the object of "You are facing": "the EDC workstation", but
+ * "your car" rather than "the Your car", and a person's station by their
+ * name alone rather than "the Coordinator Tom Reyes" (#2253).
+ */
+function facedStation(station: Station): string {
+  if (/^Your /.test(station.name)) return `y${station.name.slice(1)}`;
+  if (station.id === "coordinator" || station.id === "pi") return station.name;
+  return `the ${station.name}`;
+}
+
 function list(items: string[]): string {
   if (items.length <= 1) return items.join("");
   return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
@@ -246,7 +258,7 @@ export function describeSurroundings(
   const target = targetInFront(world, map, people);
   if (target)
     parts.push(
-      `You are facing ${target.kind === "person" ? target.person.name : `the ${target.station.name}`}. Press E to interact.`
+      `You are facing ${target.kind === "person" ? target.person.name : facedStation(target.station)}. Press E to interact.`
     );
   return parts.join(" ");
 }

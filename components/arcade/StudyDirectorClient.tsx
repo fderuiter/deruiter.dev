@@ -76,10 +76,11 @@ export const StudyDirectorClient: React.FC = () => {
                   aria-hidden="true"
                 />
               }
-              instructions="Walk the office, talk to your team, and drive out to the sites behind the green dashboard. Every action costs minutes and energy, and skipped documentation comes back at inspection. Prefer the dashboard? The classic desk is one button away."
+              instructions="Walk the office, talk to your team, work the query queue at the EDC, and drive out to the sites behind the green dashboard. Every action costs minutes and energy, and skipped documentation comes back at inspection. Prefer the dashboard? The classic desk is one button away."
               controls={[
                 { key: "W A S D or ↑ ← ↓ →", action: "Walk" },
                 { key: "E", action: "Use what you face, or talk" },
+                { key: "E at the EDC", action: "Work the query queue" },
                 { key: "F", action: "Ask yourself how you are" },
                 { key: "Classic desk: 1 - 5", action: "Choose an option" },
                 { key: "Classic desk: E", action: "End the day" },

@@ -7,7 +7,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { act, cleanup, render, screen, within } from "@testing-library/react";
-import { BOOTH_CREW, DILEMMAS, DILEMMA_IDS } from "@/lib/patty-drive-thru";
+import { BOOTH_CREW, DILEMMAS, type DilemmaId } from "@/lib/patty-drive-thru";
 import { GAME_MANUALS } from "@/lib/game-manuals";
 import { createBoothStore } from "@/components/patty-drive-thru/store";
 import { KdsBoard } from "@/components/patty-drive-thru/KdsBoard";
@@ -74,12 +74,15 @@ describe("dilemma prompts (#2136)", () => {
     coworker: BOOTH_CREW.coworker,
   } as const;
 
-  it.each(DILEMMA_IDS)("%s does not name its own speaker", (id) => {
-    const dilemma = DILEMMAS[id];
-    const name = NAMES[dilemma.speaker as keyof typeof NAMES];
-    if (name) expect(dilemma.prompt).not.toMatch(new RegExp(`\\b${name}\\b`));
-    expect(dilemma.prompt).not.toMatch(/\b(asks|says|wants to know)\b/);
-  });
+  it.each(Object.keys(DILEMMAS) as DilemmaId[])(
+    "%s does not name its own speaker",
+    (id) => {
+      const dilemma = DILEMMAS[id];
+      const name = NAMES[dilemma.speaker as keyof typeof NAMES];
+      if (name) expect(dilemma.prompt).not.toMatch(new RegExp(`\\b${name}\\b`));
+      expect(dilemma.prompt).not.toMatch(/\b(asks|says|wants to know)\b/);
+    }
+  );
 });
 
 describe("diary form controls (#2137)", () => {

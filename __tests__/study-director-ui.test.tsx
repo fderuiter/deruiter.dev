@@ -111,15 +111,17 @@ describe("StudyDirectorGame", () => {
   });
 
   it("warns when critical messages will lapse", () => {
+    window.location.hash = "#seed=study-critical-58";
     start();
     const root = document.querySelector(
       '[data-keyboard-boundary="true"]'
     ) as HTMLElement;
-    // The deck (#2093) moves each message within a few days, and the seed
-    // here is fresh, so end days until the first critical message is open.
-    for (let i = 0; i < 70 && !screen.queryByText(/critical message/i); i += 1)
+    // The seeded deck can show a headline about critical messages alongside
+    // the lapse warning, so look specifically for the warning.
+    const lapseWarning = /critical messages? will lapse if you end the day/i;
+    for (let i = 0; i < 70 && !screen.queryByText(lapseWarning); i += 1)
       fireEvent.keyDown(root, { key: "e" });
-    expect(screen.getByText(/critical message/i)).toBeTruthy();
+    expect(screen.getByText(lapseWarning)).toBeTruthy();
   });
 
   it("plays to the end and shows the report, then restarts", () => {

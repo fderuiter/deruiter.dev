@@ -863,7 +863,11 @@ describe("Quasi-Perfect Puzzler Granular 18-Level Step-by-Step Solvability", () 
   it("generates Lean 4 proof scripts for completed and in-progress proofs", () => {
     const l1 = puzzleLevels[0];
     const scriptEmpty = generateLeanProofScript(l1, [], false);
-    expect(scriptEmpty).toContain("sorry -- Goal open");
+    expect(scriptEmpty).toContain("-- Goal open");
+    // #2043: an open goal is a comment, never a sorry tactic line.
+    expect(
+      scriptEmpty.split("\n").some((line) => line.trim().startsWith("sorry"))
+    ).toBe(false);
 
     const scriptDone = generateLeanProofScript(
       l1,

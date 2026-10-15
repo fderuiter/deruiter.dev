@@ -1974,7 +1974,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Best Streak",
         detail:
-          "Beating your stored best shows a New Echo best toast. The best is kept in this browser and survives reloads. It is separate from the trophy count that feeds the arcade score.",
+          "Beating your stored best shows a New Echo best toast. The best is kept in this browser, survives reloads and shows on the Arcade Hub's vault card. Streaks of 5 and 10 unlock the Echo Chamber and Perfect Recall arcade trophies; the arcade score itself counts hidden trophies.",
         badge: "Record",
       },
       {

@@ -1190,6 +1190,12 @@ Re-exports [STUDY_ID](presets/variables/STUDY_ID.md)
 
 ***
 
+### studyVariant
+
+Re-exports [studyVariant](internal/variants/functions/studyVariant.md)
+
+***
+
 ### SubmissionFixture
 
 Re-exports [SubmissionFixture](types/interfaces/SubmissionFixture.md)

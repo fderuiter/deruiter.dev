@@ -9,6 +9,7 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
+import { requestFbbAutoPause } from "@/components/for-better-or-bulk/auto-pause";
 import { DEFAULT_SETUP, type Setup } from "@/lib/for-better-or-bulk";
 
 const ForBetterOrBulkLoader = () =>
@@ -97,6 +98,12 @@ export const ForBetterOrBulkClient: React.FC = () => (
             importComponent={ForBetterOrBulkLoader}
             fullscreenKey={false}
             singleTitleScreen={false}
+            // The day, its dock and its panel are built to fit the touch
+            // cabinet's viewport, so the stage clips rather than scrolls
+            // (ADR 0061, #2123). The plan and the receipt scroll in the game.
+            mobileLayout="fit"
+            // A hidden tab or a backgrounded app pauses a day in progress.
+            onAutoPause={requestFbbAutoPause}
           >
             <DynamicForBetterOrBulk initialSetup={PAGE_SETUP} />
           </PlayCabinet>

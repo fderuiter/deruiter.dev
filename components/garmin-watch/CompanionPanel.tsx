@@ -312,7 +312,8 @@ interface CompanionPanelProps {
   highScore: number;
   isFocused: boolean;
   isFullscreen: boolean;
-  onToggleFullscreen: () => void;
+  /** Left out in the touch cabinet, whose toolbar owns Fullscreen (#2122). */
+  onToggleFullscreen?: () => void;
   onSelectDevice: (target: DeviceTarget, e: React.MouseEvent) => void;
   onSelectTheme: (theme: WatchBezelTheme, e: React.MouseEvent) => void;
   onWriteFlash: (e: React.MouseEvent) => void;
@@ -560,7 +561,10 @@ export function CompanionPanel({
           </div>
         )}
 
-        <p className="flex items-center gap-2 text-[10px] text-zinc-400">
+        <p
+          data-keyboard-status=""
+          className="flex items-center gap-2 text-[10px] text-zinc-400"
+        >
           <span
             className={`h-1.5 w-1.5 shrink-0 rounded-full ${
               isFocused ? "bg-emerald-400" : "bg-zinc-600"
@@ -881,11 +885,13 @@ export function CompanionPanel({
 
         <div className="flex flex-wrap items-center gap-2">
           <FieldManualButton manualId="garmin-watch" label="Manual" />
-          <FullscreenButton
-            isFullscreen={isFullscreen}
-            onToggle={onToggleFullscreen}
-            variant="header"
-          />
+          {onToggleFullscreen && (
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              onToggle={onToggleFullscreen}
+              variant="header"
+            />
+          )}
         </div>
       </div>
       {children}

@@ -10,7 +10,10 @@ import {
   safeSetRawItem,
 } from "@/lib/safe-storage";
 import { emitAppEvent } from "@/lib/event-bus";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { isNewEchoBest, parseEchoBest } from "@/lib/meme-echo";
 
 export interface MemeQuote {
@@ -433,8 +436,29 @@ export function setVaultUnlocked(unlocked: boolean = true): void {
 }
 
 /**
+ * The Echo streaks that unlock an arcade trophy (#2126). Reaching one
+ * records the milestone `echo_streak_<n>` for the Meme Vault.
+ */
+export const ECHO_TROPHY_STREAKS: readonly number[] = [5, 10];
+
+/**
+ * Records the Echo trophy milestones a streak of `streak` has reached.
+ * Unlocking is idempotent, so calling it again for the same streak, or with
+ * the stored best on load, unlocks nothing twice.
+ */
+export function recordEchoMilestones(streak: number): void {
+  if (typeof window === "undefined" || !Number.isFinite(streak)) return;
+  for (const target of ECHO_TROPHY_STREAKS) {
+    if (streak >= target) {
+      recordArcadeMilestone("meme-vault", `echo_streak_${target}`);
+    }
+  }
+}
+
+/**
  * The best Echo streak stored on this device, or 0. Echo keeps its own key:
- * it does not feed the Meme Vault's arcade score, which counts trophies.
+ * it does not feed the Meme Vault's arcade score, which counts trophies, but
+ * its streaks unlock arcade trophies through {@link recordEchoMilestones}.
  */
 export function getEchoBest(): number {
   if (typeof window === "undefined") return 0;

@@ -245,7 +245,10 @@ function sharedRun(): {
   return { seed, difficulty, length };
 }
 
-/** The shared seed is used once; a reload resumes the saved run. */
+/**
+ * The shared seed is used once; a reload resumes the saved run. Call it only
+ * once that run is saved (#2251).
+ */
 function dropSharedRun(): void {
   window.history.replaceState(
     null,
@@ -281,11 +284,13 @@ function openWorld(): {
     };
   }
   if (shared) {
+    // The shared run's first morning is saved before the link is dropped, so
+    // an office that mounts again (StrictMode, or the cabinet's launch)
+    // resumes it instead of finding neither a seed nor a save (#2251).
+    const opening = firstMorning(shared.seed, shared.difficulty, shared.length);
+    saveWorld(opening.world);
     dropSharedRun();
-    return {
-      ...firstMorning(shared.seed, shared.difficulty, shared.length),
-      fresh: true,
-    };
+    return { ...opening, fresh: true };
   }
   if (saved && saved.study.status === "running")
     return { ...firstMorningOf(saved), fresh: true };

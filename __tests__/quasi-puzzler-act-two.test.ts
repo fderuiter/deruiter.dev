@@ -45,7 +45,8 @@ describe("parser: quantifiers, ≤ and function application (#2091)", () => {
     const node = f("forall a b, a + b = b + a");
     expect(node.type).toBe("Forall");
     expect(node.children?.[0].type).toBe("Forall");
-    expect(renderASTString(node)).toBe("∀ a, ∀ b, a + b = b + a");
+    // Nested binders still parse one per name, and print grouped (#2249).
+    expect(renderASTString(node)).toBe("∀ a b, a + b = b + a");
     expect(f("exists x, x = 1").type).toBe("Exists");
   });
 

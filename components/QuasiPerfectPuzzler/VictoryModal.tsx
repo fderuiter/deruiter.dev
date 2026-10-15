@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LevelScore, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
 import {
@@ -53,6 +53,8 @@ interface VictoryModalProps {
   onRestartLevel: () => void;
   /** Starts the campaign again from the first level. */
   onRestartCampaign?: () => void;
+  /** Close the card and open the level map; shown after the last level. */
+  onOpenLevelMap?: () => void;
   /** Hides the modal so the finished proof board can be read (Escape). */
   onDismiss?: () => void;
   /** The variant this run was played under, or null for the base level (#2090). */
@@ -76,6 +78,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   onNextLevel,
   onRestartLevel,
   onRestartCampaign,
+  onOpenLevelMap,
   onDismiss,
   variant = null,
   variantCleared = false,
@@ -85,10 +88,18 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   const isSorry = score.usedSorry;
   // First focus lands on the main action, not the Copy button (#1939).
   const primaryRef = React.useRef<HTMLButtonElement | null>(null);
+  // The card scrolls, so focusing a button near its foot must not scroll the
+  // title out of view; the card opens at its top (#2246).
   const modalRef = useFocusTrap<HTMLDivElement>(true, {
     returnFocus: true,
     initialFocusRef: primaryRef,
+    preventScroll: true,
   });
+  const cardRef = React.useRef<HTMLDivElement | null>(null);
+  React.useEffect(() => {
+    if (cardRef.current) cardRef.current.scrollTop = 0;
+  }, []);
+  const reduceMotion = useReducedMotion();
   // On the touch cabinet the card is at most the screen tall and scrolls, so
   // an iPad mini in landscape still reaches every action (#2042).
   const campaignDone = !!campaignStars && campaignStars.proven >= totalLevels;
@@ -112,12 +123,13 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           onDismiss?.();
         }
       }}
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
+      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
     >
       <div
+        ref={cardRef}
         // The card scrolls on every screen now the Lean text is shown in
         // full (#2201); its buttons keep the region keyboard-reachable.
         className="max-w-md w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl font-mono max-h-[calc(100dvh-2rem)] overflow-y-auto"
@@ -352,7 +364,18 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                 : "Replay Level"}
           </button>
 
-          {isLastLevel ? (
+          {isLastLevel && onOpenLevelMap ? (
+            // The finale copy points at the map (unproved levels, challenge
+            // variants), so the main action opens it (#2246).
+            <button
+              ref={isSorry ? undefined : primaryRef}
+              type="button"
+              onClick={onOpenLevelMap}
+              className="qp-btn-primary qp-focus flex-1 rounded-xl px-4 py-2.5 text-xs font-bold transition-colors"
+            >
+              Open Level Map
+            </button>
+          ) : isLastLevel ? (
             onRestartCampaign && (
               <button
                 ref={isSorry ? undefined : primaryRef}

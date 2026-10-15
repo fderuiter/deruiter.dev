@@ -871,7 +871,7 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
       title: "Computational Reflection & norm_num",
       summary:
         "`norm_num` evaluates numerical operations (add, mul, div, pow, comparisons) by computing normalization proofs inside the logic kernel, reducing runtime proof size.",
-      mathNotation: "(2 × 3 = 6) ∧ (10 > 5) ≡ True",
+      mathNotation: "(2 * 3 = 6) ∧ (10 > 5) ≡ True",
       mathIntuition:
         "Why construct axiomatic deduction steps when a computer can simply compute the answer? If a proposition contains only finite numbers and decidable operators, computation is proof.",
       leanAnalogy:

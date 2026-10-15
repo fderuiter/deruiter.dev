@@ -76,7 +76,13 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       }
 
       const [left, right] = nodeToTest.children;
-      if (areNodesEqual(left, right)) {
+      // Closed numerals reduce by computation, so Lean's `rfl` closes
+      // `3 + 7 = 10` too (#2248); open terms still need the same shape.
+      const leftValue = evaluateArithmetic(left);
+      const rightValue = evaluateArithmetic(right);
+      const closedEqual =
+        leftValue !== null && rightValue !== null && leftValue === rightValue;
+      if (closedEqual || areNodesEqual(left, right)) {
         const trueNode: ASTNode = {
           id: `qed-${Date.now()}`,
           type: "Boolean",

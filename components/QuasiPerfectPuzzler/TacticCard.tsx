@@ -127,9 +127,11 @@ export const TacticCard: React.FC<TacticCardProps> = ({
 
       <div className="px-2 pb-2">
         <span
-          className={`block min-w-0 truncate text-center text-xs font-bold tracking-tight ${
-            art.rarity === "cursed" ? "text-rose-300" : "text-zinc-100"
-          }`}
+          // Long names such as trans [succ_le_double] wrap to two lines
+          // instead of being cut off (#2249).
+          className={`block min-w-0 line-clamp-2 break-words text-center font-bold leading-tight tracking-tight ${
+            displayLabel.length > 12 ? "text-[10px]" : "text-xs"
+          } ${art.rarity === "cursed" ? "text-rose-300" : "text-zinc-100"}`}
           title={displayLabel}
         >
           {displayLabel}

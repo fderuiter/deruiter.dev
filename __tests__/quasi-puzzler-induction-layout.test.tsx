@@ -35,7 +35,7 @@ describe("Quasi Puzzler induction layout (#2195, #2196, #2197)", () => {
     localStorage.clear();
   });
 
-  it("lays the hypotheses out as one sideways row above the tree", () => {
+  it("lays the hypotheses out as one row above the tree (#2195, #2247)", () => {
     const level = puzzleLevels.find((l) => l.hypotheses.length >= 3);
     expect(level).toBeDefined();
     render(
@@ -49,6 +49,7 @@ describe("Quasi Puzzler induction layout (#2195, #2196, #2197)", () => {
       />
     );
     const row = screen.getByTestId("hypotheses-row");
+    // One line keeps the tree's room above the docked hand (#2247).
     expect(row.className).toContain("overflow-x-auto");
     expect(row.className).not.toContain("flex-wrap");
     const chips = row.querySelectorAll("button[data-node-id]");

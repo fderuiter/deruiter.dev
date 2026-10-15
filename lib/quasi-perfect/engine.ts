@@ -150,10 +150,17 @@ export function renderASTString(node: ASTNode): string {
     case "Forall":
     case "Exists": {
       const symbol = node.type === "Forall" ? "∀" : "∃";
-      const body = node.children?.[0];
+      // Consecutive binders of one kind share a symbol, as written and as
+      // Lean prints them: ∀ a b, … rather than ∀ a, ∀ b, … (#2249).
+      const names = [String(node.value)];
+      let body = node.children?.[0];
+      while (body && body.type === node.type && body.children?.length === 1) {
+        names.push(String(body.value));
+        body = body.children[0];
+      }
       return body
-        ? `${symbol} ${String(node.value)}, ${renderASTString(body)}`
-        : `${symbol} ${String(node.value)}`;
+        ? `${symbol} ${names.join(" ")}, ${renderASTString(body)}`
+        : `${symbol} ${names.join(" ")}`;
     }
 
     case "Function":

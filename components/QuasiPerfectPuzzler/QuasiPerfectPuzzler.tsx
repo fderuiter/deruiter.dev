@@ -1942,6 +1942,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                 }
                 campaignStars={campaignStars}
                 onRestartCampaign={() => loadLevel(0)}
+                onOpenLevelMap={() => {
+                  dismissResult(currentScore.timestamp);
+                  if (!levelIndexOpen) toggleLevelDrawer();
+                }}
                 onDismiss={() => dismissResult(currentScore.timestamp)}
                 actTwoUnlocked={
                   currentLevel.id === ACT_ONE_CAPSTONE_LEVEL_ID &&

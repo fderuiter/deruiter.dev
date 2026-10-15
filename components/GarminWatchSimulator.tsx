@@ -156,6 +156,14 @@ import {
 } from "@/lib/garmin-ghost-store";
 import { isUnderwater } from "@/lib/garmin-swim";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
+import { useCabinetTouch } from "@/components/arcade/mobile";
+import {
+  GarminTouchDock,
+  type GarminDockKey,
+  type GarminDockMode,
+} from "@/components/garmin-watch/GarminTouchDock";
+import { GARMIN_AUTO_PAUSE_EVENT } from "@/components/garmin-watch/auto-pause";
+import "@/components/garmin-watch/garmin-touch.css";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
 import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import {
@@ -866,6 +874,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const outerContainerRef = useRef<HTMLDivElement | null>(null);
   const { isFullscreen, toggleFullscreen } = useFullscreen(outerContainerRef);
+  // The immersive touch cabinet (ADR 0061, #2122): the watch, a touch dock
+  // and the companion panel share the viewport. Desktop never sets it.
+  const touchCabinet = useCabinetTouch();
   const frameCountRef = useRef<number>(0);
 
   // Run telemetry: sampled beside the animation loop, never through React
@@ -1596,6 +1607,81 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     },
     [handleJump, handleJettison, handleStartStop, handleForceGc]
   );
+
+  // The touch dock (#2122). Jog and Sprint are held like the arrow keys; with
+  // both down the later press wins, and letting it go falls back to the other.
+  const dockRunRef = useRef<{ jog: boolean; sprint: boolean; last: -1 | 1 }>({
+    jog: false,
+    sprint: false,
+    last: 1,
+  });
+  const releaseDockRun = useCallback(() => {
+    const held = dockRunRef.current;
+    if (!held.jog && !held.sprint) return;
+    held.jog = false;
+    held.sprint = false;
+    handleRunInput(0);
+  }, [handleRunInput]);
+  const handleDockKey = (key: GarminDockKey, down: boolean) => {
+    // A Training Plan screen takes the dock as its arrows, Select, Back and
+    // the gear bag, exactly as the keyboard drives it.
+    if (planFaceShowing()) {
+      if (!down) return;
+      const planInput: Record<GarminDockKey, PlanInput> = {
+        jog: "left",
+        sprint: "right",
+        down: "down",
+        start: "select",
+        back: "back",
+        action: "bag",
+        jump: "up",
+      };
+      triggerHaptic(15);
+      plan.press(planInput[key]);
+      return;
+    }
+    if (key === "jog" || key === "sprint") {
+      const held = dockRunRef.current;
+      held[key] = down;
+      if (down) held.last = key === "jog" ? -1 : 1;
+      const input: -1 | 0 | 1 =
+        held.jog && held.sprint
+          ? held.last
+          : held.jog
+            ? -1
+            : held.sprint
+              ? 1
+              : 0;
+      handleRunInput(input);
+      return;
+    }
+    if (key === "jump") {
+      if (down) handleJump();
+      else handleJumpRelease();
+      return;
+    }
+    if (!down) return;
+    if (key === "action") handleAction();
+    else if (key === "down") handleJettison();
+    else if (key === "start") handleStartStop();
+    else handleBack();
+  };
+
+  // The touch cabinet asks the game to stop when the tab is hidden or the app
+  // is backgrounded (onAutoPause on PlayCabinet, #2122). A run in progress
+  // pauses and held keys let go; resuming is the player's choice.
+  useEffect(() => {
+    const pauseRun = () => {
+      handleJumpRelease();
+      releaseDockRun();
+      handleRunInput(0);
+      if (stateRef.current.gameState === "playing") {
+        applyTransition((state) => pauseGame(state));
+      }
+    };
+    window.addEventListener(GARMIN_AUTO_PAUSE_EVENT, pauseRun);
+    return () => window.removeEventListener(GARMIN_AUTO_PAUSE_EVENT, pauseRun);
+  }, [applyTransition, handleJumpRelease, handleRunInput, releaseDockRun]);
 
   // Keyboard Event Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -2442,6 +2528,12 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     });
   }
 
+  // What the touch dock drives right now: the run, or a Training Plan screen.
+  const runLive =
+    gameState.gameState === "playing" || gameState.gameState === "paused";
+  const dockMode: GarminDockMode =
+    planMode && plan.save !== null && !runLive ? "plan" : "run";
+
   const rebootFromCard = () => {
     triggerHaptic(20);
     playButtonTone();
@@ -2456,22 +2548,30 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       ref={outerContainerRef}
       data-game-fullscreen={isFullscreen}
       className={`garmin-sim w-full select-none @container ${
-        isFullscreen
-          ? "fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] max-w-none overflow-y-auto overflow-x-hidden bg-black p-3 sm:p-6 touch-none"
-          : "px-3 py-5 sm:px-4"
+        touchCabinet
+          ? "garmin-touch"
+          : isFullscreen
+            ? "fixed inset-0 z-50 h-[100dvh] max-h-[100dvh] max-w-none overflow-y-auto overflow-x-hidden bg-black p-3 sm:p-6 touch-none"
+            : "px-3 py-5 sm:px-4"
       }`}
     >
-      <FullscreenButton
-        isFullscreen={isFullscreen}
-        onToggle={toggleFullscreen}
-        variant="floating"
-      />
+      {/* The touch cabinet's toolbar owns Fullscreen, and a tablet is never
+          asked to turn (ADR 0061). */}
+      {!touchCabinet && (
+        <>
+          <FullscreenButton
+            isFullscreen={isFullscreen}
+            onToggle={toggleFullscreen}
+            variant="floating"
+          />
 
-      {/* Tablet Orientation Recommendation */}
-      <TabletOrientationHint className="mx-auto mb-3 w-full max-w-md" />
+          {/* Tablet Orientation Recommendation */}
+          <TabletOrientationHint className="mx-auto mb-3 w-full max-w-md" />
+        </>
+      )}
 
-      <div className="mx-auto grid w-full max-w-6xl gap-5 @3xl:grid-cols-[minmax(0,1fr)_18rem] @5xl:grid-cols-[minmax(0,1fr)_21rem] @3xl:items-start">
-        <div className="flex min-w-0 flex-col items-center">
+      <div className="garmin-layout mx-auto grid w-full max-w-6xl gap-5 @3xl:grid-cols-[minmax(0,1fr)_18rem] @5xl:grid-cols-[minmax(0,1fr)_21rem] @3xl:items-start">
+        <div className="garmin-play flex min-w-0 flex-col items-center">
           {/* Watch: keyboard boundary around the hardware render. */}
           <div
             ref={containerRef}
@@ -2486,6 +2586,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             onKeyDown={handleKeyDown}
             onKeyUp={handleKeyUp}
             data-keyboard-boundary="true"
+            // A run takes Escape for itself (it pauses and resumes), so the
+            // touch cabinet's Escape does not also leave the game (#2122).
+            data-escape-docks={touchCabinet && runLive ? "true" : undefined}
             className="garmin-chassis relative w-full px-12 outline-none select-none"
           >
             {/* Visible copy of the latest in-run alert; screen readers get
@@ -2665,18 +2768,27 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             </div>
           </div>
 
-          {/* Touch devices get the bezel pushers as a dock as well. */}
-          <div className="mt-4 hidden w-full max-w-xl justify-center [@media(hover:none)]:flex">
-            <BezelClusterDock
-              onButtonPress={(btn) => {
-                if (btn === "light") handleToggleLight();
-                else if (btn === "up") handleJump();
-                else if (btn === "down") handleJettison();
-                else if (btn === "start") handleStartStop();
-                else if (btn === "back") handleBack();
-              }}
+          {touchCabinet ? (
+            // The touch cabinet's dock: hold to jog, sprint and jump (#2122).
+            <GarminTouchDock
+              mode={dockMode}
+              startAction={startAction}
+              onKey={handleDockKey}
             />
-          </div>
+          ) : (
+            /* Touch devices get the bezel pushers as a dock as well. */
+            <div className="mt-4 hidden w-full max-w-xl justify-center [@media(hover:none)]:flex">
+              <BezelClusterDock
+                onButtonPress={(btn) => {
+                  if (btn === "light") handleToggleLight();
+                  else if (btn === "up") handleJump();
+                  else if (btn === "down") handleJettison();
+                  else if (btn === "start") handleStartStop();
+                  else if (btn === "back") handleBack();
+                }}
+              />
+            </div>
+          )}
         </div>
 
         <CompanionPanel
@@ -2686,7 +2798,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           highScore={effectiveHighScore}
           isFocused={isFocused}
           isFullscreen={isFullscreen}
-          onToggleFullscreen={toggleFullscreen}
+          onToggleFullscreen={touchCabinet ? undefined : toggleFullscreen}
           onSelectDevice={(target, e) => {
             handleSelectDevice(target);
             returnFocusAfterPointerClick(e);

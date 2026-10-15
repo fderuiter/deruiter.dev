@@ -9,6 +9,9 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { useTeMotion } from "@/components/trial-and-error/useTeMotion";
+import { usePhone } from "@/components/arcade/mobile";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { requestTeAutoPause } from "@/components/trial-and-error/auto-pause";
 
 const CardTableLoader = () =>
   import("@/components/trial-and-error/Tutorial").then(
@@ -24,8 +27,20 @@ const DynamicCardTable = dynamic(CardTableLoader, {
   ),
 });
 
+/**
+ * A touch window wider than any phone held upright (430px) and taller than a
+ * phone held sideways (under 500px): an iPad Split View pane (507px, 678px).
+ */
+const TABLET_PANE_QUERY = "(min-width: 450px) and (min-height: 600px)";
+
 export const TrialAndErrorClient: React.FC = () => {
   const { loudEffectsEnabled } = useTeMotion();
+  // Tablets get the table fitted to the screen. A phone keeps the scrolling
+  // stage: its own pass is a later ticket (ADR 0061).
+  const phone = usePhone();
+  // An iPad in Split View reads as a phone by window width (507px, 678px) but
+  // is wider and taller than any phone, so it keeps the fitted table.
+  const tabletPane = useMediaQuery(TABLET_PANE_QUERY);
   return (
     <div className="min-h-dvh overflow-x-hidden bg-[#0d0e11] px-4 pb-24 text-zinc-100 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -85,6 +100,13 @@ export const TrialAndErrorClient: React.FC = () => {
               { key: "Esc", action: "Close Inspect" },
             ]}
             importComponent={CardTableLoader}
+            // None of the table's keys is F (arrows, Space, Enter, D, I, R,
+            // S, H, T, C, A and ?), so the cabinet's F-for-fullscreen stays on
+            // (#2120). A tablet's table, desks and sheets are built to fit the
+            // stage, which clips rather than scrolls (ADR 0061).
+            mobileLayout={phone && !tabletPane ? "scroll" : "fit"}
+            // A hidden tab or a backgrounded app settles a hand still scoring.
+            onAutoPause={requestTeAutoPause}
           >
             <DynamicCardTable />
           </PlayCabinet>

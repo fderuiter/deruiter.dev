@@ -3,6 +3,11 @@
 import React, { useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
+import {
   type CardType,
   type CustomScenarioSpec,
   CustomScenarioSpecSchema,
@@ -100,10 +105,12 @@ export function DeckBuilder({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const portalTarget = usePortalTarget();
   const modalRef = useFocusTrap<HTMLDivElement>(true, {
-    onEscape: onClose,
+    onEscape: closeNow(onClose),
     initialFocusRef: closeButtonRef,
   });
+  useClaimFocus(modalRef);
 
   const id = useId();
 
@@ -589,6 +596,6 @@ export function DeckBuilder({
         </div>
       </div>
     </div>,
-    document.body
+    portalTarget
   );
 }

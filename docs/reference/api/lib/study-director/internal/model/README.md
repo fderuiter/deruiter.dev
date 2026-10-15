@@ -26,6 +26,7 @@
 - [createStudy](functions/createStudy.md)
 - [dashboard](functions/dashboard.md)
 - [dataManagerCapacity](functions/dataManagerCapacity.md)
+- [inheritedSlip](functions/inheritedSlip.md)
 - [phaseForDay](functions/phaseForDay.md)
 - [projectedFinishDay](functions/projectedFinishDay.md)
 - [reportedSite](functions/reportedSite.md)

@@ -21,6 +21,7 @@ export const WORLD_ACTIONS = [
   "talk",
   "readMail",
   "reviewEdc",
+  "clearQueries",
   "document",
   "sponsorCall",
   "meeting",

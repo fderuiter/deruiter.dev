@@ -1,12 +1,15 @@
 import {
   AREA_IDS,
+  applyEffects,
   dashboard,
   documentDecision,
   getEvent,
   inbox,
+  reportedSite,
   resolveEvent,
   type AreaId,
   type DecisionRecord,
+  type Difficulty,
   type StudyEvent,
 } from "@/lib/study-director";
 import { uniformAt } from "@/lib/utils/prng";
@@ -458,4 +461,91 @@ export function edcScreen(world: WorldState): EdcRow[] {
       .reverse()
       .slice(0, 3),
   }));
+}
+
+/**
+ * Queries one session at the EDC clears, by difficulty (#2192). A rescued
+ * study's queries are older and vaguer, so the same hour clears fewer.
+ */
+export const QUERIES_PER_SESSION: Record<Difficulty, number> = {
+  calm: 6,
+  standard: 5,
+  rescue: 4,
+};
+
+/** Workload a session at the EDC takes off the data manager. */
+const QUERY_SESSION_RELIEF = 3;
+/**
+ * Integrity each query the Study Director answers adds: a query answered by
+ * someone who knows the protocol stays answered, where one the data manager
+ * closes at speed tends to come back.
+ */
+const INTEGRITY_PER_QUERY = 0.2;
+
+/** Open queries the EDC shows across the sites: what the player can work. */
+export function workableQueries(world: WorldState): number {
+  return world.study.sites.reduce(
+    (n, s) => n + (reportedSite(world.study, s.id)?.openQueries ?? 0),
+    0
+  );
+}
+
+/**
+ * Works the query queue at the EDC for forty-five minutes (#2192): answers
+ * or closes the open queries the dashboard shows, the biggest backlog first,
+ * takes a little load off the data manager and adds a little integrity for
+ * each query answered. Only queries a site has entered can be worked, so a
+ * site that hides its problems keeps them. The lock delay and the morning's
+ * routine work also ease as the backlog falls. Refuses when the EDC shows
+ * nothing to work.
+ */
+export function clearQueriesAtEdc(
+  world: WorldState
+): WorldResult<{ cleared: number; lines: DialogueLine[] }> {
+  if (world.study.status !== "running")
+    return { ok: false, reason: "study-complete" };
+  if (workableQueries(world) === 0)
+    return { ok: false, reason: "unknown-action" };
+  const spent = spend(world, "clearQueries");
+  if (!spent.ok) return spent;
+  const study = spent.world.study;
+  let left = QUERIES_PER_SESSION[study.difficulty ?? "standard"];
+  const changes: Array<{ siteId: string; openQueries: number }> = [];
+  const queues = study.sites
+    .map((s) => ({
+      site: s,
+      shown: reportedSite(study, s.id)?.openQueries ?? 0,
+    }))
+    .filter((q) => q.shown > 0)
+    .sort((a, b) => b.shown - a.shown);
+  for (const { site, shown } of queues) {
+    if (left === 0) break;
+    const take = Math.min(left, shown, site.openQueries);
+    if (take === 0) continue;
+    changes.push({ siteId: site.id, openQueries: -take });
+    left -= take;
+  }
+  const cleared = changes.reduce((n, c) => n - c.openQueries, 0);
+  const manager = study.team.find((m) => m.role === "dataManager");
+  const next = applyEffects(study, {
+    sites: changes,
+    meters: { integrity: cleared * INTEGRITY_PER_QUERY },
+    workload: manager
+      ? [{ memberId: manager.id, delta: -QUERY_SESSION_RELIEF }]
+      : [],
+  });
+  const names = changes
+    .map((c) => study.sites.find((s) => s.id === c.siteId)?.name ?? c.siteId)
+    .join(", ");
+  return {
+    ok: true,
+    cleared,
+    world: { ...spent.world, study: next },
+    lines: [
+      {
+        kind: "information",
+        text: `You worked the query queue: ${cleared} ${cleared === 1 ? "query" : "queries"} closed at ${names}.`,
+      },
+    ],
+  };
 }

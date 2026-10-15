@@ -427,6 +427,7 @@
 - [lib/study-director-world/internal/dressing](lib/study-director-world/internal/dressing/README.md)
 - [lib/study-director-world/internal/favours](lib/study-director-world/internal/favours/README.md)
 - [lib/study-director-world/internal/floor](lib/study-director-world/internal/floor/README.md)
+- [lib/study-director-world/internal/goodwill](lib/study-director-world/internal/goodwill/README.md)
 - [lib/study-director-world/internal/guests](lib/study-director-world/internal/guests/README.md)
 - [lib/study-director-world/internal/handlers](lib/study-director-world/internal/handlers/README.md)
 - [lib/study-director-world/internal/history](lib/study-director-world/internal/history/README.md)

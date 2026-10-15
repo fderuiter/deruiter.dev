@@ -18,6 +18,7 @@ export const ACTION_COSTS: Record<WorldActionKind, ActionCost> = {
   talk: { minutes: 10, energy: 1, focus: 2 },
   readMail: { minutes: 10, energy: 1, focus: 3 },
   reviewEdc: { minutes: 20, energy: 2, focus: 10 },
+  clearQueries: { minutes: 45, energy: 5, focus: 12 },
   document: { minutes: 20, energy: 2, focus: 8 },
   sponsorCall: { minutes: 45, energy: 6, focus: 8 },
   meeting: { minutes: 45, energy: 5, focus: 5 },

@@ -152,6 +152,12 @@ Re-exports [choosePriority](internal/rhythm/functions/choosePriority.md)
 
 ***
 
+### clearQueriesAtEdc
+
+Re-exports [clearQueriesAtEdc](internal/channels/functions/clearQueriesAtEdc.md)
+
+***
+
 ### closeVisit
 
 Re-exports [closeVisit](internal/sites/functions/closeVisit.md)
@@ -998,6 +1004,12 @@ Re-exports [PriorityId](types/type-aliases/PriorityId.md)
 
 ***
 
+### QUERIES\_PER\_SESSION
+
+Re-exports [QUERIES_PER_SESSION](internal/channels/variables/QUERIES_PER_SESSION.md)
+
+***
+
 ### redMarksFor
 
 Re-exports [redMarksFor](internal/dressing/functions/redMarksFor.md)
@@ -1505,6 +1517,12 @@ Re-exports [withBond](internal/team/functions/withBond.md)
 ### WORK\_STREAMS
 
 Re-exports [WORK_STREAMS](types/variables/WORK_STREAMS.md)
+
+***
+
+### workableQueries
+
+Re-exports [workableQueries](internal/channels/functions/workableQueries.md)
 
 ***
 

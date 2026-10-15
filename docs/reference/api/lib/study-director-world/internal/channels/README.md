@@ -8,6 +8,7 @@
 
 ## Variables
 
+- [QUERIES\_PER\_SESSION](variables/QUERIES_PER_SESSION.md)
 - [RETRY\_MINUTES](variables/RETRY_MINUTES.md)
 
 ## Functions
@@ -15,6 +16,7 @@
 - [answerCall](functions/answerCall.md)
 - [brushOff](functions/brushOff.md)
 - [channelFor](functions/channelFor.md)
+- [clearQueriesAtEdc](functions/clearQueriesAtEdc.md)
 - [decide](functions/decide.md)
 - [deskView](functions/deskView.md)
 - [documentAtDesk](functions/documentAtDesk.md)
@@ -28,3 +30,4 @@
 - [phoneCalls](functions/phoneCalls.md)
 - [ringingCall](functions/ringingCall.md)
 - [sendToVoicemail](functions/sendToVoicemail.md)
+- [workableQueries](functions/workableQueries.md)

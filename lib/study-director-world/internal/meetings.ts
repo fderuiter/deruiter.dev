@@ -1,5 +1,6 @@
 import { applyEffects, getEvent, inbox } from "@/lib/study-director";
 import { spend } from "./clock";
+import { applyOfficeEffects } from "./goodwill";
 import { channelFor, markRaised, messagesFrom } from "./channels";
 import { dialogueLines } from "./dialogue";
 import { adjustTrust, observe, personState, placePeople } from "./team";
@@ -109,7 +110,7 @@ export function endMeeting(
   if (meeting.kind === "sponsor" && settled.length > 0) {
     next = {
       ...next,
-      study: applyEffects(next.study, { meters: { client: 2 } }),
+      study: applyOfficeEffects(next.study, { meters: { client: 2 } }),
     };
     changes.push("The sponsor appreciated hearing it from you directly");
   }

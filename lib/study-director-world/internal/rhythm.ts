@@ -1,4 +1,5 @@
 import { applyEffects, getEvent, inbox } from "@/lib/study-director";
+import { applyOfficeEffects } from "./goodwill";
 import { clamp } from "@/lib/game-utils";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
@@ -164,7 +165,7 @@ const CATALOG: readonly Catalogued[] = [
         result: "Short, plain, and true. The sponsor writes back: thank you.",
         apply: (w) => ({
           ...w,
-          study: applyEffects(w.study, { meters: { client: 2 } }),
+          study: applyOfficeEffects(w.study, { meters: { client: 2 } }),
         }),
       },
       {

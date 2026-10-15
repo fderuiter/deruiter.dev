@@ -132,10 +132,12 @@ export {
   undocumentedDecisions,
 } from "./internal/dialogue";
 export {
+  QUERIES_PER_SESSION,
   RETRY_MINUTES,
   answerCall,
   brushOff,
   channelFor,
+  clearQueriesAtEdc,
   decide,
   deskView,
   documentAtDesk,
@@ -149,6 +151,7 @@ export {
   phoneCalls,
   ringingCall,
   sendToVoicemail,
+  workableQueries,
 } from "./internal/channels";
 export {
   ASSIGNMENT_LOAD,

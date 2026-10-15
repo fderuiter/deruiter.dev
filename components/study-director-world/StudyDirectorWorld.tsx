@@ -96,6 +96,8 @@ import { WorldHud } from "./WorldHud";
 import { useReducedMotion } from "./use-reduced-motion";
 import { ConditionsPicker, LengthPicker, WorldIntro } from "./WorldIntro";
 import { DIFFICULTY_TEXT } from "@/components/study-director/DifficultyPicker";
+import { KICKOFF_DAY } from "@/components/study-director/career";
+import { recordArcadeMilestone } from "@/lib/arcade-achievements";
 import { tapDestination } from "./tap-walk";
 import { WorldTouchControls } from "./WorldTouchControls";
 import { playWorldCue } from "./world-sound";
@@ -225,22 +227,68 @@ function untouched(saved: WorldState): boolean {
  * A run nobody has touched yet comes back `fresh`, so its difficulty can
  * still be picked.
  */
+/** A study shared by link (`#mode=world&seed=…&length=…&difficulty=…`), or null (#2191). */
+function sharedRun(): {
+  seed: string;
+  difficulty: Difficulty;
+  length: StudyLength;
+} | null {
+  const hash = window.location.hash;
+  const seed = /(?:^#|&)seed=([\w-]{1,60})(?:&|$)/.exec(hash)?.[1];
+  if (!seed) return null;
+  const difficulty =
+    (/(?:^#|&)difficulty=(calm|standard|rescue)(?:&|$)/.exec(hash)?.[1] as
+      Difficulty | undefined) ?? "standard";
+  const length =
+    (/(?:^#|&)length=(short|full)(?:&|$)/.exec(hash)?.[1] as
+      StudyLength | undefined) ?? "full";
+  return { seed, difficulty, length };
+}
+
+/** The shared seed is used once; a reload resumes the saved run. */
+function dropSharedRun(): void {
+  window.history.replaceState(
+    null,
+    "",
+    `${window.location.pathname}${window.location.search}#mode=world`
+  );
+}
+
 function openWorld(): {
   world: WorldState;
   digest: MorningDigest | null;
   finished?: boolean;
   fresh?: boolean;
+  /** A shared link was set aside for a study already under way (#2191). */
+  sharedWaiting?: boolean;
 } {
   const saved = loadWorld();
+  const shared = sharedRun();
   if (saved && saved.study.status === "complete") {
-    return { world: saved, digest: null, finished: true };
+    return {
+      world: saved,
+      digest: null,
+      finished: true,
+      sharedWaiting: shared !== null,
+    };
   }
-  if (saved && saved.study.status === "running") {
-    if (untouched(saved)) return { ...firstMorningOf(saved), fresh: true };
-    return saved.location === "home"
-      ? startDay(saved)
-      : { world: saved, digest: null };
+  if (saved && saved.study.status === "running" && !untouched(saved)) {
+    return {
+      ...(saved.location === "home"
+        ? startDay(saved)
+        : { world: saved, digest: null }),
+      sharedWaiting: shared !== null && shared.seed !== saved.study.seed,
+    };
   }
+  if (shared) {
+    dropSharedRun();
+    return {
+      ...firstMorning(shared.seed, shared.difficulty, shared.length),
+      fresh: true,
+    };
+  }
+  if (saved && saved.study.status === "running")
+    return { ...firstMorningOf(saved), fresh: true };
   const seed = `sdw-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
   return { ...firstMorning(seed, "standard"), fresh: true };
 }
@@ -291,7 +339,9 @@ export const StudyDirectorWorld: React.FC<{
   onExit: () => void;
   /** Hands a finished study to the classic closeout: report, verdict, share card. */
   onCloseout?: (study: StudyState, world: WorldState) => void;
-}> = ({ onExit, onCloseout }) => {
+  /** Called once when a new run leaves its untouched first morning (#2191). */
+  onStart?: () => void;
+}> = ({ onExit, onCloseout, onStart }) => {
   const [opened] = useState(openWorld);
   const [world, setWorld] = useState<WorldState>(opened.world);
   const [digest, setDigest] = useState<MorningDigest | null>(opened.digest);
@@ -313,6 +363,19 @@ export const StudyDirectorWorld: React.FC<{
     opened.fresh ? opened.world : null
   );
   const choosing = freshWorld !== null && world === freshWorld;
+  // The career counts a new run once it is under way, not when it opens.
+  const counted = useRef(false);
+  useEffect(() => {
+    if (counted.current || freshWorld === null || world === freshWorld) return;
+    counted.current = true;
+    onStart?.();
+  }, [world, freshWorld, onStart]);
+  // Three weeks in earns Study Kickoff, as its text says (#2191).
+  const studyDay = world.study.day;
+  useEffect(() => {
+    if (studyDay >= KICKOFF_DAY)
+      recordArcadeMilestone("study-director", "first_weeks");
+  }, [studyDay]);
   const difficulty: Difficulty = world.study.difficulty ?? "standard";
   const length: StudyLength = studyLength(world.study.setup);
   // Delegating the day asks first: it cannot be taken back (#2092).
@@ -1035,6 +1098,26 @@ export const StudyDirectorWorld: React.FC<{
       </div>
     </>
   );
+  // A shared link waits while a study is under way, and says so (#2191).
+  const [sharedHeld, setSharedHeld] = useState(opened.sharedWaiting === true);
+  const sharedNotice = sharedHeld ? (
+    <div
+      data-testid="world-shared-ignored"
+      className="flex flex-wrap items-center justify-between gap-2 border border-[var(--sd-hairline)] bg-[var(--sd-surface)] px-3 py-2 text-xs"
+    >
+      <p className="min-w-0">
+        You have a study in progress, so the shared link is on hold. Finish this
+        study, then open the link again to play the shared one.
+      </p>
+      <button
+        type="button"
+        onClick={() => setSharedHeld(false)}
+        className="min-h-11 border border-[var(--sd-hairline)] px-3 active:scale-[0.98]"
+      >
+        Got it
+      </button>
+    </div>
+  ) : null;
   const header = (
     <div
       className={`flex flex-wrap items-center justify-between gap-2${touch ? " sd-world-top" : ""}`}
@@ -1327,6 +1410,7 @@ export const StudyDirectorWorld: React.FC<{
       >
         {liveRegions}
         {header}
+        {sharedNotice}
         {hudStrip}
         <div className="sd-world-body">
           <div className="sd-world-stage">
@@ -1367,6 +1451,7 @@ export const StudyDirectorWorld: React.FC<{
     >
       {liveRegions}
       {header}
+      {sharedNotice}
       {hudStrip}
 
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,260px)] xl:grid-cols-[minmax(0,1fr)_minmax(0,300px)]">

@@ -2992,7 +2992,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                       : { splits: gameState.bestSplits ?? [] }
                   }
                 />
-                <p className="mt-4 text-[11px] text-zinc-400">
+                {/* Left out where the panel is narrow, so the card and its
+                    buttons fit beside the watch (#2132). */}
+                <p className="mt-4 text-[11px] text-zinc-400 @3xl:@max-5xl:hidden">
                   Shipping a real Connect IQ app?{" "}
                   <a
                     href="/schedule"

@@ -5,9 +5,13 @@ import {
 } from "@/lib/safe-storage";
 import {
   DIFFICULTIES,
+  STUDY_LENGTHS,
+  studyLength,
   type Difficulty,
   type FinalReport,
   type StudyDirectorProfile,
+  type StudyLength,
+  type StudyState,
 } from "@/lib/study-director";
 import { recordArcadeScore } from "@/lib/arcade-achievements";
 
@@ -37,6 +41,28 @@ interface CareerRun {
    * it have none, and count only towards the overall bests.
    */
   difficulty?: Difficulty;
+  /** Short or full (#2191); runs filed before then have none. */
+  length?: StudyLength;
+  /** True for a run played in the walkable office (#2191). */
+  office?: boolean;
+}
+
+/** The study day that earns the Study Kickoff trophy: three working weeks in (#2191). */
+export const KICKOFF_DAY = 15;
+
+/**
+ * True when a closed study left a clean file: every decision written up and
+ * none ignored, which is what FDA Replay Approved promises (#2191).
+ */
+export function cleanFile(state: StudyState): boolean {
+  const answered = state.log.filter(
+    (r) => r.optionId !== "ignored" && r.optionId !== "audit"
+  );
+  return (
+    answered.length > 0 &&
+    answered.every((r) => r.documented) &&
+    !state.log.some((r) => r.optionId === "ignored")
+  );
 }
 
 /** The best result on one difficulty. */
@@ -163,7 +189,16 @@ export function recordRun(
         [profile]: { title, count: (earned?.count ?? 0) + 1 },
       },
       history: [
-        { seed, grade, stars, profile, headline, difficulty },
+        {
+          seed,
+          grade,
+          stars,
+          profile,
+          headline,
+          difficulty,
+          length: studyLength(report.state.setup),
+          ...(report.state.budget === "clock" ? { office: true } : {}),
+        },
         ...career.history,
       ].slice(0, HISTORY_LIMIT),
     },
@@ -247,6 +282,7 @@ export function parseCareer(value: unknown): CareerFile | null {
         )
         .map((r) => {
           const difficulty = asDifficulty(r.difficulty);
+          const length = STUDY_LENGTHS.find((l) => l === r.length);
           return {
             seed: r.seed.slice(0, 80),
             grade: r.grade,
@@ -254,6 +290,8 @@ export function parseCareer(value: unknown): CareerFile | null {
             profile: r.profile,
             headline: r.headline.slice(0, 80),
             ...(difficulty ? { difficulty } : {}),
+            ...(length ? { length } : {}),
+            ...(r.office === true ? { office: true } : {}),
           };
         })
         .slice(0, HISTORY_LIMIT)

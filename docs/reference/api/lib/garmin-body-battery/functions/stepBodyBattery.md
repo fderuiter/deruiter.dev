@@ -8,7 +8,7 @@
 
 > **stepBodyBattery**(`bb`, `input`, `grounded`, `deltaMs`): [`BodyBattery`](../interfaces/BodyBattery.md)
 
-input: 1 sprint, 0 run, -1 brake (the engine's run input). In the air nothing changes. Hitting 0 sets bonked. Recovering to >= BONK_RECOVER_AT clears it. While bonked, a steady pace recharges like braking.
+input: 1 sprint, 0 run, -1 brake (the engine's run input). In the air only a sprint changes it: a sprint costs charge wherever the runner is (#2022). Hitting 0 sets bonked. Recovering to >= BONK_RECOVER_AT clears it. While bonked, a steady pace recharges like braking.
 
 ## Parameters
 

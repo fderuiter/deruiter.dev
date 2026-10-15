@@ -375,6 +375,31 @@ describe("Race Report and board (#2019)", () => {
     );
   });
 
+  // #2022: the Saturday 5K publishes a coach's time to chase.
+  it("puts a finished Saturday 5K against the coach's time", () => {
+    render(<GarminWatchSimulator initialState={finished()} />);
+    expect(screen.getByText("Coach")).toBeTruthy();
+    expect(screen.getByText("5:17.43 · you beat the coach")).toBeTruthy();
+  });
+
+  it("says how far behind the coach a slower Saturday 5K finished", () => {
+    render(
+      <GarminWatchSimulator initialState={finished({ runClockMs: 327_430 })} />
+    );
+    expect(screen.getByText("5:17.43 · +0:10.0 behind")).toBeTruthy();
+  });
+
+  it("shows no coach on the Daily Workout", () => {
+    render(
+      <GarminWatchSimulator
+        initialState={finished({
+          race: raceSetup("daily", "any", new Date(2026, 9, 14)),
+        })}
+      />
+    );
+    expect(screen.queryByText("Coach")).toBeNull();
+  });
+
   it("names a DNF for a race that crashed", () => {
     render(
       <GarminWatchSimulator

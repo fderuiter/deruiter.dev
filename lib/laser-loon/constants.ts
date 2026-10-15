@@ -464,7 +464,10 @@ export const FLAG_MUSEUM: readonly FlagMuseumEntry[] = [
 
 export const DEFAULT_CANVAS_WIDTH = 768;
 export const DEFAULT_CANVAS_HEIGHT = 420;
-export const ARCADE_GAME_DURATION_SECS = 45;
+/** Seconds per Arcade Survival wave: each wave fields the next act's roster. */
+export const SURVIVAL_WAVE_SECONDS = 30;
+/** Seconds of survival until spawn rate and crowd size reach their peak. */
+export const SURVIVAL_FULL_HEAT_SECONDS = 240;
 export const COMBO_TIMEOUT_MS = 1800;
 export const MAX_MULTIPLIER = 5;
 export const ULTIMATE_CHARGE_PER_KILL = 12;

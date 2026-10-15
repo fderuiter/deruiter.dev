@@ -10,6 +10,7 @@
 
 - [guestDay](functions/guestDay.md)
 - [guestScene](functions/guestScene.md)
+- [guestsExpected](functions/guestsExpected.md)
 - [guestWaiting](functions/guestWaiting.md)
 - [guestWrapUp](functions/guestWrapUp.md)
 - [meetGuest](functions/meetGuest.md)

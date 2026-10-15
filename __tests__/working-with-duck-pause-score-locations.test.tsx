@@ -297,8 +297,14 @@ describe("Working With Duck: pause, score and per-scene tips (#1645, #1646, #164
       ).toBe(true);
     });
 
-    it("shows the saved high score on the start screen and in the HUD", async () => {
+    it("shows the saved sprint best on the start screen and in the HUD", async () => {
+      // The campaign shows this sprint's best (#2159); the overall high
+      // score stays in the screen reader summary.
       localStorage.setItem("working_with_duck_high_score", "2519");
+      localStorage.setItem(
+        "working_with_duck_sprint_bests",
+        JSON.stringify({ 1: 2519 })
+      );
       await render(createInitialDuckGameState(1));
       expect(
         container.querySelector('[data-testid="duck-start-highscore"]')

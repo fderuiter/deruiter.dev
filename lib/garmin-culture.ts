@@ -35,6 +35,10 @@ export function gpsBannerText(elapsedMs: number): string {
 export const MOVE_ALERT_IDLE_MS = 6000;
 /** The text on the move alert. */
 export const MOVE_ALERT_TEXT = "MOVE!";
+/** The banner when a bonk ends and sprinting works again (#2022). */
+export const BONK_OVER_TEXT = "RECOVERED · SPRINT IS BACK";
+/** The banner when a Rest Day ends and the bricks and Kudos swap back (#2022). */
+export const REST_DAY_OVER_TEXT = "REST DAY OVER";
 
 /** The effort a stage took, read off the run when the stage is cleared. */
 export interface StageEffort {

@@ -45,11 +45,34 @@ describe("For Better or Bulk game challenges", () => {
     expect(challengesOf(base).map((c) => c.id)).toEqual(CHALLENGE_IDS);
   });
 
-  it("meets no burnt batches only when none burnt", () => {
-    expect(met({ ...base, burntBatches: 0 }, "no-burnt")).toBe(true);
-    expect(met({ ...base, burntBatches: 1 }, "no-burnt")).toBe(false);
-    const one = challengesOf({ ...base, burntBatches: 1 })[0];
+  /** The level with the grilled dishes on the buffet, nothing else placed. */
+  const grilled: GameState = {
+    ...base,
+    targets: base.targets.map((t) =>
+      t.category === "buffet" && (t.wants === "hotdogs" || t.wants === "wings")
+        ? {
+            ...t,
+            status: "filled" as const,
+            filled: [{ kind: t.wants, madeBy: "fred" as const }],
+            filledBy: ["fred" as const],
+            filledByHelper: [false],
+          }
+        : t
+    ),
+  };
+
+  it("meets no burnt batches only when none burnt and the grill food was served", () => {
+    expect(met({ ...grilled, burntBatches: 0 }, "no-burnt")).toBe(true);
+    expect(met({ ...grilled, burntBatches: 1 }, "no-burnt")).toBe(false);
+    const one = challengesOf({ ...grilled, burntBatches: 1 })[0];
     expect(one?.detail).toBe("1 batch burnt on the grill.");
+  });
+
+  it("gives an idle day no star for not burning anything (#2163)", () => {
+    expect(met(base, "no-burnt")).toBe(false);
+    expect(detailOf(base, "no-burnt")).toBe(
+      "Nothing burnt, but the grilled food never reached the buffet."
+    );
   });
 
   it("meets set-by-three at 3:00 or earlier and not after", () => {
@@ -131,7 +154,7 @@ describe("For Better or Bulk game challenges", () => {
 
   it("counts one star for each challenge met", () => {
     const all = challengesOf({
-      ...base,
+      ...grilled,
       burntBatches: 0,
       finishedAt: 0,
       presence: null,
@@ -154,7 +177,7 @@ describe("For Better or Bulk game challenges", () => {
 
   it("puts the challenges and stars on the receipt", () => {
     const receipt = computeReceipt({
-      ...base,
+      ...grilled,
       burntBatches: 0,
       finishedAt: 0,
       presence: null,

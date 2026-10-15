@@ -6,6 +6,6 @@
 
 # Variable: SWIM\_PACE
 
-> `const` **SWIM\_PACE**: `0.45` = `0.45`
+> `const` **SWIM\_PACE**: `0.55` = `0.55`
 
 Swim pace against the track's full pace (the pace multiplier of a run).

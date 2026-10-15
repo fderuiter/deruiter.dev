@@ -261,6 +261,8 @@ describe("Retro Labyrinth route map and reward pick (#2084)", () => {
       expect(container.textContent).toContain(`Room ${room} of 6`);
       await key("ArrowRight");
       expect(runsCompleted()).toBe(0);
+      // Enter with no pick asks first; a second Enter skips (#2177).
+      await key("Enter");
       await key("Enter");
       expect(slotFour()?.textContent?.split("(")[0]).toBe(tool?.split("(")[0]);
     }
@@ -269,6 +271,21 @@ describe("Retro Labyrinth route map and reward pick (#2084)", () => {
     expect(container.textContent).toContain("RUN COMPLETE");
     expect(container.querySelector('ol[aria-label="Route map"]')).toBeNull();
     expect(runsCompleted()).toBe(1);
+  });
+
+  it("asks before Enter skips the reward, then skips on a second Enter (#2177)", async () => {
+    await mount();
+    await key("ArrowRight");
+    await key("Enter");
+    expect(container.textContent).toContain("MAINFRAME TIER BREACHED");
+    expect(container.textContent).toContain("Room 1 of 6");
+    expect(
+      container.querySelector('[data-testid="labyrinth-reward-prompt"]')
+        ?.textContent
+    ).toContain("press Enter again to skip");
+    await key("Enter");
+    expect(container.textContent).toContain("Room 2 of 6");
+    expect(slotFour()?.textContent).toContain("---");
   });
 
   it("lets Enter on a focused pick select it rather than leave the room", async () => {

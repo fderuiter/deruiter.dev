@@ -110,11 +110,14 @@ export function useTeamLayer({
   world,
   setWorld,
   announce,
+  refuse: report,
   refocus,
 }: {
   world: WorldState;
   setWorld: (world: WorldState) => void;
   announce: (text: string) => void;
+  /** Shows a refusal on screen too, and offers to go home when it ends the day (#2184, #2185). */
+  refuse?: (reason: WorldRefusal, text: string) => void;
   refocus: () => void;
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -126,8 +129,9 @@ export function useTeamLayer({
   }, [refocus]);
 
   const refuse = useCallback(
-    (reason: WorldRefusal) => announce(REFUSED[reason]),
-    [announce]
+    (reason: WorldRefusal) =>
+      report ? report(reason, REFUSED[reason]) : announce(REFUSED[reason]),
+    [announce, report]
   );
 
   const openEvent = useCallback(

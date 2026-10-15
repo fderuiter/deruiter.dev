@@ -361,11 +361,15 @@ describe("Retro Labyrinth pass-4 fixes", () => {
       expect(score()).toBe(1410);
       expect(container.textContent).toContain("Crypto Harvested: +150");
 
+      // Enter asks about the unpicked reward first, then skips it (#2177).
+      await press("Enter");
       await press("Enter");
       await clearRoom();
       expect(score()).toBe(2820);
       expect(container.textContent).toContain("Crypto Harvested: +150");
 
+      // Enter asks about the unpicked reward first, then skips it (#2177).
+      await press("Enter");
       await press("Enter");
       await clearRoom();
       expect(score()).toBe(4230);
@@ -375,7 +379,10 @@ describe("Retro Labyrinth pass-4 fixes", () => {
       mockCampaign.build = shortRun;
       await mount();
       for (let room = 0; room < 4; room++) {
-        if (room > 0) await press("Enter");
+        if (room > 0) {
+          await press("Enter");
+          await press("Enter");
+        }
         await clearRoom();
       }
       expect(score()).toBe(5640);

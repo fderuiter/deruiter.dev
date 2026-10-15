@@ -1,6 +1,8 @@
 import {
   deskView,
+  formatClock,
   guestScene,
+  guestsExpected,
   messagesFrom,
   pendingInterruption,
   ringingCall,
@@ -146,6 +148,15 @@ export function todaysTasks(world: WorldState): WorldTask[] {
       where: "Conference room",
       urgent: true,
     });
+  // A visitor still to come today is on the list from the morning (#2188).
+  if (!guest)
+    for (const expected of guestsExpected(world))
+      tasks.push({
+        id: `guest:${expected.id}`,
+        text: `${expected.name} of ${expected.organisation} visits at ${formatClock(expected.at)}`,
+        where: "Conference room",
+        urgent: false,
+      });
   if (world.meeting)
     tasks.push({
       id: "meeting",

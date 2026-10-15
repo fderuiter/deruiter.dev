@@ -13,6 +13,7 @@ import {
 } from "@/lib/garmin-engine";
 import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin-course";
 import {
+  BODY_BATTERY_SPRINT_DRAIN_PER_S,
   FRESH_BODY_BATTERY,
   effectiveRunInput,
 } from "@/lib/garmin-body-battery";
@@ -232,7 +233,10 @@ describe("Body Battery under fitness rules", () => {
   it("drains faster while sprinting on footing", () => {
     const s = setRunInput(fitnessRun(), 1);
     const after = step(s, 60);
-    expect(after.bodyBattery?.value).toBeCloseTo(98.6, 3);
+    expect(after.bodyBattery?.value).toBeCloseTo(
+      100 - BODY_BATTERY_SPRINT_DRAIN_PER_S,
+      3
+    );
   });
 
   it("recovers while easing on footing", () => {

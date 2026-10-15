@@ -17,6 +17,7 @@ import {
   type Readiness,
 } from "@/lib/for-better-or-bulk";
 import { ChallengeStrip, type TimeChallenge } from "./ChallengeStrip";
+import { scrollBelowNavbar } from "./scroll";
 
 const STATUS_LABELS: Readonly<Record<Readiness, string>> = {
   ready: "Ready",
@@ -37,13 +38,6 @@ interface ReceiptViewProps {
    * receipt (#2056). Absent where a front end does not track them.
    */
   timeChallenge?: TimeChallenge | null;
-}
-
-/** Whether the viewer asked for less motion; the scroll then jumps instead of gliding. */
-function prefersReducedMotion(): boolean {
-  return (
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false
-  );
 }
 
 const BUTTON_CLASS =
@@ -70,16 +64,7 @@ export function ReceiptView({
   // the cabinet's clipped ancestors are scroll containers of their own.
   useEffect(() => {
     const root = rootRef.current;
-    if (root && typeof window.scrollTo === "function") {
-      const margin = parseFloat(getComputedStyle(root).scrollMarginTop) || 0;
-      window.scrollTo({
-        top: Math.max(
-          0,
-          window.scrollY + root.getBoundingClientRect().top - margin
-        ),
-        behavior: prefersReducedMotion() ? "auto" : "smooth",
-      });
-    }
+    if (root) scrollBelowNavbar(root);
     titleRef.current?.focus({ preventScroll: true });
   }, []);
 

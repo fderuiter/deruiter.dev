@@ -206,7 +206,8 @@ describe("procedural observation generators (#2088)", () => {
       },
     ]);
     expect(row.STRESU).toBe("mmHg");
-    expect(row.TESTCD).toBe("C25298");
+    // The SDTM short test code, not the NCI concept code (#2171).
+    expect(row.TESTCD).toBe("SYSBP");
   });
 });
 

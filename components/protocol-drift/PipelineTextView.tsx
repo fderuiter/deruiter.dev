@@ -9,7 +9,7 @@ import {
   WAVE1_GRAPH,
   type PipelineGraph,
 } from "@/lib/protocol-drift";
-import { toFlowEdges, toFlowNodes } from "./graph-model";
+import { toFlowEdges, toFlowNodes, type ChipNode } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
 
 const REFERENCE_PIPELINES: {
@@ -31,6 +31,12 @@ const REFERENCE_PIPELINES: {
   { id: "full", label: "Full: with the ADaM lane", graph: FULL_GRAPH },
 ];
 
+/** A chip's readable name: its kind and the number in its id. */
+function chipName(node: ChipNode): string {
+  const number = /-(\d+)$/.exec(node.id)?.[1];
+  return number ? `${node.data.kind} ${number}` : node.data.kind;
+}
+
 /**
  * Accessible text alternative to the canvas: every chip and wire as a list,
  * with keyboard-operable controls to add a wire or remove a chip or wire.
@@ -48,12 +54,18 @@ export function PipelineTextView() {
   const toId = useId();
   const refId = useId();
 
+  // Chips read as "CDISCSink 1", never their internal ids (#2170).
+  const nameOf = useMemo(() => {
+    const names = new Map(nodes.map((n) => [n.id, chipName(n)]));
+    return (id: string) => names.get(id) ?? id;
+  }, [nodes]);
+
   const outputs = useMemo(
     () =>
       nodes.flatMap((n) =>
         CHIP_SPECS[n.data.kind].outputs.map((p) => ({
           value: `${n.id}::${p.handle}`,
-          label: `${n.id}.${p.handle} (${p.type})`,
+          label: `${chipName(n)}.${p.handle} (${p.type})`,
         }))
       ),
     [nodes]
@@ -63,7 +75,7 @@ export function PipelineTextView() {
       nodes.flatMap((n) =>
         CHIP_SPECS[n.data.kind].inputs.map((p) => ({
           value: `${n.id}::${p.handle}`,
-          label: `${n.id}.${p.handle} (${p.type})`,
+          label: `${chipName(n)}.${p.handle} (${p.type})`,
         }))
       ),
     [nodes]
@@ -91,15 +103,15 @@ export function PipelineTextView() {
               {nodes.map((n) => (
                 <li key={n.id} className="flex min-w-0 items-center gap-2">
                   <span className="min-w-0 flex-1 break-words">
-                    {n.id}: {n.data.kind},{" "}
-                    {CHIP_SPECS[n.data.kind].lane.toLowerCase()} lane, at x
-                    {Math.round(n.position.x)} y{Math.round(n.position.y)}
+                    {chipName(n)}, {CHIP_SPECS[n.data.kind].lane.toLowerCase()}{" "}
+                    lane, at x{Math.round(n.position.x)} y
+                    {Math.round(n.position.y)}
                   </span>
                   <button
                     type="button"
                     onClick={() => void removeSelection([n.id], [])}
                     className="min-h-8 shrink-0 border border-zinc-700 px-2 hover:border-amber-500"
-                    aria-label={`Remove chip ${n.id}`}
+                    aria-label={`Remove chip ${chipName(n)}`}
                   >
                     Remove
                   </button>
@@ -117,7 +129,8 @@ export function PipelineTextView() {
               {edges.map((e) => (
                 <li key={e.id} className="flex min-w-0 items-center gap-2">
                   <span className="min-w-0 flex-1 break-words">
-                    {e.source}.{e.sourceHandle} to {e.target}.{e.targetHandle}
+                    {nameOf(e.source)}.{e.sourceHandle} to {nameOf(e.target)}.
+                    {e.targetHandle}
                   </span>
                   <button
                     type="button"

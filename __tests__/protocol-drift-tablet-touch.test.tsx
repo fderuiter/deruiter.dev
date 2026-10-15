@@ -87,14 +87,14 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     renderGame(true);
     await screen.findByRole("dialog", { name: /Trial Briefing/ });
     expect(root().className).toContain("pd-touch");
-    expect(root().className).not.toContain("h-[max(760px");
+    expect(root().className).not.toContain("h-[max(");
   });
 
   it("the desktop workbench keeps its fixed height and has no touch class", async () => {
     renderGame(false);
     await screen.findByRole("dialog", { name: /Trial Briefing/ });
     expect(root().className).not.toContain("pd-touch");
-    expect(root().className).toContain("h-[max(760px,calc(100dvh-8rem))]");
+    expect(root().className).toContain("h-[max(560px,calc(100dvh-9rem))]");
     expect(root().hasAttribute("data-escape-docks")).toBe(false);
   });
 

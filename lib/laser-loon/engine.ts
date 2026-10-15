@@ -26,7 +26,8 @@ import {
   POWER_UP_CONFIGS,
   DEFAULT_CANVAS_WIDTH,
   DEFAULT_CANVAS_HEIGHT,
-  ARCADE_GAME_DURATION_SECS,
+  SURVIVAL_FULL_HEAT_SECONDS,
+  SURVIVAL_WAVE_SECONDS,
   COMBO_TIMEOUT_MS,
   MAX_MULTIPLIER,
   ULTIMATE_CHARGE_PER_KILL,
@@ -64,7 +65,7 @@ export function createInitialState(
     highScore: 0,
     combo: 0,
     multiplier: 1,
-    timeLeft: mode === "arcade" ? ARCADE_GAME_DURATION_SECS : 999,
+    timeLeft: 999,
     gravity: 0.15,
     ultimateMeter: 0,
     activePowerUp: null,
@@ -1518,6 +1519,53 @@ export function mergeActBest(
   };
 }
 
+/** The shape of an Arcade Survival run at a moment in time. */
+export interface SurvivalWave {
+  /** Zero-based wave index. */
+  wave: number;
+  /** The campaign act whose enemy roster this wave fields, 1 to 4. */
+  rosterAct: number;
+  /** The wave's short name for the HUD. */
+  label: "Lake" | "Fair" | "Hearing" | "Capitol";
+  /** Chance per 60 fps frame of spawning an enemy. */
+  spawnChance: number;
+  /** Most enemies on screen at once. */
+  maxTargets: number;
+  /**
+   * The act number fed to minion fire, or 0 while minions hold fire. Higher
+   * levels fire more often (see `updateMinionFire`).
+   */
+  fireLevel: number;
+}
+
+const SURVIVAL_WAVE_LABELS = ["Lake", "Fair", "Hearing", "Capitol"] as const;
+
+/**
+ * Arcade Survival's ramp: every wave fields the next act's roster (Lake, Fair,
+ * Hearing, Capitol, then round again), spawns come faster and in larger
+ * crowds until full heat, and from the second wave on the minions shoot back,
+ * more often each wave.
+ *
+ * @param elapsedSeconds - Seconds of unpaused survival so far.
+ */
+export function getSurvivalWave(elapsedSeconds: number): SurvivalWave {
+  const seconds = Math.max(0, Number.isFinite(elapsedSeconds) ? elapsedSeconds : 0);
+  const wave = Math.floor(seconds / SURVIVAL_WAVE_SECONDS);
+  const rosterIndex = wave % SURVIVAL_WAVE_LABELS.length;
+  const heat = Math.min(1, seconds / SURVIVAL_FULL_HEAT_SECONDS);
+  return {
+    wave,
+    rosterAct: rosterIndex + 1,
+    label: SURVIVAL_WAVE_LABELS[rosterIndex],
+    spawnChance: 0.03 + 0.035 * heat,
+    maxTargets: 5 + Math.round(4 * heat),
+    fireLevel:
+      wave === 0
+        ? 0
+        : Math.min(MINION_FIRE_FIRST_ACT + 3, MINION_FIRE_FIRST_ACT + wave - 1),
+  };
+}
+
 /**
  * Total stars in a record, out of three per campaign act.
  *
@@ -1528,4 +1576,16 @@ export function countActStars(record: ActBestRecord): number {
     (sum, act) => sum + (record[act.actNumber]?.stars ?? 0),
     0
   );
+}
+
+/**
+ * Seconds as a run clock, such as 1:05.
+ *
+ * @param totalSeconds - Whole or fractional seconds; negatives read as 0.
+ */
+export function formatRunClock(totalSeconds: number): string {
+  const whole = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(whole / 60);
+  const seconds = whole % 60;
+  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }

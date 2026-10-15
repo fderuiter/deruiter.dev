@@ -90,11 +90,11 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     subtitle: "Five Stages, Three Lives, One Body Battery",
     genre: "Embedded Simulation",
     description:
-      "Run a 5K platformer on a simulated Garmin watch. Stomp Couch Potatoes, jump Hurdles, grab power-ups, and keep your Body Battery above zero. Optional Dev Mode brings back the RAM heap challenge.",
+      "Run a 5K platformer on a simulated Garmin watch. Stomp gym foes, swim the pool, grab power-ups, and pace your Body Battery: sprint the whole way and you bonk. Race the Saturday 5K against the coach's time, or work a Training Plan up to Race Day. Optional Dev Mode brings back the RAM heap challenge.",
     mechanics: [
-      "Body Battery Meter",
-      "Compression Cape Glide",
-      "Rep Max Boss Fight",
+      "Body Battery Pacing",
+      "Race Mode Speedrun",
+      "Training Plan to Race Day",
       "Optional Dev Mode RAM Heap",
     ],
     techStack: [
@@ -270,7 +270,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     subtitle: "Dungeon Crawler & CRT Phosphor Engine",
     genre: "Dungeon Roguelike",
     description:
-      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss.",
+      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and break two wireframe bosses.",
     mechanics: [
       "TSP Dynamic Shifting Walls",
       "Developer Weapons (npm i, git push -f)",
@@ -292,11 +292,12 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     id: "meme-vault",
     slug: "meme-vault",
     title: "Meme Vault & Soundboard",
-    subtitle: "Developer Soundboard & Easter Egg Trophies",
-    genre: "Meme Soundboard & Trophy Room",
+    subtitle: "Echo Memory Game, Soundboard & Easter Egg Trophies",
+    genre: "Memory Game & Trophy Room",
     description:
-      "Developer & MedTech easter-egg room. Trigger synthesized audio soundbites, collect site easter egg achievements, and browse curated engineering memes.",
+      "Developer & MedTech easter-egg room. Play Echo, repeating a growing sequence on eight synthesized pads, collect site easter egg achievements, and browse curated engineering memes.",
     mechanics: [
+      "Echo Repeat-the-Sequence Game",
       "8-Channel Web Audio Soundboard",
       "Easter Egg Achievement Tracker",
       "Interactive Meme Deck",
@@ -304,7 +305,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     techStack: [
       "Web Audio API",
       "LocalStorage State",
-      "Phosphor CRT Shader",
+      "Seeded PRNG Sequences",
       "React 19",
     ],
     accentColor: "text-emerald-400",

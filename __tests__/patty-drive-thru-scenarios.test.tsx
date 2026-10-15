@@ -126,12 +126,18 @@ describe("Patty's Drive-Thru scenarios (#1887)", () => {
   });
 
   it("the lunch rush brings more cars than the standard shift", () => {
-    const standard = run(createShift({ seed: "rush-1" }), 25);
-    const rush = run(
-      createShift({ seed: "rush-1", ...scenarioDialsFor("lunchRush") }),
-      25
-    );
-    expect(arrivals(rush)).toBeGreaterThan(arrivals(standard) + 1);
+    // Summed over a few seeds: the standard shift's gaps tightened with its
+    // ramp (#2138), so one seed's first 25 seconds no longer tell the two
+    // apart reliably. Nobody serves, so stay under the six-order cap.
+    let standard = 0;
+    let rush = 0;
+    for (const seed of ["rush-1", "rush-2", "rush-3", "rush-4"]) {
+      standard += arrivals(run(createShift({ seed }), 30));
+      rush += arrivals(
+        run(createShift({ seed, ...scenarioDialsFor("lunchRush") }), 30)
+      );
+    }
+    expect(rush).toBeGreaterThanOrEqual(standard + 4);
   });
 
   it("strict management yells sooner at a player who stands still", () => {

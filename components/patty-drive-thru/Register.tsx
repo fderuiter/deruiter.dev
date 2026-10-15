@@ -111,6 +111,14 @@ export const Register = React.forwardRef<HTMLDivElement, RegisterProps>(
                     : "border-[var(--pdt-key-edge)] bg-[var(--pdt-key)] text-[var(--pdt-ink)]"
                 }`}
               >
+                {index < 9 ? (
+                  <kbd
+                    aria-hidden="true"
+                    className="mr-1.5 rounded border border-[var(--pdt-key-edge)] px-1 font-mono text-[10px]"
+                  >
+                    {index + 1}
+                  </kbd>
+                ) : null}
                 #{ticket.orderId}
                 {ticket.ready ? " ✓" : ""}
               </button>

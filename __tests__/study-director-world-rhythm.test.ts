@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { inbox } from "@/lib/study-director";
 import {
   INTERRUPTION_TIMES,
+  INTERRUPTION_WINDOW,
   PEOPLE_DAY_TARGET,
   PEOPLE_PRIORITY_BONUS,
   PRIORITIES,
@@ -153,16 +154,16 @@ describe("interruptions", () => {
     ).toMatchObject({ ok: false });
   });
 
-  it("is refused when the answer would run past the hard stop", () => {
-    const w = at(fresh(), 21 * 60 + 58);
-    const pending = pendingInterruption(w);
-    if (!pending) throw new Error("nothing pending");
-    const slow = pending.options.find((o) => o.cost.minutes >= 5);
-    if (!slow) throw new Error("no slow option");
-    expect(answerInterruption(w, slow.id)).toMatchObject({
-      ok: false,
-      reason: "too-late",
-    });
+  it("lapses once its window has passed, so nothing waits until 10 PM (#2189)", () => {
+    const w = fresh();
+    const [first] = scheduleFor(w);
+    expect(pendingInterruption(at(w, first.at))?.id).toBe(
+      first.interruption.id
+    );
+    expect(
+      pendingInterruption(at(w, first.at + INTERRUPTION_WINDOW - 1))?.id
+    ).toBe(first.interruption.id);
+    expect(pendingInterruption(at(w, 21 * 60 + 58))).toBeNull();
   });
 });
 
@@ -244,11 +245,28 @@ describe("what the priority reveals overnight", () => {
     const w = fresh();
     const chosen = choosePriority(w, "desk");
     if (!chosen.ok) throw new Error("choose failed");
-    const clear = settlePriority(chosen.world);
-    expect(clear.lines[0].tone).toBe("good");
-    expect(clear.world.study).not.toBe(chosen.world.study);
     const eventId = inbox(chosen.world.study)[0]?.id;
     if (!eventId) throw new Error("no event to decide");
+    const written = {
+      day: 1,
+      eventId,
+      optionId: "a",
+      label: "x",
+      documented: true,
+      attentionSpent: 0,
+      effects: {},
+    };
+    const clear = settlePriority({
+      ...chosen.world,
+      study: { ...chosen.world.study, log: [written] },
+    });
+    expect(clear.lines[0].tone).toBe("good");
+    expect(clear.world.study.log).toEqual([written]);
+    // The compliance point lands on the study.
+    expect(clear.world.study).not.toEqual({
+      ...chosen.world.study,
+      log: [written],
+    });
     const gaps = settlePriority({
       ...chosen.world,
       study: {
@@ -272,6 +290,14 @@ describe("what the priority reveals overnight", () => {
       ...chosen.world.study,
       log: gaps.world.study.log,
     });
+  });
+
+  it("desk: an empty day earns nothing, there was nothing to clear (#2190)", () => {
+    const chosen = choosePriority(fresh(), "desk");
+    if (!chosen.ok) throw new Error("choose failed");
+    const empty = settlePriority(chosen.world);
+    expect(empty.lines).toEqual([]);
+    expect(empty.world).toBe(chosen.world);
   });
 
   it("is silent when no priority was chosen", () => {

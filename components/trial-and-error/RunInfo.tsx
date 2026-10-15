@@ -3,6 +3,11 @@
 import React from "react";
 import { createPortal } from "react-dom";
 import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
+import {
   RELIC_PHASE_LABELS,
   relicPhase,
   type AccessRecord,
@@ -66,7 +71,11 @@ export function RunInfo({
   dmc = false,
   onClose,
 }: RunInfoProps) {
-  const ref = useFocusTrap<HTMLDivElement>(true, { onEscape: onClose });
+  const portalTarget = usePortalTarget();
+  const ref = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: closeNow(onClose),
+  });
+  useClaimFocus(ref);
   return createPortal(
     <div
       data-te-cabinet=""
@@ -238,6 +247,6 @@ export function RunInfo({
         </button>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

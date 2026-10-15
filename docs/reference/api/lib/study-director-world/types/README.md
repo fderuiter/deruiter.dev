@@ -23,6 +23,7 @@
 - [DirectoryEntry](interfaces/DirectoryEntry.md)
 - [EdcRow](interfaces/EdcRow.md)
 - [EventDialogue](interfaces/EventDialogue.md)
+- [ExpectedGuest](interfaces/ExpectedGuest.md)
 - [FloorDressing](interfaces/FloorDressing.md)
 - [GuestOption](interfaces/GuestOption.md)
 - [GuestRecord](interfaces/GuestRecord.md)

@@ -27,6 +27,8 @@ import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
 import { ArcadeTrailer } from "@/components/arcade/ArcadeTrailer";
 import { ArcadeDailyPanel } from "@/components/arcade/ArcadeDailyPanel";
 import { onAppEvent } from "@/lib/event-bus";
+import { getEchoBest } from "@/lib/meme-data";
+import { countHonestProofs, parseGameProgress } from "@/lib/quasi-perfect";
 
 interface ArcadeGameCard {
   id: string;
@@ -68,6 +70,31 @@ const getScore = (key?: string) => () => {
 };
 
 const getServerScore = () => "0";
+
+const getServerEchoBest = () => 0;
+
+/** The vault card's Echo best, read from this browser (#2126). */
+function MemeVaultEchoBest() {
+  const best = useSyncExternalStore(
+    subscribeStorage,
+    getEchoBest,
+    getServerEchoBest
+  );
+  return (
+    <p
+      className="mt-2 font-mono text-[11px] uppercase tracking-wider text-zinc-300"
+      data-testid="hub-meme-echo-best"
+    >
+      {best > 0 ? (
+        <>
+          Echo best: <span className="text-amber-300 tabular-nums">{best}</span>
+        </>
+      ) : (
+        "Echo best: not set yet"
+      )}
+    </p>
+  );
+}
 
 // Same query as DesktopOnlyGate (PHONE_QUERY, ADR 0061): phones only. Tablets
 // are not marked desktop only.
@@ -165,11 +192,11 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     subtitle: "Five Stages, Three Lives, One Body Battery",
     genre: "Embedded Systems",
     description:
-      "Run a 5K in five stages on three lives. Stomp Couch Potatoes, jump Hurdles, earn a Training Effect on every stage, and keep your Body Battery above zero. Dev Mode is optional.",
+      "Run a 5K in five stages on three lives: track, pool, basement gym, open water and the home straight. Pace your Body Battery or bonk, race the Saturday 5K against the coach's time, and work a Training Plan up to Race Day. Dev Mode is optional.",
     mechanics: [
-      "Circular LCD 280×280",
-      "Body Battery Drain & Recharge",
-      "Training Effect Scores",
+      "Body Battery Pacing",
+      "Race Mode Speedrun",
+      "Training Plan to Race Day",
       "Optional Dev Mode RAM Limit",
     ],
     techStack: [
@@ -369,13 +396,9 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
   let formattedScore = rawScore;
   if (game.id === "quasi-puzzler" && rawScore !== "0") {
-    try {
-      const parsed = JSON.parse(rawScore);
-      const count = Object.keys(parsed?.completedLevels || {}).length;
-      formattedScore = `${count} / 5 Proofs`;
-    } catch {
-      formattedScore = "Progress Saved";
-    }
+    // Honest proofs only; a level closed with sorry is not a proof (#2198).
+    const count = countHonestProofs(parseGameProgress(rawScore));
+    formattedScore = `${count} ${count === 1 ? "Proof" : "Proofs"}`;
   }
 
   return (
@@ -627,9 +650,10 @@ export const ArcadeHubClient: React.FC = () => {
                 Developer Soundboard &amp; Meme Vault
               </h2>
               <p className="text-xs sm:text-sm text-zinc-300 font-sans mt-1">
-                Make some noise, find a few hidden trophies, and borrow some
-                ASCII art.
+                Play Echo: repeat the vault&apos;s growing pad sequence. Then
+                hunt a few hidden trophies and borrow some ASCII art.
               </p>
+              <MemeVaultEchoBest />
             </div>
           </div>
 

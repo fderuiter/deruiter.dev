@@ -9,6 +9,7 @@
 ## Variables
 
 - [INTERRUPTION\_TIMES](variables/INTERRUPTION_TIMES.md)
+- [INTERRUPTION\_WINDOW](variables/INTERRUPTION_WINDOW.md)
 - [PEOPLE\_DAY\_TARGET](variables/PEOPLE_DAY_TARGET.md)
 - [PRIORITIES](variables/PRIORITIES.md)
 
@@ -17,6 +18,7 @@
 - [answerInterruption](functions/answerInterruption.md)
 - [choosePriority](functions/choosePriority.md)
 - [eveningWrapUp](functions/eveningWrapUp.md)
+- [excuseAway](functions/excuseAway.md)
 - [pendingInterruption](functions/pendingInterruption.md)
 - [peopleSeenToday](functions/peopleSeenToday.md)
 - [planFor](functions/planFor.md)

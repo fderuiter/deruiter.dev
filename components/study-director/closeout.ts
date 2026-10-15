@@ -22,10 +22,15 @@ export function verdictFor(report: FinalReport): Verdict {
     (company.marginPct >= -5 ? 2 : company.marginPct >= -15 ? 1 : 0) +
     (company.timelineVarianceDays <= 3 ? 1 : 0);
   if (score >= 9) {
+    // Only the claims that are true: the top band can be reached over a real
+    // overrun, which read "on budget" beside a -17.9% margin (#2190).
+    const onBudget = company.marginPct >= -5;
     return {
       score,
       headline: "Everything actually was fine.",
-      line: "On file, on budget and on the sponsor's good side. Frame this one.",
+      line: onBudget
+        ? "On file, on budget and on the sponsor's good side. Frame this one."
+        : "On file and on the sponsor's good side. The budget is a conversation for another day.",
       tone: "good",
     };
   }

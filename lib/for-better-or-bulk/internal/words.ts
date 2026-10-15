@@ -84,18 +84,42 @@ export const CRATE_ITEM_NAMES: Readonly<Record<SupplyKind, string>> = {
 };
 
 /**
- * The key names a person's interact button carries in a prompt. Co-op gives
- * each person their own key (Fred E, Abbi Enter); solo takes either set.
+ * The on-screen key a person taps to pick up or put down on a touch iPad
+ * (#2123). Each person's dock has its own, so co-op and solo share the name.
  */
-export function interactKeyName(id: PlayerId, coop: boolean): string {
+export const TOUCH_INTERACT_NAME = "Use";
+
+/** The on-screen key a person holds to arrange, pluck or simplify on touch. */
+export const TOUCH_WORK_NAME = "Work";
+
+/** The on-screen key that swaps the person being played in solo touch play. */
+export const TOUCH_SWAP_NAME = "Swap";
+
+/**
+ * The key names a person's interact button carries in a prompt. Co-op gives
+ * each person their own key (Fred E, Abbi Enter); solo takes either set. On
+ * a touch iPad the line names the dock's Use key instead.
+ */
+export function interactKeyName(
+  id: PlayerId,
+  coop: boolean,
+  touch = false
+): string {
+  if (touch) return TOUCH_INTERACT_NAME;
   return coop ? (id === "fred" ? "E" : "Enter") : "E or Enter";
 }
 
 /**
  * The key names a person's work button carries in a prompt or coach line.
- * Co-op gives each person their own key (Fred F, Abbi Shift); solo takes either.
+ * Co-op gives each person their own key (Fred F, Abbi Shift); solo takes
+ * either. On a touch iPad the line names the dock's Work key instead.
  */
-export function workKeyName(id: PlayerId, coop: boolean): string {
+export function workKeyName(
+  id: PlayerId,
+  coop: boolean,
+  touch = false
+): string {
+  if (touch) return TOUCH_WORK_NAME;
   return coop ? (id === "fred" ? "F" : "Shift") : "F or Shift";
 }
 

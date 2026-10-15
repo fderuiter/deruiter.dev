@@ -93,20 +93,23 @@ function play(config: Partial<ShiftConfig>, pick: Picker): Played {
 }
 
 /** The answer that stands with the crew for each dilemma. */
-const WITH_CREW: Record<DilemmaId, string> = {
-  "stale-fries": "toss",
-  "short-till": "cover",
-  "shake-machine": "broken",
-  "long-break": "cover",
-};
+const WITH_CREW = sideOf((a, b) => a > b);
 
 /** The answer that sides with management for each dilemma. */
-const WITH_MANAGEMENT: Record<DilemmaId, string> = {
-  "stale-fries": "serve",
-  "short-till": "report",
-  "shake-machine": "make",
-  "long-break": "tell",
-};
+const WITH_MANAGEMENT = sideOf((a, b) => a < b);
+
+/** Each dilemma's option whose Solidarity wins the comparison. */
+function sideOf(
+  better: (a: number, b: number) => boolean
+): Record<DilemmaId, string> {
+  return Object.fromEntries(
+    Object.values(DILEMMAS).map((dilemma) => {
+      const [first, second] = dilemma.options;
+      const pick = better(first.solidarity, second.solidarity) ? first : second;
+      return [dilemma.id, pick.id];
+    })
+  ) as Record<DilemmaId, string>;
+}
 
 describe("the dilemma plan (#2087)", () => {
   it("puts three different dilemmas into a standard shift, in order, each closing before the end", () => {

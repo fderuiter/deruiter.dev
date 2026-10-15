@@ -32,12 +32,6 @@ Re-exports [ActProgressReadout](engine/interfaces/ActProgressReadout.md)
 
 ***
 
-### ARCADE\_GAME\_DURATION\_SECS
-
-Re-exports [ARCADE_GAME_DURATION_SECS](constants/variables/ARCADE_GAME_DURATION_SECS.md)
-
-***
-
 ### BOSS\_ATTACK\_BASE\_FRAMES
 
 Re-exports [BOSS_ATTACK_BASE_FRAMES](constants/variables/BOSS_ATTACK_BASE_FRAMES.md)
@@ -224,6 +218,12 @@ Re-exports [FloatingText](types/interfaces/FloatingText.md)
 
 ***
 
+### formatRunClock
+
+Re-exports [formatRunClock](engine/functions/formatRunClock.md)
+
+***
+
 ### getActAvailableEnemies
 
 Re-exports [getActAvailableEnemies](engine/functions/getActAvailableEnemies.md)
@@ -257,6 +257,12 @@ Re-exports [getBossAttackInterval](engine/functions/getBossAttackInterval.md)
 ### getEnemyWeakness
 
 Re-exports [getEnemyWeakness](engine/functions/getEnemyWeakness.md)
+
+***
+
+### getSurvivalWave
+
+Re-exports [getSurvivalWave](engine/functions/getSurvivalWave.md)
 
 ***
 
@@ -533,6 +539,24 @@ Re-exports [spawnPowerUp](engine/functions/spawnPowerUp.md)
 ### spawnTarget
 
 Re-exports [spawnTarget](engine/functions/spawnTarget.md)
+
+***
+
+### SURVIVAL\_FULL\_HEAT\_SECONDS
+
+Re-exports [SURVIVAL_FULL_HEAT_SECONDS](constants/variables/SURVIVAL_FULL_HEAT_SECONDS.md)
+
+***
+
+### SURVIVAL\_WAVE\_SECONDS
+
+Re-exports [SURVIVAL_WAVE_SECONDS](constants/variables/SURVIVAL_WAVE_SECONDS.md)
+
+***
+
+### SurvivalWave
+
+Re-exports [SurvivalWave](engine/interfaces/SurvivalWave.md)
 
 ***
 

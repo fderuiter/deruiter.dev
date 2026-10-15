@@ -6,4 +6,4 @@
 
 # Variable: ARRIVAL\_GAP\_MAX\_SEC
 
-> `const` **ARRIVAL\_GAP\_MAX\_SEC**: `15` = `15`
+> `const` **ARRIVAL\_GAP\_MAX\_SEC**: `12` = `12`

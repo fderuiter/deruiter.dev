@@ -3144,3 +3144,670 @@ test.describe("Patty's Drive-Thru on a tablet (iPad projects, #2116)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Trial & Error on a tablet (#2120)
+// ---------------------------------------------------------------------------
+
+const TE_ROUTE = `${UNGATED_ROUTE}?seed=alpha`;
+const TE_ROOT = 'section[aria-labelledby="card-table-heading"]';
+const TE_HAND = '[data-testid="hand"]';
+const TE_CARDS = `${TE_HAND} button[data-card-id]`;
+const TE_ACT = "biostat-ops-campaign";
+
+/** Inspect actions for one Table, then the findings the SAP wants corrected. */
+function teInspect(cardId: string, findings: string[]) {
+  const cells = Array.from({ length: 15 }, (_, i) => ({
+    type: "INSPECT_CELL",
+    row: Math.floor(i / 3),
+    col: i % 3,
+  }));
+  return [
+    { type: "INSPECT_CARD", cardId },
+    ...cells,
+    ...findings.map((findingId) => ({ type: "CORRECT_FINDING", findingId })),
+    { type: "CLOSE_INSPECT" },
+  ];
+}
+
+/**
+ * A saved run on seed alpha, for the between-Blinds screens: the first Blind
+ * cleared in one hand ("cleared"), cashed out into the Procurement Shop
+ * ("shop"), or with the first pack bought and open ("pack").
+ */
+function teSave(stage: "cleared" | "shop" | "pack") {
+  const actions: unknown[] = [
+    ...teInspect("C-T14.1.1-A", [
+      "SAP-DM-03@r1c2",
+      "SAP-DM-02@r2c1",
+      "SAP-DM-01@r2c2",
+      "SAP-DM-01@r3c2",
+      "SAP-DM-01@r4c2",
+    ]),
+    ...teInspect("C-T14.1.1-B", ["SAP-DM-02@r2c0"]),
+    ...teInspect("C-T14.1.1-C", []),
+    ...[
+      "C-T14.1.1-A",
+      "C-L16.2.4",
+      "C-T14.1.2",
+      "C-T14.1.1-B",
+      "C-T14.1.1-C",
+    ].map((cardId) => ({ type: "TOGGLE_SELECT", cardId })),
+    { type: "PLAY_HAND" },
+  ];
+  if (stage !== "cleared") actions.push({ type: "CASH_OUT" });
+  if (stage === "pack") actions.push({ type: "BUY_PACK", slot: 0 });
+  return JSON.stringify({
+    version: 4,
+    actId: TE_ACT,
+    savedAt: new Date().toISOString(),
+    seed: "alpha",
+    actions,
+    origin: { kind: "SEEDED" },
+  });
+}
+
+/**
+ * Opens the cabinet on a seeded table with the tutorial dismissed, optionally
+ * resuming a saved run. Taps Launch once, then waits for the table.
+ */
+async function openTe(page: Page, save?: "cleared" | "shop" | "pack") {
+  const json = save ? teSave(save) : null;
+  await page.addInitScript(
+    ([actId, saved]) => {
+      try {
+        localStorage.setItem("te:tutorial-seen", "1");
+        if (saved) localStorage.setItem(`te:run-save:${actId}`, saved);
+      } catch {}
+    },
+    [TE_ACT, json] as const
+  );
+  await page.goto(TE_ROUTE);
+  await launchCabinet(page);
+  if (save) {
+    const resume = page.getByRole("button", { name: "Resume run" });
+    await expect(async () => {
+      await resume.tap({ timeout: 4000 });
+    }).toPass({ timeout: 30000 });
+  }
+  await expect(page.locator(TE_ROOT)).toBeVisible({ timeout: 60000 });
+}
+
+const teCards = (page: Page) => page.locator(TE_CARDS);
+
+/** Index of the first hand card whose label matches. */
+async function teCardIndex(page: Page, label: RegExp) {
+  const labels = await teCards(page).evaluateAll((els) =>
+    els.map((el) => el.getAttribute("aria-label") ?? "")
+  );
+  return labels.findIndex((text) => label.test(text));
+}
+
+/** Taps the first untouched Demographics Table and opens its Inspect desk. */
+async function teOpenInspect(page: Page) {
+  const index = await teCardIndex(
+    page,
+    /^Table 14\.1\.1(?!.*(inspected|stale|empty shell|face down))/
+  );
+  expect(index).toBeGreaterThanOrEqual(0);
+  await expect(async () => {
+    await teCards(page).nth(index).tap({ timeout: 4000 });
+    await page.getByRole("button", { name: /^Inspect/ }).tap({ timeout: 4000 });
+    await expect(page.getByTestId("inspect-drawer")).toBeVisible({
+      timeout: 4000,
+    });
+  }).toPass({ timeout: 20000 });
+}
+
+/** Taps every cell of the open Inspect desk, correcting what it flags. */
+async function teInspectAllCells(page: Page) {
+  const cells = page.locator(
+    '[data-testid="inspect-drawer"] [role="gridcell"]'
+  );
+  const count = await cells.count();
+  for (let i = 0; i < count; i += 1) {
+    await cells.nth(i).tap();
+    const flag = page.getByRole("button", { name: /Flag & Correct/ });
+    if (await flag.count()) await flag.first().tap();
+  }
+}
+
+/** Reads one HUD tile of the Blind panel, such as "HANDS" or "DISCARDS". */
+async function teTile(page: Page, name: string) {
+  return page.evaluate((label) => {
+    const panel = document.querySelector<HTMLElement>(".te-area-blind");
+    const text = panel?.innerText ?? "";
+    const match = text.match(new RegExp(`${label}\\s*\\n?\\s*([0-9]+)`, "i"));
+    return match ? Number(match[1]) : null;
+  }, name);
+}
+
+/** The first inspected play: Table, Inspect, tap cells, close, Listing, Play. */
+async function tePlayFirstHand(page: Page) {
+  await teOpenInspect(page);
+  await teInspectAllCells(page);
+  await page.getByRole("button", { name: /Close Inspect/ }).tap();
+  await expect(page.getByTestId("inspect-drawer")).toBeHidden();
+  const listing = await teCardIndex(page, /^Listing /);
+  expect(listing).toBeGreaterThanOrEqual(0);
+  await teCards(page).nth(listing).tap();
+  await page.getByRole("button", { name: /^Play Hand/ }).tap();
+}
+
+/** Dialogs and sheets of the table sit inside the cabinet and the viewport. */
+async function teDialogFits(page: Page, label: string) {
+  const dialog = page.locator(`${IMMERSIVE} [role="dialog"]`).last();
+  await expect(dialog).toBeVisible();
+  await expectBoxInViewport(page, dialog, label);
+  const toolbar = (await page
+    .getByTestId("cabinet-touch-toolbar")
+    .boundingBox())!;
+  const box = (await dialog.boundingBox())!;
+  // The sheet starts below the floating toolbar, never under it.
+  expect(box.y, `${label} clears the toolbar`).toBeGreaterThanOrEqual(
+    toolbar.y + toolbar.height - 1
+  );
+}
+
+/** Space left above and below the hand's cards inside the hand area. */
+async function teHandBands(page: Page) {
+  return page.evaluate(() => {
+    const area = document
+      .querySelector<HTMLElement>(".te-area-hand")!
+      .getBoundingClientRect();
+    const cards = Array.from(
+      document.querySelectorAll<HTMLElement>(
+        '[data-testid="hand"] button[data-card-id]'
+      )
+    ).map((el) => el.getBoundingClientRect());
+    return {
+      above: Math.min(...cards.map((b) => b.top)) - area.top,
+      below: area.bottom - Math.max(...cards.map((b) => b.bottom)),
+      viewport: window.innerHeight,
+    };
+  });
+}
+
+const teKey = async (page: Page, key: string) => page.keyboard.press(key);
+
+test.describe("Trial & Error on a tablet (iPad projects, #2120)", () => {
+  test.setTimeout(300000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  });
+
+  test("the cabinet launches fit to the viewport with the touch table", async ({
+    page,
+  }) => {
+    await openTe(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expect(page.locator(TE_ROOT)).toHaveClass(/te-touch/);
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the table, hand and HUD fit both orientations with no scroll and no dead band", async ({
+    page,
+  }) => {
+    await openTe(page);
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expect(page.locator(TE_ROOT)).toBeVisible();
+      await expect(teCards(page).first()).toBeVisible();
+      await expectInsideViewport(page, [TE_ROOT, TE_CARDS, ".te-area-hand"]);
+      const overflow = await page.evaluate(() => {
+        const grid = document.querySelector<HTMLElement>(".te-table-grid")!;
+        const root = document.querySelector<HTMLElement>(".te-touch")!;
+        const hand = document.querySelector<HTMLElement>(
+          '[data-testid="hand"]'
+        )!;
+        return {
+          page: Math.max(
+            0,
+            document.scrollingElement!.scrollHeight - window.innerHeight
+          ),
+          root: Math.max(0, root.scrollHeight - root.clientHeight),
+          grid: Math.max(0, grid.scrollHeight - grid.clientHeight),
+          handX: Math.max(0, hand.scrollWidth - hand.clientWidth),
+        };
+      });
+      expect(overflow, `${size.width}x${size.height} overflow`).toEqual({
+        page: 0,
+        root: 0,
+        grid: 0,
+        handX: 0,
+      });
+      // Every card of a full hand is on screen, and the hand fills its area.
+      expect(await teCards(page).count()).toBeGreaterThanOrEqual(8);
+      const bands = await teHandBands(page);
+      expect(bands.above, "band above the hand").toBeLessThan(
+        bands.viewport * 0.25
+      );
+      expect(bands.below, "band below the hand").toBeLessThan(
+        bands.viewport * 0.25
+      );
+      await assertNoHorizontalOverflow(page);
+    }
+  });
+
+  test("the header clears the floating toolbar", async ({ page }) => {
+    await openTe(page);
+    const toolbar = (await page
+      .getByTestId("cabinet-touch-toolbar")
+      .boundingBox())!;
+    const controls = page.locator(`${TE_ROOT} > header button:visible`);
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
+    for (let i = 0; i < count; i += 1) {
+      const box = (await controls.nth(i).boundingBox())!;
+      const clear =
+        box.x + box.width <= toolbar.x + 1 ||
+        box.y >= toolbar.y + toolbar.height - 1;
+      expect(clear, `header control ${i} under the toolbar`).toBe(true);
+    }
+  });
+
+  test("the page cannot scroll behind the open cabinet", async ({ page }) => {
+    await openTe(page);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("every control is 44px and no text is under 12px: table, inspect, hands, run info, deck builder", async ({
+    page,
+  }) => {
+    await openTe(page);
+    await sdTouchSizes(page, TE_ROOT);
+    await teOpenInspect(page);
+    await sdTouchSizes(page, TE_ROOT);
+    await page.getByRole("button", { name: /Close Inspect/ }).tap();
+    for (const trigger of [
+      "hand-sheet-button",
+      "run-info-button",
+      "deck-builder-button",
+    ]) {
+      await page.getByTestId(trigger).tap();
+      await expect(page.locator(`${IMMERSIVE} [role="dialog"]`)).toBeVisible();
+      await sdTouchSizes(page, `${TE_ROOT} [role="dialog"]`);
+      await page.keyboard.press("Escape");
+      await expect(page.locator(`${IMMERSIVE} [role="dialog"]`)).toHaveCount(0);
+    }
+  });
+
+  test("a hand is played by taps alone: inspect, correct, select, play", async ({
+    page,
+  }) => {
+    await openTe(page);
+    expect(await teTile(page, "ROUND")).toBe(0);
+    await tePlayFirstHand(page);
+    await expect
+      .poll(async () => (await teTile(page, "ROUND")) ?? 0, {
+        timeout: 20000,
+      })
+      .toBeGreaterThan(0);
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("a card is inspected, read and discarded by touch", async ({ page }) => {
+    await openTe(page);
+    // Inspect desk: fits, and its Close row stays in reach.
+    await teOpenInspect(page);
+    await teDialogFits(page, "inspect desk");
+    await expect(
+      page.getByRole("button", { name: /Close Inspect/ })
+    ).toBeVisible();
+    await page.getByRole("button", { name: /Close Inspect/ }).tap();
+    // A second tap on a selected card reads it.
+    const first = teCards(page).nth(await teCardIndex(page, /^Listing /));
+    await first.tap();
+    await expect(first).toHaveAttribute("aria-pressed", "true");
+    await first.tap();
+    await expect(page.getByTestId("card-detail")).toBeVisible();
+    await teDialogFits(page, "card detail");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("card-detail")).toBeHidden();
+    // Discard what is selected.
+    const discards = await teTile(page, "DISCARDS");
+    // The card is still selected after reading it.
+    await expect(first).toHaveAttribute("aria-pressed", "true");
+    await page.getByRole("button", { name: /^Discard/ }).tap();
+    await expect
+      .poll(() => teTile(page, "DISCARDS"), { timeout: 10000 })
+      .toBe((discards ?? 0) - 1);
+  });
+
+  test("Hands, Run Info, the Codex and the Deck Builder are sheets that fit", async ({
+    page,
+  }) => {
+    await openTe(page);
+    await page.getByTestId("hand-sheet-button").tap();
+    await teDialogFits(page, "hands sheet");
+    await page.keyboard.press("Escape");
+    await page.getByTestId("run-info-button").tap();
+    await teDialogFits(page, "run info");
+    await page.getByTestId("run-info-codex").tap();
+    await expect(page.getByTestId("codex")).toBeVisible();
+    await teDialogFits(page, "codex");
+    await page.keyboard.press("Escape");
+    await expect(page.getByTestId("codex")).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await page.getByTestId("deck-builder-button").tap();
+    await teDialogFits(page, "deck builder");
+    await assertNoHorizontalOverflow(page);
+    await page.keyboard.press("Escape");
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the cleared Blind, the Procurement Shop and a pack fit, with Next Blind in reach", async ({
+    page,
+  }) => {
+    await openTe(page, "shop");
+    await expect(page.getByTestId("shop")).toBeVisible();
+    await expectInsideViewport(page, [TE_ROOT]);
+    // Next Blind stays in reach whatever the shop's length.
+    const nextBlinds = page.getByRole("button", { name: /Next Blind/ });
+    const vh = page.viewportSize()!.height;
+    const reachable = await nextBlinds.evaluateAll(
+      (els, height) =>
+        els.some((el) => {
+          const box = el.getBoundingClientRect();
+          return box.top >= 0 && box.bottom <= height + 1;
+        }),
+      vh
+    );
+    expect(reachable, "a Next Blind button is on screen").toBe(true);
+    await sdTouchSizes(page, TE_ROOT);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+    await assertNoHorizontalOverflow(page);
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+  });
+
+  test("a pack opens inside the table and a card is picked by touch", async ({
+    page,
+  }) => {
+    await openTe(page, "pack");
+    const pack = page.getByTestId("pack-opening");
+    await expect(pack).toBeVisible();
+    await expectInsideViewport(page, [TE_ROOT]);
+    await sdTouchSizes(page, TE_ROOT);
+    await assertNoHorizontalOverflow(page);
+    const choice = pack.getByRole("button").first();
+    await expect(choice).toBeVisible();
+    await choice.scrollIntoViewIfNeeded();
+    await choice.tap();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("a shop buy by touch spends the budget", async ({ page }) => {
+    await openTe(page, "shop");
+    const buys = page.getByTestId("shop-buy");
+    await expect(buys.first()).toBeVisible();
+    const before = await page.locator(TE_ROOT).innerText();
+    const count = await buys.count();
+    for (let i = 0; i < count; i += 1) {
+      const buy = buys.nth(i);
+      if (await buy.isEnabled()) {
+        await buy.scrollIntoViewIfNeeded();
+        await buy.tap();
+        await expect
+          .poll(() => page.locator(TE_ROOT).innerText())
+          .not.toBe(before);
+        return;
+      }
+    }
+    test.info().annotations.push({
+      type: "note",
+      description: "No offer was affordable on this seed.",
+    });
+  });
+
+  test("Escape closes a dialog and keeps the cabinet, even straight after its key", async ({
+    page,
+  }) => {
+    await openTe(page);
+    await teCards(page).first().focus();
+    // No wait after each key: focus has not moved into the sheet yet.
+    for (const [key, dialog] of [
+      ["h", "hand-sheet"],
+      ["Shift+R", "run-info"],
+      ["?", "card-detail"],
+      ["i", "inspect-drawer"],
+    ] as const) {
+      await page.keyboard.press(key);
+      await page.keyboard.press("Escape");
+      await expect(page.getByTestId(dialog)).toHaveCount(0);
+      await expect(page.locator(IMMERSIVE)).toBeVisible();
+      await teCards(page).first().focus();
+    }
+    // With nothing open Escape leaves the cabinet.
+    await page.keyboard.press("Escape");
+    await expect(page.locator(IMMERSIVE)).toHaveCount(0);
+  });
+
+  test("a sheet traps focus", async ({ page }) => {
+    await openTe(page);
+    await page.getByTestId("run-info-button").tap();
+    const dialog = page.locator(`${IMMERSIVE} [role="dialog"]`);
+    await expect(dialog).toBeVisible();
+    for (let i = 0; i < 14; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () => !!document.activeElement?.closest('[role="dialog"]')
+        )
+      ).toBe(true);
+    }
+  });
+
+  test("a picked-up seal answers Escape itself instead of leaving the cabinet", async ({
+    page,
+  }) => {
+    await openTe(page);
+    const first = teCards(page).first();
+    for (const id of ["C-T14.1.1-A", "C-T14.1.1-B", "C-L16.2.4"]) {
+      await page.locator(`[data-card-id="${id}"]`).tap();
+    }
+    await page.getByRole("button", { name: /^Discard/ }).tap();
+    await page.locator('[data-card-id="C-T14.1.3"]').focus();
+    await page.keyboard.press("a");
+    await page.getByTestId("allocate-option").nth(1).tap();
+    const seal = page
+      .getByTestId("consumable-tray")
+      .getByRole("button", { name: /Adjudicated Endpoint/ });
+    await seal.tap();
+    await expect(seal).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(TE_ROOT)).toHaveAttribute(
+      "data-escape-docks",
+      "true"
+    );
+    await first.focus();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await expect(seal).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("with a keyboard case every shortcut works", async ({ page }) => {
+    await openTe(page);
+    const first = teCards(page).first();
+    await first.focus();
+    await page.keyboard.press("ArrowRight");
+    expect(
+      await page.evaluate(
+        () => document.activeElement?.getAttribute("data-card-id") ?? ""
+      )
+    ).not.toBe(await first.getAttribute("data-card-id"));
+    await page.keyboard.press("Space");
+    await expect(page.locator(`${TE_CARDS}[aria-pressed="true"]`)).toHaveCount(
+      1
+    );
+    await page.keyboard.press("Space");
+    await expect(page.locator(`${TE_CARDS}[aria-pressed="true"]`)).toHaveCount(
+      0
+    );
+    await page.keyboard.press("h");
+    await expect(page.getByTestId("hand-sheet")).toBeVisible();
+    await page.keyboard.press("h");
+    await expect(page.getByTestId("hand-sheet")).toBeHidden();
+    // Focus returns to the table, so the next shortcut still reaches it.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            !!document.activeElement?.closest(
+              'section[aria-labelledby="card-table-heading"]'
+            )
+        )
+      )
+      .toBe(true);
+    await page.keyboard.press("Shift+R");
+    await expect(page.getByTestId("run-info")).toBeVisible();
+    await page.keyboard.press("Escape");
+    // F is not a table key, so the cabinet keeps it for fullscreen.
+    await teKey(page, "Tab");
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the Apple Pencil works like a finger", async ({ page }) => {
+    await openTe(page);
+    const card = teCards(page).nth(await teCardIndex(page, /^Listing /));
+    const box = (await card.boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = box.x + box.width * 0.5;
+    const y = box.y + box.height * 0.5;
+    const penTap = async () => {
+      for (const type of ["mousePressed", "mouseReleased"] as const) {
+        await cdp.send("Input.dispatchMouseEvent", {
+          type,
+          x,
+          y,
+          button: "left",
+          clickCount: 1,
+          pointerType: "pen",
+        });
+      }
+    };
+    await penTap();
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-input-modality",
+      "pen"
+    );
+    await expect(card).toHaveAttribute("aria-pressed", "true");
+    // A second pen tap reads the card, as a second finger tap does.
+    await penTap();
+    await expect(page.getByTestId("card-detail")).toBeVisible();
+  });
+
+  test("a hidden tab settles a hand that is still scoring", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await openTe(page);
+    await tePlayFirstHand(page);
+    const skip = page.getByRole("button", { name: /^Skip/ });
+    await expect(skip).toBeVisible({ timeout: 15000 });
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(skip).toBeHidden({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("the cabinet has no blocking axe violations: table, inspect, hands, shop", async ({
+    page,
+  }) => {
+    await openTe(page);
+    await sdAxe(page);
+    await teOpenInspect(page);
+    await sdAxe(page);
+    await page.getByRole("button", { name: /Close Inspect/ }).tap();
+    await page.getByTestId("hand-sheet-button").tap();
+    await expect(page.getByTestId("hand-sheet")).toBeVisible();
+    await sdAxe(page);
+  });
+
+  test("the Procurement Shop has no blocking axe violations", async ({
+    page,
+  }) => {
+    await openTe(page, "shop");
+    await expect(page.getByTestId("shop")).toBeVisible();
+    await sdAxe(page);
+  });
+
+  test.describe("Split View (ADR 0061)", () => {
+    for (const width of [507, 678]) {
+      test(`${width}x1024: the table fits, the hand fits its row and the HUD clears the toolbar`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await openTe(page);
+        await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+          "data-mobile-layout",
+          "fit"
+        );
+        await expectFillsViewport(page, page.locator(IMMERSIVE));
+        await expectInsideViewport(page, [TE_ROOT, TE_CARDS]);
+        await assertNoHorizontalOverflow(page);
+        const overflow = await page.evaluate(() => {
+          const hand = document.querySelector<HTMLElement>(
+            '[data-testid="hand"]'
+          )!;
+          const grid = document.querySelector<HTMLElement>(".te-table-grid")!;
+          return {
+            handX: Math.max(0, hand.scrollWidth - hand.clientWidth),
+            gridY: Math.max(0, grid.scrollHeight - grid.clientHeight),
+            page: Math.max(
+              0,
+              document.scrollingElement!.scrollHeight - window.innerHeight
+            ),
+          };
+        });
+        expect(overflow).toEqual({ handX: 0, gridY: 0, page: 0 });
+        const toolbar = (await page
+          .getByTestId("cabinet-touch-toolbar")
+          .boundingBox())!;
+        const controls = page.locator(`${TE_ROOT} > header button:visible`);
+        for (let i = 0; i < (await controls.count()); i += 1) {
+          const box = (await controls.nth(i).boundingBox())!;
+          expect(
+            box.x + box.width <= toolbar.x + 1 ||
+              box.y >= toolbar.y + toolbar.height - 1,
+            `header control ${i} under the toolbar`
+          ).toBe(true);
+        }
+        await sdTouchSizes(page, TE_ROOT);
+      });
+
+      test(`${width}x1024: the desks and sheets fit`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await openTe(page);
+        await teOpenInspect(page);
+        await teDialogFits(page, "inspect desk");
+        await page.getByRole("button", { name: /Close Inspect/ }).tap();
+        for (const trigger of [
+          "hand-sheet-button",
+          "run-info-button",
+          "deck-builder-button",
+        ]) {
+          await page.getByTestId(trigger).tap();
+          await teDialogFits(page, trigger);
+          await assertNoHorizontalOverflow(page);
+          await page.keyboard.press("Escape");
+          await expect(page.locator(IMMERSIVE)).toBeVisible();
+        }
+      });
+    }
+  });
+});

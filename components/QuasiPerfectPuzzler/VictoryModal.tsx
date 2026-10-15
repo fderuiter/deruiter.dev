@@ -6,7 +6,6 @@ import { CopyButton } from "@/components/ui/CopyButton";
 import { LevelScore, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
 import type { PuzzlerVariantDef } from "@/lib/quasi-perfect";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { useCabinetTouch } from "@/components/arcade/mobile";
 import { IconCheck, IconCopy, IconSparkles } from "@tabler/icons-react";
 
 interface VictoryModalProps {
@@ -65,7 +64,6 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
   });
   // On the touch cabinet the card is at most the screen tall and scrolls, so
   // an iPad mini in landscape still reaches every action (#2042).
-  const inCabinet = useCabinetTouch();
   const campaignDone = !!campaignStars && campaignStars.proven >= totalLevels;
   // RAM budgets per star, stated as RAM spent so they read the same in Story
   // and Hacker modes (computeLevelStars compares the hacker equivalent).
@@ -93,7 +91,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4"
     >
       <div
-        className={`max-w-md w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl font-mono${inCabinet ? " max-h-[calc(100dvh-2rem)] overflow-y-auto" : ""}`}
+        // The card scrolls on every screen now the Lean text is shown in
+        // full (#2201); its buttons keep the region keyboard-reachable.
+        className="max-w-md w-full rounded-2xl border border-zinc-700 bg-zinc-950 p-6 text-center shadow-2xl font-mono max-h-[calc(100dvh-2rem)] overflow-y-auto"
       >
         {/* Title Badge */}
         {isSorry ? (
@@ -298,7 +298,9 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                 successMessage="Generated Lean text copied to clipboard"
               />
             </div>
-            <pre className="text-[10px] text-zinc-300 font-mono whitespace-pre overflow-x-auto max-h-24">
+            {/* Wrapped, not a scroll box: every line shows in full and no
+                keyboard-unreachable scroll region is left behind (#2201). */}
+            <pre className="text-[10px] text-zinc-300 font-mono whitespace-pre-wrap break-words">
               {leanCode}
             </pre>
           </div>

@@ -16,6 +16,14 @@ The player's plan for one day.
 
 ***
 
+### excused?
+
+> `optional` **excused?**: `string`[]
+
+Ids that came while the player was away, held against nobody (#2189).
+
+***
+
 ### handled
 
 > **handled**: `string`[]

@@ -33,7 +33,11 @@ import type {
   WeekdayId,
 } from "../types";
 import { BOOTH_CREW, CHOICE_ENDINGS, getShiftEnding } from "./diary";
-import { getChoiceEnding, getDilemmaDiaryLines } from "./dilemmas";
+import {
+  dealWeekDilemmas,
+  getChoiceEnding,
+  getDilemmaDiaryLines,
+} from "./dilemmas";
 import { computePayStub } from "./engine";
 import { scoreShift } from "./view";
 
@@ -130,6 +134,8 @@ export function getWeekDayConfig(
     ...(day.rushWindows ? { rushWindows: day.rushWindows } : {}),
     ...(day.ageUnlocked ? { ageUnlocked: true } : {}),
     startMeters: carryMeters(week.days.at(-1) ?? null),
+    // The week deals each day its own dilemmas, so none repeats (#2139).
+    dilemmaDeck: dealWeekDilemmas(week.seed, WEEKDAY_IDS)[week.days.length],
   };
 }
 
@@ -184,6 +190,12 @@ export function getWeekNetCents(week: WeekState): number {
   return week.days.reduce((sum, day) => sum + day.netCents, 0);
 }
 
+/** How a mid-week day that reached close leans, by its ending (#2139). */
+const DAY_LEANS = {
+  walkout: `${BOOTH_CREW.coworker} saved me a seat on break. The crew is starting to talk about Friday.`,
+  "company-man": `${BOOTH_CREW.manager} nodded at me on the way out. ${BOOTH_CREW.coworker} didn't.`,
+} as const;
+
 function count(value: number, one: string, many: string): string {
   return `${value} ${value === 1 ? one : many}`;
 }
@@ -234,6 +246,12 @@ export function getWeekDayDiaryLines(result: WeekDayResult): string[] {
   }
   // What the player chose that day, one line per dilemma (#2087).
   lines.push(...getDilemmaDiaryLines(result.choices ?? []));
+  // Mid-week, a closed day leans toward an ending rather than reaching one
+  // (#2139): the week has only one walkout or promotion, on Friday.
+  if (result.outcome === "completed" && result.day !== "friday") {
+    const lean = DAY_LEANS[result.ending as keyof typeof DAY_LEANS];
+    if (lean) lines.push(lean);
+  }
   return lines;
 }
 

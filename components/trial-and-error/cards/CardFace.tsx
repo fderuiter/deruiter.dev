@@ -152,7 +152,7 @@ export function CardFace({ view }: { view: TableCardView }) {
         )}
       </span>
       <span
-        className={`block font-bold leading-tight break-words${dim}`}
+        className={`te-card-number block font-bold leading-tight break-words${dim}`}
         style={UNCOVERED}
       >
         {card.number}

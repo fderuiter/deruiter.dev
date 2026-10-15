@@ -1,0 +1,223 @@
+/*
+ * Monkey C Mayhem on the immersive touch cabinet (ADR 0061, #2122). The
+ * simulator root carries `garmin-touch` only while useCabinetTouch() is true,
+ * so desktop markup and styles never see these rules. The watch, its touch
+ * dock and the Connect IQ companion share the cabinet's stage without any page
+ * scroll: held sideways the companion is a column beside the watch, held
+ * upright it is a band under the dock, and in both it scrolls on its own.
+ */
+
+/* ---- The stage ---- */
+/* The client's wrapper hands the simulator the whole stage height. */
+.arcade-cabinet[data-immersive="true"] .garmin-stage {
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.arcade-cabinet[data-immersive="true"] .garmin-sim.garmin-touch {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  padding: 0.5rem;
+  padding-left: calc(0.5rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(0.5rem + env(safe-area-inset-right, 0px));
+  overflow: hidden;
+  touch-action: none;
+}
+
+.arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-layout {
+  height: 100%;
+  max-width: none;
+  gap: 0.75rem;
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 22rem);
+  grid-template-rows: minmax(0, 1fr);
+}
+
+@media (orientation: portrait) {
+  .arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 30%);
+  }
+}
+
+/* The play column: the watch takes the height the dock leaves. */
+.arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-play {
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+}
+
+.arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-chassis {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  container-type: size;
+}
+
+/* The watch is the largest 520:580 box that fits, leaving room either side
+   for the pusher captions. */
+.arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-watch-frame {
+  width: min(calc(100cqw - 8rem), calc(100cqh * 520 / 580));
+  max-width: none;
+  margin: 0 auto;
+}
+
+/* ---- Sizes: every control 44px or more, no text under 12px ---- */
+.garmin-touch .garmin-layout button,
+.garmin-touch .garmin-layout select {
+  min-height: 44px;
+}
+.garmin-touch .garmin-layout button {
+  min-width: 44px;
+}
+.garmin-touch .garmin-layout .text-\[9px\],
+.garmin-touch .garmin-layout .text-\[10px\],
+.garmin-touch .garmin-layout .text-\[11px\] {
+  font-size: 0.75rem;
+}
+
+/* A pusher's key hint ([L], [ENTER]) is for a keyboard; a touch cabinet keeps
+   the name. */
+.garmin-touch [data-pusher] > span:last-child > span:last-child {
+  display: none;
+}
+
+/* "Click the watch to use the keys" is about a keyboard's focus; the dock
+   plays without it. */
+.garmin-touch [data-keyboard-status] {
+  display: none;
+}
+
+/* The idle start card sits inside the round screen. */
+.garmin-touch [data-testid="garmin-screen"] p {
+  line-height: 1.35;
+}
+
+/* ---- The companion: its own scroll, clear of the floating toolbar ---- */
+.arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-companion {
+  position: static;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (orientation: landscape) {
+  .arcade-cabinet[data-immersive="true"] .garmin-touch .garmin-companion {
+    margin-top: 4.25rem;
+    height: calc(100% - 4.25rem);
+  }
+}
+
+/* The end-of-run card covers the whole stage, not just the companion. */
+.garmin-touch .arcade-result-card {
+  max-height: 100%;
+}
+
+/* ---- The dock ---- */
+.garmin-touch .garmin-dock {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0 calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  touch-action: none;
+}
+
+.garmin-touch .garmin-dock-side,
+.garmin-touch .garmin-dock-middle {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.garmin-touch .garmin-dock-middle {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.garmin-touch .garmin-dock .garmin-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-width: 4rem;
+  min-height: 4rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #3f3f46;
+  border-radius: 1rem;
+  background: #1c1c20;
+  color: #e4e4e7;
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.garmin-touch .garmin-dock .garmin-dock-middle .garmin-key {
+  min-width: 3.5rem;
+  flex: 0 1 5rem;
+}
+
+/* The thumbs' keys are the biggest. */
+.garmin-touch .garmin-dock .garmin-key-jog,
+.garmin-touch .garmin-dock .garmin-key-sprint,
+.garmin-touch .garmin-dock .garmin-key-jump,
+.garmin-touch .garmin-dock .garmin-key-action {
+  min-width: 5rem;
+  min-height: 4.5rem;
+}
+
+.garmin-touch .garmin-dock .garmin-key-sprint,
+.garmin-touch .garmin-key-jump {
+  border-color: rgba(34, 211, 238, 0.5);
+  color: #a5f3fc;
+}
+
+.garmin-touch .garmin-key-start {
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #6ee7b7;
+}
+
+.garmin-touch .garmin-dock .garmin-key-action {
+  border-color: rgba(245, 158, 11, 0.5);
+  color: #fcd34d;
+}
+
+.garmin-touch .garmin-key:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.garmin-touch .garmin-key[data-pressed="true"],
+.garmin-touch .garmin-key:active {
+  background: #27272a;
+}
+
+.garmin-touch .garmin-key-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.garmin-touch .garmin-key-label {
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .garmin-touch .garmin-key:active {
+    transform: scale(0.98);
+  }
+}

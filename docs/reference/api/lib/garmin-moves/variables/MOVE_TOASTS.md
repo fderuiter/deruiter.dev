@@ -8,4 +8,4 @@
 
 > `const` **MOVE\_TOASTS**: `Record`\<[`MoveName`](../type-aliases/MoveName.md), `string`\>
 
-The popup line for each move's first use in a run.
+The popup line for each move's first use in a run, or the banner for a course piece's first meeting.

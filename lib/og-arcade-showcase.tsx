@@ -51,7 +51,7 @@ export const GAME_CARD_COPY = {
   "garmin-watch": {
     title: "Monkey C Mayhem",
     tagline:
-      "Keep a simulated smartwatch running inside a 32 KB memory budget, and wipe the screen when it fogs up.",
+      "A 5K platformer on a Garmin watch. Pace your Body Battery, race the Saturday 5K, and beat the coach's time.",
   },
   "clinical-chaos": {
     title: "Clinical Trial Chaos",

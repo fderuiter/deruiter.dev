@@ -22,6 +22,24 @@ import {
 import { parseFormulaWithError } from "./compiler";
 
 /**
+ * Unfolds the Nat definitions Lean's `rfl` sees through: addition and
+ * multiplication recurse on their second argument, so `e + 0` is `e` and
+ * `e * 0` is `0` by definition (#2277). Nothing else is reduced, so `0 + e`
+ * still needs a lemma, as it does in Lean.
+ */
+function reduceByDefinition(node: ASTNode): ASTNode {
+  if (!node.children || node.children.length === 0) return node;
+  const children = node.children.map(reduceByDefinition);
+  if (node.type === "Operator" && children.length === 2) {
+    const [lhs, rhs] = children;
+    const rhsIsZero = rhs.type === "Constant" && Number(rhs.value) === 0;
+    if (rhsIsZero && node.value === "+") return lhs;
+    if (rhsIsZero && (node.value === "*" || node.value === "×")) return rhs;
+  }
+  return { ...node, children };
+}
+
+/**
  * Resolves a hypothesis from context using LIFO (reverse array search) order.
  * Tier 1: Searches by metadata.name (case-insensitive) or node id in reverse order.
  * Tier 2: Structural predicate fallback searching in reverse order.
@@ -82,7 +100,10 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
       const rightValue = evaluateArithmetic(right);
       const closedEqual =
         leftValue !== null && rightValue !== null && leftValue === rightValue;
-      if (closedEqual || areNodesEqual(left, right)) {
+      if (
+        closedEqual ||
+        areNodesEqual(reduceByDefinition(left), reduceByDefinition(right))
+      ) {
         const trueNode: ASTNode = {
           id: `qed-${Date.now()}`,
           type: "Boolean",
@@ -96,6 +117,16 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
           leanProofStep: "rfl",
           message: "tactic 'rfl' succeeded: equality proven by reflexivity.",
           isProofComplete: newAST.type === "Boolean" && newAST.value === true,
+        };
+      }
+
+      // Closed numerals that disagree fail on arithmetic, not on shape
+      // (#2277): say what the left side actually evaluates to.
+      if (leftValue !== null && rightValue !== null) {
+        return {
+          success: false,
+          ramConsumed: tacticDefs.rfl.failureCost,
+          message: `error: 'rfl' failed: ${renderASTString(left)} evaluates to ${leftValue}, not ${rightValue}.`,
         };
       }
 

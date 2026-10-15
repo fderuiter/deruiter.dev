@@ -167,14 +167,24 @@ const subscribeHighScore = (callback: () => void) => {
   window.addEventListener("storage", callback);
   return () => window.removeEventListener("storage", callback);
 };
-const getHighScoreSnapshot = () => {
+// Campaign and arcade keep separate bests: a four-act total and a single
+// survival run are different scales. Sandbox never saves a score (#2140).
+// The campaign keeps the original key, which the arcade hub also reads.
+const BEST_SCORE_KEYS: Partial<Record<LaserMode, string>> = {
+  campaign: "laser_loon_high_score",
+  arcade: "laser_loon_arcade_best",
+};
+const readBest = (key: string) => {
   try {
-    return safeGetRawItem("laser_loon_high_score") || "0";
+    return parseInt(safeGetRawItem(key) || "0", 10) || 0;
   } catch {
-    return "0";
+    return 0;
   }
 };
-const getHighScoreServerSnapshot = () => "0";
+// A string snapshot keeps useSyncExternalStore's comparison stable.
+const getHighScoreSnapshot = () =>
+  `${readBest("laser_loon_high_score")}|${readBest("laser_loon_arcade_best")}`;
+const getHighScoreServerSnapshot = () => "0|0";
 
 export const LaserLoon: React.FC = () => {
   const isMounted = useSyncExternalStore(
@@ -187,7 +197,9 @@ export const LaserLoon: React.FC = () => {
     getHighScoreSnapshot,
     getHighScoreServerSnapshot
   );
-  const loadedHighScore = parseInt(rawHighScore, 10) || 0;
+  const [savedCampaignBest, savedArcadeBest] = rawHighScore
+    .split("|")
+    .map((n) => parseInt(n, 10) || 0);
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
 
@@ -211,8 +223,17 @@ export const LaserLoon: React.FC = () => {
   const [bossMaxHp, setBossMaxHp] = useState(100);
   const [bossName, setBossName] = useState("");
   const [score, setScore] = useState(0);
-  const [highScore, setHighScore] = useState(0);
-  const effectiveHighScore = Math.max(highScore, loadedHighScore);
+  // Bests reached this session, per mode, ahead of the storage snapshot.
+  const [sessionBest, setSessionBest] = useState<
+    Partial<Record<LaserMode, number>>
+  >({});
+  const loadedHighScore =
+    mode === "campaign"
+      ? savedCampaignBest
+      : mode === "arcade"
+        ? savedArcadeBest
+        : 0;
+  const effectiveHighScore = Math.max(sessionBest[mode] ?? 0, loadedHighScore);
   const [combo, setCombo] = useState(0);
   const [maxCombo, setMaxCombo] = useState(0);
   // The best score before this run, for the result card's best-score line.
@@ -607,20 +628,23 @@ export const LaserLoon: React.FC = () => {
   // write happens outside any setState updater (AGENTS.md §4), and the best
   // includes the saved score so a lower run never overwrites it.
   const scoreRef = useRef(0);
-  const bestScoreRef = useRef(0);
+  const bestScoreRef = useRef<Partial<Record<LaserMode, number>>>({});
   const addScore = useCallback(
     (pts: number) => {
       const next = scoreRef.current + pts;
       scoreRef.current = next;
       setScore(next);
-      if (next > Math.max(bestScoreRef.current, loadedHighScore)) {
-        bestScoreRef.current = next;
-        setHighScore(next);
-        safeSetRawItem("laser_loon_high_score", next.toString());
-        recordArcadeScore("laser-loon", next);
+      const key = BEST_SCORE_KEYS[mode];
+      if (!key) return;
+      if (next > Math.max(bestScoreRef.current[mode] ?? 0, loadedHighScore)) {
+        bestScoreRef.current = { ...bestScoreRef.current, [mode]: next };
+        setSessionBest(bestScoreRef.current);
+        safeSetRawItem(key, next.toString());
+        // The arcade hub's one Laser Loon score is the campaign best.
+        if (mode === "campaign") recordArcadeScore("laser-loon", next);
       }
     },
-    [loadedHighScore]
+    [mode, loadedHighScore]
   );
 
   const addUltimateMeter = useCallback((amount: number) => {
@@ -862,6 +886,17 @@ export const LaserLoon: React.FC = () => {
     loonPosRef.current = { x: 120, y: 180, targetX: 120, targetY: 180 };
   }, []);
 
+  // A retry starts from the score the act began with, so points scored in a
+  // failed attempt never stack into the run total or the best (#2140).
+  const retryAct = useCallback(() => {
+    scoreRef.current = actStartScoreRef.current;
+    setScore(actStartScoreRef.current);
+    comboRef.current = 0;
+    setCombo(0);
+    setMultiplier(1);
+    startAct(currentActNum);
+  }, [startAct, currentActNum]);
+
   // The next act's intro starts its counter at zero, not at last act's kills.
   const advanceToNextAct = useCallback(() => {
     setActKills(0);
@@ -872,7 +907,7 @@ export const LaserLoon: React.FC = () => {
 
   // Start game session
   const startGame = useCallback(() => {
-    setRunStartBest(Math.max(bestScoreRef.current, loadedHighScore));
+    setRunStartBest(Math.max(bestScoreRef.current[mode] ?? 0, loadedHighScore));
     scoreRef.current = 0;
     setScore(0);
     setCombo(0);
@@ -2030,7 +2065,9 @@ export const LaserLoon: React.FC = () => {
         gameState === "campaign-victory"
       ) {
         startGame();
-      } else if (gameState === "act-intro" || gameState === "act-failed") {
+      } else if (gameState === "act-failed") {
+        retryAct();
+      } else if (gameState === "act-intro") {
         startAct(currentActNum);
       } else if (gameState === "act-victory") {
         advanceToNextAct();
@@ -2289,7 +2326,10 @@ export const LaserLoon: React.FC = () => {
         <ArcadeHud
           stats={[
             { label: "Score", value: score, accent: true },
-            { label: "Hi", value: effectiveHighScore },
+            // Sandbox never saves a score, so it shows no best.
+            ...(mode === "sandbox"
+              ? []
+              : [{ label: "Hi", value: effectiveHighScore }]),
             ...(mode === "campaign"
               ? [
                   { label: "Act", value: `${currentActNum}/4` },
@@ -2951,7 +2991,7 @@ export const LaserLoon: React.FC = () => {
               label: `Try Act ${currentActNum} again${keyTag("Space")}`,
               icon: <IconRefresh className="w-4 h-4" />,
               onClick: () => {
-                startAct(currentActNum);
+                retryAct();
                 containerRef.current?.focus({ preventScroll: true });
               },
             }}

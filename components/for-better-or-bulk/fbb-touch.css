@@ -1,0 +1,272 @@
+/*
+ * For Better or Bulk on the immersive touch cabinet (ADR 0061, #2123). The
+ * game root carries `fbb-touch` only while useCabinetTouch() is true, so
+ * desktop markup and styles never see these rules. During a day the header,
+ * the venue, the side panel and the dock share the cabinet's stage without
+ * any page scroll: held upright the venue spans the width with the panel
+ * under it, held sideways the panel sits beside the venue. The plan, the
+ * ceremony, the receipt and a replay scroll inside the stage instead.
+ */
+
+/* ---- Sizes: every control 44px or more, no text under 12px ---- */
+.fbb-touch button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.fbb-touch .text-\[9px\],
+.fbb-touch .text-\[10px\],
+.fbb-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+
+/* ---- The root fills the stage; between days it scrolls inside it ---- */
+.arcade-cabinet[data-immersive="true"] .fbb-touch {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+/* The cabinet's toolbar floats over the top right corner. */
+.fbb-touch:not([data-fbb-phase="playing"]) {
+  padding-top: 3.5rem;
+}
+.arcade-cabinet[data-immersive="true"] .fbb-touch[data-fbb-phase="playing"] {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* ---- A day: header, venue and panel, dock ---- */
+.fbb-touch .fbb-play {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.fbb-touch .fbb-play > [data-testid="fbb-strip"] {
+  flex: none;
+  /* The strip stops short of the floating toolbar. */
+  width: calc(100% - var(--cabinet-toolbar-inset, 0px));
+}
+.fbb-touch .fbb-play > .fbb-main {
+  flex: 1 1 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.fbb-touch .fbb-play > [data-touch-controls] {
+  flex: none;
+}
+.fbb-touch .fbb-panel {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  font-size: 0.8125rem;
+}
+
+/* Held upright, the panel lays its parts out in two columns under the venue. */
+@media (orientation: portrait) {
+  .fbb-touch .fbb-panel {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    column-gap: 1rem;
+  }
+  .fbb-touch .fbb-panel > [data-testid="fbb-checklist"] {
+    grid-row: span 3;
+  }
+}
+
+/* Held sideways, the venue takes the height the strip and dock leave, kept at
+   5:3, and the panel sits beside it. */
+@media (orientation: landscape) {
+  .fbb-touch .fbb-play > .fbb-main {
+    grid-template-columns: minmax(0, 1fr) 15rem;
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .fbb-touch .fbb-venue {
+    container-type: size;
+    min-height: 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+  }
+  .fbb-touch .fbb-venue-frame {
+    width: min(100cqw, 100cqh * 5 / 3);
+    flex: none;
+  }
+}
+
+/* ---- The dock ---- */
+.fbb-touch .fbb-dock {
+  --fbb-stick: 9.5rem;
+  --fbb-key: 5.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem calc(0.25rem + env(safe-area-inset-bottom, 0px));
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+@media (orientation: landscape) and (max-height: 820px) {
+  .fbb-touch .fbb-dock {
+    --fbb-stick: 8rem;
+    --fbb-key: 4.5rem;
+  }
+}
+@media (min-height: 1300px) {
+  .fbb-touch .fbb-dock {
+    --fbb-stick: 11rem;
+    --fbb-key: 6rem;
+  }
+}
+.fbb-touch .fbb-side {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.fbb-touch .fbb-middle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fbb-touch .fbb-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.fbb-touch .fbb-stick {
+  position: relative;
+  flex: none;
+  width: var(--fbb-stick);
+  height: var(--fbb-stick);
+  border-radius: 9999px;
+  border: 1px solid var(--fbb-control);
+  background: var(--fbb-panel);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.fbb-touch .fbb-stick[data-active] {
+  border-color: var(--fbb-accent);
+}
+.fbb-touch .fbb-stick-ring {
+  position: absolute;
+  inset: 22%;
+  border-radius: 9999px;
+  border: 1px dashed var(--fbb-rule);
+  pointer-events: none;
+}
+.fbb-touch .fbb-stick-knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 40%;
+  height: 40%;
+  margin: -20% 0 0 -20%;
+  border-radius: 9999px;
+  border: 2px solid var(--fbb-accent);
+  background: var(--fbb-stage);
+  pointer-events: none;
+}
+.fbb-touch .fbb-stick-label {
+  position: absolute;
+  left: 50%;
+  bottom: 0.35rem;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fbb-dim);
+  pointer-events: none;
+}
+
+.fbb-touch .fbb-key {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  width: var(--fbb-key);
+  height: var(--fbb-key);
+  border-radius: 0.75rem;
+  border: 1px solid var(--fbb-control);
+  background: var(--fbb-panel);
+  color: var(--fbb-text);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.fbb-touch .fbb-key:active {
+  background: var(--fbb-toast);
+}
+.fbb-touch .fbb-key-use {
+  border-color: var(--fbb-accent);
+  color: var(--fbb-accent);
+}
+.fbb-touch .fbb-key-note {
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-transform: none;
+  color: var(--fbb-dim);
+}
+.fbb-touch .fbb-key-small {
+  width: auto;
+  min-width: 4.5rem;
+  height: auto;
+  min-height: 3.5rem;
+  padding: 0 0.75rem;
+}
+.fbb-touch .fbb-key-small[aria-disabled="true"] {
+  opacity: 0.45;
+}
+.fbb-touch .fbb-key-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* ---- Narrower docks ----
+   Co-op fits two pads, four keys and Pause on one row: the iPad mini held
+   upright is 744 wide, and Split View panes are 678 and 507. These come last
+   so they win over the sizes above. */
+.fbb-touch .fbb-dock[data-mode="coop"] {
+  --fbb-stick: 8rem;
+  --fbb-key: 4.25rem;
+}
+@media (min-width: 1000px) {
+  .fbb-touch .fbb-dock[data-mode="coop"] {
+    --fbb-stick: 9.5rem;
+    --fbb-key: 5.25rem;
+  }
+}
+@media (max-width: 720px) {
+  .fbb-touch .fbb-dock[data-mode] {
+    --fbb-stick: 7rem;
+    --fbb-key: 4rem;
+    gap: 0.5rem;
+  }
+}
+@media (max-width: 600px) {
+  .fbb-touch .fbb-dock[data-mode] {
+    --fbb-stick: 5.5rem;
+    --fbb-key: 3.25rem;
+    padding-inline: 0.25rem;
+  }
+  .fbb-touch .fbb-key-small {
+    min-width: 3.5rem;
+    padding: 0 0.375rem;
+  }
+  .fbb-touch .fbb-side,
+  .fbb-touch .fbb-middle,
+  .fbb-touch .fbb-actions {
+    gap: 0.375rem;
+  }
+}

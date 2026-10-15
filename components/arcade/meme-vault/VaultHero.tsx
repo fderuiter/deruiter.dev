@@ -39,8 +39,8 @@ export function VaultHero({ unlocked, total }: VaultHeroProps) {
             Developer Soundboard &amp; Meme Vault
           </h1>
           <p className="font-sans text-sm leading-relaxed text-zinc-400 sm:text-base">
-            A soundboard, hidden trophies, and jokes for people who have spent
-            too long looking at error messages.
+            Echo, a memory game on a retro soundboard, plus hidden trophies and
+            jokes for people who have spent too long looking at error messages.
           </p>
         </div>
 

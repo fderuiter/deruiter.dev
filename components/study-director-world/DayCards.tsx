@@ -9,6 +9,7 @@ import {
   type MorningDigest,
   type OvernightReport,
   type PriorityId,
+  type SiteVisitReport,
 } from "@/lib/study-director-world";
 import { OverlayButton } from "./TeamPieces";
 
@@ -86,6 +87,21 @@ const LineList: React.FC<{
       </ul>
     </section>
   );
+
+/** A site visit's write-up as overnight lines: verdict, findings, what you learned. */
+function visitLines(visit: SiteVisitReport): ToneLine[] {
+  return [
+    { text: visit.verdict, tone: "neutral" },
+    ...visit.findings.map((f) => ({
+      text: f.hidden ? `Hidden by the dashboard: ${f.text}` : f.text,
+      tone: f.hidden ? ("bad" as const) : ("neutral" as const),
+    })),
+    ...visit.learned.map((t) => ({
+      text: `Learned: ${t.label}. ${t.detail}`,
+      tone: "good" as const,
+    })),
+  ];
+}
 
 const CARD =
   "sd-enter scroll-mt-24 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3 space-y-3";
@@ -272,7 +288,9 @@ export const OvernightCard: React.FC<{
   onNextDay: () => void;
   onCloseout: () => void;
   closeoutLabel: string;
-}> = ({ report, nextDay, onNextDay, onCloseout, closeoutLabel }) => {
+  /** The write-up of a site visit the player drove home from (#2185). */
+  visit?: SiteVisitReport | null;
+}> = ({ report, nextDay, onNextDay, onCloseout, closeoutLabel, visit }) => {
   const primary = useRef<HTMLButtonElement>(null);
   const card = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -311,6 +329,12 @@ export const OvernightCard: React.FC<{
         title="What the team did with your day"
         lines={report.delegated ?? []}
       />
+      {visit ? (
+        <LineList
+          title={`${visit.siteName} visit write-up`}
+          lines={visitLines(visit)}
+        />
+      ) : null}
       <LineList title="How today went" lines={report.wrapUp ?? []} />
       <LineList title="What changed" lines={changes} tagged />
       <LineList title="As it was" lines={steady} />

@@ -8,7 +8,11 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { SoundboardButton } from "@/lib/meme-data";
-import { getEchoBest, recordEchoStreak } from "@/lib/meme-data";
+import {
+  getEchoBest,
+  recordEchoMilestones,
+  recordEchoStreak,
+} from "@/lib/meme-data";
 import {
   ECHO_LIGHT_FRACTION,
   beginEchoInput,
@@ -42,6 +46,11 @@ interface EchoGame {
   round: EchoRound | null;
   /** Id of the pad Echo has lit, or null. */
   litId: string | null;
+  /**
+   * Id of the pad the vault wanted when a wrong pad ended the round, or
+   * null. It stays marked until Echo starts again or stops (#2125).
+   */
+  missedId: string | null;
   /** Best streak stored on this device. */
   best: number;
   /** True after a pad was pressed while the vault was still playing. */
@@ -88,6 +97,7 @@ export function useEchoGame({
   const [round, setRound] = useState<EchoRound | null>(null);
   const [litId, setLitId] = useState<string | null>(null);
   const [early, setEarly] = useState(false);
+  const [missedId, setMissedId] = useState<string | null>(null);
   const earlyRef = useRef(false);
   const best = useSyncExternalStore(
     subscribeBest,
@@ -159,6 +169,7 @@ export function useEchoGame({
   const start = useCallback(() => {
     clearTimers();
     setLitId(null);
+    setMissedId(null);
     const next = createEchoRound(makeSeed());
     commit(next);
     callbacksRef.current.announce(
@@ -171,6 +182,7 @@ export function useEchoGame({
   const stop = useCallback(() => {
     clearTimers();
     setLitId(null);
+    setMissedId(null);
     commit(null);
   }, [clearTimers, commit]);
 
@@ -202,6 +214,7 @@ export function useEchoGame({
         callbacksRef.current.onFail();
         const expected =
           next.expectedPad !== null ? padList[next.expectedPad] : undefined;
+        setMissedId(expected?.id ?? null);
         const newBest = recordEchoStreak(next.streak);
         callbacksRef.current.announce(
           `Wrong pad. Echo over with a streak of ${next.streak}.${
@@ -222,6 +235,7 @@ export function useEchoGame({
       }
 
       if (outcome === "complete") {
+        recordEchoMilestones(next.streak);
         callbacksRef.current.announce(
           `Streak ${next.streak}. Watch the next sequence.`,
           "polite"
@@ -234,6 +248,11 @@ export function useEchoGame({
   );
 
   useEffect(() => clearTimers, [clearTimers]);
+
+  // A best set before the Echo trophies existed still earns them (#2126).
+  useEffect(() => {
+    recordEchoMilestones(getEchoBest());
+  }, []);
 
   // A hidden page (app switch, lock screen, Split View hand-off) stops the
   // playback timers, which a browser throttles or freezes, so the sequence
@@ -257,5 +276,5 @@ export function useEchoGame({
     return () => document.removeEventListener("visibilitychange", onVisibility);
   }, [clearTimers, playBack]);
 
-  return { round, litId, best, early, start, stop, press };
+  return { round, litId, missedId, best, early, start, stop, press };
 }

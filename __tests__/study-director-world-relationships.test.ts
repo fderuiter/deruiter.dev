@@ -135,6 +135,19 @@ describe("asking about them", () => {
       expect(text).toMatch(/coffee/);
     }
   });
+  it("gives every team member a quirk and a coffee order of their own (#2193)", () => {
+    let w = fresh();
+    const quirks = new Set<string>();
+    const coffees = new Set<string>();
+    for (const m of w.study.team) {
+      w = trusting(w, m.id, 60);
+      const r = take(w, m.id, "askAbout");
+      quirks.add(r.lines[0].text.replace(m.name, ""));
+      coffees.add(r.lines[1].text.replace(m.name, ""));
+    }
+    expect(quirks.size).toBe(w.study.team.length);
+    expect(coffees.size).toBe(w.study.team.length);
+  });
 });
 
 describe("covering for you", () => {
@@ -235,6 +248,72 @@ describe("what trust unlocks", () => {
     expect(
       earlyWarning({ ...trusted, study: { ...trusted.study, day: 1 } })
     ).toBeNull();
+  });
+
+  it("gives a hunch once, then one reminder in other words (#2193)", () => {
+    const base = trusting(fresh(), "walt", TRUSTED_TRUST);
+    const troubled = (w: WorldState, day: number): WorldState => ({
+      ...w,
+      study: {
+        ...w.study,
+        day,
+        sites: w.study.sites.map((s, i) => ({
+          ...s,
+          openQueries: i === 1 ? 40 : 0,
+          deviations: 0,
+          unsignedSource: 0,
+          eligibilityConcerns: 0,
+        })),
+      },
+    });
+    const site = base.study.sites[1].name;
+    const mornings: string[] = [];
+    let w = base;
+    for (let day = 2; day <= 8; day += 1) {
+      const morning = startDay(troubled(w, day));
+      w = morning.world;
+      const hunch = morning.digest.lines.find((l) => l.text.includes(site));
+      if (hunch) mornings.push(`${day}: ${hunch.text}`);
+    }
+    expect(mornings).toEqual([
+      `2: Walt has a feeling about ${site}. Worth a look this week.`,
+      `5: Walt mentions ${site} again. Nobody has looked yet.`,
+    ]);
+  });
+
+  it("drops the reminder once the player has visited the site", () => {
+    const base = trusting(fresh(), "walt", TRUSTED_TRUST);
+    const site = base.study.sites[1];
+    const troubled: WorldState = {
+      ...base,
+      study: {
+        ...base.study,
+        day: 2,
+        sites: base.study.sites.map((s, i) => ({
+          ...s,
+          openQueries: i === 1 ? 40 : 0,
+        })),
+      },
+    };
+    const first = startDay(troubled).world;
+    const visited: WorldState = {
+      ...first,
+      study: { ...first.study, day: 6 },
+      siteVisitHistory: [
+        {
+          siteId: site.id,
+          siteName: site.name,
+          day: 3,
+          checks: [],
+          audited: false,
+          findings: [],
+          unchecked: [],
+          learned: [],
+          verdict: "",
+        },
+      ],
+    };
+    expect(earlyWarning(visited)).toBeNull();
   });
 
   it("shows trust only as hearts on the card", () => {

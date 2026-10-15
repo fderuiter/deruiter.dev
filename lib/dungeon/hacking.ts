@@ -78,14 +78,12 @@ export function generateHexMatrixPuzzle(
   // stray bytes before it fails (#2085).
   const maxBufferSize =
     sequenceLength + 2 + Math.max(0, Math.floor(extraBufferSlots));
-  const timeLimit = Math.max(12, 25 - difficulty * 3);
 
   return {
     grid,
     targetSequence,
     currentInput: [],
     maxBufferSize,
-    timeRemainingSeconds: timeLimit,
     activeAxis: "row",
     activeIndex: 0,
     solved: false,

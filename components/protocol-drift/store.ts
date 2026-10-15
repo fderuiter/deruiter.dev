@@ -144,6 +144,8 @@ interface ProtocolDriftState {
   loadTemplate: (graph: {
     nodes: ChipNode[];
     edges: WireEdge[];
+    /** The reference pipeline's id; loading one marks the run assisted. */
+    reference?: string;
   }) => Promise<void>;
   addChip: (
     kind: ChipKind,
@@ -192,6 +194,28 @@ let noticeId = 0;
 export function isTracerComplete(view: ProtocolDriftView | null): boolean {
   return view?.scenario === "tracer" && view.completedWaves.length > 0;
 }
+
+/**
+ * The full study's last wave is in and no site owes a reply, so running the
+ * clock only adds days to the lock date. The next step is Database Lock (#2165).
+ */
+export function isAwaitingLock(view: ProtocolDriftView | null): boolean {
+  return (
+    view?.scenario === "full" &&
+    view.completedWaves.includes(3) &&
+    !view.queries.some(
+      (q) =>
+        q.communicationState === "Queued" ||
+        q.communicationState === "AwaitingResponse"
+    )
+  );
+}
+
+const AWAITING_LOCK_TEXT =
+  "Every wave is in and no site owes a reply. Request Database Lock: each extra day counts against the lock-day par.";
+
+/** A reference pipeline loaded but not yet committed to the engine. */
+let pendingReference: string | null = null;
 let busy = false;
 /** True while a save is replaying: no cues, no autosaves. */
 let replaying = false;
@@ -399,6 +423,7 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
     init: async (scenario = "full", seed) => {
       if (seed !== undefined) runSeed = seed;
+      pendingReference = null;
       adapter?.dispose();
       adapter = createEngineAdapter();
       set({ ...initialState(), mode: adapter.mode, scenario });
@@ -429,6 +454,11 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         await send({ type: "SET_PAUSED", isPaused: true });
       } else if (isTracerComplete(get().view)) {
         say("info", "The tracer is complete. Start the full study to go on.");
+      } else if (isAwaitingLock(get().view)) {
+        set({ waveSummary: null });
+        if (fsm === "WAVE_REVIEW")
+          await send({ type: "SET_PAUSED", isPaused: true });
+        say("info", AWAITING_LOCK_TEXT);
       } else if (fsm === "PAUSED" || fsm === "WAVE_REVIEW") {
         set({ waveSummary: null });
         await send({ type: "SET_PAUSED", isPaused: false });
@@ -448,6 +478,10 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         say("info", "The tracer is complete. Start the full study to go on.");
         return;
       }
+      if (fsm === "PAUSED" && isAwaitingLock(get().view)) {
+        say("info", AWAITING_LOCK_TEXT);
+        return;
+      }
       if (fsm === "DRAFT" || fsm === "VALIDATE" || fsm === "DEPLOY_READY") {
         say("warn", "Run Local Test and Publish Revision before stepping.");
         playProtocolCue("rejectCollision");
@@ -465,6 +499,14 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       busy = true;
       try {
         await send({ type: "TICK", realMs });
+        // The last site reply after the final wave: stop before empty days.
+        if (
+          get().snapshot?.fsmState === "RUNNING" &&
+          isAwaitingLock(get().view)
+        ) {
+          await send({ type: "SET_PAUSED", isPaused: true });
+          say("info", AWAITING_LOCK_TEXT);
+        }
       } finally {
         busy = false;
       }
@@ -497,15 +539,11 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       }
     },
 
-    loadTemplate: async ({ nodes, edges }) => {
+    loadTemplate: async ({ nodes, edges, reference }) => {
       set({ nodes, edges, validation: null });
+      if (reference) pendingReference = reference;
       const fsm = get().snapshot?.fsmState;
-      if (fsm && EDITABLE.has(fsm)) {
-        await send({
-          type: "LOAD_GRAPH",
-          ...toPipelineGraph(nodes, edges),
-        });
-      }
+      if (fsm && EDITABLE.has(fsm)) await get().commitCanvasEdit();
     },
 
     addChip: async (kind, position) => {
@@ -523,7 +561,21 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
     commitCanvasEdit: async () => {
       const { nodes, edges } = get();
-      await send({ type: "LOAD_GRAPH", ...toPipelineGraph(nodes, edges) });
+      // A reference loaded while the pipeline was not editable rides on the
+      // next commit, so the engine still marks the run assisted (#2168).
+      const reference = pendingReference;
+      const res = await send({
+        type: "LOAD_GRAPH",
+        ...toPipelineGraph(nodes, edges),
+        ...(reference ? { reference } : {}),
+      });
+      if (
+        reference &&
+        res &&
+        !res.events.some((e) => e.type === "COMMAND_REJECTED")
+      ) {
+        pendingReference = null;
+      }
     },
 
     setNodes: (nodes) => set({ nodes }),

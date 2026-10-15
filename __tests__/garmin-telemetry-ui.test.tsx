@@ -195,7 +195,30 @@ describe("Garmin telemetry and ground strip", () => {
     expect(fitName).toMatch(/\.fit$/);
   });
 
+  it("hides the ground strip on the fitness face, which draws fixed fields (#2131)", async () => {
+    await act(async () => {
+      root.render(<GarminWatchSimulator />);
+    });
+    expect(container.textContent).not.toMatch(/Ground strip/);
+    expect(container.querySelector("select")).toBeNull();
+  });
+
+  it("lists Run mode before the device and developer settings (#2131)", async () => {
+    await act(async () => {
+      root.render(<GarminWatchSimulator />);
+    });
+    const legends = Array.from(container.querySelectorAll("legend")).map((l) =>
+      l.textContent?.trim()
+    );
+    expect(legends.indexOf("Run mode")).toBeGreaterThanOrEqual(0);
+    expect(legends.indexOf("Run mode")).toBeLessThan(legends.indexOf("Device"));
+    expect(legends.indexOf("Device")).toBeLessThan(
+      legends.indexOf("Developer tools")
+    );
+  });
+
   it("offers every field in each slot and defaults to steps, distance, vars", async () => {
+    store.garmin_dev_mode = "1";
     await act(async () => {
       root.render(<GarminWatchSimulator />);
     });
@@ -237,6 +260,7 @@ describe("Garmin telemetry and ground strip", () => {
   });
 
   it("loads a saved layout after mount", async () => {
+    store.garmin_dev_mode = "1";
     store.garmin_ground_strip = JSON.stringify(["fog", "thermal", "ram"]);
     await act(async () => {
       root.render(<GarminWatchSimulator />);

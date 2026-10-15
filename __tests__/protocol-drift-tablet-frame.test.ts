@@ -11,6 +11,7 @@ import {
   touchZoomFloor,
   type ChipNode,
 } from "@/components/protocol-drift/graph-model";
+import { LANE_GEOMETRY } from "@/lib/protocol-drift";
 
 function fakeFlow(viewport = { x: 0, y: 0, zoom: 0.8 }) {
   const flow = {
@@ -78,5 +79,20 @@ describe("touch framing (#2045)", () => {
       touchZoomFloor()
     );
     expect(flow.fitView).not.toHaveBeenCalled();
+  });
+
+  it("keeps the lane labels on screen when the lane is wider than the canvas", () => {
+    const { flow } = fakeFlow();
+    frameLane(flow, { width: 720, height: 300 });
+    const { x, zoom } = flow.setViewport.mock.calls[0][0];
+    // The labels start at world x 8; their left edge must sit inside the canvas.
+    expect(x + 8 * zoom).toBeGreaterThanOrEqual(0);
+  });
+
+  it("keeps the tabulation lane label on screen when the canvas is short", () => {
+    const { flow } = fakeFlow();
+    frameLane(flow, { width: 720, height: 200 });
+    const { y, zoom } = flow.setViewport.mock.calls[0][0];
+    expect(y + LANE_GEOMETRY.tabulationTop * zoom).toBeGreaterThanOrEqual(0);
   });
 });

@@ -713,6 +713,10 @@ export const ClinicalTrialChaos: React.FC = () => {
     playState === "phase_cleared" && lastBimoReport
       ? describePhaseClearForm483(lastBimoReport, scoreState.auditViolations)
       : null;
+  // Between shifts the header shows the filed report, which the closing
+  // interview may have downgraded, not the live stream (#2172).
+  const headerBimoReport =
+    playState !== "playing" && lastBimoReport ? lastBimoReport : liveBimoReport;
 
   // 5. Audit Logger
   const addAuditLog = useCallback(
@@ -3797,18 +3801,18 @@ export const ClinicalTrialChaos: React.FC = () => {
             <IconBolt className="h-4 w-4 text-amber-400" />
             <span className="hidden sm:inline">Stress & BIMO Stream</span>
             <span className="sm:hidden">Stress</span>
-            {liveBimoReport && (
+            {headerBimoReport && (
               <span
                 className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
-                  liveBimoReport.verdict.startsWith("NAI")
+                  headerBimoReport.verdict.startsWith("NAI")
                     ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
-                    : liveBimoReport.verdict.startsWith("VAI")
+                    : headerBimoReport.verdict.startsWith("VAI")
                       ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
                       : "bg-rose-500/20 text-rose-300 border border-rose-500/30"
                 }`}
               >
-                {liveBimoReport.overallScore}% (
-                {liveBimoReport.verdict.split(" ")[0]})
+                {headerBimoReport.overallScore}% (
+                {headerBimoReport.verdict.split(" ")[0]})
               </span>
             )}
           </button>
@@ -4516,9 +4520,11 @@ export const ClinicalTrialChaos: React.FC = () => {
                               {obs.destination}
                             </span>
                           </span>
-                          <span className="mt-1 flex items-center justify-between gap-2">
+                          {/* The flagged value is what the player judges, so it
+                              wraps rather than truncating (#2173). */}
+                          <span className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5">
                             <span
-                              className={`truncate text-sm font-bold ${
+                              className={`min-w-0 break-words text-sm font-bold ${
                                 !obs.isResolved
                                   ? "text-amber-300"
                                   : "text-zinc-100"

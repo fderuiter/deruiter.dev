@@ -7,6 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { requestGarminAutoPause } from "@/components/garmin-watch/auto-pause";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -95,17 +96,29 @@ export const GarminWatchClient: React.FC = () => {
               title="Monkey C Mayhem: A Garmin 5K Platformer"
               subtitle="Five Stages, Three Lives, One Body Battery"
               icon={<IconDeviceWatch className="w-8 h-8" />}
-              instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
+              instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Down in mid-air is a Burpee Slam and X in mid-air a Spin Jump; press Jump in mid-air against a station or plyo box to Wall Jump, and stand beside a medicine ball and press X to pick it up, then X again to throw it. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
               controls={[
                 { key: "Enter", action: "Start / Pause" },
                 { key: "UP / Space", action: "Jump (hold = higher)" },
                 { key: "→ / ←", action: "Sprint / Jog" },
                 { key: "X / Backspace", action: "Heat Bolt / Cape Spin" },
+                { key: "↓", action: "Enter a Water Station / Slam" },
+                { key: "P / Esc", action: "Pause" },
+                { key: "Backspace (race paused)", action: "Restart the race" },
+                { key: "L", action: "Backlight" },
                 { key: "W (Dev Mode)", action: "Wipe Fog" },
               ]}
               importComponent={GarminWatchSimulatorLoader}
+              // No game key is F (arrows, Space, Enter, P, Escape, X, G, L,
+              // W, Backspace), so the cabinet's F-for-fullscreen stays on
+              // (#2122). The watch, its dock and the companion are built to
+              // fit the touch cabinet's viewport, so the stage clips rather
+              // than scrolls (ADR 0061).
+              mobileLayout="fit"
+              // A hidden tab or a backgrounded app pauses a run in progress.
+              onAutoPause={requestGarminAutoPause}
             >
-              <div className="flex flex-col items-center w-full">
+              <div className="garmin-stage flex flex-col items-center w-full">
                 <DynamicGarminWatchSimulator />
               </div>
             </PlayCabinet>
@@ -182,9 +195,9 @@ export const GarminWatchClient: React.FC = () => {
                     <IconRun className="w-3.5 h-3.5" />
                     <span>Real-World Engineering Inspiration</span>
                   </div>
-                  <h3 className="text-xl font-mono font-extrabold text-white mb-2">
+                  <h2 className="text-xl font-mono font-extrabold text-white mb-2">
                     Theodore Wirth Mud Run (Run Minnesota 10K)
-                  </h3>
+                  </h2>
                   <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
                     The inspiration behind <em>Monkey C Mayhem</em>: 10
                     kilometers of Minnesota trail mud and an actual Garmin watch

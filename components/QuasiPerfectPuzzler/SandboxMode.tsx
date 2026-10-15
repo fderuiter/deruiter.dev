@@ -366,14 +366,15 @@ export const SandboxMode: React.FC = () => {
                 type="button"
                 onClick={() => loadPreset(idx)}
                 data-verified={verified ? "true" : undefined}
-                title={verified ? `${preset.name} (verified)` : preset.name}
                 className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-[0.98] ${
                   idx === selectedPresetIdx
                     ? "qp-btn-primary"
                     : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
                 }`}
               >
-                <span>Preset {idx + 1}</span>
+                {/* The name is on the button, not only in a tooltip (#2202). */}
+                <span>{preset.name}</span>
+                {verified && <span className="sr-only"> (verified)</span>}
                 {verified && (
                   <IconCheck
                     aria-hidden="true"

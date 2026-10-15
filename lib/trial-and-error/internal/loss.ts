@@ -1,4 +1,5 @@
 import { POPULATION_LABELS, type PopulationType } from "../types";
+import { HAND_NAMES } from "./hands";
 import type { TableView } from "./table";
 
 const listOf = (sets: readonly PopulationType[]) =>
@@ -38,6 +39,10 @@ export function describeBlindLoss(view: TableView): string | null {
     parts.push(`${tightest.name} left ${n} hand${n === 1 ? "" : "s"}.`);
   } else if (view.hand.length === 0) {
     parts.push("The deck ran out of outputs.");
+  } else if (view.stranded) {
+    parts.push(
+      `The deck ran out, and no ${view.stranded.map((h) => HAND_NAMES[h]).join(" or ")} could be formed from the cards left.`
+    );
   } else {
     parts.push("The CPU ran out before another hand.");
   }

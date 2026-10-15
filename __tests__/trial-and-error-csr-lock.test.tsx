@@ -187,6 +187,25 @@ describe("CSR lock summary (#922)", () => {
       "csr-amend-note"
     );
   });
+  it("folds the audit and Blind record, and drops the amendment once ended (#2152)", () => {
+    render(
+      <CsrLockSummary
+        lock={view.lock!}
+        amendRefusal={null}
+        seed="alpha"
+        handsPlayed={1}
+        cpuSpent={3}
+        loud={false}
+      />
+    );
+    const details = screen.getByTestId("csr-details") as HTMLDetailsElement;
+    expect(details.open).toBe(false);
+    expect(details.contains(screen.getByRole("table"))).toBe(true);
+    expect(details.contains(screen.getByTestId("csr-final-score"))).toBe(false);
+    expect(
+      screen.queryByRole("button", { name: "File protocol amendment" })
+    ).toBeNull();
+  });
 });
 
 describe("CSR Lock on the card table (#922)", () => {

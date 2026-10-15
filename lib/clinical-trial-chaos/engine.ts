@@ -19,7 +19,7 @@ import {
   SignatureReason,
   StationConfig,
 } from "./types";
-import { AMENDMENT_PRESETS } from "./scenarios";
+import { AMENDMENT_PRESETS, MOCK_OBSERVATION_TEMPLATES } from "./scenarios";
 import { getAuditYearSpawnFactor } from "./escalation";
 import { evaluateCondition, evaluateRule } from "../crf/ast-evaluator";
 import { EditCheckRule, StudyProtocol, CRFField } from "../crf/types";
@@ -834,6 +834,32 @@ export function triggerRandomAmendment(): ProtocolAmendment {
   };
 }
 
+/** SDTM short test codes (HEIGHT, CREAT, ...) for the built-in fields. */
+const TEMPLATE_TEST_CODES = new Map(
+  MOCK_OBSERVATION_TEMPLATES.map((t) => [t.field, t.testCode])
+);
+
+/**
+ * The SDTM --TESTCD for an observation: the field's short test code, never an
+ * NCI concept code such as C25347 or a MedDRA/WHODrug reference (#2171).
+ */
+function getSDTMTestCode(obs: ClinicalSubject["observations"][number]): string {
+  const known = TEMPLATE_TEST_CODES.get(obs.field);
+  if (known) return known;
+  // Protocol fields carry their CRF variable name, which is a valid TESTCD.
+  if (
+    obs.ctCode &&
+    /^[A-Z][A-Z0-9]{0,7}$/.test(obs.ctCode) &&
+    !/^C\d{4,}$/.test(obs.ctCode)
+  ) {
+    return obs.ctCode;
+  }
+  return obs.field
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 8);
+}
+
 /**
  * Converts submitted subjects into compliant CDISC SDTM observation rows.
  */
@@ -855,8 +881,7 @@ export function generateSDTMDataset(subjects: ClinicalSubject[]): SDTMRow[] {
         DOMAIN: obs.destination,
         USUBJID: `CTC-${subj.studySite.slice(5, 8)}-${subj.subjectLabel}`,
         SEQ: seq++,
-        TESTCD:
-          obs.ctCode || obs.field.toUpperCase().replace(/\s+/g, "").slice(0, 8),
+        TESTCD: getSDTMTestCode(obs),
         TEST: obs.field,
         ORRES: obs.rawValue,
         STRESC: obs.currentValue,
@@ -984,6 +1009,51 @@ export function exportToSDTMCSV(sdtmRows: SDTMRow[]): string {
   );
 
   return [headers.join(","), ...lines].join("\n");
+}
+
+const VERDICT_SUMMARIES: Record<BIMOInspectionReport["verdict"], string> = {
+  "NAI (No Action Indicated)":
+    "The Bioresearch Monitoring inspection found no objectionable conditions. The sponsor and clinical site data systems operate in full compliance with 21 CFR Part 11 and CDISC standards.",
+  "VAI (Voluntary Action Indicated)":
+    "Objectionable conditions were noted, but they do not meet the threshold for regulatory action. The sponsor is advised to implement corrective and preventive action (CAPA) plans for Controlled Terminology validation.",
+  "OAI (Official Action Indicated - Form 483 Issued)":
+    "FDA Form 483 issued. Significant objectionable conditions were observed during the inspection, including critical data integrity discrepancies. Clinical hold risk under 21 CFR § 312.42.",
+};
+
+/**
+ * The opening sentence of a BIMO report's summary for a verdict.
+ *
+ * @param verdict - The report's verdict.
+ * @returns The summary that matches it.
+ */
+export function getBIMOVerdictSummary(
+  verdict: BIMOInspectionReport["verdict"]
+): string {
+  return VERDICT_SUMMARIES[verdict];
+}
+
+/**
+ * Restates a report summary after a later pass (the closing interview,
+ * sponsor skeletons) changed its verdict, so the text never says "no
+ * objectionable conditions" under a VAI or OAI verdict (#2172). Sentences
+ * appended after the verdict summary are kept.
+ *
+ * @param summary - The current summary.
+ * @param from - The verdict the summary was written for.
+ * @param to - The new verdict.
+ * @returns The summary for `to`.
+ */
+export function restateBIMOSummary(
+  summary: string,
+  from: BIMOInspectionReport["verdict"],
+  to: BIMOInspectionReport["verdict"]
+): string {
+  if (from === to) return summary;
+  const previous = VERDICT_SUMMARIES[from];
+  const rest = summary.startsWith(previous)
+    ? summary.slice(previous.length)
+    : ` ${summary}`;
+  return `${VERDICT_SUMMARIES[to]}${rest}`;
 }
 
 /**
@@ -1122,8 +1192,6 @@ export function generateBIMOReport(
   }
 
   let verdict: BIMOInspectionReport["verdict"] = "NAI (No Action Indicated)";
-  let summary =
-    "The Bioresearch Monitoring inspection found no objectionable conditions. The sponsor and clinical site data systems operate in full compliance with 21 CFR Part 11 and CDISC standards.";
 
   if (
     auditorState.suspicion >= 100 ||
@@ -1131,13 +1199,10 @@ export function generateBIMOReport(
     findings.some((f) => f.severity === "Critical")
   ) {
     verdict = "OAI (Official Action Indicated - Form 483 Issued)";
-    summary =
-      "FDA Form 483 issued. Significant objectionable conditions were observed during the inspection, including critical data integrity discrepancies. Clinical hold risk under 21 CFR § 312.42.";
   } else if (findings.length > 0 || auditorState.suspicion > 30) {
     verdict = "VAI (Voluntary Action Indicated)";
-    summary =
-      "Objectionable conditions were noted, but they do not meet the threshold for regulatory action. The sponsor is advised to implement corrective and preventive action (CAPA) plans for Controlled Terminology validation.";
   }
+  const summary = getBIMOVerdictSummary(verdict);
 
   return {
     runId: `BIMO-${now.getTime().toString(36).toUpperCase()}`,

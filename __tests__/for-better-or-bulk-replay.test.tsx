@@ -164,8 +164,24 @@ describe("ReplayControls", () => {
 });
 
 describe("ReceiptView game challenges", () => {
+  // A finished day: every planned spot filled, so the grill food is served.
+  const level = createLevel(DEFAULT_SETUP);
   const receipt = computeReceipt({
-    ...createLevel(DEFAULT_SETUP),
+    ...level,
+    targets: level.targets.map((t) =>
+      t.status === "open"
+        ? {
+            ...t,
+            status: "filled" as const,
+            filled: Array.from({ length: t.capacity }, () => ({
+              kind: t.wants,
+              madeBy: "fred" as const,
+            })),
+            filledBy: Array.from({ length: t.capacity }, () => "fred" as const),
+            filledByHelper: Array.from({ length: t.capacity }, () => false),
+          }
+        : t
+    ),
     burntBatches: 0,
     finishedAt: 0,
     presence: null,

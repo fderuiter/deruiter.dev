@@ -26,6 +26,7 @@ import {
   runnerPose,
   stepsFor,
 } from "@/components/garmin-watch/watch-face-art";
+import { raceSetup } from "@/lib/garmin-race";
 import {
   CASE_RADIUS,
   PUSHER_ANGLES,
@@ -46,9 +47,14 @@ interface TextCall {
   align: CanvasTextAlign;
 }
 
-/** A recording 2D context: every fillText with its font size and alignment. */
-function recordingCtx() {
+/**
+ * A recording 2D context: every fillText with its font size and alignment,
+ * and every strokeRect. `monoMeasure` measures text at 0.6 em per glyph, as
+ * the face's monospace font draws it, instead of a flat 6 px.
+ */
+function recordingCtx({ monoMeasure = false } = {}) {
   const calls: TextCall[] = [];
+  const rects: Array<[x: number, y: number, w: number, h: number]> = [];
   const state = {
     font: "10px monospace",
     textAlign: "start" as CanvasTextAlign,
@@ -73,7 +79,17 @@ function recordingCtx() {
           };
         }
         if (key === "measureText") {
-          return (text: string) => ({ width: text.length * 6 });
+          return (text: string) => {
+            const px = Number(
+              /([\d.]+)px/.exec(String(target.font))?.[1] ?? 10
+            );
+            return { width: text.length * (monoMeasure ? px * 0.6 : 6) };
+          };
+        }
+        if (key === "strokeRect") {
+          return (x: number, y: number, w: number, h: number) => {
+            rects.push([x, y, w, h]);
+          };
         }
         if (key === "createLinearGradient" || key === "createRadialGradient") {
           return () => gradient;
@@ -86,7 +102,7 @@ function recordingCtx() {
       },
     })
   );
-  return { ctx, calls };
+  return { ctx, calls, rects };
 }
 
 function running(over: Partial<GameEngineState> = {}): GameEngineState {
@@ -109,6 +125,28 @@ const halfChord = (y: number) =>
   Math.sqrt(Math.max(0, FACE_RADIUS ** 2 - (FACE_CENTER - y) ** 2));
 
 describe("watch face meters", () => {
+  it("keeps the run clock clear of the heart rate and battery icon (#2133)", () => {
+    for (const runClockMs of [7_950, 599_990, 1_199_990]) {
+      for (const rules of ["fitness", "dev"] as const) {
+        const { ctx, calls, rects } = recordingCtx({ monoMeasure: true });
+        renderWatchFace(ctx, running({ runClockMs, gpsMs: 0, rules }));
+        const clock = calls.find((c) => /^\d+:\d\d\.\d\d$/.test(c.text));
+        expect(clock).toBeDefined();
+        const [left, right] = extent(clock!);
+        const battery = rects.find(
+          ([, y, w, h]) => w === 11 && h === 6 && y < 60
+        );
+        expect(battery).toBeDefined();
+        expect(right).toBeLessThanOrEqual(battery![0] - 2);
+        const heartRate = calls.find(
+          (c) => c.align === "left" && /^\d+$/.test(c.text) && c.y < 60
+        );
+        expect(heartRate).toBeDefined();
+        expect(left).toBeGreaterThanOrEqual(extent(heartRate!)[1] + 2);
+      }
+    }
+  });
+
   it("tones RAM and flash at 65% and 85%, battery at 30% and 15%", () => {
     expect(meterTone(0.2)).toBe("ok");
     expect(meterTone(0.7)).toBe("warn");
@@ -283,6 +321,19 @@ describe("watch face data-field ring", () => {
     const { ctx, calls } = recordingCtx();
     renderWatchFace(ctx, running({ gameState: "paused" }));
     expect(calls.map((c) => c.text)).toContain("PAUSED");
+    expect(calls.map((c) => c.text)).not.toContain("BACKSPACE: RESTART");
+  });
+
+  it("names the restart key on a paused race (#2134)", () => {
+    const { ctx, calls } = recordingCtx();
+    renderWatchFace(
+      ctx,
+      running({
+        gameState: "paused",
+        race: raceSetup("daily", "nogear", new Date(2026, 9, 14)),
+      })
+    );
+    expect(calls.map((c) => c.text)).toContain("BACKSPACE: RESTART");
   });
 });
 

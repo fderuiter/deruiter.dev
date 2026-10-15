@@ -201,6 +201,8 @@ class Engine implements ProtocolDriftEngine {
   private lastLockAudit: LockAuditResult | null = null;
   private lockedAtMinute: number | null = null;
   private rejectedCount = 0;
+  /** True once a reference pipeline was loaded this run (#2168). */
+  private assisted = false;
   private log: PDCommand[] = [];
   private events: PDWorkerEvent[] = [];
 
@@ -341,6 +343,7 @@ class Engine implements ProtocolDriftEngine {
     applicabilityErrors = 0;
     regexBeforeNarrative: boolean | null = null;
     sleuthResolved = false;
+    assisted = false;
     lastLockAudit: LockAuditResult | null = null;
     lockedAtMinute: number | null = null;
     rejectedCount = 0;
@@ -412,6 +415,7 @@ class Engine implements ProtocolDriftEngine {
       routing: Array.from(this.routing.values()),
       lastLockAudit: this.lastLockAudit,
       rejectedCommands: this.rejectedCount,
+      assisted: this.assisted,
     });
   }
 
@@ -512,6 +516,7 @@ class Engine implements ProtocolDriftEngine {
       case "LOAD_GRAPH":
         this.notLocked();
         this.enterDraft();
+        if (command.reference) this.assisted = true;
         this.draftGraph = clone({ nodes: command.nodes, edges: command.edges });
         this.validatedGraphJson = null;
         return;
@@ -1912,6 +1917,7 @@ class Engine implements ProtocolDriftEngine {
         chipCount: this.publishedGraph?.nodes.length ?? 0,
         wireCount: this.publishedGraph?.edges.length ?? 0,
         rejectedCommands: this.rejectedCount,
+        assisted: this.assisted,
         fabricatedBits: this.mh.reduce((sum, r) => sum + r.fabricatedBits, 0),
       }),
     });

@@ -54,6 +54,7 @@ import { TrophyShelf } from "@/components/arcade/meme-vault/TrophyShelf";
 import { VaultHero } from "@/components/arcade/meme-vault/VaultHero";
 import { EchoConsole } from "@/components/arcade/meme-vault/EchoConsole";
 import { useEchoGame } from "@/components/arcade/meme-vault/useEchoGame";
+import { padKeyLabel } from "@/components/arcade/meme-vault/vault-geometry";
 
 /** How long a newly unlocked trophy keeps its stamp class. */
 const STAMP_MS = 900;
@@ -211,6 +212,41 @@ export const MemeVaultClient: React.FC = () => {
     announce,
   });
   const { press: pressEcho } = echo;
+  const missedIndex = echo.missedId
+    ? SOUNDBOARD_BUTTONS.findIndex((b) => b.id === echo.missedId)
+    : -1;
+  const missedPad =
+    missedIndex >= 0
+      ? {
+          key: padKeyLabel(missedIndex),
+          label: SOUNDBOARD_BUTTONS[missedIndex].label,
+        }
+      : null;
+
+  // Starting Echo brings the Echo strip and all eight pads into view, so the
+  // vault never plays a sequence below the fold (#2124).
+  const playAreaRef = useRef<HTMLDivElement | null>(null);
+  const revealPlayArea = useCallback(() => {
+    const el = playAreaRef.current;
+    if (!el || typeof window === "undefined") return;
+    const header = document.querySelector("header");
+    const top = Math.max(0, header?.getBoundingClientRect().bottom ?? 0) + 12;
+    const rect = el.getBoundingClientRect();
+    // Not laid out (a hidden tab or a test DOM): nothing to scroll to.
+    if (rect.height === 0) return;
+    if (rect.top >= top && rect.bottom <= window.innerHeight) return;
+    const reduce = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    // Too tall to fit: align the bottom of the pads, keeping as much of the
+    // Echo strip as the viewport allows; otherwise align its top.
+    const room = window.innerHeight - top;
+    const delta =
+      rect.height > room
+        ? rect.bottom - window.innerHeight + 8
+        : rect.top - top;
+    window.scrollBy({ top: delta, behavior: reduce ? "auto" : "smooth" });
+  }, []);
 
   // A pad press is an Echo answer while a round runs, a sample otherwise.
   const handlePadPress = useCallback(
@@ -373,7 +409,39 @@ export const MemeVaultClient: React.FC = () => {
 
         <div className="rounded-xl border border-white/[0.08] bg-[#13151a] p-3 sm:p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] xl:gap-5 pointer-coarse:landscape:lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] pointer-coarse:landscape:lg:gap-5">
-            <div className="min-w-0 xl:order-2 pointer-coarse:landscape:lg:order-2">
+            {/* Echo and the pads come first, so in one column the scope sits
+                below them and never pushes the pads off screen (#2124). */}
+            <div ref={playAreaRef} className="min-w-0">
+              {silentPress && silentReason && (
+                <p
+                  className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-sans text-xs text-amber-200"
+                  data-testid="meme-silent-press"
+                >
+                  That pad played silently. {silentReason}
+                </p>
+              )}
+              <EchoConsole
+                round={echo.round}
+                best={echo.best}
+                early={echo.early}
+                onStart={() => {
+                  unlockMemeAudio();
+                  echo.start();
+                  // After the start renders, so the strip's new lines count.
+                  requestAnimationFrame(revealPlayArea);
+                }}
+                onStop={echo.stop}
+                silentReason={silentReason}
+                missedPad={missedPad}
+              />
+              <SamplerPads
+                pads={SOUNDBOARD_BUTTONS}
+                activeId={echo.litId ?? activeSound}
+                missedId={echo.missedId}
+                onPress={handlePadPress}
+              />
+            </div>
+            <div className="min-w-0">
               <Oscilloscope
                 analyser={analyser}
                 isPlaying={activeSound !== null || echo.litId !== null}
@@ -402,32 +470,6 @@ export const MemeVaultClient: React.FC = () => {
                   </dd>
                 </div>
               </dl>
-            </div>
-            <div className="min-w-0 xl:order-1 pointer-coarse:landscape:lg:order-1">
-              {silentPress && silentReason && (
-                <p
-                  className="mb-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 font-sans text-xs text-amber-200"
-                  data-testid="meme-silent-press"
-                >
-                  That pad played silently. {silentReason}
-                </p>
-              )}
-              <EchoConsole
-                round={echo.round}
-                best={echo.best}
-                early={echo.early}
-                onStart={() => {
-                  unlockMemeAudio();
-                  echo.start();
-                }}
-                onStop={echo.stop}
-                silentReason={silentReason}
-              />
-              <SamplerPads
-                pads={SOUNDBOARD_BUTTONS}
-                activeId={echo.litId ?? activeSound}
-                onPress={handlePadPress}
-              />
             </div>
           </div>
         </div>

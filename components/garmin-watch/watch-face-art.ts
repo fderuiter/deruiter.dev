@@ -371,8 +371,14 @@ export function stepsFor(distanceMeters: number): number {
 
 const GROUND_STRIP_X = [90, 140, 190];
 
-/** Widest the run clock may draw across the top centre, between heart and battery. */
-const CLOCK_MAX_WIDTH = 64;
+/**
+ * Widest the run clock may draw across the top centre, between heart and
+ * battery: centred on the face it spans 111 to 169, clear of the heart
+ * rate (ends near 94) and the battery icon at `BATTERY_GLYPH_X` (#2133).
+ */
+const CLOCK_MAX_WIDTH = 58;
+/** Left edge of the battery icon beside the run clock. */
+const BATTERY_GLYPH_X = 174;
 /** Widest a lap banner's text may draw inside its pill. */
 const BANNER_TEXT_MAX_WIDTH = 180;
 
@@ -3013,7 +3019,7 @@ function drawFitnessRing(ctx: Ctx, state: GameEngineState) {
     FACE_COLORS.text,
     "left"
   );
-  drawBatteryGlyph(ctx, 171, 40, bbValue);
+  drawBatteryGlyph(ctx, BATTERY_GLYPH_X, 40, bbValue);
   text(ctx, `${bbValue}`, 212, 43, 9, TONE_COLOR[bbTone], "right");
 
   text(ctx, "BODY", 24, 93, 6.5, FACE_COLORS.dim, "left");
@@ -3080,7 +3086,7 @@ function drawDataRing(
     "left"
   );
   const battery = Math.round(state.battery);
-  drawBatteryGlyph(ctx, 171, 40, battery);
+  drawBatteryGlyph(ctx, BATTERY_GLYPH_X, 40, battery);
   text(
     ctx,
     `${battery}%`,
@@ -3212,7 +3218,7 @@ function drawFog(ctx: Ctx, state: GameEngineState) {
   }
 }
 
-function drawPaused(ctx: Ctx, title: string) {
+function drawPaused(ctx: Ctx, title: string, race = false) {
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
   text(ctx, title, FACE_CENTER, FACE_CENTER - 4, 16, FACE_COLORS.text);
@@ -3224,6 +3230,17 @@ function drawPaused(ctx: Ctx, title: string) {
     7,
     FACE_COLORS.dim
   );
+  // A paused race restarts on the same course with Backspace (#2134).
+  if (race) {
+    text(
+      ctx,
+      "BACKSPACE: RESTART",
+      FACE_CENTER,
+      FACE_CENTER + 24,
+      7,
+      FACE_COLORS.dim
+    );
+  }
 }
 
 // ------------------------------------------------------------ end faces
@@ -3553,7 +3570,11 @@ export function renderWatchFace(
   }
   if (state.fogLevel > 0.05) drawFog(ctx, state);
   if (state.gameState === "paused")
-    drawPaused(ctx, isFitnessRun(state) ? AUTO_PAUSE_TEXT : "PAUSED");
+    drawPaused(
+      ctx,
+      isFitnessRun(state) ? AUTO_PAUSE_TEXT : "PAUSED",
+      Boolean(state.race)
+    );
 
   ctx.restore();
 }

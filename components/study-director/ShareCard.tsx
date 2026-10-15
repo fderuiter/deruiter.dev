@@ -7,6 +7,7 @@ import {
   studyLength,
   type Difficulty,
   type FinalReport,
+  type StudyLength,
 } from "@/lib/study-director";
 import { copyToClipboard, getActiveHostUrl } from "@/lib/clipboard";
 import { verdictFor } from "./closeout";
@@ -25,15 +26,23 @@ const GRADE_FILL = {
   F: "#f87171",
 } as const;
 
-/** The link that replays a study from its seed. */
+/**
+ * The link that replays a study from its seed. Given where the run was
+ * played, the link opens the same place: the office with its length, or the
+ * classic desk (#2191). Without it the link carries the seed alone.
+ */
 export function seedLink(
   seed: string,
   origin = getActiveHostUrl(),
-  difficulty?: Difficulty
+  difficulty?: Difficulty,
+  place?: { office: boolean; length?: StudyLength }
 ): string {
   const hard =
     difficulty && difficulty !== "standard" ? `&difficulty=${difficulty}` : "";
-  return `${origin}/arcade/study-director#seed=${encodeURIComponent(seed)}${hard}`;
+  const mode = place ? `mode=${place.office ? "world" : "desk"}&` : "";
+  const short =
+    place?.office && place.length === "short" ? "&length=short" : "";
+  return `${origin}/arcade/study-director#${mode}seed=${encodeURIComponent(seed)}${short}${hard}`;
 }
 
 /**
@@ -257,12 +266,15 @@ export const SharePanel: React.FC<{
   const copyLink = async () => {
     try {
       await copyToClipboard(
-        seedLink(report.state.seed, undefined, report.state.difficulty)
+        seedLink(report.state.seed, undefined, report.state.difficulty, {
+          office,
+          length: studyLength(report.state.setup),
+        })
       );
       setMessage(
         office
-          ? "Link copied. It opens the same seed at the classic desk."
-          : "Link copied. It opens this same study."
+          ? "Link copied. It opens this same study in the office, from day 1."
+          : "Link copied. It opens this same study at the classic desk."
       );
     } catch {
       setMessage("Copy failed. The seed is on the card.");

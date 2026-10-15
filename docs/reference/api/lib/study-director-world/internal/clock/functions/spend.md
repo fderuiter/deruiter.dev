@@ -21,7 +21,7 @@ the player has no energy left for it.
 
 ### kind
 
-`"document"` \| `"coffee"` \| `"walk"` \| `"talk"` \| `"readMail"` \| `"reviewEdc"` \| `"sponsorCall"` \| `"meeting"` \| `"amendment"`
+`"document"` \| `"coffee"` \| `"walk"` \| `"talk"` \| `"meeting"` \| `"readMail"` \| `"reviewEdc"` \| `"clearQueries"` \| `"sponsorCall"` \| `"amendment"`
 
 ### tiles?
 

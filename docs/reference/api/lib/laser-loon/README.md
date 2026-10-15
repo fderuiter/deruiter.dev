@@ -8,15 +8,27 @@
 
 ## References
 
-### ActProgressReadout
+### ActBest
 
-Re-exports [ActProgressReadout](engine/interfaces/ActProgressReadout.md)
+Re-exports [ActBest](engine/interfaces/ActBest.md)
 
 ***
 
-### ARCADE\_GAME\_DURATION\_SECS
+### ActBestMerge
 
-Re-exports [ARCADE_GAME_DURATION_SECS](constants/variables/ARCADE_GAME_DURATION_SECS.md)
+Re-exports [ActBestMerge](engine/interfaces/ActBestMerge.md)
+
+***
+
+### ActBestRecord
+
+Re-exports [ActBestRecord](engine/type-aliases/ActBestRecord.md)
+
+***
+
+### ActProgressReadout
+
+Re-exports [ActProgressReadout](engine/interfaces/ActProgressReadout.md)
 
 ***
 
@@ -134,6 +146,12 @@ Re-exports [COMBO_TIMEOUT_MS](constants/variables/COMBO_TIMEOUT_MS.md)
 
 ***
 
+### countActStars
+
+Re-exports [countActStars](engine/functions/countActStars.md)
+
+***
+
 ### CounterHitPoint
 
 Re-exports [CounterHitPoint](types/interfaces/CounterHitPoint.md)
@@ -200,6 +218,12 @@ Re-exports [FloatingText](types/interfaces/FloatingText.md)
 
 ***
 
+### formatRunClock
+
+Re-exports [formatRunClock](engine/functions/formatRunClock.md)
+
+***
+
 ### getActAvailableEnemies
 
 Re-exports [getActAvailableEnemies](engine/functions/getActAvailableEnemies.md)
@@ -236,6 +260,12 @@ Re-exports [getEnemyWeakness](engine/functions/getEnemyWeakness.md)
 
 ***
 
+### getSurvivalWave
+
+Re-exports [getSurvivalWave](engine/functions/getSurvivalWave.md)
+
+***
+
 ### getWeaponCounter
 
 Re-exports [getWeaponCounter](engine/functions/getWeaponCounter.md)
@@ -269,6 +299,12 @@ Re-exports [isBossTelegraphing](engine/functions/isBossTelegraphing.md)
 ### KEYBOARD\_AIM\_CONE\_RADIANS
 
 Re-exports [KEYBOARD_AIM_CONE_RADIANS](constants/variables/KEYBOARD_AIM_CONE_RADIANS.md)
+
+***
+
+### LASER\_LOON\_STARS\_KEY
+
+Re-exports [LASER_LOON_STARS_KEY](engine/variables/LASER_LOON_STARS_KEY.md)
 
 ***
 
@@ -380,6 +416,12 @@ Re-exports [MAX_MULTIPLIER](constants/variables/MAX_MULTIPLIER.md)
 
 ***
 
+### mergeActBest
+
+Re-exports [mergeActBest](engine/functions/mergeActBest.md)
+
+***
+
 ### MINION\_FIRE\_BASE\_FRAMES
 
 Re-exports [MINION_FIRE_BASE_FRAMES](constants/variables/MINION_FIRE_BASE_FRAMES.md)
@@ -425,6 +467,12 @@ Re-exports [MINION_SHOT_SPEED](constants/variables/MINION_SHOT_SPEED.md)
 ### MinionFireResult
 
 Re-exports [MinionFireResult](engine/interfaces/MinionFireResult.md)
+
+***
+
+### parseActBestRecord
+
+Re-exports [parseActBestRecord](engine/functions/parseActBestRecord.md)
 
 ***
 
@@ -491,6 +539,24 @@ Re-exports [spawnPowerUp](engine/functions/spawnPowerUp.md)
 ### spawnTarget
 
 Re-exports [spawnTarget](engine/functions/spawnTarget.md)
+
+***
+
+### SURVIVAL\_FULL\_HEAT\_SECONDS
+
+Re-exports [SURVIVAL_FULL_HEAT_SECONDS](constants/variables/SURVIVAL_FULL_HEAT_SECONDS.md)
+
+***
+
+### SURVIVAL\_WAVE\_SECONDS
+
+Re-exports [SURVIVAL_WAVE_SECONDS](constants/variables/SURVIVAL_WAVE_SECONDS.md)
+
+***
+
+### SurvivalWave
+
+Re-exports [SurvivalWave](engine/interfaces/SurvivalWave.md)
 
 ***
 

@@ -6,10 +6,12 @@ import {
 } from "@/lib/study-director";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
+import { applyOfficeEffects } from "./goodwill";
 import { CRO_FLOOR, roomAt } from "./floor";
 import { adjustTrust, placePeople } from "./team";
 import type {
   ActionCost,
+  ExpectedGuest,
   GuestId,
   GuestOption,
   GuestRecord,
@@ -93,6 +95,28 @@ function waiting(world: WorldState): GuestId | null {
         world.minute < SCHEDULE[id].at + STAY_MINUTES
     ) ?? null
   );
+}
+
+/**
+ * Visitors still to come today, or waiting now, in the order they arrive:
+ * who, from where, and when. The morning digest, the Today list and the car
+ * name them, so a site day on a visit day is a choice the player can see
+ * (#2188).
+ */
+export function guestsExpected(world: WorldState): ExpectedGuest[] {
+  if (world.study.status !== "running" || world.location === "home") return [];
+  return dueToday(world)
+    .filter(
+      (id) =>
+        !recordFor(world, id) && world.minute < SCHEDULE[id].at + STAY_MINUTES
+    )
+    .map((id) => ({
+      id,
+      name: VISITORS[id].name,
+      organisation: VISITORS[id].organisation,
+      at: SCHEDULE[id].at,
+      leavesAt: SCHEDULE[id].at + STAY_MINUTES,
+    }));
 }
 
 /** Whether a visitor is waiting in the conference room right now. */
@@ -197,7 +221,9 @@ function sponsorChoices(): Choice[] {
         return {
           world: {
             ...world,
-            study: applyEffects(world.study, { meters: { client, integrity } }),
+            study: applyOfficeEffects(world.study, {
+              meters: { client, integrity },
+            }),
           },
           result,
         };
@@ -212,7 +238,7 @@ function sponsorChoices(): Choice[] {
         return {
           world: {
             ...world,
-            study: applyEffects(world.study, {
+            study: applyOfficeEffects(world.study, {
               meters: { client: 2, integrity: trouble ? -3 : 0 },
             }),
           },
@@ -233,7 +259,7 @@ function sponsorChoices(): Choice[] {
         if (manager) {
           next = {
             ...next,
-            study: applyEffects(next.study, {
+            study: applyOfficeEffects(next.study, {
               workload: [{ memberId: manager.id, delta: 5 }],
               meters: { client: 3 },
             }),
@@ -474,9 +500,14 @@ export function settleGuests(world: WorldState): {
         tone: "bad",
       });
     } else {
+      // Missing the vendor costs the fix they came to offer (#2188).
+      next = {
+        ...next,
+        study: applyEffects(next.study, { meters: { compliance: -1 } }),
+      };
       lines.push({
-        text: `${who.name} of ${who.organisation} left a brochure at the front desk.`,
-        tone: "neutral",
+        text: `${who.name} of ${who.organisation} left a brochure at the front desk. The audit-trail export they came to fix stays broken for now.`,
+        tone: "bad",
       });
     }
   }

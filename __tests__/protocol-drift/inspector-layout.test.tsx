@@ -33,11 +33,11 @@ describe("Forensic Inspector layout", () => {
   beforeAll(() => installFlowMocks());
   afterEach(() => cleanup());
 
-  it("docks at min(328px, 35vh) with three panes in 30/40/30 columns", async () => {
+  it("docks at clamp(184px, 26vh, 328px) with three panes in 30/40/30 columns", async () => {
     await mountAtDraft();
     const inspector = screen.getByTestId("inspector");
     expect(inspector.dataset.expanded).toBe("false");
-    expect(inspector.style.height).toBe("min(328px, 35vh)");
+    expect(inspector.style.height).toBe("clamp(184px, 26vh, 328px)");
     expect(screen.getByTestId("pane-form")).toBeTruthy();
     expect(screen.getByTestId("pane-trace")).toBeTruthy();
     expect(screen.getByTestId("pane-review")).toBeTruthy();

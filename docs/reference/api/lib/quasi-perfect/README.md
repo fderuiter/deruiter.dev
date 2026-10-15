@@ -74,6 +74,12 @@ Re-exports [computeLevelStars](ram/functions/computeLevelStars.md)
 
 ***
 
+### countHonestProofs
+
+Re-exports [countHonestProofs](progress/functions/countHonestProofs.md)
+
+***
+
 ### describeModeRules
 
 Re-exports [describeModeRules](ram/functions/describeModeRules.md)
@@ -245,6 +251,12 @@ Re-exports [isVariantCleared](variants/functions/isVariantCleared.md)
 ### isVariantRunCleared
 
 Re-exports [isVariantRunCleared](variants/functions/isVariantRunCleared.md)
+
+***
+
+### LEAN\_OPEN\_GOAL\_MARKER
+
+Re-exports [LEAN_OPEN_GOAL_MARKER](engine/variables/LEAN_OPEN_GOAL_MARKER.md)
 
 ***
 

@@ -107,10 +107,14 @@ export function frameLane(flow: FrameFlow, size: FrameSize): void {
     (size.height - PAD - BOTTOM_PAD) / (bottom - top),
   ]);
   const zoom = Math.max(touchZoomFloor(), fit);
+  // Centre the lane when it fits; otherwise keep its top-left corner, where
+  // the lane label sits and the first chip goes, on screen.
+  const centredX = size.width / 2 - (WORLD_WIDTH / 2) * zoom;
+  const centredY = (size.height - BOTTOM_PAD) / 2 - ((top + bottom) / 2) * zoom;
   flow.setViewport(
     {
-      x: size.width / 2 - (WORLD_WIDTH / 2) * zoom,
-      y: (size.height - BOTTOM_PAD) / 2 - ((top + bottom) / 2) * zoom,
+      x: Math.max(centredX, PAD),
+      y: Math.max(centredY, PAD - top * zoom),
       zoom,
     },
     { duration: 0 }

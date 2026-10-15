@@ -178,6 +178,7 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
   const command = useProtocolDriftStore((s) => s.command);
   const scenario = useProtocolDriftStore((s) => s.scenario);
   const init = useProtocolDriftStore((s) => s.init);
+  const requestLock = useProtocolDriftStore((s) => s.requestLock);
   const id = useId();
   const tracer = scenario === "tracer";
   const last = tracer || summary.waveIndex === 3;
@@ -185,11 +186,20 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
     dismiss();
     void command({ type: "SET_PAUSED", isPaused: true });
   };
+  // The final wave leads to the lock gate; the gate lists anything still open
+  // and Return to Workbench goes back to fix it (#2165).
+  const goToLock = () => {
+    dismiss();
+    void (async () => {
+      await command({ type: "SET_PAUSED", isPaused: true });
+      await requestLock();
+    })();
+  };
   return (
     <ModalShell
       title={tracer ? "Tracer Complete" : `Wave ${summary.waveIndex} Review`}
       labelledBy={`${id}-title`}
-      onEscape={tracer ? pauseAndInspect : dismiss}
+      onEscape={last ? pauseAndInspect : dismiss}
     >
       <dl className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1">
         <dt>Confirmed records</dt>
@@ -257,6 +267,15 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
             Continue to next wave
           </button>
         ) : null}
+        {last && !tracer ? (
+          <button
+            type="button"
+            className={`${PRIMARY} min-h-12`}
+            onClick={goToLock}
+          >
+            Request Database Lock
+          </button>
+        ) : null}
         <button
           type="button"
           className={`${SECONDARY} min-h-12 min-w-12`}
@@ -268,7 +287,7 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
           <button
             type="button"
             className={`${SECONDARY} min-h-12 min-w-12`}
-            onClick={dismiss}
+            onClick={last ? pauseAndInspect : dismiss}
           >
             Close
           </button>
@@ -319,11 +338,13 @@ function CheckRow({
   label,
   detail,
   onInspect,
+  actionLabel = "Inspect",
 }: {
   passed: boolean;
   label: string;
   detail: string;
   onInspect?: () => void;
+  actionLabel?: string;
 }) {
   return (
     <li className="flex min-w-0 items-start gap-2">
@@ -344,7 +365,7 @@ function CheckRow({
             onClick={onInspect}
             className="ml-2 min-h-6 border border-zinc-700 px-1.5 text-[10px] text-zinc-200 hover:border-amber-500"
           >
-            Inspect
+            {actionLabel}
           </button>
         ) : null}
       </span>
@@ -375,6 +396,17 @@ function locate(view: ProtocolDriftView, entityId: string) {
     const related = view.issues.find((i) => i.submissionId === mh.submissionId);
     return { issueId: related?.issueId ?? null, submissionId: mh.submissionId };
   }
+  // ADVS rows, paired or not, point back at the visit's issue (#2164).
+  const adam = [...view.adamRows, ...view.unpaired].find(
+    (r) => r.rowId === entityId
+  );
+  if (adam) {
+    const related = view.issues.find(
+      (i) => i.subjectId === adam.USUBJID && i.visitDay === adam.AVISITN
+    );
+    if (related)
+      return { issueId: related.issueId, submissionId: related.submissionId };
+  }
   return null;
 }
 
@@ -388,6 +420,8 @@ export function LockReviewModal({
 }) {
   const back = useProtocolDriftStore((s) => s.returnToWorkbench);
   const confirm = useProtocolDriftStore((s) => s.confirmLock);
+  const command = useProtocolDriftStore((s) => s.command);
+  const requestLock = useProtocolDriftStore((s) => s.requestLock);
   const select = useProtocolDriftStore((s) => s.select);
   const setExpanded = useProtocolDriftStore((s) => s.setInspectorExpanded);
   const id = useId();
@@ -402,6 +436,15 @@ export function LockReviewModal({
       setExpanded(true);
       void back();
     };
+  };
+  // Replays every stale ADVS row, paired or unpaired, and re-runs the gate,
+  // so a correction accepted after derivation never blocks the lock (#2164).
+  const replayStale = () => {
+    void (async () => {
+      await back();
+      await command({ type: "REPLAY_DERIVATIONS" });
+      await requestLock();
+    })();
   };
   return (
     <ModalShell
@@ -496,7 +539,8 @@ export function LockReviewModal({
             passed={a.staleDerivations.passed}
             label="Stale derivations"
             detail={`${a.staleDerivations.actual}`}
-            onInspect={inspectFor(["STALE_DERIVATIONS_EXIST"])}
+            onInspect={replayStale}
+            actionLabel="Replay derivations"
           />
         </ul>
       </section>
@@ -620,7 +664,7 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
                           : "border-zinc-700 text-zinc-300"
                       }`}
                     >
-                      {m.medal ? "MEDAL" : "OVER PAR"}
+                      {m.medal ? "MEDAL" : m.waived ? "ASSISTED" : "OVER PAR"}
                     </span>
                   </td>
                 </tr>
@@ -629,6 +673,13 @@ function EfficiencyTable({ scorecard }: { scorecard: Scorecard }) {
           </tbody>
         </table>
       </div>
+      {scorecard.assisted ? (
+        <p className="mt-2 text-amber-300">
+          Assisted run: a reference pipeline was loaded, so the chip and wire
+          measures earn no medal, no points and no best. Design your own
+          pipeline to score them.
+        </p>
+      ) : null}
       <p className="mt-2 text-zinc-300">
         Arcade score{" "}
         <b className="tabular-nums text-zinc-100">{scorecard.score}</b>: 100 for

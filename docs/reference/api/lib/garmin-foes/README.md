@@ -26,6 +26,7 @@
 - [DUMBBELL\_VX](variables/DUMBBELL_VX.md)
 - [DUMBBELL\_VY](variables/DUMBBELL_VY.md)
 - [FOE\_DEFEAT\_SCORE](variables/FOE_DEFEAT_SCORE.md)
+- [FOE\_GAP\_CLEAR](variables/FOE_GAP_CLEAR.md)
 - [FOE\_SHOT\_SIZE](variables/FOE_SHOT_SIZE.md)
 - [FOE\_SIZE](variables/FOE_SIZE.md)
 - [FOE\_STOMP\_SCORE](variables/FOE_STOMP_SCORE.md)

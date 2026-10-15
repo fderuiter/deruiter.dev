@@ -78,7 +78,14 @@ export const SATURDAY_SEED = 5_205_000;
  * on a seeded course, so old times are kept on their own board instead of
  * being compared with a different course.
  */
-export const COURSE_VERSION = 1;
+export const COURSE_VERSION = 2;
+
+/**
+ * The coach's time on the Saturday 5K (#2022): the balance pass's best
+ * playtest run of the course, sprinting the whole way through three bonks.
+ * Beating it is the race's stretch goal.
+ */
+export const COACH_SATURDAY_MS = 317_430;
 
 /** The simulation step a race runs at, in ms. */
 export const FIXED_STEP_MS = 1000 / 60;

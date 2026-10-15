@@ -712,6 +712,8 @@ describe("arcade loops read current state (#1628)", () => {
     const board = labyrinthBoard(container);
     for (let room = 0; room < 2; room++) {
       fireEvent.keyDown(board, { key: "ArrowRight" });
+      // Enter asks about the unpicked reward first, then skips it (#2177).
+      fireEvent.keyDown(board, { key: "Enter" });
       fireEvent.keyDown(board, { key: "Enter" });
     }
     // Only the runs generated after mount have a TSP room at index 2.
@@ -852,6 +854,8 @@ describe("arcade hover and timer bars (#1639)", () => {
     const board = labyrinthBoard(container);
     for (let room = 0; room < 2; room++) {
       fireEvent.keyDown(board, { key: "ArrowRight" });
+      // Enter asks about the unpicked reward first, then skips it (#2177).
+      fireEvent.keyDown(board, { key: "Enter" });
       fireEvent.keyDown(board, { key: "Enter" });
     }
     expect(playerLocation(container)).toEqual(["12", "7"]);

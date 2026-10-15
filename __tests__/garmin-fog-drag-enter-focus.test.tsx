@@ -230,6 +230,22 @@ describe("Garmin watch fog drag and Enter focus (#1648, #1649)", () => {
       expect(document.activeElement).toBe(watch(container));
     });
 
+    it("shows the result card in place of the panel settings until it is put away (#2132)", async () => {
+      await render({
+        ...createInitialState("fenix"),
+        gameState: "crashed",
+      });
+      const panel = container.querySelector("aside.garmin-companion")!;
+      const settings = panel.querySelector(":scope > div")!;
+      const slot = panel.querySelector("[data-result-slot]");
+      expect(slot?.querySelector('[role="dialog"]')).not.toBeNull();
+      expect(settings.className).toBe("hidden");
+
+      await inspectWatch();
+      expect(panel.querySelector("[data-result-slot]")).toBeNull();
+      expect(settings.className).not.toContain("hidden");
+    });
+
     it("reboots a crashed run on Enter after Write NV Flash instead of writing again", async () => {
       await render({
         ...createInitialState("fenix"),

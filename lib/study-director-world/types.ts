@@ -21,6 +21,7 @@ export const WORLD_ACTIONS = [
   "talk",
   "readMail",
   "reviewEdc",
+  "clearQueries",
   "document",
   "sponsorCall",
   "meeting",
@@ -102,6 +103,8 @@ export interface DayPlan {
   priority: PriorityId | null;
   /** Ids of today's interruptions the player has dealt with. */
   handled: string[];
+  /** Ids that came while the player was away, held against nobody (#2189). */
+  excused?: string[];
 }
 
 /** The most meetings or site visits a run keeps; the oldest drop first. */
@@ -118,6 +121,17 @@ export type WorldResult<T extends object = object> =
   ({ ok: true; world: WorldState } & T) | { ok: false; reason: WorldRefusal };
 
 /** One line of the morning digest, most important first. */
+/** A visitor due today who has not been met or missed yet (#2188). */
+export interface ExpectedGuest {
+  id: GuestId;
+  name: string;
+  organisation: string;
+  /** Clock minute they arrive in the conference room. */
+  at: number;
+  /** Clock minute they give up and leave. */
+  leavesAt: number;
+}
+
 export interface DigestLine {
   text: string;
   tone: "neutral" | "good" | "bad";

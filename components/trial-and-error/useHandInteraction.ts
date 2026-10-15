@@ -268,8 +268,8 @@ export function useHandInteraction({
       },
       onPointerEnd: cancelPress,
       onContextMenu: (event) => {
-        // A long press on touch reads the card, not the browser menu.
-        if (pointerType.current === "touch") event.preventDefault();
+        // A long press on touch or Pencil reads the card, not the browser menu.
+        if (pointerType.current !== "mouse") event.preventDefault();
       },
       onDragOver: (event) => {
         if (event.dataTransfer.types.includes(SEAL_DRAG_TYPE)) {

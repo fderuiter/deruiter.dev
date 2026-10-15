@@ -1,5 +1,6 @@
 import { clamp } from "../game-utils";
 import { BIMOFinding, BIMOInspectionReport } from "./types";
+import { restateBIMOSummary } from "./engine";
 
 /**
  * A shortcut the player took to keep the sponsor happy. Skeletons stay hidden
@@ -816,6 +817,7 @@ export function applySponsorSkeletonsToReport(
   } else if (findings.length > 0 && verdict === "NAI (No Action Indicated)") {
     verdict = "VAI (Voluntary Action Indicated)";
   }
+  summary = restateBIMOSummary(summary, report.verdict, verdict);
   const fresh = Math.max(0, skeletons.length - chargedCount);
   if (fresh > 0) {
     summary = `${summary} Inspectors also found ${fresh} sponsor-pleasing shortcut${

@@ -100,7 +100,7 @@ export const RetroLabyrinthClient: React.FC = () => {
                 { key: "1-3", action: "Fire Class Tools" },
                 { key: "Space", action: "EMP Burst" },
                 { key: "C", action: "CRT Scanlines" },
-                { key: "P", action: "Pause" },
+                { key: "P / Esc", action: "Pause" },
                 { key: "Enter / R", action: "Continue / Retry" },
               ]}
               importComponent={RetroLabyrinthLoader}
@@ -126,9 +126,9 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>TSP Shifting Walls</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Room 01, the Airgap Enclave, recalculates the Traveling
-              Salesperson tour as you move. Time your steps through the striped
-              airgap walls, which shift every step, to reach the EXIT.
+              The TSP Enclave, mid-route, recalculates the Traveling Salesperson
+              tour as you move. Time your steps through the striped airgap
+              walls, which shift every step, to reach the EXIT.
             </p>
           </div>
 

@@ -1830,7 +1830,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Pause",
         description: "Pause and resume the run. Enter also resumes.",
-        key: "P",
+        key: "P / Esc",
       },
       {
         action: "Continue or Retry",
@@ -1891,7 +1891,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     proTips: [
       "Use Nmap Port Recon on room entry (key 2 for the default Script Kiddie) to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
-      "Save Hardware Bypass Chips for the terminals in the TSP enclave and the Darknet Vault, where time limits are tight.",
+      "Save Hardware Bypass Chips for the 5x5 terminals deeper in the route, where the target sequence is longest.",
       "Take the Darknet Vault on the route when you are short of crypto or HP: its market and chest restock the deck before the bosses.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
       "A lost run still banks the crypto of every room you cleared, so a few Firmware Bay tiers make the next attempt sturdier.",

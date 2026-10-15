@@ -19,4 +19,5 @@
 ## Functions
 
 - [isEnemyWalkable](functions/isEnemyWalkable.md)
+- [stepSecurityDrone](functions/stepSecurityDrone.md)
 - [updateEnemyAI](functions/updateEnemyAI.md)

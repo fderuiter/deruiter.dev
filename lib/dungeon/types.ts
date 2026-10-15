@@ -209,6 +209,20 @@ export interface TSPMovingWall {
   active: boolean;
 }
 
+/**
+ * A security drone that sweeps one row on a timer, whether or not the player
+ * moves. Touching it costs HP, and an EMP stuns it (#2273).
+ */
+export interface SecurityDrone {
+  x: number;
+  y: number;
+  dir: "left" | "right";
+  /** The leftmost column of its sweep. */
+  minX: number;
+  /** The rightmost column of its sweep. */
+  maxX: number;
+}
+
 export interface DungeonRoom {
   id: RoomThemeId;
   index: number;
@@ -228,6 +242,8 @@ export interface DungeonRoom {
   boss?: BossState;
   tspNodes?: TSPNode[];
   tspMovingWalls?: TSPMovingWall[];
+  /** Real-time drones that sweep a corridor (#2273). */
+  drones?: SecurityDrone[];
   chestOpened?: boolean;
   securityTier?: number;
   hasTerminal?: boolean;

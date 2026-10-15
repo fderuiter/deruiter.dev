@@ -2306,7 +2306,9 @@ describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
       code.indexOf("const library = generateRoguelikeCampaign();"),
       code.indexOf("const fov = calculateFOV(")
     );
-    expect(roguelikeBranch).toContain("setDrones([]);");
+    // Sweeping drones come only from the room's own list (#2273), never as a
+    // copy of its patrol drones.
+    expect(roguelikeBranch).toContain("setDrones(currentRoom.drones ?? []);");
     expect(roguelikeBranch).not.toContain('filter((e) => e.type === "drone")');
   });
 

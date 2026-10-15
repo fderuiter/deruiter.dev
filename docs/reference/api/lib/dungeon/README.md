@@ -818,6 +818,12 @@ Re-exports [saveCyberdeckProfile](metaprogression/functions/saveCyberdeckProfile
 
 ***
 
+### SecurityDrone
+
+Re-exports [SecurityDrone](types/interfaces/SecurityDrone.md)
+
+***
+
 ### selectHexCell
 
 Re-exports [selectHexCell](hacking/functions/selectHexCell.md)
@@ -839,6 +845,12 @@ Re-exports [STAGE_2_MAZE](generator/variables/STAGE_2_MAZE.md)
 ### startRunRoute
 
 Re-exports [startRunRoute](route/functions/startRunRoute.md)
+
+***
+
+### stepSecurityDrone
+
+Re-exports [stepSecurityDrone](ai/functions/stepSecurityDrone.md)
 
 ***
 

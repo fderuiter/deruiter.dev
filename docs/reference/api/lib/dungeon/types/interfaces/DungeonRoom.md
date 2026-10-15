@@ -32,6 +32,14 @@
 
 ***
 
+### drones?
+
+> `optional` **drones?**: [`SecurityDrone`](SecurityDrone.md)[]
+
+Real-time drones that sweep a corridor (#2273).
+
+***
+
 ### enemies
 
 > **enemies**: [`Enemy`](Enemy.md)[]

@@ -177,6 +177,7 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
   const command = useProtocolDriftStore((s) => s.command);
   const scenario = useProtocolDriftStore((s) => s.scenario);
   const init = useProtocolDriftStore((s) => s.init);
+  const requestLock = useProtocolDriftStore((s) => s.requestLock);
   const id = useId();
   const tracer = scenario === "tracer";
   const last = tracer || summary.waveIndex === 3;
@@ -184,11 +185,20 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
     dismiss();
     void command({ type: "SET_PAUSED", isPaused: true });
   };
+  // The final wave leads to the lock gate; the gate lists anything still open
+  // and Return to Workbench goes back to fix it (#2165).
+  const goToLock = () => {
+    dismiss();
+    void (async () => {
+      await command({ type: "SET_PAUSED", isPaused: true });
+      await requestLock();
+    })();
+  };
   return (
     <ModalShell
       title={tracer ? "Tracer Complete" : `Wave ${summary.waveIndex} Review`}
       labelledBy={`${id}-title`}
-      onEscape={tracer ? pauseAndInspect : dismiss}
+      onEscape={last ? pauseAndInspect : dismiss}
     >
       <dl className="mb-3 grid grid-cols-2 gap-x-4 gap-y-1">
         <dt>Confirmed records</dt>
@@ -256,6 +266,15 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
             Continue to next wave
           </button>
         ) : null}
+        {last && !tracer ? (
+          <button
+            type="button"
+            className={`${PRIMARY} min-h-12`}
+            onClick={goToLock}
+          >
+            Request Database Lock
+          </button>
+        ) : null}
         <button
           type="button"
           className={`${SECONDARY} min-h-12 min-w-12`}
@@ -267,7 +286,7 @@ export function WaveReviewModal({ summary }: { summary: WaveSummary }) {
           <button
             type="button"
             className={`${SECONDARY} min-h-12 min-w-12`}
-            onClick={dismiss}
+            onClick={last ? pauseAndInspect : dismiss}
           >
             Close
           </button>

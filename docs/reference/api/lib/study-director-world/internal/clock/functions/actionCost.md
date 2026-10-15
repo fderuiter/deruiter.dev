@@ -14,7 +14,7 @@ Whole minutes, energy and focus for one action; walking scales by tiles.
 
 ### kind
 
-`"document"` \| `"coffee"` \| `"walk"` \| `"talk"` \| `"readMail"` \| `"reviewEdc"` \| `"sponsorCall"` \| `"meeting"` \| `"amendment"`
+`"document"` \| `"coffee"` \| `"walk"` \| `"talk"` \| `"meeting"` \| `"readMail"` \| `"reviewEdc"` \| `"clearQueries"` \| `"sponsorCall"` \| `"amendment"`
 
 ### tiles?
 

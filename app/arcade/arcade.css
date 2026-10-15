@@ -1041,21 +1041,30 @@
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+/* min-content, not 0: when the tree's floor and the goal header outgrow the
+   board, the panel grows with them and the board scrolls (#2195). */
 .qp-root.qp-touch > .qp-touch-board > div:not(.hidden) {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: min-content;
   display: flex;
   flex-direction: column;
 }
 .qp-root.qp-touch .qp-touch-panel {
   flex: 1 1 auto;
-  min-height: 0;
+  min-height: min-content;
   display: flex;
   flex-direction: column;
 }
+/* The goal, Γ row and status line keep their height; only the tree flexes. */
+.qp-root.qp-touch .qp-touch-panel > :not(.qp-touch-tree) {
+  flex-shrink: 0;
+}
+/* The tree keeps a floor as tall as the board's own minimum, so a tall goal
+   header makes the board scroll to a tree whose rows close up to fit,
+   instead of squeezing the tree to nothing (#2195). */
 .qp-root.qp-touch .qp-touch-tree {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 1 1 0;
+  min-height: min(13rem, 36dvh);
   display: flex;
   overflow: auto;
   overscroll-behavior: contain;

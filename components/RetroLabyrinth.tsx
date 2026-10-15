@@ -91,6 +91,7 @@ import { triggerHaptic } from "@/lib/haptics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
 import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
+import { ClassSelect } from "@/components/retro-labyrinth/ClassSelect";
 import { FirmwareBay } from "@/components/retro-labyrinth/FirmwareBay";
 import {
   patrolThreat,
@@ -158,7 +159,6 @@ import {
   aoeRadiusBonus,
   isCyberdeckClassUnlocked,
   purchaseFirmwareTier,
-  CLASS_UNLOCK_MILESTONES,
   type CyberdeckMilestone,
   type FirmwareTiers,
   type FirmwareUpgradeId,
@@ -417,6 +417,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // means the first option) and the reward (an offer index; null skips it).
   const [pendingRoute, setPendingRoute] = useState<number | null>(null);
   const [pendingReward, setPendingReward] = useState<number | null>(null);
+  // Enter with no reward picked asks once before skipping it (#2177).
+  const [rewardPromptShown, setRewardPromptShown] = useState(false);
   // The class a cleared room just unlocked, shown on its card (#2085).
   const [unlockNotice, setUnlockNotice] = useState<string | null>(null);
 
@@ -656,6 +658,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       setGameMode(mode);
       setPendingRoute(null);
       setPendingReward(null);
+      setRewardPromptShown(false);
       setUnlockNotice(null);
       floatingTextsRef.current = [
         {
@@ -1651,6 +1654,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ) {
           // A focused button (a route or reward pick) answers Enter itself.
           e.preventDefault();
+          const rewardWaiting =
+            gameMode === "roguelike" &&
+            roomIndex < runLength - 1 &&
+            rewardOffer.length > 0 &&
+            pendingReward === null;
+          if (rewardWaiting && !rewardPromptShown) {
+            // The hinted key must not throw the reward away unasked: the
+            // first Enter asks for a pick, a second one skips (#2177).
+            setRewardPromptShown(true);
+            announce("Pick a reward, or press Enter again to skip it.");
+            return;
+          }
           if (gameMode === "roguelike") {
             // After the last room this starts a new run (#1668).
             handleNextRoom();
@@ -1762,6 +1777,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       handleNextRoom,
       tryMove,
       crtCalibration,
+      roomIndex,
+      runLength,
+      rewardOffer,
+      pendingReward,
+      rewardPromptShown,
+      announce,
     ]
   );
 
@@ -3071,7 +3092,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-bold uppercase tracking-wider border transition-all duration-300 ${
               isFocused
                 ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/30"
-                : "bg-neutral-950 text-neutral-500 border-neutral-900"
+                : "bg-neutral-950 text-neutral-400 border-neutral-900"
             }`}
           >
             <span
@@ -3476,6 +3497,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     offer: rewardOffer,
                     selected: pendingReward,
                     onSelect: setPendingReward,
+                    prompt: rewardPromptShown,
                   }
                 : undefined
             }
@@ -3594,8 +3616,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               </span>
             </div>
 
-            {/* Hex Grid */}
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-1 my-1">
+            {/* Hex Grid: one visual row per puzzle row, so the highlighted
+                row and column line up at any size (#2175). */}
+            <div
+              className="grid gap-1 my-1"
+              data-testid="labyrinth-hex-grid"
+              style={{
+                gridTemplateColumns: `repeat(${hexPuzzle.grid[0]?.length ?? hexPuzzle.grid.length}, minmax(0, 1fr))`,
+              }}
+            >
               {hexPuzzle.grid.map((row, rIdx) =>
                 row.map((cell, cIdx) => {
                   const isSelectable =
@@ -3678,71 +3707,15 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           />
         )}
 
-        {/* Cyberdeck Class Select Modal */}
+        {/* Cyberdeck Class Select dialog (#2179). */}
         {gameStatus === "class_select" && (
-          <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md flex flex-col items-center justify-between p-2.5 rounded-lg border border-zinc-700 z-40">
-            <div className="text-xs font-bold text-amber-400 uppercase tracking-wider">
-              SELECT CYBERDECK FIRMWARE ARCHETYPE
-            </div>
-
-            <div className="grid grid-cols-2 gap-1.5 my-1 w-full flex-1 min-h-0 content-start overflow-y-auto">
-              {Object.values(CYBERDECK_CLASSES).map((cls) => {
-                // A locked class names its milestone and says Locked in
-                // words, not only by dimming (#2085).
-                const locked = !isCyberdeckClassUnlocked(profile, cls.id);
-                const unlock = CLASS_UNLOCK_MILESTONES[cls.id];
-                return (
-                  <button
-                    key={cls.id}
-                    type="button"
-                    onClick={() => chooseClass(cls.id)}
-                    aria-disabled={locked || undefined}
-                    data-locked={locked ? "true" : undefined}
-                    className={`p-1.5 rounded border text-left flex flex-col justify-between transition-all [@media(pointer:coarse)]:min-h-11 ${
-                      locked
-                        ? "bg-neutral-950 border-dashed border-neutral-700 text-neutral-400 cursor-not-allowed"
-                        : selectedClassId === cls.id
-                          ? "bg-amber-500/15 border-amber-400 text-amber-100 cursor-pointer"
-                          : "bg-neutral-900 border-neutral-800 text-neutral-400 hover:border-neutral-700 cursor-pointer"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-1">
-                      <span
-                        className={`font-bold text-xs ${locked ? "text-neutral-300" : "text-white"}`}
-                      >
-                        {cls.icon} {cls.name}
-                      </span>
-                      <span className="text-xs text-amber-400">
-                        {locked ? "🔒 Locked" : `${cls.baseRam}GB RAM`}
-                      </span>
-                    </div>
-                    <div className="text-xs text-neutral-400 mt-0.5 leading-tight">
-                      {locked && unlock
-                        ? `Unlock: ${unlock.label}.`
-                        : cls.passiveBonus}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="flex w-full gap-1.5">
-              <button
-                type="button"
-                onClick={() => openOverlay("firmware_bay")}
-                className="flex-1 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 rounded text-xs font-bold cursor-pointer [@media(pointer:coarse)]:min-h-11"
-              >
-                Firmware Upgrades
-              </button>
-              <button
-                type="button"
-                onClick={closeOverlay}
-                className="flex-1 py-0.5 bg-neutral-800 text-neutral-300 rounded text-xs font-bold cursor-pointer [@media(pointer:coarse)]:min-h-11"
-              >
-                Confirm Loadout & Hack
-              </button>
-            </div>
-          </div>
+          <ClassSelect
+            profile={profile}
+            selectedClassId={selectedClassId}
+            onChoose={chooseClass}
+            onOpenFirmware={() => openOverlay("firmware_bay")}
+            onClose={closeOverlay}
+          />
         )}
 
         {/* Firmware Bay: spends banked crypto between runs (#2085). */}
@@ -4071,7 +4044,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 </span>
                 {gameMode === "roguelike" && (
                   <span
-                    className="shrink-0 text-neutral-500 tabular-nums"
+                    className="shrink-0 text-neutral-400 tabular-nums"
                     data-testid="labyrinth-room-count"
                   >
                     Room {roomIndex + 1} of {runLength}

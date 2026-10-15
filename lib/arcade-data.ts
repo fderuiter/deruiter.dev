@@ -270,7 +270,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     subtitle: "Dungeon Crawler & CRT Phosphor Engine",
     genre: "Dungeon Roguelike",
     description:
-      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss.",
+      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and break two wireframe bosses.",
     mechanics: [
       "TSP Dynamic Shifting Walls",
       "Developer Weapons (npm i, git push -f)",

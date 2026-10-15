@@ -79,8 +79,8 @@ export const RetroLabyrinthClient: React.FC = () => {
               </h1>
               <p className="text-xs sm:text-sm text-zinc-400 font-mono mt-1">
                 An abandoned codebase, now with corridors. Navigate moving
-                walls, wield developer-themed weapons, and find the FaceForge
-                boss.
+                walls, wield developer-themed weapons, and break two wireframe
+                bosses.
               </p>
             </div>
           </div>
@@ -100,7 +100,7 @@ export const RetroLabyrinthClient: React.FC = () => {
                 { key: "1-3", action: "Fire Class Tools" },
                 { key: "Space", action: "EMP Burst" },
                 { key: "C", action: "CRT Scanlines" },
-                { key: "P", action: "Pause" },
+                { key: "P / Esc", action: "Pause" },
                 { key: "Enter / R", action: "Continue / Retry" },
               ]}
               importComponent={RetroLabyrinthLoader}
@@ -126,9 +126,9 @@ export const RetroLabyrinthClient: React.FC = () => {
               <span>TSP Shifting Walls</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              Room 01, the Airgap Enclave, recalculates the Traveling
-              Salesperson tour as you move. Time your steps through the striped
-              airgap walls, which shift every step, to reach the EXIT.
+              The TSP Enclave, mid-route, recalculates the Traveling Salesperson
+              tour as you move. Time your steps through the striped airgap
+              walls, which shift every step, to reach the EXIT.
             </p>
           </div>
 
@@ -149,12 +149,12 @@ export const RetroLabyrinthClient: React.FC = () => {
           <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
             <div className="flex items-center gap-2 text-slate-300 font-bold mb-2">
               <IconShieldLock className="w-4 h-4" />
-              <span>3D Wireframe Boss</span>
+              <span>3D Wireframe Bosses</span>
             </div>
             <p className="text-zinc-400 text-[11px] leading-relaxed">
-              FaceForge in Room 02 projects real-time rotating 3D wireframe
-              polyhedra. Evade projecting face-normals and utilize EMP bursts to
-              stun rogue drones.
+              Every run ends on two bosses: FaceForge, then the Neural Warden.
+              Both project real-time rotating 3D wireframe polyhedra. Use walls
+              as cover from their volleys, and EMP bursts to stun rogue drones.
             </p>
           </div>
         </div>

@@ -65,9 +65,3 @@
 ### targetSequence
 
 > **targetSequence**: `string`[]
-
-***
-
-### timeRemainingSeconds
-
-> **timeRemainingSeconds**: `number`

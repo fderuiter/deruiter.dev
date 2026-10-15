@@ -99,14 +99,20 @@ export const ReportView: React.FC<{
             {verdict.line}
           </p>
           <p className="mt-2 text-xs text-[var(--sd-muted)]">
+            {/* The lock figure is about queries alone: "locked clean" and
+                "Data cleanliness 100%" read as a verdict on the data next to
+                eleven major deviations (#2253). */}
             {lock.openQueriesAtLock === 0
               ? profile.profile === "absentee"
-                ? "The database locked clean, because nobody touched it."
-                : "The database locked clean."
-              : `${lock.openQueriesAtLock} queries were still open at lock, which cost ${lock.lockDelayDays} days.`}{" "}
-            Data cleanliness {lock.dataCleanPct}%. The study ran{" "}
-            {state.setup.durationDays + state.slipDays} days against{" "}
-            {state.setup.durationDays} planned.
+                ? "The database locked with no open queries, because nobody touched it."
+                : "The database locked with no open queries."
+              : `${lock.openQueriesAtLock} ${lock.openQueriesAtLock === 1 ? "query was" : "queries were"} still open at lock, which cost ${lock.lockDelayDays} ${lock.lockDelayDays === 1 ? "day" : "days"}.`}{" "}
+            {lock.dataCleanPct}% of the queries raised were resolved by lock
+            {ev.science.majorDeviations > 0
+              ? `; the ${ev.science.majorDeviations} major ${ev.science.majorDeviations === 1 ? "deviation stays" : "deviations stay"} on the record`
+              : ""}
+            . The study ran {state.setup.durationDays + state.slipDays} days
+            against {state.setup.durationDays} planned.
           </p>
         </div>
         <div
@@ -216,7 +222,7 @@ export const ReportView: React.FC<{
               </button>
             ))}
           </div>
-          <MeetingArchive meetings={world.meetingHistory ?? []} />
+          <MeetingArchive meetings={world.meetingHistory ?? []} finished />
         </Card>
       ) : null}
 

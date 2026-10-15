@@ -116,7 +116,7 @@ test.describe("Study Director site visits (/arcade/study-director#mode=world)", 
     await launchWorld(page);
     await page.getByTestId("world-playfield").focus();
 
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     const car = page.getByTestId("world-outcome");
     await expect(car.getByRole("button", { name: "Go home" })).toBeVisible();
@@ -155,7 +155,7 @@ test.describe("Study Director site visits (/arcade/study-director#mode=world)", 
     await expectNoBlockingViolations(page, "site check");
     await shot(page, "site-visit-check-1280");
 
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     await tabTo(
       page,
@@ -205,7 +205,7 @@ test.describe("Study Director site visits (/arcade/study-director#mode=world)", 
     await launchWorld(page);
     await page.getByTestId("world-playfield").focus();
 
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     await tabTo(page, page.getByRole("button", { name: /Drive to Site 03/ }));
     await page.keyboard.press("Enter");
@@ -221,7 +221,7 @@ test.describe("Study Director site visits (/arcade/study-director#mode=world)", 
       await walkTo(
         page,
         new RegExp(`Walk to ${name}`),
-        new RegExp(`You are facing the ${name}`)
+        new RegExp(`You are facing (the )?${name}`)
       );
       await page.keyboard.press("e");
       await tabTo(page, page.getByRole("button", { name: check }));
@@ -237,7 +237,7 @@ test.describe("Study Director site visits (/arcade/study-director#mode=world)", 
     await expectNoBlockingViolations(page, "troubled site");
     await shot(page, "site-03-visit-1280");
 
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     await tabTo(
       page,

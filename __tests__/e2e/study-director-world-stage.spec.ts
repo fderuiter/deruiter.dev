@@ -209,7 +209,7 @@ test.describe("Study Director world: the stage (#1829 to #1834)", () => {
     await expect(page.getByTestId("world-digest")).toBeVisible();
     await scrollToStage(page);
     await shot(page, testInfo, "card-digest-1280");
-    await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+    await walkTo(page, /Walk to Your car/, /You are facing your car/);
     await page.keyboard.press("e");
     await activate(page.getByRole("button", { name: "Go home" }));
     const card = page.getByTestId("world-overnight");

@@ -604,6 +604,10 @@ export function siteVisibility(state: StudyState, site: SiteState): number {
   }[site.coordinator];
 }
 
+/** "1 day", "3 days": a count with the noun that agrees with it (#2253). */
+const plural = (n: number, one: string, many = `${one}s`): string =>
+  `${n} ${n === 1 ? one : many}`;
+
 const grade = (value: number, amberAt: number, redAt: number): Health =>
   value >= redAt ? "red" : value >= amberAt ? "amber" : "green";
 
@@ -629,7 +633,12 @@ export function dashboard(state: StudyState): Dashboard {
   const spentRatio = state.spent / setup.budget;
   const overspend = spentRatio - state.day / setup.durationDays;
   const late = Math.max(0, projectedFinishDay(state) - setup.durationDays);
-  const visQueries = visible((s) => s.openQueries);
+  // Each site's reported count rounded on its own, as `reportedSite` and the
+  // EDC queue round it, so the Data row and the queue agree (#2253).
+  const visQueries = state.sites.reduce(
+    (sum, s) => sum + Math.round(s.openQueries * siteVisibility(state, s)),
+    0
+  );
   const visSafety = visible((s) => s.eligibilityConcerns * 5 + s.deviations);
   const visReg =
     visible((s) => s.unsignedSource + (s.trainingCurrent ? 0 : 4)) +
@@ -650,7 +659,7 @@ export function dashboard(state: StudyState): Dashboard {
     },
     data: {
       health: grade(visQueries, 8, 20),
-      summary: `${Math.round(visQueries)} open queries reported`,
+      summary: `${plural(visQueries, "open query", "open queries")} reported`,
     },
     regulatory: {
       health: grade(visReg, 3, 8),
@@ -667,7 +676,7 @@ export function dashboard(state: StudyState): Dashboard {
     },
     timeline: {
       health: grade(late, 1, 5),
-      summary: late > 0 ? `${late} days behind` : "On plan",
+      summary: late > 0 ? `${plural(late, "day")} behind` : "On plan",
     },
   };
 }

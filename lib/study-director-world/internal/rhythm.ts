@@ -845,13 +845,23 @@ export function eveningWrapUp(world: WorldState): OvernightLine[] {
     (r) =>
       r.day === study.day && r.optionId !== "ignored" && getEvent(r.eventId)
   );
+  const work = workDoneToday(world);
   lines.push({
     text:
-      today.length === 0
-        ? "You decided nothing today."
-        : `You decided ${plural(today.length, "thing")} today.`,
+      today.length > 0
+        ? `You decided ${plural(today.length, "thing")} today.`
+        : work.length > 0
+          ? "No decisions today."
+          : "You decided nothing today.",
     tone: "neutral",
   });
+  // Work that is not a decision still counts: a day at the EDC or out at
+  // the sites read as a day of nothing (#2253).
+  if (work.length > 0)
+    lines.push({
+      text: `${today.length > 0 ? "You also" : "You"} ${list(work)}.`,
+      tone: "good",
+    });
   const unwritten = undocumentedDecisions(study).length;
   if (unwritten > 0)
     lines.push({
@@ -883,6 +893,41 @@ export function eveningWrapUp(world: WorldState): OvernightLine[] {
   lines.push(...guestWrapUp(world));
   lines.push(...priorityOutcome(world, unwritten));
   return lines;
+}
+
+function list(items: readonly string[]): string {
+  if (items.length <= 1) return items.join("");
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}
+
+/**
+ * The work the player did today that is not a decision: queries closed at
+ * the EDC, sites visited and meetings held, each as a phrase for the
+ * wrap-up ("closed 15 queries at the EDC").
+ */
+function workDoneToday(world: WorldState): string[] {
+  const day = world.study.day;
+  const work: string[] = [];
+  const closed = planFor(world).queriesClosed ?? 0;
+  if (closed > 0)
+    work.push(`closed ${plural(closed, "query", "queries")} at the EDC`);
+  const sites = new Set(
+    (world.siteVisitHistory ?? [])
+      .filter((r) => r.day === day)
+      .map((r) => r.siteId)
+  );
+  if (world.visit?.day === day) sites.add(world.visit.siteId);
+  if (sites.size > 0) {
+    const names = [...sites].map(
+      (id) => world.study.sites.find((s) => s.id === id)?.name ?? id
+    );
+    work.push(`visited ${list(names)}`);
+  }
+  const meetings = (world.meetingHistory ?? []).filter(
+    (m) => m.day === day
+  ).length;
+  if (meetings > 0) work.push(`held ${plural(meetings, "meeting")}`);
+  return work;
 }
 
 /** True when the player, not the team, decided something today. */
@@ -943,7 +988,10 @@ function priorityOutcome(
   if (!decidedToday(world))
     return [
       {
-        text: `${label}: nothing crossed the desk today. Nothing to keep.`,
+        text:
+          (planFor(world).queriesClosed ?? 0) > 0
+            ? `${label}: no decisions to write up, and you worked the query queue. Nothing to keep.`
+            : `${label}: nothing crossed the desk today. Nothing to keep.`,
         tone: "neutral",
       },
     ];
@@ -961,6 +1009,22 @@ function visitedToday(world: WorldState, siteId: string): boolean {
       (r) => r.day === day && r.siteId === siteId
     )
   );
+}
+
+/**
+ * Ways to say a site sent nothing overnight. The one line repeated on every
+ * Keep-the-sites day (#2253), so the night picks one by the day.
+ */
+const QUIET_SITE_LINES: ReadonlyArray<(name: string) => string> = [
+  (name) => `${name} sent nothing overnight. Quiet is not the same as fine.`,
+  (name) => `Nothing from ${name} overnight. No news is not good news.`,
+  (name) => `${name} stayed silent overnight. Somebody should go and look.`,
+  (name) =>
+    `Still no word from ${name}. The dashboard only knows what it is told.`,
+];
+
+function quietSiteLine(name: string, turn: number): string {
+  return QUIET_SITE_LINES[turn % QUIET_SITE_LINES.length](name);
 }
 
 /**
@@ -1019,7 +1083,7 @@ export function settlePriority(
       });
     for (const s of quiet)
       lines.push({
-        text: `${s.name} sent nothing overnight. Quiet is not the same as fine.`,
+        text: quietSiteLine(s.name, world.study.day + silent.indexOf(s)),
         tone: "neutral",
       });
     return { world, lines };

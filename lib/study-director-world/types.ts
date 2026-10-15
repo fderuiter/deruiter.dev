@@ -105,6 +105,8 @@ export interface DayPlan {
   handled: string[];
   /** Ids that came while the player was away, held against nobody (#2189). */
   excused?: string[];
+  /** Queries the player closed at the EDC today, for the wrap-up (#2253). */
+  queriesClosed?: number;
 }
 
 /** The most meetings or site visits a run keeps; the oldest drop first. */

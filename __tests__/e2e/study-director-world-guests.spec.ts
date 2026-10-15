@@ -129,7 +129,7 @@ async function shotCard(
 }
 
 async function driveTo(page: Page, site: string) {
-  await walkTo(page, /Walk to Your car/, /You are facing the Your car/);
+  await walkTo(page, /Walk to Your car/, /You are facing your car/);
   await page.keyboard.press("e");
   const car = page.getByTestId("world-outcome");
   await activate(
@@ -189,7 +189,7 @@ test.describe("Study Director: more sites, a sponsor visit and a vendor (#1839)"
     await walkTo(
       page,
       /Walk to Coordinator Jun Park/,
-      /You are facing the Coordinator Jun Park/
+      /You are facing Coordinator Jun Park/
     );
     await page.keyboard.press("e");
     await activate(

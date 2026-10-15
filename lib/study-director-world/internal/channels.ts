@@ -15,6 +15,7 @@ import {
 import { uniformAt } from "@/lib/utils/prng";
 import { clamp } from "@/lib/game-utils";
 import { spend } from "./clock";
+import { planFor } from "./rhythm";
 import { undocumentedDecisions } from "./dialogue";
 import { adjustTrust, senderOf } from "./team";
 import {
@@ -537,10 +538,17 @@ export function clearQueriesAtEdc(
   const names = changes
     .map((c) => study.sites.find((s) => s.id === c.siteId)?.name ?? c.siteId)
     .join(", ");
+  // The wrap-up credits the session: a day spent at the EDC said "You
+  // decided nothing today" (#2253).
+  const plan = planFor(spent.world);
   return {
     ok: true,
     cleared,
-    world: { ...spent.world, study: next },
+    world: {
+      ...spent.world,
+      study: next,
+      plan: { ...plan, queriesClosed: (plan.queriesClosed ?? 0) + cleared },
+    },
     lines: [
       {
         kind: "information",

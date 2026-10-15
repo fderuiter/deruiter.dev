@@ -224,6 +224,20 @@ function overnightLines(
     if (gained > 0)
       lines.push({ text: `${site.name} enrolled +${gained}`, tone: "good" });
   }
+  // A decision today that gave money back lowered the running total before
+  // the night began, and the total fell with no line saying why (#2253).
+  for (const record of before.log) {
+    const credit = -(record.effects.spend ?? 0);
+    if (record.day !== before.day || record.optionId === "ignored") continue;
+    if (credit <= 0) continue;
+    lines.push({
+      text:
+        record.optionId === "change-order"
+          ? `A change order credited ${money(credit)} back to the budget`
+          : `${record.label}: ${money(credit)} back in the budget`,
+      tone: "good",
+    });
+  }
   const spent = after.spent - before.spent;
   // The day's burn and the running total: "$2,390 spent" every night read
   // like a total that never moved (#2187).

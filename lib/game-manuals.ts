@@ -984,6 +984,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "E",
       },
       {
+        action: "Work the query queue (office)",
+        description:
+          "At the EDC workstation, spends forty-five minutes answering the open queries the sites have entered, the biggest backlog first. Only queries the EDC shows can be worked: a site that hides its problems keeps them. The Today list counts the queries the EDC shows, and the evening wrap-up counts the ones you closed.",
+        key: "E at the EDC",
+      },
+      {
         action: "Ask yourself how it is going",
         description: "It is fine.",
         key: "F",

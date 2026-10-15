@@ -16,12 +16,16 @@ const KIND_LABEL: Record<MeetingReport["kind"], string> = {
  */
 export const MeetingArchive: React.FC<{
   meetings: readonly MeetingReport[];
-}> = ({ meetings }) => {
+  /** True on a finished study's closeout, where "yet" no longer fits (#2253). */
+  finished?: boolean;
+}> = ({ meetings, finished = false }) => {
   const [picked, setPicked] = useState(0);
   if (meetings.length === 0)
     return (
       <p className="text-xs text-zinc-300" data-testid="meeting-archive-empty">
-        No meetings held yet.
+        {finished
+          ? "No meetings were held in this study."
+          : "No meetings held yet."}
       </p>
     );
   const ordered = [...meetings].reverse();

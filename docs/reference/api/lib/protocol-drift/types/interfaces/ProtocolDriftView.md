@@ -22,6 +22,14 @@ A read-only copy of the engine state, for tests, the inspector and saves.
 
 ***
 
+### assisted
+
+> **assisted**: `boolean`
+
+True once the run has loaded a reference pipeline (#2168).
+
+***
+
 ### attentionLog
 
 > **attentionLog**: [`AttentionStep`](AttentionStep.md)[]

@@ -212,6 +212,7 @@ export function PipelineTextView() {
                   void loadTemplate({
                     nodes: toFlowNodes(pick.graph.nodes),
                     edges: toFlowEdges(pick.graph.edges),
+                    reference: pick.id,
                   });
                 }
               }}

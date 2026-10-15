@@ -8,7 +8,8 @@
 
 > **recordEfficiencyBests**(`bests`, `scorecard`): `object`
 
-Folds a locked run into the bests. Lower is better for every measure.
+Folds a locked run into the bests. Lower is better for every measure;
+waived measures are skipped.
 Returns the merged bests (the same object when nothing improved) and the
 measures this run improved, including first-time entries.
 

@@ -10,6 +10,14 @@ Systems efficiency scorecard shown after lock.
 
 ## Properties
 
+### assisted
+
+> **assisted**: `boolean`
+
+True when the run loaded a reference pipeline (#2168).
+
+***
+
 ### badges
 
 > **badges**: [`BadgeAward`](BadgeAward.md)[]

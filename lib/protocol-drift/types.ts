@@ -694,6 +694,8 @@ export interface ScorecardInput {
   wireCount: number;
   /** Commands the engine turned down during the run (#2054). */
   rejectedCommands: number;
+  /** True when the run loaded a reference pipeline (#2168). */
+  assisted?: boolean;
   /**
    * Fabricated precision introduced over the whole run, in bits, counting
    * records that were later corrected and superseded (#2054).
@@ -723,6 +725,11 @@ export interface EfficiencyMetric {
   medal: boolean;
   /** Points this measure adds to the efficiency score. */
   points: number;
+  /**
+   * True when a loaded reference pipeline did this measure's work, so it
+   * earns no medal, no points and no best (#2168).
+   */
+  waived?: boolean;
 }
 
 /** The lowest value seen per efficiency measure in this browser. */
@@ -751,6 +758,8 @@ export interface Scorecard {
   rejectedCommands: number;
   /** Fabricated precision introduced over the run, in bits. */
   fabricatedBits: number;
+  /** True when the run loaded a reference pipeline (#2168). */
+  assisted: boolean;
   /** Each efficiency measure against its par, in a fixed order. */
   efficiency: EfficiencyMetric[];
   /** The sum of the efficiency points. */
@@ -788,7 +797,16 @@ export type PDCommand =
   | { type: "STEP_TICK" }
   | { type: "TICK"; realMs: number }
   | { type: "ADVANCE_TO"; minute: number }
-  | { type: "LOAD_GRAPH"; nodes: CanvasNode[]; edges: CanvasEdge[] }
+  | {
+      type: "LOAD_GRAPH";
+      nodes: CanvasNode[];
+      edges: CanvasEdge[];
+      /**
+       * The reference pipeline this graph came from, when the player loaded
+       * one; it marks the run as assisted (#2168).
+       */
+      reference?: string;
+    }
   | { type: "VALIDATE_GRAPH"; nodes: CanvasNode[]; edges: CanvasEdge[] }
   | {
       type: "PUBLISH_REVISION";
@@ -926,6 +944,8 @@ export interface ProtocolDriftView {
    * Skip to next event advances the clock to it (#2170).
    */
   nextEventMinute: number | null;
+  /** True once the run has loaded a reference pipeline (#2168). */
+  assisted: boolean;
 }
 
 /** How the AmendmentRouter routed one submission. */

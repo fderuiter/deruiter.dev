@@ -16,6 +16,14 @@ Facts the scorecard needs about how the run went.
 
 ***
 
+### assisted?
+
+> `optional` **assisted?**: `boolean`
+
+True when the run loaded a reference pipeline (#2168).
+
+***
+
 ### chipCount
 
 > **chipCount**: `number`

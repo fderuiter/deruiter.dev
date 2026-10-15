@@ -24,6 +24,7 @@ export type DuckCommand =
   | "space"
   | "steer-up"
   | "steer-down"
+  | "package"
   | "pause"
   | "auto-pause";
 

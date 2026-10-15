@@ -341,6 +341,9 @@ export function generateTSPRoom(): DungeonRoom {
     exitY: 7,
     enemies,
     items,
+    // A drone sweeps the last corridor on a timer, so the middle of the run
+    // has a timing beat, not only turn-based patrols (#2273).
+    drones: [{ x: 8, y: 7, dir: "right", minX: 8, maxX: 11 }],
     tspNodes,
     tspMovingWalls,
     securityTier: 3,
@@ -662,6 +665,8 @@ export function generateBlinkBrowseRoom(): DungeonRoom {
     exitY: 7,
     enemies,
     items,
+    // A drone sweeps the long middle corridor on a timer (#2273).
+    drones: [{ x: 1, y: 5, dir: "right", minX: 1, maxX: 8 }],
   };
 }
 

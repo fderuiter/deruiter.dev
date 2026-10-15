@@ -182,6 +182,8 @@ import {
   startRunRoute,
   type RunBuild,
   type RunRoute,
+  type SecurityDrone,
+  stepSecurityDrone,
 } from "@/lib/dungeon";
 
 const MAZE = STAGE_1_MAZE;
@@ -263,13 +265,7 @@ function phoneToolLabel(weaponId: WeaponId): string {
   );
 }
 
-interface Drone {
-  x: number;
-  y: number;
-  dir: "left" | "right" | "up" | "down";
-  minX: number;
-  maxX: number;
-}
+type Drone = SecurityDrone;
 
 interface RetroLabyrinthProps {
   isMounted?: boolean;
@@ -742,10 +738,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           };
         }
         setTspWalls(currentRoom.tspMovingWalls || []);
-        // Campaign drones are enemies, moved and drawn with the rest. The
-        // classic-mode drone list stays empty so no static copy is left on
-        // the spawn tile (#1665).
-        setDrones([]);
+        // Patrol drones are enemies, moved and drawn with the rest. A room's
+        // sweeping security drones run on a timer (#2273); rooms without them
+        // start with none, so no static copy is left on the spawn tile (#1665).
+        setDrones(currentRoom.drones ?? []);
 
         const fov = calculateFOV(
           currentRoom.grid,
@@ -2287,46 +2283,23 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         }
       }
 
-      // 4. Update Classic Drones, one step per
+      // 4. Update sweeping drones, one step per
       // CLASSIC_DRONE_STEP_INTERVAL_MS of play.
-      if (
-        gameStatus === "playing" &&
-        !dronesStunned &&
-        drones.length > 0 &&
-        gameMode === "classic"
-      ) {
+      if (gameStatus === "playing" && !dronesStunned && drones.length > 0) {
         droneStepElapsedRef.current += deltaMs;
         if (droneStepElapsedRef.current >= CLASSIC_DRONE_STEP_INTERVAL_MS) {
           droneStepElapsedRef.current = 0;
           setDrones((prev) =>
             prev.map((d) => {
-              let nextX = d.x;
-              let nextDir = d.dir;
-              if (d.dir === "right") {
-                if (nextX >= d.maxX) {
-                  nextDir = "left";
-                  nextX -= 1;
-                } else {
-                  nextX += 1;
-                }
-              } else {
-                if (nextX <= d.minX) {
-                  nextDir = "right";
-                  nextX += 1;
-                } else {
-                  nextX -= 1;
-                }
-              }
-
-              if (nextX === playerPosition.x && d.y === playerPosition.y) {
+              const next = stepSecurityDrone(d);
+              if (next.x === playerPosition.x && next.y === playerPosition.y) {
                 takeContactHit(
                   DRONE_CONTACT_DAMAGE,
                   "An Airgap Sentinel drone severed your cyberdeck proxy tunnel.",
                   playerPosition
                 );
               }
-
-              return { ...d, x: nextX, dir: nextDir };
+              return next;
             })
           );
         }
@@ -2525,7 +2498,20 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             }
           });
 
-          // Classic Stage 2 drones
+          // Sweeping security drones (Classic Stage 2 and the middle rooms,
+          // #2273), each over a faint track of its sweep so the timing reads.
+          drones.forEach((d) => {
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.strokeStyle = LABYRINTH_INK.red;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 3]);
+            ctx.beginPath();
+            ctx.moveTo(d.minX * TILE + 2, d.y * TILE + TILE - 2);
+            ctx.lineTo(d.maxX * TILE + TILE - 2, d.y * TILE + TILE - 2);
+            ctx.stroke();
+            ctx.restore();
+          });
           drones.forEach((d) => {
             drawSprite(
               ctx,

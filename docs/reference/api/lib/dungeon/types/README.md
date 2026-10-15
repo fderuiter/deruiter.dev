@@ -23,6 +23,7 @@
 - [ItemPickup](interfaces/ItemPickup.md)
 - [MeshProjectile](interfaces/MeshProjectile.md)
 - [ParticleEffect](interfaces/ParticleEffect.md)
+- [SecurityDrone](interfaces/SecurityDrone.md)
 - [ThemedRoomMeta](interfaces/ThemedRoomMeta.md)
 - [TSPMovingWall](interfaces/TSPMovingWall.md)
 - [TSPNode](interfaces/TSPNode.md)

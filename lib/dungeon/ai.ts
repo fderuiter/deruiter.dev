@@ -3,7 +3,7 @@
  */
 
 import { hasLineOfSight } from "./fov";
-import { Enemy } from "./types";
+import { Enemy, SecurityDrone } from "./types";
 
 export interface AIUpdateResult {
   updatedEnemies: Enemy[];
@@ -255,4 +255,22 @@ export function updateEnemyAI(
     damageToPlayer,
     contactedPlayer,
   };
+}
+
+/**
+ * Moves a sweeping security drone one tile along its row, turning back at
+ * either end of its sweep (#2273).
+ *
+ * @param drone - The drone before the step.
+ * @returns The drone after the step.
+ */
+export function stepSecurityDrone(drone: SecurityDrone): SecurityDrone {
+  if (drone.dir === "right") {
+    return drone.x >= drone.maxX
+      ? { ...drone, x: drone.x - 1, dir: "left" }
+      : { ...drone, x: drone.x + 1 };
+  }
+  return drone.x <= drone.minX
+    ? { ...drone, x: drone.x + 1, dir: "right" }
+    : { ...drone, x: drone.x - 1 };
 }

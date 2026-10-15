@@ -689,10 +689,28 @@ export interface GameEngineState {
   finisherCards?: FinisherCard[] | null;
   /** What the last card collected said, for the screen reader (#1996). */
   finisherNews?: string | null;
+  /**
+   * What this run has done toward its badges (#2021), or unset when nothing
+   * is watching. The engine carries it untouched; lib/garmin-badges.ts acts
+   * on it.
+   */
+  badgeRun?: BadgeRun | null;
 }
 
 /** A Finisher Card on a stage's finish pole (#1996). */
 export type FinisherCard = "shoe" | "bottle" | "medal";
+
+/** A run's progress toward its in-run badges (#2021). */
+export interface BadgeRun {
+  /** Sprint was held on the stage being run. */
+  sprinted: boolean;
+  /** A stage was cleared without sprinting. */
+  legDay: boolean;
+  /** A Rep Max was beaten. */
+  repMax: boolean;
+  /** The best Training Effect of a stage cleared, or null before one is. */
+  peakTe: number | null;
+}
 
 /** Packed gear still to take effect in a workout (#1995). */
 export interface Loadout {

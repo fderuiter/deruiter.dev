@@ -240,6 +240,21 @@ function madeCondition(
   return null;
 }
 
+/** The rose rows, in display order; all three use the same roses. */
+const ROSE_ROWS: readonly Category[] = ["bouquets", "centerpieces", "petals"];
+
+/**
+ * Whether a rose row comes after another planned rose row, so its "Roses
+ * bought" clause would only repeat the one above it.
+ */
+function repeatsRosePurchase(state: GameState, category: Category): boolean {
+  const index = ROSE_ROWS.indexOf(category);
+  return (
+    index > 0 &&
+    ROSE_ROWS.slice(0, index).some((row) => categoryProgress(state, row))
+  );
+}
+
 function readinessLine(state: GameState, category: Category): ReadinessLine {
   const label = CATEGORY_LABELS[category];
   const progress = categoryProgress(state, category);
@@ -259,7 +274,11 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
   );
   const simplified = planned.filter((t) => t.status === "simplified").length;
   const open = planned.filter((t) => t.status === "open").length;
-  const conditions: Condition[] = [sourceCondition(state, category)];
+  // The roses are bought once, so only the first planned rose row says so;
+  // the others would repeat it word for word (round 20 N-3, #2146).
+  const conditions: Condition[] = repeatsRosePurchase(state, category)
+    ? []
+    : [sourceCondition(state, category)];
   const made = madeCondition(category, planned);
   if (made) conditions.push(made);
   conditions.push({
@@ -272,7 +291,11 @@ function readinessLine(state: GameState, category: Category): ReadinessLine {
   let explanation: string;
   if (status === "unfinished") {
     const unit = progress.multi ? "items placed" : "done";
-    explanation = `Only ${progress.placed} of ${progress.planned} ${unit} at 4:00.`;
+    // "Only 0 of 4" reads oddly; nothing placed says so plainly (#2146).
+    explanation =
+      progress.placed === 0
+        ? `None of the ${progress.planned} ${unit} at 4:00.`
+        : `Only ${progress.placed} of ${progress.planned} ${unit} at 4:00.`;
     // Credit whoever did place something, so a short line still names the work.
     if (progress.placed > 0) {
       const who = carried(planned.flatMap(placementsOf));

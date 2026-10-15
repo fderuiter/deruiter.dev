@@ -217,7 +217,7 @@ describe("Laser Loon arcade clock (#1940)", () => {
     cleanup();
   });
 
-  it("reads 45s before an arcade run starts, not 999s", async () => {
+  it("reads a fresh survival clock before an arcade run starts, not 999s", async () => {
     const { container } = render(<LaserLoon />);
     // A campaign run leaves its 999s clock behind.
     const playfield = container.querySelector(".arcade-shooter-playfield");
@@ -229,7 +229,8 @@ describe("Laser Loon arcade clock (#1940)", () => {
       fireEvent.click(screen.getByRole("button", { name: /Arcade Survival/i }));
     });
     const hud = screen.getByLabelText("Game status");
-    expect(hud.textContent).toContain("45s");
+    // Arcade Survival counts up from 0:00 (#2141).
+    expect(hud.textContent).toContain("0:00");
     expect(hud.textContent).not.toContain("999");
   });
 });

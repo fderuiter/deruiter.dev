@@ -15,6 +15,7 @@
 ## Variables
 
 - [EASTER\_EGG\_ACHIEVEMENTS](variables/EASTER_EGG_ACHIEVEMENTS.md)
+- [ECHO\_TROPHY\_STREAKS](variables/ECHO_TROPHY_STREAKS.md)
 - [FORTUNES](variables/FORTUNES.md)
 - [MEME\_QUOTES](variables/MEME_QUOTES.md)
 - [MEME\_STORAGE\_KEYS](variables/MEME_STORAGE_KEYS.md)
@@ -31,6 +32,7 @@
 - [getEchoBest](functions/getEchoBest.md)
 - [getUnlockedAchievements](functions/getUnlockedAchievements.md)
 - [isVaultUnlocked](functions/isVaultUnlocked.md)
+- [recordEchoMilestones](functions/recordEchoMilestones.md)
 - [recordEchoStreak](functions/recordEchoStreak.md)
 - [setVaultUnlocked](functions/setVaultUnlocked.md)
 - [unlockAchievement](functions/unlockAchievement.md)

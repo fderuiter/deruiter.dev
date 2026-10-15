@@ -450,6 +450,17 @@ export function eveningWrapUp(world: WorldState): OvernightLine[] {
   return lines;
 }
 
+/** True when the player, not the team, decided something today. */
+function decidedToday(world: WorldState): boolean {
+  return world.study.log.some(
+    (r) =>
+      r.day === world.study.day &&
+      r.optionId !== "ignored" &&
+      r.optionId !== "audit" &&
+      !r.delegated
+  );
+}
+
 function priorityOutcome(
   world: WorldState,
   unwritten: number
@@ -494,6 +505,13 @@ function priorityOutcome(
           },
         ];
   }
+  if (!decidedToday(world))
+    return [
+      {
+        text: `${label}: nothing crossed the desk today. Nothing to keep.`,
+        tone: "neutral",
+      },
+    ];
   return unwritten === 0
     ? [{ text: `${label}: every decision is written up. Kept.`, tone: "good" }]
     : [{ text: `${label}: the desk is not clear. Not kept.`, tone: "bad" }];
@@ -537,6 +555,9 @@ export function settlePriority(world: WorldState): {
       });
     return { world, lines };
   }
+  // A clear desk earns its point only on a day something was decided: an
+  // empty day paid compliance for nothing (#2190).
+  if (!decidedToday(world)) return { world, lines };
   if (undocumentedDecisions(world.study).length === 0) {
     lines.push({
       text: "The desk was clear: compliance is up a point.",

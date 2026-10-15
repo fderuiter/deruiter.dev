@@ -43,9 +43,11 @@ describe("GarminWatchSimulator Architecture & Feature Completeness", () => {
 
   it("should support Connect IQ device target profiles: fenix, forerunner, edge", () => {
     expect(content).toContain("deviceTarget");
-    expect(content).toContain("fenix");
-    expect(content).toContain("forerunner");
-    expect(content).toContain("edge");
+    expect(Object.keys(DEVICE_PROFILES).sort()).toEqual([
+      "edge",
+      "fenix",
+      "forerunner",
+    ]);
   });
 
   it("should support backlight toggling with battery & overheat management", () => {

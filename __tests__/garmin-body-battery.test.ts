@@ -47,11 +47,25 @@ describe("garmin body battery", () => {
       expect(next.value).toBe(BODY_BATTERY_MAX);
     });
 
-    it("changes nothing in the air", () => {
+    it("changes nothing in the air at a run or a jog", () => {
       const start: BodyBattery = { value: 60, bonked: false };
-      expect(stepBodyBattery(start, 1, false, 1000)).toEqual(start);
       expect(stepBodyBattery(start, 0, false, 1000)).toEqual(start);
       expect(stepBodyBattery(start, -1, false, 1000)).toEqual(start);
+    });
+
+    // #2022: the balance playtest never bonked in 120 runs, because a sprint
+    // in the air (or a swim stroke) was free. A sprint now costs charge
+    // wherever the runner is.
+    it("drains at the sprint rate while sprinting in the air", () => {
+      const start: BodyBattery = { value: 60, bonked: false };
+      const next = stepBodyBattery(start, 1, false, 1000);
+      expect(next.value).toBeCloseTo(60 - BODY_BATTERY_SPRINT_DRAIN_PER_S, 9);
+    });
+
+    it("lets a bonked runner in the air neither drain nor recharge", () => {
+      const start: BodyBattery = { value: 10, bonked: true };
+      expect(stepBodyBattery(start, 1, false, 1000)).toEqual(start);
+      expect(stepBodyBattery(start, 0, false, 1000)).toEqual(start);
     });
 
     it("changes nothing for a NaN, zero or negative delta", () => {

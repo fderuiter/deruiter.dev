@@ -22,7 +22,11 @@ const BAND_CLASS: Record<KdsBand, string> = {
   red: "bg-[var(--pdt-band-red)]",
 };
 
-function TicketCard({ ticket }: { ticket: KdsTicket }) {
+/**
+ * One ticket. `slot` is its place on the board, which is the number key that
+ * picks it, so a keyboard player can find car #7 under key 1 (#2135).
+ */
+function TicketCard({ ticket, slot }: { ticket: KdsTicket; slot: number }) {
   return (
     <li
       className={`flex min-w-0 flex-col overflow-hidden rounded border-2 ${
@@ -34,7 +38,16 @@ function TicketCard({ ticket }: { ticket: KdsTicket }) {
       <div
         className={`flex items-center justify-between gap-2 px-2 py-1 font-bold text-[var(--pdt-kds-text)] ${BAND_CLASS[ticket.band]}`}
       >
-        <span>#{ticket.orderId}</span>
+        <span className="flex min-w-0 items-center gap-1.5">
+          <kbd
+            aria-hidden="true"
+            data-testid="pdt-ticket-key"
+            className="rounded border border-current px-1 text-[11px] leading-tight"
+          >
+            {slot}
+          </kbd>
+          <span>#{ticket.orderId}</span>
+        </span>
         <span className="tabular-nums">
           {formatClock(ticket.ageSec)}
           <span className="sr-only">, {BAND_LABEL[ticket.band]}</span>
@@ -97,8 +110,8 @@ export function KdsBoard({ store }: { store: BoothStore }) {
         </p>
       ) : (
         <ol className="grid grid-cols-2 gap-2 @lg:grid-cols-3">
-          {tickets.map((ticket) => (
-            <TicketCard key={ticket.orderId} ticket={ticket} />
+          {tickets.map((ticket, index) => (
+            <TicketCard key={ticket.orderId} ticket={ticket} slot={index + 1} />
           ))}
         </ol>
       )}

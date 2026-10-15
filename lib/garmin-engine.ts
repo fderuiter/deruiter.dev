@@ -196,6 +196,8 @@ import {
   GPS_LOCK_MS,
   MOVE_ALERT_IDLE_MS,
   MOVE_ALERT_TEXT,
+  BONK_OVER_TEXT,
+  REST_DAY_OVER_TEXT,
   NEW_PR_TEXT,
   gpsBannerText,
   pickToast,
@@ -1611,6 +1613,8 @@ export const FLASH_TOKEN_SCORE = 40;
  * difficulty. The runner covers about 15 m a second, so this is 3 minutes.
  */
 export const DIFFICULTY_RAMP_METERS = 2700;
+/** World px past the spawn point a rack must clear before a bug may spawn (#2022). */
+export const RACK_CLEAR = 120;
 
 /**
  * How far into the difficulty ramp a run is, from 0 at the start to 1 at
@@ -3073,6 +3077,20 @@ function stepSimulation(
       (wall - PLAYER_X - PLAYER_WIDTH + 3) / PX_PER_METER
     );
   }
+  // A pool's deep end has a far wall (#2022): a swimmer below the lane
+  // strokes up and out instead of swimming on under the lane.
+  if (swimming && prevFeetBottom > GROUND_Y + 2) {
+    const feet = prevCameraX + PLAYER_X + 5;
+    const pit = (state.course ?? EMPTY_COURSE).gaps.find(
+      (g) => feet >= g.x && feet < g.x + g.width
+    );
+    if (pit) {
+      const wall =
+        (pit.x + pit.width - PLAYER_X - PLAYER_WIDTH + 5) / PX_PER_METER;
+      const capped = Math.min(nextDistance, wall);
+      nextDistance = Math.max(state.distanceMeters, capped);
+    }
+  }
   const cameraX = nextDistance * PX_PER_METER;
   const footLeft = cameraX + PLAYER_X + 5;
   const footRight = cameraX + PLAYER_X + PLAYER_WIDTH - 5;
@@ -3117,6 +3135,19 @@ function stepSimulation(
   }
   // The banner carried in from last frame; anything else was set this frame.
   const carriedBanner = banner;
+  // A course piece met for the first time this run is named on the face, so
+  // a screen reader hears it too (#2022).
+  let movesUsed = state.movesUsed ?? [];
+  const meet = (piece: MoveName) => {
+    // Shown only on a clear face, and recorded once shown.
+    if (banner || movesUsed.includes(piece)) return;
+    movesUsed = [...movesUsed, piece];
+    banner = { text: MOVE_TOASTS[piece], ttlMs: 1800, tone: "info" };
+  };
+  if (currentPush !== 0) meet("current");
+  if ((state.restDayMs ?? 0) > 0 && restDayMs === 0 && !banner) {
+    banner = { text: REST_DAY_OVER_TEXT, ttlMs: 1400, tone: "info" };
+  }
   // A Buff or stronger runner breaks a PR Board (a brick) from below.
   const breakBoard = (index: number) => {
     const block = course.blocks[index];
@@ -3268,6 +3299,9 @@ function stepSimulation(
       nextPlayerY = landingTop - h;
       nextPlayerVy = 0;
       isGrounded = true;
+      if (landingProp?.kind === "plyo" || landingProp?.kind === "belt") {
+        meet(landingProp.kind);
+      }
       if (landingProp?.kind === "plyo") {
         // A Plyo Box springs the runner up; holding jump springs higher.
         nextPlayerVy = plyoLaunchVy(jumpHeld);
@@ -3797,6 +3831,9 @@ function stepSimulation(
         ttlMs: 2200,
         tone: "warn",
       };
+    } else if (before?.bonked && !bodyBattery.bonked && !freshBanner) {
+      // The bonk is over: sprint works again (#2022).
+      banner = { text: BONK_OVER_TEXT, ttlMs: 1600, tone: "good" };
     }
     // Easing on footing for too long and the watch nags. A bonked runner is
     // forced to ease, so that never counts.
@@ -3881,6 +3918,7 @@ function stepSimulation(
     stompChain,
     popups,
     banner,
+    movesUsed,
     props,
     propClockMs,
     restDayMs,
@@ -4415,11 +4453,14 @@ function stepSimulation(
   // 6. Spawn new Obstacles
   // Early stages leave room to learn the course before the bugs crowd in.
   const stageCalm = 1 + 0.12 * (STAGE_COUNT - (updatedState.stage ?? 1));
+  // Spawns are spaced by distance, not time, so a slower pace meets no more
+  // bugs per kilometre than a sprint does (#2022).
   const obstacleInterval =
-    (1800 + rand() * 1200) *
-    tuning.obstacleIntervalScale *
-    stageCalm *
-    (1 - 0.4 * ramp);
+    ((1800 + rand() * 1200) *
+      tuning.obstacleIntervalScale *
+      stageCalm *
+      (1 - 0.4 * ramp)) /
+    pace;
   if (
     now - updatedState.lastObstacleTime > obstacleInterval &&
     nextObstacles.length < 3 &&
@@ -4434,6 +4475,12 @@ function stepSimulation(
       isOverGap(liveCourse, spawnWorldX + 32) ||
       liveCourse.poles.some(
         (p) => p.grabbed === undefined && Math.abs(p.x - spawnWorldX) < 160
+      ) ||
+      // A rack overhead leaves no room to jump, so no bug meets the runner
+      // under one (#2022).
+      (liveCourse.ceilings ?? []).some(
+        (c) =>
+          c.x + c.width > cameraX + PLAYER_X && c.x < spawnWorldX + RACK_CLEAR
       ) ||
       propFootings(
         updatedState.props ?? EMPTY_PROPS,

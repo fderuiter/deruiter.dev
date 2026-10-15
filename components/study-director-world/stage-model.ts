@@ -252,3 +252,13 @@ export function currentGoal(
     ? "wrap up the day: go to your car and drive home."
     : null;
 }
+
+/**
+ * A conversation's subject followed by its instruction, as one line. A
+ * subject that already ends a sentence (a question, say) gets no extra full
+ * stop: "Would the team be allowed a day off? Choose an answer" (#2193).
+ */
+export function subjectSubtitle(subject: string, rest: string): string {
+  const s = subject.trim();
+  return /[.?!…]["'”’)]?$/.test(s) ? `${s} ${rest}` : `${s}. ${rest}`;
+}

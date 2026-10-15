@@ -141,6 +141,7 @@ import {
   grantAmmoForLoadout,
   computeRoomExitScore,
   ENEMY_STEP_INTERVAL_MS,
+  ENEMY_CONTACT_RECOIL_MS,
   type AmmoGrantResult,
   updateTSPMovingWalls,
   tspWallTelegraph,
@@ -190,6 +191,8 @@ const EXIT_Y = 7;
 const BOSS_LEAD_WINDOW_MS = 600;
 /** HP a drone takes when it and the player share a tile. */
 const DRONE_CONTACT_DAMAGE = 25;
+/** How long a contact hit protects the player from the next one (#2176). */
+const CONTACT_IMMUNITY_MS = ENEMY_CONTACT_RECOIL_MS;
 /**
  * Real time between classic Stage 2 drone steps. It used to be a 4% chance
  * per frame, which ran twice as fast on a 120 Hz display (#1665).
@@ -1123,6 +1126,40 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   );
 
   // Attempt player move
+  // After any contact hit the player is untouchable for a moment, so a held
+  // key or a patrol that keeps bumping costs one hit, not one per keypress
+  // or per enemy step (#2176).
+  const contactImmuneUntilRef = useRef(0);
+  const takeContactHit = useCallback(
+    (damage: number, cause: string, at: { x: number; y: number }) => {
+      const now = performance.now();
+      if (now < contactImmuneUntilRef.current) return false;
+      contactImmuneUntilRef.current = now + CONTACT_IMMUNITY_MS;
+      setLastHitBy(cause);
+      setPlayerHp((hp) => {
+        const nextHp = hp - damage;
+        if (nextHp <= 0) {
+          setGameStatus("caught");
+          retroAudio.playAlertPulse();
+          return 0;
+        }
+        return nextHp;
+      });
+      floatingTextsRef.current.push({
+        id: `contact-hit-${now}`,
+        x: at.x,
+        y: at.y,
+        text: `-${damage} HP`,
+        color: "#ef4444",
+        alpha: 1,
+        vy: -0.02,
+      });
+      playNote(200, 0.2);
+      return true;
+    },
+    [playNote]
+  );
+
   const tryMove = useCallback(
     (dx: number, dy: number) => {
       if (gameStatus !== "playing") return;
@@ -1152,19 +1189,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                 e.state !== "frozen"
             ))
         ) {
-          setLastHitBy(
-            "You walked into a patrolling security process, and it traced you."
+          takeContactHit(
+            DRONE_CONTACT_DAMAGE,
+            "You walked into a patrolling security process, and it traced you.",
+            playerPosition
           );
-          setPlayerHp((hp) => {
-            const nextHp = hp - DRONE_CONTACT_DAMAGE;
-            if (nextHp <= 0) {
-              setGameStatus("caught");
-              retroAudio.playAlertPulse();
-              return 0;
-            }
-            return nextHp;
-          });
-          playNote(200, 0.2);
           return;
         }
 
@@ -1427,6 +1456,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       movesCount,
       playNote,
       playSuccess,
+      takeContactHit,
       gameMode,
       exploredMap,
       roomIndex,
@@ -2030,6 +2060,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     currentTheme,
     crtCalibration,
     playNote,
+    takeContactHit,
   });
 
   useEffect(() => {
@@ -2055,6 +2086,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       currentTheme,
       crtCalibration,
       playNote,
+      takeContactHit,
     };
   });
 
@@ -2148,6 +2180,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         currentTheme,
         crtCalibration,
         playNote,
+        takeContactHit,
       } = loopStateRef.current;
       const exitLocked =
         gameMode === "roguelike" && getExitLockState(boss, tspNodes).locked;
@@ -2178,27 +2211,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           setEnemies(updatedEnemies);
 
           if (damageToPlayer > 0) {
-            setLastHitBy(
-              "EDR Sentinel Daemons severed your cyberdeck proxy tunnel."
+            takeContactHit(
+              damageToPlayer,
+              "EDR Sentinel Daemons severed your cyberdeck proxy tunnel.",
+              playerPosition
             );
-            setPlayerHp((hp) => {
-              const nextHp = hp - damageToPlayer;
-              if (nextHp <= 0) {
-                setGameStatus("caught");
-                return 0;
-              }
-              return nextHp;
-            });
-            playNote(220, 0.1);
-            floatingTextsRef.current.push({
-              id: `enemy-hit-${timestamp}`,
-              x: playerPosition.x,
-              y: playerPosition.y,
-              text: `-${damageToPlayer} HP`,
-              color: "#ef4444",
-              alpha: 1,
-              vy: -0.02,
-            });
           }
         }
       }
@@ -2283,18 +2300,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               }
 
               if (nextX === playerPosition.x && d.y === playerPosition.y) {
-                setLastHitBy(
-                  "An Airgap Sentinel drone severed your cyberdeck proxy tunnel."
+                takeContactHit(
+                  DRONE_CONTACT_DAMAGE,
+                  "An Airgap Sentinel drone severed your cyberdeck proxy tunnel.",
+                  playerPosition
                 );
-                setPlayerHp((hp) => {
-                  const nextHp = hp - DRONE_CONTACT_DAMAGE;
-                  if (nextHp <= 0) {
-                    setGameStatus("caught");
-                    return 0;
-                  }
-                  return nextHp;
-                });
-                playNote(220, 0.2);
               }
 
               return { ...d, x: nextX, dir: nextDir };

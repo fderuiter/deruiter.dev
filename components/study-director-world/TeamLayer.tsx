@@ -47,6 +47,7 @@ import {
   OverlayButton,
   RelationshipCardView,
 } from "./TeamPieces";
+import { subjectSubtitle } from "./stage-model";
 
 const VERB_LABEL: Record<DelegationVerb, string> = {
   askStatus: "Ask status · 10 min",
@@ -606,7 +607,7 @@ export const TeamOverlay: React.FC<{
           titleId="sd-event-title"
           title={title}
           speaker={speakerFor(world, dialogue.speaker)}
-          subtitle={`${dialogue.subject}. ${subtitle}`}
+          subtitle={subjectSubtitle(dialogue.subject, subtitle)}
           lines={after ? [...dialogue.lines, ...after] : dialogue.lines}
           reducedMotion={reducedMotion}
           testId="world-dialogue"

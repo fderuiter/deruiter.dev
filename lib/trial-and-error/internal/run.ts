@@ -596,6 +596,8 @@ export interface RunView {
   /** The act card, while a new study's first Blind has not started. */
   actIntro: ActIntroView | null;
   phase: RunPhase;
+  /** The won run was submitted and ended; nothing follows (#1088). */
+  ended: boolean;
   /** The act being played, from 0; post-marketing rounds follow the campaign. */
   actIndex: number;
   /** The Blind has just started: nothing has been played or discarded. */
@@ -2058,6 +2060,7 @@ export function deriveRunView(authored: RunPlan, run: RunState): RunView {
           }
         : null,
     phase,
+    ended: run.ended,
     actIndex: run.actIndex,
     showIntro,
     table: endedTableView(

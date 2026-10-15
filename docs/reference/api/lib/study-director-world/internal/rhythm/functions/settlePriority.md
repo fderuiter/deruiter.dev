@@ -6,17 +6,26 @@
 
 # Function: settlePriority()
 
-> **settlePriority**(`world`): `object`
+> **settlePriority**(`world`, `options?`): `object`
 
 What the chosen priority adds to the night. People: how the team looked
-when you left. Sites: which site sent nothing. Desk: a clear desk earns a
-point of compliance. Returns the world with any effect applied.
+when you left, said only when you stayed to the end of the day yourself.
+Sites: which site sent nothing, leaving out a site you visited today.
+Desk: a clear desk earns a point of compliance. Returns the world with any
+effect applied. Pass `delegated` when the team ran the day without the
+player, who then saw nobody at their desk.
 
 ## Parameters
 
 ### world
 
 [`WorldState`](../../../types/interfaces/WorldState.md)
+
+### options?
+
+#### delegated?
+
+`boolean`
 
 ## Returns
 

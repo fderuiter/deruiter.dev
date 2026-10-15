@@ -17,7 +17,7 @@ import {
 import { fatigueFrom, formatClock, weekdayFor } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { workTheNight } from "./delegation";
-import { earlyWarning } from "./favours";
+import { earlyWarningNote } from "./favours";
 import { guestsExpected, settleGuests } from "./guests";
 import { CRO_FLOOR } from "./floor";
 import { eveningWrapUp, settlePriority } from "./rhythm";
@@ -127,8 +127,8 @@ export function startDay(world: WorldState): {
     });
   lines.push(...teamDigest(study));
   // Someone who trusts the player tells them where to look (#1838).
-  const warning = earlyWarning(world);
-  if (warning) lines.push(warning);
+  const warning = earlyWarningNote(world);
+  if (warning) lines.push(warning.line);
   // Visitors are announced in the morning: the sponsor used to arrive
   // unannounced and the miss was held against the player (#2188).
   for (const guest of guestsExpected({
@@ -143,6 +143,7 @@ export function startDay(world: WorldState): {
   return {
     world: {
       ...world,
+      known: warning ? [...world.known, warning.known] : world.known,
       plan: { day: study.day, priority: null, handled: [] },
       minute: startsAt,
       energy,
@@ -276,14 +277,18 @@ function overnightLines(
  * The player goes home. Overtime becomes fatigue, and the study simulates
  * the night: unanswered messages that ran out of time apply their fallout,
  * the sites and team work through their day, and new messages arrive.
+ * Pass `delegated` when the team ran the day without the player.
  */
-export function goHome(world: WorldState): {
+export function goHome(
+  world: WorldState,
+  options: { delegated?: boolean } = {}
+): {
   world: WorldState;
   report: OvernightReport;
 } {
   const wrapUp = eveningWrapUp(world);
   const worked = workTheNight({ ...world, meeting: null });
-  const settled = settlePriority(worked.world);
+  const settled = settlePriority(worked.world, options);
   const callers = settleGuests(settled.world);
   const night = {
     world: callers.world,

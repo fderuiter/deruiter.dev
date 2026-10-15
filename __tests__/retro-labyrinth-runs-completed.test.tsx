@@ -84,6 +84,8 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
   };
 });
 
+let contactSkew = 0;
+
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { STORAGE_KEY_PROFILE } from "@/lib/dungeon";
 import { safeRemoveItem } from "@/lib/safe-storage";
@@ -98,6 +100,14 @@ describe("Retro Labyrinth counts each run once (#2048)", () => {
     vi.useFakeTimers({
       toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
     });
+    // A contact hit protects the player for a moment (#2176). Each key
+    // press here moves the contact clock past it, without running frames,
+    // so repeated bumps each land.
+    contactSkew = 0;
+    const fakeNow = performance.now.bind(performance);
+    vi.spyOn(performance, "now").mockImplementation(
+      () => fakeNow() + contactSkew
+    );
     store = {};
     Object.defineProperty(window, "localStorage", {
       configurable: true,
@@ -155,6 +165,7 @@ describe("Retro Labyrinth counts each run once (#2048)", () => {
   }
 
   async function step(key: "ArrowRight" | "ArrowLeft") {
+    contactSkew += 1000;
     const boundary = container.querySelector(
       '[data-keyboard-boundary="true"]'
     ) as HTMLElement;

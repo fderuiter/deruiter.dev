@@ -133,7 +133,7 @@ export function delegateDay(world: WorldState): WorldResult<{
     text: `The team ran the day without you: trust -${DELEGATED_TRUST_COST} with everyone`,
     tone: "bad",
   });
-  const night = goHome(next);
+  const night = goHome(next, { delegated: true });
   return {
     ok: true,
     world: night.world,

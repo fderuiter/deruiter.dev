@@ -1,6 +1,6 @@
 "use client";
 
-import React, { type ReactNode } from "react";
+import React, { type ReactNode, useEffect, useRef } from "react";
 import { clamp } from "@/lib/game-utils";
 import { IconDeviceWatch } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
@@ -431,13 +431,24 @@ export function CompanionPanel({
   const progress = state.gameState === "idle" ? 0 : stageProgress(state);
   const courseFraction = (stage - 1 + progress) / STAGE_COUNT;
   const te = state.lastTrainingEffect;
+  // A result card replaces the panel's settings, so the panel is only as
+  // tall as the card and the card opens beside the run-over face (#2132).
+  const cardOpen = Boolean(children);
+  const resultSlotRef = useRef<HTMLDivElement>(null);
+  // A card taller than the panel scrolls inside it; start at its buttons so
+  // the focused Run Again is on screen.
+  useEffect(() => {
+    const overlay = resultSlotRef.current?.firstElementChild;
+    if (overlay instanceof HTMLElement)
+      overlay.scrollTop = overlay.scrollHeight;
+  }, [cardOpen]);
 
   return (
     <aside
       aria-label="Connect IQ companion"
       className="garmin-companion relative isolate w-full min-w-0 self-stretch overflow-hidden rounded-2xl border border-white/[0.08] bg-[#13151a] font-mono text-xs text-zinc-300"
     >
-      <div className="flex flex-col gap-4 p-4">
+      <div className={cardOpen ? "hidden" : "flex flex-col gap-4 p-4"}>
         <header className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <span className="rounded-lg border border-white/[0.08] bg-[#0d0e11] p-1.5 text-zinc-300">
@@ -919,7 +930,15 @@ export function CompanionPanel({
           </div>
         </fieldset>
       </div>
-      {children}
+      {cardOpen && (
+        <div
+          ref={resultSlotRef}
+          data-result-slot=""
+          className="relative h-full min-h-[34rem] @max-5xl:min-h-[36.5rem] @max-5xl:[&_.arcade-result-card>dl]:grid-cols-2 @max-5xl:[&>div]:p-2"
+        >
+          {children}
+        </div>
+      )}
     </aside>
   );
 }

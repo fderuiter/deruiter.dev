@@ -307,11 +307,12 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     title: "Study Kickoff",
     subtitle: "Study Director",
     description:
-      "Get through your first weeks: answer the inbox, walk the floor and keep the sites running.",
+      "Get through your first three weeks: answer the inbox, walk the floor and keep the sites running.",
     icon: "ClipboardCheck",
     category: "gameplay",
-    targetScore: 100,
-    conditionDescription: "Reach 100+ points in Study Director",
+    // Fired on day 15 of a study, as the text says, not at closeout (#2191).
+    milestone: "first_weeks",
+    conditionDescription: "Reach day 15 of a study in Study Director",
   },
   {
     id: "study_director_closeout",
@@ -319,11 +320,13 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     title: "FDA Replay Approved",
     subtitle: "Study Director",
     description:
-      "Complete study closeout with zero unmanaged documentation debt.",
+      "Close out a study with every decision written up and nothing left to lapse.",
     icon: "ShieldCheck",
     category: "mastery",
-    targetScore: 500,
-    conditionDescription: "Reach 500+ points in Study Director",
+    // Fired by the run it describes, not by career points (#2191).
+    milestone: "clean_file",
+    conditionDescription:
+      "Close out a Study Director study with every decision documented and none ignored",
   },
   {
     id: "study_director_grade_a",

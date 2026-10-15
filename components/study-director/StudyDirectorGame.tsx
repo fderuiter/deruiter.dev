@@ -54,6 +54,8 @@ import type { WorldState } from "@/lib/study-director-world";
 import { ReportView } from "./ReportView";
 import { clearStudySave, loadStudySave, saveStudy } from "./useStudySave";
 import {
+  KICKOFF_DAY,
+  cleanFile,
   dailyResultFor,
   loadCareer,
   mergeCareers,
@@ -363,6 +365,8 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
       if (finished.evaluations.regulatory.grade === "A") {
         recordArcadeMilestone("study-director", "grade_a");
       }
+      if (cleanFile(finished.state))
+        recordArcadeMilestone("study-director", "clean_file");
       // A study on the day's Arcade Daily seed records its own best (#2113).
       const dailyDate = parseArcadeDailyTag(done.seed, "study-director");
       if (dailyDate) {
@@ -382,6 +386,20 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
    * A world run ends where a classic run does: the report, the verdict and
    * the share card, filed in the career like any other study.
    */
+  // An office run counts as started once its first morning is touched: the
+  // personnel file said "0 started, 1 closed" after an office run (#2191).
+  const countOfficeStart = useCallback(
+    () => updateCareer(recordStart(career)),
+    [career, updateCareer]
+  );
+
+  // Three weeks into a study, at the desk, earns Study Kickoff (#2191).
+  const deskDay = state?.day ?? 0;
+  useEffect(() => {
+    if (deskDay >= KICKOFF_DAY)
+      recordArcadeMilestone("study-director", "first_weeks");
+  }, [deskDay]);
+
   const closeWorldRun = useCallback(
     (done: StudyState, run: WorldState) => {
       showCloseout();
@@ -599,7 +617,11 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
 
   if (worldMode)
     return (
-      <StudyDirectorWorld onExit={leaveWorld} onCloseout={closeWorldRun} />
+      <StudyDirectorWorld
+        onExit={leaveWorld}
+        onCloseout={closeWorldRun}
+        onStart={countOfficeStart}
+      />
     );
 
   if (!state) {

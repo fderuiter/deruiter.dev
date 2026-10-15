@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
-import { CHIP_SPECS, isWireCompatible, type ChipKind } from "@/lib/protocol-drift";
+import {
+  CHIP_SPECS,
+  isWireCompatible,
+  type ChipKind,
+} from "@/lib/protocol-drift";
 import { wireRefusal } from "@/components/protocol-drift/wire-refusal";
 
 const kinds = Object.keys(CHIP_SPECS) as ChipKind[];
@@ -24,7 +28,7 @@ describe("wire refusal copy (#2167)", () => {
     for (const [a, out, b, inp] of pairs) {
       const text = wireRefusal(a, out, b, inp);
       expect(text).toContain(`${a}.${out} to ${b}.${inp}`);
-      expect(text).toMatch(/sends \w+ data and the pin takes \w+|flows down/);
+      expect(text).toMatch(/sends \w+ data to an? \w+ pin|flows down/);
     }
   });
 
@@ -37,7 +41,7 @@ describe("wire refusal copy (#2167)", () => {
     const sent = CHIP_SPECS[a].outputs.find((p) => p.handle === out)?.type;
     const taken = CHIP_SPECS[b].inputs.find((p) => p.handle === inp)?.type;
     expect(wireRefusal(a, out, b, inp)).toBe(
-      `Can't wire ${a}.${out} to ${b}.${inp}: it sends ${sent} data and the pin takes ${taken}.`
+      `Can't wire ${a}.${out} to ${b}.${inp}: it sends ${sent} data to ${/^[aeiou]/.test(taken ?? "") ? "an" : "a"} ${taken} pin.`
     );
   });
 });

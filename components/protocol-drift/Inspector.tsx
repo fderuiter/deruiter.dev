@@ -342,6 +342,8 @@ function Composer({ issue, view }: { issue: Issue; view: ProtocolDriftView }) {
   const [busy, setBusy] = useState(false);
   const ids = useId();
   const site = view.sites[issue.siteId];
+  // A second query on an answered issue only costs goodwill (#2276).
+  const reviewFirst = issue.status === "ReadyForReview";
   const preview = evidence
     ? `${observed}. Attached source evidence: ${issue.evidence}. ${
         action === "reconcile"
@@ -426,9 +428,14 @@ function Composer({ issue, view }: { issue: Issue; view: ProtocolDriftView }) {
         Expected latency {site.latencyHours}h · Goodwill cost{" "}
         {GOODWILL_RULES.distinctQuery}
       </p>
+      {reviewFirst ? (
+        <p className="text-amber-300">
+          The site has answered. Review the answer before querying again.
+        </p>
+      ) : null}
       <button
         type="submit"
-        disabled={busy || !isIssueOpen(issue.status)}
+        disabled={busy || !isIssueOpen(issue.status) || reviewFirst}
         className="min-h-8 border border-amber-500 px-3 text-amber-400 disabled:border-zinc-700 disabled:text-zinc-400"
       >
         Send Query ({GOODWILL_RULES.distinctQuery} GW)
@@ -665,7 +672,9 @@ export function Inspector() {
         data-testid="pane-form"
         aria-label="Form View"
         role="region"
-        className="min-h-0 min-w-0 overflow-y-auto"
+        // Focusable so a keyboard can scroll a long pane (#2276).
+        tabIndex={0}
+        className="min-h-0 min-w-0 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-amber-500"
       >
         <FormPane
           view={view}
@@ -677,7 +686,9 @@ export function Inspector() {
         data-testid="pane-trace"
         aria-label="Pipeline Trace"
         role="region"
-        className="min-h-0 min-w-0 overflow-y-auto"
+        // Focusable so a keyboard can scroll a long pane (#2276).
+        tabIndex={0}
+        className="min-h-0 min-w-0 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-amber-500"
       >
         <TracePane
           view={view}
@@ -695,7 +706,9 @@ export function Inspector() {
         data-testid="pane-review"
         aria-label="Review and Query"
         role="region"
-        className="min-h-0 min-w-0 overflow-y-auto"
+        // Focusable so a keyboard can scroll a long pane (#2276).
+        tabIndex={0}
+        className="min-h-0 min-w-0 overflow-y-auto outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-amber-500"
       >
         <ReviewPane view={view} issue={issue} />
       </div>

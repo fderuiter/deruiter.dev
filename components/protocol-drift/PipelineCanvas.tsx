@@ -26,6 +26,7 @@ import { ChipNodeView } from "./ChipNodeView";
 import { PacketEdgeView } from "./PacketEdgeView";
 import {
   CHIP_WIDTH,
+  chipName,
   clampChip,
   chipHeight,
   touchZoomFloor,
@@ -84,13 +85,13 @@ function LaneOverlay() {
           className="absolute text-[13px] tracking-wide text-slate-300"
           style={{ left: 408, top: tabulationTop + 4 }}
         >
-          TABULATION LANE (SDTM) · y{tabulationTop}–{conservationWallY}
+          TABULATION LANE (SDTM)
         </span>
         <span
           className="absolute text-[13px] tracking-wide text-emerald-400"
           style={{ left: 408, top: conservationWallY + 24 }}
         >
-          ANALYSIS LANE (ADaM) · y{conservationWallY}–{analysisBottom}
+          ANALYSIS LANE (ADaM)
         </span>
         <div
           data-testid="conservation-wall"
@@ -400,6 +401,15 @@ function CanvasInner() {
     },
     []
   );
+  // Wires announce readable chip names, never internal ids (#2276).
+  const flowEdges = useMemo(() => {
+    const names = new Map(nodes.map((n) => [n.id, chipName(n)]));
+    const nameOf = (id: string) => names.get(id) ?? id;
+    return edges.map((e) => ({
+      ...e,
+      ariaLabel: `Wire from ${nameOf(e.source)}.${e.sourceHandle ?? ""} to ${nameOf(e.target)}.${e.targetHandle ?? ""}`,
+    }));
+  }, [nodes, edges]);
   const flowNodes = useMemo(
     () =>
       touch && wireFrom
@@ -422,7 +432,7 @@ function CanvasInner() {
       <ReactFlow<ChipNode, WireEdge>
         nodes={flowNodes}
         onNodeClick={touch ? onNodeClick : undefined}
-        edges={edges}
+        edges={flowEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}

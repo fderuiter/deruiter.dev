@@ -20,6 +20,6 @@ export function wireRefusal(
   const names = `${sourceKind}.${sourceHandle} to ${targetKind}.${targetHandle}`;
   if (!out || !inp) return `Can't wire ${names}: wire an output to an input.`;
   if (out.type !== inp.type)
-    return `Can't wire ${names}: it sends ${out.type} data and the pin takes ${inp.type}.`;
+    return `Can't wire ${names}: it sends ${out.type} data to ${/^[aeiou]/.test(inp.type) ? "an" : "a"} ${inp.type} pin.`;
   return `Can't wire ${names}: data only flows down across the Conservation Wall.`;
 }

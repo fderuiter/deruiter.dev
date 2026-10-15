@@ -9,8 +9,9 @@ import {
   WAVE1_GRAPH,
   type PipelineGraph,
 } from "@/lib/protocol-drift";
-import { toFlowEdges, toFlowNodes, type ChipNode } from "./graph-model";
+import { chipName, toFlowEdges, toFlowNodes } from "./graph-model";
 import { useProtocolDriftStore } from "./store";
+import { canRewire } from "./touch-wire";
 
 const REFERENCE_PIPELINES: {
   id: string;
@@ -31,12 +32,6 @@ const REFERENCE_PIPELINES: {
   { id: "full", label: "Full: with the ADaM lane", graph: FULL_GRAPH },
 ];
 
-/** A chip's readable name: its kind and the number in its id. */
-function chipName(node: ChipNode): string {
-  const number = /-(\d+)$/.exec(node.id)?.[1];
-  return number ? `${node.data.kind} ${number}` : node.data.kind;
-}
-
 /**
  * Accessible text alternative to the canvas: every chip and wire as a list,
  * with keyboard-operable controls to add a wire or remove a chip or wire.
@@ -47,6 +42,10 @@ export function PipelineTextView() {
   const connect = useProtocolDriftStore((s) => s.connect);
   const removeSelection = useProtocolDriftStore((s) => s.removeSelection);
   const loadTemplate = useProtocolDriftStore((s) => s.loadTemplate);
+  // The text view edits only when the canvas does: never after lock (#2276).
+  const editable = canRewire(
+    useProtocolDriftStore((s) => s.snapshot?.fsmState)
+  );
   const [reference, setReference] = useState(REFERENCE_PIPELINES[0].id);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -110,7 +109,8 @@ export function PipelineTextView() {
                   <button
                     type="button"
                     onClick={() => void removeSelection([n.id], [])}
-                    className="min-h-8 shrink-0 border border-zinc-700 px-2 hover:border-amber-500"
+                    disabled={!editable}
+                    className="min-h-8 shrink-0 border border-zinc-700 px-2 hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label={`Remove chip ${chipName(n)}`}
                   >
                     Remove
@@ -135,8 +135,9 @@ export function PipelineTextView() {
                   <button
                     type="button"
                     onClick={() => void removeSelection([], [e.id])}
-                    className="min-h-8 shrink-0 border border-zinc-700 px-2 hover:border-amber-500"
-                    aria-label={`Remove wire ${e.id}`}
+                    disabled={!editable}
+                    className="min-h-8 shrink-0 border border-zinc-700 px-2 hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label={`Remove wire ${nameOf(e.source)}.${e.sourceHandle} to ${nameOf(e.target)}.${e.targetHandle}`}
                   >
                     Remove
                   </button>
@@ -180,7 +181,7 @@ export function PipelineTextView() {
             <button
               type="button"
               onClick={submit}
-              disabled={!from || !to}
+              disabled={!editable || !from || !to}
               className="min-h-8 border border-amber-500 px-3 text-amber-400 disabled:border-zinc-700 disabled:text-zinc-400"
             >
               Connect
@@ -216,7 +217,8 @@ export function PipelineTextView() {
                   });
                 }
               }}
-              className="min-h-8 border border-zinc-700 px-3 text-zinc-200 hover:border-amber-500"
+              disabled={!editable}
+              className="min-h-8 border border-zinc-700 px-3 text-zinc-200 hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Load
             </button>

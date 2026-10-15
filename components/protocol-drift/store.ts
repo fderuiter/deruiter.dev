@@ -194,6 +194,26 @@ let noticeId = 0;
 export function isTracerComplete(view: ProtocolDriftView | null): boolean {
   return view?.scenario === "tracer" && view.completedWaves.length > 0;
 }
+
+/**
+ * The full study's last wave is in and no site owes a reply, so running the
+ * clock only adds days to the lock date. The next step is Database Lock (#2165).
+ */
+export function isAwaitingLock(view: ProtocolDriftView | null): boolean {
+  return (
+    view?.scenario === "full" &&
+    view.completedWaves.includes(3) &&
+    !view.queries.some(
+      (q) =>
+        q.communicationState === "Queued" ||
+        q.communicationState === "AwaitingResponse"
+    )
+  );
+}
+
+const AWAITING_LOCK_TEXT =
+  "Every wave is in and no site owes a reply. Request Database Lock: each extra day counts against the lock-day par.";
+
 let busy = false;
 /** True while a save is replaying: no cues, no autosaves. */
 let replaying = false;
@@ -431,6 +451,11 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
         await send({ type: "SET_PAUSED", isPaused: true });
       } else if (isTracerComplete(get().view)) {
         say("info", "The tracer is complete. Start the full study to go on.");
+      } else if (isAwaitingLock(get().view)) {
+        set({ waveSummary: null });
+        if (fsm === "WAVE_REVIEW")
+          await send({ type: "SET_PAUSED", isPaused: true });
+        say("info", AWAITING_LOCK_TEXT);
       } else if (fsm === "PAUSED" || fsm === "WAVE_REVIEW") {
         set({ waveSummary: null });
         await send({ type: "SET_PAUSED", isPaused: false });
@@ -448,6 +473,10 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       const fsm = get().snapshot?.fsmState;
       if (isTracerComplete(get().view)) {
         say("info", "The tracer is complete. Start the full study to go on.");
+        return;
+      }
+      if (fsm === "PAUSED" && isAwaitingLock(get().view)) {
+        say("info", AWAITING_LOCK_TEXT);
         return;
       }
       if (fsm === "DRAFT" || fsm === "VALIDATE" || fsm === "DEPLOY_READY") {
@@ -494,6 +523,14 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
       busy = true;
       try {
         await send({ type: "TICK", realMs });
+        // The last site reply after the final wave: stop before empty days.
+        if (
+          get().snapshot?.fsmState === "RUNNING" &&
+          isAwaitingLock(get().view)
+        ) {
+          await send({ type: "SET_PAUSED", isPaused: true });
+          say("info", AWAITING_LOCK_TEXT);
+        }
       } finally {
         busy = false;
       }

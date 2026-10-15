@@ -70,6 +70,8 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
   };
 });
 
+let contactSkew = 0;
+
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 
 describe("RetroLabyrinth drone contact and retry HP (#1310)", () => {
@@ -84,6 +86,14 @@ describe("RetroLabyrinth drone contact and retry HP (#1310)", () => {
     vi.useFakeTimers({
       toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
     });
+    // A contact hit protects the player for a moment (#2176). Each key
+    // press here moves the contact clock past it, without running frames,
+    // so repeated bumps each land.
+    contactSkew = 0;
+    const fakeNow = performance.now.bind(performance);
+    vi.spyOn(performance, "now").mockImplementation(
+      () => fakeNow() + contactSkew
+    );
     const store: Record<string, string> = {};
     Object.defineProperty(window, "localStorage", {
       configurable: true,
@@ -133,6 +143,7 @@ describe("RetroLabyrinth drone contact and retry HP (#1310)", () => {
   }
 
   async function stepRight() {
+    contactSkew += 1000;
     const boundary = container.querySelector(
       '[data-keyboard-boundary="true"]'
     ) as HTMLElement;
@@ -158,6 +169,25 @@ describe("RetroLabyrinth drone contact and retry HP (#1310)", () => {
 
     expect(hp()).toBe(startHp - 25);
     expect(container.textContent).not.toContain("IP TRACE INTERCEPTED");
+  });
+
+  it("charges a held key into a patrol one hit per contact window (#2176)", async () => {
+    await act(async () => {
+      root.render(<RetroLabyrinth isMounted={true} />);
+    });
+    const startHp = hp();
+
+    await stepRight();
+    // Key repeat: more bumps inside the window cost nothing more.
+    contactSkew -= 1000;
+    await stepRight();
+    contactSkew -= 1000;
+    await stepRight();
+    expect(hp()).toBe(startHp - 25);
+
+    // Once the window has passed, the next bump lands.
+    await stepRight();
+    expect(hp()).toBe(startHp - 50);
   });
 
   it("retries the room with the HP the player entered it with", async () => {

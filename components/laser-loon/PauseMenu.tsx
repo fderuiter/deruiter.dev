@@ -189,7 +189,7 @@ export function PauseMenu({
         ) : (
           <>
             <span>WASD: Move</span>
-            <span>Click: Fire</span>
+            <span>Click / Space: Fire</span>
             <span>1-4: Optics</span>
             <span>U: Tremolo</span>
           </>

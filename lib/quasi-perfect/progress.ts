@@ -253,3 +253,19 @@ export function withUnlockedChapter(
   }
   return { ...progress, unlockedChapter: ACT_TWO_FIRST_CHAPTER };
 }
+
+/**
+ * How many levels the save records as proved honestly: completed with at
+ * least one star and no `sorry`. A level admitted with `sorry` is not a
+ * proof, so it never counts (#1939, #2198).
+ *
+ * @param progress - Parsed campaign progress.
+ * @returns The number of honestly proved levels.
+ */
+export function countHonestProofs(
+  progress: Pick<GameProgressState, "completedLevels"> | null | undefined
+): number {
+  return Object.values(progress?.completedLevels ?? {}).filter(
+    (score) => !!score && !score.usedSorry && score.stars > 0
+  ).length;
+}

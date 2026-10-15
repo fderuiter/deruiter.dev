@@ -3,6 +3,11 @@
 import React, { useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
+import {
   DISCOVERY_SOURCE_LABELS,
   HAND_NAMES,
   RUN_HISTORY_LIMIT,
@@ -171,7 +176,11 @@ function SectionPanel({ section }: { section: CodexSectionView }) {
  * focus returns to the trigger.
  */
 export function Codex({ plan, codex, onClose }: CodexProps) {
-  const ref = useFocusTrap<HTMLDivElement>(true, { onEscape: onClose });
+  const portalTarget = usePortalTarget();
+  const ref = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: closeNow(onClose),
+  });
+  useClaimFocus(ref);
   const sections = useMemo(() => deriveCodexView(plan, codex), [plan, codex]);
   const tabIds = [...sections.map((s) => s.category), HISTORY_TAB];
   const [active, setActive] = useState<string>(tabIds[0]);
@@ -308,6 +317,6 @@ export function Codex({ plan, codex, onClose }: CodexProps) {
         </button>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

@@ -1,6 +1,8 @@
 import {
   deskView,
+  formatClock,
   guestScene,
+  guestsExpected,
   messagesFrom,
   pendingInterruption,
   ringingCall,
@@ -146,6 +148,15 @@ export function todaysTasks(world: WorldState): WorldTask[] {
       where: "Conference room",
       urgent: true,
     });
+  // A visitor still to come today is on the list from the morning (#2188).
+  if (!guest)
+    for (const expected of guestsExpected(world))
+      tasks.push({
+        id: `guest:${expected.id}`,
+        text: `${expected.name} of ${expected.organisation} visits at ${formatClock(expected.at)}`,
+        where: "Conference room",
+        urgent: false,
+      });
   if (world.meeting)
     tasks.push({
       id: "meeting",
@@ -240,4 +251,14 @@ export function currentGoal(
   return world.minute >= 17 * 60
     ? "wrap up the day: go to your car and drive home."
     : null;
+}
+
+/**
+ * A conversation's subject followed by its instruction, as one line. A
+ * subject that already ends a sentence (a question, say) gets no extra full
+ * stop: "Would the team be allowed a day off? Choose an answer" (#2193).
+ */
+export function subjectSubtitle(subject: string, rest: string): string {
+  const s = subject.trim();
+  return /[.?!…]["'”’)]?$/.test(s) ? `${s} ${rest}` : `${s}. ${rest}`;
 }

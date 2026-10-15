@@ -721,6 +721,16 @@ export function instantiatePattern(
 }
 
 /**
+ * The line {@link generateLeanProofScript} ends an unfinished proof with.
+ * It is a Lean comment, so it never reads as a `sorry` tactic.
+ */
+export const LEAN_OPEN_GOAL_MARKER =
+  "  -- Goal open: apply a tactic to continue";
+
+// Subgoal labels the induction tactic gives its two cases.
+const INDUCTION_CASE_LABEL = /^(Base|Step) case:/;
+
+/**
  * Generates an accurate, clean Lean 4 proof script for the given level and executed steps.
  */
 export function generateLeanProofScript(
@@ -734,16 +744,26 @@ export function generateLeanProofScript(
     `theorem ${level.leanTheoremName} ${level.leanTypeSignature} := by`,
   ];
 
-  if (steps.length === 0) {
-    lines.push("  sorry -- Goal open");
-  } else {
-    for (const step of steps) {
+  // Induction cases get a Lean bullet each, mirroring the base and step tabs
+  // (#2202): the first step in a case opens `·`, later ones indent under it.
+  let openCase: string | undefined;
+  for (const step of steps) {
+    const label = step.subgoalLabel;
+    if (label && INDUCTION_CASE_LABEL.test(label)) {
+      lines.push(
+        label === openCase ? `    ${step.leanLine}` : `  · ${step.leanLine}`
+      );
+      openCase = label;
+    } else {
       lines.push(`  ${step.leanLine}`);
-    }
-    if (isComplete) {
-      lines.push("  -- Q.E.D. Goal closed! 🚀");
+      openCase = undefined;
     }
   }
+  // An open goal is a comment, never a `sorry` line, so the verifier can tell
+  // it apart from a goal the player admitted with the sorry tactic (#2043).
+  lines.push(
+    isComplete ? "  -- Q.E.D. Goal closed! 🚀" : LEAN_OPEN_GOAL_MARKER
+  );
 
   return lines.join("\n");
 }

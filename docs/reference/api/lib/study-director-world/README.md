@@ -152,6 +152,12 @@ Re-exports [choosePriority](internal/rhythm/functions/choosePriority.md)
 
 ***
 
+### clearQueriesAtEdc
+
+Re-exports [clearQueriesAtEdc](internal/channels/functions/clearQueriesAtEdc.md)
+
+***
+
 ### closeVisit
 
 Re-exports [closeVisit](internal/sites/functions/closeVisit.md)
@@ -446,6 +452,18 @@ Re-exports [examineSelf](internal/dressing/functions/examineSelf.md)
 
 ***
 
+### excuseAway
+
+Re-exports [excuseAway](internal/rhythm/functions/excuseAway.md)
+
+***
+
+### ExpectedGuest
+
+Re-exports [ExpectedGuest](types/interfaces/ExpectedGuest.md)
+
+***
+
 ### exportDialogueCsv
 
 Re-exports [exportDialogueCsv](internal/history/functions/exportDialogueCsv.md)
@@ -584,6 +602,12 @@ Re-exports [GuestScene](types/interfaces/GuestScene.md)
 
 ***
 
+### guestsExpected
+
+Re-exports [guestsExpected](internal/guests/functions/guestsExpected.md)
+
+***
+
 ### guestWaiting
 
 Re-exports [guestWaiting](internal/guests/functions/guestWaiting.md)
@@ -677,6 +701,12 @@ Re-exports [Interruption](types/interfaces/Interruption.md)
 ### INTERRUPTION\_TIMES
 
 Re-exports [INTERRUPTION_TIMES](internal/rhythm/variables/INTERRUPTION_TIMES.md)
+
+***
+
+### INTERRUPTION\_WINDOW
+
+Re-exports [INTERRUPTION_WINDOW](internal/rhythm/variables/INTERRUPTION_WINDOW.md)
 
 ***
 
@@ -995,6 +1025,12 @@ Re-exports [PRIORITY_IDS](types/variables/PRIORITY_IDS.md)
 ### PriorityId
 
 Re-exports [PriorityId](types/type-aliases/PriorityId.md)
+
+***
+
+### QUERIES\_PER\_SESSION
+
+Re-exports [QUERIES_PER_SESSION](internal/channels/variables/QUERIES_PER_SESSION.md)
 
 ***
 
@@ -1505,6 +1541,12 @@ Re-exports [withBond](internal/team/functions/withBond.md)
 ### WORK\_STREAMS
 
 Re-exports [WORK_STREAMS](types/variables/WORK_STREAMS.md)
+
+***
+
+### workableQueries
+
+Re-exports [workableQueries](internal/channels/functions/workableQueries.md)
 
 ***
 

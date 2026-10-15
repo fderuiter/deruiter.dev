@@ -34,9 +34,9 @@ export const SWIM_SURFACE_Y = 96;
 /** Swim pace scale while wading along the bottom instead of stroking. */
 export const WADE_PACE_SCALE = 0.35;
 /** Swim pace against the track's full pace (the pace multiplier of a run). */
-export const SWIM_PACE = 0.45;
+export const SWIM_PACE = 0.55;
 /** Swim pace of a Tri Suit runner. */
-export const SUIT_SWIM_PACE = 0.7;
+export const SUIT_SWIM_PACE = 0.8;
 /** Upward speed of a Tri Suit stroke. */
 export const SUIT_STROKE_VY = -3;
 /** Gap between a Tri Suit runner's strokes, in ms. */

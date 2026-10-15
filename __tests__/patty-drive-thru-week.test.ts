@@ -157,10 +157,10 @@ describe("week mode days (#2086)", () => {
     expect(getWeekDaySeed("abc", "friday")).toBe("abc:friday");
   });
 
-  it("gives Wednesday two rushes and Monday one", () => {
+  it("gives Wednesday two rushes and Monday a lunch and a dinner rush", () => {
     const monday = playShift(dayConfig(0));
     const wednesday = playShift(dayConfig(2));
-    expect(count(monday.events, "rush-started")).toBe(1);
+    expect(count(monday.events, "rush-started")).toBe(2);
     expect(count(wednesday.events, "rush-started")).toBe(2);
   });
 

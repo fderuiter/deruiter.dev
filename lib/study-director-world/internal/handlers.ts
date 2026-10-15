@@ -1,4 +1,4 @@
-import { deskView, edcScreen } from "./channels";
+import { deskView, edcScreen, workableQueries } from "./channels";
 import { describePerson, personState } from "./team";
 import type { InteractionHandlers } from "../types";
 
@@ -45,11 +45,17 @@ export const TEAM_INTERACTIONS: InteractionHandlers = {
     edc: (world) => {
       const rows = edcScreen(world);
       const red = rows.filter((r) => r.health === "red").length;
+      const queries = workableQueries(world);
       return {
         world,
         title: "EDC workstation",
         lines: [
           "The dashboard as the sites report it, beside what you have seen yourself.",
+          ...(queries > 0
+            ? [
+                `${queries} open ${queries === 1 ? "query" : "queries"} on screen to work.`,
+              ]
+            : []),
         ],
         tone: red > 0 ? "bad" : "neutral",
         panel: { kind: "edc" },

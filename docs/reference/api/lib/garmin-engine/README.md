@@ -65,6 +65,7 @@
 - [PLAYER\_HEIGHT](variables/PLAYER_HEIGHT.md)
 - [PLAYER\_WIDTH](variables/PLAYER_WIDTH.md)
 - [PLAYER\_X](variables/PLAYER_X.md)
+- [RACK\_CLEAR](variables/RACK_CLEAR.md)
 - [REQUIRED\_VARIABLE\_NAMES](variables/REQUIRED_VARIABLE_NAMES.md)
 - [STAGE\_CLEAR\_SCORE](variables/STAGE_CLEAR_SCORE.md)
 - [STOMP\_BOUNCE\_VY](variables/STOMP_BOUNCE_VY.md)

@@ -49,7 +49,9 @@ export function ChipNodeView({ data, selected }: NodeProps<ChipNode>) {
       >
         <span
           className="min-w-0 truncate text-[11px] font-semibold"
-          style={touch ? { fontSize: TOUCH_TITLE_PX } : undefined}
+          // The same title size on desktop, which now frames at the same
+          // legible zoom floor as touch (#2167).
+          style={{ fontSize: TOUCH_TITLE_PX }}
         >
           {data.kind}
         </span>

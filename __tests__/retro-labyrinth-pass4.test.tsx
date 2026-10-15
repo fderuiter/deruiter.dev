@@ -58,6 +58,8 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
   };
 });
 
+let contactSkew = 0;
+
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { RETRO_LABYRINTH_HIGH_SCORE_KEY } from "@/lib/dungeon";
 import { safeRemoveItem } from "@/lib/safe-storage";
@@ -114,6 +116,14 @@ describe("Retro Labyrinth pass-4 fixes", () => {
     vi.useFakeTimers({
       toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"],
     });
+    // A contact hit protects the player for a moment (#2176). Each key
+    // press here moves the contact clock past it, without running frames,
+    // so repeated bumps each land.
+    contactSkew = 0;
+    const fakeNow = performance.now.bind(performance);
+    vi.spyOn(performance, "now").mockImplementation(
+      () => fakeNow() + contactSkew
+    );
     // Before #1665 a 5% roll per frame gated each enemy step; pin it so the
     // old code would step on every frame.
     vi.spyOn(Math, "random").mockReturnValue(0);
@@ -203,6 +213,7 @@ describe("Retro Labyrinth pass-4 fixes", () => {
   }
 
   async function press(key: string, target: HTMLElement = board()) {
+    contactSkew += 1000;
     let event: KeyboardEvent | undefined;
     await act(async () => {
       event = new KeyboardEvent("keydown", {
@@ -361,11 +372,15 @@ describe("Retro Labyrinth pass-4 fixes", () => {
       expect(score()).toBe(1410);
       expect(container.textContent).toContain("Crypto Harvested: +150");
 
+      // Enter asks about the unpicked reward first, then skips it (#2177).
+      await press("Enter");
       await press("Enter");
       await clearRoom();
       expect(score()).toBe(2820);
       expect(container.textContent).toContain("Crypto Harvested: +150");
 
+      // Enter asks about the unpicked reward first, then skips it (#2177).
+      await press("Enter");
       await press("Enter");
       await clearRoom();
       expect(score()).toBe(4230);
@@ -375,7 +390,10 @@ describe("Retro Labyrinth pass-4 fixes", () => {
       mockCampaign.build = shortRun;
       await mount();
       for (let room = 0; room < 4; room++) {
-        if (room > 0) await press("Enter");
+        if (room > 0) {
+          await press("Enter");
+          await press("Enter");
+        }
         await clearRoom();
       }
       expect(score()).toBe(5640);

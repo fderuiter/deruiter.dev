@@ -6,6 +6,6 @@
 
 # Variable: WORLD\_ACTIONS
 
-> `const` **WORLD\_ACTIONS**: readonly \[`"walk"`, `"talk"`, `"readMail"`, `"reviewEdc"`, `"document"`, `"sponsorCall"`, `"meeting"`, `"amendment"`, `"coffee"`\]
+> `const` **WORLD\_ACTIONS**: readonly \[`"walk"`, `"talk"`, `"readMail"`, `"reviewEdc"`, `"clearQueries"`, `"document"`, `"sponsorCall"`, `"meeting"`, `"amendment"`, `"coffee"`\]
 
 Kinds of things the player spends time on.

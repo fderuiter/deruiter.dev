@@ -34,7 +34,8 @@ The option taken when the timer runs out.
 
 > `readonly` **prompt**: `string`
 
-What is said or seen, one or two sentences.
+What the speaker says, one or two sentences. The speaker is shown as the
+prompt's label, so the prompt never names them again.
 
 ***
 

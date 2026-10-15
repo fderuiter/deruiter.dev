@@ -289,7 +289,7 @@ describe("variants on the board", () => {
       "Banned in this variant"
     );
     const apply = screen.getByRole("button", {
-      name: /Apply Tactic: rw to the goal \(banned in this variant\)/i,
+      name: /Apply Tactic: rw( \[[^\]]*\])? to the goal \(banned in this variant\)/i,
     });
     expect((apply as HTMLButtonElement).disabled).toBe(true);
     fireEvent.click(
@@ -315,7 +315,9 @@ describe("variants on the board", () => {
       "1 of 1 tactics used"
     );
     fireEvent.click(
-      screen.getByRole("button", { name: /Apply Tactic: rw to the goal/i })
+      screen.getByRole("button", {
+        name: /Apply Tactic: rw( \[[^\]]*\])? to the goal/i,
+      })
     );
     expect(screen.queryByTestId("victory-variant")).toBeNull();
     // Reset keeps the variant and clears the failure.

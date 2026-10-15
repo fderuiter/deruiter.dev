@@ -269,7 +269,9 @@ describe("Sandbox preset goals", () => {
     );
     expect(screen.getByTestId("sandbox-preset-verified-binomial")).toBeTruthy();
     // The verified mark does not change the preset button's name.
-    expect(screen.getByRole("button", { name: "Preset 1" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /^Binomial Expansion \(a \+ b\)²/ })
+    ).toBeTruthy();
   });
 
   it("does not verify a preset admitted with sorry", () => {

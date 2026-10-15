@@ -6,6 +6,6 @@
 
 # Variable: REPMAX\_THROW\_MS
 
-> `const` **REPMAX\_THROW\_MS**: `1600` = `1600`
+> `const` **REPMAX\_THROW\_MS**: `2200` = `2200`
 
 Time between a Rep Max's dumbbells.

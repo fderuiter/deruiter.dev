@@ -429,6 +429,19 @@ export function advanceDay(input: StudyState): StudyState {
 }
 
 /**
+ * Days of slip a study started with and cannot win back (#2192): a rescue's
+ * inherited delay, none otherwise. A decision that pulls the schedule in
+ * recovers only slip this study has added, so committing to an earlier lock
+ * no longer erased a rescue's six-day head start and left a careful rescue
+ * finishing beside a calm study.
+ */
+export function inheritedSlip(state: StudyState): number {
+  return state.difficulty === "rescue"
+    ? scaleDays(RESCUE_SLIP_DAYS, state.setup)
+    : 0;
+}
+
+/**
  * Applies a set of effects to the study without recording a decision. The
  * world layer uses it for work that lands over time (#1689): an assignment
  * a team member clears night by night, or a meeting's cost to the team.
@@ -475,7 +488,10 @@ export function applyEffects(state: StudyState, effects: Effects): StudyState {
     team,
     sites,
     spent: Math.max(0, state.spent + (effects.spend ?? 0)),
-    slipDays: Math.max(0, state.slipDays + (effects.slipDays ?? 0)),
+    slipDays: Math.max(
+      inheritedSlip(state),
+      state.slipDays + (effects.slipDays ?? 0)
+    ),
   };
 }
 

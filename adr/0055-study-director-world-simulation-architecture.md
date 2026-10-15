@@ -280,3 +280,44 @@ through `goHome`, so the team's night work and the domain's day run as
 usual. The overnight report carries a `delegated` list in place of the
 evening wrap-up. Delegation is a convenience with a price, not a strategy: a
 run delegated end to end graded F at inspection on every seed tried.
+
+## Amendment 2026-10-15: late-game work, seeded openings and felt difficulty
+
+A playtest audit (#2192) found four problems in a full run. From about day
+58 most days held nothing to decide, because the deck thinned out and the
+mail written past the planned end (out to day 110) was rarely reached by
+runs that end between days 82 and 94. The cleaning phase had no player work:
+queries fell on their own while the EDC only showed them. Two seeds shared
+about three quarters of their first fortnight. And a careful player scored
+alike on calm and rescue.
+
+- **Late mail follows the real end.** `deckDay` squeezes a dealt day past
+  `durationDays` into the days the run actually has past its plan
+  (`slipDays - 1`), in written order, and never stretches it. An on-time
+  run still sees none of it. Because the squeeze follows the slip as it
+  grows, an event already in the inbox stays there (`seen` is honoured in
+  `isDue`). Saves without a deck are unchanged.
+- **Late core events.** Thirteen core events cover days 57 to 75 of the
+  plan (query ageing, source verification, blind review, SAE
+  reconciliation, the lock checklist, the p-value) and four more are
+  written past it for slipped runs.
+- **Query work at the EDC.** `clearQueriesAtEdc` is a world action
+  (`clearQueries`, 45 minutes, 5 energy, 12 focus). It closes up to
+  `QUERIES_PER_SESSION` (calm 6, standard 5, rescue 4) of the queries the
+  EDC shows, biggest backlog first, adds 0.2 integrity per query and takes
+  3 load off the data manager. Queries a site has not entered cannot be
+  worked, so the reported-versus-true gap still matters.
+- **A varied first fortnight.** Six optional early events join the deck,
+  the early events draw from wider windows, and the coordinator's dosing
+  question is no longer core. The sponsor's biomarker request still opens
+  every run.
+- **Difficulty survives careful play.** A rescue's inherited six days
+  (`inheritedSlip`) can no longer be won back by a decision that pulls the
+  schedule in, which had let a careful rescue finish beside a calm study.
+  Office goodwill toward the sponsor (sponsor calls, visits and status
+  lines, through `applyOfficeEffects`) counts for half in a rescue, so the
+  sponsor meter no longer saturates on every difficulty.
+
+The seeded-simulation spread holds: an idle run scores 1 star and fails
+inspection on every difficulty, and a careful run scores 3.5 to 5 stars.
+`__tests__/study-director-audit-variety.test.ts` guards the four findings.

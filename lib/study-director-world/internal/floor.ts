@@ -246,7 +246,7 @@ const CRO_STATIONS: Station[] = [
     "edc",
     "EDC workstation",
     "office",
-    "Shows the open queries the sites report."
+    "Shows the open queries the sites report, and lets you work them."
   ),
   station("phone", "Phone", "office", "Shows the messages waiting for you."),
   station(

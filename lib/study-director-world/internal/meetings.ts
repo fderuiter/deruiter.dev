@@ -1,10 +1,12 @@
 import { applyEffects, getEvent, inbox } from "@/lib/study-director";
 import { spend } from "./clock";
+import { applyOfficeEffects } from "./goodwill";
 import { channelFor, markRaised, messagesFrom } from "./channels";
 import { dialogueLines } from "./dialogue";
 import { adjustTrust, observe, personState, placePeople } from "./team";
 import { CRO_FLOOR, roomAt } from "./floor";
 import { keepRecent } from "./history";
+import { excuseAway } from "./rhythm";
 import type {
   Meeting,
   MeetingReport,
@@ -109,7 +111,7 @@ export function endMeeting(
   if (meeting.kind === "sponsor" && settled.length > 0) {
     next = {
       ...next,
-      study: applyEffects(next.study, { meters: { client: 2 } }),
+      study: applyOfficeEffects(next.study, { meters: { client: 2 } }),
     };
     changes.push("The sponsor appreciated hearing it from you directly");
   }
@@ -144,10 +146,11 @@ export function endMeeting(
   };
   return {
     ok: true,
-    world: {
+    // What came up while the meeting ran is excused (#2189).
+    world: excuseAway({
       ...next,
       meetingHistory: keepRecent([...(next.meetingHistory ?? []), report]),
-    },
+    }),
     report,
   };
 }

@@ -311,7 +311,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   retroLabyrinth: {
     title: "Retro Labyrinth: Graveyard Roguelike",
     description:
-      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss in this browser roguelike.",
+      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and break two wireframe bosses in this browser roguelike.",
     path: "/arcade/retro-labyrinth",
     ogImageType: "image/jpeg",
     keywords: [
@@ -486,12 +486,13 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   memeVault: {
     title: "Meme Vault: Soundboard and Trophies",
     description:
-      "Make some noise with a synthesized browser soundboard, discover hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
+      "Play Echo, a memory game on a synthesized browser soundboard, hunt hidden trophies, and enjoy a few jokes about code, clinical data, and the working day.",
     path: "/arcade/meme-vault",
     ogImageType: "image/jpeg",
     keywords: [
       "Developer Meme Vault",
       "Web Audio Soundboard",
+      "Echo Memory Game",
       "MedTech Easter Eggs",
       "Achievement Trophy Sandbox",
       "Interactive Retro Arcade",

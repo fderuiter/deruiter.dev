@@ -52,6 +52,18 @@ Short captions for the shift's one-shot events.
 
 > `readonly` **orderExpired**: `"A car gave up and drove off."` = `"A car gave up and drove off."`
 
+### rushClosing
+
+> `readonly` **rushClosing**: `"Dinner rush. Everybody wants fries before close."` = `"Dinner rush. Everybody wants fries before close."`
+
+### rushFriday
+
+> `readonly` **rushFriday**: `"Fry Friday. Here they all come."` = `"Fry Friday. Here they all come."`
+
+### rushSchool
+
+> `readonly` **rushSchool**: `"School's out. Here they come."` = `"School's out. Here they come."`
+
 ### rushStarted
 
 > `readonly` **rushStarted**: `"Lunch rush. Here they come."` = `"Lunch rush. Here they come."`

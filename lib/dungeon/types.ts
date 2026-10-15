@@ -267,7 +267,6 @@ export interface HexMatrixPuzzle {
   targetSequence: string[];
   currentInput: string[];
   maxBufferSize: number;
-  timeRemainingSeconds: number;
   activeAxis: "row" | "col";
   activeIndex: number;
   solved: boolean;

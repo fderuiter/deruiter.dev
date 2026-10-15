@@ -17,7 +17,7 @@ enough that its timer runs out before close.
 
 ### config
 
-`Pick`\<[`ShiftConfig`](../../../types/interfaces/ShiftConfig.md), `"seed"` \| `"durationSec"` \| `"dilemmaWindowSec"`\>
+`Pick`\<[`ShiftConfig`](../../../types/interfaces/ShiftConfig.md), `"seed"` \| `"durationSec"` \| `"dilemmaWindowSec"` \| `"dilemmaDeck"`\>
 
 The shift's seed, length and answer window.
 

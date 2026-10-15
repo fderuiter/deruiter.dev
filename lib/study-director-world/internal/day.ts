@@ -14,11 +14,11 @@ import {
   type StudyLength,
   type StudyState,
 } from "@/lib/study-director";
-import { fatigueFrom, weekdayFor } from "./clock";
+import { fatigueFrom, formatClock, weekdayFor } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { workTheNight } from "./delegation";
-import { earlyWarning } from "./favours";
-import { settleGuests } from "./guests";
+import { earlyWarningNote } from "./favours";
+import { guestsExpected, settleGuests } from "./guests";
 import { CRO_FLOOR } from "./floor";
 import { eveningWrapUp, settlePriority } from "./rhythm";
 import { adjustTrust, senderOf } from "./team";
@@ -127,11 +127,23 @@ export function startDay(world: WorldState): {
     });
   lines.push(...teamDigest(study));
   // Someone who trusts the player tells them where to look (#1838).
-  const warning = earlyWarning(world);
-  if (warning) lines.push(warning);
+  const warning = earlyWarningNote(world);
+  if (warning) lines.push(warning.line);
+  // Visitors are announced in the morning: the sponsor used to arrive
+  // unannounced and the miss was held against the player (#2188).
+  for (const guest of guestsExpected({
+    ...world,
+    location: ARRIVAL,
+    minute: startsAt,
+  }))
+    lines.push({
+      text: `${guest.name} of ${guest.organisation} visits at ${formatClock(guest.at)}. Meet them in the conference room.`,
+      tone: guest.id === "sponsorVisit" ? "bad" : "neutral",
+    });
   return {
     world: {
       ...world,
+      known: warning ? [...world.known, warning.known] : world.known,
       plan: { day: study.day, priority: null, handled: [] },
       minute: startsAt,
       energy,
@@ -213,7 +225,13 @@ function overnightLines(
       lines.push({ text: `${site.name} enrolled +${gained}`, tone: "good" });
   }
   const spent = after.spent - before.spent;
-  if (spent > 0) lines.push({ text: `${money(spent)} spent`, tone: "neutral" });
+  // The day's burn and the running total: "$2,390 spent" every night read
+  // like a total that never moved (#2187).
+  if (spent > 0)
+    lines.push({
+      text: `${money(spent)} spent today, ${money(after.spent)} of ${money(after.setup.budget)} so far`,
+      tone: "neutral",
+    });
   const slip = projectedFinishDay(after) - projectedFinishDay(before);
   if (slip > 0)
     lines.push({
@@ -246,7 +264,8 @@ function overnightLines(
   }
   const arrived = arrivedToday(after);
   const critical = arrived.filter((e) => e.urgency === "critical").length;
-  if (arrived.length > 0)
+  // Mail for a study that just ended will never be read (#2190).
+  if (arrived.length > 0 && after.status !== "complete")
     lines.push({
       text: `${plural(arrived.length, "new message")} arrived${critical > 0 ? `, ${critical} urgent` : ""}`,
       tone: critical > 0 ? "bad" : "neutral",
@@ -258,14 +277,18 @@ function overnightLines(
  * The player goes home. Overtime becomes fatigue, and the study simulates
  * the night: unanswered messages that ran out of time apply their fallout,
  * the sites and team work through their day, and new messages arrive.
+ * Pass `delegated` when the team ran the day without the player.
  */
-export function goHome(world: WorldState): {
+export function goHome(
+  world: WorldState,
+  options: { delegated?: boolean } = {}
+): {
   world: WorldState;
   report: OvernightReport;
 } {
   const wrapUp = eveningWrapUp(world);
   const worked = workTheNight({ ...world, meeting: null });
-  const settled = settlePriority(worked.world);
+  const settled = settlePriority(worked.world, options);
   const callers = settleGuests(settled.world);
   const night = {
     world: callers.world,

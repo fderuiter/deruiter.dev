@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { inbox } from "@/lib/study-director";
 import {
   INTERRUPTION_TIMES,
+  INTERRUPTION_WINDOW,
   PEOPLE_DAY_TARGET,
   PEOPLE_PRIORITY_BONUS,
   PRIORITIES,
@@ -26,6 +27,19 @@ const fresh = (seed = "rhythm-1"): WorldState =>
   startDay(newWorld(seed, "standard")).world;
 
 const at = (w: WorldState, minute: number): WorldState => ({ ...w, minute });
+
+/** The same world with one member's workload set. */
+const withLoad = (
+  w: WorldState,
+  memberId: string,
+  workload: number
+): WorldState => ({
+  ...w,
+  study: {
+    ...w.study,
+    team: w.study.team.map((m) => (m.id === memberId ? { ...m, workload } : m)),
+  },
+});
 
 describe("the day's plan", () => {
   it("starts each morning with no priority and nothing handled", () => {
@@ -153,16 +167,16 @@ describe("interruptions", () => {
     ).toMatchObject({ ok: false });
   });
 
-  it("is refused when the answer would run past the hard stop", () => {
-    const w = at(fresh(), 21 * 60 + 58);
-    const pending = pendingInterruption(w);
-    if (!pending) throw new Error("nothing pending");
-    const slow = pending.options.find((o) => o.cost.minutes >= 5);
-    if (!slow) throw new Error("no slow option");
-    expect(answerInterruption(w, slow.id)).toMatchObject({
-      ok: false,
-      reason: "too-late",
-    });
+  it("lapses once its window has passed, so nothing waits until 10 PM (#2189)", () => {
+    const w = fresh();
+    const [first] = scheduleFor(w);
+    expect(pendingInterruption(at(w, first.at))?.id).toBe(
+      first.interruption.id
+    );
+    expect(
+      pendingInterruption(at(w, first.at + INTERRUPTION_WINDOW - 1))?.id
+    ).toBe(first.interruption.id);
+    expect(pendingInterruption(at(w, 21 * 60 + 58))).toBeNull();
   });
 });
 
@@ -219,11 +233,63 @@ describe("what the priority reveals overnight", () => {
     const w = fresh();
     const chosen = choosePriority(w, "people");
     if (!chosen.ok) throw new Error("choose failed");
-    const { lines } = settlePriority(chosen.world);
+    const { lines } = settlePriority(at(chosen.world, 18 * 60));
     expect(lines.length).toBeGreaterThan(0);
     expect(lines.every((l) => /desk when you left|on time/.test(l.text))).toBe(
       true
     );
+  });
+
+  it("people: does not say who stayed late when the player left early or delegated (#2193)", () => {
+    const w = withLoad(fresh(), "walt", 98);
+    const chosen = choosePriority(w, "people");
+    if (!chosen.ok) throw new Error("choose failed");
+    const late = settlePriority(at(chosen.world, 18 * 60)).lines;
+    expect(late.map((l) => l.text)).toContain(
+      "Walt was still at their desk when you left."
+    );
+    const early = settlePriority(at(chosen.world, 8 * 60)).lines;
+    expect(early.map((l) => l.text)).toEqual([
+      "You left before the end of the day, so you did not see who stayed late.",
+    ]);
+    const delegated = settlePriority(at(chosen.world, 18 * 60), {
+      delegated: true,
+    }).lines;
+    expect(delegated.map((l) => l.text)).toEqual([
+      "You were not in today, so you did not see who stayed late.",
+    ]);
+    const home = goHome(at(chosen.world, 8 * 60), { delegated: true });
+    expect(
+      home.report.lines.some((l) => /still at their desk/.test(l.text))
+    ).toBe(false);
+  });
+
+  it("sites: does not say a site sent nothing when the player visited it today (#2193)", () => {
+    const w = fresh();
+    const chosen = choosePriority(w, "sites");
+    if (!chosen.ok) throw new Error("choose failed");
+    const quiet = w.study.sites.filter((s) => s.coordinator === "invisible");
+    expect(quiet.length).toBeGreaterThan(0);
+    const visited: WorldState = {
+      ...chosen.world,
+      siteVisitHistory: quiet.map((s) => ({
+        siteId: s.id,
+        siteName: s.name,
+        day: w.study.day,
+        checks: [],
+        audited: false,
+        findings: [],
+        unchecked: [],
+        learned: [],
+        verdict: "",
+      })),
+    };
+    const text = settlePriority(visited)
+      .lines.map((l) => l.text)
+      .join(" ");
+    expect(text).not.toMatch(/sent nothing/);
+    for (const s of quiet) expect(text).toContain(s.name);
+    expect(text).toMatch(/yourself today/);
   });
 
   it("sites: names a site that sent nothing, when there is one", () => {
@@ -244,11 +310,28 @@ describe("what the priority reveals overnight", () => {
     const w = fresh();
     const chosen = choosePriority(w, "desk");
     if (!chosen.ok) throw new Error("choose failed");
-    const clear = settlePriority(chosen.world);
-    expect(clear.lines[0].tone).toBe("good");
-    expect(clear.world.study).not.toBe(chosen.world.study);
     const eventId = inbox(chosen.world.study)[0]?.id;
     if (!eventId) throw new Error("no event to decide");
+    const written = {
+      day: 1,
+      eventId,
+      optionId: "a",
+      label: "x",
+      documented: true,
+      attentionSpent: 0,
+      effects: {},
+    };
+    const clear = settlePriority({
+      ...chosen.world,
+      study: { ...chosen.world.study, log: [written] },
+    });
+    expect(clear.lines[0].tone).toBe("good");
+    expect(clear.world.study.log).toEqual([written]);
+    // The compliance point lands on the study.
+    expect(clear.world.study).not.toEqual({
+      ...chosen.world.study,
+      log: [written],
+    });
     const gaps = settlePriority({
       ...chosen.world,
       study: {
@@ -272,6 +355,14 @@ describe("what the priority reveals overnight", () => {
       ...chosen.world.study,
       log: gaps.world.study.log,
     });
+  });
+
+  it("desk: an empty day earns nothing, there was nothing to clear (#2190)", () => {
+    const chosen = choosePriority(fresh(), "desk");
+    if (!chosen.ok) throw new Error("choose failed");
+    const empty = settlePriority(chosen.world);
+    expect(empty.lines).toEqual([]);
+    expect(empty.world).toBe(chosen.world);
   });
 
   it("is silent when no priority was chosen", () => {

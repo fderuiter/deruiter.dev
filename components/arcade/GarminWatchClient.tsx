@@ -7,6 +7,7 @@ import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { requestGarminAutoPause } from "@/components/garmin-watch/auto-pause";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -101,11 +102,21 @@ export const GarminWatchClient: React.FC = () => {
                 { key: "UP / Space", action: "Jump (hold = higher)" },
                 { key: "→ / ←", action: "Sprint / Jog" },
                 { key: "X / Backspace", action: "Heat Bolt / Cape Spin" },
+                { key: "↓", action: "Enter a Water Station / Slam" },
+                { key: "P / Esc", action: "Pause" },
                 { key: "W (Dev Mode)", action: "Wipe Fog" },
               ]}
               importComponent={GarminWatchSimulatorLoader}
+              // No game key is F (arrows, Space, Enter, P, Escape, X, G, L,
+              // W, Backspace), so the cabinet's F-for-fullscreen stays on
+              // (#2122). The watch, its dock and the companion are built to
+              // fit the touch cabinet's viewport, so the stage clips rather
+              // than scrolls (ADR 0061).
+              mobileLayout="fit"
+              // A hidden tab or a backgrounded app pauses a run in progress.
+              onAutoPause={requestGarminAutoPause}
             >
-              <div className="flex flex-col items-center w-full">
+              <div className="garmin-stage flex flex-col items-center w-full">
                 <DynamicGarminWatchSimulator />
               </div>
             </PlayCabinet>
@@ -182,9 +193,9 @@ export const GarminWatchClient: React.FC = () => {
                     <IconRun className="w-3.5 h-3.5" />
                     <span>Real-World Engineering Inspiration</span>
                   </div>
-                  <h3 className="text-xl font-mono font-extrabold text-white mb-2">
+                  <h2 className="text-xl font-mono font-extrabold text-white mb-2">
                     Theodore Wirth Mud Run (Run Minnesota 10K)
-                  </h3>
+                  </h2>
                   <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
                     The inspiration behind <em>Monkey C Mayhem</em>: 10
                     kilometers of Minnesota trail mud and an actual Garmin watch

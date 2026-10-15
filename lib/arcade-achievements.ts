@@ -71,19 +71,21 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     description: "Complete a work sprint while keeping Duck happy.",
     icon: "Bone",
     category: "gameplay",
-    targetScore: 100,
-    conditionDescription: "Reach 100+ points in Working With Duck",
+    milestone: "sprint_shipped",
+    conditionDescription: "Ship any sprint in Working With Duck",
   },
   {
     id: "duck_master",
     gameId: "working-with-duck",
     title: "Puppy Whisperer",
     subtitle: "Working With Duck",
-    description: "Balance deadlines and treats with elite multitasking skills.",
+    description:
+      "Ship a sprint with every prop saved, no accidents and Duck still a Good Boy.",
     icon: "Heart",
     category: "mastery",
-    targetScore: 500,
-    conditionDescription: "Reach 500+ points in Working With Duck",
+    milestone: "three_star_sprint",
+    conditionDescription:
+      "Earn all three stars on a sprint in Working With Duck",
   },
   {
     id: "duck_graduate",
@@ -142,6 +144,17 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     milestone: "campaign_cleared",
     conditionDescription: "Win the Laser Loon campaign",
   },
+  {
+    id: "laser_loon_all_stars",
+    gameId: "laser-loon",
+    title: "Unanimous Consent",
+    subtitle: "Laser Loon",
+    description: "Earn all three stars on every campaign act.",
+    icon: "Sparkles",
+    category: "mastery",
+    milestone: "all_stars",
+    conditionDescription: "Earn all 12 Laser Loon campaign stars",
+  },
 
   // Quasi-Perfect Puzzler
   {
@@ -176,6 +189,18 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     category: "mastery",
     milestone: "all_gold",
     conditionDescription: "Earn gold (3 stars) on all 18 Act 1 levels",
+  },
+  {
+    id: "quasi_act_two",
+    gameId: "quasi-puzzler",
+    title: "Almost Perfect",
+    subtitle: "Quasi-Perfect Puzzler",
+    description:
+      "Prove every Act 2 level honestly: quantifiers, induction, inequality chains and almost perfect numbers.",
+    icon: "Trophy",
+    category: "mastery",
+    milestone: "act_two_proven",
+    conditionDescription: "Prove all 12 Act 2 levels without sorry",
   },
 
   // Garmin Watch Simulator
@@ -294,11 +319,12 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     title: "Study Kickoff",
     subtitle: "Study Director",
     description:
-      "Get through your first weeks: answer the inbox, walk the floor and keep the sites running.",
+      "Get through your first three weeks: answer the inbox, walk the floor and keep the sites running.",
     icon: "ClipboardCheck",
     category: "gameplay",
-    targetScore: 100,
-    conditionDescription: "Reach 100+ points in Study Director",
+    // Fired on day 15 of a study, as the text says, not at closeout (#2191).
+    milestone: "first_weeks",
+    conditionDescription: "Reach day 15 of a study in Study Director",
   },
   {
     id: "study_director_closeout",
@@ -306,11 +332,13 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     title: "FDA Replay Approved",
     subtitle: "Study Director",
     description:
-      "Complete study closeout with zero unmanaged documentation debt.",
+      "Close out a study with every decision written up and nothing left to lapse.",
     icon: "ShieldCheck",
     category: "mastery",
-    targetScore: 500,
-    conditionDescription: "Reach 500+ points in Study Director",
+    // Fired by the run it describes, not by career points (#2191).
+    milestone: "clean_file",
+    conditionDescription:
+      "Close out a Study Director study with every decision documented and none ignored",
   },
   {
     id: "study_director_grade_a",
@@ -503,12 +531,33 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     gameId: "meme-vault",
     title: "Soundboard Operator",
     subtitle: "Meme Vault",
-    description:
-      "Trigger soundbites and discover easter eggs in the Meme Vault.",
+    description: "Find your first hidden trophy in or around the Meme Vault.",
     icon: "Sparkles",
     category: "gameplay",
     targetScore: 100,
-    conditionDescription: "Unlock easter eggs in Meme Vault",
+    conditionDescription: "Find 1 Meme Vault easter egg",
+  },
+  {
+    id: "meme_vault_echo_5",
+    gameId: "meme-vault",
+    title: "Echo Chamber",
+    subtitle: "Meme Vault",
+    description: "Repeat a five-pad Echo sequence without a wrong pad.",
+    icon: "Sparkles",
+    category: "gameplay",
+    milestone: "echo_streak_5",
+    conditionDescription: "Reach an Echo streak of 5 in Meme Vault",
+  },
+  {
+    id: "meme_vault_echo_10",
+    gameId: "meme-vault",
+    title: "Perfect Recall",
+    subtitle: "Meme Vault",
+    description: "Repeat a ten-pad Echo sequence without a wrong pad.",
+    icon: "Trophy",
+    category: "mastery",
+    milestone: "echo_streak_10",
+    conditionDescription: "Reach an Echo streak of 10 in Meme Vault",
   },
   {
     id: "meme_vault_cleared",

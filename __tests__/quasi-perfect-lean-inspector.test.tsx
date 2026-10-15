@@ -98,4 +98,16 @@ describe("LeanIdeInspector Live Sync Component", () => {
     });
     expect(screen.getByText(/Proof contains sorry axiom/i)).toBeDefined();
   });
+
+  it("shows a fresh level as open, not admitted via sorry, when the API is down (#2043)", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("offline"));
+    const level = puzzleLevels[0];
+    render(<LeanIdeInspector level={level} steps={[]} isComplete={false} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Fallback Simulation Active/i)).toBeDefined();
+    });
+    expect(screen.getAllByText(/Goal open/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/admitted/i)).toBeNull();
+  });
 });

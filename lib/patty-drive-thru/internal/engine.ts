@@ -48,6 +48,8 @@ import {
   SOS_GAIN_ON_TIME,
   SOS_LOSS_EXPIRED,
   SOS_LOSS_LATE,
+  CLOSING_RUSH,
+  SHIFT_RAMP,
   STANDARD_RUSH,
   TILL_SHORT_PER_EXPIRED_CENTS,
   UNIFORM_DEDUCTION_CENTS,
@@ -73,6 +75,7 @@ import type {
   StepResult,
 } from "../types";
 import {
+  dilemmaDeckOf,
   dilemmaWindowOf,
   getDilemmaOption,
   getDilemmaPayCents,
@@ -161,16 +164,22 @@ function weekSettings(
   config: Partial<ShiftConfig>
 ): Pick<
   ShiftConfig,
-  "rushWindows" | "ageUnlocked" | "startMeters" | "dilemmaWindowSec"
+  | "rushWindows"
+  | "ageUnlocked"
+  | "startMeters"
+  | "dilemmaWindowSec"
+  | "dilemmaDeck"
 > {
   const rushWindows = rushWindowsOf(config.rushWindows);
   const startMeters = startMetersOf(config.startMeters);
   const dilemmaWindowSec = dilemmaWindowOf(config.dilemmaWindowSec);
+  const dilemmaDeck = dilemmaDeckOf(config.dilemmaDeck);
   return {
     ...(rushWindows ? { rushWindows } : {}),
     ...(config.ageUnlocked === true ? { ageUnlocked: true } : {}),
     ...(startMeters ? { startMeters } : {}),
     ...(dilemmaWindowSec !== undefined ? { dilemmaWindowSec } : {}),
+    ...(dilemmaDeck ? { dilemmaDeck } : {}),
   };
 }
 
@@ -265,16 +274,37 @@ export function isAgeLocked(
 }
 
 /**
- * The rushes a shift has (#2086): the ones its config names, or else the
- * standard lunch rush, unless a scenario set its own arrival gaps, which it
- * then keeps exactly (#1938).
+ * True when a practice scenario set its own arrival gaps and names no rushes,
+ * so it keeps those gaps exactly: no rush and no ramp (#1938).
  */
-function rushWindowsFor(config: ShiftConfig): readonly RushWindow[] {
+function keepsOwnGaps(config: ShiftConfig): boolean {
+  return (
+    !config.rushWindows &&
+    (config.arrivalGapMinSec !== undefined ||
+      config.arrivalGapMaxSec !== undefined)
+  );
+}
+
+/**
+ * The rushes a shift has (#2086): the ones its config names, or else the
+ * standard lunch and dinner rushes (#2138), unless a scenario set its own
+ * arrival gaps, which it then keeps exactly (#1938).
+ */
+export function getRushWindows(config: ShiftConfig): readonly RushWindow[] {
   if (config.rushWindows) return config.rushWindows;
-  const setsGaps =
-    config.arrivalGapMinSec !== undefined ||
-    config.arrivalGapMaxSec !== undefined;
-  return setsGaps ? [] : [STANDARD_RUSH];
+  return keepsOwnGaps(config) ? [] : [STANDARD_RUSH, CLOSING_RUSH];
+}
+
+/**
+ * How much the shift ramp has shrunk the arrival gap by this point (#2138):
+ * 1 at clock-in, falling steadily to `1 - SHIFT_RAMP` at close.
+ *
+ * @param timeSec - Shift time of the arrival.
+ * @param durationSec - The shift's length.
+ */
+export function getShiftRamp(timeSec: number, durationSec: number): number {
+  const at = durationSec > 0 ? clamp(timeSec / durationSec, 0, 1) : 0;
+  return 1 - SHIFT_RAMP * at;
 }
 
 /**
@@ -424,11 +454,13 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
   // A standard shift has a lunch rush; a practice scenario that sets its
   // own arrival gaps keeps them exactly (#1938); a day of the week names
   // its own rushes (#2086).
-  const rushes = rushWindowsFor(state.config);
-  for (const [from] of rushes) {
+  const rushes = getRushWindows(state.config);
+  const ramps = !keepsOwnGaps(state.config);
+  rushes.forEach(([from], rush) => {
     const rushAt = durationSec * from;
-    if (start < rushAt && rushAt <= time) events.push({ type: "rush-started" });
-  }
+    if (start < rushAt && rushAt <= time)
+      events.push({ type: "rush-started", rush });
+  });
 
   while (nextArrivalAt <= time) {
     if (orders.length < MAX_OPEN_ORDERS) {
@@ -440,7 +472,8 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
     }
     const gap =
       (gapMin + uniformAt(seed, draws++) * (gapMax - gapMin)) *
-      getArrivalGapScale(nextArrivalAt, durationSec, rushes);
+      getArrivalGapScale(nextArrivalAt, durationSec, rushes) *
+      (ramps ? getShiftRamp(nextArrivalAt, durationSec) : 1);
     nextArrivalAt += gap;
   }
 

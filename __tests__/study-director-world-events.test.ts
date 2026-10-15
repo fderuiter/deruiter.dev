@@ -147,8 +147,10 @@ describe("the phone rings, interrupts and takes time (#1689)", () => {
 
   it("is scheduled before its time, rings from it, and a step across the time sets it ringing", () => {
     const world = morning("ring-2");
+    // Day 1 opens with seeded messages beside the sponsor's (#2254), so the
+    // first call of the day is whichever rings first.
     const [call] = phoneCalls(world);
-    expect(call.eventId).toBe("sponsor-biomarkers");
+    expect(getEvent(call.eventId)).toBeTruthy();
     expect(ringingCall({ ...world, minute: call.ringAt - 1 })).toBeNull();
     // Stand in the corridor and take a step across the ring time.
     const walker: WorldState = {
@@ -159,7 +161,7 @@ describe("the phone rings, interrupts and takes time (#1689)", () => {
     };
     expect(ringingCall(walker)).toBeNull();
     const stepped = expectOk(step(walker, "left", CRO_FLOOR, []));
-    expect(ringingCall(stepped.world)?.eventId).toBe("sponsor-biomarkers");
+    expect(ringingCall(stepped.world)?.eventId).toBe(call.eventId);
     expect(ringingCall({ ...stepped.world, location: "home" })).toBeNull();
     // Away on a site visit, the desk phone cannot reach you.
     expect(
@@ -189,7 +191,10 @@ describe("the phone rings, interrupts and takes time (#1689)", () => {
       ringingCall({ ...ignored, minute: call.ringAt + RETRY_MINUTES })?.eventId
     ).toBe(call.eventId);
     const vm = sendToVoicemail(now, call.eventId);
-    expect(ringingCall({ ...vm, minute: 16 * 60 })).toBeNull();
+    // Other calls may still ring that day (#2254); this one does not.
+    expect(ringingCall({ ...vm, minute: 16 * 60 })?.eventId).not.toBe(
+      call.eventId
+    );
     expect(deskView(vm).voicemail.map((v) => v.eventId)).toEqual([
       call.eventId,
     ]);
@@ -268,7 +273,10 @@ describe("world actions translate into domain calls (#1689)", () => {
     const world = morning("desk-1");
     const call = expectOk(openAtDesk(world, "sponsor-biomarkers", "callback"));
     expect(call.world.minute).toBe(world.minute + 10);
-    expect(phoneCalls(call.world)[0].status).toBe("answered");
+    expect(
+      phoneCalls(call.world).find((c) => c.eventId === "sponsor-biomarkers")
+        ?.status
+    ).toBe("answered");
     expect(call.dialogue.via).toBe("callback");
   });
 
@@ -336,11 +344,13 @@ describe("meetings report time against change (#1689)", () => {
   });
 
   it("says a meeting that changed nothing could have been an email", () => {
+    // Walt, not Lee: day 1 can bring Lee's typo note forward (#2254), and a
+    // meeting with someone who has a message waiting raises it.
     const world = inConference(
-      withBond(morning("meet-2"), "lee", { trust: 20 })
+      withBond(morning("meet-2"), "walt", { trust: 20 })
     );
     const ended = expectOk(
-      endMeeting(expectOk(startMeeting(world, "team", ["lee"])).world)
+      endMeeting(expectOk(startMeeting(world, "team", ["walt"])).world)
     );
     expect(ended.report.changes).toEqual([]);
     expect(ended.report.verdict).toBe("Could have been an email.");

@@ -148,6 +148,32 @@ export function createStudy(
 /** Days a rescue study starts behind, on the full calendar. */
 export const RESCUE_SLIP_DAYS = 6;
 
+/** How much more money a calm study is given on top of its plan. */
+const CALM_BUDGET_FACTOR = 1.15;
+
+/**
+ * The budget the study's daily spend is planned against: the setup's own
+ * budget, before a calm study's extra. Calm used to raise the daily burn by
+ * the same 15% it raised the budget, so the extra was never headroom
+ * (#2254); now the team spends at the standard rate and the extra is margin.
+ */
+function plannedBudget(state: StudyState): number {
+  return state.difficulty === "calm"
+    ? state.setup.budget / CALM_BUDGET_FACTOR
+    : state.setup.budget;
+}
+
+/**
+ * A slip written on the full calendar, on this study's calendar: a short
+ * study (#2092) slips proportionally less for the same setback, as its
+ * events, follow-ups and a rescue's head start already do (#2254). Never
+ * rounds a setback, or a recovery, away to nothing.
+ */
+function scaledSlip(days: number, setup: StudySetup): number {
+  if (days === 0) return 0;
+  return Math.sign(days) * scaleDays(Math.abs(days), setup);
+}
+
 /**
  * Sets how hard the study starts. Calm has more budget, a warmer sponsor
  * and a rested team; rescue inherits a study already behind, over-spent,
@@ -162,7 +188,10 @@ export function applyDifficulty(
     return {
       ...state,
       difficulty,
-      setup: { ...state.setup, budget: Math.round(state.setup.budget * 1.15) },
+      setup: {
+        ...state.setup,
+        budget: Math.round(state.setup.budget * CALM_BUDGET_FACTOR),
+      },
       adjust: { ...state.adjust, client: state.adjust.client + 8 },
       team: state.team.map((m) => ({
         ...m,
@@ -411,7 +440,7 @@ export function advanceDay(input: StudyState): StudyState {
     state.team.reduce((s, m) => s + m.workload, 0) /
     Math.max(1, state.team.length);
   const burn =
-    (setup.budget / setup.durationDays) *
+    (plannedBudget(state) / setup.durationDays) *
     (1 + Math.max(0, meanLoad - 80) / 100);
   const creep = meanLoad > 85 ? 0.3 : 0;
 
@@ -490,7 +519,7 @@ export function applyEffects(state: StudyState, effects: Effects): StudyState {
     spent: Math.max(0, state.spent + (effects.spend ?? 0)),
     slipDays: Math.max(
       inheritedSlip(state),
-      state.slipDays + (effects.slipDays ?? 0)
+      state.slipDays + scaledSlip(effects.slipDays ?? 0, state.setup)
     ),
   };
 }

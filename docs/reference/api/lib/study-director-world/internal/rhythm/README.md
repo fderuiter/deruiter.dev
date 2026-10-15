@@ -19,6 +19,7 @@
 - [choosePriority](functions/choosePriority.md)
 - [eveningWrapUp](functions/eveningWrapUp.md)
 - [excuseAway](functions/excuseAway.md)
+- [excuseGoingHome](functions/excuseGoingHome.md)
 - [pendingInterruption](functions/pendingInterruption.md)
 - [peopleSeenToday](functions/peopleSeenToday.md)
 - [planFor](functions/planFor.md)

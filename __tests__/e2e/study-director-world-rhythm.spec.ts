@@ -57,8 +57,11 @@ async function quietPhone(page: Page) {
   const ringing = page.getByRole("alertdialog", {
     name: "The phone is ringing",
   });
-  if (await ringing.isVisible())
+  // Day 1 brings openers forward (#2254), so several calls can be waiting.
+  for (let i = 0; i < 6 && (await ringing.isVisible()); i++) {
     await ringing.getByRole("button", { name: "Send to voicemail" }).click();
+    await page.waitForTimeout(150);
+  }
 }
 
 /**

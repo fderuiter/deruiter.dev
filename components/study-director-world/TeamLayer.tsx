@@ -123,7 +123,14 @@ export function useTeamLayer({
   refocus: () => void;
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
-  const ringing = useMemo(() => ringingCall(world), [world]);
+  // You cannot take a second call while on one: the next waits until you
+  // hang up, rather than ringing over the call you just answered.
+  const onCall =
+    conversation?.kind === "event" && conversation.dialogue.via === "phone";
+  const ringing = useMemo(
+    () => (onCall ? null : ringingCall(world)),
+    [onCall, world]
+  );
 
   const close = useCallback(() => {
     setConversation(null);
@@ -410,7 +417,10 @@ const PhoneOverlay: React.FC<{
   const call = team.ringing;
   if (!call) return null;
   return (
+    // Keyed by call, so the next call to ring lands on Answer again rather
+    // than leaving focus on the button that sent the last one away.
     <Overlay
+      key={call.eventId}
       titleId="sd-phone-title"
       title="The phone is ringing"
       subtitle={`${call.from}, about "${call.subject}". Calls take ten minutes.`}

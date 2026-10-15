@@ -78,6 +78,7 @@ vi.mock("@/hooks/useTelemetry", () => ({
 }));
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
+import { safeClear } from "@/lib/safe-storage";
 import {
   createInitialDuckGameState,
   type WorkingWithDuckState,
@@ -105,7 +106,9 @@ describe("Working With Duck sprint result card (#1677)", () => {
   let originalRaf: typeof window.requestAnimationFrame;
 
   beforeEach(() => {
-    localStorage.clear();
+    // safeClear also empties the in-memory copy SafeStorage keeps of each
+    // write, which would otherwise carry one test's best into the next.
+    safeClear();
     originalRaf = window.requestAnimationFrame;
     window.requestAnimationFrame = (() =>
       1) as typeof window.requestAnimationFrame;
@@ -158,6 +161,24 @@ describe("Working With Duck sprint result card (#1677)", () => {
     ).toEqual(
       expect.arrayContaining(["Replay Sprint 2", "Proceed to Sprint 3"])
     );
+  });
+
+  it("saves a sprint best from a shipped run only, never a time-out (#2159)", async () => {
+    await render(finished("failed", { totalScore: 300 }));
+    expect(localStorage.getItem("working_with_duck_sprint_bests")).toBeNull();
+
+    // A fresh mount, since initialState is only read once.
+    await act(async () => {
+      root.render(
+        <WorkingWithDuck
+          key="won"
+          initialState={finished("won", { totalScore: 900, highScore: 900 })}
+        />
+      );
+    });
+    expect(
+      JSON.parse(localStorage.getItem("working_with_duck_sprint_bests") ?? "{}")
+    ).toEqual({ 2: 900 });
   });
 
   it("shows how far a timed-out sprint fell short and Escape retries it", async () => {

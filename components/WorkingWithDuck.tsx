@@ -1761,7 +1761,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       ) {
         recordArcadeMilestone("working-with-duck", "campaign_cleared");
       }
-      if (sprintOver && uiState.mode === "campaign") {
+      // A sprint best counts shipped runs only, so a time-out never sets
+      // the bar the next real run is measured against.
+      if (uiState.status === "won" && uiState.mode === "campaign") {
         const bests = parseSprintBests(getSprintBestsSnapshot());
         if (uiState.totalScore > (bests[uiState.currentLevel] ?? 0)) {
           bests[uiState.currentLevel] = uiState.totalScore;

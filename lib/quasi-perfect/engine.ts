@@ -727,6 +727,9 @@ export function instantiatePattern(
 export const LEAN_OPEN_GOAL_MARKER =
   "  -- Goal open: apply a tactic to continue";
 
+// Subgoal labels the induction tactic gives its two cases.
+const INDUCTION_CASE_LABEL = /^(Base|Step) case:/;
+
 /**
  * Generates an accurate, clean Lean 4 proof script for the given level and executed steps.
  */
@@ -741,8 +744,20 @@ export function generateLeanProofScript(
     `theorem ${level.leanTheoremName} ${level.leanTypeSignature} := by`,
   ];
 
+  // Induction cases get a Lean bullet each, mirroring the base and step tabs
+  // (#2202): the first step in a case opens `·`, later ones indent under it.
+  let openCase: string | undefined;
   for (const step of steps) {
-    lines.push(`  ${step.leanLine}`);
+    const label = step.subgoalLabel;
+    if (label && INDUCTION_CASE_LABEL.test(label)) {
+      lines.push(
+        label === openCase ? `    ${step.leanLine}` : `  · ${step.leanLine}`
+      );
+      openCase = label;
+    } else {
+      lines.push(`  ${step.leanLine}`);
+      openCase = undefined;
+    }
   }
   // An open goal is a comment, never a `sorry` line, so the verifier can tell
   // it apart from a goal the player admitted with the sorry tactic (#2043).

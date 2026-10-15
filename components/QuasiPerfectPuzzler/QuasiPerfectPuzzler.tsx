@@ -102,6 +102,9 @@ const STORAGE_KEY = "quasi_perfect_puzzler_progress_v1";
 const ACT_ONE_LEVELS = puzzleLevels.filter(
   (lvl) => lvl.chapter < ACT_TWO_FIRST_CHAPTER
 );
+const ACT_TWO_LEVELS = puzzleLevels.filter(
+  (lvl) => lvl.chapter >= ACT_TWO_FIRST_CHAPTER
+);
 const ACT_ONE_CAPSTONE_INDEX = Math.max(
   0,
   puzzleLevels.findIndex((lvl) => lvl.id === ACT_ONE_CAPSTONE_LEVEL_ID)
@@ -160,6 +163,14 @@ function writeStoredProgress(progress: GameProgressState): void {
   }
   if (honest && scores.every((score) => score && score.stars >= 3)) {
     recordArcadeMilestone("quasi-puzzler", "all_gold");
+  }
+  // Act 2 has its own finish beat (#2202): every Act 2 level proved honestly.
+  const actTwoProven = ACT_TWO_LEVELS.every((lvl) => {
+    const score = progress.completedLevels?.[lvl.id];
+    return !!score && !score.usedSorry && score.stars > 0;
+  });
+  if (actTwoProven) {
+    recordArcadeMilestone("quasi-puzzler", "act_two_proven");
   }
 }
 
@@ -289,14 +300,28 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const campaignStars = useMemo(() => {
     let earned = 0;
     let proven = 0;
+    let challengesCleared = 0;
+    let challengesTotal = 0;
     for (const lvl of playableLevels) {
       const best = parsedProgress.completedLevels?.[lvl.id];
       if (best && best.completed && !best.usedSorry && best.stars > 0) {
         earned += best.stars;
         proven += 1;
       }
+      for (const variant of getLevelVariants(lvl)) {
+        challengesTotal += 1;
+        if (isVariantCleared(parsedProgress, lvl.id, variant.kind)) {
+          challengesCleared += 1;
+        }
+      }
     }
-    return { earned, proven, possible: playableLevels.length * 3 };
+    return {
+      earned,
+      proven,
+      possible: playableLevels.length * 3,
+      challengesCleared,
+      challengesTotal,
+    };
   }, [parsedProgress, playableLevels]);
 
   // Escape hides the result card for this run so the solved board can be read.

@@ -262,7 +262,7 @@ describe("QuasiPerfectPuzzler UI Component Suite", () => {
 
     expect(container.textContent).toContain("Theorem Playground & AST Sandbox");
     expect(container.textContent).toContain("Unlimited RAM");
-    expect(container.textContent).toContain("Preset 1");
+    expect(container.textContent).toContain("Binomial Expansion (a + b)²");
   });
 
   it("switches tabs in the Lean IDE Inspector and browses Tactic Encyclopedia", async () => {

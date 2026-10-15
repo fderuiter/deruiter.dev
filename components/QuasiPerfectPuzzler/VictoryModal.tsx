@@ -4,9 +4,29 @@ import React from "react";
 import { motion } from "framer-motion";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LevelScore, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
-import type { PuzzlerVariantDef } from "@/lib/quasi-perfect";
+import {
+  ACT_ONE_CAPSTONE_LEVEL_ID,
+  type PuzzlerVariantDef,
+} from "@/lib/quasi-perfect";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { IconCheck, IconCopy, IconSparkles } from "@tabler/icons-react";
+
+// What to chase once every playable level is proved: gold first, then the
+// challenge variants, so a 90-of-90-star card never says "chase gold" (#2202).
+function campaignNextStep(
+  stars: NonNullable<VictoryModalProps["campaignStars"]>
+) {
+  if (stars.earned < stars.possible) {
+    return "Replay any level from the map to chase gold.";
+  }
+  const total = stars.challengesTotal ?? 0;
+  const cleared = stars.challengesCleared ?? 0;
+  if (total === 0) return "Every level is gold.";
+  if (cleared >= total) {
+    return `Every level is gold and all ${total} challenge variants are cleared.`;
+  }
+  return `Every level is gold. ${cleared} of ${total} challenge variants cleared; pick a level to try the rest.`;
+}
 
 interface VictoryModalProps {
   score: LevelScore;
@@ -21,7 +41,14 @@ interface VictoryModalProps {
   /** The level's step par in tactics, or null when it has none (#2059). */
   par?: number | null;
   /** Best stars saved across every level, for the campaign-complete card. */
-  campaignStars?: { earned: number; possible: number; proven: number };
+  campaignStars?: {
+    earned: number;
+    possible: number;
+    proven: number;
+    /** Challenge variants cleared and offered on the playable levels. */
+    challengesCleared?: number;
+    challengesTotal?: number;
+  };
   onNextLevel: () => void;
   onRestartLevel: () => void;
   /** Starts the campaign again from the first level. */
@@ -117,7 +144,7 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
         <p className="mt-2 text-xs text-zinc-400 leading-relaxed">
           {isSorry
             ? "The local simulator admitted this goal using 'sorry'. No Lean kernel check was run, and your score was penalized."
-            : "The local AST goal was discharged without exhausting simulated RAM. The generated Lean text has not been compiled or kernel-checked."}
+            : "The local AST goal was discharged within its simulated RAM budget. The generated Lean text has not been compiled or kernel-checked."}
         </p>
 
         <p
@@ -235,14 +262,18 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                 className="mb-4 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-left text-xs text-zinc-200"
               >
                 <p className="font-bold text-amber-300">
-                  {campaignDone ? "Campaign complete" : "Final level cleared"}
+                  {campaignDone
+                    ? totalLevels > ACT_ONE_CAPSTONE_LEVEL_ID
+                      ? "Act 2 complete"
+                      : "Campaign complete"
+                    : "Final level cleared"}
                 </p>
                 <p className="mt-1 text-zinc-300">
                   {campaignStars.proven} of {totalLevels} levels proven
                   honestly, {campaignStars.earned} of {campaignStars.possible}{" "}
                   stars.{" "}
                   {campaignDone
-                    ? "Replay any level from the map to chase gold."
+                    ? campaignNextStep(campaignStars)
                     : "Open the level map to prove the levels still unsolved."}
                 </p>
               </div>

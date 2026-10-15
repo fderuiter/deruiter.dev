@@ -20,6 +20,7 @@ import {
   DEFAULT_SHIFT_CONFIG,
   DILEMMA_WINDOW_LONG_SEC,
   getDilemma,
+  getFacing,
   getKdsTickets,
   isStandardScenario,
   isWeekOver,
@@ -42,7 +43,10 @@ import {
   usePrefersReducedMotion,
 } from "@/hooks/useMediaQuery";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import { useCabinetTouch } from "@/components/arcade/mobile";
+import { PATTY_AUTO_PAUSE_EVENT } from "./auto-pause";
 import { playShiftEvents } from "./booth-audio";
 import {
   DiaryIntroPage,
@@ -55,6 +59,7 @@ import { KdsBoard } from "./KdsBoard";
 import { Register } from "./Register";
 import { ShiftCaption, ShiftHud } from "./ShiftHud";
 import { DilemmaPrompt } from "./DilemmaPrompt";
+import { PattyTouchDock } from "./PattyTouchDock";
 import { DILEMMA_KEYS, createBoothStore, type BoothStore } from "./store";
 import {
   clearWeekSave,
@@ -62,6 +67,7 @@ import {
   saveWeek,
   useWeekSave,
 } from "./week-save";
+import "./patty-touch.css";
 
 /** The arcade id used for scores, trophies and the cabinet. */
 const PATTY_GAME_ID = "patty-drive-thru";
@@ -82,8 +88,12 @@ const DRAG_RADIANS_PER_PX = 0.0045;
 /** Pixels a press must move before it counts as a drag rather than a click. */
 const DRAG_THRESHOLD_PX = 5;
 
-const LEFT_KEYS = new Set(["a", "A", "ArrowLeft"]);
-const RIGHT_KEYS = new Set(["d", "D", "ArrowRight"]);
+/** The dock's turn keys hold under their own names, apart from the keyboard's. */
+const TOUCH_LEFT = "touch:left";
+const TOUCH_RIGHT = "touch:right";
+
+const LEFT_KEYS = new Set(["a", "A", "ArrowLeft", TOUCH_LEFT]);
+const RIGHT_KEYS = new Set(["d", "D", "ArrowRight", TOUCH_RIGHT]);
 
 let webglSupport: boolean | null = null;
 
@@ -143,6 +153,8 @@ export function PattyDriveThruGame({
   );
   const endedLog = useBooth(store, (s) => (s.phase === "ended" ? s.log : null));
   const week = useBooth(store, (s) => s.week);
+  // Where the head points, for the touch cabinet's turn state (#2116).
+  const facing = useBooth(store, (s) => getFacing(s.look));
   const savedWeek = useWeekSave();
 
   const webgl = useWebglSupport();
@@ -154,9 +166,24 @@ export function PattyDriveThruGame({
   const view = wanted === "3d" && webgl && !contextLost ? "3d" : "flat";
 
   const setup = useCabinetSetup();
+  // True inside the immersive touch cabinet (a tablet after Launch). Desktop
+  // and the attract screen read false, and none of the touch layout, dock or
+  // dialog behaviour below applies to them (#2116).
+  const touchCabinet = useCabinetTouch();
   // P, or Escape with the register closed, pauses the shift (#1938); the
   // Setup Wizard pauses it too.
   const [userPaused, setUserPaused] = useState(false);
+  // Pause and resume that are safe to repeat. One Escape can reach both the
+  // booth's key handler and the pause dialog's own, so asking for a state the
+  // shift is already in does nothing instead of flipping it back.
+  const userPausedRef = useRef(false);
+  const heldKeys = useRef(new Set<string>());
+  const setPaused = useCallback((next: boolean) => {
+    if (userPausedRef.current === next) return;
+    userPausedRef.current = next;
+    if (next) heldKeys.current.clear();
+    setUserPaused(next);
+  }, []);
   const [previousBest, setPreviousBest] = useState<number | null>(null);
   // The best week total before the one just finished (#2086).
   const [previousWeekBest, setPreviousWeekBest] = useState<number | null>(null);
@@ -164,7 +191,6 @@ export function PattyDriveThruGame({
 
   const boundaryRef = useRef<HTMLDivElement>(null);
   const registerRef = useRef<HTMLDivElement>(null);
-  const heldKeys = useRef(new Set<string>());
   const drag = useRef({ yaw: 0, pitch: 0 });
   const pointer = useRef<{
     id: number;
@@ -185,7 +211,7 @@ export function PattyDriveThruGame({
   const clockIn = useCallback(
     (picked?: ScenarioId) => {
       if (picked) scenario.current = picked;
-      setUserPaused(false);
+      setPaused(false);
       store.getState().clockIn({
         ...(config?.seed ? {} : { seed: seedFromUrl() ?? freshSeed() }),
         ...scenarioDialsFor(scenario.current),
@@ -193,13 +219,13 @@ export function PattyDriveThruGame({
       });
       boundaryRef.current?.focus({ preventScroll: true });
     },
-    [store, config?.seed, dilemmaWindowSec]
+    [store, config?.seed, dilemmaWindowSec, setPaused]
   );
 
   // A week of shifts (#2086): a new one from a fresh seed, or one resumed.
   const startWeek = useCallback(
     (resume?: WeekState) => {
-      setUserPaused(false);
+      setPaused(false);
       store.getState().clockInWeek(
         resume
           ? { week: resume, dilemmaWindowSec }
@@ -210,14 +236,14 @@ export function PattyDriveThruGame({
       );
       boundaryRef.current?.focus({ preventScroll: true });
     },
-    [store, config?.seed, dilemmaWindowSec]
+    [store, config?.seed, dilemmaWindowSec, setPaused]
   );
 
   const nextWeekDay = useCallback(() => {
-    setUserPaused(false);
+    setPaused(false);
     store.getState().clockInWeek();
     boundaryRef.current?.focus({ preventScroll: true });
-  }, [store]);
+  }, [store, setPaused]);
 
   const backToIntro = useCallback(() => {
     store.getState().backToIntro();
@@ -392,6 +418,56 @@ export function PattyDriveThruGame({
     [store]
   );
 
+  // The dock's turn keys hold while a finger is down.
+  const handleTurn = useCallback(
+    (direction: "left" | "right", down: boolean) => {
+      const held = direction === "left" ? TOUCH_LEFT : TOUCH_RIGHT;
+      if (!down) {
+        heldKeys.current.delete(held);
+        return;
+      }
+      if (store.getState().registerOpen) return;
+      heldKeys.current.add(held);
+    },
+    [store]
+  );
+
+  const toggleRegister = useCallback(() => {
+    if (store.getState().registerOpen) closeRegister();
+    else openRegister();
+  }, [store, openRegister, closeRegister]);
+
+  // The touch cabinet asks the game to stop when the tab is hidden, the page
+  // is closing or the window loses focus (#2116). Only a shift in progress
+  // pauses, and resuming is the player's choice.
+  useEffect(() => {
+    const pauseForBackground = () => {
+      if (store.getState().phase === "shift") setPaused(true);
+    };
+    window.addEventListener(PATTY_AUTO_PAUSE_EVENT, pauseForBackground);
+    return () =>
+      window.removeEventListener(PATTY_AUTO_PAUSE_EVENT, pauseForBackground);
+  }, [store, setPaused]);
+
+  // Dialogs in the touch cabinet trap focus, close on Escape and hand focus
+  // back to the booth. The booth's own key handler still sees their keys, so
+  // the shift shortcuts keep working beside them.
+  const resumeRef = useRef<HTMLButtonElement>(null);
+  const pauseDialogRef = useFocusTrap<HTMLDivElement>(
+    touchCabinet && phase === "shift" && userPaused,
+    {
+      initialFocusRef: resumeRef,
+      onEscape: () => setPaused(false),
+      returnFocusTo: boundaryRef,
+    }
+  );
+  const registerSheetOpen =
+    touchCabinet && phase === "shift" && view === "3d" && registerOpen;
+  const registerSheetRef = useFocusTrap<HTMLDivElement>(registerSheetOpen, {
+    onEscape: closeRegister,
+    returnFocusTo: boundaryRef,
+  });
+
   const actOnActive = (type: "bump" | "reenterDrink" | "flagCoworker") => {
     const orderId = store.getState().shift.pos.activeOrderId;
     if (orderId !== null)
@@ -405,14 +481,27 @@ export function PattyDriveThruGame({
     const key = event.key;
     const state = store.getState();
 
+    // The touch cabinet leaves Escape to the game while a shift runs, so a
+    // stray press from a keyboard case steps back instead of closing the
+    // cabinet and losing the shift (#2116): it resumes a paused shift, then
+    // closes the register, then pauses. A press the register already handled
+    // is not handled twice.
+    if (touchCabinet && key === "Escape") {
+      if (event.defaultPrevented) return;
+      event.preventDefault();
+      if (userPausedRef.current) setPaused(false);
+      else if (view === "3d" && state.registerOpen) closeRegister();
+      else setPaused(true);
+      return;
+    }
+
     // In the 3D booth Escape first leaves the register, whose own handler
     // may already have closed it by the time the key reaches the booth.
     const closesRegister =
       key === "Escape" && view === "3d" && (state.registerOpen || !onBoundary);
     if ((key === "p" || key === "P" || key === "Escape") && !closesRegister) {
       event.preventDefault();
-      heldKeys.current.clear();
-      setUserPaused((was) => !was);
+      setPaused(!userPausedRef.current);
       return;
     }
     // While paused the booth hears nothing but the pause keys.
@@ -530,10 +619,15 @@ export function PattyDriveThruGame({
     if (pointer.current?.id === event.pointerId) pointer.current = null;
   };
 
+  // Diary pages scroll inside the touch cabinet's stage; the page never does.
+  const pageClass = touchCabinet
+    ? "pdt-page w-full p-3 sm:p-6"
+    : "w-full p-3 sm:p-6";
+
   let body: React.ReactNode;
   if (phase === "intro") {
     body = (
-      <div className="w-full p-3 sm:p-6">
+      <div className={pageClass}>
         <DiaryIntroPage
           onClockIn={clockIn}
           onStartWeek={() => startWeek()}
@@ -546,7 +640,7 @@ export function PattyDriveThruGame({
     );
   } else if (phase === "ended" && endedShift && week) {
     body = (
-      <div className="w-full p-3 sm:p-6">
+      <div className={pageClass}>
         {isWeekOver(week) ? (
           <WeekSummaryPage
             week={week}
@@ -569,7 +663,7 @@ export function PattyDriveThruGame({
     );
   } else if (phase === "ended" && endedShift) {
     body = (
-      <div className="w-full p-3 sm:p-6">
+      <div className={pageClass}>
         <ShiftEndPage
           shift={endedShift}
           log={endedLog ?? []}
@@ -581,8 +675,13 @@ export function PattyDriveThruGame({
   } else if (view === "3d") {
     body = (
       <div
-        className="relative h-[var(--layout-viewport-budget,calc(100dvh-160px))] min-h-[460px] w-full overflow-hidden"
+        className={
+          touchCabinet
+            ? "pdt-booth relative min-h-0 w-full flex-1 overflow-hidden"
+            : "relative h-[var(--layout-viewport-budget,calc(100dvh-160px))] min-h-[460px] w-full overflow-hidden"
+        }
         aria-describedby="pdt-booth-description"
+        data-sheet={registerSheetOpen ? "open" : undefined}
       >
         <p id="pdt-booth-description" className="sr-only">
           {BOOTH_DESCRIPTION}
@@ -590,6 +689,7 @@ export function PattyDriveThruGame({
         <div
           className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
           data-testid="pdt-stage"
+          data-facing={touchCabinet ? facing : undefined}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerEnd}
@@ -601,33 +701,83 @@ export function PattyDriveThruGame({
             onContextLost={handleContextLost}
           />
         </div>
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 p-2 sm:p-3">
-          <ShiftHud
-            store={store}
-            viewToggle={<ViewToggle view="3d" onChange={changeView} />}
-          />
-          <DilemmaPrompt store={store} className="mx-auto mt-2 max-w-xl" />
-        </div>
         <div
-          className={`absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 p-2 sm:p-3 ${
-            registerOpen ? "z-30" : "pointer-events-none z-20"
+          className={`pointer-events-none absolute inset-x-0 top-0 z-20 p-2 sm:p-3${
+            touchCabinet ? " pdt-top" : ""
           }`}
         >
-          <ShiftCaption store={store} className="text-center" />
-          {registerOpen ? (
-            <Register
-              ref={registerRef}
-              store={store}
-              onLeave={closeRegister}
-              className="w-full max-w-2xl shadow-2xl"
-            />
-          ) : (
-            <p className="px-3 text-center font-mono text-[11px] text-[var(--pdt-hud-text)] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
-              Enter or Tab: use the register · A / D or drag: turn · W: wipe · Q
-              / E: answer · P or Esc: pause
-            </p>
+          <ShiftHud
+            store={store}
+            hideWipe={touchCabinet}
+            viewToggle={<ViewToggle view="3d" onChange={changeView} />}
+          />
+          {registerSheetOpen ? null : (
+            <DilemmaPrompt store={store} className="mx-auto mt-2 max-w-xl" />
           )}
         </div>
+        {touchCabinet ? (
+          registerSheetOpen ? (
+            // The register is a sheet over the booth: along the bottom held
+            // upright, down the right side held sideways. The caption and any
+            // dilemma ride inside it, so it holds everything a player answers.
+            <div
+              ref={registerSheetRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Drive-thru register"
+              data-testid="pdt-register-sheet"
+              className="pdt-sheet"
+            >
+              <div className="pdt-sheet-head">
+                <ShiftCaption store={store} className="min-w-0 flex-1" />
+                <button
+                  type="button"
+                  onClick={closeRegister}
+                  aria-keyshortcuts="Escape"
+                  className="pdt-sheet-close min-h-11"
+                >
+                  Back to booth
+                </button>
+              </div>
+              <DilemmaPrompt store={store} />
+              <Register
+                ref={registerRef}
+                store={store}
+                onLeave={closeRegister}
+                className="w-full"
+              />
+            </div>
+          ) : (
+            <div className="pdt-booth-foot pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-1 p-2">
+              <ShiftCaption store={store} className="text-center" />
+              <p className="px-3 text-center font-mono text-xs text-[var(--pdt-hud-text)] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
+                Drag the booth or hold the arrows to turn. Tap Register to take
+                orders.
+              </p>
+            </div>
+          )
+        ) : (
+          <div
+            className={`absolute inset-x-0 bottom-0 flex flex-col items-center gap-1 p-2 sm:p-3 ${
+              registerOpen ? "z-30" : "pointer-events-none z-20"
+            }`}
+          >
+            <ShiftCaption store={store} className="text-center" />
+            {registerOpen ? (
+              <Register
+                ref={registerRef}
+                store={store}
+                onLeave={closeRegister}
+                className="w-full max-w-2xl shadow-2xl"
+              />
+            ) : (
+              <p className="px-3 text-center font-mono text-[11px] text-[var(--pdt-hud-text)] [text-shadow:0_1px_3px_rgba(0,0,0,0.9)]">
+                Enter or Tab: use the register · A / D or drag: turn · W: wipe ·
+                Q / E: answer · P or Esc: pause
+              </p>
+            )}
+          </div>
+        )}
         {yells > 0 ? (
           <div key={yells} aria-hidden="true" className="pdt-yell-vignette" />
         ) : null}
@@ -635,16 +785,25 @@ export function PattyDriveThruGame({
     );
   } else {
     body = (
-      <div className="flex w-full min-w-0 flex-col gap-3 p-2 sm:p-4">
+      <div
+        className={`flex w-full min-w-0 flex-col gap-3 p-2 sm:p-4${
+          touchCabinet ? " pdt-flat" : ""
+        }`}
+      >
         <ShiftHud
           store={store}
+          hideWipe={touchCabinet}
           viewToggle={
             webgl ? <ViewToggle view="flat" onChange={changeView} /> : null
           }
         />
         <DilemmaPrompt store={store} />
         <ShiftCaption store={store} />
-        <p className="font-mono text-[11px] text-[var(--pdt-hud-dim)]">
+        <p
+          className={`font-mono text-[11px] text-[var(--pdt-hud-dim)]${
+            touchCabinet ? " sr-only" : ""
+          }`}
+        >
           {contextLost
             ? "The 3D booth stopped responding, so this is the flat view. "
             : ""}
@@ -652,12 +811,18 @@ export function PattyDriveThruGame({
         </p>
         <p
           data-testid="pdt-key-legend"
-          className="font-mono text-[11px] text-[var(--pdt-hud-text)]"
+          className={`font-mono text-[11px] text-[var(--pdt-hud-text)]${
+            touchCabinet ? " sr-only" : ""
+          }`}
         >
           Keys: 1-6 pick a car · B bump · R re-enter drink · C flag{" "}
           {BOOTH_CREW.coworker} · W wipe · Q / E answer · P or Esc pause
         </p>
-        <div className="grid min-w-0 gap-3 @3xl:grid-cols-2">
+        <div
+          className={`grid min-w-0 gap-3 @3xl:grid-cols-2${
+            touchCabinet ? " pdt-flat-grid" : ""
+          }`}
+        >
           <KdsBoard store={store} />
           <Register store={store} />
         </div>
@@ -672,6 +837,7 @@ export function PattyDriveThruGame({
       data-keyboard-boundary="true"
       data-pdt-cabinet=""
       data-pdt-view={view}
+      data-escape-docks={touchCabinet && phase === "shift" ? "true" : undefined}
       data-testid="pdt-game"
       aria-label="Patty's Drive-Thru"
       onKeyDown={handleKeyDown}
@@ -681,7 +847,9 @@ export function PattyDriveThruGame({
           heldKeys.current.clear();
         }
       }}
-      className="pdt-root @container relative flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--pdt-stage)] text-[var(--pdt-hud-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--pdt-focus)]"
+      className={`pdt-root @container relative flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--pdt-stage)] text-[var(--pdt-hud-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--pdt-focus)]${
+        touchCabinet ? " pdt-touch" : ""
+      }`}
     >
       <div
         role="status"
@@ -692,22 +860,48 @@ export function PattyDriveThruGame({
         {announcement}
       </div>
       {body}
+      {touchCabinet && phase === "shift" ? (
+        // In the flat view there is nothing to turn to or open, so the dock
+        // keeps only the wipe and the pause.
+        <PattyTouchDock
+          store={store}
+          view={view}
+          registerOpen={registerOpen}
+          onTurn={handleTurn}
+          onToggleRegister={toggleRegister}
+          onPause={() => setPaused(true)}
+        />
+      ) : null}
       {phase === "shift" && userPaused ? (
         <div
           data-testid="pdt-paused"
           className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
         >
-          <div className="flex flex-col items-center gap-3 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-stage)] p-5 text-center">
-            <p className="font-mono text-sm font-bold uppercase tracking-wide">
+          <div
+            ref={pauseDialogRef}
+            {...(touchCabinet
+              ? {
+                  role: "dialog",
+                  "aria-modal": true,
+                  "aria-labelledby": "pdt-paused-title",
+                }
+              : {})}
+            className="flex flex-col items-center gap-3 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-stage)] p-5 text-center"
+          >
+            <p
+              id={touchCabinet ? "pdt-paused-title" : undefined}
+              className="font-mono text-sm font-bold uppercase tracking-wide"
+            >
               Shift paused
             </p>
             <p className="font-mono text-[11px] text-[var(--pdt-hud-text)]">
               The clock is stopped. P or Esc to resume.
             </p>
             <button
+              ref={resumeRef}
               type="button"
               onClick={() => {
-                setUserPaused(false);
+                setPaused(false);
                 boundaryRef.current?.focus({ preventScroll: true });
               }}
               className="min-h-11 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-hud-button)] px-4 text-xs font-bold uppercase tracking-wide text-[var(--pdt-hud-text)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"

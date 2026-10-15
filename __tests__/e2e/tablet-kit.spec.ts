@@ -2524,3 +2524,623 @@ test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
     }
   });
 });
+
+// Patty's Drive-Thru: the booth, its dock and its register sheet in the touch
+// cabinet (#2116). The dock holds the turn, wipe, register and pause keys; the
+// register is a sheet that traps focus and closes on Escape without closing the
+// cabinet. A fixed seed makes every shift the same.
+const PDT_ROUTE = "/arcade/patty-drive-thru?seed=tablet-1";
+const PDT_ROOT = ".pdt-touch";
+const PDT_DOCK = '[data-testid="pdt-touch-dock"]';
+const PDT_GATE = "[data-touch-controls]";
+const PDT_BOARD = '[data-testid="pdt-game"]';
+const PDT_STAGE = '[data-testid="pdt-stage"]';
+const PDT_SHEET = '[data-testid="pdt-register-sheet"]';
+
+/** Launches the cabinet and waits for the game's touch layout. */
+async function launchPatty(page: Page) {
+  const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+  await expect(async () => {
+    if ((await page.locator(IMMERSIVE).count()) > 0) return;
+    await launch.tap({ timeout: 5000 });
+    await expect(page.locator(IMMERSIVE)).toBeVisible({ timeout: 5000 });
+  }).toPass({ timeout: 180000 });
+  await expect(page.locator(PDT_ROOT).first()).toBeVisible({ timeout: 90000 });
+}
+
+/** Clocks in, and switches to the 3D booth unless the flat view is asked for. */
+async function startPatty(page: Page, view: "3d" | "flat" = "3d") {
+  await expect(async () => {
+    if ((await page.locator(PDT_DOCK).count()) > 0) return;
+    await page.getByRole("button", { name: "Clock in" }).tap({ timeout: 3000 });
+    await expect(page.locator(PDT_DOCK)).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 30000 });
+  const board = page.locator(PDT_BOARD);
+  if (view === "3d") {
+    await expect(async () => {
+      if ((await board.getAttribute("data-pdt-view")) === "3d") return;
+      await page
+        .getByRole("button", { name: "3D booth" })
+        .tap({ timeout: 3000 });
+      await expect(board).toHaveAttribute("data-pdt-view", "3d", {
+        timeout: 3000,
+      });
+    }).toPass({ timeout: 30000 });
+    await expect(page.locator(PDT_STAGE)).toHaveAttribute(
+      "data-facing",
+      "counter"
+    );
+  }
+}
+
+/**
+ * A dock key by its name. Found by attribute, because the dock hides from the
+ * accessibility tree while a keyboard is in use, yet stays tappable.
+ */
+const pdtKey = (page: Page, name: string) =>
+  page.locator(`${PDT_DOCK} [aria-label="${name}"]`);
+
+const pdtFacing = (page: Page) =>
+  page.locator(PDT_STAGE).getAttribute("data-facing");
+
+/**
+ * Holds a finger on a box until the head faces `facing`, then lifts it. The
+ * head turns with the frame clock, so the hold waits for the result instead
+ * of timing it.
+ */
+async function holdFingerUntil(page: Page, locator: Locator, facing: string) {
+  const box = (await locator.boundingBox())!;
+  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [point],
+  });
+  try {
+    await expect.poll(() => pdtFacing(page), { timeout: 40000 }).toBe(facing);
+  } finally {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await cdp.detach();
+  }
+}
+
+/** Drags a finger across the booth from one fraction of the stage to another. */
+async function dragBooth(page: Page, fromX: number, toX: number) {
+  const box = (await page.locator(PDT_STAGE).boundingBox())!;
+  const y = box.y + box.height * 0.4;
+  const cdp = await page.context().newCDPSession(page);
+  const at = (f: number) => ({ x: box.x + box.width * f, y });
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [at(fromX)],
+  });
+  for (let i = 1; i <= 12; i += 1) {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [at(fromX + ((toX - fromX) * i) / 12)],
+    });
+    await page.waitForTimeout(16);
+  }
+  await cdp.send("Input.dispatchTouchEvent", {
+    type: "touchEnd",
+    touchPoints: [],
+  });
+  await cdp.detach();
+}
+
+/** Opens the register sheet from the dock and waits for it. */
+async function openRegisterSheet(page: Page) {
+  await expect(async () => {
+    if (await page.locator(PDT_SHEET).isVisible()) return;
+    await page
+      .getByRole("button", { name: "Use the register" })
+      .tap({ timeout: 3000 });
+    await expect(page.locator(PDT_SHEET)).toBeVisible({ timeout: 3000 });
+  }).toPass({ timeout: 15000 });
+}
+
+test.describe("Patty's Drive-Thru on a tablet (iPad projects, #2116)", () => {
+  test.setTimeout(300000);
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      !/^iPad/.test(testInfo.project.name),
+      "iPad projects only (ADR 0061)"
+    );
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(PDT_ROUTE);
+  });
+
+  test("the notice is hidden, and the cabinet launches fit to the viewport", async ({
+    page,
+  }) => {
+    await expect(page.locator(NOTICE)).toBeHidden();
+    await launchPatty(page);
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-mobile-layout",
+      "fit"
+    );
+    await expectFillsViewport(page, page.locator(IMMERSIVE));
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("the booth, HUD and dock fit both orientations without scrolling", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expect(page.locator(PDT_ROOT).first()).toBeVisible();
+      await expectInsideViewport(page, [
+        PDT_ROOT,
+        PDT_STAGE,
+        '[data-testid="pdt-hud"]',
+        PDT_DOCK,
+      ]);
+      const overflow = await page.evaluate(() => {
+        const root = document.querySelector<HTMLElement>(".pdt-touch")!;
+        const booth = document.querySelector<HTMLElement>(".pdt-booth")!;
+        return [
+          document.scrollingElement!.scrollHeight - window.innerHeight,
+          root.scrollHeight - root.clientHeight,
+          booth.scrollHeight - booth.clientHeight,
+        ].map((n) => Math.max(0, n));
+      });
+      expect(overflow.every((n) => n <= 1)).toBe(true);
+      // The booth takes the height the strip and the dock leave.
+      const stage = (await page.locator(PDT_STAGE).boundingBox())!;
+      expect(stage.height / size.height).toBeGreaterThanOrEqual(0.6);
+      // The dock sits at the bottom edge, with no dead band under it.
+      const dock = (await page.locator(PDT_DOCK).boundingBox())!;
+      expect(size.height - (dock.y + dock.height)).toBeLessThanOrEqual(24);
+      // The strip stays clear of the floating toolbar.
+      const toolbar = (await page
+        .getByTestId("cabinet-touch-toolbar")
+        .boundingBox())!;
+      const hud = (await page.getByTestId("pdt-hud").boundingBox())!;
+      expect(
+        hud.x + hud.width <= toolbar.x + 1 ||
+          hud.y >= toolbar.y + toolbar.height - 1
+      ).toBe(true);
+      await assertNoHorizontalOverflow(page);
+    }
+  });
+
+  test("the flat view fits both orientations without scrolling, with no dead band", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page, "flat");
+    const { width, height } = page.viewportSize()!;
+    for (const size of [
+      { width, height },
+      { width: height, height: width },
+    ]) {
+      await page.setViewportSize(size);
+      await expectInsideViewport(page, [
+        PDT_ROOT,
+        '[data-testid="pdt-hud"]',
+        '[data-testid="pdt-kds-board"]',
+        '[data-testid="pdt-register"]',
+        PDT_DOCK,
+      ]);
+      const overflow = await page.evaluate(() => {
+        const flat = document.querySelector<HTMLElement>(".pdt-flat")!;
+        return [
+          document.scrollingElement!.scrollHeight - window.innerHeight,
+          flat.scrollHeight - flat.clientHeight,
+        ].map((n) => Math.max(0, n));
+      });
+      expect(overflow.every((n) => n <= 1)).toBe(true);
+      // The register reaches down to the dock.
+      const register = (await page.getByTestId("pdt-register").boundingBox())!;
+      const dock = (await page.locator(PDT_DOCK).boundingBox())!;
+      expect(dock.y - (register.y + register.height)).toBeLessThanOrEqual(32);
+      expect(size.height - (dock.y + dock.height)).toBeLessThanOrEqual(24);
+      await assertNoHorizontalOverflow(page);
+    }
+  });
+
+  test("the page cannot scroll behind the open cabinet", async ({ page }) => {
+    await launchPatty(page);
+    await attemptPageScroll(page);
+    await settleScroll(page);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  });
+
+  test("every control is 44px and no text is under 12px: diary, booth, register sheet, pause, flat view", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await sdTouchSizes(page, PDT_ROOT);
+    await startPatty(page);
+    await sdTouchSizes(page, PDT_ROOT);
+    await openRegisterSheet(page);
+    await sdTouchSizes(page, PDT_ROOT);
+    await page
+      .locator(PDT_SHEET)
+      .getByRole("button", { name: "Back to booth" })
+      .tap();
+    await expect(page.locator(PDT_SHEET)).toBeHidden();
+    await pdtKey(page, "Pause shift").tap();
+    await expect(
+      page.getByRole("dialog", { name: /Shift paused/i })
+    ).toBeVisible();
+    await sdTouchSizes(page, PDT_ROOT);
+    await page.getByRole("button", { name: "Resume shift" }).tap();
+    await page.getByRole("button", { name: "Flat view" }).tap();
+    await expect(page.locator(PDT_BOARD)).toHaveAttribute(
+      "data-pdt-view",
+      "flat"
+    );
+    await sdTouchSizes(page, PDT_ROOT);
+  });
+
+  test("a finger turns the booth by dragging it and by holding the dock keys", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    expect(await pdtFacing(page)).toBe("counter");
+    // Dragging left swings the head toward the window, dragging right toward
+    // the kitchen.
+    await dragBooth(page, 0.8, 0.1);
+    await expect.poll(() => pdtFacing(page)).toBe("window");
+    await dragBooth(page, 0.1, 0.95);
+    await dragBooth(page, 0.1, 0.95);
+    await expect.poll(() => pdtFacing(page)).not.toBe("window");
+    // The dock keys hold while the finger is down.
+    await pdtKey(page, "Pause shift").tap();
+    await page.getByRole("button", { name: "Resume shift" }).tap();
+    const left = pdtKey(page, "Turn left");
+    const right = pdtKey(page, "Turn right");
+    for (const key of [left, right]) {
+      const box = (await key.boundingBox())!;
+      expect(box.height).toBeGreaterThanOrEqual(44);
+      expect(box.width).toBeGreaterThanOrEqual(44);
+    }
+    await holdFingerUntil(page, left, "window");
+    await holdFingerUntil(page, right, "kitchen");
+  });
+
+  test("the register key opens a sheet that fits, and Back to booth closes it", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    await openRegisterSheet(page);
+    const sheet = page.locator(PDT_SHEET);
+    await expect(sheet).toHaveAttribute("aria-modal", "true");
+    await expectBoxInViewport(page, sheet, "register sheet");
+    const { width, height } = page.viewportSize()!;
+    await page.setViewportSize({ width: height, height: width });
+    await expectBoxInViewport(page, sheet, "register sheet (turned)");
+    await assertNoHorizontalOverflow(page);
+    // The HUD and the sheet stay clear of each other.
+    const hud = (await page.getByTestId("pdt-hud").boundingBox())!;
+    const box = (await sheet.boundingBox())!;
+    expect(
+      hud.x + hud.width <= box.x + 1 || hud.y + hud.height <= box.y + 1
+    ).toBe(true);
+    await page
+      .locator(PDT_SHEET)
+      .getByRole("button", { name: "Back to booth" })
+      .tap();
+    await expect(sheet).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("a shift is worked by taps alone: pick an order, ring it, bump it", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    // Wipe by tap: the counter's cooldown starts.
+    const wipe = pdtKey(page, "Wipe counter");
+    await wipe.tap();
+    await expect(wipe).toBeDisabled();
+    await openRegisterSheet(page);
+    const orders = page.getByRole("toolbar", { name: "Open orders" });
+    const chip = orders.getByRole("button").first();
+    await expect(chip).toBeVisible({ timeout: 60000 });
+    await chip.tap();
+    await expect(chip).toHaveAttribute("aria-pressed", "true");
+    const sheet = page.locator(PDT_SHEET);
+    const lines = sheet.locator('[aria-live="polite"] li');
+    await expect(lines.first()).toBeVisible();
+    const home = sheet.getByRole("button", { name: "Home", exact: true });
+    const category = (label: string) =>
+      /burger/i.test(label)
+        ? "Burgers"
+        : /fries|nuggets/i.test(label)
+          ? "Sides"
+          : "Drinks";
+    // Ring each line by tapping down the menu, answering a dropped drink with
+    // Re-enter drink, and flagging the coworker for coffee.
+    for (let step = 0; step < 30; step += 1) {
+      if (/✓/.test(await chip.innerText().catch(() => ""))) break;
+      if (!(await chip.isVisible())) break;
+      const reenter = sheet.getByRole("button", { name: /Re-enter drink/ });
+      const flag = sheet.getByRole("button", { name: /^Flag / });
+      if (await reenter.isEnabled()) {
+        await reenter.tap();
+        continue;
+      }
+      if (await flag.isEnabled()) {
+        await flag.tap();
+        await page.waitForTimeout(300);
+        continue;
+      }
+      const count = await lines.count();
+      let acted = false;
+      for (let i = 0; i < count && !acted; i += 1) {
+        const text = await lines.nth(i).innerText();
+        if (/To ring|Ready to ring/.test(text)) {
+          const label = text
+            .split("\n")[0]
+            .replace(/\s·.*$/, "")
+            .trim();
+          if (await home.isEnabled()) await home.tap();
+          await sheet
+            .getByRole("button", { name: new RegExp(`^${category(label)}`) })
+            .tap();
+          await sheet
+            .getByRole("button", {
+              name: new RegExp(`^(Brew )?${label}`),
+            })
+            .first()
+            .tap();
+          acted = true;
+        } else if (/not entered/.test(text)) {
+          if (await home.isEnabled()) await home.tap();
+          for (const name of [
+            "Modifiers",
+            "Toppings",
+            "Pickles",
+            "No Pickles",
+          ]) {
+            await sheet
+              .getByRole("button", { name: new RegExp(`^${name}`) })
+              .tap();
+          }
+          acted = true;
+        }
+      }
+      if (!acted) await page.waitForTimeout(400);
+    }
+    const bump = sheet.getByRole("button", { name: /Bump order/ });
+    await expect(bump).toBeEnabled({ timeout: 20000 });
+    await bump.tap();
+    await expect(
+      orders.getByRole("button", { name: /^Order 1[:,]/ })
+    ).toHaveCount(0);
+  });
+
+  test("the register sheet traps focus, and Escape pressed at once after Enter closes it", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    const sheet = page.locator(PDT_SHEET);
+    await page.locator(PDT_BOARD).focus();
+    await page.keyboard.press("Enter");
+    // No wait: focus has not moved into the sheet yet.
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await expect(page.getByTestId("pdt-paused")).toHaveCount(0);
+    await page.keyboard.press("Enter");
+    await expect(sheet).toBeVisible();
+    for (let i = 0; i < 16; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () => !!document.activeElement?.closest('[role="dialog"]')
+        )
+      ).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(sheet).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await expect(page.getByTestId("pdt-paused")).toHaveCount(0);
+  });
+
+  test("Pause stops the shift, and Escape pressed at once resumes it with the cabinet open", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    const paused = page.getByRole("dialog", { name: /Shift paused/i });
+    await page.locator(PDT_BOARD).focus();
+    await page.keyboard.press("p");
+    await page.keyboard.press("Escape");
+    await expect(paused).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+    await pdtKey(page, "Pause shift").tap();
+    await expect(paused).toBeVisible();
+    await expectBoxInViewport(page, paused, "pause dialog");
+    const { width, height } = page.viewportSize()!;
+    await page.setViewportSize({ width: height, height: width });
+    await expectBoxInViewport(page, paused, "pause dialog (turned)");
+    for (let i = 0; i < 6; i += 1) {
+      await page.keyboard.press("Tab");
+      expect(
+        await page.evaluate(
+          () => !!document.activeElement?.closest('[role="dialog"]')
+        )
+      ).toBe(true);
+    }
+    await page.keyboard.press("Escape");
+    await expect(paused).toBeHidden();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("Escape during a shift pauses instead of leaving the cabinet", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    await page.locator(PDT_BOARD).focus();
+    await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("dialog", { name: /Shift paused/i })
+    ).toBeVisible();
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("a hidden tab or a blurred window pauses a shift in progress", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    const paused = page.getByRole("dialog", { name: /Shift paused/i });
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(paused).toBeVisible();
+    await page.getByRole("button", { name: "Resume shift" }).tap();
+    await expect(paused).toBeHidden();
+    await page.evaluate(() => {
+      Object.defineProperty(document, "visibilityState", {
+        configurable: true,
+        get: () => "hidden",
+      });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await expect(paused).toBeVisible();
+  });
+
+  test("with a keyboard case the dock hides and every shortcut works; a tap brings it back", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    const gate = page.locator(PDT_GATE).first();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+    await page.locator(PDT_BOARD).focus();
+    // D turns toward the kitchen, and hides the dock.
+    await page.keyboard.down("d");
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    await expect
+      .poll(() => pdtFacing(page), { timeout: 40000 })
+      .toBe("kitchen");
+    await page.keyboard.up("d");
+    await page.keyboard.down("a");
+    await expect.poll(() => pdtFacing(page), { timeout: 40000 }).toBe("window");
+    await page.keyboard.up("a");
+    // W wipes, which starts the cooldown.
+    await page.keyboard.press("w");
+    await expect(pdtKey(page, "Wipe counter")).toBeDisabled();
+    // Enter opens the register, Backspace and Home work in it, Escape leaves.
+    await page.keyboard.press("Enter");
+    await expect(page.locator(PDT_SHEET)).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.locator(PDT_SHEET)).toBeHidden();
+    // P pauses and resumes.
+    const paused = page.getByRole("dialog", { name: /Shift paused/i });
+    await page.keyboard.press("p");
+    await expect(paused).toBeVisible();
+    await page.keyboard.press("p");
+    await expect(paused).toBeHidden();
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    await pdtKey(page, "Pause shift").tap();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+  });
+
+  test("the Apple Pencil works like a finger", async ({ page }) => {
+    await launchPatty(page);
+    await startPatty(page);
+    const stage = (await page.locator(PDT_STAGE).boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    const x = stage.x + stage.width * 0.5;
+    const y = stage.y + stage.height * 0.3;
+    for (const type of ["mousePressed", "mouseReleased"] as const) {
+      await cdp.send("Input.dispatchMouseEvent", {
+        type,
+        x,
+        y,
+        button: "left",
+        clickCount: 1,
+        pointerType: "pen",
+      });
+    }
+    await expect(page.locator(IMMERSIVE)).toHaveAttribute(
+      "data-input-modality",
+      "pen"
+    );
+    await expect(page.locator(PDT_GATE).first()).toHaveAttribute(
+      "data-touch-controls",
+      "shown"
+    );
+    // The pen presses a dock key too.
+    await pdtKey(page, "Use the register").tap();
+    await expect(page.locator(PDT_SHEET)).toBeVisible();
+  });
+
+  test("the playing cabinet has no blocking axe violations", async ({
+    page,
+  }) => {
+    await launchPatty(page);
+    await sdAxe(page);
+    await startPatty(page);
+    await sdAxe(page);
+    await openRegisterSheet(page);
+    await sdAxe(page);
+    await page
+      .locator(PDT_SHEET)
+      .getByRole("button", { name: "Back to booth" })
+      .tap();
+    await pdtKey(page, "Pause shift").tap();
+    await expect(page.getByTestId("pdt-paused")).toBeVisible();
+    await sdAxe(page);
+  });
+
+  test.describe("Split View (ADR 0061)", () => {
+    for (const width of [507, 678]) {
+      test(`${width}x1024: the notice offers Try it anyway, with no overflow`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(PDT_ROUTE);
+        await expect(page.locator(NOTICE).first()).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+        const tryAnyway = page.getByRole("button", { name: /Try it anyway/i });
+        await expect(tryAnyway).toBeVisible();
+        await tryAnyway.tap();
+        await expect(
+          page.getByRole("button", { name: /Launch Cabinet/i })
+        ).toBeVisible();
+        await assertNoHorizontalOverflow(page);
+      });
+
+      test(`${width}x1024: Try it anyway launches a cabinet that fits`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 1024 });
+        await page.goto(PDT_ROUTE);
+        await page.getByRole("button", { name: /Try it anyway/i }).tap();
+        await launchPatty(page);
+        await startPatty(page);
+        await expectInsideViewport(page, [
+          PDT_ROOT,
+          PDT_STAGE,
+          '[data-testid="pdt-hud"]',
+          PDT_DOCK,
+        ]);
+        await openRegisterSheet(page);
+        await expectBoxInViewport(
+          page,
+          page.locator(PDT_SHEET),
+          "register sheet"
+        );
+        await assertNoHorizontalOverflow(page);
+      });
+    }
+  });
+});

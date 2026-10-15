@@ -54,6 +54,11 @@ interface ShiftHudProps {
   store: BoothStore;
   /** Shown when the visitor can switch between the 3D booth and the flat view. */
   viewToggle?: React.ReactNode;
+  /**
+   * Leaves the wipe button out, for the touch cabinet, which keeps it in its
+   * dock beside the thumbs (#2116).
+   */
+  hideWipe?: boolean;
 }
 
 /**
@@ -61,7 +66,11 @@ interface ShiftHudProps {
  * Values are rounded in their selectors, so the strip only re-renders when a
  * number on it changes.
  */
-export function ShiftHud({ store, viewToggle }: ShiftHudProps) {
+export function ShiftHud({
+  store,
+  viewToggle,
+  hideWipe = false,
+}: ShiftHudProps) {
   const timeLeft = useBooth(store, (s) =>
     Math.ceil(Math.max(0, s.shift.config.durationSec - s.shift.time))
   );
@@ -103,15 +112,17 @@ export function ShiftHud({ store, viewToggle }: ShiftHudProps) {
         testId="pdt-meter-idle"
       />
       <div className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 @2xl:col-span-1">
-        <button
-          type="button"
-          onClick={() => act({ type: "wipe" })}
-          disabled={!canWipe}
-          aria-keyshortcuts="W"
-          className="min-h-11 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-hud-button)] px-3 text-xs font-bold uppercase tracking-wide text-[var(--pdt-hud-text)] active:scale-[0.98] disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
-        >
-          Wipe counter
-        </button>
+        {hideWipe ? null : (
+          <button
+            type="button"
+            onClick={() => act({ type: "wipe" })}
+            disabled={!canWipe}
+            aria-keyshortcuts="W"
+            className="min-h-11 rounded border border-[var(--pdt-hud-rule)] bg-[var(--pdt-hud-button)] px-3 text-xs font-bold uppercase tracking-wide text-[var(--pdt-hud-text)] active:scale-[0.98] disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]"
+          >
+            Wipe counter
+          </button>
+        )}
         {viewToggle}
       </div>
     </div>

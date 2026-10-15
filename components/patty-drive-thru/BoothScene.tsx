@@ -8,6 +8,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 import { BOOTH_CAMERA, BoothWorld } from "./BoothWorld";
 import type { BoothStore } from "./store";
 
@@ -19,12 +20,22 @@ interface BoothSceneProps {
   onContextLost: () => void;
 }
 
+/** Pixel-ratio range of the desktop canvas. */
+const DESKTOP_DPR: [number, number] = [1, 1.75];
+/**
+ * Pixel-ratio range of the touch cabinet's canvas (#2116). An iPad mini draws
+ * a 2x screen at full cabinet size every frame; 1.5 keeps it light and the
+ * booth's flat colours and screen textures read the same.
+ */
+const TOUCH_DPR: [number, number] = [1, 1.5];
+
 /** The WebGL canvas for the booth, mounted only when WebGL is available. */
 export default function BoothScene({
   store,
   onOpenRegister,
   onContextLost,
 }: BoothSceneProps) {
+  const touchCabinet = useCabinetTouch();
   // React Three Fiber releases the context itself a moment after unmount,
   // which fires the same event; only a loss while mounted is a real one.
   const mounted = useRef(false);
@@ -42,7 +53,7 @@ export default function BoothScene({
   return (
     <Canvas
       frameloop="demand"
-      dpr={[1, 1.75]}
+      dpr={touchCabinet ? TOUCH_DPR : DESKTOP_DPR}
       camera={BOOTH_CAMERA}
       gl={{ antialias: true, powerPreference: "default" }}
       onCreated={({ gl }) => {

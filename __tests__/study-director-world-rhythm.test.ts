@@ -245,11 +245,28 @@ describe("what the priority reveals overnight", () => {
     const w = fresh();
     const chosen = choosePriority(w, "desk");
     if (!chosen.ok) throw new Error("choose failed");
-    const clear = settlePriority(chosen.world);
-    expect(clear.lines[0].tone).toBe("good");
-    expect(clear.world.study).not.toBe(chosen.world.study);
     const eventId = inbox(chosen.world.study)[0]?.id;
     if (!eventId) throw new Error("no event to decide");
+    const written = {
+      day: 1,
+      eventId,
+      optionId: "a",
+      label: "x",
+      documented: true,
+      attentionSpent: 0,
+      effects: {},
+    };
+    const clear = settlePriority({
+      ...chosen.world,
+      study: { ...chosen.world.study, log: [written] },
+    });
+    expect(clear.lines[0].tone).toBe("good");
+    expect(clear.world.study.log).toEqual([written]);
+    // The compliance point lands on the study.
+    expect(clear.world.study).not.toEqual({
+      ...chosen.world.study,
+      log: [written],
+    });
     const gaps = settlePriority({
       ...chosen.world,
       study: {
@@ -273,6 +290,14 @@ describe("what the priority reveals overnight", () => {
       ...chosen.world.study,
       log: gaps.world.study.log,
     });
+  });
+
+  it("desk: an empty day earns nothing, there was nothing to clear (#2190)", () => {
+    const chosen = choosePriority(fresh(), "desk");
+    if (!chosen.ok) throw new Error("choose failed");
+    const empty = settlePriority(chosen.world);
+    expect(empty.lines).toEqual([]);
+    expect(empty.world).toBe(chosen.world);
   });
 
   it("is silent when no priority was chosen", () => {

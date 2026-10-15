@@ -2,6 +2,7 @@ import { clamp } from "@/lib/game-utils";
 import {
   auditSite,
   reportedSite,
+  type AreaId,
   type SiteAuditReport,
   type SiteState,
 } from "@/lib/study-director";
@@ -446,6 +447,60 @@ export function coordinatorProfile(
   };
 }
 
+/** A finding that is a real problem, reported or not. */
+function isProblem(f: SiteFinding): boolean {
+  return typeof f.actual === "boolean" ? !f.actual : f.actual > 0;
+}
+
+/**
+ * The verdict when nothing was hidden. Only a terrified coordinator's noise
+ * is honesty; a quiet site that reported its problems is simply accurate,
+ * and problems that were reported are still problems (#2187).
+ */
+function matchedVerdict(site: SiteState, findings: SiteFinding[]): string {
+  const problems = findings.filter(isProblem).length;
+  const still =
+    problems > 0
+      ? ` The ${plural(problems, "problem")} it reported ${problems === 1 ? "is" : "are"} real and still need${problems === 1 ? "s" : ""} fixing.`
+      : "";
+  return site.coordinator === "terrified"
+    ? `Everything you checked matched what the site reports. Its noise is honesty.${still}`
+    : `Everything you checked matched what the site reports.${still}`;
+}
+
+/** The dashboard area each finding bears on, for the EDC's "You have seen" column. */
+const FINDING_AREA: Record<SiteFindingField, AreaId> = {
+  openQueries: "data",
+  unsignedSource: "data",
+  deviations: "regulatory",
+  trainingCurrent: "regulatory",
+  eligibilityConcerns: "enrollment",
+};
+
+/**
+ * What a visit's records checks showed, as observations the EDC lists beside
+ * the dashboard. Only things seen at the site count, never hearsay (#2187).
+ */
+function visitObservations(
+  world: WorldState,
+  report: SiteVisitReport
+): WorldState {
+  const observations = [...(world.observations ?? [])];
+  for (const f of report.findings) {
+    const id = `seen:${report.siteId}:${report.day}:${f.field}`;
+    if (observations.some((o) => o.id === id)) continue;
+    observations.push({
+      id,
+      day: report.day,
+      source: `${report.siteName} visit`,
+      text: `${report.siteName}: ${f.text}`,
+      area: FINDING_AREA[f.field],
+      siteId: report.siteId,
+    });
+  }
+  return { ...world, observations };
+}
+
 function siteVisitReport(
   world: WorldState,
   site: SiteState,
@@ -483,9 +538,9 @@ function siteVisitReport(
     learned,
     verdict: !audited
       ? "Nothing was checked against the records, so the dashboard still shows what the site reports."
-      : hidden.length === 0
-        ? "Everything you checked matched what the site reports. Its noise is honesty."
-        : `The dashboard was hiding ${plural(hidden.length, "finding")} here: ${hidden.map((f) => f.label.toLowerCase()).join(", ")}.`,
+      : hidden.length > 0
+        ? `The dashboard was hiding ${plural(hidden.length, "finding")} here: ${hidden.map((f) => f.label.toLowerCase()).join(", ")}.`
+        : matchedVerdict(site, findings),
   };
 }
 
@@ -520,7 +575,13 @@ export function closeVisit(world: WorldState): {
     ...(world.siteVisitHistory ?? []),
     report,
   ]);
-  return { world: { ...world, study, visit: null, siteVisitHistory }, report };
+  return {
+    world: visitObservations(
+      { ...world, study, visit: null, siteVisitHistory },
+      report
+    ),
+    report,
+  };
 }
 
 function arrive(world: WorldState, map: WorldMap, spawn: PlayerState) {

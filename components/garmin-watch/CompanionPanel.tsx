@@ -592,109 +592,6 @@ export function CompanionPanel({
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
-            Device
-          </legend>
-          <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-[#0d0e11] p-0.5">
-            {DEVICES.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                aria-pressed={deviceTarget === d.id}
-                onClick={(e) => onSelectDevice(d.id, e)}
-                className={segmentClass(deviceTarget === d.id)}
-              >
-                {d.label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="min-w-0">
-          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
-            Bezel
-          </legend>
-          <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-[#0d0e11] p-0.5">
-            {THEMES.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                aria-pressed={bezelTheme === t.id}
-                onClick={(e) => onSelectTheme(t.id, e)}
-                className={segmentClass(bezelTheme === t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset className="min-w-0">
-          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
-            Ground strip
-          </legend>
-          <div className="grid gap-1.5">
-            {GROUND_STRIP_SLOT_LABELS.map((slotLabel, slot) => (
-              <label
-                key={slotLabel}
-                className="flex min-w-0 items-center justify-between gap-2 text-[10px] text-zinc-400"
-              >
-                <span>{slotLabel}</span>
-                <select
-                  value={groundStrip[slot]}
-                  onChange={(e) =>
-                    onGroundStripSlot(slot, e.target.value as GroundStripField)
-                  }
-                  className="min-h-[32px] min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#0d0e11] px-2 text-[10px] text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-                >
-                  {GROUND_STRIP_FIELDS.map((field) => (
-                    <option key={field} value={field}>
-                      {GROUND_STRIP_FIELD_LABELS[field]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-            <button
-              type="button"
-              onClick={onGroundStripReset}
-              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
-            >
-              Reset strip
-            </button>
-          </div>
-        </fieldset>
-
-        <fieldset className="min-w-0">
-          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
-            Run telemetry
-          </legend>
-          <p className="mb-1.5 text-[10px] tabular-nums text-zinc-400">
-            {telemetryCount} {telemetryCount === 1 ? "sample" : "samples"}, one
-            per second of play. The FIT file carries heart rate and distance
-            only; the CSV has every metric.
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={onExportCsv}
-              disabled={telemetryCount === 0}
-              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
-            >
-              Download CSV
-            </button>
-            <button
-              type="button"
-              onClick={onExportFit}
-              disabled={telemetryCount === 0}
-              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
-            >
-              Download FIT
-            </button>
-          </div>
-        </fieldset>
-
-        <fieldset className="min-w-0">
-          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
             Run mode
           </legend>
           <div className="grid gap-2">
@@ -827,7 +724,137 @@ export function CompanionPanel({
           </div>
         </fieldset>
 
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/[0.08] pt-3 text-[10px]">
+          {(fitnessView ? FITNESS_KEYS : KEYS).map(([key, action]) => (
+            <React.Fragment key={key}>
+              <dt className="text-zinc-200">{key}</dt>
+              <dd className="min-w-0 text-zinc-400">{action}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <FieldManualButton manualId="garmin-watch" label="Manual" />
+          {onToggleFullscreen && (
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              onToggle={onToggleFullscreen}
+              variant="header"
+            />
+          )}
+        </div>
+
         {badgePanel}
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Device
+          </legend>
+          <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-[#0d0e11] p-0.5">
+            {DEVICES.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                aria-pressed={deviceTarget === d.id}
+                onClick={(e) => onSelectDevice(d.id, e)}
+                className={segmentClass(deviceTarget === d.id)}
+              >
+                {d.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Bezel
+          </legend>
+          <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-[#0d0e11] p-0.5">
+            {THEMES.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={bezelTheme === t.id}
+                onClick={(e) => onSelectTheme(t.id, e)}
+                className={segmentClass(bezelTheme === t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        {/* The fitness face draws fixed fields, so the strip only
+            applies to Dev Mode runs (#2131). */}
+        {!fitnessView && (
+          <fieldset className="min-w-0">
+            <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+              Ground strip
+            </legend>
+            <div className="grid gap-1.5">
+              {GROUND_STRIP_SLOT_LABELS.map((slotLabel, slot) => (
+                <label
+                  key={slotLabel}
+                  className="flex min-w-0 items-center justify-between gap-2 text-[10px] text-zinc-400"
+                >
+                  <span>{slotLabel}</span>
+                  <select
+                    value={groundStrip[slot]}
+                    onChange={(e) =>
+                      onGroundStripSlot(
+                        slot,
+                        e.target.value as GroundStripField
+                      )
+                    }
+                    className="min-h-[32px] min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#0d0e11] px-2 text-[10px] text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                  >
+                    {GROUND_STRIP_FIELDS.map((field) => (
+                      <option key={field} value={field}>
+                        {GROUND_STRIP_FIELD_LABELS[field]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+              <button
+                type="button"
+                onClick={onGroundStripReset}
+                className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+              >
+                Reset strip
+              </button>
+            </div>
+          </fieldset>
+        )}
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Run telemetry
+          </legend>
+          <p className="mb-1.5 text-[10px] tabular-nums text-zinc-400">
+            {telemetryCount} {telemetryCount === 1 ? "sample" : "samples"}, one
+            per second of play. The FIT file carries heart rate and distance
+            only; the CSV has every metric.
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={onExportCsv}
+              disabled={telemetryCount === 0}
+              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+            >
+              Download CSV
+            </button>
+            <button
+              type="button"
+              onClick={onExportFit}
+              disabled={telemetryCount === 0}
+              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+            >
+              Download FIT
+            </button>
+          </div>
+        </fieldset>
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
@@ -891,26 +918,6 @@ export function CompanionPanel({
             )}
           </div>
         </fieldset>
-
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/[0.08] pt-3 text-[10px]">
-          {(fitnessView ? FITNESS_KEYS : KEYS).map(([key, action]) => (
-            <React.Fragment key={key}>
-              <dt className="text-zinc-200">{key}</dt>
-              <dd className="min-w-0 text-zinc-400">{action}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <FieldManualButton manualId="garmin-watch" label="Manual" />
-          {onToggleFullscreen && (
-            <FullscreenButton
-              isFullscreen={isFullscreen}
-              onToggle={onToggleFullscreen}
-              variant="header"
-            />
-          )}
-        </div>
       </div>
       {children}
     </aside>

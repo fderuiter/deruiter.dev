@@ -105,7 +105,21 @@ export interface StartMeters {
 
 /** The hand-written micro-dilemmas a shift can put to the player (#2087). */
 export type DilemmaId =
-  "stale-fries" | "short-till" | "shake-machine" | "long-break";
+  | "stale-fries"
+  | "short-till"
+  | "shake-machine"
+  | "long-break"
+  | "free-drink"
+  | "swap-saturday"
+  | "upsell-day"
+  | "onion-name"
+  | "ice-machine"
+  | "cold-burger"
+  | "bathrooms"
+  | "new-kid"
+  | "early-bump"
+  | "eighteen-close"
+  | "fry-box";
 
 /** Who puts a dilemma to the player, which sets its caption and voice. */
 export type DilemmaSpeaker = "manager" | "coworker" | "customer";
@@ -194,6 +208,12 @@ export interface ShiftConfig extends ShiftScenario {
    * window; the booth passes a longer one for players who ask for more time.
    */
   readonly dilemmaWindowSec?: number;
+  /**
+   * The dilemmas this shift puts to the player, in order (#2139). A week
+   * deals each day its own so no dilemma repeats; left out, the shift draws
+   * from every dilemma a single shift can.
+   */
+  readonly dilemmaDeck?: readonly DilemmaId[];
 }
 
 /** The days of the week mode (#2086), Monday to Friday. */
@@ -335,7 +355,11 @@ export type ShiftEvent =
   | { readonly type: "wrong-entry"; readonly nodeId: string }
   | { readonly type: "manager-yell" }
   | { readonly type: "wiped" }
-  | { readonly type: "rush-started" }
+  | {
+      readonly type: "rush-started";
+      /** Which of the shift's rushes began, counting from 0 (#2139). */
+      readonly rush: number;
+    }
   | { readonly type: "dilemma-offered"; readonly dilemmaId: DilemmaId }
   | {
       readonly type: "dilemma-resolved";

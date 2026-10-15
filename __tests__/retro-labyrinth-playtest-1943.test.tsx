@@ -281,6 +281,8 @@ describe("Retro Labyrinth playtest fixes (#1943)", () => {
     await press("ArrowDown");
     await press("ArrowRight");
     expect(status()).toBe("victory");
+    // Enter asks about the unpicked reward first, then skips it (#2177).
+    await press("Enter");
     await press("Enter");
     expect(hp()).toBe(40);
   });
@@ -303,6 +305,7 @@ describe("Retro Labyrinth playtest fixes (#1943)", () => {
     await press("ArrowDown");
     await press("ArrowRight");
     for (let room = 1; room < 4; room++) {
+      await press("Enter");
       await press("Enter");
       await press("ArrowRight");
     }
@@ -343,5 +346,49 @@ describe("Retro Labyrinth playtest fixes (#1943)", () => {
 
     await press("Enter", document.activeElement as HTMLElement);
     expect(status()).toBe("playing");
+  });
+
+  it("lays a 4x4 terminal out as four cells per row (#2175)", async () => {
+    mockCampaign.build = (actual) => {
+      const grid = openGrid();
+      grid[1][2] = "H";
+      return [
+        plainRoom(actual, { grid }),
+        ...actual.generateRoguelikeCampaign().slice(1),
+      ];
+    };
+    await mount();
+    await press("ArrowRight");
+    const hexGrid = container.querySelector<HTMLElement>(
+      '[data-testid="labyrinth-hex-grid"]'
+    );
+    expect(hexGrid?.style.gridTemplateColumns).toBe(
+      "repeat(4, minmax(0, 1fr))"
+    );
+    expect(hexGrid?.querySelectorAll("button")).toHaveLength(16);
+  });
+
+  it("runs the class picker as a dialog that takes focus and closes on Escape (#2179)", async () => {
+    mockCampaign.build = (actual) => [
+      plainRoom(actual, {}),
+      ...actual.generateRoguelikeCampaign().slice(1),
+    ];
+    await mount();
+    await act(async () => {
+      button("Script Kiddie")?.click();
+    });
+    expect(status()).toBe("class_select");
+    const dialog = container.querySelector(
+      '[data-testid="labyrinth-class-select"]'
+    );
+    expect(dialog?.getAttribute("role")).toBe("dialog");
+    // The focus trap moves focus on its next tick.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 60));
+    });
+    expect(dialog?.contains(document.activeElement)).toBe(true);
+    await press("Escape", document.activeElement as HTMLElement);
+    expect(status()).toBe("paused");
+    expect(board().contains(document.activeElement)).toBe(true);
   });
 });

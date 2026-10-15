@@ -28,7 +28,6 @@ import {
   STAGE_COUNT,
   courseRandom,
   isFootingOverGap,
-  isOverGap,
   stagePoleX,
   stageStartX,
   type CourseLayout,
@@ -137,7 +136,7 @@ export const REPMAX_HP = 6;
 /** Time between a Rep Max's hops. */
 export const REPMAX_HOP_MS = 1800;
 /** Time between a Rep Max's dumbbells. */
-export const REPMAX_THROW_MS = 1600;
+export const REPMAX_THROW_MS = 2200;
 /** A dumbbell's launch speeds. */
 export const DUMBBELL_VX = 2.4;
 export const DUMBBELL_VY = -6;
@@ -278,6 +277,9 @@ function waterLineY(
   return top + rand() * (bottom - top);
 }
 
+/** World px a course foe keeps clear of every gap, on both sides (#2022). */
+export const FOE_GAP_CLEAR = 40;
+
 /**
  * Lays out one stage's foes: three plus the stage number, picked from
  * {@link STAGE_FOE_TABLE}, spread over the stage clear of gaps, with a
@@ -312,9 +314,13 @@ export function generateFoes(
     let nx = x;
     for (let tries = 0; tries < 40 && nx + width <= end; tries++) {
       if (
-        !isOverGap(course, nx - 4) &&
-        !isOverGap(course, nx + width + 4) &&
-        !isFootingOverGap(course, nx, nx + width) &&
+        // Keep foes a run-up away from gaps, so no foe guards a take-off or
+        // a landing (#2022).
+        !course.gaps.some(
+          (g) =>
+            nx < g.x + g.width + FOE_GAP_CLEAR &&
+            nx + width > g.x - FOE_GAP_CLEAR
+        ) &&
         // Keep foes out from under the Basement Gym racks.
         !(course.ceilings ?? []).some(
           (c) => nx < c.x + c.width + 16 && nx + width > c.x - 16

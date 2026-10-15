@@ -146,7 +146,7 @@ describe("Quasi Puzzler playtest fixes (#1939)", () => {
       />
     );
     const card = screen.getByTestId("victory-campaign-complete");
-    expect(within(card).getByText("Campaign complete")).toBeTruthy();
+    expect(within(card).getByText("Act 2 complete")).toBeTruthy();
     expect(card.textContent).toContain("30 of 30 levels proven honestly");
     expect(card.textContent).toContain("86 of 90 stars");
     fireEvent.click(screen.getByRole("button", { name: "Back to Level 1" }));

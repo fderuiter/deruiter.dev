@@ -28,10 +28,21 @@ async function launchAndStartDuck(page: import("@playwright/test").Page) {
     if (await launchBtn.isVisible()) {
       await launchBtn.click({ force: true });
     }
-    // The attract screen is the title (#1516): Launch starts Sprint 1.
+    // The attract screen is the title (#1516): Launch opens Sprint 1 in
+    // the room, and its clock waits for the first click (#2160).
     const progressMeter = page.locator('[aria-label="Work Progress"]');
     await expect(progressMeter).toBeVisible({ timeout: 2000 });
   }).toPass({ timeout: 20000 });
+
+  // 2. Start the clock with a click in the room
+  await expect(async () => {
+    await page
+      .locator('canvas[role="application"]')
+      .click({ position: { x: 30, y: 30 } });
+    const meter = page.locator('[aria-label="Work Progress"]');
+    const val = Number(await meter.getAttribute("aria-valuenow"));
+    expect(val).toBeGreaterThan(0);
+  }).toPass({ timeout: 10000 });
 
   // 3. Wait until simulation is actively advancing
   await expect(async () => {

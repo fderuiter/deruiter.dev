@@ -394,14 +394,14 @@ export const FLAG_MUSEUM: readonly FlagMuseumEntry[] = [
     id: "f277-laser-loon",
     name: "Submission F277: Laser Loon",
     submissionCode: "F277",
-    creator: "Fred deRuiter",
+    creator: "Fred de Ruiter",
     category: "Civic Legend",
     description:
       "A Common Loon floating on azure waters against a midnight sky, projecting twin crimson laser beams from its eyes across the horizon.",
     historicalSignificance:
       "Submitted in October 2023 to the Minnesota State Emblems Redesign Commission. It instantly became a worldwide viral phenomenon featured by The New York Times, The Washington Post, and NPR.",
     civicImpact:
-      "Fred deRuiter released the design into the public domain (CC0), launching a grassroots campaign that sold community flags and merchandise to raise over $13,500 for the Saint Paul Public Library Foundation.",
+      "Fred de Ruiter released the design into the public domain (CC0), launching a grassroots campaign that sold community flags and merchandise to raise over $13,500 for the Saint Paul Public Library Foundation.",
     flagColors: ["#091E3A", "#00B4D8", "#EF4444", "#FFFFFF"],
   },
   {
@@ -464,7 +464,10 @@ export const FLAG_MUSEUM: readonly FlagMuseumEntry[] = [
 
 export const DEFAULT_CANVAS_WIDTH = 768;
 export const DEFAULT_CANVAS_HEIGHT = 420;
-export const ARCADE_GAME_DURATION_SECS = 45;
+/** Seconds per Arcade Survival wave: each wave fields the next act's roster. */
+export const SURVIVAL_WAVE_SECONDS = 30;
+/** Seconds of survival until spawn rate and crowd size reach their peak. */
+export const SURVIVAL_FULL_HEAT_SECONDS = 240;
 export const COMBO_TIMEOUT_MS = 1800;
 export const MAX_MULTIPLIER = 5;
 export const ULTIMATE_CHARGE_PER_KILL = 12;

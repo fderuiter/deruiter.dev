@@ -16,6 +16,7 @@
 ## Functions
 
 - [earlyWarning](functions/earlyWarning.md)
+- [earlyWarningNote](functions/earlyWarningNote.md)
 - [knowsQuirk](functions/knowsQuirk.md)
 - [relate](functions/relate.md)
 - [relationshipOptions](functions/relationshipOptions.md)

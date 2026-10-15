@@ -126,7 +126,7 @@ test.describe("Working With Duck: HUD meets WCAG AA contrast while running", () 
       if (await launchBtn.isVisible()) {
         await launchBtn.click({ force: true });
       }
-      // The attract screen is the title (#1516): Launch starts Sprint 1.
+      // The attract screen is the title (#1516): Launch opens Sprint 1.
       await expect(page.getByTestId("duck-hud-meters")).toBeVisible({
         timeout: 2000,
       });

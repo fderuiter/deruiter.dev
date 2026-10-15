@@ -78,6 +78,7 @@ vi.mock("@/hooks/useTelemetry", () => ({
 }));
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
+import { safeClear } from "@/lib/safe-storage";
 import {
   createInitialDuckGameState,
   type WorkingWithDuckState,
@@ -105,7 +106,9 @@ describe("Working With Duck sprint result card (#1677)", () => {
   let originalRaf: typeof window.requestAnimationFrame;
 
   beforeEach(() => {
-    localStorage.clear();
+    // safeClear also empties the in-memory copy SafeStorage keeps of each
+    // write, which would otherwise carry one test's best into the next.
+    safeClear();
     originalRaf = window.requestAnimationFrame;
     window.requestAnimationFrame = (() =>
       1) as typeof window.requestAnimationFrame;
@@ -137,7 +140,11 @@ describe("Working With Duck sprint result card (#1677)", () => {
   }
 
   it("recaps a cleared sprint and measures the score against the best saved before it", async () => {
-    localStorage.setItem("working_with_duck_high_score", "500");
+    // The card compares against this sprint's own best (#2159).
+    localStorage.setItem(
+      "working_with_duck_sprint_bests",
+      JSON.stringify({ 2: 500 })
+    );
     await render(finished("won", { highScore: 900 }));
 
     const card = dialog("duck-win-dialog-heading");
@@ -156,8 +163,29 @@ describe("Working With Duck sprint result card (#1677)", () => {
     );
   });
 
+  it("saves a sprint best from a shipped run only, never a time-out (#2159)", async () => {
+    await render(finished("failed", { totalScore: 300 }));
+    expect(localStorage.getItem("working_with_duck_sprint_bests")).toBeNull();
+
+    // A fresh mount, since initialState is only read once.
+    await act(async () => {
+      root.render(
+        <WorkingWithDuck
+          key="won"
+          initialState={finished("won", { totalScore: 900, highScore: 900 })}
+        />
+      );
+    });
+    expect(
+      JSON.parse(localStorage.getItem("working_with_duck_sprint_bests") ?? "{}")
+    ).toEqual({ 2: 900 });
+  });
+
   it("shows how far a timed-out sprint fell short and Escape retries it", async () => {
-    localStorage.setItem("working_with_duck_high_score", "2000");
+    localStorage.setItem(
+      "working_with_duck_sprint_bests",
+      JSON.stringify({ 2: 2000 })
+    );
     await render(finished("failed", { totalScore: 300 }));
 
     const card = dialog("duck-fail-dialog-heading");

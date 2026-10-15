@@ -8,8 +8,6 @@
 
 > **getDilemma**(`id`): [`Dilemma`](../../../types/interfaces/Dilemma.md)
 
-The written dilemma for an id.
-
 ## Parameters
 
 ### id

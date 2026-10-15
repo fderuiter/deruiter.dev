@@ -259,7 +259,7 @@ describe("Working With Duck - Sprint Completion, Retry & Progression Reliability
     }
   );
 
-  it("Proceed to Sprint button resumes the authoritative simulation for the next sprint", async () => {
+  it("Proceed to Sprint opens the next sprint's briefing, and Start resumes the simulation", async () => {
     scriptOneTickFromWin(1, 0);
 
     await act(async () => {
@@ -272,14 +272,23 @@ describe("Working With Duck - Sprint Completion, Retry & Progression Reliability
 
     await clickByText(container, /Proceed to Sprint 2/);
 
-    // Regression: previously the ref driving the deterministic engine stayed
-    // "idle" here, so no amount of elapsed time advanced work progress.
+    // The next sprint opens on its briefing with the clock stopped (#2160).
     await advanceFrames(500);
-
     expect(container.textContent).not.toContain("Completed!");
-    expect(container.textContent).toContain("Sprint 2");
-    const progressText = container.textContent || "";
-    expect(progressText).not.toContain("0%");
+    expect(
+      container.querySelector('[data-testid="duck-sprint-briefing"]')
+        ?.textContent
+    ).toContain("Sprint 2");
+    expect(container.textContent).toContain("Work0%");
+
+    // Regression: previously the ref driving the deterministic engine stayed
+    // "idle" after starting, so no amount of elapsed time advanced work.
+    await clickByText(container, /Start Sprint 2/);
+    await advanceFrames(500);
+    expect(
+      container.querySelector('[data-testid="duck-sprint-briefing"]')
+    ).toBeNull();
+    expect(container.textContent).not.toContain("Work0%");
   });
 
   it("Escape key on the victory panel also resumes simulation for the next sprint", async () => {
@@ -341,7 +350,7 @@ describe("Working With Duck - Sprint Completion, Retry & Progression Reliability
     expect(container.textContent).toContain("Sprint 1");
   });
 
-  it("campaign-to-endless handoff starts the simulation running instead of leaving it idle", async () => {
+  it("campaign-to-endless handoff opens the endless briefing, then runs on Start", async () => {
     scriptOneTickFromWin(5, 1);
 
     await act(async () => {
@@ -355,7 +364,13 @@ describe("Working With Duck - Sprint Completion, Retry & Progression Reliability
     await clickByText(container, /Play Endless Mode/);
     await advanceFrames(500);
 
-    expect(container.textContent).toContain("Endless");
+    expect(container.textContent).toContain("Endless mode briefing");
     expect(container.textContent).not.toContain("Completed!");
+
+    await clickByText(container, /Start Endless Mode/);
+    await advanceFrames(500);
+    expect(
+      container.querySelector('[data-testid="duck-sprint-briefing"]')
+    ).toBeNull();
   });
 });

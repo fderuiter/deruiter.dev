@@ -15,6 +15,9 @@
 - [STATION\_NAMES](variables/STATION_NAMES.md)
 - [SWAP\_KEY\_NAME](variables/SWAP_KEY_NAME.md)
 - [TARGET\_NAMES](variables/TARGET_NAMES.md)
+- [TOUCH\_INTERACT\_NAME](variables/TOUCH_INTERACT_NAME.md)
+- [TOUCH\_SWAP\_NAME](variables/TOUCH_SWAP_NAME.md)
+- [TOUCH\_WORK\_NAME](variables/TOUCH_WORK_NAME.md)
 
 ## Functions
 

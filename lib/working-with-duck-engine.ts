@@ -173,6 +173,8 @@ export interface GameSprint {
   subtitle: string;
   targetWork: number;
   impulseInterval: number; // ticks between impulses
+  /** Seconds a well-run sprint takes; each second under it earns a bonus. */
+  parSeconds: number;
   description: string;
 }
 
@@ -255,20 +257,20 @@ export const DUCK_FACTS: DuckFact[] = [
   {
     id: 9,
     level: 9,
-    title: "Theodore Wirth Mud Run Co-Pilot",
-    fact: "Duck's zoomie speed and mud resistance clocked at peak velocity. Minnesota trail mud is merely an operational challenge.",
-    photoUrl: "/images/sports/theodore-wirth-mud-run.jpg",
+    title: "Dog Park Wrestling League",
+    fact: "Duck's signature wrestling move is the flop: flat on his back in the grass, paws in the air, still grinning at his friend.",
+    photoUrl: "/duck/duck-flop.jpg",
     svgUrl: "/duck/duck-happy.svg",
-    caption: "Endurance running spirit with Garmin watch telemetry.",
+    caption: "Belly-up in the grass mid-wrestle, grinning at his opponent.",
   },
   {
     id: 10,
     level: 10,
-    title: "Welch Village Alpine Flame",
-    fact: "Equipped with maximum cold-weather charisma and 90s flame ski suit energy, ready for whatever winter throws our way.",
-    photoUrl: "/images/sports/fred-ski-flame-suit.jpg",
+    title: "Road Trip Co-Pilot",
+    fact: "Duck takes car rides seriously: bolt upright in the back seat, leash on, watching the road as if he were the one navigating.",
+    photoUrl: "/duck/duck-car.jpg",
     svgUrl: "/duck/duck-car.svg",
-    caption: "Carving snowy slopes in legendary flame style.",
+    caption: "Back seat claimed and ready for the next drive.",
   },
 ];
 
@@ -309,6 +311,14 @@ export const DUCK_FACT_STAR_MILESTONES: Readonly<Record<number, number>> = {
 const NEGLECT_DRAIN_PER_TICK = 0.04;
 /** Ticks the Dog Park stays closed after a trip (60 ticks = 1 s). */
 const PARK_COOLDOWN_TICKS = 20 * 60;
+/**
+ * Points per work unit shipped (#2159), scaled by the multiplier. Passive
+ * work and coding bursts pay the same rate, so a sprint's work is worth the
+ * same however long it takes, and time spent earns nothing by itself.
+ */
+export const WORK_UNIT_POINTS = 25;
+/** Points for each second a sprint ships under its par time (#2159). */
+export const PAR_POINTS_PER_SECOND = 150;
 /** Minimum ticks between two code bursts (60 ticks = 1 s, so 6 per second). */
 const CODE_BURST_MIN_TICKS = 10;
 
@@ -318,6 +328,7 @@ export const SPRINTS: GameSprint[] = [
     title: "Sprint 1: Onboarding & Puppy Proofing",
     subtitle: "Gentle puppy impulses · Learn clicker tricks & toys",
     targetWork: 100,
+    parSeconds: 30,
     impulseInterval: 280,
     description:
       "Configure your remote workspace while teaching Duck basic obedience (Sit, High Five) and redirecting playful nibbles.",
@@ -327,6 +338,7 @@ export const SPRINTS: GameSprint[] = [
     title: "Sprint 2: Q1 Deliverables & Cable Alert",
     subtitle: "Faster impulses · Package delivery knock & office wires",
     targetWork: 160,
+    parSeconds: 40,
     impulseInterval: 220,
     description:
       "High-priority deliverable in flight! Protect the office power strip with Kong toys and trade treats during 'No Take, Only Throw!'.",
@@ -336,6 +348,7 @@ export const SPRINTS: GameSprint[] = [
     title: "Sprint 3: Executive Pitch & Window Distraction",
     subtitle: "High excitement · Window squirrels & rapid potty runs",
     targetWork: 240,
+    parSeconds: 50,
     impulseInterval: 175,
     description:
       "Board meeting deadline! Excitement is rising. Run outside for fast potty breaks and practice clicker training for Good Boy multipliers.",
@@ -345,6 +358,7 @@ export const SPRINTS: GameSprint[] = [
     title: "Sprint 4: Deadline Crunch & Park Break",
     subtitle: "Extreme multitasking · Agility hurdles & bathtub wash",
     targetWork: 330,
+    parSeconds: 65,
     impulseInterval: 145,
     description:
       "Intense project crunch! Duck needs high-energy Dog Park agility runs. If he splashes into mud, scrub him clean in the Bathtub.",
@@ -354,6 +368,7 @@ export const SPRINTS: GameSprint[] = [
     title: "Sprint 5: Annual Launch & Golden Promotion",
     subtitle: "Peak velocity · Master combos & zero downtime",
     targetWork: 450,
+    parSeconds: 80,
     impulseInterval: 120,
     description:
       "The major milestone release! Master all training tricks, focus work sprints, and unlock the Golden Graduation hat.",
@@ -724,6 +739,8 @@ export interface WorkingWithDuckState {
   sprintAccidents: number;
   /** Stars from the sprint just cleared; null until a campaign win. */
   sprintStars: DuckSprintStars | null;
+  /** Par-time bonus from the sprint just cleared; 0 until a campaign win. */
+  sprintParBonus?: number;
   /** Best stars per campaign sprint, carried across sprints and sessions. */
   bestStars: DuckBestStars;
   highScore: number;
@@ -770,6 +787,17 @@ export function factsUnlockedByStars(totalStars: number): number[] {
     .filter(([, needed]) => totalStars >= needed)
     .map(([id]) => Number(id))
     .sort((a, b) => a - b);
+}
+
+/**
+ * The par-time bonus for a campaign sprint that just shipped (#2159): points
+ * for every whole second under the sprint's par, nothing at or over it.
+ */
+export function computeParBonus(state: WorkingWithDuckState): number {
+  const sprint = SPRINTS.find((s) => s.level === state.currentLevel);
+  if (!sprint) return 0;
+  const underPar = Math.floor(sprint.parSeconds - state.ticks / 60);
+  return Math.max(0, underPar) * PAR_POINTS_PER_SECOND;
 }
 
 /**
@@ -1069,9 +1097,7 @@ export function stepDuckGame(
       state.targetWorkProgress,
       state.workProgress + workIncrement
     );
-    nextScore += Math.round(
-      1 * effectiveMultiplier * puddlePenalty * mudPenalty
-    );
+    nextScore += Math.round(workIncrement * WORK_UNIT_POINTS);
   }
 
   // Endless waves (#2051): every ENDLESS_QUARTER_WORK work units a new
@@ -1848,6 +1874,7 @@ function handleLevelVictory(
 ): WorkingWithDuckState {
   const isCampaign = state.mode === "campaign";
   const sprintStars = isCampaign ? computeSprintStars(state) : null;
+  const parBonus = isCampaign ? computeParBonus(state) : 0;
   const bestStars: DuckBestStars = { ...(state.bestStars ?? {}) };
   if (sprintStars) {
     bestStars[state.currentLevel] = Math.max(
@@ -1893,8 +1920,9 @@ function handleLevelVictory(
     workProgress: state.targetWorkProgress,
     excitement: 0,
     naughtyVsGood: Math.min(100, state.naughtyVsGood + 40),
-    totalScore: state.totalScore + 250,
-    highScore: Math.max(state.highScore, state.totalScore + 250),
+    sprintParBonus: parBonus,
+    totalScore: state.totalScore + 250 + parBonus,
+    highScore: Math.max(state.highScore, state.totalScore + 250 + parBonus),
     unlockedFacts: unlocked,
     latestUnlockedFact: currentFact,
     unlockedAccessories,
@@ -2169,7 +2197,10 @@ export function activeCodeBurst(
     state.targetWorkProgress,
     state.workProgress + progressBoost
   );
-  const nextScore = state.totalScore + Math.round(5 * effectiveMultiplier);
+  // A burst pays the same per work unit as passive work (#2159).
+  const nextScore =
+    state.totalScore +
+    Math.round((nextWork - state.workProgress) * WORK_UNIT_POINTS);
   const soundCues: Array<SoundCue> = ["code-type"];
 
   const particles = [

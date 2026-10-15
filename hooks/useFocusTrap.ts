@@ -57,6 +57,43 @@ interface ActiveTrap {
 }
 const trapStack: ActiveTrap[] = [];
 
+function radioGroup(el: Element | null): string | null {
+  return el instanceof HTMLInputElement && el.type === "radio" && el.name
+    ? el.name
+    : null;
+}
+
+// A radio group is one Tab stop: the checked radio, or the first in the group
+// when none is checked; the arrow keys move within it. Counting every radio
+// made the first radio in DOM order the trap's first stop even when a later
+// one was checked, so Shift+Tab from the checked radio left the dialog
+// (#2194). Collapse each named group in the container to its real stop.
+function collapseRadioGroups(elements: HTMLElement[]): HTMLElement[] {
+  const stops = new Map<string, HTMLElement>();
+  for (const el of elements) {
+    const group = radioGroup(el);
+    if (group === null) continue;
+    const current = stops.get(group);
+    if (
+      !current ||
+      ((el as HTMLInputElement).checked &&
+        !(current as HTMLInputElement).checked)
+    )
+      stops.set(group, el);
+  }
+  return elements.filter((el) => {
+    const group = radioGroup(el);
+    return group === null || stops.get(group) === el;
+  });
+}
+
+// True when focus is on this Tab stop, counting any radio of its group.
+function isAtStop(current: HTMLElement | null, stop: HTMLElement): boolean {
+  if (current === stop) return true;
+  const group = radioGroup(stop);
+  return group !== null && radioGroup(current) === group;
+}
+
 function keyboardOwner(): symbol | undefined {
   const focused =
     typeof document !== "undefined" ? document.activeElement : null;
@@ -159,7 +196,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       if (event.key !== "Tab") return;
 
       const container = containerRef.current;
-      const focusableElements = Array.from(
+      const tabbable = Array.from(
         container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
       ).filter(
         // A control taken out of the Tab order (tabindex="-1", inside an
@@ -177,6 +214,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
             typeof env.VITEST !== "undefined" ||
             el.style.display !== "none")
       );
+      const focusableElements = collapseRadioGroups(tabbable);
 
       if (focusableElements.length === 0) {
         event.preventDefault();
@@ -190,7 +228,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       if (event.shiftKey) {
         // Shift + Tab: if on first element or outside, move to last
         if (
-          currentActive === firstElement ||
+          isAtStop(currentActive, firstElement) ||
           !container.contains(currentActive)
         ) {
           event.preventDefault();
@@ -199,7 +237,7 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       } else {
         // Tab: if on last element or outside, move to first
         if (
-          currentActive === lastElement ||
+          isAtStop(currentActive, lastElement) ||
           !container.contains(currentActive)
         ) {
           event.preventDefault();

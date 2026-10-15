@@ -25,6 +25,8 @@ interface RewardChoiceProps {
   /** Index of the picked reward; null takes none. */
   readonly selected: number | null;
   readonly onSelect: (index: number | null) => void;
+  /** True once Enter was pressed with nothing picked (#2177). */
+  readonly prompt?: boolean;
 }
 
 interface RoomClearedCardProps {
@@ -261,6 +263,7 @@ export function RoomClearedCard({
           <div
             role="group"
             aria-labelledby={rewardHeadingId}
+            data-testid="labyrinth-reward-pick"
             className="@container w-full max-w-md mt-2"
           >
             <h3
@@ -303,6 +306,14 @@ export function RoomClearedCard({
           >
             Next: {chosenRoom ? chosenRoom.name : "the next room"} · Reward:{" "}
             {chosenReward ? chosenReward.name : "none"}
+          </p>
+        )}
+        {showNextRoom && rewards?.prompt && rewards.selected === null && (
+          <p
+            className="text-xs font-bold text-amber-300 mt-1"
+            data-testid="labyrinth-reward-prompt"
+          >
+            Pick a reward, or press Enter again to skip it.
           </p>
         )}
         <div className="flex gap-2 mt-2">

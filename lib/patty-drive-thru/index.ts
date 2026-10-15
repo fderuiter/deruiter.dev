@@ -20,6 +20,8 @@ export {
   replayShift,
   stepShift,
   getArrivalGapScale,
+  getRushWindows,
+  getShiftRamp,
 } from "./internal/engine";
 export {
   buildShiftTelemetry,
@@ -58,8 +60,10 @@ export {
   getHeadsetLine,
   getManagerLine,
   getShiftEnding,
+  getRushCaption,
 } from "./internal/diary";
 export {
+  dealWeekDilemmas,
   getChoiceEnding,
   getDilemma,
   getDilemmaDiaryLines,

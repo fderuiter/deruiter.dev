@@ -366,9 +366,9 @@ describe("Clinical Trial Chaos Engine - Unit Tests", () => {
     expect(xml).toContain('SubjectKey="SUBJ_&amp;1&lt;2&gt;&quot;3&quot;"');
     expect(xml).toContain('FormOID="FRM.LB"');
     expect(xml).toContain('ItemGroupOID="IG.LB"');
-    expect(xml).toContain(
-      'ItemOID="IT.LB.GLUC&amp;HBA1C&lt;1&gt;&quot;2&quot;"'
-    );
+    // TESTCD is now an SDTM short code built from the field (#2171), so the
+    // reserved characters in the concept code never reach the ItemOID.
+    expect(xml).toContain('ItemOID="IT.LB.GLUCOSEH"');
     expect(xml).toContain('Value="100 mg/dL &lt;normal&gt;"');
   });
 

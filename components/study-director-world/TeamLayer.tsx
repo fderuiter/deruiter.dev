@@ -45,6 +45,7 @@ import {
   OverlayButton,
   RelationshipCardView,
 } from "./TeamPieces";
+import { subjectSubtitle } from "./stage-model";
 
 const VERB_LABEL: Record<DelegationVerb, string> = {
   askStatus: "Ask status · 10 min",
@@ -109,11 +110,14 @@ export function useTeamLayer({
   world,
   setWorld,
   announce,
+  refuse: report,
   refocus,
 }: {
   world: WorldState;
   setWorld: (world: WorldState) => void;
   announce: (text: string) => void;
+  /** Shows a refusal on screen too, and offers to go home when it ends the day (#2184, #2185). */
+  refuse?: (reason: WorldRefusal, text: string) => void;
   refocus: () => void;
 }) {
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -125,8 +129,9 @@ export function useTeamLayer({
   }, [refocus]);
 
   const refuse = useCallback(
-    (reason: WorldRefusal) => announce(REFUSED[reason]),
-    [announce]
+    (reason: WorldRefusal) =>
+      report ? report(reason, REFUSED[reason]) : announce(REFUSED[reason]),
+    [announce, report]
   );
 
   const openEvent = useCallback(
@@ -588,7 +593,7 @@ export const TeamOverlay: React.FC<{
           titleId="sd-event-title"
           title={title}
           speaker={speakerFor(world, dialogue.speaker)}
-          subtitle={`${dialogue.subject}. ${subtitle}`}
+          subtitle={subjectSubtitle(dialogue.subject, subtitle)}
           lines={after ? [...dialogue.lines, ...after] : dialogue.lines}
           reducedMotion={reducedMotion}
           testId="world-dialogue"

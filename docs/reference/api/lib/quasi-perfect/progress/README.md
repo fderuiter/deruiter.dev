@@ -13,6 +13,7 @@
 
 ## Functions
 
+- [countHonestProofs](functions/countHonestProofs.md)
 - [isActTwoUnlocked](functions/isActTwoUnlocked.md)
 - [isGolfedRun](functions/isGolfedRun.md)
 - [isLevelGolfed](functions/isLevelGolfed.md)

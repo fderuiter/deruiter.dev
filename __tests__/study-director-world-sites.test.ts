@@ -352,7 +352,7 @@ describe("study director world: coordinator traits", () => {
   it("shows visible traits on the first visit and hides the rest", () => {
     const world = atSite(fresh(), "site-02");
     const profile = coordinatorProfile(world, "site-02")!;
-    expect(profile.name).toBe("Priya Lindqvist");
+    expect(profile.name).toBe("Elin Lindqvist");
     expect(profile.visible.map((t) => t.label)).toEqual([
       "Anxious",
       "Apologetic",
@@ -430,5 +430,22 @@ describe("study director world: visits across saves and days", () => {
     expect(currentMap(morning)).toBe(CRO_FLOOR);
     expect(morning.visit).toBeNull();
     expect(morning.location).toBe("lobby");
+  });
+});
+
+describe("study director world: names (#2193)", () => {
+  it("never gives a site coordinator a team member's first name", () => {
+    const first = (name: string) => name.split(" ")[0].toLowerCase();
+    for (const length of ["full", "short"] as const) {
+      const world = newWorld("names", "standard", length);
+      const team = new Set(world.study.team.map((m) => first(m.name)));
+      const coordinators = SITE_IDS.flatMap((id) => {
+        const profile = coordinatorProfile(world, id);
+        return profile ? [profile.name] : [];
+      });
+      expect(coordinators.length).toBeGreaterThan(0);
+      for (const name of coordinators)
+        expect(team.has(first(name)), name).toBe(false);
+    }
   });
 });

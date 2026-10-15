@@ -21,4 +21,5 @@
 
 - [getHeadsetLine](functions/getHeadsetLine.md)
 - [getManagerLine](functions/getManagerLine.md)
+- [getRushCaption](functions/getRushCaption.md)
 - [getShiftEnding](functions/getShiftEnding.md)

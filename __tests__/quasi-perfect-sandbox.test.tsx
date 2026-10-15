@@ -61,7 +61,11 @@ describe("Sandbox target scope (#1234)", () => {
   });
   it("rewrites only the selected arithmetic child and preserves its sibling", () => {
     render(<SandboxMode />);
-    fireEvent.click(screen.getByRole("button", { name: "Preset 3" }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Arithmetic Decidability (3 + 7 = 10)",
+      })
+    );
     fireEvent.click(
       screen.getByRole("button", { name: /^Operator node with value \+/ })
     );
@@ -80,7 +84,7 @@ describe("Sandbox target scope (#1234)", () => {
 
   it("preserves hypotheses when their button is selected as an unsupported target", () => {
     render(<SandboxMode />);
-    fireEvent.click(screen.getByRole("button", { name: "Preset 2" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tautology P → P" }));
     fireEvent.click(screen.getByRole("button", { name: /^Implication node/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Tactic intro\./ }));
     fireEvent.click(screen.getByRole("button", { name: "h: P" }));

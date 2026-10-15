@@ -6,9 +6,11 @@
  */
 
 import { drawInt } from "../../utils/prng";
-import { SOLIDARITY_START } from "../presets";
+import { CLOSING_RUSH_START_FRACTION, SOLIDARITY_START } from "../presets";
 import type {
   BoothCrew,
+  RushWindow,
+  WeekdayId,
   DiaryIntro,
   ShiftEndingId,
   ShiftOutcome,
@@ -68,6 +70,9 @@ export const EVENT_CAPTIONS = {
   bumped: "Bumped. Next car.",
   wiped: "You wipe the counter. It was already clean.",
   rushStarted: "Lunch rush. Here they come.",
+  rushClosing: "Dinner rush. Everybody wants fries before close.",
+  rushSchool: "School's out. Here they come.",
+  rushFriday: "Fry Friday. Here they all come.",
   dilemmaTimedOut: "Too slow. Somebody decided for you.",
 } as const;
 
@@ -119,6 +124,26 @@ export function getHeadsetLine(seed: string, orderId: number): string {
 /** What the manager says on the given yell of the shift. */
 export function getManagerLine(seed: string, yellNumber: number): string {
   return pick(MANAGER_LINES, `${seed}:manager`, yellNumber);
+}
+
+/**
+ * What Bo calls out when a rush starts (#2139): the dinner rush at close,
+ * Wednesday's after-school rush, Fry Friday, or the lunch rush.
+ *
+ * @param windows - The shift's rushes, as `getRushWindows` returns them.
+ * @param rush - Which rush began, counting from 0.
+ * @param day - The day of the week being worked, or null for a single shift.
+ */
+export function getRushCaption(
+  windows: readonly RushWindow[],
+  rush: number,
+  day: WeekdayId | null = null
+): string {
+  const start = windows[rush]?.[0] ?? 0;
+  if (start >= CLOSING_RUSH_START_FRACTION) return EVENT_CAPTIONS.rushClosing;
+  if (day === "friday") return EVENT_CAPTIONS.rushFriday;
+  if (rush > 0) return EVENT_CAPTIONS.rushSchool;
+  return EVENT_CAPTIONS.rushStarted;
 }
 
 function count(value: number, one: string, many: string): string {

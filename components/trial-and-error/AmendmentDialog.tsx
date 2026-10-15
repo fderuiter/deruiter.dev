@@ -2,6 +2,11 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import type { AmendmentPreview } from "@/lib/trial-and-error";
 
@@ -22,7 +27,11 @@ export function AmendmentDialog({
   onConfirm,
   onCancel,
 }: AmendmentDialogProps) {
-  const ref = useFocusTrap<HTMLDivElement>(true, { onEscape: onCancel });
+  const portalTarget = usePortalTarget();
+  const ref = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: closeNow(onCancel),
+  });
+  useClaimFocus(ref);
   const { staled } = preview;
   return createPortal(
     <div
@@ -93,6 +102,6 @@ export function AmendmentDialog({
         </div>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

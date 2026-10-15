@@ -8,4 +8,6 @@
 
 > `const` **DILEMMA\_IDS**: readonly [`DilemmaId`](../../types/type-aliases/DilemmaId.md)[]
 
-Every dilemma id, in the order they are written.
+The dilemmas any shift can draw, in the order they are written. A week
+deals these out without repeats (#2139), so there are enough to fill
+Monday to Wednesday and two slots each on Thursday and Friday.

@@ -67,11 +67,12 @@ describe("Quasi-Puzzler modals on the touch cabinet (#2042)", () => {
     expect(card.className).toContain("overflow-y-auto");
   });
 
-  it("leaves the victory card unchanged on desktop", () => {
+  it("keeps the desktop victory card inside the viewport too (#2201)", () => {
+    // The Lean text now shows in full, so the card scrolls on every screen.
     renderVictory(false);
     const card = screen.getByRole("dialog").firstElementChild as HTMLElement;
-    expect(card.className).not.toContain("max-h-[calc(100dvh-2rem)]");
-    expect(card.className).not.toContain("overflow-y-auto");
+    expect(card.className).toContain("max-h-[calc(100dvh-2rem)]");
+    expect(card.className).toContain("overflow-y-auto");
   });
 
   it("traps focus inside the victory dialog and closes it with Escape", async () => {

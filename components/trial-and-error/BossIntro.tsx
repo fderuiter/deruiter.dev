@@ -2,6 +2,11 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
 import type { BossIntroView } from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
@@ -22,10 +27,12 @@ interface BossIntroProps {
 export function BossIntro({ intro, onDismiss }: BossIntroProps) {
   // The table moves focus to the hand on dismiss: whatever had focus before
   // (the previous Blind's controls) is usually gone.
+  const portalTarget = usePortalTarget();
   const ref = useFocusTrap<HTMLDivElement>(true, {
-    onEscape: onDismiss,
+    onEscape: closeNow(onDismiss),
     returnFocus: false,
   });
+  useClaimFocus(ref);
   return createPortal(
     <div
       data-te-cabinet=""
@@ -115,6 +122,6 @@ export function BossIntro({ intro, onDismiss }: BossIntroProps) {
         </button>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

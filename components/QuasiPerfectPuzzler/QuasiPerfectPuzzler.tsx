@@ -39,6 +39,7 @@ import {
   recordClearedVariant,
   resolveResumeLevelIndex,
   withUnlockedChapter,
+  countHonestProofs,
 } from "@/lib/quasi-perfect";
 import {
   STORAGE_CHANGE_EVENT,
@@ -95,9 +96,14 @@ import {
   IconX,
 } from "@tabler/icons-react";
 
+// Matches the level heading's scroll-mt-24: the fixed Navbar's height.
+const NAVBAR_CLEARANCE_PX = 96;
 const STORAGE_KEY = "quasi_perfect_puzzler_progress_v1";
 const ACT_ONE_LEVELS = puzzleLevels.filter(
   (lvl) => lvl.chapter < ACT_TWO_FIRST_CHAPTER
+);
+const ACT_TWO_LEVELS = puzzleLevels.filter(
+  (lvl) => lvl.chapter >= ACT_TWO_FIRST_CHAPTER
 );
 const ACT_ONE_CAPSTONE_INDEX = Math.max(
   0,
@@ -144,9 +150,7 @@ function writeStoredProgress(progress: GameProgressState): void {
   });
   // A proof admitted with sorry is not a proof, so it earns neither arcade
   // score nor the first-proof trophy that the score unlocks (#1939).
-  const provenCount = Object.values(progress.completedLevels || {}).filter(
-    (score) => score && !score.usedSorry && score.stars > 0
-  ).length;
+  const provenCount = countHonestProofs(progress);
   recordArcadeScore("quasi-puzzler", provenCount * 100);
   // The Act 1 trophies keep their meaning (all 18 levels); Act 2 (#2091)
   // does not move the goalposts for them.
@@ -159,6 +163,14 @@ function writeStoredProgress(progress: GameProgressState): void {
   }
   if (honest && scores.every((score) => score && score.stars >= 3)) {
     recordArcadeMilestone("quasi-puzzler", "all_gold");
+  }
+  // Act 2 has its own finish beat (#2202): every Act 2 level proved honestly.
+  const actTwoProven = ACT_TWO_LEVELS.every((lvl) => {
+    const score = progress.completedLevels?.[lvl.id];
+    return !!score && !score.usedSorry && score.stars > 0;
+  });
+  if (actTwoProven) {
+    recordArcadeMilestone("quasi-puzzler", "act_two_proven");
   }
 }
 
@@ -288,14 +300,28 @@ export const QuasiPerfectPuzzler: React.FC = () => {
   const campaignStars = useMemo(() => {
     let earned = 0;
     let proven = 0;
+    let challengesCleared = 0;
+    let challengesTotal = 0;
     for (const lvl of playableLevels) {
       const best = parsedProgress.completedLevels?.[lvl.id];
       if (best && best.completed && !best.usedSorry && best.stars > 0) {
         earned += best.stars;
         proven += 1;
       }
+      for (const variant of getLevelVariants(lvl)) {
+        challengesTotal += 1;
+        if (isVariantCleared(parsedProgress, lvl.id, variant.kind)) {
+          challengesCleared += 1;
+        }
+      }
     }
-    return { earned, proven, possible: playableLevels.length * 3 };
+    return {
+      earned,
+      proven,
+      possible: playableLevels.length * 3,
+      challengesCleared,
+      challengesTotal,
+    };
   }, [parsedProgress, playableLevels]);
 
   // Escape hides the result card for this run so the solved board can be read.
@@ -971,7 +997,12 @@ export const QuasiPerfectPuzzler: React.FC = () => {
       const headerHeight = headerRowRef.current?.offsetHeight;
       if (headerHeight) setDrawerTop(headerHeight + 8);
       requestAnimationFrame(() => {
-        currentLevelButtonRef.current?.focus({ preventScroll: true });
+        const button = currentLevelButtonRef.current;
+        button?.focus({ preventScroll: true });
+        // The focused level must be on screen, not under the fold (#2197).
+        if (typeof button?.scrollIntoView === "function") {
+          button.scrollIntoView({ block: "nearest" });
+        }
       });
     }
   }, [levelIndexOpen]);
@@ -1025,7 +1056,10 @@ export const QuasiPerfectPuzzler: React.FC = () => {
     const viewportBottom = window.innerHeight;
     const slotRect = slot.getBoundingClientRect();
     const sectionRect = section.getBoundingClientRect();
+    // The open level map sits over the board; a docked hand would cover its
+    // lower rows, so the hand stays in its slot while the map is open (#2197).
     const shouldDock =
+      !levelIndexOpen &&
       slotRect.height > 0 &&
       slotRect.bottom > viewportBottom + 1 &&
       sectionRect.top < viewportBottom / 2;
@@ -1040,7 +1074,99 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         ? prev
         : next;
     });
-  }, []);
+  }, [levelIndexOpen]);
+
+  // A deep goal (Act 2's induction cases) can sit wholly under the docked
+  // hand. When a level loads or the goal changes, the page scrolls just far
+  // enough for the tree to clear the hand, without pushing the goal formula
+  // under the fixed navbar (#2196).
+  const revealProofTree = useCallback(() => {
+    const section = containerRef.current;
+    const slot = handSlotRef.current;
+    const hand = handRef.current;
+    if (!section || !slot || !hand) return;
+    if (inCabinet) {
+      // The touch cabinet scrolls its board, not the page: bring the tree
+      // region into the board's view, keeping its top edge visible (#2195).
+      const touchBoard = section.querySelector(".qp-touch-board");
+      const region = section.querySelector(".qp-touch-tree");
+      if (!touchBoard || !region) return;
+      const boardRect = touchBoard.getBoundingClientRect();
+      const regionRect = region.getBoundingClientRect();
+      const by = Math.min(
+        regionRect.bottom - boardRect.bottom,
+        regionRect.top - boardRect.top
+      );
+      if (by > 0) touchBoard.scrollTop += by;
+      return;
+    }
+    const viewportBottom = window.innerHeight;
+    if (section.getBoundingClientRect().top >= viewportBottom / 2) return;
+    const tree = section.querySelector('[data-testid="proof-board-tree"]');
+    const board = tree?.closest(".qp-board");
+    if (!tree || !board) return;
+    const slotRect = slot.getBoundingClientRect();
+    const handTop =
+      slotRect.bottom > viewportBottom + 1
+        ? viewportBottom - hand.offsetHeight
+        : slotRect.top;
+    const hidden = tree.getBoundingClientRect().bottom - (handTop - 8);
+    const room = board.getBoundingClientRect().top - NAVBAR_CLEARANCE_PX;
+    const by = Math.min(hidden, room);
+    if (by > 0) window.scrollBy({ top: by, behavior: "auto" });
+  }, [inCabinet]);
+
+  // Desktop: the height the tree may use so that, scrolled just under the
+  // navbar, it ends above the docked hand. The tree's rows close up to fit.
+  const [treeFitHeight, setTreeFitHeight] = useState<number | undefined>();
+  const measureTreeFit = useCallback(() => {
+    const section = containerRef.current;
+    const hand = handRef.current;
+    if (inCabinet || !section || !hand) return;
+    const region = section.querySelector(
+      '[data-testid="proof-board-tree"]'
+    )?.parentElement;
+    const board = region?.closest(".qp-board");
+    if (!region || !board) return;
+    const headerHeight =
+      region.getBoundingClientRect().top - board.getBoundingClientRect().top;
+    const next = Math.floor(
+      window.innerHeight -
+        NAVBAR_CLEARANCE_PX -
+        headerHeight -
+        hand.offsetHeight -
+        16
+    );
+    setTreeFitHeight((prev) => (prev === next ? prev : next));
+  }, [inCabinet]);
+
+  useEffect(() => {
+    if (activeTab !== "campaign" || typeof window === "undefined") return;
+    measureTreeFit();
+    window.addEventListener("resize", measureTreeFit);
+    return () => window.removeEventListener("resize", measureTreeFit);
+  }, [activeTab, currentLevelIndex, subgoals, activeGoalIndex, measureTreeFit]);
+
+  useEffect(() => {
+    if (activeTab !== "campaign" || typeof window === "undefined") return;
+    // Two frames: a level picked from the map scrolls its heading first.
+    let inner = 0;
+    const outer = window.requestAnimationFrame(() => {
+      inner = window.requestAnimationFrame(revealProofTree);
+    });
+    return () => {
+      window.cancelAnimationFrame(outer);
+      if (inner) window.cancelAnimationFrame(inner);
+    };
+  }, [
+    activeTab,
+    currentLevelIndex,
+    subgoals,
+    activeGoalIndex,
+    // Rows close up after the fit height is measured; reveal again then.
+    treeFitHeight,
+    revealProofTree,
+  ]);
 
   useEffect(() => {
     if (activeTab !== "campaign" || typeof window === "undefined") return;
@@ -1570,6 +1696,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   {isActive && (
                     <ExpressionTree
                       goalAST={goalAST}
+                      fitHeight={treeFitHeight}
                       hypotheses={activeHypotheses}
                       selectedTargetId={selectedTargetId}
                       hoveredTargetId={hoveredTargetId}
@@ -1642,7 +1769,14 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   const id =
                     typeof tacticItem === "string" ? tacticItem : tacticItem.id;
                   const def = tacticDefs[id];
-                  const label = def?.name || id;
+                  // The card's own label carries its argument (use 3 vs use 4,
+                  // rw [ih] vs rw [add_succ]), so the buttons stay distinct
+                  // (#2200).
+                  const label =
+                    (typeof tacticItem === "object" &&
+                      tacticItem.labelOverride) ||
+                    def?.name ||
+                    id;
                   const banned = isTacticBanned(activeVariant, id);
                   return (
                     <button
@@ -1711,7 +1845,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
               data-docked={handDock ? "true" : "false"}
               className={
                 handDock
-                  ? "fixed bottom-0 z-40 rounded-t-xl border border-b-0 border-[color:var(--qp-hairline)] bg-[color:var(--qp-stage)] px-3 pt-1 pb-3 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.9)]"
+                  ? "fixed bottom-0 z-40 rounded-t-xl border border-b-0 border-[color:var(--qp-hairline)] bg-[color:var(--qp-stage)] px-3 pt-1 pb-4 shadow-[0_-12px_32px_-12px_rgba(0,0,0,0.9)]"
                   : undefined
               }
               style={

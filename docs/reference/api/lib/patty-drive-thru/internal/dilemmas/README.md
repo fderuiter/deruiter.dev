@@ -8,6 +8,8 @@
 
 ## Functions
 
+- [dealWeekDilemmas](functions/dealWeekDilemmas.md)
+- [dilemmaDeckOf](functions/dilemmaDeckOf.md)
 - [dilemmaWindowOf](functions/dilemmaWindowOf.md)
 - [getChoiceEnding](functions/getChoiceEnding.md)
 - [getDilemma](functions/getDilemma.md)

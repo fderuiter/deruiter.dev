@@ -9,8 +9,9 @@
 > **pendingInterruption**(`world`): [`Interruption`](../../../types/interfaces/Interruption.md) \| `null`
 
 The interruption waiting for an answer: the first of today's that has
-arrived and not been dealt with. Nothing arrives while the player is at a
-site, in a meeting, or has gone home.
+arrived, has not lapsed and has not been dealt with. Nothing arrives
+while the player is at a site, in a meeting, with a visitor waiting, or
+has gone home.
 
 ## Parameters
 

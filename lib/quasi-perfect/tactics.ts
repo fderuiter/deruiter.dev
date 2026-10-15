@@ -542,6 +542,17 @@ export const tacticDefs: Record<TacticId, TacticDef> = {
         };
       }
 
+      // A concrete claim that is false (`4 + 4 = 7` after the wrong witness)
+      // is not "non-concrete": say it is false, so the player knows to undo
+      // and pick another route (#2199).
+      if (boolRes === false) {
+        return {
+          success: false,
+          ramConsumed: tacticDefs.norm_num.failureCost,
+          message: `error: tactic 'norm_num' reduced '${renderASTString(targetNode)}' to False. This goal is not provable; undo and choose another route.`,
+        };
+      }
+
       const numRes = evaluateArithmetic(targetNode);
       if (numRes !== null) {
         const numNode: ASTNode = {

@@ -71,6 +71,28 @@ export interface TimelineContext {
 
 const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
 
+/** Readable names for the Kaplan–Meier checks, keyed by `KmCheck`. */
+const KM_CHECK_LABELS: Readonly<Record<string, string>> = {
+  TIME_ORIGIN: "KM time origin",
+  MONOTONIC: "KM curve never rises",
+  ESTIMATE: "KM survival estimate",
+  CENSOR_TICK: "KM censoring ticks",
+  AT_RISK: "KM number at risk",
+  PARENT_AT_RISK: "KM at risk vs its table",
+  PARENT_EVENTS: "KM events vs its table",
+};
+
+/**
+ * A rule's name for the breakdown. SAP rules keep their ids (SAP-P2-01);
+ * a KM finding's internal key (`KM@AT_RISK@PLACEBOt8`) reads as its check
+ * instead (#2154).
+ */
+function ruleLabel(ruleId: string): string {
+  if (!ruleId.startsWith("KM@")) return ruleId;
+  const check = ruleId.slice(3).split("@")[0];
+  return KM_CHECK_LABELS[check] ?? "KM check";
+}
+
 /**
  * Turns a hand's evaluation into an ordered, narratable scoring timeline.
  *
@@ -203,7 +225,7 @@ export function scoreTimeline(
       chipsDelta: result.chipsDelta,
       multDelta: result.multDelta,
       evidence: result.evidence,
-      text: `${result.ruleId}: ${parts.join(", ")}. ${result.evidence}`,
+      text: `${ruleLabel(result.ruleId)}: ${parts.join(", ")}. ${result.evidence}`,
       running: snapshot(),
     });
   }

@@ -12,7 +12,10 @@ import { useTelemetry } from "@/hooks/useTelemetry";
 import { logger } from "@/lib/logger";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
-import { recordArcadeScore } from "@/lib/arcade-achievements";
+import {
+  recordArcadeMilestone,
+  recordArcadeScore,
+} from "@/lib/arcade-achievements";
 import { clamp } from "@/lib/game-utils";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
@@ -590,6 +593,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // FX: Particles & Floating texts
   const particlesRef = useRef<ParticleEffect[]>([]);
   const floatingTextsRef = useRef<FloatingNotification[]>([]);
+  // Whether a boss volley has hit the player in this room, for the no-hit
+  // boss trophy (#2181). Every room load, retries included, clears it.
+  const bossHitThisRoomRef = useRef(false);
   const cursorGridPosRef = useRef<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -663,6 +669,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       setPendingReward(null);
       setRewardPromptShown(false);
       setUnlockNotice(null);
+      bossHitThisRoomRef.current = false;
       floatingTextsRef.current = [
         {
           id: `objective-${Date.now()}`,
@@ -1421,6 +1428,17 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               milestones.push("faceforge_cleared");
             }
             if (roomIndex >= runLength - 1) milestones.push("run_completed");
+          }
+          // The same moments, plus a boss cleared without a hit, unlock the
+          // arcade trophies (#2181).
+          if (gameMode === "roguelike") {
+            const trophyMoments: string[] = [...milestones];
+            if (campaignRooms[roomIndex]?.boss && !bossHitThisRoomRef.current) {
+              trophyMoments.push("boss_no_hit");
+            }
+            for (const moment of trophyMoments) {
+              recordArcadeMilestone("retro-labyrinth", moment);
+            }
           }
           const unlockedNow: string[] = [];
           for (const milestone of milestones) {
@@ -2244,6 +2262,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setBoss(updatedBoss);
 
         if (spawnedDamage > 0) {
+          bossHitThisRoomRef.current = true;
           setLastHitBy(
             `A ${boss.name.split(" :: ")[0]} mesh volley severed your cyberdeck proxy tunnel.`
           );

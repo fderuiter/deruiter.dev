@@ -21,6 +21,41 @@ const byKind = <K extends TimelineStep["kind"]>(
 ) =>
   steps.filter((s): s is Extract<TimelineStep, { kind: K }> => s.kind === kind);
 
+describe("scoreTimeline rule names (#2154)", () => {
+  it("names a KM finding by its check and keeps SAP rule ids", () => {
+    const evaluation = evaluateHand({
+      handType: "TLF_PAIR",
+      cards: [
+        { id: "T", chips: 30, mult: 1 },
+        { id: "L", chips: 20, mult: 0 },
+      ],
+      ruleResults: [
+        {
+          ruleId: "KM@AT_RISK@PLACEBOt8",
+          passed: false,
+          chipsDelta: 0,
+          multDelta: -1,
+          evidence: "Figure 14.2.1: at risk.",
+        },
+        {
+          ruleId: "SAP-P2-01",
+          passed: false,
+          chipsDelta: 0,
+          multDelta: -1,
+          evidence: "Rounding.",
+        },
+      ],
+    });
+    const rules = scoreTimeline(evaluation, context).filter(
+      (s) => s.kind === "RULE"
+    );
+    expect(rules.map((s) => s.text)).toEqual([
+      "KM number at risk: -1 Mult. Figure 14.2.1: at risk.",
+      "SAP-P2-01: -1 Mult. Rounding.",
+    ]);
+  });
+});
+
 describe("scoreTimeline", () => {
   it("narrates a bare hand: base, each card, total, progress", () => {
     const evaluation = evaluateHand({

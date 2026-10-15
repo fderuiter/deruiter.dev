@@ -267,6 +267,20 @@ describe("shop transactions", () => {
     }
   });
 
+  it("names a Guidance card's hand as the Hands table does (#2154)", () => {
+    const run = inShop();
+    const guidance = ACT_I_SHOP.entries.filter((e) => e.kind === "GUIDANCE");
+    expect(guidance.length).toBeGreaterThan(0);
+    const shop = {
+      ...run.shop!,
+      slots: guidance.map((entry) => ({ entry, sold: false })),
+    };
+    for (const item of deriveRunView(act, { ...run, shop }).shop!.items) {
+      expect(item.description).toMatch(/^Levels up (TLF|MedDRA|[A-Z])/);
+      expect(item.description).not.toMatch(/^Levels up [a-z]/);
+    }
+  });
+
   it("refuses a purchase over budget and never lets the budget go negative", () => {
     const run = inShop("fold-change", 0);
     const refused = apply(run, { type: "BUY", slot: 0 });

@@ -502,6 +502,8 @@ export interface GameEngineState {
   lastObstacleTime: number;
   /** Wall-clock time the run was paused, so resuming can shift the spawn timers. */
   pausedAt?: number;
+  /** The cabinet paused the run on its own (a hidden tab), not the player (#2239). */
+  autoPaused?: boolean;
   /** Wall-clock time of the last pop, for its cooldown. */
   lastJettisonAt?: number;
   /** Wall-clock time of the last GC, for its cooldown. */
@@ -1222,14 +1224,17 @@ export function startGame(
 }
 
 /**
- * Pause a running session. Only a playing run can pause.
+ * Pause a running session. Only a playing run can pause. `auto` marks a
+ * pause the cabinet made on its own (a hidden tab), which the face calls
+ * Auto Pause; a pause the player pressed is just paused (#2239).
  */
 export function pauseGame(
   state: GameEngineState,
-  now: number = clockNow(state)
+  now: number = clockNow(state),
+  auto = false
 ): GameEngineState {
   if (state.gameState !== "playing") return state;
-  return { ...state, gameState: "paused", pausedAt: now };
+  return { ...state, gameState: "paused", pausedAt: now, autoPaused: auto };
 }
 
 /**
@@ -1248,6 +1253,7 @@ export function resumeGame(
     ...state,
     gameState: "playing",
     pausedAt: undefined,
+    autoPaused: false,
     lastAllocTime: state.lastAllocTime + pausedFor,
     lastObstacleTime: state.lastObstacleTime + pausedFor,
   };

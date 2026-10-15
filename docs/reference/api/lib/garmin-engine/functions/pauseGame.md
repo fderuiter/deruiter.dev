@@ -6,9 +6,11 @@
 
 # Function: pauseGame()
 
-> **pauseGame**(`state`, `now?`): [`GameEngineState`](../interfaces/GameEngineState.md)
+> **pauseGame**(`state`, `now?`, `auto?`): [`GameEngineState`](../interfaces/GameEngineState.md)
 
-Pause a running session. Only a playing run can pause.
+Pause a running session. Only a playing run can pause. `auto` marks a
+pause the cabinet made on its own (a hidden tab), which the face calls
+Auto Pause; a pause the player pressed is just paused (#2239).
 
 ## Parameters
 
@@ -19,6 +21,10 @@ Pause a running session. Only a playing run can pause.
 ### now?
 
 `number` = `...`
+
+### auto?
+
+`boolean` = `false`
 
 ## Returns
 

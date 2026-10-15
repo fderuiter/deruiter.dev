@@ -518,11 +518,36 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     title: "FaceForge Slayer",
     subtitle: "Retro Labyrinth",
     description:
-      "Vanquish the 3D Wireframe Normal Boss at the end of the dungeon.",
+      "Break the FaceForge wireframe boss and walk out of its arena.",
     icon: "Trophy",
+    category: "gameplay",
+    milestone: "faceforge_cleared",
+    conditionDescription: "Clear the FaceForge boss room in Retro Labyrinth",
+  },
+  {
+    id: "retro_labyrinth_untouched",
+    gameId: "retro-labyrinth",
+    title: "Zero Packets Lost",
+    subtitle: "Retro Labyrinth",
+    description: "Clear a boss room without a single volley landing.",
+    icon: "ShieldCheck",
     category: "mastery",
-    targetScore: 2000,
-    conditionDescription: "Reach 2,000+ points in Retro Labyrinth",
+    milestone: "boss_no_hit",
+    conditionDescription:
+      "Clear a Retro Labyrinth boss room without taking a hit from the boss",
+  },
+  {
+    id: "retro_labyrinth_root",
+    gameId: "retro-labyrinth",
+    title: "Root Access",
+    subtitle: "Retro Labyrinth",
+    description:
+      "Route through the whole network and take down the Neural Warden.",
+    icon: "Cpu",
+    category: "mastery",
+    milestone: "run_completed",
+    conditionDescription:
+      "Finish a Retro Labyrinth run by clearing the Neural Warden",
   },
 
   // Meme Vault

@@ -21,6 +21,7 @@
 - [LoonCollisionInput](interfaces/LoonCollisionInput.md)
 - [LoonCollisionResult](interfaces/LoonCollisionResult.md)
 - [MinionFireResult](interfaces/MinionFireResult.md)
+- [SurvivalWave](interfaces/SurvivalWave.md)
 
 ## Type Aliases
 
@@ -34,12 +35,14 @@
 - [createExplosionParticles](functions/createExplosionParticles.md)
 - [createIceBlock](functions/createIceBlock.md)
 - [createInitialState](functions/createInitialState.md)
+- [formatRunClock](functions/formatRunClock.md)
 - [getActAvailableEnemies](functions/getActAvailableEnemies.md)
 - [getActNewEnemies](functions/getActNewEnemies.md)
 - [getActProgressReadout](functions/getActProgressReadout.md)
 - [getActStars](functions/getActStars.md)
 - [getBossAttackInterval](functions/getBossAttackInterval.md)
 - [getEnemyWeakness](functions/getEnemyWeakness.md)
+- [getSurvivalWave](functions/getSurvivalWave.md)
 - [getWeaponCounter](functions/getWeaponCounter.md)
 - [getWeaponDamageMultiplier](functions/getWeaponDamageMultiplier.md)
 - [isBossTelegraphing](functions/isBossTelegraphing.md)

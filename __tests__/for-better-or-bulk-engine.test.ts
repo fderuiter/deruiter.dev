@@ -804,7 +804,7 @@ describe("ending and receipt", () => {
     );
     expect(
       receipt.readiness.find((l) => l.category === "chairs")?.explanation
-    ).toMatch(/^Only \d+ of \d+ done at 4:00\.$/);
+    ).toMatch(/^(Only \d+ of|None of the) \d+ done at 4:00\.$/);
   });
 
   it("titles a 3D-intro run Is It Loading?", () => {
@@ -1055,6 +1055,37 @@ describe("ending and receipt", () => {
     });
     expect(over.ok).toBe(false);
     if (!over.ok) expect(over.reason).toMatch(/\$\d{1,3}(,\d{3})+ budget\.$/);
+  });
+
+  it("says the roses were bought once, on the first rose row (#2146)", () => {
+    const yes = {
+      ...DEFAULT_SETUP,
+      cart: { ...DEFAULT_SETUP.cart, roses: "yes" as const },
+    };
+    const readiness = readinessLines(allFilled(createLevel(yes), "abbi"));
+    const roseRows = readiness.filter((l) =>
+      ["bouquets", "centerpieces", "petals"].includes(l.category)
+    );
+    expect(roseRows.map((l) => l.status)).toEqual(["ready", "ready", "ready"]);
+    expect(roseRows[0]?.explanation).toMatch(
+      /^Roses bought: "Yes", \d+ bunches;/
+    );
+    for (const line of roseRows.slice(1)) {
+      expect(line.explanation).not.toContain("Roses bought");
+      expect(line.explanation).toMatch(/^(Arranged|Plucked) at the/);
+    }
+  });
+
+  it("says none rather than only 0 when nothing in a row was placed (#2146)", () => {
+    const state = finishIdle(DEFAULT_SETUP, {
+      choice: "stay",
+      commitment: null,
+    });
+    const lanterns = readinessLines(state).find(
+      (l) => l.category === "lanterns"
+    );
+    expect(lanterns?.placed).toBe(0);
+    expect(lanterns?.explanation).toBe("None of the 4 done at 4:00.");
   });
 
   it("writes source and made clauses with a colon and no stacked parentheses (#1931)", () => {
@@ -1811,12 +1842,13 @@ describe("the receipt's copy", () => {
     expect(LEFT_LINE).not.toContain("requested separately");
   });
 
-  it("names the tux shop on the receipt and says the name is not the real shop's", () => {
+  it("names the tux shop on the receipt with the same aside as the recap (#2147)", () => {
     const receipt = computeReceipt(finishIdle(DEFAULT_SETUP, STAY_DECISION));
-    expect(receipt.suit).toContain("The Suit Wherehouse");
-    expect(receipt.suit).toContain(
-      "The Suit Wherehouse (not the real shop's name)"
+    expect(receipt.suit).toBe(
+      "Fred wore the rented tux. The free suit from The Suit Wherehouse (a fictional homage name) was never worn."
     );
+    const recap = LINE_BANK.find((line) => line.id === "suit")?.text ?? "";
+    expect(recap).toContain("The Suit Wherehouse (a fictional homage name)");
   });
 
   it("says Fred stayed on one line of the receipt only (round 16)", () => {

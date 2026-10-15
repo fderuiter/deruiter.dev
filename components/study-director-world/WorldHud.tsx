@@ -103,7 +103,8 @@ export const WorldHud: React.FC<{
           </span>
         </Cell>
         <Cell label="Timeline">
-          Day {hud.timeline.day} / {hud.timeline.total}
+          {/* The planned length, plus the slip, not the slipped total plus the slip again (#2187). */}
+          Day {hud.timeline.day} / {hud.timeline.total - hud.timeline.slipDays}
           {hud.timeline.slipDays > 0 ? (
             <span className="ml-1 text-xs text-[var(--sd-amber)]">
               +{hud.timeline.slipDays}

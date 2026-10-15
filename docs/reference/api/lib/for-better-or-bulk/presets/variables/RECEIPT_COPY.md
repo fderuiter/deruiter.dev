@@ -22,4 +22,4 @@ Fixed receipt lines. The real weather line comes from the line bank.
 
 ### suit
 
-> `readonly` **suit**: `"Fred wore the rented tux. The free suit from The Suit Wherehouse (not the real shop's name): acquired, yes. Worn, no."` = `"Fred wore the rented tux. The free suit from The Suit Wherehouse (not the real shop's name): acquired, yes. Worn, no."`
+> `readonly` **suit**: `"Fred wore the rented tux. The free suit from The Suit Wherehouse (a fictional homage name) was never worn."` = `"Fred wore the rented tux. The free suit from The Suit Wherehouse (a fictional homage name) was never worn."`

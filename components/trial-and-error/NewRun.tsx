@@ -3,6 +3,11 @@
 import React, { useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
+import {
   DEFAULT_RUN_CHOICE,
   challengeChoice,
   challengeOrigin,
@@ -125,10 +130,12 @@ export function NewRun({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const firstRef = useRef<HTMLInputElement>(null);
+  const portalTarget = usePortalTarget();
   const ref = useFocusTrap<HTMLDivElement>(true, {
-    onEscape: onClose,
+    onEscape: closeNow(onClose),
     initialFocusRef: challenge ? inputRef : firstRef,
   });
+  useClaimFocus(ref);
   const id = useId();
   const errorId = `${id}-error`;
   const daily = choice === "DAILY";
@@ -487,6 +494,6 @@ export function NewRun({
       </div>
     </div>,
 
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

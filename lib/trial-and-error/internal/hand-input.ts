@@ -138,7 +138,10 @@ export function handActivationIntent(
 ): HandIntent | null {
   if (activation.locked) return null;
   if (activation.sealArmed) return { kind: "APPLY_SEAL" };
-  if (activation.pointerType === "touch" && activation.selected) {
+  // Apple Pencil taps like a finger, so it reads a selected card too.
+  const direct =
+    activation.pointerType === "touch" || activation.pointerType === "pen";
+  if (direct && activation.selected) {
     return { kind: "READ" };
   }
   return { kind: "TOGGLE_SELECT" };

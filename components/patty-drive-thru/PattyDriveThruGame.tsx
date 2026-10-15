@@ -827,8 +827,8 @@ export function PattyDriveThruGame({
             touchCabinet ? " sr-only" : ""
           }`}
         >
-          Keys: 1-6 pick a car · B bump · R re-enter drink · C flag{" "}
-          {BOOTH_CREW.coworker} · W wipe · Q / E answer · P or Esc pause
+          Keys: 1-6 pick the ticket with that key · B bump · R re-enter drink ·
+          C flag {BOOTH_CREW.coworker} · W wipe · Q / E answer · P or Esc pause
         </p>
         <div
           className={`grid min-w-0 gap-3 @3xl:grid-cols-2${

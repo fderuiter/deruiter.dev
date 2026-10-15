@@ -54,6 +54,11 @@ interface ExpressionTreeProps {
     text: string;
     type: "info" | "success" | "warning" | "error";
   };
+  /**
+   * Desktop only: the height the tree should fit in so it clears the docked
+   * tactic hand. Rows close up (down to the minimum gap) to fit (#2196).
+   */
+  fitHeight?: number;
 }
 
 const STATUS_TONE: Record<
@@ -82,6 +87,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
   isTacticActive = false,
   targetingHint,
   statusMessage,
+  fitHeight,
 }) => {
   const calm = useCalmMotion();
   // On the touch cabinet the panel fills the board region and the tree scrolls
@@ -111,9 +117,11 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
     };
     if (inCabinet) {
       options.levelGap = fitLevelGap(boardHeight, treeDepth(goalAST), options);
+    } else if (fitHeight) {
+      options.levelGap = fitLevelGap(fitHeight, treeDepth(goalAST), options);
     }
     return layoutProofTree(goalAST, options);
-  }, [goalAST, boardWidth, boardHeight, shortViewport, inCabinet]);
+  }, [goalAST, boardWidth, boardHeight, shortViewport, inCabinet, fitHeight]);
 
   const positions = useMemo(() => {
     const map = new Map<string, { x: number; y: number }>();
@@ -148,70 +156,73 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
           </p>
         </div>
 
-        <div className="flex min-w-0 max-w-[55%] flex-col items-end gap-2 pt-1">
-          <div className="text-[11px] text-zinc-400 flex items-center gap-2">
-            {isProofComplete ? (
-              <span className="text-emerald-300 font-bold">✔ Closed</span>
-            ) : inspectedNode ? (
-              <span className="qp-chip-accent rounded border px-2 py-0.5 font-bold flex items-center gap-1">
-                <IconFocus2 className="w-3 h-3" />
-                <span>
-                  {inspectedNode.type}:{" "}
-                  <code className="text-zinc-100 font-mono">
-                    {renderASTString(inspectedNode)}
-                  </code>
-                </span>
+        <div className="flex min-w-0 items-center gap-2 pt-1 text-[11px] text-zinc-400">
+          {isProofComplete ? (
+            <span className="text-emerald-300 font-bold">✔ Closed</span>
+          ) : inspectedNode ? (
+            <span className="qp-chip-accent rounded border px-2 py-0.5 font-bold flex items-center gap-1">
+              <IconFocus2 className="w-3 h-3" />
+              <span>
+                {inspectedNode.type}:{" "}
+                <code className="text-zinc-100 font-mono">
+                  {renderASTString(inspectedNode)}
+                </code>
               </span>
-            ) : (
-              <span>Target: Root Goal</span>
-            )}
-          </div>
-          {/* Hypotheses in context (Γ) */}
-          {hypotheses.length > 0 && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              <span
-                className="qp-math text-base text-zinc-300"
-                title="Active Hypotheses Context"
-              >
-                Γ
-              </span>
-              <span className="sr-only">
-                Active Hypotheses Context (Γ), {hypotheses.length} in context
-              </span>
-              {hypotheses.map((hyp) => {
-                const hypName = (hyp.metadata?.name as string) || "h";
-                const hypFormula = renderASTString(hyp);
-                const isSelected = selectedTargetId === hyp.id;
-                const isHovered = hoveredTargetId === hyp.id;
-                const isTargetEligible = isTacticActive && !isProofComplete;
-                return (
-                  <button
-                    type="button"
-                    key={hyp.id}
-                    data-node-id={hyp.id}
-                    data-target-eligible={isTargetEligible ? "true" : undefined}
-                    onClick={() => onSelectTarget(hyp.id)}
-                    onMouseEnter={() => onHoverTarget(hyp.id)}
-                    onMouseLeave={() => onHoverTarget(null)}
-                    className={`qp-focus inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm transition-colors cursor-pointer ${
-                      isSelected || isHovered
-                        ? "border-[color:var(--qp-accent)] bg-[color:var(--qp-accent-soft)] text-zinc-100"
-                        : isTargetEligible
-                          ? "border-dashed border-[color:var(--qp-accent)] bg-[color:var(--qp-raised)] text-zinc-100"
-                          : "border-[color:var(--qp-hairline)] bg-[color:var(--qp-raised)] text-zinc-200 hover:border-[color:var(--qp-accent-line)]"
-                    }`}
-                  >
-                    <span className="font-mono text-xs font-bold qp-text-accent-strong">
-                      {hypName}:
-                    </span>
-                    <span className="qp-math">{prettyMath(hypFormula)}</span>
-                  </button>
-                );
-              })}
-            </div>
+            </span>
+          ) : (
+            <span>Target: Root Goal</span>
           )}
         </div>
       </div>
+
+      {/* Hypotheses in context (Γ). One row that scrolls sideways, so a long
+          context never pushes the tree off the board (#2195, #2196). */}
+      {hypotheses.length > 0 && (
+        <div
+          className="mt-2 flex items-center gap-2 overflow-x-auto px-5 py-1"
+          data-testid="hypotheses-row"
+        >
+          <span
+            className="qp-math shrink-0 text-base text-zinc-300"
+            title="Active Hypotheses Context"
+          >
+            Γ
+          </span>
+          <span className="sr-only">
+            Active Hypotheses Context (Γ), {hypotheses.length} in context
+          </span>
+          {hypotheses.map((hyp) => {
+            const hypName = (hyp.metadata?.name as string) || "h";
+            const hypFormula = renderASTString(hyp);
+            const isSelected = selectedTargetId === hyp.id;
+            const isHovered = hoveredTargetId === hyp.id;
+            const isTargetEligible = isTacticActive && !isProofComplete;
+            return (
+              <button
+                type="button"
+                key={hyp.id}
+                data-node-id={hyp.id}
+                data-target-eligible={isTargetEligible ? "true" : undefined}
+                onClick={() => onSelectTarget(hyp.id)}
+                onMouseEnter={() => onHoverTarget(hyp.id)}
+                onMouseLeave={() => onHoverTarget(null)}
+                className={`qp-focus inline-flex shrink-0 items-center whitespace-nowrap gap-1.5 rounded-lg border px-2.5 py-1 text-sm transition-colors cursor-pointer ${
+                  isSelected || isHovered
+                    ? "border-[color:var(--qp-accent)] bg-[color:var(--qp-accent-soft)] text-zinc-100"
+                    : isTargetEligible
+                      ? "border-dashed border-[color:var(--qp-accent)] bg-[color:var(--qp-raised)] text-zinc-100"
+                      : "border-[color:var(--qp-hairline)] bg-[color:var(--qp-raised)] text-zinc-200 hover:border-[color:var(--qp-accent-line)]"
+                }`}
+              >
+                <span className="font-mono text-xs font-bold qp-text-accent-strong">
+                  {hypName}:
+                </span>
+                <span className="qp-math">{prettyMath(hypFormula)}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* The AST, drawn top-down with SVG edges */}
       <div

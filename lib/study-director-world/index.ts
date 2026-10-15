@@ -78,6 +78,7 @@ export { SITE_IDS, SITE_MAPS } from "./internal/site-maps";
 export {
   guestDay,
   guestScene,
+  guestsExpected,
   guestWaiting,
   guestWrapUp,
   meetGuest,
@@ -186,6 +187,8 @@ export {
 } from "./internal/favours";
 export {
   INTERRUPTION_TIMES,
+  INTERRUPTION_WINDOW,
+  excuseAway,
   PEOPLE_DAY_TARGET,
   PRIORITIES,
   answerInterruption,

@@ -6,8 +6,6 @@
 
 # Interface: DigestLine
 
-One line of the morning digest, most important first.
-
 ## Properties
 
 ### text

@@ -151,6 +151,8 @@ export interface DecisionRecord {
   documented: boolean;
   attentionSpent: number;
   effects: Effects;
+  /** Set when the team settled it on a delegated day, not the player (#2190). */
+  delegated?: boolean;
 }
 
 /** How hard the study starts. Older saves have none, which plays as standard. */

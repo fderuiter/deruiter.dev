@@ -19,6 +19,7 @@ import {
   IDLE_FRAME,
   THROW_OUT_PROMPT,
   TICK_SECONDS,
+  TOUCH_SWAP_NAME,
   assistJob,
   assistJobKind,
   clockLabel,
@@ -65,6 +66,10 @@ import { recordArcadeDailyResult } from "@/lib/arcade/daily-store";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
 import { useCabinetSetup } from "@/components/arcade/CabinetSetupContext";
+import { useCabinetTouch } from "@/components/arcade/mobile";
+import { FBB_AUTO_PAUSE_EVENT } from "./auto-pause";
+import { FbbTouchDock } from "./FbbTouchDock";
+import "./fbb-touch.css";
 import { readBestTimes, saveBestTime } from "./best-time-storage";
 import { BrothersDialog } from "./BrothersDialog";
 import type { TimeChallenge } from "./ChallengeStrip";
@@ -141,8 +146,13 @@ function stockLine(state: GameState): string {
 }
 
 /** The line that names the key to hold for a work prompt. */
-function holdLine(work: string, mode: ControlMode, id: PlayerId): string {
-  const keys = workKeyName(id, mode === "coop");
+function holdLine(
+  work: string,
+  mode: ControlMode,
+  id: PlayerId,
+  touch: boolean
+): string {
+  const keys = workKeyName(id, mode === "coop", touch);
   if (work === THROW_OUT_PROMPT) return `Hold ${keys} to throw it out`;
   return `Hold ${keys}: ${work}`;
 }
@@ -330,6 +340,9 @@ export function ForBetterOrBulkGame({
 
   const loud = useFbbLoud();
   const cabinet = useCabinetSetup();
+  // The immersive touch cabinet on an iPad (#2123): the dock, the fit layout
+  // and copy that names the on-screen keys. Desktop reads false.
+  const touch = useCabinetTouch();
   const paused = userPaused || (cabinet?.isSetupOpen ?? false);
 
   const boundaryRef = useRef<HTMLDivElement>(null);
@@ -668,7 +681,12 @@ export function ForBetterOrBulkGame({
         cabinetEl?.focus({ preventScroll: true });
         // The header and status line sit under the sticky navbar unless the
         // page scrolls them in; the cabinet's scroll-margin-top clears the bar.
-        if (cabinetEl && typeof cabinetEl.scrollIntoView === "function") {
+        // The touch cabinet already fills the screen, so nothing scrolls there.
+        if (
+          !touch &&
+          cabinetEl &&
+          typeof cabinetEl.scrollIntoView === "function"
+        ) {
           cabinetEl.scrollIntoView({
             block: "start",
             behavior: prefersReducedMotion() ? "auto" : "smooth",
@@ -676,7 +694,7 @@ export function ForBetterOrBulkGame({
         }
       });
     },
-    [focusAfterPaint]
+    [focusAfterPaint, touch]
   );
 
   const decide = (decision: PresenceDecision) => {
@@ -702,6 +720,73 @@ export function ForBetterOrBulkGame({
     setUserPaused(next);
     setAnnouncement(next ? "Paused. Choose Resume to continue." : "Resumed.");
   };
+
+  /**
+   * Swaps the person being played in solo, from Tab or the dock's Swap key.
+   * Someone who is out with his brothers cannot take over, so the swap only
+   * says so.
+   */
+  const swapActive = () => {
+    const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
+    if (stateRef.current?.players[other].presence === "away") {
+      setAnnouncement(`${NAMES[other]} is out with his brothers.`);
+      return;
+    }
+    // A press that has not reached the engine yet belongs to the person
+    // who was active when it was made, so apply it before swapping.
+    if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
+      step(
+        buildFrame(
+          held.current,
+          tapped.current,
+          pressed.current,
+          mode,
+          activeRef.current
+        )
+      );
+      pressed.current.clear();
+      tapped.current.clear();
+    }
+    activeRef.current = other;
+    setActive(other);
+    setAnnouncement(`Now playing as ${NAMES[other]}.`);
+  };
+
+  /**
+   * A touch dock key going down or up (#2123). It is the same key the
+   * keyboard would press, so a tap is a press and a hold is a hold.
+   */
+  const touchKey = (code: string, down: boolean) => {
+    if (!down) {
+      held.current.delete(code);
+      return;
+    }
+    if (paused || stateRef.current?.phase !== "playing") return;
+    if (held.current.has(code)) return;
+    held.current.add(code);
+    pressed.current.add(code);
+    tapped.current.add(code);
+  };
+
+  // A hidden tab or a backgrounded iPad app pauses a day in progress. The
+  // brothers' text already stops the clock, so it is left as it is.
+  const autoPauseRef = useRef<() => void>(() => {});
+  useEffect(() => {
+    autoPauseRef.current = () => {
+      if (
+        phase === "playing" &&
+        !userPaused &&
+        stateRef.current?.phase === "playing"
+      ) {
+        setPaused(true);
+      }
+    };
+  });
+  useEffect(() => {
+    const onAutoPause = () => autoPauseRef.current();
+    window.addEventListener(FBB_AUTO_PAUSE_EVENT, onAutoPause);
+    return () => window.removeEventListener(FBB_AUTO_PAUSE_EVENT, onAutoPause);
+  }, []);
 
   /** Opens a replay of a verified run: from the receipt or a shared link. */
   const beginReplay = (run: SharedRun, origin: ReplayOrigin) => {
@@ -899,32 +984,15 @@ export function ForBetterOrBulkGame({
       // Someone who is out with his brothers cannot take the keys, so there
       // is no one to swap with. Tab does nothing rather than moving focus to
       // Pause, where the arrows would stop moving anyone (round 18, S-1).
-      const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
       event.preventDefault();
-      if (stateRef.current?.players[other].presence === "away") {
-        setAnnouncement(`${NAMES[other]} is out with his brothers.`);
+      const other: PlayerId = activeRef.current === "fred" ? "abbi" : "fred";
+      if (
+        event.repeat &&
+        stateRef.current?.players[other].presence !== "away"
+      ) {
         return;
       }
-      if (event.repeat) return;
-      // A press that has not reached the engine yet belongs to the person
-      // who was active when it was made, so apply it before swapping.
-      if (pressed.current.size > 0 && stateRef.current?.phase === "playing") {
-        step(
-          buildFrame(
-            held.current,
-            tapped.current,
-            pressed.current,
-            mode,
-            activeRef.current
-          )
-        );
-        pressed.current.clear();
-        tapped.current.clear();
-      }
-      const next = activeRef.current === "fred" ? "abbi" : "fred";
-      activeRef.current = next;
-      setActive(next);
-      setAnnouncement(`Now playing as ${NAMES[next]}.`);
+      swapActive();
       return;
     }
     if (GAME_CODES.has(event.code)) {
@@ -991,7 +1059,12 @@ export function ForBetterOrBulkGame({
             ) : null}
           </section>
         ) : null}
-        <SetupScreen initial={setup} initialMode={mode} onStart={start} />
+        <SetupScreen
+          initial={setup}
+          initialMode={mode}
+          touch={touch}
+          onStart={start}
+        />
       </>
     );
   } else if (phase === "receipt" && receipt) {
@@ -1069,8 +1142,13 @@ export function ForBetterOrBulkGame({
     );
     const eventLines = activeEventLines(view);
     body = (
-      <div className="relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3">
-        <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs">
+      <div
+        className={`relative flex w-full min-w-0 flex-col gap-2 p-2 sm:p-3${touch ? " fbb-play" : ""}`}
+      >
+        <div
+          data-testid="fbb-strip"
+          className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1 font-mono text-xs"
+        >
           <span
             className="text-lg font-extrabold tabular-nums"
             data-testid="fbb-clock"
@@ -1098,54 +1176,69 @@ export function ForBetterOrBulkGame({
           {mode === "solo" ? (
             <span data-testid="fbb-active">
               Playing as <span className="font-bold">{NAMES[active]}</span> ·
-              {view.players[partner].presence === "away"
-                ? ` ${NAMES[partner]} is out, so Tab does nothing · Shift+Tab to leave · Escape to pause`
-                : " Tab to swap · Shift+Tab to leave · Escape to pause"}
+              {touch
+                ? view.players[partner].presence === "away"
+                  ? ` ${NAMES[partner]} is out, so there is no one to swap to`
+                  : ` ${TOUCH_SWAP_NAME} plays ${NAMES[partner]}`
+                : view.players[partner].presence === "away"
+                  ? ` ${NAMES[partner]} is out, so Tab does nothing · Shift+Tab to leave · Escape to pause`
+                  : " Tab to swap · Shift+Tab to leave · Escape to pause"}
             </span>
+          ) : touch ? (
+            <span>Fred on the left · Abbi on the right</span>
           ) : (
             <span>Fred: WASD, E or Space, F · Abbi: arrows, Enter, Shift</span>
           )}
-          <button
-            ref={pauseRef}
-            type="button"
-            onClick={() => {
-              setPaused(!userPaused);
-              boundaryRef.current?.focus({ preventScroll: true });
-            }}
-            className="ml-auto min-h-11 rounded border border-[var(--fbb-control)] px-3 font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
-          >
-            {userPaused ? "Resume" : "Pause"}
-          </button>
+          {/* On touch, Pause sits in the dock by the thumbs, and a keyboard
+              case pauses with Escape (#2123). */}
+          {touch ? null : (
+            <button
+              ref={pauseRef}
+              type="button"
+              onClick={() => {
+                setPaused(!userPaused);
+                boundaryRef.current?.focus({ preventScroll: true });
+              }}
+              className="ml-auto min-h-11 rounded border border-[var(--fbb-control)] px-3 font-bold uppercase tracking-wide active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--fbb-focus)]"
+            >
+              {userPaused ? "Resume" : "Pause"}
+            </button>
+          )}
         </div>
 
-        <div className="grid min-w-0 gap-2 @4xl:grid-cols-[minmax(0,1fr)_14rem]">
-          <div className="relative min-w-0">
-            <canvas
-              ref={canvasRef}
-              width={VENUE_WIDTH}
-              height={VENUE_HEIGHT}
-              role="img"
-              aria-label="Top-down view of the Plummer House patio and lawn, with Fred, Abbi, the supply crates from the car, the rose table, the grill and every spot that still needs something."
-              aria-describedby="fbb-checklist"
-              data-testid="fbb-canvas"
-              className="block aspect-[5/3] h-auto w-full rounded border border-[var(--fbb-rule)]"
-            />
-            <ul
-              className="pointer-events-none absolute inset-x-2 top-2 flex flex-col items-start gap-1"
-              aria-hidden="true"
-            >
-              {toasts.map((toast) => (
-                <li
-                  key={toast.id}
-                  className="rounded bg-[var(--fbb-toast)] px-2 py-1 font-mono text-[11px] text-[var(--fbb-text)]"
-                >
-                  {toast.text}
-                </li>
-              ))}
-            </ul>
-            <BurstLayer bursts={textBursts} onDone={removeTextBurst} />
+        <div className="fbb-main grid min-w-0 gap-2 @4xl:grid-cols-[minmax(0,1fr)_14rem]">
+          <div className="fbb-venue relative min-w-0">
+            <div className="fbb-venue-frame relative min-w-0">
+              <canvas
+                ref={canvasRef}
+                width={VENUE_WIDTH}
+                height={VENUE_HEIGHT}
+                role="img"
+                aria-label="Top-down view of the Plummer House patio and lawn, with Fred, Abbi, the supply crates from the car, the rose table, the grill and every spot that still needs something."
+                aria-describedby="fbb-checklist"
+                data-testid="fbb-canvas"
+                className="block aspect-[5/3] h-auto w-full rounded border border-[var(--fbb-rule)]"
+              />
+              <ul
+                className="pointer-events-none absolute inset-x-2 top-2 flex flex-col items-start gap-1"
+                aria-hidden="true"
+              >
+                {toasts.map((toast) => (
+                  <li
+                    key={toast.id}
+                    className="rounded bg-[var(--fbb-toast)] px-2 py-1 font-mono text-[11px] text-[var(--fbb-text)]"
+                  >
+                    {toast.text}
+                  </li>
+                ))}
+              </ul>
+              <BurstLayer bursts={textBursts} onDone={removeTextBurst} />
+            </div>
           </div>
-          <div className="flex min-w-0 flex-col gap-2 font-mono text-xs">
+          <div
+            data-testid="fbb-panel"
+            className="fbb-panel flex min-w-0 flex-col gap-2 font-mono text-xs"
+          >
             {laptopBadgeShown(view) ? (
               <p
                 data-testid="fbb-laptop"
@@ -1172,7 +1265,10 @@ export function ForBetterOrBulkGame({
                   {coached.map((id) => {
                     // An away person is already said in their prompt.
                     if (view.players[id].presence === "away") return null;
-                    const hint = getHint(view, id, { coop: mode === "coop" });
+                    const hint = getHint(view, id, {
+                      coop: mode === "coop",
+                      touch,
+                    });
                     if (!hint) return null;
                     return (
                       <li key={id} className="break-words">
@@ -1233,6 +1329,7 @@ export function ForBetterOrBulkGame({
             {shown.map((id) => {
               const prompt = getPrompt(view, id, {
                 waiting: mode === "solo" && id !== active,
+                touch,
               });
               return (
                 <div
@@ -1251,19 +1348,19 @@ export function ForBetterOrBulkGame({
                       }
                     >
                       {prompt.interactLands
-                        ? `${interactKeyName(id, mode === "coop")}: ${prompt.interact}`
+                        ? `${interactKeyName(id, mode === "coop", touch)}: ${prompt.interact}`
                         : prompt.interact}
                     </p>
                   ) : null}
                   {prompt.floorDrop ? (
                     // A floor drop is a hold: a tap does nothing (ADR 0060 amendment).
                     <p className="text-[var(--fbb-accent)]">
-                      {`${prompt.floorDrop.note ? `${prompt.floorDrop.note} ` : ""}Hold ${interactKeyName(id, mode === "coop")} to ${prompt.floorDrop.action}`}
+                      {`${prompt.floorDrop.note ? `${prompt.floorDrop.note} ` : ""}Hold ${interactKeyName(id, mode === "coop", touch)} to ${prompt.floorDrop.action}`}
                     </p>
                   ) : null}
                   {prompt.work ? (
                     <p className="text-[var(--fbb-accent)]">
-                      {holdLine(prompt.work, mode, id)}
+                      {holdLine(prompt.work, mode, id, touch)}
                     </p>
                   ) : null}
                 </div>
@@ -1290,6 +1387,17 @@ export function ForBetterOrBulkGame({
           </div>
         </div>
 
+        {touch ? (
+          <FbbTouchDock
+            mode={mode}
+            active={active}
+            paused={paused || view.phase !== "playing"}
+            canSwap={view.players[partner].presence !== "away"}
+            onKey={touchKey}
+            onSwap={swapActive}
+            onPause={() => setPaused(true)}
+          />
+        ) : null}
         {userPaused ? (
           <div
             role="region"
@@ -1334,6 +1442,15 @@ export function ForBetterOrBulkGame({
       data-keyboard-boundary="true"
       data-fbb-cabinet=""
       data-fbb-loud={loud ? "on" : "off"}
+      data-fbb-phase={touch ? phase : undefined}
+      // In the touch cabinet Escape pauses a running day (and closes a
+      // replay) through this element's own keys rather than leaving (#2123).
+      data-escape-docks={
+        touch &&
+        (phase === "playing" || phase === "replay" || phase === "playback")
+          ? "true"
+          : undefined
+      }
       data-testid="fbb-game"
       aria-label="For Better or Bulk"
       onKeyDown={handleKeyDown}
@@ -1349,7 +1466,7 @@ export function ForBetterOrBulkGame({
           next === null && event.target !== event.currentTarget;
         if (phase === "playing" && !removedChild) setPaused(true);
       }}
-      className="@container relative isolate flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]"
+      className={`@container relative isolate flex min-h-[460px] w-full min-w-0 flex-col items-stretch bg-[var(--fbb-stage)] text-[var(--fbb-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--fbb-focus)]${touch ? " fbb-touch" : ""}`}
     >
       <div
         role="status"

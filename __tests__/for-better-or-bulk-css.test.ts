@@ -213,7 +213,9 @@ describe("the cabinet clears the sticky navbar and sits on opaque surfaces", () 
       "components/for-better-or-bulk/ForBetterOrBulkGame.tsx"
     );
     const root =
-      /className="([^"]*min-h-\[460px\][^"]*)"/.exec(source)?.[1] ?? "";
+      // The root's class is a template: the touch cabinet adds fbb-touch (#2123).
+      /className=\{?[`"]([^`"]*min-h-\[460px\][^`"]*)[`"]/.exec(source)?.[1] ??
+      "";
     expect(root.split(/\s+/)).toContain("isolate");
     const overlay = /className="absolute inset-0 z-(\d+)[^"]*"/.exec(source);
     expect(overlay, "the pause overlay exists").not.toBeNull();

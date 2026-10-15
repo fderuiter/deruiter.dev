@@ -1104,7 +1104,7 @@ export const StudyDirectorWorld: React.FC<{
                 aria-hidden="true"
                 data-testid="world-said"
                 data-tone={said.tone}
-                className={`pointer-events-none absolute bottom-2 left-2 z-10 max-w-[48%] min-w-0 border bg-[var(--sd-surface)] px-2 py-1 text-[11px] leading-snug break-words ${SAID_TONE[said.tone]}`}
+                className={`pointer-events-none absolute top-2 left-2 z-10 max-w-[48%] min-w-0 border bg-[var(--sd-surface)] px-2 py-1 text-[11px] leading-snug break-words ${SAID_TONE[said.tone]}`}
               >
                 {said.text}
               </p>

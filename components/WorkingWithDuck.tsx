@@ -139,6 +139,7 @@ const DUCK_HOTKEY_KEYS = [
   "ArrowLeft",
   "ArrowRight",
   "Enter",
+  "Escape",
 ] as const;
 
 /**
@@ -521,8 +522,11 @@ function drawDogParkScene(
   ctx.font = gameFont(11, "bold");
   ctx.textAlign = "center";
   if (park.status === "aim") {
+    // The banner names the keys as well as the mouse (#2158).
     ctx.fillText(
-      "🎾 Phase 1: Click & Drag on field to Launch!",
+      touchHints
+        ? "🎾 Drag on the field and let go to throw!"
+        : "🎾 Press Space, or drag on the field, to throw!",
       CANVAS_WIDTH / 2,
       34
     );
@@ -536,7 +540,7 @@ function drawDogParkScene(
     ctx.fillText(
       touchHints
         ? `🐾 Steer Duck (drag) · Tap Jump for hurdles · Bones: ${park.bonesCollected}/3`
-        : `🐾 Steer Duck (Mouse) · Jump Hurdles (Space) · Bones: ${park.bonesCollected}/3`,
+        : `🐾 Steer Duck (Mouse, W or Arrows) · Jump (Space) · Bones: ${park.bonesCollected}/3`,
       CANVAS_WIDTH / 2,
       34
     );
@@ -772,6 +776,80 @@ function winVerdict(saved: number, total: number): string {
 const RESULT_LINK =
   "inline-flex min-h-[48px] items-center rounded-xl border border-white/[0.08] px-3 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
 
+/** A Space or Enter press this soon after the previous one is still mashing. */
+const RESULT_MASH_GAP_MS = 400;
+/** Keyboard presses this soon after the card opens are left over from play. */
+const RESULT_OPEN_GUARD_MS = 500;
+
+/**
+ * Holds back keyboard clicks on the result card that come from play (#2157).
+ * Space is the coding key, so players mash or hold it as the sprint ships;
+ * the card opens with its primary button focused, and the next press would
+ * skip the card. A press counts only once the card has been open a moment,
+ * and only when it is not part of a run of presses or a held key.
+ */
+function ResultKeyGuard({ children }: { children: React.ReactNode }) {
+  const openedAtRef = useRef(0);
+  const previousPressRef = useRef(0);
+  const lastPressRef = useRef(0);
+  const heldRef = useRef(false);
+  // A Space pressed during play and released after the card opened.
+  const staleReleaseRef = useRef(false);
+
+  useEffect(() => {
+    openedAtRef.current = performance.now();
+    const isActivationKey = (event: KeyboardEvent) =>
+      event.key === " " || event.key === "Enter";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isActivationKey(event)) return;
+      if (event.repeat) {
+        heldRef.current = true;
+        return;
+      }
+      previousPressRef.current = lastPressRef.current;
+      lastPressRef.current = performance.now();
+      heldRef.current = false;
+    };
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (!isActivationKey(event)) return;
+      if (lastPressRef.current < openedAtRef.current) {
+        staleReleaseRef.current = true;
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+    };
+  }, []);
+
+  const onClickCapture = (event: React.MouseEvent) => {
+    // A pointer click has a detail of 1 or more; keyboard activation is 0.
+    if (event.detail !== 0) return;
+    const openedAt = openedAtRef.current;
+    const pressAt = lastPressRef.current;
+    const pressedSinceOpen = pressAt >= openedAt;
+    const blocked =
+      staleReleaseRef.current ||
+      heldRef.current ||
+      (pressedSinceOpen &&
+        (pressAt - openedAt < RESULT_OPEN_GUARD_MS ||
+          pressAt - previousPressRef.current < RESULT_MASH_GAP_MS));
+    staleReleaseRef.current = false;
+    if (blocked) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
+  return (
+    <div className="contents" onClickCapture={onClickCapture}>
+      {children}
+    </div>
+  );
+}
+
 /**
  * The end of a sprint on the shared arcade result card: what shipped, how
  * good Duck was, the scrapbook photo it earned, and Next or Retry.
@@ -835,6 +913,7 @@ function DuckSprintResult({
           icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
         }}
         onEscape={onReplay}
+        preventScroll
       >
         <p
           data-testid="duck-endless-best"
@@ -866,6 +945,7 @@ function DuckSprintResult({
           icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
         }}
         onEscape={onReplay}
+        preventScroll
       />
     );
   }
@@ -894,6 +974,7 @@ function DuckSprintResult({
         icon: <IconRotate aria-hidden="true" className="h-4 w-4" />,
       }}
       onEscape={onNext}
+      preventScroll
     >
       {stars && (
         <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
@@ -986,7 +1067,7 @@ function DuckSprintResult({
 // Action dock styles (#1676): graphite keys, amber for the held toy,
 // emerald for tricks, and the cabinet accent for the one primary action.
 const DOCK_BUTTON =
-  "disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
+  "disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:opacity-50 min-h-[44px] min-w-[44px] px-2.5 py-1.5 rounded-xl border text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
 const TOY_IDLE =
   "border-white/[0.08] bg-[#13151a] text-zinc-300 hover:border-white/20 hover:text-white";
 const TOY_SELECTED = "border-amber-400/70 bg-amber-400/15 text-amber-200";
@@ -1001,7 +1082,7 @@ const DOCK_GROUP = "flex min-w-0 flex-wrap items-center gap-1";
 // dock fits two rows and the canvas keeps its height at 1024 (#1942).
 /** Actions with no dock control, in the touch cabinet's compact row (44px floor). */
 const CABINET_ACTION =
-  "disabled:opacity-40 disabled:cursor-not-allowed min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
+  "disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:opacity-50 min-h-[44px] min-w-[44px] px-3 py-2 rounded-xl border border-zinc-700 bg-zinc-900 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
 /** Icon-only keys in the same row; each keeps a 44px square. */
 const CABINET_ICON =
   "disabled:opacity-40 min-h-[44px] min-w-[44px] p-2.5 rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-300 flex items-center justify-center cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400";
@@ -1924,6 +2005,25 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         return;
       }
 
+      // Escape pauses a running sprint, as in the other cabinets (#2158). An
+      // open dialog (pause overlay, wardrobe, scrapbook, result card) owns
+      // its own Escape, so the press is left to it.
+      if (e.key === "Escape") {
+        const dialogOpen = !!containerRef.current?.querySelector(
+          '[role="dialog"], [aria-modal="true"]'
+        );
+        if (
+          !textEntry &&
+          focusInGame &&
+          !dialogOpen &&
+          gameStateRef.current.status === "running"
+        ) {
+          e.preventDefault();
+          toggleManualPause();
+        }
+        return;
+      }
+
       const interactiveTag =
         target?.tagName === "BUTTON" ||
         target?.tagName === "SELECT" ||
@@ -2631,8 +2731,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       uiState.duck.state === "SNIFFING_POTTY" ||
       uiState.bladder > 80
     ) {
-      tutorialHint =
-        "Duck needs to go! Click and drag Duck over to the Back Door!";
+      tutorialHint = cabinetTouch
+        ? "Duck needs to go! Drag Duck over to the Back Door!"
+        : "Duck needs to go! Drag Duck to the Back Door, or move him there with the arrow keys and press Enter!";
     } else if (uiState.duck.state === "SNEAKY_CHEW") {
       tutorialHint = cabinetTouch
         ? "Duck is eyeing your work! Tap Kong or Drop It to save it!"
@@ -2734,6 +2835,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   // Paused play is frozen (#1645); toys and tricks only work in the office
   // (#1647). Disabled controls point at the reason via aria-describedby.
   const isPlayFrozen = uiState.status === "paused";
+  // Seconds until the Dog Park opens again after a trip (#2158), so the
+  // button shows the wait instead of looking ready.
+  const parkCooldownSeconds = Math.max(
+    0,
+    Math.ceil(((uiState.parkReadyAtTick ?? 0) - uiState.ticks) / 60)
+  );
   const isAwayFromOffice = uiState.inDogPark || uiState.inBathtub;
   const officeOnlyDisabled = isPlayFrozen || isAwayFromOffice;
   const pausedReasonId = isPlayFrozen ? "duck-paused-reason" : undefined;
@@ -3306,14 +3413,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         disabled={isPlayFrozen}
+                        aria-disabled={parkCooldownSeconds > 0 || undefined}
                         aria-describedby={pausedReasonId}
                         onClick={() => {
                           applyTransition((state) => enterDogPark(state));
                         }}
-                        className="disabled:opacity-40 disabled:cursor-not-allowed p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
+                        className="disabled:opacity-40 disabled:cursor-not-allowed aria-disabled:opacity-50 p-3 rounded-2xl border border-emerald-400/40 bg-emerald-400/10 text-emerald-200 active:bg-emerald-400/20 text-xs font-bold transition-colors flex items-center justify-center gap-1.5 min-h-[48px] cursor-pointer touch-manipulation select-none active:scale-[0.98]"
                       >
                         <IconTrees aria-hidden="true" className="w-4 h-4" />
-                        <span>Dog Park</span>
+                        <span>
+                          {parkCooldownSeconds > 0
+                            ? `Dog Park ${parkCooldownSeconds}s`
+                            : "Dog Park"}
+                        </span>
                       </button>
 
                       <button
@@ -3682,6 +3794,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   <>
                     <button
                       disabled={isPlayFrozen}
+                      aria-disabled={parkCooldownSeconds > 0 || undefined}
                       aria-describedby={pausedReasonId}
                       onClick={() => {
                         applyTransition((state) => enterDogPark(state));
@@ -3689,7 +3802,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                       className={`${DOCK_BUTTON} border-emerald-400/40 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20`}
                     >
                       <IconTrees aria-hidden="true" className="w-4 h-4" />
-                      <span>Dog Park</span>
+                      <span>
+                        {parkCooldownSeconds > 0
+                          ? `Dog Park ${parkCooldownSeconds}s`
+                          : "Dog Park"}
+                      </span>
                     </button>
 
                     <button
@@ -3837,6 +3954,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               <>
                 <button
                   disabled={isPlayFrozen}
+                  aria-disabled={parkCooldownSeconds > 0 || undefined}
                   aria-describedby={pausedReasonId}
                   onClick={() =>
                     applyTransition((state) => enterDogPark(state))
@@ -3844,7 +3962,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   className={CABINET_ACTION}
                 >
                   <IconTrees aria-hidden="true" className="w-4 h-4" />
-                  <span>Dog Park</span>
+                  <span>
+                    {parkCooldownSeconds > 0
+                      ? `Dog Park ${parkCooldownSeconds}s`
+                      : "Dog Park"}
+                  </span>
                 </button>
                 <button
                   disabled={isPlayFrozen}
@@ -3921,15 +4043,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
       {/* Sprint result (#1677): the shared arcade card with this run's recap */}
       {(uiState.status === "won" || uiState.status === "failed") && (
-        <DuckSprintResult
-          state={uiState}
-          sprintTitle={currentSprint.title}
-          storedBest={loadedHighScore}
-          storedEndlessBest={loadedEndlessBest}
-          onNext={handleAdvanceLevel}
-          onReplay={restartSprint}
-          onEndless={startEndlessRun}
-        />
+        <ResultKeyGuard>
+          <DuckSprintResult
+            state={uiState}
+            sprintTitle={currentSprint.title}
+            storedBest={loadedHighScore}
+            storedEndlessBest={loadedEndlessBest}
+            onNext={handleAdvanceLevel}
+            onReplay={restartSprint}
+            onEndless={startEndlessRun}
+          />
+        </ResultKeyGuard>
       )}
 
       {/* Accessory Wardrobe Modal */}

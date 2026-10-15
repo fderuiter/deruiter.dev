@@ -17,9 +17,15 @@ interface EchoConsoleProps {
   onStop: () => void;
   /** Why the pads are silent, or null when sound is on. */
   silentReason: React.ReactNode;
+  /** The pad the vault wanted when a wrong pad ended the round (#2125). */
+  missedPad?: { key: string; label: string } | null;
 }
 
-function statusLine(round: EchoRound | null, early: boolean): string {
+function statusLine(
+  round: EchoRound | null,
+  early: boolean,
+  missedPad: { key: string; label: string } | null
+): string {
   if (!round)
     return "Press Start Echo, watch the pads light, then repeat them.";
   switch (round.phase) {
@@ -30,7 +36,9 @@ function statusLine(round: EchoRound | null, early: boolean): string {
     case "input":
       return `Your turn: pad ${round.inputIndex + 1} of ${round.sequence.length}.`;
     case "over":
-      return `Wrong pad. Streak ${round.streak}. Start again to beat it.`;
+      return missedPad
+        ? `Wrong pad. Streak ${round.streak}. The vault played ${missedPad.key} · ${missedPad.label}, marked in amber. Start again to beat it.`
+        : `Wrong pad. Streak ${round.streak}. Start again to beat it.`;
   }
 }
 
@@ -46,6 +54,7 @@ export function EchoConsole({
   onStart,
   onStop,
   silentReason,
+  missedPad = null,
 }: EchoConsoleProps) {
   const running = round !== null && round.phase !== "over";
   return (
@@ -72,7 +81,7 @@ export function EchoConsole({
               }`}
               data-testid="meme-echo-status"
             >
-              {statusLine(round, early)}
+              {statusLine(round, early, missedPad)}
             </p>
           </div>
         </div>

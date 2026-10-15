@@ -10,6 +10,15 @@ Options for one person's prompt.
 
 ## Properties
 
+### touch?
+
+> `readonly` `optional` **touch?**: `boolean`
+
+True on a touch iPad (#2123): the idle partner's line names the dock's
+Swap key instead of Tab.
+
+***
+
 ### waiting?
 
 > `readonly` `optional` **waiting?**: `boolean`

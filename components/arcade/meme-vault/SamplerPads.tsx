@@ -9,6 +9,8 @@ interface SamplerPadsProps {
   pads: readonly SoundboardButton[];
   /** Id of the pad whose sound is playing, or null. */
   activeId: string | null;
+  /** Id of the pad Echo wanted when the player missed, marked amber. */
+  missedId?: string | null;
   onPress: (pad: SoundboardButton) => void;
 }
 
@@ -24,7 +26,12 @@ function isTypingTarget(target: EventTarget | null): boolean {
  * narrow container). Each pad carries a key-cap label and a pictogram, lights
  * emerald while its sound plays, and answers to keys 1 to 8.
  */
-export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
+export function SamplerPads({
+  pads,
+  activeId,
+  missedId = null,
+  onPress,
+}: SamplerPadsProps) {
   const onPressRef = useRef(onPress);
   const padsRef = useRef(pads);
   useEffect(() => {
@@ -55,6 +62,7 @@ export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
       <div className="grid grid-cols-2 gap-2.5 @lg:grid-cols-4 @lg:gap-3">
         {pads.map((pad, index) => {
           const isLit = activeId === pad.id;
+          const isMissed = missedId === pad.id;
           const key = padKeyLabel(index);
           return (
             <button
@@ -65,13 +73,14 @@ export function SamplerPads({ pads, activeId, onPress }: SamplerPadsProps) {
               aria-keyshortcuts={key}
               aria-describedby={`meme-pad-desc-${pad.id}`}
               data-lit={isLit ? "true" : "false"}
-              className="meme-pad group relative isolate flex min-h-[7.5rem] min-w-0 flex-col justify-between overflow-hidden rounded-lg border border-white/[0.08] bg-[#1a1d24] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_2px_0_#08090b] transition-transform duration-75 hover:border-white/[0.16] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a] active:scale-[0.98] pointer-coarse:touch-manipulation pointer-coarse:select-none pointer-coarse:[-webkit-tap-highlight-color:transparent] pointer-coarse:[-webkit-touch-callout:none] @lg:aspect-square @lg:p-4"
+              data-missed={isMissed ? "true" : undefined}
+              className="meme-pad group relative isolate flex min-h-[6.5rem] min-w-0 @sm:min-h-[7.5rem] flex-col justify-between overflow-hidden rounded-lg border border-white/[0.08] bg-[#1a1d24] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_2px_0_#08090b] transition-transform duration-75 hover:border-white/[0.16] data-[missed=true]:border-amber-400/70 data-[missed=true]:shadow-[inset_0_0_0_1px_rgba(245,158,11,0.55)] focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#13151a] active:scale-[0.98] pointer-coarse:touch-manipulation pointer-coarse:select-none pointer-coarse:[-webkit-tap-highlight-color:transparent] pointer-coarse:[-webkit-touch-callout:none] @lg:aspect-square @lg:p-4"
             >
               {/* Emerald press glow: an opacity-only layer, lit while the
                   pad's sound plays. */}
               <span aria-hidden="true" className="meme-pad-glow" />
               <span className="relative flex items-start justify-between gap-2">
-                <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-1.5 font-mono text-[11px] pointer-coarse:text-xs font-semibold tabular-nums text-zinc-300 shadow-[0_1px_0_rgba(255,255,255,0.06)] group-data-[lit=true]:border-emerald-500/60 group-data-[lit=true]:text-emerald-300">
+                <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-1.5 font-mono text-[11px] pointer-coarse:text-xs font-semibold tabular-nums text-zinc-300 shadow-[0_1px_0_rgba(255,255,255,0.06)] group-data-[missed=true]:border-amber-400/70 group-data-[missed=true]:text-amber-300 group-data-[lit=true]:border-emerald-500/60 group-data-[lit=true]:text-emerald-300">
                   {key}
                 </kbd>
                 <span className="font-mono text-[10px] pointer-coarse:text-xs uppercase tracking-wider text-zinc-400">

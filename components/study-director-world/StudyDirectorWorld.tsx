@@ -114,12 +114,36 @@ const KEY_DIRECTIONS: Record<string, Facing> = {
 };
 
 const REFUSALS: Record<WorldRefusal, string> = {
-  "too-late": "It is too late to keep working. Go to your car and go home.",
-  "too-tired": "You are too tired to keep walking. Have a coffee or go home.",
+  "too-late": "It is too late to keep working. Go home from here.",
+  "too-tired": "You are too tired to keep walking. Go home and rest.",
   "unknown-action": "That cannot be done here.",
   "study-complete": "The study is over.",
   unreachable: "There is no way through to there right now.",
 };
+
+/**
+ * Refusals that end the working day: past the hard stop or out of energy,
+ * the car may be out of reach, so the game offers to go home from where you
+ * stand instead of asking for a walk it would refuse (#2184).
+ */
+const STUCK: Partial<Record<WorldRefusal, string>> = {
+  "too-late": "Time to go home",
+  "too-tired": "Out of energy",
+};
+
+const SAID_TONE: Record<"neutral" | "good" | "bad", string> = {
+  neutral: "border-[var(--sd-hairline-strong)] text-zinc-200",
+  good: "border-[var(--sd-emerald)]/60 text-emerald-300",
+  bad: "border-[var(--sd-red)]/60 text-red-300",
+};
+
+/** A line shown on screen, as well as read out (#2185). */
+interface Said {
+  text: string;
+  tone: "neutral" | "good" | "bad";
+  /** Set when the line belongs to a directory walk, so it shows there too. */
+  walk?: boolean;
+}
 
 function loadWorld(): WorldState | null {
   try {
@@ -275,6 +299,8 @@ export const StudyDirectorWorld: React.FC<{
   const [walk, setWalk] = useState<Walk | null>(null);
   const [visitReport, setVisitReport] = useState<SiteVisitReport | null>(null);
   const [notice, setNotice] = useState("");
+  // The latest result or refusal, visible on the stage (#2185).
+  const [said, setSaid] = useState<Said | null>(null);
   // First-run help (#1819); the Controls button reopens it.
   const [showIntro, setShowIntro] = useState(() => !introSeen());
   // A resumed run that has moved on from its first morning has acted
@@ -305,10 +331,40 @@ export const StudyDirectorWorld: React.FC<{
     () => playfieldRef.current?.focus({ preventScroll: true }),
     []
   );
+  /** Says a line aloud and on screen (#2185). */
+  const show = useCallback(
+    (text: string, tone: Said["tone"] = "neutral", walk = false) => {
+      setNotice(text);
+      setSaid({ text, tone, walk });
+    },
+    []
+  );
+  /**
+   * A refusal, seen as well as heard. Past the hard stop or out of energy it
+   * also offers to go home from here, since the car may be out of reach
+   * (#2184).
+   */
+  const refuseWith = useCallback(
+    (reason: WorldRefusal, text: string = REFUSALS[reason], walk = false) => {
+      show(text, "bad", walk);
+      const title = STUCK[reason];
+      if (!title || world.study.status !== "running") return;
+      setWalk(null);
+      setOutcome({
+        world,
+        title,
+        lines: [text, "Going home now ends the day where you stand."],
+        tone: "bad",
+        offer: "goHome",
+      });
+    },
+    [show, world]
+  );
   const team = useTeamLayer({
     world,
     setWorld,
     announce: setNotice,
+    refuse: refuseWith,
     refocus,
   });
   const { study, coffees, fatigue } = world;
@@ -435,9 +491,26 @@ export const StudyDirectorWorld: React.FC<{
     (dir: Facing) => {
       const result = forgivingStep(world, dir, map, people);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
+      // A meeting in progress keeps you in the conference room: walking out
+      // used to leave it running with its controls gone (#2186).
+      if (
+        world.meeting &&
+        result.moved &&
+        roomAt(map, result.world.player.x, result.world.player.y)?.id !==
+          "conference"
+      ) {
+        show(
+          world.meeting.kind === "sponsor"
+            ? "The sponsor is still on the line. End the call before you leave the room."
+            : "The meeting is still going. End it before you leave the room.",
+          "bad"
+        );
+        return;
+      }
+      if (result.moved) setSaid(null);
       setWorld(result.world);
       if (result.moved)
         team.catchUp(
@@ -449,7 +522,7 @@ export const StudyDirectorWorld: React.FC<{
         if (room) setNotice(room.name);
       }
     },
-    [world, map, people, team]
+    [world, map, people, team, refuseWith, show]
   );
 
   const pressE = useCallback(() => {
@@ -530,7 +603,7 @@ export const StudyDirectorWorld: React.FC<{
     (entry: DirectoryEntry) => {
       const route = routeAround(world.player, entry.target, map, people);
       if (!route) {
-        setNotice(REFUSALS.unreachable);
+        show(REFUSALS.unreachable, "bad", true);
         return;
       }
       setOutcome(null);
@@ -545,7 +618,7 @@ export const StudyDirectorWorld: React.FC<{
         facing: route.facing,
       });
     },
-    [world.player, map, people]
+    [world.player, map, people, show]
   );
 
   /** What a directory walk would cost, worked out only for the entries shown. */
@@ -599,21 +672,21 @@ export const StudyDirectorWorld: React.FC<{
     (optionId: string) => {
       const result = meetGuest(world, optionId);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
       setWorld(result.world);
-      setNotice(result.result);
+      show(result.result);
       refocus();
     },
-    [world, refocus]
+    [world, refocus, refuseWith, show]
   );
 
   const pickPriority = useCallback(
     (id: PriorityId) => {
       const result = choosePriority(world, id);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
       setWorld(result.world);
@@ -622,21 +695,21 @@ export const StudyDirectorWorld: React.FC<{
       );
       refocus();
     },
-    [world, refocus]
+    [world, refocus, refuseWith]
   );
 
   const answer = useCallback(
     (optionId: string) => {
       const result = answerInterruption(world, optionId);
       if (!result.ok) {
-        setNotice(REFUSALS[result.reason]);
+        refuseWith(result.reason);
         return;
       }
       setWorld(result.world);
-      setNotice(result.result);
+      show(result.result);
       refocus();
     },
-    [world, refocus]
+    [world, refocus, refuseWith, show]
   );
 
   const leave = useCallback(() => {
@@ -664,7 +737,7 @@ export const StudyDirectorWorld: React.FC<{
     setConfirmDelegate(false);
     const result = delegateDay(world);
     if (!result.ok) {
-      setNotice(REFUSALS[result.reason]);
+      refuseWith(result.reason);
       return;
     }
     setActed(true);
@@ -679,7 +752,7 @@ export const StudyDirectorWorld: React.FC<{
         ? "The team ran the last day. The study is complete."
         : `The team ran day ${result.report.day} without you. Overnight report for day ${result.report.day}.`
     );
-  }, [world]);
+  }, [world, refuseWith]);
   const delegation = delegationPreview(world);
 
   // An outcome card (the car's Drive / Go home, a desk result) opened off the
@@ -713,6 +786,7 @@ export const StudyDirectorWorld: React.FC<{
     setReport(null);
     setConfirmDelegate(false);
     setVisitReport(null);
+    setSaid(null);
     setNotice(
       `${morning.digest.weekday}, day ${morning.digest.day}. You start at ${formatClock(morning.digest.startsAt)}.`
     );
@@ -832,7 +906,7 @@ export const StudyDirectorWorld: React.FC<{
           const waited = passTime(world, 1);
           if (waited.ok) {
             setWorld(waited.world);
-            setNotice("Someone is in the way. Waiting a minute.");
+            show("Someone is in the way. Waiting a minute.", "neutral", true);
             setWalk({ ...walk, steps, facing, waits: waits + 1 });
             return;
           }
@@ -840,9 +914,8 @@ export const StudyDirectorWorld: React.FC<{
       }
       if (!result.ok || !result.moved) {
         setWalk(null);
-        setNotice(
-          result.ok ? "Someone is in the way." : REFUSALS[result.reason]
-        );
+        if (result.ok) show("Someone is in the way.", "bad", true);
+        else refuseWith(result.reason, REFUSALS[result.reason], true);
         return;
       }
       setWorld(result.world);
@@ -858,7 +931,7 @@ export const StudyDirectorWorld: React.FC<{
       setWalk({ ...walk, steps: rest, facing });
     }, STEP_MS);
     return () => window.clearTimeout(id);
-  }, [walk, world, map, people, team, directory]);
+  }, [walk, world, map, people, team, directory, show, refuseWith]);
 
   const panel = report ? (
     <OvernightCard
@@ -869,6 +942,7 @@ export const StudyDirectorWorld: React.FC<{
       closeoutLabel={
         onCloseout ? "See the closeout" : "Switch to the classic desk"
       }
+      visit={visitReport}
     />
   ) : outcome ? (
     <section
@@ -1027,6 +1101,16 @@ export const StudyDirectorWorld: React.FC<{
               prompt={away || team.blocking ? null : prompt}
             />
             <FeedbackToasts items={toasts} />
+            {said && !away ? (
+              <p
+                aria-hidden="true"
+                data-testid="world-said"
+                data-tone={said.tone}
+                className={`pointer-events-none absolute top-2 left-2 z-10 max-w-[48%] min-w-0 border bg-[var(--sd-surface)] px-2 py-1 text-[11px] leading-snug break-words ${SAID_TONE[said.tone]}`}
+              >
+                {said.text}
+              </p>
+            ) : null}
             {showMap ? (
               <Minimap
                 map={map}
@@ -1193,6 +1277,13 @@ export const StudyDirectorWorld: React.FC<{
       entries={directory}
       walkingTo={walk?.entryId ?? null}
       disabled={away || team.blocking || Boolean(world.meeting)}
+      note={
+        world.meeting && !away
+          ? "Closed during a meeting. End it in the conference room first."
+          : said?.walk && !away
+            ? said.text
+            : null
+      }
       onWalk={walkTo}
       minutesTo={minutesTo}
     />

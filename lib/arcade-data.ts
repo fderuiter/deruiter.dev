@@ -292,11 +292,12 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     id: "meme-vault",
     slug: "meme-vault",
     title: "Meme Vault & Soundboard",
-    subtitle: "Developer Soundboard & Easter Egg Trophies",
-    genre: "Meme Soundboard & Trophy Room",
+    subtitle: "Echo Memory Game, Soundboard & Easter Egg Trophies",
+    genre: "Memory Game & Trophy Room",
     description:
-      "Developer & MedTech easter-egg room. Trigger synthesized audio soundbites, collect site easter egg achievements, and browse curated engineering memes.",
+      "Developer & MedTech easter-egg room. Play Echo, repeating a growing sequence on eight synthesized pads, collect site easter egg achievements, and browse curated engineering memes.",
     mechanics: [
+      "Echo Repeat-the-Sequence Game",
       "8-Channel Web Audio Soundboard",
       "Easter Egg Achievement Tracker",
       "Interactive Meme Deck",
@@ -304,7 +305,7 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     techStack: [
       "Web Audio API",
       "LocalStorage State",
-      "Phosphor CRT Shader",
+      "Seeded PRNG Sequences",
       "React 19",
     ],
     accentColor: "text-emerald-400",

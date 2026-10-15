@@ -27,6 +27,11 @@ import type {
   WorldState,
 } from "../types";
 
+/** A count and its noun, with the noun made plural unless the count is one. */
+function plural(n: number, one: string, many = `${one}s`): string {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
 /** Decisions on the log that were never written up. */
 export function undocumentedDecisions(study: StudyState) {
   return study.log.filter(
@@ -129,12 +134,12 @@ function roleLine(
         if (open)
           return {
             kind: "warning",
-            text: `${worst.site.name} is sitting on ${worst.total} open queries. The EDC shows about ${worst.total - worst.hidden}; their coordinator doesn't enter the rest.`,
+            text: `${worst.site.name} is sitting on ${plural(worst.total, "open query", "open queries")}. The EDC shows about ${worst.total - worst.hidden}; their coordinator doesn't enter the rest.`,
             fact: fact(
               world,
               member,
               `queries:${worst.site.id}:${bucket(worst.total)}`,
-              `${worst.site.name} has about ${worst.total} open queries, more than the EDC shows.`,
+              `${worst.site.name} has about ${plural(worst.total, "open query", "open queries")}, more than the EDC shows.`,
               { area: "data", siteId: worst.site.id }
             ),
           };
@@ -156,7 +161,7 @@ function roleLine(
       return total > 0
         ? {
             kind: "information",
-            text: `${total} open queries across the sites, and the EDC has all of them. For once.`,
+            text: `${plural(total, "open query", "open queries")} across the sites, and the EDC has all of them. For once.`,
           }
         : {
             kind: "information",
@@ -169,12 +174,12 @@ function roleLine(
         if (open)
           return {
             kind: "warning",
-            text: `${worst.site.name} has ${worst.site.unsignedSource} unsigned source documents and ${worst.site.deviations} deviations. I'd go and look before an inspector does.`,
+            text: `${worst.site.name} has ${plural(worst.site.unsignedSource, "unsigned source document")} and ${plural(worst.site.deviations, "deviation")}. I'd go and look before an inspector does.`,
             fact: fact(
               world,
               member,
               `source:${worst.site.id}:${bucket(worst.total, 3)}`,
-              `${worst.site.name}: ${worst.site.unsignedSource} unsigned source, ${worst.site.deviations} deviations.`,
+              `${worst.site.name}: ${worst.site.unsignedSource} unsigned source, ${plural(worst.site.deviations, "deviation")}.`,
               { area: "regulatory", siteId: worst.site.id }
             ),
           };
@@ -241,7 +246,7 @@ function roleLine(
             world,
             member,
             `debt:${bucket(study.documentationDebt, 10)}`,
-            "Dana says decisions are missing from the TMF.",
+            `${member.name} says decisions are missing from the TMF.`,
             { area: "regulatory" }
           ),
         };
@@ -256,12 +261,12 @@ function roleLine(
         if (open)
           return {
             kind: "warning",
-            text: `${worst.total} subjects at ${worst.site.name} may not meet eligibility. If they stay in the analysis set, the endpoint is in trouble.`,
+            text: `${plural(worst.total, "subject")} at ${worst.site.name} may not meet eligibility. If they stay in the analysis set, the endpoint is in trouble.`,
             fact: fact(
               world,
               member,
               `eligibility:${worst.site.id}:${worst.total}`,
-              `${worst.total} eligibility concerns at ${worst.site.name}.`,
+              `${plural(worst.total, "eligibility concern")} at ${worst.site.name}.`,
               { area: "safety", siteId: worst.site.id }
             ),
           };
@@ -285,12 +290,12 @@ function roleLine(
         if (open)
           return {
             kind: "warning",
-            text: `${missing} of your decisions have no write-up. I can't write a CSR from memory, and neither can an inspector.`,
+            text: `${missing === 1 ? "One of your decisions has" : `${missing} of your decisions have`} no write-up. I can't write a CSR from memory, and neither can an inspector.`,
             fact: fact(
               world,
               member,
               `undocumented:${missing}`,
-              `${missing} decisions are not written up.`,
+              `${missing === 1 ? "1 decision is" : `${missing} decisions are`} not written up.`,
               { area: "regulatory" }
             ),
           };
@@ -313,12 +318,12 @@ function roleLine(
         if (open)
           return {
             kind: "warning",
-            text: `At this query backlog, lock slips about ${backlog} days. The programs don't care how nice the dashboard looks.`,
+            text: `At this query backlog, lock slips about ${plural(backlog, "day")}. The programs don't care how nice the dashboard looks.`,
             fact: fact(
               world,
               member,
               `lock-slip:${backlog}`,
-              `Omar projects lock slipping about ${backlog} days on the backlog.`,
+              `${member.name} projects lock slipping about ${plural(backlog, "day")} on the backlog.`,
               { area: "timeline" }
             ),
           };
@@ -381,6 +386,16 @@ export function dialogueLines(
 }
 
 /**
+ * How a member takes the player stopping by, by trust before the talk. A
+ * member who would not look up from the screen does not then seem glad; the
+ * trust still moves, but the line is guarded.
+ */
+function acknowledgement(name: string, trust: number): string {
+  if (trust >= WARY_TRUST) return `${name} seems glad you stopped by.`;
+  return `${name} gives you a short nod before you go. It is a start.`;
+}
+
+/**
  * Talks to a member: ten minutes of the player's day. What they say is
  * worked out before the talk, any facts are recorded as seen, and the first
  * talk of the day builds a little trust, which the last line reports.
@@ -394,6 +409,7 @@ export function talk(
   const spent = spend(world, "talk");
   if (!spent.ok) return spent;
   const lines = dialogueLines(world, memberId);
+  const before = personState(world, memberId)?.trust ?? 0;
   let next = spent.world;
   for (const line of lines) if (line.fact) next = observe(next, line.fact);
   const trusted = adjustTrust(next, memberId, "talk");
@@ -401,7 +417,7 @@ export function talk(
   if (trusted.delta > 0)
     lines.push({
       kind: "relationship",
-      text: `${member.name} seems glad you stopped by.`,
+      text: acknowledgement(member.name, before),
       trustDelta: trusted.delta,
     });
   return { ok: true, world: next, lines };

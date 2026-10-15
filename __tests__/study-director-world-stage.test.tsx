@@ -17,6 +17,7 @@ import {
   currentGoal,
   interactionPrompt,
   nameplates,
+  subjectSubtitle,
   todaysTasks,
 } from "@/components/study-director-world/stage-model";
 import {
@@ -235,5 +236,25 @@ describe("TasksPanel", () => {
     cleanup();
     render(<TasksPanel tasks={[]} />);
     expect(screen.getByText(/Nothing is waiting on you/)).toBeTruthy();
+  });
+});
+
+describe("conversation subtitle (#2193)", () => {
+  it("adds a full stop only when the subject does not end a sentence", () => {
+    expect(
+      subjectSubtitle(
+        "Would the team be allowed a day off?",
+        "Choose an answer"
+      )
+    ).toBe("Would the team be allowed a day off? Choose an answer");
+    expect(subjectSubtitle("Stop the line!", "Decided.")).toBe(
+      "Stop the line! Decided."
+    );
+    expect(subjectSubtitle("Late kits.", "Decided.")).toBe(
+      "Late kits. Decided."
+    );
+    expect(subjectSubtitle("Late kits", "Decided.")).toBe(
+      "Late kits. Decided."
+    );
   });
 });

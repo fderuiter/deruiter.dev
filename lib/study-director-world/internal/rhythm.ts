@@ -5,6 +5,7 @@ import { spendCost } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { guestWaiting, guestWrapUp } from "./guests";
 import { adjustTrust, bondFor, personState } from "./team";
+import { DAY_END } from "../types";
 import type {
   ActionCost,
   DayPlan,
@@ -499,18 +500,44 @@ function priorityOutcome(
     : [{ text: `${label}: the desk is not clear. Not kept.`, tone: "bad" }];
 }
 
+/** True when the player looked at a site themselves today. */
+function visitedToday(world: WorldState, siteId: string): boolean {
+  const day = world.study.day;
+  return (
+    (world.visit?.day === day && world.visit.siteId === siteId) ||
+    (world.siteVisitHistory ?? []).some(
+      (r) => r.day === day && r.siteId === siteId
+    )
+  );
+}
+
 /**
  * What the chosen priority adds to the night. People: how the team looked
- * when you left. Sites: which site sent nothing. Desk: a clear desk earns a
- * point of compliance. Returns the world with any effect applied.
+ * when you left, said only when you stayed to the end of the day yourself.
+ * Sites: which site sent nothing, leaving out a site you visited today.
+ * Desk: a clear desk earns a point of compliance. Returns the world with any
+ * effect applied. Pass `delegated` when the team ran the day without the
+ * player, who then saw nobody at their desk.
  */
-export function settlePriority(world: WorldState): {
+export function settlePriority(
+  world: WorldState,
+  options: { delegated?: boolean } = {}
+): {
   world: WorldState;
   lines: OvernightLine[];
 } {
   const { priority } = planFor(world);
   if (!priority) return { world, lines: [] };
   const lines: OvernightLine[] = [];
+  if (priority === "people" && (options.delegated || world.minute < DAY_END)) {
+    lines.push({
+      text: options.delegated
+        ? "You were not in today, so you did not see who stayed late."
+        : "You left before the end of the day, so you did not see who stayed late.",
+      tone: "neutral",
+    });
+    return { world, lines };
+  }
   if (priority === "people") {
     const stretched = world.study.team.filter(
       (m) => personState(world, m.id)?.mood === "overloaded"
@@ -525,11 +552,19 @@ export function settlePriority(world: WorldState): {
     return { world, lines };
   }
   if (priority === "sites") {
-    const quiet = world.study.sites.filter(
+    const silent = world.study.sites.filter(
       (s) => s.coordinator === "invisible"
     );
-    if (quiet.length === 0)
+    // A site the player stood in today did not send nothing: they saw it.
+    const seen = silent.filter((s) => visitedToday(world, s.id));
+    const quiet = silent.filter((s) => !visitedToday(world, s.id));
+    if (silent.length === 0)
       lines.push({ text: "Every site checked in overnight.", tone: "good" });
+    if (seen.length > 0 && quiet.length === 0)
+      lines.push({
+        text: `You saw ${seen.map((s) => s.name).join(" and ")} yourself today.`,
+        tone: "neutral",
+      });
     for (const s of quiet)
       lines.push({
         text: `${s.name} sent nothing overnight. Quiet is not the same as fine.`,

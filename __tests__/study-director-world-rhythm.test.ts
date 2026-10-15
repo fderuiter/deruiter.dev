@@ -27,6 +27,19 @@ const fresh = (seed = "rhythm-1"): WorldState =>
 
 const at = (w: WorldState, minute: number): WorldState => ({ ...w, minute });
 
+/** The same world with one member's workload set. */
+const withLoad = (
+  w: WorldState,
+  memberId: string,
+  workload: number
+): WorldState => ({
+  ...w,
+  study: {
+    ...w.study,
+    team: w.study.team.map((m) => (m.id === memberId ? { ...m, workload } : m)),
+  },
+});
+
 describe("the day's plan", () => {
   it("starts each morning with no priority and nothing handled", () => {
     const w = fresh();
@@ -219,11 +232,63 @@ describe("what the priority reveals overnight", () => {
     const w = fresh();
     const chosen = choosePriority(w, "people");
     if (!chosen.ok) throw new Error("choose failed");
-    const { lines } = settlePriority(chosen.world);
+    const { lines } = settlePriority(at(chosen.world, 18 * 60));
     expect(lines.length).toBeGreaterThan(0);
     expect(lines.every((l) => /desk when you left|on time/.test(l.text))).toBe(
       true
     );
+  });
+
+  it("people: does not say who stayed late when the player left early or delegated (#2193)", () => {
+    const w = withLoad(fresh(), "walt", 98);
+    const chosen = choosePriority(w, "people");
+    if (!chosen.ok) throw new Error("choose failed");
+    const late = settlePriority(at(chosen.world, 18 * 60)).lines;
+    expect(late.map((l) => l.text)).toContain(
+      "Walt was still at their desk when you left."
+    );
+    const early = settlePriority(at(chosen.world, 8 * 60)).lines;
+    expect(early.map((l) => l.text)).toEqual([
+      "You left before the end of the day, so you did not see who stayed late.",
+    ]);
+    const delegated = settlePriority(at(chosen.world, 18 * 60), {
+      delegated: true,
+    }).lines;
+    expect(delegated.map((l) => l.text)).toEqual([
+      "You were not in today, so you did not see who stayed late.",
+    ]);
+    const home = goHome(at(chosen.world, 8 * 60), { delegated: true });
+    expect(
+      home.report.lines.some((l) => /still at their desk/.test(l.text))
+    ).toBe(false);
+  });
+
+  it("sites: does not say a site sent nothing when the player visited it today (#2193)", () => {
+    const w = fresh();
+    const chosen = choosePriority(w, "sites");
+    if (!chosen.ok) throw new Error("choose failed");
+    const quiet = w.study.sites.filter((s) => s.coordinator === "invisible");
+    expect(quiet.length).toBeGreaterThan(0);
+    const visited: WorldState = {
+      ...chosen.world,
+      siteVisitHistory: quiet.map((s) => ({
+        siteId: s.id,
+        siteName: s.name,
+        day: w.study.day,
+        checks: [],
+        audited: false,
+        findings: [],
+        unchecked: [],
+        learned: [],
+        verdict: "",
+      })),
+    };
+    const text = settlePriority(visited)
+      .lines.map((l) => l.text)
+      .join(" ");
+    expect(text).not.toMatch(/sent nothing/);
+    for (const s of quiet) expect(text).toContain(s.name);
+    expect(text).toMatch(/yourself today/);
   });
 
   it("sites: names a site that sent nothing, when there is one", () => {

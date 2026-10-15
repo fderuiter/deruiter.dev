@@ -225,6 +225,8 @@
 - [lib/game-audio](lib/game-audio/README.md)
 - [lib/game-manuals](lib/game-manuals/README.md)
 - [lib/game-utils](lib/game-utils/README.md)
+- [lib/garmin-badge-store](lib/garmin-badge-store/README.md)
+- [lib/garmin-badges](lib/garmin-badges/README.md)
 - [lib/garmin-bag](lib/garmin-bag/README.md)
 - [lib/garmin-bests-store](lib/garmin-bests-store/README.md)
 - [lib/garmin-body-battery](lib/garmin-body-battery/README.md)

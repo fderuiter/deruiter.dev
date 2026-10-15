@@ -12,6 +12,7 @@
 
 ## Interfaces
 
+- [BadgeRun](interfaces/BadgeRun.md)
 - [BonusRoom](interfaces/BonusRoom.md)
 - [CrashReport](interfaces/CrashReport.md)
 - [DeviceProfile](interfaces/DeviceProfile.md)

@@ -79,4 +79,12 @@ describe("touch framing (#2045)", () => {
     );
     expect(flow.fitView).not.toHaveBeenCalled();
   });
+
+  it("keeps the lane labels on screen when the lane is wider than the canvas", () => {
+    const { flow } = fakeFlow();
+    frameLane(flow, { width: 720, height: 300 });
+    const { x, zoom } = flow.setViewport.mock.calls[0][0];
+    // The labels start at world x 8; their left edge must sit inside the canvas.
+    expect(x + 8 * zoom).toBeGreaterThanOrEqual(0);
+  });
 });

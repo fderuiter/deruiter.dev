@@ -27,6 +27,7 @@ import {
   type ShiftState,
   type WeekDayResult,
 } from "@/lib/patty-drive-thru";
+import { createBoothStore } from "@/components/patty-drive-thru/store";
 
 /** Arrival times of a shift nobody serves, while under the open-order cap. */
 function arrivalTimes(shift: ShiftState, seconds: number): number[] {
@@ -111,9 +112,9 @@ describe("dilemmas that can reach every ending (#2139)", () => {
   });
 });
 
-describe("a week of dilemmas (#2139)", () => {
-  const days = WEEK_DAYS.map((day) => day.id);
+const days = WEEK_DAYS.map((day) => day.id);
 
+describe("a week of dilemmas (#2139)", () => {
   it("deals three a day and never repeats one in a week", () => {
     for (const seed of ["w-1", "w-2", "w-3"]) {
       const decks = dealWeekDilemmas(seed, days);
@@ -183,9 +184,7 @@ describe("rush calls and mid-week pages (#2139)", () => {
       EVENT_CAPTIONS.rushSchool
     );
     const friday = WEEK_DAYS[4].rushWindows!;
-    expect(getRushCaption(friday, 0, "friday")).toBe(
-      EVENT_CAPTIONS.rushFriday
-    );
+    expect(getRushCaption(friday, 0, "friday")).toBe(EVENT_CAPTIONS.rushFriday);
     expect(getRushCaption(friday, 1, "friday")).toBe(
       EVENT_CAPTIONS.rushClosing
     );
@@ -212,5 +211,40 @@ describe("rush calls and mid-week pages (#2139)", () => {
     expect(company.join(" ")).toMatch(/nodded at me/);
     const friday = getWeekDayDiaryLines({ ...base, day: "friday" });
     expect(friday.join(" ")).not.toMatch(/talk about Friday/);
+  });
+
+  it("has Bo call Fry Friday in the booth on the week's last day", () => {
+    const done = (day: (typeof days)[number]): WeekDayResult => ({
+      day,
+      seed: day,
+      outcome: "completed",
+      score: 0,
+      netCents: 0,
+      served: 0,
+      late: 0,
+      expired: 0,
+      drinksDropped: 0,
+      yells: 0,
+      endMeters: { sos: 80, dignity: 70, solidarity: 50 },
+      ending: "silent-exit",
+      choices: [],
+    });
+    const week = {
+      ...createWeek("fry"),
+      days: days.slice(0, 4).map(done),
+    };
+    const store = createBoothStore();
+    store.getState().clockInWeek({ week });
+    const calls: string[] = [];
+    store.getState().onEvents((events) => {
+      if (events.some((event) => event.type === "rush-started"))
+        calls.push(store.getState().caption?.text ?? "");
+    });
+    // A week day keeps its own idle rate, so keep busy until the rush.
+    for (let i = 0; i < 400 && calls.length === 0; i += 1) {
+      if (i % 10 === 0) store.getState().act({ type: "wipe" });
+      store.getState().tick(0.5);
+    }
+    expect(calls[0]).toBe(EVENT_CAPTIONS.rushFriday);
   });
 });

@@ -362,7 +362,6 @@ export const puzzleLevels: PuzzlerLevelDef[] = [
     availableTactics: [
       { id: "rw", hypothesis: "add_zero", labelOverride: "rw [add_zero]" },
       "simp",
-      "rfl",
       "sorry",
     ],
     hints: [

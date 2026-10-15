@@ -1112,6 +1112,16 @@
   width: 7.5rem;
   height: 9.75rem;
 }
+/* A crowded hand on a narrow tablet (iPad portrait, 7+ cards) keeps the
+   compact width so the fan fits on screen; the labels stay 12px and wrap
+   (#2278). */
+.qp-root.qp-touch .qp-card.qp-card-compact {
+  width: 6rem;
+  height: 9.25rem;
+}
+.qp-root.qp-touch .qp-card-compact .qp-card-foot {
+  padding-inline: 0.25rem;
+}
 /* On a short landscape screen (iPad mini, iPad Air) the two drawers sit side
    by side, without the "Expand Drawer" words (the chevron and aria-expanded
    still say it), so the board keeps a drawer row's worth of height. */

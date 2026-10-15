@@ -64,7 +64,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({
       data-banned={banned ? "true" : undefined}
       data-selected={isSelected ? "true" : undefined}
       className={`qp-card qp-focus relative flex flex-col overflow-hidden rounded-xl font-mono select-none shadow-[0_10px_24px_-14px_rgba(0,0,0,0.9)] ${
-        compact ? "h-[128px] w-[96px]" : "h-[140px] w-[108px]"
+        compact ? "qp-card-compact h-[128px] w-[96px]" : "h-[140px] w-[108px]"
       } ${
         banned
           ? "grayscale cursor-not-allowed"
@@ -125,7 +125,7 @@ export const TacticCard: React.FC<TacticCardProps> = ({
         {art.glyph}
       </div>
 
-      <div className="px-2 pb-2">
+      <div className="qp-card-foot px-2 pb-2">
         <span
           // Long names such as trans [succ_le_double] wrap to two lines
           // instead of being cut off (#2249).

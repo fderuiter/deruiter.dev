@@ -123,4 +123,19 @@ describe("Arcade Survival in the cabinet (#2141)", () => {
     );
     expect(source).toMatch(/if \(mode === "arcade"\) \{\s+setGameState\("gameover"\);/);
   });
+
+  it("keeps the result cards from repeating the clock or centering the star row (#2262)", () => {
+    const source = fs.readFileSync(
+      path.resolve(process.cwd(), "components/LaserLoon.tsx"),
+      "utf8"
+    );
+    // The headline already reads "Survived 1:42"; a "102s" tile repeated it.
+    expect(source).not.toContain('{ label: "Survived", value: survivalSecs');
+    expect(source).toContain('{ label: "Flags downed", value: runKills }');
+    expect(source).toMatch(/runKillsRef\.current \+= 1;\s+setRunKills\(runKillsRef\.current\);\s+if \(mode !== "campaign"\) return;/);
+    expect(source).toMatch(/setRunKills\(0\);\s+runKillsRef\.current = 0;/);
+    expect(source).toMatch(
+      /data-testid="laser-loon-campaign-stars"\s+className="font-mono text-xs text-neutral-300"/
+    );
+  });
 });

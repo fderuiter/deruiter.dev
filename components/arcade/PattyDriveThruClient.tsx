@@ -9,6 +9,7 @@ import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
+import { requestPattyAutoPause } from "@/components/patty-drive-thru/auto-pause";
 import { COMPANION_POST_PATH } from "@/lib/patty-drive-thru";
 
 const PattyDriveThruLoader = () =>
@@ -88,9 +89,19 @@ export const PattyDriveThruClient: React.FC = () => (
               { key: "B", action: "Bump the order" },
               { key: "R", action: "Re-enter a dropped drink" },
               { key: "C", action: "Flag a coworker for coffee" },
+              { key: "Q / E", action: "Answer a dilemma" },
+              { key: "P", action: "Pause" },
               { key: "Esc", action: "Step back from the register" },
             ]}
             importComponent={PattyDriveThruLoader}
+            // No game key is F (A D, arrows, Enter, Tab, W, B, R, C, 1 to 9,
+            // Q, E, P, Backspace, Home, Escape), so the cabinet's
+            // F-for-fullscreen stays on (#2116). The booth, its dock and its
+            // register sheet are built to fit the touch cabinet's viewport,
+            // so the stage clips rather than scrolls (ADR 0061).
+            mobileLayout="fit"
+            // A hidden tab or a backgrounded app pauses a shift in progress.
+            onAutoPause={requestPattyAutoPause}
           >
             <DynamicPattyDriveThru />
           </PlayCabinet>

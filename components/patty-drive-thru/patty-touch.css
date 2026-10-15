@@ -1,0 +1,296 @@
+/*
+ * Patty's Drive-Thru on the immersive touch cabinet (ADR 0061, #2116). The
+ * game root carries `pdt-touch` only while useCabinetTouch() is true, so
+ * desktop markup and styles never see these rules. The HUD, the booth, the
+ * dock and the register sheet share the cabinet's stage without any page
+ * scroll. Held upright, the booth fills the stage with the keys along the
+ * bottom and the register rising as a sheet; held sideways, the register
+ * takes the right side and the booth stays beside it.
+ */
+
+/* ---- Sizes: every control 44px or more, no text under 12px ---- */
+.pdt-touch button,
+.pdt-touch summary {
+  min-height: 44px;
+}
+.pdt-touch button {
+  min-width: 44px;
+}
+.pdt-touch .text-\[9px\],
+.pdt-touch .text-\[10px\],
+.pdt-touch .text-\[11px\] {
+  font-size: 0.75rem;
+}
+
+/* ---- The root fills the stage and never scrolls as a page ---- */
+.arcade-cabinet[data-immersive="true"] .pdt-touch {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.pdt-touch > * {
+  min-width: 0;
+}
+.pdt-touch > .pdt-booth,
+.pdt-touch > .pdt-flat,
+.pdt-touch > .pdt-page {
+  flex: 1 1 0;
+  min-height: 0;
+}
+.pdt-touch > [data-touch-controls] {
+  flex: none;
+}
+
+/* ---- Diary pages and the flat view scroll inside the stage ---- */
+.pdt-touch .pdt-page,
+.pdt-touch .pdt-flat {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+/* The cabinet's toolbar floats over the top right corner. */
+.pdt-touch .pdt-page {
+  display: flex;
+  flex-direction: column;
+  padding-top: 3.75rem;
+}
+.pdt-touch .pdt-page > * {
+  margin-block: auto;
+}
+.pdt-touch .pdt-flat > * {
+  flex-shrink: 0;
+}
+/* The orders and the register take the height the strip leaves, so the keys
+   sit at the thumbs and no empty band opens above the dock. */
+.pdt-touch .pdt-flat > .pdt-flat-grid {
+  flex: 1 1 auto;
+  align-items: stretch;
+  grid-template-rows: minmax(0, 1fr);
+}
+@media (orientation: portrait) {
+  .pdt-touch .pdt-flat > .pdt-flat-grid {
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+}
+.pdt-touch .pdt-flat-grid > * {
+  min-height: 0;
+}
+.pdt-touch
+  .pdt-flat-grid
+  > [data-testid="pdt-register"]
+  [role="group"][aria-label^="Menu"] {
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(3rem, 5rem);
+  align-content: start;
+}
+.pdt-touch .pdt-flat-grid > [data-testid="pdt-kds-board"] {
+  overflow-y: auto;
+}
+
+/* ---- The heads-up strip clears the cabinet's floating toolbar ---- */
+.pdt-touch [data-testid="pdt-hud"] {
+  width: calc(100% - var(--cabinet-toolbar-inset, 0px) + 0.25rem);
+}
+.pdt-touch [data-testid="pdt-hud"] .truncate {
+  overflow: visible;
+  white-space: normal;
+  line-height: 1.15;
+}
+/* Held upright the strip takes two rows: the clock and the view toggle, then
+   the three meters across, each wide enough for its whole name. */
+@media (orientation: portrait) {
+  .pdt-touch [data-testid="pdt-hud"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+  }
+  .pdt-touch [data-testid="pdt-hud"] > :nth-child(1) {
+    grid-column: 1 / 3;
+    grid-row: 1;
+  }
+  .pdt-touch [data-testid="pdt-hud"] > :nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .pdt-touch [data-testid="pdt-hud"] > :nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .pdt-touch [data-testid="pdt-hud"] > :nth-child(4) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+  .pdt-touch [data-testid="pdt-hud"] > :nth-child(5) {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+  }
+}
+
+/* ---- The dock ---- */
+.pdt-touch .pdt-dock {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr 1.5fr 1fr 1.15fr;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--pdt-hud-rule);
+  background: var(--pdt-stage);
+  touch-action: manipulation;
+}
+.pdt-touch .pdt-dock[data-view="flat"] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.pdt-touch .pdt-key {
+  display: flex;
+  min-height: 3.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  border: 1px solid var(--pdt-hud-rule);
+  border-radius: 0.5rem;
+  background: var(--pdt-hud-button);
+  color: var(--pdt-hud-text);
+  font-family: var(--font-geist-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.pdt-touch .pdt-key.pdt-key-turn {
+  touch-action: none;
+}
+.pdt-touch .pdt-key:active:not(:disabled) {
+  background: var(--pdt-key-active);
+  color: var(--pdt-ink);
+}
+.pdt-touch .pdt-key:disabled {
+  opacity: 0.45;
+}
+.pdt-touch .pdt-key:focus-visible {
+  outline: 2px solid var(--pdt-focus);
+  outline-offset: 2px;
+}
+.pdt-touch .pdt-key-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+}
+.pdt-touch .pdt-key-label {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.pdt-touch .pdt-key-register {
+  border-color: var(--pdt-bump-edge);
+  background: var(--pdt-bump);
+  color: var(--pdt-ink);
+}
+.pdt-touch .pdt-key-register[aria-pressed="true"] {
+  background: var(--pdt-key-active);
+}
+/* On the taller iPads the keys grow to a thumb-sized pad. */
+@media (min-height: 900px) {
+  .pdt-touch .pdt-key {
+    min-height: 4.5rem;
+  }
+  .pdt-touch .pdt-key-icon {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+@media (min-height: 1200px) {
+  .pdt-touch .pdt-key {
+    min-height: 5.5rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ---- The register sheet ---- */
+.pdt-touch .pdt-sheet {
+  position: absolute;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--pdt-hud-rule);
+  background: var(--pdt-stage);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+.pdt-touch .pdt-sheet-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.pdt-touch .pdt-sheet-close {
+  flex: none;
+  border: 1px solid var(--pdt-hud-rule);
+  border-radius: 0.25rem;
+  background: var(--pdt-hud-button);
+  padding: 0 0.75rem;
+  color: var(--pdt-hud-text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.pdt-touch .pdt-sheet-close:focus-visible {
+  outline: 2px solid var(--pdt-focus);
+  outline-offset: 2px;
+}
+.pdt-touch .pdt-sheet > [data-testid="pdt-register"] {
+  flex: 1 1 auto;
+}
+.pdt-touch .pdt-sheet [role="group"][aria-label^="Menu"] {
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(3rem, 5rem);
+  align-content: start;
+}
+@media (orientation: portrait) {
+  .pdt-touch .pdt-sheet {
+    right: 0;
+    bottom: 0;
+    left: 0;
+    max-height: 80%;
+    border-bottom: 0;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+}
+/* Held sideways the sheet is a panel down the right side, under the toolbar,
+   and the heads-up strip gives it the room. */
+@media (orientation: landscape) {
+  .pdt-touch .pdt-sheet {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(27rem, 48%);
+    padding-top: 4rem;
+    border-width: 0 0 0 1px;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.45);
+  }
+  .pdt-touch .pdt-sheet [role="group"][aria-label^="Menu"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pdt-touch .pdt-booth[data-sheet="open"] > .pdt-top {
+    right: min(27rem, 48%);
+  }
+  .pdt-touch .pdt-booth[data-sheet="open"] .pdt-top [data-testid="pdt-hud"] {
+    width: 100%;
+  }
+}
+@media (min-height: 1200px) {
+  .pdt-touch .pdt-sheet [role="group"][aria-label^="Menu"] {
+    grid-auto-rows: minmax(4rem, 6rem);
+  }
+}

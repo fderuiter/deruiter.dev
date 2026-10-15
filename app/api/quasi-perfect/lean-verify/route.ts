@@ -112,7 +112,9 @@ export async function POST(req: Request) {
     }> = [];
 
     let hasSorry = false;
+    let hasOpenGoal = false;
     lines.forEach((line, idx) => {
+      if (line.trim().startsWith("-- Goal open")) hasOpenGoal = true;
       const lineNum = idx + 1;
       const trimmed = line.trim();
       if (trimmed.startsWith("sorry")) {
@@ -133,7 +135,9 @@ export async function POST(req: Request) {
       diagnostics,
       goalState: hasSorry
         ? "Goal admitted via sorry (simulated fallback)"
-        : "Goals closed via local simulation ✔",
+        : hasOpenGoal
+          ? "Goal open: unsolved goals remain (simulated fallback)"
+          : "Goals closed via local simulation ✔",
       executionTimeMs: Date.now() - startTime,
       engine: "fallback_simulator",
     });

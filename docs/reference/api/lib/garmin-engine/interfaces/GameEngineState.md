@@ -20,6 +20,16 @@
 
 ***
 
+### badgeRun?
+
+> `optional` **badgeRun?**: [`BadgeRun`](BadgeRun.md) \| `null`
+
+What this run has done toward its badges (#2021), or unset when nothing
+is watching. The engine carries it untouched; lib/garmin-badges.ts acts
+on it.
+
+***
+
 ### banner?
 
 > `optional` **banner?**: [`FaceBanner`](FaceBanner.md) \| `null`

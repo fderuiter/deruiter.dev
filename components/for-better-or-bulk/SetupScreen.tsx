@@ -76,6 +76,8 @@ const FOOD_OPTIONS: readonly { id: FoodTier; label: string; note: string }[] = [
 interface SetupScreenProps {
   initial: Setup;
   initialMode: ControlMode;
+  /** True in the iPad touch cabinet: the modes name the on-screen keys (#2123). */
+  touch?: boolean;
   onStart: (setup: Setup, mode: ControlMode) => void;
 }
 
@@ -113,6 +115,7 @@ function OptionButton({
 export function SetupScreen({
   initial,
   initialMode,
+  touch = false,
   onStart,
 }: SetupScreenProps) {
   const [capabilities, setCapabilities] = useState<readonly CapabilityId[]>(
@@ -341,7 +344,9 @@ export function SetupScreen({
           >
             <span className="font-bold text-[var(--fbb-text)]">One player</span>
             <span className="mt-0.5">
-              Play both. Tab swaps between Fred and Abbi.
+              {touch
+                ? "Play both. Swap changes between Fred and Abbi."
+                : "Play both. Tab swaps between Fred and Abbi."}
             </span>
           </OptionButton>
           <OptionButton
@@ -349,10 +354,12 @@ export function SetupScreen({
             onClick={() => setMode("coop")}
           >
             <span className="font-bold text-[var(--fbb-text)]">
-              Two players, one keyboard
+              {touch ? "Two players, one iPad" : "Two players, one keyboard"}
             </span>
             <span className="mt-0.5">
-              Fred: WASD, E or Space, F. Abbi: arrows, Enter, Shift.
+              {touch
+                ? "Fred plays from the left edge, Abbi from the right. Each has a drag pad, Use and Work."
+                : "Fred: WASD, E or Space, F. Abbi: arrows, Enter, Shift."}
             </span>
           </OptionButton>
         </div>

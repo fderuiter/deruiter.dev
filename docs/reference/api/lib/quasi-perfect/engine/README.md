@@ -10,6 +10,10 @@
 
 - [MonomialMap](type-aliases/MonomialMap.md)
 
+## Variables
+
+- [LEAN\_OPEN\_GOAL\_MARKER](variables/LEAN_OPEN_GOAL_MARKER.md)
+
 ## Functions
 
 - [areAllSubgoalsClosed](functions/areAllSubgoalsClosed.md)

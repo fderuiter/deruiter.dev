@@ -767,6 +767,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         badge: "Cards",
       },
       {
+        title: "Badges and Run History",
+        detail:
+          "The companion panel keeps a badge case and your last 20 runs, with the day, mode, finish time or DNF, distance, best Training Effect and Kudos of each. Badges are earned once: First 5K, Sub-5 Minute Race, Negative Splitter (every lap faster than the last), Rep Max Slayer, All Kudos and No Gear Finisher (both in Race Mode), Daily Workout Streaks for finishing a run on 3 and 7 days in a row, Couch to 5K (finish the 5K on a day you already took a DNF) and Never Skip Leg Day (clear a stage without sprinting). New badges show on the result card and are read out. First 5K also counts toward the 5K Finisher trophy. Everything stays on this device.",
+        badge: "Badges",
+      },
+      {
         title: "Race Day and The Wall",
         detail:
           "Race Day ends the plan. The lane moves at a steady race pace, so pace keys do nothing, and the run clock times it onto its own Race Day board. Near the end The Wall steps out, and the finish stays out of reach until it falls. It holds ahead of you, then charges down the lane: jump and land on top to hit it, or jump clear to dodge. It takes three hits, and each one changes its pattern: it charges faster, then throws a brick while it holds, then two. Bricks fly low, so a jump clears them. Beat it and reach the finish for the finisher medal.",
@@ -1968,7 +1974,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Best Streak",
         detail:
-          "Beating your stored best shows a New Echo best toast. The best is kept in this browser and survives reloads. It is separate from the trophy count that feeds the arcade score.",
+          "Beating your stored best shows a New Echo best toast. The best is kept in this browser, survives reloads and shows on the Arcade Hub's vault card. Streaks of 5 and 10 unlock the Echo Chamber and Perfect Recall arcade trophies; the arcade score itself counts hidden trophies.",
         badge: "Record",
       },
       {

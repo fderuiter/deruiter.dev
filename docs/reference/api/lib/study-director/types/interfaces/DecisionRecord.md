@@ -20,6 +20,14 @@
 
 ***
 
+### delegated?
+
+> `optional` **delegated?**: `boolean`
+
+Set when the team settled it on a delegated day, not the player (#2190).
+
+***
+
 ### documented
 
 > **documented**: `boolean`

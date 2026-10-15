@@ -277,7 +277,9 @@ export const StudyDirectorWorld: React.FC<{
   const [notice, setNotice] = useState("");
   // First-run help (#1819); the Controls button reopens it.
   const [showIntro, setShowIntro] = useState(() => !introSeen());
-  const [acted, setActed] = useState(false);
+  // A resumed run that has moved on from its first morning has acted
+  // already: the day-1 goal went back to "walk to the EDC" on reload (#2187).
+  const [acted, setActed] = useState(() => !opened.fresh);
   // The first morning of a new run, while nothing has changed it: its
   // difficulty can still be chosen (#2058). Any change to the world ends that.
   const [freshWorld, setFreshWorld] = useState<WorldState | null>(

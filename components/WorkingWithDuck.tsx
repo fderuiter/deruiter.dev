@@ -180,6 +180,54 @@ const getHighScoreSnapshot = () => {
 
 const getServerSnapshot = () => "0";
 
+/**
+ * Storage key for the best score of each campaign sprint (#2159). Later
+ * sprints ship more work and so score more, so one shared high score made
+ * every sprint a "new best"; the result card compares against this instead.
+ */
+const SPRINT_BESTS_KEY = "working_with_duck_sprint_bests";
+/** Fired in this tab after a sprint best is saved; "storage" only fires in others. */
+const SPRINT_BESTS_EVENT = "duck-sprint-bests";
+
+const subscribeSprintBests = (callback: () => void) => {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener("storage", callback);
+  window.addEventListener(SPRINT_BESTS_EVENT, callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener(SPRINT_BESTS_EVENT, callback);
+  };
+};
+
+const getSprintBestsSnapshot = () => {
+  if (typeof window === "undefined") return "{}";
+  try {
+    return safeGetRawItem(SPRINT_BESTS_KEY) || "{}";
+  } catch {
+    return "{}";
+  }
+};
+
+const getSprintBestsServerSnapshot = () => "{}";
+
+/** Parses the stored sprint bests, dropping anything malformed. */
+function parseSprintBests(raw: string): Record<number, number> {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return {};
+    const bests: Record<number, number> = {};
+    for (const [level, score] of Object.entries(parsed)) {
+      const n = Number(level);
+      if (Number.isInteger(n) && typeof score === "number" && score > 0) {
+        bests[n] = score;
+      }
+    }
+    return bests;
+  } catch {
+    return {};
+  }
+}
+
 /** Storage key for the best endless score, kept apart from the high score (#2051). */
 const ENDLESS_BEST_KEY = "working_with_duck_endless_best";
 
@@ -773,6 +821,17 @@ function winVerdict(saved: number, total: number): string {
   return `The work shipped with ${saved} of ${total} props intact. The rest have tooth marks.`;
 }
 
+/** How the sprint's time compares with its par, and the bonus it earned (#2159). */
+function parLine(state: WorkingWithDuckState): string {
+  const par = SPRINTS.find((s) => s.level === state.currentLevel)?.parSeconds;
+  const seconds = Math.round(state.ticks / 60);
+  if (!par) return `Shipped in ${seconds}s`;
+  const bonus = state.sprintParBonus ?? 0;
+  return bonus > 0
+    ? `Shipped in ${seconds}s, par ${par}s: +${bonus} speed bonus`
+    : `Shipped in ${seconds}s, par ${par}s: no speed bonus`;
+}
+
 const RESULT_LINK =
   "inline-flex min-h-[48px] items-center rounded-xl border border-white/[0.08] px-3 font-mono text-[11px] text-zinc-200 transition-colors hover:border-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300";
 
@@ -976,6 +1035,14 @@ function DuckSprintResult({
       onEscape={onNext}
       preventScroll
     >
+      {state.mode === "campaign" && (
+        <p
+          data-testid="duck-par-line"
+          className="mt-3 font-mono text-[11px] tabular-nums text-zinc-400"
+        >
+          {parLine(state)}
+        </p>
+      )}
       {stars && (
         <div className="mt-4 rounded-xl border border-white/[0.08] bg-[#0d0e11] p-2.5">
           <p
@@ -1105,6 +1172,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     getServerSnapshot
   );
   const loadedEndlessBest = parseInt(rawEndlessBest, 10) || 0;
+  const rawSprintBests = useSyncExternalStore(
+    subscribeSprintBests,
+    getSprintBestsSnapshot,
+    getSprintBestsServerSnapshot
+  );
 
   const { playNote, muted, setMuted } = useAudio();
   const { recordEvent } = useTelemetry();
@@ -1689,6 +1761,24 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       ) {
         recordArcadeMilestone("working-with-duck", "campaign_cleared");
       }
+      // A sprint best counts shipped runs only, so a time-out never sets
+      // the bar the next real run is measured against.
+      if (uiState.status === "won" && uiState.mode === "campaign") {
+        const bests = parseSprintBests(getSprintBestsSnapshot());
+        if (uiState.totalScore > (bests[uiState.currentLevel] ?? 0)) {
+          bests[uiState.currentLevel] = uiState.totalScore;
+          safeSetRawItem(SPRINT_BESTS_KEY, JSON.stringify(bests));
+          window.dispatchEvent(new Event(SPRINT_BESTS_EVENT));
+        }
+      }
+      // Trophy milestones for real play (#2159): a sprint shipped, and a
+      // sprint with all three stars.
+      if (uiState.status === "won" && uiState.mode === "campaign") {
+        recordArcadeMilestone("working-with-duck", "sprint_shipped");
+        if (uiState.sprintStars?.count === 3) {
+          recordArcadeMilestone("working-with-duck", "three_star_sprint");
+        }
+      }
       if (sprintOver && uiState.highScore > loadedHighScore) {
         safeSetRawItem(
           "working_with_duck_high_score",
@@ -1710,6 +1800,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     uiState.unlockedFacts,
     uiState.mode,
     uiState.currentLevel,
+    uiState.sprintStars,
     loadedHighScore,
   ]);
 
@@ -2831,6 +2922,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
   const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
+  // The campaign shows the best for this sprint; endless keeps the overall
+  // high score (#2159).
+  const loadedSprintBest =
+    parseSprintBests(rawSprintBests)[uiState.currentLevel] ?? 0;
+  const displayedBest =
+    uiState.mode === "campaign" ? loadedSprintBest : displayedHighScore;
 
   // Paused play is frozen (#1645); toys and tricks only work in the office
   // (#1647). Disabled controls point at the reason via aria-describedby.
@@ -2981,7 +3078,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   data-testid="duck-hud-highscore-value"
                   className="font-bold text-zinc-100"
                 >
-                  {displayedHighScore}
+                  {displayedBest}
                 </span>
               </span>
             </span>
@@ -3092,10 +3189,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               data-testid="duck-start-highscore"
               className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
             >
-              High Score{" "}
-              <span className="text-zinc-100 font-bold">
-                {displayedHighScore}
-              </span>
+              {uiState.mode === "campaign"
+                ? `Sprint ${uiState.currentLevel} best `
+                : "High Score "}
+              <span className="text-zinc-100 font-bold">{displayedBest}</span>
               {uiState.mode === "endless" && (
                 <>
                   {" · "}Endless best{" "}
@@ -4047,7 +4144,9 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           <DuckSprintResult
             state={uiState}
             sprintTitle={currentSprint.title}
-            storedBest={loadedHighScore}
+            storedBest={
+              uiState.mode === "campaign" ? loadedSprintBest : loadedHighScore
+            }
             storedEndlessBest={loadedEndlessBest}
             onNext={handleAdvanceLevel}
             onReplay={restartSprint}

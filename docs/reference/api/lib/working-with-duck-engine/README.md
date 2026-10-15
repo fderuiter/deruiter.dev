@@ -67,9 +67,11 @@
 - [MAX\_DUCK\_Y](variables/MAX_DUCK_Y.md)
 - [MIN\_DUCK\_X](variables/MIN_DUCK_X.md)
 - [MIN\_DUCK\_Y](variables/MIN_DUCK_Y.md)
+- [PAR\_POINTS\_PER\_SECOND](variables/PAR_POINTS_PER_SECOND.md)
 - [RUG\_BOUNDS](variables/RUG_BOUNDS.md)
 - [SPRINTS](variables/SPRINTS.md)
 - [WATER\_BOWL\_BOUNDS](variables/WATER_BOWL_BOUNDS.md)
+- [WORK\_UNIT\_POINTS](variables/WORK_UNIT_POINTS.md)
 
 ## Functions
 
@@ -80,6 +82,7 @@
 - [calculateGoodBoyMultiplier](functions/calculateGoodBoyMultiplier.md)
 - [clampBounds](functions/clampBounds.md)
 - [computeEndlessScore](functions/computeEndlessScore.md)
+- [computeParBonus](functions/computeParBonus.md)
 - [computeSprintStars](functions/computeSprintStars.md)
 - [createInitialDuckGameState](functions/createInitialDuckGameState.md)
 - [dragDuckTo](functions/dragDuckTo.md)

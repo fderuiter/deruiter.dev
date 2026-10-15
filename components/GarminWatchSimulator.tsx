@@ -29,6 +29,19 @@ import {
   type RunMode,
 } from "@/components/garmin-watch/CompanionPanel";
 import { TrainingPlanPanel } from "@/components/garmin-watch/TrainingPlanPanel";
+import { BadgeCasePanel } from "@/components/garmin-watch/BadgeCasePanel";
+import {
+  BADGE_MILESTONES,
+  badgeNews,
+  badgeToast,
+  newBadgeRun,
+  recordRun,
+  runFactsOf,
+  stepBadgeRun,
+  type BadgeId,
+  type BadgeSave,
+} from "@/lib/garmin-badges";
+import { loadBadges, saveBadges } from "@/lib/garmin-badge-store";
 import {
   planScreenLabel,
   renderPlanFace,
@@ -805,6 +818,16 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const [runStartBest, setRunStartBest] = useState(effectiveHighScore);
   const [resultDismissed, setResultDismissed] = useState(false);
   const [raceReport, setRaceReport] = useState<RaceReport | null>(null);
+  // Badges and run history (#2021): read after mount so server and client
+  // markup match, and saved once per run, keyed by the run id.
+  const [badgeSave, setBadgeSave] = useState<BadgeSave | null>(null);
+  const [badgeFresh, setBadgeFresh] = useState<BadgeId[]>([]);
+  // Run 0 is a state handed in before any run starts, never a run played.
+  const savedHistoryRunRef = useRef(0);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setBadgeSave(loadBadges());
+  }, []);
   // The share text of the last race when the clipboard is unavailable, or the
   // copied note once it is copied (#2019).
   const [shareNote, setShareNote] = useState<{
@@ -984,6 +1007,8 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
         ...loaded,
         finisherCards: cards ? [...cards] : null,
         finisherNews: null,
+        // Badges (#2021): every run is watched for its in-run badges.
+        badgeRun: newBadgeRun(),
       };
       raceCarryRef.current = 0;
       raceRunIdRef.current += 1;
@@ -991,6 +1016,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       ghostRecorderRef.current = race ? createGhostRecorder() : null;
       setRaceReport(null);
       setShareNote(null);
+      setBadgeFresh([]);
       applyTransition(() => ({
         ...started,
         bestSplits: loadBests(splitsKeyOf(started)).splits,
@@ -1085,6 +1111,24 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
   const { runOver } = plan;
   useEffect(() => {
     if (!isRunOver(gameState)) return;
+    // Every run goes in the history once, and earns its badges (#2021).
+    if (savedHistoryRunRef.current !== raceRunIdRef.current) {
+      savedHistoryRunRef.current = raceRunIdRef.current;
+      const recorded = recordRun(
+        loadBadges(),
+        runFactsOf(gameState),
+        new Date()
+      );
+      saveBadges(recorded.save);
+      setBadgeSave(recorded.save);
+      setBadgeFresh(recorded.earned);
+      for (const id of recorded.earned) {
+        const milestone = BADGE_MILESTONES[id];
+        if (milestone) recordArcadeMilestone("garmin-watch", milestone);
+      }
+      const news = badgeNews(recorded.earned);
+      if (news) announce(news, "polite");
+    }
     // A Training Plan workout settles on the map first (#1994).
     if (gameState.plan) runOver(gameState);
     if (gameState.race) {
@@ -2066,20 +2110,23 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           const last = i === stepCount - 1;
           nextState = applyTransition(
             // Race Day moves The Wall after each step (#1994), packed gear
-            // takes effect (#1995), and the pole's Finisher Card is
-            // collected (#1996).
+            // takes effect (#1995), the pole's Finisher Card is collected
+            // (#1996), and the run's badges are watched (#2021).
             (state) =>
-              stepFinisherCard(
+              stepBadgeRun(
                 state,
-                shownClockMs,
-                stepLoadout(
+                stepFinisherCard(
                   state,
-                  stepRaceDay(
+                  shownClockMs,
+                  stepLoadout(
                     state,
-                    updateGameSimulation(state, stepMs),
+                    stepRaceDay(
+                      state,
+                      updateGameSimulation(state, stepMs),
+                      stepMs
+                    ),
                     stepMs
-                  ),
-                  stepMs
+                  )
                 )
               ),
             (next) => {
@@ -2687,6 +2734,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           ghostTarget={ghostTarget}
           onSetGhostOn={handleSetGhostOn}
           onSetGhostTarget={handleSetGhostTarget}
+          badgePanel={<BadgeCasePanel save={badgeSave} fresh={badgeFresh} />}
           planPanel={
             <TrainingPlanPanel
               save={plan.save}
@@ -2775,6 +2823,18 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                   <p className="mt-3 text-[12px] text-zinc-200">
                     {plan.screen.outcome.text}
                   </p>
+                )}
+                {badgeFresh.length > 0 && (
+                  <ul aria-label="Badges earned" className="mt-3 grid gap-1">
+                    {badgeFresh.map((id) => (
+                      <li
+                        key={id}
+                        className="rounded-md border border-amber-500/40 bg-amber-500/[0.08] px-2 py-1 font-mono text-[11px] text-amber-200"
+                      >
+                        {badgeToast(id)}
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {gameState.race && (
                   <RaceReportCard

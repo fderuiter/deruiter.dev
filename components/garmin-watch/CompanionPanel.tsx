@@ -349,6 +349,8 @@ interface CompanionPanelProps {
   onGroundStripReset: () => void;
   /** The Training Plan's map, bag and save (#1994), shown with the plan picked. */
   planPanel?: ReactNode;
+  /** The badge case and run history (#2021). */
+  badgePanel?: ReactNode;
   /** Laid over the panel, e.g. the end-of-run result card. */
   children?: ReactNode;
 }
@@ -396,6 +398,7 @@ export function CompanionPanel({
   onGroundStripSlot,
   onGroundStripReset,
   planPanel,
+  badgePanel,
   children,
 }: CompanionPanelProps) {
   const profile = DEVICE_PROFILES[deviceTarget];
@@ -801,6 +804,8 @@ export function CompanionPanel({
             )}
           </div>
         </fieldset>
+
+        {badgePanel}
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">

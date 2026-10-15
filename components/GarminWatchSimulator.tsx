@@ -3041,25 +3041,46 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             <output aria-live="off" htmlFor="garmin-device">
               Device Target: {currentProfile.name}
             </output>
-            {fitnessView && (
-              <output aria-live="off" htmlFor="garmin-body-battery">
-                Body Battery: {Math.round(gameState.bodyBattery?.value ?? 100)}
-              </output>
+            {/* A fitness run reads its own numbers; the firmware readouts
+                only mean something on a Dev Mode run (#2240). */}
+            {fitnessView ? (
+              <>
+                <output aria-live="off" htmlFor="garmin-body-battery">
+                  Body Battery:{" "}
+                  {Math.round(gameState.bodyBattery?.value ?? 100)}
+                </output>
+                <output aria-live="off" htmlFor="garmin-run-time">
+                  Run Time: {formatClock(gameState.runClockMs ?? 0)}
+                </output>
+                <output aria-live="off" htmlFor="garmin-distance">
+                  Distance:{" "}
+                  {(Math.max(0, gameState.distanceMeters) / 1000).toFixed(2)} km
+                </output>
+                <output aria-live="off" htmlFor="garmin-lives">
+                  Lives: {gameState.lives ?? 1}
+                </output>
+                <output aria-live="off" htmlFor="garmin-kudos">
+                  Kudos: {gameState.kudos ?? 0}
+                </output>
+              </>
+            ) : (
+              <>
+                <output aria-live="off" htmlFor="garmin-ram">
+                  RAM Memory: {gameState.allocatedRamKb.toFixed(1)} /{" "}
+                  {currentProfile.ramLimitKb} KB
+                </output>
+                <output aria-live="off" htmlFor="garmin-battery">
+                  Battery Level: {Math.round(gameState.battery)}%
+                </output>
+                <output aria-live="off" htmlFor="garmin-thermal">
+                  Thermal Stress:{" "}
+                  {Math.round((gameState.thermalStress ?? 0) * 100)}%
+                </output>
+                <output aria-live="off" htmlFor="garmin-fog">
+                  Condensation Fog: {Math.round(gameState.fogLevel * 100)}%
+                </output>
+              </>
             )}
-            <output aria-live="off" htmlFor="garmin-ram">
-              RAM Memory: {gameState.allocatedRamKb.toFixed(1)} /{" "}
-              {currentProfile.ramLimitKb} KB
-            </output>
-            <output aria-live="off" htmlFor="garmin-battery">
-              Battery Level: {Math.round(gameState.battery)}%
-            </output>
-            <output aria-live="off" htmlFor="garmin-thermal">
-              Thermal Stress: {Math.round((gameState.thermalStress ?? 0) * 100)}
-              %
-            </output>
-            <output aria-live="off" htmlFor="garmin-fog">
-              Condensation Fog: {Math.round(gameState.fogLevel * 100)}%
-            </output>
           </div>
 
           <div

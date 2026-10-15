@@ -346,11 +346,14 @@ export const StudyDirectorGame: React.FC<{ officeFirst?: boolean }> = ({
   const startNew = useCallback(() => {
     updateCareer(recordStart(career));
     if (sharedSeed) {
-      // The shared seed is used once; a later restart is a fresh study.
+      // The shared seed is used once; a later restart is a fresh study. A
+      // link that names the desk keeps naming it, or the page would switch
+      // to the office the moment the study starts (#2251).
+      const desk = DESK_PATTERN.test(window.location.hash) ? "#mode=desk" : "";
       window.history.replaceState(
         null,
         "",
-        window.location.pathname + window.location.search
+        window.location.pathname + window.location.search + desk
       );
     }
     start(newStudy(scenario, sharedSeed, difficulty));

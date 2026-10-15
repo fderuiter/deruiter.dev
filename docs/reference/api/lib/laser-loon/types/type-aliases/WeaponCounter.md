@@ -6,7 +6,7 @@
 
 # Type Alias: WeaponCounter
 
-> **WeaponCounter** = `"weak"` \| `"resisted"` \| `"neutral"`
+> **WeaponCounter** = `"weak"` \| `"resisted"` \| `"neutral"` \| `"blocked"`
 
 How a weapon's hit lands on an enemy: a weakness crit, a resisted glance,
 or plain neutral damage.

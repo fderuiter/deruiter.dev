@@ -17,6 +17,7 @@ import {
   PowerUp,
   PowerUpType,
   WeaponCounter,
+  BossSignature,
   CounterHitPoint,
 } from "./types";
 import {
@@ -40,6 +41,9 @@ import {
   BOSS_TELEGRAPH_FRAMES,
   BOSS_PROJECTILE_RADIUS,
   BOSS_FIRST_VOLLEY_FRAMES,
+  STARFLAKE_SHIELD_HALF_ARC,
+  SWARM_MAX_MINIONS,
+  GAVEL_WALL_GAP,
   MINION_FIRE_FIRST_ACT,
   MINION_FIRE_BASE_FRAMES,
   MINION_FIRE_FRAMES_PER_ACT,
@@ -183,6 +187,7 @@ function targetCounter(target: Target, laserType: LaserType): WeaponCounter {
 function counterMultiplier(counter: WeaponCounter): number {
   if (counter === "weak") return WEAKNESS_DAMAGE_MULTIPLIER;
   if (counter === "resisted") return RESISTED_DAMAGE_MULTIPLIER;
+  if (counter === "blocked") return 0;
   return 1;
 }
 
@@ -586,6 +591,7 @@ export function updateTargetsPosition(
       nextT.pulsePhase += 0.05 * dt;
 
       if (nextT.isProjectile) {
+        if (nextT.ay) nextT.vy += nextT.ay * dt;
         nextT.x += nextT.vx * dt;
         nextT.y += nextT.vy * dt;
         return nextT;
@@ -693,12 +699,15 @@ export function checkLaserRayHit(
 
       if (distToRay < t.radius + hitExtra) {
         hitAny = true;
-        // Damage step: the weapon's counter against this enemy scales it.
-        const counter = targetCounter(t, laserType);
+        // Damage step: the weapon's counter against this enemy scales it,
+        // and the Starflake's shield turns away a beam it faces (#2144).
+        const counter = isShieldFacing(t, eyeX, eyeY)
+          ? "blocked"
+          : targetCounter(t, laserType);
         const nextHp = t.hp - damage * counterMultiplier(counter);
         damagedPoints.push({ x: nearX, y: nearY, color: t.color, counter });
 
-        if (t.isBoss) {
+        if (t.isBoss && counter !== "blocked") {
           ultimateGained += 4;
         }
 
@@ -1178,6 +1187,57 @@ export function isBossTelegraphing(
   return (boss.specialAttackTimer ?? 0) >= interval - BOSS_TELEGRAPH_FRAMES;
 }
 
+/**
+ * A boss's signature attack, from its type. Anything that is not one of the
+ * four campaign bosses fires the plain aimed volley the swarm builds on.
+ *
+ * @param type - The boss's enemy type.
+ */
+export function getBossSignature(type: CivicEnemyType): BossSignature {
+  switch (type) {
+    case "butter-colossus":
+      return "lob";
+    case "starflake-boss":
+      return "burst";
+    case "gavel-sovereign":
+      return "wall";
+    default:
+      return "swarm";
+  }
+}
+
+/** One line per signature for the act intro, so the player knows the plan. */
+export const BOSS_SIGNATURE_HINTS: Record<BossSignature, string> = {
+  swarm: "Calls in mosquito swarms. Clear them fast or get boxed in.",
+  lob: "Lobs butter pats in high arcs. Watch where they come down.",
+  burst:
+    "Fires star bursts in every direction behind a turning shield. Shoot through the open side, or use the Tremolo.",
+  wall: "Slams walls of amendments across the room. Fly through the gap.",
+};
+
+/**
+ * True when the Starflake's shield arc faces a beam's origin, which turns
+ * the beam away. The shield turns with the boss's `shieldAngle`, so it opens
+ * and closes as it spins.
+ *
+ * @param target - Any target; only the Starflake has a shield.
+ * @param fromX - The beam's origin x.
+ * @param fromY - The beam's origin y.
+ */
+export function isShieldFacing(
+  target: Pick<Target, "type" | "isBoss" | "x" | "y" | "shieldAngle">,
+  fromX: number,
+  fromY: number
+): boolean {
+  if (!target.isBoss || getBossSignature(target.type) !== "burst") return false;
+  const toward = Math.atan2(fromY - target.y, fromX - target.x);
+  const diff = Math.atan2(
+    Math.sin(toward - (target.shieldAngle ?? 0)),
+    Math.cos(toward - (target.shieldAngle ?? 0))
+  );
+  return Math.abs(diff) < STARFLAKE_SHIELD_HALF_ARC;
+}
+
 /** The result of advancing a boss's attack pattern by one frame. */
 export interface BossAttackResult {
   /** The targets with the boss updated and any volley shots appended. */
@@ -1202,6 +1262,7 @@ export interface BossAttackResult {
  * @param loonY - The loon's y position.
  * @param actNumber - The act being played.
  * @param nextId - The next free target id.
+ * @param rng - Random source for swarm drift and wall gaps, injectable for tests.
  */
 export function updateBossAttack(
   targets: Target[],
@@ -1209,7 +1270,8 @@ export function updateBossAttack(
   loonX: number,
   loonY: number,
   actNumber: number,
-  nextId: number
+  nextId: number,
+  rng: () => number = Math.random
 ): BossAttackResult {
   const index = targets.findIndex((t) => t.isBoss && t.hp > 0);
   const idle: BossAttackResult = {
@@ -1241,31 +1303,116 @@ export function updateBossAttack(
   }
   boss.specialAttackTimer = 0;
 
-  const shots =
-    1 + (actNumber >= 3 ? 1 : 0) + ((boss.bossPhase ?? 1) >= 2 ? 1 : 0);
-  const speed = 3.5 + 0.5 * Math.max(1, actNumber);
-  const aim = Math.atan2(loonY - boss.y, loonX - boss.x);
-  const spread = 0.22;
+  const phaseTwo = (boss.bossPhase ?? 1) >= 2;
+  const volley = boss.volleyCount ?? 0;
+  boss.volleyCount = volley + 1;
   let id = nextId;
-  for (let i = 0; i < shots; i++) {
-    const angle = aim + (i - (shots - 1) / 2) * spread;
-    nextTargets.push({
-      id: id++,
-      x: boss.x - boss.radius,
-      y: boss.y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed,
-      radius: BOSS_PROJECTILE_RADIUS,
-      type: boss.type,
-      label: "",
-      color: boss.color,
-      hp: 1,
-      maxHp: 1,
-      points: 5,
-      pulsePhase: 0,
-      frozenTimer: 0,
-      isProjectile: true,
-    });
+  const shot = (
+    x: number,
+    y: number,
+    vx: number,
+    vy: number,
+    extra: Partial<Target> = {}
+  ): Target => ({
+    id: id++,
+    x,
+    y,
+    vx,
+    vy,
+    radius: BOSS_PROJECTILE_RADIUS,
+    type: boss.type,
+    label: "",
+    color: boss.color,
+    hp: 1,
+    maxHp: 1,
+    points: 5,
+    pulsePhase: 0,
+    frozenTimer: 0,
+    isProjectile: true,
+    ...extra,
+  });
+  const mouthX = boss.x - boss.radius;
+  const aimedVolley = (count: number) => {
+    const speed = 3.5 + 0.5 * Math.max(1, actNumber);
+    const aim = Math.atan2(loonY - boss.y, loonX - boss.x);
+    for (let i = 0; i < count; i++) {
+      const angle = aim + (i - (count - 1) / 2) * 0.22;
+      nextTargets.push(
+        shot(mouthX, boss.y, Math.cos(angle) * speed, Math.sin(angle) * speed)
+      );
+    }
+  };
+
+  switch (getBossSignature(boss.type)) {
+    case "swarm": {
+      // The Queen fires as before and calls mosquitoes to box the loon in.
+      aimedVolley(phaseTwo ? 2 : 1);
+      const template = ENEMY_TYPES.find((e) => e.type === "mosquito");
+      const alive = nextTargets.filter(
+        (t) => !t.isBoss && !t.isProjectile && t.type === "mosquito"
+      ).length;
+      const calls = Math.min(phaseTwo ? 3 : 2, SWARM_MAX_MINIONS - alive);
+      for (let i = 0; template && i < calls; i++) {
+        nextTargets.push({
+          id: id++,
+          x: boss.x - boss.radius,
+          y: boss.y + (i - (calls - 1) / 2) * 46,
+          vx: -(2 + rng() * 0.8),
+          vy: (rng() - 0.5) * 1.6,
+          radius: template.radius,
+          type: template.type,
+          label: template.label,
+          color: template.color,
+          hp: template.hp,
+          maxHp: template.hp,
+          points: template.points,
+          pulsePhase: rng() * Math.PI * 2,
+          frozenTimer: 0,
+        });
+      }
+      break;
+    }
+    case "lob": {
+      // Butter pats arc up and come down where the loon is, or just past it.
+      const pats = phaseTwo ? 3 : 2;
+      const ay = 0.12;
+      for (let i = 0; i < pats; i++) {
+        const frames = 64 + i * 16;
+        const vx = (loonX - mouthX) / frames;
+        const vy = (loonY - boss.y - 0.5 * ay * frames * frames) / frames;
+        nextTargets.push(
+          shot(mouthX, boss.y, vx, vy, { ay, radius: BOSS_PROJECTILE_RADIUS + 3 })
+        );
+      }
+      break;
+    }
+    case "burst": {
+      // Star bursts in every direction, turned a little each volley.
+      const count = phaseTwo ? 12 : 8;
+      const offset = volley * 0.35;
+      for (let i = 0; i < count; i++) {
+        const angle = offset + (i * Math.PI * 2) / count;
+        nextTargets.push(
+          shot(boss.x, boss.y, Math.cos(angle) * 2.8, Math.sin(angle) * 2.8)
+        );
+      }
+      break;
+    }
+    case "wall": {
+      // Phase 2 alternates a wall with an aimed volley.
+      if (phaseTwo && volley % 2 === 1) {
+        aimedVolley(3);
+        break;
+      }
+      const top = 50 + GAVEL_WALL_GAP / 2;
+      const bottom = DEFAULT_CANVAS_HEIGHT - 50 - GAVEL_WALL_GAP / 2;
+      const gapCenter = top + rng() * (bottom - top);
+      for (let y = 18; y < DEFAULT_CANVAS_HEIGHT; y += 30) {
+        if (Math.abs(y - gapCenter) < GAVEL_WALL_GAP / 2) continue;
+        nextTargets.push(shot(mouthX, y, -2.4, 0));
+      }
+      break;
+    }
   }
 
   return { targets: nextTargets, nextId: id, fired: true, enteredPhaseTwo };

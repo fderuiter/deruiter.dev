@@ -32,6 +32,7 @@
 
 ## Variables
 
+- [BOSS\_SIGNATURE\_HINTS](variables/BOSS_SIGNATURE_HINTS.md)
 - [LASER\_LOON\_STARS\_KEY](variables/LASER_LOON_STARS_KEY.md)
 
 ## Functions
@@ -49,11 +50,13 @@
 - [getActProgressReadout](functions/getActProgressReadout.md)
 - [getActStars](functions/getActStars.md)
 - [getBossAttackInterval](functions/getBossAttackInterval.md)
+- [getBossSignature](functions/getBossSignature.md)
 - [getEnemyWeakness](functions/getEnemyWeakness.md)
 - [getSurvivalWave](functions/getSurvivalWave.md)
 - [getWeaponCounter](functions/getWeaponCounter.md)
 - [getWeaponDamageMultiplier](functions/getWeaponDamageMultiplier.md)
 - [isBossTelegraphing](functions/isBossTelegraphing.md)
+- [isShieldFacing](functions/isShieldFacing.md)
 - [mergeActBest](functions/mergeActBest.md)
 - [parseActBestRecord](functions/parseActBestRecord.md)
 - [pickKeyboardAim](functions/pickKeyboardAim.md)

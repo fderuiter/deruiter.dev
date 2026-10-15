@@ -398,7 +398,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Historic Campaign Acts & Bosses",
         detail:
-          "Advance through Lake Minnetonka (Mega Mosquito), State Fair (Butter Colossus), Redesign Commission (Starflake Finalist), and the Capitol Rotunda (Grand Veto Gavel).",
+          "Advance through Lake Minnetonka, the State Fair, the Redesign Commission and the Capitol Rotunda. Each boss fights its own way: the Mega Mosquito Queen calls in swarms, the Butter Colossus lobs pats in high arcs, the Starflake Finalist fires star bursts behind a turning shield that turns your beam away (shoot through the open side, or use the Tremolo), and the Grand Veto Gavel slams walls of amendments with one gap to fly through.",
         badge: "4-Act Campaign",
       },
       {
@@ -1917,7 +1917,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "3D Wireframe Sovereign Boss Fights",
         detail:
-          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. Dodge the volleys and hit it with your tools.",
+          "The second-last room is the FaceForge wireframe face and the last is the NEURAL_WARDEN octahedron. Each fires volleys that change across three phases as its HP falls, and its room's EXIT stays locked until it is defeated. FaceForge fans and rings its shots at you. The NEURAL_WARDEN fights differently: in phase 1 it lights four lanes (a + or an X) just before it fires down them, in phase 2 it sweeps a turning two-ended beam, and in phase 3 it fires the lanes you stand nearest plus a fast seeker. Walls stop every shot. Dodge the volleys and hit it with your tools.",
         badge: "3D Boss Fight",
       },
     ],

@@ -34,6 +34,14 @@ No salvo is fired before this time, so a room never opens mid-volley.
 
 ***
 
+### kind?
+
+> `optional` **kind?**: `"faceforge"` \| `"neural_warden"`
+
+Which boss this is, so each fights by its own rules (#2178).
+
+***
+
 ### lastSalvoTime
 
 > **lastSalvoTime**: `number`
@@ -87,6 +95,14 @@ Salvos fired so far; phase 1 turns every third one into a ring.
 ### shieldActive?
 
 > `optional` **shieldActive?**: `boolean`
+
+***
+
+### telegraph?
+
+> `optional` **telegraph?**: `"cross"` \| `"diagonal"`
+
+Lanes about to fire, shown on the board ahead of a lattice volley.
 
 ***
 

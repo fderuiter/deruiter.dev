@@ -739,7 +739,8 @@ export function DebriefModal({
           {partial ? (
             <li>
               Commendation: partial onset date {partial.MHSTDTC} was retained at
-              collected precision (CDASH 3.6) without artificial day imputation.
+              collected precision (an ISO 8601 partial date) without artificial
+              day imputation.
             </li>
           ) : null}
           <li>

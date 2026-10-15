@@ -23,6 +23,7 @@
 
 ## Type Aliases
 
+- [BossSignature](type-aliases/BossSignature.md)
 - [BugTemplate](type-aliases/BugTemplate.md)
 - [CivicEnemyType](type-aliases/CivicEnemyType.md)
 - [LaserMode](type-aliases/LaserMode.md)

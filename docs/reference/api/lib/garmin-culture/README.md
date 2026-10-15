@@ -23,6 +23,8 @@
 - [MOVE\_ALERT\_TEXT](variables/MOVE_ALERT_TEXT.md)
 - [NEW\_PR\_TEXT](variables/NEW_PR_TEXT.md)
 - [REST\_DAY\_OVER\_TEXT](variables/REST_DAY_OVER_TEXT.md)
+- [STALLED\_ALERT\_MS](variables/STALLED_ALERT_MS.md)
+- [STALLED\_ALERT\_TEXT](variables/STALLED_ALERT_TEXT.md)
 - [TOASTS](variables/TOASTS.md)
 
 ## Functions

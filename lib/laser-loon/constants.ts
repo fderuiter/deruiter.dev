@@ -497,6 +497,12 @@ export const BOSS_PROJECTILE_RADIUS = 9;
 export const BOSS_MINION_SPAWN_RATE = 0.01;
 /** Frames from a boss's arrival to its first volley, wind-up included. */
 export const BOSS_FIRST_VOLLEY_FRAMES = 90;
+/** Half the width of the Starflake's shield arc, in radians. */
+export const STARFLAKE_SHIELD_HALF_ARC = Math.PI / 3;
+/** Most swarm mosquitoes the Queen keeps in the air at once. */
+export const SWARM_MAX_MINIONS = 6;
+/** Height of the one gap in a Gavel wall, in canvas pixels. */
+export const GAVEL_WALL_GAP = 110;
 /** Leftmost x the loon can fly to, in canvas pixels. */
 export const LOON_MIN_X = 40;
 /** Rightmost x the loon can fly to, in canvas pixels. */

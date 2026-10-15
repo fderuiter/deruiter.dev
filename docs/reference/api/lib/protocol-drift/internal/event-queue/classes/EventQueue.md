@@ -34,6 +34,24 @@ Number of pending events.
 
 ## Methods
 
+### nextMinuteOf()
+
+> **nextMinuteOf**(`kinds`): `number` \| `null`
+
+The minute of the first pending event of one of the given kinds.
+
+#### Parameters
+
+##### kinds
+
+`ReadonlySet`\<[`SimEventKind`](../type-aliases/SimEventKind.md)\>
+
+#### Returns
+
+`number` \| `null`
+
+***
+
 ### peek()
 
 > **peek**(): [`SimEvent`](../interfaces/SimEvent.md) \| `undefined`

@@ -163,6 +163,10 @@ export interface BossState {
   holdFireUntilMs?: number;
   /** Salvos fired so far; phase 1 turns every third one into a ring. */
   salvoCount?: number;
+  /** Which boss this is, so each fights by its own rules (#2178). */
+  kind?: "faceforge" | "neural_warden";
+  /** Lanes about to fire, shown on the board ahead of a lattice volley. */
+  telegraph?: "cross" | "diagonal";
 }
 
 export interface MeshProjectile {
@@ -174,6 +178,8 @@ export interface MeshProjectile {
   mesh: WireframeMesh;
   damage: number;
   alive: boolean;
+  /** How close to the player's tile centre the shot hits; 0.75 if unset. */
+  hitRadius?: number;
 }
 
 export interface ActiveSideEffect {

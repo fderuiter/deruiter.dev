@@ -67,7 +67,12 @@ import {
   simulateEntrySession,
 } from "./coordinator";
 import { resolvePartialDate } from "./debt";
-import { EVENT_PRIORITY, EventQueue, type SimEvent } from "./event-queue";
+import {
+  EVENT_PRIORITY,
+  EventQueue,
+  type SimEvent,
+  type SimEventKind,
+} from "./event-queue";
 import { ProtocolDriftStateError, transition } from "./fsm";
 import {
   analysisLaneWired,
@@ -152,6 +157,15 @@ function rejectionCount(value: unknown): number {
     ? value
     : 0;
 }
+
+/** Scheduled events a player sees land; Skip to next event stops at them. */
+const NOTICEABLE_EVENTS: ReadonlySet<SimEventKind> = new Set([
+  "SITE_ACTIVATION",
+  "SOURCE_SUBMISSION",
+  "QUERY_RESPONSE",
+  "AMENDMENT_NOTICE",
+  "WAVE_END",
+]);
 
 class Engine implements ProtocolDriftEngine {
   private seed: number;
@@ -415,6 +429,7 @@ class Engine implements ProtocolDriftEngine {
       routing: Array.from(this.routing.values()),
       lastLockAudit: this.lastLockAudit,
       rejectedCommands: this.rejectedCount,
+      nextEventMinute: this.queue.nextMinuteOf(NOTICEABLE_EVENTS),
       assisted: this.assisted,
     });
   }
@@ -1281,7 +1296,7 @@ class Engine implements ProtocolDriftEngine {
           code: "PARTIAL_DATE",
           origin: "source",
           targetField: "MHSTDTC",
-          message: `Onset ${draft.MHSTDTC} collected at month precision; day unknown (CDASH 3.6 permits partial dates)`,
+          message: `Onset ${draft.MHSTDTC} collected at month precision; day unknown (an ISO 8601 partial date is allowed)`,
           evidence: `Source onset recorded as ${draft.MHSTDTC}`,
         });
       }
@@ -1783,7 +1798,7 @@ class Engine implements ProtocolDriftEngine {
     this.setIssueStatus(
       issue,
       "AcceptedUncertainty",
-      "Accepted as documented uncertainty under CDASH 3.6"
+      "Accepted as documented uncertainty: an ISO 8601 partial date"
     );
     this.appendAudit({
       type: "UNCERTAINTY_ACCEPTED",
@@ -1794,7 +1809,7 @@ class Engine implements ProtocolDriftEngine {
       newValue: "AcceptedUncertainty",
       actor: "DATA_ARCHITECT",
       reason:
-        "Partial date retained at collected precision (CDASH 3.6); no day imputed",
+        "Partial date retained at collected precision (ISO 8601); no day imputed",
     });
   }
 

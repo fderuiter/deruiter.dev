@@ -602,6 +602,18 @@ Re-exports [MIN_EXIT_SPEED_BONUS](scoring/variables/MIN_EXIT_SPEED_BONUS.md)
 
 ***
 
+### NEURAL\_WARDEN\_PHASES
+
+Re-exports [NEURAL_WARDEN_PHASES](boss/variables/NEURAL_WARDEN_PHASES.md)
+
+***
+
+### NEURAL\_WARDEN\_TELEGRAPH\_MS
+
+Re-exports [NEURAL_WARDEN_TELEGRAPH_MS](boss/variables/NEURAL_WARDEN_TELEGRAPH_MS.md)
+
+***
+
 ### ParticleEffect
 
 Re-exports [ParticleEffect](types/interfaces/ParticleEffect.md)
@@ -872,6 +884,12 @@ Re-exports [TspWallTelegraph](tsp/interfaces/TspWallTelegraph.md)
 
 ***
 
+### updateBoss
+
+Re-exports [updateBoss](boss/functions/updateBoss.md)
+
+***
+
 ### updateEnemyAI
 
 Re-exports [updateEnemyAI](ai/functions/updateEnemyAI.md)
@@ -881,6 +899,12 @@ Re-exports [updateEnemyAI](ai/functions/updateEnemyAI.md)
 ### updateFaceForgeBoss
 
 Re-exports [updateFaceForgeBoss](boss/functions/updateFaceForgeBoss.md)
+
+***
+
+### updateNeuralWardenBoss
+
+Re-exports [updateNeuralWardenBoss](boss/functions/updateNeuralWardenBoss.md)
 
 ***
 

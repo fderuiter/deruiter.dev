@@ -4,6 +4,7 @@ import {
   decodeCustomScenario,
   encodeCustomScenario,
 } from "./scenario-compression";
+import { arcadeDailyKey, isArcadeDailyDate } from "@/lib/arcade/daily";
 import { uniformAt } from "./rng";
 import type { RunChoice } from "./run-rules";
 import { DEFAULT_SPONSOR_ID } from "./sponsors";
@@ -22,7 +23,6 @@ const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const SEED_CHARS = 8;
 /** A named seed from before the codec: letters, digits and hyphens. */
 const LEGACY_SEED = /^[A-Za-z0-9-]{1,32}$/;
-const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 /** How a run's seed was chosen, for the end screen and run history. */
 export type RunOrigin =
@@ -83,11 +83,7 @@ export function parseSeed(input: string): string | null {
 
 /** True for a real calendar date written `YYYY-MM-DD`. */
 export function isIsoDate(date: string): boolean {
-  const match = ISO_DATE.exec(date);
-  if (!match) return false;
-  const [year, month, day] = match.slice(1).map(Number);
-  const time = Date.UTC(year, month - 1, day);
-  return new Date(time).toISOString().slice(0, 10) === date;
+  return isArcadeDailyDate(date);
 }
 
 /** The UTC calendar date of an instant, `YYYY-MM-DD`. */
@@ -99,13 +95,18 @@ export function utcDate(epochMs: number): string {
  * The Daily Protocol seed for a UTC date, `YYYY-MM-DD`. Everyone playing on
  * the same UTC day gets the same seed, wherever they are. Pure: it takes the
  * date and never reads the clock. Throws on anything but a real date.
+ *
+ * The Daily Protocol is Trial & Error's Arcade Daily (#2113): its bytes are
+ * drawn from the shared Arcade Daily key, which keeps the salt this function
+ * always used, so every past and future daily link gives the same seed.
  */
 export function dailySeed(isoDate: string): string {
   if (!isIsoDate(isoDate)) {
     throw new RangeError(`dailySeed needs a YYYY-MM-DD date, got ${isoDate}`);
   }
+  const key = arcadeDailyKey(isoDate, "trial-and-error");
   const bytes = Array.from({ length: 5 }, (_, i) =>
-    Math.floor(uniformAt(`daily-protocol:${isoDate}`, i) * 256)
+    Math.floor(uniformAt(key, i) * 256)
   );
   return seedFromBytes(bytes);
 }
@@ -161,7 +162,8 @@ export function challengeHash(
  * The challenge in a URL hash, or null when it names no valid seed. Unknown
  * parameters are ignored, so later links can add more. A `daily` date is
  * kept only when the seed really is that day's Daily Protocol, so a link
- * cannot pass another seed off as one.
+ * cannot pass another seed off as one. A link with a `daily` date and no
+ * seed, as the Arcade Daily panel opens (#2113), plays that day's seed.
  *
  * `sponsor` must be a sponsor id exactly as written and `stake` a single
  * digit from 1 to 6; anything else falls back to the default, as does either
@@ -173,13 +175,17 @@ export function parseChallengeHash(hash: string): Challenge | null {
   const customParam = params.get("custom") ?? params.get("scenario");
   const customScenario = customParam ? decodeCustomScenario(customParam) : null;
 
+  const date = params.get("daily");
   let seed = raw === null ? null : parseSeed(raw);
+  // An Arcade Daily link (#2113) names only the date: the seed is that day's.
+  if (raw === null && date !== null && isIsoDate(date)) {
+    seed = dailySeed(date);
+  }
   if (!seed && customScenario) {
     seed = "7K3M-Q9PX";
   }
   if (!seed) return null;
 
-  const date = params.get("daily");
   const daily =
     date !== null && isIsoDate(date) && dailySeed(date) === seed ? date : null;
   if (daily)

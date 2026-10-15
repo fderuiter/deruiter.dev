@@ -11,7 +11,8 @@
 The challenge in a URL hash, or null when it names no valid seed. Unknown
 parameters are ignored, so later links can add more. A `daily` date is
 kept only when the seed really is that day's Daily Protocol, so a link
-cannot pass another seed off as one.
+cannot pass another seed off as one. A link with a `daily` date and no
+seed, as the Arcade Daily panel opens (#2113), plays that day's seed.
 
 `sponsor` must be a sponsor id exactly as written and `stake` a single
 digit from 1 to 6; anything else falls back to the default, as does either

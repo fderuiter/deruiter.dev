@@ -105,6 +105,8 @@ export interface AppEventMap {
     score: number;
     metadata?: Record<string, unknown>;
   };
+  /** An Arcade Daily result was recorded (#2113). */
+  arcade_daily_updated: { gameId: string; date: string };
   /** An arcade trophy or achievement was unlocked. */
   arcade_trophy_unlocked: {
     trophyId: string;

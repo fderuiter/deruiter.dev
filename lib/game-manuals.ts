@@ -1066,6 +1066,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Locking the database turns open queries into delay. The sponsor rates you in stars, the company reports margin and timeline variance, the science reports evaluable and missing data, and the regulator grades inspection readiness. The game then names which kind of Study Director you were, from what you actually did. A run played in the office closes out at the same report, and its share card says so; the link replays the same seed at the classic desk. Office runs also keep a meeting archive, reachable from your desk and from the closeout, and add meetings, site visits and what you were told to the exports.",
         badge: "Closeout",
       },
+      {
+        title: "Arcade Daily",
+        detail:
+          "Play daily on the arcade hub opens the classic desk on today's study seed, the same for everyone until midnight UTC. A finished daily study records its grade and stars as today's daily best on the hub, beside your career.",
+        badge: "Daily",
+      },
     ],
     proTips: [
       "Audit the site you hear least from.",
@@ -1206,6 +1212,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Monday is a normal shift. On Tuesday the drink machine is broken, Wednesday has two rushes, Thursday is your eighteenth birthday so you can brew coffee yourself, and Fry Friday is the busiest day. Dignity and drive-thru speed carry halfway back toward their usual start into the next day, so a bad day leaves you worse off but never ends the week. The week saves after each day, so you can stop and come back.",
         badge: "Week",
       },
+      {
+        title: "Arcade Daily",
+        detail:
+          "Play daily on the arcade hub opens today's shift seed, the same cars for everyone until midnight UTC. A standard single shift finished on it records its shift score as today's daily best on the hub. Practice scenarios and weeks do not count.",
+        badge: "Daily",
+      },
     ],
     proTips: [
       "Look at the order screen before you zoom into the register.",
@@ -1303,6 +1315,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "Hold F or Shift on an empty centerpiece or petal spot to leave it bare. Simplifying drops that spot from the plan, and the receipt counts it as a choice, not as unfinished.",
         badge: "Simplify",
+      },
+      {
+        title: "Arcade Daily",
+        detail:
+          "Play daily on the arcade hub opens today's seed: the same shower and guest rush for everyone, rolling over at midnight UTC. A day finished on today's seed at normal speed records its spots set as today's daily best, kept apart from the board score, which counts only the standard day.",
+        badge: "Daily",
       },
     ],
     proTips: [
@@ -1405,6 +1423,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "The debrief scores five measures against par: 13 chips, 21 wires, lock on Day 28, no rejected commands and no fabricated bits. Each is worth 100 points at par, more for a leaner pipeline and less for a sprawling one, and earns a medal at or under par. Your best for each measure is kept in this browser.",
         badge: "Par",
+      },
+      {
+        title: "Arcade Daily",
+        detail:
+          "Play daily on the arcade hub starts the study on today's seed instead of seed #48291; the footer shows the daily's date. Locking the database on it records the lock score as today's daily best on the hub.",
+        badge: "Daily",
       },
     ],
     proTips: [
@@ -1723,6 +1747,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         detail:
           "The cabinet keeps the run's seed and your moves in this browser, never a blinded value, and replays them when you choose Resume run. The save is cleared when the run ends or you start a new one. A run saved before the run deck resumes with its Blinds' own decks and no shells in the shop, and a run saved before each act had its own shop resumes with the one shop every act shared.",
         badge: "Save",
+      },
+      {
+        title: "Arcade Daily",
+        detail:
+          "The Daily Protocol is this game's Arcade Daily. Play daily on the arcade hub opens today's seed in the New run dialog, under Virtual Biotech at stake 1, and a finished run files its best hand as today's daily best beside the other games' dailies. Old Daily Protocol links still give the same seeds.",
+        badge: "Daily",
       },
     ],
     proTips: [

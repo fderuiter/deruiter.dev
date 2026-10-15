@@ -1138,7 +1138,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       },
       {
         action: "Pick an order",
-        description: "Selects an open order by its position on the strip.",
+        description:
+          "Selects an open order by the small key number on its ticket, which is its place on the board, not its order number.",
         key: "1 - 6",
       },
       {
@@ -1173,6 +1174,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description:
           "Picks the first or second answer when someone puts a question to you mid-shift. The buttons work too.",
         key: "Q / E",
+      },
+      {
+        action: "Pause",
+        description:
+          "Stops the shift clock. Press it again to resume. In the 3D booth, Esc first steps back from the register.",
+        key: "P or Esc",
       },
     ],
     rules: [

@@ -807,6 +807,9 @@ function keyboardToyTarget(state: WorkingWithDuckState): {
   return { x: clamp(x + towardCenter, 40, CANVAS_WIDTH - 40), y };
 }
 
+/** Keys pressed this soon after a briefing opens are left from the last screen. */
+const BRIEFING_OPEN_GUARD_MS = 500;
+
 /** Ticks (60 = 1 s) the sprint 1 goal stays in the tip line. */
 const SPRINT_ONE_BRIEF_TICKS = 8 * 60;
 
@@ -847,7 +850,14 @@ const RESULT_OPEN_GUARD_MS = 500;
  * skip the card. A press counts only once the card has been open a moment,
  * and only when it is not part of a run of presses or a held key.
  */
-function ResultKeyGuard({ children }: { children: React.ReactNode }) {
+function ResultKeyGuard({
+  children,
+  enabled = true,
+}: {
+  children: React.ReactNode;
+  /** Off where no keys from play can be in flight, e.g. a first briefing. */
+  enabled?: boolean;
+}) {
   const openedAtRef = useRef(0);
   const previousPressRef = useRef(0);
   const lastPressRef = useRef(0);
@@ -885,7 +895,7 @@ function ResultKeyGuard({ children }: { children: React.ReactNode }) {
 
   const onClickCapture = (event: React.MouseEvent) => {
     // A pointer click has a detail of 1 or more; keyboard activation is 0.
-    if (event.detail !== 0) return;
+    if (!enabled || event.detail !== 0) return;
     const openedAt = openedAtRef.current;
     const pressAt = lastPressRef.current;
     const pressedSinceOpen = pressAt >= openedAt;
@@ -1288,10 +1298,22 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     [applyTransition, dispatchCommand]
   );
 
+  // The briefing's Start button, whether it takes focus when it next opens,
+  // and when it opened (#2160).
+  const briefingStartRef = useRef<HTMLButtonElement>(null);
+  const focusBriefingRef = useRef(false);
+  const briefingOpenedAtRef = useRef(0);
+  // Whether the open briefing followed a result card, whose keys may still
+  // be in flight.
+  const [briefingAfterResult, setBriefingAfterResult] = useState(false);
+
+  // The next sprint opens on its briefing with the clock stopped (#2160).
   const handleAdvanceLevel = useCallback(() => {
+    focusBriefingRef.current = true;
+    setBriefingAfterResult(true);
     applyTransition((state) => {
       const res = dispatchCommand({ type: "advance_level", state });
-      return res.success ? res.data.state : state;
+      return res.success ? { ...res.data.state, status: "idle" } : state;
     });
   }, [applyTransition, dispatchCommand]);
 
@@ -1359,18 +1381,29 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   }, [applyTransition, recordEvent]);
 
   // One title screen per game (#1516): inside a cabinet, the attract screen
-  // was the title, so Launch starts Sprint 1 at once. Sprint 1's guided hints
-  // carry its instructions, and Scrapbook, Wardrobe and the Manual stay in
-  // the action dock. Later sprints keep their briefing as a short intro.
+  // was the title, so Launch opens Sprint 1 straight into the room with no
+  // second start screen. Its clock waits for the player's first key or click
+  // (#2160), so the goal tip can be read before the meters climb. Sprints 2
+  // to 5, and endless, open on their briefing card, with the clock stopped
+  // until Start Sprint.
   const skipTitleScreen = useSkipTitleScreen();
+  const isSprintOneWaiting = (state: WorkingWithDuckState) =>
+    skipTitleScreen &&
+    state.status === "idle" &&
+    state.mode === "campaign" &&
+    state.currentLevel === 1;
+  const sprintOneWaits = isSprintOneWaiting(uiState);
 
-  const autoStartedRef = useRef(false);
+  // The briefing's Start button takes focus when a sprint hands over to the
+  // next one, so Space or Enter starts it. ResultKeyGuard keeps presses left
+  // over from the result card from starting it by accident.
   useEffect(() => {
-    if (!skipTitleScreen || autoStartedRef.current) return;
-    autoStartedRef.current = true;
-    const state = gameStateRef.current;
-    if (state.status === "idle" && state.currentLevel === 1) startSprint();
-  }, [skipTitleScreen, startSprint]);
+    if (uiState.status !== "idle") return;
+    briefingOpenedAtRef.current = performance.now();
+    if (!focusBriefingRef.current) return;
+    focusBriefingRef.current = false;
+    briefingStartRef.current?.focus({ preventScroll: true });
+  }, [uiState.status, uiState.currentLevel, uiState.mode]);
 
   const toggleManualPause = useCallback(() => {
     const currentStatus = gameStateRef.current.status;
@@ -1979,6 +2012,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         return;
       }
       if (state.status === "paused") return;
+      // The cabinet's Sprint 1 waits for the player (#2160): the first
+      // control starts the clock.
+      if (
+        skipTitleScreen &&
+        state.status === "idle" &&
+        state.mode === "campaign" &&
+        state.currentLevel === 1
+      ) {
+        startSprint();
+        return;
+      }
 
       if (command === "toy-1" || command === "toy-2" || command === "toy-3") {
         if (!state.inDogPark && !state.inBathtub) {
@@ -2038,6 +2082,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       handleGiveTreat,
       handlePerformTrick,
       toggleManualPause,
+      skipTitleScreen,
+      startSprint,
     ]
   );
 
@@ -2143,6 +2189,23 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       }
 
       const state = gameStateRef.current;
+      if (state.status === "idle") {
+        // Before a sprint starts (#2160): Space or Enter starts it from the
+        // briefing, and in the cabinet's Sprint 1 any game key starts the
+        // clock. A held key, or one pressed as the briefing opened, is left
+        // over from the last screen and is ignored.
+        const starts = isSprintOneWaiting(state)
+          ? true
+          : e.code === "Space" || e.key === "Enter";
+        if (e.code === "Space" || e.key.startsWith("Arrow")) {
+          e.preventDefault();
+        }
+        const fresh =
+          performance.now() - briefingOpenedAtRef.current >=
+          BRIEFING_OPEN_GUARD_MS;
+        if (starts && !e.repeat && fresh) startSprint();
+        return;
+      }
       if (state.status === "paused") {
         // A paused sprint is frozen (#1645): only P (handled above) acts. Swallow Space and
         // the arrows so they don't scroll the page behind the pause overlay.
@@ -2424,6 +2487,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     const { x, y } = toGameCoordinates(e.clientX, e.clientY);
 
     const state = gameStateRef.current;
+
+    // The cabinet's Sprint 1 starts its clock on the first click (#2160).
+    if (isSprintOneWaiting(state)) {
+      startSprint();
+      return;
+    }
 
     // A paused sprint ignores the canvas (#1645).
     if (state.status === "paused") return;
@@ -2792,7 +2861,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   // Guided Onboarding Hint Text
   let tutorialHint: string | null = null;
-  if (uiState.status === "running" && uiState.inDogPark) {
+  if (sprintOneWaits) {
+    // The cabinet's Sprint 1 waits for the player (#2160), so the goal can
+    // be read before the meters start to climb.
+    tutorialHint = cabinetTouch
+      ? "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit calms Duck, and the Back Door handles Bladder. Tap the room to start the clock."
+      : "Goal: ship the work before Good Boy hits the red. Excitement and Bladder fill on their own: Sit (Q) calms Duck, and the Back Door handles Bladder. Press any game key or click the room to start the clock.";
+  } else if (uiState.status === "running" && uiState.inDogPark) {
     // Scene tips show on every sprint: the controls change with the scene.
     tutorialHint = cabinetTouch
       ? "Dog Park: drag on the field and let go to throw, steer Duck with Move Up and Move Down, and tap Jump to clear hurdles. Work, Excitement and Bladder pause until you return to the office."
@@ -2860,6 +2935,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   };
 
   const startEndlessRun = () => {
+    focusBriefingRef.current = true;
+    setBriefingAfterResult(true);
     applyTransition((state) => {
       const next = createInitialDuckGameState(
         5,
@@ -2868,7 +2945,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         state.unlockedFacts,
         state.bestStars
       );
-      next.status = "running";
+      // Endless opens on its own briefing too (#2160).
+      next.status = "idle";
       next.activeAccessory = state.activeAccessory;
       return next;
     });
@@ -3164,81 +3242,90 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           </div>
         )}
 
-        {/* Start Overlay Screen */}
-        {uiState.status === "idle" && (
-          <div
-            data-testid="duck-sprint-briefing"
-            className="absolute inset-0 bg-[#0d0e11]/80 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20 overflow-y-auto"
-          >
-            <p className="arcade-accent-text mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.2em]">
-              {uiState.mode === "endless"
-                ? "Endless mode briefing"
-                : `Sprint ${uiState.currentLevel} of ${SPRINTS.length} · Briefing`}
-            </p>
-            <h2 className="mb-1 sm:mb-2 text-lg sm:text-2xl font-extrabold font-mono tracking-[-0.035em] text-zinc-50">
-              {uiState.mode === "endless"
-                ? "High Score Challenge"
-                : currentSprint.title}
-            </h2>
-            <p className="max-w-md text-[11px] sm:text-sm text-zinc-300 font-mono mb-4 sm:mb-6 leading-relaxed line-clamp-3 sm:line-clamp-none">
-              {uiState.mode === "endless"
-                ? `Every ${ENDLESS_QUARTER_WORK} work units a new quarter starts: faster meters and one more hazard. Survive as many quarters as you can!`
-                : currentSprint.description}
-            </p>
-            <p
-              data-testid="duck-start-highscore"
-              className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
+        {/* Start Overlay Screen: the sprint briefing, clock stopped (#2160) */}
+        {uiState.status === "idle" && !sprintOneWaits && (
+          <ResultKeyGuard enabled={briefingAfterResult}>
+            <div
+              data-testid="duck-sprint-briefing"
+              className="absolute inset-0 bg-[#0d0e11]/80 flex flex-col items-center justify-center p-4 sm:p-6 text-center z-20 overflow-y-auto"
             >
-              {uiState.mode === "campaign"
-                ? `Sprint ${uiState.currentLevel} best `
-                : "High Score "}
-              <span className="text-zinc-100 font-bold">{displayedBest}</span>
-              {uiState.mode === "endless" && (
-                <>
-                  {" · "}Endless best{" "}
-                  <span className="text-zinc-100 font-bold">
-                    {loadedEndlessBest}
+              <p className="arcade-accent-text mb-1 sm:mb-2 text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-[0.2em]">
+                {uiState.mode === "endless"
+                  ? "Endless mode briefing"
+                  : `Sprint ${uiState.currentLevel} of ${SPRINTS.length} · Briefing`}
+              </p>
+              <h2 className="mb-1 sm:mb-2 text-lg sm:text-2xl font-extrabold font-mono tracking-[-0.035em] text-zinc-50">
+                {uiState.mode === "endless"
+                  ? "High Score Challenge"
+                  : currentSprint.title}
+              </h2>
+              <p className="max-w-md text-[11px] sm:text-sm text-zinc-300 font-mono mb-4 sm:mb-6 leading-relaxed line-clamp-3 sm:line-clamp-none">
+                {uiState.mode === "endless"
+                  ? `Every ${ENDLESS_QUARTER_WORK} work units a new quarter starts: faster meters and one more hazard. Survive as many quarters as you can!`
+                  : currentSprint.description}
+              </p>
+              <p
+                data-testid="duck-start-highscore"
+                className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
+              >
+                {uiState.mode === "campaign"
+                  ? `Sprint ${uiState.currentLevel} best `
+                  : "High Score "}
+                <span className="text-zinc-100 font-bold">{displayedBest}</span>
+                {uiState.mode === "endless" && (
+                  <>
+                    {" · "}Endless best{" "}
+                    <span className="text-zinc-100 font-bold">
+                      {loadedEndlessBest}
+                    </span>
+                  </>
+                )}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                <button
+                  ref={briefingStartRef}
+                  type="button"
+                  onClick={startSprint}
+                  className="arcade-launch-button px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border text-zinc-950 font-mono font-bold text-xs sm:text-sm transition-colors active:scale-[0.98] flex items-center gap-2 cursor-pointer min-h-[44px]"
+                >
+                  <IconPlayerPlay className="w-4 h-4 fill-current" />
+                  <span>
+                    {uiState.mode === "endless"
+                      ? "Start Endless Mode"
+                      : `Start Sprint ${uiState.currentLevel}`}
                   </span>
-                </>
+                </button>
+
+                <button
+                  onClick={openScrapbook}
+                  className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                >
+                  <IconBook className="w-4 h-4" />
+                  <span>Duck Scrapbook</span>
+                </button>
+
+                <button
+                  onClick={openWardrobe}
+                  className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
+                >
+                  <IconShirt aria-hidden="true" className="w-4 h-4" />
+                  <span>Wardrobe</span>
+                </button>
+
+                <FieldManualButton
+                  manualId="working-with-duck"
+                  label="Manual"
+                  onOpenChange={handleManualOpenChange}
+                  isHotkeyOwner={false}
+                />
+              </div>
+              {!cabinetTouch && (
+                <p className="mt-3 text-[10px] sm:text-[11px] font-mono text-zinc-500">
+                  The clock starts when you do. Press Space or Enter to start.
+                </p>
               )}
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-              <button
-                onClick={startSprint}
-                className="arcade-launch-button px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border text-zinc-950 font-mono font-bold text-xs sm:text-sm transition-colors active:scale-[0.98] flex items-center gap-2 cursor-pointer min-h-[44px]"
-              >
-                <IconPlayerPlay className="w-4 h-4 fill-current" />
-                <span>
-                  {uiState.mode === "endless"
-                    ? "Start Endless Mode"
-                    : `Start Sprint ${uiState.currentLevel}`}
-                </span>
-              </button>
-
-              <button
-                onClick={openScrapbook}
-                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
-              >
-                <IconBook className="w-4 h-4" />
-                <span>Duck Scrapbook</span>
-              </button>
-
-              <button
-                onClick={openWardrobe}
-                className="px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-white/[0.08] bg-[#13151a] text-zinc-300 font-mono text-xs hover:text-white hover:border-white/20 transition-colors flex items-center gap-1.5 cursor-pointer min-h-[44px]"
-              >
-                <IconShirt aria-hidden="true" className="w-4 h-4" />
-                <span>Wardrobe</span>
-              </button>
-
-              <FieldManualButton
-                manualId="working-with-duck"
-                label="Manual"
-                onOpenChange={handleManualOpenChange}
-                isHotkeyOwner={false}
-              />
             </div>
-          </div>
+          </ResultKeyGuard>
         )}
 
         {/* Paused Overlay Screen */}

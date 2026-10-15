@@ -26,6 +26,10 @@
 
 - [CampaignKillOutcome](type-aliases/CampaignKillOutcome.md)
 
+## Variables
+
+- [BOSS\_SIGNATURE\_HINTS](variables/BOSS_SIGNATURE_HINTS.md)
+
 ## Functions
 
 - [calculateNextComboAndMultiplier](functions/calculateNextComboAndMultiplier.md)
@@ -39,10 +43,12 @@
 - [getActProgressReadout](functions/getActProgressReadout.md)
 - [getActStars](functions/getActStars.md)
 - [getBossAttackInterval](functions/getBossAttackInterval.md)
+- [getBossSignature](functions/getBossSignature.md)
 - [getEnemyWeakness](functions/getEnemyWeakness.md)
 - [getWeaponCounter](functions/getWeaponCounter.md)
 - [getWeaponDamageMultiplier](functions/getWeaponDamageMultiplier.md)
 - [isBossTelegraphing](functions/isBossTelegraphing.md)
+- [isShieldFacing](functions/isShieldFacing.md)
 - [pickKeyboardAim](functions/pickKeyboardAim.md)
 - [resolveLoonCollision](functions/resolveLoonCollision.md)
 - [spawnBossForAct](functions/spawnBossForAct.md)

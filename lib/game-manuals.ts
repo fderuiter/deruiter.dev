@@ -392,7 +392,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Historic Campaign Acts & Bosses",
         detail:
-          "Advance through Lake Minnetonka (Mega Mosquito), State Fair (Butter Colossus), Redesign Commission (Starflake Finalist), and the Capitol Rotunda (Grand Veto Gavel).",
+          "Advance through Lake Minnetonka, the State Fair, the Redesign Commission and the Capitol Rotunda. Each boss fights its own way: the Mega Mosquito Queen calls in swarms, the Butter Colossus lobs pats in high arcs, the Starflake Finalist fires star bursts behind a turning shield that turns your beam away (shoot through the open side, or use the Tremolo), and the Grand Veto Gavel slams walls of amendments with one gap to fly through.",
         badge: "4-Act Campaign",
       },
     ],

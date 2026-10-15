@@ -103,6 +103,9 @@ import {
   LOON_MAX_HITS,
   resolveLoonCollision,
   updateBossAttack,
+  getBossSignature,
+  BOSS_SIGNATURE_HINTS,
+  STARFLAKE_SHIELD_HALF_ARC,
   isBossTelegraphing,
   BOSS_MINION_SPAWN_RATE,
   ARCADE_GAME_DURATION_SECS,
@@ -533,7 +536,7 @@ export const LaserLoon: React.FC = () => {
         if (pt.counter === "weak") {
           spawnExplosion(pt.x, pt.y, "#f59e0b", 8, false, true);
           if (!cue || cue.counter !== "weak") cue = pt;
-        } else if (pt.counter === "resisted") {
+        } else if (pt.counter === "resisted" || pt.counter === "blocked") {
           spawnExplosion(pt.x, pt.y, "#94a3b8", 3);
           if (!cue) cue = pt;
         }
@@ -545,6 +548,9 @@ export const LaserLoon: React.FC = () => {
       if (cue.counter === "weak") {
         addFloatingText(cue.x, cue.y - 18, "CRIT!", "#f59e0b");
         playCritSound();
+      } else if (cue.counter === "blocked") {
+        addFloatingText(cue.x, cue.y - 18, "SHIELDED", "#94a3b8");
+        playResistSound();
       } else {
         addFloatingText(cue.x, cue.y - 18, "RESISTED", "#94a3b8");
         playResistSound();
@@ -1457,8 +1463,25 @@ export const LaserLoon: React.FC = () => {
           ctx.setLineDash([]);
         }
 
-        // Boss rotating energy shields
-        if (t.isBoss && t.shieldAngle !== undefined) {
+        // The Starflake's shield is a solid arc the beam cannot pass (#2144);
+        // the other bosses keep their decorative orbiting nodes.
+        if (t.isBoss && getBossSignature(t.type) === "burst") {
+          const arcR = t.radius + 16;
+          const a = t.shieldAngle ?? 0;
+          ctx.strokeStyle = "#e0f2fe";
+          ctx.lineWidth = 6;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.arc(
+            t.x,
+            t.y,
+            arcR,
+            a - STARFLAKE_SHIELD_HALF_ARC,
+            a + STARFLAKE_SHIELD_HALF_ARC
+          );
+          ctx.stroke();
+          ctx.lineCap = "butt";
+        } else if (t.isBoss && t.shieldAngle !== undefined) {
           const numNodes = 6;
           for (let i = 0; i < numNodes; i++) {
             const nodeAngle = t.shieldAngle + (i * Math.PI * 2) / numNodes;
@@ -2803,8 +2826,18 @@ export const LaserLoon: React.FC = () => {
               </section>
 
               <div className="mt-4 flex items-center justify-between gap-4 border-t border-[#1c1a17] pt-3">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">
+                <span className="min-w-0 font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">
                   Boss sighted: {currentAct.bossName}
+                  <span
+                    data-testid="laser-loon-boss-hint"
+                    className="mt-1 block normal-case tracking-normal"
+                  >
+                    {
+                      BOSS_SIGNATURE_HINTS[
+                        getBossSignature(currentAct.bossType)
+                      ]
+                    }
+                  </span>
                 </span>
                 <button
                   onClick={() => startAct(currentActNum)}

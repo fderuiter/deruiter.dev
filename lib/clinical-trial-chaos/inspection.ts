@@ -16,6 +16,7 @@
 import { clamp } from "../game-utils";
 import { fnv1a } from "../utils/prng";
 import { ALL_STATIONS } from "./scenarios";
+import { restateBIMOSummary } from "./engine";
 import {
   SPONSOR_REQUESTS,
   SkeletonDisposition,
@@ -756,7 +757,7 @@ export function applyInspectionToReport(
       report.overallScore - misses * INSPECTION_MISS_PENALTY
     ),
     verdict,
-    summary: `${report.summary} In the closing interview the site answered ${summary.recordCorrect} of ${summary.recordQuestions} record questions from its audit trail.`,
+    summary: `${restateBIMOSummary(report.summary, report.verdict, verdict)} In the closing interview the site answered ${summary.recordCorrect} of ${summary.recordQuestions} record questions from its audit trail.`,
     findings: [...report.findings, ...findings],
     inspection: summary,
   };

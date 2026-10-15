@@ -462,10 +462,11 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     expect(cabinet?.getAttribute("data-fullscreen")).toBe("false");
   });
 
-  /** Runs focus moves at once, and records each scrollIntoView call. */
-  function stubScroll(): ReturnType<typeof vi.fn> {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+  /** Runs focus moves at once, and records each window.scrollTo call. */
+  function stubScroll() {
+    const scroll = vi.fn<(options: ScrollToOptions) => void>();
+    window.scrollTo = ((options: ScrollToOptions) =>
+      scroll(options)) as typeof window.scrollTo;
     vi.stubGlobal("requestAnimationFrame", (task: FrameRequestCallback) => {
       task(0);
       return 1;
@@ -473,26 +474,30 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     return scroll;
   }
 
-  it("brings the cabinet into view below the navbar when a level starts (#1927)", () => {
-    const original = Element.prototype.scrollIntoView;
+  it("scrolls the cabinet top below the navbar when a level starts (#1927, #2145)", () => {
+    const original = window.scrollTo;
     try {
       const scroll = stubScroll();
       render(<ForBetterOrBulkGame />);
+      // scrollIntoView ignored this margin inside the cabinet (#2145), so the
+      // page is scrolled by hand to the cabinet top minus its scroll margin.
+      game().style.scrollMarginTop = "112px";
+      game().getBoundingClientRect = () =>
+        fromPartial<DOMRect>({ top: 500, bottom: 1100, left: 0, right: 0 });
       start();
       expect(document.activeElement).toBe(game());
       expect(scroll).toHaveBeenCalledTimes(1);
-      expect(scroll.mock.contexts[0]).toBe(game());
       expect(scroll).toHaveBeenCalledWith({
-        block: "start",
+        top: 500 - 112,
         behavior: "smooth",
       });
     } finally {
-      Element.prototype.scrollIntoView = original;
+      window.scrollTo = original;
     }
   });
 
   it("scrolls without animation when the viewer prefers reduced motion (#1927)", () => {
-    const original = Element.prototype.scrollIntoView;
+    const original = window.scrollTo;
     window.matchMedia = vi.fn((query: string) =>
       fromPartial<MediaQueryList>({
         matches: query === "(prefers-reduced-motion: reduce)",
@@ -505,9 +510,11 @@ describe("For Better or Bulk cabinet (#1906)", () => {
       const scroll = stubScroll();
       render(<ForBetterOrBulkGame />);
       start();
-      expect(scroll).toHaveBeenCalledWith({ block: "start", behavior: "auto" });
+      expect(scroll).toHaveBeenCalledWith(
+        expect.objectContaining({ behavior: "auto" })
+      );
     } finally {
-      Element.prototype.scrollIntoView = original;
+      window.scrollTo = original;
     }
   });
 
@@ -914,19 +921,16 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
     );
   });
 
-  it("says before starting that helper days earn no trophies or board score, only once the helper is on", () => {
+  it("says the helper rule once on the setup screen (#2147)", () => {
     render(<ForBetterOrBulkGame />);
-    expect(screen.queryByTestId("fbb-no-rewards")).toBeNull();
     fireEvent.click(
       screen.getByRole("checkbox", { name: /Helper for the other person/ })
     );
-    expect(screen.getByTestId("fbb-no-rewards").textContent).toBe(
-      // The sped-up clock is not named unless it is on (round 19, N-3).
-      "Helper days don't earn trophies or a board score. The relaxed clock counts the same as the standard one."
-    );
-    expect(screen.getByTestId("fbb-setup").textContent).toContain(
-      "Helper days don't earn trophies or a board score."
-    );
+    const text = screen.getByTestId("fbb-setup").textContent ?? "";
+    expect(
+      text.split("Helper days don't earn trophies or a board score.").length - 1
+    ).toBe(1);
+    expect(screen.queryByTestId("fbb-no-rewards")).toBeNull();
   });
 
   it("keeps the no-trophy line on the side panel during a helper day", () => {

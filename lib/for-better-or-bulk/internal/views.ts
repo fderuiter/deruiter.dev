@@ -35,6 +35,7 @@ import {
   SPOT_NAMES,
   STATION_NAMES,
   SWAP_KEY_NAME,
+  TOUCH_SWAP_NAME,
   TARGET_NAMES,
   crateGrabName,
   crateTakeName,
@@ -385,6 +386,11 @@ export interface PromptOptions {
    * on a helper day, where the partner is the helper's charge.
    */
   readonly waiting?: boolean;
+  /**
+   * True on a touch iPad (#2123): the idle partner's line names the dock's
+   * Swap key instead of Tab.
+   */
+  readonly touch?: boolean;
 }
 
 /**
@@ -392,11 +398,12 @@ export interface PromptOptions {
  * partner who holds something says what, so the person at the keys knows
  * before they swap.
  */
-function swapStatus(id: PlayerId, held: Item | null): string {
+function swapStatus(id: PlayerId, held: Item | null, touch: boolean): string {
   const name = id === "fred" ? "Fred" : "Abbi";
   const pronoun = id === "fred" ? "him" : "her";
   const carrying = held ? ` with ${heldName(held)}` : "";
-  return `${name} is waiting${carrying}. ${SWAP_KEY_NAME} to switch to ${pronoun}.`;
+  const key = touch ? TOUCH_SWAP_NAME : SWAP_KEY_NAME;
+  return `${name} is waiting${carrying}. ${key} to switch to ${pronoun}.`;
 }
 
 /** The first thing in a list that sits on a tile. */
@@ -519,7 +526,7 @@ export function getPrompt(
       interactLands: false,
       floorDrop: null,
       work: null,
-      status: swapStatus(id, held),
+      status: swapStatus(id, held, options.touch === true),
     };
   }
   const status = held
@@ -931,7 +938,7 @@ export function getCoachStep(
   const player = state.players[id];
   if (player.presence === "away") return null;
   // The key the line names: co-op gives each person one, solo either set.
-  const key = workKeyName(id, options.coop === true);
+  const key = workKeyName(id, options.coop === true, options.touch === true);
   if (player.holding) return carryStep(state, player.holding, key);
   // In co-op the second person starts on the food, so the two lines differ.
   const lead = options.coop && id === "abbi" ? "food" : "roses";

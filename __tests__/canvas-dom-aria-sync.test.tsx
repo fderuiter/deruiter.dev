@@ -138,7 +138,17 @@ describe("Off-screen Canvas DOM Fallback Subtree & Bidirectional ARIA Sync", () 
         'div[aria-label="Garmin Watch Accessible Subtree"]'
       );
       expect(fallbackDiv).not.toBeNull();
-      expect(fallbackDiv?.classList.contains("sr-only")).toBe(true);
+      // The readouts stay off screen; the watch buttons show while one of
+      // them has keyboard focus, so Tab never lands somewhere unseen (#2129).
+      const readouts = screen.getByRole("group", {
+        name: "Garmin Simulator Telemetry and Status",
+      });
+      expect(readouts.classList.contains("sr-only")).toBe(true);
+      const buttons = screen.getByRole("group", {
+        name: "Garmin Watch Physical Controls",
+      });
+      expect(buttons.classList.contains("sr-only")).toBe(true);
+      expect(buttons.classList.contains("focus-within:not-sr-only")).toBe(true);
 
       const outputs = container.querySelectorAll("output");
       expect(outputs.length).toBeGreaterThan(0);

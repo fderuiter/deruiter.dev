@@ -12,6 +12,7 @@ import {
   createInspectionRound,
   extendInspectionTimer,
   generateBIMOReport,
+  getBIMOVerdictSummary,
   getCurrentInspectionQuestion,
   getInspectionSeed,
   getSkeletonDispositions,
@@ -22,6 +23,7 @@ import {
   INSPECTION_RECORD_SECONDS,
   INSPECTION_SKELETON_SECONDS,
   isInspectionComplete,
+  restateBIMOSummary,
   setInspectionTimerEnabled,
   summarizeInspection,
   tickInspectionTimer,
@@ -497,6 +499,39 @@ describe("the inspection in the report", () => {
       ]);
       expect(out.verdict).toMatch(/^OAI/);
     });
+  });
+
+  it("restates the summary when the interview downgrades NAI to VAI (#2172)", () => {
+    const base = generateBIMOReport(cleanScore, auditor, [], [], null, NOW);
+    expect(base.verdict).toMatch(/^NAI/);
+    const missed = play(round(records(4)), () => null);
+    const out = applyInspectionToReport(base, missed);
+    expect(out.verdict).toMatch(/^VAI/);
+    expect(out.summary).not.toMatch(/no objectionable conditions/);
+    expect(out.summary.startsWith(getBIMOVerdictSummary(out.verdict))).toBe(
+      true
+    );
+    expect(out.summary).toMatch(/In the closing interview/);
+  });
+
+  it("restates the summary when skeletons raise the verdict (#2172)", () => {
+    const base = generateBIMOReport(cleanScore, auditor, [], [], null, NOW);
+    const out = applySponsorSkeletonsToReport(base, [skeleton("Critical")]);
+    expect(out.verdict).toMatch(/^OAI/);
+    expect(out.summary).not.toMatch(/no objectionable conditions/);
+    expect(out.summary).toMatch(/^FDA Form 483 issued/);
+  });
+
+  it("keeps appended sentences when restating a summary", () => {
+    expect(
+      restateBIMOSummary(
+        `${getBIMOVerdictSummary("NAI (No Action Indicated)")} Extra.`,
+        "NAI (No Action Indicated)",
+        "VAI (Voluntary Action Indicated)"
+      )
+    ).toBe(
+      `${getBIMOVerdictSummary("VAI (Voluntary Action Indicated)")} Extra.`
+    );
   });
 
   it("leaves the report alone when there is nothing to apply", () => {

@@ -8,8 +8,9 @@
 
 > **resolveDilemma**(`state`, `option`, `timedOut`, `events`): [`ShiftState`](../../../types/interfaces/ShiftState.md)
 
-Answers the open dilemma: applies the option's meter and Solidarity
-changes, records the choice and closes the dilemma. The caller has already
+Answers the open dilemma: applies the option's meter changes, and its
+Solidarity change when the player chose it rather than the clock (#2139),
+records the choice and closes the dilemma. The caller has already
 checked the option belongs to the open dilemma.
 
 ## Parameters

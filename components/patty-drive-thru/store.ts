@@ -16,6 +16,8 @@ import {
   getKdsBand,
   getManagerLine,
   getOrderAge,
+  getRushCaption,
+  getRushWindows,
   getWeekDay,
   getWeekDayConfig,
   isShiftOver,
@@ -32,6 +34,7 @@ import {
   type ShiftLogEntry,
   type ShiftState,
   type WeekState,
+  type WeekdayId,
 } from "@/lib/patty-drive-thru";
 
 /** Who a caption comes from, which sets its style and audio channel. */
@@ -133,7 +136,8 @@ export const DILEMMA_KEYS = ["Q", "E"] as const;
 
 function captionFor(
   event: ShiftEvent,
-  shift: ShiftState
+  shift: ShiftState,
+  day: WeekdayId | null = null
 ): { speaker: CaptionSpeaker; text: string } | null {
   switch (event.type) {
     case "order-arrived":
@@ -177,7 +181,10 @@ function captionFor(
     case "wiped":
       return { speaker: "booth", text: EVENT_CAPTIONS.wiped };
     case "rush-started":
-      return { speaker: "manager", text: EVENT_CAPTIONS.rushStarted };
+      return {
+        speaker: "manager",
+        text: getRushCaption(getRushWindows(shift.config), event.rush, day),
+      };
     case "dilemma-offered": {
       const dilemma = getDilemma(event.dilemmaId);
       return {
@@ -198,7 +205,8 @@ function captionFor(
 /** The single most important caption among a batch of events. */
 function pickCaption(
   events: readonly ShiftEvent[],
-  shift: ShiftState
+  shift: ShiftState,
+  day: WeekdayId | null
 ): { speaker: CaptionSpeaker; text: string } | null {
   let best: ShiftEvent | null = null;
   for (const event of events) {
@@ -207,11 +215,15 @@ function pickCaption(
       best = event;
     }
   }
-  return best ? captionFor(best, shift) : null;
+  return best ? captionFor(best, shift, day) : null;
 }
 
 /** What a screen reader hears for a batch of events. */
-function announce(events: readonly ShiftEvent[], shift: ShiftState): string {
+function announce(
+  events: readonly ShiftEvent[],
+  shift: ShiftState,
+  day: WeekdayId | null
+): string {
   const parts: string[] = [];
   for (const event of events) {
     if (event.type === "order-arrived") {
@@ -238,7 +250,7 @@ function announce(events: readonly ShiftEvent[], shift: ShiftState): string {
         );
       }
     } else {
-      const caption = captionFor(event, shift);
+      const caption = captionFor(event, shift, day);
       if (caption) parts.push(caption.text);
     }
   }
@@ -283,8 +295,11 @@ export function createBoothStore(
   return createStore<BoothState & BoothActions>()((set, get) => {
     const absorb = (shift: ShiftState, events: readonly ShiftEvent[]) => {
       const state = get();
-      const caption = pickCaption(events, shift);
-      let announcement = events.length > 0 ? announce(events, shift) : "";
+      // The day being worked, for its rush calls (#2139).
+      const day = state.week ? (getWeekDay(state.week)?.id ?? null) : null;
+      const caption = pickCaption(events, shift, day);
+      let announcement =
+        events.length > 0 ? announce(events, shift, day) : "";
       const open = new Set(shift.orders.map((o) => o.id));
       const known = state.lateAnnounced.filter((id) => open.has(id));
       const newlyLate = lateOrders(shift).filter((id) => !known.includes(id));

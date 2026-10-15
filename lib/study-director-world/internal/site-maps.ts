@@ -70,13 +70,13 @@ interface SiteProfile {
 
 const SITE_PROFILES: Record<string, SiteProfile> = {
   "site-01": {
-    coordinator: "Dana Okafor",
+    coordinator: "Ngozi Okafor",
     pi: "Dr. Hale",
     travelMinutes: 25,
     reception: "A quiet waiting room with this month's magazines.",
   },
   "site-02": {
-    coordinator: "Priya Lindqvist",
+    coordinator: "Elin Lindqvist",
     pi: "Dr. Moreau",
     travelMinutes: 40,
     reception: "Every surface has a laminated reminder about the protocol.",

@@ -78,7 +78,7 @@ describe("StudyDirectorWorld site visits", () => {
       SITE_MAPS["site-02"].rooms.length + SITE_MAPS["site-02"].stations.length
     );
     const visit = screen.getByTestId("site-visit");
-    expect(visit.textContent).toMatch(/Priya Lindqvist/);
+    expect(visit.textContent).toMatch(/Elin Lindqvist/);
     expect(visit.textContent).toMatch(/Anxious/);
     expect(visit.textContent).toMatch(/2 things about them/);
 

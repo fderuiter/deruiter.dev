@@ -40,22 +40,26 @@ export function queryRestraintLabel(
 
 /** Awards the three preventative badges from what happened in the run. */
 export function evaluateBadges(input: ScorecardInput): BadgeAward[] {
+  const { narrative, transposition } = input.beatLabels ?? {
+    narrative: "Site A Day 7",
+    transposition: "B01 Day 14",
+  };
   return [
     {
       id: "PREVENTATIVE_ARCHITECT",
       title: "Preventative Architect",
       earned: input.regexSplitBeforeNarrative,
       reason: input.regexSplitBeforeNarrative
-        ? "RegexSplit was deployed before the Site A Day 7 narrative entered ingestion."
-        : "The Site A Day 7 narrative reached a pipeline without RegexSplit.",
+        ? `RegexSplit was deployed before the ${narrative} narrative entered ingestion.`
+        : `The ${narrative} narrative reached a pipeline without RegexSplit.`,
     },
     {
       id: "FORENSIC_SLEUTH",
       title: "Forensic Sleuth",
       earned: input.sleuthResolvedWithEvidence,
       reason: input.sleuthResolvedWithEvidence
-        ? "The B01 Day 14 transposition was resolved through an evidence-linked query."
-        : "The B01 Day 14 transposition was not resolved with source evidence.",
+        ? `The ${transposition} transposition was resolved through an evidence-linked query.`
+        : `The ${transposition} transposition was not resolved with source evidence.`,
     },
     {
       id: "AMENDMENT_NAVIGATOR",

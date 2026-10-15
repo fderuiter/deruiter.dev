@@ -5,7 +5,10 @@ import {
   FULL_SUBMISSIONS,
   TRACER_GRAPH,
   createProtocolDriftEngine,
+  isoToMinute,
+  studyPlan,
   studyVariant,
+  trialDayOf,
 } from "@/lib/protocol-drift";
 import { arcadeDailyNumber } from "@/lib/arcade/daily";
 import {
@@ -50,14 +53,20 @@ describe("seeded study variants (#2169)", () => {
   });
 
   it("keeps every submission in its day and its order within a session", () => {
+    const dayOf = (iso: string) => trialDayOf(isoToMinute(iso));
     for (const seed of SEEDS) {
+      // Site B's late Day 24 backlog lands on the plan's day (#2275).
+      const lateDay = studyPlan(seed).lateBacklogDay;
       const variant = studyVariant(FULL_SUBMISSIONS, seed);
       variant.forEach((f, i) => {
         const before = FULL_SUBMISSIONS[i];
-        expect(f.submittedAt.slice(0, 10)).toBe(
-          before.submittedAt.slice(0, 10)
+        const late = before.sessionId === "sess-b-day27-backlog";
+        expect(dayOf(f.submittedAt)).toBe(
+          late ? lateDay : dayOf(before.submittedAt)
         );
-        expect(f.submittedAt >= before.submittedAt).toBe(true);
+        expect(f.submittedAt.slice(11) >= before.submittedAt.slice(11)).toBe(
+          true
+        );
         expect(f.assessedAt).toBe(before.assessedAt);
       });
     }

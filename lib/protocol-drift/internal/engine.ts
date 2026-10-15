@@ -10,10 +10,8 @@ import {
   FULL_SUBMISSIONS,
   RANGE_LIMITS,
   SAVE_FORMAT,
-  SITE_CLARIFICATIONS,
   SITE_IDS,
   SITE_PROFILES,
-  SOURCE_WORKSHEETS,
   STUDY_ID,
   TRACER_SUBMISSIONS,
   WAVE_ENDS,
@@ -42,6 +40,7 @@ import type {
   SiteId,
   SiteState,
   SourceRevision,
+  StudyPlan,
   SubmissionFixture,
   TraceViolation,
   UnmatchedEntry,
@@ -92,7 +91,11 @@ import {
   queryTransition,
 } from "./queries";
 import { hashValue, seededDraw } from "./rng";
-import { studyVariant } from "./variants";
+import {
+  scriptedTranspositions,
+  studyPlan,
+  studyVariant,
+} from "./variants";
 import { buildScorecard } from "./scorecard";
 
 /** Options for creating an engine. */
@@ -170,6 +173,8 @@ const NOTICEABLE_EVENTS: ReadonlySet<SimEventKind> = new Set([
 class Engine implements ProtocolDriftEngine {
   private seed: number;
   private scenario: ScenarioId;
+  /** Where this seed puts the study's beats (#2275). */
+  private plan: StudyPlan = studyPlan(DEFAULT_SEED);
   private fsm: SimulationState = "BRIEF";
   private minute = 0;
   private speed: SimSpeed = 1;
@@ -239,17 +244,16 @@ class Engine implements ProtocolDriftEngine {
     this.seed = seed;
     this.scenario = scenario;
     this.rejectedCount = rejectionCount(rejectedCommands);
+    this.plan = studyPlan(seed);
     for (const id of SITE_IDS) {
       const profile = SITE_PROFILES[id];
+      const goodwill = this.plan.initialGoodwill[id];
       this.sites[id] = {
         siteId: id,
-        goodwill: profile.initialGoodwill,
+        goodwill,
         attention: 100,
         version: "v1",
-        latencyHours: responseLatencyHours(
-          profile.baseLatencyHours,
-          profile.initialGoodwill
-        ),
+        latencyHours: responseLatencyHours(profile.baseLatencyHours, goodwill),
         openQueries: 0,
       };
     }
@@ -258,13 +262,14 @@ class Engine implements ProtocolDriftEngine {
       scenario === "tracer" ? TRACER_SUBMISSIONS : FULL_SUBMISSIONS,
       seed
     );
+    const transpositions = scriptedTranspositions(seed);
     const sessions = new Map<string, SubmissionFixture[]>();
     for (const f of fixtures) {
       this.fixtures.set(f.submissionId, f);
       sessions.set(f.sessionId, [...(sessions.get(f.sessionId) ?? []), f]);
     }
     for (const subs of sessions.values()) {
-      const session = simulateEntrySession(subs, seed);
+      const session = simulateEntrySession(subs, seed, transpositions);
       for (const [id, payload] of session.entered)
         this.entered.set(id, payload);
       this.attentionLog.push(...session.steps);
@@ -932,7 +937,7 @@ class Engine implements ProtocolDriftEngine {
       this.events.push({ type: "PACKET_DISPATCHED", packet });
     }
     if (
-      rev.submissionId === "sub-a01-d07" &&
+      rev.submissionId === this.plan.narrativeSubmissionId &&
       this.regexBeforeNarrative === null
     ) {
       this.regexBeforeNarrative = result.regexSplitUsed;
@@ -1036,7 +1041,8 @@ class Engine implements ProtocolDriftEngine {
       message: draft.message,
       detectedAtMinute: this.minute,
       ...(draft.evidence ? { evidence: draft.evidence } : {}),
-      ...(rev.submissionId === "sub-b01-d14" && draft.code === "OUT_OF_RANGE"
+      ...(rev.submissionId === this.plan.transpositionSubmissionId &&
+      draft.code === "OUT_OF_RANGE"
         ? { scriptedStampOnGeneric: true }
         : {}),
     };
@@ -1072,7 +1078,7 @@ class Engine implements ProtocolDriftEngine {
         k in rev.payload &&
         f.payload[k] !== rev.payload[k]
       ) {
-        const sheet = SOURCE_WORKSHEETS[rev.submissionId];
+        const sheet = this.plan.worksheets[rev.submissionId];
         const unit = testcd === "PULSE" ? "beats/min" : "mmHg";
         return `Scanned worksheet clip${sheet ? ` (${sheet.hospital}, ${sheet.clinician})` : ""}: ${testcd} ${String(f.payload[k])} ${unit}; eCRF entry ${String(rev.payload[k])}`;
       }
@@ -1668,7 +1674,7 @@ class Engine implements ProtocolDriftEngine {
         q.responseReceived = `Amended source record ${rev.sourceRevisionId} submitted after review of the paper worksheet.`;
       } else {
         q.responseReceived =
-          SITE_CLARIFICATIONS[issue.submissionId] ??
+          this.plan.clarifications[issue.submissionId] ??
           "Value verified against source documents; no change.";
       }
       if (issue.status === "Open" || issue.status === "AwaitingEvidence") {
@@ -1766,7 +1772,7 @@ class Engine implements ProtocolDriftEngine {
       const site = this.sites[issue.siteId];
       site.goodwill = clampGoodwill(
         site.goodwill + GOODWILL_RULES.resolvedDiscrepancy,
-        SITE_PROFILES[issue.siteId].initialGoodwill
+        this.plan.initialGoodwill[issue.siteId]
       );
       this.refreshLatency(issue.siteId);
     }
@@ -1777,7 +1783,7 @@ class Engine implements ProtocolDriftEngine {
         (x) => x.queryId === this.pendingSource.get(pendingId)
       );
       if (
-        issue.submissionId === "sub-b01-d14" &&
+        issue.submissionId === this.plan.transpositionSubmissionId &&
         issue.code === "OUT_OF_RANGE" &&
         q?.isEvidenceLinked
       ) {
@@ -1927,6 +1933,7 @@ class Engine implements ProtocolDriftEngine {
         regexSplitBeforeNarrative: this.regexBeforeNarrative === true,
         sleuthResolvedWithEvidence: this.sleuthResolved,
         lateBacklogRoutedV1: b24.every((r) => r?.handle === "v1"),
+        beatLabels: this.beatLabels(),
         applicabilityErrors: this.applicabilityErrors,
         integrityPassed: result.canLock,
         chipCount: this.publishedGraph?.nodes.length ?? 0,
@@ -1936,6 +1943,22 @@ class Engine implements ProtocolDriftEngine {
         fabricatedBits: this.mh.reduce((sum, r) => sum + r.fabricatedBits, 0),
       }),
     });
+  }
+
+  /** How the badge reasons name this seed's narrative and transposition. */
+  private beatLabels(): { narrative: string; transposition: string } {
+    const narrative = this.fixtures.get(this.plan.narrativeSubmissionId);
+    const transposition = this.fixtures.get(
+      this.plan.transpositionSubmissionId
+    );
+    return {
+      narrative: narrative
+        ? `${narrative.siteId.replace("SITE-", "Site ")} Day ${narrative.visitDay}`
+        : "narrative",
+      transposition: transposition
+        ? `${transposition.subjectId.replace(/^PD-101-/, "")} Day ${transposition.visitDay}`
+        : "fatigue",
+    };
   }
 
   private buildSave(savedAt?: string): ProtocolDriftSaveFile {

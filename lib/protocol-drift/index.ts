@@ -22,7 +22,11 @@ export {
   trialDayOf,
 } from "./internal/clock";
 export { fnv1a, hashValue, mulberry32, seededDraw } from "./internal/rng";
-export { studyVariant } from "./internal/variants";
+export {
+  scriptedTranspositions,
+  studyPlan,
+  studyVariant,
+} from "./internal/variants";
 export {
   FSM_TRANSITIONS,
   ProtocolDriftStateError,

@@ -294,6 +294,35 @@ export interface SubmissionFixture {
   sessionId: string;
 }
 
+/** A paper source worksheet facsimile shown in the Form View. */
+export interface SourceWorksheet {
+  hospital: string;
+  clinician: string;
+  text: string;
+}
+
+/**
+ * Where a seed puts the study's authored puzzle beats and how its sites
+ * behave (#2275). The default seed's plan is the authored study.
+ */
+export interface StudyPlan {
+  seed: number;
+  /** The MH submission whose start date is a partial ISO 8601 date. */
+  partialDateSubmissionId: string;
+  /** The VS submission keyed as a free-text narrative with a repeat reading. */
+  narrativeSubmissionId: string;
+  /** The Site B systolic the fatigued backlog session transposes. */
+  transpositionSubmissionId: string;
+  /** The trial day Site B keys its late Day 24 backlog (26 or 27). */
+  lateBacklogDay: number;
+  /** Each site's starting goodwill, which also sets its reply delay. */
+  initialGoodwill: Readonly<Record<SiteId, number>>;
+  /** Worksheet scans by submission, for the transposition carrier. */
+  worksheets: Readonly<Record<string, SourceWorksheet>>;
+  /** Site answers that need no new source revision, by submission. */
+  clarifications: Readonly<Record<string, string>>;
+}
+
 /** An immutable source revision. */
 export interface SourceRevision {
   sourceRevisionId: string;
@@ -686,6 +715,8 @@ export interface ScorecardInput {
   regexSplitBeforeNarrative: boolean;
   sleuthResolvedWithEvidence: boolean;
   lateBacklogRoutedV1: boolean;
+  /** How the badge reasons name this seed's beats (#2275). */
+  beatLabels?: { narrative: string; transposition: string };
   applicabilityErrors: number;
   integrityPassed: boolean;
   /** Chips in the pipeline revision that was live at lock. */

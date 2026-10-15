@@ -8,4 +8,6 @@
 
 ## Functions
 
+- [scriptedTranspositions](functions/scriptedTranspositions.md)
+- [studyPlan](functions/studyPlan.md)
 - [studyVariant](functions/studyVariant.md)

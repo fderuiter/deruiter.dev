@@ -323,6 +323,17 @@ const subscribeHighScore = (callback: () => void) => {
   window.addEventListener("storage", callback);
   return () => window.removeEventListener("storage", callback);
 };
+// The screen-reader button row: off screen until one of its buttons takes
+// keyboard focus, then a visible row under the watch (#2129).
+const WATCH_BUTTON_ROW = [
+  "sr-only focus-within:not-sr-only",
+  "focus-within:mx-auto focus-within:mt-4 focus-within:flex focus-within:max-w-3xl focus-within:flex-wrap focus-within:justify-center focus-within:gap-2",
+  "focus-within:rounded-xl focus-within:border focus-within:border-white/[0.08] focus-within:bg-[#13151a] focus-within:p-3",
+  "[&_button]:min-h-11 [&_button]:rounded-lg [&_button]:border [&_button]:border-zinc-700 [&_button]:bg-[#0d0e11] [&_button]:px-3",
+  "[&_button]:font-mono [&_button]:text-[11px] [&_button]:text-zinc-200 [&_button]:active:scale-[0.98]",
+  "[&_button:focus-visible]:outline-none [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-amber-400",
+  "[&_button:disabled]:opacity-50",
+].join(" ");
 const HIGH_SCORE_KEY = "garmin_simulator_high_score";
 // The high score is stored as a bare numeric string, so it is read and
 // written raw; the safe-storage helpers already guard missing or throwing
@@ -2985,14 +2996,20 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             )}
         </CompanionPanel>
       </div>
-      {/* Off-screen Accessible DOM Fallback Subtree */}
-      <div className="sr-only" aria-label="Garmin Watch Accessible Subtree">
+      {/* Accessible DOM fallback: the state readouts stay off screen, and
+          the watch buttons show as a visible row whenever one of them has
+          keyboard focus, so Tab never lands on an invisible control (#2129). */}
+      <div aria-label="Garmin Watch Accessible Subtree">
         <fieldset>
-          <legend>
+          <legend className="sr-only">
             Garmin Watch Embedded Simulator State and Physical Controls
           </legend>
 
-          <div role="group" aria-label="Garmin Simulator Telemetry and Status">
+          <div
+            role="group"
+            aria-label="Garmin Simulator Telemetry and Status"
+            className="sr-only"
+          >
             <output aria-live="off" htmlFor="garmin-state">
               State: {gameState.gameState}
             </output>
@@ -3029,7 +3046,14 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             </output>
           </div>
 
-          <div role="group" aria-label="Garmin Watch Physical Controls">
+          <div
+            role="group"
+            aria-label="Garmin Watch Physical Controls"
+            className={WATCH_BUTTON_ROW}
+          >
+            <p className="w-full text-center font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+              Watch buttons
+            </p>
             <button type="button" onClick={a11yLight}>
               LIGHT / Backlight Button
             </button>
@@ -3124,47 +3148,6 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
                 </button>
               </>
             )}
-
-            <button
-              type="button"
-              aria-pressed={devMode}
-              onClick={handleToggleDevMode}
-            >
-              Dev Mode (firmware rules)
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                handleSelectDevice("forerunner");
-                announce("Switched profile to Forerunner.", "polite");
-              }}
-              aria-pressed={deviceTarget === "forerunner"}
-            >
-              Profile: Forerunner
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                handleSelectDevice("fenix");
-                announce("Switched profile to Fenix.", "polite");
-              }}
-              aria-pressed={deviceTarget === "fenix"}
-            >
-              Profile: Fenix
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                handleSelectDevice("edge");
-                announce("Switched profile to Edge.", "polite");
-              }}
-              aria-pressed={deviceTarget === "edge"}
-            >
-              Profile: Edge
-            </button>
           </div>
         </fieldset>
       </div>

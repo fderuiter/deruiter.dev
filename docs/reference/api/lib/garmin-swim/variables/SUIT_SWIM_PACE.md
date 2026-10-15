@@ -6,6 +6,6 @@
 
 # Variable: SUIT\_SWIM\_PACE
 
-> `const` **SUIT\_SWIM\_PACE**: `0.7` = `0.7`
+> `const` **SUIT\_SWIM\_PACE**: `0.8` = `0.8`
 
 Swim pace of a Tri Suit runner.

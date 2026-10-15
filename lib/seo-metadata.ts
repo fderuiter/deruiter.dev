@@ -311,7 +311,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   retroLabyrinth: {
     title: "Retro Labyrinth: Graveyard Roguelike",
     description:
-      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and find the FaceForge boss in this browser roguelike.",
+      "An abandoned codebase, now with corridors. Navigate moving walls, wield developer-themed weapons, and break two wireframe bosses in this browser roguelike.",
     path: "/arcade/retro-labyrinth",
     ogImageType: "image/jpeg",
     keywords: [

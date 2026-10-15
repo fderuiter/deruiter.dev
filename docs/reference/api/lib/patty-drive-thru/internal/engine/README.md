@@ -15,6 +15,8 @@
 - [getKdsBand](functions/getKdsBand.md)
 - [getOrderAge](functions/getOrderAge.md)
 - [getPosScreen](functions/getPosScreen.md)
+- [getRushWindows](functions/getRushWindows.md)
+- [getShiftRamp](functions/getShiftRamp.md)
 - [isAgeLocked](functions/isAgeLocked.md)
 - [isOrderReady](functions/isOrderReady.md)
 - [isShiftOver](functions/isShiftOver.md)

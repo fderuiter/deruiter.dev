@@ -230,6 +230,8 @@ interface ChoiceGroupProps<T extends string> {
   options: readonly ChoiceOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /** Runs after a pick, with the click, so a pointer pick can hand the keyboard back to the watch. */
+  onPick?: (e: React.MouseEvent) => void;
   disabled: boolean;
   /** Columns on a wide panel; the group stacks when it is narrower. */
   columns: 1 | 2;
@@ -245,6 +247,7 @@ function ChoiceGroup<T extends string>({
   options,
   value,
   onChange,
+  onPick,
   disabled,
   columns,
   describedBy,
@@ -286,7 +289,10 @@ function ChoiceGroup<T extends string>({
             tabIndex={checked ? 0 : -1}
             disabled={disabled}
             title={option.title}
-            onClick={() => onChange(option.value)}
+            onClick={(e) => {
+              onChange(option.value);
+              onPick?.(e);
+            }}
             onKeyDown={onKeyDown}
             className={`${raceChoiceClass} ${
               checked
@@ -341,6 +347,12 @@ interface CompanionPanelProps {
   ghostTarget: GhostTarget;
   onSetGhostOn: (on: boolean) => void;
   onSetGhostTarget: (target: GhostTarget) => void;
+  /**
+   * Called after a run mode, race or Virtual Partner option is clicked, so a
+   * pointer pick hands the keyboard back to the watch and Enter starts the
+   * run (#2130).
+   */
+  onRunChoicePick: (e: React.MouseEvent) => void;
   /** Samples recorded for the current run. */
   telemetryCount: number;
   onExportCsv: () => void;
@@ -392,6 +404,7 @@ export function CompanionPanel({
   ghostTarget,
   onSetGhostOn,
   onSetGhostTarget,
+  onRunChoicePick,
   telemetryCount,
   onExportCsv,
   onExportFit,
@@ -579,6 +592,162 @@ export function CompanionPanel({
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+            Run mode
+          </legend>
+          <div className="grid gap-2">
+            <ChoiceGroup<RunMode>
+              label="Run mode"
+              value={planMode ? "plan" : raceMode ? "race" : "training"}
+              disabled={raceLocked}
+              columns={2}
+              onChange={onSetRunMode}
+              onPick={onRunChoicePick}
+              options={[
+                {
+                  value: "training",
+                  label: "Training Run",
+                  title: "A random course every run.",
+                },
+                {
+                  value: "race",
+                  label: "Race Mode",
+                  title:
+                    "The same seeded course every attempt, with Dev Mode off.",
+                },
+                {
+                  value: "plan",
+                  label: "Training Plan",
+                  title:
+                    "Workouts on a map, Recovery Huts and Race Day, saved on this device.",
+                },
+              ]}
+            />
+            {raceMode && (
+              <>
+                <p className="text-[10px] text-zinc-400">
+                  Races run with Dev Mode off.
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Course
+                </p>
+                <ChoiceGroup<RaceCourse>
+                  label="Race course"
+                  value={raceCourse}
+                  disabled={raceLocked}
+                  columns={1}
+                  onChange={onSetRaceCourse}
+                  onPick={onRunChoicePick}
+                  options={RACE_COURSES.map((course) => ({
+                    value: course,
+                    label: RACE_COURSE_NAMES[course],
+                    title:
+                      course === "daily"
+                        ? "Today's course: the same for everyone, new at local midnight."
+                        : "The same course every attempt.",
+                  }))}
+                />
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Category
+                </p>
+                <ChoiceGroup<RaceCategory>
+                  label="Race category"
+                  value={raceCategory}
+                  disabled={raceLocked}
+                  columns={1}
+                  onChange={onSetRaceCategory}
+                  onPick={onRunChoicePick}
+                  describedBy="race-category-rule"
+                  options={RACE_CATEGORIES.map((category) => ({
+                    value: category,
+                    label: RACE_CATEGORY_INFO[category].name,
+                  }))}
+                />
+                <p
+                  id="race-category-rule"
+                  className="text-[10px] text-zinc-400"
+                >
+                  {RACE_CATEGORY_INFO[raceCategory].rule}
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
+                  Virtual Partner
+                </p>
+                <ChoiceGroup<"on" | "off">
+                  label="Virtual Partner"
+                  value={ghostOn ? "on" : "off"}
+                  disabled={false}
+                  columns={2}
+                  onChange={(value) => onSetGhostOn(value === "on")}
+                  onPick={onRunChoicePick}
+                  options={[
+                    {
+                      value: "on",
+                      label: "Ghost on",
+                      title: "A see-through runner replays your best race.",
+                    },
+                    { value: "off", label: "Ghost off" },
+                  ]}
+                />
+                {ghostOn && (
+                  <>
+                    <ChoiceGroup<GhostTarget>
+                      label="Race against"
+                      value={ghostTarget}
+                      disabled={false}
+                      columns={2}
+                      onChange={onSetGhostTarget}
+                      onPick={onRunChoicePick}
+                      describedBy="ghost-target-note"
+                      options={[
+                        { value: "pr", label: "Your PR" },
+                        { value: "cr", label: "Course record" },
+                      ]}
+                    />
+                    <p
+                      id="ghost-target-note"
+                      className="text-[10px] text-zinc-400"
+                    >
+                      This device keeps one runner, so your PR is also the
+                      course record. A ghost is kept from the next race that
+                      sets the best time on its board.
+                    </p>
+                  </>
+                )}
+              </>
+            )}
+            {planMode && planPanel}
+            {raceLocked && (
+              <p className="text-[10px] text-zinc-400">
+                Run mode, course and category change once this run ends. The
+                Virtual Partner can change at any time.
+              </p>
+            )}
+          </div>
+        </fieldset>
+
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/[0.08] pt-3 text-[10px]">
+          {(fitnessView ? FITNESS_KEYS : KEYS).map(([key, action]) => (
+            <React.Fragment key={key}>
+              <dt className="text-zinc-200">{key}</dt>
+              <dd className="min-w-0 text-zinc-400">{action}</dd>
+            </React.Fragment>
+          ))}
+        </dl>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <FieldManualButton manualId="garmin-watch" label="Manual" />
+          {onToggleFullscreen && (
+            <FullscreenButton
+              isFullscreen={isFullscreen}
+              onToggle={onToggleFullscreen}
+              variant="header"
+            />
+          )}
+        </div>
+
+        {badgePanel}
+
+        <fieldset className="min-w-0">
+          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
             Device
           </legend>
           <div className="flex gap-1 rounded-lg border border-white/[0.08] bg-[#0d0e11] p-0.5">
@@ -615,41 +784,48 @@ export function CompanionPanel({
           </div>
         </fieldset>
 
-        <fieldset className="min-w-0">
-          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
-            Ground strip
-          </legend>
-          <div className="grid gap-1.5">
-            {GROUND_STRIP_SLOT_LABELS.map((slotLabel, slot) => (
-              <label
-                key={slotLabel}
-                className="flex min-w-0 items-center justify-between gap-2 text-[10px] text-zinc-400"
-              >
-                <span>{slotLabel}</span>
-                <select
-                  value={groundStrip[slot]}
-                  onChange={(e) =>
-                    onGroundStripSlot(slot, e.target.value as GroundStripField)
-                  }
-                  className="min-h-[32px] min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#0d0e11] px-2 text-[10px] text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        {/* The fitness face draws fixed fields, so the strip only
+            applies to Dev Mode runs (#2131). */}
+        {!fitnessView && (
+          <fieldset className="min-w-0">
+            <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
+              Ground strip
+            </legend>
+            <div className="grid gap-1.5">
+              {GROUND_STRIP_SLOT_LABELS.map((slotLabel, slot) => (
+                <label
+                  key={slotLabel}
+                  className="flex min-w-0 items-center justify-between gap-2 text-[10px] text-zinc-400"
                 >
-                  {GROUND_STRIP_FIELDS.map((field) => (
-                    <option key={field} value={field}>
-                      {GROUND_STRIP_FIELD_LABELS[field]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
-            <button
-              type="button"
-              onClick={onGroundStripReset}
-              className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
-            >
-              Reset strip
-            </button>
-          </div>
-        </fieldset>
+                  <span>{slotLabel}</span>
+                  <select
+                    value={groundStrip[slot]}
+                    onChange={(e) =>
+                      onGroundStripSlot(
+                        slot,
+                        e.target.value as GroundStripField
+                      )
+                    }
+                    className="min-h-[32px] min-w-0 flex-1 rounded-md border border-white/[0.08] bg-[#0d0e11] px-2 text-[10px] text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+                  >
+                    {GROUND_STRIP_FIELDS.map((field) => (
+                      <option key={field} value={field}>
+                        {GROUND_STRIP_FIELD_LABELS[field]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ))}
+              <button
+                type="button"
+                onClick={onGroundStripReset}
+                className={`${toolClass} border-white/[0.08] bg-[#0d0e11] text-zinc-300 hover:bg-white/[0.04]`}
+              >
+                Reset strip
+              </button>
+            </div>
+          </fieldset>
+        )}
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
@@ -679,137 +855,6 @@ export function CompanionPanel({
             </button>
           </div>
         </fieldset>
-
-        <fieldset className="min-w-0">
-          <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
-            Run mode
-          </legend>
-          <div className="grid gap-2">
-            <ChoiceGroup<RunMode>
-              label="Run mode"
-              value={planMode ? "plan" : raceMode ? "race" : "training"}
-              disabled={raceLocked}
-              columns={2}
-              onChange={onSetRunMode}
-              options={[
-                {
-                  value: "training",
-                  label: "Training Run",
-                  title: "A random course every run.",
-                },
-                {
-                  value: "race",
-                  label: "Race Mode",
-                  title:
-                    "The same seeded course every attempt, with Dev Mode off.",
-                },
-                {
-                  value: "plan",
-                  label: "Training Plan",
-                  title:
-                    "Workouts on a map, Recovery Huts and Race Day, saved on this device.",
-                },
-              ]}
-            />
-            {raceMode && (
-              <>
-                <p className="text-[10px] text-zinc-400">
-                  Races run with Dev Mode off.
-                </p>
-                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                  Course
-                </p>
-                <ChoiceGroup<RaceCourse>
-                  label="Race course"
-                  value={raceCourse}
-                  disabled={raceLocked}
-                  columns={1}
-                  onChange={onSetRaceCourse}
-                  options={RACE_COURSES.map((course) => ({
-                    value: course,
-                    label: RACE_COURSE_NAMES[course],
-                    title:
-                      course === "daily"
-                        ? "Today's course: the same for everyone, new at local midnight."
-                        : "The same course every attempt.",
-                  }))}
-                />
-                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                  Category
-                </p>
-                <ChoiceGroup<RaceCategory>
-                  label="Race category"
-                  value={raceCategory}
-                  disabled={raceLocked}
-                  columns={1}
-                  onChange={onSetRaceCategory}
-                  describedBy="race-category-rule"
-                  options={RACE_CATEGORIES.map((category) => ({
-                    value: category,
-                    label: RACE_CATEGORY_INFO[category].name,
-                  }))}
-                />
-                <p
-                  id="race-category-rule"
-                  className="text-[10px] text-zinc-400"
-                >
-                  {RACE_CATEGORY_INFO[raceCategory].rule}
-                </p>
-                <p className="text-[10px] uppercase tracking-wider text-zinc-400">
-                  Virtual Partner
-                </p>
-                <ChoiceGroup<"on" | "off">
-                  label="Virtual Partner"
-                  value={ghostOn ? "on" : "off"}
-                  disabled={false}
-                  columns={2}
-                  onChange={(value) => onSetGhostOn(value === "on")}
-                  options={[
-                    {
-                      value: "on",
-                      label: "Ghost on",
-                      title: "A see-through runner replays your best race.",
-                    },
-                    { value: "off", label: "Ghost off" },
-                  ]}
-                />
-                {ghostOn && (
-                  <>
-                    <ChoiceGroup<GhostTarget>
-                      label="Race against"
-                      value={ghostTarget}
-                      disabled={false}
-                      columns={2}
-                      onChange={onSetGhostTarget}
-                      describedBy="ghost-target-note"
-                      options={[
-                        { value: "pr", label: "Your PR" },
-                        { value: "cr", label: "Course record" },
-                      ]}
-                    />
-                    <p
-                      id="ghost-target-note"
-                      className="text-[10px] text-zinc-400"
-                    >
-                      This device keeps one runner, so your PR is also the
-                      course record. A ghost is kept from the next race that
-                      sets the best time on its board.
-                    </p>
-                  </>
-                )}
-              </>
-            )}
-            {planMode && planPanel}
-            {raceLocked && (
-              <p className="text-[10px] text-zinc-400">
-                Run mode, course and category change once this run ends. The
-                Virtual Partner can change at any time.
-              </p>
-            )}
-          </div>
-        </fieldset>
-
-        {badgePanel}
 
         <fieldset className="min-w-0">
           <legend className="mb-1.5 text-[10px] uppercase tracking-wider text-zinc-400">
@@ -873,26 +918,6 @@ export function CompanionPanel({
             )}
           </div>
         </fieldset>
-
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 border-t border-white/[0.08] pt-3 text-[10px]">
-          {(fitnessView ? FITNESS_KEYS : KEYS).map(([key, action]) => (
-            <React.Fragment key={key}>
-              <dt className="text-zinc-200">{key}</dt>
-              <dd className="min-w-0 text-zinc-400">{action}</dd>
-            </React.Fragment>
-          ))}
-        </dl>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <FieldManualButton manualId="garmin-watch" label="Manual" />
-          {onToggleFullscreen && (
-            <FullscreenButton
-              isFullscreen={isFullscreen}
-              onToggle={onToggleFullscreen}
-              variant="header"
-            />
-          )}
-        </div>
       </div>
       {children}
     </aside>

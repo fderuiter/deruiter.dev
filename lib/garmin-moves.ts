@@ -37,14 +37,20 @@ export const WALL_JUMP_VY = -10.5;
 /** Fastest the runner slides down a wall while pressed against it, in px per frame. */
 export const WALL_SLIDE_MAX_VY = 2.5;
 
-/** The three moves that toast the first time they are used in a run. */
-export type MoveName = "slam" | "wall" | "spin";
+/**
+ * The moves that toast the first time they are used in a run, and the course
+ * pieces named the first time the runner meets them (#2022).
+ */
+export type MoveName = "slam" | "wall" | "spin" | "plyo" | "belt" | "current";
 
-/** The popup line for each move's first use in a run. */
+/** The popup line for each move's first use in a run, or the banner for a course piece's first meeting. */
 export const MOVE_TOASTS: Record<MoveName, string> = {
   slam: "BURPEE SLAM!",
   wall: "WALL JUMP!",
   spin: "SPIN JUMP!",
+  plyo: "PLYO BOX · HOLD JUMP TO GO HIGHER",
+  belt: "TREADMILL BELT · RIDE IT ACROSS",
+  current: "CURRENT · SWIM WITH THE FLOW",
 };
 
 /**

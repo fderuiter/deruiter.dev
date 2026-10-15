@@ -156,6 +156,13 @@ describe("Hand pointer and touch policy (#997)", () => {
     });
   });
 
+  it("reads a selected card on a second Apple Pencil tap, like a finger (#2120)", () => {
+    expect(tap({ pointerType: "pen", selected: true })).toEqual({
+      kind: "READ",
+    });
+    expect(tap({ pointerType: "pen" })).toEqual({ kind: "TOGGLE_SELECT" });
+  });
+
   it("affixes a picked-up seal whatever the pointer", () => {
     expect(tap({ sealArmed: true })).toEqual({ kind: "APPLY_SEAL" });
     expect(

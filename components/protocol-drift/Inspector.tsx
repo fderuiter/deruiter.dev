@@ -487,7 +487,8 @@ function ReviewPane({
 }) {
   const select = useProtocolDriftStore((s) => s.select);
   const command = useProtocolDriftStore((s) => s.command);
-  const hasStale = view.adamRows.some((r) => r.stale);
+  // The lock gate counts stale unpaired rows too (#2164).
+  const hasStale = [...view.adamRows, ...view.unpaired].some((r) => r.stale);
   const queries = issue
     ? view.queries.filter((q) => q.issueId === issue.issueId)
     : [];

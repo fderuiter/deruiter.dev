@@ -86,6 +86,18 @@ Re-exports [CLOSING_NOTE](internal/diary/variables/CLOSING_NOTE.md)
 
 ***
 
+### CLOSING\_RUSH
+
+Re-exports [CLOSING_RUSH](presets/variables/CLOSING_RUSH.md)
+
+***
+
+### CLOSING\_RUSH\_START\_FRACTION
+
+Re-exports [CLOSING_RUSH_START_FRACTION](presets/variables/CLOSING_RUSH_START_FRACTION.md)
+
+***
+
 ### COMPANION\_POST\_PATH
 
 Re-exports [COMPANION_POST_PATH](internal/diary/variables/COMPANION_POST_PATH.md)
@@ -131,6 +143,12 @@ Re-exports [createWeek](internal/week/functions/createWeek.md)
 ### DayChoice
 
 Re-exports [DayChoice](types/interfaces/DayChoice.md)
+
+***
+
+### dealWeekDilemmas
+
+Re-exports [dealWeekDilemmas](internal/dilemmas/functions/dealWeekDilemmas.md)
 
 ***
 
@@ -404,9 +422,27 @@ Re-exports [getPosScreen](internal/engine/functions/getPosScreen.md)
 
 ***
 
+### getRushCaption
+
+Re-exports [getRushCaption](internal/diary/functions/getRushCaption.md)
+
+***
+
+### getRushWindows
+
+Re-exports [getRushWindows](internal/engine/functions/getRushWindows.md)
+
+***
+
 ### getShiftEnding
 
 Re-exports [getShiftEnding](internal/diary/functions/getShiftEnding.md)
+
+***
+
+### getShiftRamp
+
+Re-exports [getShiftRamp](internal/engine/functions/getShiftRamp.md)
 
 ***
 
@@ -854,6 +890,12 @@ Re-exports [SHIFT_PAID_MINUTES](presets/variables/SHIFT_PAID_MINUTES.md)
 
 ***
 
+### SHIFT\_RAMP
+
+Re-exports [SHIFT_RAMP](presets/variables/SHIFT_RAMP.md)
+
+***
+
 ### ShiftAction
 
 Re-exports [ShiftAction](types/type-aliases/ShiftAction.md)
@@ -1049,6 +1091,12 @@ Re-exports [WEEK_CARRY_FLOOR](presets/variables/WEEK_CARRY_FLOOR.md)
 ### WEEK\_CARRY\_RECOVERY
 
 Re-exports [WEEK_CARRY_RECOVERY](presets/variables/WEEK_CARRY_RECOVERY.md)
+
+***
+
+### WEEK\_DAY\_DILEMMAS
+
+Re-exports [WEEK_DAY_DILEMMAS](presets/variables/WEEK_DAY_DILEMMAS.md)
 
 ***
 

@@ -1582,6 +1582,14 @@
   --pdt-paper-rule: #cfc6ad;
 }
 
+/* The diary pages are paper, so their radios and checkboxes draw in the
+ * light scheme: under the site's dark scheme an unchecked box rendered as a
+ * filled dark square and read as already ticked. */
+[data-pdt-cabinet] .pdt-diary {
+  color-scheme: light;
+  accent-color: var(--pdt-paper-ink);
+}
+
 [data-pdt-cabinet] .pdt-yell-vignette {
   position: absolute;
   inset: 0;

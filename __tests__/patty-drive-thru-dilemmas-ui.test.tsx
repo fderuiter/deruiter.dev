@@ -11,6 +11,7 @@ import {
   DILEMMAS,
   DILEMMA_WINDOW_LONG_SEC,
   DILEMMA_WINDOW_SEC,
+  getDilemma,
   getDilemmaDiaryLines,
   type ShiftState,
 } from "@/lib/patty-drive-thru";
@@ -197,18 +198,10 @@ describe("dilemmas in the booth (#2087)", () => {
     while (store.getState().phase === "shift") {
       const { shift } = store.getState();
       if (shift.dilemma) {
-        const crew = {
-          "stale-fries": "toss",
-          "short-till": "cover",
-          "shake-machine": "broken",
-          "long-break": "cover",
-        } as const;
-        store
-          .getState()
-          .act({
-            type: "chooseDilemma",
-            optionId: crew[shift.dilemma.dilemmaId],
-          });
+        // The answer that stands with the crew.
+        const [first, second] = getDilemma(shift.dilemma.dilemmaId).options;
+        const crew = first.solidarity > second.solidarity ? first : second;
+        store.getState().act({ type: "chooseDilemma", optionId: crew.id });
       }
       store.getState().tick(0.5);
     }

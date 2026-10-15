@@ -99,6 +99,7 @@ describe("Patty's Drive-Thru kitchen display texture", () => {
     const text = drawnText(ctx);
     expect(text).toEqual(
       expect.arrayContaining([
+        "1",
         "#3",
         "1:01",
         "Burger ✓",
@@ -156,7 +157,7 @@ describe("Patty's Drive-Thru register screen texture", () => {
     drawPos(ctx, readPosPicture(state));
     const text = drawnText(ctx);
     expect(text).toContain("Order #1");
-    expect(text).toContain("#1");
+    expect(text).toContain("1·#1");
     expect(text).toContain("HOME › SIDES");
     expect(text).toContain("Burger · No pickles?");
     expect(text).toContain("to ring");
@@ -189,7 +190,7 @@ describe("Patty's Drive-Thru register screen texture", () => {
     });
     const text = drawnText(ctx);
     expect(text).toEqual(
-      expect.arrayContaining(["#3 ✓", "rung", "DROPPED", "18+", "brewing"])
+      expect.arrayContaining(["1·#3 ✓", "rung", "DROPPED", "18+", "brewing"])
     );
   });
 });

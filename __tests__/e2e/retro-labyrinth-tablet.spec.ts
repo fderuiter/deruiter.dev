@@ -719,7 +719,13 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
           Math.abs(dx) >= Math.abs(dy)
             ? [horizontal, vertical]
             : [vertical, horizontal];
-        for (const name of ordered.filter((n): n is string => n !== null)) {
+        // When walls block both greedy moves, step aside so the walker
+        // doesn't stand still for the rest of the test.
+        const tries = [
+          ...ordered.filter((n): n is string => n !== null),
+          moves[step % 4],
+        ];
+        for (const name of tries) {
           await page
             .getByRole("button", { name })
             .tap({ timeout: 5000 })

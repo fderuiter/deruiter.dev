@@ -2047,9 +2047,10 @@ export function drawOfficeScene(
     ctx.fillRect(px, py, 24, 5);
     ctx.fillStyle = "#e5d3a8";
     ctx.fillRect(px + 10, py, 4, 22);
+    // The key is named off touch, as the desk names Space (#2259).
     pill(
       ctx,
-      "Sign for the package",
+      touchHints ? "Sign for the package" : "D: sign for the package",
       BACK_DOOR_BOUNDS.x - 30,
       BACK_DOOR_BOUNDS.y + 22,
       "#fbbf24",

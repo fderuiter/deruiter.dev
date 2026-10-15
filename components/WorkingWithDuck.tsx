@@ -64,6 +64,7 @@ import {
   IconDroplet,
   IconCheck,
   IconCode,
+  IconPackage,
 } from "@tabler/icons-react";
 import {
   WorkingWithDuckState,
@@ -136,6 +137,7 @@ const DUCK_HOTKEY_KEYS = [
   "w",
   "e",
   "r",
+  "d",
   "Space",
   "ArrowUp",
   "ArrowDown",
@@ -753,6 +755,34 @@ const TRICK_BY_COMMAND = {
   "trick-spin": "SPIN",
 } as const;
 
+/** The package waiting at the back door, claimed by a click on the door or
+ * the D key (#2259). Anything else leaves the state as it is, so a click and
+ * a key press can never both pay. */
+function claimPackageDelivery(
+  state: WorkingWithDuckState
+): WorkingWithDuckState {
+  if (state.activeSurpriseEvent?.type !== "amazon-delivery") return state;
+  return {
+    ...state,
+    activeSurpriseEvent: null,
+    totalScore: state.totalScore + 150,
+    comboStreak: state.comboStreak + 1,
+    soundCueQueue: [...state.soundCueQueue, "combo-fanfare"],
+    floatingAlerts: [
+      ...state.floatingAlerts,
+      {
+        id: state.nextAlertId,
+        x: BACK_DOOR_BOUNDS.x,
+        y: BACK_DOOR_BOUNDS.y + 30,
+        text: "📦 Package Retrieved! (+150 pts)",
+        color: "#f59e0b",
+        alpha: 1,
+        vy: -1.2,
+      },
+    ],
+  };
+}
+
 /**
  * The command a key sends, or null for a key that has none. Arrow keys in the
  * office drag Duck instead, so they map to nothing here; W steers in the park
@@ -784,6 +814,9 @@ function duckCommandForKey(
     case "r":
     case "R":
       return "trick-spin";
+    case "d":
+    case "D":
+      return "package";
     case "ArrowUp":
       return state.inDogPark ? "steer-up" : null;
     case "ArrowDown":
@@ -2064,6 +2097,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         if (!state.inDogPark && !state.inBathtub) {
           handlePerformTrick(TRICK_BY_COMMAND[command]);
         }
+      } else if (command === "package") {
+        if (
+          !state.inDogPark &&
+          !state.inBathtub &&
+          state.activeSurpriseEvent?.type === "amazon-delivery"
+        ) {
+          applyTransition(claimPackageDelivery);
+          announce("Package retrieved. Plus 150 points.", "polite");
+        }
       } else if (command === "steer-up") {
         if (state.inDogPark) {
           applyTransition((state) =>
@@ -2562,25 +2604,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         y >= BACK_DOOR_BOUNDS.y + 10 &&
         y <= BACK_DOOR_BOUNDS.y + 70
       ) {
-        applyTransition((state) => ({
-          ...state,
-          activeSurpriseEvent: null,
-          totalScore: state.totalScore + 150,
-          comboStreak: state.comboStreak + 1,
-          soundCueQueue: [...state.soundCueQueue, "combo-fanfare"],
-          floatingAlerts: [
-            ...state.floatingAlerts,
-            {
-              id: state.nextAlertId,
-              x: BACK_DOOR_BOUNDS.x,
-              y: BACK_DOOR_BOUNDS.y + 30,
-              text: "📦 Package Retrieved! (+150 pts)",
-              color: "#f59e0b",
-              alpha: 1,
-              vy: -1.2,
-            },
-          ],
-        }));
+        applyTransition(claimPackageDelivery);
         return;
       }
     }
@@ -3020,6 +3044,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           Math.ceil((STANDUP_START_TICK + STANDUP_TICKS - uiState.ticks) / 60)
         )
       : null;
+
+  // A package at the back door gets its own dock button and the D key while
+  // it waits, so it is not mouse-only (#2259).
+  const packageWaiting =
+    uiState.activeSurpriseEvent?.type === "amazon-delivery" &&
+    !uiState.inDogPark &&
+    !uiState.inBathtub;
 
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
   const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
@@ -4022,6 +4053,23 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
                 {!uiState.inDogPark && !uiState.inBathtub && (
                   <>
+                    {packageWaiting && (
+                      <button
+                        data-testid="duck-package-button"
+                        disabled={isPlayFrozen}
+                        aria-describedby={pausedReasonId}
+                        onClick={() => runDuckCommand("package")}
+                        title="Get the package at the back door (D)"
+                        className={`${DOCK_BUTTON} ${TOY_SELECTED}`}
+                      >
+                        <IconPackage aria-hidden="true" className="w-4 h-4" />
+                        <span>Get the package</span>
+                        <kbd className="hidden xl:inline rounded border border-white/20 bg-white/10 px-1 font-mono text-[10px]">
+                          D
+                        </kbd>
+                      </button>
+                    )}
+
                     <button
                       disabled={isPlayFrozen}
                       aria-disabled={parkCooldownSeconds > 0 || undefined}
@@ -4182,6 +4230,19 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </>
             ) : (
               <>
+                {packageWaiting && (
+                  <button
+                    data-testid="duck-package-button"
+                    disabled={isPlayFrozen}
+                    aria-describedby={pausedReasonId}
+                    onClick={() => runDuckCommand("package")}
+                    title="Get the package at the back door (D)"
+                    className={CABINET_ACTION}
+                  >
+                    <IconPackage aria-hidden="true" className="w-4 h-4" />
+                    <span>Get the package (D)</span>
+                  </button>
+                )}
                 <button
                   disabled={isPlayFrozen}
                   aria-disabled={parkCooldownSeconds > 0 || undefined}

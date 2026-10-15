@@ -262,6 +262,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "1, 2, 3, 4 Hotkeys",
       },
       {
+        action: "Answer the Door",
+        description:
+          "When a delivery knocks at the back door, press D, click the door, or use the Get the package button to bring it in before it is gone.",
+        key: "D / Door Click",
+      },
+      {
         action: "Bathtub Wash & Rinse",
         description:
           "When Duck gets muddy at the Dog Park, drag him to the Bathtub station, scrub lather with your mouse, and shower rinse for a sparkling clean coat.",

@@ -247,6 +247,26 @@ describe("shop transactions", () => {
     );
   });
 
+  it("says what a seal does and what it fits before it is bought (#2153)", () => {
+    const run = inShop();
+    const seals = ACT_I_SHOP.entries.filter((e) => e.kind === "SEAL");
+    expect(seals.length).toBeGreaterThan(0);
+    const shop = {
+      ...run.shop!,
+      slots: seals.map((entry) => ({ entry, sold: false })),
+    };
+    const items = deriveRunView(act, { ...run, shop }).shop!.items;
+    const byName = Object.fromEntries(items.map((i) => [i.name, i]));
+    expect(byName["AE Not Mutually Exclusive"]?.description).toMatch(
+      /^\+20 Chips on Safety AE tables\. "A subject with more than one event/
+    );
+    for (const item of items) {
+      expect(item.description).toMatch(
+        /^(\+\d+ (Chips|Mult) on |Waives the redline of an SAP rule that accepts it, on ).*tables\. "/
+      );
+    }
+  });
+
   it("refuses a purchase over budget and never lets the budget go negative", () => {
     const run = inShop("fold-change", 0);
     const refused = apply(run, { type: "BUY", slot: 0 });

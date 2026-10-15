@@ -5,6 +5,7 @@ import { downloadFile } from "@/lib/download";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import {
+  DEFAULT_SEED,
   STUDY_ID,
   formatClock,
   trialDayOf,
@@ -581,6 +582,14 @@ export function LockReviewModal({
   );
 }
 
+/** A random five-digit seed other than the one just played. */
+function freshSeed(current: number): number {
+  for (;;) {
+    const seed = 10_000 + Math.floor(Math.random() * 90_000);
+    if (seed !== current && seed !== DEFAULT_SEED) return seed;
+  }
+}
+
 function download(name: string, text: string, mime: string) {
   downloadFile(text, name, { mimeType: mime });
 }
@@ -859,6 +868,14 @@ export function DebriefModal({
           onClick={() => void init("full")}
         >
           Start a new study
+        </button>
+        <button
+          type="button"
+          className={`${SECONDARY} min-h-12 min-w-12`}
+          // A fresh seed: new arrival times and site vitals (#2169).
+          onClick={() => void init("full", freshSeed(view.seed))}
+        >
+          Try another study
         </button>
         <button
           type="button"

@@ -92,6 +92,7 @@ import {
   queryTransition,
 } from "./queries";
 import { hashValue, seededDraw } from "./rng";
+import { studyVariant } from "./variants";
 import { buildScorecard } from "./scorecard";
 
 /** Options for creating an engine. */
@@ -252,8 +253,11 @@ class Engine implements ProtocolDriftEngine {
         openQueries: 0,
       };
     }
-    const fixtures =
-      scenario === "tracer" ? TRACER_SUBMISSIONS : FULL_SUBMISSIONS;
+    // Any seed but the default plays a variant of the study (#2169).
+    const fixtures = studyVariant(
+      scenario === "tracer" ? TRACER_SUBMISSIONS : FULL_SUBMISSIONS,
+      seed
+    );
     const sessions = new Map<string, SubmissionFixture[]>();
     for (const f of fixtures) {
       this.fixtures.set(f.submissionId, f);

@@ -352,6 +352,7 @@
 - [lib/protocol-drift/internal/rng](lib/protocol-drift/internal/rng/README.md)
 - [lib/protocol-drift/internal/save](lib/protocol-drift/internal/save/README.md)
 - [lib/protocol-drift/internal/scorecard](lib/protocol-drift/internal/scorecard/README.md)
+- [lib/protocol-drift/internal/variants](lib/protocol-drift/internal/variants/README.md)
 - [lib/protocol-drift/presets](lib/protocol-drift/presets/README.md)
 - [lib/protocol-drift/types](lib/protocol-drift/types/README.md)
 - [lib/public-routes](lib/public-routes/README.md)

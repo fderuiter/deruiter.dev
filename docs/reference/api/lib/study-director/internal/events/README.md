@@ -6,8 +6,13 @@
 
 # lib/study-director/internal/events
 
+## Interfaces
+
+- [DeckOptions](interfaces/DeckOptions.md)
+
 ## Variables
 
+- [DAY\_ONE\_OPENERS](variables/DAY_ONE_OPENERS.md)
 - [DECK\_KEEP\_SHARE](variables/DECK_KEEP_SHARE.md)
 - [WILDCARDS\_PER\_RUN](variables/WILDCARDS_PER_RUN.md)
 

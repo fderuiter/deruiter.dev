@@ -28,6 +28,24 @@ async function launchWorld(page: Page) {
   }).toPass({ timeout: 15000 });
 }
 
+// Day 1 brings a few openers forward (#2254), so a call from one of them can
+// ring ahead of the sponsor's; send those to voicemail until the sponsor rings.
+async function ringSponsor(page: Page): Promise<Locator> {
+  const phone = page.getByRole("alertdialog", {
+    name: "The phone is ringing",
+  });
+  await expect(async () => {
+    await expect(phone).toBeVisible({ timeout: 2000 });
+    if (!(await phone.getByText(/Exploratory biomarkers/).count())) {
+      await phone.getByRole("button", { name: "Send to voicemail" }).click();
+    }
+    await expect(phone.getByText(/Exploratory biomarkers/)).toBeVisible({
+      timeout: 2000,
+    });
+  }).toPass({ timeout: 15000 });
+  return phone;
+}
+
 async function expectNoBlockingViolations(
   page: Page,
   selector: string,
@@ -190,9 +208,7 @@ test.describe("Study Director world: the stage (#1829 to #1834)", () => {
     }, SAVE_KEY);
     await page.reload();
     await launchWorld(page);
-    const phone = page.getByRole("alertdialog", {
-      name: "The phone is ringing",
-    });
+    const phone = await ringSponsor(page);
     await expect(phone).toHaveAttribute("data-device", "phone");
     await shot(page, testInfo, "device-phone-1280");
     await page.keyboard.press("Enter");

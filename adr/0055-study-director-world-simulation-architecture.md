@@ -321,3 +321,23 @@ alike on calm and rescue.
 The seeded-simulation spread holds: an idle run scores 1 star and fails
 inspection on every difficulty, and a careful run scores 3.5 to 5 stars.
 `__tests__/study-director-audit-variety.test.ts` guards the four findings.
+
+A replay audit (#2254) found three more:
+
+- **Calm's extra budget is headroom.** Daily burn is planned against the
+  standard budget (`plannedBudget`), so calm's 15% is margin rather than
+  15% more spent each day. A careful calm run now ends about $28k (full) and
+  $14k (short) better off than standard on the same seed, where before it
+  ended worse.
+- **A short study slips in proportion.** An effect's `slipDays` is scaled
+  by `calendarScale` like every other span of days (a one-day setback stays
+  one day), so a careful short run ends 4 to 5 days late instead of the
+  same 7 to 10 days as a full one.
+- **No blame for time away, and a seeded first day.** Going home from a
+  site or out of a meeting excuses every interruption that came meanwhile
+  (`excuseGoingHome`). The office deals its deck with `openers: true`, which
+  brings one or two gentle `DAY_ONE_OPENERS` it dealt into the first
+  fortnight forward to day 1; none is urgent or slips the study if left.
+  The classic desk keeps its one-message first day.
+
+`__tests__/study-director-audit-fairness.test.ts` guards the three.

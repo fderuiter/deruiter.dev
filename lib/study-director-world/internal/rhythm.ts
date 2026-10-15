@@ -768,13 +768,32 @@ export function pendingInterruption(world: WorldState): Interruption | null {
  * your return. Only the latest one that is still waiting is kept (#2189).
  */
 export function excuseAway(world: WorldState): WorldState {
+  return excuseInterruptions(world, true);
+}
+
+/**
+ * Going home while still away, from a site or out of a meeting: nothing that
+ * came up in the meantime was ever in front of the player, so all of it is
+ * excused and the wrap-up does not blame them for it (#2254). Anywhere else
+ * the world is unchanged.
+ */
+export function excuseGoingHome(world: WorldState): WorldState {
+  return world.visit || world.meeting
+    ? excuseInterruptions(world, false)
+    : world;
+}
+
+function excuseInterruptions(
+  world: WorldState,
+  keepWaiting: boolean
+): WorldState {
   const plan = planFor(world);
   const arrived = scheduleFor(world).filter(
     (s) => s.at <= world.minute && !settled(world, s.interruption.id)
   );
   const last = arrived[arrived.length - 1];
   const keep =
-    last && world.minute < last.at + INTERRUPTION_WINDOW
+    keepWaiting && last && world.minute < last.at + INTERRUPTION_WINDOW
       ? last.interruption.id
       : null;
   const excused = arrived

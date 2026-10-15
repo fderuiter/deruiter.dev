@@ -298,14 +298,79 @@ const DEAL_ORDER = [
 ];
 
 /**
+ * Gentle early messages one of which, or two, opens a run alongside the
+ * sponsor's biomarker request (#2254). Day 1 used to be the same in every
+ * seed and empty by mid-morning; now each seed draws its own openers from
+ * these. None is urgent and none slips the timeline if it is left, so the
+ * first day still reads as a first day.
+ */
+export const DAY_ONE_OPENERS: readonly string[] = [
+  "boss-proposal-call",
+  "sponsor-slide-colors",
+  "walt-initiation-trips",
+  "lab-manual",
+  "lee-protocol-typos",
+  "site-two-pharmacy",
+  "pi-training-trailer",
+  "sponsor-kickoff-dinner",
+];
+
+/** How a run's deck is dealt. */
+export interface DeckOptions {
+  /** Bring a seeded pick of {@link DAY_ONE_OPENERS} forward to day 1. */
+  openers?: boolean;
+}
+
+/** Messages day 1 holds, counting the core ones that always open it. */
+const DAY_ONE_MESSAGES = 3;
+
+/** Days of the full calendar an opener may be brought forward from. */
+const OPENER_FROM_DAYS = 14;
+
+/**
+ * The openers this run's day 1 brings forward: enough to bring it to
+ * {@link DAY_ONE_MESSAGES} beside the core events that can only land on it,
+ * and at least one. They come from what the deck dealt into the first
+ * fortnight where it can, so only the day moves: the deck keeps the same events and the
+ * fortnight the same variety (#2192). The pick reads the deck's own stream on
+ * indices nothing else reads, so every other draw is unchanged.
+ */
+function dayOneOpeners(
+  state: StudyState,
+  stream: string,
+  deck: Readonly<Record<string, number>>
+): string[] {
+  const fixed = DECKABLE.filter(
+    (e) => e.core && !e.recalls && scaleDays(windowOf(e)[1], state.setup) <= 1
+  ).length;
+  const by = scaleDays(OPENER_FROM_DAYS, state.setup);
+  const dealt = DAY_ONE_OPENERS.filter((id) => deck[id] !== undefined);
+  const early = dealt.filter((id) => deck[id] <= by);
+  // A deck that dealt none of them early still opens with one of its own.
+  const pool = early.length > 0 ? early : dealt;
+  if (pool.length === 0) return [];
+  const count = clamp(DAY_ONE_MESSAGES - fixed, 1, pool.length);
+  for (let i = 0; i < count; i += 1) {
+    const j = i + Math.floor(uniformAt(stream, 50_000 + i) * (pool.length - i));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, count);
+}
+
+/**
  * Deals this run's event deck (#2093). Core events are always drawn; of the
  * optional ones, each stretch of the study keeps {@link DECK_KEEP_SHARE} of
  * what was written for it. Every drawn event gets a day inside its window,
  * scaled to this study's calendar. A callback is drawn exactly when the
- * event it recalls is, and always arrives after it. The deck uses its own stream of
+ * event it recalls is, and always arrives after it. With `openers`, a seeded
+ * pick of gentle openers it dealt into the first fortnight is brought
+ * forward to day 1. The deck uses its own stream of
  * the seed, so the study's other draws and the wildcards are unchanged.
  */
-export function drawDeck(state: StudyState): StudyState {
+export function drawDeck(
+  state: StudyState,
+  options: DeckOptions = {}
+): StudyState {
   const stream = `${state.seed}:deck`;
   const kept = new Set<string>();
   const bands = new Map<number, string[]>();
@@ -343,6 +408,8 @@ export function drawDeck(state: StudyState): StudyState {
     const day = scaleDays(full, state.setup);
     deck[event.id] = parent === undefined ? day : Math.max(day, parent + 1);
   }
+  if (options.openers)
+    for (const id of dayOneOpeners(state, stream, deck)) deck[id] = 1;
   return { ...state, deck };
 }
 
@@ -365,8 +432,13 @@ export function readDeck(value: unknown): Record<string, number> | undefined {
 
 /**
  * Starts the study on day 1 with its event deck dealt, its wildcards drawn
- * and the first inbox ready.
+ * and the first inbox ready. The office passes `openers` so its first day
+ * varies by seed (#2254); the classic desk keeps its one-message first day,
+ * which teaches auditing once the inbox is empty.
  */
-export function beginStudy(state: StudyState): StudyState {
-  return markSeen(advanceDay(scheduleWildcards(drawDeck(state))));
+export function beginStudy(
+  state: StudyState,
+  options: DeckOptions = {}
+): StudyState {
+  return markSeen(advanceDay(scheduleWildcards(drawDeck(state, options))));
 }

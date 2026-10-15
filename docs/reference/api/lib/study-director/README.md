@@ -152,6 +152,12 @@ Re-exports [dataManagerCapacity](internal/model/functions/dataManagerCapacity.md
 
 ***
 
+### DAY\_ONE\_OPENERS
+
+Re-exports [DAY_ONE_OPENERS](internal/events/variables/DAY_ONE_OPENERS.md)
+
+***
+
 ### DecisionInput
 
 Re-exports [DecisionInput](types/interfaces/DecisionInput.md)
@@ -173,6 +179,12 @@ Re-exports [DECK_KEEP_SHARE](internal/events/variables/DECK_KEEP_SHARE.md)
 ### deckDay
 
 Re-exports [deckDay](internal/events/functions/deckDay.md)
+
+***
+
+### DeckOptions
+
+Re-exports [DeckOptions](internal/events/interfaces/DeckOptions.md)
 
 ***
 

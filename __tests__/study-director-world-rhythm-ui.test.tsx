@@ -21,8 +21,10 @@ import {
   officeDirectory,
   parseWorld,
   pendingInterruption,
+  phoneCalls,
   placePeople,
   planRoute,
+  sendToVoicemail,
   serializeWorld,
   startDay,
   type PlayerState,
@@ -200,7 +202,12 @@ describe("walking to a place someone is blocking", () => {
   it("walks anyway, and they have moved on by the time you arrive", async () => {
     // At 11:00 on this seed, people standing in the car park leave no way to
     // the car that goes round them (found by probing seeds and times).
-    const { world } = renderAt({ minute: 11 * 60 });
+    // Day 1's seeded calls (#2254) go to voicemail, so no ringing phone
+    // stops the walk.
+    let quiet = { ...saved(), minute: 11 * 60 };
+    for (const call of phoneCalls(quiet))
+      quiet = sendToVoicemail(quiet, call.eventId);
+    const { world } = renderAt({ minute: 11 * 60, calls: quiet.calls });
     const people = placePeople(world, CRO_FLOOR);
     const car = officeDirectory(CRO_FLOOR, people).find(
       (e) => e.label === "Your car"

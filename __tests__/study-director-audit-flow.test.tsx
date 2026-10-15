@@ -63,9 +63,13 @@ async function openWorld(world: WorldState) {
   window.history.replaceState(null, "", "/#mode=world");
   render(<StudyDirectorGame />);
   const playfield = await screen.findByTestId("world-playfield");
-  // The first morning's sponsor call rings on open; let it ring.
-  const ring = screen.queryByRole("button", { name: "Let it ring" });
-  if (ring) fireEvent.click(ring);
+  // The first morning's calls ring on open; let each ring (day 1 can bring
+  // more than the sponsor's, #2254).
+  for (let i = 0; i < 5; i++) {
+    const ring = screen.queryByRole("button", { name: "Let it ring" });
+    if (!ring) break;
+    fireEvent.click(ring);
+  }
   return playfield;
 }
 

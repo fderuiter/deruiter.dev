@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
+  DAY_ONE_OPENERS,
   DECK_KEEP_SHARE,
   STUDY_24_081,
   STUDY_24_081_SITES,
@@ -127,6 +128,8 @@ describe("the event deck", () => {
         const s = start(seed, length);
         for (const [id, day] of Object.entries(s.deck!)) {
           if (getEvent(id)?.recalls) continue;
+          // A day-1 opener is brought forward from its window (#2254).
+          if (day === 1 && DAY_ONE_OPENERS.includes(id)) continue;
           const [lo, hi] = bounds(id);
           expect(day, id).toBeGreaterThanOrEqual(scaleDays(lo, s.setup));
           expect(day, id).toBeLessThanOrEqual(scaleDays(hi, s.setup));

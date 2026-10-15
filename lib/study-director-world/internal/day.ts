@@ -20,7 +20,7 @@ import { workTheNight } from "./delegation";
 import { earlyWarningNote } from "./favours";
 import { guestsExpected, settleGuests } from "./guests";
 import { CRO_FLOOR } from "./floor";
-import { eveningWrapUp, settlePriority } from "./rhythm";
+import { eveningWrapUp, excuseGoingHome, settlePriority } from "./rhythm";
 import { adjustTrust, senderOf } from "./team";
 import {
   DAY_START,
@@ -73,7 +73,9 @@ export function newWorld(
       applyDifficulty(
         createStudy(seed, preset.setup, preset.sites, preset.team),
         difficulty
-      )
+      ),
+      // The office's first day varies by seed (#2254).
+      { openers: true }
     )
   );
 }
@@ -300,8 +302,11 @@ export function goHome(
   world: WorldState;
   report: OvernightReport;
 } {
-  const wrapUp = eveningWrapUp(world);
-  const worked = workTheNight({ ...world, meeting: null });
+  // Interruptions that came while the player was at a site or in a meeting
+  // are not theirs to answer, even when they go home from there (#2254).
+  const present = excuseGoingHome(world);
+  const wrapUp = eveningWrapUp(present);
+  const worked = workTheNight({ ...present, meeting: null });
   const settled = settlePriority(worked.world, options);
   const callers = settleGuests(settled.world);
   const night = {
@@ -315,7 +320,7 @@ export function goHome(
   let next: WorldState = {
     ...night.world,
     study: after,
-    fatigue: fatigueFrom(world.overtime),
+    fatigue: fatigueFrom(present.overtime),
     location: "home",
   };
   // A team member whose message ran out of time unanswered was ignored.

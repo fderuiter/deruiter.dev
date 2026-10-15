@@ -43,6 +43,7 @@ export {
 } from "./presets";
 export { STUDY_EVENTS } from "./internal/events-data";
 export {
+  DAY_ONE_OPENERS,
   DECK_KEEP_SHARE,
   WILDCARDS_PER_RUN,
   beginStudy,
@@ -56,6 +57,7 @@ export {
   readDeck,
   resolveEvent,
   scheduleWildcards,
+  type DeckOptions,
 } from "./internal/events";
 export {
   classifyProfile,

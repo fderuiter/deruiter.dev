@@ -169,6 +169,11 @@
   .te-touch .te-area-blind {
     max-height: clamp(5rem, 11dvh, 8rem);
   }
+  /* The narrowed cards wrap the number between words, never inside one. */
+  .te-touch .te-card-number {
+    font-size: 0.75rem;
+    overflow-wrap: normal;
+  }
 }
 
 /* Held sideways: the Blind panel and the relic rail flank the play zone. */

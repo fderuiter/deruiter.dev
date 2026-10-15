@@ -75,19 +75,14 @@ describe("Laser Loon boss attacks (#1313)", () => {
     expect(shots[0].vx).toBeLessThan(0);
   });
 
-  it("adds shots in later acts and in phase 2", () => {
-    const act3 = spawnBossForAct(3, 1).boss;
-    expect(
-      runUntilVolley([act3], 3).targets.filter((t) => t.isProjectile)
-    ).toHaveLength(2);
-
-    const hurt = { ...spawnBossForAct(3, 1).boss };
+  it("adds shots in phase 2", () => {
+    const hurt = { ...spawnBossForAct(1, 1).boss };
     hurt.hp = Math.floor(hurt.maxHp / 2);
-    const r = updateBossAttack([hurt], 1, LOON.x, LOON.y, 3, 100);
+    const r = updateBossAttack([hurt], 1, LOON.x, LOON.y, 1, 100);
     expect(r.enteredPhaseTwo).toBe(true);
     expect(
-      runUntilVolley(r.targets, 3).targets.filter((t) => t.isProjectile)
-    ).toHaveLength(3);
+      runUntilVolley(r.targets, 1).targets.filter((t) => t.isProjectile)
+    ).toHaveLength(2);
   });
 
   it("holds fire while the boss is frozen", () => {

@@ -6,7 +6,7 @@
 
 # Function: updateBossAttack()
 
-> **updateBossAttack**(`targets`, `dt`, `loonX`, `loonY`, `actNumber`, `nextId`): [`BossAttackResult`](../interfaces/BossAttackResult.md)
+> **updateBossAttack**(`targets`, `dt`, `loonX`, `loonY`, `actNumber`, `nextId`, `rng?`): [`BossAttackResult`](../interfaces/BossAttackResult.md)
 
 Advances the live boss's attack timer and fires a volley aimed at the loon
 when it runs out. Later acts and phase 2 (at or below half HP) fire more
@@ -50,6 +50,12 @@ The act being played.
 `number`
 
 The next free target id.
+
+### rng?
+
+() => `number`
+
+Random source for swarm drift and wall gaps, injectable for tests.
 
 ## Returns
 

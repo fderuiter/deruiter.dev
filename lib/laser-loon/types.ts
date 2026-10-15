@@ -54,7 +54,14 @@ export interface EnemyTemplate {
  * How a weapon's hit lands on an enemy: a weakness crit, a resisted glance,
  * or plain neutral damage.
  */
-export type WeaponCounter = "weak" | "resisted" | "neutral";
+export type WeaponCounter = "weak" | "resisted" | "neutral" | "blocked";
+
+/**
+ * Each boss's signature attack: the Mosquito Queen calls a swarm, the Butter
+ * Colossus lobs arcing pats, the Starflake fires radial bursts behind a
+ * turning shield, and the Gavel slams walls of amendments with one gap.
+ */
+export type BossSignature = "swarm" | "lob" | "burst" | "wall";
 
 /** Where a hit landed, whose colour to spark, and how it was countered. */
 export interface CounterHitPoint {
@@ -90,6 +97,10 @@ export interface Target {
   fireTimer?: number;
   /** A boss volley shot: flies straight, costs a hit on contact, scores no act kill. */
   isProjectile?: boolean;
+  /** Downward pull on a lobbed shot, per 60 fps frame. */
+  ay?: number;
+  /** How many volleys the boss has fired, so patterns can alternate. */
+  volleyCount?: number;
 }
 
 export interface IceBlock {

@@ -8,6 +8,14 @@
 
 ## Properties
 
+### ay?
+
+> `optional` **ay?**: `number`
+
+Downward pull on a lobbed shot, per 60 fps frame.
+
+***
+
 ### bossPhase?
 
 > `optional` **bossPhase?**: `number`
@@ -105,6 +113,14 @@ A boss volley shot: flies straight, costs a hit on contact, scores no act kill.
 ### type
 
 > **type**: [`CivicEnemyType`](../type-aliases/CivicEnemyType.md)
+
+***
+
+### volleyCount?
+
+> `optional` **volleyCount?**: `number`
+
+How many volleys the boss has fired, so patterns can alternate.
 
 ***
 

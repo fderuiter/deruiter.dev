@@ -14,11 +14,17 @@ async function openDirectory(page: Page) {
     await toggle.click();
 }
 
-async function launchWorld(page: Page) {
+// Day 1's openers vary by seed (#2254). This seed's day 1 brings no call but
+// the sponsor's, so another call cannot ring over the desk mid-test.
+const QUIET_PHONE_SEED = "e2e-day-2";
+
+async function launchWorld(page: Page, seed?: string) {
   await page.addInitScript(() => {
     window.localStorage.setItem("study_director_world_intro_seen", "1");
   });
-  await page.goto("/arcade/study-director#mode=world");
+  await page.goto(
+    `/arcade/study-director#mode=world${seed ? `&seed=${seed}` : ""}`
+  );
   await page.waitForLoadState("domcontentloaded");
   await expect(async () => {
     await page.getByRole("button", { name: /Launch Cabinet/i }).click();
@@ -87,7 +93,7 @@ test.describe("Study Director world: a working day (#1688, #1689)", () => {
     page,
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await launchWorld(page);
+    await launchWorld(page, QUIET_PHONE_SEED);
     // Arrive: the morning digest.
     await expect(page.getByText("Monday morning")).toBeVisible();
 
@@ -161,7 +167,7 @@ test.describe("Study Director world: a working day (#1688, #1689)", () => {
   test("rings the phone when a call is due, and the overlays pass axe", async ({
     page,
   }) => {
-    await launchWorld(page);
+    await launchWorld(page, QUIET_PHONE_SEED);
     // Move the saved day on to the afternoon, when the sponsor's call is due.
     await page.evaluate((key) => {
       const world = JSON.parse(localStorage.getItem(key) ?? "{}");

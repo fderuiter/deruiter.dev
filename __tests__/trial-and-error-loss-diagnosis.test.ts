@@ -23,6 +23,15 @@ describe("describeBlindLoss branches (#1944)", () => {
     expect(failed({ clock: fromPartial({ hold: false }) })).toMatch(/^0 short/);
   });
 
+  it('takes "an" before a hand name that starts with a vowel (#2154)', () => {
+    const best = (name: string) =>
+      failed({ scoreLog: [fromPartial({ name, score: 7714 })] });
+    expect(best("Efficacy Full House")).toContain(
+      "Your best hand was an Efficacy Full House (7714)."
+    );
+    expect(best("TLF Pair")).toContain("Your best hand was a TLF Pair (7714).");
+  });
+
   it("names the tightest of several hand limits, in the singular for one", () => {
     const text = failed({
       handsLeft: 0,

@@ -32,6 +32,7 @@ import {
   type RunDeckCardView,
 } from "./run-deck";
 import { blindStartCpu, relicRarity } from "./relics";
+import { HAND_NAMES } from "./hands";
 import { drawInt } from "./rng";
 import {
   resolveRunChoice,
@@ -940,9 +941,7 @@ function describeEntry(entry: ShopEntry): {
   if (entry.kind === "GUIDANCE") {
     return {
       name: entry.guidance.name,
-      description: `Levels up ${entry.guidance.handType
-        .toLowerCase()
-        .replace(/_/g, " ")}. ${entry.guidance.flavor}`,
+      description: `Levels up ${HAND_NAMES[entry.guidance.handType]}. ${entry.guidance.flavor}`,
     };
   }
   if (entry.kind === "AMENDMENT") {

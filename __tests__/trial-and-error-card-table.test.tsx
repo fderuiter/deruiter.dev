@@ -196,6 +196,10 @@ describe("CardTable", () => {
     expect(card(DRAFT_A).getAttribute("aria-label")).toContain(
       "TLF Pair with Listing 16.2.4"
     );
+    // Drafts of one table share its number: the Listing names it once (#2154).
+    const listing = card(DM_LISTING).getAttribute("aria-label") ?? "";
+    expect(listing).toMatch(/TLF Pair with Table 14\.1\.1(,|$)/);
+    expect(listing).not.toContain("Table 14.1.1 and Table 14.1.1");
   });
 
   it("traces a flagged cell to its Listing with T and cycles the matched rows", async () => {

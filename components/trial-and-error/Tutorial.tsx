@@ -126,7 +126,7 @@ function Coach({ step, table, onNext, onSkip, onRestart }: CoachProps) {
   } else if (status === "CLEARED") {
     title = "Blind cleared";
     text =
-      "That is the loop: inspect, correct, pair, play. The campaign runs three studies, each with its own SAP and a Boss at the end. Start it below the table.";
+      "That is the loop: inspect, correct, pair, play. The campaign runs three studies, each with its own SAP and a Boss at the end. Start it from the result card.";
   } else if (status === "FAILED") {
     title = "Out of hands";
     text = `The Blind needed ${quota} points. Try the guided Blind again, or go straight to the campaign.`;

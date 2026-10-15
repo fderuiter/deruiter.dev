@@ -365,7 +365,8 @@ function cardLabel(view: TableCardView, partners: string[] = []): string {
   parts.push(...view.stamps.map((stamp) => STAMP_LABELS[stamp]));
   for (const seal of view.seals) parts.push(`footnote seal: ${seal.name}`);
   if (partners.length > 0)
-    parts.push(`TLF Pair with ${partners.join(" and ")}`);
+    // Drafts of one table share its number, so it is named once (#2154).
+    parts.push(`TLF Pair with ${[...new Set(partners)].join(" and ")}`);
   if (view.selected) parts.push("selected");
   return parts.join(", ");
 }

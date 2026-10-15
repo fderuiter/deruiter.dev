@@ -417,7 +417,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     lore: {
       title: "The Grassroots Legend of Submission F277",
       story:
-        "In late 2023, the Minnesota State Emblems Redesign Commission invited citizen submissions. Fred deRuiter submitted 'F277: Laser Loon': a majestic common loon blasting twin crimson lasers across azure waters. The design became a worldwide viral sensation, featured in The New York Times, The Washington Post, and NPR. Fred released F277 into the public domain (CC0), launching a grassroots civic campaign that raised over $13,500 for the Saint Paul Public Library Foundation.",
+        "In late 2023, the Minnesota State Emblems Redesign Commission invited citizen submissions. Fred de Ruiter submitted 'F277: Laser Loon': a majestic common loon blasting twin crimson lasers across azure waters. The design became a worldwide viral sensation, featured in The New York Times, The Washington Post, and NPR. Fred released F277 into the public domain (CC0), launching a grassroots civic campaign that raised over $13,500 for the Saint Paul Public Library Foundation.",
       realWorldTech: [
         "Raycast Collision Vectors",
         "Web Audio Dual-Oscillator Synthesis",

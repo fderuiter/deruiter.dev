@@ -128,6 +128,22 @@ const OPTIC_SHORT_NAMES: Record<LaserType, string> = {
 /** Shortest gap between counter callouts, so rapid fire cannot spam them. */
 const COUNTER_CUE_INTERVAL_MS = 260;
 
+// Screen-reader status reads words, not internal state names (#2142).
+const MODE_NAMES: Record<LaserMode, string> = {
+  campaign: "Campaign",
+  arcade: "Arcade Survival",
+  sandbox: "Zero-G Sandbox",
+};
+const GAME_STATE_NAMES = {
+  idle: "Title screen",
+  playing: "Playing",
+  "act-intro": "Act briefing",
+  "act-victory": "Act cleared",
+  "act-failed": "Act failed",
+  gameover: "Run over",
+  "campaign-victory": "Campaign won",
+} as const;
+
 // Where each survival wave takes place, for the result card.
 const SURVIVAL_WAVE_STOPS = {
   Lake: "on Lake Minnetonka",
@@ -2568,19 +2584,33 @@ export const LaserLoon: React.FC = () => {
           />
         )}
 
-        {/* Off-screen Accessible DOM Fallback Subtree */}
-        <div className="sr-only" aria-label="Laser Loon Accessible Subtree">
+        {/* Accessible fallback controls. They sit off screen until a
+            keyboard user tabs into them, then show as a labelled strip so
+            focus never lands on something invisible (#2142). */}
+        <div
+          aria-label="Laser Loon Accessible Subtree"
+          className="sr-only focus-within:not-sr-only focus-within:absolute focus-within:inset-x-2 focus-within:bottom-2 focus-within:z-40 focus-within:rounded-xl focus-within:border focus-within:border-neutral-700 focus-within:bg-neutral-950/95 focus-within:p-3 font-mono text-xs text-neutral-200 [&_button]:min-h-12 [&_button]:rounded-lg [&_button]:border [&_button]:border-neutral-700 [&_button]:bg-neutral-900 [&_button]:px-3 [&_button]:text-neutral-100 [&_button:focus-visible]:outline-2 [&_button:focus-visible]:outline-amber-400 [&_button:disabled]:opacity-50 [&_button[aria-pressed=true]]:border-amber-500 [&_legend]:mb-2 [&_legend]:text-neutral-400"
+        >
           <fieldset>
             <legend>Laser Loon Game State and Controls</legend>
+            <p className="mb-2 text-neutral-400">
+              Keyboard controls. Tab past them to leave the game.
+            </p>
 
-            <div role="group" aria-label="Laser Loon Telemetry and Status">
+            <div
+              role="group"
+              aria-label="Laser Loon Telemetry and Status"
+              className="sr-only"
+            >
               <output htmlFor="laser-loon-score">Score: {score}</output>
               <output htmlFor="laser-loon-highscore">
                 High Score: {effectiveHighScore}
               </output>
-              <output htmlFor="laser-loon-mode">Mode: {mode}</output>
+              <output htmlFor="laser-loon-mode">
+                Mode: {MODE_NAMES[mode]}
+              </output>
               <output htmlFor="laser-loon-status">
-                Game Status: {gameState}
+                Game Status: {GAME_STATE_NAMES[gameState]}
               </output>
               <output htmlFor="laser-loon-act">
                 Act: {currentActNum} of 4
@@ -2589,9 +2619,11 @@ export const LaserLoon: React.FC = () => {
               <output htmlFor="laser-loon-multiplier">
                 Multiplier: {multiplier}x
               </output>
-              <output htmlFor="laser-loon-timer">
-                Time Survived: {formatRunClock(survivalSecs)}
-              </output>
+              {mode === "arcade" && (
+                <output htmlFor="laser-loon-timer">
+                  Time Survived: {formatRunClock(survivalSecs)}
+                </output>
+              )}
               <output htmlFor="laser-loon-ultimate">
                 Ultimate Tremolo: {ultimateMeter}%
               </output>
@@ -2606,7 +2638,11 @@ export const LaserLoon: React.FC = () => {
               )}
             </div>
 
-            <div role="group" aria-label="Laser Loon Interactive Controls">
+            <div
+              role="group"
+              aria-label="Laser Loon Interactive Controls"
+              className="flex flex-wrap gap-1.5"
+            >
               <button
                 type="button"
                 onClick={startGame}
@@ -2617,21 +2653,21 @@ export const LaserLoon: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setMode("campaign")}
+                onClick={() => chooseMode("campaign")}
                 aria-pressed={mode === "campaign"}
               >
                 Campaign Mode
               </button>
               <button
                 type="button"
-                onClick={() => setMode("arcade")}
+                onClick={() => chooseMode("arcade")}
                 aria-pressed={mode === "arcade"}
               >
                 Arcade Mode
               </button>
               <button
                 type="button"
-                onClick={() => setMode("sandbox")}
+                onClick={() => chooseMode("sandbox")}
                 aria-pressed={mode === "sandbox"}
               >
                 Sandbox Mode

@@ -394,14 +394,14 @@ export const FLAG_MUSEUM: readonly FlagMuseumEntry[] = [
     id: "f277-laser-loon",
     name: "Submission F277: Laser Loon",
     submissionCode: "F277",
-    creator: "Fred deRuiter",
+    creator: "Fred de Ruiter",
     category: "Civic Legend",
     description:
       "A Common Loon floating on azure waters against a midnight sky, projecting twin crimson laser beams from its eyes across the horizon.",
     historicalSignificance:
       "Submitted in October 2023 to the Minnesota State Emblems Redesign Commission. It instantly became a worldwide viral phenomenon featured by The New York Times, The Washington Post, and NPR.",
     civicImpact:
-      "Fred deRuiter released the design into the public domain (CC0), launching a grassroots campaign that sold community flags and merchandise to raise over $13,500 for the Saint Paul Public Library Foundation.",
+      "Fred de Ruiter released the design into the public domain (CC0), launching a grassroots campaign that sold community flags and merchandise to raise over $13,500 for the Saint Paul Public Library Foundation.",
     flagColors: ["#091E3A", "#00B4D8", "#EF4444", "#FFFFFF"],
   },
   {

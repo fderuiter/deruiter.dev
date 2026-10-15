@@ -6,6 +6,7 @@ import React, {
   useRef,
   useSyncExternalStore,
   useCallback,
+  useMemo,
 } from "react";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { getSoundEngine } from "@/lib/audio/sound-engine";
@@ -108,6 +109,11 @@ import {
   ARCADE_GAME_DURATION_SECS,
   getActProgressReadout,
   getActStars,
+  parseActBestRecord,
+  mergeActBest,
+  countActStars,
+  LASER_LOON_STARS_KEY,
+  type ActBestRecord,
   pickKeyboardAim,
   updateMinionFire,
   ENEMY_TYPES,
@@ -142,6 +148,18 @@ const getHighScoreSnapshot = () => {
   }
 };
 const getHighScoreServerSnapshot = () => "0";
+// Saved act stars, read as the raw string so the snapshot compares stably.
+const getStarSnapshot = () => {
+  try {
+    return safeGetRawItem(LASER_LOON_STARS_KEY) || "";
+  } catch {
+    return "";
+  }
+};
+const getStarServerSnapshot = () => "";
+const CAMPAIGN_STAR_TOTAL = CAMPAIGN_ACTS.length * 3;
+const starString = (stars: number) =>
+  "★".repeat(stars) + "☆".repeat(Math.max(0, 3 - stars));
 
 export const LaserLoon: React.FC = () => {
   const isMounted = useSyncExternalStore(
@@ -155,6 +173,19 @@ export const LaserLoon: React.FC = () => {
     getHighScoreServerSnapshot
   );
   const loadedHighScore = parseInt(rawHighScore, 10) || 0;
+  const rawStars = useSyncExternalStore(
+    subscribeHighScore,
+    getStarSnapshot,
+    getStarServerSnapshot
+  );
+  // A same-tab write fires no storage event, so a clear updates this copy.
+  const [savedStars, setSavedStars] = useState<ActBestRecord | null>(null);
+  const actBests = useMemo(
+    () => savedStars ?? parseActBestRecord(rawStars),
+    [savedStars, rawStars]
+  );
+  // Each act's stars this run, for the campaign card's tally (#2143).
+  const [runStars, setRunStars] = useState<ActBestRecord>({});
   const { playNote, playSuccess } = useAudio();
   const { recordEvent } = useTelemetry();
 
@@ -188,6 +219,8 @@ export const LaserLoon: React.FC = () => {
     actScore: number;
     seconds: number;
     stars: 1 | 2 | 3;
+    newStars: boolean;
+    newTime: boolean;
   } | null>(null);
   const [multiplier, setMultiplier] = useState(1);
   const [timeLeft, setTimeLeft] = useState(45);
@@ -707,14 +740,28 @@ export const LaserLoon: React.FC = () => {
       setBossHp(0);
       const act = CAMPAIGN_ACTS.find((a) => a.actNumber === currentActNum);
       const seconds = Math.round(actPlayMsRef.current / 1000);
+      const stars = getActStars(
+        seconds,
+        act?.parSeconds ?? Infinity,
+        LOON_MAX_HITS - hitsLeftRef.current
+      );
+      // Save the act's best stars and time (#2143).
+      const merged = mergeActBest(actBests, currentActNum, stars, seconds);
+      safeSetRawItem(LASER_LOON_STARS_KEY, JSON.stringify(merged.record));
+      setSavedStars(merged.record);
+      setRunStars((prev) => ({
+        ...prev,
+        [currentActNum]: { stars, bestSeconds: seconds },
+      }));
+      if (countActStars(merged.record) >= CAMPAIGN_STAR_TOTAL) {
+        recordArcadeMilestone("laser-loon", "all_stars");
+      }
       setActResult({
         actScore: Math.max(0, scoreRef.current - actStartScoreRef.current),
         seconds,
-        stars: getActStars(
-          seconds,
-          act?.parSeconds ?? Infinity,
-          LOON_MAX_HITS - hitsLeftRef.current
-        ),
+        stars,
+        newStars: merged.newStars,
+        newTime: merged.newTime,
       });
       if (hitsLeftRef.current >= LOON_MAX_HITS) {
         recordArcadeMilestone("laser-loon", "act_no_hit");
@@ -729,7 +776,7 @@ export const LaserLoon: React.FC = () => {
         playSuccess();
       }
     },
-    [mode, currentActNum, playSuccess, recordEvent]
+    [mode, currentActNum, actBests, playSuccess, recordEvent]
   );
 
   // The render loop reads the latest handlers through a ref rather than
@@ -847,6 +894,7 @@ export const LaserLoon: React.FC = () => {
     setMaxCombo(0);
     comboRef.current = 0;
     setMultiplier(1);
+    setRunStars({});
     setTimeLeft(fresh.timeLeft);
     setIsPaused(false);
     ultimateMeterRef.current = 0;
@@ -2803,8 +2851,16 @@ export const LaserLoon: React.FC = () => {
               </section>
 
               <div className="mt-4 flex items-center justify-between gap-4 border-t border-[#1c1a17] pt-3">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">
+                <span className="min-w-0 font-mono text-[10px] uppercase tracking-widest text-[#5b5346]">
                   Boss sighted: {currentAct.bossName}
+                  <span
+                    data-testid="laser-loon-act-best"
+                    className="mt-1 block normal-case tracking-normal"
+                  >
+                    {actBests[currentActNum]
+                      ? `Your best: ${starString(actBests[currentActNum]!.stars)} · ${actBests[currentActNum]!.bestSeconds}s (par ${currentAct.parSeconds}s)`
+                      : `Par ${currentAct.parSeconds}s. Beat it with no hits for 3 stars.`}
+                  </span>
                 </span>
                 <button
                   onClick={() => startAct(currentActNum)}
@@ -2861,6 +2917,15 @@ export const LaserLoon: React.FC = () => {
                 {hitsLeft >= LOON_MAX_HITS
                   ? " · No hits taken"
                   : " · Took a hit"}
+                <span className="mt-1 block text-amber-300">
+                  {actResult.newStars && actResult.newTime
+                    ? "New best stars and time!"
+                    : actResult.newStars
+                      ? "New best stars!"
+                      : actResult.newTime
+                        ? "New best time!"
+                        : `Best: ${starString(actBests[currentActNum]?.stars ?? actResult.stars)} · ${actBests[currentActNum]?.bestSeconds ?? actResult.seconds}s`}
+                </span>
               </p>
             )}
           </ResultCard>
@@ -2906,7 +2971,11 @@ export const LaserLoon: React.FC = () => {
             stats={[
               { label: "Total score", value: score },
               { label: "Max combo", value: maxCombo, suffix: "x" },
-              { label: "Acts", value: CAMPAIGN_ACTS.length },
+              {
+                label: "Stars",
+                value: countActStars(runStars),
+                suffix: `/${CAMPAIGN_STAR_TOTAL}`,
+              },
             ]}
             score={score}
             previousBest={runStartBest}
@@ -2921,6 +2990,27 @@ export const LaserLoon: React.FC = () => {
               onClick: () => setShowMuseum(true),
             }}
           >
+            <p
+              data-testid="laser-loon-campaign-stars"
+              className="text-center font-mono text-xs text-neutral-300"
+            >
+              {CAMPAIGN_ACTS.map((a) => (
+                <span key={a.actNumber} className="mx-1.5 inline-block">
+                  Act {a.actNumber}{" "}
+                  <span
+                    className="text-amber-400"
+                    aria-label={`${runStars[a.actNumber]?.stars ?? 0} of 3 stars`}
+                  >
+                    {starString(runStars[a.actNumber]?.stars ?? 0)}
+                  </span>
+                </span>
+              ))}
+              <span className="mt-1 block text-neutral-400">
+                {countActStars(actBests) >= CAMPAIGN_STAR_TOTAL
+                  ? "Every star earned. The commission is speechless."
+                  : `Best ever: ${countActStars(actBests)}/${CAMPAIGN_STAR_TOTAL} stars. Beat each par with no hits for the rest.`}
+              </span>
+            </p>
             <MerchPrompt liveLabel="Get official Laser Loon swag at cost" />
           </ResultCard>
         )}

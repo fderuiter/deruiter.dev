@@ -142,6 +142,17 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     milestone: "campaign_cleared",
     conditionDescription: "Win the Laser Loon campaign",
   },
+  {
+    id: "laser_loon_all_stars",
+    gameId: "laser-loon",
+    title: "Unanimous Consent",
+    subtitle: "Laser Loon",
+    description: "Earn all three stars on every campaign act.",
+    icon: "Sparkles",
+    category: "mastery",
+    milestone: "all_stars",
+    conditionDescription: "Earn all 12 Laser Loon campaign stars",
+  },
 
   // Quasi-Perfect Puzzler
   {

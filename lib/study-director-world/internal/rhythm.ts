@@ -1,4 +1,10 @@
-import { applyEffects, getEvent, inbox } from "@/lib/study-director";
+import {
+  applyEffects,
+  getEvent,
+  inbox,
+  type Effects,
+  type TeamRole,
+} from "@/lib/study-director";
 import { clamp } from "@/lib/game-utils";
 import { fnv1a } from "@/lib/utils/prng";
 import { spendCost } from "./clock";
@@ -112,6 +118,27 @@ function befriend(world: WorldState, ids: readonly string[]): WorldState {
   return next;
 }
 
+/** The study with some meter adjustments applied. */
+function meters(
+  world: WorldState,
+  change: NonNullable<Effects["meters"]>
+): WorldState {
+  return { ...world, study: applyEffects(world.study, { meters: change }) };
+}
+
+/** More (or, negative, less) work for whoever holds a role on the team. */
+function loadRole(world: WorldState, role: TeamRole, delta: number): WorldState {
+  const member = world.study.team.find((m) => m.role === role);
+  return member
+    ? {
+        ...world,
+        study: applyEffects(world.study, {
+          workload: [{ memberId: member.id, delta }],
+        }),
+      }
+    : world;
+}
+
 /** The site with the most open queries, if any have any. */
 function loudestSite(world: WorldState) {
   const sorted = [...world.study.sites].sort(
@@ -121,7 +148,7 @@ function loudestSite(world: WorldState) {
 }
 
 /**
- * Six small things that can land on a day. Each is a real choice with a cost
+ * Twenty-one small things that can land on a day. Each is a real choice with a cost
  * in time, and each is original, plain and a little dry (ADR 0016). The
  * effects are small on purpose: an interruption bends a day, it does not
  * decide a study.
@@ -300,6 +327,331 @@ const CATALOG: readonly Catalogued[] = [
       },
     ],
   },
+  {
+    id: "coffeeOut",
+    title: "The coffee machine is out of beans",
+    body: "A note on the machine says EMPTY in three different hands. Somebody has to order more, and everybody has decided it is somebody else.",
+    options: [
+      {
+        id: "order",
+        label: "Order the beans",
+        cost: cost(5),
+        result: "Two kilos, next-day delivery. The note gets a fourth line: thank you.",
+        apply: (w) => meters(w, { team: 1 }),
+      },
+      {
+        id: "note",
+        label: "Add a line to the note",
+        cost: cost(1),
+        result: "Now it says EMPTY in four hands.",
+      },
+    ],
+  },
+  {
+    id: "tearfulCoordinator",
+    title: "A coordinator calls, close to tears",
+    body: "The coordinator at the busiest site has three monitors' worth of findings and one afternoon. They want to know what matters first.",
+    options: [
+      {
+        id: "listen",
+        label: "Take the call and triage with them",
+        cost: cost(20, 1, 4),
+        result: "You pick the three things that matter. They write them on their hand.",
+        apply: (w) => {
+          const site = loudestSite(w);
+          return site
+            ? {
+                ...w,
+                study: applyEffects(w.study, {
+                  sites: [{ siteId: site.id, burden: -2 }],
+                }),
+              }
+            : w;
+        },
+      },
+      {
+        id: "pass",
+        label: "Pass it to the monitor",
+        cost: cost(2),
+        result: "The monitor takes it. The monitor's afternoon is now theirs.",
+        apply: (w) => loadRole(w, "monitor", 4),
+      },
+    ],
+  },
+  {
+    id: "financeBurn",
+    title: "Finance wants the burn explained",
+    body: "Someone from finance is at your door with a printout. Spend is ahead of the plan and they would like a sentence they can put in a box.",
+    options: [
+      {
+        id: "explain",
+        label: "Walk them through it",
+        cost: cost(20, 0, 5),
+        result: "Pass-throughs, site start-up, one invoice nobody expected. The box gets its sentence.",
+        apply: (w) => meters(w, { budget: 1 }),
+      },
+      {
+        id: "spreadsheet",
+        label: "Send them the spreadsheet",
+        cost: cost(3),
+        result: "They reply with a question about column K. There are forty columns.",
+        apply: (w) => meters(w, { budget: -1 }),
+      },
+    ],
+  },
+  {
+    id: "irbQuestion",
+    title: "The IRB has a question about consent",
+    body: "The review board wants to know why page four of the consent form uses a word the summary page does not.",
+    options: [
+      {
+        id: "answer",
+        label: "Answer it now",
+        cost: cost(15, 0, 4),
+        result: "One word, changed in two places, with a note saying why. The board says thank you in capitals.",
+        apply: (w) => meters(w, { compliance: 2 }),
+      },
+      {
+        id: "regulatory",
+        label: "Flag it for regulatory",
+        cost: cost(2),
+        result: "It joins regulatory's list, near the top, below four other things near the top.",
+        apply: (w) => loadRole(w, "regulatory", 4),
+      },
+    ],
+  },
+  {
+    id: "birthday",
+    title: "Cake for a birthday",
+    body: "There is a cake in the break room with somebody's name on it in blue icing. The singing is about to start.",
+    options: [
+      {
+        id: "sing",
+        label: "Go and sing, badly",
+        cost: cost(10),
+        result: "You know the words. Everybody knows the words. The cake is mostly sugar and helps.",
+        apply: (w) =>
+          befriend(
+            { ...w, energy: clamp(w.energy + 5, 0, 100) },
+            leastTrusting(w, 2)
+          ),
+      },
+      {
+        id: "wave",
+        label: "Wave from the doorway",
+        cost: cost(1),
+        result: "Somebody saves you a slice. It is the slice with no icing.",
+      },
+    ],
+  },
+  {
+    id: "invoice",
+    title: "An invoice that looks wrong",
+    body: "A vendor invoice has arrived for a service you are fairly sure ended last month. It is due on Friday.",
+    options: [
+      {
+        id: "check",
+        label: "Check it line by line",
+        cost: cost(20, 0, 6),
+        result: "Two lines are for last month. You send it back with both circled.",
+        apply: (w) => ({ ...w, study: applyEffects(w.study, { spend: -1500 }) }),
+      },
+      {
+        id: "approve",
+        label: "Approve it and move on",
+        cost: cost(1),
+        result: "Paid. It is the vendor's best month.",
+        apply: (w) => ({ ...w, study: applyEffects(w.study, { spend: 1500 }) }),
+      },
+    ],
+  },
+  {
+    id: "laptopUpdate",
+    title: "Your laptop wants to restart",
+    body: "A box in the corner of the screen says updates are ready. It has said so since Tuesday, and the box is getting bigger.",
+    options: [
+      {
+        id: "restart",
+        label: "Let it restart",
+        cost: cost(15),
+        result: "Fifteen minutes of a spinning circle. Everything opens faster afterwards.",
+        apply: (w) => ({ ...w, focus: clamp(w.focus + 5, 0, 100) }),
+      },
+      {
+        id: "postpone",
+        label: "Postpone it again",
+        cost: cost(0),
+        result: "The box comes back every ten minutes for the rest of the day.",
+        apply: (w) => ({ ...w, focus: clamp(w.focus - 4, 0, 100) }),
+      },
+    ],
+  },
+  {
+    id: "monitoringReport",
+    title: "A monitoring report needs your signature",
+    body: "Thirty pages from last week's visit, with a sign-off box on the last one. The monitor would like it back today.",
+    options: [
+      {
+        id: "read",
+        label: "Read it properly first",
+        cost: cost(25, 0, 5),
+        result: "Page nineteen has a finding nobody escalated. You escalate it and then you sign.",
+        apply: (w) => meters(w, { integrity: 1 }),
+      },
+      {
+        id: "sign",
+        label: "Sign the last page",
+        cost: cost(2),
+        result: "Signed. Page nineteen will come up again, in somebody else's report.",
+        apply: (w) => meters(w, { compliance: -1 }),
+      },
+    ],
+  },
+  {
+    id: "courier",
+    title: "The lab courier is at reception",
+    body: "A courier with a cool box needs a signature for the sample shipment. The shipping log is two floors of paperwork away.",
+    options: [
+      {
+        id: "log",
+        label: "Check the shipping log first",
+        cost: cost(10),
+        result: "One tube number does not match. Fixed before it leaves the building.",
+        apply: (w) => meters(w, { integrity: 1 }),
+      },
+      {
+        id: "sign",
+        label: "Sign for it",
+        cost: cost(1),
+        result: "The van leaves. The lab will tell you about tube 14 in a fortnight.",
+        apply: (w) => meters(w, { integrity: -1 }),
+      },
+    ],
+  },
+  {
+    id: "meetingAboutMeetings",
+    title: "A meeting about meetings",
+    body: "An invitation arrives for this afternoon: a review of the recurring meetings, to see which ones could be an email.",
+    options: [
+      {
+        id: "go",
+        label: "Go and argue for fewer",
+        cost: cost(30, 1),
+        result: "Two standing meetings are cancelled. The team gets back an hour a week.",
+        apply: (w) => meters(w, { team: 1 }),
+      },
+      {
+        id: "decline",
+        label: "Decline, politely",
+        cost: cost(1),
+        result: "Declined. The meeting about meetings runs long without you.",
+      },
+    ],
+  },
+  {
+    id: "protocolVersion",
+    title: "A new protocol version arrives",
+    body: "The sponsor has sent version 4.2 with a tracked-changes copy. The summary of changes says minor.",
+    options: [
+      {
+        id: "read",
+        label: "Read the tracked changes now",
+        cost: cost(20, 0, 5),
+        result: "Minor, except the visit window, which is now two days shorter. You tell the sites.",
+        apply: (w) => meters(w, { integrity: 1 }),
+      },
+      {
+        id: "later",
+        label: "Trust the summary",
+        cost: cost(1),
+        result: "Minor. The visit window will introduce itself at the next monitoring visit.",
+        apply: (w) => meters(w, { integrity: -1 }),
+      },
+    ],
+  },
+  {
+    id: "internQuestion",
+    title: "The intern has a question",
+    body: "The summer intern is hovering with a notebook. They want to know why a query gets closed if the answer is still wrong.",
+    options: [
+      {
+        id: "explain",
+        label: "Explain it properly",
+        cost: cost(15),
+        result: "You draw it on the whiteboard. Halfway through you realise you are explaining it to yourself.",
+        apply: (w) => befriend(meters(w, { team: 1 }), leastTrusting(w, 1)),
+      },
+      {
+        id: "sop",
+        label: "Point them at the SOP",
+        cost: cost(1),
+        result: "The SOP is a hundred and forty pages. They come back tomorrow with eleven questions.",
+      },
+    ],
+  },
+  {
+    id: "secondEyes",
+    title: "The data manager wants a second pair of eyes",
+    body: "A listing looks odd and the data manager would like somebody else to look before it goes to the sites.",
+    options: [
+      {
+        id: "look",
+        label: "Look it over together",
+        cost: cost(15, 0, 3),
+        result: "It is a sorting error, not a data error. Caught before forty queries went out.",
+        apply: (w) => loadRole(w, "dataManager", -3),
+      },
+      {
+        id: "later",
+        label: "Not now",
+        cost: cost(1),
+        result: "It goes out as it is. The replies arrive by the end of the week.",
+        apply: (w) => loadRole(w, "dataManager", 2),
+      },
+    ],
+  },
+  {
+    id: "tmfTracker",
+    title: "The TMF tracker turned red",
+    body: "The trial master file tracker has a red row: a site's delegation log expired and nobody has the new one.",
+    options: [
+      {
+        id: "chase",
+        label: "Chase the site for it now",
+        cost: cost(15, 0, 3),
+        result: "The site had it all along, in a drawer. It is filed by four.",
+        apply: (w) => meters(w, { compliance: 1 }),
+      },
+      {
+        id: "friday",
+        label: "Note it for Friday",
+        cost: cost(1),
+        result: "Friday has a lot of notes on it.",
+        apply: (w) => meters(w, { compliance: -1 }),
+      },
+    ],
+  },
+  {
+    id: "doubleBooked",
+    title: "Two sites booked the same monitor",
+    body: "Two sites have each confirmed a visit from the monitor on the same Thursday, two hundred miles apart.",
+    options: [
+      {
+        id: "sort",
+        label: "Sort the schedule yourself",
+        cost: cost(15, 0, 4),
+        result: "One visit moves a week. Both sites say that works, which is not the same as it working.",
+        apply: (w) => loadRole(w, "monitor", -2),
+      },
+      {
+        id: "leave",
+        label: "Let them work it out",
+        cost: cost(1),
+        result: "They work it out by email, copying you, eleven times.",
+        apply: (w) => loadRole(w, "monitor", 4),
+      },
+    ],
+  },
 ];
 
 /** Minutes after midnight at which a day's three interruptions arrive. */
@@ -309,46 +661,101 @@ export const INTERRUPTION_TIMES = [
   15 * 60 + 30,
 ] as const;
 
-/** Three distinct interruptions for the day, in an order fixed by the seed. */
+/** How long an interruption waits for an answer before it lapses (#2189). */
+export const INTERRUPTION_WINDOW = 90;
+
+/** Interruptions that only make sense in the middle of the day. */
+const MIDDAY = new Set(["lunch"]);
+
+/** The catalog in the order this seed works through it. */
+function rotation(seed: string): Catalogued[] {
+  return [...CATALOG].sort(
+    (a, b) =>
+      fnv1a(`${seed}:rhythm:${a.id}`) - fnv1a(`${seed}:rhythm:${b.id}`)
+  );
+}
+
+/**
+ * Three distinct interruptions for the day. Each seed works through the
+ * whole catalog in its own order, three a day, so none comes back within a
+ * week (#2189: six of them repeated from the second week); lunch always
+ * takes the midday slot.
+ */
 export function scheduleFor(world: WorldState): ScheduledInterruption[] {
   const { seed, day } = world.study;
-  return [...CATALOG]
-    .sort(
-      (a, b) =>
-        fnv1a(`${seed}:rhythm:${day}:${a.id}`) -
-        fnv1a(`${seed}:rhythm:${day}:${b.id}`)
-    )
-    .slice(0, INTERRUPTION_TIMES.length)
-    .map((entry, i) => ({
-      at: INTERRUPTION_TIMES[i],
-      interruption: {
-        id: entry.id,
-        title: entry.title,
-        body: entry.body,
-        options: entry.options.map(({ id, label, cost: c, result }) => ({
-          id,
-          label,
-          cost: c,
-          result,
-        })),
-      },
-    }));
+  const order = rotation(seed);
+  const per = INTERRUPTION_TIMES.length;
+  const first = (Math.max(0, day - 1) * per) % order.length;
+  const picked = INTERRUPTION_TIMES.map(
+    (_, i) => order[(first + i) % order.length]
+  );
+  const midday = picked.findIndex((e) => MIDDAY.has(e.id));
+  if (midday >= 0 && midday !== 1)
+    [picked[1], picked[midday]] = [picked[midday], picked[1]];
+  return picked.map((entry, i) => ({
+    at: INTERRUPTION_TIMES[i],
+    interruption: {
+      id: entry.id,
+      title: entry.title,
+      body: entry.body,
+      options: entry.options.map(({ id, label, cost: c, result }) => ({
+        id,
+        label,
+        cost: c,
+        result,
+      })),
+    },
+  }));
+}
+
+/** Dealt with, or excused because it came while the player was away. */
+function settled(world: WorldState, id: string): boolean {
+  const plan = planFor(world);
+  return plan.handled.includes(id) || (plan.excused ?? []).includes(id);
 }
 
 /**
  * The interruption waiting for an answer: the first of today's that has
- * arrived and not been dealt with. Nothing arrives while the player is at a
- * site, in a meeting, or has gone home.
+ * arrived, has not lapsed and has not been dealt with. Nothing arrives
+ * while the player is at a site, in a meeting, with a visitor waiting, or
+ * has gone home.
  */
 export function pendingInterruption(world: WorldState): Interruption | null {
   if (world.study.status !== "running" || world.location === "home")
     return null;
   if (world.visit || world.meeting || guestWaiting(world)) return null;
-  const handled = planFor(world).handled;
   const due = scheduleFor(world).find(
-    (s) => s.at <= world.minute && !handled.includes(s.interruption.id)
+    (s) =>
+      s.at <= world.minute &&
+      world.minute < s.at + INTERRUPTION_WINDOW &&
+      !settled(world, s.interruption.id)
   );
   return due?.interruption ?? null;
+}
+
+/**
+ * Back from a site, a meeting or a visitor: what came up while you were away
+ * is excused, so it is neither held against you overnight nor stacked up on
+ * your return. Only the latest one that is still waiting is kept (#2189).
+ */
+export function excuseAway(world: WorldState): WorldState {
+  const plan = planFor(world);
+  const arrived = scheduleFor(world).filter(
+    (s) => s.at <= world.minute && !settled(world, s.interruption.id)
+  );
+  const last = arrived[arrived.length - 1];
+  const keep =
+    last && world.minute < last.at + INTERRUPTION_WINDOW
+      ? last.interruption.id
+      : null;
+  const excused = arrived
+    .map((s) => s.interruption.id)
+    .filter((id) => id !== keep);
+  if (excused.length === 0) return world;
+  return {
+    ...world,
+    plan: { ...plan, excused: [...(plan.excused ?? []), ...excused] },
+  };
 }
 
 /**
@@ -432,8 +839,7 @@ export function eveningWrapUp(world: WorldState): OvernightLine[] {
   });
   const plan = planFor(world);
   for (const s of scheduleFor(world)) {
-    if (s.at > world.minute || plan.handled.includes(s.interruption.id))
-      continue;
+    if (s.at > world.minute || settled(world, s.interruption.id)) continue;
     lines.push({
       text: `You let "${s.interruption.title}" go unanswered.`,
       tone: "bad",

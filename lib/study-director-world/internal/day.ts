@@ -14,11 +14,11 @@ import {
   type StudyLength,
   type StudyState,
 } from "@/lib/study-director";
-import { fatigueFrom, weekdayFor } from "./clock";
+import { fatigueFrom, formatClock, weekdayFor } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { workTheNight } from "./delegation";
 import { earlyWarning } from "./favours";
-import { settleGuests } from "./guests";
+import { guestsExpected, settleGuests } from "./guests";
 import { CRO_FLOOR } from "./floor";
 import { eveningWrapUp, settlePriority } from "./rhythm";
 import { adjustTrust, senderOf } from "./team";
@@ -129,6 +129,17 @@ export function startDay(world: WorldState): {
   // Someone who trusts the player tells them where to look (#1838).
   const warning = earlyWarning(world);
   if (warning) lines.push(warning);
+  // Visitors are announced in the morning: the sponsor used to arrive
+  // unannounced and the miss was held against the player (#2188).
+  for (const guest of guestsExpected({
+    ...world,
+    location: ARRIVAL,
+    minute: startsAt,
+  }))
+    lines.push({
+      text: `${guest.name} of ${guest.organisation} visits at ${formatClock(guest.at)}. Meet them in the conference room.`,
+      tone: guest.id === "sponsorVisit" ? "bad" : "neutral",
+    });
   return {
     world: {
       ...world,

@@ -7,7 +7,9 @@ import {
 } from "@/lib/study-director";
 import { OVERTIME_ENERGY_FACTOR, formatClock, lateMinutes } from "./clock";
 import { CRO_FLOOR, WORLD_MAPS, roomAt } from "./floor";
+import { guestsExpected } from "./guests";
 import { keepRecent } from "./history";
+import { excuseAway } from "./rhythm";
 import {
   COORDINATOR_TRAITS,
   SITE_MAPS,
@@ -571,7 +573,8 @@ export function travel(
     return {
       ok: true,
       report: closed.report,
-      world: arrive(closed.world, CRO_FLOOR, CRO_PARKING_ARRIVAL),
+      // What came up at the office while you were out is excused (#2189).
+      world: excuseAway(arrive(closed.world, CRO_FLOOR, CRO_PARKING_ARRIVAL)),
     };
   const number = visitsTo(closed.world, site.id) + 1;
   const arrived = arrive(closed.world, target, target.spawn);
@@ -767,6 +770,11 @@ export function carOutcome(world: WorldState): InteractionOutcome {
   if (!world.visit && travel.length === 0)
     lines.push(
       `The sites close at ${formatClock(SITE_CLOSES)}; it is too late to drive out to one today.`
+    );
+  // A visitor still due today waits for nobody if you leave (#2188).
+  for (const guest of guestsExpected(world))
+    lines.push(
+      `${guest.name} of ${guest.organisation} is due in the conference room at ${formatClock(guest.at)} and leaves at ${formatClock(guest.leavesAt)}. Nobody will meet them if you go.`
     );
   return {
     world,

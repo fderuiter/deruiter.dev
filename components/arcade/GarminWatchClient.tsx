@@ -193,9 +193,9 @@ export const GarminWatchClient: React.FC = () => {
                     <IconRun className="w-3.5 h-3.5" />
                     <span>Real-World Engineering Inspiration</span>
                   </div>
-                  <h3 className="text-xl font-mono font-extrabold text-white mb-2">
+                  <h2 className="text-xl font-mono font-extrabold text-white mb-2">
                     Theodore Wirth Mud Run (Run Minnesota 10K)
-                  </h3>
+                  </h2>
                   <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-3">
                     The inspiration behind <em>Monkey C Mayhem</em>: 10
                     kilometers of Minnesota trail mud and an actual Garmin watch

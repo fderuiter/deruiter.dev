@@ -49,6 +49,7 @@ describe("Trial & Error: an ended run keeps its CSR lock (#2149)", () => {
     const won = lockedCampaign("alpha");
     expect(won.table.status).toBe("CLEARED");
     expect(won.table.lock).not.toBeNull();
+    expect(deriveRunView(C, won).ended).toBe(false);
     const lock = deriveRunView(C, won).table.csrLock;
     expect(lock?.lock).not.toBeNull();
     expect(lock?.amendRefusal).toBeNull();
@@ -57,6 +58,7 @@ describe("Trial & Error: an ended run keeps its CSR lock (#2149)", () => {
   it("refuses the amendment once the run is submitted and ended", () => {
     const ended = advanceRun(C, lockedCampaign("alpha"), { type: "END_RUN" });
     expect(ended.ended).toBe(true);
+    expect(deriveRunView(C, ended).ended).toBe(true);
     expect(deriveRunView(C, ended).table.csrLock?.amendRefusal).toBe(ENDED);
 
     const after = advanceRun(C, ended, { type: "AMEND_PROTOCOL" });

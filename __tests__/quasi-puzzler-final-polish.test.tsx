@@ -2,6 +2,7 @@
 import React from "react";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { describe, it, expect, vi, afterEach } from "vitest";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { VictoryModal } from "@/components/QuasiPerfectPuzzler/VictoryModal";
 import { InlineCodeText } from "@/components/QuasiPerfectPuzzler/InlineCodeText";
 import { TacticHand } from "@/components/QuasiPerfectPuzzler/TacticHand";
@@ -108,15 +109,13 @@ describe("Quasi Puzzler final polish (#2246-#2249)", () => {
   });
 
   it("uses compact cards for a crowded fan on a narrow screen (#2249)", () => {
-    vi.stubGlobal(
-      "matchMedia",
-      (query: string) =>
-        ({
-          matches: query.includes("max-width: 1179px"),
-          media: query,
-          addEventListener: () => {},
-          removeEventListener: () => {},
-        }) as unknown as MediaQueryList
+    vi.stubGlobal("matchMedia", (query: string) =>
+      fromPartial<MediaQueryList>({
+        matches: query.includes("max-width: 1179px"),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {},
+      })
     );
     const level = puzzleLevels.find(
       (l) => l.availableTactics.length >= 7 && l.availableTactics.length <= 8

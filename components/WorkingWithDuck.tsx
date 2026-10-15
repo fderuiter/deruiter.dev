@@ -3264,6 +3264,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   ? `Every ${ENDLESS_QUARTER_WORK} work units a new quarter starts: faster meters and one more hazard. Survive as many quarters as you can!`
                   : currentSprint.description}
               </p>
+              {uiState.mode === "campaign" && currentSprint.twistBrief && (
+                <p
+                  data-testid="duck-sprint-twist"
+                  className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 max-w-md rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] sm:text-xs font-mono leading-relaxed text-amber-200"
+                >
+                  {currentSprint.twistBrief}
+                </p>
+              )}
               <p
                 data-testid="duck-start-highscore"
                 className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
@@ -3382,7 +3390,10 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
         {/* Skill Toast Easter Egg */}
         {uiState.activeSkillToast && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 px-4 py-2 rounded-xl border border-emerald-500/40 bg-[#0d0e11]/90 text-white shadow-2xl flex items-center gap-2.5">
+          <div
+            role="status"
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 w-max max-w-[92%] px-4 py-2 rounded-xl border border-emerald-500/40 bg-[#0d0e11]/90 text-white shadow-2xl flex items-center gap-2.5"
+          >
             <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold uppercase">
               {uiState.activeSkillToast.badge}
             </span>

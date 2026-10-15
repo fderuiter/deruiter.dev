@@ -179,6 +179,18 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     milestone: "all_gold",
     conditionDescription: "Earn gold (3 stars) on all 18 Act 1 levels",
   },
+  {
+    id: "quasi_act_two",
+    gameId: "quasi-puzzler",
+    title: "Almost Perfect",
+    subtitle: "Quasi-Perfect Puzzler",
+    description:
+      "Prove every Act 2 level honestly: quantifiers, induction, inequality chains and almost perfect numbers.",
+    icon: "Trophy",
+    category: "mastery",
+    milestone: "act_two_proven",
+    conditionDescription: "Prove all 12 Act 2 levels without sorry",
+  },
 
   // Garmin Watch Simulator
   {

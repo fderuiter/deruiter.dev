@@ -106,7 +106,7 @@ export const actTwoLevels: PuzzlerLevelDef[] = [
       mathIntuition:
         "Existence proofs in constructive logic carry their evidence. A wrong witness is not a small error: with use 4 the goal becomes 4 + 4 = 7, which is false and cannot be proved.",
       leanAnalogy:
-        "`use 3` is Mathlib's tactic for `refine ⟨3, ?_⟩`; it also tries `rfl` on what is left. Here `norm_num` then checks 3 + 4 = 7.",
+        "`use 3` is Mathlib's tactic for `refine ⟨3, ?_⟩`. In Mathlib it also tries `rfl` on what is left, which already closes 3 + 4 = 7; the simulator leaves that arithmetic for `norm_num` so you can see the check.",
       tacticalObjective: "Play 'use 3', then 'norm_num' (5 GB in total).",
       leanDocUrl:
         "https://leanprover-community.github.io/mathlib4_docs/Mathlib/Tactic/Use.html",

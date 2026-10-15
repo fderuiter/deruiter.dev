@@ -29,8 +29,8 @@ import { useWorkbenchKeys } from "./useWorkbenchKeys";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { PROTOCOL_DRIFT_AUTO_PAUSE_EVENT } from "./auto-pause";
 
-/** Container width from which the toolbox shows chip names (1280 viewport). */
-const TOOLBOX_OPEN_PX = 1000;
+/** Container width from which the toolbox shows chip names (1024 viewport). */
+const TOOLBOX_OPEN_PX = 820;
 /** Container width from which the site rail also stays fully open. */
 const WIDE_CONTAINER_PX = 1400;
 const TICK_MS = 250;
@@ -222,6 +222,7 @@ export function ProtocolDriftGame() {
         </span>
         <span>[Space] Pause</span>
         <span>[N] Step</span>
+        <span>[S] Skip</span>
         <span>[I] Inspect</span>
         <span>[Esc] Return</span>
         <span className="ml-auto">engine: {mode ?? "starting"}</span>

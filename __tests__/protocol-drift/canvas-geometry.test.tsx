@@ -128,9 +128,7 @@ describe("pipeline canvas", () => {
     await act(async () => {
       fireEvent.click(screen.getByText(/Pipeline as text/));
     });
-    expect(
-      screen.getByText(/source-ingest-1: SourceIngest, tabulation lane/)
-    ).toBeTruthy();
+    expect(screen.getByText(/SourceIngest 1, tabulation lane/)).toBeTruthy();
     await act(async () => {
       fireEvent.change(screen.getByLabelText("From output"), {
         target: { value: "source-ingest-1::raw_entry" },
@@ -144,7 +142,7 @@ describe("pipeline canvas", () => {
     });
     expect(useProtocolDriftStore.getState().edges).toHaveLength(1);
     expect(
-      screen.getByText(/source-ingest-1\.raw_entry to extract-field-1\.in/)
+      screen.getByText(/SourceIngest 1\.raw_entry to ExtractField 1\.in/)
     ).toBeTruthy();
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: /Remove wire/ }));

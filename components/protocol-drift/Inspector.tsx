@@ -27,7 +27,7 @@ const BADGE: Record<
   UNCERTAIN: {
     mark: "?",
     className: "border-dotted border-slate-300 text-slate-200",
-    label: "documented uncertainty (CDASH 3.6)",
+    label: "documented uncertainty (ISO 8601 partial date)",
   },
   FABRICATED: {
     mark: "FAB",
@@ -557,7 +557,7 @@ function ReviewPane({
                 }
                 className="min-h-8 border border-emerald-500 px-2 text-[11px] text-emerald-400"
               >
-                Accept Documented Uncertainty (CDASH 3.6)
+                Accept Documented Uncertainty (partial date)
               </button>
             ) : null}
             {ready && issue.code !== "PARTIAL_DATE" ? (

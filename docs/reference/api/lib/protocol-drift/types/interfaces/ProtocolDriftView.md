@@ -88,6 +88,16 @@ A read-only copy of the engine state, for tests, the inspector and saves.
 
 ***
 
+### nextEventMinute
+
+> **nextEventMinute**: `number` \| `null`
+
+The minute of the next event a player would notice (data arriving, a
+site reply, the memo or a wave's end), or null when none is scheduled.
+Skip to next event advances the clock to it (#2170).
+
+***
+
 ### publishedGraph
 
 > **publishedGraph**: [`PipelineGraph`](PipelineGraph.md) \| `null`

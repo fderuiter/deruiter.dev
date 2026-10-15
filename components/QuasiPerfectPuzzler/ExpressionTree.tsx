@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useMemo, useState, useSyncExternalStore } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { ASTNode } from "@/lib/quasi-perfect/types";
 import { findNodeById, renderASTString } from "@/lib/quasi-perfect/engine";
 import { useResizeObserver } from "@/hooks/useResizeObserver";
@@ -108,6 +114,30 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
     isShortViewport,
     () => false
   );
+  // The induction hypothesis is the one the step case needs, so it leads
+  // the Γ row rather than sitting past its edge (#2247).
+  const orderedHypotheses = useMemo(
+    () =>
+      [...hypotheses].sort(
+        (a, b) =>
+          Number(b.metadata?.name === "ih") - Number(a.metadata?.name === "ih")
+      ),
+    [hypotheses]
+  );
+  const hypothesesRowRef = useRef<HTMLDivElement | null>(null);
+  const [hypothesesOverflow, setHypothesesOverflow] = useState(false);
+  useEffect(() => {
+    const row = hypothesesRowRef.current;
+    if (!row) return;
+    const check = () =>
+      setHypothesesOverflow(row.scrollWidth > row.clientWidth + 1);
+    check();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(check);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [orderedHypotheses]);
+
   const layout = useMemo(() => {
     const slotWidth = fitSlotWidth(boardWidth, countLeaves(goalAST));
     const options = {
@@ -177,12 +207,18 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
 
       {/* Hypotheses in context (Γ), above the tree rather than beside it, so
           a long context never pushes the tree off the board (#2195, #2196).
-          Chips wrap so every hypothesis (ih included) stays in view; past two
-          rows the strip scrolls down, never sideways (#2247). */}
+          One line keeps the tree's room; the induction hypothesis leads it,
+          and a fade marks a row that scrolls on (#2247). */}
       {hypotheses.length > 0 && (
         <div
-          className="mt-2 flex max-h-[5.5rem] flex-wrap items-center gap-2 overflow-y-auto px-5 py-1"
+          ref={hypothesesRowRef}
+          className={`mt-2 flex items-center gap-2 overflow-x-auto px-5 py-1 ${
+            hypothesesOverflow
+              ? "[mask-image:linear-gradient(to_right,black_85%,transparent)]"
+              : ""
+          }`}
           data-testid="hypotheses-row"
+          data-overflow={hypothesesOverflow ? "true" : undefined}
         >
           <span
             className="qp-math shrink-0 text-base text-zinc-300"
@@ -193,7 +229,7 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
           <span className="sr-only">
             Active Hypotheses Context (Γ), {hypotheses.length} in context
           </span>
-          {hypotheses.map((hyp) => {
+          {orderedHypotheses.map((hyp) => {
             const hypName = (hyp.metadata?.name as string) || "h";
             const hypFormula = renderASTString(hyp);
             const isSelected = selectedTargetId === hyp.id;

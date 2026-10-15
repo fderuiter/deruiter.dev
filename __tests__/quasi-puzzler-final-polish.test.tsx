@@ -5,6 +5,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { VictoryModal } from "@/components/QuasiPerfectPuzzler/VictoryModal";
 import { InlineCodeText } from "@/components/QuasiPerfectPuzzler/InlineCodeText";
 import { TacticHand } from "@/components/QuasiPerfectPuzzler/TacticHand";
+import { ExpressionTree } from "@/components/QuasiPerfectPuzzler/ExpressionTree";
 import {
   parseFormula,
   puzzleLevels,
@@ -133,5 +134,29 @@ describe("Quasi Puzzler final polish (#2246-#2249)", () => {
     );
     const card = container.querySelector("[data-tactic-id]") as HTMLElement;
     expect(card.className).toContain("w-[96px]");
+  });
+  it("puts the induction hypothesis first in the Γ row (#2247)", () => {
+    const hyp = (name: string, text: string) => ({
+      ...parseFormula(text, name),
+      metadata: { name },
+    });
+    render(
+      <ExpressionTree
+        goalAST={parseFormula("σ(2 ^ (k + 1)) + 1 = 2 ^ (k + 1 + 1)", "g")}
+        hypotheses={[
+          hyp("σ_base", "σ(1) = 1"),
+          hyp("pow_double", "2 ^ m + 2 ^ m = 2 ^ (m + 1)"),
+          hyp("ih", "σ(2 ^ k) + 1 = 2 ^ (k + 1)"),
+        ]}
+        selectedTargetId={null}
+        hoveredTargetId={null}
+        onSelectTarget={() => {}}
+        onHoverTarget={() => {}}
+      />
+    );
+    const chips = screen
+      .getByTestId("hypotheses-row")
+      .querySelectorAll("button[data-node-id]");
+    expect(chips[0].textContent).toContain("ih");
   });
 });

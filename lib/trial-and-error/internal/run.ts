@@ -3,6 +3,7 @@ import type {
   Campaign,
   CrisisCard,
   Endless,
+  FootnoteSeal,
   Pack,
   Relic,
   RelicRarity,
@@ -960,7 +961,31 @@ function describeEntry(entry: ShopEntry): {
       description: `A blank ${entry.card.title} shell (${shell.chips} Chips) for your deck, dealt in every later Blind. Allocate ${sets} data and it compiles clean.`,
     };
   }
-  return { name: entry.seal.name, description: entry.seal.footnote };
+  return {
+    name: entry.seal.name,
+    description: `${sealOffer(entry.seal)} "${entry.seal.footnote}"`,
+  };
+}
+
+/**
+ * What a seal does and what it fits, in the tray's words, so the shop says it
+ * before the player pays (#2153): "+20 Chips on Safety AE tables."
+ */
+function sealOffer(seal: FootnoteSeal): string {
+  const { cardTypes, populations, topics } = seal.eligible;
+  const fits = [
+    ...(populations ?? []).map((p) => POPULATION_LABELS[p]),
+    ...(topics ?? []),
+    (cardTypes ?? ["OUTPUT"]).map((t) => `${t.toLowerCase()}s`).join(" and "),
+  ].join(" ");
+  switch (seal.effect.kind) {
+    case "PLUS_CHIPS":
+      return `+${seal.effect.value} Chips on ${fits}.`;
+    case "PLUS_MULT":
+      return `+${seal.effect.value} Mult on ${fits}.`;
+    case "WAIVE":
+      return `Waives the redline of an SAP rule that accepts it, on ${fits}.`;
+  }
 }
 
 /** Amendments the run owns: in force, or waiting in the tray. */

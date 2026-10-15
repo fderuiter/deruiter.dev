@@ -1028,6 +1028,12 @@ Re-exports [SCRIPTED_TRANSPOSITIONS](presets/variables/SCRIPTED_TRANSPOSITIONS.m
 
 ***
 
+### scriptedTranspositions
+
+Re-exports [scriptedTranspositions](internal/variants/functions/scriptedTranspositions.md)
+
+***
+
 ### SDTMMedicalHistoryRecord
 
 Re-exports [SDTMMedicalHistoryRecord](types/interfaces/SDTMMedicalHistoryRecord.md)
@@ -1154,6 +1160,12 @@ Re-exports [SourceRevision](types/interfaces/SourceRevision.md)
 
 ***
 
+### SourceWorksheet
+
+Re-exports [SourceWorksheet](types/interfaces/SourceWorksheet.md)
+
+***
+
 ### StandardizedValue
 
 Re-exports [StandardizedValue](internal/chips/interfaces/StandardizedValue.md)
@@ -1187,6 +1199,18 @@ Re-exports [STEP_MINUTES](internal/clock/variables/STEP_MINUTES.md)
 ### STUDY\_ID
 
 Re-exports [STUDY_ID](presets/variables/STUDY_ID.md)
+
+***
+
+### studyPlan
+
+Re-exports [studyPlan](internal/variants/functions/studyPlan.md)
+
+***
+
+### StudyPlan
+
+Re-exports [StudyPlan](types/interfaces/StudyPlan.md)
 
 ***
 

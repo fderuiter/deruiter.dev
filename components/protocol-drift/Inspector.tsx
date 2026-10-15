@@ -3,8 +3,8 @@
 import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   GOODWILL_RULES,
-  SOURCE_WORKSHEETS,
   isIssueOpen,
+  studyPlan,
   type ClinicalQuery,
   type EpistemicStatus,
   type Issue,
@@ -99,7 +99,8 @@ function FormPane({
   }
   const revision = latestPayload(view, submissionId);
   const first = view.sourceLedger.find((r) => r.submissionId === submissionId);
-  const sheet = SOURCE_WORKSHEETS[submissionId];
+  // The seed decides which visit the worksheet scan belongs to (#2275).
+  const sheet = studyPlan(view.seed).worksheets[submissionId];
   const hot = new Set(issue ? payloadKeysFor(issue.targetField) : []);
   const entries = revision ? Object.entries(revision.payload) : [];
   return (

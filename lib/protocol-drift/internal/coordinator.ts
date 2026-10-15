@@ -100,10 +100,12 @@ export interface EntrySessionResult {
  * Keys a session of submissions field by field. Attention starts at 100 and
  * depletes by c_f; a designated numeric fixture is transposed when attention
  * is below 40 and either it is scripted or a seeded draw falls below p_err.
+ * A seeded study variant passes its own designated fixtures (#2275).
  */
 export function simulateEntrySession(
   submissions: readonly SubmissionFixture[],
-  seed: number
+  seed: number,
+  transpositions: typeof SCRIPTED_TRANSPOSITIONS = SCRIPTED_TRANSPOSITIONS
 ): EntrySessionResult {
   let attention = ATTENTION_START;
   const entered = new Map<string, Record<string, unknown>>();
@@ -116,7 +118,7 @@ export function simulateEntrySession(
       let next = value;
       const p = fatigueErrorProbability(attention);
       let transposed = false;
-      const designated = SCRIPTED_TRANSPOSITIONS.find(
+      const designated = transpositions.find(
         (t) => t.submissionId === sub.submissionId && t.payloadKey === field
       );
       if (designated && typeof value === "number" && p > 0) {

@@ -24,6 +24,22 @@ True when the run loaded a reference pipeline (#2168).
 
 ***
 
+### beatLabels?
+
+> `optional` **beatLabels?**: `object`
+
+How the badge reasons name this seed's beats (#2275).
+
+#### narrative
+
+> **narrative**: `string`
+
+#### transposition
+
+> **transposition**: `string`
+
+***
+
 ### chipCount
 
 > **chipCount**: `number`

@@ -234,7 +234,7 @@ describe("Adaptive Mobile Accordion Drawers & Tap-Select Interaction Suite", () 
     });
 
     // Tap-selection mode enabled! Active indicator and target highlight cues are present
-    expect(container.textContent).toContain("Card Active · Tap Target Node");
+    expect(container.textContent).toContain("Card Active · ");
     const eligibleNodes = container.querySelectorAll(
       '[data-target-eligible="true"]'
     );
@@ -251,9 +251,7 @@ describe("Adaptive Mobile Accordion Drawers & Tap-Select Interaction Suite", () 
     });
 
     // Tactic executed successfully! Active tap selection cleared and victory modal displayed
-    expect(container.textContent).not.toContain(
-      "Card Active · Tap Target Node"
-    );
+    expect(container.textContent).not.toContain("Card Active · ");
     expect(container.textContent).toContain("AST GOAL DISCHARGED · SIMULATED");
   });
 

@@ -12,6 +12,7 @@ import {
   IconTarget,
   IconX,
 } from "@tabler/icons-react";
+import { InlineCodeText } from "./InlineCodeText";
 
 interface TheoryBriefingModalProps {
   level: PuzzlerLevelDef;
@@ -142,7 +143,7 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
             )}
           </div>
           <p className="text-zinc-300 leading-relaxed">
-            {concept.mathIntuition || concept.summary}
+            <InlineCodeText text={concept.mathIntuition || concept.summary} />
           </p>
         </div>
 
@@ -158,8 +159,12 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
             </span>
           </div>
           <p className="text-zinc-300 leading-relaxed">
-            {concept.leanAnalogy ||
-              "A Lean 4 proof assistant checks proof terms with its kernel; this playable transformation is only simulated here."}
+            <InlineCodeText
+              text={
+                concept.leanAnalogy ||
+                "A Lean 4 proof assistant checks proof terms with its kernel; this playable transformation is only simulated here."
+              }
+            />
           </p>
           <p className="text-zinc-400 text-xs">
             This playable level runs in a local TypeScript simulator; it does
@@ -179,12 +184,16 @@ export const TheoryBriefingModal: React.FC<TheoryBriefingModalProps> = ({
             <span>3. Your Mission &amp; Tactical Objective</span>
           </span>
           <p className="text-zinc-200 leading-relaxed font-semibold">
-            {concept.tacticalObjective ||
-              "Apply available tactics to transform the goal syntax tree to True."}
+            <InlineCodeText
+              text={
+                concept.tacticalObjective ||
+                "Apply available tactics to transform the goal syntax tree to True."
+              }
+            />
           </p>
           <div className="text-[11px] text-zinc-400 pt-1 border-t border-emerald-500/20">
             <strong className="text-zinc-300">Real-World Impact:</strong>{" "}
-            {concept.realWorldApplication}
+            <InlineCodeText text={concept.realWorldApplication} />
           </div>
         </div>
       </div>

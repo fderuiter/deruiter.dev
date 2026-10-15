@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useSyncExternalStore } from "react";
 import { PanInfo } from "framer-motion";
 import { TacticDef, TacticId } from "@/lib/quasi-perfect/types";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
 import { getTacticBlock } from "@/lib/quasi-perfect/ram";
 import { TacticCard } from "./TacticCard";
 import { fanPose } from "./boardArt";
+import { useCabinetTouch } from "@/components/arcade/mobile";
 
 interface HandItem {
   id: TacticId;
@@ -32,6 +33,23 @@ interface TacticHandProps {
 
 /** Hands up to this size are fanned; larger ones (the sandbox deck) wrap. */
 const MAX_FANNED_CARDS = 8;
+// Below this width a fan of seven or eight full cards is wider than the
+// docked hand, so it uses the compact card (#2249).
+const NARROW_HAND_QUERY = "(max-width: 1179px)";
+const CROWDED_HAND_CARDS = 7;
+
+function subscribeNarrowHand(onChange: () => void) {
+  if (typeof window === "undefined" || !window.matchMedia) return () => {};
+  const media = window.matchMedia(NARROW_HAND_QUERY);
+  media.addEventListener?.("change", onChange);
+  return () => media.removeEventListener?.("change", onChange);
+}
+
+function isNarrowHand() {
+  return typeof window !== "undefined" && !!window.matchMedia
+    ? window.matchMedia(NARROW_HAND_QUERY).matches
+    : false;
+}
 
 export const TacticHand: React.FC<TacticHandProps> = ({
   availableTactics,
@@ -58,6 +76,16 @@ export const TacticHand: React.FC<TacticHandProps> = ({
   });
   const playableCount = cards.filter((card) => !card.isDisabled).length;
   const fanned = cards.length <= MAX_FANNED_CARDS;
+  const narrow = useSyncExternalStore(
+    subscribeNarrowHand,
+    isNarrowHand,
+    () => false
+  );
+  const compactCards =
+    !fanned || (narrow && cards.length >= CROWDED_HAND_CARDS);
+  // Desktop players click, or Shift+Tab back to the tree; touch players tap
+  // (#2249).
+  const touch = useCabinetTouch();
 
   return (
     <div className="w-full">
@@ -68,7 +96,9 @@ export const TacticHand: React.FC<TacticHandProps> = ({
         <span className="flex items-center gap-3 text-[11px] font-mono">
           {selectedTacticIndex !== null && (
             <span className="qp-text-accent-strong font-bold uppercase tracking-wider">
-              Card Active · Tap Target Node
+              {touch
+                ? "Card Active · Tap Target Node"
+                : "Card Active · Click a Target Node or Shift+Tab to the Tree"}
             </span>
           )}
           <span data-testid="tactic-hand-count" className="text-zinc-400">
@@ -117,7 +147,7 @@ export const TacticHand: React.FC<TacticHandProps> = ({
                   isSelected={isSelected}
                   disabled={isDisabled}
                   banned={isBanned}
-                  compact={!fanned}
+                  compact={compactCards}
                   onSelect={() => onSelectTactic(idx)}
                   onDragStart={() => onCardDragStart(idx)}
                   onDragEnd={(e, info) => onCardDragEnd(idx, e, info)}

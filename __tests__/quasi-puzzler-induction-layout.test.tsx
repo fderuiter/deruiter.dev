@@ -35,7 +35,7 @@ describe("Quasi Puzzler induction layout (#2195, #2196, #2197)", () => {
     localStorage.clear();
   });
 
-  it("lays the hypotheses out as one sideways row above the tree", () => {
+  it("wraps the hypotheses above the tree so none is cut off (#2247)", () => {
     const level = puzzleLevels.find((l) => l.hypotheses.length >= 3);
     expect(level).toBeDefined();
     render(
@@ -49,8 +49,10 @@ describe("Quasi Puzzler induction layout (#2195, #2196, #2197)", () => {
       />
     );
     const row = screen.getByTestId("hypotheses-row");
-    expect(row.className).toContain("overflow-x-auto");
-    expect(row.className).not.toContain("flex-wrap");
+    // Wrapping, never a sideways scroll that hides ih (#2247).
+    expect(row.className).toContain("flex-wrap");
+    expect(row.className).not.toContain("overflow-x-auto");
+    expect(row.className).toContain("overflow-y-auto");
     const chips = row.querySelectorAll("button[data-node-id]");
     expect(chips.length).toBe(level!.hypotheses.length);
     for (const chip of chips) {

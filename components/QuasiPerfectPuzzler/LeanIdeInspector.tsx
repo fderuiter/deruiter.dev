@@ -16,6 +16,7 @@ import {
   IconAlertCircle,
   IconTerminal,
 } from "@tabler/icons-react";
+import { InlineCodeText } from "./InlineCodeText";
 
 interface LeanIdeInspectorProps {
   level: PuzzlerLevelDef;
@@ -268,13 +269,17 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
               )}
             </div>
             <p className="mt-1 text-xs text-zinc-300 leading-relaxed">
-              {level.educationalConcept.summary}
+              <InlineCodeText text={level.educationalConcept.summary} />
             </p>
             <div className="mt-2 text-[10px] text-zinc-400 flex items-center gap-1">
               <span className="qp-text-accent-strong font-semibold">
                 Real-World Application:
               </span>
-              <span>{level.educationalConcept.realWorldApplication}</span>
+              <span>
+                <InlineCodeText
+                  text={level.educationalConcept.realWorldApplication}
+                />
+              </span>
             </div>
           </div>
 

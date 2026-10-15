@@ -175,11 +175,13 @@ export const ExpressionTree: React.FC<ExpressionTreeProps> = ({
         </div>
       </div>
 
-      {/* Hypotheses in context (Γ). One row that scrolls sideways, so a long
-          context never pushes the tree off the board (#2195, #2196). */}
+      {/* Hypotheses in context (Γ), above the tree rather than beside it, so
+          a long context never pushes the tree off the board (#2195, #2196).
+          Chips wrap so every hypothesis (ih included) stays in view; past two
+          rows the strip scrolls down, never sideways (#2247). */}
       {hypotheses.length > 0 && (
         <div
-          className="mt-2 flex items-center gap-2 overflow-x-auto px-5 py-1"
+          className="mt-2 flex max-h-[5.5rem] flex-wrap items-center gap-2 overflow-y-auto px-5 py-1"
           data-testid="hypotheses-row"
         >
           <span

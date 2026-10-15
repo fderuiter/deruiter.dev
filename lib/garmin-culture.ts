@@ -132,7 +132,7 @@ export function recoveryHours(
 /** The banner for a new best score. */
 export const NEW_PR_TEXT = "NEW PR!";
 
-/** The paused overlay title. */
+/** The paused overlay title when the cabinet paused the run on its own (#2239). */
 export const AUTO_PAUSE_TEXT = "AUTO PAUSE";
 
 /** Short toasts, picked deterministically from a seed so tests and replays repeat. */

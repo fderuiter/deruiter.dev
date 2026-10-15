@@ -8,4 +8,4 @@
 
 > `const` **AUTO\_PAUSE\_TEXT**: `"AUTO PAUSE"` = `"AUTO PAUSE"`
 
-The paused overlay title.
+The paused overlay title when the cabinet paused the run on its own (#2239).

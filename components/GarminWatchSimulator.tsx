@@ -1700,7 +1700,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       releaseDockRun();
       handleRunInput(0);
       if (stateRef.current.gameState === "playing") {
-        applyTransition((state) => pauseGame(state));
+        applyTransition((state) => pauseGame(state, undefined, true));
       }
     };
     window.addEventListener(GARMIN_AUTO_PAUSE_EVENT, pauseRun);

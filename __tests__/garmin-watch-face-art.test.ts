@@ -8,6 +8,8 @@ import {
   GROUND_Y,
   PLAYER_HEIGHT,
   createInitialState,
+  pauseGame,
+  resumeGame,
   startGame,
   type GameEngineState,
   type ObstacleType,
@@ -27,6 +29,7 @@ import {
   stepsFor,
 } from "@/components/garmin-watch/watch-face-art";
 import { raceSetup } from "@/lib/garmin-race";
+import { AUTO_PAUSE_TEXT } from "@/lib/garmin-culture";
 import {
   CASE_RADIUS,
   PUSHER_ANGLES,
@@ -322,6 +325,21 @@ describe("watch face data-field ring", () => {
     renderWatchFace(ctx, running({ gameState: "paused" }));
     expect(calls.map((c) => c.text)).toContain("PAUSED");
     expect(calls.map((c) => c.text)).not.toContain("BACKSPACE: RESTART");
+  });
+
+  it("calls only a pause the cabinet made an Auto Pause (#2239)", () => {
+    const texts = (state: GameEngineState) => {
+      const { ctx, calls } = recordingCtx();
+      renderWatchFace(ctx, state);
+      return calls.map((c) => c.text);
+    };
+    const run = running();
+    const manual = pauseGame(run);
+    expect(texts(manual)).toContain("PAUSED");
+    expect(texts(manual)).not.toContain(AUTO_PAUSE_TEXT);
+    const auto = pauseGame(run, undefined, true);
+    expect(texts(auto)).toContain(AUTO_PAUSE_TEXT);
+    expect(resumeGame(auto).autoPaused).toBe(false);
   });
 
   it("names the restart key on a paused race (#2134)", () => {

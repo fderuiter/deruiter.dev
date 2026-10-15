@@ -20,6 +20,14 @@
 
 ***
 
+### autoPaused?
+
+> `optional` **autoPaused?**: `boolean`
+
+The cabinet paused the run on its own (a hidden tab), not the player (#2239).
+
+***
+
 ### badgeRun?
 
 > `optional` **badgeRun?**: [`BadgeRun`](BadgeRun.md) \| `null`

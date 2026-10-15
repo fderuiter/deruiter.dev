@@ -255,20 +255,20 @@ export const DUCK_FACTS: DuckFact[] = [
   {
     id: 9,
     level: 9,
-    title: "Theodore Wirth Mud Run Co-Pilot",
-    fact: "Duck's zoomie speed and mud resistance clocked at peak velocity. Minnesota trail mud is merely an operational challenge.",
-    photoUrl: "/images/sports/theodore-wirth-mud-run.jpg",
+    title: "Dog Park Wrestling League",
+    fact: "Duck's signature wrestling move is the flop: flat on his back in the grass, paws in the air, still grinning at his friend.",
+    photoUrl: "/duck/duck-flop.jpg",
     svgUrl: "/duck/duck-happy.svg",
-    caption: "Endurance running spirit with Garmin watch telemetry.",
+    caption: "Belly-up in the grass mid-wrestle, grinning at his opponent.",
   },
   {
     id: 10,
     level: 10,
-    title: "Welch Village Alpine Flame",
-    fact: "Equipped with maximum cold-weather charisma and 90s flame ski suit energy, ready for whatever winter throws our way.",
-    photoUrl: "/images/sports/fred-ski-flame-suit.jpg",
+    title: "Road Trip Co-Pilot",
+    fact: "Duck takes car rides seriously: bolt upright in the back seat, leash on, watching the road as if he were the one navigating.",
+    photoUrl: "/duck/duck-car.jpg",
     svgUrl: "/duck/duck-car.svg",
-    caption: "Carving snowy slopes in legendary flame style.",
+    caption: "Back seat claimed and ready for the next drive.",
   },
 ];
 

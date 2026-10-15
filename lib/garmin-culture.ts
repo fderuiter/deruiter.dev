@@ -35,6 +35,10 @@ export function gpsBannerText(elapsedMs: number): string {
 export const MOVE_ALERT_IDLE_MS = 6000;
 /** The text on the move alert. */
 export const MOVE_ALERT_TEXT = "MOVE!";
+/** Held at a station or plyo side this long and the watch says to jump (#2232). */
+export const STALLED_ALERT_MS = 1500;
+/** The text on the stall alert. */
+export const STALLED_ALERT_TEXT = "BLOCKED · JUMP!";
 /** The banner when a bonk ends and sprinting works again (#2022). */
 export const BONK_OVER_TEXT = "RECOVERED · SPRINT IS BACK";
 /** The banner when a Rest Day ends and the bricks and Kudos swap back (#2022). */

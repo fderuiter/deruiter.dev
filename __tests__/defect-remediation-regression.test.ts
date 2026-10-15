@@ -502,6 +502,39 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
     });
   });
 
+  describe("Garmin runner held at a station (#2232)", () => {
+    // Isolated reproduction in __tests__/garmin-props-engine.test.ts.
+    it("scores nothing while the runner goes nowhere", () => {
+      let s: GameEngineState = {
+        ...startGame(createInitialState("fenix", 0, []), "fenix"),
+        gpsMs: 0,
+        course: EMPTY_COURSE,
+        props: {
+          ...EMPTY_PROPS,
+          stations: [
+            {
+              id: 1,
+              x: 200,
+              width: 30,
+              height: 20,
+              enterable: false,
+              exitX: 900,
+            },
+          ],
+        },
+        foes: [],
+        obstacles: [],
+        lastObstacleTime: Date.now() + 1e9,
+        distanceMeters: 10,
+      };
+      for (let i = 0; i < 300; i++) s = updateGameSimulation(s, 1000 / 60);
+      const held = { distance: s.distanceMeters, score: s.score };
+      for (let i = 0; i < 60; i++) s = updateGameSimulation(s, 1000 / 60);
+      expect(s.distanceMeters).toBe(held.distance);
+      expect(s.score).toBe(held.score);
+    });
+  });
+
   describe("Working With Duck Deterministic State Machine Hardening", () => {
     it("clampBounds safely recovers from NaN or undefined coordinate inputs", () => {
       const boundedNaN = clampBounds(NaN, NaN);

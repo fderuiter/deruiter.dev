@@ -1690,25 +1690,32 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         d.textContent?.includes(dialogTitle)
       );
     const openNextFlaggedField = async () => {
+      const queue = container.querySelector('[aria-label="Queue"]');
+      const flaggedSubject = Array.from(
+        queue?.querySelectorAll("button") ?? []
+      ).find((button) => button.textContent?.includes("to fix"));
+      if (!flaggedSubject) return false;
+      await act(async () => {
+        flaggedSubject.click();
+      });
       const validateChoiceEl = Array.from(
         container.querySelectorAll("span")
       ).find((s) => s.textContent?.includes("Validate Choice"));
       const card = validateChoiceEl?.closest(".cursor-pointer");
-      if (!card) return;
+      if (!card) return false;
       await act(async () => {
         (card as HTMLElement).click();
       });
+      return Boolean(openDialog());
     };
 
-    await openNextFlaggedField();
+    expect(await openNextFlaggedField()).toBe(true);
     expect(openDialog()).toBeTruthy();
 
     // Keep answering flagged fields until the FDA's suspicion ends the trial.
-    // Which offered value is compliant depends on the random subject, so pick
-    // by position: a pick that leaves the dialog open was a wrong fix, and a
-    // pick that closes it resolved the field, so open the next one.
-    // Allow the auditor to finish issuing Form 483 when the full suite leaves
-    // the run near 98% scrutiny after the former 120-step limit.
+    // Which offered value is compliant depends on the random subject. Try
+    // enabled choices in order: wrong fixes stay disabled in the open dialog,
+    // while a correct fix closes it so the next flagged field can open.
     let wrongPicks = 0;
     for (
       let i = 0;
@@ -1722,12 +1729,25 @@ describe("ClinicalTrialChaos React Component UI Suite", () => {
         const choices = Array.from(dialog.querySelectorAll("button")).filter(
           (b) => /^\d/.test(b.textContent?.trim() ?? "")
         );
-        if (choices.length === 0) break;
+        const choice = choices.find((button) => !button.disabled);
+        if (!choice) break;
         await act(async () => {
-          choices[i % choices.length].click();
+          choice.click();
         });
         if (openDialog()) wrongPicks++;
       }
+      await act(async () => {
+        vi.advanceTimersByTime(700);
+      });
+    }
+
+    // The last wrong fix can fill the scrutiny meter after this loop's tick.
+    // Let the shift clock observe that state and render its Form 483 panel.
+    for (
+      let i = 0;
+      i < 30 && !container.textContent?.includes("CLINICAL HOLD");
+      i++
+    ) {
       await act(async () => {
         vi.advanceTimersByTime(700);
       });

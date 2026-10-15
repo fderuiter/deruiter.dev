@@ -236,7 +236,7 @@ describe("Garmin watch fog drag and Enter focus (#1648, #1649)", () => {
         gameState: "crashed",
       });
       const panel = container.querySelector("aside.garmin-companion")!;
-      const settings = panel.firstElementChild!;
+      const settings = panel.querySelector(":scope > div")!;
       const slot = panel.querySelector("[data-result-slot]");
       expect(slot?.querySelector('[role="dialog"]')).not.toBeNull();
       expect(settings.className).toBe("hidden");

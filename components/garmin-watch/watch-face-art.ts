@@ -371,8 +371,14 @@ export function stepsFor(distanceMeters: number): number {
 
 const GROUND_STRIP_X = [90, 140, 190];
 
-/** Widest the run clock may draw across the top centre, between heart and battery. */
-const CLOCK_MAX_WIDTH = 64;
+/**
+ * Widest the run clock may draw across the top centre, between heart and
+ * battery: centred on the face it spans 111 to 169, clear of the heart
+ * rate (ends near 94) and the battery icon at `BATTERY_GLYPH_X` (#2133).
+ */
+const CLOCK_MAX_WIDTH = 58;
+/** Left edge of the battery icon beside the run clock. */
+const BATTERY_GLYPH_X = 174;
 /** Widest a lap banner's text may draw inside its pill. */
 const BANNER_TEXT_MAX_WIDTH = 180;
 
@@ -3013,7 +3019,7 @@ function drawFitnessRing(ctx: Ctx, state: GameEngineState) {
     FACE_COLORS.text,
     "left"
   );
-  drawBatteryGlyph(ctx, 171, 40, bbValue);
+  drawBatteryGlyph(ctx, BATTERY_GLYPH_X, 40, bbValue);
   text(ctx, `${bbValue}`, 212, 43, 9, TONE_COLOR[bbTone], "right");
 
   text(ctx, "BODY", 24, 93, 6.5, FACE_COLORS.dim, "left");
@@ -3080,7 +3086,7 @@ function drawDataRing(
     "left"
   );
   const battery = Math.round(state.battery);
-  drawBatteryGlyph(ctx, 171, 40, battery);
+  drawBatteryGlyph(ctx, BATTERY_GLYPH_X, 40, battery);
   text(
     ctx,
     `${battery}%`,

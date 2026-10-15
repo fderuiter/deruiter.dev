@@ -578,7 +578,7 @@ function RaceReportCard({
         </p>
       )}
       <ol aria-label="This device's board" className="mt-2 grid gap-0.5">
-        {board.length === 0 && <li className="text-zinc-500">No times yet</li>}
+        {board.length === 0 && <li className="text-zinc-400">No times yet</li>}
         {board.map((entry, i) => (
           <li
             key={`${entry.at}-${entry.timeMs}`}
@@ -635,26 +635,26 @@ function RunSplitsSummary({
       className="mt-4 min-w-0 border-t border-white/10 pt-3 font-mono text-[11px] tabular-nums text-zinc-300"
     >
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-        <dt className="text-zinc-500">{finished ? "Finish time" : "Time"}</dt>
+        <dt className="text-zinc-400">{finished ? "Finish time" : "Time"}</dt>
         <dd className="text-right text-zinc-100">{formatClock(clockMs)}</dd>
-        <dt className="text-zinc-500">Average pace</dt>
+        <dt className="text-zinc-400">Average pace</dt>
         <dd className="text-right text-zinc-100">{pace}</dd>
       </dl>
       {newBest && <p className="mt-2 text-emerald-400">New best time</p>}
       {splits.length > 0 && (
         <table className="mt-3 w-full min-w-0 text-left">
-          <caption className="mb-1 text-left text-zinc-500">
+          <caption className="mb-1 text-left text-zinc-400">
             Splits per km
           </caption>
           <thead>
             <tr>
-              <th scope="col" className="font-medium text-zinc-500">
+              <th scope="col" className="font-medium text-zinc-400">
                 Lap
               </th>
-              <th scope="col" className="font-medium text-zinc-500">
+              <th scope="col" className="font-medium text-zinc-400">
                 Split
               </th>
-              <th scope="col" className="text-right font-medium text-zinc-500">
+              <th scope="col" className="text-right font-medium text-zinc-400">
                 vs best
               </th>
             </tr>

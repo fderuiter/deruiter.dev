@@ -395,6 +395,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
           "Advance through Lake Minnetonka (Mega Mosquito), State Fair (Butter Colossus), Redesign Commission (Starflake Finalist), and the Capitol Rotunda (Grand Veto Gavel).",
         badge: "4-Act Campaign",
       },
+      {
+        title: "Arcade Survival",
+        detail:
+          "Three hearts and no finish line. Every 30 seconds a new wave arrives with the next act's enemies (Lake, Fair, Hearing, Capitol, then round again), the crowd grows, and from the second wave the enemies shoot back, faster each wave. Your score and the time you lasted are saved separately from the campaign's best.",
+        badge: "Endless Waves",
+      },
     ],
     proTips: [
       "Save your Haunting Loon Tremolo ultimate for boss encounters to shatter their revolving defense shields.",

@@ -2,6 +2,11 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
 import type { ActIntroView } from "@/lib/trial-and-error";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
@@ -21,10 +26,12 @@ interface ActIntroProps {
  * focuses the hand.
  */
 export function ActIntro({ intro, loud, onDismiss }: ActIntroProps) {
+  const portalTarget = usePortalTarget();
   const ref = useFocusTrap<HTMLDivElement>(true, {
-    onEscape: onDismiss,
+    onEscape: closeNow(onDismiss),
     returnFocus: false,
   });
+  useClaimFocus(ref);
   return createPortal(
     <div
       data-te-cabinet=""
@@ -109,6 +116,6 @@ export function ActIntro({ intro, loud, onDismiss }: ActIntroProps) {
         </button>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

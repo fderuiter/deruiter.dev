@@ -32,6 +32,8 @@ export const OfficeDirectory: React.FC<{
   onWalk: (entry: DirectoryEntry) => void;
   /** Clock minutes the walk to an entry would take, or null when it cannot be reached. */
   minutesTo?: (entry: DirectoryEntry) => number | null;
+  /** Why a walk stopped or the buttons are disabled, shown under the heading (#2185, #2186). */
+  note?: string | null;
 }> = ({
   title = "Office directory",
   entries,
@@ -39,6 +41,7 @@ export const OfficeDirectory: React.FC<{
   disabled,
   onWalk,
   minutesTo,
+  note,
 }) => {
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -59,6 +62,14 @@ export const OfficeDirectory: React.FC<{
           <span aria-hidden="true">{open ? "Hide" : "Show"}</span>
         </button>
       </h3>
+      {note ? (
+        <p
+          data-testid="world-directory-note"
+          className="mt-1 text-[11px] break-words text-amber-300"
+        >
+          {note}
+        </p>
+      ) : null}
       {open ? (
         <div id={panelId}>
           <p className="mt-1 text-[11px] text-[var(--sd-muted)]">

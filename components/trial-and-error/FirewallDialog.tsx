@@ -2,6 +2,11 @@
 
 import React from "react";
 import { createPortal } from "react-dom";
+import {
+  closeNow,
+  useClaimFocus,
+  usePortalTarget,
+} from "@/components/trial-and-error/sheet-host";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 
 interface FirewallDialogProps {
@@ -25,7 +30,11 @@ export function FirewallDialog({
   onConfirm,
   onCancel,
 }: FirewallDialogProps) {
-  const ref = useFocusTrap<HTMLDivElement>(true, { onEscape: onCancel });
+  const portalTarget = usePortalTarget();
+  const ref = useFocusTrap<HTMLDivElement>(true, {
+    onEscape: closeNow(onCancel),
+  });
+  useClaimFocus(ref);
   return createPortal(
     <div
       data-te-cabinet=""
@@ -76,6 +85,6 @@ export function FirewallDialog({
         </div>
       </div>
     </div>,
-    document.fullscreenElement ?? document.body
+    portalTarget
   );
 }

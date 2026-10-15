@@ -1,0 +1,238 @@
+/*
+ * Trial & Error on the immersive touch cabinet (ADR 0061, #2120). The table
+ * carries `te-touch` only while useCabinetTouch() is true, so desktop markup
+ * and styles never see these rules. Every control is 44px or more and no text
+ * is under 12px. Where the cabinet fits the table to the viewport
+ * (data-mobile-layout="fit"), the HUD, the play zone, the relic rail and the
+ * hand share the stage with no page scroll: held upright they stack, held
+ * sideways the Blind panel and the relic rail sit beside the play zone.
+ * Desks, the shop, the codex and every dialog open as sheets inside the
+ * cabinet (.te-sheet-host), below the cabinet's floating toolbar.
+ */
+
+/* ---- Sizes: 44px controls, 12px text ---- */
+.te-touch button,
+.te-touch summary,
+.te-sheet-host button,
+.te-sheet-host summary {
+  min-height: 44px;
+}
+.te-touch button,
+.te-sheet-host button {
+  min-width: 44px;
+}
+.te-touch .text-\[7px\],
+.te-touch .text-\[8px\],
+.te-touch .text-\[9px\],
+.te-touch .text-\[10px\],
+.te-touch .text-\[11px\],
+.te-sheet-host .text-\[7px\],
+.te-sheet-host .text-\[8px\],
+.te-sheet-host .text-\[9px\],
+.te-sheet-host .text-\[10px\],
+.te-sheet-host .text-\[11px\] {
+  font-size: 0.75rem;
+}
+.te-touch .te-summary {
+  display: none;
+}
+
+/* ---- Sheets: dialogs mount inside the cabinet, under the toolbar ---- */
+.te-sheet-host {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.te-sheet-host > * {
+  pointer-events: auto;
+}
+.te-sheet-host > [data-te-cabinet] {
+  position: absolute;
+  inset: 0;
+  padding: 3.5rem 0 0;
+  align-items: flex-end;
+  justify-content: center;
+}
+.te-sheet-host [role="dialog"] {
+  max-height: 100%;
+}
+
+/* ---- Hand cards scale with the stage (--te-card-scale, 1 to 1.9) ---- */
+.te-touch [data-testid="hand"] > div {
+  width: calc(8.5rem * var(--te-card-w-scale, 1));
+}
+.te-touch [data-testid="hand"] button[data-card-id] {
+  height: calc(15rem * var(--te-card-scale, 1));
+}
+/* The card's table or listing preview grows with the card. */
+.te-touch [data-testid="hand"] button[data-card-id] .h-\[4\.75rem\] {
+  height: calc(4.75rem * var(--te-card-scale, 1));
+}
+/* The reorder grip is a 44px target straddling the card's top edge. */
+.te-touch [data-testid="drag-grip"] {
+  top: -1.375rem;
+  height: 2.75rem;
+  width: 2.75rem;
+  z-index: 20;
+}
+.te-touch [data-testid="hand"] {
+  padding-top: 1.75rem;
+}
+
+/* ---- Fit: the table shares the stage with no page scroll ---- */
+.arcade-cabinet[data-mobile-layout="fit"] .te-touch {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.te-touch > * {
+  min-width: 0;
+}
+.te-touch > header {
+  flex: none;
+  padding-right: var(--cabinet-toolbar-inset, 0px);
+}
+.te-touch > header > div:first-child {
+  flex-basis: 12rem;
+}
+.arcade-cabinet[data-mobile-layout="fit"] .te-touch > .te-table-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.te-touch .te-area-blind,
+.te-touch .te-area-rail,
+.te-touch .te-area-hand {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+.te-touch .te-area-hand {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Spare height splits above and below the hand, so no band opens at one end
+   (auto margins, so a tall allocation panel still scrolls from its top). */
+.te-touch .te-area-hand > :first-child {
+  margin-top: auto;
+}
+.te-touch .te-area-hand > :last-child {
+  margin-bottom: auto;
+}
+
+/* Held upright: Blind strip, play zone, relic rail, then the hand. */
+@media (orientation: portrait) {
+  .arcade-cabinet[data-mobile-layout="fit"] .te-touch .te-table-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      "blind"
+      "play"
+      "rail"
+      "hand";
+  }
+  .te-touch .te-area-blind {
+    grid-area: blind;
+    contain: none;
+    overflow-y: auto;
+    max-height: clamp(8rem, 24dvh, 14rem);
+  }
+  .te-touch .te-area-blind dl {
+    grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+  }
+  .te-touch .te-area-blind dl > .col-span-3 {
+    grid-column: auto;
+  }
+  .te-touch .te-area-play {
+    grid-area: play;
+  }
+  .te-touch .te-area-rail {
+    grid-area: rail;
+    contain: none;
+    overflow: visible;
+  }
+  .te-touch .te-area-hand {
+    grid-area: hand;
+  }
+}
+
+/* A Split View pane: the header's toolbar wraps to three rows, so the Blind
+   panel scrolls in a short strip and the hand keeps the height it needs. */
+@media (orientation: portrait) and (max-width: 640px) {
+  .te-touch .te-area-blind {
+    max-height: clamp(5rem, 11dvh, 8rem);
+  }
+  /* The narrowed cards wrap the number between words, never inside one. */
+  .te-touch .te-card-number {
+    font-size: 0.75rem;
+    overflow-wrap: normal;
+  }
+}
+
+/* Held sideways: the Blind panel and the relic rail flank the play zone. */
+@media (orientation: landscape) {
+  .arcade-cabinet[data-mobile-layout="fit"] .te-touch .te-table-grid {
+    grid-template-columns: 14rem minmax(0, 1fr) 13rem;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "blind play rail"
+      "blind hand rail";
+  }
+  .te-touch .te-area-blind {
+    grid-area: blind;
+    contain: size;
+    overflow-y: auto;
+  }
+  .te-touch .te-area-blind dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .te-touch .te-area-blind dl > .col-span-3 {
+    grid-column: 1 / -1;
+  }
+  .te-touch .te-area-play {
+    grid-area: play;
+  }
+  .te-touch .te-area-rail {
+    grid-area: rail;
+    contain: size;
+    overflow-y: auto;
+  }
+  .te-touch .te-area-hand {
+    grid-area: hand;
+  }
+}
+.te-sheet-host [role="dialog"].h-dvh {
+  height: 100%;
+}
+/* The close row of the Inspect desk and the card detail stays in reach. */
+.te-sheet-host [data-testid="inspect-drawer"] > :last-child,
+.te-sheet-host [data-testid="card-detail"] > :last-child {
+  position: sticky;
+  bottom: 0;
+  background: var(--te-surface-0);
+}
+
+/* Between Blinds the play zone has nothing to show, so the cash-out, shop and
+   pack reveal take its height. Their action row stays in reach. */
+.te-touch.te-between .te-area-play {
+  display: none;
+}
+@media (orientation: portrait) {
+  .te-touch.te-between .te-area-blind {
+    max-height: 9rem;
+  }
+}
+.te-touch [data-testid="blind-result"] > .mt-4.flex {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding-block: 0.5rem;
+  background: var(--te-surface-0);
+}

@@ -579,6 +579,18 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         key: "Hold ↑ / Space",
       },
       {
+        action: "Restart Race",
+        description:
+          "In Race Mode, Backspace while paused restarts the race on the same course.",
+        key: "Backspace (paused race)",
+      },
+      {
+        action: "Training Plan Map",
+        description:
+          "On the Morning Report and the map, the arrow keys move between workouts, Space or Enter starts the highlighted one, X opens the gear bag, and Esc or Backspace goes back.",
+        key: "Arrows / Space / Enter / X / Esc",
+      },
+      {
         action: "Backlight",
         description:
           "Turns the watch backlight on or off. In Dev Mode the backlight drains the watch battery.",
@@ -679,19 +691,19 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Course Pieces",
         detail:
-          "Water Stations are aid tables you jump onto; their sides stop you. One with a down arrow over it opens a bonus room full of Kudos when you press Down on it, and you come out further along the course. A Rest Day ends when you go in. Plyo Boxes spring you up when you land on them, and higher if you hold jump. Treadmill Belts slide back and forth over gaps and carry you while you stand on them. Stomp a Rest Day Switch and for 8 seconds the bricks turn into Kudos and the Kudos into bricks. The bricks are PR Boards: Buff or stronger, you break them from below for a NEW PR! bonus.",
+          "Water Stations are aid tables you jump onto; their sides stop you. One with a down arrow over it opens a bonus room full of Kudos when you press Down on it, and you come out further along the course. A Rest Day ends when you go in. Plyo Boxes spring you up when you land on them, and higher if you hold jump. Treadmill Belts slide back and forth over gaps and carry you while you stand on them. Stomp a Rest Day Switch and for 8 seconds the bricks turn into Kudos and the Kudos into bricks, until REST DAY OVER. The first Plyo Box, Treadmill Belt and current you meet in a run are named on the face, and read out. The bricks are PR Boards: Buff or stronger, you break them from below for a NEW PR! bonus.",
         badge: "Course",
       },
       {
         title: "Pool & Open Water",
         detail:
-          "Stages 2 and 4 are swum, not run. Each tap of jump (Up or Space) is a stroke that pulls you toward the surface; between strokes you sink. Wading along the bottom is slow and the water foes sit low too, so keep stroking. Each pool length is 25 metres, and a stage is 40 lengths: the LENGTH readout counts them off on the face. Open water has currents, marked by teal chevrons, that carry you with the flow or hold you back against it. Orange buoys with a white stripe mark the swim line along the open water; you can climb onto one for a breather as it bobs. Bonus rooms stay on dry land.",
+          "Stages 2 and 4 are swum, not run. Each tap of jump (Up or Space) is a stroke that pulls you toward the surface; between strokes you sink. Wading along the bottom is slow and the water foes sit low too, so keep stroking. Each pool length is 25 metres, and a stage is 40 lengths: the LENGTH readout counts them off on the face. A gap in the pool floor is a deep end: you can sink into it, its far wall stops you, and you stroke up and out over the edge; sink past the bottom of the face and you lose a life. Open water has currents, marked by teal chevrons, that carry you with the flow or hold you back against it. Orange buoys with a white stripe mark the swim line along the open water; you can climb onto one for a breather as it bobs. Bonus rooms stay on dry land.",
         badge: "Water",
       },
       {
         title: "Basement Gym",
         detail:
-          "Stage 3 is the Basement Gym, with low squat racks hanging over the lane. Duck under the bar and keep your jumps low: a rising runner that meets a rack's underside bonks off it and drops back down. Big forms get hurt. A runner taller than Base, such as a Buff monkey or one with a Heat Map or Cape, that ends up under a rack takes a hit. Fluorescent strips run overhead as you pass.",
+          "Stage 3 is the Basement Gym, with low squat racks hanging over the lane. Duck under the bar and keep your jumps low: a rising runner that meets a rack's underside bonks off it and drops back down. No bug comes at you under a rack, so a rack is never a trap. Big forms get hurt. A runner taller than Base, such as a Buff monkey or one with a Heat Map or Cape, that ends up under a rack takes a hit. Fluorescent strips run overhead as you pass.",
         badge: "Gym",
       },
       {
@@ -715,7 +727,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Body Battery",
         detail:
-          "Body Battery replaces the watch battery. It drains while you run, and faster while you sprint. A hit costs 15. Kudos add 2, and power-ups and stage clears add 25. A Runner's High fills it. Ease to a jog to recharge it. At 0 you bonk: you can't sprint until it recovers to 25, and it recharges at a steady pace as well as a jog. It never ends a run.",
+          "Body Battery replaces the watch battery. It drains while you run on the ground, and a sprint drains it faster wherever you are: on the ground, in the air or in the water. A hit costs 15. Kudos add 2, and power-ups and stage clears add 25. A Runner's High fills it. Ease to a jog on the ground to recharge it. At 0 you bonk: you can't sprint until it recovers to 25, and it recharges at a steady pace as well as a jog. RECOVERED · SPRINT IS BACK tells you when the bonk is over. Sprinting the whole 5K bonks you about three times; sprinting only while the gauge reads MED or better keeps you clear. It never ends a run.",
         badge: "Body Battery",
       },
       {
@@ -727,7 +739,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Run Clock & Splits",
         detail:
-          "The run clock counts game time from GPS lock. It stops when you pause and when the run ends. Each 1 km stage clear is an auto lap, and its banner shows that lap's split: green when it is a best split for that lap, amber when it is slower. The banner also calls your pace: WORLD RECORD PACE for a lap under 50 seconds, NEGATIVE SPLIT when a lap beats the one before, and POSITIVE SPLIT · EASE UP when it is more than 5% slower. The result card shows your finish time, your average pace and a splits table against your previous bests, with a Negative split note and New best time when you beat your best total. Bests are saved per watch on this device. Sprinting buys time but drains Body Battery, and a bonk costs more time than it saves.",
+          "The run clock counts game time from GPS lock. It stops when you pause and when the run ends. Each 1 km stage clear is an auto lap, and its banner shows that lap's split: green when it is a best split for that lap, amber when it is slower. The banner also calls your pace: WORLD RECORD PACE for a lap under 43 seconds, NEGATIVE SPLIT when a lap beats the one before, and POSITIVE SPLIT · EASE UP when it is more than 5% slower. The result card shows your finish time, your average pace and a splits table against your previous bests, with a Negative split note and New best time when you beat your best total. Bests are saved per watch on this device. Sprinting buys time but drains Body Battery, and a bonk costs more time than it saves.",
         badge: "Splits",
       },
       {
@@ -739,7 +751,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Race Mode",
         detail:
-          "Race Mode is an option in the companion panel, next to Dev Mode. A Training Run lays a random course every time; a race runs the same course every attempt, so times compare. The Saturday 5K is one fixed course. The Daily Workout is a course for the day that changes at local midnight, the same for everyone. Pick a category before the start: 5K Any% (finish as fast as you can), All Kudos (collect every Kudos on the lane), No Gear (finish at Base, with no power-ups, Runner's High or training buddy; Sync Blocks pay Kudos instead), Negative Split (every lap beats the lap before it), or All Medals (find all 15 Finisher Medals). Races run with Dev Mode off, every random choice comes from the course seed, and the simulation steps at a fixed 60 times a second, so a fast or slow monitor cannot change the game's speed. A press lands on the next step, so input timing can still vary by one step. While paused in a race, Backspace restarts it on the same course. Each result lands on this device's top 5 for its course and category, with CR for the first record set on it and PR when you beat that record. Share copies a plain-text result. Nothing goes online.",
+          "Race Mode is an option in the companion panel, next to Dev Mode. A Training Run lays a random course every time; a race runs the same course every attempt, so times compare. The Saturday 5K is one fixed course. The Daily Workout is a course for the day that changes at local midnight, the same for everyone. Pick a category before the start: 5K Any% (finish as fast as you can), All Kudos (collect every Kudos on the lane), No Gear (finish at Base, with no power-ups, Runner's High or training buddy; Sync Blocks pay Kudos instead), Negative Split (every lap beats the lap before it), or All Medals (find all 15 Finisher Medals). Races run with Dev Mode off, every random choice comes from the course seed, and the simulation steps at a fixed 60 times a second, so a fast or slow monitor cannot change the game's speed. A press lands on the next step, so input timing can still vary by one step. While paused in a race, Backspace restarts it on the same course. The Saturday 5K has a coach's time of 5:17.43, set by the balance-pass playtest sprinting the whole course, and the race report shows how far you are from it. Each result lands on this device's top 5 for its course and category, with CR for the first record set on it and PR when you beat that record. Share copies a plain-text result. Nothing goes online.",
         badge: "Race",
       },
       {
@@ -796,6 +808,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       "Jump early over the Hurdles. A late hop lands you on the spikes.",
       "Ease to a jog before your Body Battery hits zero. A bonk costs you the sprint.",
       "Pick up every Kudos you can. Each one adds 2 to Body Battery, and they add up over a 5K.",
+      "Sprinting in the air and in the water costs Body Battery too. Sprint the flat land, and ease to a steady stroke in the pool when the gauge drops to LOW.",
       "The Rep Max takes three stomps. Stomp from above, then stay out of the dumbbell arc.",
       "With a Heat Map, throw early so the bolts clear a walker before it reaches you.",
       "With the Cape, sprint the flat stretch before a wide gap so a full pace meter turns the jump into a take-off.",
@@ -1138,7 +1151,8 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       },
       {
         action: "Pick an order",
-        description: "Selects an open order by its position on the strip.",
+        description:
+          "Selects an open order by the small key number on its ticket, which is its place on the board, not its order number.",
         key: "1 - 6",
       },
       {
@@ -1173,6 +1187,12 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
         description:
           "Picks the first or second answer when someone puts a question to you mid-shift. The buttons work too.",
         key: "Q / E",
+      },
+      {
+        action: "Pause",
+        description:
+          "Stops the shift clock. Press it again to resume. In the 3D booth, Esc first steps back from the register.",
+        key: "P or Esc",
       },
     ],
     rules: [
@@ -1830,7 +1850,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         action: "Pause",
         description: "Pause and resume the run. Enter also resumes.",
-        key: "P",
+        key: "P / Esc",
       },
       {
         action: "Continue or Retry",
@@ -1891,7 +1911,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     ],
     proTips: [
       "Use Nmap Port Recon on room entry (key 2 for the default Script Kiddie) to reveal hidden traps and tag hostile daemons with CVE vulnerability marks.",
-      "Save Hardware Bypass Chips for the terminals in the TSP enclave and the Darknet Vault, where time limits are tight.",
+      "Save Hardware Bypass Chips for the 5x5 terminals deeper in the route, where the target sequence is longest.",
       "Take the Darknet Vault on the route when you are short of crypto or HP: its market and chest restock the deck before the bosses.",
       "Visit the Darknet Market to purchase DDR5 RAM overclocks and Airgap 0-Day payloads using harvested Crypto.",
       "A lost run still banks the crypto of every room you cleared, so a few Firmware Bay tiers make the next attempt sturdier.",
@@ -1974,7 +1994,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
       {
         title: "Best Streak",
         detail:
-          "Beating your stored best shows a New Echo best toast. The best is kept in this browser and survives reloads. It is separate from the trophy count that feeds the arcade score.",
+          "Beating your stored best shows a New Echo best toast. The best is kept in this browser, survives reloads and shows on the Arcade Hub's vault card. Streaks of 5 and 10 unlock the Echo Chamber and Perfect Recall arcade trophies; the arcade score itself counts hidden trophies.",
         badge: "Record",
       },
       {

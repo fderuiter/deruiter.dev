@@ -22,6 +22,7 @@ import {
   DILEMMA_WINDOW_SEC,
   WALKOUT_MIN_DIGNITY,
   WALKOUT_MIN_SOLIDARITY,
+  WEEK_DAY_DILEMMAS,
 } from "../presets";
 import type {
   Dilemma,
@@ -33,6 +34,7 @@ import type {
   ShiftEndingId,
   ShiftEvent,
   ShiftState,
+  WeekdayId,
 } from "../types";
 
 /** How far either side of its even spot a dilemma may land, as a fraction of the gap. */
@@ -57,13 +59,17 @@ export function dilemmaWindowOf(value: unknown): number | undefined {
  * @param config - The shift's seed, length and answer window.
  */
 export function getDilemmaPlan(
-  config: Pick<ShiftConfig, "seed" | "durationSec" | "dilemmaWindowSec">
+  config: Pick<
+    ShiftConfig,
+    "seed" | "durationSec" | "dilemmaWindowSec" | "dilemmaDeck"
+  >
 ): readonly DilemmaSlot[] {
   const duration = config.durationSec;
   if (!Number.isFinite(duration) || duration <= 0) return [];
+  const deck = dilemmaDeckOf(config.dilemmaDeck);
   const count = Math.min(
     DILEMMAS_PER_SHIFT,
-    DILEMMA_IDS.length,
+    deck?.length ?? DILEMMA_IDS.length,
     Math.floor(duration / DILEMMA_SEC_PER)
   );
   if (count <= 0) return [];
@@ -71,12 +77,15 @@ export function getDilemmaPlan(
   const stream = `${config.seed}:dilemmas`;
   let draw = 0;
 
-  // A seeded Fisher-Yates shuffle, so no shift repeats a dilemma.
+  // A seeded Fisher-Yates shuffle, so no shift repeats a dilemma. A day of
+  // the week brings its own deck, already dealt (#2139), but draws the same
+  // number of times so the slot times stay where they were.
   const ids = [...DILEMMA_IDS];
   for (let i = ids.length - 1; i > 0; i -= 1) {
     const j = drawInt(stream, draw++, i + 1);
     [ids[i], ids[j]] = [ids[j], ids[i]];
   }
+  const order = deck ?? ids;
 
   const gap = duration / (count + 1);
   const latest = Math.max(0, duration - window - 1);
@@ -84,12 +93,55 @@ export function getDilemmaPlan(
   for (let i = 0; i < count; i += 1) {
     const jitter = (uniformAt(stream, draw++) - 0.5) * gap * SLOT_JITTER;
     const at = Math.round(clamp(gap * (i + 1) + jitter, 0, latest) * 100) / 100;
-    slots.push({ at, dilemmaId: ids[i] });
+    slots.push({ at, dilemmaId: order[i] });
   }
   return slots;
 }
 
 /** The written dilemma for an id. */
+/**
+ * A configured dilemma deck (#2139): the known ids in the list, each once,
+ * in order. Anything that is not a list is left out, so the shift draws its
+ * own; a list with no known ids is an empty deck, and the shift asks nothing.
+ */
+export function dilemmaDeckOf(value: unknown): readonly DilemmaId[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const deck: DilemmaId[] = [];
+  for (const id of value) {
+    if (typeof id !== "string" || !Object.hasOwn(DILEMMAS, id)) continue;
+    if (!deck.includes(id as DilemmaId)) deck.push(id as DilemmaId);
+  }
+  return deck;
+}
+
+/**
+ * Deals a week's dilemmas (#2139): the shuffled shared dilemmas, three a day
+ * from Monday, with each day's own dilemma in the middle of its three. No
+ * dilemma comes up twice in a week.
+ *
+ * @param weekSeed - The week's seed; the same seed always deals the same.
+ * @param days - The weekdays in order.
+ * @returns One deck per day, in the order of `days`.
+ */
+export function dealWeekDilemmas(
+  weekSeed: string,
+  days: readonly WeekdayId[]
+): DilemmaId[][] {
+  const stream = `${weekSeed}:week-dilemmas`;
+  const ids = [...DILEMMA_IDS];
+  for (let i = ids.length - 1; i > 0; i -= 1) {
+    const j = drawInt(stream, i, i + 1);
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+  }
+  let next = 0;
+  return days.map((day) => {
+    const own = WEEK_DAY_DILEMMAS[day];
+    const shared = ids.slice(next, next + DILEMMAS_PER_SHIFT - (own ? 1 : 0));
+    next += shared.length;
+    return own ? [shared[0], own, ...shared.slice(1)].filter(Boolean) : shared;
+  });
+}
+
 export function getDilemma(id: DilemmaId): Dilemma {
   return DILEMMAS[id];
 }
@@ -116,8 +168,9 @@ export function getDilemmaPayCents(
 }
 
 /**
- * Answers the open dilemma: applies the option's meter and Solidarity
- * changes, records the choice and closes the dilemma. The caller has already
+ * Answers the open dilemma: applies the option's meter changes, and its
+ * Solidarity change when the player chose it rather than the clock (#2139),
+ * records the choice and closes the dilemma. The caller has already
  * checked the option belongs to the open dilemma.
  */
 export function resolveDilemma(
@@ -141,7 +194,11 @@ export function resolveDilemma(
       sos: clamp(state.meters.sos + option.sos, 0, 100),
       dignity: clamp(state.meters.dignity + option.dignity, 0, 100),
     },
-    solidarity: clamp(state.solidarity + option.solidarity, 0, 100),
+    // Saying nothing takes no side (#2139): the default still plays out on
+    // the meters, but only an answer moves Solidarity.
+    solidarity: timedOut
+      ? state.solidarity
+      : clamp(state.solidarity + option.solidarity, 0, 100),
     dilemma: null,
     dilemmaChoices: [
       ...state.dilemmaChoices,

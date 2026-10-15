@@ -82,6 +82,24 @@ function promiseDetail(
   return `Fred took a break and promised to come back for the ${promise}. ${outcome}`;
 }
 
+/** The buffet dishes that come off the grill. */
+const GRILLED: readonly string[] = ["hotdogs", "wings"];
+
+/**
+ * Whether every grilled dish the buffet wants is on it. "No burnt batches"
+ * needs this too, so a day where nothing was cooked does not earn the star
+ * for not burning anything (#2163).
+ */
+function grillServed(state: GameState): boolean {
+  const grillSpots = state.targets.filter(
+    (t) =>
+      t.category === "buffet" &&
+      t.status !== "unplanned" &&
+      GRILLED.includes(t.wants)
+  );
+  return grillSpots.every((t) => t.status !== "open");
+}
+
 /**
  * The three challenges for a run, each met or not with the evidence. The
  * result is derived from the level state and its readiness lines alone, so a
@@ -93,15 +111,22 @@ export function evaluateChallenges(
 ): readonly ChallengeResult[] {
   const burnt = state.burntBatches;
   const finished = state.finishedAt;
+  const served = grillServed(state);
+  let burntDetail: string;
+  if (burnt > 0) {
+    burntDetail = `${burnt} ${burnt === 1 ? "batch" : "batches"} burnt on the grill.`;
+  } else if (served) {
+    burntDetail = "Not one batch went up in smoke.";
+  } else {
+    burntDetail =
+      "Nothing burnt, but the grilled food never reached the buffet.";
+  }
   return [
     {
       id: "no-burnt",
       label: CHALLENGE_LABELS["no-burnt"],
-      met: burnt === 0,
-      detail:
-        burnt === 0
-          ? "Not one batch went up in smoke."
-          : `${burnt} ${burnt === 1 ? "batch" : "batches"} burnt on the grill.`,
+      met: burnt === 0 && served,
+      detail: burntDetail,
     },
     {
       id: "set-by-three",

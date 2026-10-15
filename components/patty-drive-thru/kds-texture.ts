@@ -79,10 +79,20 @@ export function drawKds(
     ctx.fillStyle = KDS_COLORS.text;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.font = "bold 30px monospace";
-    ctx.fillText(`#${ticket.orderId}`, x + 10, gap + header / 2);
-    ctx.textAlign = "right";
+    // The slot, boxed like a key cap, is the number key that picks the
+    // ticket; the order number follows it (#2135).
+    const mid = gap + header / 2;
+    ctx.strokeStyle = KDS_COLORS.text;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 8, mid - 14, 24, 28);
+    ctx.font = "bold 20px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(String(index + 1), x + 20, mid);
+    ctx.textAlign = "left";
     ctx.font = "bold 26px monospace";
+    ctx.fillText(`#${ticket.orderId}`, x + 40, mid, columnWidth - 110);
+    ctx.textAlign = "right";
+    ctx.font = "bold 22px monospace";
     ctx.fillText(
       formatClock(ticket.ageSec),
       x + columnWidth - 10,

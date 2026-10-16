@@ -3060,6 +3060,17 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     parseSprintBests(rawSprintBests)[uiState.currentLevel] ?? 0;
   const displayedBest =
     uiState.mode === "campaign" ? loadedSprintBest : displayedHighScore;
+  // A zero best reads like a score the player earned, so a sprint not yet
+  // played shows a dash instead (#2283).
+  const hasBest = displayedBest > 0;
+  const bestValue = hasBest ? (
+    displayedBest
+  ) : (
+    <>
+      <span aria-hidden="true">—</span>
+      <span className="sr-only">none yet</span>
+    </>
+  );
 
   // Paused play is frozen (#1645); toys and tricks only work in the office
   // (#1647). Disabled controls point at the reason via aria-describedby.
@@ -3222,7 +3233,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   data-testid="duck-hud-highscore-value"
                   className="font-bold text-zinc-100"
                 >
-                  {displayedBest}
+                  {bestValue}
                 </span>
               </span>
             </span>
@@ -3342,10 +3353,16 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 data-testid="duck-start-highscore"
                 className="-mt-2 mb-4 sm:-mt-3 sm:mb-6 text-[11px] sm:text-xs font-mono tabular-nums text-zinc-400"
               >
-                {uiState.mode === "campaign"
-                  ? `Sprint ${uiState.currentLevel} best `
-                  : "High Score "}
-                <span className="text-zinc-100 font-bold">{displayedBest}</span>
+                {uiState.mode === "campaign" && !hasBest ? (
+                  `First run of Sprint ${uiState.currentLevel}`
+                ) : (
+                  <>
+                    {uiState.mode === "campaign"
+                      ? `Sprint ${uiState.currentLevel} best `
+                      : "High Score "}
+                    <span className="text-zinc-100 font-bold">{bestValue}</span>
+                  </>
+                )}
                 {uiState.mode === "endless" && (
                   <>
                     {" · "}Endless best{" "}

@@ -665,6 +665,17 @@ export function endlessAct(
   };
 }
 
+/**
+ * The act the run is in now: a campaign act, or the post-marketing round's
+ * study, whose shop and Blinds the table should show (#2330).
+ */
+export function currentRunAct(
+  plan: RunPlan,
+  run: Pick<RunState, "bossIds" | "actIndex">
+): Act {
+  return actAt(plan, run, run.actIndex);
+}
+
 /** The act at `index`: a campaign act, or a post-marketing round. */
 function actAt(
   plan: RunPlan,

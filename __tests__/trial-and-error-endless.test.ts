@@ -14,6 +14,7 @@ import {
   SAFETY_SURVEILLANCE_STUDY,
   advanceRun,
   createRunState,
+  currentRunAct,
   deriveRunView,
   endlessAct,
   parseRunSave,
@@ -227,6 +228,12 @@ describe("post-marketing rounds (#1088)", () => {
     // Relics, levels and budget carry as between acts; sites close out.
     expect(round1.table.relics).toEqual(won.table.relics);
     expect(round1.table.sites).toEqual([]);
+
+    // The table reads the round's study, shop included, past the planned
+    // acts (#2330).
+    expect(currentRunAct(C, round1)).toEqual(study);
+    expect(currentRunAct(C, round1).shop).toBeDefined();
+    expect(currentRunAct(C, won)).toBe(C.acts[2]);
 
     let run = round1;
     while (run.actIndex === 3) {

@@ -13,6 +13,7 @@ import { CardTable } from "@/components/trial-and-error/CardTable";
 import {
   DEMOGRAPHICS_SCENARIO,
   DOSE_ESCALATION_SCENARIO,
+  ACT_I_SHOP,
   type Campaign,
   type Scenario,
 } from "@/lib/trial-and-error";
@@ -80,6 +81,22 @@ const MINI: Campaign = {
 function playFirstCard() {
   fireEvent.click(document.querySelector<HTMLButtonElement>("[data-card-id]")!);
   fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
+}
+
+/** Plays up to five cards in hand, skipping any that Play Hand refuses. */
+function playPlayableHand() {
+  const play = () =>
+    screen.getByRole("button", { name: /Play Hand/ }) as HTMLButtonElement;
+  let picked = 0;
+  for (const card of document.querySelectorAll<HTMLButtonElement>(
+    "[data-card-id]"
+  )) {
+    if (picked === 5) break;
+    fireEvent.click(card);
+    if (play().disabled) fireEvent.click(card);
+    else picked++;
+  }
+  fireEvent.click(play());
 }
 
 async function winCampaign() {
@@ -163,5 +180,65 @@ describe("the choice after the campaign is won (#1088)", () => {
       "Blind failed · run over"
     );
     expect(screen.getByRole("button", { name: "Restart run" })).toBeTruthy();
+  });
+});
+
+/**
+ * A post-marketing round whose first Blind the pinned AE listing clears, in
+ * a study with a shop: clearing it shows the round's cash-out (#2330).
+ */
+const CLEARABLE: Campaign = {
+  ...MINI,
+  id: "mini-endless-clearable",
+  endless: {
+    ...MINI.endless!,
+    studies: [
+      {
+        id: "mini-surveillance",
+        title: "Safety surveillance",
+        shop: ACT_I_SHOP,
+        blinds: [
+          { ...withQuota(DEMOGRAPHICS_SCENARIO, 1), pinned: ["C-L16.2.7"] },
+          withQuota(DEMOGRAPHICS_SCENARIO, 1_000_000),
+        ],
+        bossPool: [DOSE_ESCALATION_SCENARIO],
+      },
+    ],
+  },
+};
+
+describe("clearing a post-marketing Blind (#2330)", () => {
+  it("shows the round's next Blind and shop instead of crashing", async () => {
+    render(<CardTable act={CLEARABLE} seed="alpha" />);
+    fireEvent.click(
+      document.querySelector<HTMLButtonElement>('[data-card-id="C-L16.2.7"]')!
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
+    await screen.findByTestId("endless-choice");
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue into post-marketing" })
+    );
+    fireEvent.click(await screen.findByRole("button", { name: "Next study" }));
+    fireEvent.click(await screen.findByTestId("act-intro-start"));
+    await waitFor(() => expect(screen.queryByTestId("act-intro")).toBeNull());
+
+    // Post-marketing quotas round up to the next 100, so play full hands.
+    for (let hand = 0; hand < 4; hand++) {
+      if (screen.queryByTestId("blind-result")) break;
+      playPlayableHand();
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId("blind-result") ??
+            screen.queryByRole("button", { name: /Play Hand/ })
+        ).toBeTruthy()
+      );
+    }
+    await waitFor(() =>
+      expect(screen.getByTestId("blind-result").textContent).toContain(
+        "Blind cleared"
+      )
+    );
+    expect(screen.getByTestId("cash-out-button")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Next Blind" })).toBeTruthy();
   });
 });

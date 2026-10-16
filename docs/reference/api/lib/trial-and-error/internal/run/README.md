@@ -40,6 +40,7 @@
 
 - [advanceRun](functions/advanceRun.md)
 - [createRunState](functions/createRunState.md)
+- [currentRunAct](functions/currentRunAct.md)
 - [deriveRunView](functions/deriveRunView.md)
 - [endlessAct](functions/endlessAct.md)
 - [planActs](functions/planActs.md)

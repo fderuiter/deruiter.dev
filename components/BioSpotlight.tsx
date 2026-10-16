@@ -148,7 +148,7 @@ export const BioSpotlight: React.FC = () => {
 
             <h2
               id="duck-bio-spotlight-title"
-              className="min-w-0 break-words text-xl sm:text-2xl font-extrabold text-white tracking-tight mb-2 heading-editorial"
+              className="type-heading min-w-0 break-words text-white mb-2"
             >
               Meet Duck: From 8-Week Fluff to 80-lb Marshmallow
             </h2>

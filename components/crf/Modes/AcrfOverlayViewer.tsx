@@ -221,7 +221,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
             {/* Header */}
             <div className="border-b-2 border-zinc-900 pb-4 flex items-end justify-between">
               <div>
-                <h2 className="text-xl font-black uppercase text-zinc-900 tracking-tight">
+                <h2 className="text-xl font-extrabold uppercase text-zinc-900 tracking-tight">
                   {study.studyName}
                 </h2>
                 <div className="font-mono text-xs text-zinc-600 mt-1">
@@ -316,7 +316,7 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
             <span className="text-xs font-mono font-bold tracking-widest text-sky-700 uppercase">
               Regulatory Submission Annotated CRF Book (aCRF)
             </span>
-            <h2 className="text-2xl font-black text-zinc-900">
+            <h2 className="text-2xl font-extrabold text-zinc-900">
               {study.studyName}
             </h2>
             <p className="text-xs font-mono text-zinc-600">

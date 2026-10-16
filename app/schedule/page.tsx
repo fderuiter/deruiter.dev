@@ -284,7 +284,7 @@ export default function SchedulePage() {
             <IconCalendar className="w-3.5 h-3.5 text-accent" />
             <span>30 minutes on Google Meet</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold font-mono text-white tracking-tight mb-4">
+          <h1 className="type-display font-mono text-white mb-4">
             Say Hi &amp; Book a Chat
           </h1>
           <p className="text-sm sm:text-base text-zinc-400 font-sans leading-relaxed">

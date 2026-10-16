@@ -418,6 +418,51 @@ body {
   line-height: 1.6;
 }
 
+/* Named type scale (#2311). Each step fixes size, line height, weight and
+   tracking together, so heading levels differ by more than size alone.
+   Font family is left to the element, so mono headings stay mono. */
+@utility type-display {
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+@utility type-title {
+  font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  line-height: 1.15;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+@utility type-heading {
+  font-size: 1.5rem;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+@utility type-subheading {
+  font-size: 1.125rem;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+@utility type-body {
+  font-size: clamp(0.9375rem, 1.2vw, 1.0625rem);
+  line-height: 1.6;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+@utility type-small {
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
 /* Reduced motion compliance */
 @media (prefers-reduced-motion: reduce) {
   *,

@@ -217,9 +217,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
           </div>
 
           {/* Title */}
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-neutral-100 mb-4 leading-tight">
-            {study.title}
-          </h1>
+          <h1 className="type-title text-neutral-100 mb-4">{study.title}</h1>
 
           {/* Project Hero Image Banner */}
           {study.hero_image_url && (

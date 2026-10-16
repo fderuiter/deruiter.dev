@@ -48,9 +48,7 @@ export default function ContactPage() {
             <IconMessageCode className="w-3.5 h-3.5" />
             <span>A NOTE TO FRED</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-4 heading-editorial">
-            Let’s talk.
-          </h1>
+          <h1 className="type-display text-white mb-4">Let’s talk.</h1>
           <p className="text-sm sm:text-base font-mono text-zinc-400 leading-relaxed">
             Working on an interesting build, an open-source idea, or a clinical
             data problem that will not sit still? I’d like to hear about it.

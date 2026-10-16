@@ -100,7 +100,7 @@ export default function OfflineFallbackPage() {
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
                 {isOnline ? "Connection Restored" : "You’re offline"}
               </span>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-100 mt-1">
+              <h1 className="type-title text-zinc-100 mt-1">
                 {isOnline
                   ? "This page is taking longer than expected"
                   : "This page isn’t available offline"}

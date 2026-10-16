@@ -40,9 +40,7 @@ export default function GlobalError({
             CRITICAL_HALT
           </span>
 
-          <h1 className="text-2xl font-bold tracking-tight mb-4">
-            Unrecoverable Crash
-          </h1>
+          <h1 className="type-heading mb-4">Unrecoverable Crash</h1>
 
           <p className="text-sm text-neutral-400 leading-relaxed mb-8">
             The root layout rendering tree has failed to compile. The details of

@@ -35,7 +35,7 @@ export function ProofWorkspaceSkeleton() {
                 </li>
               </ol>
             </nav>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white flex items-center gap-2">
+            <h1 className="type-title text-white flex items-center gap-2">
               <IconCpu className="w-8 h-8 text-brand-cyan animate-pulse" />
               Logical Proof Canvas
             </h1>

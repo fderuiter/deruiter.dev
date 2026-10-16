@@ -184,9 +184,7 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         {/* Article Header */}
         <header className="w-full max-w-3xl">
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-neutral-100 mb-4 leading-tight">
-            {post.title}
-          </h1>
+          <h1 className="type-title text-neutral-100 mb-4">{post.title}</h1>
 
           <p className="text-lg text-muted-strong font-medium mb-6 leading-relaxed">
             {post.dek}

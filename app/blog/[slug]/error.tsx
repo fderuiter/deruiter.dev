@@ -37,7 +37,7 @@ export default function BlogPostError({
             LOAD_FAILED
           </span>
 
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-100 mb-4">
+          <h1 className="type-heading text-neutral-100 mb-4">
             This dispatch couldn&apos;t be loaded.
           </h1>
 

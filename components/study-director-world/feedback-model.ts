@@ -1,5 +1,9 @@
 import {
   deskView,
+  guestScene,
+  pendingInterruption,
+  phoneCalls,
+  planFor,
   relationshipCard,
   ringingCall,
   type WorldState,
@@ -19,10 +23,103 @@ export interface Feedback {
 }
 
 /**
+ * Tasks whose leaving the list is not, by itself, something done: the
+ * phone, the interruption and a visitor are told apart by what became of
+ * them; a visitor still to come turns into a visitor waiting; and a meeting
+ * ending has its own report (#2252).
+ */
+const NOT_STAMPED = (id: string) =>
+  id === "ringing" ||
+  id === "interruption" ||
+  id === "guest" ||
+  id === "meeting" ||
+  id.startsWith("guest:");
+
+/**
+ * The stamps for items that left today's list, worded for what actually
+ * happened to them. Only something dealt with says "Done": a call let ring
+ * says so, an interruption that lapsed is "Missed", one held back by a
+ * meeting or a visitor is "Waiting", and a meeting ending says nothing
+ * here, since its report opens (#2252).
+ */
+function settledBetween(prev: WorldState, next: WorldState): Feedback[] {
+  const out: Feedback[] = [];
+  const stamp = (key: string, text: string): Feedback => ({
+    id: `${key}:${next.minute}`,
+    kind: "stamp",
+    text,
+    tone: "neutral",
+  });
+
+  const call = ringingCall(prev);
+  if (call && ringingCall(next)?.eventId !== call.eventId) {
+    const now = phoneCalls(next).find((c) => c.eventId === call.eventId);
+    // An answered call opens the conversation; the decision is what counts.
+    if (now?.status === "voicemail")
+      out.push(stamp(`call:${call.eventId}`, `Voicemail: ${call.from}`));
+    else if (now?.status === "scheduled")
+      out.push(stamp(`call:${call.eventId}`, `Let it ring: ${call.from}`));
+  }
+
+  const asked = pendingInterruption(prev);
+  if (asked && pendingInterruption(next)?.id !== asked.id) {
+    const key = `interruption:${asked.id}`;
+    if (planFor(next).handled.includes(asked.id))
+      out.push(stamp(key, `Done: ${asked.title}`));
+    else if (next.meeting || next.visit || guestScene(next))
+      out.push(stamp(key, `Waiting: ${asked.title}`));
+    else if (!(planFor(next).excused ?? []).includes(asked.id))
+      out.push(stamp(key, `Missed: ${asked.title}`));
+  }
+
+  const guest = guestScene(prev);
+  if (guest && guestScene(next)?.id !== guest.id) {
+    const record = (next.guests ?? []).find(
+      (g) => g.id === guest.id && g.day === next.study.day
+    );
+    if (record)
+      out.push(
+        stamp(
+          `guest:${guest.id}`,
+          record.outcome === "met"
+            ? `Done: met ${guest.visitor.name}`
+            : `Missed: ${guest.visitor.name} left`
+        )
+      );
+  }
+
+  // A desk item that only changed tray (a call to return sent on to
+  // voicemail, say) is still on the desk, so it is not done.
+  const before = deskView(prev);
+  const after = deskView(next);
+  const onDesk = new Set(
+    [...after.voicemail, ...after.callbacks, ...after.mail].map(
+      (i) => i.eventId
+    )
+  );
+  const trays = {
+    voicemail: before.voicemail,
+    callbacks: before.callbacks,
+    mail: before.mail,
+  } as const;
+  const moved = (id: string) =>
+    id in trays &&
+    trays[id as keyof typeof trays].some((i) => onDesk.has(i.eventId));
+  const stillOpen = new Set(todaysTasks(next).map((t) => t.id));
+  for (const task of todaysTasks(prev)) {
+    if (stillOpen.has(task.id) || NOT_STAMPED(task.id) || moved(task.id))
+      continue;
+    out.push(stamp(`done:${task.id}`, `Done: ${task.text}`));
+  }
+  return out;
+}
+
+/**
  * What changed between two worlds, as toasts: energy and focus moving by a
  * few points, a team member's trust crossing a heart, and an item leaving
- * the task list (stamped as done). Nothing is reported across a new day or
- * after the player has gone home, where the cards say it already.
+ * the task list, worded for what became of it (#2252). Nothing is reported
+ * across a new day or after the player has gone home, where the cards say
+ * it already.
  */
 export function feedbackBetween(
   prev: WorldState,
@@ -58,16 +155,7 @@ export function feedbackBetween(
       tone: now.hearts > was.hearts ? "good" : "bad",
     });
   }
-  const stillOpen = new Set(todaysTasks(next).map((t) => t.id));
-  for (const task of todaysTasks(prev)) {
-    if (stillOpen.has(task.id)) continue;
-    out.push({
-      id: `done:${task.id}:${next.minute}`,
-      kind: "stamp",
-      text: `Done: ${task.text}`,
-      tone: "neutral",
-    });
-  }
+  out.push(...settledBetween(prev, next));
   return out;
 }
 

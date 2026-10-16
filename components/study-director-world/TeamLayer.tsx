@@ -21,6 +21,7 @@ import {
   markRaised,
   messagesFrom,
   openAtDesk,
+  pendingInterruption,
   relationshipCard,
   ringingCall,
   sendToVoicemail,
@@ -131,6 +132,12 @@ export function useTeamLayer({
     () => (onCall ? null : ringingCall(world)),
     [onCall, world]
   );
+  // Why answering the ringing call was refused, shown in the phone itself:
+  // behind the modal the player never saw it (#2252).
+  const [phoneRefusal, setPhoneRefusal] = useState<{
+    eventId: string;
+    text: string;
+  } | null>(null);
 
   const close = useCallback(() => {
     setConversation(null);
@@ -311,6 +318,10 @@ export function useTeamLayer({
       if (action === "answer") {
         const result = answerCall(world, ringing.eventId);
         if (!result.ok) {
+          setPhoneRefusal({
+            eventId: ringing.eventId,
+            text: REFUSED[result.reason],
+          });
           refuse(result.reason);
           return;
         }
@@ -385,6 +396,11 @@ export function useTeamLayer({
   return {
     conversation,
     ringing,
+    /** Why answering this call was refused, if it was. */
+    phoneRefusal:
+      ringing && phoneRefusal?.eventId === ringing.eventId
+        ? phoneRefusal.text
+        : null,
     blocking: conversation !== null || ringing !== null,
     open,
     catchUp,
@@ -431,10 +447,21 @@ const PhoneOverlay: React.FC<{
       initialFocusRef={answerRef}
       returnFocusTo={returnFocusTo}
     >
+      {team.phoneRefusal ? (
+        <p
+          role="alert"
+          id="sd-phone-refused"
+          data-testid="world-phone-refused"
+          className="border border-[var(--sd-red)]/60 px-2 py-1 text-xs break-words text-red-300"
+        >
+          {team.phoneRefusal} Send it to voicemail or let it ring.
+        </p>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <OverlayButton
           ref={answerRef}
           primary
+          aria-describedby={team.phoneRefusal ? "sd-phone-refused" : undefined}
           onClick={() => team.phone("answer")}
         >
           Answer
@@ -447,6 +474,31 @@ const PhoneOverlay: React.FC<{
         </OverlayButton>
       </div>
     </Overlay>
+  );
+};
+
+/**
+ * An interruption that lands while the desk, the EDC or the archive is open
+ * waits on the side column behind the screen; this says so on the screen,
+ * with a way to go to it (#2252).
+ */
+const InterruptionCue: React.FC<{ world: WorldState; onGo: () => void }> = ({
+  world,
+  onGo,
+}) => {
+  const waiting = pendingInterruption(world);
+  if (!waiting) return null;
+  return (
+    <div
+      role="status"
+      data-testid="world-overlay-interruption"
+      className="flex min-w-0 flex-wrap items-center gap-2 border border-[var(--sd-amber)]/60 px-2 py-1.5 text-xs"
+    >
+      <p className="min-w-0 flex-1 break-words text-amber-300">
+        Something needs you: {waiting.title}
+      </p>
+      <OverlayButton onClick={onGo}>Go to it</OverlayButton>
+    </div>
   );
 };
 
@@ -691,6 +743,7 @@ export const TeamOverlay: React.FC<{
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
       >
+        <InterruptionCue world={world} onGo={team.close} />
         {c.lines.length > 0 ? <DialogueLines lines={c.lines} /> : null}
         {section("Voicemail", desk.voicemail, "Listen", "voicemail")}
         {section("Calls to return", desk.callbacks, "Call", "callback")}
@@ -746,6 +799,7 @@ export const TeamOverlay: React.FC<{
         initialFocusRef={closeRef}
         returnFocusTo={returnFocusTo}
       >
+        <InterruptionCue world={world} onGo={team.close} />
         <table className="w-full table-fixed border-collapse text-left text-[11px]">
           <thead>
             <tr className="text-[var(--sd-muted)]">

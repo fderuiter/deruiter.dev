@@ -74,7 +74,7 @@ import {
   InterruptionCard,
   OvernightCard,
   PriorityCard,
-  revealIfAbove,
+  revealInView,
 } from "./DayCards";
 import { FeedbackToasts } from "./FeedbackToasts";
 import { cuesBetween, feedbackBetween, type Feedback } from "./feedback-model";
@@ -413,19 +413,22 @@ export const StudyDirectorWorld: React.FC<{
    * also offers to go home from here, since the car may be out of reach
    * (#2184).
    */
+  const stuckOutcome = useRef<InteractionOutcome | null>(null);
   const refuseWith = useCallback(
     (reason: WorldRefusal, text: string = REFUSALS[reason], walk = false) => {
       show(text, "bad", walk);
       const title = STUCK[reason];
       if (!title || world.study.status !== "running") return;
       setWalk(null);
-      setOutcome({
+      const stuck: InteractionOutcome = {
         world,
         title,
         lines: [text, "Going home now ends the day where you stand."],
         tone: "bad",
         offer: "goHome",
-      });
+      };
+      stuckOutcome.current = stuck;
+      setOutcome(stuck);
     },
     [show, world]
   );
@@ -825,12 +828,37 @@ export const StudyDirectorWorld: React.FC<{
   }, [world, refuseWith]);
   const delegation = delegationPreview(world);
 
-  // An outcome card (the car's Drive / Go home, a desk result) opened off the
-  // top of the page after a directory walk is brought into view (#1936).
+  // An outcome card (the car's Drive / Go home, a refusal that ends the day,
+  // a desk result) is brought fully into view, whether it opened off the top
+  // of the page after a directory walk (#1936) or below the fold (#2252). It
+  // waits for a dialog over the floor to close. Past the hard stop or out of
+  // energy every step is refused, so that card's Go home takes focus; any
+  // other card, the car's included, leaves the keys on the floor to walk
+  // away with, and is the first stop on Tab from it.
   const outcomeRef = useRef<HTMLElement>(null);
+  const goHomeRef = useRef<HTMLButtonElement>(null);
+  const focusedOutcome = useRef<InteractionOutcome | null>(null);
+  const blocking = team.blocking;
   useEffect(() => {
-    if (outcome) revealIfAbove(outcomeRef.current);
-  }, [outcome]);
+    if (!outcome || blocking) return;
+    revealInView(outcomeRef.current);
+    if (
+      outcome === stuckOutcome.current &&
+      !touch &&
+      focusedOutcome.current !== outcome
+    ) {
+      focusedOutcome.current = outcome;
+      goHomeRef.current?.focus({ preventScroll: true });
+    }
+  }, [outcome, blocking, touch]);
+
+  // An interruption or a visitor landing is brought into view the same way,
+  // once any dialog over the floor has closed (#2252).
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const landed = interruption?.id ?? guest?.id ?? null;
+  useEffect(() => {
+    if (landed && !blocking) revealInView(cardsRef.current);
+  }, [landed, blocking]);
 
   // The finished study goes to the closeout, which files it in the career.
   const closedOut = useRef(false);
@@ -1019,6 +1047,14 @@ export const StudyDirectorWorld: React.FC<{
       ref={outcomeRef}
       aria-labelledby="sd-world-outcome"
       data-testid="world-outcome"
+      onKeyDown={(e) => {
+        // Escape closes the card from its own buttons too, as it does from
+        // the floor.
+        if (e.key !== "Escape" || touch) return;
+        e.preventDefault();
+        setOutcome(null);
+        playfieldRef.current?.focus({ preventScroll: true });
+      }}
       className={`scroll-mt-24 border p-3 ${TONE_CLASS[outcome.tone]}`}
     >
       <h3 id="sd-world-outcome" className="text-sm font-bold">
@@ -1052,6 +1088,7 @@ export const StudyDirectorWorld: React.FC<{
         ))}
         {outcome.offer === "goHome" ? (
           <button
+            ref={goHomeRef}
             type="button"
             onClick={leave}
             className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
@@ -1076,7 +1113,7 @@ export const StudyDirectorWorld: React.FC<{
       </div>
     </section>
   ) : digest || interruption || guest || (!plan.priority && morning) ? (
-    <div className="space-y-3">
+    <div ref={cardsRef} className="scroll-mt-24 space-y-3">
       {digest ? <DigestCard digest={digest} /> : null}
       {guest ? <GuestCard scene={guest} onMeet={meet} /> : null}
       {interruption ? (
@@ -1214,8 +1251,12 @@ export const StudyDirectorWorld: React.FC<{
       />
     </div>
   );
+  // What just happened, or what the morning asks, opens first in the side
+  // column, beside the floor, so it is on screen when it opens: below the
+  // pickers and Delegate it opened under the fold (#2252).
   const sideSections = (
     <>
+      {panel}
       <section
         aria-labelledby="sd-world-where"
         className="border border-[var(--sd-hairline)] bg-[var(--sd-surface)] p-3"
@@ -1348,7 +1389,6 @@ export const StudyDirectorWorld: React.FC<{
           )}
         </section>
       ) : null}
-      {panel}
       {visitReport && !report ? (
         <SiteVisitReportPanel
           report={visitReport}

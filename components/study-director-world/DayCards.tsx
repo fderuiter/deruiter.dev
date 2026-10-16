@@ -103,20 +103,38 @@ function visitLines(visit: SiteVisitReport): ToneLine[] {
   ];
 }
 
-const CARD =
-  "sd-enter scroll-mt-24 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3 space-y-3";
+const CARD_FRAME =
+  "sd-enter scroll-mt-24 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3";
+const CARD = `${CARD_FRAME} space-y-3`;
+
+/** Clearance for the fixed site navbar above the cabinet, in pixels. */
+const TOP_CLEARANCE = 96;
 
 /**
- * Brings a card that opened above the viewport down into view. After a walk
- * from the office directory, which sits below the floor, the side column's
- * cards render off the top of the page and the player saw nothing happen
- * (#1936). A card already on screen is left where it is.
+ * Brings a newly opened card fully into view, from above or below. After a
+ * walk from the office directory, which sits below the floor, a card can
+ * open off the top of the page (#1936); a keyboard player at the car, or
+ * one stopped by the hard stop, saw the card open below the fold (#2252).
+ * A card already on screen is left where it is, and one taller than the
+ * viewport is brought in by its top. Smooth unless the visitor asks for
+ * less motion.
  */
-export function revealIfAbove(el: HTMLElement | null): void {
+export function revealInView(el: HTMLElement | null): void {
   if (!el || typeof el.getBoundingClientRect !== "function") return;
-  if (el.getBoundingClientRect().top < 96) {
-    el.scrollIntoView?.({ block: "start" });
-  }
+  if (typeof el.scrollIntoView !== "function") return;
+  const { top, bottom, height } = el.getBoundingClientRect();
+  const viewport = window.innerHeight || document.documentElement.clientHeight;
+  if (top >= TOP_CLEARANCE && bottom <= viewport) return;
+  const reduced =
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({
+    block:
+      top < TOP_CLEARANCE || height > viewport - TOP_CLEARANCE
+        ? "start"
+        : "end",
+    behavior: reduced ? "auto" : "smooth",
+  });
 }
 
 /** The morning digest: the start time, then what changed, then what held. */
@@ -126,7 +144,7 @@ export const DigestCard: React.FC<{ digest: MorningDigest }> = ({ digest }) => {
     <section
       aria-labelledby="sd-world-digest"
       data-testid="world-digest"
-      className={CARD}
+      className={`${CARD_FRAME} space-y-2`}
     >
       <Heading
         id="sd-world-digest"
@@ -161,23 +179,27 @@ export const PriorityCard: React.FC<{
   <section
     aria-labelledby="sd-world-priority"
     data-testid="world-priority"
-    className={CARD}
+    // A little tighter than the other cards, so the day-1 digest and this
+    // card fit beside the floor at 1280x800 (#2252).
+    className={`@container ${CARD_FRAME} space-y-0.5 p-2`}
   >
     <Heading
       id="sd-world-priority"
       kicker="Before you start"
       title="What is today about?"
     />
-    <ul className="grid gap-2 sm:grid-cols-3">
+    <ul className="grid gap-0.5 @lg:grid-cols-3 @lg:gap-2">
       {PRIORITY_ORDER.map((id) => (
         <li key={id} className="min-w-0">
           <OverlayButton
-            className="h-full w-full"
+            className="h-full w-full px-2 py-0.5 leading-tight"
             data-priority={id}
             onClick={() => onChoose(id)}
           >
-            <span className="block font-bold">{PRIORITIES[id].label}</span>
-            <span className="mt-1 block text-[11px] font-normal break-words text-[var(--sd-muted)]">
+            {/* Stacked in a narrow column the promise runs on after the
+                label, so the card fits beside the floor (#2252). */}
+            <span className="font-bold @lg:block">{PRIORITIES[id].label}</span>{" "}
+            <span className="text-[11px] font-normal break-words text-[var(--sd-muted)] @lg:mt-1 @lg:block">
               {PRIORITIES[id].promise}
             </span>
           </OverlayButton>
@@ -185,8 +207,7 @@ export const PriorityCard: React.FC<{
       ))}
     </ul>
     <p className="text-[11px] text-[var(--sd-muted)]">
-      You can also just start walking. A day with no priority has no promise to
-      keep.
+      Or start walking with no promise.
     </p>
   </section>
 );
@@ -295,7 +316,7 @@ export const OvernightCard: React.FC<{
   const card = useRef<HTMLElement>(null);
   useEffect(() => {
     primary.current?.focus({ preventScroll: true });
-    revealIfAbove(card.current);
+    revealInView(card.current);
   }, []);
   const { changes, steady } = changesFirst(report.lines);
   return (

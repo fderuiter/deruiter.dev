@@ -55,7 +55,7 @@ function whatChanges(id: Difficulty, length: StudyLength): string {
     return "The study as written: the planned budget and timeline, and three surprise events.";
   const behind = scaleDays(RESCUE_SLIP_DAYS, studyPreset(length).setup);
   const days = behind === 6 ? "Six" : behind === 3 ? "Three" : `${behind}`;
-  return `${days} days behind, 8% of the budget already spent, more paperwork owed, a cooler sponsor, a busier team and sites, and four surprise events.`;
+  return `${days} days behind, 8% less budget, more paperwork owed, a cooler sponsor, a busier team and sites, and four surprise events.`;
 }
 
 const LENGTH_TEXT: Record<StudyLength, { label: string; detail: string }> = {

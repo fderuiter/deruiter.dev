@@ -329,6 +329,13 @@ A replay audit (#2254) found three more:
   15% more spent each day. A careful calm run now ends about $28k (full) and
   $14k (short) better off than standard on the same seed, where before it
   ended worse.
+- **Routine work leaves room for decisions (#2287).** Daily burn uses 75% of
+  the full study's baseline budget, or 60% for the short pilot because its
+  fixed event costs consume a larger share. The rest pays for decisions and
+  documentation. Rescue starts with an 8% smaller budget and no prepaid
+  spending, while its work still burns at the baseline rate. New saves record
+  that baseline; older Rescue saves keep their original daily cost and
+  inherited spending when resumed.
 - **A short study slips in proportion.** An effect's `slipDays` is scaled
   by `calendarScale` like every other span of days (a one-day setback stays
   one day), so a careful short run ends 4 to 5 days late instead of the

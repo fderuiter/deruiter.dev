@@ -153,6 +153,58 @@ describe("Calm's extra budget is headroom (#2254)", () => {
   });
 });
 
+describe("careful-run budget and Rescue opening (#2287)", () => {
+  it.each(["calm", "standard"] as const)(
+    "lets a careful %s run finish within the closeout budget threshold",
+    (difficulty) => {
+      for (const length of ["full", "short"] as const)
+        for (const seed of ["sim-a", "sim-b", "sim-c", "sim-d"]) {
+          const study = careful(seed, difficulty, length);
+          const marginPct =
+            ((study.setup.budget - study.spent) / study.setup.budget) * 100;
+          expect(
+            marginPct,
+            `${difficulty} ${length} ${seed}`
+          ).toBeGreaterThanOrEqual(-5);
+        }
+    }
+  );
+
+  it("starts Rescue with less budget, rather than spending it before day one", () => {
+    const preset = studyPreset("full");
+    const start = createStudy(
+      "rescue-opening",
+      preset.setup,
+      preset.sites,
+      preset.team
+    );
+    const standard = applyDifficulty(start, "standard");
+    const rescue = applyDifficulty(start, "rescue");
+    expect(rescue.setup.budget).toBeLessThan(standard.setup.budget);
+    expect(rescue.spent).toBe(0);
+  });
+
+  it("keeps an older Rescue save on its original daily cost", () => {
+    const preset = studyPreset("full");
+    const start = createStudy(
+      "rescue-legacy",
+      preset.setup,
+      preset.sites,
+      preset.team
+    );
+    const current = applyDifficulty(start, "rescue");
+    const legacy = {
+      ...current,
+      baselineBudget: undefined,
+      setup: { ...current.setup, budget: start.setup.budget },
+      spent: start.setup.budget * 0.08,
+    };
+    expect(endDay(legacy).spent - legacy.spent).toBeCloseTo(
+      endDay(current).spent - current.spent
+    );
+  });
+});
+
 describe("time away is not held against the player (#2254)", () => {
   const unanswered = (lines: readonly { text: string }[] | undefined) =>
     (lines ?? []).filter((l) => /go unanswered/.test(l.text));

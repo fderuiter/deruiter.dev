@@ -118,6 +118,7 @@ export function createStudy(
     version: 1,
     seed,
     setup,
+    baselineBudget: setup.budget,
     day: 0,
     status: "running",
     team: team.map((m) => ({ ...m })),
@@ -150,17 +151,24 @@ export const RESCUE_SLIP_DAYS = 6;
 
 /** How much more money a calm study is given on top of its plan. */
 const CALM_BUDGET_FACTOR = 1.15;
+/** A rescue has the same obligations with a smaller budget, not prepaid spend. */
+const RESCUE_BUDGET_FACTOR = 0.92;
+/** The rest of the plan pays for decisions; a pilot has more fixed event costs. */
+const DAILY_OPERATIONS_SHARE: Record<StudyLength, number> = {
+  full: 0.75,
+  short: 0.6,
+};
 
 /**
- * The budget the study's daily spend is planned against: the setup's own
- * budget, before a calm study's extra. Calm used to raise the daily burn by
- * the same 15% it raised the budget, so the extra was never headroom
- * (#2254); now the team spends at the standard rate and the extra is margin.
+ * The baseline budget before a difficulty changes the available margin.
+ * Older saves did not record it: Calm's raised setup can be reversed, while
+ * an older Rescue save retains its original setup and prepaid spending.
  */
 function plannedBudget(state: StudyState): number {
-  return state.difficulty === "calm"
-    ? state.setup.budget / CALM_BUDGET_FACTOR
-    : state.setup.budget;
+  if (state.baselineBudget !== undefined) return state.baselineBudget;
+  if (state.difficulty === "calm")
+    return state.setup.budget / CALM_BUDGET_FACTOR;
+  return state.setup.budget;
 }
 
 /**
@@ -176,7 +184,7 @@ function scaledSlip(days: number, setup: StudySetup): number {
 
 /**
  * Sets how hard the study starts. Calm has more budget, a warmer sponsor
- * and a rested team; rescue inherits a study already behind, over-spent,
+ * and a rested team; rescue inherits a study already behind with less budget,
  * under-documented and with a sponsor who has stopped smiling. Apply it to
  * a fresh study, before it begins.
  */
@@ -184,13 +192,15 @@ export function applyDifficulty(
   state: StudyState,
   difficulty: Difficulty
 ): StudyState {
+  const baselineBudget = plannedBudget(state);
   if (difficulty === "calm") {
     return {
       ...state,
       difficulty,
+      baselineBudget,
       setup: {
         ...state.setup,
-        budget: Math.round(state.setup.budget * CALM_BUDGET_FACTOR),
+        budget: Math.round(baselineBudget * CALM_BUDGET_FACTOR),
       },
       adjust: { ...state.adjust, client: state.adjust.client + 8 },
       team: state.team.map((m) => ({
@@ -203,10 +213,14 @@ export function applyDifficulty(
     return {
       ...state,
       difficulty,
+      baselineBudget,
+      setup: {
+        ...state.setup,
+        budget: Math.round(baselineBudget * RESCUE_BUDGET_FACTOR),
+      },
       // Six days behind on the full calendar; proportionally fewer on a
       // short study (#2092).
       slipDays: state.slipDays + scaleDays(RESCUE_SLIP_DAYS, state.setup),
-      spent: state.spent + Math.round(state.setup.budget * 0.08),
       documentationDebt: clamp(state.documentationDebt + 12),
       adjust: { ...state.adjust, client: state.adjust.client - 15 },
       team: state.team.map((m) => ({
@@ -216,7 +230,7 @@ export function applyDifficulty(
       sites: state.sites.map((x) => ({ ...x, burden: clamp(x.burden + 8) })),
     };
   }
-  return { ...state, difficulty };
+  return { ...state, difficulty, baselineBudget };
 }
 
 function member(state: StudyState, role: TeamRole): TeamMember | undefined {
@@ -440,7 +454,8 @@ export function advanceDay(input: StudyState): StudyState {
     state.team.reduce((s, m) => s + m.workload, 0) /
     Math.max(1, state.team.length);
   const burn =
-    (plannedBudget(state) / setup.durationDays) *
+    ((plannedBudget(state) * DAILY_OPERATIONS_SHARE[studyLength(setup)]) /
+      setup.durationDays) *
     (1 + Math.max(0, meanLoad - 80) / 100);
   const creep = meanLoad > 85 ? 0.3 : 0;
 

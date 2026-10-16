@@ -24,6 +24,14 @@ Attention left today.
 
 ***
 
+### baselineBudget?
+
+> `optional` **baselineBudget?**: `number`
+
+Budget before difficulty changes the available margin; absent in old saves.
+
+***
+
 ### budget?
 
 > `optional` **budget?**: [`StudyBudget`](../type-aliases/StudyBudget.md)

@@ -316,6 +316,20 @@ describe("Working With Duck: pause, score and per-scene tips (#1645, #1646, #164
       ).toBe("2519");
       expect(srOutput(container, "High Score")).toBe("High Score: 2519");
     });
+
+    it("shows a first-run line and a dash before a sprint has a best (#2283)", async () => {
+      await render(createInitialDuckGameState(2));
+      const briefing = container.querySelector(
+        '[data-testid="duck-start-highscore"]'
+      )?.textContent;
+      expect(briefing).toContain("First run of Sprint 2");
+      expect(briefing).not.toMatch(/best\s*0/i);
+      const hudBest = container.querySelector(
+        '[data-testid="duck-hud-highscore-value"]'
+      )?.textContent;
+      expect(hudBest).toContain("—");
+      expect(hudBest).not.toContain("0");
+    });
   });
 
   describe("#1647 tips, controls and location match the scene", () => {

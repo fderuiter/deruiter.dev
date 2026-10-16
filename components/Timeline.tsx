@@ -122,9 +122,9 @@ export const Timeline: React.FC = () => {
             aria-pressed={globalMode === "professional"}
             aria-label="Professional Summary: Concise overview of technical responsibilities and systems impact"
             title="Professional Summary: Concise overview of technical responsibilities and systems impact"
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 min-h-[44px] px-3.5 py-2 rounded-lg font-bold transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
               globalMode === "professional"
-                ? "bg-[#1f232d] text-cyan-300 border border-cyan-500/40 shadow-sm"
+                ? "bg-[#1f232d] text-amber-300 border border-amber-500/40 shadow-sm"
                 : "text-zinc-400 hover:text-zinc-200 border border-transparent"
             }`}
           >
@@ -161,12 +161,12 @@ export const Timeline: React.FC = () => {
               {/* Timeline Bullet Node */}
               <div
                 className={`absolute left-3 sm:left-4 md:left-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-[#0d0e11] border-2 -translate-x-1/2 z-10 flex items-center justify-center transition-colors duration-300 ${
-                  isReality ? "border-amber-400" : "border-cyan-400"
+                  isReality ? "border-amber-400" : "border-amber-400"
                 }`}
               >
                 <span
                   className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                    isReality ? "bg-amber-400" : "bg-cyan-400"
+                    isReality ? "bg-amber-400" : "bg-amber-400"
                   }`}
                 />
               </div>
@@ -181,7 +181,7 @@ export const Timeline: React.FC = () => {
                       "--timeline-glow": `0 0 25px ${
                         isReality
                           ? hexToRgba(designManifest.colors.warning, 0.05)
-                          : hexToRgba(designManifest.colors["brand-cyan"], 0.05)
+                          : hexToRgba(designManifest.colors["accent"], 0.05)
                       }`,
                     } as React.CSSProperties
                   }
@@ -198,7 +198,7 @@ export const Timeline: React.FC = () => {
                       className={`text-[10px] font-mono font-bold tracking-wider uppercase px-2.5 py-0.5 border rounded-md transition-colors duration-300 ${
                         isReality
                           ? "bg-amber-500/10 text-amber-300 border-amber-500/25"
-                          : "bg-cyan-500/10 text-cyan-300 border-cyan-500/25"
+                          : "bg-amber-500/10 text-amber-300 border-amber-500/25"
                       }`}
                     >
                       {item.period}

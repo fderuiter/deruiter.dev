@@ -30,8 +30,8 @@ export default async function BlogIndexPage() {
           ]),
         }}
       />
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-brand-cyan/5 blur-[140px] pointer-events-none hidden sm:block" />
-      <div className="absolute top-60 left-1/3 w-80 h-80 rounded-full bg-brand-blue/5 blur-[160px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-accent/5 blur-[140px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-60 left-1/3 w-80 h-80 rounded-full bg-accent/5 blur-[160px] pointer-events-none hidden sm:block" />
 
       <div className="relative z-10 w-full flex flex-col items-center">
         {/* Navigation Breadcrumb */}
@@ -59,7 +59,7 @@ export default async function BlogIndexPage() {
               The first posts are on the way. In the meantime, the{" "}
               <Link
                 href="/case-studies"
-                className="text-brand-cyan hover:underline"
+                className="text-accent hover:underline"
               >
                 case studies
               </Link>{" "}
@@ -72,7 +72,7 @@ export default async function BlogIndexPage() {
               <Link
                 key={post.slug}
                 href={`/blog/${post.slug}`}
-                className="block p-6 bg-zinc-900/20 border border-zinc-800/80 rounded-2xl hover:border-brand-cyan/40 transition-colors"
+                className="block p-6 bg-zinc-900/20 border border-zinc-800/80 rounded-2xl hover:border-accent/40 transition-colors"
               >
                 <h2 className="text-lg font-bold text-neutral-100 mb-2">
                   {post.title}

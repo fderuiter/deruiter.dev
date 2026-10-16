@@ -201,8 +201,8 @@ export default async function CaseStudyPage({ params }: PageProps) {
         }}
       />
       {/* Background Blurs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-brand-cyan/5 blur-[120px] pointer-events-none hidden sm:block" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 w-80 h-80 rounded-full bg-brand-blue/5 blur-[120px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
 
       <div className="relative z-10 w-full max-w-3xl">
         <TracingBeam>
@@ -246,7 +246,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
           {/* Metadata badges row */}
           <div className="flex flex-wrap items-center justify-between gap-3 mb-6 border-b border-zinc-900 pb-6">
             <div className="flex flex-wrap items-center gap-3">
-              <span className="px-3 py-1 text-xs font-mono font-bold bg-brand-cyan/5 border border-brand-cyan/20 text-brand-cyan rounded-md">
+              <span className="px-3 py-1 text-xs font-mono font-bold bg-accent/5 border border-accent/20 text-accent rounded-md">
                 {study.primary_language}
               </span>
               <span className="text-xs font-mono text-muted">
@@ -274,7 +274,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
                 `editorial_content` is Markdown, not HTML -- rendering it through
                 RichNarrative printed the asterisks and backticks literally on
                 every case study. */}
-            <div className="text-lg text-muted-strong font-medium border-l-2 border-brand-cyan/60 pl-6 py-2 italic bg-zinc-900/10 rounded-r-xl">
+            <div className="text-lg text-muted-strong font-medium border-l-2 border-accent/60 pl-6 py-2 italic bg-zinc-900/10 rounded-r-xl">
               <InlineMarkdown
                 text={study.editorial_content}
                 codeClassName="px-1.5 py-0.5 mx-0.5 text-sm font-mono not-italic bg-amber-500/10 border border-amber-500/20 text-amber-300 rounded"
@@ -301,7 +301,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
                 className="mt-12 scroll-mt-24 border-t border-zinc-900/50 pt-10"
               >
                 <h2 className="text-xl font-bold font-sans text-neutral-100 mb-3 flex items-center gap-2">
-                  <IconTerminal className="w-5 h-5 text-brand-cyan" />
+                  <IconTerminal className="w-5 h-5 text-accent" />
                   Try the Sample Commands
                 </h2>
                 <p className="text-xs font-mono text-muted mb-6 leading-relaxed">
@@ -321,7 +321,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
               <div className="mt-12 border-t border-zinc-900/50 pt-10">
                 <h2 className="text-xl font-bold font-sans text-neutral-100 mb-3 flex items-center gap-2">
                   <svg
-                    className="w-5 h-5 text-brand-cyan"
+                    className="w-5 h-5 text-accent"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

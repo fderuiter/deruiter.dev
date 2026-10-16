@@ -96,8 +96,8 @@ export default async function CaseStudiesPage() {
           ]),
         }}
       />
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-brand-cyan/5 blur-[140px] pointer-events-none hidden sm:block" />
-      <div className="absolute top-60 left-1/3 w-80 h-80 rounded-full bg-brand-blue/5 blur-[160px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full bg-accent/5 blur-[140px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-60 left-1/3 w-80 h-80 rounded-full bg-accent/5 blur-[160px] pointer-events-none hidden sm:block" />
 
       <div className="relative z-10 w-full flex flex-col items-center">
         {/* Navigation Breadcrumb */}

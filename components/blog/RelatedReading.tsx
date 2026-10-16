@@ -18,7 +18,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
       className="w-full mt-16 pt-12 border-t border-zinc-900"
     >
       <div className="mb-6">
-        <span className="text-xs font-mono font-semibold uppercase tracking-wider text-brand-cyan">
+        <span className="text-xs font-mono font-semibold uppercase tracking-wider text-accent">
           Architecture & Systems Depth
         </span>
         <h2
@@ -38,7 +38,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
           <Link
             key={item.id}
             href={item.href}
-            className="group relative flex flex-col justify-between p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-brand-cyan/40 hover:bg-zinc-900/70 transition-all duration-200"
+            className="group relative flex flex-col justify-between p-5 rounded-xl bg-zinc-900/40 border border-zinc-800/80 hover:border-accent/40 hover:bg-zinc-900/70 transition-all duration-200"
           >
             <div>
               {/* Type & Meta Header */}
@@ -46,7 +46,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
                 <span
                   className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase ${
                     item.type === "dispatch"
-                      ? "bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/30"
+                      ? "bg-accent/10 text-accent border border-accent/30"
                       : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
                   }`}
                 >
@@ -66,7 +66,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
               </div>
 
               {/* Title */}
-              <h3 className="text-base font-semibold text-zinc-100 group-hover:text-brand-cyan transition-colors mb-2 line-clamp-2">
+              <h3 className="text-base font-semibold text-zinc-100 group-hover:text-accent transition-colors mb-2 line-clamp-2">
                 {item.title}
               </h3>
 
@@ -89,7 +89,7 @@ export function RelatedReading({ items }: RelatedReadingProps) {
                 ))}
               </div>
 
-              <span className="inline-flex items-center gap-1 text-xs font-mono font-medium text-brand-cyan group-hover:underline">
+              <span className="inline-flex items-center gap-1 text-xs font-mono font-medium text-accent group-hover:underline">
                 {item.type === "dispatch" ? "Read dispatch" : "Explore study"}
                 <svg
                   className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"

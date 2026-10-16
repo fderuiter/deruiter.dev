@@ -160,8 +160,8 @@ export default async function BlogPostPage({ params }: PageProps) {
         }}
       />
       {/* Background Blurs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-brand-cyan/5 blur-[120px] pointer-events-none hidden sm:block" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 w-80 h-80 rounded-full bg-brand-blue/5 blur-[120px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
+      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
 
       <div className="relative z-10 w-full max-w-5xl">
         {/* Breadcrumbs Navigation */}
@@ -173,9 +173,9 @@ export default async function BlogPostPage({ params }: PageProps) {
 
         {/* Content Pillar Badge */}
         <div className="mb-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-medium bg-accent/10 text-accent border border-accent/20">
             <span
-              className="w-1.5 h-1.5 rounded-full bg-brand-cyan"
+              className="w-1.5 h-1.5 rounded-full bg-accent"
               aria-hidden="true"
             />
             {pillarLabel}

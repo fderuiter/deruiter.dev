@@ -83,7 +83,7 @@ describe("Polymorphic CardTitle Heading Configuration", () => {
       expect(heading.className).toContain("font-heading");
       expect(heading.className).toContain("font-bold");
       expect(heading.className).toContain("text-neutral-100");
-      expect(heading.className).toContain("group-hover:text-brand-cyan");
+      expect(heading.className).toContain("group-hover:text-accent");
       expect(heading.className).toContain("transition-colors");
     });
 

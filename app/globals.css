@@ -28,7 +28,10 @@
   --brand-blue-glow: rgba(59, 130, 246, 0.1);
   --brand-dark: #0d0e11;
   --success: #10b981;
-  --error: #f87171;
+  --error: #ef4444;
+  /* The single interactive accent (#2309): focus, selection, active state,
+     link hover and primary actions. --warning shares the hue for caution status. */
+  --accent: #f59e0b;
   --warning: #f59e0b;
 
   /* Typography Sizes */
@@ -99,6 +102,7 @@
   --color-success: var(--success);
   --color-error: var(--error);
   --color-warning: var(--warning);
+  --color-accent: var(--accent);
 
   --font-sans: var(--font-atkinson), system-ui, -apple-system, sans-serif;
   --font-heading: var(--font-lexend), system-ui, -apple-system, sans-serif;

@@ -9,7 +9,7 @@
 > **applyDifficulty**(`state`, `difficulty`): [`StudyState`](../../../types/interfaces/StudyState.md)
 
 Sets how hard the study starts. Calm has more budget, a warmer sponsor
-and a rested team; rescue inherits a study already behind, over-spent,
+and a rested team; rescue inherits a study already behind with less budget,
 under-documented and with a sponsor who has stopped smiling. Apply it to
 a fresh study, before it begins.
 
@@ -21,7 +21,7 @@ a fresh study, before it begins.
 
 ### difficulty
 
-`"calm"` \| `"standard"` \| `"rescue"`
+`"standard"` \| `"calm"` \| `"rescue"`
 
 ## Returns
 

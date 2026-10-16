@@ -17,7 +17,7 @@ export const DIFFICULTY_TEXT: Record<
   },
   rescue: {
     label: "Rescue study",
-    blurb: "You inherit it six days late, over-spent and under-documented.",
+    blurb: "You inherit it six days late, under-funded and under-documented.",
   },
 };
 

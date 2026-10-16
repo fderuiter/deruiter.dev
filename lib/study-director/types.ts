@@ -177,6 +177,8 @@ export interface StudyState {
    */
   budget?: StudyBudget;
   setup: StudySetup;
+  /** Budget before difficulty changes the available margin; absent in old saves. */
+  baselineBudget?: number;
   day: number;
   status: "running" | "complete";
   team: TeamMember[];

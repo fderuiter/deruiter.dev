@@ -105,7 +105,7 @@ describe("wildcards", () => {
 });
 
 describe("difficulty", () => {
-  it("gives calm more budget and rescue a late, over-spent start", () => {
+  it("gives calm more budget and rescue a late start with less budget", () => {
     const standard = fresh("d");
     const calm = fresh("d", "calm");
     const rescue = fresh("d", "rescue");
@@ -113,7 +113,8 @@ describe("difficulty", () => {
     expect(calm.setup.budget).toBeGreaterThan(standard.setup.budget);
     expect(calm.adjust.client).toBeGreaterThan(0);
     expect(rescue.slipDays).toBe(6);
-    expect(rescue.spent).toBeGreaterThan(0);
+    expect(rescue.setup.budget).toBeLessThan(standard.setup.budget);
+    expect(rescue.spent).toBe(0);
     expect(rescue.documentationDebt).toBeGreaterThan(0);
     expect(rescue.adjust.client).toBeLessThan(0);
   });

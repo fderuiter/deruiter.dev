@@ -137,13 +137,13 @@ Original CSS Variable: --foreground
 
 #### colors.muted
 
-> `readonly` **muted**: `"#94a3b8"` = `"#94a3b8"`
+> `readonly` **muted**: `"#9da2af"` = `"#9da2af"`
 
 Original CSS Variable: --muted
 
 #### colors.muted-strong
 
-> `readonly` **muted-strong**: `"#cbd5e1"` = `"#cbd5e1"`
+> `readonly` **muted-strong**: `"#d2d4db"` = `"#d2d4db"`
 
 Original CSS Variable: --muted-strong
 
@@ -167,7 +167,7 @@ Original CSS Variable: --surface-2
 
 #### colors.text-secondary
 
-> `readonly` **text-secondary**: `"#94a3b8"` = `"#94a3b8"`
+> `readonly` **text-secondary**: `"#9da2af"` = `"#9da2af"`
 
 Original CSS Variable: --text-secondary
 

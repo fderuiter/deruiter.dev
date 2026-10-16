@@ -19,6 +19,8 @@ import { playBlind } from "./utils/trial-and-error-bot";
 const C = BIOSTAT_OPS_CAMPAIGN;
 const ENDED =
   "The run was submitted and has ended, so the package stays locked.";
+const ON_MARKET =
+  "The package is submitted and the compound is on the market, so it stays locked.";
 
 /** A run whose current Blind is marked cleared, without playing it. */
 const cleared = (run: RunState): RunState => ({
@@ -69,5 +71,27 @@ describe("Trial & Error: an ended run keeps its CSR lock (#2149)", () => {
       kind: "REFUSED",
       message: ENDED,
     });
+  });
+
+  // #2331: Continue into post-marketing submits the package too, so the
+  // amendment must not send the run back to CSR Lock.
+  it("refuses the amendment once the run continues into post-marketing", () => {
+    const continued = advanceRun(C, lockedCampaign("alpha"), {
+      type: "CONTINUE_ENDLESS",
+    });
+    expect(continued.endless).toBe(true);
+    const view = deriveRunView(C, continued);
+    expect(view.phase).toBe("BLIND_CLEARED");
+    expect(view.table.csrLock?.amendRefusal).toBe(ON_MARKET);
+
+    const after = advanceRun(C, continued, { type: "AMEND_PROTOCOL" });
+    expect(after.table.lock).toEqual(continued.table.lock);
+    expect(after.table.status).toBe("CLEARED");
+    expect(after.table.amendments).toBe(continued.table.amendments);
+    expect(after.table.lastEvent).toMatchObject({
+      kind: "REFUSED",
+      message: ON_MARKET,
+    });
+    expect(deriveRunView(C, after).phase).toBe("BLIND_CLEARED");
   });
 });

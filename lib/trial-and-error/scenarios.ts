@@ -3465,6 +3465,31 @@ export const SAFETY_SURVEILLANCE_STUDY: Act = {
   shop: ACT_III_SHOP,
 };
 
+/**
+ * The PASS Boss: the campaign's FDA Information Request with its quotas
+ * raised, reworded for a marketed compound (#2331). The request is a
+ * post-marketing requirement's safety questions, not the End-of-Phase-2
+ * gate, so neither the intro nor the Clinical Hold letter mentions Phase III.
+ */
+const PASS_IR_BOSS: Scenario = postMarketingBoss(
+  {
+    ...FDA_IR_SCENARIO,
+    summary:
+      "The agency's safety questions under the post-marketing requirement: answer each with the output it asks for, in two hands, before the 48-hour deadline.",
+    intro:
+      "The agency has safety questions under the post-marketing requirement. The response is due in 48 hours and goes in at most two hands. Every move takes time: a hand 12 hours, a discard 4, an Inspect 2, a trace 1. Run out of time and the study goes on Clinical Hold.",
+    encounter: {
+      ...FDA_IR_SCENARIO.encounter,
+      letter: {
+        request: "Post-Marketing Requirement Information Request",
+        consequence:
+          "continue the post-authorisation safety study until the hold is lifted",
+      },
+    },
+  },
+  POST_MARKETING_QUOTAS.irBoss
+);
+
 /** Post-marketing study: a post-authorisation safety study (PASS). */
 export const PASS_STUDY: Act = {
   id: "post-marketing-pass",
@@ -3491,7 +3516,7 @@ export const PASS_STUDY: Act = {
       quota: POST_MARKETING_QUOTAS.passDmc,
     }),
   ],
-  bossPool: [postMarketingBoss(FDA_IR_SCENARIO, POST_MARKETING_QUOTAS.irBoss)],
+  bossPool: [PASS_IR_BOSS],
   shop: ACT_III_SHOP,
 };
 

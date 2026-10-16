@@ -106,8 +106,10 @@ function LinkNote() {
  * chosen sponsor and GCP-audit stake. Locked sponsors and stakes stay in the
  * list, disabled, each saying how to unlock it. A challenge link's sponsor
  * and stake can always be played, unlocked here or not, so a friend's run
- * replays. The Daily Protocol is always Virtual Biotech at stake 1. A
- * focus-trapped dialog; Escape or Cancel closes it and nothing changes.
+ * replays. The Daily Protocol is always Virtual Biotech at stake 1, so a
+ * Daily link opens on the Daily, its date kept, with the sponsor and stake
+ * shown read-only (#2333). A focus-trapped dialog; Escape or Cancel closes it
+ * and nothing changes.
  */
 export function NewRun({
   challenge,
@@ -120,7 +122,11 @@ export function NewRun({
   const today = useUtcToday();
   const linked =
     challenge && !challenge.daily ? challengeChoice(challenge) : null;
-  const [choice, setChoice] = useState<Choice>(challenge ? "SEEDED" : "RANDOM");
+  // A Daily link's own date: the Daily option plays that day, today or not.
+  const linkedDaily = challenge?.daily ?? null;
+  const [choice, setChoice] = useState<Choice>(
+    linkedDaily ? "DAILY" : challenge ? "SEEDED" : "RANDOM"
+  );
   const [typed, setTyped] = useState(challenge?.seed ?? "");
   const [error, setError] = useState<string | null>(null);
   const [deckBuilderOpen, setDeckBuilderOpen] = useState(false);
@@ -130,15 +136,28 @@ export function NewRun({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const firstRef = useRef<HTMLInputElement>(null);
+  const dailyRef = useRef<HTMLInputElement>(null);
   const portalTarget = usePortalTarget();
   const ref = useFocusTrap<HTMLDivElement>(true, {
     onEscape: closeNow(onClose),
-    initialFocusRef: challenge ? inputRef : firstRef,
+    initialFocusRef: linkedDaily ? dailyRef : challenge ? inputRef : firstRef,
   });
   useClaimFocus(ref);
   const id = useId();
   const errorId = `${id}-error`;
-  const daily = choice === "DAILY";
+  const dailyDate = linkedDaily ?? today;
+  // The seed a typed entry starts, as start() reads it.
+  const typedSeed =
+    challenge && typed.trim() === challenge.seed
+      ? challenge.seed
+      : normalizeSeed(typed);
+  // The Daily option, or a Daily link's own seed typed in: either starts the
+  // Daily Protocol under the defaults, so the pickers are read-only.
+  const daily =
+    choice === "DAILY" ||
+    (choice === "SEEDED" &&
+      linkedDaily !== null &&
+      typedSeed === challenge?.seed);
   const sponsors = sponsorOptions(unlocks);
   const stakes = stakeOptions(unlocks, runChoice.sponsorId);
 
@@ -162,21 +181,20 @@ export function NewRun({
       return;
     }
     if (choice === "DAILY") {
-      if (today) {
+      if (dailyDate) {
         onStart(
-          dailySeed(today),
-          { kind: "DAILY", date: today },
-          DEFAULT_RUN_CHOICE
+          dailySeed(dailyDate),
+          { kind: "DAILY", date: dailyDate },
+          DEFAULT_RUN_CHOICE,
+          // A Daily link starts exactly as its link says (#2333).
+          linkedDaily ? challenge?.customScenario : undefined
         );
       }
       return;
     }
     // A typed seed must be a codec seed, so a typo is caught rather than
     // played as a named seed; a challenge link's own seed always starts.
-    const seed =
-      challenge && typed.trim() === challenge.seed
-        ? challenge.seed
-        : normalizeSeed(typed);
+    const seed = typedSeed;
     if (!seed) {
       setError(
         "Enter 8 letters or digits, like 7K3M-Q9PX. Hyphens and case don't matter."
@@ -300,17 +318,23 @@ export function NewRun({
               )}
             </div>
             <label
-              className={`flex min-h-[48px] items-start gap-3 border border-zinc-800 p-3 ${today ? "cursor-pointer hover:bg-zinc-900" : "opacity-60"}`}
+              className={`flex min-h-[48px] items-start gap-3 border border-zinc-800 p-3 ${dailyDate ? "cursor-pointer hover:bg-zinc-900" : "opacity-60"}`}
             >
-              <input {...option("DAILY")} disabled={!today} />
+              <input
+                ref={dailyRef}
+                {...option("DAILY")}
+                disabled={!dailyDate}
+              />
               <span className="min-w-0 break-words">
                 <span className="font-bold uppercase tracking-wider">
                   Daily Protocol
                 </span>
                 <span className="block text-zinc-400" data-testid="daily-date">
-                  {today
-                    ? `${today} (UTC): everyone plays the same run today.`
-                    : "Checking today's date…"}
+                  {linkedDaily
+                    ? `${linkedDaily} (UTC): everyone gets the same run for that date.`
+                    : today
+                      ? `${today} (UTC): everyone plays the same run today.`
+                      : "Checking today's date…"}
                 </span>
               </span>
             </label>

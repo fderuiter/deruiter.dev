@@ -45,4 +45,5 @@
 - [recordDiscoveries](functions/recordDiscoveries.md)
 - [recordRun](functions/recordRun.md)
 - [serializeCodex](functions/serializeCodex.md)
+- [summarizeCampaignWin](functions/summarizeCampaignWin.md)
 - [summarizeRun](functions/summarizeRun.md)

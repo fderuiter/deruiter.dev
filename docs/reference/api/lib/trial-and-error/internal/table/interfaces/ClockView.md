@@ -12,6 +12,14 @@ move is made; nothing reads the wall clock.
 
 ## Properties
 
+### consequence
+
+> **consequence**: `string`
+
+What the program may not do on hold, e.g. "proceed to Phase III".
+
+***
+
 ### costs
 
 > **costs**: `Record`\<[`ClockAction`](../../../types/type-aliases/ClockAction.md), `number`\>
@@ -31,6 +39,14 @@ The clock ran out with questions open: a Clinical Hold.
 ### hoursLeft
 
 > **hoursLeft**: `number`
+
+***
+
+### request
+
+> **request**: `string`
+
+The request's name, as the Clinical Hold letter gives it (#2331).
 
 ***
 

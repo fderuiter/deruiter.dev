@@ -852,6 +852,19 @@ export const FdaIrSchema = z.object({
   /** The hands the FDA accepts as a response. */
   hands: z.array(HandTypeSchema).min(1),
   questions: z.array(IrQuestionSchema).min(1).max(4),
+  /**
+   * How a Clinical Hold names the request and what the hold stops (#2331).
+   * Absent means the End-of-Phase-2 request, which stops the move to Phase
+   * III; a post-marketing round gives its post-approval wording.
+   */
+  letter: z
+    .object({
+      /** The request's name, e.g. "End-of-Phase-2 Information Request". */
+      request: z.string().min(1).max(120),
+      /** What the program may not do on hold, e.g. "proceed to Phase III". */
+      consequence: z.string().min(1).max(160),
+    })
+    .optional(),
 });
 /** The FDA Information Request encounter. */
 export type FdaIr = z.infer<typeof FdaIrSchema>;

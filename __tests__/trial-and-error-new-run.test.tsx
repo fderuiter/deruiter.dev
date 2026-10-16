@@ -237,6 +237,72 @@ describe("New Run (#1528)", () => {
     );
   });
 
+  // #2333: a Daily link used to open on "Enter a seed" with live sponsor and
+  // stake pickers whose choices start() silently replaced.
+  it("opens a Daily Protocol link on the Daily, with sponsor and stake read-only", async () => {
+    const seed = dailySeed("2026-09-29");
+    window.history.replaceState(
+      null,
+      "",
+      `/arcade/trial-and-error#seed=${seed}&daily=2026-09-29`
+    );
+    render(<CardTable act={act1} persist />);
+    const dialog = screen.getByRole("dialog", { name: "New run" });
+    const dailyRadio = within(dialog).getByRole<HTMLInputElement>("radio", {
+      name: /Daily Protocol/,
+    });
+    expect(dailyRadio.checked).toBe(true);
+    expect(dailyRadio.disabled).toBe(false);
+    expect(
+      within(dialog).getByRole<HTMLInputElement>("radio", {
+        name: /Enter a seed/,
+      }).checked
+    ).toBe(false);
+    expect(within(dialog).getByTestId("daily-date").textContent).toContain(
+      "2026-09-29 (UTC)"
+    );
+    await waitFor(() => expect(document.activeElement).toBe(dailyRadio));
+    for (const testId of ["sponsor-picker", "stake-picker"]) {
+      expect(
+        (within(dialog).getByTestId(testId) as HTMLFieldSetElement).disabled
+      ).toBe(true);
+    }
+    expect(within(dialog).getByTestId("daily-choice-note")).toBeTruthy();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "Start run" }));
+    expect(announce).toHaveBeenCalledWith(
+      "Daily Protocol for 2026-09-29 started."
+    );
+    const info = openRunInfo();
+    expect(within(info).getByTestId("run-seed").textContent).toBe(seed);
+    expect(within(info).getByTestId("run-daily").textContent).toContain(
+      "Daily Protocol 2026-09-29 (UTC)"
+    );
+  });
+
+  it("keeps the pickers read-only when a Daily link's seed is chosen as a seed", () => {
+    const seed = dailySeed("2026-09-29");
+    window.history.replaceState(
+      null,
+      "",
+      `/arcade/trial-and-error#seed=${seed}&daily=2026-09-29`
+    );
+    render(<CardTable act={act1} persist />);
+    const dialog = screen.getByRole("dialog", { name: "New run" });
+    fireEvent.click(
+      within(dialog).getByRole("radio", { name: /Enter a seed/ })
+    );
+    const sponsors = within(dialog).getByTestId(
+      "sponsor-picker"
+    ) as HTMLFieldSetElement;
+    expect(sponsors.disabled).toBe(true);
+    // A different seed is no longer the Daily: its sponsor and stake open.
+    fireEvent.change(within(dialog).getByTestId("new-run-seed"), {
+      target: { value: "7K3M-Q9PX" },
+    });
+    expect(sponsors.disabled).toBe(false);
+  });
+
   it("dismisses a challenge link on Cancel, leaving the run as it was", () => {
     window.history.replaceState(null, "", "/#seed=7K3M-Q9PX");
     render(<CardTable act={act1} seed="mine" persist />);

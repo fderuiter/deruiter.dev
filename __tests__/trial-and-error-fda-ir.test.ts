@@ -6,6 +6,7 @@ import {
   DMC_MILESTONE_SCENARIO,
   DOSE_ESCALATION_SCENARIO,
   FDA_IR_SCENARIO,
+  PASS_STUDY,
   SCENARIOS,
   ScenarioSchema,
   advanceRun,
@@ -135,6 +136,8 @@ describe("FDA Information Request clock (#921)", () => {
       costs: { PLAY_HAND: 12, DISCARD: 4, INSPECT: 2, TRACE: 1 },
       urgent: false,
       hold: false,
+      request: "End-of-Phase-2 Information Request",
+      consequence: "proceed to Phase III",
     });
     expect(v.questions.map((q) => [q.cardNumber, q.answered])).toEqual([
       ["Table 14.3.3", false],
@@ -437,5 +440,44 @@ describe("FDA Information Request in a run (#921)", () => {
     expect(state.table.status).toBe("CLEARED");
     expect(deriveRunView(act, state).phase).toBe("RUN_WON");
     expect(deriveRunView(act, state).table.reward).toBeNull();
+  });
+});
+
+describe("the post-marketing Information Request (#2331)", () => {
+  const PM = PASS_STUDY.bossPool![0];
+  const PM_ROOMY: Scenario = {
+    ...PM,
+    table: { ...PM.table, startingCpu: 40 },
+  };
+
+  it("is the campaign's IR Boss, reworded for a marketed compound", () => {
+    expect(PM.id).toBe(IR.id);
+    expect(ScenarioSchema.safeParse(PM).success).toBe(true);
+    for (const text of [PM.intro, PM.summary]) {
+      expect(text).not.toMatch(/Phase III|End-of-Phase-2/);
+    }
+    expect(PM.intro).toContain("post-marketing requirement");
+  });
+
+  it("puts the marketed compound's hold in the outcome, not Phase III", () => {
+    const state = discardTimes(10, PM_ROOMY);
+    expect(state.status).toBe("FAILED");
+    const message = state.lastEvent?.message ?? "";
+    expect(message).toContain(
+      `${CLINICAL_HOLD}: the 48-hour response window closed with 2 of 2 questions unanswered.`
+    );
+    expect(message).not.toContain("Phase III");
+    expect(view(state, PM_ROOMY).clock).toMatchObject({
+      hold: true,
+      request: "Post-Marketing Requirement Information Request",
+    });
+  });
+
+  it("leaves the campaign's End-of-Phase-2 copy as it was", () => {
+    expect(IR.intro).toContain("The FDA has questions before Phase III.");
+    expect(view(discardTimes(10), ROOMY).clock).toMatchObject({
+      request: "End-of-Phase-2 Information Request",
+      consequence: "proceed to Phase III",
+    });
   });
 });

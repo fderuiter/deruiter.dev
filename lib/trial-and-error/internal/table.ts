@@ -888,6 +888,10 @@ export interface ClockView {
   urgent: boolean;
   /** The clock ran out with questions open: a Clinical Hold. */
   hold: boolean;
+  /** The request's name, as the Clinical Hold letter gives it (#2331). */
+  request: string;
+  /** What the program may not do on hold, e.g. "proceed to Phase III". */
+  consequence: string;
 }
 
 /** One targeted question as the Blind panel lists it. */
@@ -1437,15 +1441,17 @@ function stageHands(
  * them can be formed from the cards left (#2150): the Blind can no longer
  * be won, so it fails rather than waiting on a discard. Null while a hand
  * is still possible, the deck still deals, or a blank shell could yet be
- * allocated. Stale cards count as recompiled, and an open-session stage
- * leaves out the closed-session outputs it cannot be shown. The FDA IR is
+ * allocated. Stale cards count as recompiled only as far as the CPU left
+ * pays for their recompiles and the play (#2332), and an open-session stage
+ * leaves out the closed-session outputs it cannot be shown. A pending
+ * crisis may still change the CPU, so it waits for the choice. The FDA IR is
  * left to its response clock, which ends it as a Clinical Hold (#921).
  */
 function strandedHands(
   scenario: Scenario,
   state: TableState
 ): readonly HandType[] | null {
-  if (fdaIrOf(scenario)) return null;
+  if (fdaIrOf(scenario) || state.crisis) return null;
   const accepts = stageHands(scenario, state);
   if (!accepts || state.hand.length === 0) return null;
   if (state.deckIndex < scenario.deck.length) return null;
@@ -1458,11 +1464,35 @@ function strandedHands(
     stage?.session === "OPEN"
       ? cards.filter((card) => !isClosedSession(scenario, state, card))
       : cards;
-  const best = classifyHand(
-    shown.map((card) => ({ ...card, stale: false })),
-    accepts
+  const current = shown.filter((card) => !isStale(scenario, state, card));
+  const stale = shown.filter((card) => isStale(scenario, state, card));
+  const recompiles = Math.max(
+    0,
+    Math.floor(
+      (state.cpu.available - CPU_COSTS.PLAY_HAND) / CPU_COSTS.RECOMPILE
+    )
   );
-  return best && accepts.includes(best.handType) ? null : accepts;
+  const formable = subsetsOf(stale, Math.min(recompiles, stale.length)).some(
+    (recompiled) => {
+      const best = classifyHand(
+        [...current, ...recompiled].map((card) => ({ ...card, stale: false })),
+        accepts
+      );
+      return best !== null && accepts.includes(best.handType);
+    }
+  );
+  return formable ? null : accepts;
+}
+
+/** Every subset of `items` with exactly `size` members, in order. */
+function subsetsOf<T>(items: readonly T[], size: number): T[][] {
+  if (size === 0) return [[]];
+  if (items.length < size) return [];
+  const [first, ...rest] = items;
+  return [
+    ...subsetsOf(rest, size - 1).map((subset) => [first, ...subset]),
+    ...subsetsOf(rest, size),
+  ];
 }
 
 /**
@@ -2863,7 +2893,7 @@ function clinicalHold(
   const open = ir.questions.length - state.answered.length;
   return {
     state: { ...state, status: "FAILED" },
-    outcome: `${CLINICAL_HOLD}: the ${ir.clockHours}-hour response window closed with ${open} of ${ir.questions.length} question${ir.questions.length === 1 ? "" : "s"} unanswered. The program cannot proceed to Phase III.`,
+    outcome: `${CLINICAL_HOLD}: the ${ir.clockHours}-hour response window closed with ${open} of ${ir.questions.length} question${ir.questions.length === 1 ? "" : "s"} unanswered. The program cannot ${irLetter(ir).consequence}.`,
   };
 }
 
@@ -2933,6 +2963,17 @@ export const CLOCK_URGENT_HOURS = 12;
 
 /** How a lost FDA Information Request is announced: it ends the run. */
 export const CLINICAL_HOLD = "Clinical Hold";
+
+/** The campaign's Clinical Hold letter: the End-of-Phase-2 request. */
+const END_OF_PHASE_2_LETTER: NonNullable<FdaIr["letter"]> = {
+  request: "End-of-Phase-2 Information Request",
+  consequence: "proceed to Phase III",
+};
+
+/** How a Clinical Hold names the request and what it stops (#2331). */
+function irLetter(ir: FdaIr): NonNullable<FdaIr["letter"]> {
+  return ir.letter ?? END_OF_PHASE_2_LETTER;
+}
 
 /** Actions still allowed while a crisis waits for an answer: none play the Blind. */
 const CRISIS_SAFE_ACTIONS = new Set<TableAction["type"]>([
@@ -4540,6 +4581,7 @@ export function deriveTableView(
             costs: { ...ir.hours },
             urgent: state.clock <= CLOCK_URGENT_HOURS,
             hold: state.status === "FAILED" && state.clock < ir.hours.PLAY_HAND,
+            ...irLetter(ir),
           }
         : null,
     questions: (ir?.questions ?? []).map((q) => ({

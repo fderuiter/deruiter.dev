@@ -14,7 +14,9 @@ seed, choice, move count and result) leaves the history as it was.
 
 A run that won its campaign also unlocks (#950): the next stake for its
 sponsor, and the next sponsor at stake 1. A campaign won before
-post-marketing rounds failed still counts as a win.
+post-marketing rounds failed still counts as a win. The win a run recorded
+as it continued into post-marketing (#2331) is replaced by that run's end,
+so one run keeps one entry.
 
 ## Parameters
 
@@ -84,6 +86,13 @@ The run's highest-scoring hand, or null when none was played.
 `boolean` = `...`
 
 The campaign was won, even if post-marketing rounds then failed.
+
+#### continued?
+
+`true` = `...`
+
+True for the win a run records as it continues into post-marketing
+(#2331). The run's own end replaces it; an abandoned run keeps it.
 
 #### endedOn?
 

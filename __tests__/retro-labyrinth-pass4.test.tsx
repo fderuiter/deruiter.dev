@@ -370,14 +370,14 @@ describe("Retro Labyrinth pass-4 fixes", () => {
       // Pickup 300, speed bonus 1000 - 2 x 20 = 960, this room's crypto 150.
       await clearRoom();
       expect(score()).toBe(1410);
-      expect(container.textContent).toContain("Crypto Harvested: +150");
+      expect(container.textContent).toContain("Crypto earned: +150");
 
       // Enter asks about the unpicked reward first, then skips it (#2177).
       await press("Enter");
       await press("Enter");
       await clearRoom();
       expect(score()).toBe(2820);
-      expect(container.textContent).toContain("Crypto Harvested: +150");
+      expect(container.textContent).toContain("Crypto earned: +150");
 
       // Enter asks about the unpicked reward first, then skips it (#2177).
       await press("Enter");
@@ -486,6 +486,11 @@ describe("Retro Labyrinth pass-4 fixes", () => {
     });
 
     it("comes back paused from the Market", async () => {
+      // The Market trades only at the rest stop (#2291).
+      mockCampaign.build = (actual) => [
+        plainRoom(actual, { id: "darknet_vault" }),
+        ...actual.generateRoguelikeCampaign().slice(1),
+      ];
       await mount();
       await act(async () => {
         button("Market")?.click();

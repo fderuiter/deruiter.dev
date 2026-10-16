@@ -137,13 +137,13 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
             title="Professional Mode: Concise overview of technical responsibilities and systems impact"
             className={cn(
               segment,
-              "min-w-0 flex-1 rounded-lg px-2 font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan",
+              "min-w-0 flex-1 rounded-lg px-2 font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
               persona === "professional"
-                ? "bg-zinc-950 text-brand-cyan border border-brand-cyan/20"
+                ? "bg-zinc-950 text-accent border border-accent/20"
                 : "text-zinc-400 hover:text-zinc-200 border border-transparent"
             )}
           >
-            <IconBriefcase className="h-3.5 w-3.5 shrink-0 text-brand-cyan" />
+            <IconBriefcase className="h-3.5 w-3.5 shrink-0 text-accent" />
             <span>PROFESSIONAL</span>
           </button>
         </div>
@@ -163,7 +163,7 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
             aria-pressed={muted}
             className={cn(
               compact,
-              "flex items-center gap-1.5 rounded-lg border border-zinc-800 px-2 text-[10px] font-mono font-bold text-brand-cyan cursor-pointer hover:border-brand-cyan/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan"
+              "flex items-center gap-1.5 rounded-lg border border-zinc-800 px-2 text-[10px] font-mono font-bold text-accent cursor-pointer hover:border-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             )}
           >
             {muted ? (
@@ -187,7 +187,7 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
           onChange={(e) => setVolume(parseFloat(e.target.value) / 100)}
           disabled={muted}
           className={cn(
-            "w-full cursor-pointer accent-brand-cyan disabled:cursor-not-allowed disabled:opacity-40",
+            "w-full cursor-pointer accent-accent disabled:cursor-not-allowed disabled:opacity-40",
             drawer && "h-3"
           )}
         />
@@ -201,9 +201,9 @@ export function PreferencesPanel({ variant }: { variant: PreferencesVariant }) {
               aria-pressed={profile === option.id}
               className={cn(
                 compact,
-                "min-w-0 rounded-lg border px-1 text-[10px] font-mono cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan",
+                "min-w-0 rounded-lg border px-1 text-[10px] font-mono cursor-pointer active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                 profile === option.id
-                  ? "border-brand-cyan/40 bg-brand-cyan/10 text-brand-cyan"
+                  ? "border-accent/40 bg-accent/10 text-accent"
                   : "border-zinc-800 text-zinc-400 hover:border-zinc-700"
               )}
             >
@@ -291,9 +291,9 @@ export function PreferencesMenu({
         aria-controls="navigation-preferences"
         aria-expanded={isOpen}
         onClick={onToggle}
-        className="flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-mono text-zinc-300 cursor-pointer transition-colors hover:border-brand-cyan/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan/40"
+        className="flex min-h-9 items-center gap-1.5 whitespace-nowrap rounded-xl border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs font-mono text-zinc-300 cursor-pointer transition-colors hover:border-accent/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
       >
-        <IconAdjustmentsHorizontal className="h-3.5 w-3.5 text-brand-cyan" />
+        <IconAdjustmentsHorizontal className="h-3.5 w-3.5 text-accent" />
         <span>Preferences</span>
         {muted && (
           <IconVolumeOff

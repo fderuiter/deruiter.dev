@@ -27,6 +27,21 @@ interface RewardChoiceProps {
   readonly onSelect: (index: number | null) => void;
   /** True once Enter was pressed with nothing picked (#2177). */
   readonly prompt?: boolean;
+  /**
+   * Why each offer cannot be taken, by offer index, such as "HP full" for a
+   * Patch Kit at full HP (#2291); null or missing means it can be taken.
+   */
+  readonly unavailable?: readonly (string | null)[];
+}
+
+/** What the run-complete card reports about the whole run (#2291). */
+interface RunSummary {
+  /** The short name of each room played, in order. */
+  readonly roomNames: readonly string[];
+  /** HP lost across the run, retries included. */
+  readonly damageTaken: number;
+  /** The run's time, formatted, or null when it was not timed. */
+  readonly runTime: string | null;
 }
 
 interface RoomClearedCardProps {
@@ -48,6 +63,8 @@ interface RoomClearedCardProps {
   readonly notice?: string | null;
   /** Opens the between-runs Firmware Bay; shown when the run is over. */
   readonly onFirmware?: () => void;
+  /** The run's figures, shown on the run-complete card. */
+  readonly summary?: RunSummary;
 }
 
 const TIER_LABELS: Record<RouteTier, string> = {
@@ -74,7 +91,7 @@ const CHOICE_OFF =
 /** The run's rooms as a line of steps: cleared, here, the choice, then ahead. */
 function RouteMap({ seed, map }: Pick<RouteChoiceProps, "seed" | "map">) {
   return (
-    <div className="w-full max-w-md mt-2">
+    <div className="w-full max-w-md mt-1.5">
       <p className="text-[11px] uppercase tracking-widest text-zinc-500 font-mono">
         Route map · seed{" "}
         <span className="text-zinc-300" data-testid="labyrinth-run-seed">
@@ -149,6 +166,7 @@ export function RoomClearedCard({
   rewards,
   notice,
   onFirmware,
+  summary,
 }: RoomClearedCardProps) {
   const routeHeadingId = useId();
   const rewardHeadingId = useId();
@@ -162,10 +180,10 @@ export function RoomClearedCard({
   return (
     <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-sm overflow-y-auto overscroll-contain rounded-lg border border-zinc-700 z-30">
       <div className="min-h-full flex flex-col items-center justify-center text-center p-3">
-        <div className="w-7 h-7 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-1 text-emerald-400">
-          <IconTrophy className="w-4 h-4" aria-hidden="true" />
-        </div>
-        <h2 className="text-emerald-400 font-bold text-xs uppercase tracking-widest">
+        {/* The trophy sits beside the title rather than above it, so the
+            card fits a 1024x768 board without a scroll (#2291). */}
+        <h2 className="inline-flex items-center gap-1.5 text-emerald-400 font-bold text-xs uppercase tracking-widest">
+          <IconTrophy className="w-4 h-4 shrink-0" aria-hidden="true" />
           {isFinalRoom ? "RUN COMPLETE" : "MAINFRAME TIER BREACHED"}
         </h2>
         {isFinalRoom && (
@@ -180,17 +198,38 @@ export function RoomClearedCard({
               <span className="font-bold text-zinc-100">
                 {runMoves.reduce((a, b) => a + b, 0)}
               </span>{" "}
-              moves. Crypto Harvested:{" "}
+              moves. Crypto earned:{" "}
               <span className="font-bold text-amber-400">+{runCrypto}</span>
             </p>
+            {summary && (
+              <p
+                className="text-xs text-neutral-400 font-mono tabular-nums"
+                data-testid="labyrinth-run-stats"
+              >
+                Damage taken:{" "}
+                <span className="font-bold text-zinc-100">
+                  {summary.damageTaken} HP
+                </span>
+                {summary.runTime && (
+                  <>
+                    {" "}
+                    · Run time:{" "}
+                    <span className="font-bold text-zinc-100">
+                      {summary.runTime}
+                    </span>
+                  </>
+                )}
+              </p>
+            )}
             <p
               className="text-xs text-neutral-400 font-mono tabular-nums"
               data-testid="labyrinth-run-rooms"
             >
               {runMoves
-                .map(
-                  (moves, i) => `R${String(i + 1).padStart(2, "0")} ${moves}`
-                )
+                .map((moves, i) => {
+                  const name = summary?.roomNames[i];
+                  return `${roomNumber(i)}${name ? ` ${name}` : ""} ${moves}`;
+                })
                 .join(" · ")}
             </p>
           </>
@@ -198,12 +237,14 @@ export function RoomClearedCard({
           <p className="text-xs text-neutral-400 mt-0.5 leading-relaxed">
             This room:{" "}
             <span className="font-bold text-zinc-100">{movesCount}</span> moves.
-            Crypto Harvested:{" "}
+            Crypto earned:{" "}
             <span className="font-bold text-amber-400">+{roomCrypto}</span>
           </p>
         )}
+        {/* "Final" only once the run is over (#2291). */}
         <p className="text-xs text-neutral-400">
-          Final Score: <span className="font-bold text-zinc-100">{score}</span>
+          {isFinalRoom ? "Final Score" : "Score"}:{" "}
+          <span className="font-bold text-zinc-100">{score}</span>
           {isFinalRoom && (
             <>
               {" "}
@@ -227,7 +268,7 @@ export function RoomClearedCard({
           <div
             role="group"
             aria-labelledby={routeHeadingId}
-            className="w-full max-w-md mt-2"
+            className="w-full max-w-md mt-1.5"
           >
             <h3
               id={routeHeadingId}
@@ -264,7 +305,7 @@ export function RoomClearedCard({
             role="group"
             aria-labelledby={rewardHeadingId}
             data-testid="labyrinth-reward-pick"
-            className="@container w-full max-w-md mt-2"
+            className="@container w-full max-w-md mt-1.5"
           >
             <h3
               id={rewardHeadingId}
@@ -275,23 +316,27 @@ export function RoomClearedCard({
             <div className="mt-1 grid grid-cols-1 gap-1.5 @sm:grid-cols-3">
               {rewards.offer.map((reward, i) => {
                 const on = rewards.selected === i;
+                // A reward that would be wasted, such as a Patch Kit at full
+                // HP, is greyed out and says why (#2291).
+                const reason = rewards.unavailable?.[i] ?? null;
                 return (
                   <button
                     key={`${reward.kind}-${reward.name}`}
                     type="button"
                     aria-pressed={on}
+                    disabled={reason !== null && !on}
                     onClick={(e) => {
                       e.stopPropagation();
                       rewards.onSelect(on ? null : i);
                     }}
-                    className={`${CHOICE_CLASS} ${on ? CHOICE_ON : CHOICE_OFF}`}
+                    className={`${CHOICE_CLASS} ${on ? CHOICE_ON : CHOICE_OFF} disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-zinc-700`}
                   >
                     <span className="text-[11px] uppercase tracking-wider text-zinc-400">
                       {REWARD_KIND_LABELS[reward.kind]}
                     </span>
                     <span className="font-bold break-words">{reward.name}</span>
                     <span className="text-[11px] text-zinc-400 break-words">
-                      {reward.description}
+                      {reason ?? reward.description}
                     </span>
                   </button>
                 );
@@ -301,7 +346,7 @@ export function RoomClearedCard({
         )}
         {showNextRoom && (route || rewards) && (
           <p
-            className="text-xs text-neutral-400 mt-2"
+            className="text-xs text-neutral-400 mt-1.5"
             data-testid="labyrinth-next-pick"
           >
             Next: {chosenRoom ? chosenRoom.name : "the next room"} · Reward:{" "}
@@ -316,7 +361,7 @@ export function RoomClearedCard({
             Pick a reward, or press Enter again to skip it.
           </p>
         )}
-        <div className="flex gap-2 mt-2">
+        <div className="flex gap-2 mt-1.5">
           {showNextRoom ? (
             <button
               type="button"

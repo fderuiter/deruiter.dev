@@ -35,9 +35,11 @@ export const Tooltip = ({
           }
         }}
         style={{ font: "inherit" }}
-        className="bg-transparent p-0 m-0 border-0 outline-none align-baseline inline text-inherit cursor-help focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-brand-cyan"
+        className="bg-transparent p-0 m-0 border-0 outline-none align-baseline inline text-inherit cursor-help focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent"
       >
-        <span className="border-b border-dashed border-zinc-500">{children}</span>
+        <span className="border-b border-dashed border-zinc-500">
+          {children}
+        </span>
       </button>
       <AnimatePresence>
         {show && (
@@ -56,4 +58,3 @@ export const Tooltip = ({
     </span>
   );
 };
-

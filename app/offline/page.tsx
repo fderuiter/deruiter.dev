@@ -51,37 +51,37 @@ export default function OfflineFallbackPage() {
     {
       title: "Home Overview",
       path: "/",
-      icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconDirections className="w-4 h-4 text-accent" />,
     },
     {
       title: "Formal Proof Studio",
       path: "/proof",
-      icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconTerminal className="w-4 h-4 text-accent" />,
     },
     {
       title: "Systems Simulator",
       path: "/simulator",
-      icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconDirections className="w-4 h-4 text-accent" />,
     },
     {
       title: "Neuro 3D CAD",
       path: "/neuro",
-      icon: <IconBrain className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconBrain className="w-4 h-4 text-accent" />,
     },
     {
       title: "CRF Studio",
       path: "/crf",
-      icon: <IconFileSpreadsheet className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconFileSpreadsheet className="w-4 h-4 text-accent" />,
     },
     {
       title: "Architecture & Stack",
       path: "/stack",
-      icon: <IconCpu className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconCpu className="w-4 h-4 text-accent" />,
     },
     {
       title: "Arcade Hub",
       path: "/arcade",
-      icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+      icon: <IconTerminal className="w-4 h-4 text-accent" />,
     },
   ];
 
@@ -117,7 +117,7 @@ export default function OfflineFallbackPage() {
           <div className="flex flex-wrap items-center gap-4 mb-10">
             <button
               onClick={handleRetry}
-              className="inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-semibold text-zinc-950 bg-brand-cyan hover:bg-cyan-400 transition-colors shadow-md active:scale-95 cursor-pointer"
+              className="inline-flex items-center px-5 py-2.5 rounded-lg text-sm font-semibold text-zinc-950 bg-accent hover:bg-amber-400 transition-colors shadow-md active:scale-95 cursor-pointer"
             >
               <IconRefresh className="w-4 h-4 mr-2" />
               Retry Connection
@@ -140,12 +140,12 @@ export default function OfflineFallbackPage() {
                 <Link
                   key={route.path}
                   href={route.path}
-                  className="flex items-center space-x-3 p-3 rounded-lg bg-zinc-950/60 border border-zinc-800/60 hover:border-brand-cyan/40 hover:bg-zinc-800/40 transition-all group"
+                  className="flex items-center space-x-3 p-3 rounded-lg bg-zinc-950/60 border border-zinc-800/60 hover:border-accent/40 hover:bg-zinc-800/40 transition-all group"
                 >
-                  <div className="p-2 rounded-md bg-zinc-900 border border-zinc-800 text-brand-cyan group-hover:border-brand-cyan/30">
+                  <div className="p-2 rounded-md bg-zinc-900 border border-zinc-800 text-accent group-hover:border-accent/30">
                     {route.icon}
                   </div>
-                  <span className="text-sm font-medium text-zinc-200 group-hover:text-brand-cyan transition-colors">
+                  <span className="text-sm font-medium text-zinc-200 group-hover:text-accent transition-colors">
                     {route.title}
                   </span>
                 </Link>

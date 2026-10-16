@@ -242,12 +242,12 @@ export const Navbar: React.FC = () => {
             href="/"
             onClick={(e) => handleNavClick(e, "/#hero")}
             onMouseEnter={handleLinkHover}
-            className="group flex min-h-6 items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-cyan rounded-md shrink-0"
+            className="group flex min-h-6 items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground cursor-pointer focus-visible:ring-2 focus-visible:ring-accent rounded-md shrink-0"
             aria-label="Frederick de Ruiter Homepage"
           >
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-brand-cyan/70 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-cyan"></span>
+              <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-accent"></span>
             </span>
             <span className="tracking-wider">FDERUITER</span>
           </Link>
@@ -321,7 +321,7 @@ export const Navbar: React.FC = () => {
                     onMouseEnter={handleLinkHover}
                     className={cn(
                       "py-1 text-xs font-mono tracking-wider font-semibold transition-all duration-200 hover:text-foreground cursor-pointer flex items-center gap-1 whitespace-nowrap shrink-0",
-                      isCurrent ? "text-brand-cyan font-bold" : "text-muted"
+                      isCurrent ? "text-accent font-bold" : "text-muted"
                     )}
                   >
                     {group.label}
@@ -335,7 +335,7 @@ export const Navbar: React.FC = () => {
               type="button"
               onClick={openSearch}
               onMouseEnter={handleLinkHover}
-              className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-brand-cyan/40 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-all cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-brand-cyan/40 shrink-0 whitespace-nowrap"
+              className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-accent/40 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-all cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/40 shrink-0 whitespace-nowrap"
               aria-label="Search portfolio and commands (Press Command+K)"
             >
               <IconSearch className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
@@ -364,7 +364,7 @@ export const Navbar: React.FC = () => {
             <button
               type="button"
               onClick={openSearch}
-              className="flex items-center justify-center min-w-12 min-h-12 rounded-xl border border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:text-brand-cyan transition-colors cursor-pointer"
+              className="flex items-center justify-center min-w-12 min-h-12 rounded-xl border border-zinc-800 bg-zinc-900/60 text-zinc-300 hover:text-accent transition-colors cursor-pointer"
               aria-label="Open Command Search"
             >
               <IconSearch className="w-4 h-4" />
@@ -446,8 +446,8 @@ export const Navbar: React.FC = () => {
                 pair is substituted rather than gated: a radial gradient costs no
                 per-frame rasterisation while the drawer scrolls. */}
             <div className="absolute inset-0 sm:hidden pointer-events-none bg-[radial-gradient(circle_at_25%_25%,rgba(34,211,238,0.10),transparent_55%),radial-gradient(circle_at_75%_75%,rgba(59,130,246,0.06),transparent_55%)]" />
-            <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-brand-cyan/10 blur-[130px] pointer-events-none hidden sm:block" />
-            <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-80 h-80 rounded-full bg-brand-blue/5 blur-[130px] pointer-events-none hidden sm:block" />
+            <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/10 blur-[130px] pointer-events-none hidden sm:block" />
+            <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[130px] pointer-events-none hidden sm:block" />
 
             <div className="relative z-10 flex flex-col gap-6">
               {/* Primary navigation: the same groups as the top bar */}
@@ -470,7 +470,7 @@ export const Navbar: React.FC = () => {
                 href="https://github.com/fderuiter/deruiter.dev"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-zinc-400 hover:text-brand-cyan flex items-center gap-1 min-h-11 px-2 py-2"
+                className="text-zinc-400 hover:text-accent flex items-center gap-1 min-h-11 px-2 py-2"
               >
                 GitHub ↗
               </a>

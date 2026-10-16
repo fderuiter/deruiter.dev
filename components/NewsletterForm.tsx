@@ -112,8 +112,8 @@ export function NewsletterForm({
       {variant === "card" && (
         <div className="mb-4">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-cyan-400">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">
               PROJECT NOTES / NEWSLETTER
             </span>
           </div>
@@ -171,7 +171,7 @@ export function NewsletterForm({
                 aria-invalid={emailInvalid}
                 aria-describedby={emailInvalid ? errorId : undefined}
                 disabled={status === "submitting"}
-                className="w-full pl-9 pr-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-brand-cyan focus:ring-1 focus:ring-brand-cyan transition-colors disabled:opacity-50"
+                className="w-full pl-9 pr-3 py-2 bg-zinc-950/80 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors disabled:opacity-50"
               />
             </div>
 
@@ -179,7 +179,7 @@ export function NewsletterForm({
               type="submit"
               disabled={status === "submitting"}
               onMouseEnter={() => playHover()}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 hover:border-brand-cyan/60 rounded-xl text-xs font-mono font-bold text-brand-cyan transition-all duration-200 active:scale-[0.98] disabled:opacity-50 cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-accent/10 hover:bg-accent/20 border border-accent/30 hover:border-accent/60 rounded-xl text-xs font-mono font-bold text-accent transition-all duration-200 active:scale-[0.98] disabled:opacity-50 cursor-pointer shrink-0"
             >
               {status === "submitting" ? (
                 <>

@@ -69,7 +69,8 @@ export function FirmwareBay({
         </span>
       </div>
       <p className="w-full text-[11px] text-neutral-400 mt-1">
-        Upgrades are permanent and apply from your next run.
+        Upgrades are permanent and apply from your next run. Every room banks
+        all the crypto it earned, whatever you spent at the Market.
       </p>
 
       <ul

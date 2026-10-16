@@ -43,7 +43,7 @@ describe("Retro Labyrinth control hints", () => {
       "the run-finished card",
       FINAL_ROOM_HINT,
       "Tap New Run to start over from Room 01",
-      "Enter for a new run from Room 01 · R to retry this room",
+      "Enter for a new run from Room 01",
     ],
   ])(
     "%s says the gesture on touch and the keys elsewhere",

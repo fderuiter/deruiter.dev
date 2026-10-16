@@ -358,7 +358,7 @@ export function CaseStudyFeedbackSection({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-900/80 pb-4">
           <div>
             <h3 className="text-xl font-bold text-neutral-100 flex items-center gap-2">
-              <IconMessageCode className="w-5 h-5 text-brand-cyan" />
+              <IconMessageCode className="w-5 h-5 text-accent" />
               Learning Feedback & Article Reactions
             </h3>
             <p className="text-xs font-mono text-zinc-400 mt-1">
@@ -392,18 +392,18 @@ export function CaseStudyFeedbackSection({
                   aria-label={`React with ${label}, current count ${count}`}
                   className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-medium border transition-all duration-150 active:scale-95 ${
                     isReacted
-                      ? "bg-brand-cyan/15 border-brand-cyan/40 text-brand-cyan shadow-sm shadow-brand-cyan/10"
+                      ? "bg-accent/15 border-accent/40 text-accent shadow-sm shadow-accent/10"
                       : "bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-neutral-100 hover:bg-zinc-900"
                   }`}
                 >
                   <IconComponent
-                    className={`w-4 h-4 ${isReacted ? "text-brand-cyan" : "text-zinc-400"}`}
+                    className={`w-4 h-4 ${isReacted ? "text-accent" : "text-zinc-400"}`}
                   />
                   <span>{label}</span>
                   <span
                     className={`ml-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
                       isReacted
-                        ? "bg-brand-cyan/20 text-brand-cyan"
+                        ? "bg-accent/20 text-accent"
                         : "bg-zinc-800 text-zinc-400"
                     }`}
                   >
@@ -450,7 +450,7 @@ export function CaseStudyFeedbackSection({
                       aria-pressed={isSelected}
                       className={`px-3 py-1.5 rounded-md text-xs font-mono transition-all duration-150 border active:scale-95 ${
                         isSelected
-                          ? "bg-brand-cyan/20 border-brand-cyan/50 text-brand-cyan font-bold"
+                          ? "bg-accent/20 border-accent/50 text-accent font-bold"
                           : "bg-zinc-900/60 border-zinc-800/80 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
                       }`}
                     >
@@ -483,7 +483,7 @@ export function CaseStudyFeedbackSection({
                     setComments(e.target.value.slice(0, 2000));
                   }}
                   placeholder="Describe key insights, questions, or actionable observations from reading this post-mortem..."
-                  className="w-full rounded-lg bg-zinc-900/80 border border-zinc-800 p-3 text-sm text-neutral-100 placeholder-zinc-600 focus:outline-none focus:border-brand-cyan/60 focus:ring-1 focus:ring-brand-cyan/30 transition-all font-sans leading-relaxed"
+                  className="w-full rounded-lg bg-zinc-900/80 border border-zinc-800 p-3 text-sm text-neutral-100 placeholder-zinc-600 focus:outline-none focus:border-accent/60 focus:ring-1 focus:ring-accent/30 transition-all font-sans leading-relaxed"
                 />
               </div>
 
@@ -503,7 +503,7 @@ export function CaseStudyFeedbackSection({
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-brand-cyan text-zinc-950 font-mono text-xs font-bold hover:bg-cyan-400 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 shadow-md shadow-brand-cyan/20"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-accent text-zinc-950 font-mono text-xs font-bold hover:bg-amber-400 transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 shadow-md shadow-accent/20"
                 >
                   {submitting ? (
                     <>

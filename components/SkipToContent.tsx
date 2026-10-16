@@ -57,7 +57,7 @@ export function SkipToContent({
       <a
         href={`#${targetId}`}
         onClick={(e) => scrollToAnchor(e, targetId)}
-        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-56 focus:z-50 focus:px-4 focus:py-2.5 focus:bg-cyan-400 focus:text-slate-950 focus:font-semibold focus:text-sm focus:rounded-md focus:shadow-xl focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900 focus:outline-none transition-all duration-150"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-56 focus:z-50 focus:px-4 focus:py-2.5 focus:bg-amber-400 focus:text-slate-950 focus:font-semibold focus:text-sm focus:rounded-md focus:shadow-xl focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-slate-900 focus:outline-none transition-all duration-150"
       >
         {label}
       </a>

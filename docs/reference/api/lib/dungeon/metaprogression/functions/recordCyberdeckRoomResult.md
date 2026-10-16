@@ -12,6 +12,10 @@ Folds one room's result into the persistent Cyberdeck profile. Crypto and the
 high score bank on every room, but `runsCompleted` counts runs, so it moves
 only when the result ends one. It used to move on every room exit (#2048).
 
+Banked crypto is lifetime earnings, by design: a room banks everything it
+earned, and spending at the in-run Market does not lower it. The Market
+spends the run's wallet; the Firmware Bay spends the bank (#2291).
+
 ## Parameters
 
 ### profile

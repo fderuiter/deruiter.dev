@@ -36,18 +36,18 @@ function MenuLink({
 }) {
   const isActive = pathname === item.href;
   const className = cn(
-    "group flex min-w-0 items-start gap-3 rounded-xl p-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan",
+    "group flex min-w-0 items-start gap-3 rounded-xl p-2.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
     isActive
-      ? "border border-brand-cyan/30 bg-brand-cyan/10 text-white"
+      ? "border border-accent/30 bg-accent/10 text-white"
       : "text-zinc-300 hover:bg-zinc-900/80 hover:text-white"
   );
   const body = (
     <>
-      <div className="mt-0.5 shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 p-1.5 transition-colors group-hover:border-brand-cyan/30">
+      <div className="mt-0.5 shrink-0 rounded-lg border border-zinc-800 bg-zinc-900 p-1.5 transition-colors group-hover:border-accent/30">
         <NavIcon name={item.icon} tone={item.tone} />
       </div>
       <div className="flex min-w-0 flex-col">
-        <span className="truncate font-mono text-xs font-bold tracking-tight text-neutral-200 transition-colors group-hover:text-brand-cyan">
+        <span className="truncate font-mono text-xs font-bold tracking-tight text-neutral-200 transition-colors group-hover:text-accent">
           {item.title}
           {item.external ? " ↗" : ""}
         </span>
@@ -161,8 +161,8 @@ export const DesktopNavMenu: React.FC<DesktopNavMenuProps> = ({
         aria-expanded={isOpen}
         aria-controls={panelId}
         className={cn(
-          "flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded py-1 font-mono text-xs font-semibold tracking-wider transition-all duration-200 hover:text-foreground focus-visible:ring-1 focus-visible:ring-brand-cyan",
-          isCurrent || isOpen ? "font-bold text-brand-cyan" : "text-muted"
+          "flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded py-1 font-mono text-xs font-semibold tracking-wider transition-all duration-200 hover:text-foreground focus-visible:ring-1 focus-visible:ring-accent",
+          isCurrent || isOpen ? "font-bold text-accent" : "text-muted"
         )}
       >
         <span className="whitespace-nowrap">{group.label}</span>
@@ -170,7 +170,7 @@ export const DesktopNavMenu: React.FC<DesktopNavMenuProps> = ({
           aria-hidden="true"
           className={cn(
             "h-3 w-3 shrink-0 transition-transform duration-200",
-            isOpen ? "rotate-180 text-brand-cyan" : "text-zinc-500"
+            isOpen ? "rotate-180 text-accent" : "text-zinc-500"
           )}
         />
       </button>

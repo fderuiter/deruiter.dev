@@ -17,9 +17,9 @@
   --surface-2: #191c22;
   --border: rgba(255, 255, 255, 0.08);
   --border-active: rgba(245, 158, 11, 0.4);
-  --muted: #94a3b8;
-  --muted-strong: #cbd5e1;
-  --text-secondary: #94a3b8;
+  --muted: #9da2af;
+  --muted-strong: #d2d4db;
+  --text-secondary: #9da2af;
   --brand-cyan: #06b6d4;
   --brand-cyan-glow: rgba(6, 182, 212, 0.15);
   --cyan-glow: #38bdf8;
@@ -30,7 +30,10 @@
   --brand-blue-glow: rgba(59, 130, 246, 0.1);
   --brand-dark: #0d0e11;
   --success: #10b981;
-  --error: #f87171;
+  --error: #ef4444;
+  /* The single interactive accent (#2309): focus, selection, active state,
+     link hover and primary actions. --warning shares the hue for caution status. */
+  --accent: #f59e0b;
   --warning: #f59e0b;
 
   /* Typography Sizes */
@@ -101,10 +104,69 @@
   --color-success: var(--success);
   --color-error: var(--error);
   --color-warning: var(--warning);
+  --color-accent: var(--accent);
 
   --font-sans: var(--font-atkinson), system-ui, -apple-system, sans-serif;
   --font-heading: var(--font-lexend), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/*
+ * Graphite gray ramp (#2308). One neutral family for the whole site, tinted
+ * toward the graphite ground. Each step keeps the relative luminance of the
+ * Tailwind zinc step it replaces, so existing text keeps its contrast on both
+ * dark and light surfaces; only the tint is unified. zinc, slate, neutral and
+ * gray utilities all resolve to this ramp, so new code can use any of them
+ * and still match.
+ */
+@theme {
+  --color-gray-50: #fafafb;
+  --color-gray-100: #f4f4f6;
+  --color-gray-200: #e3e4e8;
+  --color-gray-300: #d2d4db;
+  --color-gray-400: #9da2af;
+  --color-gray-500: #6c7183;
+  --color-gray-600: #4e5260;
+  --color-gray-700: #3c3f4a;
+  --color-gray-800: #25282e;
+  --color-gray-900: #17181d;
+  --color-gray-950: #0d0e11;
+
+  --color-zinc-50: #fafafb;
+  --color-zinc-100: #f4f4f6;
+  --color-zinc-200: #e3e4e8;
+  --color-zinc-300: #d2d4db;
+  --color-zinc-400: #9da2af;
+  --color-zinc-500: #6c7183;
+  --color-zinc-600: #4e5260;
+  --color-zinc-700: #3c3f4a;
+  --color-zinc-800: #25282e;
+  --color-zinc-900: #17181d;
+  --color-zinc-950: #0d0e11;
+
+  --color-slate-50: #fafafb;
+  --color-slate-100: #f4f4f6;
+  --color-slate-200: #e3e4e8;
+  --color-slate-300: #d2d4db;
+  --color-slate-400: #9da2af;
+  --color-slate-500: #6c7183;
+  --color-slate-600: #4e5260;
+  --color-slate-700: #3c3f4a;
+  --color-slate-800: #25282e;
+  --color-slate-900: #17181d;
+  --color-slate-950: #0d0e11;
+
+  --color-neutral-50: #fafafb;
+  --color-neutral-100: #f4f4f6;
+  --color-neutral-200: #e3e4e8;
+  --color-neutral-300: #d2d4db;
+  --color-neutral-400: #9da2af;
+  --color-neutral-500: #6c7183;
+  --color-neutral-600: #4e5260;
+  --color-neutral-700: #3c3f4a;
+  --color-neutral-800: #25282e;
+  --color-neutral-900: #17181d;
+  --color-neutral-950: #0d0e11;
 }
 
 /*

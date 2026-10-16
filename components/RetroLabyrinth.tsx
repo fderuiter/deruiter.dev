@@ -110,6 +110,15 @@ import {
   RETRY_HINT,
   ROOM_CLEAR_HINT,
 } from "@/components/retro-labyrinth/control-hints";
+import {
+  MARKET_CLOSED_REASON,
+  holdBossSpin,
+  formatRunTime,
+  isMarketOpen,
+  rewardUnavailableReasons,
+  slotUnavailableMessage,
+  stillParticles,
+} from "@/components/retro-labyrinth/run-rules";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
 import {
   ActiveSideEffect,
@@ -174,6 +183,7 @@ import {
   describeRouteMap,
   drawRouteOptions,
   drawRunRewards,
+  routeRoomName,
   routeRooms,
   routeRunLength,
   runBuildBonuses,
@@ -466,10 +476,16 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [clearedRooms, setClearedRooms] = useState<
     { moves: number; crypto: number }[]
   >([]);
+  // HP lost across the run, retries included, and when the run started and
+  // ended, for the run-complete card (#2291).
+  const [runDamage, setRunDamage] = useState(0);
+  const runStartedAtRef = useRef(0);
+  const [runTimeMs, setRunTimeMs] = useState<number | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   // Phone cabinet (ADR 0061): a compact layout with controls either side of
   // the maze. The options panel is a sheet there, not an inline disclosure.
   const phoneCabinet = useCabinetTouch();
+  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   // A phone gets the rotate prompt; a tablet keeps the orientation hint.
   const phoneDevice = usePhone();
   // A portrait tablet has the room for larger keys under the maze.
@@ -704,6 +720,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       } else {
         const library = generateRoguelikeCampaign();
         const activeRoute = route ?? startRunRoute(createRunSeed());
+        if (!route) {
+          // A room entered without a route starts a new run (#2291).
+          setRunDamage(0);
+          setRunTimeMs(null);
+          runStartedAtRef.current = Date.now();
+        }
         setRoomLibrary(library);
         setRunRoute(activeRoute);
         const rooms = routeRooms(library, activeRoute);
@@ -1139,6 +1161,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       if (now < contactImmuneUntilRef.current) return false;
       contactImmuneUntilRef.current = now + CONTACT_IMMUNITY_MS;
       setLastHitBy(cause);
+      setRunDamage((total) => total + damage);
       setPlayerHp((hp) => {
         const nextHp = hp - damage;
         if (nextHp <= 0) {
@@ -1390,6 +1413,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         // Exit reached
         if (nextX === EXIT_X && nextY === EXIT_Y) {
           setGameStatus("victory");
+          if (gameMode === "roguelike" && roomIndex >= runLength - 1) {
+            setRunTimeMs(Date.now() - runStartedAtRef.current);
+          }
           playSuccess();
           retroAudio.playHackSuccess();
           const finalScore = computeRoomExitScore(score, nextMoves, roomCrypto);
@@ -1411,6 +1437,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             (gameMode === "classic" || roomIndex >= runLength - 1) &&
             !runEndRecordedRef.current;
           if (endsRun) runEndRecordedRef.current = true;
+          // The bank takes what the room earned, not the wallet left after
+          // Market spending: banked crypto is lifetime earnings, by design
+          // (#2291).
           let updatedProf = recordCyberdeckRoomResult(profile, {
             crypto: roomCrypto,
             score: finalScore,
@@ -1581,7 +1610,10 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         setActiveSideEffect(res.activeSideEffect);
       }
 
-      particlesRef.current.push(...res.particles);
+      // Under reduced motion a tool's burst holds still and fades (#2291).
+      particlesRef.current.push(
+        ...(reducedMotion ? stillParticles(res.particles) : res.particles)
+      );
 
       floatingTextsRef.current.push({
         id: `weap-msg-${nowMs}`,
@@ -1609,6 +1641,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       earnCrypto,
       phoneCabinet,
       showPhoneToast,
+      reducedMotion,
     ]
   );
 
@@ -1690,7 +1723,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           handleRestart();
         } else if (gameStatus === "victory" && lowerKey === "r") {
           e.preventDefault();
-          handleRestart();
+          // The run-complete card offers only a new run: retrying the last
+          // boss after the run has ended is not a choice (#2291).
+          if (gameMode === "classic" || roomIndex < runLength - 1) {
+            handleRestart();
+          }
         } else if (
           gameStatus === "victory" &&
           e.key === "Enter" &&
@@ -1785,6 +1822,23 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         if (weaponId && weapons[weaponId] && weapons[weaponId].ammo > 0) {
           setActiveWeaponId(weaponId);
           handleFireWeapon(weaponId);
+        } else {
+          // An empty or spent slot says so instead of doing nothing (#2291).
+          const message = slotUnavailableMessage(
+            slotIdx,
+            weaponId ? weapons[weaponId]?.name : undefined
+          );
+          floatingTextsRef.current.push({
+            id: `slot-empty-${Date.now()}`,
+            x: playerPosition.x,
+            y: playerPosition.y,
+            text: message,
+            color: "#f59e0b",
+            alpha: 1,
+            vy: -0.03,
+          });
+          announce(message);
+          if (phoneCabinet) showPhoneToast(message);
         }
       } else if (key === " ") {
         handleFireWeapon("emp_blast");
@@ -1827,6 +1881,9 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       pendingReward,
       rewardPromptShown,
       announce,
+      playerPosition,
+      phoneCabinet,
+      showPhoneToast,
     ]
   );
 
@@ -2050,8 +2107,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           wallTelegraph.stepsUntilAppear === 1 ? "" : "s"
         }`
     : null;
-  const reducedMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
-
   const loopStateRef = useRef({
     isMounted,
     wallTelegraph,
@@ -2255,10 +2310,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           deltaMs,
           (col, row) => currentMaze[row]?.[col] === "#"
         );
-        setBoss(updatedBoss);
+        // Under reduced motion the boss mesh holds its angle (#2291).
+        setBoss(reducedMotion ? holdBossSpin(boss, updatedBoss) : updatedBoss);
 
         if (spawnedDamage > 0) {
           bossHitThisRoomRef.current = true;
+          setRunDamage((total) => total + spawnedDamage);
           setLastHitBy(
             `A ${boss.name.split(" :: ")[0]} mesh volley severed your cyberdeck proxy tunnel.`
           );
@@ -2825,6 +2882,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ? generateClassicStage2()
         : generateClassicStage1();
 
+  // The Market trades only at the rest stop the route map labels (#2291).
+  const marketOpen = isMarketOpen(
+    gameMode,
+    gameMode === "roguelike" ? campaignRooms[roomIndex] : undefined
+  );
+  // The run-complete card names each room it cleared (#2291).
+  const runRoomNames = campaignRooms
+    .slice(0, runMoves.length)
+    .map((room) => routeRoomName(room));
+  // A starter slot holding EMP shares the Space key, so the hotbar shows one
+  // EMP button for both (#2291).
+  const loadoutHasEmp = loadout.includes("emp_blast");
+
   // Swipe on the maze (phone only): one drag is one step, and a tap does nothing.
   const handleCanvasPointerDown = (
     event: React.PointerEvent<HTMLCanvasElement>
@@ -3133,9 +3203,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         EXPLOIT
       </TouchButton>
       <TouchButton
-        label="Market: open the darknet market"
+        label={
+          marketOpen
+            ? "Market: open the darknet market"
+            : `Market: ${MARKET_CLOSED_REASON}`
+        }
+        disabled={!marketOpen}
         onPress={() => openOverlay("darknet_shop")}
-        className="flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
+        className="disabled:opacity-40 flex h-11 w-11 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-[10px] portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
       >
         Market
       </TouchButton>
@@ -3350,6 +3425,29 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           } [image-rendering:pixelated] bg-[#0d0e11] cursor-crosshair ${phoneCabinet ? "touch-none select-none" : ""} focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/60`}
         />
 
+        {/* Active side-effect strip: it overlays the top of the board, so
+            the maze does not move while it shows (#2291). */}
+        {activeSideEffect && (
+          <div
+            data-testid="labyrinth-side-effect"
+            className="pointer-events-none absolute inset-x-1 top-1 z-20 mx-auto flex items-center justify-between gap-2 rounded border border-rose-800/60 bg-rose-950/85 px-2 py-0.5 text-xs text-rose-300"
+            style={
+              canvasSize
+                ? {
+                    // Sit on the board itself, which is centred in its frame.
+                    top: `calc(50% - ${canvasSize.cssHeight / 2}px + 4px)`,
+                    maxWidth: `${Math.max(0, canvasSize.cssWidth - 8)}px`,
+                  }
+                : undefined
+            }
+          >
+            <span className="min-w-0 truncate">
+              ⚠️ {activeSideEffect.title}: {activeSideEffect.description}
+            </span>
+            <span className="shrink-0 font-bold">ACTIVE</span>
+          </div>
+        )}
+
         {phoneToast && (
           <div
             key={phoneToast.id}
@@ -3558,10 +3656,25 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                     selected: pendingReward,
                     onSelect: setPendingReward,
                     prompt: rewardPromptShown,
+                    unavailable: rewardUnavailableReasons(
+                      rewardOffer,
+                      playerHp,
+                      maxPlayerHp
+                    ),
                   }
                 : undefined
             }
             notice={unlockNotice}
+            summary={
+              isFinalRoom
+                ? {
+                    roomNames: runRoomNames,
+                    damageTaken: runDamage,
+                    runTime:
+                      runTimeMs === null ? null : formatRunTime(runTimeMs),
+                  }
+                : undefined
+            }
             onFirmware={
               isFinalRoom && gameMode === "roguelike"
                 ? () => openOverlay("firmware_bay")
@@ -3949,7 +4062,8 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
                   }`}
                 >
                   <span className="font-bold">
-                    [{keyNum}] {shortLabel}
+                    [{weaponId === "emp_blast" ? `${keyNum}/SPACE` : keyNum}]{" "}
+                    {shortLabel}
                   </span>
                   <span
                     className={hasAmmo ? "text-amber-400" : "text-rose-500"}
@@ -3960,19 +4074,35 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
               );
             })}
 
-            <button
-              onClick={() => handleFireWeapon("emp_blast")}
-              className="px-1.5 py-0.5 rounded border bg-neutral-900 text-slate-300 border-slate-700 hover:bg-slate-900 cursor-pointer font-bold"
-            >
-              [SPACE] EMP
-            </button>
+            {!loadoutHasEmp && (
+              <button
+                onClick={() => handleFireWeapon("emp_blast")}
+                className="px-1.5 py-0.5 rounded border bg-neutral-900 text-slate-300 border-slate-700 hover:bg-slate-900 cursor-pointer font-bold"
+              >
+                [SPACE] EMP
+              </button>
+            )}
 
             <button
               onClick={() => openOverlay("darknet_shop")}
-              className="px-1.5 py-0.5 rounded border bg-amber-950/40 text-amber-300 border-amber-700/50 hover:bg-amber-900/40 cursor-pointer font-bold"
+              disabled={!marketOpen}
+              aria-describedby={
+                marketOpen ? undefined : "labyrinth-market-closed"
+              }
+              title={marketOpen ? undefined : MARKET_CLOSED_REASON}
+              className="px-1.5 py-0.5 rounded border bg-amber-950/40 text-amber-300 border-amber-700/50 hover:bg-amber-900/40 cursor-pointer font-bold disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-amber-950/40"
             >
               🛒 Market
             </button>
+            {!marketOpen && (
+              <span
+                id="labyrinth-market-closed"
+                className="text-[11px] text-neutral-400"
+                data-testid="labyrinth-market-closed"
+              >
+                {MARKET_CLOSED_REASON}
+              </span>
+            )}
           </div>
 
           {/* Controls string */}
@@ -4037,7 +4167,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   return (
     <div
       className={`arcade-labyrinth w-full flex flex-col select-none font-mono ${
-        phoneCabinet ? "min-h-0 flex-1 items-stretch" : "items-center my-6"
+        phoneCabinet ? "min-h-0 flex-1 items-stretch" : "items-center mb-6"
       }`}
     >
       {!phoneDevice && <TabletOrientationHint className="w-full" />}
@@ -4251,16 +4381,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
           </>
         )}
         {phoneCabinet && phoneHud}
-        {/* Active Side-Effect Warning Banner */}
-        {activeSideEffect && (
-          <div className="w-full bg-rose-950/60 border border-rose-800/60 rounded px-2 py-0.5 my-0.5 flex items-center justify-between text-xs text-rose-300">
-            <span>
-              ⚠️ {activeSideEffect.title}: {activeSideEffect.description}
-            </span>
-            <span className="font-bold">ACTIVE</span>
-          </div>
-        )}
-
         {phoneCabinet ? phoneRow : canvasFrameNode}
         {!phoneCabinet && footerNode}
       </div>

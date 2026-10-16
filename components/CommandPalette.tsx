@@ -298,7 +298,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "The problems, implementation choices, and lessons behind my clinical data tools, web apps, and side projects.",
         category: "navigation",
         url: "/case-studies",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Showcase",
         status: "Project Collection",
         description:
@@ -317,7 +317,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Cross-project retrospectives, technique write-ups, and field notes.",
         category: "navigation",
         url: "/blog",
-        icon: <IconArticle className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconArticle className="w-4 h-4 text-accent" />,
         badge: "Dispatches",
         status: "Engineering Writing",
         description:
@@ -336,7 +336,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Clinical research, Vikings training camp, ski patrol, and the route that brought me to building software.",
         category: "navigation",
         url: "/#about",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Bio & Skills",
         status: "Origin Story",
         description:
@@ -360,7 +360,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Have a project, a role, or a question in mind? Send me a note or find a time to talk.",
         category: "navigation",
         url: "/contact",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Direct Inquiries",
         status: "Contact Form",
         description:
@@ -385,7 +385,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A laser loon, a demanding puppy, logic puzzles, and a watch with very little memory. Try my browser games.",
         category: "navigation",
         url: "/arcade",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Arcade Hub",
         status: "Interactive 60 FPS",
         description:
@@ -409,7 +409,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Have a project, a role, or a question in mind? Send me a note or find a time to talk.",
         category: "navigation",
         url: "/contact",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Newsletter",
         status: "Bi-Weekly",
         description:
@@ -433,7 +433,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A Rust scientific computing framework exploring numerical solvers, compile-time checks, and interactive simulations. The aim is to keep the mathematical model and the code that runs it close together.",
         category: "navigation",
         url: "/case-studies/oxidizemath",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Rust / WASM",
         description:
@@ -458,7 +458,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A local Sonos controller built with Python, FastAPI, and HTMX. It talks to speakers over UPnP/SOAP and exposes a REST API for playback control on your own network.",
         category: "navigation",
         url: "/case-studies/sonos-network-controller",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Python / IoT",
         description:
@@ -485,7 +485,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A browser-based workspace for comparing adaptive clinical trial designs. Pyodide workers run models including CRM, EffTox, group sequential designs, and win ratio analyses.",
         category: "navigation",
         url: "/case-studies/clintrials",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Python / WASM",
         description:
@@ -511,7 +511,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A browser-based tool for stratified block and minimization randomization. A seeded Mersenne Twister (MT19937) makes schedules reproducible, and they export as R, Python, SAS, and Stata scripts.",
         category: "navigation",
         url: "/case-studies/equipose-randomization",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Angular / TS",
         description:
@@ -536,7 +536,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "An FMCW radar project exploring respiratory motion tracking for Surface Guided Radiation Therapy. Haskell handles signal processing; C++ ring buffers move samples between stages.",
         category: "navigation",
         url: "/case-studies/lambda-wave",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Haskell / C++",
         description:
@@ -562,7 +562,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A TypeScript tool that turns JSON Schema into configuration forms, then compiles their values into Kubernetes, Helm, or Cloud Run manifests. Web Workers keep compilation off the UI thread.",
         category: "navigation",
         url: "/case-studies/duckdeploy",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "TypeScript / UI",
         description:
@@ -588,7 +588,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A Python cardiac risk modeling project using XGBoost, LightGBM, calibration, and SHAP explanations. The writeup examines data leakage, distribution shift, and how to evaluate the predictions.",
         category: "navigation",
         url: "/case-studies/cardiac-risk-modeling",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Python / ML",
         description:
@@ -614,7 +614,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A Python basketball prediction project that compares my basketball judgment with XGBoost models across NBA seasons. Includes rolling features, walk-forward validation, and SHAP analysis. Confidence is easy; checking it takes a dataset.",
         category: "navigation",
         url: "/case-studies/4glory",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Full Stack / Analytics",
         description:
@@ -640,7 +640,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "An Excel add-in that turns protocol spreadsheets into CDISC CDASH forms and ODM-XML exports. It checks rule dependencies and runs compilation in background workers so the workbook stays usable.",
         category: "navigation",
         url: "/case-studies/crf-xl",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "CDISC / Compiler",
         description:
@@ -666,7 +666,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "A TypeScript toolkit for versioning prompts, validating output with Zod, and running regression evaluations in CI. A prompt change should come with a way to check what changed in the results.",
         category: "navigation",
         url: "/case-studies/promptops",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "LLM / DevOps",
         description:
@@ -741,7 +741,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Apply tactics to a proof tree in this Lean-inspired puzzle game. Complete the proof before your simulated memory runs out.",
         category: "navigation",
         url: "/arcade/quasi-puzzler",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Logic Puzzler",
         status: "Formal Tactics",
         description:
@@ -765,7 +765,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Sort clinical data, fix entries, and sign submissions against the clock in this clinical research arcade game.",
         category: "navigation",
         url: "/arcade/clinical-chaos",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Regulatory Arcade",
         status: "Audit Simulation",
         description:
@@ -789,7 +789,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Review clinical tables against the SAP and play Chips × Mult hands to beat regulatory Blinds.",
         category: "navigation",
         url: "/arcade/trial-and-error",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Deckbuilder",
         status: "Campaign",
         description:
@@ -808,7 +808,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Walk the floor of a CRO, run a clinical study from kickoff to closeout, and defend your decisions to the FDA.",
         category: "navigation",
         url: "/arcade/study-director",
-        icon: <IconClipboardCheck className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconClipboardCheck className="w-4 h-4 text-accent" />,
         badge: "Simulation",
         status: "Playable",
         description:
@@ -828,7 +828,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "One shift at the drive-thru window of my first job, as a first-person 3D diary entry.",
         category: "navigation",
         url: "/arcade/patty-drive-thru",
-        icon: <IconHeadset className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconHeadset className="w-4 h-4 text-accent" />,
         badge: "Diary",
         status: "Playable",
         description:
@@ -848,7 +848,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Set up our Costco wedding before the 4:00 ceremony, solo or as two players on one keyboard.",
         category: "navigation",
         url: "/arcade/for-better-or-bulk",
-        icon: <IconRings className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconRings className="w-4 h-4 text-accent" />,
         badge: "Co-op",
         status: "Playable",
         description:
@@ -894,7 +894,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Stomp Couch Potatoes, jump Hurdles, and keep your Body Battery above zero on a simulated Garmin watch.",
         category: "navigation",
         url: "/arcade/garmin-watch",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Monkey C Mayhem",
         status: "A Garmin 5K Platformer",
         description:
@@ -942,7 +942,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Explore an abandoned codebase as a shifting dungeon. Fight bugs, navigate moving walls, and face a wireframe boss.",
         category: "navigation",
         url: "/arcade/retro-labyrinth",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Dungeon Roguelike",
         status: "7-Room Campaign",
         description:
@@ -966,7 +966,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong.",
         category: "navigation",
         url: "/proof",
-        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconTerminal className="w-4 h-4 text-accent" />,
         badge: "Formal Verification",
         status: "Theorem Engine",
         description:
@@ -985,7 +985,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Explore brain surfaces and MRI slices, place control points, and work through simulated reconstruction problems.",
         category: "navigation",
         url: "/neuro",
-        icon: <IconBrain className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconBrain className="w-4 h-4 text-accent" />,
         badge: "Neuroimaging CAD",
         status: "WebGL 3D Active",
         description:
@@ -1004,7 +1004,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Build clinical research forms, add validation rules, and try them with sample data in a browser-based study designer.",
         category: "navigation",
         url: "/crf",
-        icon: <IconFileSpreadsheet className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconFileSpreadsheet className="w-4 h-4 text-accent" />,
         badge: "Clinical Data Suite",
         status: "21 CFR Part 11",
         description:
@@ -1028,7 +1028,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Midwest ski-patrol operational judgment simulation and state machine foundation.",
         category: "navigation",
         url: "/patrol",
-        icon: <IconShieldCheck className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconShieldCheck className="w-4 h-4 text-accent" />,
         badge: "Foundation Scaffold",
         status: "M1 Scaffold Active",
         description:
@@ -1043,7 +1043,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "See how this site works: text layout, browser audio, the application stack, and the checks I use while building it.",
         category: "navigation",
         url: "/stack",
-        icon: <IconCpu className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconCpu className="w-4 h-4 text-accent" />,
         badge: "Architecture",
         status: "Live Blueprint",
         description:
@@ -1135,7 +1135,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Pick an architecture bias, triage an outage and review a pipeline, then see which architectural archetype your trade-offs map to.",
         category: "navigation",
         url: "/simulator",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Simulator",
         status: "Incident Triage",
         description:
@@ -1159,7 +1159,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Find a time to talk about a project, ask a question, or introduce yourself. Book a 30-minute Google Meet call.",
         category: "navigation",
         url: "/schedule",
-        icon: <IconCalendar className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconCalendar className="w-4 h-4 text-accent" />,
         badge: "Sync Scheduler",
         status: "Live Calendar",
         description:
@@ -1203,7 +1203,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Check your connection, retry this page, or explore pages saved for offline use.",
         category: "navigation",
         url: "/offline",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
         badge: "Offline Shell",
         status: "Fallback View",
         description:
@@ -1221,7 +1221,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle: "Navigate to Admin view",
         category: "navigation",
         url: "/admin",
-        icon: <IconDirections className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
       },
       {
         id: "nav-photos",
@@ -1230,7 +1230,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "14 authentic photographs spanning Duck's puppy-to-adult journey, Theodore Wirth 10K, and alpine skiing.",
         category: "navigation",
         url: "action:photos",
-        icon: <IconCamera className="w-4 h-4 text-brand-cyan" />,
+        icon: <IconCamera className="w-4 h-4 text-accent" />,
         badge: "Photos",
         status: "Visual Gallery",
         description:
@@ -1315,7 +1315,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle: `${study.primary_language} · ${study.tags}`,
         category: "case-study",
         url: `/case-studies/${study.slug}`,
-        icon: <IconFileCode className="w-4 h-4 text-brand-blue" />,
+        icon: <IconFileCode className="w-4 h-4 text-accent" />,
         badge: "Case Study",
         status: "Architectural Case",
         description: `In-depth technical breakdown covering architecture decisions, production trade-offs, and software craftsmanship for ${study.title}.`,
@@ -1360,7 +1360,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle: "Hyper Text Coffee Pot Control Protocol / RFC 7168",
         category: "navigation",
         url: "action:418",
-        icon: <IconCoffee className="w-4 h-4 text-teal-400" />,
+        icon: <IconCoffee className="w-4 h-4 text-amber-400" />,
         badge: "RFC 2324",
         status: "Brewing Error",
         description:
@@ -1472,7 +1472,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         subtitle: "Lake Minnetonka cluster is 100% online",
         category: "navigation",
         url: "action:ping",
-        icon: <IconTerminal className="w-4 h-4 text-cyan-400" />,
+        icon: <IconTerminal className="w-4 h-4 text-amber-400" />,
         badge: "ICMP Pong",
         status: "0.012ms",
         description:
@@ -1655,14 +1655,14 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ref={trapRef}
         style={
           {
-            "--cmd-glow": `0 0 50px ${hexToRgba(designManifest.colors["brand-cyan"], 0.06)}`,
+            "--cmd-glow": `0 0 50px ${hexToRgba(designManifest.colors["accent"], 0.06)}`,
           } as React.CSSProperties
         }
         className="w-full max-w-3xl bg-[#13151a] border border-zinc-800/90 shadow-[var(--cmd-glow)] rounded-3xl overflow-hidden flex flex-col relative my-auto sm:my-0 max-h-[85vh]"
       >
         {/* Circular glow visual elements inside modal */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-brand-cyan/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-brand-blue/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Input Header container */}
         <div className="relative z-10 flex items-center border-b border-zinc-800/60 p-3 sm:p-4 gap-2 sm:gap-3">
@@ -1699,7 +1699,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close command search"
-            className="min-h-10 min-w-10 flex items-center justify-center text-xs font-mono font-bold tracking-wider text-zinc-300 px-2.5 py-1 bg-zinc-950 border border-zinc-700 hover:border-brand-cyan/40 hover:text-brand-cyan rounded-xl cursor-pointer select-none transition"
+            className="min-h-10 min-w-10 flex items-center justify-center text-xs font-mono font-bold tracking-wider text-zinc-300 px-2.5 py-1 bg-zinc-950 border border-zinc-700 hover:border-accent/40 hover:text-accent rounded-xl cursor-pointer select-none transition"
           >
             ESC
           </button>
@@ -1731,7 +1731,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       style={
                         {
                           "--cmd-item-glow": hexToRgba(
-                            designManifest.colors["brand-cyan"],
+                            designManifest.colors["accent"],
                             0.04
                           ),
                         } as React.CSSProperties
@@ -1739,7 +1739,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       onMouseEnter={() => handleItemHover(index)}
                       className={`flex items-center gap-3.5 px-3.5 py-3 rounded-xl cursor-pointer select-none transition-all duration-200 border ${
                         isActive
-                          ? "bg-zinc-950 border-brand-cyan/25 shadow-[0_0_15px_var(--cmd-item-glow)]"
+                          ? "bg-zinc-950 border-accent/25 shadow-[0_0_15px_var(--cmd-item-glow)]"
                           : "bg-transparent border-transparent hover:bg-zinc-950/40"
                       }`}
                     >
@@ -1747,7 +1747,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       <span
                         className={`w-8 h-8 rounded-lg border flex items-center justify-center transition-colors duration-300 flex-shrink-0 ${
                           isActive
-                            ? "bg-brand-cyan/10 border-brand-cyan/30 text-brand-cyan"
+                            ? "bg-accent/10 border-accent/30 text-accent"
                             : "bg-zinc-950 border-zinc-900 text-zinc-400"
                         }`}
                       >
@@ -1759,7 +1759,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span
                             className={`text-[10px] font-mono font-bold uppercase tracking-wider transition-colors ${
-                              isActive ? "text-brand-cyan" : "text-zinc-400"
+                              isActive ? "text-accent" : "text-zinc-400"
                             }`}
                           >
                             {getNavGroupForHref(item.url) && (
@@ -1795,7 +1795,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                       {isActive && (
                         <span className="text-xs font-mono text-zinc-400 flex items-center gap-1 animate-pulse flex-shrink-0 select-none">
                           <span className="hidden sm:inline">Select</span>
-                          <IconCornerDownLeft className="w-3.5 h-3.5 text-brand-cyan" />
+                          <IconCornerDownLeft className="w-3.5 h-3.5 text-accent" />
                         </span>
                       )}
                     </div>
@@ -1833,7 +1833,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                 {/* Top section: Badges, Title, Description */}
                 <div>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-brand-cyan/10 text-brand-cyan border border-brand-cyan/20">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-accent/10 text-accent border border-accent/20">
                       {getNavGroupForHref(activeItem.url) && (
                         <span data-testid="palette-preview-group">
                           {getNavGroupForHref(activeItem.url)?.label}
@@ -1854,7 +1854,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                   </div>
 
                   <div className="mt-3 flex items-start gap-2.5">
-                    <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-brand-cyan flex-shrink-0 mt-0.5">
+                    <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-accent flex-shrink-0 mt-0.5">
                       {activeItem.icon}
                     </div>
                     <div className="min-w-0">
@@ -1905,7 +1905,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                               key={idx}
                               className="text-[11px] text-zinc-300 flex items-start gap-1.5 leading-snug"
                             >
-                              <span className="text-brand-cyan text-xs leading-none">
+                              <span className="text-accent text-xs leading-none">
                                 ▸
                               </span>
                               <span>{highlight}</span>
@@ -1918,7 +1918,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
 
                 {/* Bottom Quick Navigation Hint */}
                 <div className="pt-2.5 border-t border-zinc-850 flex items-center justify-between text-[10px] font-mono text-zinc-400 select-none">
-                  <span className="flex items-center gap-1 text-brand-cyan/90">
+                  <span className="flex items-center gap-1 text-accent/90">
                     <span className="bg-zinc-900 border border-zinc-800 px-1 py-0.5 rounded text-[9px]">
                       ↵ ENTER
                     </span>

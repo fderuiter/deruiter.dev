@@ -242,7 +242,7 @@ export const CardTitle = ({
   return (
     <Component
       className={cn(
-        "my-2 font-heading font-bold text-neutral-100 group-hover:text-brand-cyan transition-colors duration-300 break-words text-balance min-w-0",
+        "my-2 font-heading font-bold text-neutral-100 group-hover:text-accent transition-colors duration-300 break-words text-balance min-w-0",
         className
       )}
       style={style}

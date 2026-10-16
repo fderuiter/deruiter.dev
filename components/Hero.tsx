@@ -319,7 +319,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
               <span>ACCESSIBILITY: FOR MY BROTHER ↗</span>
             </Link>
             <span className="flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>SOURCE ON GITHUB</span>
             </span>
           </div>

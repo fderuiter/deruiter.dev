@@ -51,10 +51,10 @@ const ICONS: Record<NavIconKey, typeof IconActivity> = {
 };
 
 const TONES: Record<NavTone, string> = {
-  cyan: "text-brand-cyan",
+  cyan: "text-accent",
   amber: "text-amber-400",
   emerald: "text-emerald-400",
-  purple: "text-brand-purple",
+  purple: "text-zinc-300",
 };
 
 /** The text colour class for a tone, shared with badges. */

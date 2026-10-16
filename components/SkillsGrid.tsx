@@ -144,14 +144,14 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
                 text: "text-amber-300",
               },
               {
-                bg: "bg-cyan-500/10",
-                border: "border-cyan-500/25",
-                text: "text-cyan-300",
+                bg: "bg-amber-500/10",
+                border: "border-amber-500/25",
+                text: "text-amber-300",
               },
               {
-                bg: "bg-purple-500/10",
-                border: "border-purple-500/25",
-                text: "text-purple-300",
+                bg: "bg-amber-500/10",
+                border: "border-amber-500/25",
+                text: "text-amber-300",
               },
             ];
             const color = colors[idx] || colors[0];

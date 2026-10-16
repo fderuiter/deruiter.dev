@@ -51,6 +51,12 @@ Original CSS Variable: --breakpoint-xl
 
 > `readonly` **colors**: `object`
 
+#### colors.accent
+
+> `readonly` **accent**: `"#f59e0b"` = `"#f59e0b"`
+
+Original CSS Variable: --accent
+
 #### colors.background
 
 > `readonly` **background**: `"#0d0e11"` = `"#0d0e11"`
@@ -125,7 +131,7 @@ Original CSS Variable: --emerald-accent
 
 #### colors.error
 
-> `readonly` **error**: `"#f87171"` = `"#f87171"`
+> `readonly` **error**: `"#ef4444"` = `"#ef4444"`
 
 Original CSS Variable: --error
 

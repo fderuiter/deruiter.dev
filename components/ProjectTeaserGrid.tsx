@@ -86,14 +86,14 @@ const LANGUAGE_STYLES: Record<
     border: "border-emerald-500/20",
   },
   Haskell: {
-    bg: "bg-indigo-500/10",
-    text: "text-indigo-300",
-    border: "border-indigo-500/20",
+    bg: "bg-amber-500/10",
+    text: "text-amber-300",
+    border: "border-amber-500/20",
   },
   React: {
-    bg: "bg-cyan-500/10",
-    text: "text-cyan-300",
-    border: "border-cyan-500/20",
+    bg: "bg-amber-500/10",
+    text: "text-amber-300",
+    border: "border-amber-500/20",
   },
 };
 

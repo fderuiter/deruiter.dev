@@ -1828,8 +1828,11 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       // Scores are saved when a sprint ends, not while it runs: the result
       // card compares against the stored best, which must still be the best
       // from earlier runs when the card opens (#1942).
+      // An endless run is ranked by its own endless best, saved below, so
+      // its points never reach the campaign or arcade high score (#2326).
       const sprintOver =
-        uiState.status === "won" || uiState.status === "failed";
+        uiState.mode === "campaign" &&
+        (uiState.status === "won" || uiState.status === "failed");
       if (sprintOver && uiState.totalScore > 0) {
         recordArcadeScore("working-with-duck", uiState.totalScore);
       }
@@ -3054,23 +3057,30 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
 
   const sessionLabel = uiState.mode === "endless" ? "Run" : "Sprint";
   const displayedHighScore = Math.max(uiState.highScore, loadedHighScore);
-  // The campaign shows the best for this sprint; endless keeps the overall
-  // high score (#2159).
+  // The campaign shows the best for this sprint (#2159); endless shows the
+  // endless best, the number its runs are ranked by (#2326).
   const loadedSprintBest =
     parseSprintBests(rawSprintBests)[uiState.currentLevel] ?? 0;
   const displayedBest =
-    uiState.mode === "campaign" ? loadedSprintBest : displayedHighScore;
-  // A zero best reads like a score the player earned, so a sprint not yet
-  // played shows a dash instead (#2283).
-  const hasBest = displayedBest > 0;
-  const bestValue = hasBest ? (
-    displayedBest
-  ) : (
+    uiState.mode === "campaign" ? loadedSprintBest : loadedEndlessBest;
+  // The HUD score in endless is the endless score, so Score and Best compare.
+  const hudScore = isEndless
+    ? computeEndlessScore(uiState)
+    : uiState.totalScore;
+  // A zero best reads like a score the player earned, so a best not yet set
+  // shows a dash instead (#2283, #2327).
+  const noBestYet = (
     <>
       <span aria-hidden="true">—</span>
       <span className="sr-only">none yet</span>
     </>
   );
+  const hasBest = displayedBest > 0;
+  const bestValue = hasBest ? displayedBest : noBestYet;
+  const briefingHighScoreValue =
+    displayedHighScore > 0 ? displayedHighScore : noBestYet;
+  const endlessBestValue =
+    loadedEndlessBest > 0 ? loadedEndlessBest : noBestYet;
 
   // Paused play is frozen (#1645); toys and tricks only work in the office
   // (#1647). Disabled controls point at the reason via aria-describedby.
@@ -3224,7 +3234,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   data-testid="duck-hud-score-value"
                   className="arcade-accent-text font-bold"
                 >
-                  {uiState.totalScore}
+                  {hudScore}
                 </span>
               </span>
               <span className="whitespace-nowrap uppercase tracking-wider text-zinc-400">
@@ -3360,14 +3370,18 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                     {uiState.mode === "campaign"
                       ? `Sprint ${uiState.currentLevel} best `
                       : "High Score "}
-                    <span className="text-zinc-100 font-bold">{bestValue}</span>
+                    <span className="text-zinc-100 font-bold">
+                      {uiState.mode === "campaign"
+                        ? bestValue
+                        : briefingHighScoreValue}
+                    </span>
                   </>
                 )}
                 {uiState.mode === "endless" && (
                   <>
                     {" · "}Endless best{" "}
                     <span className="text-zinc-100 font-bold">
-                      {loadedEndlessBest}
+                      {endlessBestValue}
                     </span>
                   </>
                 )}

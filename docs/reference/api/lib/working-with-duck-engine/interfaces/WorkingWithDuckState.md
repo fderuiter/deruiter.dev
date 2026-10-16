@@ -450,6 +450,16 @@ then `passed` or `failed`. Absent before it starts and in other sprints.
 
 ***
 
+### surpriseDue?
+
+> `optional` **surpriseDue?**: `boolean`
+
+Endless only: a surprise roll came due while Duck was busy or another
+surprise was up, so it fires at his next calm moment instead of being
+skipped (#2328). The campaign keeps its exact-tick rolls.
+
+***
+
 ### targetWorkProgress
 
 > **targetWorkProgress**: `number`

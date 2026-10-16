@@ -178,7 +178,7 @@ export function UnifiedErrorLayout({
       <div className="min-h-screen py-32 px-6 flex flex-col items-center justify-center bg-brand-dark text-foreground relative overflow-hidden select-none">
         {/* Background Blurs */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-brand-cyan/5 blur-[120px] pointer-events-none transition-all duration-700 [transform:translate(-50%,-50%)_translate(var(--blur-shift-x,0px),var(--blur-shift-y,0px))] hidden sm:block"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none transition-all duration-700 [transform:translate(-50%,-50%)_translate(var(--blur-shift-x,0px),var(--blur-shift-y,0px))] hidden sm:block"
           style={
             showRetroLabyrinth
               ? ({
@@ -209,7 +209,7 @@ export function UnifiedErrorLayout({
           {/* Spotlight overlay effect following the mouse */}
           {showRetroLabyrinth && (
             <div
-              className="absolute inset-0 pointer-events-none transition-opacity duration-300 [background:radial-gradient(180px_circle_at_var(--spotlight-x)_var(--spotlight-y),rgba(6,182,212,0.08),transparent_80%)] opacity-[var(--spotlight-opacity)]"
+              className="absolute inset-0 pointer-events-none transition-opacity duration-300 [background:radial-gradient(180px_circle_at_var(--spotlight-x)_var(--spotlight-y),rgba(245,158,11,0.08),transparent_80%)] opacity-[var(--spotlight-opacity)]"
               style={
                 {
                   "--spotlight-x": `${mousePos.x}px`,
@@ -256,16 +256,16 @@ export function UnifiedErrorLayout({
               }}
             >
               {/* Target Reticle circle */}
-              <div className="w-12 h-12 rounded-full border border-brand-cyan/30 flex items-center justify-center animate-spin">
-                <div className="w-1.5 h-1.5 rounded-full bg-brand-cyan" />
+              <div className="w-12 h-12 rounded-full border border-accent/30 flex items-center justify-center animate-spin">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent" />
               </div>
               {/* Subtle crosshairs extending from reticle */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-[1px] bg-brand-cyan/20 pointer-events-none" />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-[1px] bg-brand-cyan/20 pointer-events-none" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-[1px] bg-accent/20 pointer-events-none" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-20 w-[1px] bg-accent/20 pointer-events-none" />
             </div>
           )}
 
-          <span className="inline-block px-3 py-1 text-xs font-mono font-bold bg-neutral-900 border border-neutral-800 text-brand-cyan rounded-md mb-6 relative">
+          <span className="inline-block px-3 py-1 text-xs font-mono font-bold bg-neutral-900 border border-neutral-800 text-accent rounded-md mb-6 relative">
             {badge}
           </span>
 
@@ -295,7 +295,7 @@ export function UnifiedErrorLayout({
               <span className="block text-[10px] font-mono font-bold text-neutral-500 uppercase tracking-wider mb-1.5">
                 Requested Address
               </span>
-              <div className="font-mono text-xs text-brand-cyan/90 break-all select-all font-semibold">
+              <div className="font-mono text-xs text-accent/90 break-all select-all font-semibold">
                 {invalidPath}
               </div>
             </div>
@@ -320,18 +320,18 @@ export function UnifiedErrorLayout({
                     handleActivateGame();
                   }
                 }}
-                className="relative w-full aspect-[15/9] min-h-[240px] h-[240px] bg-neutral-950/90 border border-neutral-900 hover:border-brand-cyan/60 rounded-2xl flex flex-col items-center justify-center font-mono select-none overflow-hidden my-6 cursor-pointer group/coin transition-all duration-300 shadow-xl"
+                className="relative w-full aspect-[15/9] min-h-[240px] h-[240px] bg-neutral-950/90 border border-neutral-900 hover:border-accent/60 rounded-2xl flex flex-col items-center justify-center font-mono select-none overflow-hidden my-6 cursor-pointer group/coin transition-all duration-300 shadow-xl"
               >
                 {/* Cyberpunk grid background effect */}
                 <div className="absolute inset-0 pointer-events-none opacity-10 group-hover/coin:opacity-20 transition-opacity duration-300">
-                  <div className="w-full h-full bg-[linear-gradient(to_right,#06b6d4_1px,transparent_1px),linear-gradient(to_bottom,#06b6d4_1px,transparent_1px)] bg-[size:16px_16px]" />
+                  <div className="w-full h-full bg-[linear-gradient(to_right,#f59e0b_1px,transparent_1px),linear-gradient(to_bottom,#f59e0b_1px,transparent_1px)] bg-[size:16px_16px]" />
                 </div>
 
                 {/* Header Bar */}
                 <div className="absolute top-3 left-4 right-4 flex justify-between items-center text-[10px] font-bold text-neutral-500 uppercase tracking-wider">
                   <span>SYSTEM_LABYRINTH.EXE</span>
-                  <span className="text-brand-cyan/70 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan" />
+                  <span className="text-accent/70 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                     IDLE_STANDBY
                   </span>
                 </div>
@@ -339,15 +339,15 @@ export function UnifiedErrorLayout({
                 {/* Center Insert Coin Prompts */}
                 <div className="flex flex-col items-center justify-center gap-3 p-4 z-10 text-center">
                   {/* Arcade Coin Slot Icon / Badge */}
-                  <div className="w-12 h-12 rounded-full border-2 border-brand-cyan/40 group-hover/coin:border-brand-cyan group-hover/coin:scale-105 flex items-center justify-center bg-brand-cyan/10 transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
-                    <span className="text-brand-cyan font-extrabold text-sm tracking-tighter">
+                  <div className="w-12 h-12 rounded-full border-2 border-accent/40 group-hover/coin:border-accent group-hover/coin:scale-105 flex items-center justify-center bg-accent/10 transition-all duration-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                    <span className="text-accent font-extrabold text-sm tracking-tighter">
                       1¢
                     </span>
                   </div>
 
                   {/* Glowing Blinking INSERT COIN */}
                   <div className="space-y-1">
-                    <div className="text-base sm:text-lg font-black text-brand-cyan tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+                    <div className="text-base sm:text-lg font-black text-accent tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">
                       INSERT COIN
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium tracking-wide">
@@ -357,7 +357,7 @@ export function UnifiedErrorLayout({
                 </div>
 
                 {/* Bottom Status Footer */}
-                <div className="absolute bottom-3 left-4 right-4 text-center text-[9px] font-bold text-neutral-500 uppercase tracking-widest group-hover/coin:text-brand-cyan/80 transition-colors">
+                <div className="absolute bottom-3 left-4 right-4 text-center text-[9px] font-bold text-neutral-500 uppercase tracking-widest group-hover/coin:text-accent/80 transition-colors">
                   ▶ DEFERRED ENGINE ACTIVATION READY
                 </div>
               </div>
@@ -389,13 +389,13 @@ export function UnifiedErrorLayout({
                       key={study.id}
                       href={`/case-studies/${study.slug}`}
                       onClick={() => handleSuggestionClick(study.slug)}
-                      className="group block p-4 bg-neutral-950/60 hover:bg-neutral-900/60 border border-neutral-900 hover:border-brand-cyan/40 rounded-2xl transition-all duration-300 backdrop-blur-sm"
+                      className="group block p-4 bg-neutral-950/60 hover:bg-neutral-900/60 border border-neutral-900 hover:border-accent/40 rounded-2xl transition-all duration-300 backdrop-blur-sm"
                     >
                       <div className="flex justify-between items-start gap-2 mb-1">
-                        <h2 className="text-sm font-bold text-neutral-200 group-hover:text-brand-cyan transition-colors duration-250">
+                        <h2 className="text-sm font-bold text-neutral-200 group-hover:text-accent transition-colors duration-250">
                           {study.title}
                         </h2>
-                        <span className="shrink-0 px-2 py-0.5 text-[9px] font-mono font-bold bg-neutral-900 border border-neutral-800 text-brand-blue rounded">
+                        <span className="shrink-0 px-2 py-0.5 text-[9px] font-mono font-bold bg-neutral-900 border border-neutral-800 text-accent rounded">
                           {study.primary_language}
                         </span>
                       </div>
@@ -426,7 +426,7 @@ export function UnifiedErrorLayout({
                 e.currentTarget.focus();
                 openSearch();
               }}
-              className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-bold bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-cyan/40 text-brand-cyan rounded-2xl transition-all duration-300 shadow-lg cursor-pointer"
+              className="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-bold bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-accent/40 text-accent rounded-2xl transition-all duration-300 shadow-lg cursor-pointer"
             >
               Search Site
             </button>

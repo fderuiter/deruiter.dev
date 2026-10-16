@@ -2,7 +2,13 @@
 
 import React, { useRef } from "react";
 import { hexToRgba } from "@/lib/utils";
-import { motion, useScroll, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+  useReducedMotion,
+} from "framer-motion";
 import { cn } from "@/lib/utils";
 import { designManifest } from "@/lib/design-manifest";
 
@@ -11,7 +17,10 @@ interface TracingBeamProps {
   className?: string;
 }
 
-export const TracingBeam: React.FC<TracingBeamProps> = ({ children, className }) => {
+export const TracingBeam: React.FC<TracingBeamProps> = ({
+  children,
+  className,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
 
@@ -29,7 +38,9 @@ export const TracingBeam: React.FC<TracingBeamProps> = ({ children, className })
   });
 
   // Active motion progress value adhering to reduced motion settings
-  const activeProgress = shouldReduceMotion ? scrollYProgress : scrollYProgressSpring;
+  const activeProgress = shouldReduceMotion
+    ? scrollYProgress
+    : scrollYProgressSpring;
 
   // Map progress to percentage translation for the marker indicator (0% to 100%)
   const yTransform = useTransform(activeProgress, [0, 1], ["0%", "100%"]);
@@ -43,23 +54,27 @@ export const TracingBeam: React.FC<TracingBeamProps> = ({ children, className })
       <div className="absolute -left-6 md:-left-12 lg:-left-16 top-4 bottom-4 w-[2px] bg-zinc-900/60 rounded-full hidden md:block select-none pointer-events-none">
         {/* Active glowing beam segment scaled via composited GPU transform */}
         <motion.div
-          style={{
-            scaleY: activeProgress,
-            originY: 0,
-            "--beam-glow": `0 0 8px ${hexToRgba(designManifest.colors["brand-cyan"], 0.3)}`
-          } as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any}
-          className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-brand-cyan via-brand-blue to-purple-500 rounded-full shadow-[var(--beam-glow)] origin-top transform-gpu will-change-transform"
+          style={
+            {
+              scaleY: activeProgress,
+              originY: 0,
+              "--beam-glow": `0 0 8px ${hexToRgba(designManifest.colors["accent"], 0.3)}`,
+            } as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any
+          }
+          className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-accent via-accent to-amber-500 rounded-full shadow-[var(--beam-glow)] origin-top transform-gpu will-change-transform"
         />
-        
+
         {/* Breathing Head floating focus bubble translated via composited GPU transform */}
         <motion.div
-          style={{
-            y: yTransform,
-            "--dot-glow": `0 0 15px ${hexToRgba(designManifest.colors["brand-cyan"], 0.8)}`
-          } as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any}
+          style={
+            {
+              y: yTransform,
+              "--dot-glow": `0 0 15px ${hexToRgba(designManifest.colors["accent"], 0.8)}`,
+            } as /* eslint-disable-line @typescript-eslint/no-explicit-any */ any
+          }
           className="absolute top-0 left-0 w-full h-full transform-gpu will-change-transform pointer-events-none"
         >
-          <div className="absolute top-0 -left-[5px] -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-brand-cyan border-2 border-zinc-950 shadow-[var(--dot-glow)] flex items-center justify-center">
+          <div className="absolute top-0 -left-[5px] -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-accent border-2 border-zinc-950 shadow-[var(--dot-glow)] flex items-center justify-center">
             {/* Neon pulsating ring */}
             {!shouldReduceMotion && (
               <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping absolute opacity-75" />
@@ -70,9 +85,7 @@ export const TracingBeam: React.FC<TracingBeamProps> = ({ children, className })
       </div>
 
       {/* 5. Main content viewport shifted on desktop to leave rail space */}
-      <div className="w-full md:pl-8 lg:pl-12">
-        {children}
-      </div>
+      <div className="w-full md:pl-8 lg:pl-12">{children}</div>
     </div>
   );
 };

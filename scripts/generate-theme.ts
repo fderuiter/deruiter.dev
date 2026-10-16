@@ -109,6 +109,7 @@ export function generateTheme({
     "success",
     "error",
     "warning",
+    "accent",
   ];
   const colors: TokenEntry[] = colorKeys.flatMap((key) =>
     tokens[key] ? [{ key, cssVar: key, value: tokens[key] }] : []

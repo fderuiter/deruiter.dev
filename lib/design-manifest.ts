@@ -44,9 +44,11 @@ export const designManifest = {
     /** Original CSS Variable: --success */
     "success": "#10b981",
     /** Original CSS Variable: --error */
-    "error": "#f87171",
+    "error": "#ef4444",
     /** Original CSS Variable: --warning */
     "warning": "#f59e0b",
+    /** Original CSS Variable: --accent */
+    "accent": "#f59e0b",
   },
   typography: {
     fonts: {

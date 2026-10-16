@@ -18,8 +18,8 @@ export function TerminologyToggle() {
         aria-checked={simplified}
         aria-label="Toggle simplified terminology"
         onClick={() => setSimplified((prev) => !prev)}
-        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
-          simplified ? "bg-brand-cyan" : "bg-zinc-800"
+        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950 ${
+          simplified ? "bg-accent" : "bg-zinc-800"
         }`}
       >
         <span

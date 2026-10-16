@@ -33,6 +33,8 @@ export interface DirectAnnotation {
 
 /** Subset of a lockfile entry the builder reads. */
 export interface LockfileEntry {
+  /** Published name, present when the install path is an npm alias. */
+  name?: string;
   version?: string;
   license?: string;
   dev?: boolean;

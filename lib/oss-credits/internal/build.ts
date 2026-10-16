@@ -35,12 +35,14 @@ export function buildCreditsDataset(input: {
 
   for (const [lockPath, entry] of Object.entries(input.lockfile.packages)) {
     if (lockPath === "" || entry.link) continue;
-    const name = packageNameFromPath(lockPath);
-    if (!name || !entry.version) continue;
+    const installedName = packageNameFromPath(lockPath);
+    if (!installedName || !entry.version) continue;
+    // An npm alias installs under another name; credit what was published.
+    const name = entry.name ?? installedName;
     const key = `${name}@${entry.version}`;
-    const isTopLevel = lockPath === `${NODE_MODULES}${name}`;
+    const isTopLevel = lockPath === `${NODE_MODULES}${installedName}`;
     // A direct dependency is always the top-level install of that name.
-    const isDirect = isTopLevel && direct.has(name);
+    const isDirect = isTopLevel && direct.has(installedName);
     const facts = input.facts.packages[`${name}@${entry.version}`];
     const scope = entry.dev ? "tooling" : "runtime";
     const existing = packages.find((p) => `${p.name}@${p.version}` === key);
@@ -52,7 +54,7 @@ export function buildCreditsDataset(input: {
     }
     if (seen.has(key)) continue;
     seen.add(key);
-    const annotation = isDirect ? input.annotations[name] : undefined;
+    const annotation = isDirect ? input.annotations[installedName] : undefined;
     packages.push({
       name,
       version: entry.version,

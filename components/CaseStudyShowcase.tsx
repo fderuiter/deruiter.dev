@@ -136,7 +136,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
   return (
     <div className="w-full flex flex-col items-center">
       {/* Primary Showcase Filter Control Bar */}
-      <div className="flex max-w-full overflow-x-auto items-center gap-2 mb-8 sm:mb-12 bg-zinc-900/40 p-1.5 rounded-2xl border border-zinc-900/60 backdrop-blur-md relative z-20 scrollbar-none">
+      <div className="flex max-w-full overflow-x-auto items-center gap-2 mb-8 sm:mb-12 bg-surface-1 p-1.5 rounded-2xl border border-zinc-900/60 relative z-20 scrollbar-none">
         {/* Persona Role Filter Tabs */}
         <div
           className="flex items-center gap-1 shrink-0"

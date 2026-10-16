@@ -204,7 +204,7 @@ export function UnifiedErrorLayout({
                 } as React.CSSProperties)
               : undefined
           }
-          className={`relative z-10 w-full max-w-md p-8 bg-neutral-950/40 border border-neutral-900 rounded-3xl backdrop-blur-xl text-center shadow-2xl overflow-hidden [transform:perspective(1000px)_rotateX(var(--tilt-x,0deg))_rotateY(var(--tilt-y,0deg))] [transition:var(--tilt-transition,none)] ${showRetroLabyrinth ? "group" : ""}`}
+          className={`relative z-10 w-full max-w-md p-8 bg-surface-1 border border-neutral-900 rounded-3xl text-center shadow-2xl overflow-hidden [transform:perspective(1000px)_rotateX(var(--tilt-x,0deg))_rotateY(var(--tilt-y,0deg))] [transition:var(--tilt-transition,none)] ${showRetroLabyrinth ? "group" : ""}`}
         >
           {/* Spotlight overlay effect following the mouse */}
           {showRetroLabyrinth && (
@@ -389,7 +389,7 @@ export function UnifiedErrorLayout({
                       key={study.id}
                       href={`/case-studies/${study.slug}`}
                       onClick={() => handleSuggestionClick(study.slug)}
-                      className="group block p-4 bg-neutral-950/60 hover:bg-neutral-900/60 border border-neutral-900 hover:border-brand-cyan/40 rounded-2xl transition-all duration-300 backdrop-blur-sm"
+                      className="group block p-4 bg-surface-1 hover:bg-surface-2 border border-neutral-900 hover:border-brand-cyan/40 rounded-2xl transition-all duration-300"
                     >
                       <div className="flex justify-between items-start gap-2 mb-1">
                         <h2 className="text-sm font-bold text-neutral-200 group-hover:text-brand-cyan transition-colors duration-250">

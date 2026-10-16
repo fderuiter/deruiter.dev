@@ -72,7 +72,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
   return (
     <nav
       aria-label="Table of contents"
-      className="my-8 p-4 md:p-6 rounded-2xl bg-zinc-900/30 border border-zinc-800/80 backdrop-blur-sm"
+      className="my-8 p-4 md:p-6 rounded-2xl bg-surface-1 border border-zinc-800/80"
     >
       {/* Header bar / Mobile Accordion Toggle */}
       <div className="flex items-center justify-between">

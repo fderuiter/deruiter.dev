@@ -193,7 +193,7 @@ export const Card = ({
     >
       <div className="h-full grid [grid-template-areas:'stack'] transform-gpu [transform-style:preserve-3d] rounded-[var(--radius)]">
         {/* Layer 1: Solid Dark Background & Subtle Border */}
-        <div className="border border-zinc-800/80 [grid-area:1/1] rounded-[var(--radius)] bg-zinc-950/70 backdrop-blur-md" />
+        <div className="border border-zinc-800/80 [grid-area:1/1] rounded-[var(--radius)] bg-surface-1" />
 
         {/* Layer 2: Dynamic Holographic Glare Pattern */}
         <div

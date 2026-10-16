@@ -77,7 +77,7 @@ export const Timeline: React.FC = () => {
   return (
     <div className="w-full max-w-3xl mx-auto py-6 sm:py-8 relative select-none">
       {/* Global View Switcher */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 py-3 bg-[#13151a]/90 border border-white/10 rounded-2xl backdrop-blur-md w-full shadow-lg">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 py-3 bg-surface-1 border border-white/10 rounded-2xl w-full shadow-lg">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2 text-xs font-mono text-zinc-400 self-start sm:self-center">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400" />
@@ -185,7 +185,7 @@ export const Timeline: React.FC = () => {
                       }`,
                     } as React.CSSProperties
                   }
-                  className={`p-4 sm:p-6 bg-[#13151a]/85 border rounded-2xl backdrop-blur-md transition-all duration-300 group shadow-lg ${
+                  className={`p-4 sm:p-6 bg-surface-1 border rounded-2xl transition-all duration-300 group shadow-lg ${
                     isReality
                       ? "border-amber-500/25 hover:border-amber-500/45"
                       : "border-white/10 hover:border-white/20"

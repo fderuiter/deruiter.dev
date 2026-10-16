@@ -459,7 +459,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
           )}
 
           {/* Premium Segmented Mode Switcher */}
-          <div className="flex p-0.5 bg-zinc-950/80 border border-zinc-900/80 rounded-lg mb-3 text-xs font-mono relative z-10 w-fit backdrop-blur-sm">
+          <div className="flex p-0.5 bg-zinc-950 border border-zinc-900/80 rounded-lg mb-3 text-xs font-mono relative z-10 w-fit">
             <button
               onClick={() => handleToggleMode("pitch")}
               className={`min-h-[44px] px-3.5 py-1.5 rounded-md border text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${

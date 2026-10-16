@@ -60,7 +60,7 @@ export default function ContactPage() {
         {/* Two-Column Grid: Contact Form & Alternative Channels */}
         <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-16">
           {/* Main Column: Contact Form */}
-          <div className="lg:col-span-7 bg-[#13151a]/80 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+          <div className="lg:col-span-7 bg-surface-1 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
             <div className="mb-6 border-b border-white/5 pb-4">
               <h2 className="text-lg font-mono font-bold text-white mb-1">
                 Send me a message

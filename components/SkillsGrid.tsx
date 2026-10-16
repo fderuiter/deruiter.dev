@@ -36,7 +36,7 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
         onMouseEnter={playSkillHover}
-        className="md:col-span-2 p-5 sm:p-6 md:p-8 bg-[#13151a]/80 border border-white/10 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[250px] hover:border-amber-500/30 transition-all duration-300 backdrop-blur-md shadow-xl"
+        className="md:col-span-2 p-5 sm:p-6 md:p-8 bg-surface-1 border border-white/10 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[250px] hover:border-amber-500/30 transition-all duration-300 shadow-xl"
       >
         <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-[60px] pointer-events-none" />
 
@@ -69,7 +69,7 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
         viewport={{ once: true }}
         transition={{ duration: 0.6, delay: 0.1 }}
         onMouseEnter={playSkillHover}
-        className="p-5 sm:p-6 bg-[#13151a]/80 border border-white/10 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[250px] hover:border-amber-500/30 transition-all duration-300 backdrop-blur-md shadow-xl"
+        className="p-5 sm:p-6 bg-surface-1 border border-white/10 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[250px] hover:border-amber-500/30 transition-all duration-300 shadow-xl"
       >
         <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/5 rounded-full blur-[50px] pointer-events-none" />
 
@@ -124,7 +124,7 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6, delay: 0.2 }}
-        className="md:col-span-3 p-5 sm:p-6 md:p-8 bg-[#13151a]/80 border border-white/10 rounded-2xl relative overflow-hidden hover:border-white/20 transition-all duration-300 backdrop-blur-md shadow-xl"
+        className="md:col-span-3 p-5 sm:p-6 md:p-8 bg-surface-1 border border-white/10 rounded-2xl relative overflow-hidden hover:border-white/20 transition-all duration-300 shadow-xl"
       >
         <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-300 uppercase mb-5 sm:mb-6 text-center md:text-left">
           {dict.domains.title}

@@ -1335,7 +1335,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             "--term-glow": `0 0 35px ${hexToRgba(designManifest.colors["brand-cyan"], 0.02)}`,
           } as React.CSSProperties
         }
-        className="w-full border border-zinc-900 focus-within:border-brand-cyan/40 bg-zinc-950/80 rounded-2xl overflow-hidden shadow-[var(--term-glow)] focus-within:shadow-[0_0_40px_rgba(6,182,212,0.08),0_0_80px_rgba(6,182,212,0.02)] relative backdrop-blur-md cursor-text transition-all duration-300"
+        className="w-full border border-zinc-900 focus-within:border-brand-cyan/40 bg-zinc-950 rounded-2xl overflow-hidden shadow-[var(--term-glow)] focus-within:shadow-[0_0_40px_rgba(6,182,212,0.08),0_0_80px_rgba(6,182,212,0.02)] relative cursor-text transition-all duration-300"
       >
         {/* Terminal Header */}
         <div className="border-b border-zinc-900/60 bg-zinc-950/90 px-4 py-3.5 flex justify-between items-center select-none min-w-0 gap-2">

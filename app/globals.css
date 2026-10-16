@@ -11,8 +11,10 @@
   /* Colors - Warm Architectural Graphite & Precision Accents */
   --background: #0d0e11;
   --foreground: #f4f4f6;
-  --surface-1: rgba(20, 22, 28, 0.75);
-  --surface-2: rgba(28, 31, 39, 0.55);
+  /* Opaque card surfaces: text contrast never depends on what scrolls
+     behind a card, and no backdrop blur is needed to keep it legible (#2310). */
+  --surface-1: #13151a;
+  --surface-2: #191c22;
   --border: rgba(255, 255, 255, 0.08);
   --border-active: rgba(245, 158, 11, 0.4);
   --muted: #94a3b8;
@@ -220,8 +222,6 @@ body {
 
 .dossier-card {
   background: var(--surface-1);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--border);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -254,8 +254,6 @@ body {
 /* Glassmorphism & Neon Glow Utilities */
 .glass-panel {
   background: var(--surface-1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
 }
 
@@ -276,8 +274,6 @@ body {
 
 .glass-panel-glow {
   background: var(--surface-1);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--border);
   box-shadow: 0 0 25px -5px var(--brand-cyan-glow);
 }
@@ -299,9 +295,7 @@ body {
 
 /* Tool Shell & Precision Editorial Utilities */
 .tool-shell {
-  background: rgba(18, 20, 26, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1.25rem;
 }
@@ -323,11 +317,7 @@ body {
 }
 
 .editorial-surface {
-  background: linear-gradient(
-    180deg,
-    rgba(20, 22, 28, 0.6) 0%,
-    rgba(13, 14, 17, 0.9) 100%
-  );
+  background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 

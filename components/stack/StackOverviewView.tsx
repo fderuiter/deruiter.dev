@@ -203,7 +203,7 @@ export const StackOverviewView: React.FC = () => {
           id="quickstart"
           className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
         >
-          <div className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-800/80 p-6 backdrop-blur-xl">
+          <div className="w-full rounded-2xl bg-surface-1 border border-zinc-800/80 p-6">
             <div className="flex items-center gap-3 pb-5 border-b border-zinc-800/80 mb-5">
               <div className="p-2.5 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan">
                 <IconTerminal className="w-5 h-5" />

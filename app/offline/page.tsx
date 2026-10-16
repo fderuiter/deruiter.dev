@@ -91,7 +91,7 @@ export default function OfflineFallbackPage() {
       className="pt-28 pb-16 bg-zinc-950 text-foreground relative overflow-hidden"
     >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-zinc-900/80 border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl backdrop-blur-md">
+        <div className="bg-surface-1 border border-zinc-800 rounded-2xl p-8 md:p-12 shadow-2xl">
           <div className="flex items-center space-x-3 mb-6">
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400">
               <IconWifiOff className="w-8 h-8" />

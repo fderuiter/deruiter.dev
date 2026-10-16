@@ -17,9 +17,12 @@ export const ROOM_CLEAR_HINT = controlHint({
   desktop: "Enter to continue · R to retry this room",
 });
 
-/** The run-finished card, which starts over from Room 01. */
+/**
+ * The run-finished card, which starts over from Room 01. The run is over, so
+ * it offers no retry of the last room (#2291).
+ */
 export const FINAL_ROOM_HINT = controlHint({
   key: "Enter",
   touch: "Tap New Run to start over from Room 01",
-  desktop: "Enter for a new run from Room 01 · R to retry this room",
+  desktop: "Enter for a new run from Room 01",
 });

@@ -770,6 +770,12 @@ Re-exports [CsrStageSchema](types/variables/CsrStageSchema.md)
 
 ***
 
+### currentRunAct
+
+Re-exports [currentRunAct](internal/run/functions/currentRunAct.md)
+
+***
+
 ### CustomScenarioSpec
 
 Re-exports [CustomScenarioSpec](types/type-aliases/CustomScenarioSpec.md)

@@ -30,7 +30,7 @@ import {
   createCustomScenario,
   createRunState,
   parseSeed,
-  planActs,
+  currentRunAct,
   deriveRunView,
   describeBlindLoss,
   previewAllocation,
@@ -605,8 +605,9 @@ export function CardTable({
     runView.phase === "RUN_FAILED" ||
     (runView.phase === "RUN_WON" && !runView.endless?.canContinue);
   const endlessRound = runView.endless?.round ?? null;
-  // The act being played: its shop runs between its Blinds.
-  const currentAct = planActs(act)[runView.actIndex];
+  // The act being played: its shop runs between its Blinds. In
+  // post-marketing this is the round's study, past the planned acts (#2330).
+  const currentAct = currentRunAct(act, run);
   // A campaign with post-marketing rounds is won once, whatever act shows.
   const wonLabel =
     runView.act.count > 1 || runView.endless

@@ -266,6 +266,7 @@ export {
   planActs,
   runBlinds,
   endlessAct,
+  currentRunAct,
   DEFAULT_SEED,
   runChoice,
   type ActIntroView,

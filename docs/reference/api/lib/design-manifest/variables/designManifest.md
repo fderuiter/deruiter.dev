@@ -161,13 +161,13 @@ Original CSS Variable: --success
 
 #### colors.surface-1
 
-> `readonly` **surface-1**: `"rgba(20, 22, 28, 0.75)"` = `"rgba(20, 22, 28, 0.75)"`
+> `readonly` **surface-1**: `"#13151a"` = `"#13151a"`
 
 Original CSS Variable: --surface-1
 
 #### colors.surface-2
 
-> `readonly` **surface-2**: `"rgba(28, 31, 39, 0.55)"` = `"rgba(28, 31, 39, 0.55)"`
+> `readonly` **surface-2**: `"#191c22"` = `"#191c22"`
 
 Original CSS Variable: --surface-2
 

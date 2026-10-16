@@ -236,7 +236,7 @@ export function AdminLoginGateway() {
                 },
                 elements: {
                   rootBox: "w-full",
-                  card: "w-full bg-[#0d0e11] border border-white/10 shadow-2xl rounded-xl p-6 sm:p-7 backdrop-blur-md",
+                  card: "w-full bg-[#0d0e11] border border-white/10 shadow-2xl rounded-xl p-6 sm:p-7",
                   header: "text-left pb-4 mb-3 border-b border-white/10 gap-1",
                   headerTitle:
                     "text-zinc-100 font-mono text-base font-bold tracking-tight",

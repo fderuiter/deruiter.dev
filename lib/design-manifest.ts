@@ -10,9 +10,9 @@ export const designManifest = {
     /** Original CSS Variable: --foreground */
     "foreground": "#f4f4f6",
     /** Original CSS Variable: --surface-1 */
-    "surface-1": "rgba(20, 22, 28, 0.75)",
+    "surface-1": "#13151a",
     /** Original CSS Variable: --surface-2 */
-    "surface-2": "rgba(28, 31, 39, 0.55)",
+    "surface-2": "#191c22",
     /** Original CSS Variable: --border */
     "border": "rgba(255, 255, 255, 0.08)",
     /** Original CSS Variable: --border-active */

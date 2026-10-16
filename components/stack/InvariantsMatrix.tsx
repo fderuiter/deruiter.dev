@@ -174,7 +174,7 @@ export const InvariantsMatrix: React.FC = () => {
   });
 
   return (
-    <div className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-800/80 p-6 backdrop-blur-xl relative overflow-hidden">
+    <div className="w-full rounded-2xl bg-surface-1 border border-zinc-800/80 p-6 relative overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-zinc-800/80">
         <div className="flex items-center gap-3">

@@ -13,7 +13,7 @@ import {
 import { getPhotosByCategory } from "@/lib/media-registry";
 
 const CAROUSEL_NAV_BUTTON_BASE =
-  "absolute z-10 top-1/2 -translate-y-1/2 min-w-11 min-h-11 rounded-full bg-black/70 border border-white/25 flex items-center justify-center text-white hover:bg-amber-400 hover:text-black active:scale-[0.98] transition-colors backdrop-blur-sm cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
+  "absolute z-10 top-1/2 -translate-y-1/2 min-w-11 min-h-11 rounded-full bg-zinc-950 border border-white/25 flex items-center justify-center text-white hover:bg-amber-400 hover:text-black active:scale-[0.98] transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
 
 export const BioSpotlight: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();

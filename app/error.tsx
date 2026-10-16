@@ -32,7 +32,7 @@ export default function Error({
       <meta name="robots" content="noindex, nofollow" />
       <link rel="canonical" href={canonicalUrl} />
       <div className="min-h-screen py-32 px-6 flex flex-col items-center justify-center bg-brand-dark text-foreground">
-        <div className="relative z-10 w-full max-w-md p-8 bg-neutral-950/40 border border-neutral-900 rounded-3xl backdrop-blur-xl text-center shadow-2xl">
+        <div className="relative z-10 w-full max-w-md p-8 bg-surface-1 border border-neutral-900 rounded-3xl text-center shadow-2xl">
           <span className="inline-block px-3 py-1 text-xs font-mono font-bold bg-red-950/20 border border-red-900/40 text-red-400 rounded-md mb-6">
             RUNTIME_ERROR
           </span>

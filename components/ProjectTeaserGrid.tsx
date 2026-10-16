@@ -183,7 +183,7 @@ export const ProjectTeaserGrid: React.FC<ProjectTeaserGridProps> = ({
             <article
               key={study.id}
               data-testid="featured-project-card"
-              className="group relative isolate @container min-w-0 break-words flex flex-col p-5 @sm:p-6 rounded-2xl bg-[#13151a]/80 border border-white/10 hover:border-amber-500/40 hover:bg-[#181b22] transition-all duration-300 motion-reduce:transition-none backdrop-blur-md overflow-hidden shadow-xl"
+              className="group relative isolate @container min-w-0 break-words flex flex-col p-5 @sm:p-6 rounded-2xl bg-surface-1 border border-white/10 hover:border-amber-500/40 hover:bg-surface-2 transition-all duration-300 motion-reduce:transition-none overflow-hidden shadow-xl"
             >
               <div className="relative z-10 min-w-0 flex flex-1 flex-col">
                 {/* Header: System Number, Language Badge & Slug */}

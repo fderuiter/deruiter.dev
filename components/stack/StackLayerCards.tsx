@@ -285,7 +285,7 @@ export const StackLayerCards: React.FC = () => {
           <div
             key={layer.id}
             onMouseEnter={() => playHover()}
-            className={`p-5 rounded-2xl bg-zinc-900/40 border border-zinc-800/80 ${layer.borderColor} transition-all duration-200 flex flex-col justify-between group backdrop-blur-sm relative overflow-hidden`}
+            className={`p-5 rounded-2xl bg-surface-1 border border-zinc-800/80 ${layer.borderColor} transition-all duration-200 flex flex-col justify-between group relative overflow-hidden`}
           >
             {/* Ambient Corner Glow */}
             <div

@@ -188,7 +188,7 @@ export const DesktopNavMenu: React.FC<DesktopNavMenuProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute left-0 z-50 mt-3 flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950/95 p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] backdrop-blur-2xl sm:w-80"
+            className="absolute left-0 z-50 mt-3 flex max-h-[calc(100dvh-6rem)] w-[calc(100vw-2rem)] max-w-[calc(100vw-2rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-zinc-800 bg-zinc-950 p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.9)] sm:w-80"
           >
             {group.sections.map((section) => {
               const items = filterNavItems(section.items, persona);

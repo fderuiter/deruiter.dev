@@ -111,7 +111,7 @@ export const PretextBenchmarkLab: React.FC = () => {
       : null;
 
   return (
-    <div className="w-full rounded-2xl bg-zinc-900/50 border border-zinc-800/80 p-6 backdrop-blur-xl relative overflow-hidden">
+    <div className="w-full rounded-2xl bg-surface-1 border border-zinc-800/80 p-6 relative overflow-hidden">
       {/* Hidden container for DOM reflow simulation */}
       <div
         ref={benchmarkDomContainerRef}

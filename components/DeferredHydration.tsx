@@ -154,7 +154,7 @@ export const TimelineSkeleton: React.FC = () => {
   return (
     <div className="w-full max-w-3xl mx-auto py-6 sm:py-8 relative select-none animate-pulse">
       {/* Perspective Switcher Placeholder */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 py-3 bg-zinc-900/40 border border-zinc-900/80 rounded-2xl backdrop-blur-md w-full">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-12 sm:mb-16 px-4 py-3 bg-surface-1 border border-zinc-900/80 rounded-2xl w-full">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-zinc-800" />
           <div className="h-3.5 w-20 bg-zinc-800/60 rounded" />

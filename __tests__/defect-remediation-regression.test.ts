@@ -75,6 +75,7 @@ import {
   enterBathtub,
   exitBathtub,
   BACK_DOOR_BOUNDS,
+  endlessPace,
   type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
 import { sanitizeError, sanitizeString } from "@/lib/error-sanitization";
@@ -2524,5 +2525,57 @@ describe("Working With Duck facts 6-10 are reachable (#2050)", () => {
     expect(state.unlockedFacts).toEqual(
       expect.arrayContaining([6, 7, 8, 9, 10])
     );
+  });
+});
+
+describe("Working With Duck endless keeps getting harder (#2328)", () => {
+  it("keeps the endless pace climbing past Y2 without passing its ceiling", () => {
+    expect(endlessPace(8).impulseInterval).toBeLessThan(
+      endlessPace(6).impulseInterval
+    );
+    expect(endlessPace(20).meterLevel).toBeGreaterThan(
+      endlessPace(13).meterLevel
+    );
+    const far = endlessPace(1_000_000);
+    expect(far.meterLevel).toBeLessThanOrEqual(16);
+    expect(far.impulseInterval).toBeGreaterThanOrEqual(40);
+  });
+
+  it("holds a due endless surprise until Duck is calm instead of skipping it", () => {
+    const spy = vi.spyOn(Math, "random").mockReturnValue(0.5);
+    try {
+      const base = createInitialDuckGameState(5, "endless");
+      const interval = endlessPace(2).surpriseInterval;
+      const busy: WorkingWithDuckState = {
+        ...base,
+        status: "running",
+        endlessQuarter: 2,
+        workProgress: 120,
+        ticks: interval - 1,
+        duck: {
+          ...base.duck,
+          state: "DRINKING_WATER",
+          stateTimer: 10_000,
+          maxStateTimer: 10_000,
+        },
+      };
+      const due = stepDuckGame(busy);
+      expect(due.activeSurpriseEvent).toBeNull();
+      expect(due.surpriseDue).toBe(true);
+
+      const calm = stepDuckGame({
+        ...due,
+        duck: {
+          ...due.duck,
+          state: "IDLE_ROAM",
+          stateTimer: 10_000,
+          maxStateTimer: 10_000,
+        },
+      });
+      expect(calm.activeSurpriseEvent).not.toBeNull();
+      expect(calm.surpriseDue).toBe(false);
+    } finally {
+      spy.mockRestore();
+    }
   });
 });

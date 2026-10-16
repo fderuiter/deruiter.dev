@@ -78,8 +78,10 @@ vi.mock("@/hooks/useTelemetry", () => ({
 }));
 
 import { WorkingWithDuck } from "@/components/WorkingWithDuck";
+import { safeClear } from "@/lib/safe-storage";
 import {
   ENDLESS_QUARTER_WORK,
+  computeEndlessScore,
   createInitialDuckGameState,
   type WorkingWithDuckState,
 } from "@/lib/working-with-duck-engine";
@@ -184,5 +186,88 @@ describe("Working With Duck endless result card (#2051)", () => {
       container.querySelector('[data-testid="duck-start-highscore"]')
         ?.textContent
     ).toContain("Endless best 3210");
+  });
+});
+
+describe("Working With Duck endless keeps its own best (#2326, #2327)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  let originalRaf: typeof window.requestAnimationFrame;
+
+  beforeEach(() => {
+    // Clears the safe-storage memory cache too, so no best leaks between tests.
+    safeClear();
+    localStorage.clear();
+    originalRaf = window.requestAnimationFrame;
+    window.requestAnimationFrame = (() =>
+      1) as typeof window.requestAnimationFrame;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+
+  afterEach(async () => {
+    window.requestAnimationFrame = originalRaf;
+    await act(async () => {
+      root.unmount();
+    });
+    container.remove();
+  });
+
+  async function render(state: WorkingWithDuckState) {
+    await act(async () => {
+      root.render(<WorkingWithDuck initialState={state} />);
+    });
+  }
+
+  function text(testId: string): string {
+    const el = container.querySelector(`[data-testid="${testId}"]`);
+    expect(el).not.toBeNull();
+    return (el!.textContent ?? "").replace(/\s+/g, " ").trim();
+  }
+
+  it("keeps a finished endless run's points out of the campaign high score (#2326)", async () => {
+    localStorage.setItem("working_with_duck_high_score", "1000");
+    await render(endlessRun({ status: "failed", totalScore: 23933 }));
+
+    expect(localStorage.getItem("working_with_duck_high_score")).toBe("1000");
+    const progress = JSON.parse(
+      localStorage.getItem("arcade_unified_progress_v1") ?? "{}"
+    ) as { highScores?: Record<string, number> };
+    expect(progress.highScores?.["working-with-duck"] ?? 0).not.toBe(23933);
+  });
+
+  it("still records a finished campaign sprint as the arcade high score", async () => {
+    localStorage.setItem("working_with_duck_high_score", "1000");
+    await render({
+      ...createInitialDuckGameState(2),
+      status: "failed",
+      totalScore: 4321,
+    });
+
+    expect(localStorage.getItem("working_with_duck_high_score")).toBe("4321");
+  });
+
+  it("shows the endless score and endless best in the endless HUD (#2326)", async () => {
+    localStorage.setItem("working_with_duck_high_score", "23933");
+    localStorage.setItem(ENDLESS_BEST_KEY, "5704");
+    const state = endlessRun({ status: "running", totalScore: 38415 });
+    await render(state);
+
+    expect(text("duck-hud-highscore-value")).toBe("5704");
+    expect(text("duck-hud-score-value")).toBe(
+      String(computeEndlessScore(state))
+    );
+  });
+
+  it("shows a dash and 'none yet' for the endless best before any run (#2326, #2327)", async () => {
+    localStorage.setItem("working_with_duck_high_score", "5813");
+    await render(endlessRun());
+
+    const briefing = text("duck-start-highscore");
+    expect(briefing).toContain("Endless best");
+    expect(briefing).not.toMatch(/Endless best 0/);
+    expect(briefing).toContain("Endless best —none yet");
+    expect(text("duck-hud-highscore-value")).toBe("—none yet");
   });
 });

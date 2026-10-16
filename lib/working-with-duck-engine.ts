@@ -444,12 +444,18 @@ const SURPRISE_INTERVAL_TICKS = 520;
 const ENDLESS_SURPRISE_INTERVAL_TICKS = 300;
 /** Meter level added per endless quarter after the first. */
 const ENDLESS_METER_LEVEL_STEP = 0.6;
-/** Highest meter level an endless run climbs to. */
-const ENDLESS_MAX_METER_LEVEL = 12;
+/** Meter level where the endless climb stops being linear (#2328). */
+const ENDLESS_METER_LEVEL_KNEE = 12;
+/** Ceiling the meter level approaches, but never reaches, past the knee. */
+const ENDLESS_MAX_METER_LEVEL = 16;
 /** Ticks taken off the impulse interval per endless quarter. */
 const ENDLESS_IMPULSE_STEP = 12;
-/** Shortest impulse interval an endless run reaches. */
-const ENDLESS_MIN_IMPULSE_INTERVAL = 60;
+/** Impulse interval where the endless climb stops being linear (#2328). */
+const ENDLESS_IMPULSE_KNEE = 60;
+/** Floor the impulse interval approaches, but never reaches, past the knee. */
+const ENDLESS_MIN_IMPULSE_INTERVAL = 40;
+/** Linear overshoot past the impulse knee that closes about 63% of the gap. */
+const ENDLESS_IMPULSE_EASE = 120;
 /** Ticks Duck needs to chew a prop, normally and under cable chewing. */
 const CHEW_TICKS = 240;
 const CABLE_CHEW_TICKS = 150;
@@ -466,9 +472,28 @@ export const HICCUP_PERIOD_TICKS = 50;
 export const HICCUP_WINDOW_TICKS = 18;
 
 /**
+ * Follows a linear climb up to `knee`, then eases it toward `limit` so it
+ * keeps moving every quarter without ever passing the limit (#2328). The
+ * slope is unchanged at the knee; `ease` sets how quickly the gap closes.
+ */
+function easeTowardLimit(
+  linear: number,
+  knee: number,
+  limit: number,
+  ease: number
+): number {
+  const overshoot = Math.abs(linear - knee);
+  const climbsUp = limit > knee;
+  if (climbsUp ? linear <= knee : linear >= knee) return linear;
+  const eased = Math.abs(limit - knee) * (1 - Math.exp(-overshoot / ease));
+  return climbsUp ? knee + eased : knee - eased;
+}
+
+/**
  * The pace of an endless quarter. Quarter 1 plays at the base sprint's
  * rates; each later quarter raises the meter rates, shortens the impulse
- * interval and adds one hazard.
+ * interval and adds one hazard. Past Y2 the climb eases toward a ceiling
+ * rather than stopping, so a long run keeps getting harder (#2328).
  */
 export function endlessPace(quarter: number, baseLevel = 5): DuckEndlessPace {
   const wave = Number.isFinite(quarter)
@@ -477,13 +502,19 @@ export function endlessPace(quarter: number, baseLevel = 5): DuckEndlessPace {
   const base = SPRINTS.find((s) => s.level === baseLevel) || SPRINTS[0];
   const hazards = ENDLESS_HAZARD_ORDER.slice(0, wave);
   return {
-    meterLevel: Math.min(
+    meterLevel: easeTowardLimit(
+      base.level + wave * ENDLESS_METER_LEVEL_STEP,
+      ENDLESS_METER_LEVEL_KNEE,
       ENDLESS_MAX_METER_LEVEL,
-      base.level + wave * ENDLESS_METER_LEVEL_STEP
+      ENDLESS_MAX_METER_LEVEL - ENDLESS_METER_LEVEL_KNEE + 2
     ),
-    impulseInterval: Math.max(
-      ENDLESS_MIN_IMPULSE_INTERVAL,
-      base.impulseInterval - wave * ENDLESS_IMPULSE_STEP
+    impulseInterval: Math.round(
+      easeTowardLimit(
+        base.impulseInterval - wave * ENDLESS_IMPULSE_STEP,
+        ENDLESS_IMPULSE_KNEE,
+        ENDLESS_MIN_IMPULSE_INTERVAL,
+        ENDLESS_IMPULSE_EASE
+      )
     ),
     surpriseInterval: hazards.includes("surprises")
       ? ENDLESS_SURPRISE_INTERVAL_TICKS
@@ -737,6 +768,12 @@ export interface WorkingWithDuckState {
     maxTimer: number;
     resolved: boolean;
   } | null;
+  /**
+   * Endless only: a surprise roll came due while Duck was busy or another
+   * surprise was up, so it fires at his next calm moment instead of being
+   * skipped (#2328). The campaign keeps its exact-tick rolls.
+   */
+  surpriseDue?: boolean;
 
   duck: {
     x: number;
@@ -1379,11 +1416,17 @@ export function stepDuckGame(
   // Random surprise event during calm roam. Sprint 1 keeps its two gentle
   // surprises; from sprint 2, and in endless, puppy hiccups join the pool.
   // Window Watch brings only squirrels.
-  if (
+  // In endless, a roll that comes due while Duck is busy waits for his next
+  // calm moment, so shorter intervals really bring more surprises (#2328).
+  const surpriseTick = nextTicks % surpriseInterval === 0;
+  const surpriseWaiting =
+    state.mode === "endless" && (surpriseTick || state.surpriseDue === true);
+  const surpriseRolls =
     !activeSurprise &&
-    nextTicks % surpriseInterval === 0 &&
-    (duck.state === "IDLE_ROAM" || twist === "window-watch")
-  ) {
+    (surpriseTick || surpriseWaiting) &&
+    (duck.state === "IDLE_ROAM" || twist === "window-watch");
+  const nextSurpriseDue = surpriseWaiting && !surpriseRolls;
+  if (surpriseRolls) {
     const roll = Math.random();
     const withHiccups = state.mode === "endless" || state.currentLevel >= 2;
     const windowWatch = twist === "window-watch";
@@ -2082,6 +2125,7 @@ export function stepDuckGame(
     comboStreak: nextComboStreak,
     comboTimer: nextComboTimer,
     activeSurpriseEvent: activeSurprise,
+    surpriseDue: nextSurpriseDue,
     isMuddy: nextIsMuddy,
     standup: nextStandup,
     activeTrick,

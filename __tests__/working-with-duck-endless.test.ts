@@ -110,8 +110,9 @@ describe("endless pace (#2051)", () => {
 
   it("keeps rising past Q4 but within bounds", () => {
     const late = endlessPace(40);
-    expect(late.meterLevel).toBeLessThanOrEqual(12);
-    expect(late.impulseInterval).toBeGreaterThanOrEqual(60);
+    // Past Y2 the climb eases toward a ceiling instead of stopping (#2328).
+    expect(late.meterLevel).toBeLessThanOrEqual(16);
+    expect(late.impulseInterval).toBeGreaterThanOrEqual(40);
     expect(late.hazards).toHaveLength(3);
     expect(endlessPace(Number.NaN)).toEqual(endlessPace(1));
   });

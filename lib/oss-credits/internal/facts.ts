@@ -23,7 +23,8 @@ export function listLockedPackages(lockfile: LockfileShape): LockedPackage[] {
   const byKey = new Map<string, LockedPackage>();
   for (const [lockPath, entry] of Object.entries(lockfile.packages)) {
     if (lockPath === "" || entry.link) continue;
-    const name = packageNameFromLockPath(lockPath);
+    // An npm alias installs under another name; credit what was published.
+    const name = entry.name ?? packageNameFromLockPath(lockPath);
     if (!name || !entry.version) continue;
     const key = `${name}@${entry.version}`;
     const scope = entry.dev ? "tooling" : "runtime";

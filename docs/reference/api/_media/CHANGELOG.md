@@ -175,6 +175,10 @@ commit are deployed; later ones ship with the next manual release.
   Contact, and Protocol Drift moved to `/protocol-drift` with a permanent
   redirect from `/arcade/protocol-drift` ([ADR 0058](adr/0058-site-navigation-information-architecture.md),
   #1852).
+- Security: the `braces` advisory (GHSA-vfj7-8cjw-p6xm) is resolved instead
+  of excepted. `fast-glob`, its only path into the tree, is overridden to
+  `tinyglobby`, so `braces` is no longer installed and its audit exception is
+  removed (#1783).
 
 ### Added
 

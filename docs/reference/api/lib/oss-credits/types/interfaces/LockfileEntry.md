@@ -36,6 +36,14 @@ Subresource integrity hash of that tarball.
 
 ***
 
+### name?
+
+> `optional` **name?**: `string`
+
+Published name, present when the install path is an npm alias.
+
+***
+
 ### resolved?
 
 > `optional` **resolved?**: `string`

@@ -155,6 +155,28 @@ describe("buildCreditsDataset", () => {
     ]);
   });
 
+  it("credits an npm alias under the package that was published (#1783)", () => {
+    const aliased: LockfileShape = {
+      packages: {
+        ...lockfile.packages,
+        "node_modules/app-lib/node_modules/alias-of-nested": {
+          name: "nested",
+          version: "0.1.0",
+          license: "MIT",
+        },
+      },
+    };
+    const names = buildCreditsDataset({
+      lockfile: aliased,
+      root,
+      annotations,
+      facts: facts(),
+    }).packages.map((p) => p.name);
+    expect(names).not.toContain("alias-of-nested");
+    expect(names.filter((name) => name === "nested")).toHaveLength(1);
+    expect(diffFactsAgainstLockfile(facts(), aliased).missing).toEqual([]);
+  });
+
   it("marks scope and direct correctly", () => {
     const byName = Object.fromEntries(build().packages.map((p) => [p.name, p]));
     expect(byName["dev-tool"].scope).toBe("tooling");

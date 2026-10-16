@@ -149,7 +149,8 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("SCORE:");
     expect(container.textContent).toContain("[1] npm i");
     expect(container.textContent).toContain("[2] Port Scan");
-    expect(container.textContent).toContain("[3] EMP");
+    // Script Kiddie's EMP slot shares the Space key (#2291).
+    expect(container.textContent).toContain("[3/SPACE] EMP");
   });
 
   it("states the objective and marks the player and the fogged exit (#1187)", async () => {
@@ -464,7 +465,7 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     expect(container.textContent).toContain("APT Specialist");
   });
 
-  it("should open Darknet Market modal and show vendor items", async () => {
+  it("keeps the Darknet Market shut in Room 01, away from the rest stop (#2291)", async () => {
     await act(async () => {
       root.render(<RetroLabyrinth isMounted={true} />);
     });
@@ -472,13 +473,16 @@ describe("RetroLabyrinth React Component UI Suite", () => {
     const marketBtn = Array.from(container.querySelectorAll("button")).find(
       (b) => b.textContent?.includes("Market")
     );
+    expect(marketBtn?.disabled).toBe(true);
+    expect(
+      container.querySelector('[data-testid="labyrinth-market-closed"]')
+        ?.textContent
+    ).toBe("Market opens at the rest stop");
     await act(async () => {
       marketBtn?.click();
     });
 
-    expect(container.textContent).toContain("DARKNET EXPLOIT BLACK-MARKET");
-    expect(container.textContent).toContain("Overclocked 16GB DDR5 RAM");
-    expect(container.textContent).toContain("Hardware Jumper Bypass Chip");
+    expect(container.textContent).not.toContain("DARKNET EXPLOIT BLACK-MARKET");
   });
 
   it("defaults to the emerald phosphor theme, keeps amber and drops synthwave (#1522)", async () => {

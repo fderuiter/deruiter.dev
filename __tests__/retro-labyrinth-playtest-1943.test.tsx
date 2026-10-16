@@ -247,8 +247,9 @@ describe("Retro Labyrinth playtest fixes (#1943)", () => {
   });
 
   it("closes the Market on Escape", async () => {
+    // The Market trades only at the rest stop (#2291).
     mockCampaign.build = (actual) => [
-      plainRoom(actual, {}),
+      plainRoom(actual, { id: "darknet_vault" }),
       ...actual.generateRoguelikeCampaign().slice(1),
     ];
     await mount();
@@ -325,7 +326,9 @@ describe("Retro Labyrinth playtest fixes (#1943)", () => {
     expect(
       container.querySelector('[data-testid="labyrinth-run-rooms"]')
         ?.textContent
-    ).toBe("R01 2 · R02 1 · R03 1 · R04 1");
+    ).toBe(
+      "R01 BlinkBrowse 2 · R02 BlinkBrowse 1 · R03 BlinkBrowse 1 · R04 BlinkBrowse 1"
+    );
   });
 
   it("hands focus to Complete Decryption when the terminal is solved", async () => {

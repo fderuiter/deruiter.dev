@@ -77,10 +77,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
       {/* Header bar / Mobile Accordion Toggle */}
       <div className="flex items-center justify-between">
         <h2 className="text-xs sm:text-sm font-mono font-bold tracking-wider text-zinc-300 uppercase flex items-center gap-2">
-          <span
-            className="w-2 h-2 rounded-full bg-brand-cyan"
-            aria-hidden="true"
-          />
+          <span className="w-2 h-2 rounded-full bg-accent" aria-hidden="true" />
           Table of Contents
         </h2>
 
@@ -117,7 +114,7 @@ export function TableOfContents({ headings }: TableOfContentsProps) {
                       : "pl-3 text-sm font-medium"
                   } ${
                     isActive
-                      ? "border-brand-cyan text-brand-cyan font-semibold"
+                      ? "border-accent text-accent font-semibold"
                       : "border-transparent text-zinc-400 hover:text-zinc-200 hover:border-zinc-600"
                   }`}
                 >

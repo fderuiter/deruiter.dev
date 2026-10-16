@@ -18,11 +18,11 @@ export const designManifest = {
     /** Original CSS Variable: --border-active */
     "border-active": "rgba(245, 158, 11, 0.4)",
     /** Original CSS Variable: --muted */
-    "muted": "#94a3b8",
+    "muted": "#9da2af",
     /** Original CSS Variable: --muted-strong */
-    "muted-strong": "#cbd5e1",
+    "muted-strong": "#d2d4db",
     /** Original CSS Variable: --text-secondary */
-    "text-secondary": "#94a3b8",
+    "text-secondary": "#9da2af",
     /** Original CSS Variable: --brand-cyan */
     "brand-cyan": "#06b6d4",
     /** Original CSS Variable: --brand-cyan-glow */
@@ -44,9 +44,11 @@ export const designManifest = {
     /** Original CSS Variable: --success */
     "success": "#10b981",
     /** Original CSS Variable: --error */
-    "error": "#f87171",
+    "error": "#ef4444",
     /** Original CSS Variable: --warning */
     "warning": "#f59e0b",
+    /** Original CSS Variable: --accent */
+    "accent": "#f59e0b",
   },
   typography: {
     fonts: {

@@ -80,7 +80,7 @@ export const PretextCard: React.FC<PretextCardProps> = ({
             </p>
           </div>
         </div>
-        <div className="text-[10px] text-brand-blue font-mono self-end opacity-60">
+        <div className="text-[10px] text-accent font-mono self-end opacity-60">
           {!isReady ? "Measuring..." : `Pretext height: ${computedHeight}px`}
         </div>
       </div>

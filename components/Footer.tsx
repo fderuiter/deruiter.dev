@@ -43,7 +43,7 @@ const FooterNavLink: React.FC<{
       href={item.href}
       onClick={onClick}
       onMouseEnter={onHover}
-      className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+      className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
     >
       <NavIcon name={item.icon} tone={item.tone} className="h-3 w-3" />
       {item.title}
@@ -101,7 +101,7 @@ export const Footer: React.FC = () => {
       className="w-full bg-zinc-950 border-t border-zinc-900 relative z-20 select-none"
     >
       {/* Top Ambient Highlight */}
-      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-brand-cyan/20 to-transparent" />
+      <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-accent/20 to-transparent" />
 
       {/* Live Status Ticker & Interactive Mascot */}
       <FooterStatusTicker />
@@ -118,10 +118,10 @@ export const Footer: React.FC = () => {
                 className="inline-flex items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground group"
               >
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-brand-cyan/70 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-cyan" />
+                  <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
                 </span>
-                <span className="group-hover:text-brand-cyan transition-colors">
+                <span className="group-hover:text-accent transition-colors">
                   FDERUITER
                 </span>
               </Link>
@@ -135,12 +135,12 @@ export const Footer: React.FC = () => {
             <Link
               href="/stack"
               onMouseEnter={handleHover}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-brand-cyan/40 text-[11px] font-mono text-zinc-300 hover:text-white transition-all w-fit group"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-accent/40 text-[11px] font-mono text-zinc-300 hover:text-white transition-all w-fit group"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:animate-pulse" />
               <span>Explore the projects</span>
               <span className="text-zinc-600">|</span>
-              <span className="text-zinc-400 group-hover:text-brand-cyan transition-colors">
+              <span className="text-zinc-400 group-hover:text-accent transition-colors">
                 Inspect Stack ↗
               </span>
             </Link>
@@ -149,7 +149,7 @@ export const Footer: React.FC = () => {
           {/* Col 2: Arcade, from the shared navigation data */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconSparkles className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconSparkles className="w-3.5 h-3.5 text-accent" />
               Arcade
             </span>
             <ul className="space-y-2 text-xs font-mono">
@@ -169,7 +169,7 @@ export const Footer: React.FC = () => {
           {/* Col 3: Simulators and studios */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconTerminal className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconTerminal className="w-3.5 h-3.5 text-accent" />
               Simulators
             </span>
             <ul className="space-y-2 text-xs font-mono">
@@ -188,7 +188,7 @@ export const Footer: React.FC = () => {
           {/* Col 4: Site pages */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconArticle className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconArticle className="w-3.5 h-3.5 text-accent" />
               Site
             </span>
             <ul className="space-y-2 text-xs font-mono">
@@ -196,7 +196,7 @@ export const Footer: React.FC = () => {
                 <Link
                   href="/case-studies"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors"
+                  className="text-zinc-400 hover:text-accent transition-colors"
                 >
                   Work
                 </Link>
@@ -211,9 +211,9 @@ export const Footer: React.FC = () => {
                 <Link
                   href="/blog"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
                 >
-                  <IconArticle className="w-3 h-3 text-brand-cyan" />
+                  <IconArticle className="w-3 h-3 text-accent" />
                   Blog
                 </Link>
               </li>
@@ -243,7 +243,7 @@ export const Footer: React.FC = () => {
           {/* Col 5: Connect & Schedule */}
           <div className="space-y-4">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconCalendar className="w-3.5 h-3.5 text-brand-cyan" />
+              <IconCalendar className="w-3.5 h-3.5 text-accent" />
               Connect
             </span>
             <ul className="space-y-2 text-xs font-mono">
@@ -251,9 +251,9 @@ export const Footer: React.FC = () => {
                 <Link
                   href="/schedule"
                   onMouseEnter={handleHover}
-                  className="text-brand-cyan font-bold hover:underline transition-all flex items-center gap-1.5"
+                  className="text-accent font-bold hover:underline transition-all flex items-center gap-1.5"
                 >
-                  <IconCalendar className="w-3 h-3 text-brand-cyan" />
+                  <IconCalendar className="w-3 h-3 text-accent" />
                   Book a Chat ↗
                 </Link>
               </li>
@@ -261,9 +261,9 @@ export const Footer: React.FC = () => {
                 <Link
                   href="/contact"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
                 >
-                  <IconMessageCode className="w-3 h-3 text-brand-cyan" />
+                  <IconMessageCode className="w-3 h-3 text-accent" />
                   Contact ↗
                 </Link>
               </li>
@@ -273,7 +273,7 @@ export const Footer: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
                 >
                   <IconBrandGithub className="w-3 h-3 text-zinc-400" />
                   GitHub Repos ↗
@@ -285,7 +285,7 @@ export const Footer: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
                 >
                   <IconBrandLinkedin className="w-3 h-3 text-zinc-400" />
                   LinkedIn ↗
@@ -296,7 +296,7 @@ export const Footer: React.FC = () => {
                   type="button"
                   onClick={() => emitAppEvent("open-photo-gallery")}
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-brand-cyan transition-colors flex items-center gap-1.5 cursor-pointer text-left"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 cursor-pointer text-left"
                 >
                   <IconCamera className="w-3 h-3 text-amber-400" />
                   Behind the Code (Photos)
@@ -310,8 +310,8 @@ export const Footer: React.FC = () => {
         <div className="mb-12 p-6 bg-[#13151a]/90 border border-white/10 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
           <div className="space-y-1 max-w-md">
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-cyan animate-pulse-settle" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-brand-cyan">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse-settle" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-accent">
                 Project Notes
               </span>
             </div>
@@ -378,7 +378,7 @@ export const Footer: React.FC = () => {
             <Link
               href="/proof"
               onMouseEnter={handleHover}
-              className="hover:text-brand-cyan transition-colors"
+              className="hover:text-accent transition-colors"
             >
               Logic &amp; Proofs
             </Link>
@@ -387,7 +387,7 @@ export const Footer: React.FC = () => {
               type="button"
               onClick={scrollToTop}
               onMouseEnter={handleHover}
-              className="inline-flex items-center gap-1 text-zinc-400 hover:text-brand-cyan transition-colors cursor-pointer group"
+              className="inline-flex items-center gap-1 text-zinc-400 hover:text-accent transition-colors cursor-pointer group"
               aria-label="Scroll back to top of page"
             >
               <span>Back to Top</span>

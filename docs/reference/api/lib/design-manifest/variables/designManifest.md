@@ -51,6 +51,12 @@ Original CSS Variable: --breakpoint-xl
 
 > `readonly` **colors**: `object`
 
+#### colors.accent
+
+> `readonly` **accent**: `"#f59e0b"` = `"#f59e0b"`
+
+Original CSS Variable: --accent
+
 #### colors.background
 
 > `readonly` **background**: `"#0d0e11"` = `"#0d0e11"`
@@ -125,7 +131,7 @@ Original CSS Variable: --emerald-accent
 
 #### colors.error
 
-> `readonly` **error**: `"#f87171"` = `"#f87171"`
+> `readonly` **error**: `"#ef4444"` = `"#ef4444"`
 
 Original CSS Variable: --error
 
@@ -137,13 +143,13 @@ Original CSS Variable: --foreground
 
 #### colors.muted
 
-> `readonly` **muted**: `"#94a3b8"` = `"#94a3b8"`
+> `readonly` **muted**: `"#9da2af"` = `"#9da2af"`
 
 Original CSS Variable: --muted
 
 #### colors.muted-strong
 
-> `readonly` **muted-strong**: `"#cbd5e1"` = `"#cbd5e1"`
+> `readonly` **muted-strong**: `"#d2d4db"` = `"#d2d4db"`
 
 Original CSS Variable: --muted-strong
 
@@ -167,7 +173,7 @@ Original CSS Variable: --surface-2
 
 #### colors.text-secondary
 
-> `readonly` **text-secondary**: `"#94a3b8"` = `"#94a3b8"`
+> `readonly` **text-secondary**: `"#9da2af"` = `"#9da2af"`
 
 Original CSS Variable: --text-secondary
 

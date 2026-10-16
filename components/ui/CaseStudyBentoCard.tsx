@@ -158,7 +158,7 @@ function parseInlineNodes(
       nodes.push(
         <code
           key={`code-${matchIndex}`}
-          className="px-1.5 py-0.5 mx-0.5 text-[11px] font-mono font-bold bg-brand-cyan/10 border border-brand-cyan/20 text-brand-cyan rounded-md inline-block shadow-[0_0_10px_rgba(6,182,212,0.05)] align-baseline leading-none"
+          className="px-1.5 py-0.5 mx-0.5 text-[11px] font-mono font-bold bg-accent/10 border border-accent/20 text-accent rounded-md inline-block shadow-[0_0_10px_rgba(245,158,11,0.05)] align-baseline leading-none"
         >
           {unescapeEntities(cleanCode)}
         </code>
@@ -219,7 +219,7 @@ const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
                 } else if (/\[\s*WARN\s*\]|WARN:/i.test(line)) {
                   lineStyle = "text-amber-300 font-semibold";
                 } else if (/\[\s*INFO\s*\]|INFO:/i.test(line)) {
-                  lineStyle = "text-cyan-300";
+                  lineStyle = "text-zinc-300";
                 } else if (/\[\s*DEBUG\s*\]|DEBUG:/i.test(line)) {
                   lineStyle = "text-zinc-500";
                 }
@@ -256,7 +256,7 @@ const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
                   line.startsWith("---") ||
                   line.startsWith("+++")
                 ) {
-                  lineStyle = "text-brand-cyan font-bold";
+                  lineStyle = "text-accent font-bold";
                 }
                 return (
                   <div
@@ -275,7 +275,7 @@ const FormattedMarkdownText: React.FC<{ text: string; className?: string }> = ({
           return (
             <div
               key={bIdx}
-              className="my-1.5 p-2 bg-black/80 border border-zinc-800/80 rounded-lg font-mono text-[11px] leading-[18px] text-brand-cyan/90 overflow-x-auto select-text"
+              className="my-1.5 p-2 bg-black/80 border border-zinc-800/80 rounded-lg font-mono text-[11px] leading-[18px] text-accent/90 overflow-x-auto select-text"
             >
               {block.language && block.language !== "code" && (
                 <div className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 mb-1 border-b border-zinc-800/60 pb-0.5">
@@ -464,7 +464,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
               onClick={() => handleToggleMode("pitch")}
               className={`min-h-[44px] px-3.5 py-1.5 rounded-md border text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 mode === "pitch"
-                  ? "bg-zinc-900 text-brand-cyan border-brand-cyan/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]"
+                  ? "bg-zinc-900 text-accent border-accent/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -474,7 +474,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
               onClick={() => handleToggleMode("reality")}
               className={`min-h-[44px] px-3.5 py-1.5 rounded-md border text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 mode === "reality"
-                  ? "bg-zinc-900 text-brand-cyan border-brand-cyan/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]"
+                  ? "bg-zinc-900 text-accent border-accent/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -517,7 +517,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
                   <span className="truncate">STARS</span>
                 </span>
                 <span className="flex items-center gap-1 min-w-0 shrink">
-                  <IconGitFork className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                  <IconGitFork className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span className="text-zinc-300 font-bold truncate">
                     {formatNumber(githubStats.forks)}
                   </span>{" "}
@@ -604,7 +604,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
                   ) : githubStats.recentCommits.length > 0 ? (
                     githubStats.recentCommits.map((c, i) => (
                       <div key={i} className="truncate flex items-start gap-1">
-                        <span className="text-brand-cyan select-none shrink-0">
+                        <span className="text-accent select-none shrink-0">
                           {c.sha}
                         </span>
                         <span className="text-zinc-500 select-none shrink-0">
@@ -647,7 +647,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
         <div className="flex justify-between items-center border-t border-zinc-900/40 pt-1.5 mt-1">
           <Link
             href={`/case-studies/${study.slug}`}
-            className="group inline-flex items-center min-h-[44px] py-2 text-xs font-bold text-brand-cyan/80 hover:text-brand-cyan transition-colors duration-300 cursor-pointer relative z-10"
+            className="group inline-flex items-center min-h-[44px] py-2 text-xs font-bold text-accent/80 hover:text-accent transition-colors duration-300 cursor-pointer relative z-10"
           >
             <span>Analyze Architecture</span>
             <IconChevronRight className="ml-1 w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform duration-200" />

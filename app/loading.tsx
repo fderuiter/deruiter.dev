@@ -2,7 +2,7 @@ export default function Loading() {
   return (
     <div className="min-h-screen py-24 px-6 md:px-16 flex flex-col items-center bg-brand-dark text-foreground">
       {/* Decorative Blur Elements */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-brand-cyan/5 blur-[120px] pointer-events-none hidden sm:block" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
 
       {/* Main Container */}
       <div className="relative z-10 w-full max-w-3xl flex flex-col items-center">

@@ -111,7 +111,7 @@ describe("CaseStudyShowcase filtering (#581)", () => {
     const rustTab = Array.from(container.querySelectorAll("button")).find((b) =>
       b.textContent?.includes("RUST")
     );
-    expect(rustTab?.className).toContain("text-brand-cyan");
+    expect(rustTab?.className).toContain("text-accent");
   });
 
   it("writes the selected filter into the URL hash (via replaceState) so Back restores it", async () => {

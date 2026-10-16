@@ -49,7 +49,7 @@ export function EngineeringBridgeJump({
     <a
       href={`#${BRIDGE_HEADING_ID}`}
       onClick={handleClick}
-      className={`fixed right-3 top-20 z-40 hidden 2xl:inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/90 px-3 py-1.5 font-mono text-xs text-zinc-300 hover:border-brand-cyan/40 hover:text-brand-cyan focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-cyan active:scale-[0.98] transition-colors ${className}`}
+      className={`fixed right-3 top-20 z-40 hidden 2xl:inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-950/90 px-3 py-1.5 font-mono text-xs text-zinc-300 hover:border-accent/40 hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] transition-colors ${className}`}
     >
       Architecture &amp; Engine Notes
       <IconArrowDown aria-hidden="true" className="h-3.5 w-3.5" />
@@ -93,7 +93,7 @@ export function EngineeringBridge({ route }: { route: string }) {
             key={constraint.label}
             className="min-w-0 rounded-xl border border-zinc-800 bg-zinc-900/40 p-4"
           >
-            <dt className="font-mono text-xs font-semibold uppercase tracking-wide text-brand-cyan">
+            <dt className="font-mono text-xs font-semibold uppercase tracking-wide text-accent">
               {constraint.label}
             </dt>
             <dd className="mt-1 text-sm leading-relaxed text-zinc-300 break-words">
@@ -114,7 +114,7 @@ export function EngineeringBridge({ route }: { route: string }) {
                 <li key={study.slug} className="break-words">
                   <Link
                     href={`/case-studies/${study.slug}`}
-                    className="text-brand-cyan underline underline-offset-2 hover:text-white"
+                    className="text-accent underline underline-offset-2 hover:text-white"
                   >
                     {study.title}
                   </Link>
@@ -136,7 +136,7 @@ export function EngineeringBridge({ route }: { route: string }) {
                 <li key={adr.id} className="break-words">
                   <a
                     href={`${ADR_REPOSITORY_URL}/${adr.file}`}
-                    className="text-brand-cyan underline underline-offset-2 hover:text-white"
+                    className="text-accent underline underline-offset-2 hover:text-white"
                   >
                     {`ADR ${adr.id}: ${adr.title}`}
                   </a>

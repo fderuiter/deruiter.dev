@@ -76,7 +76,7 @@ export function FAQAccordion({
                   aria-expanded={isOpen}
                   aria-controls={panelId}
                   onClick={() => toggle(index)}
-                  className="flex w-full min-w-0 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm sm:text-base font-semibold text-zinc-100 break-words hover:bg-zinc-800/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-cyan active:scale-[0.98] transition-colors"
+                  className="flex w-full min-w-0 items-center justify-between gap-3 rounded-xl px-4 py-3 text-left text-sm sm:text-base font-semibold text-zinc-100 break-words hover:bg-zinc-800/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent active:scale-[0.98] transition-colors"
                 >
                   <span className="min-w-0">{item.question}</span>
                   <IconChevronDown

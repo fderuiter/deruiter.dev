@@ -2,7 +2,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -91,7 +93,7 @@ describe("GPU-Accelerated TracingBeam Scroll Indicator Suite", () => {
     expect(markerWrapper?.className).toContain("transform-gpu");
 
     // Inner indicator marker bubble
-    const markerBubble = container.querySelector(".bg-brand-cyan.border-2");
+    const markerBubble = container.querySelector(".bg-accent.border-2");
     expect(markerBubble).not.toBeNull();
   });
 
@@ -113,6 +115,8 @@ describe("GPU-Accelerated TracingBeam Scroll Indicator Suite", () => {
 
   it("verifies design system spring timing tokens match design manifest configuration", () => {
     expect(designManifest.motion.springs.smooth.stiffness).toBeDefined();
-    expect(typeof designManifest.motion.springs.smooth.stiffness).toBe("number");
+    expect(typeof designManifest.motion.springs.smooth.stiffness).toBe(
+      "number"
+    );
   });
 });

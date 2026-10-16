@@ -169,22 +169,22 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
               aria-label={`React with ${label}, current count ${count}`}
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-medium border transition-all duration-150 active:scale-95 ${
                 isReacted
-                  ? "bg-brand-cyan/15 border-brand-cyan/40 text-brand-cyan shadow-sm shadow-brand-cyan/10 cursor-default"
+                  ? "bg-accent/15 border-accent/40 text-accent shadow-sm shadow-accent/10 cursor-default"
                   : "bg-zinc-900/70 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:text-neutral-100 hover:bg-zinc-900 cursor-pointer"
-              } focus-visible:ring-2 focus-visible:ring-brand-cyan focus-visible:outline-none`}
+              } focus-visible:ring-2 focus-visible:ring-accent focus-visible:outline-none`}
             >
               {isLoading ? (
-                <IconLoader2 className="w-4 h-4 animate-spin text-brand-cyan" />
+                <IconLoader2 className="w-4 h-4 animate-spin text-accent" />
               ) : (
                 <IconComponent
-                  className={`w-4 h-4 ${isReacted ? "text-brand-cyan" : "text-zinc-400"}`}
+                  className={`w-4 h-4 ${isReacted ? "text-accent" : "text-zinc-400"}`}
                 />
               )}
               <span>{label}</span>
               <span
                 className={`ml-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
                   isReacted
-                    ? "bg-brand-cyan/20 text-brand-cyan"
+                    ? "bg-accent/20 text-accent"
                     : "bg-zinc-800 text-zinc-400"
                 }`}
               >
@@ -200,7 +200,7 @@ export function BlogPostReactions({ slug }: BlogPostReactionsProps) {
           role="status"
           aria-live="polite"
           className={`mt-4 flex items-center gap-2 text-xs font-mono ${
-            statusMsg.type === "success" ? "text-brand-cyan" : "text-red-400"
+            statusMsg.type === "success" ? "text-accent" : "text-red-400"
           }`}
         >
           {statusMsg.type === "success" ? (

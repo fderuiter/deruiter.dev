@@ -23,7 +23,7 @@ interface MobileNavSectionsProps {
 }
 
 const ROW =
-  "min-h-[48px] w-full px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-neutral-200 hover:text-brand-cyan hover:border-brand-cyan/30 flex items-center justify-between gap-2 active:scale-[0.98] transition-all min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan";
+  "min-h-[48px] w-full px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-base font-bold text-neutral-200 hover:text-accent hover:border-accent/30 flex items-center justify-between gap-2 active:scale-[0.98] transition-all min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 function ItemRow({
   item,
@@ -55,7 +55,7 @@ function ItemRow({
     </>
   );
   const className =
-    "min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-brand-cyan flex items-center justify-between gap-2 active:scale-[0.98] transition-all min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-cyan";
+    "min-h-[48px] px-3.5 py-3 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-sm font-semibold text-neutral-200 hover:text-accent flex items-center justify-between gap-2 active:scale-[0.98] transition-all min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
   if (item.external) {
     return (
       <a
@@ -109,7 +109,7 @@ function ExpandableGroup({
             aria-hidden="true"
             className={cn(
               "h-4 w-4 transition-transform",
-              open && "rotate-180 text-brand-cyan"
+              open && "rotate-180 text-accent"
             )}
           />
         </span>

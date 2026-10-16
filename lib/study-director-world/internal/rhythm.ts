@@ -12,7 +12,7 @@ import { spendCost } from "./clock";
 import { undocumentedDecisions } from "./dialogue";
 import { guestWaiting, guestWrapUp } from "./guests";
 import { adjustTrust, bondFor, personState } from "./team";
-import { DAY_END } from "../types";
+import { DAY_END, HISTORY_LIMIT } from "../types";
 import type {
   ActionCost,
   DayPlan,
@@ -1042,8 +1042,64 @@ const QUIET_SITE_LINES: ReadonlyArray<(name: string) => string> = [
     `Still no word from ${name}. The dashboard only knows what it is told.`,
 ];
 
-function quietSiteLine(name: string, turn: number): string {
-  return QUIET_SITE_LINES[turn % QUIET_SITE_LINES.length](name);
+/** The second half of a quiet-streak line, rotated by the day. */
+const QUIET_STREAK_TAILS: readonly string[] = [
+  "Quiet is not the same as fine.",
+  "No news is not good news.",
+  "Somebody should go and look.",
+  "The dashboard only knows what it is told.",
+];
+
+/**
+ * Nights a site has gone without anyone standing in it, counting tonight:
+ * since the player's last visit, or since the study began when nobody has
+ * gone (#2288). Read from saved state, so a reload or a replay of the same
+ * seed counts the same. When the trimmed visit history no longer reaches
+ * back to this site, the count starts at the oldest visit it still holds.
+ */
+function quietNights(
+  world: WorldState,
+  siteId: string
+): { nights: number; since: "visit" | "start" | "trimmed" } {
+  const history = world.siteVisitHistory ?? [];
+  const days = history.filter((r) => r.siteId === siteId).map((r) => r.day);
+  if (world.visit?.siteId === siteId) days.push(world.visit.day);
+  const since =
+    days.length > 0
+      ? "visit"
+      : history.length >= HISTORY_LIMIT
+        ? "trimmed"
+        : "start";
+  const last =
+    since === "visit"
+      ? Math.max(...days)
+      : since === "trimmed"
+        ? Math.min(...history.map((r) => r.day))
+        : 0;
+  return { nights: Math.max(1, world.study.day - last), since };
+}
+
+/**
+ * The quiet-site line. A first quiet night rotates its wording; from the
+ * second night on it says how long the site has been quiet, which is what
+ * the player can act on (#2288).
+ */
+function quietSiteLine(
+  world: WorldState,
+  name: string,
+  siteId: string,
+  turn: number
+): string {
+  const { nights, since } = quietNights(world, siteId);
+  if (nights < 2) return QUIET_SITE_LINES[turn % QUIET_SITE_LINES.length](name);
+  const span = {
+    visit: `for ${nights} nights since you last looked`,
+    start: `for ${nights} nights since the study began`,
+    trimmed: `for at least ${nights} nights`,
+  }[since];
+  return `${name} has been quiet ${span}. ${
+    QUIET_STREAK_TAILS[turn % QUIET_STREAK_TAILS.length]
+  }`;
 }
 
 /**
@@ -1102,7 +1158,12 @@ export function settlePriority(
       });
     for (const s of quiet)
       lines.push({
-        text: quietSiteLine(s.name, world.study.day + silent.indexOf(s)),
+        text: quietSiteLine(
+          world,
+          s.name,
+          s.id,
+          world.study.day + silent.indexOf(s)
+        ),
         tone: "neutral",
       });
     return { world, lines };

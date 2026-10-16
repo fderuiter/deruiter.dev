@@ -151,9 +151,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                 onClick={() => handleRoleSelect(pTab.id)}
                 aria-pressed={isActive}
                 className={`relative px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[40px] sm:min-h-0 flex items-center justify-center text-xs font-mono font-bold transition-colors duration-300 rounded-xl cursor-pointer select-none shrink-0 ${
-                  isActive
-                    ? "text-brand-cyan"
-                    : "text-zinc-400 hover:text-zinc-200"
+                  isActive ? "text-accent" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 {isActive && (
@@ -161,7 +159,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                     layoutId="activePersonaTab"
                     style={
                       {
-                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["brand-cyan"], 0.12)}`,
+                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["accent"], 0.12)}`,
                       } as React.CSSProperties
                     }
                     className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"
@@ -191,9 +189,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                 onClick={() => setSelectedFilter(tab)}
                 aria-pressed={isActive}
                 className={`relative px-3.5 sm:px-4 py-2.5 sm:py-2 min-h-[40px] sm:min-h-0 flex items-center justify-center text-xs font-mono font-bold transition-colors duration-300 rounded-xl cursor-pointer select-none shrink-0 ${
-                  isActive
-                    ? "text-brand-cyan"
-                    : "text-zinc-400 hover:text-zinc-200"
+                  isActive ? "text-accent" : "text-zinc-400 hover:text-zinc-200"
                 }`}
               >
                 {isActive && (
@@ -201,7 +197,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                     layoutId="activeLangTab"
                     style={
                       {
-                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["brand-cyan"], 0.12)}`,
+                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["accent"], 0.12)}`,
                       } as React.CSSProperties
                     }
                     className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"

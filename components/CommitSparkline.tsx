@@ -68,9 +68,7 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
           Commit Activity (12 Months)
         </span>
         {isMeasured ? (
-          <span className="text-brand-cyan font-bold">
-            {totalCommits} Commits
-          </span>
+          <span className="text-accent font-bold">{totalCommits} Commits</span>
         ) : (
           <span
             className="text-slate-400 font-bold tracking-widest uppercase"
@@ -84,7 +82,7 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
       {/* SVG Canvas Sparkline Graph */}
       <div className="relative bg-zinc-950/40 border border-zinc-900/60 rounded-xl p-2.5 overflow-hidden flex items-center justify-center">
         {/* Glow ambient accent light */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-12 rounded-full bg-brand-cyan/5 blur-2xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-12 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
 
         <svg
           viewBox="0 0 300 60"
@@ -99,8 +97,8 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
           <defs>
             {/* Area gradient under the path */}
             <linearGradient id={`${uniqueId}-area`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
+              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.0" />
             </linearGradient>
 
             {/* Timeline color stroke gradient */}
@@ -111,9 +109,9 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
               x2="1"
               y2="0"
             >
-              <stop offset="0%" stopColor="#06b6d4" />
-              <stop offset="50%" stopColor="#3b82f6" />
-              <stop offset="100%" stopColor="#06b6d4" />
+              <stop offset="0%" stopColor="#f59e0b" />
+              <stop offset="50%" stopColor="#fbbf24" />
+              <stop offset="100%" stopColor="#f59e0b" />
             </linearGradient>
           </defs>
 

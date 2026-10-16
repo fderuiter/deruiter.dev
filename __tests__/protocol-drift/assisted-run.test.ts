@@ -129,3 +129,22 @@ function lockSites() {
     "SITE-C": { ...site, siteId: "SITE-C" },
   } as const;
 }
+
+describe("assisted design badges (#2276)", () => {
+  it("waives the two design badges a reference earned, never the player's own", () => {
+    const own = startEngine();
+    playFullLevel(own);
+    const earned = lock(own).badges;
+    const engine = startEngine();
+    playAssisted(engine);
+    const badges = lock(engine).badges;
+    for (const id of ["PREVENTATIVE_ARCHITECT", "AMENDMENT_NAVIGATOR"]) {
+      const badge = badges.find((b) => b.id === id)!;
+      expect(badge.earned).toBe(false);
+      expect(badge.reason).toMatch(/Waived: a reference pipeline/);
+    }
+    const sleuth = badges.find((b) => b.id === "FORENSIC_SLEUTH")!;
+    expect(sleuth.reason).not.toMatch(/Waived/);
+    expect(earned.every((b) => !/Waived/.test(b.reason))).toBe(true);
+  });
+});

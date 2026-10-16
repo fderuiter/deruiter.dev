@@ -55,7 +55,7 @@ describe("save files", () => {
     expect(() => deserializeSave("3")).toThrow(/JSON object/);
     expect(() =>
       deserializeSave(JSON.stringify({ ...file, format: "other" }))
-    ).toThrow(/format/);
+    ).toThrow(/not a Protocol Drift save/);
     expect(() =>
       deserializeSave(JSON.stringify({ ...file, version: 2 }))
     ).toThrow(/version: 2/);

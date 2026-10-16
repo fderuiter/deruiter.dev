@@ -73,6 +73,12 @@ export function evaluateBadges(input: ScorecardInput): BadgeAward[] {
   ];
 }
 
+/** Badges a loaded reference pipeline earns on the player's behalf. */
+const ASSISTED_WAIVED_BADGES: ReadonlySet<BadgeAward["id"]> = new Set([
+  "PREVENTATIVE_ARCHITECT",
+  "AMENDMENT_NAVIGATOR",
+]);
+
 /** Base points every lock earns before badges, goodwill and efficiency. */
 export const LOCK_BASE_POINTS = 100;
 /** Points each earned preventative badge adds. */
@@ -153,14 +159,28 @@ export function buildScorecard(input: ScorecardInput): Scorecard {
   }
   const trialDurationDays = trialDayOf(input.lockedAtMinute);
   const meanGoodwill = total / SITE_IDS.length;
-  const badges = evaluateBadges(input);
-  const efficiency = evaluateEfficiency({
-    chips: input.chipCount,
-    wires: input.wireCount,
-    lockDay: trialDurationDays,
-    rejectedCommands: input.rejectedCommands,
-    fabricatedBits: input.fabricatedBits,
-  }, input.assisted === true);
+  // A reference pipeline designed the regex split and the amendment routing,
+  // so those two badges are waived on an assisted run; the evidence-linked
+  // query is still the player's own (#2276).
+  const badges = evaluateBadges(input).map((badge) =>
+    input.assisted === true && ASSISTED_WAIVED_BADGES.has(badge.id)
+      ? {
+          ...badge,
+          earned: false,
+          reason: "Waived: a reference pipeline was loaded for this run.",
+        }
+      : badge
+  );
+  const efficiency = evaluateEfficiency(
+    {
+      chips: input.chipCount,
+      wires: input.wireCount,
+      lockDay: trialDurationDays,
+      rejectedCommands: input.rejectedCommands,
+      fabricatedBits: input.fabricatedBits,
+    },
+    input.assisted === true
+  );
   const efficiencyScore = efficiency.reduce((sum, m) => sum + m.points, 0);
   return {
     trialDurationDays,

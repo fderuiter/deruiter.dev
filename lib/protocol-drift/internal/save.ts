@@ -34,7 +34,7 @@ export function deserializeSave(json: string): ProtocolDriftSaveFile {
   const save = data as Partial<ProtocolDriftSaveFile>;
   if (save.format !== SAVE_FORMAT) {
     throw new ProtocolDriftSaveError(
-      `Unsupported save format: ${String(save.format)}`
+      "This file is not a Protocol Drift save. Export one from the workbench and import that."
     );
   }
   if (save.version !== 1) {

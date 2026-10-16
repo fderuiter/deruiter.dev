@@ -103,7 +103,7 @@ describe("Database lock and debrief", () => {
     });
     expect(card.textContent).toMatch(/Trial duration/);
     expect(card.textContent).toMatch(/Query restraint ratio/);
-    expect(within(card).getAllByText(/goodwill retained/)).toHaveLength(3);
+    expect(within(card).getAllByText(/^Site [ABC] goodwill$/)).toHaveLength(3);
     expect(
       within(card).getByLabelText("Preventative badges").children
     ).toHaveLength(3);

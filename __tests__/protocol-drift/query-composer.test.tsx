@@ -127,6 +127,15 @@ describe("Forensic Inspector: Site B transposition", () => {
     expect(after.queries.at(-1)!.rubberStamped).toBe(false);
     const ready = after.issues.find((i) => i.issueId === issue.issueId)!;
     expect(ready.status).toBe("ReadyForReview");
+    // A second query on an answered issue would only cost goodwill (#2276).
+    expect(
+      within(
+        screen.getByRole("form", { name: "Structured query composer" })
+      ).getByRole("button", { name: /Send Query/ })
+    ).toHaveProperty("disabled", true);
+    expect(
+      screen.getByText(/Review the answer before querying again/)
+    ).toBeTruthy();
     await act(async () => {
       fireEvent.click(
         screen.getByRole("button", { name: "Accept correction" })

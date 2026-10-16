@@ -72,7 +72,7 @@ describe("lock gate after a late site correction (#2164)", () => {
     let gate = await screen.findByRole("dialog", {
       name: /Dual Database Lock Audit Gate/,
     });
-    expect(within(gate).getByText(/STALE_DERIVATIONS_EXIST/)).toBeTruthy();
+    expect(within(gate).getByText(/Stale derivation:/)).toBeTruthy();
 
     await act(async () => {
       fireEvent.click(

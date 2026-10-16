@@ -24,7 +24,11 @@ import { SiteRail } from "./SiteRail";
 import { Toolbox } from "./Toolbox";
 import { isTracerComplete, useProtocolDriftStore } from "./store";
 import { DEFAULT_SEED } from "@/lib/protocol-drift";
-import { arcadeDailyNumber, readArcadeDailyParam } from "@/lib/arcade/daily";
+import {
+  arcadeDailyDate,
+  arcadeDailyNumber,
+  readArcadeDailyParam,
+} from "@/lib/arcade/daily";
 import { useWorkbenchKeys } from "./useWorkbenchKeys";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { PROTOCOL_DRIFT_AUTO_PAUSE_EVENT } from "./auto-pause";
@@ -46,7 +50,11 @@ function seedFromUrl(): number {
   return date ? arcadeDailyNumber(date, "protocol-drift") : DEFAULT_SEED;
 }
 
-const dailyFromUrl = () => readArcadeDailyParam(window.location.search);
+/** A daily date from the link; a date still to come plays the default (#2276). */
+const dailyFromUrl = () => {
+  const date = readArcadeDailyParam(window.location.search);
+  return date !== null && date <= arcadeDailyDate(Date.now()) ? date : null;
+};
 const noDaily = () => null;
 const noSubscription = () => () => {};
 

@@ -50,6 +50,12 @@ export function touchZoomFloor(): number {
   );
 }
 
+/** A chip's readable name: its kind and the number in its id. */
+export function chipName(node: ChipNode): string {
+  const number = /-(\d+)$/.exec(node.id)?.[1];
+  return number ? `${node.data.kind} ${number}` : node.data.kind;
+}
+
 /** Chip width in canvas pixels. */
 export const CHIP_WIDTH = LANE_GEOMETRY.chipWidth;
 

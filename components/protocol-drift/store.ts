@@ -50,6 +50,7 @@ import {
   type ChipNode,
   type WireEdge,
 } from "./graph-model";
+import { pauseReasonText } from "./labels";
 import { writeAutosave } from "./persistence";
 
 /** Longest history of dispatched packets the Pipeline Trace keeps. */
@@ -207,6 +208,8 @@ export function isTracerComplete(view: ProtocolDriftView | null): boolean {
 export function isAwaitingLock(view: ProtocolDriftView | null): boolean {
   return (
     view?.scenario === "full" &&
+    view.fsmState !== "LOCKED" &&
+    view.fsmState !== "LOCK_REVIEW" &&
     view.completedWaves.includes(3) &&
     !view.queries.some(
       (q) =>
@@ -215,6 +218,8 @@ export function isAwaitingLock(view: ProtocolDriftView | null): boolean {
     )
   );
 }
+
+const LOCKED_TEXT = "The database is locked; this study is done.";
 
 const AWAITING_LOCK_TEXT =
   "Every wave is in and no site owes a reply. Request Database Lock: each extra day counts against the lock-day par.";
@@ -335,10 +340,13 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           needsAutosave = true;
           break;
         case "AUTO_PAUSED":
+          // Each auto-pause is a natural checkpoint, so Resume loses less
+          // than a whole wave (#2276).
+          needsAutosave = true;
           if (event.reason === "AMENDMENT_01") {
             patch.memoOpen = true;
           } else {
-            const text = `Clock paused: ${event.reason.replace("NEW_ISSUE_CATEGORY:", "new issue category ")}`;
+            const text = `Clock paused: ${pauseReasonText(event.reason)}.`;
             patch.pausedReason = text;
             patch.notice = { id: ++noticeId, tone: "warn", text };
           }
@@ -350,7 +358,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
           patch.scorecard = event.scorecard;
           cue = "gatePass";
           recordArcadeScore("protocol-drift", event.scorecard.score);
-          if (!replaying) recordDaily(res.view.seed, event.scorecard.score);
+          // An assisted run keeps no Daily best, as it keeps no bests (#2276).
+          if (!replaying && !event.scorecard.assisted)
+            recordDaily(res.view.seed, event.scorecard.score);
           patch.efficiencyBests = saveEfficiencyBests(event.scorecard);
           if (event.scorecard.badges.every((b) => b.earned)) {
             recordArcadeMilestone("protocol-drift", "all_badges");
@@ -456,7 +466,9 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
     togglePause: async () => {
       const fsm = get().snapshot?.fsmState;
-      if (fsm === "RUNNING") {
+      if (fsm === "LOCKED") {
+        say("info", LOCKED_TEXT);
+      } else if (fsm === "RUNNING") {
         await send({ type: "SET_PAUSED", isPaused: true });
       } else if (isTracerComplete(get().view)) {
         say("info", "The tracer is complete. Start the full study to go on.");
@@ -480,6 +492,10 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
 
     step: async () => {
       const fsm = get().snapshot?.fsmState;
+      if (fsm === "LOCKED") {
+        say("info", LOCKED_TEXT);
+        return;
+      }
       if (isTracerComplete(get().view)) {
         say("info", "The tracer is complete. Start the full study to go on.");
         return;
@@ -503,6 +519,10 @@ export const useProtocolDriftStore = create<ProtocolDriftState>()((
     skipToNextEvent: async () => {
       const { view } = get();
       const fsm = get().snapshot?.fsmState;
+      if (fsm === "LOCKED") {
+        say("info", LOCKED_TEXT);
+        return;
+      }
       if (isTracerComplete(view)) {
         say("info", "The tracer is complete. Start the full study to go on.");
         return;

@@ -8,6 +8,7 @@ import {
   DEFAULT_SEED,
   STUDY_ID,
   formatClock,
+  studyPlan,
   trialDayOf,
   type EfficiencyMetric,
   type ProtocolDriftSaveFile,
@@ -15,8 +16,10 @@ import {
   type ProtocolDriftView,
   type ScenarioId,
   type Scorecard,
+  type SiteId,
   type WaveSummary,
 } from "@/lib/protocol-drift";
+import { LOCK_LABELS } from "./labels";
 import { readAutosave } from "./persistence";
 import { useProtocolDriftStore } from "./store";
 
@@ -554,7 +557,7 @@ export function LockReviewModal({
               key={`${d.code}-${d.entityId}-${index}`}
               className="break-words"
             >
-              {d.code}: {d.message}
+              {LOCK_LABELS[d.code]}: {d.message}
             </li>
           ))}
         </ul>
@@ -772,8 +775,11 @@ export function DebriefModal({
           </dd>
           {Object.entries(scorecard.goodwill).map(([site, g]) => (
             <React.Fragment key={site}>
-              <dt>{site.replace("SITE-", "Site ")} goodwill retained</dt>
+              <dt>{site.replace("SITE-", "Site ")} goodwill</dt>
               <dd className="text-right tabular-nums text-zinc-100">
+                {/* Start to end, so a held value reads as held (#2276). The
+                    seed moves each site's start (#2275). */}
+                {studyPlan(view.seed).initialGoodwill[site as SiteId]} →{" "}
                 {Math.round(g)}
               </dd>
             </React.Fragment>

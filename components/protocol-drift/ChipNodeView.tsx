@@ -4,6 +4,7 @@ import React from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { CHIP_SPECS, type ChipLane } from "@/lib/protocol-drift";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { clamp } from "@/lib/game-utils";
 import {
   CHIP_WIDTH,
   PIN_LAYOUT,
@@ -23,6 +24,17 @@ const LANE_TAG: Record<ChipLane, string> = {
   WALL: "WALL",
   ANALYSIS: "ADaM",
 };
+
+/** Width of a monospace glyph, as a share of the font size. */
+const MONO_GLYPH_EM = 0.6;
+/** Room for the title inside the chip header's padding. */
+const TITLE_ROOM_PX = CHIP_WIDTH - 16;
+
+/** The largest title size, 12px to 15px, at which the whole name fits. */
+function desktopTitlePx(name: string): number {
+  const fit = TITLE_ROOM_PX / (name.length * MONO_GLYPH_EM);
+  return clamp(Math.floor(fit), 12, TOUCH_TITLE_PX);
+}
 
 /** One chip on the pipeline canvas, with a labelled pin per port. */
 export function ChipNodeView({ data, selected }: NodeProps<ChipNode>) {
@@ -49,15 +61,21 @@ export function ChipNodeView({ data, selected }: NodeProps<ChipNode>) {
       >
         <span
           className="min-w-0 truncate text-[11px] font-semibold"
-          // The same title size on desktop, which now frames at the same
-          // legible zoom floor as touch (#2167).
-          style={{ fontSize: TOUCH_TITLE_PX }}
+          title={data.kind}
+          // Touch keeps the 15px title its zoom floor is built on (#2045).
+          // On desktop the lane tag gives way and a long name steps down to
+          // as little as 12px, so the whole name shows (#2276).
+          style={{
+            fontSize: touch ? TOUCH_TITLE_PX : desktopTitlePx(data.kind),
+          }}
         >
           {data.kind}
         </span>
-        <span className={`shrink-0 text-[9px] ${style.tag}`}>
-          {LANE_TAG[spec.lane]}
-        </span>
+        {touch ? (
+          <span className={`shrink-0 text-[9px] ${style.tag}`}>
+            {LANE_TAG[spec.lane]}
+          </span>
+        ) : null}
       </div>
       {Array.from({ length: rows }, (_, index) => {
         const input = spec.inputs[index];

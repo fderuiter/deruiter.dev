@@ -862,7 +862,7 @@ export default function SchemaFlowWorkspace() {
                   )}
                 </div>
                 <div>
-                  <h4 className="text-xs font-black uppercase text-zinc-300 tracking-wider">
+                  <h4 className="text-xs font-bold uppercase text-zinc-300 tracking-wider">
                     Goal R Verification
                   </h4>
                   <p className="text-[11px] text-muted mt-0.5 leading-relaxed">
@@ -931,7 +931,7 @@ export default function SchemaFlowWorkspace() {
               {/* Gauge description & controls */}
               <div className="flex-1 flex flex-col justify-between h-full py-1">
                 <div>
-                  <h4 className="text-xs font-black uppercase text-zinc-300 tracking-wider flex items-center gap-1.5">
+                  <h4 className="text-xs font-bold uppercase text-zinc-300 tracking-wider flex items-center gap-1.5">
                     <IconCpu className="w-3.5 h-3.5 text-brand-cyan" />
                     Solver RAM Telemetry
                   </h4>

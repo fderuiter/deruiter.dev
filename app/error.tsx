@@ -37,7 +37,7 @@ export default function Error({
             RUNTIME_ERROR
           </span>
 
-          <h1 className="text-2xl font-bold tracking-tight text-neutral-100 mb-4">
+          <h1 className="type-heading text-neutral-100 mb-4">
             This page hit a snag.
           </h1>
 

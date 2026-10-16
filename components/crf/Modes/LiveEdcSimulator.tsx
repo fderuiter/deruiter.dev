@@ -1188,7 +1188,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
                                       }
                                       className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition-all border ${
                                         isSelectedNf
-                                          ? "bg-brand-cyan text-black border-brand-cyan font-black"
+                                          ? "bg-brand-cyan text-black border-brand-cyan font-extrabold"
                                           : "bg-zinc-950 text-zinc-400 border-zinc-850 hover:text-zinc-200"
                                       }`}
                                       title={`Set Null Flavor: ${CDISC_NULL_FLAVORS[nf]} (${nf})`}

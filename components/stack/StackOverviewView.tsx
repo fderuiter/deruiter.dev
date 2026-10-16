@@ -81,7 +81,7 @@ export const StackOverviewView: React.FC = () => {
                 <IconCpu className="w-3.5 h-3.5 text-brand-cyan" />
                 <span>HOW THIS SITE WORKS</span>
               </div>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl font-mono font-extrabold tracking-tight text-white leading-tight">
+              <h1 className="type-display font-mono text-white">
                 Under the Hood: <br className="hidden sm:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-cyan via-teal-300 to-emerald-400">
                   The Portfolio Tech Stack

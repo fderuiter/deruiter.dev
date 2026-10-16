@@ -281,9 +281,7 @@ export function UnifiedErrorLayout({
             </div>
           )}
 
-          <h1 className="text-4xl font-extrabold tracking-tight mb-4 text-white">
-            {title}
-          </h1>
+          <h1 className="type-title mb-4 text-white">{title}</h1>
 
           <p className="text-sm text-neutral-400 leading-relaxed mb-6">
             {description}
@@ -347,7 +345,7 @@ export function UnifiedErrorLayout({
 
                   {/* Glowing Blinking INSERT COIN */}
                   <div className="space-y-1">
-                    <div className="text-base sm:text-lg font-black text-brand-cyan tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
+                    <div className="text-base sm:text-lg font-extrabold text-brand-cyan tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(6,182,212,0.6)]">
                       INSERT COIN
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium tracking-wide">

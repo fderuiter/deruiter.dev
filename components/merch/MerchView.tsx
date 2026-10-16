@@ -25,7 +25,7 @@ export function MerchView() {
         <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">
           Laser Loon / Minnesota flag submission F277
         </p>
-        <h1 className="break-words text-3xl font-extrabold tracking-[-0.035em] text-[#f4f4f6] sm:text-5xl">
+        <h1 className="type-display break-words text-[#f4f4f6]">
           Laser Loon merch
           {!live && <span className="text-amber-400">, coming soon</span>}
         </h1>

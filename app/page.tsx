@@ -125,7 +125,7 @@ export default async function PortfolioHomePage() {
           </div>
 
           {/* Title Block */}
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white text-center mb-2 heading-editorial">
+          <h2 className="type-title text-white text-center mb-2">
             Things I’ve built. Reasons I built them.
           </h2>
           <p className="text-sm sm:text-base text-zinc-300 mb-8 sm:mb-12 text-center max-w-xl leading-relaxed">
@@ -172,7 +172,7 @@ export default async function PortfolioHomePage() {
             <span>SECTION 02 // WHAT I WORK WITH</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white text-center mb-2 heading-editorial">
+          <h2 className="type-title text-white text-center mb-2">
             A somewhat unconventional toolkit.
           </h2>
           <p className="text-sm sm:text-base text-zinc-300 mb-8 sm:mb-12 text-center max-w-md leading-relaxed">
@@ -191,7 +191,7 @@ export default async function PortfolioHomePage() {
             <span>SECTION 03 // ORIGIN STORY</span>
           </div>
 
-          <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white text-center mb-2 heading-editorial">
+          <h3 className="type-heading text-white text-center mb-2">
             The route here had a few turns.
           </h3>
           <p className="text-sm sm:text-base text-zinc-300 mb-8 sm:mb-12 text-center max-w-md leading-relaxed">
@@ -218,7 +218,7 @@ export default async function PortfolioHomePage() {
             <span>SECTION 04 // SAY HELLO</span>
           </div>
 
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white text-center mb-2 heading-editorial">
+          <h2 className="type-title text-white text-center mb-2">
             What are you working on?
           </h2>
           <p className="text-sm sm:text-base text-zinc-300 mb-8 sm:mb-12 text-center max-w-md leading-relaxed">

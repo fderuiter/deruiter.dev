@@ -167,7 +167,7 @@ export function AcknowledgmentsView() {
               { label: "Open Source Credits" },
             ]}
           />
-          <h1 className="break-words text-3xl font-bold tracking-[-0.035em] text-zinc-50 sm:text-5xl">
+          <h1 className="type-display break-words text-zinc-50">
             Open source acknowledgments
           </h1>
           <p className="max-w-3xl break-words text-base leading-relaxed text-zinc-300">

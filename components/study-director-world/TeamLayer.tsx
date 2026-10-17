@@ -138,6 +138,9 @@ export function useTeamLayer({
     eventId: string;
     text: string;
   } | null>(null);
+  // What the last decision on the call said, price included, shown on the
+  // meeting card where it was made (#2344).
+  const [meetingLines, setMeetingLines] = useState<DialogueLine[]>([]);
 
   const close = useCallback(() => {
     setConversation(null);
@@ -352,6 +355,7 @@ export function useTeamLayer({
         return;
       }
       setWorld(result.world);
+      setMeetingLines([]);
       announce(
         kind === "team"
           ? "The meeting starts. Everyone takes a seat."
@@ -368,6 +372,7 @@ export function useTeamLayer({
       return;
     }
     setWorld(result.world);
+    setMeetingLines([]);
     setConversation({ kind: "report", report: result.report });
     announce(`Meeting over. ${result.report.verdict}`);
   }, [announce, refuse, setWorld, world]);
@@ -380,7 +385,13 @@ export function useTeamLayer({
         return;
       }
       setWorld(result.world);
-      announce(result.lines[0]?.text ?? "Decided.");
+      setMeetingLines(result.lines);
+      announce(
+        result.lines
+          .filter((l) => l.kind === "information")
+          .map((l) => l.text)
+          .join(" ") || "Decided."
+      );
     },
     [announce, refuse, setWorld, world]
   );
@@ -416,6 +427,7 @@ export function useTeamLayer({
     meet,
     adjourn,
     meetingDecide,
+    meetingLines,
     openEvent,
     openArchive,
     openDesk,
@@ -989,6 +1001,15 @@ export const MeetingSection: React.FC<{
               </div>
             ))
           : null}
+        {team.meetingLines.length > 0 && (
+          <ul className="mt-2 space-y-1 text-xs text-zinc-200">
+            {team.meetingLines.map((l, i) => (
+              <li key={i} className="break-words">
+                {l.text}
+              </li>
+            ))}
+          </ul>
+        )}
         <OverlayButton primary className="mt-3" onClick={team.adjourn}>
           End the meeting
         </OverlayButton>

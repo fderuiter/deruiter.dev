@@ -1,7 +1,7 @@
 import { applyEffects, getEvent, inbox } from "@/lib/study-director";
 import { spend } from "./clock";
 import { applyOfficeEffects } from "./goodwill";
-import { channelFor, markRaised, messagesFrom } from "./channels";
+import { budgetLine, channelFor, markRaised, messagesFrom } from "./channels";
 import { dialogueLines } from "./dialogue";
 import { adjustTrust, observe, personState, placePeople } from "./team";
 import { CRO_FLOOR, roomAt } from "./floor";
@@ -134,13 +134,19 @@ export function endMeeting(
       : changes.length >= 3
         ? "Worth the hour."
         : "Some of it was useful.";
+  // What the room's decisions cost is said with them (#2344), after the
+  // verdict, since a price is not something the meeting changed.
+  const priced = budgetLine(
+    settled.reduce((sum, r) => sum + (r.effects.spend ?? 0), 0),
+    next.study
+  );
   const report: MeetingReport = {
     kind: meeting.kind,
     day: world.study.day,
     minutes: MEETING_MINUTES,
     personMinutes: MEETING_MINUTES * people,
     attendees: names,
-    changes,
+    changes: priced ? [...changes, priced] : changes,
     raised,
     verdict,
   };

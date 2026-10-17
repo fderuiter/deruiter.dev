@@ -256,7 +256,7 @@ describe("copy that matches the numbers (#2337)", () => {
       .map((l) => l.text)
       .join(" ");
     expect(text).toMatch(
-      /Be with the team: you did not spend time with anyone on the team\. Not kept\./
+      /Be with the team: no kind acts today \(a chat, a coffee, coaching, a status check or a favour\)\. Not kept\./
     );
     expect(text).not.toMatch(/got to 0/);
   });

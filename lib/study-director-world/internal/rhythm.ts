@@ -871,7 +871,12 @@ export function answerInterruption(
 const plural = (n: number, one: string, many = `${one}s`) =>
   `${n} ${n === 1 ? one : many}`;
 
-/** Team members the player spent time with today, by any kind of contact. */
+/**
+ * Team members the player did a kind act for today: a chat, a coffee,
+ * coaching, a status check or a favour. Deciding something with them, a
+ * meeting or an interruption is not counted, so the overnight line names
+ * what is (#2345).
+ */
 export function peopleSeenToday(world: WorldState): number {
   const day = world.study.day;
   return world.study.team.filter((m) => {
@@ -881,6 +886,9 @@ export function peopleSeenToday(world: WorldState): number {
       .includes(day);
   }).length;
 }
+
+/** What counts as a kind act on a "people" day, as the zero case says it. */
+const KIND_ACTS = "a chat, a coffee, coaching, a status check or a favour";
 
 /** People the player must have seen for a "people" day to count as kept. */
 export const PEOPLE_DAY_TARGET = 3;
@@ -1002,10 +1010,13 @@ function priorityOutcome(
   const label = PRIORITIES[priority].label;
   if (priority === "people") {
     const seen = peopleSeenToday(world);
+    // It said "you spent time with" while counting only kind acts, so a
+    // day of face-to-face decisions read "you did not spend time with
+    // anyone" (#2345).
     return seen >= PEOPLE_DAY_TARGET
       ? [
           {
-            text: `${label}: you spent time with ${seen} of the team. Kept.`,
+            text: `${label}: kind acts for ${seen} of the team. Kept.`,
             tone: "good",
           },
         ]
@@ -1015,8 +1026,8 @@ function priorityOutcome(
             // nobody (#2337).
             text:
               seen === 0
-                ? `${label}: you did not spend time with anyone on the team. Not kept.`
-                : `${label}: you spent time with only ${seen} of the team, short of ${PEOPLE_DAY_TARGET}. Not kept.`,
+                ? `${label}: no kind acts today (${KIND_ACTS}). Not kept.`
+                : `${label}: kind acts for only ${seen} of the team, short of ${PEOPLE_DAY_TARGET}. Not kept.`,
             tone: "bad",
           },
         ];

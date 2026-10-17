@@ -9,6 +9,7 @@
 ## Functions
 
 - [createWorld](functions/createWorld.md)
+- [driveHome](functions/driveHome.md)
 - [goHome](functions/goHome.md)
 - [newWorld](functions/newWorld.md)
 - [startDay](functions/startDay.md)

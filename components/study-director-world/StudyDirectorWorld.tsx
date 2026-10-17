@@ -16,17 +16,16 @@ import {
   guestScene,
   meetGuest,
   choosePriority,
-  closeVisit,
   currentMap,
   delegateDay,
   delegationPreview,
   describePerson,
   describeSurroundings,
+  driveHome,
   examineSelf,
   excuseAway,
   formatClock,
   forgivingStep,
-  goHome,
   hudReadout,
   interact,
   newWorld,
@@ -779,6 +778,9 @@ export const StudyDirectorWorld: React.FC<{
         return;
       }
       setWorld(result.world);
+      // A card left open beside it, such as the car's, was written before
+      // the answer; close it rather than leave it saying the message waits.
+      setOutcome(null);
       show(result.result);
       refocus();
     },
@@ -786,10 +788,10 @@ export const StudyDirectorWorld: React.FC<{
   );
 
   const leave = useCallback(() => {
-    // Driving home from a site writes the visit up first.
-    const closed = closeVisit(world);
-    if (closed.report) setVisitReport(closed.report);
-    const night = goHome(closed.world);
+    // Driving home from a site writes the visit up first, and excuses what
+    // came while you were there (#2334).
+    const night = driveHome(world);
+    if (night.visit) setVisitReport(night.visit);
     setWorld(night.world);
     setReport(night.report);
     setOutcome(null);
@@ -1043,75 +1045,83 @@ export const StudyDirectorWorld: React.FC<{
       visit={visitReport}
     />
   ) : outcome ? (
-    <section
-      ref={outcomeRef}
-      aria-labelledby="sd-world-outcome"
-      data-testid="world-outcome"
-      onKeyDown={(e) => {
-        // Escape closes the card from its own buttons too, as it does from
-        // the floor.
-        if (e.key !== "Escape" || touch) return;
-        e.preventDefault();
-        setOutcome(null);
-        playfieldRef.current?.focus({ preventScroll: true });
-      }}
-      className={`scroll-mt-24 border p-3 ${TONE_CLASS[outcome.tone]}`}
-    >
-      <h3 id="sd-world-outcome" className="text-sm font-bold">
-        {outcome.title}
-      </h3>
-      <ul className="mt-1 space-y-1 text-xs text-zinc-200">
-        {outcome.lines.map((l, i) => (
-          <li key={i}>{l}</li>
-        ))}
-      </ul>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {outcome.check ? (
+    <div className="space-y-3">
+      <section
+        ref={outcomeRef}
+        aria-labelledby="sd-world-outcome"
+        data-testid="world-outcome"
+        onKeyDown={(e) => {
+          // Escape closes the card from its own buttons too, as it does from
+          // the floor.
+          if (e.key !== "Escape" || touch) return;
+          e.preventDefault();
+          setOutcome(null);
+          playfieldRef.current?.focus({ preventScroll: true });
+        }}
+        className={`scroll-mt-24 border p-3 ${TONE_CLASS[outcome.tone]}`}
+      >
+        <h3 id="sd-world-outcome" className="text-sm font-bold">
+          {outcome.title}
+        </h3>
+        <ul className="mt-1 space-y-1 text-xs text-zinc-200">
+          {outcome.lines.map((l, i) => (
+            <li key={i}>{l}</li>
+          ))}
+        </ul>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {outcome.check ? (
+            <button
+              type="button"
+              onClick={() => outcome.check && doCheck(outcome.check)}
+              className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
+            >
+              {SITE_CHECKS[outcome.check].label},{" "}
+              {SITE_CHECKS[outcome.check].cost.minutes} minutes
+            </button>
+          ) : null}
+          {(outcome.travel ?? []).map((option) => (
+            <button
+              key={option.mapId}
+              type="button"
+              onClick={() => drive(option)}
+              className="min-h-[40px] border border-[var(--sd-amber)]/70 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
+            >
+              {option.label}, {option.minutes} minutes
+            </button>
+          ))}
+          {outcome.offer === "goHome" ? (
+            <button
+              ref={goHomeRef}
+              type="button"
+              onClick={leave}
+              className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
+            >
+              Go home
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={() => outcome.check && doCheck(outcome.check)}
-            className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
+            onClick={() => {
+              setOutcome(null);
+              playfieldRef.current?.focus({ preventScroll: true });
+            }}
+            className="min-h-[40px] border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)]"
           >
-            {SITE_CHECKS[outcome.check].label},{" "}
-            {SITE_CHECKS[outcome.check].cost.minutes} minutes
+            {outcome.offer === "goHome"
+              ? "Stay"
+              : outcome.check
+                ? "Not now"
+                : "Close"}
           </button>
-        ) : null}
-        {(outcome.travel ?? []).map((option) => (
-          <button
-            key={option.mapId}
-            type="button"
-            onClick={() => drive(option)}
-            className="min-h-[40px] border border-[var(--sd-amber)]/70 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
-          >
-            {option.label}, {option.minutes} minutes
-          </button>
-        ))}
-        {outcome.offer === "goHome" ? (
-          <button
-            ref={goHomeRef}
-            type="button"
-            onClick={leave}
-            className="min-h-[40px] border border-[var(--sd-amber)] bg-[var(--sd-amber)]/10 px-3 text-xs font-bold text-amber-300 hover:bg-[var(--sd-amber)]/20 active:scale-[0.98]"
-          >
-            Go home
-          </button>
-        ) : null}
-        <button
-          type="button"
-          onClick={() => {
-            setOutcome(null);
-            playfieldRef.current?.focus({ preventScroll: true });
-          }}
-          className="min-h-[40px] border border-zinc-700 px-3 text-xs text-zinc-300 hover:border-[var(--sd-amber)]"
-        >
-          {outcome.offer === "goHome"
-            ? "Stay"
-            : outcome.check
-              ? "Not now"
-              : "Close"}
-        </button>
-      </div>
-    </section>
+        </div>
+      </section>
+      {/* An open card does not hide the message waiting for an answer: the
+          Today list points at it, and going home leaves it unanswered
+          (#2336). */}
+      {interruption ? (
+        <InterruptionCard interruption={interruption} onAnswer={answer} />
+      ) : null}
+    </div>
   ) : digest || interruption || guest || (!plan.priority && morning) ? (
     <div ref={cardsRef} className="scroll-mt-24 space-y-3">
       {digest ? <DigestCard digest={digest} /> : null}

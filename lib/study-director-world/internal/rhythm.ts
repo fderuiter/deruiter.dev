@@ -94,6 +94,21 @@ interface Choice {
 
 interface Catalogued extends Omit<Interruption, "options"> {
   options: Choice[];
+  /**
+   * Words that depend on the study's numbers, in place of `body` and any
+   * option's `result`, so a line never says what the numbers do not.
+   */
+  retell?: (world: WorldState) => {
+    body: string;
+    results?: Readonly<Record<string, string>>;
+  };
+}
+
+/** Spend over where an even burn of the budget would be by today. */
+function spendAheadOfPlan(world: WorldState): boolean {
+  const { day, spent, setup } = world.study;
+  const days = Math.max(1, setup.durationDays);
+  return spent > (setup.budget * Math.min(day, days)) / days;
 }
 
 const cost = (minutes: number, energy = 0, focus = 0): ActionCost => ({
@@ -390,6 +405,19 @@ const CATALOG: readonly Catalogued[] = [
     id: "financeBurn",
     title: "Finance wants the burn explained",
     body: "Someone from finance is at your door with a printout. Spend is ahead of the plan and they would like a sentence they can put in a box.",
+    // It said "ahead of the plan" whatever the budget was (#2337).
+    retell: (w) =>
+      spendAheadOfPlan(w)
+        ? {
+            body: "Someone from finance is at your door with a printout. Spend is ahead of the plan and they would like a sentence they can put in a box.",
+          }
+        : {
+            body: "Someone from finance is at your door with a printout. Spend is behind the plan, which worries them almost as much, and they would like a sentence they can put in a box.",
+            results: {
+              explain:
+                "Invoices not in yet, and sites slower to start than the plan assumed. The box gets its sentence.",
+            },
+          },
     options: [
       {
         id: "explain",
@@ -721,20 +749,23 @@ export function scheduleFor(world: WorldState): ScheduledInterruption[] {
   const midday = picked.findIndex((e) => MIDDAY.has(e.id));
   if (midday >= 0 && midday !== 1)
     [picked[1], picked[midday]] = [picked[midday], picked[1]];
-  return picked.map((entry, i) => ({
-    at: INTERRUPTION_TIMES[i],
-    interruption: {
-      id: entry.id,
-      title: entry.title,
-      body: entry.body,
-      options: entry.options.map(({ id, label, cost: c, result }) => ({
-        id,
-        label,
-        cost: c,
-        result,
-      })),
-    },
-  }));
+  return picked.map((entry, i) => {
+    const told = entry.retell?.(world);
+    return {
+      at: INTERRUPTION_TIMES[i],
+      interruption: {
+        id: entry.id,
+        title: entry.title,
+        body: told?.body ?? entry.body,
+        options: entry.options.map(({ id, label, cost: c, result }) => ({
+          id,
+          label,
+          cost: c,
+          result: told?.results?.[id] ?? result,
+        })),
+      },
+    };
+  });
 }
 
 /** Dealt with, or excused because it came while the player was away. */
@@ -829,7 +860,9 @@ export function answerInterruption(
     ...next,
     plan: { ...plan, handled: [...plan.handled, pending.id] },
   };
-  return { ok: true, world: next, result: choice.result };
+  const result =
+    pending.options.find((o) => o.id === choice.id)?.result ?? choice.result;
+  return { ok: true, world: next, result };
 }
 
 // ---------------------------------------------------------------------------
@@ -978,7 +1011,12 @@ function priorityOutcome(
         ]
       : [
           {
-            text: `${label}: you only got to ${seen}. Not kept.`,
+            // "You only got to 0" had no noun, and "only" does not fit
+            // nobody (#2337).
+            text:
+              seen === 0
+                ? `${label}: you did not spend time with anyone on the team. Not kept.`
+                : `${label}: you spent time with only ${seen} of the team, short of ${PEOPLE_DAY_TARGET}. Not kept.`,
             tone: "bad",
           },
         ];

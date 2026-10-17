@@ -10,7 +10,7 @@ import { OVERTIME_ENERGY_FACTOR, formatClock, lateMinutes } from "./clock";
 import { CRO_FLOOR, WORLD_MAPS, roomAt } from "./floor";
 import { guestsExpected } from "./guests";
 import { keepRecent } from "./history";
-import { excuseAway } from "./rhythm";
+import { excuseAway, pendingInterruption } from "./rhythm";
 import {
   COORDINATOR_TRAITS,
   SITE_MAPS,
@@ -831,6 +831,12 @@ export function carOutcome(world: WorldState): InteractionOutcome {
   if (!world.visit && travel.length === 0)
     lines.push(
       `The sites close at ${formatClock(SITE_CLOSES)}; it is too late to drive out to one today.`
+    );
+  // An interruption still waiting is held against you if you go (#2336).
+  const waiting = pendingInterruption(world);
+  if (waiting)
+    lines.push(
+      `"${waiting.title}" is still waiting for an answer. Going home leaves it unanswered.`
     );
   // A visitor still due today waits for nobody if you leave (#2188).
   for (const guest of guestsExpected(world))

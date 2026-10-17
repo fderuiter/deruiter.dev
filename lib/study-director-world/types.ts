@@ -107,6 +107,11 @@ export interface DayPlan {
   excused?: string[];
   /** Queries the player closed at the EDC today, for the wrap-up (#2253). */
   queriesClosed?: number;
+  /**
+   * The study's spend when the day began, so the overnight report can say
+   * what the day's decisions cost beside the running costs (#2335).
+   */
+  spentAtStart?: number;
 }
 
 /** The most meetings or site visits a run keeps; the oldest drop first. */

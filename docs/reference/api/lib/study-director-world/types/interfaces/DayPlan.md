@@ -43,3 +43,12 @@ Ids of today's interruptions the player has dealt with.
 > `optional` **queriesClosed?**: `number`
 
 Queries the player closed at the EDC today, for the wrap-up (#2253).
+
+***
+
+### spentAtStart?
+
+> `optional` **spentAtStart?**: `number`
+
+The study's spend when the day began, so the overnight report can say
+what the day's decisions cost beside the running costs (#2335).

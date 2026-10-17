@@ -175,7 +175,13 @@ function readPlan(value: unknown): DayPlan | undefined {
     day: Math.floor(num(value.day, 1, 1, 10_000)),
     priority: PRIORITY_IDS.find((p) => p === value.priority) ?? null,
     handled: strings(value.handled),
-    ...(Array.isArray(value.excused) ? { excused: strings(value.excused) } : {}),
+    ...(Array.isArray(value.excused)
+      ? { excused: strings(value.excused) }
+      : {}),
+    ...(typeof value.spentAtStart === "number" &&
+    Number.isFinite(value.spentAtStart)
+      ? { spentAtStart: Math.max(0, value.spentAtStart) }
+      : {}),
   };
 }
 

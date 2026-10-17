@@ -818,6 +818,12 @@ Re-exports [saveCyberdeckProfile](metaprogression/functions/saveCyberdeckProfile
 
 ***
 
+### SCRAMBLE\_IMMUNE\_CLASSES
+
+Re-exports [SCRAMBLE_IMMUNE_CLASSES](metaprogression/variables/SCRAMBLE_IMMUNE_CLASSES.md)
+
+***
+
 ### SecurityDrone
 
 Re-exports [SecurityDrone](types/interfaces/SecurityDrone.md)

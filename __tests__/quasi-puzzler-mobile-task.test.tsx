@@ -91,7 +91,7 @@ describe("Quasi-Puzzler puts the active task within reach on mobile (#1236)", ()
   it("keeps the focused level heading visible and clear of the fixed Navbar", () => {
     render(<QuasiPerfectPuzzler />);
     const heading = document.getElementById("quasi-current-level-heading");
-    expect(heading?.className).toContain("scroll-mt-24");
+    expect(heading?.className).toContain("scroll-mt-nav-24");
     expect(heading?.className).toContain("focus-visible:ring-2");
   });
 

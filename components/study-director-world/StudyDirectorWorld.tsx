@@ -1058,7 +1058,7 @@ export const StudyDirectorWorld: React.FC<{
           setOutcome(null);
           playfieldRef.current?.focus({ preventScroll: true });
         }}
-        className={`scroll-mt-24 border p-3 ${TONE_CLASS[outcome.tone]}`}
+        className={`scroll-mt-nav-24 border p-3 ${TONE_CLASS[outcome.tone]}`}
       >
         <h3 id="sd-world-outcome" className="text-sm font-bold">
           {outcome.title}
@@ -1123,7 +1123,7 @@ export const StudyDirectorWorld: React.FC<{
       ) : null}
     </div>
   ) : digest || interruption || guest || (!plan.priority && morning) ? (
-    <div ref={cardsRef} className="scroll-mt-24 space-y-3">
+    <div ref={cardsRef} className="scroll-mt-nav-24 space-y-3">
       {digest ? <DigestCard digest={digest} /> : null}
       {guest ? <GuestCard scene={guest} onMeet={meet} /> : null}
       {interruption ? (

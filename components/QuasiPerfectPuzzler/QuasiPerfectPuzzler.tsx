@@ -96,7 +96,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 
-// Matches the level heading's scroll-mt-24: the fixed Navbar's height.
+// Matches the level heading's scroll-mt-nav-24 offset (6rem), which clears the fixed Navbar.
 const NAVBAR_CLEARANCE_PX = 96;
 const STORAGE_KEY = "quasi_perfect_puzzler_progress_v1";
 const ACT_ONE_LEVELS = puzzleLevels.filter(
@@ -1024,7 +1024,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
         if (!heading) return;
         heading.focus({ preventScroll: true });
         if (typeof heading.scrollIntoView === "function") {
-          // scroll-mt-24 on the heading keeps it clear of the fixed Navbar.
+          // scroll-mt-nav-24 on the heading keeps it clear of the fixed Navbar.
           heading.scrollIntoView({ block: "start" });
         }
       });
@@ -1429,7 +1429,7 @@ export const QuasiPerfectPuzzler: React.FC = () => {
                   ref={levelHeadingRef}
                   tabIndex={-1}
                   id="quasi-current-level-heading"
-                  className="scroll-mt-24 mt-0.5 rounded-sm text-lg font-bold tracking-[-0.02em] text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--qp-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
+                  className="scroll-mt-nav-24 mt-0.5 rounded-sm text-lg font-bold tracking-[-0.02em] text-zinc-100 outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--qp-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-950"
                 >
                   {currentLevel.title}
                 </h3>

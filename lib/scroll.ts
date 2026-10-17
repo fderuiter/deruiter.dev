@@ -5,9 +5,10 @@
  * it without animating for readers who asked for reduced motion, and move
  * keyboard focus to it so screen readers announce where the reader landed.
  *
- * The fixed navbar offset is not computed here. Targets declare
- * `scroll-margin-top` in CSS (for example `calc(var(--navbar-height) + 2rem)`),
- * which `scrollIntoView` already honours.
+ * The fixed navbar offset is not computed here. The page declares
+ * `scroll-padding-top: var(--scroll-clearance)` on the root (app/globals.css),
+ * which `scrollIntoView` and focus scrolling already honour. A target that
+ * wants more room adds a `scroll-mt-nav-*` margin, which adds to that padding.
  */
 
 /** How the URL hash is synchronised after a jump. */

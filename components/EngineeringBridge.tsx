@@ -74,7 +74,7 @@ export function EngineeringBridge({ route }: { route: string }) {
       <h2
         id={BRIDGE_HEADING_ID}
         tabIndex={-1}
-        className="scroll-mt-28 font-mono text-xl font-bold tracking-tight text-white sm:text-2xl"
+        className="scroll-mt-nav-28 font-mono text-xl font-bold tracking-tight text-white sm:text-2xl"
       >
         {`Architecture & Engine Notes: ${entry.name}`}
       </h2>

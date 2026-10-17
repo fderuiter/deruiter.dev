@@ -167,42 +167,29 @@ export const StackOverviewView: React.FC = () => {
             </div>
           </div>
 
-          <div
-            id="pretext-lab"
-            className="scroll-mt-[calc(var(--navbar-height)+2rem)]"
-          >
+          {/* The page's scroll-padding-top keeps these anchors clear of the
+              fixed navbar (#2325), so they need no scroll margin. */}
+          <div id="pretext-lab">
             <PretextBenchmarkLab />
           </div>
 
-          <div
-            id="audio-lab"
-            className="scroll-mt-[calc(var(--navbar-height)+2rem)]"
-          >
+          <div id="audio-lab">
             <AudioSynthLab />
           </div>
         </section>
 
         {/* Section 2: Modular Stack Layers */}
-        <section
-          id="stack-layers"
-          className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
-        >
+        <section id="stack-layers" className="w-full mb-16">
           <StackLayerCards />
         </section>
 
         {/* Section 3: 12 Architectural Invariants */}
-        <section
-          id="invariants"
-          className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
-        >
+        <section id="invariants" className="w-full mb-16">
           <InvariantsMatrix />
         </section>
 
         {/* Section 4: Developer CLI Quickstart */}
-        <section
-          id="quickstart"
-          className="w-full mb-16 scroll-mt-[calc(var(--navbar-height)+2rem)]"
-        >
+        <section id="quickstart" className="w-full mb-16">
           <div className="w-full rounded-2xl bg-surface-1 border border-zinc-800/80 p-6">
             <div className="flex items-center gap-3 pb-5 border-b border-zinc-800/80 mb-5">
               <div className="p-2.5 rounded-xl bg-brand-cyan/10 border border-brand-cyan/30 text-brand-cyan">

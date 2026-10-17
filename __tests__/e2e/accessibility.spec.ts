@@ -742,3 +742,102 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await auditAndAssert(page, testInfo, "Arcade Game: For Better or Bulk");
   });
 });
+
+/**
+ * Shift+Tabs from the end of the site footer back up the page, as a keyboard
+ * reader returning to the content does, and lists every focused control that
+ * the browser leaves under the fixed navbar (#2325, WCAG 2.2 SC 2.4.11).
+ * Controls inside a fixed or sticky box are skipped, the navbar's own links
+ * among them, and so are controls taller than the room under the navbar. It
+ * stops once focus reaches the navbar.
+ */
+async function shiftTabUnderNavbar(
+  page: Page,
+  presses: number
+): Promise<{ checked: number; offenders: string[] }> {
+  await page.locator("footer").last().locator("a[href], button").last().focus();
+  const offenders: string[] = [];
+  let checked = 0;
+  for (let i = 0; i < presses; i++) {
+    await page.keyboard.press("Shift+Tab");
+    const result = await page.evaluate(() => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || el === document.body) return { kind: "skip" as const };
+      const header = document.querySelector("body header");
+      if (header?.contains(el)) return { kind: "navbar" as const };
+      for (let n: Element | null = el; n; n = n.parentElement) {
+        const position = getComputedStyle(n).position;
+        if (position === "fixed" || position === "sticky") {
+          return { kind: "skip" as const };
+        }
+      }
+      const navBottom = header?.getBoundingClientRect().bottom ?? 0;
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0)
+        return { kind: "skip" as const };
+      if (rect.height > window.innerHeight - navBottom) {
+        return { kind: "skip" as const };
+      }
+      const name = (el.getAttribute("aria-label") ?? el.textContent ?? "")
+        .trim()
+        .replace(/\s+/g, " ")
+        .slice(0, 48);
+      return rect.top < navBottom - 1
+        ? {
+            kind: "under" as const,
+            text: `${el.tagName.toLowerCase()} "${name}" top ${Math.round(rect.top)} < navbar bottom ${Math.round(navBottom)}`,
+          }
+        : { kind: "clear" as const };
+    });
+    if (result.kind === "navbar") break;
+    if (result.kind === "skip") continue;
+    checked++;
+    if (result.kind === "under") offenders.push(result.text);
+  }
+  return { checked, offenders };
+}
+
+test.describe("Shift+Tab back from the footer clears the fixed navbar (#2325)", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "chromium",
+      "Desktop keyboard journey; the touch cabinets have their own checks"
+    );
+    // Reduced motion makes every scroll instant, so each read is final.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  });
+
+  test("Protocol Drift workbench at 1280", async ({ page }) => {
+    test.setTimeout(120000);
+    // /arcade/protocol-drift redirects here.
+    await page.goto("/protocol-drift");
+    const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+    const briefing = page.getByRole("dialog", { name: /Trial Briefing/ });
+    await expect(async () => {
+      if (await briefing.isVisible()) return;
+      await launch.click({ timeout: 5000 });
+      await expect(briefing).toBeVisible({ timeout: 5000 });
+    }).toPass({ timeout: 60000 });
+    await briefing.getByLabel(/Full study/).check();
+    await briefing.getByRole("button", { name: /accept assignment/i }).click();
+    await expect(briefing).toBeHidden();
+    for (const kind of ["SourceIngest", "ExtractField", "CDISCSink"]) {
+      await page.getByRole("button", { name: `Add ${kind} chip` }).click();
+    }
+
+    const { checked, offenders } = await shiftTabUnderNavbar(page, 80);
+    expect(checked, "Shift+Tab reached page controls").toBeGreaterThan(10);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  test("Long case study page at 1280", async ({ page }) => {
+    await page.goto("/case-studies/clinical-data-mapper");
+    await page.waitForLoadState("networkidle");
+
+    const { checked, offenders } = await shiftTabUnderNavbar(page, 80);
+    expect(checked, "Shift+Tab reached page controls").toBeGreaterThan(5);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+});

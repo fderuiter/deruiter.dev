@@ -170,6 +170,11 @@ export const RunHistoryEntrySchema = z.object({
   result: z.enum(["WON", "FAILED"]),
   /** The campaign was won, even if post-marketing rounds then failed. */
   campaignWon: z.boolean(),
+  /**
+   * True for the win a run records as it continues into post-marketing
+   * (#2331). The run's own end replaces it; an abandoned run keeps it.
+   */
+  continued: z.literal(true).optional(),
   /** Moves the run took. */
   moves: count,
   /** The UTC date the run ended, when the adapter knows it. */
@@ -440,6 +445,20 @@ function sameRun(a: RunHistoryEntry, b: RunHistoryEntry): boolean {
   );
 }
 
+/** Whether `entry` is how the run behind the continued win `win` went on. */
+function continues(win: RunHistoryEntry, entry: RunHistoryEntry): boolean {
+  return (
+    win.continued === true &&
+    entry.campaignWon &&
+    entry.moves > win.moves &&
+    win.actId === entry.actId &&
+    win.seed === entry.seed &&
+    win.sponsorId === entry.sponsorId &&
+    win.stake === entry.stake &&
+    JSON.stringify(win.origin) === JSON.stringify(entry.origin)
+  );
+}
+
 /**
  * Adds a finished run to the front of the history, keeping the newest
  * `RUN_HISTORY_LIMIT`. Recording the same run twice in a row (the same plan,
@@ -447,14 +466,18 @@ function sameRun(a: RunHistoryEntry, b: RunHistoryEntry): boolean {
  *
  * A run that won its campaign also unlocks (#950): the next stake for its
  * sponsor, and the next sponsor at stake 1. A campaign won before
- * post-marketing rounds failed still counts as a win.
+ * post-marketing rounds failed still counts as a win. The win a run recorded
+ * as it continued into post-marketing (#2331) is replaced by that run's end,
+ * so one run keeps one entry.
  */
 export function recordRun(codex: Codex, entry: RunHistoryEntry): Codex {
   const newest = codex.history[0];
   if (newest && sameRun(newest, entry)) return codex;
+  const earlier =
+    newest && continues(newest, entry) ? codex.history.slice(1) : codex.history;
   return {
     ...codex,
-    history: [entry, ...codex.history].slice(0, RUN_HISTORY_LIMIT),
+    history: [entry, ...earlier].slice(0, RUN_HISTORY_LIMIT),
     unlocks: entry.campaignWon
       ? unlockAfterWin(codex.unlocks, historyChoice(entry))
       : codex.unlocks,
@@ -478,6 +501,41 @@ export function summarizeRun(
   plan: RunPlan,
   log: RunLog,
   endedOn?: string
+): RunHistoryEntry | null {
+  return summarizeLog(plan, log, endedOn, false);
+}
+
+/**
+ * The win a run records as it continues into post-marketing (#2331),
+ * replayed from its log up to and including the CONTINUE_ENDLESS move, or
+ * null when the run never continued. Later moves leave it unchanged, so it is
+ * recorded once; `recordRun` replaces it with the run's own end. This keeps
+ * the win and its unlocks when a post-marketing run is abandoned.
+ */
+export function summarizeCampaignWin(
+  plan: RunPlan,
+  log: RunLog,
+  endedOn?: string
+): RunHistoryEntry | null {
+  const at = log.actions.findIndex((a) => a.type === "CONTINUE_ENDLESS");
+  if (at < 0) return null;
+  return summarizeLog(
+    plan,
+    { ...log, actions: log.actions.slice(0, at + 1) },
+    endedOn,
+    true
+  );
+}
+
+/**
+ * Replays `log` into its history entry: the finished run's, or with
+ * `continued`, the win of a run that went on into post-marketing.
+ */
+function summarizeLog(
+  plan: RunPlan,
+  log: RunLog,
+  endedOn: string | undefined,
+  continued: boolean
 ): RunHistoryEntry | null {
   let run = createRunState(
     plan,
@@ -505,7 +563,7 @@ export function summarizeRun(
   const over =
     view.phase === "RUN_FAILED" ||
     (view.phase === "RUN_WON" && !view.endless?.canContinue);
-  if (!over) return null;
+  if (continued ? !run.endless || over : !over) return null;
   const campaignWon =
     view.phase === "RUN_WON" || (view.endless?.campaignWon ?? false);
   const title = (text: string) => text.slice(0, 120) || "Untitled";
@@ -523,8 +581,9 @@ export function summarizeRun(
       round: view.act.round,
     },
     bestHand: best,
-    result: view.phase === "RUN_WON" ? "WON" : "FAILED",
+    result: continued || view.phase === "RUN_WON" ? "WON" : "FAILED",
     campaignWon,
+    ...(continued && { continued: true as const }),
     moves: log.actions.length,
     ...(endedOn !== undefined && { endedOn }),
   };

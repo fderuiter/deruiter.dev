@@ -2015,9 +2015,11 @@ export function advanceRun(
         table: advanceTable(tableScenario(blind, run), run.table, action),
       };
     default: {
-      // A submitted run keeps its locked package (#2149).
-      if (run.ended && action.type === "AMEND_PROTOCOL") {
-        return refuse(ENDED_AMEND_REFUSAL);
+      // A submitted run keeps its locked package (#2149), and so does one
+      // that went on into post-marketing (#2331).
+      const lockedPackage = submittedAmendRefusal(run);
+      if (lockedPackage && action.type === "AMEND_PROTOCOL") {
+        return refuse(lockedPackage);
       }
       const table = advanceTable(tableScenario(blind, run), run.table, action);
       // Form 483: a Boss reward cannot fill the locked slot.
@@ -2036,12 +2038,27 @@ export function advanceRun(
 const ENDED_AMEND_REFUSAL =
   "The run was submitted and has ended, so the package stays locked.";
 
-/** The table as an ended run shows it: its lock can no longer be amended. */
+/** Why a run in post-marketing cannot file a protocol amendment (#2331). */
+const ENDLESS_AMEND_REFUSAL =
+  "The package is submitted and the compound is on the market, so it stays locked.";
+
+/** Why the run's submitted package can no longer be amended, or null. */
+function submittedAmendRefusal(run: RunState): string | null {
+  if (run.ended) return ENDED_AMEND_REFUSAL;
+  if (run.endless) return ENDLESS_AMEND_REFUSAL;
+  return null;
+}
+
+/**
+ * The table as a submitted run shows it: once the run has ended or gone on
+ * into post-marketing, its lock can no longer be amended.
+ */
 function endedTableView(run: RunState, table: TableView): TableView {
-  if (!run.ended || !table.csrLock) return table;
+  const refusal = submittedAmendRefusal(run);
+  if (!refusal || !table.csrLock) return table;
   return {
     ...table,
-    csrLock: { ...table.csrLock, amendRefusal: ENDED_AMEND_REFUSAL },
+    csrLock: { ...table.csrLock, amendRefusal: refusal },
   };
 }
 

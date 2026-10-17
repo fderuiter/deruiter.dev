@@ -2906,6 +2906,12 @@ Re-exports [SubjectSchema](types/variables/SubjectSchema.md)
 
 ***
 
+### summarizeCampaignWin
+
+Re-exports [summarizeCampaignWin](internal/codex/functions/summarizeCampaignWin.md)
+
+***
+
 ### summarizeRun
 
 Re-exports [summarizeRun](internal/codex/functions/summarizeRun.md)

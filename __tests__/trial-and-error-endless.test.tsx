@@ -10,8 +10,10 @@ import {
   within,
 } from "@testing-library/react";
 import { CardTable } from "@/components/trial-and-error/CardTable";
+import { CODEX_KEY } from "@/components/trial-and-error/useCodex";
 import {
   DEMOGRAPHICS_SCENARIO,
+  parseCodex,
   DOSE_ESCALATION_SCENARIO,
   ACT_I_SHOP,
   type Campaign,
@@ -240,5 +242,100 @@ describe("clearing a post-marketing Blind (#2330)", () => {
     );
     expect(screen.getByTestId("cash-out-button")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Next Blind" })).toBeTruthy();
+  });
+});
+
+/** The standard in-memory Storage (AGENTS.md §1). */
+class MockStorage implements Storage {
+  private store = new Map<string, string>();
+  get length(): number {
+    return this.store.size;
+  }
+  clear(): void {
+    this.store.clear();
+  }
+  getItem(key: string): string | null {
+    return this.store.get(key) ?? null;
+  }
+  key(index: number): string | null {
+    return Array.from(this.store.keys())[index] ?? null;
+  }
+  removeItem(key: string): void {
+    this.store.delete(key);
+  }
+  setItem(key: string, value: string): void {
+    this.store.set(key, String(value));
+  }
+}
+
+describe("the campaign win once the run continues (#2331)", () => {
+  const original = Object.getOwnPropertyDescriptor(window, "localStorage");
+  let storage: MockStorage;
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/");
+    storage = new MockStorage();
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: storage,
+    });
+  });
+  afterEach(() => {
+    if (original) Object.defineProperty(window, "localStorage", original);
+  });
+  const history = () => parseCodex(storage.getItem(CODEX_KEY)).codex;
+
+  it("records the win and unlocks on Continue, then one entry at the run's end", async () => {
+    render(<CardTable act={MINI} seed="alpha" persist />);
+    fireEvent.click(
+      document.querySelector<HTMLButtonElement>('[data-card-id="C-L16.2.7"]')!
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Play Hand/ }));
+    await screen.findByTestId("endless-choice");
+    expect(history().history).toEqual([]);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Continue into post-marketing" })
+    );
+    // Abandoning the run from here keeps the win: it is already recorded.
+    await waitFor(() => expect(history().history).toHaveLength(1));
+    expect(history().history[0]).toMatchObject({
+      seed: "alpha",
+      result: "WON",
+      campaignWon: true,
+      continued: true,
+    });
+    expect(history().unlocks).toEqual({
+      VIRTUAL_BIOTECH: 2,
+      ONCOLOGY_PHARMA: 1,
+    });
+
+    fireEvent.click(await screen.findByRole("button", { name: "Next study" }));
+    fireEvent.click(await screen.findByTestId("act-intro-start"));
+    await waitFor(() => expect(screen.queryByTestId("act-intro")).toBeNull());
+    for (let hand = 0; hand < 12; hand++) {
+      if (screen.queryByTestId("endless-record")) break;
+      playFirstCard();
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId("endless-record") ??
+            screen.queryByRole("button", { name: /Play Hand/ })
+        ).toBeTruthy()
+      );
+    }
+    await screen.findByTestId("endless-record");
+    // The run's end replaces the continued win; it is not recorded twice.
+    await waitFor(() =>
+      expect(history().history[0]).toMatchObject({
+        result: "FAILED",
+        campaignWon: true,
+        reached: { round: 1 },
+      })
+    );
+    expect(history().history).toHaveLength(1);
+    expect(history().history[0].continued).toBeUndefined();
+    expect(history().unlocks).toEqual({
+      VIRTUAL_BIOTECH: 2,
+      ONCOLOGY_PHARMA: 1,
+    });
   });
 });

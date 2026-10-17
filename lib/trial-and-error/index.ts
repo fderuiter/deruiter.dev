@@ -380,6 +380,7 @@ export {
   recordDiscoveries,
   recordRun,
   serializeCodex,
+  summarizeCampaignWin,
   summarizeRun,
   type Codex,
   type CodexCategory,

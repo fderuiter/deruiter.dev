@@ -92,6 +92,7 @@ function reachedLine(entry: RunHistoryEntry): string {
 }
 
 function resultLabel(entry: RunHistoryEntry): string {
+  if (entry.continued) return "Won, went on into post-marketing";
   if (entry.result === "WON") return "Won";
   return entry.campaignWon ? "Won, then failed post-marketing" : "Failed";
 }

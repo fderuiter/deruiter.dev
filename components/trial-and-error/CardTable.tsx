@@ -54,6 +54,7 @@ import {
   recordDiscoveries,
   recordRun,
   relicPhase,
+  summarizeCampaignWin,
   summarizeRun,
   utcDate,
 } from "@/lib/trial-and-error";
@@ -640,6 +641,28 @@ export function CardTable({
       })
     );
   }, [codexEnabled, offerResume, act, run, log.actId, log.seed, logOrigin]);
+  // A run that continues into post-marketing records its campaign win then,
+  // so the win and its unlocks survive the run being abandoned (#2331). The
+  // run's own end replaces this entry in the history.
+  const continuedRun = run.endless && !runOver;
+  const recordedWin = useRef<RunLog | null>(null);
+  useEffect(() => {
+    if (!codexEnabled || offerResume || !continuedRun) return;
+    const previous = recordedWin.current;
+    recordedWin.current = log;
+    // One run's later moves keep the same win: summarize it once per run.
+    if (
+      previous &&
+      previous.seed === log.seed &&
+      previous.actId === log.actId &&
+      previous.actions.length <= log.actions.length &&
+      previous.actions.every((a, i) => a === log.actions[i])
+    ) {
+      return;
+    }
+    const win = summarizeCampaignWin(act, log, utcDate(Date.now()));
+    if (win) updateCodex((current) => recordRun(current, win));
+  }, [codexEnabled, offerResume, continuedRun, act, log]);
   // A finished run is summarized once, from its log, into the history.
   const recordedRun = useRef<RunLog | null>(null);
   useEffect(() => {
@@ -2733,11 +2756,11 @@ export function CardTable({
                     {CLINICAL_HOLD}
                   </h3>
                   <p className="mt-2 text-zinc-300">
-                    Your response to the End-of-Phase-2 Information Request was
-                    not received within {clock.totalHours} hours.{" "}
+                    Your response to the {clock.request} was not received within{" "}
+                    {clock.totalHours} hours.{" "}
                     {view.questions.filter((q) => !q.answered).length} of{" "}
                     {view.questions.length} questions remain open. The program
-                    may not proceed to Phase III.
+                    may not {clock.consequence}.
                   </p>
                   <ul className="mt-2 list-disc pl-5 text-zinc-400">
                     {view.questions

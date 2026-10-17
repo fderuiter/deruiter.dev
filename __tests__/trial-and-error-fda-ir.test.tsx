@@ -10,7 +10,11 @@ import {
   within,
 } from "@testing-library/react";
 import { CardTable } from "@/components/trial-and-error/CardTable";
-import { FDA_IR_SCENARIO, type Scenario } from "@/lib/trial-and-error";
+import {
+  FDA_IR_SCENARIO,
+  PASS_STUDY,
+  type Scenario,
+} from "@/lib/trial-and-error";
 
 const announce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -129,5 +133,36 @@ describe("CardTable FDA Information Request (#921)", () => {
         "Clinical Hold · run over"
       )
     ).not.toBeNull();
+  });
+});
+
+describe("the post-marketing Clinical Hold letter (#2331)", () => {
+  it("names the post-marketing request and leaves Phase III out", async () => {
+    const pm = PASS_STUDY.bossPool![0];
+    render(
+      <CardTable
+        scenario={{ ...pm, table: { ...pm.table, startingCpu: 40 } }}
+      />
+    );
+    takeSeat();
+    for (let i = 0; i < 10; i++) discardOne();
+    const letter = await screen.findByTestId("clinical-hold");
+    expect(letter.textContent).toContain(
+      "Your response to the Post-Marketing Requirement Information Request was not received within 48 hours."
+    );
+    expect(letter.textContent).not.toMatch(/Phase III|End-of-Phase-2/);
+  });
+
+  it("keeps the campaign letter's End-of-Phase-2 wording", async () => {
+    render(<CardTable scenario={ROOMY} />);
+    takeSeat();
+    for (let i = 0; i < 10; i++) discardOne();
+    const letter = await screen.findByTestId("clinical-hold");
+    expect(letter.textContent).toContain(
+      "Your response to the End-of-Phase-2 Information Request was not received within 48 hours."
+    );
+    expect(letter.textContent).toContain(
+      "The program may not proceed to Phase III."
+    );
   });
 });

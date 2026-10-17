@@ -302,7 +302,11 @@ export const SandboxMode: React.FC = () => {
           text: result.message,
         },
       ]);
+      setSelectedTacticIndex(null);
+      setSelectedTargetId(null);
     } else {
+      // Like the campaign (#1232), a failed tactic keeps its card armed so the
+      // player can retarget it without picking the card again (#2323).
       setLogs((prev) => [
         ...prev,
         {
@@ -313,9 +317,6 @@ export const SandboxMode: React.FC = () => {
         },
       ]);
     }
-
-    setSelectedTacticIndex(null);
-    setSelectedTargetId(null);
   };
 
   const isComplete = isProofComplete(currentGoal);

@@ -187,7 +187,7 @@ const DESKTOP_EXTRA_COLUMNS = 24;
  * lane is full it continues to the right of the world, never on top of a
  * chip; a player can still drag any chip anywhere.
  */
-export function desktopChipSpot(
+function desktopChipSpot(
   kind: ChipKind,
   nodes: ChipNode[]
 ): { x: number; y: number } {

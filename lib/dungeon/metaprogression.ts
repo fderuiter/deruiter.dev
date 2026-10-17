@@ -20,7 +20,8 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     role: "Rapid Infiltrator",
     description:
       "Equipped with automated exploit toolkits and hardware bypass chips for swift breaches.",
-    passiveBonus: "Starts with 2 extra Bypass Chips and +15% Movement Evasion.",
+    passiveBonus:
+      "Starts with 1 extra Bypass Chip and +1 GB RAM regen per step.",
     baseHp: 80,
     baseRam: 24,
     ramRegen: 3,
@@ -36,7 +37,7 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     description:
       "Decodes encrypted mainframe keys and extracts maximum crypto bounties from breach targets.",
     passiveBonus:
-      "+50% Crypto harvest from Terminals and 2x Critical Strike damage on Exposed CVEs.",
+      "Starts with 32 GB RAM and the Airgap 0-Day Piercer in its loadout.",
     baseHp: 100,
     baseRam: 32,
     ramRegen: 2,
@@ -67,7 +68,7 @@ export const CYBERDECK_CLASSES: Record<CyberdeckClassId, CyberdeckClass> = {
     description:
       "Armored physical infiltrator with fortified cyberdeck chassis and high-yield EMP surges.",
     passiveBonus:
-      "High Health (+40 Max HP) and Immune to Scrambled Controls / Glitch Lag.",
+      "Highest health (140 Max HP) and immune to Scrambled Controls.",
     baseHp: 140,
     baseRam: 28,
     ramRegen: 2,
@@ -528,6 +529,14 @@ export function recordCyberdeckMilestone(
     unlocked,
   };
 }
+
+/**
+ * The classes whose keys a Stack Overflow snippet cannot invert. The
+ * Hardware Hacker's passive promises it (#2338).
+ */
+export const SCRAMBLE_IMMUNE_CLASSES: ReadonlySet<CyberdeckClassId> = new Set([
+  "hardware_hacker",
+]);
 
 /**
  * How much each class scales the AoE exploit radius. The APT Specialist's

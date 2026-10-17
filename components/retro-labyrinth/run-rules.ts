@@ -1,6 +1,9 @@
 import {
+  SCRAMBLE_IMMUNE_CLASSES,
   routeTierOf,
+  type ActiveSideEffect,
   type BossState,
+  type CyberdeckClassId,
   type DungeonRoom,
   type ParticleEffect,
   type RunReward,
@@ -111,4 +114,62 @@ export function formatRunTime(ms: number): string {
   const minutes = Math.floor(total / 60);
   const seconds = total % 60;
   return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+/**
+ * Whether the movement keys are inverted now. A Stack Overflow snippet
+ * scrambles them for a while, except for a class immune to it (#2338).
+ *
+ * @param classId - The Cyberdeck class in play.
+ * @param effect - The active side effect, if any.
+ * @param now - The time now, in epoch milliseconds.
+ * @returns True when up, down, left and right are reversed.
+ */
+export function controlsScrambled(
+  classId: CyberdeckClassId,
+  effect: ActiveSideEffect | null | undefined,
+  now: number
+): boolean {
+  return (
+    effect?.type === "scrambled_keys" &&
+    effect.expiresAt > now &&
+    !SCRAMBLE_IMMUNE_CLASSES.has(classId)
+  );
+}
+
+/**
+ * The side effect a tool leaves on this class. An immune class shrugs off
+ * scrambled keys, so no inverted-keys warning shows (#2338).
+ *
+ * @param classId - The Cyberdeck class in play.
+ * @param effect - The side effect the tool produced, if any.
+ * @returns The effect to apply, or undefined for none.
+ */
+export function sideEffectForClass(
+  classId: CyberdeckClassId,
+  effect: ActiveSideEffect | undefined
+): ActiveSideEffect | undefined {
+  if (effect?.type === "scrambled_keys" && SCRAMBLE_IMMUNE_CLASSES.has(classId))
+    return undefined;
+  return effect;
+}
+
+/** The names the trace card gives each boss, rather than its raw id. */
+const BOSS_DISPLAY_NAMES: Readonly<
+  Record<NonNullable<BossState["kind"]>, string>
+> = {
+  faceforge: "FaceForge",
+  neural_warden: "Neural Warden",
+};
+
+/**
+ * The trace card's line for a boss volley hit, naming the boss as the game
+ * does elsewhere (#2338).
+ *
+ * @param boss - The boss whose volley hit.
+ * @returns The line, such as "A Neural Warden mesh volley severed…".
+ */
+export function bossVolleyHitLine(boss: Pick<BossState, "kind">): string {
+  const name = BOSS_DISPLAY_NAMES[boss.kind ?? "faceforge"];
+  return `A ${name} mesh volley severed your cyberdeck proxy tunnel.`;
 }

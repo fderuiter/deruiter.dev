@@ -112,10 +112,13 @@ import {
 } from "@/components/retro-labyrinth/control-hints";
 import {
   MARKET_CLOSED_REASON,
+  bossVolleyHitLine,
+  controlsScrambled,
   holdBossSpin,
   formatRunTime,
   isMarketOpen,
   rewardUnavailableReasons,
+  sideEffectForClass,
   slotUnavailableMessage,
   stillParticles,
 } from "@/components/retro-labyrinth/run-rules";
@@ -1606,8 +1609,13 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         playNote(330, 0.18);
       }
 
-      if (res.activeSideEffect) {
-        setActiveSideEffect(res.activeSideEffect);
+      // A class immune to a side effect never gets it (#2338).
+      const sideEffect = sideEffectForClass(
+        selectedClassId,
+        res.activeSideEffect
+      );
+      if (sideEffect) {
+        setActiveSideEffect(sideEffect);
       }
 
       // Under reduced motion a tool's burst holds still and fades (#2291).
@@ -1639,6 +1647,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       playNote,
       playSuccess,
       earnCrypto,
+      selectedClassId,
       phoneCabinet,
       showPhoneToast,
       reducedMotion,
@@ -1806,9 +1815,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         return;
       }
 
-      const isScrambled =
-        activeSideEffect?.type === "scrambled_keys" &&
-        activeSideEffect.expiresAt > Date.now();
+      const isScrambled = controlsScrambled(
+        selectedClassId,
+        activeSideEffect,
+        Date.now()
+      );
 
       if (
         key === "1" ||
@@ -1865,6 +1876,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       gameStatus,
       gameMode,
       loadout,
+      selectedClassId,
       weapons,
       handleFireWeapon,
       handleSubmitTimesheet,
@@ -1890,9 +1902,11 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const handleDirectionalMove = useCallback(
     (dir: "up" | "down" | "left" | "right") => {
       if (gameStatus !== "playing") return;
-      const isScrambled =
-        activeSideEffect?.type === "scrambled_keys" &&
-        activeSideEffect.expiresAt > Date.now();
+      const isScrambled = controlsScrambled(
+        selectedClassId,
+        activeSideEffect,
+        Date.now()
+      );
 
       if (dir === "up") {
         tryMove(0, isScrambled ? 1 : -1);
@@ -1904,7 +1918,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         tryMove(isScrambled ? -1 : 1, 0);
       }
     },
-    [activeSideEffect, gameStatus, tryMove]
+    [activeSideEffect, gameStatus, selectedClassId, tryMove]
   );
 
   const cycleWeapon = useCallback(() => {
@@ -2316,9 +2330,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         if (spawnedDamage > 0) {
           bossHitThisRoomRef.current = true;
           setRunDamage((total) => total + spawnedDamage);
-          setLastHitBy(
-            `A ${boss.name.split(" :: ")[0]} mesh volley severed your cyberdeck proxy tunnel.`
-          );
+          setLastHitBy(bossVolleyHitLine(boss));
           setPlayerHp((hp) => {
             const nextHp = hp - spawnedDamage;
             if (nextHp <= 0) {

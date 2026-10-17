@@ -15,6 +15,7 @@
 
 - [answerCall](functions/answerCall.md)
 - [brushOff](functions/brushOff.md)
+- [budgetLine](functions/budgetLine.md)
 - [channelFor](functions/channelFor.md)
 - [clearQueriesAtEdc](functions/clearQueriesAtEdc.md)
 - [decide](functions/decide.md)

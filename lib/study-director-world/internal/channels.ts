@@ -11,6 +11,7 @@ import {
   type DecisionRecord,
   type Difficulty,
   type StudyEvent,
+  type StudyState,
 } from "@/lib/study-director";
 import { uniformAt } from "@/lib/utils/prng";
 import { clamp } from "@/lib/game-utils";
@@ -272,6 +273,22 @@ export function openAtDesk(
 }
 
 /**
+ * What a choice did to the budget, said where it was made: the dollars it
+ * moved and where spend now stands, or nothing when it moved none. The
+ * toast is decoration and sits under the dialog, so the price has to be in
+ * the words too (#2344).
+ */
+export function budgetLine(moved: number, study: StudyState): string | null {
+  const dollars = Math.round(moved);
+  if (dollars === 0) return null;
+  const amount = `$${Math.abs(dollars).toLocaleString("en-US")}`;
+  const total = `$${Math.round(study.spent).toLocaleString("en-US")} of $${Math.round(study.setup.budget).toLocaleString("en-US")} spent`;
+  return dollars > 0
+    ? `Budget: −${amount} (${total}).`
+    : `Budget: +${amount} back (${total}).`;
+}
+
+/**
  * Chooses one of an event's options: the translation of a dialogue choice
  * into the domain. It calls `resolveEvent`, which records the decision
  * through `resolveDecision`, undocumented: writing it up is a separate
@@ -304,8 +321,13 @@ export function decide(
     };
   let next: WorldState = markRaised({ ...start, study: result.state }, eventId);
   const record = result.state.log[result.state.log.length - 1];
+  const priced = budgetLine(
+    result.state.spent - start.study.spent,
+    result.state
+  );
   const lines: DialogueLine[] = [
     { kind: "information", text: `Decided: ${record.label}.` },
+    ...(priced ? [{ kind: "information" as const, text: priced }] : []),
     {
       kind: "warning",
       text: "Not on file yet. Write it up at your desk (20 minutes), or it becomes documentation debt.",

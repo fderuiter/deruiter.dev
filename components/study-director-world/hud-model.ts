@@ -25,14 +25,17 @@ export function dayPhase(minute: number): DayPhase {
   return "morning";
 }
 
+const dollars = (n: number) => `$${Math.round(n).toLocaleString("en-US")}`;
+
 /** Energy or focus below this is low, and the player is told once. */
 export const LOW_LEVEL = 25;
 
 /**
  * What a screen reader should hear when the HUD moves between two readouts:
  * only the changes that matter, never every tick of the clock. A new day or
- * phase, a meter dropping below the low mark, the budget going over, the
- * timeline slipping and enrollment moving each get one short sentence.
+ * phase, a meter dropping below the low mark, the budget moving during the
+ * day or going over, the timeline slipping and enrollment moving each get
+ * one short sentence.
  */
 export function hudChanges(
   prev: HudReadout,
@@ -55,6 +58,18 @@ export function hudChanges(
     if (was >= LOW_LEVEL && now < LOW_LEVEL)
       said.push(`${label} is low, ${Math.round(now)} of 100.`);
   }
+  // A choice that moves money is spoken as it happens; overnight the card
+  // says what the night cost (#2344).
+  const moved = Math.round(next.budget.spent - prev.budget.spent);
+  if (
+    moved !== 0 &&
+    next.day === prev.day &&
+    !next.overnight &&
+    !prev.overnight
+  )
+    said.push(
+      `Budget ${moved > 0 ? "−" : "+"}${dollars(Math.abs(moved))}, ${dollars(next.budget.spent)} of ${dollars(next.budget.total)} spent.`
+    );
   if (
     next.budget.spent > next.budget.total &&
     prev.budget.spent <= prev.budget.total

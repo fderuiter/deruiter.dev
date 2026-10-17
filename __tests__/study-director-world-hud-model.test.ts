@@ -83,8 +83,32 @@ describe("hudChanges", () => {
 
   it("announces the budget going over only on the crossing", () => {
     const over = hud({ budget: { spent: 5200, total: 5000 } });
-    expect(hudChanges(hud(), over, 540, 550)).toEqual(["The budget is over."]);
+    expect(hudChanges(hud(), over, 540, 550)).toEqual([
+      "Budget −$4,200, $5,200 of $5,000 spent.",
+      "The budget is over.",
+    ]);
     expect(hudChanges(over, over, 540, 550)).toEqual([]);
+  });
+
+  it("announces a budget move during the day, but not across the night (#2344)", () => {
+    const charged = hud({ budget: { spent: 1500, total: 5000 } });
+    expect(hudChanges(hud(), charged, 540, 550)).toEqual([
+      "Budget −$500, $1,500 of $5,000 spent.",
+    ]);
+    expect(hudChanges(charged, hud(), 540, 550)).toEqual([
+      "Budget +$500, $1,000 of $5,000 spent.",
+    ]);
+    expect(
+      hudChanges(hud(), { ...charged, overnight: true }, 17 * 60, 17 * 60)
+    ).toEqual([]);
+    expect(
+      hudChanges(
+        hud(),
+        hud({ day: 4, weekday: "Thursday", budget: charged.budget }),
+        17 * 60,
+        8 * 60
+      )
+    ).toEqual(["Day 4, Thursday."]);
   });
 
   it("announces slips and enrollment", () => {

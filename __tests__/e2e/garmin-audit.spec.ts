@@ -96,7 +96,6 @@ test.describe("Monkey C Mayhem audit (#2128)", () => {
       await page.getByRole("switch", { name: "Dev Mode" }).click();
       await page.locator('[data-testid="garmin-screen"]').click();
       await page.keyboard.press("Enter");
-      const playScroll = await page.evaluate(() => window.scrollY);
       const dialog = page.getByRole("dialog");
       await expect(async () => {
         if (!(await dialog.count())) {
@@ -107,8 +106,15 @@ test.describe("Monkey C Mayhem audit (#2128)", () => {
         await expect(dialog).toBeVisible({ timeout: 500 });
       }).toPass({ timeout: 20000 });
       // Clicking the drain button scrolled the page; a player who ran out of
-      // battery would still be looking at the watch.
-      await page.evaluate((y) => window.scrollTo(0, y), playScroll);
+      // battery would still be looking at the watch. Bring the watch back to
+      // the top of the view below the navbar (the page's scroll-padding-top,
+      // #2325) rather than replaying wherever the harness's own clicks left
+      // the page, which centre their target and so depend on its size.
+      await page.evaluate(() =>
+        document
+          .querySelector(".garmin-sim")
+          ?.scrollIntoView({ block: "start", behavior: "instant" })
+      );
 
       const primary = dialog.getByRole("button", { name: /Reboot|Run Again/ });
       await expect(primary).toBeFocused();

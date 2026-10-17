@@ -154,7 +154,7 @@ function clashes(
 /**
  * Touch: the first spot for a new chip that clears every existing chip's box.
  * It steps along the lane's row, then down to the next row, until it is clear
- * (#2045). Desktop keeps suggestPosition.
+ * (#2045). Desktop uses desktopChipSpot.
  */
 export function touchChipSpot(
   kind: ChipKind,
@@ -175,6 +175,42 @@ export function touchChipSpot(
   return clampChip(kind, base);
 }
 
+/** Vertical step of the desktop spot search, in canvas pixels. */
+const DESKTOP_SCAN_STEP_Y = 8;
+/** Columns tried past the lane world before giving up on a clear spot. */
+const DESKTOP_EXTRA_COLUMNS = 24;
+
+/**
+ * Desktop: the first spot for a new chip that clears every existing chip's
+ * box (#2324). It scans the chip's lane top to bottom, one column of chips at
+ * a time across the lane world, so the chips fill the lane in rows. When the
+ * lane is full it continues to the right of the world, never on top of a
+ * chip; a player can still drag any chip anywhere.
+ */
+function desktopChipSpot(
+  kind: ChipKind,
+  nodes: ChipNode[]
+): { x: number; y: number } {
+  const base = clampChip(kind, suggestPosition(kind, []));
+  const lowest = clampChip(kind, {
+    x: base.x,
+    y: LANE_GEOMETRY.analysisBottom,
+  }).y;
+  const stepX = CHIP_WIDTH + CHIP_GAP;
+  const columns = Math.floor((WORLD_WIDTH - base.x - CHIP_WIDTH) / stepX) + 1;
+  for (let y = base.y; y <= lowest; y += DESKTOP_SCAN_STEP_Y) {
+    for (let col = 0; col < columns; col++) {
+      const spot = clampChip(kind, { x: base.x + col * stepX, y });
+      if (!clashes(kind, spot, nodes)) return spot;
+    }
+  }
+  for (let col = columns; col < columns + DESKTOP_EXTRA_COLUMNS; col++) {
+    const spot = clampChip(kind, { x: base.x + col * stepX, y: base.y });
+    if (!clashes(kind, spot, nodes)) return spot;
+  }
+  return clampChip(kind, suggestPosition(kind, nodes));
+}
+
 /**
  * Adds a chip (toolbox buttons and keyboard). On touch the chip takes a clear
  * spot, the canvas pans to it at the current zoom, and the add is announced.
@@ -189,7 +225,7 @@ export async function placeChip(
     kind,
     options.touch
       ? touchChipSpot(kind, state.nodes)
-      : suggestPosition(kind, state.nodes)
+      : desktopChipSpot(kind, state.nodes)
   );
   const latest = useProtocolDriftStore.getState();
   const added = latest.nodes.find((node) => !before.has(node.id));

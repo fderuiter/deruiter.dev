@@ -47,7 +47,7 @@ export function ReplayControls({
   const sectionRef = useRef<HTMLElement>(null);
 
   // When a replay opens, bring its controls into view below the sticky navbar
-  // (the section's scroll-mt-28 is the margin), then focus play without a
+  // (the section's scroll-mt-nav-28 is the margin), then focus play without a
   // second scroll.
   useEffect(() => {
     const section = sectionRef.current;
@@ -72,7 +72,7 @@ export function ReplayControls({
       ref={sectionRef}
       aria-labelledby="fbb-replay-title"
       data-testid="fbb-replay"
-      className="scroll-mt-28 flex min-w-0 flex-wrap items-center gap-2 font-mono text-xs"
+      className="scroll-mt-nav-28 flex min-w-0 flex-wrap items-center gap-2 font-mono text-xs"
     >
       <h2
         id="fbb-replay-title"

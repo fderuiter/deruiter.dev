@@ -4,6 +4,17 @@
   /* Layout Space Contract Variables */
   --header-height: 80px;
   --navbar-height: 80px;
+  /* The fixed navbar's vertical chrome around --navbar-height. Navbar.tsx
+     writes --navbar-height from its header's content box, which leaves out
+     the header's padding (py-5 at rest, py-3 plus a 1px border once
+     scrolled), so this adds the larger, at-rest padding plus the border. */
+  --navbar-chrome: calc(2.5rem + 1px);
+  /* How far below the viewport top the browser parks anything it scrolls
+     into view: focus moves, anchors and scrollIntoView (#2325, WCAG 2.4.11).
+     It covers the whole navbar, safe-area inset included, in either state. */
+  --scroll-clearance: calc(
+    var(--navbar-height) + var(--navbar-chrome) + env(safe-area-inset-top, 0px)
+  );
   --footer-height: 48px;
   --ticker-height: 48px;
   --viewport-height: 100dvh;
@@ -218,6 +229,11 @@
 
 /* Custom Scrollbars (Modern Web standard + WebKit fallback) */
 html {
+  /* Keeps a focused or scrolled-to element clear of the fixed navbar
+     (#2325). Only the page scroller takes it: a launched fullscreen or
+     immersive cabinet locks the page and scrolls its own stage, which sets
+     its own padding (app/arcade/arcade.css), so no navbar offset leaks in. */
+  scroll-padding-top: var(--scroll-clearance);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
   scrollbar-gutter: stable;
@@ -408,6 +424,18 @@ body {
   line-height: 1.6;
 }
 
+/* Scroll margin for a target the browser scrolls into view, under the
+   page's scroll-padding-top (#2325). The two add up, so scroll-mt-nav-24
+   keeps a 6rem offset from the viewport top and grows only when the navbar
+   is taller than that. Elements scrolled by hand from their computed scroll
+   margin (For Better or Bulk's scrollBelowNavbar) keep plain scroll-mt-*. */
+@utility scroll-mt-nav-* {
+  scroll-margin-top: max(
+    0px,
+    calc(var(--spacing) * --value(integer) - var(--scroll-clearance))
+  );
+}
+
 /* Named type scale (#2311). Each step fixes size, line height, weight and
    tracking together, so heading levels differ by more than size alone.
    Font family is left to the element, so mono headings stay mono. */
@@ -557,7 +585,12 @@ body {
   font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.25;
-  scroll-margin-top: calc(max(var(--navbar-height), 5.5rem) + 1.5rem);
+  /* Adds to the page's scroll-padding-top, so only the part beyond the
+     navbar clearance is set here: the heading still lands where it did. */
+  scroll-margin-top: max(
+    0px,
+    calc(max(var(--navbar-height), 5.5rem) + 1.5rem - var(--scroll-clearance))
+  );
   text-wrap: balance;
 }
 
@@ -689,7 +722,12 @@ body {
 
 /* Portfolio editorial rhythm: readable prose, quiet labels, stable anchors. */
 .portfolio-home :is(#case-studies, #about, #contact) {
-  scroll-margin-top: calc(var(--navbar-height) + 2rem);
+  /* The page's scroll-padding-top already clears the navbar; this keeps any
+     offset beyond it, as scroll-mt-nav-* does. */
+  scroll-margin-top: max(
+    0px,
+    calc(var(--navbar-height) + 2rem - var(--scroll-clearance))
+  );
 }
 
 .portfolio-home :is(h2, h3) {

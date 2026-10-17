@@ -204,7 +204,7 @@ export function ProtocolDriftGame() {
       className={
         touch
           ? "pd-touch @container relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
-          : "@container relative flex h-[max(560px,calc(100dvh-9rem))] scroll-mt-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+          : "@container relative flex h-[max(560px,calc(100dvh-9rem))] scroll-mt-nav-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
       }
     >
       <HeaderBar />

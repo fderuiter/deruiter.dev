@@ -669,7 +669,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         className={`arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container ${
           immersive
             ? "fixed inset-0 z-50 h-dvh max-w-none bg-black overflow-hidden select-none"
-            : "relative scroll-mt-24"
+            : "relative scroll-mt-nav-24"
         }`}
         style={
           {

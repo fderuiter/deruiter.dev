@@ -257,7 +257,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
     const cabinet = cabinetEl();
     expect(cabinet.hasAttribute("data-immersive")).toBe(false);
     expect(cabinet.getAttribute("data-fullscreen")).toBe("false");
-    expect(cabinet.className).toContain("relative scroll-mt-24");
+    expect(cabinet.className).toContain("relative scroll-mt-nav-24");
     expect(cabinet.className).not.toContain("fixed inset-0");
     expect(document.body.style.overflow).toBe("");
     expect(screen.getByText("Cabinet Engaged")).toBeDefined();
@@ -285,7 +285,7 @@ describe("PlayCabinet immersive touch mode (ADR 0061)", () => {
       "tabindex",
     ]);
     expect(cabinet.className).toBe(
-      "arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container relative scroll-mt-24"
+      "arcade-cabinet w-full flex flex-col items-center max-w-full min-w-0 @container relative scroll-mt-nav-24"
     );
     const stage = document.querySelector<HTMLElement>(".arcade-cabinet-stage");
     expect(stage?.hasAttribute("inert")).toBe(false);

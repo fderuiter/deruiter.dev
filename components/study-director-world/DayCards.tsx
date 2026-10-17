@@ -104,7 +104,7 @@ function visitLines(visit: SiteVisitReport): ToneLine[] {
 }
 
 const CARD_FRAME =
-  "sd-enter scroll-mt-24 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3";
+  "sd-enter scroll-mt-nav-24 border border-[var(--sd-hairline-strong)] bg-[var(--sd-surface)] p-3";
 const CARD = `${CARD_FRAME} space-y-3`;
 
 /** Clearance for the fixed site navbar above the cabinet, in pixels. */

@@ -24,6 +24,9 @@ import { verdictFor } from "./closeout";
 import { DIFFICULTY_TEXT } from "./DifficultyPicker";
 import { downloadFile } from "@/lib/download";
 
+/** "1 meeting", "2 meetings" (#2337). */
+const countOf = (n: number, one: string) => `${n} ${n === 1 ? one : `${one}s`}`;
+
 const OUTCOME_STYLE = {
   closed: "border-emerald-500/50 text-emerald-400",
   minor: "border-amber-500/50 text-amber-400",
@@ -191,7 +194,7 @@ export const ReportView: React.FC<{
       {world ? (
         <Card
           title="Office run"
-          hint={`${world.meetingHistory?.length ?? 0} meetings, ${world.siteVisitHistory?.length ?? 0} site visits`}
+          hint={`${countOf(world.meetingHistory?.length ?? 0, "meeting")}, ${countOf(world.siteVisitHistory?.length ?? 0, "site visit")}`}
         >
           <div
             className="flex flex-wrap items-center gap-2 pb-3"

@@ -20,7 +20,13 @@ import { workTheNight } from "./delegation";
 import { earlyWarningNote } from "./favours";
 import { guestsExpected, settleGuests } from "./guests";
 import { CRO_FLOOR } from "./floor";
-import { eveningWrapUp, excuseGoingHome, settlePriority } from "./rhythm";
+import {
+  eveningWrapUp,
+  excuseGoingHome,
+  planFor,
+  settlePriority,
+} from "./rhythm";
+import { closeVisit } from "./sites";
 import { adjustTrust, senderOf } from "./team";
 import {
   DAY_START,
@@ -29,6 +35,7 @@ import {
   type MorningDigest,
   type OvernightLine,
   type OvernightReport,
+  type SiteVisitReport,
   type WorldState,
 } from "../types";
 
@@ -146,7 +153,12 @@ export function startDay(world: WorldState): {
     world: {
       ...world,
       known: warning ? [...world.known, warning.known] : world.known,
-      plan: { day: study.day, priority: null, handled: [] },
+      plan: {
+        day: study.day,
+        priority: null,
+        handled: [],
+        spentAtStart: study.spent,
+      },
       minute: startsAt,
       energy,
       focus: 100,
@@ -217,7 +229,8 @@ function money(dollars: number): string {
  */
 function overnightLines(
   before: StudyState,
-  after: StudyState
+  after: StudyState,
+  spend: { decisions: number; night: number }
 ): OvernightLine[] {
   const lines: OvernightLine[] = [];
   for (const site of after.sites) {
@@ -240,12 +253,36 @@ function overnightLines(
       tone: "good",
     });
   }
-  const spent = after.spent - before.spent;
+  // The night's costs run from where the day left off, so the team's work
+  // overnight is in them too.
+  const { decisions } = spend;
+  const running = after.spent - spend.night;
   // The day's burn and the running total: "$2,390 spent" every night read
-  // like a total that never moved (#2187).
-  if (spent > 0)
+  // like a total that never moved (#2187). What the day's decisions cost
+  // counts too, named apart, or the total rose by more than the card said
+  // was spent (#2335).
+  const sofar = `${money(after.spent)} of ${money(after.setup.budget)} so far`;
+  const net = running + decisions;
+  if (decisions >= 1)
     lines.push({
-      text: `${money(spent)} spent today, ${money(after.spent)} of ${money(after.setup.budget)} so far`,
+      text: `${money(net)} spent today, ${sofar} (${money(decisions)} of it on today's decisions)`,
+      tone: "neutral",
+    });
+  else if (decisions <= -1)
+    lines.push(
+      net > 0
+        ? {
+            text: `${money(net)} spent today, ${sofar} (${money(running)} running costs, less ${money(-decisions)} back from today's decisions)`,
+            tone: "neutral",
+          }
+        : {
+            text: `${money(-net)} back in the budget today, ${sofar} (${money(-decisions)} from today's decisions, less ${money(running)} running costs)`,
+            tone: "good",
+          }
+    );
+  else if (running > 0)
+    lines.push({
+      text: `${money(running)} spent today, ${sofar}`,
       tone: "neutral",
     });
   const slip = projectedFinishDay(after) - projectedFinishDay(before);
@@ -287,6 +324,37 @@ function overnightLines(
       tone: critical > 0 ? "bad" : "neutral",
     });
   return lines;
+}
+
+/**
+ * What the day's choices did to spend before the night's running costs:
+ * against the morning's figure when the plan kept it, otherwise the money
+ * on today's recorded decisions (#2335).
+ */
+function daytimeSpend(world: WorldState): number {
+  const { study } = world;
+  const plan = planFor(world);
+  if (typeof plan.spentAtStart === "number")
+    return study.spent - plan.spentAtStart;
+  return study.log
+    .filter((r) => r.day === study.day && r.optionId !== "ignored")
+    .reduce((sum, r) => sum + (r.effects.spend ?? 0), 0);
+}
+
+/**
+ * Going home by car, as the car card does it: from a site the visit is
+ * written up first, and what came up while the player was there is excused
+ * before the visit closes. Excusing after the write-up found no visit open,
+ * so the night blamed the player for messages they never saw (#2334).
+ */
+export function driveHome(world: WorldState): {
+  world: WorldState;
+  report: OvernightReport;
+  visit: SiteVisitReport | null;
+} {
+  const closed = closeVisit(excuseGoingHome(world));
+  const night = goHome(closed.world);
+  return { ...night, visit: closed.report };
 }
 
 /**
@@ -334,7 +402,13 @@ export function goHome(
     world: next,
     report: {
       day: before.day,
-      lines: [...night.lines, ...overnightLines(before, after)],
+      lines: [
+        ...night.lines,
+        ...overnightLines(before, after, {
+          decisions: daytimeSpend(present),
+          night: present.study.spent,
+        }),
+      ],
       newPhase: toPhase !== fromPhase ? toPhase : null,
       complete: after.status === "complete",
       wrapUp,

@@ -18,7 +18,13 @@ export {
   spend,
   weekdayFor,
 } from "./internal/clock";
-export { createWorld, goHome, newWorld, startDay } from "./internal/day";
+export {
+  createWorld,
+  driveHome,
+  goHome,
+  newWorld,
+  startDay,
+} from "./internal/day";
 export {
   DELEGATED_SLIP_CHANCE,
   DELEGATED_TRUST_COST,

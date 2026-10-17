@@ -398,6 +398,12 @@ Re-exports [drinkCoffee](internal/clock/functions/drinkCoffee.md)
 
 ***
 
+### driveHome
+
+Re-exports [driveHome](internal/day/functions/driveHome.md)
+
+***
+
 ### earlyWarning
 
 Re-exports [earlyWarning](internal/favours/functions/earlyWarning.md)

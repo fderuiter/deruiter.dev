@@ -138,7 +138,9 @@ export function todaysTasks(world: WorldState): WorldTask[] {
     tasks.push({
       id: "interruption",
       text: interruption.title,
-      where: "Answer it in the panel below the stage",
+      // The card sits beside the stage on a wide screen and under it on a
+      // narrow one, so the task names the card, not a place (#2336).
+      where: 'Answer it on the "Just now" card',
       urgent: true,
     });
   const guest = guestScene(world);

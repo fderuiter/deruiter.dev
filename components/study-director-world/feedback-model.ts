@@ -141,6 +141,16 @@ export function feedbackBetween(
         tone: delta > 0 ? "good" : "bad",
       });
   }
+  // Money moves only on a choice during the day, so it is said when it
+  // does, not first on the overnight card (#2335).
+  const spent = Math.round(next.study.spent - prev.study.spent);
+  if (spent !== 0)
+    out.push({
+      id: `budget:${next.minute}:${next.study.spent}`,
+      kind: "meter",
+      text: `Budget ${spent > 0 ? "−" : "+"}$${Math.abs(spent).toLocaleString("en-US")}`,
+      tone: spent > 0 ? "bad" : "good",
+    });
   for (const member of next.study.team) {
     const was = relationshipCard(prev, member.id);
     const now = relationshipCard(next, member.id);

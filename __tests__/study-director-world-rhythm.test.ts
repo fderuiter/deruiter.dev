@@ -44,8 +44,15 @@ const withLoad = (
 describe("the day's plan", () => {
   it("starts each morning with no priority and nothing handled", () => {
     const w = fresh();
-    expect(planFor(w)).toEqual({ day: 1, priority: null, handled: [] });
-    expect(w.plan).toEqual({ day: 1, priority: null, handled: [] });
+    // The morning's spend is kept, for the overnight report (#2335).
+    const plan = {
+      day: 1,
+      priority: null,
+      handled: [],
+      spentAtStart: w.study.spent,
+    };
+    expect(planFor(w)).toEqual(plan);
+    expect(w.plan).toEqual(plan);
   });
 
   it("lets the player choose once, and keeps the first choice", () => {

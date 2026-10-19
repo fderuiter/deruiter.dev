@@ -6,7 +6,8 @@
  * installed, so it has no dependencies. It decides, for one workflow run,
  * which gate groups execute:
  *
- * - `run_unit`: the Vitest shards and the Stryker gate.
+ * - `run_unit`: the Vitest shards and the Stryker gate. Off for drafts and
+ *   unpromoted bot PRs, which run only the static and security gates.
  * - `run_browser`: the build, the Playwright shards, the device gate and the
  *   Web Vitals bench.
  *
@@ -231,18 +232,22 @@ export function computeRunPolicy(input) {
   const botPr = isBotBranch(input.headRef);
   const promoted = (input.labels ?? []).includes(FULL_SUITE_LABEL);
   const draft = input.draft === true;
-  const quickOnly = botPr && !promoted;
+  // #2541: a draft runs quick checks too. The full local suite is required
+  // before every push, and on the 20-job free runner pool the draft's unit
+  // shards only delay the one ready PR in the merge lane.
+  const quickOnly = (botPr && !promoted) || draft;
   const runUnit = !quickOnly;
-  const runBrowser = !quickOnly && !draft && appChanged;
+  const runBrowser = !quickOnly && appChanged;
   const strykerForce =
     !Array.isArray(files) ||
     files.some((file) => STRYKER_INPUTS.includes(file));
 
   let reason;
-  if (quickOnly) {
+  if (botPr && !promoted) {
     reason = `bot PR (${input.headRef}): static and security checks only until a maintainer applies '${FULL_SUITE_LABEL}'.`;
   } else if (draft) {
-    reason = "draft PR: browser gates run once the PR is marked ready.";
+    reason =
+      "draft PR: static and security checks only; every gate runs once the PR is marked ready.";
   } else if (!appChanged) {
     reason = "docs-only PR: build, Playwright, device and bench gates skipped.";
   } else {

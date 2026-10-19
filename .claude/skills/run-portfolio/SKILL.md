@@ -1,6 +1,6 @@
 ---
 name: run-portfolio
-description: Build, run, and drive the fderuiter/deruiter.dev Next.js web app. Use when asked to start the portfolio site, run the dev server, take a screenshot of a page (home, /patrol, /crf, /proof, arcade games, etc.), play or click through an arcade game, or interact with its UI.
+description: Build, run, and drive the fderuiter/deruiter.dev Next.js web app. Use when asked to start the portfolio site, run the dev server, take a screenshot of a page (home, /patrol, /crf, /proof, arcade games, etc.), or interact with its UI.
 ---
 
 This is a Next.js 16 (App Router, Turbopack) web app. For agent/automated
@@ -12,7 +12,7 @@ All paths below are relative to the repo root.
 
 ## Prerequisites
 
-Node >=22 and npm >=10 (already satisfied if `node -v` / `npm -v` meet
+Node >=22 <25 and npm >=10 (already satisfied if `node -v` / `npm -v` meet
 that — no extra runtime install needed). Chromium is expected
 pre-installed under `$PLAYWRIGHT_BROWSERS_PATH`; no `apt-get` or
 `npx playwright install` required — see Gotchas if a browser launch
@@ -178,10 +178,8 @@ Ctrl-C to stop. Useless headless — this is what the driver replaces.
 npx vitest run
 ```
 
-The suite is over 1,000 test files (1,083 on 2026-10-19), and a full run
-takes many minutes in a cloud container. While iterating, run only what
-your change touches with `npx vitest related --run <changed files>`; CI
-shards the full suite three ways.
+The suite has 1,000+ test files and takes several minutes; most of that
+is JSDOM environment setup across the suite, not slow tests.
 
 ## Gotchas
 

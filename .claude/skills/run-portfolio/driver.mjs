@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * REPL driver for the deruiter.dev Next.js web app.
+ * REPL driver for the portfolio Next.js web app.
  *
  * `chromium-cli` isn't installed in this environment, so this is a small
  * hand-rolled equivalent: a headless-Chromium REPL you pipe commands to.
@@ -13,7 +13,7 @@
 import * as readline from "node:readline";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { chromium, devices } from "@playwright/test";
+import { chromium } from "@playwright/test";
 
 const SHOT_DIR = process.env.SCREENSHOT_DIR || "/tmp/shots";
 fs.mkdirSync(SHOT_DIR, { recursive: true });
@@ -38,35 +38,36 @@ async function launchChromium(options) {
   }
 }
 
+function parseSize(arg) {
+  const m = /(\d+)x(\d+)/.exec(arg || "");
+  return m ? [Number(m[1]), Number(m[2])] : null;
+}
+
 let browser = null;
 let page = null;
 const consoleErrors = [];
 
 const COMMANDS = {
-  // `launch` = 1280x800 desktop. `launch phone` / `launch tablet` emulate a
-  // touch device (hasTouch + isMobile), which is what flips CSS
-  // `pointer:coarse` -- the arcade's DesktopOnlyGate keys on that, so a
-  // plain `viewport 375x812` on the desktop context never shows the gate.
-  async launch(preset) {
+  // `launch [WxH] [touch]`, e.g. `launch 375x812 touch`. `touch` emulates
+  // a coarse pointer, which the arcade's phone gate keys on; a plain
+  // narrow viewport never triggers it.
+  async launch(arg) {
     if (browser) return console.log("already launched");
-    const PRESETS = {
-      desktop: { viewport: { width: 1280, height: 800 } },
-      phone: devices["iPhone 13"],
-      tablet: devices["iPad Pro 11 landscape"],
-    };
-    const opts = PRESETS[preset || "desktop"];
-    if (!opts) return console.log("usage: launch [desktop|phone|tablet]");
+    const [width, height] = parseSize(arg) ?? [1280, 800];
+    const touch = /\btouch\b/.test(arg || "");
     browser = await launchChromium({ headless: true, args: ["--no-sandbox"] });
-    const context = await browser.newContext(opts);
+    const context = await browser.newContext({
+      viewport: { width, height },
+      ...(touch ? { hasTouch: true, isMobile: true } : {}),
+    });
     // next dev mounts its "N Issue" badge in a <nextjs-portal> shadow host
     // over the bottom-left of every page; hide it so screenshots show the
-    // app. SHOW_DEV_OVERLAY=1 keeps it (e.g. to read a runtime error).
+    // app. SHOW_DEV_OVERLAY=1 keeps it (e.g. to read the error it counts).
     if (!process.env.SHOW_DEV_OVERLAY) {
       await context.addInitScript(() => {
-        const css = "nextjs-portal{display:none!important}";
         document.addEventListener("DOMContentLoaded", () => {
           const style = document.createElement("style");
-          style.textContent = css;
+          style.textContent = "nextjs-portal{display:none!important}";
           document.head.appendChild(style);
         });
       });
@@ -78,11 +79,15 @@ const COMMANDS = {
     page.on("pageerror", (err) =>
       consoleErrors.push(`pageerror: ${err.message}`)
     );
-    console.log(
-      "launched.",
-      preset || "desktop",
-      JSON.stringify(page.viewportSize())
-    );
+    console.log("launched.");
+  },
+
+  async viewport(arg) {
+    if (!page) return console.log("ERROR: launch first");
+    const size = parseSize(arg);
+    if (!size) return console.log("usage: viewport <width>x<height>");
+    await page.setViewportSize({ width: size[0], height: size[1] });
+    console.log("viewport ->", size.join("x"));
   },
 
   async nav(url) {
@@ -118,17 +123,19 @@ const COMMANDS = {
     console.log("screenshot:", f);
   },
 
-  async viewport(arg) {
-    if (!page) return console.log("ERROR: launch first");
-    const m = /^(\d+)x(\d+)$/.exec((arg || "").trim());
-    if (!m) return console.log("usage: viewport <width>x<height>");
-    await page.setViewportSize({ width: +m[1], height: +m[2] });
-    console.log("viewport", `${m[1]}x${m[2]}`);
-  },
-
   async sleep(ms) {
     await new Promise((r) => setTimeout(r, Number(ms) || 1000));
     console.log("slept", Number(ms) || 1000, "ms");
+  },
+
+  async tap(sel) {
+    if (!page) return console.log("ERROR: launch first");
+    try {
+      await page.tap(sel, { timeout: 10_000 });
+      console.log("tap", sel, "-> OK");
+    } catch (e) {
+      console.log("tap", sel, "-> ERROR:", e.message.split("\n")[0]);
+    }
   },
 
   async click(sel) {
@@ -169,16 +176,6 @@ const COMMANDS = {
       console.log("fill", sel, "-> OK");
     } catch (e) {
       console.log("fill", sel, "-> ERROR:", e.message.split("\n")[0]);
-    }
-  },
-
-  async tap(sel) {
-    if (!page) return console.log("ERROR: launch first");
-    try {
-      await page.tap(sel, { timeout: 10_000 });
-      console.log("tap", sel, "-> OK");
-    } catch (e) {
-      console.log("tap", sel, "-> ERROR:", e.message.split("\n")[0]);
     }
   },
 
@@ -240,28 +237,37 @@ const rl = readline.createInterface({
   prompt: "driver> ",
 });
 
-// readline fires "line" without awaiting the previous handler, so lines
-// sent back-to-back (tmux send-keys in a row) used to run concurrently:
-// a screenshot could land before the preceding nav finished. Chain every
-// command onto one promise so they run strictly in the order received.
+// Lines run strictly one after another. Without the queue, a `wait-for`
+// sent right behind a `nav` starts before the navigation finishes and can
+// match the previous page.
 let queue = Promise.resolve();
-async function run(line) {
+rl.on("line", (line) => {
+  queue = queue.then(() => runLine(line));
+});
+
+async function runLine(line) {
   const [cmd, ...rest] = line.trim().split(/\s+/);
-  if (!cmd) return;
+  if (!cmd) return rl.prompt();
   const fn = COMMANDS[cmd];
-  if (!fn) return console.log("unknown:", cmd, "- try: help");
+  if (!fn) {
+    console.log("unknown:", cmd, "- try: help");
+    return rl.prompt();
+  }
   try {
     await fn(rest.join(" "));
   } catch (e) {
     console.log("ERROR:", e.message);
   }
-  if (cmd === "quit") process.exit(0);
+  if (cmd === "quit") {
+    rl.close();
+    process.exit(0);
+  }
+  rl.prompt();
 }
-rl.on("line", (line) => {
-  queue = queue.then(() => run(line)).then(() => rl.prompt());
-});
-rl.on("close", () => {
-  queue = queue.then(() => COMMANDS.quit()).then(() => process.exit(0));
+rl.on("close", async () => {
+  await queue;
+  await COMMANDS.quit();
+  process.exit(0);
 });
 
 console.log('portfolio driver - "help" for commands, "launch" to start');

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { GET as getRss } from "@/app/blog/rss.xml/route";
 import { GET as getFeed } from "@/app/feed.xml/route";

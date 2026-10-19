@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { BUDDY_SPEED, isEdibleFoe } from "@/lib/garmin-buddy";
 import {

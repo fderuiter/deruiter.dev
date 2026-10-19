@@ -52,7 +52,7 @@ one day (a run of follow-up PRs, several `workflow_dispatch` cross-device
 runs, repeated pushes while chasing a flaky test):
 
 1. Open **Settings → Billing → Actions minutes** for the account owning
-   `fderuiter/portfolio` (organization or personal account billing settings,
+   `fderuiter/deruiter.dev` (organization or personal account billing settings,
    whichever holds this repository).
 2. Confirm standard GitHub-hosted runners remain selected. Public-repository
    runner minutes are free; larger runners and artifact/cache storage may
@@ -95,8 +95,9 @@ a gate or lowering a threshold:
   (#2529).
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
-- `build` runs `npm run build` once per PR after `static-gate`, checks the
-  bundle budgets, and uploads the build as an artifact (#1769).
+- `build` runs `npm run build` once per PR, in parallel with `static-gate`
+  (#2542), checks the bundle budgets, and uploads the build as an artifact
+  (#1769).
 - `heavy-gate` runs the full chromium e2e suite in three shards against that
   artifact (#1770). `bench-gate` measures Web Vitals on the same build:
   `bench:pages --assert` validates `.next/build-provenance.json` instead of
@@ -132,7 +133,7 @@ a gate or lowering a threshold:
 | --- | --- | --- |
 | Code change, ready for review | Every gate | Green when every gate passes |
 | Docs-only change | Every gate except `build`, `heavy-gate`, `bench-gate`, `heavy-gate-report`, `device-gate` | Green when the rest pass |
-| Draft | Static, unit, mutation and security gates | Red until marked ready, which re-runs everything |
+| Draft | Static and security gates only (#2541) | Red until marked ready, which re-runs everything |
 | Bot branch (`stitch/`, `jules/`) without `ci:full` | Static and security gates only | Red: "bot PR: full suite runs when marked ready" |
 | Bot branch with the `ci:full` label | Every gate the change needs | Green when they pass |
 
@@ -142,7 +143,8 @@ in `scripts/ci-run-policy.mjs`: Markdown outside the app source directories,
 named files. Any other path counts as code. To promote a bot PR, a
 maintainer applies the `ci:full` label; the `labeled` trigger re-runs CI.
 Adding any label re-runs the whole workflow, because the new run cancels the
-one in progress. The bot prefix list lives in `scripts/ci-run-policy.mjs`,
+one in progress, so open a pull request as a draft and add labels before
+marking it ready. The bot prefix list lives in `scripts/ci-run-policy.mjs`,
 and `__tests__/ci-run-policy.test.ts` ties it to `validateBranchName()`.
 
 ## CI-02: targeted device coverage gates pull requests to `main`
@@ -163,8 +165,8 @@ per PR) is unchanged, just relocated to before the merge instead of after.
 `static-gate`, `unit-gate`, `unit-coverage`, `mutation-gate` and
 `security-gate`, a safety net for a direct push that bypasses PR review.
 The non-gating `cache-warm` job also runs on `main` pushes.
-Branch protection is available for this public repository, but its current
-dashboard configuration has not been verified; #732 tracks that human check.
+Branch protection on `main` was verified through the GitHub API on
+2026-09-28; see [Main Branch Protection](release-and-deploy.md#main-branch-protection).
 The bounded push jobs are not a repeat of the build/Playwright work the merged
 PR already did. The full
 four-device matrix remains a one-click `workflow_dispatch` job
@@ -177,9 +179,8 @@ automatically (it doesn't).
 required status check: **`Merge Gate (Required Checks Summary)`** (the
 `merge-gate` job's `name:`). Require exactly that check for `main` under
 Settings → Branches → branch protection → "Require status checks to pass
-before merging". The current rules remain unverified because the connected
-GitHub API integration cannot read branch-protection settings; #732 tracks
-dashboard verification. The retired `dev` → `main` consolidation PR (#1029) was gated on the
+before merging". This was verified through the GitHub API on 2026-09-28,
+with Merge Gate as the required check; see [Main Branch Protection](release-and-deploy.md#main-branch-protection). The retired `dev` → `main` consolidation PR (#1029) was gated on the
 same `main` rule.
 
 This replaces the two check names #732 originally listed
@@ -269,10 +270,10 @@ need verification:
   These tests extract the exact bash script from `.github/workflows/ci.yml` and
   execute it across simulated event and status permutations (`pull_request`,
   `push`, `workflow_dispatch`, `success`, `failure`, `cancelled`, `skipped`).
-- **Server-side protection is available but unverified**: GitHub currently
-  reports this repository as public. The connected API integration returned
-  `403` when asked to read branch-protection settings, so #732 tracks manual
-  confirmation. Client-side guardrails remain defense-in-depth. Since
+- **Server-side protection is verified**: GitHub currently reports this
+  repository as public. Branch protection on `main`, with Merge Gate as the
+  required check, was verified through the GitHub API on 2026-09-28; see
+  [Main Branch Protection](release-and-deploy.md#main-branch-protection). Client-side guardrails remain defense-in-depth. Since
   [ADR 0049](../../adr/0049-deploy-main-on-green-ci.md), no GitHub workflow or
   environment deploys. During the manual hold, an operator starts Production from
   the Vercel Dashboard after CI passes ([ADR 0051](../../adr/0051-manual-production-releases.md)).

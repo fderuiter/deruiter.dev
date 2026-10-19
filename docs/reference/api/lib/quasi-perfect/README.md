@@ -80,6 +80,30 @@ Re-exports [countHonestProofs](progress/functions/countHonestProofs.md)
 
 ***
 
+### CUSTOM\_THEOREMS\_STORAGE\_KEY
+
+Re-exports [CUSTOM_THEOREMS_STORAGE_KEY](sandbox/variables/CUSTOM_THEOREMS_STORAGE_KEY.md)
+
+***
+
+### CustomTheorem
+
+Re-exports [CustomTheorem](sandbox/interfaces/CustomTheorem.md)
+
+***
+
+### CustomTheoremExport
+
+Re-exports [CustomTheoremExport](sandbox/interfaces/CustomTheoremExport.md)
+
+***
+
+### deleteCustomTheorem
+
+Re-exports [deleteCustomTheorem](sandbox/functions/deleteCustomTheorem.md)
+
+***
+
 ### describeModeRules
 
 Re-exports [describeModeRules](ram/functions/describeModeRules.md)
@@ -164,6 +188,12 @@ Re-exports [getRunStartingRam](variants/functions/getRunStartingRam.md)
 
 ***
 
+### getSavedCustomTheorems
+
+Re-exports [getSavedCustomTheorems](sandbox/functions/getSavedCustomTheorems.md)
+
+***
+
 ### getStartingRam
 
 Re-exports [getStartingRam](ram/functions/getStartingRam.md)
@@ -179,6 +209,12 @@ Re-exports [getTacticBlock](ram/functions/getTacticBlock.md)
 ### gradeSandboxRun
 
 Re-exports [gradeSandboxRun](sandbox/functions/gradeSandboxRun.md)
+
+***
+
+### importCustomTheorems
+
+Re-exports [importCustomTheorems](sandbox/functions/importCustomTheorems.md)
 
 ***
 
@@ -287,6 +323,12 @@ Re-exports [LevelScore](types/interfaces/LevelScore.md)
 ### matchPattern
 
 Re-exports [matchPattern](engine/functions/matchPattern.md)
+
+***
+
+### MAX\_CUSTOM\_THEOREMS
+
+Re-exports [MAX_CUSTOM_THEOREMS](sandbox/variables/MAX_CUSTOM_THEOREMS.md)
 
 ***
 
@@ -461,6 +503,18 @@ Re-exports [SandboxPresetRecord](sandbox/interfaces/SandboxPresetRecord.md)
 ### SandboxProgress
 
 Re-exports [SandboxProgress](sandbox/type-aliases/SandboxProgress.md)
+
+***
+
+### sanitizeFilename
+
+Re-exports [sanitizeFilename](sandbox/functions/sanitizeFilename.md)
+
+***
+
+### saveCustomTheorem
+
+Re-exports [saveCustomTheorem](sandbox/functions/saveCustomTheorem.md)
 
 ***
 

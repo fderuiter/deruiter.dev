@@ -15,7 +15,11 @@ import {
   IconAlertTriangle,
   IconAlertCircle,
   IconTerminal,
+  IconDownload,
+  IconFileExport,
 } from "@tabler/icons-react";
+import { downloadFile } from "@/lib/download";
+import { sanitizeFilename } from "@/lib/quasi-perfect/sandbox";
 import { InlineCodeText } from "./InlineCodeText";
 
 interface LeanIdeInspectorProps {
@@ -67,6 +71,55 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
   };
 
   const effectiveVerifyResult = isLiveSync ? verifyResult : idleVerifyResult;
+
+  const handleDownloadLean = () => {
+    const filename = `${sanitizeFilename(level.leanTheoremName || level.title || "proof")}.lean`;
+    downloadFile(leanCode, filename, {
+      mimeType: "text/x-lean;charset=utf-8",
+    });
+  };
+
+  const handleExportStepLog = () => {
+    const logPayload = {
+      version: "1.0",
+      level: {
+        id: level.id,
+        title: level.title,
+        chapter: level.chapter,
+        chapterTitle: level.chapterTitle,
+        leanTheoremName: level.leanTheoremName,
+        leanTypeSignature: level.leanTypeSignature,
+        initialRam: level.initialRam,
+        goldRamTarget: level.goldRamTarget,
+        silverRamTarget: level.silverRamTarget,
+      },
+      isComplete,
+      hasAdmittedStep,
+      leanScript: leanCode,
+      steps: steps.map((s) => ({
+        id: s.id,
+        tacticId: s.tacticId,
+        leanLine: s.leanLine,
+        goalBefore: s.goalBefore,
+        goalAfter: s.goalAfter,
+        explanation: s.explanation,
+        subgoalLabel: s.subgoalLabel,
+        cost: s.cost,
+      })),
+      kernelVerification: {
+        status: effectiveVerifyResult.status,
+        success: effectiveVerifyResult.success,
+        diagnostics: effectiveVerifyResult.diagnostics,
+        goalState: effectiveVerifyResult.goalState,
+        engine: effectiveVerifyResult.engine,
+      },
+      exportedAt: new Date().toISOString(),
+    };
+    const filename = `${sanitizeFilename(level.leanTheoremName || level.title || "proof")}_steplog.json`;
+    downloadFile(JSON.stringify(logPayload, null, 2), filename, {
+      mimeType: "application/json;charset=utf-8",
+    });
+  };
 
   useEffect(() => {
     if (!isLiveSync) return;
@@ -191,6 +244,26 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                 className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-emerald-400" : ""}`}
               />
               <span>Live Lean 4 Sync: {isLiveSync ? "ON" : "OFF"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadLean}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
+              aria-label="Download .lean"
+            >
+              <IconDownload className="w-3.5 h-3.5" />
+              <span>Download .lean</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportStepLog}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
+              aria-label="Export Step Log (.json)"
+            >
+              <IconFileExport className="w-3.5 h-3.5" />
+              <span>Export Step Log (.json)</span>
             </button>
 
             <CopyButton

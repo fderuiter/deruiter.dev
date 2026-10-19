@@ -9,7 +9,14 @@ import {
   type PuzzlerVariantDef,
 } from "@/lib/quasi-perfect";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { IconCheck, IconCopy, IconSparkles } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconCopy,
+  IconSparkles,
+  IconDownload,
+} from "@tabler/icons-react";
+import { downloadFile } from "@/lib/download";
+import { sanitizeFilename } from "@/lib/quasi-perfect/sandbox";
 
 // What to chase once every playable level is proved: gold first, then the
 // challenge variants, so a 90-of-90-star card never says "chase gold" (#2202).
@@ -330,16 +337,34 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
           <div className="mb-4 text-left rounded-xl border border-zinc-800 bg-zinc-900/80 p-2.5">
             <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-1 border-b border-zinc-800 pb-1">
               <span>Generated Lean 4 Text · Not Compiled</span>
-              <CopyButton
-                text={leanCode}
-                label="Copy"
-                copiedLabel="Copied!"
-                icon={<IconCopy className="w-3 h-3" />}
-                copiedIcon={<IconCheck className="w-3 h-3 text-emerald-400" />}
-                className="flex items-center gap-1 qp-text-accent-strong hover:text-zinc-100 font-bold cursor-pointer"
-                aria-label="Copy Lean 4 Script"
-                successMessage="Generated Lean text copied to clipboard"
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const filename = `${sanitizeFilename(level.title || level.leanTheoremName || "proof")}.lean`;
+                    downloadFile(leanCode, filename, {
+                      mimeType: "text/x-lean;charset=utf-8",
+                    });
+                  }}
+                  aria-label="Download .lean File"
+                  className="flex items-center gap-1 qp-text-accent-strong hover:text-zinc-100 font-bold cursor-pointer text-[10px]"
+                >
+                  <IconDownload className="w-3 h-3" />
+                  <span>Download .lean File</span>
+                </button>
+                <CopyButton
+                  text={leanCode}
+                  label="Copy"
+                  copiedLabel="Copied!"
+                  icon={<IconCopy className="w-3 h-3" />}
+                  copiedIcon={
+                    <IconCheck className="w-3 h-3 text-emerald-400" />
+                  }
+                  className="flex items-center gap-1 qp-text-accent-strong hover:text-zinc-100 font-bold cursor-pointer"
+                  aria-label="Copy Lean 4 Script"
+                  successMessage="Generated Lean text copied to clipboard"
+                />
+              </div>
             </div>
             {/* Wrapped, not a scroll box: every line shows in full and no
                 keyboard-unreachable scroll region is left behind (#2201). */}

@@ -8,6 +8,8 @@
 
 ## Interfaces
 
+- [CustomTheorem](interfaces/CustomTheorem.md)
+- [CustomTheoremExport](interfaces/CustomTheoremExport.md)
 - [SandboxPreset](interfaces/SandboxPreset.md)
 - [SandboxPresetRecord](interfaces/SandboxPresetRecord.md)
 
@@ -18,10 +20,17 @@
 
 ## Variables
 
+- [CUSTOM\_THEOREMS\_STORAGE\_KEY](variables/CUSTOM_THEOREMS_STORAGE_KEY.md)
+- [MAX\_CUSTOM\_THEOREMS](variables/MAX_CUSTOM_THEOREMS.md)
 - [SANDBOX\_PRESETS](variables/SANDBOX_PRESETS.md)
 
 ## Functions
 
+- [deleteCustomTheorem](functions/deleteCustomTheorem.md)
+- [getSavedCustomTheorems](functions/getSavedCustomTheorems.md)
 - [gradeSandboxRun](functions/gradeSandboxRun.md)
+- [importCustomTheorems](functions/importCustomTheorems.md)
 - [parseSandboxProgress](functions/parseSandboxProgress.md)
 - [recordSandboxProof](functions/recordSandboxProof.md)
+- [sanitizeFilename](functions/sanitizeFilename.md)
+- [saveCustomTheorem](functions/saveCustomTheorem.md)

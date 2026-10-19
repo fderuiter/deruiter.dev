@@ -13,7 +13,14 @@ import {
   parseSandboxProgress,
   recordSandboxProof,
   type SandboxMedal,
+  type CustomTheorem,
+  getSavedCustomTheorems,
+  saveCustomTheorem,
+  deleteCustomTheorem,
+  importCustomTheorems,
+  MAX_CUSTOM_THEOREMS,
 } from "@/lib/quasi-perfect/sandbox";
+import { downloadFile } from "@/lib/download";
 import {
   STORAGE_CHANGE_EVENT,
   safeGetRawItem,
@@ -43,6 +50,10 @@ import {
   IconAlertTriangle,
   IconCode,
   IconX,
+  IconDeviceFloppy,
+  IconDownload,
+  IconUpload,
+  IconTrash,
 } from "@tabler/icons-react";
 
 const SANDBOX_STORAGE_KEY = "quasi_perfect_puzzler_sandbox_v1";
@@ -133,10 +144,36 @@ export const SandboxMode: React.FC = () => {
   );
   const [customHypothesesInput, setCustomHypothesesInput] =
     useState<string>("");
+  const [customTitleInput, setCustomTitleInput] =
+    useState<string>("Binomial Expansion");
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [activeFormulaTitle, setActiveFormulaTitle] = useState<string>(
     SANDBOX_PRESETS[0].name
   );
+
+  const [savedCustomTheorems, setSavedCustomTheorems] = useState<
+    CustomTheorem[]
+  >(() => getSavedCustomTheorems());
+  const [saveStatus, setSaveStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [importStatus, setImportStatus] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    const syncTheorems = () => setSavedCustomTheorems(getSavedCustomTheorems());
+    window.addEventListener("storage", syncTheorems);
+    window.addEventListener(STORAGE_CHANGE_EVENT, syncTheorems);
+    return () => {
+      window.removeEventListener("storage", syncTheorems);
+      window.removeEventListener(STORAGE_CHANGE_EVENT, syncTheorems);
+    };
+  }, []);
 
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [hoveredTargetId, setHoveredTargetId] = useState<string | null>(null);
@@ -234,6 +271,155 @@ export const SandboxMode: React.FC = () => {
         text: `Successfully compiled and loaded AST for custom formula: "${customGoalInput}"`,
       },
     ]);
+  };
+
+  const handleSaveTheorem = () => {
+    setSaveStatus(null);
+    const res = saveCustomTheorem(
+      customTitleInput,
+      customGoalInput,
+      customHypothesesInput
+    );
+    if (!res.success) {
+      setSaveStatus({
+        type: "error",
+        message: res.error || "Failed to save theorem.",
+      });
+    } else {
+      setSavedCustomTheorems(res.theorems);
+      const titleSaved = customTitleInput.trim() || "Custom Formula";
+      setSaveStatus({
+        type: "success",
+        message: `Saved theorem "${titleSaved}" to local storage.`,
+      });
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+          type: "success",
+          text: `Saved custom theorem "${titleSaved}"`,
+        },
+      ]);
+    }
+  };
+
+  const handleDeleteTheorem = (id: string, title: string) => {
+    const updated = deleteCustomTheorem(id);
+    setSavedCustomTheorems(updated);
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        type: "info",
+        text: `Deleted saved theorem "${title}"`,
+      },
+    ]);
+  };
+
+  const handleLoadCustomTheoremItem = (item: CustomTheorem) => {
+    setCustomGoalInput(item.formula);
+    setCustomHypothesesInput(item.hypotheses || "");
+    setCustomTitleInput(item.title);
+
+    const parseRes = parseFormulaWithError(item.formula, "custom-load");
+    let hyps: ASTNode[] = [];
+    if (item.hypotheses?.trim()) {
+      try {
+        hyps = parseHypotheses(item.hypotheses, "custom-hyp-load");
+      } catch {
+        // Ignored
+      }
+    }
+
+    if (parseRes.ast) {
+      setSelectedPresetIdx(null);
+      setActiveFormulaTitle(`Custom: ${item.title}`);
+      setCurrentGoal(parseRes.ast);
+      setCurrentHypotheses(hyps);
+      setSelectedTargetId(null);
+      setSelectedTacticIndex(null);
+      setRamUsed(0);
+      setUsedSorry(false);
+      setLogs((prev) => [
+        ...prev,
+        {
+          id: `log-${Date.now()}`,
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+          type: "success",
+          text: `Loaded saved custom theorem "${item.title}"`,
+        },
+      ]);
+    }
+  };
+
+  const handleExportAllTheorems = () => {
+    const exportPayload = {
+      version: "1.0",
+      theorems: savedCustomTheorems,
+      exportedAt: new Date().toISOString(),
+    };
+    const filename = `custom_theorems.json`;
+    downloadFile(JSON.stringify(exportPayload, null, 2), filename, {
+      mimeType: "application/json;charset=utf-8",
+    });
+    setLogs((prev) => [
+      ...prev,
+      {
+        id: `log-${Date.now()}`,
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        type: "info",
+        text: `Exported ${savedCustomTheorems.length} custom theorem(s) to custom_theorems.json`,
+      },
+    ]);
+  };
+
+  const handleImportFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportStatus(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result;
+      if (typeof content !== "string") return;
+      const res = importCustomTheorems(content);
+      if (!res.success) {
+        setImportStatus({
+          type: "error",
+          message: res.errors.join(" | ") || "Import failed.",
+        });
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour12: false,
+            }),
+            type: "error",
+            text: `Import failed: ${res.errors.join(", ")}`,
+          },
+        ]);
+      } else {
+        setSavedCustomTheorems(res.theorems);
+        const msg = `Successfully imported ${res.importedCount} theorem(s).${res.errors.length > 0 ? ` (${res.errors.length} skipped with warnings)` : ""}`;
+        setImportStatus({ type: "success", message: msg });
+        setLogs((prev) => [
+          ...prev,
+          {
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour12: false,
+            }),
+            type: "success",
+            text: msg,
+          },
+        ]);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    };
+    reader.readAsText(file);
   };
 
   const insertSymbol = (symbol: string) => {
@@ -564,16 +750,165 @@ export const SandboxMode: React.FC = () => {
             )}
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleApplyCustomFormula}
-              disabled={!parseResult.ast || !!hypError}
-              className="qp-btn-primary qp-focus px-4 py-1.5 text-xs font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
-            >
-              <IconSparkles className="w-3.5 h-3.5" />
-              <span>Compile &amp; Set Active Goal</span>
-            </button>
+          {/* Custom Theorem Save & Storage Controls */}
+          <div className="border-t border-[color:var(--qp-accent-line)] pt-3.5 space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px] space-y-1">
+                <label
+                  htmlFor="custom-theorem-title-input"
+                  className="text-xs font-bold text-zinc-300"
+                >
+                  Theorem Title:
+                </label>
+                <input
+                  id="custom-theorem-title-input"
+                  type="text"
+                  value={customTitleInput}
+                  onChange={(e) => setCustomTitleInput(e.target.value)}
+                  placeholder="e.g. Binomial Expansion"
+                  className="w-full px-3 py-1.5 text-xs font-mono rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-100 focus:outline-none focus:border-[color:var(--qp-accent-line)]"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={handleSaveTheorem}
+                  disabled={!parseResult.ast || !!hypError}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                >
+                  <IconDeviceFloppy className="w-3.5 h-3.5" />
+                  <span>Save Theorem</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportAllTheorems}
+                  disabled={savedCustomTheorems.length === 0}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                  aria-label="Export All (.json)"
+                >
+                  <IconDownload className="w-3.5 h-3.5" />
+                  <span>Export All (.json)</span>
+                </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={handleImportFileChange}
+                  className="hidden"
+                  id="import-theorems-file-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition-all flex items-center gap-1.5"
+                  aria-label="Import (.json)"
+                >
+                  <IconUpload className="w-3.5 h-3.5" />
+                  <span>Import (.json)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleApplyCustomFormula}
+                  disabled={!parseResult.ast || !!hypError}
+                  className="qp-btn-primary qp-focus px-4 py-1.5 text-xs font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                >
+                  <IconSparkles className="w-3.5 h-3.5" />
+                  <span>Compile &amp; Set Active Goal</span>
+                </button>
+              </div>
+            </div>
+
+            {saveStatus && (
+              <div
+                className={`text-xs p-2 rounded border font-mono ${
+                  saveStatus.type === "error"
+                    ? "bg-rose-950/60 border-rose-500/40 text-rose-300"
+                    : "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
+                }`}
+              >
+                {saveStatus.message}
+              </div>
+            )}
+
+            {importStatus && (
+              <div
+                className={`text-xs p-2 rounded border font-mono ${
+                  importStatus.type === "error"
+                    ? "bg-rose-950/60 border-rose-500/40 text-rose-300"
+                    : "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
+                }`}
+              >
+                {importStatus.message}
+              </div>
+            )}
+
+            {/* Saved Custom Theorems Collection List */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
+                  Saved Theorems Collection ({savedCustomTheorems.length}/
+                  {MAX_CUSTOM_THEOREMS})
+                </span>
+                {savedCustomTheorems.length >= MAX_CUSTOM_THEOREMS && (
+                  <span className="text-[10px] text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                    Capacity Full ({MAX_CUSTOM_THEOREMS} max)
+                  </span>
+                )}
+              </div>
+
+              {savedCustomTheorems.length === 0 ? (
+                <p className="text-xs text-zinc-400 italic">
+                  No custom theorems saved yet. Enter a formula and click
+                  &quot;Save Theorem&quot; to persist it locally.
+                </p>
+              ) : (
+                <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                  {savedCustomTheorems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-xs gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-bold text-zinc-200 truncate">
+                          {item.title}
+                        </div>
+                        <div className="text-[11px] text-emerald-400 font-mono truncate">
+                          {item.formula}
+                          {item.hypotheses && (
+                            <span className="text-zinc-400 ml-2">
+                              [{item.hypotheses}]
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleLoadCustomTheoremItem(item)}
+                          className="px-2 py-1 text-[11px] font-bold rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-all"
+                        >
+                          Load Goal
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleDeleteTheorem(item.id, item.title)
+                          }
+                          className="p-1 rounded text-rose-400 hover:bg-rose-500/20 transition-all"
+                          aria-label={`Delete ${item.title}`}
+                        >
+                          <IconTrash className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

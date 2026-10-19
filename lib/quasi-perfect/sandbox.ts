@@ -1,4 +1,263 @@
 import type { ASTNode, TacticId } from "./types";
+import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
+import { parseFormulaWithError, parseHypotheses } from "./compiler";
+
+/**
+ * Sanitizes a title or theorem name into a valid, safe filename.
+ *
+ * Replaces non-alphanumeric characters (except underscores/hyphens) with underscores,
+ * collapses consecutive underscores, strips leading/trailing underscores,
+ * and falls back to `defaultName` if empty.
+ */
+export function sanitizeFilename(name: string, defaultName = "export"): string {
+  if (!name || typeof name !== "string") return defaultName;
+  const sanitized = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return sanitized || defaultName;
+}
+
+export interface CustomTheorem {
+  id: string;
+  title: string;
+  formula: string;
+  hypotheses?: string;
+  createdAt: string;
+}
+
+export interface CustomTheoremExport {
+  version: "1.0";
+  theorems: CustomTheorem[];
+  exportedAt: string;
+}
+
+export const CUSTOM_THEOREMS_STORAGE_KEY =
+  "quasi_perfect_puzzler_custom_theorems_v1";
+export const MAX_CUSTOM_THEOREMS = 50;
+
+export function getSavedCustomTheorems(): CustomTheorem[] {
+  if (typeof window === "undefined") return [];
+  const raw = safeGetRawItem(CUSTOM_THEOREMS_STORAGE_KEY);
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.filter(
+        (item): item is CustomTheorem =>
+          item &&
+          typeof item === "object" &&
+          typeof item.id === "string" &&
+          typeof item.title === "string" &&
+          typeof item.formula === "string"
+      );
+    }
+  } catch {
+    // Ignore invalid stored data
+  }
+  return [];
+}
+
+export function saveCustomTheorem(
+  title: string,
+  formula: string,
+  hypotheses = ""
+): { success: boolean; error?: string; theorems: CustomTheorem[] } {
+  const existing = getSavedCustomTheorems();
+  if (existing.length >= MAX_CUSTOM_THEOREMS) {
+    return {
+      success: false,
+      error: `Storage capacity reached (maximum ${MAX_CUSTOM_THEOREMS} custom theorems). Please delete older theorems before saving new ones.`,
+      theorems: existing,
+    };
+  }
+
+  const parseRes = parseFormulaWithError(formula, "custom-save");
+  if (!parseRes.ast) {
+    return {
+      success: false,
+      error: `Formula syntax error: ${parseRes.error || "Invalid formula"}`,
+      theorems: existing,
+    };
+  }
+
+  if (hypotheses.trim()) {
+    try {
+      parseHypotheses(hypotheses, "custom-hyp-save");
+    } catch (e) {
+      return {
+        success: false,
+        error: `Hypothesis syntax error: ${e instanceof Error ? e.message : String(e)}`,
+        theorems: existing,
+      };
+    }
+  }
+
+  const newTheorem: CustomTheorem = {
+    id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    title: title.trim() || `Custom Formula ${existing.length + 1}`,
+    formula: formula.trim(),
+    hypotheses: hypotheses.trim(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const updated = [...existing, newTheorem];
+  safeSetRawItem(CUSTOM_THEOREMS_STORAGE_KEY, JSON.stringify(updated), {
+    retainInMemory: false,
+  });
+
+  return { success: true, theorems: updated };
+}
+
+export function deleteCustomTheorem(id: string): CustomTheorem[] {
+  const existing = getSavedCustomTheorems();
+  const updated = existing.filter((t) => t.id !== id);
+  safeSetRawItem(CUSTOM_THEOREMS_STORAGE_KEY, JSON.stringify(updated), {
+    retainInMemory: false,
+  });
+  return updated;
+}
+
+export function importCustomTheorems(jsonData: string): {
+  success: boolean;
+  importedCount: number;
+  errors: string[];
+  theorems: CustomTheorem[];
+} {
+  const existing = getSavedCustomTheorems();
+  const errors: string[] = [];
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonData);
+  } catch {
+    return {
+      success: false,
+      importedCount: 0,
+      errors: ["Invalid JSON format."],
+      theorems: existing,
+    };
+  }
+
+  let listToImport: unknown[] = [];
+  if (Array.isArray(parsed)) {
+    listToImport = parsed;
+  } else if (
+    parsed &&
+    typeof parsed === "object" &&
+    "theorems" in parsed &&
+    Array.isArray((parsed as Record<string, unknown>).theorems)
+  ) {
+    listToImport = (parsed as Record<string, unknown>).theorems as unknown[];
+  } else {
+    return {
+      success: false,
+      importedCount: 0,
+      errors: ["JSON must contain an array or a { theorems: [] } object."],
+      theorems: existing,
+    };
+  }
+
+  if (listToImport.length === 0) {
+    return {
+      success: false,
+      importedCount: 0,
+      errors: ["No theorem entries found in JSON file."],
+      theorems: existing,
+    };
+  }
+
+  const validNewTheorems: CustomTheorem[] = [];
+  for (let i = 0; i < listToImport.length; i++) {
+    const item = listToImport[i];
+    if (!item || typeof item !== "object") {
+      errors.push(`Entry #${i + 1}: Invalid item structure.`);
+      continue;
+    }
+    const rec = item as Record<string, unknown>;
+    const title = typeof rec.title === "string" ? rec.title.trim() : "";
+    const formula = typeof rec.formula === "string" ? rec.formula.trim() : "";
+    const hypotheses =
+      typeof rec.hypotheses === "string" ? rec.hypotheses.trim() : "";
+
+    if (!formula) {
+      errors.push(
+        `Entry #${i + 1} (${title || "Untitled"}): Missing formula expression.`
+      );
+      continue;
+    }
+
+    const parseRes = parseFormulaWithError(formula, `import-${i}`);
+    if (!parseRes.ast) {
+      errors.push(
+        `Entry #${i + 1} (${title || "Untitled"}): Formula compilation failed: ${parseRes.error || "Syntax error"}`
+      );
+      continue;
+    }
+
+    if (hypotheses) {
+      try {
+        parseHypotheses(hypotheses, `import-hyp-${i}`);
+      } catch (e) {
+        errors.push(
+          `Entry #${i + 1} (${title || "Untitled"}): Hypotheses compilation failed: ${e instanceof Error ? e.message : String(e)}`
+        );
+        continue;
+      }
+    }
+
+    if (existing.length + validNewTheorems.length >= MAX_CUSTOM_THEOREMS) {
+      errors.push(
+        `Maximum capacity of ${MAX_CUSTOM_THEOREMS} custom theorems reached. Remaining entries skipped.`
+      );
+      break;
+    }
+
+    validNewTheorems.push({
+      id:
+        typeof rec.id === "string" && rec.id
+          ? rec.id
+          : `custom-imp-${Date.now()}-${i}`,
+      title:
+        title ||
+        `Imported Theorem ${existing.length + validNewTheorems.length + 1}`,
+      formula,
+      hypotheses,
+      createdAt:
+        typeof rec.createdAt === "string"
+          ? rec.createdAt
+          : new Date().toISOString(),
+    });
+  }
+
+  if (validNewTheorems.length === 0) {
+    return {
+      success: false,
+      importedCount: 0,
+      errors:
+        errors.length > 0
+          ? errors
+          : ["No valid custom theorems could be parsed."],
+      theorems: existing,
+    };
+  }
+
+  const updated = [...existing, ...validNewTheorems];
+  safeSetRawItem(CUSTOM_THEOREMS_STORAGE_KEY, JSON.stringify(updated), {
+    retainInMemory: false,
+  });
+
+  return {
+    success: true,
+    importedCount: validNewTheorems.length,
+    errors,
+    theorems: updated,
+  };
+}
 
 /** One ready-made Sandbox goal with RAM targets to chase (#2059). */
 export interface SandboxPreset {

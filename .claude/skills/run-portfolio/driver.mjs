@@ -38,15 +38,41 @@ async function launchChromium(options) {
   }
 }
 
+function parseSize(arg) {
+  const m = /(\d+)x(\d+)/.exec(arg || "");
+  return m ? [Number(m[1]), Number(m[2])] : null;
+}
+
 let browser = null;
 let page = null;
 const consoleErrors = [];
 
 const COMMANDS = {
-  async launch() {
+  // `launch [WxH] [touch]`, e.g. `launch 375x812 touch`. `touch` emulates
+  // a coarse pointer, which the arcade's phone gate keys on; a plain
+  // narrow viewport never triggers it.
+  async launch(arg) {
     if (browser) return console.log("already launched");
+    const [width, height] = parseSize(arg) ?? [1280, 800];
+    const touch = /\btouch\b/.test(arg || "");
     browser = await launchChromium({ headless: true, args: ["--no-sandbox"] });
-    page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    const context = await browser.newContext({
+      viewport: { width, height },
+      ...(touch ? { hasTouch: true, isMobile: true } : {}),
+    });
+    // next dev mounts its "N Issue" badge in a <nextjs-portal> shadow host
+    // over the bottom-left of every page; hide it so screenshots show the
+    // app. SHOW_DEV_OVERLAY=1 keeps it (e.g. to read the error it counts).
+    if (!process.env.SHOW_DEV_OVERLAY) {
+      await context.addInitScript(() => {
+        document.addEventListener("DOMContentLoaded", () => {
+          const style = document.createElement("style");
+          style.textContent = "nextjs-portal{display:none!important}";
+          document.head.appendChild(style);
+        });
+      });
+    }
+    page = await context.newPage();
     page.on("console", (msg) => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
     });
@@ -54,6 +80,14 @@ const COMMANDS = {
       consoleErrors.push(`pageerror: ${err.message}`)
     );
     console.log("launched.");
+  },
+
+  async viewport(arg) {
+    if (!page) return console.log("ERROR: launch first");
+    const size = parseSize(arg);
+    if (!size) return console.log("usage: viewport <width>x<height>");
+    await page.setViewportSize({ width: size[0], height: size[1] });
+    console.log("viewport ->", size.join("x"));
   },
 
   async nav(url) {
@@ -79,11 +113,29 @@ const COMMANDS = {
     }
   },
 
-  async screenshot(name) {
+  async screenshot(arg) {
     if (!page) return console.log("ERROR: launch first");
+    const parts = (arg || "").split(/\s+/).filter(Boolean);
+    const fullPage = parts.includes("--full");
+    const name = parts.find((p) => p !== "--full");
     const f = path.join(SHOT_DIR, `${name || "ss-" + Date.now()}.png`);
-    await page.screenshot({ path: f });
+    await page.screenshot({ path: f, fullPage });
     console.log("screenshot:", f);
+  },
+
+  async sleep(ms) {
+    await new Promise((r) => setTimeout(r, Number(ms) || 1000));
+    console.log("slept", Number(ms) || 1000, "ms");
+  },
+
+  async tap(sel) {
+    if (!page) return console.log("ERROR: launch first");
+    try {
+      await page.tap(sel, { timeout: 10_000 });
+      console.log("tap", sel, "-> OK");
+    } catch (e) {
+      console.log("tap", sel, "-> ERROR:", e.message.split("\n")[0]);
+    }
   },
 
   async click(sel) {
@@ -92,7 +144,7 @@ const COMMANDS = {
       await page.click(sel, { timeout: 10_000 });
       console.log("click", sel, "-> OK");
     } catch (e) {
-      console.log("click", sel, "-> ERROR:", e.message);
+      console.log("click", sel, "-> ERROR:", e.message.split("\n")[0]);
     }
   },
 
@@ -105,7 +157,12 @@ const COMMANDS = {
         .click({ timeout: 10_000 });
       console.log("click-text", JSON.stringify(text), "-> OK");
     } catch (e) {
-      console.log("click-text", JSON.stringify(text), "-> ERROR:", e.message);
+      console.log(
+        "click-text",
+        JSON.stringify(text),
+        "-> ERROR:",
+        e.message.split("\n")[0]
+      );
     }
   },
 
@@ -118,7 +175,7 @@ const COMMANDS = {
       await page.fill(sel, value);
       console.log("fill", sel, "-> OK");
     } catch (e) {
-      console.log("fill", sel, "-> ERROR:", e.message);
+      console.log("fill", sel, "-> ERROR:", e.message.split("\n")[0]);
     }
   },
 
@@ -180,7 +237,15 @@ const rl = readline.createInterface({
   prompt: "driver> ",
 });
 
-rl.on("line", async (line) => {
+// Lines run strictly one after another. Without the queue, a `wait-for`
+// sent right behind a `nav` starts before the navigation finishes and can
+// match the previous page.
+let queue = Promise.resolve();
+rl.on("line", (line) => {
+  queue = queue.then(() => runLine(line));
+});
+
+async function runLine(line) {
   const [cmd, ...rest] = line.trim().split(/\s+/);
   if (!cmd) return rl.prompt();
   const fn = COMMANDS[cmd];
@@ -198,8 +263,9 @@ rl.on("line", async (line) => {
     process.exit(0);
   }
   rl.prompt();
-});
+}
 rl.on("close", async () => {
+  await queue;
   await COMMANDS.quit();
   process.exit(0);
 });

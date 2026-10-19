@@ -11,8 +11,12 @@
  */
 
 import { fnv1a } from "../utils/prng";
+import { isPhoneGated } from "./registry";
 
-/** The games with seeded runs, in the order the hub lists them. */
+/**
+ * The games with seeded runs, in the order the daily panel lists them. A unit
+ * test keeps this set equal to the registry entries marked `daily`.
+ */
 export const ARCADE_DAILY_GAME_IDS = [
   "trial-and-error",
   "for-better-or-bulk",
@@ -32,7 +36,7 @@ export interface ArcadeDailyGame {
   readonly route: string;
   /** What the daily best measures, e.g. "best hand". */
   readonly scoreLabel: string;
-  /** Still behind the desktop-only gate on phones (ADR 0048, ADR 0061). */
+  /** Still behind the desktop-only gate on phones, read from the registry. */
   readonly desktopOnly: boolean;
 }
 
@@ -43,35 +47,35 @@ export const ARCADE_DAILY_GAMES: readonly ArcadeDailyGame[] = [
     title: "Trial & Error",
     route: "/arcade/trial-and-error",
     scoreLabel: "best hand",
-    desktopOnly: false,
+    desktopOnly: isPhoneGated("trial-and-error"),
   },
   {
     id: "for-better-or-bulk",
     title: "For Better or Bulk",
     route: "/arcade/for-better-or-bulk",
     scoreLabel: "spots set",
-    desktopOnly: true,
+    desktopOnly: isPhoneGated("for-better-or-bulk"),
   },
   {
     id: "study-director",
     title: "Study Director",
     route: "/arcade/study-director",
     scoreLabel: "grade",
-    desktopOnly: true,
+    desktopOnly: isPhoneGated("study-director"),
   },
   {
     id: "patty-drive-thru",
     title: "Patty's Drive-Thru",
     route: "/arcade/patty-drive-thru",
     scoreLabel: "shift score",
-    desktopOnly: true,
+    desktopOnly: isPhoneGated("patty-drive-thru"),
   },
   {
     id: "protocol-drift",
     title: "Protocol Drift",
     route: "/protocol-drift",
     scoreLabel: "lock score",
-    desktopOnly: true,
+    desktopOnly: isPhoneGated("protocol-drift"),
   },
 ];
 

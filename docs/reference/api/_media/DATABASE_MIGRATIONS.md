@@ -91,9 +91,9 @@ npx prisma migrate status
 
 When resolving the initial baseline migrations on an unledgered setup,
 `npx prisma migrate status` after `resolve` and before the Vercel production build will report the
-remaining active migrations (`20260814000000_add_simulated_telemetry`,
-`20260818000000_add_feedback_and_reactions`, and
-`20261014000000_add_commands_and_playback`) as pending.
+remaining 16 of the 18 committed migrations (one per `prisma/migrations/` directory,
+from `20260814000000_add_simulated_telemetry` through
+`20261026000000_reorder_case_study_reaction_unique_constraint`) as pending.
 
 **Halt Condition:** Operators must ONLY halt deployment if `prisma migrate status`
 reports missing migration files, unrecognized migrations outside the active inventory,
@@ -102,13 +102,31 @@ more than one migration is pending on an unledgered database setup.
 
 ### Verify
 
-Verify all of the following before triggering the Vercel deployment:
+Before triggering the Vercel deployment, confirm the ledger-only baseline:
 
 ```sql
 SELECT migration_name, finished_at, rolled_back_at
 FROM "_prisma_migrations"
 ORDER BY started_at;
+```
 
+Expected results before deployment are only the two resolved baselines, each
+finished and not rolled back:
+
+- `20260417215437_init`
+- `20260528000000_add_telemetry_event`
+
+Trigger the Vercel production build after the ledger-only baseline is complete.
+The build applies all remaining committed migrations before compilation.
+
+After the production build, re-run the ledger query and confirm every committed
+migration (one per `prisma/migrations/` directory, currently 18, from
+`20260417215437_init` through
+`20261026000000_reorder_case_study_reaction_unique_constraint`) is recorded as
+finished and not rolled back. Then confirm the `simulated_telemetry` column that
+`20260814000000_add_simulated_telemetry` adds:
+
+```sql
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_schema = 'public'
@@ -120,19 +138,9 @@ SELECT count(*) AS case_studies,
 FROM "CaseStudy";
 ```
 
-Expected results are all five finished and non-rolled-back migrations recorded in
-`_prisma_migrations`:
-
-- `20260417215437_init`
-- `20260528000000_add_telemetry_event`
-- `20260814000000_add_simulated_telemetry`
-- `20260818000000_add_feedback_and_reactions`
-- `20261014000000_add_commands_and_playback`
-
-Trigger the Vercel production build after the ledger-only baseline is complete.
-The build applies all remaining committed migrations before compilation. After
-promotion, confirm `npx prisma migrate status` is clean from a read-only operator
-session, then smoke-test the home page, case studies, and telemetry endpoints.
+After promotion, confirm `npx prisma migrate status` is clean from a read-only
+operator session, then smoke-test the home page, case studies, and telemetry
+endpoints.
 
 ## Release ordering, schema drift & Vercel migration execution
 

@@ -127,6 +127,8 @@ export function isBotBranch(headRef) {
  * @property {boolean} runUnit
  * @property {boolean} runBrowser
  * @property {boolean} strykerForce
+ * @property {string} arcadeDeviceGrep `--grep` for the arcade device specs
+ *   `device-gate` runs; empty runs none.
  * @property {string} reason
  */
 
@@ -137,6 +139,64 @@ const STRYKER_INPUTS = [
   "package.json",
   "package-lock.json",
 ];
+
+/**
+ * Arcade games by the display name their device specs' `describe` titles
+ * carry ("Laser Loon on a tablet"), with the paths that belong to each
+ * (#2517). `device-gate` greps the iPad and phone projects for the names a
+ * PR touches, so a new `*-phone.spec.ts` is picked up by naming its game the
+ * same way.
+ */
+export const ARCADE_DEVICE_GAMES = Object.freeze([
+  ["Retro Labyrinth", /retro-?labyrinth|RetroLabyrinth|^lib\/dungeon\//i],
+  ["Working With Duck", /working-?with-?duck/i],
+  ["Quasi-Perfect Puzzler", /quasi-?perfect|quasi-puzzler/i],
+  ["Protocol Drift", /protocol-?drift/i],
+  ["Meme Vault", /meme-vault|^lib\/meme-/i],
+  ["Study Director", /study-?director/i],
+  ["Laser Loon", /laser-?loon/i],
+  ["Clinical Trial Chaos", /clinical-?(trial-)?chaos/i],
+  ["Patty's Drive-Thru", /patty-?drive-?thru/i],
+  ["Trial & Error", /trial-and-error/i],
+  ["For Better or Bulk", /for-?better-?or-?bulk/i],
+  ["Monkey C Mayhem", /garmin-?watch|^lib\/garmin-/i],
+]);
+
+/** `describe` titles of the shared device kit specs. */
+const ARCADE_KIT_TITLES = Object.freeze([
+  "Tablet arcade kit",
+  "Mobile arcade kit",
+]);
+
+/**
+ * Paths shared by every game's cabinet: a change here runs the kit specs.
+ * This policy file is one of them, so a change to the selection runs the
+ * step it feeds at least once before it merges.
+ */
+const ARCADE_SHARED_PATHS =
+  /^(components\/arcade\/|lib\/arcade\/|lib\/haptics\.ts$|app\/arcade\/(layout\.tsx|arcade\.css)$|playwright\.config\.ts$|scripts\/ci-run-policy\.mjs$|__tests__\/e2e\/(mobile-harness\.ts|tablet-kit\.spec\.ts|mobile-kit\.spec\.ts)$)/;
+
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The Playwright `--grep` pattern for the arcade device specs a change set
+ * touches. Empty when it touches no arcade code; `.` (everything) when the
+ * change set is unknown, so the filter fails safe.
+ *
+ * @param {string[] | null | undefined} files
+ * @returns {string}
+ */
+export function arcadeDeviceGrep(files) {
+  if (!Array.isArray(files) || files.length === 0) return ".";
+  const titles = [];
+  if (files.some((file) => ARCADE_SHARED_PATHS.test(file))) {
+    titles.push(...ARCADE_KIT_TITLES);
+  }
+  for (const [name, paths] of ARCADE_DEVICE_GAMES) {
+    if (files.some((file) => paths.test(file))) titles.push(name);
+  }
+  return titles.map(escapeRegExp).join("|");
+}
 
 /**
  * Decides which gate groups run. Pure, so the tests can drive every case.
@@ -157,6 +217,7 @@ export function computeRunPolicy(input) {
       runUnit: true,
       runBrowser: false,
       strykerForce: false,
+      arcadeDeviceGrep: "",
       reason: `${eventName}: unit and mutation gates run; browser gates are pull_request only.`,
     };
   }
@@ -196,6 +257,7 @@ export function computeRunPolicy(input) {
     runUnit,
     runBrowser,
     strykerForce,
+    arcadeDeviceGrep: runBrowser ? arcadeDeviceGrep(files) : "",
     reason,
   };
 }
@@ -216,6 +278,7 @@ export function formatOutputs(policy) {
     `run_unit=${flag(policy.runUnit)}`,
     `run_browser=${flag(policy.runBrowser)}`,
     `stryker_force=${flag(policy.strykerForce)}`,
+    `arcade_device_grep=${policy.arcadeDeviceGrep}`,
     "",
   ].join("\n");
 }
@@ -275,6 +338,9 @@ function main() {
   });
 
   console.log(`Run policy: ${policy.reason}`);
+  console.log(
+    `Arcade device specs: ${policy.arcadeDeviceGrep ? `--grep "${policy.arcadeDeviceGrep}"` : "none"}`
+  );
   if (Array.isArray(changedFiles) && eventName === "pull_request") {
     console.log(`Changed files (${changedFiles.length}):`);
     for (const file of changedFiles) {

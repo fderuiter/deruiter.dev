@@ -646,58 +646,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const particlesRef = useRef<ParticleEffect[]>([]);
   const floatingTextsRef = useRef<FloatingNotification[]>([]);
 
-  const handlePlayCustomLevel = useCallback(
-    (roomToPlay: DungeonRoom) => {
-      setCustomRoom(roomToPlay);
-      setGameMode("classic");
-      setStage(1);
-      setRoomIndex(0);
-      setCurrentMaze(roomToPlay.grid);
-      setPlayerPosition({ x: roomToPlay.startX, y: roomToPlay.startY });
-      setPlayerHp(selectedClass.baseHp);
-      setMaxPlayerHp(selectedClass.baseHp);
-      setEnemies(
-        roomToPlay.enemies ? JSON.parse(JSON.stringify(roomToPlay.enemies)) : []
-      );
-      setItems(
-        roomToPlay.items ? JSON.parse(JSON.stringify(roomToPlay.items)) : []
-      );
-      setGameStatus("playing");
-      setIsLevelEditorOpen(false);
-
-      // Reset fog of war
-      const rows = roomToPlay.grid.length;
-      const cols = roomToPlay.grid[0]?.length || 0;
-      const resetExplored = Array.from({ length: rows }, () =>
-        Array(cols).fill(false)
-      );
-      setExploredMap(resetExplored);
-      const fov = calculateFOV(
-        roomToPlay.grid,
-        roomToPlay.startX,
-        roomToPlay.startY,
-        7,
-        resetExplored
-      );
-      setVisibleMap(fov.visible);
-      setExploredMap(fov.explored);
-
-      // Reset telemetry
-      runIdRef.current = `run_${Date.now()}`;
-      runStartTimeRef.current = Date.now();
-      runEndTimeRef.current = undefined;
-      setStepTrajectories([]);
-      setCombatLogs([]);
-      setEnemiesDefeated(0);
-      setItemsCollected(0);
-      setDamageDealt(0);
-      setDamageTaken(0);
-
-      announce(`Custom level '${roomToPlay.title}' loaded!`);
-    },
-    [selectedClass.baseHp, announce]
-  );
-
   const handleOpenTelemetryModal = useCallback(() => {
     const now = Date.now();
     const startTime = runStartTimeRef.current;
@@ -917,6 +865,58 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       }
     },
     []
+  );
+
+  const handlePlayCustomLevel = useCallback(
+    (roomToPlay: DungeonRoom) => {
+      setCustomRoom(roomToPlay);
+      setGameMode("classic");
+      setStage(1);
+      setRoomIndex(0);
+      setCurrentMaze(roomToPlay.grid);
+      setPlayerPosition({ x: roomToPlay.startX, y: roomToPlay.startY });
+      setPlayerHp(selectedClass.baseHp);
+      setMaxPlayerHp(selectedClass.baseHp);
+      setEnemies(
+        roomToPlay.enemies ? JSON.parse(JSON.stringify(roomToPlay.enemies)) : []
+      );
+      setItems(
+        roomToPlay.items ? JSON.parse(JSON.stringify(roomToPlay.items)) : []
+      );
+      setGameStatus("playing");
+      setIsLevelEditorOpen(false);
+
+      // Reset fog of war
+      const rows = roomToPlay.grid.length;
+      const cols = roomToPlay.grid[0]?.length || 0;
+      const resetExplored = Array.from({ length: rows }, () =>
+        Array(cols).fill(false)
+      );
+      setExploredMap(resetExplored);
+      const fov = calculateFOV(
+        roomToPlay.grid,
+        roomToPlay.startX,
+        roomToPlay.startY,
+        7,
+        resetExplored
+      );
+      setVisibleMap(fov.visible);
+      setExploredMap(fov.explored);
+
+      // Reset telemetry
+      runIdRef.current = `run_${Date.now()}`;
+      runStartTimeRef.current = Date.now();
+      runEndTimeRef.current = undefined;
+      setStepTrajectories([]);
+      setCombatLogs([]);
+      setEnemiesDefeated(0);
+      setItemsCollected(0);
+      setDamageDealt(0);
+      setDamageTaken(0);
+
+      announce(`Custom level '${roomToPlay.title}' loaded!`);
+    },
+    [selectedClass.baseHp, announce]
   );
 
   // HP, RAM, score, crypto, weapon ammo and the Threat Feed as the player

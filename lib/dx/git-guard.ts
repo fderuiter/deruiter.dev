@@ -129,6 +129,32 @@ export function validateBranchName(branch: string): {
     return { valid: true };
   }
 
+  if (cleanBranch.startsWith("stitch/")) {
+    if (
+      cleanBranch.startsWith("stitch/feat/") ||
+      cleanBranch.startsWith("stitch/fix/") ||
+      cleanBranch.startsWith("stitch/chore/") ||
+      cleanBranch.startsWith("stitch/refactor/") ||
+      cleanBranch.startsWith("stitch/docs/") ||
+      cleanBranch.startsWith("stitch/perf/") ||
+      cleanBranch.startsWith("stitch/dx/") ||
+      cleanBranch.startsWith("stitch/test/") ||
+      cleanBranch.startsWith("stitch/dev/")
+    ) {
+      return {
+        valid: false,
+        error: `Branch name '${cleanBranch}' uses a nested human prefix under stitch/. Use standard stitch/<task-id> branch format.`,
+      };
+    }
+    if (/[^a-z0-9/_-]/.test(cleanBranch)) {
+      return {
+        valid: false,
+        error: `Branch name '${cleanBranch}' contains invalid characters.`,
+      };
+    }
+    return { valid: true };
+  }
+
   const validPrefixes = [
     "feat/",
     "fix/",
@@ -140,7 +166,6 @@ export function validateBranchName(branch: string): {
     "test/",
     "dev/",
     "jules/",
-    "stitch/",
   ];
 
   const hasValidPrefix = validPrefixes.some((p) => cleanBranch.startsWith(p));

@@ -77,7 +77,7 @@ describe("ESLint Web Storage restriction (#1631)", () => {
 
   it.each([
     "lib/safe-storage.ts",
-    "lib/garmin-engine.ts",
+    "lib/garmin/engine.ts",
     "components/patrol/MedicalDisclaimerBanner.tsx",
     "__tests__/storage-probe.test.ts",
   ])(
@@ -110,7 +110,7 @@ describe("ESLint Web Storage restriction (#1631)", () => {
   it("keeps the navigator.vibrate restriction in storage-exempt files", async () => {
     const messages = await lintAs(
       "export const buzz = () => navigator.vibrate(15);\n",
-      "lib/garmin-engine.ts"
+      "lib/garmin/engine.ts"
     );
     expect(messages).toHaveLength(1);
     expect(messages[0].message).toContain("triggerHaptic");

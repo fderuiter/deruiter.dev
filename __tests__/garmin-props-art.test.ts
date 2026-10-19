@@ -9,9 +9,9 @@ import {
   createInitialState,
   startGame,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE } from "@/lib/garmin-course";
-import type { CourseProps } from "@/lib/garmin-props";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE } from "@/lib/garmin/course";
+import type { CourseProps } from "@/lib/garmin/props";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 
 /** A recording 2D context: its fillRect and fillText calls are spies. */

@@ -13,7 +13,7 @@ import {
   updateGameSimulation,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
@@ -23,7 +23,7 @@ import {
   type CourseBlock,
   type CourseLayout,
   type CourseMedal,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   BONUS_ROOM_LENGTH,
   EMPTY_PROPS,
@@ -32,7 +32,7 @@ import {
   propFootings,
   type CourseProps,
   type CourseStation,
-} from "@/lib/garmin-props";
+} from "@/lib/garmin/props";
 import {
   CHECKPOINT_BANNER,
   CHECKPOINT_TOAST,
@@ -43,11 +43,11 @@ import {
   hideFoundMedals,
   medalStage,
   placeStageExtras,
-} from "@/lib/garmin-medals";
-import { generateFoes, type Foe } from "@/lib/garmin-foes";
-import { SLAM_VY } from "@/lib/garmin-moves";
-import { START_LIVES } from "@/lib/garmin-powerups";
-import { themeForStage } from "@/lib/garmin-themes";
+} from "@/lib/garmin/medals";
+import { generateFoes, type Foe } from "@/lib/garmin/foes";
+import { SLAM_VY } from "@/lib/garmin/moves";
+import { START_LIVES } from "@/lib/garmin/powerups";
+import { themeForStage } from "@/lib/garmin/themes";
 
 // Finisher Medals, the Aid Station and secret exits in the engine (#2025):
 // the pickups and their points, the three ways a PR Board gives up its medal,

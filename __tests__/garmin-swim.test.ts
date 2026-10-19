@@ -10,9 +10,9 @@ import {
   PLAYER_HEIGHT,
   PLAYER_X,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
 import {
   SWIM_GRAVITY,
   SWIM_PACE,
@@ -22,7 +22,7 @@ import {
   SWIM_STROKE_VY,
   SWIM_SURFACE_Y,
   isUnderwater,
-} from "@/lib/garmin-swim";
+} from "@/lib/garmin/swim";
 
 // Swimming on the pool and open water stages (#1993).
 

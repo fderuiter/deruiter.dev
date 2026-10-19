@@ -262,7 +262,7 @@ Formal inference rules used to derive logical steps from valid premises:
 
 ### Garmin Watch Hardware & Thermal Emulation
 
-- **Garmin Thermal & CPU Telemetry Engine**: Deterministic physical simulation engine (`lib/garmin-engine.ts`, `components/arcade/GarminWatchClient.tsx`) modeling Connect IQ runtime CPU workloads, heat generation curves, passive wrist thermal dissipation, battery discharge profiles, and ANT+ heart rate sensor telemetry under active workload stress.
+- **Garmin Thermal & CPU Telemetry Engine**: Deterministic physical simulation engine (`lib/garmin/engine.ts`, `components/arcade/GarminWatchClient.tsx`) modeling Connect IQ runtime CPU workloads, heat generation curves, passive wrist thermal dissipation, battery discharge profiles, and ANT+ heart rate sensor telemetry under active workload stress.
 - **Monkey C Bytecode Emulation Scaffold**: Canvas-driven graphical rendering pipeline emulating high-contrast MIP (Memory-in-Pixel) transflective smartwatch displays, hardware bezel buttons, and Connect IQ OS lifecycle states with zero native C dependencies.
 
 ## Scientific & Engineering Editorial Design System

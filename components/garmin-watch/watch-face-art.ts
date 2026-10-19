@@ -2,7 +2,7 @@
  * Monkey C Mayhem watch face art (#1520).
  *
  * Draws what the round 280 x 280 Connect IQ screen shows, in the same logical
- * units as `lib/garmin-engine.ts`, from the engine state alone. The engine's
+ * units as `lib/garmin/engine.ts`, from the engine state alone. The engine's
  * own `renderCanvasFrame` is untouched (it is part of the core engine and the
  * standalone bundle); the simulator draws with this module instead.
  *
@@ -17,12 +17,12 @@
  * one full-screen face, with no DOM text on top of it.
  */
 import { clamp, gameFont } from "@/lib/game-utils";
-import { formatClock, formatPace, paceSecondsPerKm } from "@/lib/garmin-splits";
+import { formatClock, formatPace, paceSecondsPerKm } from "@/lib/garmin/splits";
 import {
   DEFAULT_GROUND_STRIP,
   type GroundStripField,
   type GroundStripLayout,
-} from "@/lib/garmin-ground-strip";
+} from "@/lib/garmin/ground-strip";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
@@ -42,25 +42,25 @@ import {
   type CoursePole,
   type CourseLayout,
   type CourseMedBall,
-} from "@/lib/garmin-course";
-import { MEDALS_PER_STAGE, stageMedalSlots } from "@/lib/garmin-medals";
-import { CARDS_PER_SET, FINISHER_CARDS, cardAt } from "@/lib/garmin-finisher";
+} from "@/lib/garmin/course";
+import { MEDALS_PER_STAGE, stageMedalSlots } from "@/lib/garmin/medals";
+import { CARDS_PER_SET, FINISHER_CARDS, cardAt } from "@/lib/garmin/finisher";
 import {
   LENGTH_METERS,
   isWaterTheme,
   themeForStage,
   type StageTheme,
-} from "@/lib/garmin-themes";
+} from "@/lib/garmin/themes";
 import {
   bodyBatteryFraction,
   bodyBatteryLabel,
-} from "@/lib/garmin-body-battery";
+} from "@/lib/garmin/body-battery";
 import {
   AUTO_PAUSE_TEXT,
   recoveryHours,
   trainingStatus,
-} from "@/lib/garmin-culture";
-import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin-foes";
+} from "@/lib/garmin/culture";
+import { FOE_SHOT_SIZE, type Foe, type FoeShot } from "@/lib/garmin/foes";
 import {
   RACE_CATEGORY_INFO,
   formatRaceTime,
@@ -68,21 +68,21 @@ import {
   raceOutcomeOf,
   type RaceCourse,
   type RaceSetup,
-} from "@/lib/garmin-race";
-import { GHOST_FLAG, formatGap, type GhostSample } from "@/lib/garmin-ghost";
-import type { ThrownBall } from "@/lib/garmin-medball";
-import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin-swim";
+} from "@/lib/garmin/race";
+import { GHOST_FLAG, formatGap, type GhostSample } from "@/lib/garmin/ghost";
+import type { ThrownBall } from "@/lib/garmin/medball";
+import { SWIM_SURFACE_Y, isUnderwater } from "@/lib/garmin/swim";
 import {
   SECOND_WIND_EVENTS,
   hillTilt,
   type SecondWind,
-} from "@/lib/garmin-second-wind";
+} from "@/lib/garmin/second-wind";
 import {
   CAPE_SPIN_MS,
   CAPE_SPIN_REACH,
   PACE_SEGMENTS,
   paceSegments,
-} from "@/lib/garmin-cape";
+} from "@/lib/garmin/cape";
 import {
   BASE_HEIGHT,
   BOLT_SIZE,
@@ -90,15 +90,15 @@ import {
   playerHeightFor,
   type Bolt,
   type Pickup,
-} from "@/lib/garmin-powerups";
+} from "@/lib/garmin/powerups";
 import type {
   CourseBelt,
   CoursePlyo,
   CourseProps,
   CourseStation,
   CourseSwitch,
-} from "@/lib/garmin-props";
-import { beltOffset } from "@/lib/garmin-props";
+} from "@/lib/garmin/props";
+import { beltOffset } from "@/lib/garmin/props";
 import {
   CANVAS_SIZE,
   DEVICE_PROFILES,
@@ -112,7 +112,7 @@ import {
   type ObstacleType,
   type VariableType,
   paceMeters,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 type Ctx = CanvasRenderingContext2D;
 

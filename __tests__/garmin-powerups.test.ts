@@ -1,4 +1,4 @@
-import { themeForStage } from "@/lib/garmin-themes";
+import { themeForStage } from "@/lib/garmin/themes";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   createInitialState,
@@ -11,7 +11,7 @@ import {
   FLASH_STORAGE_KEY,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
@@ -20,9 +20,9 @@ import {
   stageStartX,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { placeStageExtras } from "@/lib/garmin-medals";
-import { generateStageProps } from "@/lib/garmin-props";
+} from "@/lib/garmin/course";
+import { placeStageExtras } from "@/lib/garmin/medals";
+import { generateStageProps } from "@/lib/garmin/props";
 import {
   BASE_HEIGHT,
   BUFF_HEIGHT,
@@ -43,7 +43,7 @@ import {
   playerHeightFor,
   stepPickups,
   type Pickup,
-} from "@/lib/garmin-powerups";
+} from "@/lib/garmin/powerups";
 
 // Power tiers, Runner's High and lives in Monkey C Mayhem (#1988).
 

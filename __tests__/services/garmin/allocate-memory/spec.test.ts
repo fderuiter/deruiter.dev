@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { AllocateGarminMemoryInputSchema } from "@/lib/services";
 
 import { fromPartial } from "@total-typescript/shoehorn";
-import type { GameEngineState } from "@/lib/garmin-engine";
+import type { GameEngineState } from "@/lib/garmin/engine";
 
 describe("AllocateGarminMemoryInputSchema (Contract Test)", () => {
   it("accepts valid memory allocation payload", () => {

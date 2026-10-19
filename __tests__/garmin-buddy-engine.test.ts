@@ -15,14 +15,14 @@ import {
   updateGameSimulation,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   PX_PER_METER,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   BUDDY_EAT_SCORE,
   BUDDY_JUMP_BONUS_VY,
@@ -30,7 +30,7 @@ import {
   BUDDY_RUNAWAY_MS,
   BUDDY_RUNAWAY_SPEED,
   BUDDY_TOASTS,
-} from "@/lib/garmin-buddy";
+} from "@/lib/garmin/buddy";
 import {
   BUFF_HEIGHT,
   DAMAGE_GRACE_MS,
@@ -38,14 +38,14 @@ import {
   POWERUP_SCORE,
   START_LIVES,
   type Pickup,
-} from "@/lib/garmin-powerups";
+} from "@/lib/garmin/powerups";
 import {
   EMPTY_PROPS,
   STATION_WIDTH,
   type CourseProps,
   type CourseStation,
-} from "@/lib/garmin-props";
-import { makeFoe, type Foe } from "@/lib/garmin-foes";
+} from "@/lib/garmin/props";
+import { makeFoe, type Foe } from "@/lib/garmin/foes";
 
 // The Running Buddy (#2024) in the engine: hatching, mounting, the jump bonus,
 // eating small foes, the hit rules, recapture, expiry, stations and stages.

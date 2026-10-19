@@ -10,16 +10,16 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
   stageStartX,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
-import { BUFF_HEIGHT, DAMAGE_GRACE_MS } from "@/lib/garmin-powerups";
-import { CEILING_BOTTOM } from "@/lib/garmin-swim";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
+import { BUFF_HEIGHT, DAMAGE_GRACE_MS } from "@/lib/garmin/powerups";
+import { CEILING_BOTTOM } from "@/lib/garmin/swim";
 
 // Basement Gym racks (#1993): a low bar a jump bonks on, that a tall runner
 // takes a hit under.

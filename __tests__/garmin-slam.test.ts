@@ -11,16 +11,16 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS, PR_BOARD_SCORE } from "@/lib/garmin-props";
-import { FOE_STOMP_SCORE, makeFoe, type Foe } from "@/lib/garmin-foes";
-import { MOVE_TOASTS, SLAM_BATTERY_COST, SLAM_VY } from "@/lib/garmin-moves";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS, PR_BOARD_SCORE } from "@/lib/garmin/props";
+import { FOE_STOMP_SCORE, makeFoe, type Foe } from "@/lib/garmin/foes";
+import { MOVE_TOASTS, SLAM_BATTERY_COST, SLAM_VY } from "@/lib/garmin/moves";
 
 // The Burpee Slam (#2023): a fitness-run ground pound that stomps, breaks and
 // costs a little Body Battery on landing.

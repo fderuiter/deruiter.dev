@@ -258,7 +258,7 @@ describe("CI run policy (#1773)", () => {
       expect(arcadeDeviceGrep(["lib/dungeon/generator.ts"])).toBe(
         "Retro Labyrinth"
       );
-      expect(arcadeDeviceGrep(["lib/garmin-engine.ts"])).toBe(
+      expect(arcadeDeviceGrep(["lib/garmin/engine.ts"])).toBe(
         "Monkey C Mayhem"
       );
       expect(

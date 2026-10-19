@@ -52,7 +52,7 @@ const storageGlobalRestrictions = ["localStorage", "sessionStorage"].map(
 // Files where direct Web Storage access is deliberate (#1631). Add a file here
 // only when lib/safe-storage genuinely cannot be used, with its reason:
 //   lib/safe-storage.ts        the wrapper itself.
-//   lib/garmin-engine.ts       also bundled alone into public/garmin-engine.js as
+//   lib/garmin/engine.ts       also bundled alone into public/garmin-engine.js as
 //                              a browser IIFE (scripts/build-standalone-engine.ts);
 //                              lib/safe-storage pulls in the logger, Sentry and
 //                              Next.js code that bundle cannot resolve (#1633).
@@ -63,7 +63,7 @@ const storageGlobalRestrictions = ["localStorage", "sessionStorage"].map(
 // localStorage inside a string literal, which these rules do not inspect.
 const storageExemptFiles = [
   "lib/safe-storage.ts",
-  "lib/garmin-engine.ts",
+  "lib/garmin/engine.ts",
   "components/patrol/MedicalDisclaimerBanner.tsx",
 ];
 

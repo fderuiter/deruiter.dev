@@ -13,7 +13,7 @@ import {
   effectiveRunInput,
   stepBodyBattery,
   type BodyBattery,
-} from "@/lib/garmin-body-battery";
+} from "@/lib/garmin/body-battery";
 
 describe("garmin body battery", () => {
   describe("constants", () => {

@@ -371,6 +371,8 @@
 - [lib/redis](lib/redis/README.md)
 - [lib/retro-labyrinth](lib/retro-labyrinth/README.md)
 - [lib/retro-labyrinth/engine](lib/retro-labyrinth/engine/README.md)
+- [lib/retro-labyrinth/level-schema](lib/retro-labyrinth/level-schema/README.md)
+- [lib/retro-labyrinth/telemetry](lib/retro-labyrinth/telemetry/README.md)
 - [lib/route-wrapper](lib/route-wrapper/README.md)
 - [lib/safe-storage](lib/safe-storage/README.md)
 - [lib/schemas](lib/schemas/README.md)

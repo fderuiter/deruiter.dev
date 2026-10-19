@@ -119,6 +119,42 @@ Emits a typed event to registered listeners.
 
 ***
 
+### exportTelemetryCsv()
+
+> **exportTelemetryCsv**(): `object`
+
+#### Returns
+
+`object`
+
+##### combatCsv
+
+> **combatCsv**: `string`
+
+##### combinedCsv
+
+> **combinedCsv**: `string`
+
+##### stepsCsv
+
+> **stepsCsv**: `string`
+
+##### summaryCsv
+
+> **summaryCsv**: `string`
+
+***
+
+### exportTelemetryJson()
+
+> **exportTelemetryJson**(): `string`
+
+#### Returns
+
+`string`
+
+***
+
 ### fireActiveWeapon()
 
 > **fireActiveWeapon**(): `void`
@@ -143,6 +179,16 @@ Reference is preserved until notifySubscribers() is explicitly called.
 #### Inherited from
 
 [`ArcadeEngine`](../../../arcade/core/engine/classes/ArcadeEngine.md).[`getSnapshot`](../../../arcade/core/engine/classes/ArcadeEngine.md#getsnapshot)
+
+***
+
+### getTelemetry()
+
+> **getTelemetry**(): [`RunTelemetryData`](../../telemetry/interfaces/RunTelemetryData.md)
+
+#### Returns
+
+[`RunTelemetryData`](../../telemetry/interfaces/RunTelemetryData.md)
 
 ***
 
@@ -175,6 +221,22 @@ Invalidates cached snapshot so the next getSnapshot() recomputes fresh state.
 #### Inherited from
 
 [`ArcadeEngine`](../../../arcade/core/engine/classes/ArcadeEngine.md).[`invalidateSnapshot`](../../../arcade/core/engine/classes/ArcadeEngine.md#invalidatesnapshot)
+
+***
+
+### loadCustomRoom()
+
+> **loadCustomRoom**(`room`): `void`
+
+#### Parameters
+
+##### room
+
+[`DungeonRoom`](../../../dungeon/types/interfaces/DungeonRoom.md)
+
+#### Returns
+
+`void`
 
 ***
 
@@ -246,6 +308,22 @@ Subscribes to a typed one-shot action event (e.g. sfx, haptic, screen shake).
 
 ***
 
+### recordCombatAction()
+
+> **recordCombatAction**(`action`): `void`
+
+#### Parameters
+
+##### action
+
+`Partial`\<[`CombatActionEntry`](../../telemetry/interfaces/CombatActionEntry.md)\>
+
+#### Returns
+
+`void`
+
+***
+
 ### render()
 
 > **render**(`ctx`, `_alpha`): `void`
@@ -275,6 +353,16 @@ Renders in-world graphics to the 2D canvas with sub-frame alpha interpolation.
 ### resetGame()
 
 > **resetGame**(): `void`
+
+#### Returns
+
+`void`
+
+***
+
+### resetTelemetry()
+
+> **resetTelemetry**(): `void`
 
 #### Returns
 

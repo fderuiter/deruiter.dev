@@ -25,15 +25,23 @@ import {
   BossState,
   DungeonRoom,
 } from "@/lib/dungeon/types";
+import {
+  RunTelemetryData,
+  StepTrajectoryEntry,
+  CombatActionEntry,
+  exportTelemetryToJson,
+  exportTelemetryToCsv,
+} from "./telemetry";
 
 export interface RetroLabyrinthConfig {
   classId?: CyberdeckClassId;
-  gameMode?: "classic" | "roguelike";
+  gameMode?: "classic" | "roguelike" | "custom";
   crtThemeId?: CRTThemeId;
+  customRoom?: DungeonRoom;
 }
 
 export interface RetroLabyrinthState {
-  gameMode: "classic" | "roguelike";
+  gameMode: "classic" | "roguelike" | "custom";
   stage: number;
   roomIndex: number;
   campaignRooms: DungeonRoom[];
@@ -64,7 +72,7 @@ export interface RetroLabyrinthState {
 }
 
 export interface RetroLabyrinthSnapshot {
-  gameMode: "classic" | "roguelike";
+  gameMode: "classic" | "roguelike" | "custom";
   stage: number;
   roomIndex: number;
   totalRooms: number;
@@ -92,32 +100,40 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
   RetroLabyrinthSnapshot
 > {
   private tickCounter = 0;
+  private runId = "";
+  private startTime = Date.now();
+  private endTime?: number;
+  private stepTrajectories: StepTrajectoryEntry[] = [];
+  private combatLogs: CombatActionEntry[] = [];
+  private enemiesDefeated = 0;
+  private itemsCollected = 0;
+  private damageDealt = 0;
+  private damageTaken = 0;
 
   constructor(config: RetroLabyrinthConfig = {}) {
     const classId = config.classId ?? "script_kiddie";
     const selectedClass =
       CYBERDECK_CLASSES[classId] || CYBERDECK_CLASSES.script_kiddie;
-    const gameMode = config.gameMode ?? "roguelike";
+    const gameMode =
+      config.gameMode ?? (config.customRoom ? "custom" : "roguelike");
     const crtThemeId = config.crtThemeId ?? "emerald";
 
-    const campaignRooms =
-      gameMode === "roguelike" ? generateRoguelikeCampaign() : [];
-    const currentMaze =
-      gameMode === "roguelike"
-        ? campaignRooms[0]?.grid || STAGE_1_MAZE
-        : STAGE_1_MAZE;
-    const startX =
-      gameMode === "roguelike"
-        ? (campaignRooms[0]?.startX ?? START_X)
-        : START_X;
-    const startY =
-      gameMode === "roguelike"
-        ? (campaignRooms[0]?.startY ?? START_Y)
-        : START_Y;
-    const initialEnemies =
-      gameMode === "roguelike" ? campaignRooms[0]?.enemies || [] : [];
-    const initialItems =
-      gameMode === "roguelike" ? campaignRooms[0]?.items || [] : [];
+    let campaignRooms: DungeonRoom[] = [];
+    if (gameMode === "custom" && config.customRoom) {
+      campaignRooms = [config.customRoom];
+    } else if (gameMode === "roguelike") {
+      campaignRooms = generateRoguelikeCampaign();
+    }
+
+    const currentMaze = campaignRooms[0]?.grid || STAGE_1_MAZE;
+    const startX = campaignRooms[0]?.startX ?? START_X;
+    const startY = campaignRooms[0]?.startY ?? START_Y;
+    const initialEnemies = campaignRooms[0]?.enemies
+      ? JSON.parse(JSON.stringify(campaignRooms[0].enemies))
+      : [];
+    const initialItems = campaignRooms[0]?.items
+      ? JSON.parse(JSON.stringify(campaignRooms[0].items))
+      : [];
 
     const initialWeapons = selectedClass.starterWeapons.map((id: WeaponId) => {
       const template = DEFAULT_WEAPONS[id] || DEFAULT_WEAPONS.npm_install;
@@ -164,6 +180,7 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
       selectedClassId: classId,
     });
 
+    this.resetTelemetry();
     this.updateFOV();
   }
 
@@ -187,11 +204,18 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
         );
         this.state.enemies = aiRes.updatedEnemies;
         if (aiRes.damageToPlayer > 0) {
+          this.damageTaken += aiRes.damageToPlayer;
+          this.recordCombatAction({
+            actionType: "player_damaged",
+            damage: aiRes.damageToPlayer,
+            details: `Took ${aiRes.damageToPlayer} damage from enemies`,
+          });
           this.state.playerHp = Math.max(
             0,
             this.state.playerHp - aiRes.damageToPlayer
           );
           if (this.state.playerHp <= 0) {
+            this.endTime = Date.now();
             this.state.gameStatus = "game_over";
             this.emit("gameOver", { score: this.state.score });
           }
@@ -318,9 +342,41 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
     this.state.playerPosition = { x: newX, y: newY };
     this.updateFOV();
 
+    // Track step trajectory
+    this.stepTrajectories.push({
+      stepIndex: this.stepTrajectories.length + 1,
+      timestamp: Date.now(),
+      x: newX,
+      y: newY,
+      dx,
+      dy,
+      playerHp: this.state.playerHp,
+      score: this.state.score,
+    });
+
+    // Check item pickups
+    this.state.items.forEach((item) => {
+      if (!item.collected && item.x === newX && item.y === newY) {
+        item.collected = true;
+        this.itemsCollected += 1;
+        this.state.score += 50;
+        this.recordCombatAction({
+          actionType: "item_pickup",
+          targetX: newX,
+          targetY: newY,
+          details: `Picked up ${item.name}`,
+        });
+      }
+    });
+
     // Check exit
     if (targetCell === "E") {
+      this.endTime = Date.now();
       this.state.gameStatus = "victory";
+      this.recordCombatAction({
+        actionType: "enemy_hit",
+        details: "Reached exit portal. Level victory!",
+      });
       this.emit("victory", { score: this.state.score });
     }
 
@@ -337,6 +393,49 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
     if (weapon.ammo > 0) {
       weapon.ammo -= 1;
     }
+
+    this.recordCombatAction({
+      actionType: "fire_weapon",
+      weaponId: weapon.id,
+      damage: weapon.damage,
+      details: `Fired ${weapon.name}`,
+    });
+
+    // Damage adjacent enemies
+    const pX = this.state.playerPosition.x;
+    const pY = this.state.playerPosition.y;
+    this.state.enemies.forEach((enemy) => {
+      if (
+        enemy.hp > 0 &&
+        Math.abs(enemy.x - pX) <= 1 &&
+        Math.abs(enemy.y - pY) <= 1
+      ) {
+        const dmg = weapon.damage || 5;
+        enemy.hp = Math.max(0, enemy.hp - dmg);
+        this.damageDealt += dmg;
+        this.recordCombatAction({
+          actionType: "enemy_hit",
+          weaponId: weapon.id,
+          targetX: enemy.x,
+          targetY: enemy.y,
+          damage: dmg,
+          enemyType: enemy.type,
+          details: `Hit ${enemy.name || enemy.type} for ${dmg} damage.`,
+        });
+
+        if (enemy.hp <= 0) {
+          this.enemiesDefeated += 1;
+          this.state.score += 100;
+          this.recordCombatAction({
+            actionType: "enemy_defeated",
+            targetX: enemy.x,
+            targetY: enemy.y,
+            enemyType: enemy.type,
+            details: `Defeated ${enemy.name || enemy.type}!`,
+          });
+        }
+      }
+    });
 
     this.emit("fireWeapon", { weaponId: weapon.id });
     this.notifySubscribers();
@@ -355,22 +454,126 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
     this.notifySubscribers();
   }
 
+  public loadCustomRoom(room: DungeonRoom): void {
+    this.state.gameMode = "custom";
+    this.state.stage = 1;
+    this.state.roomIndex = 0;
+    this.state.campaignRooms = [room];
+    this.state.currentMaze = room.grid;
+    this.state.playerPosition = { x: room.startX, y: room.startY };
+    this.state.enemies = room.enemies
+      ? JSON.parse(JSON.stringify(room.enemies))
+      : [];
+    this.state.items = room.items ? JSON.parse(JSON.stringify(room.items)) : [];
+    this.state.gameStatus = "playing";
+
+    const rows = room.grid.length;
+    const cols = room.grid[0]?.length || 0;
+    this.state.visibleCells = Array.from({ length: rows }, () =>
+      Array(cols).fill(false)
+    );
+    this.state.exploredCells = Array.from({ length: rows }, () =>
+      Array(cols).fill(false)
+    );
+
+    this.updateFOV();
+    this.resetTelemetry();
+    this.notifySubscribers();
+  }
+
+  public recordCombatAction(action: Partial<CombatActionEntry>): void {
+    const entry: CombatActionEntry = {
+      actionIndex: this.combatLogs.length + 1,
+      timestamp: Date.now(),
+      actionType: action.actionType || "fire_weapon",
+      weaponId: action.weaponId,
+      targetX: action.targetX,
+      targetY: action.targetY,
+      damage: action.damage,
+      enemyType: action.enemyType,
+      details: action.details,
+    };
+    this.combatLogs.push(entry);
+  }
+
+  public getTelemetry(): RunTelemetryData {
+    const currentRoom =
+      this.state.campaignRooms[this.state.roomIndex] ||
+      this.state.campaignRooms[0];
+    const levelId = currentRoom?.id || "custom";
+    const levelTitle = currentRoom?.title || "Custom Dungeon Level";
+
+    const endTime =
+      this.state.gameStatus !== "playing"
+        ? this.endTime || Date.now()
+        : Date.now();
+    const durationMs = Math.max(0, endTime - this.startTime);
+
+    return {
+      summary: {
+        runId: this.runId,
+        levelId,
+        levelTitle,
+        startTime: this.startTime,
+        endTime: this.state.gameStatus !== "playing" ? endTime : undefined,
+        durationMs,
+        totalSteps: this.stepTrajectories.length,
+        combatActionsCount: this.combatLogs.length,
+        finalStatus: this.state.gameStatus,
+        finalScore: this.state.score,
+        enemiesDefeated: this.enemiesDefeated,
+        itemsCollected: this.itemsCollected,
+        damageDealt: this.damageDealt,
+        damageTaken: this.damageTaken,
+      },
+      stepTrajectories: [...this.stepTrajectories],
+      combatLogs: [...this.combatLogs],
+    };
+  }
+
+  public exportTelemetryJson(): string {
+    return exportTelemetryToJson(this.getTelemetry());
+  }
+
+  public exportTelemetryCsv(): {
+    summaryCsv: string;
+    stepsCsv: string;
+    combatCsv: string;
+    combinedCsv: string;
+  } {
+    return exportTelemetryToCsv(this.getTelemetry());
+  }
+
+  public resetTelemetry(): void {
+    this.runId = `run_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    this.startTime = Date.now();
+    this.endTime = undefined;
+    this.stepTrajectories = [];
+    this.combatLogs = [];
+    this.enemiesDefeated = 0;
+    this.itemsCollected = 0;
+    this.damageDealt = 0;
+    this.damageTaken = 0;
+  }
+
   public resetGame(): void {
     const selectedClass =
       CYBERDECK_CLASSES[this.state.selectedClassId] ||
       CYBERDECK_CLASSES.script_kiddie;
-    const campaignRooms =
-      this.state.gameMode === "roguelike" ? generateRoguelikeCampaign() : [];
+    let campaignRooms = this.state.campaignRooms;
+    if (this.state.gameMode === "roguelike") {
+      campaignRooms = generateRoguelikeCampaign();
+    }
     const currentMaze =
-      this.state.gameMode === "roguelike"
+      this.state.gameMode === "roguelike" || this.state.gameMode === "custom"
         ? campaignRooms[0]?.grid || STAGE_1_MAZE
         : STAGE_1_MAZE;
     const startX =
-      this.state.gameMode === "roguelike"
+      this.state.gameMode === "roguelike" || this.state.gameMode === "custom"
         ? (campaignRooms[0]?.startX ?? START_X)
         : START_X;
     const startY =
-      this.state.gameMode === "roguelike"
+      this.state.gameMode === "roguelike" || this.state.gameMode === "custom"
         ? (campaignRooms[0]?.startY ?? START_Y)
         : START_Y;
 
@@ -385,6 +588,7 @@ export class RetroLabyrinthEngine extends ArcadeEngine<
       currentMaze[0]?.length ?? 0
     );
     this.updateFOV();
+    this.resetTelemetry();
     this.notifySubscribers();
   }
 

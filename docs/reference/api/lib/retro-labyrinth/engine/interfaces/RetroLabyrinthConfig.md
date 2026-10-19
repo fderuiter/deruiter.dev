@@ -20,6 +20,12 @@
 
 ***
 
+### customRoom?
+
+> `optional` **customRoom?**: [`DungeonRoom`](../../../dungeon/types/interfaces/DungeonRoom.md)
+
+***
+
 ### gameMode?
 
-> `optional` **gameMode?**: `"classic"` \| `"roguelike"`
+> `optional` **gameMode?**: `"custom"` \| `"classic"` \| `"roguelike"`

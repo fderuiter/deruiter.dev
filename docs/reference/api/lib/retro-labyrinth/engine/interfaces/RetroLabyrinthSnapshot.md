@@ -34,7 +34,7 @@
 
 ### gameMode
 
-> **gameMode**: `"classic"` \| `"roguelike"`
+> **gameMode**: `"custom"` \| `"classic"` \| `"roguelike"`
 
 ***
 

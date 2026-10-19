@@ -25,6 +25,8 @@ import {
   IconFileText,
   IconTerminal2,
   IconDeviceTv,
+  IconGridDots,
+  IconActivity,
 } from "@tabler/icons-react";
 import { DpadActionDock } from "@/components/arcade/ControlDocks";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
@@ -96,6 +98,13 @@ import { DarknetMarket } from "@/components/retro-labyrinth/DarknetMarket";
 import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
 import { ClassSelect } from "@/components/retro-labyrinth/ClassSelect";
 import { FirmwareBay } from "@/components/retro-labyrinth/FirmwareBay";
+import { CustomLevelEditor } from "@/components/retro-labyrinth/CustomLevelEditor";
+import { TelemetryExportModal } from "@/components/retro-labyrinth/TelemetryExportModal";
+import type {
+  RunTelemetryData,
+  StepTrajectoryEntry,
+  CombatActionEntry,
+} from "@/lib/retro-labyrinth/telemetry";
 import {
   patrolThreat,
   type ThreatLevel,
@@ -404,6 +413,34 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   const [isCRTModalOpen, setIsCRTModalOpen] = useState(false);
   const currentTheme = CRT_THEMES[crtThemeId] || CRT_THEMES.emerald;
 
+  // Custom Level Editor & Telemetry Modal states
+  const [isLevelEditorOpen, setIsLevelEditorOpen] = useState(false);
+  const [isTelemetryModalOpen, setIsTelemetryModalOpen] = useState(false);
+  const [telemetryData, setTelemetryData] = useState<RunTelemetryData | null>(
+    null
+  );
+  const [customRoom, setCustomRoom] = useState<DungeonRoom | null>(null);
+
+  // Telemetry recording state
+  const [stepTrajectories, setStepTrajectories] = useState<
+    StepTrajectoryEntry[]
+  >([]);
+  const [combatLogs, setCombatLogs] = useState<CombatActionEntry[]>([]);
+  const [enemiesDefeated, setEnemiesDefeated] = useState(0);
+  const [itemsCollected, setItemsCollected] = useState(0);
+  const [damageDealt, setDamageDealt] = useState(0);
+  const [damageTaken, setDamageTaken] = useState(0);
+  const runStartTimeRef = useRef<number>(0);
+  const runEndTimeRef = useRef<number | undefined>(undefined);
+  const runIdRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!runStartTimeRef.current) {
+      runStartTimeRef.current = Date.now();
+      runIdRef.current = `run_${runStartTimeRef.current}`;
+    }
+  }, []);
+
   // Game mode & stage
   const [gameMode, setGameMode] = useState<"roguelike" | "classic">(
     "roguelike"
@@ -608,6 +645,107 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
   // FX: Particles & Floating texts
   const particlesRef = useRef<ParticleEffect[]>([]);
   const floatingTextsRef = useRef<FloatingNotification[]>([]);
+
+  const handlePlayCustomLevel = useCallback(
+    (roomToPlay: DungeonRoom) => {
+      setCustomRoom(roomToPlay);
+      setGameMode("classic");
+      setStage(1);
+      setRoomIndex(0);
+      setCurrentMaze(roomToPlay.grid);
+      setPlayerPosition({ x: roomToPlay.startX, y: roomToPlay.startY });
+      setPlayerHp(selectedClass.baseHp);
+      setMaxPlayerHp(selectedClass.baseHp);
+      setEnemies(
+        roomToPlay.enemies ? JSON.parse(JSON.stringify(roomToPlay.enemies)) : []
+      );
+      setItems(
+        roomToPlay.items ? JSON.parse(JSON.stringify(roomToPlay.items)) : []
+      );
+      setGameStatus("playing");
+      setIsLevelEditorOpen(false);
+
+      // Reset fog of war
+      const rows = roomToPlay.grid.length;
+      const cols = roomToPlay.grid[0]?.length || 0;
+      const resetExplored = Array.from({ length: rows }, () =>
+        Array(cols).fill(false)
+      );
+      setExploredMap(resetExplored);
+      const fov = calculateFOV(
+        roomToPlay.grid,
+        roomToPlay.startX,
+        roomToPlay.startY,
+        7,
+        resetExplored
+      );
+      setVisibleMap(fov.visible);
+      setExploredMap(fov.explored);
+
+      // Reset telemetry
+      runIdRef.current = `run_${Date.now()}`;
+      runStartTimeRef.current = Date.now();
+      runEndTimeRef.current = undefined;
+      setStepTrajectories([]);
+      setCombatLogs([]);
+      setEnemiesDefeated(0);
+      setItemsCollected(0);
+      setDamageDealt(0);
+      setDamageTaken(0);
+
+      announce(`Custom level '${roomToPlay.title}' loaded!`);
+    },
+    [selectedClass.baseHp, announce]
+  );
+
+  const handleOpenTelemetryModal = useCallback(() => {
+    const now = Date.now();
+    const startTime = runStartTimeRef.current;
+    const endTime =
+      gameStatus !== "playing" ? runEndTimeRef.current : undefined;
+    const data: RunTelemetryData = {
+      summary: {
+        runId: runIdRef.current,
+        levelId: customRoom?.id || campaignRooms[roomIndex]?.id || "classic_1",
+        levelTitle:
+          customRoom?.title ||
+          campaignRooms[roomIndex]?.title ||
+          "Retro Subnet",
+        startTime,
+        endTime,
+        durationMs: Math.max(0, (endTime || now) - startTime),
+        totalSteps: stepTrajectories.length,
+        combatActionsCount: combatLogs.length,
+        finalStatus:
+          gameStatus === "playing"
+            ? "playing"
+            : gameStatus === "victory"
+              ? "victory"
+              : "game_over",
+        finalScore: score,
+        enemiesDefeated,
+        itemsCollected,
+        damageDealt,
+        damageTaken,
+      },
+      stepTrajectories,
+      combatLogs,
+    };
+    setTelemetryData(data);
+    setIsTelemetryModalOpen(true);
+  }, [
+    customRoom,
+    campaignRooms,
+    roomIndex,
+    gameStatus,
+    stepTrajectories,
+    combatLogs,
+    score,
+    enemiesDefeated,
+    itemsCollected,
+    damageDealt,
+    damageTaken,
+  ]);
   // Whether a boss volley has hit the player in this room, for the no-hit
   // boss trophy (#2181). Every room load, retries included, clears it.
   const bossHitThisRoomRef = useRef(false);
@@ -3341,6 +3479,24 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
           <div className="flex items-center gap-1 bg-neutral-900 p-0.5 rounded-lg text-xs">
             <button
+              type="button"
+              onClick={() => setIsLevelEditorOpen(true)}
+              aria-label="Open Custom Level Editor"
+              className="px-2 py-0.5 rounded cursor-pointer transition-colors bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 hover:text-emerald-100 font-semibold [@media(pointer:coarse)]:min-h-11 inline-flex items-center gap-1"
+            >
+              <IconGridDots className="w-3.5 h-3.5 text-emerald-400" />
+              Level Editor
+            </button>
+            <button
+              type="button"
+              onClick={handleOpenTelemetryModal}
+              aria-label="Export Run Telemetry"
+              className="px-2 py-0.5 rounded cursor-pointer transition-colors bg-amber-950/80 border border-amber-500/40 text-amber-300 hover:text-amber-100 font-semibold [@media(pointer:coarse)]:min-h-11 inline-flex items-center gap-1"
+            >
+              <IconActivity className="w-3.5 h-3.5 text-amber-400" />
+              Telemetry
+            </button>
+            <button
               onClick={startRoguelikeCampaign}
               className={`px-2 py-0.5 rounded cursor-pointer transition-colors [@media(pointer:coarse)]:min-h-11 ${
                 gameMode === "roguelike"
@@ -4405,6 +4561,22 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         onChange={setSavedCrtCalibration}
         themePrimaryColor={currentTheme.primaryColor}
       />
+
+      {/* Custom Level Editor Modal */}
+      {isLevelEditorOpen && (
+        <CustomLevelEditor
+          onPlayCustomLevel={handlePlayCustomLevel}
+          onClose={() => setIsLevelEditorOpen(false)}
+        />
+      )}
+
+      {/* Telemetry Exporter Modal */}
+      {isTelemetryModalOpen && telemetryData && (
+        <TelemetryExportModal
+          telemetry={telemetryData}
+          onClose={() => setIsTelemetryModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

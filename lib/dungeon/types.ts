@@ -16,7 +16,8 @@ export type RoomThemeId =
   | "active_directory"
   | "zero_trust_core"
   | "darknet_vault"
-  | "neural_warden";
+  | "neural_warden"
+  | "custom";
 
 export interface ThemedRoomMeta {
   id: RoomThemeId;

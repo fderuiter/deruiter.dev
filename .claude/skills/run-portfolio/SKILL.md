@@ -1,6 +1,6 @@
 ---
 name: run-portfolio
-description: Build, run, and drive the fderuiter/deruiter.dev Next.js web app. Use when asked to start the portfolio site, run the dev server, take a screenshot of a page (home, /patrol, /crf, /proof, arcade games, etc.), or interact with its UI.
+description: Build, run, and drive the fderuiter/deruiter.dev Next.js web app. Use when asked to start the portfolio site, run the dev server, take a screenshot of a page (home, /patrol, /crf, /proof, arcade games, etc.), play or click through an arcade game, or interact with its UI.
 ---
 
 This is a Next.js 16 (App Router, Turbopack) web app. For agent/automated
@@ -119,7 +119,9 @@ string `[n]ext`.
 | `nav <path-or-url>`           | navigate; bare paths resolve against `PORTFOLIO_BASE_URL`             |
 | `wait-for <css-selector>`     | wait for a selector (15s timeout)                                     |
 | `wait-for text=<text>`        | wait for text to appear anywhere on the page                          |
-| `screenshot [name]`           | screenshot -> `/tmp/shots/<name or ss-<ts>>.png`                      |
+| `screenshot [name] [--full]`  | screenshot -> `/tmp/shots/<name or ss-<ts>>.png`; `--full` whole page |
+| `sleep <ms>`                  | pause (hydration, animations, game ticks)                             |
+| `tap <css-selector>`          | touch tap; needs a `touch` launch                                     |
 | `click <css-selector>`        | click via selector                                                    |
 | `click-text <text>`           | click the first button/link containing text                           |
 | `fill <css-selector> <text>`  | fill a form field                                                     |
@@ -128,6 +130,29 @@ string `[n]ext`.
 | `text [css-selector]`         | print `innerText` (whole page if no selector)                         |
 | `console --errors`            | print console/page errors captured since `launch`                     |
 | `quit`                        | close the browser                                                     |
+
+### Playing an arcade game
+
+Every `/arcade/*` page shows a `PlayCabinet` poster first. Launch the
+cabinet, wait for the canvas, then click the canvas so it has keyboard
+focus before sending keys. Verified on Retro Labyrinth (the player moves
+down and `npm i` fires: ammo 12 to 11, RAM 24 to 20 in the HUD):
+
+```bash
+node .claude/skills/run-portfolio/driver.mjs <<'EOF'
+launch
+nav /arcade/retro-labyrinth
+click-text Launch Cabinet
+wait-for canvas
+sleep 2500
+click canvas
+press ArrowDown
+press ArrowDown
+press 1
+sleep 800
+screenshot labyrinth-moved
+EOF
+```
 
 ### Viewports and the arcade phone gate
 
@@ -201,10 +226,24 @@ in Server Components`. This is now fixed — the dynamic import moved
   React's "eval() is not supported" warning (the site's static CSP has
   no `unsafe-eval`; React only wants it in development) show up on every
   route. None of them blocks rendering or interaction.
-- **The red "1 Issue" badge in dev screenshots** is Next's dev overlay
-  counting one of those dev-only console errors. The overlay never
-  appears in production builds; crop it or mention it rather than
-  trying to fix it.
+- **The red "1 Issue" badge** is Next's dev overlay counting one of
+  those dev-only console errors; it never appears in production. The
+  driver hides it with injected CSS on `nextjs-portal`; set
+  `SHOW_DEV_OVERLAY=1` when you want to read the error it counts.
+- **`GET /api/telemetry 500` and `prisma:error connect ECONNREFUSED`**
+  in the dev log are expected with the dummy `.env.local`; pages and
+  games still render.
+- **`wait-for` on text often matches before hydration.** Server HTML
+  carries headings, so add `sleep 2000` before a screenshot. On `/` the
+  headline is there while the photo card is still fading in.
+- **Each route compiles on its first visit** (3-30s in `next dev`). A
+  `click` or `tap` that navigates reports OK while `location.pathname`
+  still shows the old page; `sleep 8000` or `wait-for` something on the
+  target page.
+- **Selectors often hit a hidden duplicate first.** The arcade hub
+  renders each game link several times (mobile and desktop variants),
+  so `a[href="/arcade/meme-vault"]` picks a hidden one and times out.
+  Add Playwright's `:visible`: `tap a[href="/arcade/meme-vault"]:visible`.
 - **`.env.local` with the dummy `.env.example` Postgres URL is enough**
   for the routes this skill exercises (`/`, `/patrol`) — no local
   Postgres, Redis, or Clerk keys needed. DB-backed routes (case

@@ -56,10 +56,23 @@ const COMMANDS = {
     const [width, height] = parseSize(arg) ?? [1280, 800];
     const touch = /\btouch\b/.test(arg || "");
     browser = await launchChromium({ headless: true, args: ["--no-sandbox"] });
-    page = await browser.newPage({
+    const context = await browser.newContext({
       viewport: { width, height },
       ...(touch ? { hasTouch: true, isMobile: true } : {}),
     });
+    // next dev mounts its "N Issue" badge in a <nextjs-portal> shadow host
+    // over the bottom-left of every page; hide it so screenshots show the
+    // app. SHOW_DEV_OVERLAY=1 keeps it (e.g. to read the error it counts).
+    if (!process.env.SHOW_DEV_OVERLAY) {
+      await context.addInitScript(() => {
+        document.addEventListener("DOMContentLoaded", () => {
+          const style = document.createElement("style");
+          style.textContent = "nextjs-portal{display:none!important}";
+          document.head.appendChild(style);
+        });
+      });
+    }
+    page = await context.newPage();
     page.on("console", (msg) => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
     });
@@ -100,11 +113,29 @@ const COMMANDS = {
     }
   },
 
-  async screenshot(name) {
+  async screenshot(arg) {
     if (!page) return console.log("ERROR: launch first");
+    const parts = (arg || "").split(/\s+/).filter(Boolean);
+    const fullPage = parts.includes("--full");
+    const name = parts.find((p) => p !== "--full");
     const f = path.join(SHOT_DIR, `${name || "ss-" + Date.now()}.png`);
-    await page.screenshot({ path: f });
+    await page.screenshot({ path: f, fullPage });
     console.log("screenshot:", f);
+  },
+
+  async sleep(ms) {
+    await new Promise((r) => setTimeout(r, Number(ms) || 1000));
+    console.log("slept", Number(ms) || 1000, "ms");
+  },
+
+  async tap(sel) {
+    if (!page) return console.log("ERROR: launch first");
+    try {
+      await page.tap(sel, { timeout: 10_000 });
+      console.log("tap", sel, "-> OK");
+    } catch (e) {
+      console.log("tap", sel, "-> ERROR:", e.message.split("\n")[0]);
+    }
   },
 
   async click(sel) {
@@ -113,7 +144,7 @@ const COMMANDS = {
       await page.click(sel, { timeout: 10_000 });
       console.log("click", sel, "-> OK");
     } catch (e) {
-      console.log("click", sel, "-> ERROR:", e.message);
+      console.log("click", sel, "-> ERROR:", e.message.split("\n")[0]);
     }
   },
 
@@ -126,7 +157,12 @@ const COMMANDS = {
         .click({ timeout: 10_000 });
       console.log("click-text", JSON.stringify(text), "-> OK");
     } catch (e) {
-      console.log("click-text", JSON.stringify(text), "-> ERROR:", e.message);
+      console.log(
+        "click-text",
+        JSON.stringify(text),
+        "-> ERROR:",
+        e.message.split("\n")[0]
+      );
     }
   },
 
@@ -139,7 +175,7 @@ const COMMANDS = {
       await page.fill(sel, value);
       console.log("fill", sel, "-> OK");
     } catch (e) {
-      console.log("fill", sel, "-> ERROR:", e.message);
+      console.log("fill", sel, "-> ERROR:", e.message.split("\n")[0]);
     }
   },
 

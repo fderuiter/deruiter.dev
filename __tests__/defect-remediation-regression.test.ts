@@ -17,6 +17,7 @@ import {
   extractVariables,
   areAstsEqual,
   exportWorkspaceProof,
+  getSuggestion,
   PropAst,
 } from "@/lib/proof-utils";
 import {
@@ -2577,5 +2578,57 @@ describe("Working With Duck endless keeps getting harder (#2328)", () => {
     } finally {
       spy.mockRestore();
     }
+  });
+});
+
+describe("ROI analytics requests survive a worker crash (#2532)", () => {
+  it("settles an in-flight histogram through the main-thread fallback and replaces the worker", async () => {
+    const workers: {
+      onerror: ((event: unknown) => void) | null;
+      terminated: boolean;
+    }[] = [];
+    vi.stubGlobal(
+      "Worker",
+      class {
+        onmessage = null;
+        onerror: ((event: unknown) => void) | null = null;
+        terminated = false;
+        constructor() {
+          workers.push(this);
+        }
+        postMessage() {}
+        terminate() {
+          this.terminated = true;
+        }
+      }
+    );
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      vi.resetModules();
+      const neuro = await import("@/lib/neuro");
+      const data = new Uint8Array([3, 3, 7]);
+
+      const pending = neuro.requestHistogramAsync(data);
+      workers[0].onerror?.(new Error("worker crashed"));
+
+      await expect(pending).resolves.toEqual(
+        neuro.compute256BinHistogram(data)
+      );
+      expect(workers[0].terminated).toBe(true);
+
+      void neuro.requestHistogramAsync(data);
+      expect(workers).toHaveLength(2);
+    } finally {
+      warn.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+});
+
+describe("Proof console autocomplete never offers whitespace (#2532)", () => {
+  it("returns no suggestion after a bare connect, so Tab moves focus", () => {
+    expect(getSuggestion("connect ")).toBe("");
+    expect(getSuggestion("disconnect ")).toBe("");
+    expect(getSuggestion("connect A")).toBe("connect A ");
   });
 });

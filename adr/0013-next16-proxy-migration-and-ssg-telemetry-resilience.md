@@ -1,8 +1,13 @@
 # 0013. Next.js 16 Edge Proxy Architecture and Build-Time Telemetry Resilience
 
+## Status
+
+Accepted
+
 ## Context
 
 Following the upgrade to Next.js 16, Vercel build pipelines surfaced several architectural deprecations, warnings, and compilation friction points:
+
 1. **Next.js 16 Middleware Deprecation**: Next.js 16 deprecated the `middleware.ts` file convention in favor of `proxy.ts` exporting named `proxy()` handlers to clarify edge network boundaries and execution ergonomics.
 2. **Build-Time GitHub SSG 404/403 Stderr Dumps**: During static page prerendering (`app/case-studies/[slug]/page.tsx`, `app/case-studies/page.tsx`, `app/page.tsx`), unauthenticated requests to `api.github.com` for unreleased repositories or rate-limited IP addresses threw HTTP 404/403 errors. Because `lib/github.ts` logged full stack traces to `console.error` whenever `VERCEL_ENV === "production"`, production build logs were polluted with 20+ false-alarm exception dumps.
 3. **Node.js Engine Version Alignment**: `package.json` pinned `"node": "22.x"`, causing deployment warnings when running against modern Node 24 Vercel build environments.

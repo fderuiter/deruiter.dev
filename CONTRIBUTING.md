@@ -12,7 +12,7 @@ To prevent route drift, unindexed navigation entries, and architectural regressi
 
 ### Core Standards
 
-- **Node.js**: `>=22.0.0` (Sole supported runtime).
+- **Node.js**: `>=22.0.0 <25.0.0` (Sole supported runtime).
 - **Package Manager**: `npm >= 10.0.0` (Sole supported package manager; `bun`, `yarn`, and `pnpm` are unsupported).
 - **Quality Gates**: Zero TypeScript errors, zero ESLint warnings, 100% route indexing parity, zero uncommitted documentation drift.
 - **Architectural Slices**: All new features must be created via the scaffolding CLI to guarantee companion test files and automatic navigation indexing across the 5-Point Discovery Matrix.
@@ -129,13 +129,13 @@ Whenever a new first-class route, interactive mini-game, or case study page is i
    - Registered under `staticNavs` with Tabler icon, title, subtitle, category, and target URL.
    - _Note:_ The CLI scaffolder automatically registers `arcade` games and `case-study` pages into `CommandPalette.tsx` upon scaffolding!
 2. **Site Navigation (`lib/navigation.ts`)**:
-   - One entry under the right group (Arcade, Simulators, Work, About). The top bar, desktop menus, mobile drawer and footer columns all render from this data ([ADR 0058](./adr/0058-site-navigation-information-architecture.md)).
+   - One entry under the right group (Work, Blog, Arcade, Simulators, About, Contact). The top bar, desktop menus, mobile drawer and footer columns all render from this data ([ADR 0058](./adr/0058-site-navigation-information-architecture.md)).
 3. **Sitemap & SEO Metadata (`app/sitemap.ts` & `lib/seo-metadata.ts`)**:
    - Canonical path and change frequency added to `ROUTE_METADATA_CONFIGS`.
 4. **OpenGraph Social Preview (`app/<route>/opengraph-image.tsx`)**:
    - 1200x630 dynamic OpenGraph card generator matching design system (`lib/og-image.tsx`).
-5. **Page Benchmark (`lib/dx/page-bench.ts`)**:
-   - Path registered in `CANONICAL_ROUTES`.
+5. **Public Route Registry (`lib/public-routes.ts`)**:
+   - Path registered in `PUBLIC_ROUTE_REGISTRY`, which feeds `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` and the service-worker precache.
 
 ---
 
@@ -144,7 +144,7 @@ Whenever a new first-class route, interactive mini-game, or case study page is i
 When contributing code, ensure adherence to system invariants detailed in [`AGENTS.md`](./AGENTS.md):
 
 - **No Secondary Navbars**: `app/layout.tsx` renders the sole global `<Navbar />`. Route pages must never render a second `<Navbar />`.
-- **Root Header Clearance**: Route pages (`app/**/page.tsx`) must declare top padding clearance (`pt-28`) for the sticky header.
+- **Root Header Clearance**: Route pages (`app/**/page.tsx`) must declare top padding clearance for the sticky header (`pt-24` to `pt-32`, `min-h-dvh`, or `<PageLayout />`).
 - **Hydration & Storage**: Use `useSyncExternalStore` or safe SSR checks for browser APIs (`typeof window !== "undefined"`).
 - **Red-Green Remediation Protocol**: All defect fixes must include isolated reproduction unit tests in `__tests__/` and regression assertions in `__tests__/defect-remediation-regression.test.ts`.
 - **WCAG AA Accessibility**: Zero Critical, Serious, or Moderate accessibility violations. Interactive components must support full keyboard navigation and focus trapping.
@@ -169,6 +169,7 @@ branches must follow conventional prefixes:
 - `perf/*` - Performance optimizations
 - `chore/*` - Dependencies and repository maintenance
 - `test/*` - Test additions without behavior changes
+- `dev/*` - Short-lived personal development branches
 - `jules/*` - Reserved for branches opened by the Jules agent
 
 Open pull requests against `main` and squash-merge them using a Conventional
@@ -208,7 +209,7 @@ npm run doctor
 # 2. Automatically fix remediable invariant issues (OpenAPI spec, docs drift)
 npm run doctor:fix
 
-# 3. Run complete verification gate (type-check, ESLint, docs drift check, benchmarks)
+# 3. Run the strict DX Doctor invariant gate (docs/OpenAPI drift, routes, layout, a11y, boundaries, benchmark evidence)
 npm run verify
 
 # 4. Execute unit & integration test suite
@@ -256,26 +257,26 @@ npm run quality
 
 ### CI Quality Gate Mapping
 
-| Local Quality Command                | Continuous Integration Job / Step                                 | Verification Scope & Purpose                                                                          |
-| ------------------------------------ | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `npm run doctor`                     | `bench-gate` / Verify ADR Invariants & Doctor Health Diagnostics  | Diagnostic audit of architectural and testing invariants (routes, layout, WCAG a11y, hydration)       |
-| `npm run doctor:fix`                 | Local Auto-remediation                                            | Auto-remediates fixable architectural invariants and updates OpenAPI & TypeDoc contracts              |
-| `npm run env:check`                  | Local environment preflight                                       | Validates `.env.local` schema definitions against `lib/env.ts` and `.env.example`                     |
-| `npm run check`                      | `static-gate` / Type Check (Memory Budget) & Lint                 | Static TypeScript checking, ESLint, and dependency-boundary enforcement                               |
-| `npm run lint:docs`                  | `static-gate` / Lint Documentation                                | Markdown formatting and structure linting via `markdownlint-cli`                                      |
-| `npm run check-docs-drift`           | `static-gate` / Check Documentation Drift                         | Verifies lockstep synchronization for TypeDoc API docs, OpenAPI schemas, and onboarding guides        |
-| `npm run check:migrations:drift`     | `static-gate` / Check Schema Drift                                | Verifies Prisma database schema against active migrations and checks for drift                        |
-| `npm test` / `npm run test:ci`       | `unit-gate` (3 shards) and `unit-coverage` (merged thresholds)    | Comprehensive unit, logic, and state-engine tests with optional coverage                              |
-| `npm run test:fuzz`                  | `unit-gate` (part of the Vitest suite)                            | Fast-check property-based testing and generative invariant verification                               |
-| `npm run test:mutation`              | `mutation-gate` / Run Stryker Mutation Gate                       | Mutation testing of critical deterministic and security modules                                       |
-| `npx playwright test`                | `heavy-gate` (3 chromium shards) and `device-gate`                | Visual regression, interaction, responsive-device, and Playwright-Axe accessibility checks            |
-| `npm run analyze:bundle -- --strict` | `build` / Verify Bundle Performance Budgets                       | Enforces JavaScript chunk-size limits and initial shared-bundle gzip budgets                          |
-| `npm run bench:pages -- --assert`    | `bench-gate` / Run Real-Browser Sub-Route Web Vitals              | Production-server Core Web Vitals assertions (LCP <= 2500ms, TTFB <= 800ms, CLS <= 0.1)               |
-| `npm run audit:security`             | `security-gate` / `Execute Security Audit Gate`                   | Dependency security vulnerability auditing and policy compliance                                      |
-| `npm run audit:secrets`              | `security-gate` / Scan Reachable Git History for Secrets          | Redacted scan of all reachable Git history for high-confidence credential patterns                    |
-| `npm run audit:triage`               | `scheduled-security-audit.yml` / Triage Security Issue Escalation | Automated GitHub issue escalation for unhandled vulnerabilities and expired overrides                 |
-| `npm run probe:synthetic`            | `synthetic-probes.yml` / `Headless Synthetic Probe Matrix`        | Playwright synthetic user probes verifying critical user journeys and API telemetry                   |
-| `npm run quality`                    | CI Pipeline Composite Pre-Flight Gate                             | Runs static checks, docs gates, secret-history audit, page benchmarks, and architectural verification |
+| Local Quality Command                | Continuous Integration Job / Step                                 | Verification Scope & Purpose                                                                           |
+| ------------------------------------ | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `npm run doctor`                     | `bench-gate` / Verify ADR Invariants & Doctor Health Diagnostics  | Diagnostic audit of architectural and testing invariants (routes, layout, WCAG a11y, hydration)        |
+| `npm run doctor:fix`                 | Local Auto-remediation                                            | Auto-remediates fixable architectural invariants and updates OpenAPI & TypeDoc contracts               |
+| `npm run env:check`                  | Local environment preflight                                       | Validates `.env.local` schema definitions against `lib/env.ts` and `.env.example`                      |
+| `npm run check`                      | `static-gate` / Type Check (Memory Budget) & Lint                 | Static TypeScript checking and ESLint (CI covers dependency boundaries through `verify`)               |
+| `npm run lint:docs`                  | `static-gate` / Lint Documentation                                | Markdown formatting and structure linting via `markdownlint-cli`                                       |
+| `npm run check-docs-drift`           | `static-gate` / Check Documentation Drift                         | Verifies lockstep synchronization for TypeDoc API docs, OpenAPI schemas, and onboarding guides         |
+| `npm run check:migrations:drift`     | `static-gate` / Check Schema Drift                                | Verifies Prisma database schema against active migrations and checks for drift                         |
+| `npm test` / `npm run test:ci`       | `unit-gate` (3 shards) and `unit-coverage` (merged thresholds)    | Comprehensive unit, logic, and state-engine tests with optional coverage                               |
+| `npm run test:fuzz`                  | `unit-gate` (part of the Vitest suite)                            | Fast-check property-based testing and generative invariant verification                                |
+| `npm run test:mutation`              | `mutation-gate` / Run Stryker Mutation Gate                       | Mutation testing of critical deterministic and security modules                                        |
+| `npx playwright test`                | `heavy-gate` (3 chromium shards) and `device-gate`                | Visual regression, interaction, responsive-device, and Playwright-Axe accessibility checks             |
+| `npm run analyze:bundle -- --strict` | `build` / Verify Bundle Performance Budgets                       | Enforces JavaScript chunk-size limits and initial shared-bundle gzip budgets                           |
+| `npm run bench:pages -- --assert`    | `bench-gate` / Run Real-Browser Sub-Route Web Vitals              | Production-server Core Web Vitals assertions (LCP <= 2500ms, TTFB <= 800ms, CLS <= 0.1)                |
+| `npm run audit:security`             | `security-gate` / `Execute Security Audit Gate`                   | Dependency security vulnerability auditing and policy compliance                                       |
+| `npm run audit:secrets`              | `security-gate` / Scan Reachable Git History for Secrets          | Redacted scan of all reachable Git history for high-confidence credential patterns                     |
+| `npm run audit:triage`               | `scheduled-security-audit.yml` / Triage Security Issue Escalation | Automated GitHub issue escalation for unhandled vulnerabilities and expired overrides                  |
+| `npm run probe:synthetic`            | `synthetic-probes.yml` / `Headless Synthetic Probe Matrix`        | Playwright synthetic user probes verifying critical user journeys and API telemetry                    |
+| `npm run quality`                    | CI Pipeline Composite Pre-Flight Gate                             | Runs static checks, docs gates, license, secret-history and a11y audits, page benchmarks, and `verify` |
 
 ---
 

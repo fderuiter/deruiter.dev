@@ -1,10 +1,15 @@
 # 0014. Clerk Authentication & Edge Middleware Architecture for Admin & Author Portal
 
+## Status
+
+Accepted
+
 ## Context
 
 The portfolio showcases interactive engineering studios, clinical CDISC engines, and published case studies. To support editorial workflows—such as authoring and previewing draft case studies, publishing updates, and inspecting raw analytics telemetry—the portfolio requires administrative capabilities without exposing write access to public visitors.
 
 Key constraints:
+
 1. **Zero Public Performance Degradation**: Public visitors must never encounter auth latency, blocking database user checks, or broken prerendering on static routes.
 2. **Edge Security & Privacy Preservation**: The existing edge middleware pipeline (`middleware.ts`) applies HTTP security headers (`applySecurityHeaders`) and computes Web Crypto SHA-256 client connection tokens (`generateClientConnectionHash`) for anonymous rate limiting.
 3. **CI/CD & Offline Test Resilience**: Test suites (Vitest, Playwright synthetic probes) and static builds (`npm run build`) must run deterministically without requiring live Clerk network credentials.
@@ -27,4 +32,3 @@ We adopt `@clerk/nextjs` configured with an **Edge Middleware Chaining & Environ
 - Public routes remain 100% static, fast, and accessible without auth friction.
 - Edge security headers and anonymous telemetry fingerprinting are preserved without conflict.
 - The build, quality verification, and CI pipelines continue to run cleanly offline.
-

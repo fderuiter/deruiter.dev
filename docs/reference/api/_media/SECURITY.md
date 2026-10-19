@@ -51,31 +51,33 @@ values.
 The security audit CLI evaluates vulnerability severity levels and enforces the following policy:
 
 - **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `security-audit-ignore.json`.
-- **Low & Moderate Severities:** Do not block execution by default, though developers are encouraged to remediate them during routine maintenance.
+- **Low & Moderate Severities:** Do not block a local run by default, though developers are encouraged to remediate them during routine maintenance.
+- **CI Security Gate:** CI runs `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window also fail the Security Gate.
 
 ## CI Pipeline Security Gate Enforcement
 
 Automated security checks are enforced across continuous integration and release workflows:
 
 - **Pre-Commit Hook Gate:** Local commits perform dependency security vulnerability checks via `npm run audit:security` in `.husky/pre-commit` before remote push.
-- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job executes both audits against full Git history on every push to `main` and pull request targeting `main`. Unhandled vulnerabilities or unallowlisted secret-shaped values fail the gate.
+- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job executes three audits (dependency vulnerabilities, licenses and secrets in full Git history) on every push to `main` and pull request targeting `main`. Unhandled vulnerabilities or unallowlisted secret-shaped values fail the gate.
 - **Production Build Gate:** Vercel’s production build of `main` runs the offline migration integrity checks, applies migrations through the environment-guarded block in `scripts/build.js`, and then compiles the application. Dependency and secret audits remain mandatory CI and pre-commit gates; production database credentials remain confined to Vercel.
 
 ## Vulnerability Override Governance Rules
 
-When a high or critical third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `security-audit-ignore.json` (at the root of the repository or in `scripts/security-audit-ignore.json`).
+When a critical, high, or moderate third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `security-audit-ignore.json` (at the root of the repository or in `scripts/security-audit-ignore.json`).
 
 ### Mandatory Override Parameters
 
 All suppression rules in `security-audit-ignore.json` must strictly adhere to the following governance requirements:
 
 1. **Advisory Identifier (`advisory` / `advisoryId` / `cve` / `ghsa` / `id`):** Must specify a valid advisory identifier (e.g., `GHSA-c2qf-rxjj-4v5w` or `CVE-XXXX-XXXX`). Entries missing an advisory ID are invalid and rejected by the audit tool.
-2. **Severity Classification (`severity`):** Specifies the vulnerability severity (`critical` or `high`). If omitted, rules default to Critical severity validation limits (**14 days**) to fail closed.
+2. **Severity Classification (`severity`):** Specifies the vulnerability severity (`critical`, `high` or `moderate`). If omitted, rules default to Critical severity validation limits (**14 days**) to fail closed.
 3. **Business Justification (`reason` / `justification`):** Must contain a clear description of why the vulnerability is non-actionable or safe in the current deployment context (e.g., dev-only tool, build-time utility with no production runtime exposure).
 4. **Risk Owner & Follow-Up Ticket (`owner` & `followUp`):** Must designate a responsible risk owner and linked follow-up issue/ticket.
 5. **Expiration Date & Tiered Lifespan Limits (`expiresAt` / `expires`):** Must provide a valid ISO timestamp specifying when the override expires. Overrides are capped based on severity:
    - **Critical Severity:** Capped at a maximum lifespan of **14 days**.
    - **High Severity:** Capped at a maximum lifespan of **30 days**.
+   - **Moderate Severity:** Capped at a maximum lifespan of **90 days**.
      Overrides exceeding their severity duration limit or creation threshold are flagged as invalid and fail the audit.
 6. **Target Package Scope (`package` / `name`):** Optional parameter to restrict the override to a specific package name.
 
@@ -84,16 +86,17 @@ All suppression rules in `security-audit-ignore.json` must strictly adhere to th
 During local, CI, or scheduled daily execution, the audit tool validates all active override rules and enforces reporting policies:
 
 - **Expired Rules:** Rules whose expiration date has passed (`expiresAt <= now`) are rejected and cause the security audit to fail.
-- **Invalid Rules:** Rules missing required fields, containing invalid severity values, or exceeding severity lifespan limits (14 days for Critical, 30 days for High) trigger explicit validation errors and fail the audit.
+- **Invalid Rules:** Rules missing required fields, containing invalid severity values, or exceeding severity lifespan limits (14 days for Critical, 30 days for High, 90 days for Moderate) trigger explicit validation errors and fail the audit.
 - **Tiered Pre-Expiration Warnings:** Pre-expiration warnings are logged prior to expiration:
   - **Critical Overrides:** Warning triggered when **7 days** or fewer remain.
   - **High Overrides:** Warning triggered when **14 days** or fewer remain.
-- **Categorized Reporting:** CLI console logs and GitHub Step Summaries categorize vulnerabilities and overrides into distinct Critical and High severity reporting tables.
+  - **Moderate Overrides:** Warning triggered when **14 days** or fewer remain.
+- **Categorized Reporting:** CLI console logs and GitHub Step Summaries categorize vulnerabilities and overrides into distinct Critical, High, and Moderate severity reporting tables.
 - **Automated Issue Triage Escalation:** Daily scheduled audit failures in `.github/workflows/scheduled-security-audit.yml` automatically create or update dedicated GitHub issues labeled `security-triage`, deduplicated by advisory identifier.
 
 ## npm Package Overrides
 
-The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports only the three moderate advisories already tracked in `security-audit-ignore.json` (fast-uri, js-yaml, markdownlint-cli).
+The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports only moderate advisories tracked in `security-audit-ignore.json`, currently two: fast-uri and js-yaml (`scripts/security-audit-ignore.json` is empty).
 
 | Override        | Pinned to                | Pulled in by                                            | Resolves to without the pin | Effect of removing it                                 |
 | --------------- | ------------------------ | ------------------------------------------------------- | --------------------------- | ----------------------------------------------------- |

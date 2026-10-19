@@ -88,7 +88,11 @@ a gate or lowering a threshold:
 - `mutation-gate` runs Stryker. PRs and `main` pushes run incrementally
   against the newest report a `main` push saved; a PR that changes Stryker's
   configuration or the lockfile forces a full run, and
-  `mutation-weekly.yml` runs every mutant weekly (#1772).
+  `mutation-weekly.yml` runs every mutant weekly (#1772). The same workflow
+  mutates the game engines (Trial & Error scoring and validation, the Duck
+  engine) in a separate `mutation-engines` job, bounded at 45 minutes, with
+  a break per file in `stryker.engines.config.mjs`; PRs never run it
+  (#2529).
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

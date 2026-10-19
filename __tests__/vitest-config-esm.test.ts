@@ -11,18 +11,29 @@ const root = process.cwd();
 const read = (file: string) => fs.readFileSync(path.join(root, file), "utf-8");
 
 describe("Vitest configs load as native ESM (#1368)", () => {
-  it("keeps both configs as .mts with no .ts copies", () => {
-    for (const name of ["vitest.config", "vitest.stryker.config"]) {
+  it("keeps every config as .mts with no .ts copies", () => {
+    for (const name of [
+      "vitest.config",
+      "vitest.stryker.config",
+      "vitest.stryker-engines.config",
+    ]) {
       expect(fs.existsSync(path.join(root, `${name}.mts`))).toBe(true);
       expect(fs.existsSync(path.join(root, `${name}.ts`))).toBe(false);
     }
     expect(read("stryker.config.mjs")).toContain(
       'configFile: "vitest.stryker.config.mts"'
     );
+    expect(read("stryker.engines.config.mjs")).toContain(
+      'configFile: "vitest.stryker-engines.config.mts"'
+    );
   });
 
   it("resolves paths with import.meta.dirname, not CommonJS __dirname", () => {
-    for (const file of ["vitest.config.mts", "vitest.stryker.config.mts"]) {
+    for (const file of [
+      "vitest.config.mts",
+      "vitest.stryker.config.mts",
+      "vitest.stryker-engines.config.mts",
+    ]) {
       const source = read(file);
       expect(source).toContain("import.meta.dirname");
       expect(source).not.toMatch(/\b__dirname\b/);

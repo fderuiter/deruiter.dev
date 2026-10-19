@@ -122,6 +122,94 @@ describe("validate: Demographics QC Desk", () => {
     }
   });
 
+  it("keeps a non-suit alias from hiding a wrong-population denominator (#2529)", () => {
+    const fasTable = withCells({ "2:2": "7 (63.6)" });
+    for (const alias of [
+      { population: "FAS" as const, equals: "SAFETY" as const },
+      { population: "SAFETY" as const, equals: "FAS" as const },
+    ]) {
+      const unrelated: SapRulebook = {
+        ...rulebook,
+        populationAliases: [alias],
+      };
+      expect(validate(fasTable, snapshot, unrelated).findings[0].category).toBe(
+        "DENOMINATOR"
+      );
+    }
+  });
+
+  it("reads only whole cells as numbers (#2529)", () => {
+    const report = validate(
+      withCells({
+        "0:0": "n6",
+        "0:1": "6x",
+        "1:0": "~49.8",
+        "1:1": "40.7~",
+        "2:0": "x3 (50.0)",
+        "2:1": "4 (66.7)x",
+        "3:2": " 5 (41.7) ",
+      }),
+      snapshot,
+      rulebook
+    );
+    expect(report.findings.map((f) => [f.id, f.evidence])).toEqual([
+      ["SAP-DM-04@r0c0", '"n6" is not a subject count.'],
+      ["SAP-DM-04@r0c1", '"6x" is not a subject count.'],
+      ["SAP-DM-04@r1c0", '"~49.8" is not a number.'],
+      ["SAP-DM-04@r1c1", '"40.7~" is not a number.'],
+      ["SAP-DM-04@r2c0", '"x3 (50.0)" is not in "n (%)" form.'],
+      ["SAP-DM-04@r2c1", '"4 (66.7)x" is not in "n (%)" form.'],
+    ]);
+  });
+
+  it("treats a whole or over-precise mean as a precision slip, not a malformed number (#2529)", () => {
+    const report = validate(
+      withCells({ "1:0": "50", "1:1": "40.67" }),
+      snapshot,
+      rulebook
+    );
+    expect(report.findings.map((f) => [f.id, f.category])).toEqual([
+      ["SAP-DM-02@r1c0", "PRECISION"],
+      ["SAP-DM-02@r1c1", "PRECISION"],
+    ]);
+  });
+
+  it("says place, not places, for one decimal place (#2529)", () => {
+    const twoPlaces: SapRulebook = { ...rulebook, percentPrecision: 2 };
+    const finding = validate(
+      withCells({ "2:1": "4 (66.67)", "2:0": "3 (50.0)" }),
+      snapshot,
+      twoPlaces
+    ).findings.find((f) => f.id === "SAP-DM-02@r2c0");
+    expect(finding?.evidence).toBe(
+      "50.0 shows 1 decimal place; the SAP specifies 2."
+    );
+  });
+
+  it("counts a subject exactly at the minimum age (#2529)", () => {
+    const allSixtyFive: PopulationSnapshot = {
+      ...snapshot,
+      subjects: snapshot.subjects.map((s) => ({ ...s, age: 65 })),
+    };
+    const report = validate(
+      withCells({ "4:2": "12 (100.0)" }),
+      allSixtyFive,
+      rulebook
+    );
+    expect(report.findings.some((f) => f.id.endsWith("@r4c2"))).toBe(false);
+  });
+
+  it("only blames event counting on adverse-event rows (#2529)", () => {
+    const report = validate(
+      withCells({ "2:0": "0 (50.0)" }),
+      snapshot,
+      rulebook
+    );
+    expect(report.findings[0].evidence).toBe(
+      "n=0 does not match the snapshot, which has 3 qualifying subjects."
+    );
+  });
+
   it("classifies header N errors as denominator or value findings", () => {
     const report = validate(
       withCells({ "0:1": "5", "0:2": "13", "0:0": "six" }),

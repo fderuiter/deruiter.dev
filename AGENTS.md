@@ -37,6 +37,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `app/sitemap.ts` and `lib/seo-metadata.ts` under `ROUTE_METADATA_CONFIGS` with canonical path and change frequency.
   - `app/<route>/opengraph-image.tsx` providing a 1200x630 dynamic social preview card matching the systems architecture design system (`lib/og-image.tsx`).
   - `PUBLIC_ROUTE_REGISTRY` in `lib/public-routes.ts`, which feeds `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` (see invariant 14).
+- An arcade game is also registered in `ARCADE_REGISTRY` (`lib/arcade/registry.ts`) with its listing and per-view readiness ([ADR 0062](adr/0062-three-views-per-arcade-game.md)); DX Doctor's `routes-arcade-registry-parity` check fails when a registry route is missing from the sitemap metadata, the public route registry or the Command Palette.
 
 ### 4. Hydration & React Best Practices
 

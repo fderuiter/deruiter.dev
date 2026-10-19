@@ -23,6 +23,7 @@
 
 - [checkAccessibilityAuditIntegrity](functions/checkAccessibilityAuditIntegrity.md)
 - [checkAccessibilityStandards](functions/checkAccessibilityStandards.md)
+- [checkArcadeRegistryParity](functions/checkArcadeRegistryParity.md)
 - [checkDefectRemediationInvariants](functions/checkDefectRemediationInvariants.md)
 - [checkDesignTokens](functions/checkDesignTokens.md)
 - [checkDirectoryTopology](functions/checkDirectoryTopology.md)

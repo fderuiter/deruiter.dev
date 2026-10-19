@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted. Touch-device behavior for arcade games is now governed by [ADR 0061](0061-mobile-first-arcade.md).
+Accepted. Touch-device behavior for arcade games is now governed by [ADR 0061](0061-mobile-first-arcade.md) and [ADR 0062](0062-three-views-per-arcade-game.md).
 
 ## Context
 

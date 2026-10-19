@@ -100,6 +100,7 @@ jobs:
       run_unit: ${{ steps.policy.outputs.run_unit }}
       run_browser: ${{ steps.policy.outputs.run_browser }}
       stryker_force: ${{ steps.policy.outputs.stryker_force }}
+      arcade_device_grep: ${{ steps.policy.outputs.arcade_device_grep }}
 
     steps:
       - name: Checkout Code
@@ -751,12 +752,15 @@ jobs:
   # specs that are genuinely device-engine dependent (pixel-diffing and
   # touch-input emulation) against the three non-chromium projects. There is
   # no post-merge repeat of it on the `main` push.
+  # #2517: it also runs the arcade tablet and phone specs for the games the PR
+  # touches, on the iPad and phone projects, selected by the run policy's
+  # `arcade_device_grep`. The full arcade device matrix stays on demand.
   device-gate:
     name: Device Coverage Gate (Tablet Safari, Mobile Safari, Mobile Chrome)
     needs: [changes, build]
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -794,6 +798,17 @@ jobs:
           npx --no-install playwright test __tests__/e2e/visual.spec.ts __tests__/e2e/touch-controls.spec.ts \
             --project="Tablet Safari" --project="Mobile Safari" --project="Mobile Chrome"
         env:
+          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+          CRON_SECRET: "ci_placeholder_cron_secret"
+
+      - name: Run Arcade Device Specs for Touched Games (iPad, Small Phone, Phone Landscape)
+        if: needs.changes.outputs.arcade_device_grep != ''
+        run: |
+          npx --no-install playwright test \
+            --project="iPad*" --project="Small Phone" --project="Phone Landscape" \
+            --grep "$ARCADE_DEVICE_GREP" --pass-with-no-tests
+        env:
+          ARCADE_DEVICE_GREP: ${{ needs.changes.outputs.arcade_device_grep }}
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
 

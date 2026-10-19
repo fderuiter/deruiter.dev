@@ -1,27 +1,24 @@
 import { ARCADE_GAMES_METADATA } from "../arcade-data";
+import { ARCADE_REGISTRY } from "./registry";
+
+type HubEntry = Extract<(typeof ARCADE_REGISTRY)[number], { listing: "hub" }>;
+
+/** A playable game route on the arcade hub. */
+export type ArcadeGameRoute = HubEntry["route"];
 
 /**
- * Single source of truth for the playable arcade games listed on the hub.
- * Public copy that states a game count derives it from this list.
+ * The playable games listed on the hub, in hub order, derived from
+ * `ARCADE_REGISTRY`. Public copy that states a game count derives it from
+ * this list. Meme Vault (a page) and Protocol Drift (listed with the
+ * simulators, #1841) are in the registry but not on this list.
  */
-export const ARCADE_GAME_ROUTES = [
-  "/arcade/working-with-duck",
-  "/arcade/laser-loon",
-  "/arcade/quasi-puzzler",
-  "/arcade/garmin-watch",
-  "/arcade/clinical-chaos",
-  "/arcade/trial-and-error",
-  "/arcade/study-director",
-  "/arcade/patty-drive-thru",
-  "/arcade/for-better-or-bulk",
-  "/arcade/retro-labyrinth",
-] as const;
+export const ARCADE_GAME_ROUTES: readonly ArcadeGameRoute[] =
+  ARCADE_REGISTRY.filter(
+    (game): game is HubEntry => game.listing === "hub"
+  ).map((game) => game.route);
 
 /** Number of playable games on the arcade hub. */
 export const ARCADE_GAME_COUNT: number = ARCADE_GAME_ROUTES.length;
-
-/** A playable game route on the arcade hub. */
-export type ArcadeGameRoute = (typeof ARCADE_GAME_ROUTES)[number];
 
 /** A neighbouring game in the arcade's previous/next ring. */
 export interface ArcadeNeighbor {

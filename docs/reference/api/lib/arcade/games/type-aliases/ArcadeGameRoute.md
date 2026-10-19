@@ -6,6 +6,6 @@
 
 # Type Alias: ArcadeGameRoute
 
-> **ArcadeGameRoute** = *typeof* [`ARCADE_GAME_ROUTES`](../variables/ARCADE_GAME_ROUTES.md)\[`number`\]
+> **ArcadeGameRoute** = `HubEntry`\[`"route"`\]
 
 A playable game route on the arcade hub.

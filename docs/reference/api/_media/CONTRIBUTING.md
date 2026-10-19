@@ -137,6 +137,8 @@ Whenever a new first-class route, interactive mini-game, or case study page is i
 5. **Public Route Registry (`lib/public-routes.ts`)**:
    - Path registered in `PUBLIC_ROUTE_REGISTRY`, which feeds `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` and the service-worker precache.
 
+Arcade games are also registered in `ARCADE_REGISTRY` (`lib/arcade/registry.ts`) with where they are listed and which of their desktop, tablet and phone views are ready ([ADR 0062](./adr/0062-three-views-per-arcade-game.md)). DX Doctor's `routes-arcade-registry-parity` check fails if a registry route is missing from the matrix above.
+
 ---
 
 ## 5. Architectural & Quality Invariants

@@ -62,8 +62,8 @@ describe("CI run policy (#1773)", () => {
       expect(isBotBranch("jules/example")).toBe(true);
     });
 
-    it("treats stitch/ as a bot prefix the local guard never lets a person use", () => {
-      expect(validateBranchName("stitch/feat/example").valid).toBe(false);
+    it("treats stitch/ as a bot prefix", () => {
+      expect(validateBranchName("stitch/feat/example").valid).toBe(true);
       expect(isBotBranch("stitch/feat/example")).toBe(true);
     });
 

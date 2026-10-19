@@ -57,6 +57,18 @@
   --layout-gap: 16px;
   --layout-card-padding: 20px;
 
+  /* Spacing scale (#2314): the 4px steps new spacing should come from, named
+     by multiples of 4. They are the same steps as Tailwind's p-1, p-2, p-3,
+     p-4, p-6, p-8, p-12 and p-16, so a card or section can use either form. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
   /* Vertical Layout Budget Tokens */
   --layout-header-height: 7rem;
   --layout-footer-height: 4rem;
@@ -91,6 +103,25 @@
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1536px;
+}
+
+/*
+ * Three corner radii (#2314): 6px for badges and chips, 12px for cards,
+ * controls and dialogs, and full for pills and dots. Every Tailwind radius
+ * step resolves to one of the first two, so existing rounded-* classes
+ * already match.
+ */
+@theme {
+  --radius-badge: 6px;
+  --radius-card: 12px;
+  --radius-xs: 6px;
+  --radius-sm: 6px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
+  --radius-4xl: 12px;
 }
 
 @theme inline {
@@ -319,7 +350,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-badge);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   color: var(--muted-strong);
@@ -375,7 +406,7 @@ body {
 .tool-shell {
   background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-card);
 }
 
 .kbd-badge {
@@ -390,7 +421,7 @@ body {
   color: #94a3b8;
   background-color: rgba(20, 22, 28, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.375rem;
+  border-radius: var(--radius-badge);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -666,14 +697,14 @@ body {
 }
 
 .blog-prose a:focus-visible {
-  border-radius: 0.15rem;
+  border-radius: var(--radius-badge);
   outline: 2px solid #67e8f9;
   outline-offset: 3px;
 }
 
 .blog-prose :not(pre) > code {
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 0.3rem;
+  border-radius: var(--radius-badge);
   background: #13151a;
   color: #e2e8f0;
   font-family: var(--font-geist-mono);

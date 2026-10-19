@@ -146,6 +146,12 @@ Re-exports [ARCADE_GAME_ROUTES](games/variables/ARCADE_GAME_ROUTES.md)
 
 ***
 
+### ARCADE\_REGISTRY
+
+Re-exports [ARCADE_REGISTRY](registry/variables/ARCADE_REGISTRY.md)
+
+***
+
 ### ArcadeEngine
 
 Re-exports [ArcadeEngine](core/engine/classes/ArcadeEngine.md)
@@ -170,9 +176,21 @@ Re-exports [ArcadeGameRoute](games/type-aliases/ArcadeGameRoute.md)
 
 ***
 
+### ArcadeGameSlug
+
+Re-exports [ArcadeGameSlug](registry/type-aliases/ArcadeGameSlug.md)
+
+***
+
 ### ArcadeInputManager
 
 Re-exports [ArcadeInputManager](core/input/classes/ArcadeInputManager.md)
+
+***
+
+### ArcadeListing
+
+Re-exports [ArcadeListing](registry/type-aliases/ArcadeListing.md)
 
 ***
 
@@ -182,9 +200,27 @@ Re-exports [ArcadeNeighbor](games/interfaces/ArcadeNeighbor.md)
 
 ***
 
+### ArcadePhoneOrientation
+
+Re-exports [ArcadePhoneOrientation](registry/type-aliases/ArcadePhoneOrientation.md)
+
+***
+
+### ArcadeRegistryEntry
+
+Re-exports [ArcadeRegistryEntry](registry/interfaces/ArcadeRegistryEntry.md)
+
+***
+
 ### ArcadeViewport
 
 Re-exports [ArcadeViewport](core/viewport/classes/ArcadeViewport.md)
+
+***
+
+### ArcadeViewReadiness
+
+Re-exports [ArcadeViewReadiness](registry/type-aliases/ArcadeViewReadiness.md)
 
 ***
 
@@ -404,6 +440,12 @@ Re-exports [getArcadeNeighbors](games/functions/getArcadeNeighbors.md)
 
 ***
 
+### getArcadeRegistryEntry
+
+Re-exports [getArcadeRegistryEntry](registry/functions/getArcadeRegistryEntry.md)
+
+***
+
 ### getCabinetCrtProfile
 
 Re-exports [getCabinetCrtProfile](crt-pipeline/functions/getCabinetCrtProfile.md)
@@ -443,6 +485,12 @@ Re-exports [isCabinetCrtFilter](crt-pipeline/functions/isCabinetCrtFilter.md)
 ### isControlTarget
 
 Re-exports [isControlTarget](input/controller/functions/isControlTarget.md)
+
+***
+
+### isPhoneGated
+
+Re-exports [isPhoneGated](registry/functions/isPhoneGated.md)
 
 ***
 

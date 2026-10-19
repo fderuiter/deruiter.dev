@@ -8,4 +8,5 @@
 
 > `const` **ARCADE\_DAILY\_GAME\_IDS**: readonly \[`"trial-and-error"`, `"for-better-or-bulk"`, `"study-director"`, `"patty-drive-thru"`, `"protocol-drift"`\]
 
-The games with seeded runs, in the order the hub lists them.
+The games with seeded runs, in the order the daily panel lists them. A unit
+test keeps this set equal to the registry entries marked `daily`.

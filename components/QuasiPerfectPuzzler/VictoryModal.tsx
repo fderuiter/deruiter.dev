@@ -15,8 +15,7 @@ import {
   IconSparkles,
   IconDownload,
 } from "@tabler/icons-react";
-import { downloadFile } from "@/lib/download";
-import { sanitizeFilename } from "@/lib/quasi-perfect/sandbox";
+import { downloadFile, sanitizeFilename } from "@/lib/download";
 
 // What to chase once every playable level is proved: gold first, then the
 // challenge variants, so a 90-of-90-star card never says "chase gold" (#2202).
@@ -341,15 +340,14 @@ export const VictoryModal: React.FC<VictoryModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    const filename = `${sanitizeFilename(level.title || level.leanTheoremName || "proof")}.lean`;
+                    const filename = `${sanitizeFilename(level.leanTheoremName || level.title || "proof")}.lean`;
                     downloadFile(leanCode, filename, {
                       mimeType: "text/x-lean;charset=utf-8",
                     });
                   }}
-                  aria-label="Download .lean File"
-                  className="flex items-center gap-1 qp-text-accent-strong hover:text-zinc-100 font-bold cursor-pointer text-[10px]"
+                  className="min-h-[48px] px-2 py-1 flex items-center gap-1 qp-text-accent-strong hover:text-zinc-100 font-bold cursor-pointer text-xs"
                 >
-                  <IconDownload className="w-3 h-3" />
+                  <IconDownload className="w-3.5 h-3.5" />
                   <span>Download .lean File</span>
                 </button>
                 <CopyButton

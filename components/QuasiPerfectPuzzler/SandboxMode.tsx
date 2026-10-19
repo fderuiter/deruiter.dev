@@ -144,8 +144,7 @@ export const SandboxMode: React.FC = () => {
   );
   const [customHypothesesInput, setCustomHypothesesInput] =
     useState<string>("");
-  const [customTitleInput, setCustomTitleInput] =
-    useState<string>("Binomial Expansion");
+  const [customTitleInput, setCustomTitleInput] = useState<string>("");
   const [isDrawerOpen, setIsDrawerOpen] = useState<boolean>(false);
   const [activeFormulaTitle, setActiveFormulaTitle] = useState<string>(
     SANDBOX_PRESETS[0].name
@@ -275,8 +274,10 @@ export const SandboxMode: React.FC = () => {
 
   const handleSaveTheorem = () => {
     setSaveStatus(null);
+    const titleToSave =
+      customTitleInput.trim() || activeFormulaTitle || "Custom Formula";
     const res = saveCustomTheorem(
-      customTitleInput,
+      titleToSave,
       customGoalInput,
       customHypothesesInput
     );
@@ -287,10 +288,9 @@ export const SandboxMode: React.FC = () => {
       });
     } else {
       setSavedCustomTheorems(res.theorems);
-      const titleSaved = customTitleInput.trim() || "Custom Formula";
       setSaveStatus({
         type: "success",
-        message: `Saved theorem "${titleSaved}" to local storage.`,
+        message: `Saved theorem "${titleToSave}" to local storage.`,
       });
       setLogs((prev) => [
         ...prev,
@@ -298,7 +298,7 @@ export const SandboxMode: React.FC = () => {
           id: `log-${Date.now()}`,
           timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
           type: "success",
-          text: `Saved custom theorem "${titleSaved}"`,
+          text: `Saved custom theorem "${titleToSave}"`,
         },
       ]);
     }
@@ -553,7 +553,7 @@ export const SandboxMode: React.FC = () => {
                 type="button"
                 onClick={() => loadPreset(idx)}
                 data-verified={verified ? "true" : undefined}
-                className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg transition-all active:scale-[0.98] ${
+                className={`min-h-[48px] flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg transition-all active:scale-[0.98] ${
                   idx === selectedPresetIdx
                     ? "qp-btn-primary"
                     : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
@@ -566,7 +566,7 @@ export const SandboxMode: React.FC = () => {
                   <IconCheck
                     aria-hidden="true"
                     data-testid={`sandbox-preset-verified-${preset.id}`}
-                    className="w-3 h-3 text-emerald-400"
+                    className="w-3.5 h-3.5 text-emerald-400"
                   />
                 )}
               </button>
@@ -577,7 +577,7 @@ export const SandboxMode: React.FC = () => {
             onClick={() => setIsDrawerOpen((prev) => !prev)}
             aria-expanded={isDrawerOpen}
             aria-controls="custom-formula-drawer"
-            className={`flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all ${
+            className={`min-h-[48px] flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
               isDrawerOpen
                 ? "qp-btn-primary border-[color:var(--qp-accent-line)]"
                 : "border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] qp-text-accent-strong hover:bg-[color:var(--qp-accent-soft)]"
@@ -592,7 +592,7 @@ export const SandboxMode: React.FC = () => {
               if (selectedPresetIdx !== null) loadPreset(selectedPresetIdx);
               else handleApplyCustomFormula();
             }}
-            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition-all"
+            className="min-h-[48px] flex items-center gap-1 px-3 py-2 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition-all"
           >
             <IconRotate className="w-3.5 h-3.5" />
             <span>Reset</span>
@@ -775,7 +775,7 @@ export const SandboxMode: React.FC = () => {
                   type="button"
                   onClick={handleSaveTheorem}
                   disabled={!parseResult.ast || !!hypError}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
+                  className="min-h-[48px] px-3.5 py-2 text-xs font-bold rounded-lg border border-emerald-500/40 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                 >
                   <IconDeviceFloppy className="w-3.5 h-3.5" />
                   <span>Save Theorem</span>
@@ -785,8 +785,7 @@ export const SandboxMode: React.FC = () => {
                   type="button"
                   onClick={handleExportAllTheorems}
                   disabled={savedCustomTheorems.length === 0}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
-                  aria-label="Export All (.json)"
+                  className="min-h-[48px] px-3.5 py-2 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-1.5"
                 >
                   <IconDownload className="w-3.5 h-3.5" />
                   <span>Export All (.json)</span>
@@ -803,8 +802,7 @@ export const SandboxMode: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition-all flex items-center gap-1.5"
-                  aria-label="Import (.json)"
+                  className="min-h-[48px] px-3.5 py-2 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 transition-all flex items-center gap-1.5"
                 >
                   <IconUpload className="w-3.5 h-3.5" />
                   <span>Import (.json)</span>
@@ -814,7 +812,7 @@ export const SandboxMode: React.FC = () => {
                   type="button"
                   onClick={handleApplyCustomFormula}
                   disabled={!parseResult.ast || !!hypError}
-                  className="qp-btn-primary qp-focus px-4 py-1.5 text-xs font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+                  className="qp-btn-primary qp-focus min-h-[48px] px-4 py-2 text-xs font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
                 >
                   <IconSparkles className="w-3.5 h-3.5" />
                   <span>Compile &amp; Set Active Goal</span>
@@ -824,7 +822,9 @@ export const SandboxMode: React.FC = () => {
 
             {saveStatus && (
               <div
-                className={`text-xs p-2 rounded border font-mono ${
+                role="status"
+                aria-live="polite"
+                className={`text-xs p-2.5 rounded border font-mono ${
                   saveStatus.type === "error"
                     ? "bg-rose-950/60 border-rose-500/40 text-rose-300"
                     : "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
@@ -836,7 +836,9 @@ export const SandboxMode: React.FC = () => {
 
             {importStatus && (
               <div
-                className={`text-xs p-2 rounded border font-mono ${
+                role="status"
+                aria-live="polite"
+                className={`text-xs p-2.5 rounded border font-mono ${
                   importStatus.type === "error"
                     ? "bg-rose-950/60 border-rose-500/40 text-rose-300"
                     : "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
@@ -849,12 +851,12 @@ export const SandboxMode: React.FC = () => {
             {/* Saved Custom Theorems Collection List */}
             <div className="space-y-2 pt-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-bold text-zinc-300 uppercase tracking-wider">
+                <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">
                   Saved Theorems Collection ({savedCustomTheorems.length}/
                   {MAX_CUSTOM_THEOREMS})
                 </span>
                 {savedCustomTheorems.length >= MAX_CUSTOM_THEOREMS && (
-                  <span className="text-[10px] text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
+                  <span className="text-xs text-amber-300 font-bold bg-amber-500/20 px-2 py-0.5 rounded border border-amber-500/30">
                     Capacity Full ({MAX_CUSTOM_THEOREMS} max)
                   </span>
                 )}
@@ -876,7 +878,7 @@ export const SandboxMode: React.FC = () => {
                         <div className="font-bold text-zinc-200 truncate">
                           {item.title}
                         </div>
-                        <div className="text-[11px] text-emerald-400 font-mono truncate">
+                        <div className="text-xs qp-text-accent-strong font-mono truncate">
                           {item.formula}
                           {item.hypotheses && (
                             <span className="text-zinc-400 ml-2">
@@ -889,7 +891,7 @@ export const SandboxMode: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleLoadCustomTheoremItem(item)}
-                          className="px-2 py-1 text-[11px] font-bold rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-all"
+                          className="min-h-[48px] px-3 py-1.5 text-xs font-bold rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 transition-all flex items-center justify-center"
                         >
                           Load Goal
                         </button>
@@ -898,10 +900,10 @@ export const SandboxMode: React.FC = () => {
                           onClick={() =>
                             handleDeleteTheorem(item.id, item.title)
                           }
-                          className="p-1 rounded text-rose-400 hover:bg-rose-500/20 transition-all"
+                          className="min-h-[48px] min-w-[48px] p-2 rounded text-rose-400 hover:bg-rose-500/20 transition-all flex items-center justify-center"
                           aria-label={`Delete ${item.title}`}
                         >
-                          <IconTrash className="w-3.5 h-3.5" />
+                          <IconTrash className="w-4 h-4" />
                         </button>
                       </div>
                     </div>

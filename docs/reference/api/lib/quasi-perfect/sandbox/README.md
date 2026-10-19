@@ -32,5 +32,10 @@
 - [importCustomTheorems](functions/importCustomTheorems.md)
 - [parseSandboxProgress](functions/parseSandboxProgress.md)
 - [recordSandboxProof](functions/recordSandboxProof.md)
-- [sanitizeFilename](functions/sanitizeFilename.md)
 - [saveCustomTheorem](functions/saveCustomTheorem.md)
+
+## References
+
+### sanitizeFilename
+
+Re-exports [sanitizeFilename](../../download/functions/sanitizeFilename.md)

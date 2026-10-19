@@ -124,3 +124,23 @@ export function downloadFile(
   }
   return true;
 }
+
+/**
+ * Sanitizes a title or theorem name into a valid, safe filename.
+ *
+ * Replaces non-alphanumeric characters (except underscores/hyphens) with underscores,
+ * collapses consecutive underscores, strips leading/trailing underscores,
+ * and falls back to `defaultName` if empty.
+ */
+export function sanitizeFilename(name: string, defaultName = "export"): string {
+  if (!name || typeof name !== "string") return defaultName;
+  const sanitized = name
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9_-]+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_+|_+$/g, "");
+
+  return sanitized || defaultName;
+}

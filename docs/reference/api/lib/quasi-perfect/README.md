@@ -508,7 +508,7 @@ Re-exports [SandboxProgress](sandbox/type-aliases/SandboxProgress.md)
 
 ### sanitizeFilename
 
-Re-exports [sanitizeFilename](sandbox/functions/sanitizeFilename.md)
+Re-exports [sanitizeFilename](../download/functions/sanitizeFilename.md)
 
 ***
 

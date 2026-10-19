@@ -90,7 +90,7 @@ describe("LeanIdeInspector Export Actions", () => {
     vi.clearAllMocks();
   });
 
-  it("provides download buttons for Lean source (.lean) and step log metadata (.json)", () => {
+  it("provides download buttons for Lean source (.lean) and step log metadata (.json) with browserCheck", () => {
     render(
       <LeanIdeInspector level={sampleLevel} steps={[]} isComplete={true} />
     );
@@ -114,7 +114,7 @@ describe("LeanIdeInspector Export Actions", () => {
 
     fireEvent.click(jsonBtn);
     expect(downloadModule.downloadFile).toHaveBeenCalledWith(
-      expect.stringContaining('"version": "1.0"'),
+      expect.stringContaining('"browserCheck":'),
       expect.stringMatching(/_steplog\.json$/),
       expect.objectContaining({
         mimeType: expect.stringContaining("application/json"),
@@ -133,12 +133,21 @@ describe("SandboxMode Custom Theorem Management", () => {
     localStorage.clear();
   });
 
-  it("saves custom formulas to local storage and respects 50 item capacity limit", () => {
+  it("saves custom formulas to local storage, rejects duplicates, and respects 50 item capacity limit", () => {
     const res1 = saveCustomTheorem(
       "Formula 1",
       "(a + b)^2 = a^2 + 2*a*b + b^2"
     );
     expect(res1.success).toBe(true);
+    expect(getSavedCustomTheorems()).toHaveLength(1);
+
+    // Duplicate save attempt
+    const resDup = saveCustomTheorem(
+      "Formula 1 Dup",
+      "(a + b)^2 = a^2 + 2*a*b + b^2"
+    );
+    expect(resDup.success).toBe(false);
+    expect(resDup.error).toMatch(/already saved/i);
     expect(getSavedCustomTheorems()).toHaveLength(1);
 
     // Fill storage up to 50 items
@@ -162,18 +171,25 @@ describe("SandboxMode Custom Theorem Management", () => {
     expect(getSavedCustomTheorems()).toHaveLength(0);
   });
 
-  it("validates and imports custom theorems JSON, skipping invalid formulas", () => {
+  it("validates and imports custom theorems JSON, assigning fresh IDs and skipping duplicates & invalid formulas", () => {
+    saveCustomTheorem("Existing Theorem", "x = x");
+
     const validJson = JSON.stringify({
       version: "1.0",
       theorems: [
         {
-          id: "imp-1",
+          id: "foreign-id-1",
+          title: "Existing Duplicate",
+          formula: "x = x", // Duplicate of existing
+        },
+        {
+          id: "foreign-id-2",
           title: "Valid Transitivity",
           formula: "a = c",
           hypotheses: "h1: a = b, h2: b = c",
         },
         {
-          id: "imp-2",
+          id: "foreign-id-3",
           title: "Broken Formula",
           formula: "a + * b", // Syntax error
         },
@@ -183,12 +199,14 @@ describe("SandboxMode Custom Theorem Management", () => {
     const res = importCustomTheorems(validJson);
     expect(res.success).toBe(true);
     expect(res.importedCount).toBe(1);
-    expect(res.errors).toHaveLength(1);
-    expect(res.errors[0]).toMatch(/broken formula/i);
+    expect(res.errors).toHaveLength(2); // 1 duplicate skipped, 1 broken formula skipped
 
     const saved = getSavedCustomTheorems();
-    expect(saved).toHaveLength(1);
-    expect(saved[0].title).toBe("Valid Transitivity");
+    expect(saved).toHaveLength(2);
+    const imported = saved.find((t) => t.title === "Valid Transitivity");
+    expect(imported).toBeTruthy();
+    expect(imported?.id).not.toBe("foreign-id-2"); // Fresh ID assigned
+    expect(imported?.id).toMatch(/^custom-imp-/);
   });
 
   it("renders custom theorem drawer controls in SandboxMode UI", async () => {

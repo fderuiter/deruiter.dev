@@ -18,8 +18,7 @@ import {
   IconDownload,
   IconFileExport,
 } from "@tabler/icons-react";
-import { downloadFile } from "@/lib/download";
-import { sanitizeFilename } from "@/lib/quasi-perfect/sandbox";
+import { downloadFile, sanitizeFilename } from "@/lib/download";
 import { InlineCodeText } from "./InlineCodeText";
 
 interface LeanIdeInspectorProps {
@@ -106,7 +105,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
         subgoalLabel: s.subgoalLabel,
         cost: s.cost,
       })),
-      kernelVerification: {
+      browserCheck: {
         status: effectiveVerifyResult.status,
         success: effectiveVerifyResult.success,
         diagnostics: effectiveVerifyResult.diagnostics,
@@ -234,7 +233,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
               type="button"
               onClick={() => setIsLiveSync((prev) => !prev)}
               aria-pressed={isLiveSync}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all ${
+              className={`min-h-[48px] flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
                 isLiveSync
                   ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.2)]"
                   : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
@@ -249,8 +248,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             <button
               type="button"
               onClick={handleDownloadLean}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
-              aria-label="Download .lean"
+              className="min-h-[48px] flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
             >
               <IconDownload className="w-3.5 h-3.5" />
               <span>Download .lean</span>
@@ -259,8 +257,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             <button
               type="button"
               onClick={handleExportStepLog}
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
-              aria-label="Export Step Log (.json)"
+              className="min-h-[48px] flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
             >
               <IconFileExport className="w-3.5 h-3.5" />
               <span>Export Step Log (.json)</span>
@@ -274,8 +271,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
               copiedIcon={
                 <IconCheck className="w-3.5 h-3.5 text-emerald-400" />
               }
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
-              aria-label="Copy Generated Lean Text"
+              className="min-h-[48px] flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border border-zinc-700 bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white transition-all cursor-pointer"
               successMessage="Generated Lean text copied to clipboard"
             />
           </div>
@@ -288,7 +284,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
           {/* Status Badge & Server Diagnostics Header */}
           <div className="flex items-center justify-between text-xs bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800 flex-wrap gap-2">
             <div className="flex items-center gap-2">
-              <span className="text-zinc-400 font-bold">Kernel Status:</span>
+              <span className="text-zinc-400 font-bold">Check Status:</span>
               {isSyncing ? (
                 <span className="qp-text-accent-strong font-bold flex items-center gap-1">
                   <IconRefresh className="w-3.5 h-3.5 animate-spin" />{" "}
@@ -305,8 +301,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                 </span>
               ) : effectiveVerifyResult.status === "error" ? (
                 <span className="text-rose-400 font-bold flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30">
-                  <IconAlertCircle className="w-3.5 h-3.5" /> Kernel
-                  Verification Error
+                  <IconAlertCircle className="w-3.5 h-3.5" /> Verification Error
                 </span>
               ) : (
                 <span className="text-zinc-400 font-semibold">
@@ -361,7 +356,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             <div className="rounded-xl border border-[color:var(--qp-accent-line)] bg-[color:var(--qp-accent-soft)] p-3 text-xs space-y-1">
               <div className="flex items-center gap-1.5 qp-text-accent-strong font-bold text-[11px] uppercase tracking-wider">
                 <IconTerminal className="w-3.5 h-3.5" />
-                <span>Active Kernel Goal State</span>
+                <span>Active Goal State</span>
               </div>
               <div className="font-mono qp-text-accent-strong bg-black/60 p-2 rounded border border-[color:var(--qp-accent-line)]">
                 {effectiveVerifyResult.goalState}

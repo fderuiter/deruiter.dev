@@ -1,26 +1,9 @@
 import type { ASTNode, TacticId } from "./types";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { parseFormulaWithError, parseHypotheses } from "./compiler";
+import { sanitizeFilename } from "@/lib/download";
 
-/**
- * Sanitizes a title or theorem name into a valid, safe filename.
- *
- * Replaces non-alphanumeric characters (except underscores/hyphens) with underscores,
- * collapses consecutive underscores, strips leading/trailing underscores,
- * and falls back to `defaultName` if empty.
- */
-export function sanitizeFilename(name: string, defaultName = "export"): string {
-  if (!name || typeof name !== "string") return defaultName;
-  const sanitized = name
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9_-]+/g, "_")
-    .replace(/_+/g, "_")
-    .replace(/^_+|_+$/g, "");
-
-  return sanitized || defaultName;
-}
+export { sanitizeFilename };
 
 export interface CustomTheorem {
   id: string;
@@ -76,7 +59,24 @@ export function saveCustomTheorem(
     };
   }
 
-  const parseRes = parseFormulaWithError(formula, "custom-save");
+  const trimmedFormula = formula.trim();
+  const trimmedHypotheses = hypotheses.trim();
+
+  if (
+    existing.some(
+      (t) =>
+        t.formula.trim() === trimmedFormula &&
+        (t.hypotheses || "").trim() === trimmedHypotheses
+    )
+  ) {
+    return {
+      success: false,
+      error: "This formula and hypothesis set is already saved.",
+      theorems: existing,
+    };
+  }
+
+  const parseRes = parseFormulaWithError(trimmedFormula, "custom-save");
   if (!parseRes.ast) {
     return {
       success: false,
@@ -85,9 +85,9 @@ export function saveCustomTheorem(
     };
   }
 
-  if (hypotheses.trim()) {
+  if (trimmedHypotheses) {
     try {
-      parseHypotheses(hypotheses, "custom-hyp-save");
+      parseHypotheses(trimmedHypotheses, "custom-hyp-save");
     } catch (e) {
       return {
         success: false,
@@ -100,8 +100,8 @@ export function saveCustomTheorem(
   const newTheorem: CustomTheorem = {
     id: `custom-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     title: title.trim() || `Custom Formula ${existing.length + 1}`,
-    formula: formula.trim(),
-    hypotheses: hypotheses.trim(),
+    formula: trimmedFormula,
+    hypotheses: trimmedHypotheses,
     createdAt: new Date().toISOString(),
   };
 
@@ -191,6 +191,25 @@ export function importCustomTheorems(jsonData: string): {
       continue;
     }
 
+    const isDuplicate =
+      existing.some(
+        (t) =>
+          t.formula.trim() === formula &&
+          (t.hypotheses || "").trim() === hypotheses
+      ) ||
+      validNewTheorems.some(
+        (t) =>
+          t.formula.trim() === formula &&
+          (t.hypotheses || "").trim() === hypotheses
+      );
+
+    if (isDuplicate) {
+      errors.push(
+        `Entry #${i + 1} (${title || "Untitled"}): Duplicate theorem already exists; skipped.`
+      );
+      continue;
+    }
+
     const parseRes = parseFormulaWithError(formula, `import-${i}`);
     if (!parseRes.ast) {
       errors.push(
@@ -218,10 +237,7 @@ export function importCustomTheorems(jsonData: string): {
     }
 
     validNewTheorems.push({
-      id:
-        typeof rec.id === "string" && rec.id
-          ? rec.id
-          : `custom-imp-${Date.now()}-${i}`,
+      id: `custom-imp-${Date.now()}-${Math.random().toString(36).substring(2, 9)}-${i}`,
       title:
         title ||
         `Imported Theorem ${existing.length + validNewTheorems.length + 1}`,

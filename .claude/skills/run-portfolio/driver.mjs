@@ -38,15 +38,28 @@ async function launchChromium(options) {
   }
 }
 
+function parseSize(arg) {
+  const m = /(\d+)x(\d+)/.exec(arg || "");
+  return m ? [Number(m[1]), Number(m[2])] : null;
+}
+
 let browser = null;
 let page = null;
 const consoleErrors = [];
 
 const COMMANDS = {
-  async launch() {
+  // `launch [WxH] [touch]`, e.g. `launch 375x812 touch`. `touch` emulates
+  // a coarse pointer, which the arcade's phone gate keys on; a plain
+  // narrow viewport never triggers it.
+  async launch(arg) {
     if (browser) return console.log("already launched");
+    const [width, height] = parseSize(arg) ?? [1280, 800];
+    const touch = /\btouch\b/.test(arg || "");
     browser = await launchChromium({ headless: true, args: ["--no-sandbox"] });
-    page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+    page = await browser.newPage({
+      viewport: { width, height },
+      ...(touch ? { hasTouch: true, isMobile: true } : {}),
+    });
     page.on("console", (msg) => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
     });
@@ -54,6 +67,14 @@ const COMMANDS = {
       consoleErrors.push(`pageerror: ${err.message}`)
     );
     console.log("launched.");
+  },
+
+  async viewport(arg) {
+    if (!page) return console.log("ERROR: launch first");
+    const size = parseSize(arg);
+    if (!size) return console.log("usage: viewport <width>x<height>");
+    await page.setViewportSize({ width: size[0], height: size[1] });
+    console.log("viewport ->", size.join("x"));
   },
 
   async nav(url) {
@@ -180,7 +201,15 @@ const rl = readline.createInterface({
   prompt: "driver> ",
 });
 
-rl.on("line", async (line) => {
+// Lines run strictly one after another. Without the queue, a `wait-for`
+// sent right behind a `nav` starts before the navigation finishes and can
+// match the previous page.
+let queue = Promise.resolve();
+rl.on("line", (line) => {
+  queue = queue.then(() => runLine(line));
+});
+
+async function runLine(line) {
   const [cmd, ...rest] = line.trim().split(/\s+/);
   if (!cmd) return rl.prompt();
   const fn = COMMANDS[cmd];
@@ -198,8 +227,9 @@ rl.on("line", async (line) => {
     process.exit(0);
   }
   rl.prompt();
-});
+}
 rl.on("close", async () => {
+  await queue;
   await COMMANDS.quit();
   process.exit(0);
 });

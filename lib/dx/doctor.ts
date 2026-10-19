@@ -472,6 +472,77 @@ export function checkPublicRouteRegistryDrift(
 }
 
 /**
+ * Check Arcade Registry Discovery Parity (#2353, ADR 0062).
+ *
+ * Every game route in `ARCADE_REGISTRY` (lib/arcade/registry.ts) must also be
+ * in the route metadata that feeds the sitemap (`ROUTE_METADATA_CONFIGS`), the
+ * public route registry that feeds `CANONICAL_ROUTES`, and the Command
+ * Palette's `staticNavs`, so a game cannot be listed in one place and missing
+ * from another.
+ */
+export function checkArcadeRegistryParity(root: string): DiagnosticCheckResult {
+  const base = {
+    id: "routes-arcade-registry-parity",
+    name: "Arcade Registry Discovery Parity",
+    category: "routes" as const,
+  };
+  const registryFile = path.join(root, "lib", "arcade", "registry.ts");
+  if (!fs.existsSync(registryFile)) {
+    return {
+      ...base,
+      status: "fail",
+      message: "lib/arcade/registry.ts not found",
+      fixable: false,
+    };
+  }
+
+  const registryRoutes = Array.from(
+    fs.readFileSync(registryFile, "utf-8").matchAll(/route:\s*"([^"]+)"/g),
+    (m) => m[1]
+  );
+
+  const targets: Array<{ label: string; file: string }> = [
+    { label: "ROUTE_METADATA_CONFIGS", file: "lib/seo-metadata.ts" },
+    { label: "PUBLIC_ROUTE_REGISTRY", file: "lib/public-routes.ts" },
+    {
+      label: "CommandPalette staticNavs",
+      file: "components/CommandPalette.tsx",
+    },
+  ];
+
+  const details: string[] = [];
+  for (const target of targets) {
+    const targetPath = path.join(root, target.file);
+    const content = fs.existsSync(targetPath)
+      ? fs.readFileSync(targetPath, "utf-8")
+      : "";
+    for (const route of registryRoutes) {
+      if (!content.includes(`"${route}"`)) {
+        details.push(
+          `${route} is missing from ${target.label} (${target.file})`
+        );
+      }
+    }
+  }
+
+  if (details.length === 0) {
+    return {
+      ...base,
+      status: "pass",
+      message: `All ${registryRoutes.length} arcade registry routes are in the sitemap metadata, public route registry and Command Palette.`,
+    };
+  }
+
+  return {
+    ...base,
+    status: "fail",
+    message: `${details.length} arcade registry route(s) missing from a discovery surface (AGENTS.md #3).`,
+    details,
+    fixable: false,
+  };
+}
+
+/**
  * Check Layout and Navbar Invariant (AGENTS.md Invariant #2).
  * No secondary Navbar components allowed outside app/layout.tsx.
  */
@@ -3295,6 +3366,7 @@ export async function runDiagnostics(
   const rawChecks: DiagnosticCheckResult[] = [
     checkRouteIndexing(root, fix),
     checkPublicRouteRegistryDrift(root, fix),
+    checkArcadeRegistryParity(root),
     checkNavbarHierarchy(root),
     checkPageTopPadding(root),
     checkTestPathResolution(root),

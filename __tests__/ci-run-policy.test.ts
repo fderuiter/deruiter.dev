@@ -280,6 +280,12 @@ describe("CI run policy (#1773)", () => {
       expect(pattern.test("Laser Loon on a tablet")).toBe(false);
     });
 
+    it("runs the kit blocks when this selection logic itself changes", () => {
+      expect(arcadeDeviceGrep(["scripts/ci-run-policy.mjs"])).toBe(
+        "Tablet arcade kit|Mobile arcade kit"
+      );
+    });
+
     it("runs nothing for a change outside the arcade", () => {
       expect(arcadeDeviceGrep(["components/Hero.tsx", "lib/seo.ts"])).toBe("");
     });

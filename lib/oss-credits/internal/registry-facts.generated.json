@@ -7740,8 +7740,8 @@
       "licenses": [],
       "notices": []
     },
-    "fast-uri@3.1.7": {
-      "integrity": "sha512-dOvZVzjdZdz7phd9v6jCbwxrBW3fK6n8Rc0CtdmM4bumzMnxywBYhuph6J819RRw/ku+rLbelwfMunktuzVVHg==",
+    "fast-uri@3.1.8": {
+      "integrity": "sha512-GZMtZUTNRpOVIECoXwLNZS5xUGE+mVNbTB8h/7Rwh2TFWcBQiPzTgyZi05BF9UMZKkLJv8XBRJTlU7zg8+ZfMg==",
       "homepage": "https://github.com/fastify/fast-uri",
       "repository": "git+https://github.com/fastify/fast-uri.git",
       "author": "Vincent Le Goff",
@@ -9086,8 +9086,8 @@
       "licenses": [],
       "notices": []
     },
-    "js-yaml@5.2.3": {
-      "integrity": "sha512-n+mUVyUX5bVv7G/G2zyIHOhdxfuU1dY2NOFzTQUWiMUbFss8b57NFlgCCaggU78wSw5KVS9cllzeLyzyR+n5nw==",
+    "js-yaml@5.4.3": {
+      "integrity": "sha512-yzzNtgczwgoVHNigCyKTXcQJU4Y8t/ikU4UxXW0BvrLfHTGWZhsNcOT2s/a7vn81/4KqVnNmHjaUEPlvWnNwVw==",
       "homepage": "https://github.com/nodeca/js-yaml#readme",
       "repository": "git+https://github.com/nodeca/js-yaml.git",
       "author": "Vladimir Zapparov",

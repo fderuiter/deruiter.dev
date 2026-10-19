@@ -4519,7 +4519,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ==============================================================================
 LICENSE TEXT 44 of 86, applies to 1 package(s):
 
-- fast-uri@3.1.7 (BSD-3-Clause)
+- fast-uri@3.1.8 (BSD-3-Clause)
     Copyright (c) 2011-2021, Gary Court until https://github.com/garycourt/uri-js/commit/a1acf730b4bba3f1097c9f52e7d9d3aba8cdcaae
     Copyright (c) 2021-present The Fastify team <https://github.com/fastify/fastify#team>
 

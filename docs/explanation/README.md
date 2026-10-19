@@ -16,6 +16,12 @@ specific architectural choice (for example,
 [ADR 0023](../../adr/0023-diataxis-documentation-architecture-and-zero-drift-governance.md)
 is the record behind this very documentation layout).
 
+## Arcade playtest rubric
+
+[The arcade playtest rubric](arcade-playtest-rubric.md) defines the ten points
+every arcade playtest is scored on, for each of a game's desktop, tablet and
+phone views.
+
 ## Audits
 
 [`audits/`](audits/) contains point-in-time retrospective findings from

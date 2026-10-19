@@ -1,6 +1,6 @@
 ---
 name: run-portfolio
-description: Build, run, and drive the fderuiter/portfolio Next.js web app. Use when asked to start the portfolio site, run the dev server, take a screenshot of a page (home, /patrol, /crf, /proof, arcade games, etc.), or interact with its UI.
+description: Build, run, and drive the fderuiter/deruiter.dev Next.js web app. Use when asked to start the portfolio site, run the dev server, take a screenshot of a page (home, /patrol, /crf, /proof, arcade games, etc.), or interact with its UI.
 ---
 
 This is a Next.js 16 (App Router, Turbopack) web app. For agent/automated
@@ -25,6 +25,11 @@ npm ci --no-audit --no-fund   # installs deps; postinstall runs `npx prisma gene
 cp .env.example .env.local    # dummy local Postgres/Redis values are fine — see Gotchas
 ```
 
+In a Claude Code cloud container with no `node_modules`, run
+`CLAUDE_CODE_REMOTE=true .claude/hooks/session-start.sh` instead of the
+`npm ci` line (project threads don't run repo hooks on their own; see
+`CLAUDE.md`).
+
 No database, Redis, or Clerk credentials are required to render the
 routes covered below — every server env var in `lib/env.ts` is
 `.optional()`, and pages that touch the DB fail closed rather than
@@ -43,8 +48,11 @@ serve (don't `sleep 5` — poll):
 
 ```bash
 npx next dev > /tmp/next-dev.log 2>&1 &
-timeout 30 bash -c 'until curl -sf http://localhost:3000/ >/dev/null; do sleep 1; done'
+timeout 120 bash -c 'until curl -sf http://localhost:3000/ >/dev/null; do sleep 2; done'
 ```
+
+The first request compiles the home route and takes about 30s in a
+cloud container, so a 30s timeout can expire before the server answers.
 
 Then drive it with the REPL, wrapped in tmux so you can send one
 command at a time and read the output back:
@@ -64,6 +72,21 @@ timeout 15 bash -c 'until tmux capture-pane -t app -p | grep -q "screenshot:"; d
 tmux capture-pane -t app -p
 ```
 
+Commands run strictly in order, so you can also pipe a whole script in
+and let the driver exit when stdin closes. This is simpler than tmux
+when you don't need to react to output between steps:
+
+```bash
+node .claude/skills/run-portfolio/driver.mjs <<'EOF'
+launch 375x812 touch
+nav /arcade/laser-loon
+wait-for text=Try it anyway
+screenshot gate-375
+viewport 1440x900
+screenshot wide-1440
+EOF
+```
+
 Screenshots land in `/tmp/shots/` (override with `SCREENSHOT_DIR`). The
 driver defaults to `http://localhost:3000` (override with
 `PORTFOLIO_BASE_URL`); `nav <path>` accepts either a bare path (`/patrol`)
@@ -77,31 +100,44 @@ can leave the child alive (or vice versa). Kill both by name instead:
 
 ```bash
 lsof -ti:3000 -sTCP:LISTEN | xargs -r kill -9
-pkill -9 -f "next-server"
-pkill -9 -f "node_modules/.bin/next dev"
+pkill -9 -f "[n]ext-server"
+pkill -9 -f "node_modules/.bin/[n]ext dev"
 ```
 
-These patterns are specific enough not to match the agent's own shell
-commands (unlike a broad `pkill -f "next"` or `pkill -f "next dev"`,
-which risks matching your own command line — avoid those).
+Keep the brackets. `pkill -f` matches against full command lines, and
+the agent's own `bash -c "..."` wrapper contains the pattern text, so an
+unbracketed pattern kills the shell running it (the command just exits 1
+with no output). `[n]ext` still matches `next` but not the literal
+string `[n]ext`.
 
 ### Driver commands
 
-| command                       | what it does                                              |
-| ----------------------------- | --------------------------------------------------------- |
-| `launch`                      | launch headless Chromium, open a page                     |
-| `nav <path-or-url>`           | navigate; bare paths resolve against `PORTFOLIO_BASE_URL` |
-| `wait-for <css-selector>`     | wait for a selector (15s timeout)                         |
-| `wait-for text=<text>`        | wait for text to appear anywhere on the page              |
-| `screenshot [name]`           | screenshot -> `/tmp/shots/<name or ss-<ts>>.png`          |
-| `click <css-selector>`        | click via selector                                        |
-| `click-text <text>`           | click the first button/link containing text               |
-| `fill <css-selector> <text>`  | fill a form field                                         |
-| `type <text>` / `press <key>` | keyboard input                                            |
-| `eval <js>`                   | evaluate expression in the page, print JSON               |
-| `text [css-selector]`         | print `innerText` (whole page if no selector)             |
-| `console --errors`            | print console/page errors captured since `launch`         |
-| `quit`                        | close the browser                                         |
+| command                       | what it does                                                          |
+| ----------------------------- | --------------------------------------------------------------------- |
+| `launch [WxH] [touch]`        | launch headless Chromium (default 1280x800); `touch` emulates a phone |
+| `viewport <W>x<H>`            | resize the current page                                               |
+| `nav <path-or-url>`           | navigate; bare paths resolve against `PORTFOLIO_BASE_URL`             |
+| `wait-for <css-selector>`     | wait for a selector (15s timeout)                                     |
+| `wait-for text=<text>`        | wait for text to appear anywhere on the page                          |
+| `screenshot [name]`           | screenshot -> `/tmp/shots/<name or ss-<ts>>.png`                      |
+| `click <css-selector>`        | click via selector                                                    |
+| `click-text <text>`           | click the first button/link containing text                           |
+| `fill <css-selector> <text>`  | fill a form field                                                     |
+| `type <text>` / `press <key>` | keyboard input                                                        |
+| `eval <js>`                   | evaluate expression in the page, print JSON                           |
+| `text [css-selector]`         | print `innerText` (whole page if no selector)                         |
+| `console --errors`            | print console/page errors captured since `launch`                     |
+| `quit`                        | close the browser                                                     |
+
+### Viewports and the arcade phone gate
+
+UI changes in this repo get screenshots at 320, 375, 768 and 1440 wide;
+arcade games use 1024, 1280 and 1440 plus the phone gate. Use
+`viewport` between screenshots rather than relaunching. The arcade's
+desktop-only gate is a CSS media query on `(pointer: coarse)`, so a
+narrow viewport alone never shows it: launch with `touch`
+(`launch 375x812 touch`) to see what a phone visitor sees. Pointer
+emulation is fixed at launch, so `viewport` can't toggle it.
 
 ## Run (human path)
 
@@ -117,8 +153,10 @@ Ctrl-C to stop. Useless headless — this is what the driver replaces.
 npx vitest run
 ```
 
-363 files / 3247 tests pass as of this writing (a couple minutes; most
-of that is JSDOM environment setup across the suite, not slow tests).
+The suite is over 1,000 test files (1,083 on 2026-10-19), and a full run
+takes many minutes in a cloud container. While iterating, run only what
+your change touches with `npx vitest related --run <changed files>`; CI
+shards the full suite three ways.
 
 ## Gotchas
 
@@ -155,11 +193,18 @@ in Server Components`. This is now fixed — the dynamic import moved
   `launchChromiumWithFallback`) — you shouldn't need to do anything,
   but if you rewrite the driver, keep the fallback.
 - **Benign console noise, don't chase it:** a 404 fetching a script
-  (dev-mode service-worker registration attempt) and
+  (dev-mode service-worker registration attempt),
   `ERR_TUNNEL_CONNECTION_FAILED` (Vercel Analytics / Speed Insights /
   Sentry beacons trying to reach the outside world through a proxy the
-  headless browser isn't configured to use) show up on every route.
-  Neither blocks rendering or interaction.
+  headless browser isn't configured to use), a "Failed to find a valid
+  digest in the 'integrity' attribute" for `va.vercel-scripts.com`, and
+  React's "eval() is not supported" warning (the site's static CSP has
+  no `unsafe-eval`; React only wants it in development) show up on every
+  route. None of them blocks rendering or interaction.
+- **The red "1 Issue" badge in dev screenshots** is Next's dev overlay
+  counting one of those dev-only console errors. The overlay never
+  appears in production builds; crop it or mention it rather than
+  trying to fix it.
 - **`.env.local` with the dummy `.env.example` Postgres URL is enough**
   for the routes this skill exercises (`/`, `/patrol`) — no local
   Postgres, Redis, or Clerk keys needed. DB-backed routes (case

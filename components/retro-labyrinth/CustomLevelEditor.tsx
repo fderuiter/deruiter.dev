@@ -20,7 +20,7 @@ import {
 } from "@/lib/retro-labyrinth/level-schema";
 import type { DungeonRoom } from "@/lib/dungeon/types";
 
-export interface CustomLevelEditorProps {
+interface CustomLevelEditorProps {
   initialRoom?: DungeonRoom;
   onPlayCustomLevel: (room: DungeonRoom) => void;
   onClose: () => void;

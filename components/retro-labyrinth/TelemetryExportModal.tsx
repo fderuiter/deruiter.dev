@@ -14,7 +14,7 @@ import {
   type RunTelemetryData,
 } from "@/lib/retro-labyrinth/telemetry";
 
-export interface TelemetryExportModalProps {
+interface TelemetryExportModalProps {
   telemetry: RunTelemetryData;
   onClose: () => void;
 }

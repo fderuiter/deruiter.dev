@@ -290,7 +290,7 @@ direction was to make every game perfect on an iPad first.
   to phones only, since `mobileOrientation` is a phone concern. On 2026-10-13
   the prompt, the lock and the rotation auto-pause share one short-side query,
   `PHONE_ORIENTATION_QUERY` (`(pointer: coarse) and ((max-width: 500px) or
-(max-height: 500px))`), and tablets do not pause on rotation.
+  (max-height: 500px))`), and tablets do not pause on rotation.
   Desktop with a fine pointer is unchanged.
 - **Apple Pencil.** Pointer events with `pointerType` `"pen"` are treated as
   touch by the kit. `TouchButton` captures, counts and releases a Pencil and a

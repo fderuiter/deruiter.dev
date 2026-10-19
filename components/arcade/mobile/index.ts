@@ -17,6 +17,7 @@ export {
 } from "./orientation";
 export {
   controlHint,
+  controlHintFromAction,
   resolveControlHint,
   useTouchHint,
   useControlHint,

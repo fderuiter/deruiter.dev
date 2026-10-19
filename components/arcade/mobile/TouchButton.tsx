@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import { triggerHaptic } from "@/lib/haptics";
+import { touchActionInput, useActionSink } from "@/lib/arcade";
 
 export interface TouchButtonProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -17,6 +18,13 @@ export interface TouchButtonProps extends Omit<
   label: string;
   onPress?: () => void;
   onRelease?: () => void;
+  /**
+   * The action this control performs (#2356). The press sends it, phase
+   * `down`, to the nearest `ActionSinkProvider`, and the release sends `up`,
+   * so the session hears the action itself rather than a fake key.
+   * `onPress` and `onRelease` still run alongside.
+   */
+  action?: string;
   /** Short vibration on press. Defaults to true. */
   haptic?: boolean;
 }
@@ -38,6 +46,7 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   label,
   onPress,
   onRelease,
+  action,
   haptic = true,
   disabled = false,
   className = "",
@@ -46,12 +55,17 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   ...rest
 }) => {
   const heldRef = useRef<Set<number | string>>(new Set());
+  const sink = useActionSink();
   // The release handler is read through a ref so the unmount cleanup below
-  // sees the latest one without re-running on every render.
+  // sees the latest one without re-running on every render. An action-bound
+  // control releases its action the same way.
   const onReleaseRef = useRef(onRelease);
   useEffect(() => {
-    onReleaseRef.current = onRelease;
-  }, [onRelease]);
+    onReleaseRef.current = () => {
+      if (action && sink) sink(touchActionInput(action, "up"));
+      onRelease?.();
+    };
+  }, [onRelease, action, sink]);
 
   // A button that leaves the screen while held must not leave the game
   // thinking the control is still down.
@@ -74,6 +88,7 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
     held.add(id);
     if (first) {
       if (haptic) triggerHaptic(10);
+      if (action && sink) sink(touchActionInput(action, "down"));
       onPress?.();
     }
   };

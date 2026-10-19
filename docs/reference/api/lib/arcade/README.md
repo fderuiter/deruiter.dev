@@ -8,6 +8,126 @@
 
 ## References
 
+### ActionConflict
+
+Re-exports [ActionConflict](input/actions/interfaces/ActionConflict.md)
+
+***
+
+### ActionConflictReason
+
+Re-exports [ActionConflictReason](input/actions/type-aliases/ActionConflictReason.md)
+
+***
+
+### ActionDefinition
+
+Re-exports [ActionDefinition](input/actions/type-aliases/ActionDefinition.md)
+
+***
+
+### ActionGroup
+
+Re-exports [ActionGroup](input/actions/interfaces/ActionGroup.md)
+
+***
+
+### ActionHandler
+
+Re-exports [ActionHandler](input/actions/type-aliases/ActionHandler.md)
+
+***
+
+### actionHintText
+
+Re-exports [actionHintText](input/actions/functions/actionHintText.md)
+
+***
+
+### ActionHintText
+
+Re-exports [ActionHintText](input/actions/interfaces/ActionHintText.md)
+
+***
+
+### ActionInput
+
+Re-exports [ActionInput](input/actions/interfaces/ActionInput.md)
+
+***
+
+### ActionInputController
+
+Re-exports [ActionInputController](input/controller/classes/ActionInputController.md)
+
+***
+
+### ActionInputControllerOptions
+
+Re-exports [ActionInputControllerOptions](input/controller/interfaces/ActionInputControllerOptions.md)
+
+***
+
+### actionKeyCodes
+
+Re-exports [actionKeyCodes](input/actions/functions/actionKeyCodes.md)
+
+***
+
+### actionKeyLabel
+
+Re-exports [actionKeyLabel](input/actions/functions/actionKeyLabel.md)
+
+***
+
+### ActionKind
+
+Re-exports [ActionKind](input/actions/type-aliases/ActionKind.md)
+
+***
+
+### ActionMap
+
+Re-exports [ActionMap](input/actions/interfaces/ActionMap.md)
+
+***
+
+### ActionName
+
+Re-exports [ActionName](input/actions/type-aliases/ActionName.md)
+
+***
+
+### ActionPhase
+
+Re-exports [ActionPhase](input/actions/type-aliases/ActionPhase.md)
+
+***
+
+### ActionSinkProvider
+
+Re-exports [ActionSinkProvider](input/react/functions/ActionSinkProvider.md)
+
+***
+
+### ActionSinkProviderProps
+
+Re-exports [ActionSinkProviderProps](input/react/interfaces/ActionSinkProviderProps.md)
+
+***
+
+### ActionSource
+
+Re-exports [ActionSource](input/actions/type-aliases/ActionSource.md)
+
+***
+
+### ActionVector
+
+Re-exports [ActionVector](input/actions/interfaces/ActionVector.md)
+
+***
+
 ### applyCanvasScale
 
 Re-exports [applyCanvasScale](core/viewport/functions/applyCanvasScale.md)
@@ -68,6 +188,18 @@ Re-exports [ArcadeViewport](core/viewport/classes/ArcadeViewport.md)
 
 ***
 
+### AxisActionDefinition
+
+Re-exports [AxisActionDefinition](input/actions/interfaces/AxisActionDefinition.md)
+
+***
+
+### AxisKeys
+
+Re-exports [AxisKeys](input/actions/interfaces/AxisKeys.md)
+
+***
+
 ### BoundingBox
 
 Re-exports [BoundingBox](utils/type-aliases/BoundingBox.md)
@@ -86,6 +218,12 @@ Re-exports [buildCrtOverlayBackground](crt-pipeline/functions/buildCrtOverlayBac
 
 ***
 
+### ButtonActionDefinition
+
+Re-exports [ButtonActionDefinition](input/actions/interfaces/ButtonActionDefinition.md)
+
+***
+
 ### CABINET\_CRT\_FILTERS
 
 Re-exports [CABINET_CRT_FILTERS](crt-pipeline/variables/CABINET_CRT_FILTERS.md)
@@ -95,6 +233,18 @@ Re-exports [CABINET_CRT_FILTERS](crt-pipeline/variables/CABINET_CRT_FILTERS.md)
 ### CABINET\_CRT\_PROFILES
 
 Re-exports [CABINET_CRT_PROFILES](crt-pipeline/variables/CABINET_CRT_PROFILES.md)
+
+***
+
+### CABINET\_KEYS
+
+Re-exports [CABINET_KEYS](input/actions/variables/CABINET_KEYS.md)
+
+***
+
+### CabinetControl
+
+Re-exports [CabinetControl](input/actions/interfaces/CabinetControl.md)
 
 ***
 
@@ -134,9 +284,21 @@ Re-exports [clamp](utils/functions/clamp.md)
 
 ***
 
+### codeForKeyEvent
+
+Re-exports [codeForKeyEvent](input/actions/functions/codeForKeyEvent.md)
+
+***
+
 ### computeCanvasResolution
 
 Re-exports [computeCanvasResolution](core/viewport/functions/computeCanvasResolution.md)
+
+***
+
+### controlsFromActions
+
+Re-exports [controlsFromActions](input/actions/functions/controlsFromActions.md)
 
 ***
 
@@ -194,6 +356,42 @@ Re-exports [DEFAULT_CRT_PRESET_ID](crt-pipeline/variables/DEFAULT_CRT_PRESET_ID.
 
 ***
 
+### defineActions
+
+Re-exports [defineActions](input/actions/functions/defineActions.md)
+
+***
+
+### findActionConflicts
+
+Re-exports [findActionConflicts](input/actions/functions/findActionConflicts.md)
+
+***
+
+### GamepadAxisBinding
+
+Re-exports [GamepadAxisBinding](input/actions/interfaces/GamepadAxisBinding.md)
+
+***
+
+### GamepadButtonBinding
+
+Re-exports [GamepadButtonBinding](input/actions/interfaces/GamepadButtonBinding.md)
+
+***
+
+### GamepadLike
+
+Re-exports [GamepadLike](input/controller/interfaces/GamepadLike.md)
+
+***
+
+### GamepadStickBinding
+
+Re-exports [GamepadStickBinding](input/actions/interfaces/GamepadStickBinding.md)
+
+***
+
 ### GamePoint
 
 Re-exports [GamePoint](core/viewport/interfaces/GamePoint.md)
@@ -224,6 +422,12 @@ Re-exports [getOrCreatePhosphorPattern](crt-pipeline/functions/getOrCreatePhosph
 
 ***
 
+### HintModality
+
+Re-exports [HintModality](input/actions/type-aliases/HintModality.md)
+
+***
+
 ### InputSnapshot
 
 Re-exports [InputSnapshot](core/input/interfaces/InputSnapshot.md)
@@ -236,9 +440,27 @@ Re-exports [isCabinetCrtFilter](crt-pipeline/functions/isCabinetCrtFilter.md)
 
 ***
 
+### isControlTarget
+
+Re-exports [isControlTarget](input/controller/functions/isControlTarget.md)
+
+***
+
 ### isReducedMotionPreferred
 
 Re-exports [isReducedMotionPreferred](crt-pipeline/functions/isReducedMotionPreferred.md)
+
+***
+
+### isTextEntryTarget
+
+Re-exports [isTextEntryTarget](input/controller/functions/isTextEntryTarget.md)
+
+***
+
+### keyNameForCode
+
+Re-exports [keyNameForCode](input/actions/functions/keyNameForCode.md)
 
 ***
 
@@ -251,6 +473,24 @@ Re-exports [lerp](utils/functions/lerp.md)
 ### loadCRTCalibration
 
 Re-exports [loadCRTCalibration](crt-pipeline/functions/loadCRTCalibration.md)
+
+***
+
+### ManualControlRow
+
+Re-exports [ManualControlRow](input/actions/interfaces/ManualControlRow.md)
+
+***
+
+### manualControlsFromActions
+
+Re-exports [manualControlsFromActions](input/actions/functions/manualControlsFromActions.md)
+
+***
+
+### ManualControlSpec
+
+Re-exports [ManualControlSpec](input/actions/interfaces/ManualControlSpec.md)
 
 ***
 
@@ -284,6 +524,12 @@ Re-exports [PhosphorMaskType](crt-pipeline/type-aliases/PhosphorMaskType.md)
 
 ***
 
+### PointerActionDefinition
+
+Re-exports [PointerActionDefinition](input/actions/interfaces/PointerActionDefinition.md)
+
+***
+
 ### PoolOverflowPolicy
 
 Re-exports [PoolOverflowPolicy](core/pool/type-aliases/PoolOverflowPolicy.md)
@@ -314,6 +560,12 @@ Re-exports [renderCRTEffects](crt-pipeline/functions/renderCRTEffects.md)
 
 ***
 
+### resolveActionHint
+
+Re-exports [resolveActionHint](input/actions/functions/resolveActionHint.md)
+
+***
+
 ### saveCRTCalibration
 
 Re-exports [saveCRTCalibration](crt-pipeline/functions/saveCRTCalibration.md)
@@ -335,6 +587,30 @@ Re-exports [screenToGameCoords](core/viewport/functions/screenToGameCoords.md)
 ### shouldCabinetDrawCrt
 
 Re-exports [shouldCabinetDrawCrt](crt-pipeline/functions/shouldCabinetDrawCrt.md)
+
+***
+
+### touchActionInput
+
+Re-exports [touchActionInput](input/actions/functions/touchActionInput.md)
+
+***
+
+### useActionInput
+
+Re-exports [useActionInput](input/react/functions/useActionInput.md)
+
+***
+
+### UseActionInputOptions
+
+Re-exports [UseActionInputOptions](input/react/interfaces/UseActionInputOptions.md)
+
+***
+
+### useActionSink
+
+Re-exports [useActionSink](input/react/functions/useActionSink.md)
 
 ***
 

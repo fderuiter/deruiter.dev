@@ -47,7 +47,9 @@ async function launchDuckFullscreen(page: import("@playwright/test").Page) {
     .locator('button[aria-label*="Fullscreen"]')
     .first();
   await fullscreenBtn.click();
-  await page.waitForTimeout(300);
+  await expect(
+    page.locator('button[aria-label*="Exit Fullscreen"]').first()
+  ).toBeVisible();
 }
 
 test.describe("Working With Duck: HUD and action dock stay simultaneously visible", () => {

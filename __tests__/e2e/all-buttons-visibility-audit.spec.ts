@@ -149,7 +149,6 @@ test.describe("Arcade Games Complete Buttons Visibility & Usability Audit", () =
         .first();
       if (await fullscreenBtn.isVisible().catch(() => false)) {
         await fullscreenBtn.click();
-        await page.waitForTimeout(300);
 
         // Verify floating exit and power buttons in fullscreen
         const exitFullscreenBtn = page
@@ -163,7 +162,9 @@ test.describe("Arcade Games Complete Buttons Visibility & Usability Audit", () =
 
         // Exit fullscreen
         await exitFullscreenBtn.click();
-        await page.waitForTimeout(300);
+        await expect(
+          page.locator('button[aria-label*="Exit Fullscreen"]')
+        ).toHaveCount(0);
       }
     });
   }

@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForVisualSettle } from "./helpers/settle";
 
 // Six arcade games show a desktop-only notice on phones and portrait tablets
 // (ADR 0048). These specs exercise the touch controls behind it, so they take
@@ -59,7 +60,7 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
       page,
     }) => {
       await page.goto(route);
-      await page.waitForTimeout(300);
+      await waitForVisualSettle(page);
 
       // Verify that document scrollWidth does not exceed viewport innerWidth
       const isOverflowing = await page.evaluate(() => {
@@ -80,7 +81,6 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
     );
 
     await page.goto("/");
-    await page.waitForTimeout(400);
 
     // Click Hamburger Menu Trigger
     const menuButton = page.getByRole("button", {
@@ -176,7 +176,8 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
     isMobile,
   }) => {
     await page.goto("/crf");
-    await page.waitForTimeout(400);
+    await page.waitForSelector("text=CRF Studio", { timeout: 15000 });
+    await waitForVisualSettle(page);
 
     if (isMobile) {
       const mobileNav = page.getByLabel(/mobile view navigation/i);
@@ -197,7 +198,6 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
     page,
   }) => {
     await page.goto("/neuro");
-    await page.waitForTimeout(400);
 
     // Verify 2D / 3D split toggles
     const splitBtn = page.getByRole("button", { name: /split 3d\/2d/i });
@@ -399,7 +399,6 @@ test.describe("Real rendered touch-target dimensions (48px minimum, ADR-0003/ADR
     );
 
     await page.goto("/");
-    await page.waitForTimeout(300);
 
     const menuButton = page.getByRole("button", {
       name: /open navigation menu/i,

@@ -58,6 +58,8 @@ import {
   YELLOW_AFTER_SEC,
 } from "../presets";
 import type {
+  CustomOrderItem,
+  CustomOrderTemplate,
   KdsBand,
   Meters,
   Order,
@@ -202,8 +204,28 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
   const durationSec = clamp(rawDuration, MIN_DURATION_SEC, MAX_DURATION_SEC);
   const week = weekSettings(config);
 
+  const customOrders =
+    Array.isArray(config.customOrders) && config.customOrders.length > 0
+      ? config.customOrders
+          .slice(0, MAX_OPEN_ORDERS)
+          .map((order: CustomOrderTemplate) => ({
+            items: (Array.isArray(order?.items) ? order.items : [])
+              .slice(0, MAX_ITEMS_PER_ORDER)
+              .map((item: CustomOrderItem) => ({
+                itemId: item.itemId,
+                modifier: item.modifier ?? null,
+              })),
+          }))
+      : undefined;
+
   return {
-    config: { seed, durationSec, ...scenarioDials(config), ...week },
+    config: {
+      seed,
+      durationSec,
+      ...scenarioDials(config),
+      ...week,
+      ...(customOrders ? { customOrders } : {}),
+    },
     time: 0,
     outcome: "playing",
     meters: {
@@ -364,8 +386,32 @@ function drawOrder(
   seed: string,
   draws: number,
   id: number,
-  arrivedAt: number
+  arrivedAt: number,
+  customOrders?: readonly CustomOrderTemplate[]
 ): { order: Order; draws: number } {
+  if (customOrders && customOrders.length > 0) {
+    const templateIndex = (id - 1) % customOrders.length;
+    const template = customOrders[templateIndex];
+    const rawItems = (template.items || []).slice(0, MAX_ITEMS_PER_ORDER);
+    const validItems =
+      rawItems.length > 0
+        ? rawItems
+        : [{ itemId: "burger" as const, modifier: null }];
+    const items: OrderItem[] = validItems.map((item) => {
+      const modifier = item.modifier ?? null;
+      return {
+        itemId: item.itemId,
+        modifier,
+        rung: false,
+        modifierDone: modifier === null,
+        dropped: false,
+      };
+    });
+    return {
+      order: { id, arrivedAt, items, coworkerReadyAt: null },
+      draws,
+    };
+  }
   let cursor = draws;
   const count = 1 + drawInt(seed, cursor++, MAX_ITEMS_PER_ORDER);
   const items: OrderItem[] = [];
@@ -464,7 +510,13 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
 
   while (nextArrivalAt <= time) {
     if (orders.length < MAX_OPEN_ORDERS) {
-      const drawn = drawOrder(seed, draws, nextOrderId, nextArrivalAt);
+      const drawn = drawOrder(
+        seed,
+        draws,
+        nextOrderId,
+        nextArrivalAt,
+        state.config.customOrders
+      );
       draws = drawn.draws;
       orders = [...orders, drawn.order];
       events.push({ type: "order-arrived", orderId: nextOrderId });

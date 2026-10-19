@@ -47,6 +47,14 @@ Shortest gap between car arrivals, in seconds.
 
 ***
 
+### customOrders?
+
+> `readonly` `optional` **customOrders?**: readonly [`CustomOrderTemplate`](CustomOrderTemplate.md)[]
+
+Sequence of custom order templates used when clocking in with a custom order queue.
+
+***
+
 ### dilemmaDeck?
 
 > `readonly` `optional` **dilemmaDeck?**: readonly [`DilemmaId`](../type-aliases/DilemmaId.md)[]

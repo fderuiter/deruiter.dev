@@ -17,6 +17,17 @@ export type KdsBand = "green" | "yellow" | "red";
 /** How a shift ended; `playing` until it does. */
 export type ShiftOutcome = "playing" | "completed" | "docked" | "breakdown";
 
+/** An item configured in a custom order template. */
+export interface CustomOrderItem {
+  readonly itemId: MenuItemId;
+  readonly modifier?: ModifierId | null;
+}
+
+/** A custom order template for building custom order queues. */
+export interface CustomOrderTemplate {
+  readonly items: readonly CustomOrderItem[];
+}
+
 /** One line of an order as the customer speaks it through the headset. */
 export interface OrderItem {
   readonly itemId: MenuItemId;
@@ -214,6 +225,10 @@ export interface ShiftConfig extends ShiftScenario {
    * from every dilemma a single shift can.
    */
   readonly dilemmaDeck?: readonly DilemmaId[];
+  /**
+   * Sequence of custom order templates used when clocking in with a custom order queue.
+   */
+  readonly customOrders?: readonly CustomOrderTemplate[];
 }
 
 /** The days of the week mode (#2086), Monday to Friday. */

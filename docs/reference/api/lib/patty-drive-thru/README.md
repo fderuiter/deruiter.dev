@@ -140,6 +140,18 @@ Re-exports [createWeek](internal/week/functions/createWeek.md)
 
 ***
 
+### CustomOrderItem
+
+Re-exports [CustomOrderItem](types/interfaces/CustomOrderItem.md)
+
+***
+
+### CustomOrderTemplate
+
+Re-exports [CustomOrderTemplate](types/interfaces/CustomOrderTemplate.md)
+
+***
+
 ### DayChoice
 
 Re-exports [DayChoice](types/interfaces/DayChoice.md)

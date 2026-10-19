@@ -211,12 +211,14 @@ export function PattyDriveThruGame({
   const dilemmaWindowSec = longerDilemmas ? DILEMMA_WINDOW_LONG_SEC : undefined;
 
   const clockIn = useCallback(
-    (picked?: ScenarioId) => {
+    (picked?: ScenarioId, customConfig?: Partial<ShiftConfig>) => {
       if (picked) scenario.current = picked;
       setPaused(false);
       store.getState().clockIn({
         ...(config?.seed ? {} : { seed: seedFromUrl() ?? freshSeed() }),
-        ...scenarioDialsFor(scenario.current),
+        ...(scenario.current === "custom"
+          ? customConfig
+          : scenarioDialsFor(scenario.current)),
         ...(dilemmaWindowSec !== undefined ? { dilemmaWindowSec } : {}),
       });
       boundaryRef.current?.focus({ preventScroll: true });

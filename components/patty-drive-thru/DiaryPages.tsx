@@ -4,12 +4,18 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { downloadFile } from "@/lib/download";
+import { clamp } from "@/lib/game-utils";
 import {
   CLOSING_NOTE,
   COMPANION_POST_PATH,
   DIARY_INTRO,
   DILEMMA_WINDOW_LONG_SEC,
   DILEMMA_WINDOW_SEC,
+  MAX_ITEMS_PER_ORDER,
+  MAX_OPEN_ORDERS,
+  MENU_ITEM_LABELS,
+  ORDERABLE_ITEMS,
+  SCENARIO_LIMITS,
   SCENARIO_PRESETS,
   WEEK_DAYS,
   carryMeters,
@@ -28,8 +34,13 @@ import {
   scoreWeek,
   scoreShift,
   describeShiftScore,
+  type CustomOrderTemplate,
+  type MenuItemId,
+  type ModifierId,
   type ScenarioId,
+  type ShiftConfig,
   type ShiftLogEntry,
+  type ShiftScenario,
   type ShiftState,
   type WeekDayResult,
   type WeekState,
@@ -100,7 +111,10 @@ export function DiaryIntroPage({
   longerDilemmas = false,
   onLongerDilemmasChange,
 }: {
-  onClockIn: (scenario: ScenarioId) => void;
+  onClockIn: (
+    scenario: ScenarioId,
+    customConfig?: Partial<ShiftConfig>
+  ) => void;
   /** True when dilemmas give the longer answer window (#2087). */
   longerDilemmas?: boolean;
   /** Turns the longer dilemma window on or off. */
@@ -114,12 +128,135 @@ export function DiaryIntroPage({
 }) {
   const buttonRef = useFocusOnMount<HTMLButtonElement>();
   const [scenario, setScenario] = useState<ScenarioId | "week">("standard");
+
+  const [customDials, setCustomDials] = useState<
+    Record<keyof ShiftScenario, number>
+  >({
+    arrivalGapMinSec: 6,
+    arrivalGapMaxSec: 12,
+    firstArrivalSec: 2,
+    sosLossExpired: 15,
+    sosLossLate: 5,
+    sosGainOnTime: 2,
+    sosGainFast: 3,
+    idleGraceSec: 6,
+    idleRatePerSec: 12,
+    dispenserFailChance: 0.4,
+  });
+
+  const [customOrders, setCustomOrders] = useState<CustomOrderTemplate[]>([
+    {
+      items: [
+        { itemId: "burger", modifier: "no-pickles" },
+        { itemId: "soda", modifier: null },
+      ],
+    },
+    {
+      items: [
+        { itemId: "cheeseburger", modifier: null },
+        { itemId: "fries", modifier: null },
+        { itemId: "shake", modifier: null },
+      ],
+    },
+  ]);
+
+  const [drawerOpen, setDrawerOpen] = useState(true);
+
   const resumable =
     savedWeek && !isWeekOver(savedWeek) && onResumeWeek ? savedWeek : null;
-  const start = () => {
-    if (scenario === "week") onStartWeek?.();
-    else onClockIn(scenario);
+
+  const handleDialChange = (key: keyof ShiftScenario, rawValue: number) => {
+    const [min, max] = SCENARIO_LIMITS[key];
+    const clamped = clamp(rawValue, min, max);
+    setCustomDials((prev) => ({ ...prev, [key]: clamped }));
   };
+
+  const handleAddOrder = () => {
+    if (customOrders.length >= MAX_OPEN_ORDERS) return;
+    setCustomOrders((prev) => [
+      ...prev,
+      {
+        items: [{ itemId: "burger", modifier: null }],
+      },
+    ]);
+  };
+
+  const handleRemoveOrder = (orderIndex: number) => {
+    if (customOrders.length <= 1) return;
+    setCustomOrders((prev) => prev.filter((_, idx) => idx !== orderIndex));
+  };
+
+  const handleAddItem = (orderIndex: number) => {
+    setCustomOrders((prev) =>
+      prev.map((order, idx) => {
+        if (idx !== orderIndex) return order;
+        if (order.items.length >= MAX_ITEMS_PER_ORDER) return order;
+        return {
+          ...order,
+          items: [...order.items, { itemId: "fries", modifier: null }],
+        };
+      })
+    );
+  };
+
+  const handleRemoveItem = (orderIndex: number, itemIndex: number) => {
+    setCustomOrders((prev) =>
+      prev.map((order, idx) => {
+        if (idx !== orderIndex) return order;
+        if (order.items.length <= 1) return order;
+        return {
+          ...order,
+          items: order.items.filter((_, iIdx) => iIdx !== itemIndex),
+        };
+      })
+    );
+  };
+
+  const handleUpdateItem = (
+    orderIndex: number,
+    itemIndex: number,
+    itemId: MenuItemId,
+    modifier: ModifierId | null
+  ) => {
+    setCustomOrders((prev) =>
+      prev.map((order, idx) => {
+        if (idx !== orderIndex) return order;
+        return {
+          ...order,
+          items: order.items.map((item, iIdx) =>
+            iIdx === itemIndex ? { itemId, modifier } : item
+          ),
+        };
+      })
+    );
+  };
+
+  const start = () => {
+    if (scenario === "week") {
+      onStartWeek?.();
+    } else if (scenario === "custom") {
+      onClockIn("custom", {
+        ...customDials,
+        customOrders,
+      });
+    } else {
+      onClockIn(scenario);
+    }
+  };
+
+  const dialLabels: Record<keyof ShiftScenario, string> = {
+    arrivalGapMinSec: "Min Arrival Gap (sec)",
+    arrivalGapMaxSec: "Max Arrival Gap (sec)",
+    firstArrivalSec: "First Arrival Delay (sec)",
+    sosLossExpired: "SOS Loss (Expired)",
+    sosLossLate: "SOS Loss (Late)",
+    sosGainOnTime: "SOS Gain (On Time)",
+    sosGainFast: "SOS Gain (Fast)",
+    idleGraceSec: "Idle Grace Period (sec)",
+    idleRatePerSec: "Idle Rate (/sec)",
+    dispenserFailChance: "Dispenser Failure Rate (0-1)",
+  };
+
   return (
     <article
       className={`${PAGE_CLASS} @3xl:max-w-4xl`}
@@ -189,6 +326,206 @@ export function DiaryIntroPage({
               </label>
             ) : null}
           </fieldset>
+
+          {scenario === "custom" ? (
+            <div
+              className="mt-3 space-y-4 rounded border border-[var(--pdt-paper-rule)] bg-black/5 p-3 text-xs"
+              data-testid="pdt-custom-panel"
+            >
+              <h3 className="font-mono font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
+                Custom Scenario Dials
+              </h3>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {(
+                  Object.keys(SCENARIO_LIMITS) as Array<keyof ShiftScenario>
+                ).map((key) => {
+                  const [min, max] = SCENARIO_LIMITS[key];
+                  const step = key === "dispenserFailChance" ? 0.05 : 1;
+                  return (
+                    <label key={key} className="flex flex-col gap-1 font-mono">
+                      <span className="text-[11px] font-semibold">
+                        {dialLabels[key]} [{min} - {max}]
+                      </span>
+                      <input
+                        type="number"
+                        min={min}
+                        max={max}
+                        step={step}
+                        value={customDials[key]}
+                        onChange={(e) =>
+                          handleDialChange(
+                            key,
+                            parseFloat(e.target.value) || min
+                          )
+                        }
+                        className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-2 py-1 text-xs font-mono text-[var(--pdt-paper-ink)]"
+                        data-testid={`pdt-dial-${key}`}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Custom Order Builder Drawer */}
+              <div className="border-t border-[var(--pdt-paper-rule)] pt-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-mono font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]">
+                    Custom Order Queue
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => setDrawerOpen(!drawerOpen)}
+                    aria-expanded={drawerOpen}
+                    aria-controls="pdt-custom-order-drawer"
+                    data-testid="pdt-toggle-drawer"
+                    className="font-mono text-xs font-bold underline hover:no-underline"
+                  >
+                    {drawerOpen
+                      ? "Close Drawer"
+                      : `Open Drawer (${customOrders.length}/${MAX_OPEN_ORDERS})`}
+                  </button>
+                </div>
+
+                {drawerOpen ? (
+                  <div
+                    id="pdt-custom-order-drawer"
+                    role="region"
+                    aria-label="Custom Order Builder Drawer"
+                    data-testid="pdt-order-builder-drawer"
+                    className="mt-3 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-[var(--pdt-paper-dim)]">
+                        Construct customer ticket sequence (max{" "}
+                        {MAX_OPEN_ORDERS} orders, max {MAX_ITEMS_PER_ORDER}{" "}
+                        items per order).
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleAddOrder}
+                        disabled={customOrders.length >= MAX_OPEN_ORDERS}
+                        data-testid="pdt-add-order"
+                        className="rounded border border-[var(--pdt-bump-edge)] bg-[var(--pdt-bump)] px-2 py-1 font-mono text-[11px] font-bold uppercase text-[var(--pdt-ink)] disabled:opacity-50"
+                      >
+                        + Add Order
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {customOrders.map((order, oIdx) => (
+                        <div
+                          key={oIdx}
+                          className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] p-2 space-y-2"
+                          data-testid={`pdt-custom-order-${oIdx}`}
+                        >
+                          <div className="flex items-center justify-between font-mono text-xs font-bold">
+                            <span>Order #{oIdx + 1}</span>
+                            {customOrders.length > 1 ? (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveOrder(oIdx)}
+                                data-testid={`pdt-remove-order-${oIdx}`}
+                                aria-label={`Remove Order ${oIdx + 1}`}
+                                className="text-red-700 hover:underline text-[11px]"
+                              >
+                                Remove Order
+                              </button>
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-1.5">
+                            {order.items.map((item, iIdx) => (
+                              <div
+                                key={iIdx}
+                                className="flex flex-wrap items-center gap-2 text-[11px]"
+                              >
+                                <label className="flex items-center gap-1">
+                                  <span className="sr-only">Item</span>
+                                  <select
+                                    value={item.itemId}
+                                    onChange={(e) =>
+                                      handleUpdateItem(
+                                        oIdx,
+                                        iIdx,
+                                        e.target.value as MenuItemId,
+                                        item.modifier ?? null
+                                      )
+                                    }
+                                    data-testid={`pdt-item-select-${oIdx}-${iIdx}`}
+                                    aria-label={`Order ${oIdx + 1} Item ${iIdx + 1}`}
+                                    className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-1.5 py-1 font-mono"
+                                  >
+                                    {ORDERABLE_ITEMS.map((id) => (
+                                      <option key={id} value={id}>
+                                        {MENU_ITEM_LABELS[id]}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+
+                                <label className="flex items-center gap-1">
+                                  <span className="sr-only">Modifier</span>
+                                  <select
+                                    value={item.modifier ?? "none"}
+                                    onChange={(e) =>
+                                      handleUpdateItem(
+                                        oIdx,
+                                        iIdx,
+                                        item.itemId,
+                                        e.target.value === "none"
+                                          ? null
+                                          : (e.target.value as ModifierId)
+                                      )
+                                    }
+                                    data-testid={`pdt-modifier-select-${oIdx}-${iIdx}`}
+                                    aria-label={`Order ${oIdx + 1} Item ${iIdx + 1} Modifier`}
+                                    className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-1.5 py-1 font-mono"
+                                  >
+                                    <option value="none">
+                                      Standard (no mod)
+                                    </option>
+                                    <option value="no-pickles">
+                                      No Pickles
+                                    </option>
+                                  </select>
+                                </label>
+
+                                {order.items.length > 1 ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveItem(oIdx, iIdx)}
+                                    data-testid={`pdt-remove-item-${oIdx}-${iIdx}`}
+                                    aria-label={`Remove Item ${iIdx + 1} from Order ${oIdx + 1}`}
+                                    className="text-red-700 hover:underline text-[10px]"
+                                  >
+                                    Remove
+                                  </button>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+
+                          {order.items.length < MAX_ITEMS_PER_ORDER ? (
+                            <button
+                              type="button"
+                              onClick={() => handleAddItem(oIdx)}
+                              data-testid={`pdt-add-item-${oIdx}`}
+                              aria-label={`Add Item to Order ${oIdx + 1}`}
+                              className="font-mono text-[10px] font-bold text-blue-800 hover:underline"
+                            >
+                              + Add Item ({order.items.length}/
+                              {MAX_ITEMS_PER_ORDER})
+                            </button>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
           {onLongerDilemmasChange ? (
             <label className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm">
               <input

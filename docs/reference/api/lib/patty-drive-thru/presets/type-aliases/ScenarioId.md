@@ -6,4 +6,4 @@
 
 # Type Alias: ScenarioId
 
-> **ScenarioId** = `"standard"` \| `"lunchRush"` \| `"failingDispenser"` \| `"strictManagement"`
+> **ScenarioId** = `"standard"` \| `"lunchRush"` \| `"failingDispenser"` \| `"strictManagement"` \| `"custom"`

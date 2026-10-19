@@ -270,6 +270,7 @@ function lateOrders(shift: ShiftState): number[] {
 function withoutDials(config: Partial<ShiftConfig>): Partial<ShiftConfig> {
   const kept: Partial<ShiftConfig> = { ...config };
   delete (kept as Record<string, unknown>).dilemmaWindowSec;
+  delete (kept as Record<string, unknown>).customOrders;
   for (const key of Object.keys(SCENARIO_LIMITS) as Array<
     keyof typeof SCENARIO_LIMITS
   >)
@@ -298,8 +299,7 @@ export function createBoothStore(
       // The day being worked, for its rush calls (#2139).
       const day = state.week ? (getWeekDay(state.week)?.id ?? null) : null;
       const caption = pickCaption(events, shift, day);
-      let announcement =
-        events.length > 0 ? announce(events, shift, day) : "";
+      let announcement = events.length > 0 ? announce(events, shift, day) : "";
       const open = new Set(shift.orders.map((o) => o.id));
       const known = state.lateAnnounced.filter((id) => open.has(id));
       const newlyLate = lateOrders(shift).filter((id) => !known.includes(id));

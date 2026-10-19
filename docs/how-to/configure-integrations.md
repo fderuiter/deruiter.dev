@@ -219,7 +219,10 @@ curl -X POST http://localhost:3000/api/telemetry \
   the repository root declares `buildCommand`/`installCommand` and the cron
   schedule below. There is no dedicated setup script for this, it's a
   one-time dashboard action per Vercel's own
-  [Git integration docs](https://vercel.com/docs/git).
+  [Git integration docs](https://vercel.com/docs/git). `vercel.json` also sets
+  `git.deploymentEnabled: false`, so pushes do not deploy. An operator creates
+  each Production deployment from Vercel Dashboard → Deployments → Create
+  Deployment ([ADR 0051](../../adr/0051-manual-production-releases.md)).
 - **Cron**: `vercel.json` schedules `GET /api/cron/maintenance` daily
   (`0 0 * * *`). Vercel signs every cron invocation with an
   `Authorization: Bearer <CRON_SECRET>` header matching the `CRON_SECRET`
@@ -272,8 +275,10 @@ curl -X POST http://localhost:3000/api/telemetry \
   remain in Upstash until the next successful sync drains them (bounded by
   Upstash's own retention for the plan in use).
 - **`CRON_SECRET` rotated**: update it in the Vercel project's environment
-  variables, there is no overlap window, so the change takes effect on the
-  next deployment/cron invocation with no code change required.
+  variables. There is no overlap window, and the new value takes effect only
+  after an operator creates a new Production deployment from the current green
+  `main` SHA (Vercel Dashboard → Deployments → Create Deployment). No code
+  change is required.
 
 ## GitHub data fetching
 

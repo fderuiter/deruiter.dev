@@ -13,8 +13,9 @@ it, then have an operator create a Production deployment from the current
 ## The Flow
 
 1. Branch from `main` with an allowed prefix (`feat/`, `fix/`, `chore/`,
-   `docs/`, `dx/`, `refactor/`, `perf/`, `test/`), commit with Conventional
-   Commits, and open a pull request into `main`.
+   `docs/`, `dx/`, `refactor/`, `perf/`, `test/`, `dev/`, or `jules/`, which
+   is reserved for the Jules agent), commit with Conventional Commits, and
+   open a pull request into `main`.
 2. CI (`.github/workflows/ci.yml`) runs on the PR. Merge only when
    **Merge Gate (Required Checks Summary)** is green.
 3. Merge after **Merge Gate** is green. Git pushes the merge commit to `main`;
@@ -63,7 +64,7 @@ In the Vercel dashboard for the `portfolio` project:
 
 ### Main Branch Protection
 
-Verified through the GitHub API on 2026-09-28 for `fderuiter/portfolio`:
+Verified through the GitHub API on 2026-09-28 for `fderuiter/deruiter.dev`:
 
 - Pull requests are required, including for administrators unless the
   [Owner Merge Override](#owner-merge-override) is on. No approving
@@ -82,7 +83,7 @@ Audit these settings monthly and whenever the CI workflow or Merge Gate name
 changes. Use **Settings → Branches → Branch protection rules → main**, or:
 
 ```bash
-gh api repos/fderuiter/portfolio/branches/main/protection \
+gh api repos/fderuiter/deruiter.dev/branches/main/protection \
   --jq '{checks: .required_status_checks.checks, strict: .required_status_checks.strict, admins: .enforce_admins.enabled, reviews: .required_pull_request_reviews.required_approving_review_count, linear: .required_linear_history.enabled, force: .allow_force_pushes.enabled, deletion: .allow_deletions.enabled, conversations: .required_conversation_resolution.enabled}'
 ```
 

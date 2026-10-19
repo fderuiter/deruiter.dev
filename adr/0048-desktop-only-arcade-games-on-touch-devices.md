@@ -12,6 +12,10 @@ stays in the code, and each game leaves it in its own mobile pull request once
 it meets the phone bar in ADR 0061. The rule below describes the gate as it
 stands until then.
 
+Since 2026-10-19 [ADR 0062](0062-three-views-per-arcade-game.md) sets the
+rollout: each game leaves the gate when its dedicated phone view ships, one
+game at a time, and this ADR retires with the last game.
+
 ## Context
 
 ADR 0003 committed every arcade game to "full-fidelity usability" on phones:

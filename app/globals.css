@@ -32,13 +32,10 @@
   --muted-strong: #d2d4db;
   --text-secondary: #9da2af;
   --brand-cyan: #06b6d4;
-  --brand-cyan-glow: rgba(6, 182, 212, 0.15);
-  --cyan-glow: #38bdf8;
   --emerald-accent: #4ade80;
   --badge-muted-bg: #1e293b;
   --badge-muted-text: #7dd3fc;
   --brand-blue: #3b82f6;
-  --brand-blue-glow: rgba(59, 130, 246, 0.1);
   --brand-dark: #0d0e11;
   --success: #10b981;
   --error: #ef4444;
@@ -104,13 +101,10 @@
   --color-muted-strong: var(--muted-strong);
   --color-text-secondary: var(--text-secondary);
   --color-brand-cyan: var(--brand-cyan);
-  --color-brand-cyan-glow: var(--brand-cyan-glow);
-  --color-cyan-glow: var(--cyan-glow);
   --color-emerald-accent: var(--emerald-accent);
   --color-badge-muted-bg: var(--badge-muted-bg);
   --color-badge-muted-text: var(--badge-muted-text);
   --color-brand-blue: var(--brand-blue);
-  --color-brand-blue-glow: var(--brand-blue-glow);
   --color-brand-dark: var(--brand-dark);
   --color-success: var(--success);
   --color-error: var(--error);
@@ -329,46 +323,16 @@ body {
   letter-spacing: -0.035em;
 }
 
-/* Glassmorphism & Neon Glow Utilities */
+/* Solid surface utilities. Site chrome carries no glow (#2312): emphasis
+   comes from the hairline border and the single amber accent. */
 .glass-panel {
   background: var(--surface-1);
   border: 1px solid var(--border);
 }
 
 /* Standardized SVG Visual Filters */
-.svg-glow-cyan {
-  filter: drop-shadow(0 0 1.5px rgba(6, 182, 212, 0.8))
-    drop-shadow(0 0 4px rgba(6, 182, 212, 0.45));
-}
-
-.svg-glow-blue {
-  filter: drop-shadow(0 0 1.5px rgba(59, 130, 246, 0.8))
-    drop-shadow(0 0 4px rgba(59, 130, 246, 0.45));
-}
-
 .svg-shadow {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-
-.glass-panel-glow {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  box-shadow: 0 0 25px -5px var(--brand-cyan-glow);
-}
-
-.glow-cyan-sm {
-  box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.2);
-}
-
-.glow-cyan-md {
-  box-shadow: 0 0 30px -5px rgba(6, 182, 212, 0.25);
-}
-
-.glow-cyan-border {
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow:
-    0 0 20px -3px rgba(6, 182, 212, 0.15),
-    inset 0 0 15px -3px rgba(6, 182, 212, 0.05);
 }
 
 /* Tool Shell & Precision Editorial Utilities */

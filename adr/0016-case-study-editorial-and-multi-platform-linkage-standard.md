@@ -1,8 +1,13 @@
 # 0016. High-Assurance Systems Case Study Editorial and Multi-Platform Linkage Standard
 
+## Status
+
+Accepted
+
 ## Context
 
 The portfolio showcases complex engineering projects ranging from compiler runtimes and clinical trial compliance tools to machine learning pipelines, full-stack web applications, and embedded firmware. Previously:
+
 - Case study editorial content lacked a unified, deep-dive architectural structure, resulting in inconsistent detail across projects.
 - Case study headers did not prominently display direct links to external source code repositories (`github_url`) or secondary external artifacts (such as Kaggle notebooks or package registries).
 - There were no standardized bidirectional link seams connecting case study writeups to corresponding in-app interactive tools (e.g. CRF Studio `/simulator`, Proof Workspace `/proof`, or Arcade games `/arcade/*`).

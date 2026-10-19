@@ -14,8 +14,8 @@ version number is set when the release is tagged.
 
 ### Merged since the 2026-09-29 release
 
-Production ran `aa85100` (#1805) as of 2026-10-05, so entries up to that
-commit are deployed; later ones ship with the next manual release.
+Entries up to #1805 (`aa85100`) were deployed by 2026-10-05; later ones ship
+with the next manual release from the Vercel Dashboard.
 
 - Study Director: desk layout with status bar and scoped design tokens, study
   health radar, phase timeline, team portraits and site cards (#1510, #1541).
@@ -178,7 +178,122 @@ commit are deployed; later ones ship with the next manual release.
 - Security: the `braces` advisory (GHSA-vfj7-8cjw-p6xm) is resolved instead
   of excepted. `fast-glob`, its only path into the tree, is overridden to
   `tinyglobby`, so `braces` is no longer installed and its audit exception is
-  removed (#1783).
+  removed (#1783, #2329).
+- Patty's Drive-Thru, a new first-person booth cabinet at
+  `/arcade/patty-drive-thru`: a headless shift engine, diary pages, named
+  shift scenarios with a data export, a Monday-to-Friday week that ramps to a
+  dinner rush, scoring for speed, clean orders and dignity, shift dilemmas
+  with a hidden Solidarity track and three endings, plus fixes for focus,
+  the pause key, key caps and ticket numbers (ADR 0059, #1856, #1857, #1858,
+  #1888, #1961, #2007, #2070, #2099, #2109, #2208, #2217).
+- For Better or Bulk, a new real-time co-op wedding-setup game (ADR 0060):
+  two players set up the venue against the clock, with a first-run coach,
+  solo assist that moves the idle partner, seeded Friday events and a daily
+  seed, challenge stars, run-code replays, achievements, reactive jokes,
+  ceremony playback, a receipt card, sound for the loud moments, and a par
+  time with a time-based best (#1909, #1912, #1922, #1924, #1925, #1926,
+  #1928, #1929, #2001, #2072). Repeated playtest passes made every refused
+  press say why, named the keys, fixed the helper, chairs, grill, bin and
+  lantern crates, and kept the receipt honest and unclipped (#1921, #1930,
+  #1932, #1934, #1947, #1949, #1957, #1962, #1964, #1966, #1968, #1970,
+  #1972, #1975, #1977, #1979, #1981, #1984, #2210).
+- Garmin Monkey C Mayhem became a fitness platformer: a course with variable
+  jump and stomps, power tiers, Runner's High and lives, heat map and pace
+  meter power-ups, a gym enemy roster with a Rep Max mini-boss, body battery
+  and gym culture rules, water stations, plyo boxes and treadmill belts, pool,
+  basement gym and open water stages, new moves, a running buddy, aid
+  stations with finisher medals and secret exits, second wind events, a run
+  clock with auto lap splits, and a balance pass (#1890, #1953, #2000, #2004,
+  #2008, #2013, #2017, #2028, #2029, #2034, #2035, #2036, #2040, #2046,
+  #2213). Race Mode speedruns, a Virtual Partner ghost of your best race, a
+  training plan map with recovery huts, a gear bag, finisher card matches,
+  and badges with run history in the companion panel round it out (#2060,
+  #2094, #2101, #2110, #2114, #2119). Fixes cover screen-reader buttons and
+  readouts, the Enter start, panel layout, the run-over card, contrast, key
+  hints, station scoring and the pause text (#2203, #2211, #2218, #2227,
+  #2237, #2245, #2255, #2261, #2264, #2271, #2321).
+- Study Director: pixel art for the office world, a stage UI with camera,
+  minimap and dialogue box, walk costs and office sounds, daily priorities,
+  interruptions and relationship actions, sites 04 and 05 with a sponsor
+  visit and vendor meeting, seeded full-run simulations, a meeting archive,
+  Calm, Standard and Rescue difficulty, a short 35-day study with "Delegate
+  the day", a seeded event deck, real late-game work, and how long a quiet
+  site has gone unvisited (#1879, #1881, #1882, #1883, #1884, #1885, #1886,
+  #2078, #2108, #2112, #2242, #2316). Fixes keep finished runs and shared
+  study links, stop the 10 PM soft-lock, make readouts and the closeout tell
+  the truth, and show each decision's price where it is made (#1998, #2121,
+  #2207, #2219, #2224, #2228, #2233, #2263, #2269, #2296, #2299, #2303,
+  #2304, #2342, #2347).
+- Trial & Error: a seeded deck shuffle per Blind with a smoother quota ramp,
+  shells in the shop, a deck carried between acts, and synergy relics with
+  rarity tiers and a shop per act (#2075, #2097, #2111). Fixes cover hand
+  focus, stale-card previews, staged Boss failures, the CSR lock, the
+  campaign-won dialog, relic names, shop and coach copy, and post-marketing
+  crashes and loose ends (#2009, #2204, #2215, #2231, #2244, #2260, #2267,
+  #2280, #2295, #2339, #2341).
+- Protocol Drift: both scenarios are finishable, with an efficiency
+  scorecard, par values and saved bests, assisted runs marked as such, skip
+  to the next event, and seeds that vary each study and place its puzzle
+  beats so the Daily plays differently (#1954, #2079, #2243, #2257, #2265,
+  #2297). The workbench now fits the viewport and is legible and wireable by
+  hand on desktop, and late corrections can still reach Database Lock (#2212,
+  #2222, #2226, #2236, #2282, #2302, #2343).
+- Retro Labyrinth: solvable terminals and an Esc pause, a seven-room campaign
+  with a branching route map and a reward pick after each room, firmware
+  tiers and class milestones, a Neural Warden boss fight, run trophies,
+  sweeping drones, and polish and copy fixes so class cards promise only what
+  the game does (#1982, #2065, #2096, #2107, #2214, #2234, #2256, #2272,
+  #2300, #2319, #2346).
+- Working With Duck: no free resets, three stars per sprint and a finished
+  unlock track, escalating endless quarters with their own best, a signature
+  twist for sprints 2 to 5, sprints that open with the clock stopped,
+  scoring for both the work and the care with par times, and real Duck photos
+  (#1958, #2068, #2077, #2209, #2223, #2230, #2258, #2268, #2305, #2340).
+- Laser Loon: weapon counters so optic choice matters, an Arcade Survival
+  mode you can lose, per-act best stars and times, a distinct attack pattern
+  for each of the four bosses, and fixes for keyboard aim, retries, Tab stops
+  and the survival clock (#2005, #2066, #2205, #2220, #2229, #2238, #2250,
+  #2270).
+- Quasi-Perfect Puzzler: reachable gold and honest scoring, step par with a
+  Golfed badge, sandbox goals, constrained variants per level, and Act 2 with
+  twelve levels of quantifiers, induction and inequality chains, plus finale,
+  hub count, induction tree and Sandbox fixes (#1956, #2073, #2098, #2103,
+  #2162, #2221, #2225, #2235, #2266, #2294, #2348).
+- Clinical Trial Chaos: correct SDTM copy, endless Audit Years with the two
+  stub amendments, procedural observations, the FDA inspection as the
+  campaign finale, and accurate puzzles in an honest final report (#2006,
+  #2012, #2067, #2095, #2106, #2206, #2301).
+- Meme Vault: Echo, a repeat-the-sequence game on the pads, and a sound
+  opt-in under reduced motion with an honest trophy (#1997, #2062, #2174).
+- Arcade: a mobile-first kit with an immersive touch cabinet (ADR 0061) and a
+  tablet-first kit with an iPad cabinet that supports Pencil and the keyboard
+  case, then every game made to play properly on iPad (#2002, #2031, #2037,
+  #2041, #2044, #2069, #2074, #2080, #2104, #2115, #2118, #2182, #2183,
+  #2216). Milestone trophies for real play, Arcade Daily with one shared seed
+  across seed-capable games, a 12-game sizzle reel on the hub, and screenshot
+  link previews for the site and every game (#1908, #2033, #2061, #2117).
+- Wedding: a static one-year anniversary archive at `/wedding`, and the
+  wedding website case study rewritten to match the real site (#1901, #1920).
+- Site design: a named type scale for route headings, one graphite gray ramp,
+  amber as the single interactive accent, opaque card surfaces without
+  backdrop blur, and studio dim text raised to WCAG AA (#2315, #2317, #2318,
+  #2320, #2322).
+- Navigation: one Preferences menu for reading mode, sound and text, and the
+  navigation groups now drive `llms.txt`, the sitemap, breadcrumbs and the
+  command palette (#1874, #1875).
+- Proof and CRF: the proof export downloads as a file, CRF Studio compares a
+  draft with another study's file, saves whole forms as templates shared as
+  a package, and builds byte-identical review package zips (#1878, #1880,
+  #1892, #1894).
+- Performance and build: pages are static again to cut Vercel function CPU,
+  and type-checking runs in its own phase with a memory budget so the build
+  fits in 8 GB (#1902, #2016, #2102).
+- Dependencies: Next.js and `eslint-config-next` 16.3.8, and GitHub Actions
+  bumps for `setup-node`, `download-artifact` and `upload-artifact` (#1873,
+  #1895, #1896, #1897).
+- DX and docs: lint fails on warnings, deferred focus restoration is guarded
+  after document teardown, and navigation, architecture and repo links are
+  refreshed (#1855, #1861, #1910, #1923).
 
 ### Added
 
@@ -454,5 +569,6 @@ application.
 - Added owner and follow-up requirements for any future time-bounded audit
   exception.
 
+[Unreleased]: https://github.com/fderuiter/deruiter.dev/compare/v0.4.0...HEAD
 [0.4.0]: https://github.com/fderuiter/deruiter.dev/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/fderuiter/deruiter.dev/compare/v0.1.0...v0.3.0

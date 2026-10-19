@@ -88,7 +88,7 @@ committed schema to your local database:
 npx prisma db push
 ```
 
-Then seed it with the clinical-trial and schema-engine case study content:
+Then seed it with the sample case studies:
 
 ```bash
 npx prisma db seed
@@ -132,8 +132,8 @@ the terminal as you edit.
 Before committing, run the checks a pre-commit hook and CI will also run:
 
 ```bash
-npx tsc --noEmit          # type checking
-npx eslint --no-warn-ignored .   # lint
+npm run typecheck         # next typegen, then type checking
+npm run lint              # ESLint, zero warnings
 npm run lint:boundaries   # deep-module / circular-dependency boundaries
 npx vitest run            # unit, logic, and state-engine tests
 ```
@@ -144,10 +144,11 @@ Or run the composite pre-submission gate that CI mirrors exactly:
 npm run quality
 ```
 
-`npm run quality` runs `check` (typecheck + lint), `lint:docs`,
-`check-docs-drift`, `bench:pages -- --assert`, and `verify` in sequence:
-the same commands the `rigor-pipeline` GitHub Actions workflow runs against
-every pull request.
+`npm run quality` runs `check` (typecheck, lint and boundaries),
+`lint:docs`, `check-docs-drift`, `audit:licenses`, `audit:secrets`,
+`audit:a11y`, `bench:pages -- --assert`, and `verify` in sequence. CI runs
+the same checks as separate jobs in `.github/workflows/ci.yml`, summarized
+by its Merge Gate.
 
 ## Next steps
 

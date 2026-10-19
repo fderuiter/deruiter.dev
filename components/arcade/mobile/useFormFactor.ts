@@ -44,9 +44,11 @@ function isTyping(): boolean {
   );
 }
 
-// One shared store: every cabinet on the page measures the same window.
+// One shared store: every cabinet on the page measures the same window, so
+// one set of window listeners notifies every subscriber.
 let current: FormFactor | undefined;
-let listeners = 0;
+const callbacks = new Set<() => void>();
+let detach: (() => void) | null = null;
 
 function compute(): FormFactor {
   // An on-screen keyboard can shrink the layout viewport; never swap for it.
@@ -61,24 +63,21 @@ function compute(): FormFactor {
   );
 }
 
-function subscribe(callback: () => void): () => void {
-  const update = () => {
-    const next = compute();
-    if (next !== current) {
-      current = next;
-      callback();
-    }
-  };
+function update() {
+  const next = compute();
+  if (next === current) return;
+  current = next;
+  callbacks.forEach((callback) => callback());
+}
+
+function attach(): () => void {
   window.addEventListener("resize", update);
   window.addEventListener("orientationchange", update);
   // Leaving a text field re-measures, in case the size changed meanwhile.
   document.addEventListener("focusout", update);
   const pointer = window.matchMedia?.(TOUCH_DEVICE_QUERY);
   pointer?.addEventListener?.("change", update);
-  listeners += 1;
-  update();
   return () => {
-    listeners -= 1;
     window.removeEventListener("resize", update);
     window.removeEventListener("orientationchange", update);
     document.removeEventListener("focusout", update);
@@ -86,9 +85,23 @@ function subscribe(callback: () => void): () => void {
   };
 }
 
+function subscribe(callback: () => void): () => void {
+  callbacks.add(callback);
+  if (!detach) detach = attach();
+  update();
+  return () => {
+    callbacks.delete(callback);
+    if (callbacks.size > 0) return;
+    detach?.();
+    detach = null;
+    // The next Launch starts fresh, without this one's hysteresis.
+    current = undefined;
+  };
+}
+
 function getSnapshot(): FormFactor {
   // With nobody listening the window may have changed unseen, so re-measure.
-  if (current === undefined || listeners === 0) current = compute();
+  if (current === undefined || callbacks.size === 0) current = compute();
   return current;
 }
 

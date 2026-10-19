@@ -192,6 +192,33 @@ describe("useFormFactor (#2354)", () => {
     expect(view()).toBe("desktop");
   });
 
+  it("updates every component that reads it", () => {
+    render(
+      <>
+        <Probe />
+        <Probe />
+      </>
+    );
+    act(() => {
+      setWindow(700, 900);
+      window.dispatchEvent(new Event("resize"));
+    });
+    expect(
+      screen.getAllByTestId("view").map((node) => node.textContent)
+    ).toEqual(["phone", "phone"]);
+  });
+
+  it("forgets the last view's hysteresis once nothing reads it", () => {
+    setWindow(700, 900);
+    const { unmount } = render(<Probe />);
+    expect(view()).toBe("phone");
+    unmount();
+    // 760 px keeps a phone view, but a fresh read from a desktop does not.
+    setWindow(760, 900);
+    render(<Probe />);
+    expect(view()).toBe("desktop");
+  });
+
   it("follows a pointer change between desktop and tablet", () => {
     render(<Probe />);
     expect(view()).toBe("desktop");

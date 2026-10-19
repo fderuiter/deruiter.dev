@@ -102,6 +102,74 @@ function useFocusOnMount<T extends HTMLElement>() {
   return ref;
 }
 
+/** An interactive dial input for shift configuration that allows free typing before clamping on blur/submit. */
+function DialInput({
+  label,
+  value,
+  min,
+  max,
+  step,
+  onChange,
+  testId,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (val: number) => void;
+  testId: string;
+}) {
+  const [inputValue, setInputValue] = useState<string>(String(value));
+  const [prevValue, setPrevValue] = useState<number>(value);
+
+  if (prevValue !== value) {
+    setPrevValue(value);
+    setInputValue(String(value));
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    setInputValue(raw);
+    const parsed = parseFloat(raw);
+    if (!isNaN(parsed)) {
+      onChange(parsed);
+    }
+  };
+
+  const handleBlur = () => {
+    const parsed = parseFloat(inputValue);
+    if (isNaN(parsed)) {
+      const clamped = min;
+      setInputValue(String(clamped));
+      onChange(clamped);
+    } else {
+      const clamped = clamp(parsed, min, max);
+      setInputValue(String(clamped));
+      onChange(clamped);
+    }
+  };
+
+  return (
+    <label className="flex flex-col gap-1 font-mono">
+      <span className="text-[11px] font-semibold">
+        {label} [{min} - {max}]
+      </span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={inputValue}
+        onChange={handleChange}
+        onBlur={handleBlur}
+        className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-2 py-1 text-xs font-mono text-[var(--pdt-paper-ink)]"
+        data-testid={testId}
+      />
+    </label>
+  );
+}
+
 /** The diary page shown before the player clocks in (#1814). */
 export function DiaryIntroPage({
   onClockIn,
@@ -166,9 +234,7 @@ export function DiaryIntroPage({
     savedWeek && !isWeekOver(savedWeek) && onResumeWeek ? savedWeek : null;
 
   const handleDialChange = (key: keyof ShiftScenario, rawValue: number) => {
-    const [min, max] = SCENARIO_LIMITS[key];
-    const clamped = clamp(rawValue, min, max);
-    setCustomDials((prev) => ({ ...prev, [key]: clamped }));
+    setCustomDials((prev) => ({ ...prev, [key]: rawValue }));
   };
 
   const handleAddOrder = () => {
@@ -235,8 +301,21 @@ export function DiaryIntroPage({
     if (scenario === "week") {
       onStartWeek?.();
     } else if (scenario === "custom") {
+      const clampedDials = (
+        Object.keys(SCENARIO_LIMITS) as Array<keyof ShiftScenario>
+      ).reduce(
+        (acc, key) => {
+          const [min, max] = SCENARIO_LIMITS[key];
+          const val = customDials[key];
+          acc[key] =
+            typeof val === "number" && !isNaN(val) ? clamp(val, min, max) : min;
+          return acc;
+        },
+        {} as Record<keyof ShiftScenario, number>
+      );
+
       onClockIn("custom", {
-        ...customDials,
+        ...clampedDials,
         customOrders,
       });
     } else {
@@ -342,26 +421,16 @@ export function DiaryIntroPage({
                   const [min, max] = SCENARIO_LIMITS[key];
                   const step = key === "dispenserFailChance" ? 0.05 : 1;
                   return (
-                    <label key={key} className="flex flex-col gap-1 font-mono">
-                      <span className="text-[11px] font-semibold">
-                        {dialLabels[key]} [{min} - {max}]
-                      </span>
-                      <input
-                        type="number"
-                        min={min}
-                        max={max}
-                        step={step}
-                        value={customDials[key]}
-                        onChange={(e) =>
-                          handleDialChange(
-                            key,
-                            parseFloat(e.target.value) || min
-                          )
-                        }
-                        className="rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-2 py-1 text-xs font-mono text-[var(--pdt-paper-ink)]"
-                        data-testid={`pdt-dial-${key}`}
-                      />
-                    </label>
+                    <DialInput
+                      key={key}
+                      label={dialLabels[key]}
+                      value={customDials[key]}
+                      min={min}
+                      max={max}
+                      step={step}
+                      onChange={(val) => handleDialChange(key, val)}
+                      testId={`pdt-dial-${key}`}
+                    />
                   );
                 })}
               </div>

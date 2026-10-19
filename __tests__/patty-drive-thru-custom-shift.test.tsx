@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import {
   createShift,
   isStandardScenario,
@@ -12,6 +12,7 @@ import { createBoothStore } from "@/components/patty-drive-thru/store";
 import { DiaryIntroPage } from "@/components/patty-drive-thru/DiaryPages";
 
 describe("Patty's Drive-Thru Custom Order Builder & Scenario Dials", () => {
+  afterEach(cleanup);
   it("initializes ShiftConfig with custom dials and custom order queue", () => {
     const customOrders: CustomOrderTemplate[] = [
       {
@@ -122,7 +123,9 @@ describe("Patty's Drive-Thru Custom Order Builder & Scenario Dials", () => {
     render(<DiaryIntroPage onClockIn={onClockIn} />);
 
     // Select "Custom shift"
-    const customRadio = screen.getByLabelText(/Custom shift/i);
+    const customRadio = screen.getByRole("radio", {
+      name: (content) => content.startsWith("Custom shift"),
+    });
     fireEvent.click(customRadio);
 
     // Verify custom parameter panel and drawer appear
@@ -161,5 +164,40 @@ describe("Patty's Drive-Thru Custom Order Builder & Scenario Dials", () => {
         customOrders: expect.any(Array),
       })
     );
+  });
+
+  it("allows typing numbers into dial inputs and clamps on blur", () => {
+    const onClockIn = vi.fn();
+    render(<DiaryIntroPage onClockIn={onClockIn} />);
+
+    // Select "Custom shift"
+    const customRadio = screen.getByRole("radio", {
+      name: (content) => content.startsWith("Custom shift"),
+    });
+    fireEvent.click(customRadio);
+
+    const minGapDial = screen.getByTestId(
+      "pdt-dial-arrivalGapMinSec"
+    ) as HTMLInputElement;
+
+    // Simulate typing: user backspaces and types "2" when min gap is 1-30
+    fireEvent.change(minGapDial, { target: { value: "2" } });
+    expect(minGapDial.value).toBe("2");
+
+    // Type "5" to make 25
+    fireEvent.change(minGapDial, { target: { value: "25" } });
+    expect(minGapDial.value).toBe("25");
+
+    // Blur input
+    fireEvent.blur(minGapDial);
+    expect(minGapDial.value).toBe("25");
+
+    // Type value out of bounds (e.g. 99)
+    fireEvent.change(minGapDial, { target: { value: "99" } });
+    expect(minGapDial.value).toBe("99");
+
+    // On blur, clamps to max (30)
+    fireEvent.blur(minGapDial);
+    expect(minGapDial.value).toBe("30");
   });
 });

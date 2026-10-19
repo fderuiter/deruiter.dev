@@ -57,7 +57,11 @@ import {
 import { PauseMenu } from "@/components/laser-loon/PauseMenu";
 import { LoonTouchControls } from "@/components/laser-loon/LoonTouchControls";
 import { TouchMenuSheet } from "@/components/laser-loon/TouchMenuSheet";
-import { LASER_LOON_AUTO_PAUSE_EVENT } from "@/components/laser-loon/auto-pause";
+import {
+  AUTOMATIC_REASONS,
+  useCabinetPauseController,
+  useCabinetRunActive,
+} from "@/components/arcade/pause";
 import "@/components/laser-loon/laser-loon-touch.css";
 import { useCabinetTouch, useTouchHint } from "@/components/arcade/mobile";
 import { ArcadeHud } from "@/components/arcade/ArcadeHud";
@@ -417,18 +421,29 @@ export const LaserLoon: React.FC = () => {
   } | null>(null);
   const ultimateMeterRef = useRef(0);
 
-  // The touch cabinet asks the game to stop when the tab is hidden or the app
-  // is backgrounded (onAutoPause on PlayCabinet, #2081). A run in progress
-  // pauses and a held Fire lets go; resuming is the player's choice.
+  // The touch cabinet's pause service stops the game when the tab is hidden,
+  // the app is backgrounded or the window blurs (#2081, #2357). A run in
+  // progress pauses and a held Fire lets go; resuming is the player's choice.
+  // With no run to pause, the cabinet is released at once.
+  const pauseService = useCabinetPauseController();
+  useEffect(
+    () =>
+      pauseService.onPause((reason) => {
+        if (!AUTOMATIC_REASONS.has(reason)) return;
+        isFiringRef.current = false;
+        if (gameState === "playing") setIsPaused(true);
+        else pauseService.resume();
+      }),
+    [gameState, pauseService]
+  );
+  // The game's own pause menu stays; the cabinet mirrors it, so P, Resume
+  // and an automatic pause all agree on whether the run is paused.
   useEffect(() => {
-    const pauseRun = () => {
-      isFiringRef.current = false;
-      if (gameState === "playing") setIsPaused(true);
-    };
-    window.addEventListener(LASER_LOON_AUTO_PAUSE_EVENT, pauseRun);
-    return () =>
-      window.removeEventListener(LASER_LOON_AUTO_PAUSE_EVENT, pauseRun);
-  }, [gameState]);
+    if (isPaused) pauseService.pause("user");
+    else pauseService.resume();
+  }, [isPaused, pauseService]);
+  // The screen stays awake while the run plays.
+  useCabinetRunActive(gameState === "playing" && !isHalted);
 
   // The touch cabinet's overlays (story, pause, results, menu) start under the
   // status strip, so Menu and Pause stay in reach on every screen. The strip's

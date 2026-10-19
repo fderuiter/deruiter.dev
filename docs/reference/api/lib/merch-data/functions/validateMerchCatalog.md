@@ -23,7 +23,7 @@ readonly [`MerchProductItem`](../interfaces/MerchProductItem.md)[] = `MERCH_PROD
 
 ### shopUrl?
 
-`string` \| `null`
+`string` \| `null` = `MERCH_SHOP_URL`
 
 ## Returns
 

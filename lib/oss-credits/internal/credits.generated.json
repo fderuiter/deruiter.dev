@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1211,
-    "runtime": 566,
-    "tooling": 645,
+    "total": 1196,
+    "runtime": 575,
+    "tooling": 621,
     "direct": 71
   },
   "packages": [
@@ -37,7 +37,7 @@
     },
     {
       "name": "@axe-core/playwright",
-      "version": "4.13.0",
+      "version": "4.14.0",
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": true,
@@ -563,7 +563,7 @@
     },
     {
       "name": "@chevrotain/cst-dts-gen",
-      "version": "11.1.2",
+      "version": "13.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -572,7 +572,7 @@
     },
     {
       "name": "@chevrotain/gast",
-      "version": "11.1.2",
+      "version": "13.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -581,7 +581,7 @@
     },
     {
       "name": "@chevrotain/regexp-to-ast",
-      "version": "11.1.2",
+      "version": "13.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -590,7 +590,7 @@
     },
     {
       "name": "@chevrotain/types",
-      "version": "11.1.2",
+      "version": "13.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -599,7 +599,7 @@
     },
     {
       "name": "@chevrotain/utils",
-      "version": "11.1.2",
+      "version": "13.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -608,7 +608,7 @@
     },
     {
       "name": "@clerk/backend",
-      "version": "3.21.0",
+      "version": "3.25.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -617,7 +617,7 @@
     },
     {
       "name": "@clerk/nextjs",
-      "version": "7.9.8",
+      "version": "7.9.17",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -628,7 +628,7 @@
     },
     {
       "name": "@clerk/react",
-      "version": "6.17.3",
+      "version": "6.17.8",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -646,7 +646,7 @@
     },
     {
       "name": "@clerk/shared",
-      "version": "4.37.0",
+      "version": "4.40.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1062,7 +1062,7 @@
     },
     {
       "name": "@eslint/eslintrc",
-      "version": "3.3.5",
+      "version": "3.3.7",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -1071,7 +1071,7 @@
     },
     {
       "name": "@eslint/js",
-      "version": "9.39.4",
+      "version": "9.39.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -1622,7 +1622,7 @@
     },
     {
       "name": "@mermaid-js/parser",
-      "version": "2.0.0",
+      "version": "2.0.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1640,7 +1640,7 @@
     },
     {
       "name": "@neondatabase/serverless",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -1759,7 +1759,7 @@
     },
     {
       "name": "@oxc-parser/binding-android-arm-eabi",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1768,7 +1768,7 @@
     },
     {
       "name": "@oxc-parser/binding-android-arm64",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1777,7 +1777,7 @@
     },
     {
       "name": "@oxc-parser/binding-darwin-arm64",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1786,7 +1786,7 @@
     },
     {
       "name": "@oxc-parser/binding-darwin-x64",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1795,7 +1795,7 @@
     },
     {
       "name": "@oxc-parser/binding-freebsd-x64",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1804,7 +1804,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-arm-gnueabihf",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1813,7 +1813,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-arm-musleabihf",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1822,7 +1822,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-arm64-gnu",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1831,7 +1831,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-arm64-musl",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1840,7 +1840,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-ppc64-gnu",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1849,7 +1849,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-riscv64-gnu",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1858,7 +1858,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-riscv64-musl",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1867,7 +1867,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-s390x-gnu",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1876,7 +1876,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-x64-gnu",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1885,7 +1885,7 @@
     },
     {
       "name": "@oxc-parser/binding-linux-x64-musl",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1894,7 +1894,7 @@
     },
     {
       "name": "@oxc-parser/binding-openharmony-arm64",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1903,7 +1903,7 @@
     },
     {
       "name": "@oxc-parser/binding-win32-arm64-msvc",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1912,7 +1912,7 @@
     },
     {
       "name": "@oxc-parser/binding-win32-ia32-msvc",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1921,7 +1921,7 @@
     },
     {
       "name": "@oxc-parser/binding-win32-x64-msvc",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1930,7 +1930,7 @@
     },
     {
       "name": "@oxc-project/types",
-      "version": "0.143.0",
+      "version": "0.149.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1939,9 +1939,9 @@
     },
     {
       "name": "@oxc-project/types",
-      "version": "0.149.0",
+      "version": "0.152.0",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://oxc.rs",
       "repository": "https://github.com/oxc-project/oxc"
@@ -1959,56 +1959,56 @@
     },
     {
       "name": "@prisma/adapter-neon",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": true,
       "homepage": null,
-      "repository": "https://github.com/prisma/prisma",
+      "repository": "https://github.com/prisma/orm",
       "group": "Data and storage",
       "reason": "Connects Prisma to Neon serverless Postgres."
     },
     {
       "name": "@prisma/client",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": true,
       "homepage": "https://www.prisma.io",
-      "repository": "https://github.com/prisma/prisma",
+      "repository": "https://github.com/prisma/orm",
       "group": "Data and storage",
       "reason": "Type-safe database client."
     },
     {
       "name": "@prisma/client-runtime-utils",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
       "homepage": null,
-      "repository": "https://github.com/prisma/prisma"
+      "repository": "https://github.com/prisma/orm"
     },
     {
       "name": "@prisma/config",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
       "homepage": null,
-      "repository": "https://github.com/prisma/prisma"
+      "repository": "https://github.com/prisma/orm"
     },
     {
       "name": "@prisma/debug",
-      "version": "7.2.0",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
       "homepage": "https://www.prisma.io",
-      "repository": "https://github.com/prisma/prisma"
+      "repository": "https://github.com/prisma/orm"
     },
     {
       "name": "@prisma/debug",
-      "version": "7.9.1",
+      "version": "7.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -2026,25 +2026,25 @@
     },
     {
       "name": "@prisma/driver-adapter-utils",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
       "homepage": null,
-      "repository": "https://github.com/prisma/prisma"
+      "repository": "https://github.com/prisma/orm"
     },
     {
       "name": "@prisma/engines",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
       "homepage": null,
-      "repository": "https://github.com/prisma/prisma"
+      "repository": "https://github.com/prisma/orm"
     },
     {
       "name": "@prisma/engines-version",
-      "version": "7.9.0-1.e922089b7d7502aff4249d5da3420f6fa55fc6ad",
+      "version": "8.1.0-1.d1b3f377ca835d73fd50954a5e22128b9ebdd6b8",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -2053,25 +2053,25 @@
     },
     {
       "name": "@prisma/fetch-engine",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
       "homepage": "https://www.prisma.io",
-      "repository": "https://github.com/prisma/prisma"
+      "repository": "https://github.com/prisma/orm"
+    },
+    {
+      "name": "@prisma/get-platform",
+      "version": "7.10.1",
+      "license": "Apache-2.0",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://www.prisma.io",
+      "repository": "https://github.com/prisma/orm"
     },
     {
       "name": "@prisma/get-platform",
       "version": "7.2.0",
-      "license": "Apache-2.0",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://www.prisma.io",
-      "repository": "https://github.com/prisma/prisma"
-    },
-    {
-      "name": "@prisma/get-platform",
-      "version": "7.9.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -2179,7 +2179,7 @@
     },
     {
       "name": "@react-three/fiber",
-      "version": "9.8.1",
+      "version": "9.8.2",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2338,7 +2338,7 @@
       "name": "@rolldown/pluginutils",
       "version": "1.0.1",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/rolldown/plugins/tree/main/packages/pluginutils",
       "repository": "https://github.com/rolldown/plugins"
@@ -2606,7 +2606,7 @@
     },
     {
       "name": "@sentry/browser",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2615,7 +2615,7 @@
     },
     {
       "name": "@sentry/browser-utils",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2624,7 +2624,7 @@
     },
     {
       "name": "@sentry/bundler-plugins",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2632,8 +2632,17 @@
       "repository": "https://github.com/getsentry/sentry-javascript"
     },
     {
+      "name": "@sentry/cloudflare",
+      "version": "11.8.0",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": "https://github.com/getsentry/sentry-javascript/tree/master/packages/cloudflare",
+      "repository": "https://github.com/getsentry/sentry-javascript"
+    },
+    {
       "name": "@sentry/conventions",
-      "version": "0.24.0",
+      "version": "0.27.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2642,7 +2651,7 @@
     },
     {
       "name": "@sentry/core",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2651,7 +2660,7 @@
     },
     {
       "name": "@sentry/feedback",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2660,7 +2669,7 @@
     },
     {
       "name": "@sentry/nextjs",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2671,7 +2680,7 @@
     },
     {
       "name": "@sentry/node",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2680,7 +2689,7 @@
     },
     {
       "name": "@sentry/opentelemetry",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2689,7 +2698,7 @@
     },
     {
       "name": "@sentry/react",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2698,7 +2707,7 @@
     },
     {
       "name": "@sentry/replay",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2707,7 +2716,7 @@
     },
     {
       "name": "@sentry/replay-canvas",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2716,7 +2725,7 @@
     },
     {
       "name": "@sentry/server-runtime-injection",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2725,7 +2734,7 @@
     },
     {
       "name": "@sentry/server-utils",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2734,7 +2743,7 @@
     },
     {
       "name": "@sentry/vercel-edge",
-      "version": "11.1.0",
+      "version": "11.8.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2743,7 +2752,7 @@
     },
     {
       "name": "@serwist/build",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2752,7 +2761,7 @@
     },
     {
       "name": "@serwist/next",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2763,7 +2772,7 @@
     },
     {
       "name": "@serwist/sw",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2774,7 +2783,7 @@
     },
     {
       "name": "@serwist/utils",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2783,7 +2792,7 @@
     },
     {
       "name": "@serwist/webpack-plugin",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2792,7 +2801,7 @@
     },
     {
       "name": "@serwist/window",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2931,7 +2940,7 @@
     },
     {
       "name": "@tabler/icons",
-      "version": "3.48.0",
+      "version": "3.49.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2940,7 +2949,7 @@
     },
     {
       "name": "@tabler/icons-react",
-      "version": "3.48.0",
+      "version": "3.49.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -2951,7 +2960,7 @@
     },
     {
       "name": "@tailwindcss/node",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2960,124 +2969,124 @@
     },
     {
       "name": "@tailwindcss/oxide",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-android-arm64",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-darwin-arm64",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-darwin-x64",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-freebsd-x64",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-arm-gnueabihf",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-arm64-gnu",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-arm64-musl",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-x64-gnu",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-linux-x64-musl",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-wasm32-wasi",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-win32-arm64-msvc",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/oxide-win32-x64-msvc",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/tailwindlabs/tailwindcss",
+      "homepage": null,
       "repository": "https://github.com/tailwindlabs/tailwindcss"
     },
     {
       "name": "@tailwindcss/postcss",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -3088,7 +3097,7 @@
     },
     {
       "name": "@tanstack/query-core",
-      "version": "5.104.0",
+      "version": "5.104.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -3097,7 +3106,7 @@
     },
     {
       "name": "@testing-library/dom",
-      "version": "10.4.1",
+      "version": "10.4.2",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -3108,7 +3117,7 @@
     },
     {
       "name": "@testing-library/react",
-      "version": "16.3.2",
+      "version": "16.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -3582,7 +3591,7 @@
     },
     {
       "name": "@types/node",
-      "version": "22.20.1",
+      "version": "22.20.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -3593,7 +3602,7 @@
     },
     {
       "name": "@types/node",
-      "version": "25.9.5",
+      "version": "26.6.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -3620,7 +3629,7 @@
     },
     {
       "name": "@types/react",
-      "version": "19.2.15",
+      "version": "19.3.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -3631,7 +3640,7 @@
     },
     {
       "name": "@types/react-dom",
-      "version": "19.2.3",
+      "version": "19.3.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -3716,7 +3725,7 @@
     },
     {
       "name": "@types/ws",
-      "version": "8.18.1",
+      "version": "8.18.2",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -4033,7 +4042,7 @@
     },
     {
       "name": "@upstash/qstash",
-      "version": "2.11.3",
+      "version": "2.12.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -4044,12 +4053,12 @@
     },
     {
       "name": "@upstash/ratelimit",
-      "version": "2.0.8",
+      "version": "2.2.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
-      "homepage": null,
-      "repository": null,
+      "homepage": "https://github.com/upstash/ratelimit-js",
+      "repository": "https://github.com/upstash/ratelimit-js",
       "group": "Data and storage",
       "reason": "Rate limiting for the few mutating API routes."
     },
@@ -4263,7 +4272,7 @@
     },
     {
       "name": "acorn",
-      "version": "8.18.0",
+      "version": "8.19.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4341,15 +4350,6 @@
       "direct": false,
       "homepage": "https://github.com/prettier/angular-html-parser/blob/HEAD/packages/angular-html-parser",
       "repository": "https://github.com/prettier/angular-html-parser"
-    },
-    {
-      "name": "ansi-escapes",
-      "version": "7.3.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/ansi-escapes",
-      "repository": "https://github.com/sindresorhus/ansi-escapes"
     },
     {
       "name": "ansi-regex",
@@ -4551,7 +4551,7 @@
     },
     {
       "name": "axe-core",
-      "version": "4.13.0",
+      "version": "4.14.0",
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": false,
@@ -4785,7 +4785,7 @@
     },
     {
       "name": "chevrotain",
-      "version": "11.1.2",
+      "version": "13.2.0",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -4818,24 +4818,6 @@
       "direct": false,
       "homepage": "https://github.com/JedWatson/classnames",
       "repository": "https://github.com/JedWatson/classnames"
-    },
-    {
-      "name": "cli-cursor",
-      "version": "5.0.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/cli-cursor",
-      "repository": "https://github.com/sindresorhus/cli-cursor"
-    },
-    {
-      "name": "cli-truncate",
-      "version": "5.2.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/cli-truncate",
-      "repository": "https://github.com/sindresorhus/cli-truncate"
     },
     {
       "name": "cli-width",
@@ -4949,7 +4931,7 @@
     },
     {
       "name": "concurrently",
-      "version": "10.0.5",
+      "version": "10.0.6",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -4965,6 +4947,15 @@
       "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/unjs/confbox",
+      "repository": "https://github.com/unjs/confbox"
+    },
+    {
+      "name": "confbox",
+      "version": "0.3.1",
+      "license": "MIT",
+      "scope": "runtime",
+      "direct": false,
+      "homepage": null,
       "repository": "https://github.com/unjs/confbox"
     },
     {
@@ -5020,15 +5011,6 @@
       "direct": false,
       "homepage": "https://github.com/moxystudio/node-cross-spawn",
       "repository": "https://github.com/moxystudio/node-cross-spawn"
-    },
-    {
-      "name": "crypto-js",
-      "version": "4.2.0",
-      "license": "MIT",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://github.com/brix/crypto-js",
-      "repository": "https://github.com/brix/crypto-js"
     },
     {
       "name": "css-line-break",
@@ -5581,7 +5563,7 @@
     },
     {
       "name": "dependency-cruiser",
-      "version": "18.4.0",
+      "version": "18.6.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -5655,7 +5637,7 @@
     },
     {
       "name": "docx",
-      "version": "9.7.1",
+      "version": "9.12.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -5675,7 +5657,7 @@
     },
     {
       "name": "dompurify",
-      "version": "3.4.16",
+      "version": "3.4.17",
       "license": "(MPL-2.0 OR Apache-2.0)",
       "scope": "runtime",
       "direct": false,
@@ -5693,7 +5675,7 @@
     },
     {
       "name": "dotenv",
-      "version": "18.0.4",
+      "version": "18.0.8",
       "license": "BSD-2-Clause",
       "scope": "tooling",
       "direct": true,
@@ -5785,7 +5767,7 @@
     },
     {
       "name": "enhanced-resolve",
-      "version": "5.25.1",
+      "version": "5.26.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -5827,15 +5809,6 @@
       "direct": false,
       "homepage": "https://github.com/sindresorhus/env-paths",
       "repository": "https://github.com/sindresorhus/env-paths"
-    },
-    {
-      "name": "environment",
-      "version": "1.1.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/environment",
-      "repository": "https://github.com/sindresorhus/environment"
     },
     {
       "name": "es-abstract",
@@ -5958,7 +5931,7 @@
     },
     {
       "name": "eslint",
-      "version": "9.39.4",
+      "version": "9.39.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -6143,15 +6116,6 @@
       "repository": "https://github.com/estools/esutils"
     },
     {
-      "name": "eventemitter3",
-      "version": "5.0.4",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/primus/eventemitter3",
-      "repository": "https://github.com/primus/eventemitter3"
-    },
-    {
       "name": "execa",
       "version": "9.6.1",
       "license": "MIT",
@@ -6171,7 +6135,7 @@
     },
     {
       "name": "exsolve",
-      "version": "1.1.1",
+      "version": "1.1.3",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -6189,7 +6153,7 @@
     },
     {
       "name": "fast-check",
-      "version": "4.9.0",
+      "version": "4.10.2",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -6398,7 +6362,7 @@
     },
     {
       "name": "framer-motion",
-      "version": "13.4.6",
+      "version": "13.5.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -6861,7 +6825,7 @@
     },
     {
       "name": "ignore",
-      "version": "7.0.5",
+      "version": "7.0.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -6871,15 +6835,6 @@
     {
       "name": "ignore",
       "version": "7.0.6",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/kaelzhang/node-ignore",
-      "repository": "https://github.com/kaelzhang/node-ignore"
-    },
-    {
-      "name": "ignore",
-      "version": "7.0.9",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -7121,15 +7076,6 @@
       "repository": "https://github.com/inspect-js/is-finalizationregistry"
     },
     {
-      "name": "is-fullwidth-code-point",
-      "version": "5.1.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/is-fullwidth-code-point",
-      "repository": "https://github.com/sindresorhus/is-fullwidth-code-point"
-    },
-    {
       "name": "is-generator-function",
       "version": "1.1.2",
       "license": "MIT",
@@ -7158,7 +7104,7 @@
     },
     {
       "name": "is-installed-globally",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -7365,7 +7311,7 @@
     },
     {
       "name": "isomorphic-dompurify",
-      "version": "4.4.0",
+      "version": "4.6.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -7614,7 +7560,7 @@
     },
     {
       "name": "jspdf-autotable",
-      "version": "5.0.8",
+      "version": "5.0.9",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -7634,7 +7580,7 @@
     },
     {
       "name": "jszip",
-      "version": "3.10.1",
+      "version": "3.10.2",
       "license": "(MIT OR GPL-3.0-or-later)",
       "scope": "runtime",
       "direct": true,
@@ -7755,7 +7701,7 @@
       "name": "lightningcss",
       "version": "1.33.0",
       "license": "MPL-2.0",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/parcel-bundler/lightningcss",
       "repository": "https://github.com/parcel-bundler/lightningcss"
@@ -7969,7 +7915,7 @@
     },
     {
       "name": "lint-staged",
-      "version": "17.0.5",
+      "version": "17.6.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -7977,15 +7923,6 @@
       "repository": "https://github.com/lint-staged/lint-staged",
       "group": "Developer workflow",
       "reason": "Runs checks only on staged files."
-    },
-    {
-      "name": "listr2",
-      "version": "10.2.1",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/listr2/listr2",
-      "repository": "https://github.com/listr2/listr2"
     },
     {
       "name": "locate-path",
@@ -8033,15 +7970,6 @@
       "repository": "https://github.com/lodash/lodash"
     },
     {
-      "name": "log-update",
-      "version": "6.1.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/log-update",
-      "repository": "https://github.com/sindresorhus/log-update"
-    },
-    {
       "name": "long",
       "version": "5.3.2",
       "license": "Apache-2.0",
@@ -8070,7 +7998,7 @@
     },
     {
       "name": "lru-cache",
-      "version": "11.5.1",
+      "version": "11.5.3",
       "license": "BlueOak-1.0.0",
       "scope": "runtime",
       "direct": false,
@@ -8198,7 +8126,7 @@
     },
     {
       "name": "mermaid",
-      "version": "12.0.0",
+      "version": "12.2.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -8442,15 +8370,6 @@
       "repository": "https://github.com/micromark/micromark"
     },
     {
-      "name": "mimic-function",
-      "version": "5.0.1",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/mimic-function",
-      "repository": "https://github.com/sindresorhus/mimic-function"
-    },
-    {
       "name": "minimalistic-assert",
       "version": "1.0.1",
       "license": "ISC",
@@ -8463,7 +8382,7 @@
       "name": "minimatch",
       "version": "10.2.5",
       "license": "BlueOak-1.0.0",
-      "scope": "runtime",
+      "scope": "tooling",
       "direct": false,
       "homepage": "https://github.com/isaacs/minimatch",
       "repository": "https://github.com/isaacs/minimatch"
@@ -8472,7 +8391,7 @@
       "name": "minimatch",
       "version": "10.2.6",
       "license": "BlueOak-1.0.0",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/isaacs/minimatch",
       "repository": "https://github.com/isaacs/minimatch"
@@ -8506,7 +8425,7 @@
     },
     {
       "name": "motion-dom",
-      "version": "13.4.5",
+      "version": "13.5.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -8515,7 +8434,7 @@
     },
     {
       "name": "motion-utils",
-      "version": "13.3.0",
+      "version": "13.5.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -8605,7 +8524,7 @@
     },
     {
       "name": "nanoid",
-      "version": "5.1.16",
+      "version": "6.0.2",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -8777,15 +8696,6 @@
       "repository": "https://github.com/unjs/ohash"
     },
     {
-      "name": "onetime",
-      "version": "7.0.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/onetime",
-      "repository": "https://github.com/sindresorhus/onetime"
-    },
-    {
       "name": "optionator",
       "version": "0.9.4",
       "license": "MIT",
@@ -8805,7 +8715,7 @@
     },
     {
       "name": "oxc-parser",
-      "version": "0.143.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -9005,18 +8915,18 @@
       "name": "picomatch",
       "version": "4.0.7",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/micromatch/picomatch",
       "repository": "https://github.com/micromatch/picomatch"
     },
     {
       "name": "pkg-types",
-      "version": "2.3.1",
+      "version": "2.3.3",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
-      "homepage": "https://github.com/unjs/pkg-types",
+      "homepage": null,
       "repository": "https://github.com/unjs/pkg-types"
     },
     {
@@ -9086,7 +8996,7 @@
       "name": "postcss",
       "version": "8.5.28",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://postcss.org",
       "repository": "https://github.com/postcss/postcss"
@@ -9120,7 +9030,7 @@
     },
     {
       "name": "prettier",
-      "version": "3.9.6",
+      "version": "3.9.10",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -9158,12 +9068,12 @@
     },
     {
       "name": "prisma",
-      "version": "7.9.1",
+      "version": "7.10.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": true,
       "homepage": "https://www.prisma.io",
-      "repository": "https://github.com/prisma/prisma",
+      "repository": "https://github.com/prisma/orm",
       "group": "Build and types",
       "reason": "Schema, migrations and client generation."
     },
@@ -9268,7 +9178,7 @@
     },
     {
       "name": "rc9",
-      "version": "3.0.1",
+      "version": "3.1.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -9407,7 +9317,7 @@
     },
     {
       "name": "resend",
-      "version": "6.31.0",
+      "version": "6.34.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -9453,15 +9363,6 @@
       "repository": "https://github.com/privatenumber/resolve-pkg-maps"
     },
     {
-      "name": "restore-cursor",
-      "version": "5.1.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/sindresorhus/restore-cursor",
-      "repository": "https://github.com/sindresorhus/restore-cursor"
-    },
-    {
       "name": "ret",
       "version": "0.5.0",
       "license": "MIT",
@@ -9478,15 +9379,6 @@
       "direct": false,
       "homepage": "https://github.com/tim-kos/node-retry",
       "repository": "https://github.com/tim-kos/node-retry"
-    },
-    {
-      "name": "rfdc",
-      "version": "1.4.1",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/davidmarkclements/rfdc",
-      "repository": "https://github.com/davidmarkclements/rfdc"
     },
     {
       "name": "rgbcolor",
@@ -9510,7 +9402,7 @@
       "name": "rolldown",
       "version": "1.2.8",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://rolldown.rs",
       "repository": "https://github.com/rolldown/rolldown"
@@ -9697,7 +9589,7 @@
     },
     {
       "name": "sentry",
-      "version": "0.44.1",
+      "version": "0.45.0",
       "license": "FSL-1.1-Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -9715,7 +9607,7 @@
     },
     {
       "name": "serwist",
-      "version": "9.5.12",
+      "version": "9.5.13",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -9865,24 +9757,6 @@
       "direct": false,
       "homepage": "https://github.com/terkelg/sisteransi",
       "repository": "https://github.com/terkelg/sisteransi"
-    },
-    {
-      "name": "slice-ansi",
-      "version": "7.1.2",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/chalk/slice-ansi",
-      "repository": "https://github.com/chalk/slice-ansi"
-    },
-    {
-      "name": "slice-ansi",
-      "version": "8.0.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/chalk/slice-ansi",
-      "repository": "https://github.com/chalk/slice-ansi"
     },
     {
       "name": "smol-toml",
@@ -10239,7 +10113,7 @@
     },
     {
       "name": "tailwindcss",
-      "version": "4.3.0",
+      "version": "4.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -10299,7 +10173,7 @@
       "name": "tinyglobby",
       "version": "0.2.17",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://superchupu.dev/tinyglobby",
       "repository": "https://github.com/SuperchupuDev/tinyglobby"
@@ -10414,7 +10288,7 @@
     },
     {
       "name": "tsx",
-      "version": "4.23.12",
+      "version": "4.23.15",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -10452,7 +10326,7 @@
     },
     {
       "name": "type-fest",
-      "version": "5.8.0",
+      "version": "5.10.0",
       "license": "(MIT OR CC0-1.0)",
       "scope": "runtime",
       "direct": false,
@@ -10526,7 +10400,7 @@
     },
     {
       "name": "typedoc-plugin-markdown",
-      "version": "4.12.0",
+      "version": "4.14.1",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -10602,18 +10476,18 @@
     },
     {
       "name": "undici-types",
-      "version": "7.24.6",
+      "version": "8.10.2",
       "license": "MIT",
-      "scope": "runtime",
+      "scope": "tooling",
       "direct": false,
       "homepage": "https://undici.nodejs.org",
       "repository": "https://github.com/nodejs/undici"
     },
     {
       "name": "undici-types",
-      "version": "8.10.2",
+      "version": "8.9.0",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://undici.nodejs.org",
       "repository": "https://github.com/nodejs/undici"
@@ -10712,7 +10586,7 @@
       "name": "vite",
       "version": "8.3.0",
       "license": "MIT",
-      "scope": "tooling",
+      "scope": "runtime",
       "direct": false,
       "homepage": "https://vite.dev",
       "repository": "https://github.com/vitejs/vite"
@@ -10757,7 +10631,7 @@
     },
     {
       "name": "web-vitals",
-      "version": "6.2.2",
+      "version": "6.2.3",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -10865,15 +10739,6 @@
     },
     {
       "name": "wrap-ansi",
-      "version": "10.0.0",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/chalk/wrap-ansi",
-      "repository": "https://github.com/chalk/wrap-ansi"
-    },
-    {
-      "name": "wrap-ansi",
       "version": "9.0.2",
       "license": "MIT",
       "scope": "tooling",
@@ -10883,7 +10748,7 @@
     },
     {
       "name": "ws",
-      "version": "8.21.0",
+      "version": "8.22.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -10948,7 +10813,7 @@
     },
     {
       "name": "yaml",
-      "version": "2.9.0",
+      "version": "2.9.1",
       "license": "ISC",
       "scope": "tooling",
       "direct": false,
@@ -11002,7 +10867,7 @@
     },
     {
       "name": "zod",
-      "version": "4.4.3",
+      "version": "4.6.5",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -11011,7 +10876,7 @@
     },
     {
       "name": "zod",
-      "version": "4.6.5",
+      "version": "4.6.7",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,

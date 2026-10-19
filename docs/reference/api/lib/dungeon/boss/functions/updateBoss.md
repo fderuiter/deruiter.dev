@@ -17,7 +17,7 @@ Same parameters and result as `updateFaceForgeBoss`.
 
 ### args
 
-...\[[`BossState`](../../types/interfaces/BossState.md), `number`, `number`, `number`, `number`, `number`, `object`, `number`, (`col`, `row`) => `boolean`\]
+...\[`boss`: [`BossState`](../../types/interfaces/BossState.md), `playerX`: `number`, `playerY`: `number`, `nowMs`: `number`, `gridWidth`: `number`, `gridHeight`: `number`, `playerHeading?`: `object`, `frameDeltaMs`: `number`, `blocksShot?`: (`col`, `row`) => `boolean`\]
 
 ## Returns
 

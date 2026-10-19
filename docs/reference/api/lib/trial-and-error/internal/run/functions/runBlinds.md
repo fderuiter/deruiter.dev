@@ -23,3 +23,5 @@ and the Boss the run drew.
 `Pick`\<[`RunState`](../interfaces/RunState.md), `"bossIds"` \| `"actIndex"` \| `"sponsorId"` \| `"stake"`\>
 
 ## Returns
+
+`object`[]

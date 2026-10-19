@@ -4,3 +4,35 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  # npm updates arrive as one grouped weekly PR for patch and minor releases
+  # (#2511). Majors are ignored here and taken one per PR by hand, because
+  # each needs its own migration (vitest, eslint, jsdom, framer-motion).
+  # `next` and `eslint-config-next` are exact pins that must move together,
+  # so they get their own group. A version bump of a shipped package also
+  # needs `npm run oss:credits` pushed to the PR, or audit:licenses fails.
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "13:00"
+      timezone: "America/Chicago"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Pinned for runtime compatibility (SECURITY.md, #995).
+      - dependency-name: "jsdom"
+    groups:
+      nextjs:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"

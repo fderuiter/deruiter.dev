@@ -10,6 +10,11 @@ below in its own change. Builds on [ADR 0003](0003-mobile-responsive-and-touch-s
 (the cabinet lifecycle) and [ADR 0046](0046-trial-and-error-biostat-ops-architecture.md)
 (Trial & Error, phone play). The kit this ADR describes is built in the same change.
 
+On 2026-10-19 [ADR 0062](0062-three-views-per-arcade-game.md) replaced the
+tablet-first amendment below as the arcade's plan: every game gets a dedicated
+desktop, tablet and phone view. The kit and the phone bar here stand, and ADR
+0062 adds to the bar.
+
 ## Context
 
 ADR 0048 answered a real problem with a blunt tool. Six games were unplayable on
@@ -285,7 +290,7 @@ direction was to make every game perfect on an iPad first.
   to phones only, since `mobileOrientation` is a phone concern. On 2026-10-13
   the prompt, the lock and the rotation auto-pause share one short-side query,
   `PHONE_ORIENTATION_QUERY` (`(pointer: coarse) and ((max-width: 500px) or
-  (max-height: 500px))`), and tablets do not pause on rotation.
+(max-height: 500px))`), and tablets do not pause on rotation.
   Desktop with a fine pointer is unchanged.
 - **Apple Pencil.** Pointer events with `pointerType` `"pen"` are treated as
   touch by the kit. `TouchButton` captures, counts and releases a Pencil and a

@@ -287,6 +287,15 @@ describe("CI Execution Policy", () => {
       );
       expect(weekly).toMatch(/timeout-minutes: \d+/);
     });
+
+    it("mutates the game engines weekly only, never in the PR gate (#2529)", () => {
+      const weekly = fs.readFileSync(
+        path.join(process.cwd(), ".github/workflows/mutation-weekly.yml"),
+        "utf8"
+      );
+      expect(weekly).toContain("npm run test:mutation -- --engines");
+      expect(block).not.toContain("--engines");
+    });
   });
 
   describe("cross-device-matrix retains manual full-matrix capability", () => {

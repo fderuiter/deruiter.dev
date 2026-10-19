@@ -14,7 +14,7 @@ How the hub lists a game's daily.
 
 > `readonly` **desktopOnly**: `boolean`
 
-Still behind the desktop-only gate on phones (ADR 0048, ADR 0061).
+Still behind the desktop-only gate on phones, read from the registry.
 
 ***
 

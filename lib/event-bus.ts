@@ -105,6 +105,11 @@ export interface AppEventMap {
     score: number;
     metadata?: Record<string, unknown>;
   };
+  /**
+   * An arcade store or progress slice wrote its key in this tab (#2371).
+   * Other tabs hear the same write through the native `storage` event.
+   */
+  arcade_progress_changed: { key: string };
   /** An Arcade Daily result was recorded (#2113). */
   arcade_daily_updated: { gameId: string; date: string };
   /** An arcade trophy or achievement was unlocked. */

@@ -38,16 +38,23 @@ import {
   calculateColumnWidth,
   distributeItemsGreedily,
 } from "@/lib/graphics-engine";
+import {
+  parseArcadeDailyProgress,
+  type ArcadeDailyProgress,
+} from "@/lib/arcade/daily";
 import { sanitizeString, sanitizeError } from "@/lib/error-sanitization";
 import { validateSyncRequest } from "@/lib/security";
 import { NextRequest } from "next/server";
 import {
+  arcadeCoreSlice,
+  arcadeDailySlice,
   boundingBoxOverlap,
   calculateScoreMultiplier,
   clamp,
   createSeededRandom,
   lerp,
   scaleScoreWithMultiplier,
+  type ArcadeProgress,
   type Rect,
 } from "@/lib/arcade";
 import { calculateFOV, hasLineOfSight } from "@/lib/dungeon";
@@ -1845,5 +1852,170 @@ describe("Clinical Trial Chaos procedural observations - property fuzzing", () =
       }),
       { numRuns: 200 }
     );
+  });
+});
+
+// #2548, design §5: profile slices merge by joins, so two devices converge
+// whatever order they sync in and a merge never takes progress away.
+describe("Arcade progress merge laws", () => {
+  const gameIds = fc.constantFrom(
+    "laser-loon",
+    "quasi-puzzler",
+    "trial-and-error",
+    "meme-vault"
+  );
+  const trophyIds = fc.constantFrom(
+    "laser_loon_novice",
+    "quasi_first_proof",
+    "meme_vault_echo_5",
+    "arcade_triathlon"
+  );
+  const coreArb: fc.Arbitrary<ArcadeProgress> = fc
+    .record({
+      highScores: fc.dictionary(gameIds, fc.integer({ min: 0, max: 1e6 })),
+      unlockedTrophies: fc.dictionary(
+        trophyIds,
+        fc.integer({ min: 1, max: 2e12 })
+      ),
+      updatedAt: fc.integer({ min: 0, max: 2e12 }),
+      migratedAt: fc.option(fc.integer({ min: 1, max: 2e12 }), {
+        nil: undefined,
+      }),
+    })
+    .map((p) =>
+      p.migratedAt === undefined
+        ? {
+            highScores: p.highScores,
+            unlockedTrophies: p.unlockedTrophies,
+            updatedAt: p.updatedAt,
+          }
+        : p
+    );
+
+  const dates = fc
+    .integer({ min: 0, max: 40 })
+    .map((d) =>
+      new Date(Date.UTC(2026, 8, 1) + d * 86_400_000).toISOString().slice(0, 10)
+    );
+  const resultArb = fc.record(
+    {
+      score: fc.integer({ min: 0, max: 5000 }),
+      label: fc.constantFrom("A", "B", "Grade A, 4 stars"),
+    },
+    { requiredKeys: ["score"] }
+  );
+  const dailyArb: fc.Arbitrary<ArcadeDailyProgress> = fc
+    .record({
+      bests: fc.record(
+        {
+          "for-better-or-bulk": fc.dictionary(dates, resultArb),
+          "protocol-drift": fc.dictionary(dates, resultArb),
+        },
+        { requiredKeys: [] }
+      ),
+      played: fc.uniqueArray(dates),
+      longest: fc.integer({ min: 0, max: 50 }),
+    })
+    .map((raw) => parseArcadeDailyProgress(raw));
+
+  const laws = <T>(
+    name: string,
+    arb: fc.Arbitrary<T>,
+    merge: (a: T, b: T) => T,
+    normalize: (value: T) => unknown
+  ) => {
+    it(`${name} merge is commutative`, () => {
+      fc.assert(
+        fc.property(arb, arb, (a, b) => {
+          expect(normalize(merge(a, b))).toEqual(normalize(merge(b, a)));
+        })
+      );
+    });
+    it(`${name} merge is associative`, () => {
+      fc.assert(
+        fc.property(arb, arb, arb, (a, b, c) => {
+          expect(normalize(merge(merge(a, b), c))).toEqual(
+            normalize(merge(a, merge(b, c)))
+          );
+        })
+      );
+    });
+    it(`${name} merge is idempotent`, () => {
+      fc.assert(
+        fc.property(arb, arb, (a, b) => {
+          const ab = merge(a, b);
+          expect(normalize(merge(ab, ab))).toEqual(normalize(ab));
+          expect(normalize(merge(ab, b))).toEqual(normalize(ab));
+        })
+      );
+    });
+  };
+
+  const sortedCore = (p: ArcadeProgress) => ({
+    ...p,
+    highScores: Object.fromEntries(Object.entries(p.highScores).sort()),
+    unlockedTrophies: Object.fromEntries(
+      Object.entries(p.unlockedTrophies).sort()
+    ),
+  });
+  const sortedDaily = (p: ArcadeDailyProgress) => ({
+    ...p,
+    bests: Object.fromEntries(
+      Object.entries(p.bests)
+        .sort()
+        .map(([game, days]) => [
+          game,
+          Object.fromEntries(Object.entries(days ?? {}).sort()),
+        ])
+    ),
+  });
+
+  laws("arcade.core", coreArb, arcadeCoreSlice.merge, sortedCore);
+  laws("arcade.daily", dailyArb, arcadeDailySlice.merge, sortedDaily);
+
+  it("arcade.core merge of a copy with itself is that copy", () => {
+    fc.assert(
+      fc.property(coreArb, (a) => {
+        expect(sortedCore(arcadeCoreSlice.merge(a, a))).toEqual(sortedCore(a));
+      })
+    );
+  });
+
+  it("arcade.core merge never lowers a local best or loses a trophy", () => {
+    fc.assert(
+      fc.property(coreArb, coreArb, (local, other) => {
+        const merged = arcadeCoreSlice.merge(local, other);
+        for (const [game, best] of Object.entries(local.highScores)) {
+          expect(merged.highScores[game]).toBeGreaterThanOrEqual(best);
+        }
+        for (const [id, at] of Object.entries(local.unlockedTrophies)) {
+          expect(merged.unlockedTrophies[id]).toBeLessThanOrEqual(at);
+        }
+      })
+    );
+  });
+
+  it("arcade.daily merge never lowers a local best, played day or streak", () => {
+    fc.assert(
+      fc.property(dailyArb, dailyArb, (local, other) => {
+        const merged = arcadeDailySlice.merge(local, other);
+        for (const [game, days] of Object.entries(local.bests)) {
+          for (const [date, result] of Object.entries(days ?? {})) {
+            const kept =
+              merged.bests[game as keyof typeof merged.bests]?.[date];
+            expect(kept?.score).toBeGreaterThanOrEqual(result.score);
+          }
+        }
+        expect(merged.played).toEqual(
+          expect.arrayContaining([...local.played])
+        );
+        expect(merged.longest).toBeGreaterThanOrEqual(local.longest);
+      })
+    );
+  });
+
+  it("marks neither profile slice spendable", () => {
+    expect(arcadeCoreSlice.spendable).toBe(false);
+    expect(arcadeDailySlice.spendable).toBe(false);
   });
 });

@@ -176,19 +176,6 @@ export function UnifiedErrorLayout({
       <meta name="robots" content="noindex, nofollow" />
       <link rel="canonical" href={canonicalUrl} />
       <div className="min-h-screen py-32 px-6 flex flex-col items-center justify-center bg-brand-dark text-foreground relative overflow-hidden select-none">
-        {/* Background Blurs */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-accent/5 blur-[120px] pointer-events-none transition-all duration-700 [transform:translate(-50%,-50%)_translate(var(--blur-shift-x,0px),var(--blur-shift-y,0px))] hidden sm:block"
-          style={
-            showRetroLabyrinth
-              ? ({
-                  "--blur-shift-x": `${(normalized.x - 0.5) * 40}px`,
-                  "--blur-shift-y": `${(normalized.y - 0.5) * 40}px`,
-                } as React.CSSProperties)
-              : undefined
-          }
-        />
-
         <div
           ref={containerRef}
           onMouseMove={showRetroLabyrinth ? handleMouseMove : undefined}
@@ -337,15 +324,15 @@ export function UnifiedErrorLayout({
                 {/* Center Insert Coin Prompts */}
                 <div className="flex flex-col items-center justify-center gap-3 p-4 z-10 text-center">
                   {/* Arcade Coin Slot Icon / Badge */}
-                  <div className="w-12 h-12 rounded-full border-2 border-accent/40 group-hover/coin:border-accent group-hover/coin:scale-105 flex items-center justify-center bg-accent/10 transition-all duration-300 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                  <div className="w-12 h-12 rounded-full border-2 border-accent/40 group-hover/coin:border-accent group-hover/coin:scale-105 flex items-center justify-center bg-accent/10 transition-all duration-300">
                     <span className="text-accent font-extrabold text-sm tracking-tighter">
                       1¢
                     </span>
                   </div>
 
-                  {/* Glowing Blinking INSERT COIN */}
+                  {/* Blinking INSERT COIN */}
                   <div className="space-y-1">
-                    <div className="text-base sm:text-lg font-extrabold text-accent tracking-widest animate-pulse drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]">
+                    <div className="text-base sm:text-lg font-extrabold text-accent tracking-widest animate-pulse">
                       INSERT COIN
                     </div>
                     <p className="text-[10px] sm:text-[11px] text-neutral-400 font-medium tracking-wide">

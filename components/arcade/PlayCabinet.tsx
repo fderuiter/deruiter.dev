@@ -29,6 +29,7 @@ import {
   GameSetupConfig,
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
+import { env } from "@/lib/env";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   CabinetTouchContext,
@@ -40,12 +41,21 @@ import {
   useOrientationMismatch,
   PHONE_ORIENTATION_QUERY,
   useTouchDevice,
+  useFormFactor,
   type MobileOrientation,
 } from "@/components/arcade/mobile";
 import {
+  GameViewHost,
+  usePrefetchViews,
+  useShownView,
+  type GameViews,
+} from "@/components/arcade/views";
+import {
   buildCrtOverlayBackground,
   crtCalibrationForFilter,
+  FORM_FACTORS,
   shouldCabinetDrawCrt,
+  type FormFactor,
 } from "@/lib/arcade";
 
 interface ControlItem {
@@ -102,7 +112,14 @@ interface PlayCabinetProps {
    * touch cabinet is immersive (ADR 0061). Resuming is the game's own choice.
    */
   onAutoPause?: () => void;
-  children: React.ReactNode;
+  /**
+   * The game's three views (ADR 0062), from `defineGameViews`. After Launch
+   * the cabinet mounts the view `useFormFactor` picks, sets `data-view` on
+   * its root, and swaps views live when the viewport crosses a breakpoint, calling `onAutoPause` first so nothing is lost mid-action.
+   * Without it the cabinet renders `children`, as before.
+   */
+  views?: GameViews;
+  children?: React.ReactNode;
 }
 
 // Windowed cabinet chrome before it is measured: the marquee (min-h-12
@@ -157,6 +174,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   mobileOrientation = "either",
   mobileLayout = "scroll",
   onAutoPause,
+  views,
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -185,6 +203,28 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
 
   const [showWizard, setShowWizard] = useState(false);
   const cabinetRef = useRef<HTMLDivElement>(null);
+  // The view a cabinet with views shows (ADR 0062). A dev-only picker in the
+  // marquee can force one; `?view=` forces one in any build.
+  const [devView, setDevView] = useState<FormFactor | "auto">("auto");
+  const formFactor = useFormFactor({
+    enabled: Boolean(views) && isLaunched,
+    override: devView,
+  });
+  const targetView =
+    views && isLaunched ? views.resolved[formFactor] : undefined;
+  // A swap loads the new view first; if it fails, the old view stays.
+  const { shown: activeView, failed: failedSwap } = useShownView(
+    views,
+    targetView
+  );
+  usePrefetchViews(views, targetView);
+  const lastTargetRef = useRef<FormFactor | undefined>(undefined);
+  useEffect(() => {
+    // A live swap pauses the run first; the new view resumes into the pause.
+    const previous = lastTargetRef.current;
+    lastTargetRef.current = targetView;
+    if (previous && targetView && previous !== targetView) onAutoPause?.();
+  }, [targetView, onAutoPause]);
   const [setupConfig, setSetupConfig] = useState<GameSetupConfig>(() =>
     getSavedSetupConfig(gameId)
   );
@@ -660,6 +700,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         data-arcade-cabinet={gameId}
         data-game={gameId}
         data-fullscreen={immersive}
+        {...(activeView ? { "data-view": activeView } : {})}
         {...(touchImmersive
           ? {
               "data-immersive": true,
@@ -802,6 +843,25 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               data-testid="cabinet-header-controls"
               className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 min-w-0 max-w-full ml-auto"
             >
+              {views && env.NODE_ENV !== "production" && (
+                <label className="flex min-h-12 items-center gap-1.5 text-xs text-zinc-300">
+                  <span>View</span>
+                  <select
+                    value={devView}
+                    onChange={(event) =>
+                      setDevView(event.target.value as FormFactor | "auto")
+                    }
+                    className="min-h-12 rounded-xl border border-zinc-700 bg-neutral-900 px-2 font-mono text-xs text-zinc-200 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+                  >
+                    <option value="auto">Auto</option>
+                    {FORM_FACTORS.map((factor) => (
+                      <option key={factor} value={factor}>
+                        {factor}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <FullscreenButton
                 isFullscreen={isFullscreen}
                 isPseudoFullscreen={isPseudoFullscreen}
@@ -855,7 +915,15 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 value={toggleCabinetFullscreen}
               >
                 <CabinetSetupContext.Provider value={setupValue}>
-                  {children}
+                  {views && activeView ? (
+                    <GameViewHost
+                      views={views}
+                      view={activeView}
+                      failedSwap={failedSwap}
+                    />
+                  ) : (
+                    children
+                  )}
                 </CabinetSetupContext.Provider>
               </CabinetFullscreenContext.Provider>
             </CabinetTouchContext.Provider>

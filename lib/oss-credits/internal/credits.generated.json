@@ -5,7 +5,7 @@
     "total": 1196,
     "runtime": 575,
     "tooling": 621,
-    "direct": 71
+    "direct": 72
   },
   "packages": [
     {
@@ -37,7 +37,7 @@
     },
     {
       "name": "@axe-core/playwright",
-      "version": "4.14.0",
+      "version": "4.13.0",
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": true,
@@ -4551,12 +4551,14 @@
     },
     {
       "name": "axe-core",
-      "version": "4.14.0",
+      "version": "4.13.0",
       "license": "MPL-2.0",
       "scope": "tooling",
-      "direct": false,
+      "direct": true,
       "homepage": "https://www.deque.com/axe",
-      "repository": "https://github.com/dequelabs/axe-core"
+      "repository": "https://github.com/dequelabs/axe-core",
+      "group": "Testing",
+      "reason": "Accessibility rules that the component unit tests run in jsdom."
     },
     {
       "name": "axobject-query",

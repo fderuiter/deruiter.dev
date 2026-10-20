@@ -7,3 +7,5 @@ export * from "./registry";
 export * from "./form-factor";
 export * from "./progress";
 export * from "./run-snapshot";
+export * from "./rng";
+export * from "./step-clock";

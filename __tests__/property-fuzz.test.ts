@@ -51,6 +51,7 @@ import {
   boundingBoxOverlap,
   calculateScoreMultiplier,
   clamp,
+  createRng,
   createSeededRandom,
   lerp,
   scaleScoreWithMultiplier,
@@ -85,7 +86,16 @@ import {
 import {
   ACT_I,
   ACT_I_CRISES,
+  BIOSTAT_OPS_CAMPAIGN,
   DEMOGRAPHICS_SCENARIO,
+  GUIDED_BLIND_SCENARIO,
+  ScenarioSchema,
+  dealSeed,
+  deriveRunView,
+  openerIndex,
+  openerPool,
+  shuffledDeckOrder,
+  withOpener,
   advanceDesk,
   advanceRun,
   createRunState,
@@ -515,6 +525,45 @@ describe("Shift-Left Fuzz & Property-Based Verification", () => {
           );
         }),
         { numRuns: 80 }
+      );
+    });
+
+    it("session rng streams are repeatable, bounded and resume from any saved state (#2544)", () => {
+      fc.assert(
+        fc.property(
+          fc.oneof(
+            fc.integer({ min: -(2 ** 33), max: 2 ** 33 }),
+            fc.string({ maxLength: 24 })
+          ),
+          fc.integer({ min: 0, max: 64 }),
+          fc.integer({ min: 1, max: 1000 }),
+          (seed, savedAfter, bound) => {
+            const rng = createRng(seed);
+            const twin = createRng(seed);
+            for (let i = 0; i < savedAfter; i += 1) {
+              expect(rng.next()).toBe(twin.next());
+            }
+            const state = rng.getState();
+            expect(Number.isInteger(state)).toBe(true);
+            expect(state).toBeGreaterThanOrEqual(0);
+            expect(state).toBeLessThan(2 ** 32);
+            // The state survives a JSON round trip, as in a run snapshot.
+            const resumed = createRng(0);
+            resumed.setState(JSON.parse(JSON.stringify(state)));
+
+            for (let i = 0; i < 16; i += 1) {
+              const value = rng.next();
+              expect(value).toBeGreaterThanOrEqual(0);
+              expect(value).toBeLessThan(1);
+              expect(resumed.next()).toBe(value);
+              const n = rng.int(bound);
+              expect(resumed.int(bound)).toBe(n);
+              expect(Number.isInteger(n) && n >= 0 && n < bound).toBe(true);
+            }
+            expect(resumed.getState()).toBe(rng.getState());
+          }
+        ),
+        { numRuns: 120 }
       );
     });
 
@@ -1637,6 +1686,110 @@ describe("Trial & Error run seeds (#1528)", () => {
           expect(isChoiceUnlocked(next, choice)).toBe(true);
           unlocks = next;
         }
+      }),
+      { numRuns: 300 }
+    );
+  });
+});
+
+describe("Trial & Error first-Blind openers (#2413)", () => {
+  const codecSeed = fc
+    .uint8Array({ minLength: 5, maxLength: 5 })
+    .map((raw) => seedFromBytes(raw));
+  const daily = fc
+    .date({
+      min: new Date("2000-01-01T00:00:00Z"),
+      max: new Date("2100-12-31T23:59:59Z"),
+      noInvalidDate: true,
+    })
+    .map((when) => dailySeed(when.toISOString().slice(0, 10)));
+  const seed = fc.oneof(codecSeed, daily);
+  const choice = fc.record({
+    sponsorId: fc.constantFrom(...SPONSOR_ORDER),
+    stake: fc.integer({ min: 1, max: MAX_STAKE }),
+  });
+
+  it("picks the same opener for the same seed, every time", () => {
+    fc.assert(
+      fc.property(seed, fc.integer({ min: 1, max: 12 }), (s, size) => {
+        const index = openerIndex(s, size);
+        expect(Number.isInteger(index)).toBe(true);
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(index).toBeLessThan(size);
+        expect(openerIndex(s, size)).toBe(index);
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("opens a run on its seed's opener, and the same seed deals the same opening hand", () => {
+    fc.assert(
+      fc.property(seed, choice, (s, c) => {
+        const run = createRunState(BIOSTAT_OPS_CAMPAIGN, s, c);
+        const blind = deriveRunView(BIOSTAT_OPS_CAMPAIGN, run).blind;
+        const pool = openerPool(blind);
+        const opener = pool[openerIndex(s, pool.length)];
+        const fits = opener.length;
+        expect([...run.table.hand.slice(0, fits)].sort()).toEqual(
+          [...opener].sort()
+        );
+        expect(createRunState(BIOSTAT_OPS_CAMPAIGN, s, c).table).toEqual(
+          run.table
+        );
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("deals every opener as a legal setup of the first Blind, under any sponsor and stake", () => {
+    fc.assert(
+      fc.property(seed, choice, (s, c) => {
+        const run = createRunState(BIOSTAT_OPS_CAMPAIGN, s, c);
+        const blind = deriveRunView(BIOSTAT_OPS_CAMPAIGN, run).blind;
+        const pool = openerPool(blind);
+        expect(pool.length).toBeGreaterThan(1);
+        pool.forEach((opener, index) => {
+          // A legal setup: distinct cards the deck holds, all in one hand.
+          expect(new Set(opener).size).toBe(opener.length);
+          expect(opener.length).toBeLessThanOrEqual(blind.table.handSize);
+          const opened = withOpener(blind, index);
+          expect(ScenarioSchema.safeParse(opened).success).toBe(true);
+          // A legal deal: a permutation of the deck, the opener on top.
+          const order = shuffledDeckOrder(opened, dealSeed(s, 0, 0));
+          expect([...order].sort((a, b) => a - b)).toEqual(
+            blind.deck.map((_, i) => i)
+          );
+          expect(
+            order
+              .slice(0, opener.length)
+              .map((i) => blind.deck[i].id)
+              .sort()
+          ).toEqual([...opener].sort());
+        });
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("keeps the fixed openers for the tutorial and for named seeds", () => {
+    expect(openerPool(GUIDED_BLIND_SCENARIO)).toEqual([
+      GUIDED_BLIND_SCENARIO.pinned,
+    ]);
+    // The pool opens on the Blind's own setup first, and a Blind whose
+    // setup was rewritten keeps it.
+    expect(openerPool(DEMOGRAPHICS_SCENARIO)[0]).toEqual(
+      DEMOGRAPHICS_SCENARIO.pinned
+    );
+    const wholeDeck = DEMOGRAPHICS_SCENARIO.deck.map((card) => card.id);
+    expect(openerPool({ ...DEMOGRAPHICS_SCENARIO, pinned: wholeDeck })).toEqual(
+      [wholeDeck]
+    );
+    const named = fc.stringMatching(/^[a-z]{1,5}-[0-9]{1,2}$/);
+    fc.assert(
+      fc.property(named, (s) => {
+        expect(openerIndex(s, openerPool(DEMOGRAPHICS_SCENARIO).length)).toBe(
+          0
+        );
       }),
       { numRuns: 300 }
     );

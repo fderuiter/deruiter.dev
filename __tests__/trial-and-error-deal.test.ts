@@ -22,7 +22,10 @@ import {
   createRunState,
   createTableState,
   dealSeed,
+  openerIndex,
+  openerPool,
   parseRunSave,
+  seedFromBytes,
   replayRun,
   serializeRun,
   shuffledDeckOrder,
@@ -250,14 +253,14 @@ describe("a run deals each Blind from its seed", () => {
 describe("saves and the deal (#2055)", () => {
   it("writes the current version, and records a written-order run's dealing", () => {
     // v3 (#2082) added the run deck on top of v2's shuffle, and v4 (#2083)
-    // a shop per act.
-    expect(RUN_SAVE_VERSION).toBe(4);
+    // a shop per act, and v5 (#2413) first-Blind openers.
+    expect(RUN_SAVE_VERSION).toBe(5);
     const json = serializeRun(
       { actId: BIG_ONLY.id, seed: "alpha", dealing: "AUTHORED", actions: [] },
       SAVED_AT
     );
     expect(RunSaveSchema.parse(JSON.parse(json))).toMatchObject({
-      version: 4,
+      version: 5,
       dealing: "AUTHORED",
     });
     const shuffled = serializeRun(
@@ -284,10 +287,11 @@ describe("saves and the deal (#2055)", () => {
     expect(restored?.log.dealing).toBe("AUTHORED");
     expect(restored?.run.dealing).toBe("AUTHORED");
     expect(restored?.run.table.handsPlayed).toBe(1);
-    // It migrates on through v3 (#2082) and v4 (#2083), keeping its
-    // authored decks and its classic shop too.
+    // It migrates on through v3 (#2082), v4 (#2083) and v5 (#2413),
+    // keeping its authored decks, its classic shop and its fixed opener too.
     expect(restored?.log.decks).toBe("AUTHORED");
     expect(restored?.log.shops).toBe("CLASSIC");
+    expect(restored?.log.openers).toBe("FIXED");
     expect(restored?.run).toEqual(
       replayRun(BIG_ONLY, {
         actId: BIG_ONLY.id,
@@ -295,6 +299,7 @@ describe("saves and the deal (#2055)", () => {
         dealing: "AUTHORED",
         decks: "AUTHORED",
         shops: "CLASSIC",
+        openers: "FIXED",
         actions: [...actions],
       })
     );
@@ -303,6 +308,45 @@ describe("saves and the deal (#2055)", () => {
       BIG_ONLY,
     ]);
     expect(again?.run).toEqual(restored?.run);
+  });
+
+  it("replays a v4 save on its fixed opener, whatever opener its seed now picks (#2413)", () => {
+    // A codec seed whose pool now picks an opener other than the Blind's own.
+    const pool = openerPool(DEMOGRAPHICS_SCENARIO);
+    const seed = Array.from({ length: 64 }, (_, i) =>
+      seedFromBytes([i, 1, 2, 3, 4])
+    ).find((s) => openerIndex(s, pool.length) !== 0)!;
+    const pooled = createRunState(ACT_I, seed);
+    const fixed = createRunState(
+      ACT_I,
+      seed,
+      {},
+      "SHUFFLED",
+      "RUN",
+      "PER_ACT",
+      "FIXED"
+    );
+    expect(fixed.openers).toBe("FIXED");
+    expect(pooled.openers).toBeUndefined();
+    expect(fixed.table.hand.slice(0, 5)).toEqual(DEMOGRAPHICS_SCENARIO.pinned);
+    expect(pooled.table.hand).not.toEqual(fixed.table.hand);
+
+    const v4 = JSON.stringify({
+      version: 4,
+      actId: ACT_I.id,
+      savedAt: SAVED_AT.toISOString(),
+      seed,
+      actions: [{ type: "TOGGLE_SELECT", cardId: "C-T14.1.1-C" }],
+    });
+    const restored = parseRunSave(v4, [ACT_I]);
+    expect(restored?.log.openers).toBe("FIXED");
+    expect(restored?.run.table.hand).toEqual(fixed.table.hand);
+    // A current save keeps the seed's opener.
+    const current = parseRunSave(
+      serializeRun({ actId: ACT_I.id, seed, actions: [] }, SAVED_AT),
+      [ACT_I]
+    );
+    expect(current?.run).toEqual(pooled);
   });
 
   it("replays a current save shuffled, from its seed", () => {

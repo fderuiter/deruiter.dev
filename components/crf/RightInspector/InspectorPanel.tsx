@@ -244,6 +244,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           <>
             {activeTab === "properties" && (
               <FieldPropertiesTab
+                key={selectedField.id}
                 field={selectedField}
                 allFieldsInForm={allFields}
                 codelists={codelists}

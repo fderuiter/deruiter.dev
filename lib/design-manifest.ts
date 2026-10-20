@@ -88,6 +88,24 @@ export const designManifest = {
     /** Original CSS Variable: --layout-workspace-budget */
     workspaceBudget: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )",
   },
+  spacing: {
+    /** Original CSS Variable: --space-1 */
+    "1": 4,
+    /** Original CSS Variable: --space-2 */
+    "2": 8,
+    /** Original CSS Variable: --space-3 */
+    "3": 12,
+    /** Original CSS Variable: --space-4 */
+    "4": 16,
+    /** Original CSS Variable: --space-6 */
+    "6": 24,
+    /** Original CSS Variable: --space-8 */
+    "8": 32,
+    /** Original CSS Variable: --space-12 */
+    "12": 48,
+    /** Original CSS Variable: --space-16 */
+    "16": 64,
+  },
   breakpoints: {
     /** Original CSS Variable: --breakpoint-sm */
     "sm": 640,

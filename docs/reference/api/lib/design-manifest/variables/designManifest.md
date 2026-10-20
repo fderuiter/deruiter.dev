@@ -343,6 +343,58 @@ Original CSS Variable: --layout-masonry-padding-with-stats
 
 > `readonly` **type**: `"spring"` = `"spring"`
 
+### spacing
+
+> `readonly` **spacing**: `object`
+
+#### spacing.1
+
+> `readonly` **1**: `4` = `4`
+
+Original CSS Variable: --space-1
+
+#### spacing.12
+
+> `readonly` **12**: `48` = `48`
+
+Original CSS Variable: --space-12
+
+#### spacing.16
+
+> `readonly` **16**: `64` = `64`
+
+Original CSS Variable: --space-16
+
+#### spacing.2
+
+> `readonly` **2**: `8` = `8`
+
+Original CSS Variable: --space-2
+
+#### spacing.3
+
+> `readonly` **3**: `12` = `12`
+
+Original CSS Variable: --space-3
+
+#### spacing.4
+
+> `readonly` **4**: `16` = `16`
+
+Original CSS Variable: --space-4
+
+#### spacing.6
+
+> `readonly` **6**: `24` = `24`
+
+Original CSS Variable: --space-6
+
+#### spacing.8
+
+> `readonly` **8**: `32` = `32`
+
+Original CSS Variable: --space-8
+
 ### typography
 
 > `readonly` **typography**: `object`

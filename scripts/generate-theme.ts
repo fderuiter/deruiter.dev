@@ -114,6 +114,7 @@ export function generateTheme({
   const masonry: TokenEntry[] = [];
   const layout: TokenEntry[] = [];
   const breakpoints: TokenEntry[] = [];
+  const spacing: TokenEntry[] = [];
   const springs = new Map<string, SpringEntry>();
 
   for (const [key, value] of Object.entries(tokens)) {
@@ -132,6 +133,12 @@ export function generateTheme({
           !Number.isNaN(numberValue) && /^[0-9.]+(px|rem|em)?$/.test(value)
             ? numberValue
             : value,
+      });
+    } else if (/^space-\d+$/.test(key)) {
+      spacing.push({
+        key: key.replace("space-", ""),
+        cssVar: key,
+        value: parseNumber(value, key),
       });
     } else if (key.startsWith("breakpoint-")) {
       breakpoints.push({
@@ -211,6 +218,9 @@ export function generateTheme({
     "  },",
     "  layout: {",
     annotatedBlock(layout, "    ", false),
+    "  },",
+    "  spacing: {",
+    annotatedBlock(spacing, "    ", true),
     "  },",
     "  breakpoints: {",
     annotatedBlock(breakpoints, "    ", true),

@@ -12,7 +12,7 @@ import {
   createInitialState,
   startGame,
   type CrashReport,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 global.ResizeObserver = class {
   observe = vi.fn();

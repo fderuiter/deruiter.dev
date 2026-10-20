@@ -15,8 +15,12 @@ import {
   IconAlertTriangle,
   IconAlertCircle,
   IconTerminal,
+  IconDownload,
+  IconFileExport,
 } from "@tabler/icons-react";
+import { downloadFile } from "@/lib/download";
 import { InlineCodeText } from "./InlineCodeText";
+import { downloadLeanSource, leanFileStem } from "./leanDownload";
 
 interface LeanIdeInspectorProps {
   level: PuzzlerLevelDef;
@@ -67,6 +71,45 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
   };
 
   const effectiveVerifyResult = isLiveSync ? verifyResult : idleVerifyResult;
+
+  const handleExportStepLog = () => {
+    const { engine, status, success, diagnostics, goalState } =
+      effectiveVerifyResult;
+    const log = {
+      version: 1,
+      level: {
+        id: level.id,
+        title: level.title,
+        leanTheoremName: level.leanTheoremName,
+        leanTypeSignature: level.leanTypeSignature,
+      },
+      isComplete,
+      hasAdmittedStep,
+      steps: steps.map((step) => ({
+        tacticId: step.tacticId,
+        leanLine: step.leanLine,
+        goalBefore: step.goalBefore,
+        goalAfter: step.goalAfter,
+        explanation: step.explanation,
+        subgoalLabel: step.subgoalLabel,
+        cost: step.cost,
+      })),
+      browserCheck: {
+        engine: engine ?? null,
+        status,
+        success,
+        diagnostics,
+        goalState: goalState ?? null,
+      },
+      generatedLean: leanCode,
+      exportedAt: new Date().toISOString(),
+    };
+    downloadFile(
+      JSON.stringify(log, null, 2),
+      `${leanFileStem(level)}_steplog.json`,
+      { mimeType: "application/json" }
+    );
+  };
 
   useEffect(() => {
     if (!isLiveSync) return;
@@ -191,6 +234,24 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                 className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-emerald-400" : ""}`}
               />
               <span>Live Lean 4 Sync: {isLiveSync ? "ON" : "OFF"}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => downloadLeanSource(level, leanCode)}
+              className="qp-btn-quiet qp-focus flex min-h-12 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition-colors"
+            >
+              <IconDownload aria-hidden="true" className="w-3.5 h-3.5" />
+              <span>Download .lean</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportStepLog}
+              className="qp-btn-quiet qp-focus flex min-h-12 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold transition-colors"
+            >
+              <IconFileExport aria-hidden="true" className="w-3.5 h-3.5" />
+              <span>Export step log (.json)</span>
             </button>
 
             <CopyButton

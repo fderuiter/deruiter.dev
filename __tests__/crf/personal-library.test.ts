@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach } from "vitest";
 import { fromAny } from "@total-typescript/shoehorn";
 import {

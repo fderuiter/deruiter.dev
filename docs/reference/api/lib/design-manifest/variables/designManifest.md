@@ -93,35 +93,17 @@ Original CSS Variable: --border-active
 
 Original CSS Variable: --brand-blue
 
-#### colors.brand-blue-glow
-
-> `readonly` **brand-blue-glow**: `"rgba(59, 130, 246, 0.1)"` = `"rgba(59, 130, 246, 0.1)"`
-
-Original CSS Variable: --brand-blue-glow
-
 #### colors.brand-cyan
 
 > `readonly` **brand-cyan**: `"#06b6d4"` = `"#06b6d4"`
 
 Original CSS Variable: --brand-cyan
 
-#### colors.brand-cyan-glow
-
-> `readonly` **brand-cyan-glow**: `"rgba(6, 182, 212, 0.15)"` = `"rgba(6, 182, 212, 0.15)"`
-
-Original CSS Variable: --brand-cyan-glow
-
 #### colors.brand-dark
 
 > `readonly` **brand-dark**: `"#0d0e11"` = `"#0d0e11"`
 
 Original CSS Variable: --brand-dark
-
-#### colors.cyan-glow
-
-> `readonly` **cyan-glow**: `"#38bdf8"` = `"#38bdf8"`
-
-Original CSS Variable: --cyan-glow
 
 #### colors.emerald-accent
 
@@ -231,13 +213,13 @@ Original CSS Variable: --layout-studio-header-height
 
 #### layout.viewportBudget
 
-> `readonly` **viewportBudget**: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\n  )" = "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\n  )"
+> `readonly` **viewportBudget**: "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\\n  )" = "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\\n  )"
 
 Original CSS Variable: --layout-viewport-budget
 
 #### layout.workspaceBudget
 
-> `readonly` **workspaceBudget**: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )" = "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )"
+> `readonly` **workspaceBudget**: "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\\n      var(--layout-studio-header-height, 0px)\\n  )" = "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\\n      var(--layout-studio-header-height, 0px)\\n  )"
 
 Original CSS Variable: --layout-workspace-budget
 

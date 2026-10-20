@@ -40,8 +40,8 @@ import {
   stepBadgeRun,
   type BadgeId,
   type BadgeSave,
-} from "@/lib/garmin-badges";
-import { loadBadges, saveBadges } from "@/lib/garmin-badge-store";
+} from "@/lib/garmin/badges";
+import { loadBadges, saveBadges } from "@/lib/garmin/badge-store";
 import {
   planScreenLabel,
   renderPlanFace,
@@ -50,14 +50,14 @@ import {
   useTrainingPlan,
   type PlanInput,
 } from "@/components/garmin-watch/useTrainingPlan";
-import { startLoadout, stepLoadout } from "@/lib/garmin-bag";
+import { startLoadout, stepLoadout } from "@/lib/garmin/bag";
 import {
   FINISHER_CARD_NAMES,
   isPayoutBanner,
   stepFinisherCard,
-} from "@/lib/garmin-finisher";
-import type { GearItem, PlanRun } from "@/lib/garmin-plan";
-import { stepRaceDay } from "@/lib/garmin-raceday";
+} from "@/lib/garmin/finisher";
+import type { GearItem, PlanRun } from "@/lib/garmin/plan";
+import { stepRaceDay } from "@/lib/garmin/raceday";
 import {
   pusherAnchorPercent,
   screenBoxPercent,
@@ -68,14 +68,14 @@ import {
   TelemetryRecorder,
   exportTelemetryCsv,
   exportTelemetryFit,
-} from "@/lib/garmin-telemetry";
+} from "@/lib/garmin/telemetry";
 import {
   DEFAULT_GROUND_STRIP,
   loadGroundStrip,
   saveGroundStrip,
   type GroundStripField,
   type GroundStripLayout,
-} from "@/lib/garmin-ground-strip";
+} from "@/lib/garmin/ground-strip";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import { DynamicTabletOrientationHint as TabletOrientationHint } from "@/components/arcade/DynamicTabletOrientationHint";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
@@ -97,8 +97,8 @@ import {
   mergeBests,
   paceSecondsPerKm,
   type GarminBests,
-} from "@/lib/garmin-splits";
-import { bestsKey, loadBests, saveBests } from "@/lib/garmin-bests-store";
+} from "@/lib/garmin/splits";
+import { bestsKey, loadBests, saveBests } from "@/lib/garmin/bests-store";
 import { copyToClipboard } from "@/lib/clipboard";
 import {
   COACH_SATURDAY_MS,
@@ -117,7 +117,7 @@ import {
   raceOutcomeOf,
   type RaceSetup,
   type RaceVerdict,
-} from "@/lib/garmin-race";
+} from "@/lib/garmin/race";
 import {
   PLAN_RUN_MODE,
   RACE_CATEGORY_KEY,
@@ -132,7 +132,7 @@ import {
   readRaceMode,
   saveResult,
   writeRacePref,
-} from "@/lib/garmin-race-store";
+} from "@/lib/garmin/race-store";
 import {
   createGhostRecorder,
   finishGhost,
@@ -145,7 +145,7 @@ import {
   type GhostRecorder,
   type GhostSample,
   type GhostTrack,
-} from "@/lib/garmin-ghost";
+} from "@/lib/garmin/ghost";
 import {
   GHOST_ON_KEY,
   GHOST_TARGET_KEY,
@@ -154,8 +154,8 @@ import {
   readGhostTarget,
   saveGhost,
   type GhostTarget,
-} from "@/lib/garmin-ghost-store";
-import { isUnderwater } from "@/lib/garmin-swim";
+} from "@/lib/garmin/ghost-store";
+import { isUnderwater } from "@/lib/garmin/swim";
 import { BezelClusterDock } from "@/components/arcade/ControlDocks";
 import { useCabinetTouch } from "@/components/arcade/mobile";
 import {
@@ -197,23 +197,23 @@ import {
   type FinisherCard,
   type GameRules,
   paceMeters,
-} from "@/lib/garmin-engine";
-import { trainingStatus } from "@/lib/garmin-culture";
-import { STAGE_COUNT } from "@/lib/garmin-course";
+} from "@/lib/garmin/engine";
+import { trainingStatus } from "@/lib/garmin/culture";
+import { STAGE_COUNT } from "@/lib/garmin/course";
 import {
   MEDALS_PER_STAGE,
   medalStage,
   stageMedalCount,
-} from "@/lib/garmin-medals";
-import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin-cape";
-import type { PowerTier } from "@/lib/garmin-powerups";
-import { themeForStage, type StageTheme } from "@/lib/garmin-themes";
+} from "@/lib/garmin/medals";
+import { PACE_SEGMENTS, isPaceFull, paceSegments } from "@/lib/garmin/cape";
+import type { PowerTier } from "@/lib/garmin/powerups";
+import { themeForStage, type StageTheme } from "@/lib/garmin/themes";
 import {
   SECOND_WIND_EVENTS,
   SECOND_WIND_MS,
   type SecondWind,
   type SecondWindKind,
-} from "@/lib/garmin-second-wind";
+} from "@/lib/garmin/second-wind";
 
 const POWER_NAMES: Record<PowerTier, string> = {
   base: "Base",

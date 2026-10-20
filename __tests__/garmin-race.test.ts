@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   ALL_MEDALS,
@@ -19,7 +20,7 @@ import {
   shareText,
   type BoardEntry,
   type RaceOutcome,
-} from "@/lib/garmin-race";
+} from "@/lib/garmin/race";
 
 // The pure race rules (#2019): seeds, the fixed step, judging, the
 // leaderboard and the share text. No engine, no storage.

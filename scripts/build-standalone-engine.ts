@@ -20,7 +20,7 @@ export async function buildStandaloneEngine({
 }: StandaloneBuildOptions = {}): Promise<
   Readonly<Record<(typeof outputNames)[number], string>>
 > {
-  const entryPoint = path.join(rootDir, "lib", "garmin-engine.ts");
+  const entryPoint = path.join(rootDir, "lib", "garmin", "engine.ts");
   const temporaryDirectory = fs.mkdtempSync(
     path.join(os.tmpdir(), "portfolio-standalone-")
   );

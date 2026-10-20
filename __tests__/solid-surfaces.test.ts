@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -40,13 +41,16 @@ describe("solid card surfaces (#2310)", () => {
   it.each([
     ".dossier-card",
     ".glass-panel",
-    ".glass-panel-glow",
     ".tool-shell",
     ".editorial-surface",
   ])("%s has an opaque fill and no backdrop filter", (selector) => {
     const body = rule(selector);
     expect(body).not.toMatch(/backdrop-filter/);
     expect(body).toMatch(/background:\s*var\(--surface-1\);/);
+  });
+
+  it(".glass-panel-glow is retired in favour of the solid .glass-panel (#2312)", () => {
+    expect(css).not.toMatch(/\.glass-panel-glow\b/);
   });
 
   it.each(CARD_FILES)("%s cards do not use backdrop blur", (file) => {

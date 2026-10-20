@@ -15,8 +15,8 @@ import {
   SATURDAY_SEED,
   raceSetup,
   type RaceSetup,
-} from "@/lib/garmin-race";
-import { loadBoard, RACE_MODE_KEY } from "@/lib/garmin-race-store";
+} from "@/lib/garmin/race";
+import { loadBoard, RACE_MODE_KEY } from "@/lib/garmin/race-store";
 import { safeClear, safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
 import { copyToClipboard } from "@/lib/clipboard";
 import {
@@ -25,9 +25,9 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
-import { GROUND_Y } from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
+import { GROUND_Y } from "@/lib/garmin/engine";
 
 const frame = vi.hoisted(() => ({
   cb: null as null | ((deltaMs: number) => void),
@@ -62,8 +62,8 @@ vi.mock("@/lib/clipboard", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/clipboard")>();
   return { ...actual, copyToClipboard: vi.fn(async () => {}) };
 });
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return {
     ...actual,
     startGame: vi.fn(actual.startGame),

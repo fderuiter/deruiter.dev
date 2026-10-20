@@ -10,8 +10,8 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE, PX_PER_METER, stagePoleX } from "@/lib/garmin-course";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE, PX_PER_METER, stagePoleX } from "@/lib/garmin/course";
 import {
   BADGES,
   BADGE_IDS,
@@ -33,16 +33,16 @@ import {
   streakAfter,
   type BadgeSave,
   type RunFacts,
-} from "@/lib/garmin-badges";
+} from "@/lib/garmin/badges";
 import {
   BADGE_STORAGE_KEY,
   loadBadges,
   normalizeBadges,
   saveBadges,
-} from "@/lib/garmin-badge-store";
-import type { PlanRun } from "@/lib/garmin-plan";
+} from "@/lib/garmin/badge-store";
+import type { PlanRun } from "@/lib/garmin/plan";
 import { ARCADE_TROPHIES } from "@/lib/arcade-achievements";
-import { REPMAX_SCORE, makeFoe } from "@/lib/garmin-foes";
+import { REPMAX_SCORE, makeFoe } from "@/lib/garmin/foes";
 import { safeClear, safeSetRawItem } from "@/lib/safe-storage";
 
 // Badges and run history (#2021): each badge rule, the history cap, streaks

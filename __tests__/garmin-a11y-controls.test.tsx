@@ -7,7 +7,7 @@ import {
   allocateVariable,
   startGame,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 const mockAnnounce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({

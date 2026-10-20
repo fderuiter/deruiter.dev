@@ -1,5 +1,6 @@
 import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
+import { waitForAnimationFrames } from "./helpers/settle";
 
 const SAVE_KEY = "study_director_world_v1";
 
@@ -116,7 +117,7 @@ async function settledPixels(page: Page): Promise<string> {
     .poll(
       async () => {
         const prev = last;
-        await page.waitForTimeout(200);
+        await waitForAnimationFrames(page, 12);
         last = await canvasPixels(page);
         return prev === last;
       },
@@ -169,7 +170,7 @@ test.describe("Study Director world: the office tells the story", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await stageFloor(page, "crisisOffice");
     const still = await settledPixels(page);
-    await page.waitForTimeout(400);
+    await waitForAnimationFrames(page, 24);
     expect(await canvasPixels(page)).toBe(still);
 
     await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -177,7 +178,7 @@ test.describe("Study Director world: the office tells the story", () => {
       .poll(
         async () => {
           const a = await canvasPixels(page);
-          await page.waitForTimeout(150);
+          await waitForAnimationFrames(page, 9);
           return a !== (await canvasPixels(page));
         },
         { timeout: 5000 }
@@ -189,7 +190,7 @@ test.describe("Study Director world: the office tells the story", () => {
     await page.emulateMedia({ reducedMotion: "no-preference" });
     await stageFloor(page, "calm");
     const first = await settledPixels(page);
-    await page.waitForTimeout(400);
+    await waitForAnimationFrames(page, 24);
     expect(await canvasPixels(page)).toBe(first);
   });
 });

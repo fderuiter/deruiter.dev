@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   IconArrowDown,
   IconArrowLeft,
@@ -10,10 +10,17 @@ import {
 import { TouchButton } from "@/components/arcade/mobile/TouchButton";
 import { useHoldRepeat } from "@/components/arcade/mobile/useHoldRepeat";
 import type { SwipeDirection } from "@/components/arcade/mobile/swipe";
+import { touchActionInput, useActionSink } from "@/lib/arcade";
 
 export interface HoldDpadProps {
   /** Moves one step in a direction. Called on press and again while held. */
-  onMove: (direction: SwipeDirection) => void;
+  onMove?: (direction: SwipeDirection) => void;
+  /**
+   * The action each arrow performs (#2356). A press sends it to the nearest
+   * `ActionSinkProvider`, and each step of a hold sends it again marked as a
+   * repeat, the way a held key does. `onMove` still runs alongside.
+   */
+  actions?: Partial<Record<SwipeDirection, string>>;
   className?: string;
   /**
    * Keys at the 44px touch floor instead of 48px, for a dock that is short
@@ -81,17 +88,28 @@ function keySize(compact: boolean, large: boolean): string {
 function DirectionButton({
   direction,
   onMove,
+  action,
   compact,
   large,
   paused,
 }: {
   direction: SwipeDirection;
-  onMove: (direction: SwipeDirection) => void;
+  onMove?: (direction: SwipeDirection) => void;
+  action?: string;
   compact: boolean;
   large: boolean;
   paused: boolean;
 }) {
-  const repeat = useHoldRepeat(() => onMove(direction));
+  const sink = useActionSink();
+  // The first step of a hold is the press; the steps after it are repeats.
+  const repeatingRef = useRef(false);
+  const repeat = useHoldRepeat(() => {
+    if (action && sink) {
+      sink(touchActionInput(action, "down", repeatingRef.current));
+    }
+    repeatingRef.current = true;
+    onMove?.(direction);
+  });
   useEffect(() => {
     if (paused) repeat.stop();
   }, [paused, repeat]);
@@ -99,8 +117,14 @@ function DirectionButton({
   return (
     <TouchButton
       label={DIRECTION_LABEL[direction]}
-      onPress={() => repeat.start()}
-      onRelease={() => repeat.stop()}
+      onPress={() => {
+        repeatingRef.current = false;
+        repeat.start();
+      }}
+      onRelease={() => {
+        repeat.stop();
+        if (action && sink) sink(touchActionInput(action, "up"));
+      }}
       className={`flex ${keySize(compact, large)} items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 text-zinc-200 focus-visible:ring-amber-400 active:bg-cyan-500/30 active:text-cyan-300`}
     >
       <Icon
@@ -119,6 +143,7 @@ function DirectionButton({
  */
 export const HoldDpad: React.FC<HoldDpadProps> = ({
   onMove,
+  actions,
   className = "",
   compact = false,
   large = false,
@@ -141,6 +166,7 @@ export const HoldDpad: React.FC<HoldDpadProps> = ({
           key={cell.dir}
           direction={cell.dir}
           onMove={onMove}
+          action={actions?.[cell.dir]}
           compact={compact}
           large={large}
           paused={paused}

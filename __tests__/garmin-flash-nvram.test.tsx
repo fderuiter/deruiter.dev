@@ -9,7 +9,7 @@ import {
   allocateFlashVariable,
   clearFlashStorage,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }

@@ -18,7 +18,7 @@ Count shipped packages per license expression, most common first.
 
 ### scope?
 
-`"runtime"` \| `"tooling"`
+`"runtime"` \| `"tooling"` = `"runtime"`
 
 ## Returns
 

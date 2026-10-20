@@ -22,3 +22,4 @@
 
 - [canDownloadFiles](functions/canDownloadFiles.md)
 - [downloadFile](functions/downloadFile.md)
+- [sanitizeFilename](functions/sanitizeFilename.md)

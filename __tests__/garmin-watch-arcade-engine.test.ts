@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { GarminWatchEngine } from "@/lib/garmin-engine";
+import { GarminWatchEngine } from "@/lib/garmin/engine";
 
 describe("GarminWatchEngine", () => {
   it("initializes Connect IQ watch emulator with fenix profile", () => {

@@ -19,9 +19,9 @@ import {
   FLASH_STORAGE_KEY,
   type DeviceTarget,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE } from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE } from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
 
 // #1320: obstacle speed capped 7 seconds in, the allocation pace never
 // changed, pops and GCs were free points, and tokens only cost memory, so a

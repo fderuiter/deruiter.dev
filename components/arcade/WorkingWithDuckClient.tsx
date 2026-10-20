@@ -4,7 +4,11 @@ import React, { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
-import { getArcadeNeighbors } from "@/lib/arcade";
+import { controlsFromActions, getArcadeNeighbors } from "@/lib/arcade";
+import {
+  DUCK_ACTIONS,
+  DUCK_CABINET_GROUPS,
+} from "@/lib/working-with-duck-actions";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { useTouchDevice } from "@/components/arcade/mobile";
@@ -24,6 +28,12 @@ import {
   IconHeart,
 } from "@tabler/icons-react";
 import { getPhotosByCategory } from "@/lib/media-registry";
+
+/** The cabinet's control list, generated from the action map (#2356). */
+const DUCK_CABINET_CONTROLS = controlsFromActions(
+  DUCK_ACTIONS,
+  DUCK_CABINET_GROUPS
+);
 
 const WorkingWithDuckLoader = () =>
   import("@/components/WorkingWithDuck").then((mod) => mod.WorkingWithDuck);
@@ -110,15 +120,7 @@ export const WorkingWithDuckClient: React.FC = () => {
                 subtitle="Code, Toys, and Questionable Priorities"
                 icon={<IconBone className="w-8 h-8 text-amber-400" />}
                 instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
-                controls={[
-                  { key: "1-3 / 4", action: "Toss Toys / Trade Treats" },
-                  { key: "Space", action: "Work Sprint (Park: Jump)" },
-                  { key: "W / ↑ ↓", action: "Steer in the Park" },
-                  {
-                    key: "Q / W / E / R",
-                    action: "Sit / High Five / Drop It / Spin",
-                  },
-                ]}
+                controls={DUCK_CABINET_CONTROLS}
                 importComponent={WorkingWithDuckLoader}
                 controlDock={touchDevice ? <DuckControlDock /> : undefined}
                 onAutoPause={handleAutoPause}

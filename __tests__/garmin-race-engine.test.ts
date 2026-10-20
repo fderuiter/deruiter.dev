@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   GROUND_Y,
@@ -12,7 +13,7 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   FIXED_STEP_MS,
   SATURDAY_SEED,
@@ -20,9 +21,9 @@ import {
   fixedSteps,
   raceSetup,
   type RaceSetup,
-} from "@/lib/garmin-race";
-import type { Pickup } from "@/lib/garmin-powerups";
-import { BLOCK_SIZE, EMPTY_COURSE } from "@/lib/garmin-course";
+} from "@/lib/garmin/race";
+import type { Pickup } from "@/lib/garmin/powerups";
+import { BLOCK_SIZE, EMPTY_COURSE } from "@/lib/garmin/course";
 
 // The race engine (#2019): seeded determinism, the fixed step, the race
 // counters and the race clocks. A Training Run is checked alongside to show it

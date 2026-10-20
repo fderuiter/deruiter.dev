@@ -67,12 +67,12 @@ export const HeroHeadline: React.FC<HeroHeadlineProps> = ({ text }) => {
   return (
     <div
       style={{ minHeight: isReady && height ? `${height}px` : undefined }}
-      className="relative w-full max-w-4xl mx-auto lg:mx-0 min-h-[72px] sm:min-h-[90px] lg:min-h-[110px] mb-4 sm:mb-6 transition-[min-height] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      className="relative w-full max-w-4xl min-h-[72px] sm:min-h-[90px] lg:min-h-[110px] mb-4 sm:mb-6 transition-[min-height] duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]"
     >
       <h1
         ref={ref}
         data-pretext-layer="heading"
-        className="fluid-heading-hero font-extrabold tracking-tight text-center lg:text-left text-white leading-tight heading-editorial w-full select-text"
+        className="fluid-heading-hero font-extrabold tracking-tight text-left text-white leading-tight heading-editorial w-full select-text"
       >
         {!isReady || isMobile ? (
           text
@@ -86,7 +86,7 @@ export const HeroHeadline: React.FC<HeroHeadlineProps> = ({ text }) => {
               variants={containerVariants}
               initial={shouldReduceMotion ? false : "hidden"}
               animate="visible"
-              className="flex flex-wrap justify-center lg:justify-start"
+              className="flex flex-wrap justify-start"
             >
               {words.map((word, i) => (
                 <React.Fragment key={i}>
@@ -155,12 +155,12 @@ export const HeroText: React.FC<HeroTextProps> = ({ text }) => {
   return (
     <div
       style={{ minHeight: isReady && height ? `${height}px` : undefined }}
-      className="relative w-full max-w-2xl mx-auto lg:mx-0 min-h-[48px] sm:min-h-[54px] mb-6 sm:mb-8 transition-[min-height] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
+      className="relative w-full max-w-2xl min-h-[48px] sm:min-h-[54px] mb-6 sm:mb-8 transition-[min-height] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]"
     >
       <p
         ref={ref}
         data-pretext-layer="body"
-        className="text-zinc-300 fluid-body leading-relaxed text-center lg:text-left w-full select-text"
+        className="text-zinc-300 fluid-body leading-relaxed text-left w-full select-text"
       >
         {!isReady || isMobile ? (
           text
@@ -174,7 +174,7 @@ export const HeroText: React.FC<HeroTextProps> = ({ text }) => {
               variants={containerVariants}
               initial={shouldReduceMotion ? false : "hidden"}
               animate="visible"
-              className="flex flex-wrap justify-center lg:justify-start"
+              className="flex flex-wrap justify-start"
             >
               {words.map((word, i) => (
                 <React.Fragment key={i}>
@@ -238,7 +238,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
       {/* 3. Hero Split Grid Container */}
       <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10 lg:gap-12 items-center">
         {/* Left Column: Editorial Statement & Actions */}
-        <div className="lg:col-span-7 min-w-0 flex flex-col items-center lg:items-start text-center lg:text-left">
+        <div className="lg:col-span-7 min-w-0 flex flex-col items-start text-left">
           {/* Micro Brand Identifier */}
           <motion.div
             initial={shouldReduceMotion ? false : { opacity: 0, y: -8 }}
@@ -273,7 +273,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
                     ...designManifest.motion.springs.smooth,
                   }
             }
-            className="w-full flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3 sm:gap-4 mt-2"
+            className="w-full flex flex-col sm:flex-row items-center justify-start gap-3 sm:gap-4 mt-2"
           >
             {/* Primary Action */}
             <a
@@ -306,7 +306,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
           </motion.div>
 
           {/* Micro Invariant Telemetry Badges */}
-          <div className="mt-8 pt-6 border-t border-white/5 w-full flex flex-wrap items-center justify-center lg:justify-start gap-4 sm:gap-6 text-[10px] font-mono text-zinc-400 select-none">
+          <div className="mt-8 pt-6 border-t border-white/5 w-full flex flex-wrap items-center justify-start gap-4 sm:gap-6 text-[10px] font-mono text-zinc-400 select-none">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>CLINICAL OPERATIONS EXPERIENCE</span>

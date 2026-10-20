@@ -4204,6 +4204,14 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         data-keyboard-boundary="true"
+        // A running or paused room takes Escape for itself (it pauses, then
+        // resumes), so the touch cabinet's Escape does not also leave the game
+        // (#2569).
+        data-escape-docks={
+          phoneCabinet && (gameStatus === "playing" || gameStatus === "paused")
+            ? "true"
+            : undefined
+        }
         data-field-manual="retro-labyrinth"
         className={`arcade-labyrinth-playfield relative w-full ${
           phoneCabinet

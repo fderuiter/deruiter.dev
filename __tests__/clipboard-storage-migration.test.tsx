@@ -45,7 +45,7 @@ import {
   loadPersistedFlashStorage,
   savePersistedFlashStorage,
   type FlashVariable,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import { getOncologyPresetSync } from "@/lib/crf/presets";
 import { InspectorPanel } from "@/components/crf/RightInspector/InspectorPanel";
 import { StudioTerminal } from "@/components/crf/Terminal/StudioTerminal";

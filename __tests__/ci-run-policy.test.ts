@@ -259,7 +259,7 @@ describe("CI run policy (#1773)", () => {
       expect(arcadeDeviceGrep(["lib/dungeon/generator.ts"])).toBe(
         "Retro Labyrinth"
       );
-      expect(arcadeDeviceGrep(["lib/garmin-engine.ts"])).toBe(
+      expect(arcadeDeviceGrep(["lib/garmin/engine.ts"])).toBe(
         "Monkey C Mayhem"
       );
       expect(
@@ -285,6 +285,38 @@ describe("CI run policy (#1773)", () => {
       expect(arcadeDeviceGrep(["scripts/ci-run-policy.mjs"])).toBe(
         "Tablet arcade kit|Mobile arcade kit"
       );
+    });
+
+    it("ignores unit tests, which cannot change what a device spec sees", () => {
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/retro-labyrinth-run-rules.test.ts",
+          "__tests__/patty-drive-thru-dilemmas.test.ts",
+          "__tests__/crf/scenario-impact.test.ts",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/garmin-ceiling.test.ts",
+          "__tests__/e2e/retro-labyrinth-tablet.spec.ts",
+        ])
+      ).toBe("Retro Labyrinth");
+    });
+
+    it("ignores documentation, including the generated reference", () => {
+      expect(
+        arcadeDeviceGrep([
+          "docs/reference/api/lib/patty-drive-thru/presets/variables/SCENARIO_LIMITS.md",
+          "docs/reference/api/lib/study-director/index.md",
+          "docs/how-to/play-retro-labyrinth.md",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "docs/reference/api/lib/protocol-drift/index.md",
+          "components/protocol-drift/ProtocolDriftGame.tsx",
+        ])
+      ).toBe("Protocol Drift");
     });
 
     it("runs nothing for a change outside the arcade", () => {

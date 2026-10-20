@@ -18,8 +18,8 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE } from "@/lib/garmin-course";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE } from "@/lib/garmin/course";
 
 global.ResizeObserver = class {
   observe = vi.fn();

@@ -4,13 +4,31 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { downloadFile } from "@/lib/download";
+import { clamp } from "@/lib/game-utils";
 import {
+  ARRIVAL_GAP_MAX_SEC,
+  ARRIVAL_GAP_MIN_SEC,
   CLOSING_NOTE,
   COMPANION_POST_PATH,
   DIARY_INTRO,
   DILEMMA_WINDOW_LONG_SEC,
   DILEMMA_WINDOW_SEC,
+  DISPENSER_FAIL_CHANCE,
+  FIRST_ARRIVAL_SEC,
+  IDLE_GRACE_SEC,
+  IDLE_RATE_PER_SEC,
+  MAX_ITEMS_PER_ORDER,
+  MAX_OPEN_ORDERS,
+  MENU_ITEM_LABELS,
+  MODIFIER_ITEMS,
+  MODIFIER_LABELS,
+  ORDERABLE_ITEMS,
+  SCENARIO_LIMITS,
   SCENARIO_PRESETS,
+  SOS_GAIN_FAST,
+  SOS_GAIN_ON_TIME,
+  SOS_LOSS_EXPIRED,
+  SOS_LOSS_LATE,
   WEEK_DAYS,
   carryMeters,
   computePayStub,
@@ -28,8 +46,12 @@ import {
   scoreWeek,
   scoreShift,
   describeShiftScore,
+  type MenuItemId,
+  type ModifierId,
   type ScenarioId,
+  type ShiftConfig,
   type ShiftLogEntry,
+  type ShiftScenario,
   type ShiftState,
   type WeekDayResult,
   type WeekState,
@@ -91,9 +113,475 @@ function useFocusOnMount<T extends HTMLElement>() {
   return ref;
 }
 
+type DialKey = keyof ShiftScenario;
+
+const DIAL_KEYS = Object.keys(SCENARIO_LIMITS) as DialKey[];
+
+/** The two arrival-gap dials, shown side by side as one question. */
+const GAP_DIALS = ["arrivalGapMinSec", "arrivalGapMaxSec"] as const;
+
+/** How each custom-shift dial is asked about on the intro page (#2519). */
+const DIAL_LABELS: Readonly<Record<DialKey, string>> = {
+  arrivalGapMinSec: "Shortest",
+  arrivalGapMaxSec: "Longest",
+  firstArrivalSec: "First car arrives after (seconds)",
+  sosLossExpired: "Speed of service lost per expired order",
+  sosLossLate: "Speed of service lost per late order",
+  sosGainOnTime: "Speed of service gained per on-time order",
+  sosGainFast: "Speed of service gained per fast order",
+  idleGraceSec: "Grace before standing still is noticed (seconds)",
+  idleRatePerSec:
+    "How fast the manager notices, once he does (points a second)",
+  dispenserFailChance: "Chance the drink machine drops a cup (percent)",
+};
+
+/** The dispenser chance is a 0 to 1 fraction, shown as a percent. */
+function dialScale(key: DialKey): number {
+  return key === "dispenserFailChance" ? 100 : 1;
+}
+
+/** A dial's range in the units the player types. */
+function dialRange(key: DialKey): readonly [number, number] {
+  const [min, max] = SCENARIO_LIMITS[key];
+  return [min * dialScale(key), max * dialScale(key)];
+}
+
+type DialValues = Readonly<Record<DialKey, number>>;
+type DialDrafts = Readonly<Record<DialKey, string>>;
+
+/** A custom shift starts from the standard shift's numbers. */
+const STANDARD_DIALS: DialValues = {
+  arrivalGapMinSec: ARRIVAL_GAP_MIN_SEC,
+  arrivalGapMaxSec: ARRIVAL_GAP_MAX_SEC,
+  firstArrivalSec: FIRST_ARRIVAL_SEC,
+  sosLossExpired: SOS_LOSS_EXPIRED,
+  sosLossLate: SOS_LOSS_LATE,
+  sosGainOnTime: SOS_GAIN_ON_TIME,
+  sosGainFast: SOS_GAIN_FAST,
+  idleGraceSec: IDLE_GRACE_SEC,
+  idleRatePerSec: IDLE_RATE_PER_SEC,
+  dispenserFailChance: DISPENSER_FAIL_CHANCE * 100,
+};
+
+function draftsOf(values: DialValues): DialDrafts {
+  const drafts = {} as Record<DialKey, string>;
+  for (const key of DIAL_KEYS) drafts[key] = String(values[key]);
+  return drafts;
+}
+
+/**
+ * Settles what the player typed: each dial is held to its range, and a
+ * blank or unreadable entry goes back to the value it had. The shortest
+ * gap never ends up longer than the longest: the dial just changed wins,
+ * and the other one moves to meet it.
+ */
+function settleDials(
+  drafts: DialDrafts,
+  values: DialValues,
+  changed?: DialKey
+): DialValues {
+  const next = { ...values } as Record<DialKey, number>;
+  for (const key of changed ? [changed] : DIAL_KEYS) {
+    const typed = drafts[key].trim();
+    const parsed = typed === "" ? Number.NaN : Number(typed);
+    if (!Number.isFinite(parsed)) continue;
+    const [min, max] = dialRange(key);
+    next[key] = clamp(parsed, min, max);
+  }
+  if (next.arrivalGapMinSec > next.arrivalGapMaxSec) {
+    if (changed === "arrivalGapMaxSec")
+      next.arrivalGapMinSec = next.arrivalGapMaxSec;
+    else next.arrivalGapMaxSec = next.arrivalGapMinSec;
+  }
+  return next;
+}
+
+interface DraftItem {
+  readonly key: number;
+  readonly itemId: MenuItemId;
+  readonly modifier: ModifierId | null;
+}
+
+interface DraftOrder {
+  readonly key: number;
+  readonly items: readonly DraftItem[];
+}
+
+const DEFAULT_ORDERS: readonly DraftOrder[] = [
+  {
+    key: 1,
+    items: [
+      { key: 2, itemId: "burger", modifier: "no-pickles" },
+      { key: 3, itemId: "soda", modifier: null },
+    ],
+  },
+  {
+    key: 4,
+    items: [
+      { key: 5, itemId: "cheeseburger", modifier: null },
+      { key: 6, itemId: "fries", modifier: null },
+    ],
+  },
+];
+
+/** The modifiers an item can take, such as no pickles on a burger. */
+function modifiersFor(itemId: MenuItemId): ModifierId[] {
+  return (Object.keys(MODIFIER_ITEMS) as ModifierId[]).filter((modifier) =>
+    MODIFIER_ITEMS[modifier].includes(itemId)
+  );
+}
+
+/** The custom shift's dials and order queue while the player sets them up. */
+function useCustomShift() {
+  const [values, setValues] = useState<DialValues>(STANDARD_DIALS);
+  const [drafts, setDrafts] = useState<DialDrafts>(() =>
+    draftsOf(STANDARD_DIALS)
+  );
+  const [orders, setOrders] = useState<readonly DraftOrder[]>(DEFAULT_ORDERS);
+  const nextKey = useRef(100);
+  const newKey = () => (nextKey.current += 1);
+
+  const typeDial = (key: DialKey, typed: string) =>
+    setDrafts({ ...drafts, [key]: typed });
+
+  const settle = (changed?: DialKey): DialValues => {
+    const settled = settleDials(drafts, values, changed);
+    setValues(settled);
+    setDrafts(draftsOf(settled));
+    return settled;
+  };
+
+  const updateOrder = (
+    orderKey: number,
+    change: (items: readonly DraftItem[]) => readonly DraftItem[]
+  ) =>
+    setOrders(
+      orders.map((order) =>
+        order.key === orderKey
+          ? { ...order, items: change(order.items) }
+          : order
+      )
+    );
+
+  const addOrder = () => {
+    if (orders.length >= MAX_OPEN_ORDERS) return;
+    setOrders([
+      ...orders,
+      {
+        key: newKey(),
+        items: [{ key: newKey(), itemId: "burger", modifier: null }],
+      },
+    ]);
+  };
+
+  const removeOrder = (orderKey: number) => {
+    if (orders.length <= 1) return;
+    setOrders(orders.filter((order) => order.key !== orderKey));
+  };
+
+  const addItem = (orderKey: number) =>
+    updateOrder(orderKey, (items) =>
+      items.length >= MAX_ITEMS_PER_ORDER
+        ? items
+        : [...items, { key: newKey(), itemId: "fries", modifier: null }]
+    );
+
+  const removeItem = (orderKey: number, itemKey: number) =>
+    updateOrder(orderKey, (items) =>
+      items.length <= 1 ? items : items.filter((item) => item.key !== itemKey)
+    );
+
+  const setItem = (orderKey: number, itemKey: number, itemId: MenuItemId) =>
+    updateOrder(orderKey, (items) =>
+      items.map((item) =>
+        item.key !== itemKey
+          ? item
+          : {
+              ...item,
+              itemId,
+              modifier:
+                item.modifier && modifiersFor(itemId).includes(item.modifier)
+                  ? item.modifier
+                  : null,
+            }
+      )
+    );
+
+  const setModifier = (
+    orderKey: number,
+    itemKey: number,
+    modifier: ModifierId | null
+  ) =>
+    updateOrder(orderKey, (items) =>
+      items.map((item) => (item.key === itemKey ? { ...item, modifier } : item))
+    );
+
+  /** Settles every dial and returns the config to clock in with. */
+  const toConfig = (): Partial<ShiftConfig> => {
+    const settled = settle();
+    const dials = {} as Record<DialKey, number>;
+    for (const key of DIAL_KEYS) dials[key] = settled[key] / dialScale(key);
+    return {
+      ...dials,
+      customOrders: orders.map((order) => ({
+        items: order.items.map(({ itemId, modifier }) => ({
+          itemId,
+          modifier,
+        })),
+      })),
+    };
+  };
+
+  return {
+    drafts,
+    orders,
+    typeDial,
+    settle,
+    addOrder,
+    removeOrder,
+    addItem,
+    removeItem,
+    setItem,
+    setModifier,
+    toConfig,
+  };
+}
+
+type CustomShift = ReturnType<typeof useCustomShift>;
+
+const FIELD_CLASS =
+  "min-h-12 w-full min-w-0 rounded border border-[var(--pdt-paper-rule)] bg-[var(--pdt-paper)] px-2 font-mono text-sm text-[var(--pdt-paper-ink)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]";
+
+const SMALL_BUTTON_CLASS =
+  "min-h-12 min-w-12 rounded border-2 border-[var(--pdt-paper-rule)] px-3 font-mono text-xs font-bold uppercase tracking-wide active:scale-[0.98] hover:bg-black/10 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--pdt-focus)]";
+
+/** One number field of the custom shift, settled when it loses focus. */
+function DialField({
+  dial,
+  custom,
+  label,
+}: {
+  dial: DialKey;
+  custom: CustomShift;
+  label: string;
+}) {
+  const [min, max] = dialRange(dial);
+  return (
+    <label className="flex min-w-0 flex-col gap-1">
+      <span className="text-xs font-bold break-words">
+        {label}{" "}
+        <span className="font-normal text-[var(--pdt-paper-dim)]">
+          ({min} to {max})
+        </span>
+      </span>
+      <input
+        type="number"
+        inputMode="decimal"
+        min={min}
+        max={max}
+        step="any"
+        value={custom.drafts[dial]}
+        onChange={(event) => custom.typeDial(dial, event.target.value)}
+        onBlur={() => custom.settle(dial)}
+        className={FIELD_CLASS}
+        data-testid={`pdt-dial-${dial}`}
+      />
+    </label>
+  );
+}
+
+/** The custom shift's setup: its dials and the orders it plays (#2519). */
+function CustomShiftPanel({ custom }: { custom: CustomShift }) {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { orders } = custom;
+  return (
+    <section
+      aria-labelledby="pdt-custom-title"
+      className="@container min-w-0 space-y-3 rounded border border-[var(--pdt-paper-rule)] p-3"
+      data-testid="pdt-custom-panel"
+    >
+      <h3
+        id="pdt-custom-title"
+        className="font-mono text-xs font-bold uppercase tracking-wider text-[var(--pdt-paper-dim)]"
+      >
+        Your shift
+      </h3>
+      <p className="text-xs leading-relaxed" data-testid="pdt-custom-practice">
+        Practice only: a custom shift doesn&apos;t count toward your best score
+        or trophies. A <code>?seed=</code> link doesn&apos;t carry this setup,
+        so it can&apos;t share a custom shift.
+      </p>
+      <fieldset className="min-w-0">
+        <legend className="text-xs font-bold">
+          Time between cars (shortest / longest, seconds)
+        </legend>
+        <div className="mt-1 grid grid-cols-2 gap-2">
+          {GAP_DIALS.map((dial) => (
+            <DialField
+              key={dial}
+              dial={dial}
+              custom={custom}
+              label={DIAL_LABELS[dial]}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <div className="grid min-w-0 gap-3 @md:grid-cols-2">
+        {DIAL_KEYS.filter(
+          (dial) => !(GAP_DIALS as readonly DialKey[]).includes(dial)
+        ).map((dial) => (
+          <DialField
+            key={dial}
+            dial={dial}
+            custom={custom}
+            label={DIAL_LABELS[dial]}
+          />
+        ))}
+      </div>
+      <div className="border-t border-[var(--pdt-paper-rule)] pt-3">
+        <button
+          type="button"
+          onClick={() => setDrawerOpen(!drawerOpen)}
+          aria-expanded={drawerOpen}
+          aria-controls="pdt-order-builder"
+          data-testid="pdt-toggle-orders"
+          className={SMALL_BUTTON_CLASS}
+        >
+          {drawerOpen ? "Hide the orders" : "Build the orders"} ({orders.length}{" "}
+          of {MAX_OPEN_ORDERS})
+        </button>
+        {drawerOpen ? (
+          <div
+            id="pdt-order-builder"
+            className="mt-3 space-y-3"
+            data-testid="pdt-order-builder"
+          >
+            <p className="text-xs leading-relaxed">
+              The cars order these in turn, then start again from the first. Up
+              to {MAX_OPEN_ORDERS} orders of 1 to {MAX_ITEMS_PER_ORDER} items
+              each.
+            </p>
+            <ol className="space-y-3">
+              {orders.map((order, orderIndex) => (
+                <li
+                  key={order.key}
+                  className="min-w-0 space-y-2 rounded border border-[var(--pdt-paper-rule)] p-2"
+                  data-testid={`pdt-custom-order-${orderIndex}`}
+                >
+                  <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                    <span className="font-mono text-xs font-bold">
+                      Order {orderIndex + 1}
+                    </span>
+                    {orders.length > 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => custom.removeOrder(order.key)}
+                        aria-label={`Remove order ${orderIndex + 1}`}
+                        className={SMALL_BUTTON_CLASS}
+                      >
+                        Remove order
+                      </button>
+                    ) : null}
+                  </div>
+                  <ul className="space-y-2">
+                    {order.items.map((item, itemIndex) => {
+                      const where = `order ${orderIndex + 1}, item ${itemIndex + 1}`;
+                      const modifiers = modifiersFor(item.itemId);
+                      return (
+                        <li
+                          key={item.key}
+                          className="flex min-w-0 flex-wrap items-center gap-2"
+                        >
+                          <select
+                            value={item.itemId}
+                            onChange={(event) =>
+                              custom.setItem(
+                                order.key,
+                                item.key,
+                                event.target.value as MenuItemId
+                              )
+                            }
+                            aria-label={`Item for ${where}`}
+                            className={`${FIELD_CLASS} flex-1 basis-32`}
+                          >
+                            {ORDERABLE_ITEMS.map((id) => (
+                              <option key={id} value={id}>
+                                {MENU_ITEM_LABELS[id]}
+                              </option>
+                            ))}
+                          </select>
+                          {modifiers.length > 0 ? (
+                            <select
+                              value={item.modifier ?? ""}
+                              onChange={(event) =>
+                                custom.setModifier(
+                                  order.key,
+                                  item.key,
+                                  event.target.value === ""
+                                    ? null
+                                    : (event.target.value as ModifierId)
+                                )
+                              }
+                              aria-label={`Request for ${where}`}
+                              className={`${FIELD_CLASS} flex-1 basis-32`}
+                            >
+                              <option value="">As it comes</option>
+                              {modifiers.map((id) => (
+                                <option key={id} value={id}>
+                                  {MODIFIER_LABELS[id]}
+                                </option>
+                              ))}
+                            </select>
+                          ) : null}
+                          {order.items.length > 1 ? (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                custom.removeItem(order.key, item.key)
+                              }
+                              aria-label={`Remove ${where}`}
+                              className={SMALL_BUTTON_CLASS}
+                            >
+                              Remove
+                            </button>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {order.items.length < MAX_ITEMS_PER_ORDER ? (
+                    <button
+                      type="button"
+                      onClick={() => custom.addItem(order.key)}
+                      aria-label={`Add an item to order ${orderIndex + 1}`}
+                      className={SMALL_BUTTON_CLASS}
+                    >
+                      Add item
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ol>
+            <button
+              type="button"
+              onClick={custom.addOrder}
+              disabled={orders.length >= MAX_OPEN_ORDERS}
+              data-testid="pdt-add-order"
+              className={SMALL_BUTTON_CLASS}
+            >
+              Add order
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
 /** The diary page shown before the player clocks in (#1814). */
 export function DiaryIntroPage({
   onClockIn,
+  onClockInCustom,
   onStartWeek,
   onResumeWeek,
   savedWeek = null,
@@ -101,6 +589,11 @@ export function DiaryIntroPage({
   onLongerDilemmasChange,
 }: {
   onClockIn: (scenario: ScenarioId) => void;
+  /**
+   * Clocks in for a custom shift with the player's dials and orders
+   * (#2519). Left out, the custom shift is not offered.
+   */
+  onClockInCustom?: (setup: Partial<ShiftConfig>) => void;
   /** True when dilemmas give the longer answer window (#2087). */
   longerDilemmas?: boolean;
   /** Turns the longer dilemma window on or off. */
@@ -113,11 +606,15 @@ export function DiaryIntroPage({
   savedWeek?: WeekState | null;
 }) {
   const buttonRef = useFocusOnMount<HTMLButtonElement>();
-  const [scenario, setScenario] = useState<ScenarioId | "week">("standard");
+  const [scenario, setScenario] = useState<ScenarioId | "custom" | "week">(
+    "standard"
+  );
+  const custom = useCustomShift();
   const resumable =
     savedWeek && !isWeekOver(savedWeek) && onResumeWeek ? savedWeek : null;
   const start = () => {
     if (scenario === "week") onStartWeek?.();
+    else if (scenario === "custom") onClockInCustom?.(custom.toConfig());
     else onClockIn(scenario);
   };
   return (
@@ -171,6 +668,22 @@ export function DiaryIntroPage({
                 </span>
               </label>
             ))}
+            {onClockInCustom ? (
+              <label className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm">
+                <input
+                  type="radio"
+                  name="pdt-scenario"
+                  value="custom"
+                  checked={scenario === "custom"}
+                  onChange={() => setScenario("custom")}
+                  className="mt-1 size-4 shrink-0"
+                />
+                <span className="min-w-0 break-words">
+                  <span className="font-bold">Custom shift.</span> Set the
+                  numbers and build the orders yourself. Practice only.
+                </span>
+              </label>
+            ) : null}
             {onStartWeek ? (
               <label className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm">
                 <input
@@ -189,6 +702,9 @@ export function DiaryIntroPage({
               </label>
             ) : null}
           </fieldset>
+          {scenario === "custom" && onClockInCustom ? (
+            <CustomShiftPanel custom={custom} />
+          ) : null}
           {onLongerDilemmasChange ? (
             <label className="flex min-h-11 cursor-pointer items-start gap-2 py-1 text-sm">
               <input

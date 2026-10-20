@@ -7,6 +7,7 @@ import React, {
   useLayoutEffect,
   useMemo,
   useRef,
+  useSyncExternalStore,
 } from "react";
 import Image from "next/image";
 import "./cabinet-standby.css";
@@ -50,6 +51,15 @@ import {
   useShownView,
   type GameViews,
 } from "@/components/arcade/views";
+import {
+  CabinetPauseProvider,
+  PauseOverlay,
+  createPauseController,
+  resolveEscape,
+  showsPauseOverlay,
+  useScreenWakeLock,
+  type PauseReason,
+} from "@/components/arcade/pause";
 import {
   buildCrtOverlayBackground,
   crtCalibrationForFilter,
@@ -110,12 +120,17 @@ interface PlayCabinetProps {
    * Called when the game should pause itself: the tab is hidden, the page is
    * closing, the window blurs or the device rotates. Listens only while a
    * touch cabinet is immersive (ADR 0061). Resuming is the game's own choice.
+   * A game on the cabinet's pause service (#2357) reads `useCabinetPause()`
+   * instead and passes nothing here.
    */
   onAutoPause?: () => void;
   /**
    * The game's three views (ADR 0062), from `defineGameViews`. After Launch
    * the cabinet mounts the view `useFormFactor` picks, sets `data-view` on
-   * its root, and swaps views live when the viewport crosses a breakpoint, calling `onAutoPause` first so nothing is lost mid-action.
+   * its root, and swaps views live when the viewport crosses a breakpoint,
+   * pausing with reason `view-swap` (and calling `onAutoPause`) first so
+   * nothing is lost mid-action. A cabinet with views also shows the shared
+   * pause overlay and owns P and Escape (#2357).
    * Without it the cabinet renders `children`, as before.
    */
   views?: GameViews;
@@ -142,10 +157,16 @@ function getKeyboardBoundary(cabinet: HTMLElement): HTMLElement | null {
 }
 
 // A game's own dialog (a fix dialog, a pause menu) gets the first Escape, so
-// the press closes it rather than leaving fullscreen.
+// the press closes it rather than leaving fullscreen. The cabinet's own pause
+// overlay is not a game dialog.
 function findOpenGameDialog(cabinet: HTMLElement): Element | null {
-  return cabinet.querySelector(
+  const dialogs = cabinet.querySelectorAll(
     '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
+  );
+  return (
+    Array.from(dialogs).find(
+      (dialog) => !dialog.hasAttribute("data-pause-overlay")
+    ) ?? null
   );
 }
 
@@ -218,13 +239,36 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     targetView
   );
   usePrefetchViews(views, targetView);
+
+  // The one pause service (#2357): every reason the cabinet is paused, shared
+  // with the game through CabinetPauseProvider.
+  const [pauseController] = useState(() =>
+    createPauseController({ gameId, view: "desktop" })
+  );
+  const pauseState = useSyncExternalStore(
+    pauseController.subscribe,
+    pauseController.getState,
+    pauseController.getState
+  );
+  const pauseMenuItems = useSyncExternalStore(
+    pauseController.subscribe,
+    pauseController.getMenuItems,
+    pauseController.getMenuItems
+  );
+  useEffect(() => {
+    pauseController.setInfo({ gameId, view: activeView ?? "desktop" });
+  }, [pauseController, gameId, activeView]);
+
   const lastTargetRef = useRef<FormFactor | undefined>(undefined);
   useEffect(() => {
     // A live swap pauses the run first; the new view resumes into the pause.
     const previous = lastTargetRef.current;
     lastTargetRef.current = targetView;
-    if (previous && targetView && previous !== targetView) onAutoPause?.();
-  }, [targetView, onAutoPause]);
+    if (previous && targetView && previous !== targetView) {
+      pauseController.pause("view-swap");
+      onAutoPause?.();
+    }
+  }, [targetView, onAutoPause, pauseController]);
   const [setupConfig, setSetupConfig] = useState<GameSetupConfig>(() =>
     getSavedSetupConfig(gameId)
   );
@@ -273,6 +317,10 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // The touch toolbar's buttons: Fullscreen only where the API exists (iOS has
   // none), plus Setup and Power.
   const toolbarButtonCount = (fullscreenSupported ? 1 : 0) + 2;
+  // iPhone has no element fullscreen, so its phone view shows no Fullscreen
+  // control at all; the installed app already runs standalone (ADR 0062). A
+  // narrow desktop window in the phone view keeps it.
+  const showFullscreenControl = fullscreenSupported || activeView !== "phone";
   const { setSafeTimeout } = useSafeTimeout();
   // Entering fullscreen swaps the header, so focus would otherwise land on the
   // first toolbar button ("Exit Fullscreen"), where the game's Space key
@@ -401,9 +449,47 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   // Leaving the immersive cabinet restores the page offset the body pin
   // recorded on entry (see the pin effect above), so the preview is exactly
   // where the player left it. No scrollIntoView: that moved the page on exit.
-  useCabinetAutoPause(touchImmersive ? onAutoPause : undefined, {
-    pauseOnRotate: phoneOrientation,
-  });
+  //
+  // The pause service hears the page hide on every touch cabinet and on any
+  // launched cabinet with views; the window losing focus and a phone turning
+  // pause only the touch cabinet, as before. A desktop cabinet without views
+  // adds no listeners. The legacy onAutoPause still fires on touch only.
+  const hostsViews = Boolean(views) && isLaunched;
+  const handleAutoPause = useCallback(
+    (reason: PauseReason) => {
+      pauseController.pause(reason);
+      if (touchImmersive) onAutoPause?.();
+    },
+    [pauseController, touchImmersive, onAutoPause]
+  );
+  useCabinetAutoPause(
+    touchImmersive || hostsViews ? handleAutoPause : undefined,
+    {
+      pauseOnRotate: touchImmersive && phoneOrientation,
+      pauseOnBlur: touchImmersive,
+      onSuspend: pauseController.suspend,
+    }
+  );
+
+  // Setup is a pause of its own, cleared when Setup closes.
+  useEffect(() => {
+    if (showWizard) pauseController.pause("setup");
+    else pauseController.resume("setup");
+  }, [showWizard, pauseController]);
+
+  // The screen stays awake while a real-time run plays, and sleeps on pause.
+  useScreenWakeLock(isLaunched && pauseState.running && !pauseState.paused);
+
+  // The shared pause overlay belongs to cabinets with views; a game on the
+  // old path keeps its own pause menu.
+  const overlayOpen =
+    hostsViews && !showWizard && showsPauseOverlay(pauseState.reasons);
+  const [exitOffered, setExitOffered] = useState(false);
+  if (exitOffered && !overlayOpen) setExitOffered(false);
+  const resumeFromOverlay = () => {
+    setExitOffered(false);
+    pauseController.resume();
+  };
 
   useLayoutEffect(() => {
     const marquee = marqueeRef.current;
@@ -608,6 +694,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   }, [isLaunched]);
 
   const handleExit = () => {
+    // The next launch starts unpaused.
+    setExitOffered(false);
+    pauseController.resume();
+    pauseController.resume("sheet");
+    pauseController.resume("setup");
     setIsLaunched(false);
     setLaunchedOnTouch(false);
     setIsWarmingUp(false);
@@ -647,6 +738,36 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             target.closest("input, textarea, select, [contenteditable=true]")
           )
             return;
+          // A cabinet with views has one key rule (#2357): P toggles pause,
+          // and Escape closes the top sheet, then pauses, then offers exit.
+          // Cabinets without views keep the data-escape-* rules below until
+          // every game has moved to the pause service.
+          if (
+            hostsViews &&
+            (event.key === "Escape" || event.key.toLowerCase() === "p")
+          ) {
+            const sheetOpen = findOpenGameDialog(event.currentTarget) !== null;
+            if (event.key === "Escape") {
+              const action = resolveEscape({
+                sheetOpen,
+                overlayOpen,
+                exitOffered,
+              });
+              // The sheet's own Escape closes it.
+              if (action === "close-sheet") return;
+              event.preventDefault();
+              event.stopPropagation();
+              if (action === "pause") pauseController.pause("user");
+              else if (action === "offer-exit") setExitOffered(true);
+              return;
+            }
+            if (sheetOpen) return;
+            event.preventDefault();
+            event.stopPropagation();
+            if (overlayOpen) resumeFromOverlay();
+            else pauseController.pause("user");
+            return;
+          }
           // Escape leaves the cabinet: real Fullscreen exits, and the touch
           // cabinet (no Fullscreen) closes the game the way its Exit does.
           const escapeLeaves = isFullscreen || touchImmersive;
@@ -687,7 +808,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             }
           }
           if (
-            (fullscreenKey && event.key.toLowerCase() === "f") ||
+            (fullscreenKey &&
+              showFullscreenControl &&
+              event.key.toLowerCase() === "f") ||
             (event.key === "Escape" && escapeLeaves)
           ) {
             event.preventDefault();
@@ -700,7 +823,9 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
         data-arcade-cabinet={gameId}
         data-game={gameId}
         data-fullscreen={immersive}
-        {...(activeView ? { "data-view": activeView } : {})}
+        {...(activeView
+          ? { "data-view": activeView, "data-paused": pauseState.paused }
+          : {})}
         {...(touchImmersive
           ? {
               "data-immersive": true,
@@ -801,12 +926,14 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             inert={rotateBlocked}
             className="arcade-cabinet-toolbar self-end shrink-0 z-50 flex items-center gap-1.5 p-1 bg-black/85 backdrop-blur-md rounded-2xl border border-zinc-700/80 shadow-2xl select-none"
           >
-            <FullscreenButton
-              isFullscreen={isFullscreen}
-              isPseudoFullscreen={isPseudoFullscreen}
-              onToggle={toggleCabinetFullscreen}
-              variant="header"
-            />
+            {showFullscreenControl && (
+              <FullscreenButton
+                isFullscreen={isFullscreen}
+                isPseudoFullscreen={isPseudoFullscreen}
+                onToggle={toggleCabinetFullscreen}
+                variant="header"
+              />
+            )}
             <button
               type="button"
               onClick={() => setShowWizard(true)}
@@ -862,12 +989,14 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                   </select>
                 </label>
               )}
-              <FullscreenButton
-                isFullscreen={isFullscreen}
-                isPseudoFullscreen={isPseudoFullscreen}
-                onToggle={toggleCabinetFullscreen}
-                variant="header"
-              />
+              {showFullscreenControl && (
+                <FullscreenButton
+                  isFullscreen={isFullscreen}
+                  isPseudoFullscreen={isPseudoFullscreen}
+                  onToggle={toggleCabinetFullscreen}
+                  variant="header"
+                />
+              )}
 
               <button
                 type="button"
@@ -915,18 +1044,53 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
                 value={toggleCabinetFullscreen}
               >
                 <CabinetSetupContext.Provider value={setupValue}>
-                  {views && activeView ? (
-                    <GameViewHost
-                      views={views}
-                      view={activeView}
-                      failedSwap={failedSwap}
-                    />
-                  ) : (
-                    children
-                  )}
+                  <CabinetPauseProvider controller={pauseController}>
+                    {views && activeView ? (
+                      <GameViewHost
+                        views={views}
+                        view={activeView}
+                        failedSwap={failedSwap}
+                      />
+                    ) : (
+                      children
+                    )}
+                  </CabinetPauseProvider>
                 </CabinetSetupContext.Provider>
               </CabinetFullscreenContext.Provider>
             </CabinetTouchContext.Provider>
+
+            {hostsViews && (
+              <PauseOverlay
+                open={overlayOpen}
+                reasons={pauseState.reasons}
+                layout={activeView === "phone" ? "sheet" : "card"}
+                onResume={resumeFromOverlay}
+                onRestart={() => {
+                  // A new run, as after Setup: the game restarts on it.
+                  setRunRevision((revision) => revision + 1);
+                  resumeFromOverlay();
+                }}
+                onSettings={() => setShowWizard(true)}
+                onExit={handleExit}
+                howToPlay={
+                  <>
+                    <p>{instructions}</p>
+                    <ul className="mt-2 space-y-1">
+                      {controls.map((control) => (
+                        <li key={`${control.key}-${control.action}`}>
+                          <span className="text-zinc-100">{control.key}</span>
+                          {": "}
+                          {control.action}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                }
+                items={pauseMenuItems}
+                exitOffered={exitOffered}
+                returnFocusTo={cabinetRef}
+              />
+            )}
 
             {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
             <PreGameSetupWizard

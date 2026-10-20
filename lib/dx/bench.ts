@@ -30,7 +30,7 @@ import {
   allocateVariable,
   updateGameSimulation,
   triggerGarbageCollection,
-} from "../garmin-engine";
+} from "../garmin/engine";
 import type { CRFField } from "../crf/types";
 import { colors, formatHeader } from "./utils";
 import path from "path";

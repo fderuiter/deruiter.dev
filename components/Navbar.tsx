@@ -442,13 +442,6 @@ export const Navbar: React.FC = () => {
             }}
             className="fixed inset-0 z-40 bg-zinc-950/98 backdrop-blur-2xl flex flex-col justify-between pt-[max(6rem,env(safe-area-inset-top)+4.5rem)] pb-[max(2rem,env(safe-area-inset-bottom)+1.5rem)] px-[max(1.5rem,env(safe-area-inset-left)+1rem)] overflow-y-auto"
           >
-            {/* Ambient gradients. This drawer is a mobile surface, so the blur
-                pair is substituted rather than gated: a radial gradient costs no
-                per-frame rasterisation while the drawer scrolls. */}
-            <div className="absolute inset-0 sm:hidden pointer-events-none bg-[radial-gradient(circle_at_25%_25%,rgba(34,211,238,0.10),transparent_55%),radial-gradient(circle_at_75%_75%,rgba(59,130,246,0.06),transparent_55%)]" />
-            <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/10 blur-[130px] pointer-events-none hidden sm:block" />
-            <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[130px] pointer-events-none hidden sm:block" />
-
             <div className="relative z-10 flex flex-col gap-6">
               {/* Primary navigation: the same groups as the top bar */}
               <MobileNavSections

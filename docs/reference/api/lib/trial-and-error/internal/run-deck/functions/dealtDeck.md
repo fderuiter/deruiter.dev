@@ -235,3 +235,5 @@ Absent means none.
 (`card`) => `number`
 
 ## Returns
+
+`object`[]

@@ -9,7 +9,7 @@ import {
   raceSetup,
   type BoardEntry,
   type RaceSetup,
-} from "@/lib/garmin-race";
+} from "@/lib/garmin/race";
 import {
   RACE_BOARDS_KEY,
   RACE_CATEGORY_KEY,
@@ -23,7 +23,7 @@ import {
   readRaceMode,
   saveResult,
   writeRacePref,
-} from "@/lib/garmin-race-store";
+} from "@/lib/garmin/race-store";
 
 const satSetup: RaceSetup = raceSetup(
   "saturday5k",

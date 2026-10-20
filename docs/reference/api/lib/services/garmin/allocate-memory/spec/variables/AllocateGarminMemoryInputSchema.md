@@ -6,4 +6,4 @@
 
 # Variable: AllocateGarminMemoryInputSchema
 
-> `const` **AllocateGarminMemoryInputSchema**: `ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`\>; `state`: `ZodCustom`\<[`GameEngineState`](../../../../../garmin-engine/interfaces/GameEngineState.md), [`GameEngineState`](../../../../../garmin-engine/interfaces/GameEngineState.md)\>; `type`: `ZodEnum`\<\{ `array`: `"array"`; `float`: `"float"`; `int`: `"int"`; `string`: `"string"`; \}\>; \}, `$strip`\>
+> `const` **AllocateGarminMemoryInputSchema**: `ZodObject`\<\{ `name`: `ZodOptional`\<`ZodString`\>; `state`: `ZodCustom`\<[`GameEngineState`](../../../../../garmin/engine/interfaces/GameEngineState.md), [`GameEngineState`](../../../../../garmin/engine/interfaces/GameEngineState.md)\>; `type`: `ZodEnum`\<\{ `array`: `"array"`; `float`: `"float"`; `int`: `"int"`; `string`: `"string"`; \}\>; \}, `$strip`\>

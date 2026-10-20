@@ -23,7 +23,7 @@ short one (#2092) that fits in a sitting.
 
 ### length?
 
-`"full"` \| `"short"`
+`"full"` \| `"short"` = `"full"`
 
 ## Returns
 

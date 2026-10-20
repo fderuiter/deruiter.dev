@@ -57,6 +57,7 @@
 - [MAX\_STEP\_SEC](variables/MAX_STEP_SEC.md)
 - [MENU\_ITEM\_LABELS](variables/MENU_ITEM_LABELS.md)
 - [METER\_START](variables/METER_START.md)
+- [MODIFIER\_ITEMS](variables/MODIFIER_ITEMS.md)
 - [MODIFIER\_LABELS](variables/MODIFIER_LABELS.md)
 - [NO\_PICKLES\_CHANCE](variables/NO_PICKLES_CHANCE.md)
 - [ORDERABLE\_ITEMS](variables/ORDERABLE_ITEMS.md)

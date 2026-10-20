@@ -12,14 +12,14 @@ import {
   startLoadout,
   stepLoadout,
   unpackGearItem,
-} from "@/lib/garmin-bag";
-import { BODY_BATTERY_MAX } from "@/lib/garmin-body-battery";
+} from "@/lib/garmin/bag";
+import { BODY_BATTERY_MAX } from "@/lib/garmin/body-battery";
 import {
   createInitialState,
   setRules,
   startGame,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BAG_SIZE,
   GEAR_ITEMS,
@@ -32,15 +32,15 @@ import {
   type GearItem,
   type PlanNodeId,
   type PlanSave,
-} from "@/lib/garmin-plan";
+} from "@/lib/garmin/plan";
 import {
   PLAN_SAVE_VERSION,
   PLAN_STORAGE_KEY,
   loadPlan,
   normalizePlan,
   savePlan,
-} from "@/lib/garmin-plan-store";
-import { HIGH_MS } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/plan-store";
+import { HIGH_MS } from "@/lib/garmin/powerups";
 import { safeClear } from "@/lib/safe-storage";
 
 // The gear bag (#1995): capacity, the rules for using each item, the save,

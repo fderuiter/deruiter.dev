@@ -496,7 +496,7 @@ To maintain high stability across complex domain simulation and calculation engi
 - **Legacy Computational Engine Hardening:**
   - **Proof AST Solver (`lib/proof-utils.ts`):** Enforces cycle-safe evaluation and max-depth guards on propositional ASTs to prevent stack overflow on deeply nested formulas.
   - **CRF Clinical Evaluator (`lib/crf/ast-evaluator.ts`):** Guarantees zero-divisor protection and safe token evaluation for anthropometric and oncology clinical formulas.
-  - **Garmin Telemetry Engine (`lib/garmin-engine.ts`):** Defends against zero-duration pace divisions, negative heap allocation readings, and thermal boundary overruns.
+  - **Garmin Telemetry Engine (`lib/garmin/engine.ts`):** Defends against zero-duration pace divisions, negative heap allocation readings, and thermal boundary overruns.
   - **Deterministic Duck State Machine (`lib/working-with-duck-engine.ts`):** Guards out-of-bounds drag coordinates, eliminates illegal concurrent states, and isolates item hazard interactions.
 - **Strict Red-Green Remediation Protocol:**
   - Every reported defect requires an isolated reproduction test in `__tests__/` written before patching.

@@ -16,7 +16,7 @@ import {
   type GhostSample,
   type GhostSource,
   type GhostTrack,
-} from "@/lib/garmin-ghost";
+} from "@/lib/garmin/ghost";
 import {
   createInitialState,
   paceMeters,
@@ -26,9 +26,9 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { FIXED_STEP_MS, raceSetup } from "@/lib/garmin-race";
-import { isUnderwater } from "@/lib/garmin-swim";
+} from "@/lib/garmin/engine";
+import { FIXED_STEP_MS, raceSetup } from "@/lib/garmin/race";
+import { isUnderwater } from "@/lib/garmin/swim";
 
 // The Virtual Partner (#2020): recording, encoding, interpolation and gaps.
 

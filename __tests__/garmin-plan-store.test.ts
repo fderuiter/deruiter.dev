@@ -8,7 +8,7 @@ import {
   clearWorkout,
   newPlan,
   takeHutItem,
-} from "@/lib/garmin-plan";
+} from "@/lib/garmin/plan";
 import {
   PLAN_SAVE_VERSION,
   PLAN_STORAGE_KEY,
@@ -16,8 +16,8 @@ import {
   loadPlan,
   normalizePlan,
   savePlan,
-} from "@/lib/garmin-plan-store";
-import { START_LIVES } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/plan-store";
+import { START_LIVES } from "@/lib/garmin/powerups";
 
 // The Training Plan save (#1994): the round trip, a corrupt save, malformed
 // fields one by one, a failed write and New plan.

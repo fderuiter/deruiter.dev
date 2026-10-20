@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { FlashVariable } from "@/lib/garmin-engine";
+import type { FlashVariable } from "@/lib/garmin/engine";
 import type { ServiceResult } from "@/lib/services/service-result";
 
 export const FlashVariableSchema = z.object({

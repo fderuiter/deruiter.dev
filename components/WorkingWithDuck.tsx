@@ -34,16 +34,25 @@ import {
 import { useDuckService } from "@/hooks/useDuckService";
 import { useResponsiveCanvas } from "@/hooks/useResponsiveCanvas";
 import { useCanvasResolution } from "@/hooks/useCanvasResolution";
-import { applyCanvasScale } from "@/lib/arcade";
+import {
+  applyCanvasScale,
+  useActionInput,
+  type ActionInput,
+} from "@/lib/arcade";
+import {
+  DUCK_ACTIONS,
+  duckInputContext,
+  type DuckActionName,
+} from "@/lib/working-with-duck-actions";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame";
 import {
+  isDuckCommand,
   useDuckTouchBridge,
   type DuckCommand,
   type DuckTouchSnapshot,
 } from "@/components/working-with-duck/touch-bridge";
 import { useCabinetTouch } from "@/components/arcade/mobile";
 import { fitRoomToStage } from "@/components/working-with-duck/room-fit";
-import { useHotkeys } from "@/hooks/useHotkeys";
 import {
   IconPlayerPlay,
   IconPlayerPause,
@@ -125,48 +134,6 @@ const TOUCH_TIP_BAND_PX = 80;
 const DUCK_FIXED_STEP_MS = 1000 / 60;
 /** Most fixed steps one rendered frame may replay after a long gap. */
 const DUCK_MAX_CATCHUP_STEPS = 8;
-
-/** Keys the Duck keyboard handler acts on, named for `useHotkeys`. */
-const DUCK_HOTKEY_KEYS = [
-  "p",
-  "1",
-  "2",
-  "3",
-  "4",
-  "q",
-  "w",
-  "e",
-  "r",
-  "d",
-  "Space",
-  "ArrowUp",
-  "ArrowDown",
-  "ArrowLeft",
-  "ArrowRight",
-  "Enter",
-  "Escape",
-] as const;
-
-/**
- * Every Ctrl/Alt/Meta combination the old window listener accepted. It never
- * checked modifiers, and useHotkeys matches Ctrl, Alt and Meta exactly, so
- * each one is listed. Shift needs no entry: useHotkeys ignores it unless a
- * hotkey names it.
- */
-const DUCK_HOTKEY_MODIFIERS = [
-  "",
-  "Ctrl+",
-  "Alt+",
-  "Meta+",
-  "Ctrl+Alt+",
-  "Ctrl+Meta+",
-  "Alt+Meta+",
-  "Ctrl+Alt+Meta+",
-] as const;
-
-const DUCK_HOTKEYS: readonly string[] = DUCK_HOTKEY_KEYS.flatMap((key) =>
-  DUCK_HOTKEY_MODIFIERS.map((modifiers) => `${modifiers}${key}`)
-);
 
 const subscribeStorage = (callback: () => void) => {
   if (typeof window === "undefined") return () => {};
@@ -781,49 +748,6 @@ function claimPackageDelivery(
       },
     ],
   };
-}
-
-/**
- * The command a key sends, or null for a key that has none. Arrow keys in the
- * office drag Duck instead, so they map to nothing here; W steers in the park
- * and high-fives in the office.
- */
-function duckCommandForKey(
-  e: KeyboardEvent,
-  state: WorkingWithDuckState
-): DuckCommand | null {
-  if (e.code === "Space") return "space";
-  switch (e.key) {
-    case "1":
-      return "toy-1";
-    case "2":
-      return "toy-2";
-    case "3":
-      return "toy-3";
-    case "4":
-      return "treat";
-    case "q":
-    case "Q":
-      return "trick-sit";
-    case "w":
-    case "W":
-      return state.inDogPark ? "steer-up" : "trick-high-five";
-    case "e":
-    case "E":
-      return "trick-drop-it";
-    case "r":
-    case "R":
-      return "trick-spin";
-    case "d":
-    case "D":
-      return "package";
-    case "ArrowUp":
-      return state.inDogPark ? "steer-up" : null;
-    case "ArrowDown":
-      return state.inDogPark ? "steer-down" : null;
-    default:
-      return null;
-  }
 }
 
 /** Where a toy used from the keyboard lands: the ball goes across the room,
@@ -2042,8 +1966,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   );
 
   // Every game action the keyboard or the touch cabinet can take (ADR 0061).
-  // A key maps to a command through duckCommandForKey; a touch button sends
-  // the same command through the bridge. Both land here, so they cannot
+  // A key or gamepad button maps to an action through DUCK_ACTIONS (#2356);
+  // a touch button sends the same action through the bridge. Both land here, so they cannot
   // drift. A paused sprint is frozen (#1645): only pause acts.
   const runDuckCommand = useCallback(
     (command: DuckCommand) => {
@@ -2170,200 +2094,153 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     });
   }, [touchBridge, touchScene, touchAiming, touchPaused, touchManualPause]);
 
-  // Keyboard Shortcuts (1-4 for hotbar items, Q-W-E-R for tricks, Space for coding/jumping)
-  //
-  // DUCK_HOTKEYS lists every key the handler acts on under every Ctrl, Alt
-  // and Meta combination, because the listener never checked modifiers.
-  // The container is a keyboard boundary, so the binding opts in to it; the
-  // handler keeps its own interactive-target and focus checks.
-  useHotkeys(
-    DUCK_HOTKEYS,
-    (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      const textEntry =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable;
-      const focusInGame =
-        !!containerRef.current &&
-        containerRef.current.contains(document.activeElement);
+  // Keys and gamepad buttons (1-4 for hotbar items, Q-W-E-R for tricks,
+  // Space for coding or jumping) arrive as DUCK_ACTIONS (#2356). The binding
+  // reads physical keys, so the controls sit in the same place on any layout.
+  // It acts only while focus is inside the game, leaves keys typed into a
+  // field or pressed on a focused button to them (P and Escape still act on
+  // the pause overlay's Resume), and takes Ctrl, Alt and Meta chords as the
+  // bare key, as the window listener before it did.
+  const handleDuckAction = (input: ActionInput<DuckActionName>) => {
+    if (input.phase !== "down") return;
+    const { action } = input;
 
-      // P toggles pause both ways (#1942). Pausing moves focus to the
-      // overlay's Resume button, so P must get past the button filter below
-      // or the overlay's "Press P to resume" would be untrue.
-      if ((e.key === "p" || e.key === "P") && !textEntry && focusInGame) {
-        const status = gameStateRef.current.status;
-        if (status === "running" || status === "paused") {
-          e.preventDefault();
-          toggleManualPause();
-        }
-        return;
+    // P toggles pause both ways (#1942). Pausing moves focus to the
+    // overlay's Resume button, so the action acts on controls, or the
+    // overlay's "Press P to resume" would be untrue.
+    if (action === "pause") {
+      const status = gameStateRef.current.status;
+      if (status === "running" || status === "paused") {
+        input.preventDefault();
+        toggleManualPause();
       }
+      return;
+    }
 
-      // Escape pauses a running sprint, as in the other cabinets (#2158). An
-      // open dialog (pause overlay, wardrobe, scrapbook, result card) owns
-      // its own Escape, so the press is left to it.
-      if (e.key === "Escape") {
-        const dialogOpen = !!containerRef.current?.querySelector(
-          '[role="dialog"], [aria-modal="true"]'
-        );
-        if (
-          !textEntry &&
-          focusInGame &&
-          !dialogOpen &&
-          gameStateRef.current.status === "running"
-        ) {
-          e.preventDefault();
-          toggleManualPause();
-        }
-        return;
+    // Escape pauses a running sprint, as in the other cabinets (#2158). An
+    // open dialog (pause overlay, wardrobe, scrapbook, result card) owns
+    // its own Escape, so the press is left to it.
+    if (action === "escape") {
+      const dialogOpen = !!containerRef.current?.querySelector(
+        '[role="dialog"], [aria-modal="true"]'
+      );
+      if (!dialogOpen && gameStateRef.current.status === "running") {
+        input.preventDefault();
+        toggleManualPause();
       }
+      return;
+    }
 
-      const interactiveTag =
-        target?.tagName === "BUTTON" ||
-        target?.tagName === "SELECT" ||
-        target?.tagName === "A";
-      const interactiveRole =
-        target?.getAttribute?.("role") === "button" ||
-        target?.getAttribute?.("role") === "link" ||
-        target?.getAttribute?.("role") === "menuitem" ||
-        target?.getAttribute?.("role") === "tab";
-      if (
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.isContentEditable ||
-        interactiveTag ||
-        interactiveRole
-      ) {
-        return;
-      }
+    const state = gameStateRef.current;
+    if (state.status === "idle") {
+      // Before a sprint starts (#2160): Space or Enter starts it from the
+      // briefing, and in the cabinet's Sprint 1 any game key starts the
+      // clock. A held key, or one pressed as the briefing opened, is left
+      // over from the last screen and is ignored.
+      const starts = isSprintOneWaiting(state)
+        ? true
+        : action === "space" || action === "drop";
+      const fresh =
+        performance.now() - briefingOpenedAtRef.current >=
+        BRIEFING_OPEN_GUARD_MS;
+      if (starts && !input.repeat && fresh) startSprint();
+      return;
+    }
+    // A paused sprint is frozen (#1645): only P (handled above) acts. The
+    // map already keeps Space and the arrows from scrolling the page behind
+    // the pause overlay.
+    if (state.status === "paused") return;
 
-      // Restrict key listener to only fire when focus is within our container
-      if (
-        !containerRef.current ||
-        !containerRef.current.contains(document.activeElement)
-      ) {
-        return;
-      }
+    if (isDuckCommand(action)) {
+      runDuckCommand(action);
+      return;
+    }
 
-      const state = gameStateRef.current;
-      if (state.status === "idle") {
-        // Before a sprint starts (#2160): Space or Enter starts it from the
-        // briefing, and in the cabinet's Sprint 1 any game key starts the
-        // clock. A held key, or one pressed as the briefing opened, is left
-        // over from the last screen and is ignored.
-        const starts = isSprintOneWaiting(state)
-          ? true
-          : e.code === "Space" || e.key === "Enter";
-        if (e.code === "Space" || e.key.startsWith("Arrow")) {
-          e.preventDefault();
-        }
-        const fresh =
-          performance.now() - briefingOpenedAtRef.current >=
-          BRIEFING_OPEN_GUARD_MS;
-        if (starts && !e.repeat && fresh) startSprint();
-        return;
-      }
-      if (state.status === "paused") {
-        // A paused sprint is frozen (#1645): only P (handled above) acts. Swallow Space and
-        // the arrows so they don't scroll the page behind the pause overlay.
-        if (e.code === "Space" || e.key.startsWith("Arrow")) {
-          e.preventDefault();
-        }
-        return;
-      }
-
-      if (e.code === "Space" || e.key.startsWith("Arrow")) {
-        e.preventDefault();
-      }
-      const command = duckCommandForKey(e, state);
-      if (command) {
-        runDuckCommand(command);
-        return;
-      }
-
-      // Office arrows drag Duck; the touch equivalent is dragging him on the
-      // canvas. Enter drops him.
-      if (e.key === "ArrowUp") {
-        if (!state.inDogPark) {
-          const s = applyTransition((state) => {
-            let next = state;
-            if (next.duck.state !== "DRAGGED") {
-              next = startDraggingDuck(next);
-            }
-            const nextY = Math.max(50, next.duck.y - 25);
-            return dragDuckTo(next, next.duck.x, nextY);
-          });
-          announce(
-            `Dragging Duck up. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
-            "polite"
-          );
-        }
-      } else if (e.key === "ArrowDown") {
-        if (!state.inDogPark) {
-          const s = applyTransition((state) => {
-            let next = state;
-            if (next.duck.state !== "DRAGGED") {
-              next = startDraggingDuck(next);
-            }
-            const nextY = Math.min(CANVAS_HEIGHT - 50, next.duck.y + 25);
-            return dragDuckTo(next, next.duck.x, nextY);
-          });
-          announce(
-            `Dragging Duck down. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
-            "polite"
-          );
-        }
-      } else if (e.key === "ArrowLeft") {
-        if (!state.inDogPark) {
-          const s = applyTransition((state) => {
-            let next = state;
-            if (next.duck.state !== "DRAGGED") {
-              next = startDraggingDuck(next);
-            }
-            const nextX = Math.max(50, next.duck.x - 25);
-            return dragDuckTo(next, nextX, next.duck.y);
-          });
-          announce(
-            `Dragging Duck left. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
-            "polite"
-          );
-        }
-      } else if (e.key === "ArrowRight") {
-        if (!state.inDogPark) {
-          const s = applyTransition((state) => {
-            let next = state;
-            if (next.duck.state !== "DRAGGED") {
-              next = startDraggingDuck(next);
-            }
-            const nextX = Math.min(CANVAS_WIDTH - 25, next.duck.x + 25);
-            return dragDuckTo(next, nextX, next.duck.y);
-          });
-          announce(
-            `Dragging Duck right. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
-            "polite"
-          );
-        }
-      } else if (e.key === "Enter") {
-        if (state.duck.state === "DRAGGED") {
-          e.preventDefault();
-          const s = applyTransition((state) => releaseDuck(state));
-          let dropLocation = "on the floor";
-          if (s.inBathtub) dropLocation = "in the bathtub";
-          else if (
-            s.duck.x >= BACK_DOOR_BOUNDS.x &&
-            s.duck.x <= BACK_DOOR_BOUNDS.x + BACK_DOOR_BOUNDS.width &&
-            s.duck.y >= BACK_DOOR_BOUNDS.y &&
-            s.duck.y <= BACK_DOOR_BOUNDS.y + BACK_DOOR_BOUNDS.height
-          ) {
-            dropLocation = "outside to potty";
+    // Office arrows drag Duck; the touch equivalent is dragging him on the
+    // canvas. Enter drops him.
+    if (action === "drag-up") {
+      if (!state.inDogPark) {
+        const s = applyTransition((state) => {
+          let next = state;
+          if (next.duck.state !== "DRAGGED") {
+            next = startDraggingDuck(next);
           }
-          announce(`Dropped Duck ${dropLocation}.`, "polite");
-        }
+          const nextY = Math.max(50, next.duck.y - 25);
+          return dragDuckTo(next, next.duck.x, nextY);
+        });
+        announce(
+          `Dragging Duck up. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
+          "polite"
+        );
       }
-    },
-    { allowInKeyboardBoundary: true }
-  );
+    } else if (action === "drag-down") {
+      if (!state.inDogPark) {
+        const s = applyTransition((state) => {
+          let next = state;
+          if (next.duck.state !== "DRAGGED") {
+            next = startDraggingDuck(next);
+          }
+          const nextY = Math.min(CANVAS_HEIGHT - 50, next.duck.y + 25);
+          return dragDuckTo(next, next.duck.x, nextY);
+        });
+        announce(
+          `Dragging Duck down. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
+          "polite"
+        );
+      }
+    } else if (action === "drag-left") {
+      if (!state.inDogPark) {
+        const s = applyTransition((state) => {
+          let next = state;
+          if (next.duck.state !== "DRAGGED") {
+            next = startDraggingDuck(next);
+          }
+          const nextX = Math.max(50, next.duck.x - 25);
+          return dragDuckTo(next, nextX, next.duck.y);
+        });
+        announce(
+          `Dragging Duck left. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
+          "polite"
+        );
+      }
+    } else if (action === "drag-right") {
+      if (!state.inDogPark) {
+        const s = applyTransition((state) => {
+          let next = state;
+          if (next.duck.state !== "DRAGGED") {
+            next = startDraggingDuck(next);
+          }
+          const nextX = Math.min(CANVAS_WIDTH - 25, next.duck.x + 25);
+          return dragDuckTo(next, nextX, next.duck.y);
+        });
+        announce(
+          `Dragging Duck right. Horizontal position ${Math.round(s.duck.x)}, vertical position ${Math.round(s.duck.y)}. Press Enter to drop.`,
+          "polite"
+        );
+      }
+    } else if (action === "drop") {
+      if (state.duck.state === "DRAGGED") {
+        input.preventDefault();
+        const s = applyTransition((state) => releaseDuck(state));
+        let dropLocation = "on the floor";
+        if (s.inBathtub) dropLocation = "in the bathtub";
+        else if (
+          s.duck.x >= BACK_DOOR_BOUNDS.x &&
+          s.duck.x <= BACK_DOOR_BOUNDS.x + BACK_DOOR_BOUNDS.width &&
+          s.duck.y >= BACK_DOOR_BOUNDS.y &&
+          s.duck.y <= BACK_DOOR_BOUNDS.y + BACK_DOOR_BOUNDS.height
+        ) {
+          dropLocation = "outside to potty";
+        }
+        announce(`Dropped Duck ${dropLocation}.`, "polite");
+      }
+    }
+  };
+  useActionInput(DUCK_ACTIONS, handleDuckAction, {
+    scopeRef: containerRef,
+    getContext: () => duckInputContext(gameStateRef.current),
+    modifiers: "any",
+  });
 
   // Ends a pointer drag. While paused the drop is deferred until the sprint
   // resumes (see pendingDragReleaseRef), so it can't score with the clock

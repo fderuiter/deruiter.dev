@@ -8,9 +8,9 @@
 
 > **isStandardScenario**(`config`): `boolean`
 
-True when a shift has no scenario dial set and is not a day of the week
-mode, so its own score counts. A week's days add up to the week's score
-instead (#2086).
+True when a shift has no scenario dial set, no hand-built orders (#2519)
+and is not a day of the week mode, so its own score counts. A week's days
+add up to the week's score instead (#2086).
 
 ## Parameters
 

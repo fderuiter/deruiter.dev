@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { createInitialState, startGame } from "@/lib/garmin-engine";
+import { createInitialState, startGame } from "@/lib/garmin/engine";
 import {
   FIT_EPOCH_OFFSET_SEC,
   TELEMETRY_INTERVAL_MS,
@@ -10,7 +10,7 @@ import {
   exportTelemetryCsv,
   exportTelemetryFit,
   type TelemetrySample,
-} from "@/lib/garmin-telemetry";
+} from "@/lib/garmin/telemetry";
 
 const running = () => startGame(createInitialState("fenix", 0), "fenix");
 

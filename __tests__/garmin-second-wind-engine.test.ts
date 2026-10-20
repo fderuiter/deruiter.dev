@@ -11,17 +11,17 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   PX_PER_METER,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
-import { makeFoe, type Foe } from "@/lib/garmin-foes";
-import { MEDAL_SCORE, MEDALS_PER_STAGE, medalId } from "@/lib/garmin-medals";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
+import { makeFoe, type Foe } from "@/lib/garmin/foes";
+import { MEDAL_SCORE, MEDALS_PER_STAGE, medalId } from "@/lib/garmin/medals";
 import {
   HILL_WAVELENGTH,
   SECOND_WIND_EVENTS,
@@ -29,9 +29,9 @@ import {
   hillSpeedScale,
   startSecondWind,
   type SecondWind,
-} from "@/lib/garmin-second-wind";
-import { DAMAGE_GRACE_MS, START_LIVES } from "@/lib/garmin-powerups";
-import { SYNC_BLOCK_SCORE, KUDOS_SCORE } from "@/lib/garmin-engine";
+} from "@/lib/garmin/second-wind";
+import { DAMAGE_GRACE_MS, START_LIVES } from "@/lib/garmin/powerups";
+import { SYNC_BLOCK_SCORE, KUDOS_SCORE } from "@/lib/garmin/engine";
 
 // The Second Wind in the engine (#2026): a wind Sync Block starts an event,
 // each event's rule changes the run while it lasts, its goal pays its medal,

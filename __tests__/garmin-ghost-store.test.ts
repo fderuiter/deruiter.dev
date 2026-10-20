@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { MockStorage } from "../vitest.setup";
 import { safeClear } from "@/lib/safe-storage";
 import * as safeStorage from "@/lib/safe-storage";
-import { raceSetup, type RaceSetup } from "@/lib/garmin-race";
+import { raceSetup, type RaceSetup } from "@/lib/garmin/race";
 import {
   GHOST_FLAG,
   GHOST_SAMPLE_MS,
   type GhostTrack,
-} from "@/lib/garmin-ghost";
+} from "@/lib/garmin/ghost";
 import {
   GHOST_ON_KEY,
   GHOST_STORE_KEY,
@@ -17,7 +17,7 @@ import {
   readGhostOn,
   readGhostTarget,
   saveGhost,
-} from "@/lib/garmin-ghost-store";
+} from "@/lib/garmin/ghost-store";
 
 // Virtual Partner storage (#2020): one ghost per race, the cap and eviction,
 // corrupt ghosts and the ghost options.

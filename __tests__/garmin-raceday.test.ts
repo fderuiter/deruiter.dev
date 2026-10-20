@@ -12,13 +12,13 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
   stagePoleX,
   stageStartX,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   FOE_SIZE,
   REPMAX_GRACE_MS,
@@ -26,10 +26,10 @@ import {
   makeFoe,
   stompFoe,
   type Foe,
-} from "@/lib/garmin-foes";
-import { PLAN_SEED, type PlanRun } from "@/lib/garmin-plan";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
-import { startSecondWind } from "@/lib/garmin-second-wind";
+} from "@/lib/garmin/foes";
+import { PLAN_SEED, type PlanRun } from "@/lib/garmin/plan";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
+import { startSecondWind } from "@/lib/garmin/second-wind";
 import {
   BRICK_VX,
   WALL_CHARGE_END_X,
@@ -45,7 +45,7 @@ import {
   stepWall,
   wallBannerText,
   wallPhase,
-} from "@/lib/garmin-raceday";
+} from "@/lib/garmin/raceday";
 
 // Race Day and The Wall (#1994): workouts on one stage in the engine, the
 // steady race pace, The Wall's three-hit pattern, and the finish it holds

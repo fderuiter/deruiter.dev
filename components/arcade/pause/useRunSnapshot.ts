@@ -49,7 +49,7 @@ export interface RunSnapshotControls {
 
 type SnapshotSession = Pick<
   ArcadeSession<unknown, unknown>,
-  "snapshot" | "restore" | "tuning"
+  "snapshot" | "restore" | "tuning" | "rng" | "clock"
 >;
 
 /**
@@ -59,6 +59,10 @@ type SnapshotSession = Pick<
  * `beforeunload`). On mount a save from an earlier visit is offered through
  * `saved`; one that fails to parse, or carries another schema version, is
  * discarded with one notice and never throws into a view.
+ *
+ * A session with a seeded `rng` or a `clock` also saves their `rngState` and
+ * `step`, and Resume puts them back after `restore`, so the restored run draws
+ * the same numbers (#2544).
  *
  * Call it in the game's session holder, under the cabinet, with a session
  * that offers `snapshot` and `restore`. Without them this saves nothing.
@@ -107,6 +111,8 @@ export function useRunSnapshot<State>(
       view,
       tuning: current.tuning ?? {},
       state,
+      rngState: current.rng?.getState(),
+      step: current.clock?.getStep(),
     });
   }, [controller, format.schema]);
 
@@ -133,7 +139,12 @@ export function useRunSnapshot<State>(
     pendingRef.current = null;
     setPending(null);
     try {
-      sessionRef.current.restore?.(run.state);
+      const current = sessionRef.current;
+      current.restore?.(run.state);
+      // The stream and step continue from the save (#2544), so the rest of
+      // the run is the run that was saved, not a re-roll.
+      if (run.rngState !== undefined) current.rng?.setState(run.rngState);
+      if (run.step !== undefined) current.clock?.setStep(run.step);
     } catch {
       // A restore that throws leaves the fresh run in place.
       clear();

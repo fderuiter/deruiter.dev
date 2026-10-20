@@ -73,6 +73,36 @@ module.exports = {
       },
     },
     {
+      name: "arcade-views-stay-apart",
+      comment:
+        "A game's desktop, tablet and phone views never import each other; shared presentation goes in the game's parts/ (ADR 0062).",
+      severity: "error",
+      from: {
+        path: "^components/([^/]+)/views/(Desktop|Tablet|Phone)View\\.tsx$",
+      },
+      to: { path: "^components/$1/views/(Desktop|Tablet|Phone)View\\.tsx$" },
+    },
+    {
+      name: "arcade-session-reads-no-device",
+      comment:
+        "A game session never reads the viewport, pointer or form factor; choosing the view is the only device branch (ADR 0062).",
+      severity: "error",
+      from: {
+        path: "^(components|lib)/.*/(use[A-Z][A-Za-z]*Session|session)\\.tsx?$",
+      },
+      to: {
+        path: "^(components/arcade/mobile/(index|immersive|input-modality|CabinetTouchContext|useFormFactor)\\.tsx?|hooks/useMediaQuery\\.tsx?)$",
+      },
+    },
+    {
+      name: "arcade-parts-import-no-view",
+      comment:
+        "A game's parts/ are shared by all three views, so they never import a view (ADR 0062).",
+      severity: "error",
+      from: { path: "^components/([^/]+)/parts/" },
+      to: { path: "^components/$1/views/" },
+    },
+    {
       name: "no-circular",
       comment: "Zero circular dependency cycles allowed across the codebase.",
       severity: "error",

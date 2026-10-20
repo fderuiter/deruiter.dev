@@ -424,11 +424,19 @@ export const LaserLoon: React.FC = () => {
   // The touch cabinet's pause service stops the game when the tab is hidden,
   // the app is backgrounded or the window blurs (#2081, #2357). A run in
   // progress pauses and a held Fire lets go; resuming is the player's choice.
-  // With no run to pause, the cabinet is released at once.
+  // With no run to pause, the cabinet is released at once. The cabinet's
+  // own user pause (phone or browser Back, #2545) pauses a run in progress
+  // too; with no run it is left to the cabinet, which exits on the next Back.
   const pauseService = useCabinetPauseController();
   useEffect(
     () =>
       pauseService.onPause((reason) => {
+        if (reason === "user") {
+          if (gameState !== "playing") return;
+          isFiringRef.current = false;
+          setIsPaused(true);
+          return;
+        }
         if (!AUTOMATIC_REASONS.has(reason)) return;
         isFiringRef.current = false;
         if (gameState === "playing") setIsPaused(true);

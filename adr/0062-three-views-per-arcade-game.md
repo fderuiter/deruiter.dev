@@ -232,6 +232,39 @@ and routes WebGL context loss through `lib/webgl/context-manager.ts`. The
 phone view hides the Fullscreen control on iPhone, which has no element
 fullscreen; the installed app already runs standalone.
 
+### Phone navigation gestures
+
+Amended by [#2545](https://github.com/fderuiter/deruiter.dev/issues/2545).
+
+- **One history entry per launch.** Launch pushes one entry with the same
+  URL (`{ arcadeCabinet: slug }`, merged into the router's own state), so
+  Android Back, a back gesture or the browser's Back fires `popstate` rather
+  than leaving the page. Back walks the Escape ladder: it closes the top
+  sheet, then pauses, then, pressed again while paused, exits. Each step that
+  leaves the cabinet open pushes the entry again. Exit from the cabinet's own
+  controls pops the entry, so the player's Back history is what it was before
+  Launch. No entry exists before Launch, and an entry a reload left behind is
+  stripped on the next mount so it never traps Back. A cabinet without views
+  has no pause overlay to read, so its first Back pauses the game through
+  `onAutoPause` and the pause service, shows "Press Back again to exit", and
+  the second Back exits unless the player touched the game in between. This
+  holds on desktop too: browser Back pauses first. Focus returns to Launch on
+  exit.
+- **Edge keep-out.** In landscape, interactive drag origins such as a dock's
+  stick sit at least 24 px (`EDGE_KEEP_OUT_PX` in
+  `components/arcade/mobile`) in from the left and right edges, inside the
+  safe area, so a drag is not taken as a back swipe. The dock presets
+  ([#2359](https://github.com/fderuiter/deruiter.dev/issues/2359)) and the
+  harness's thumb-zone check
+  ([#2365](https://github.com/fderuiter/deruiter.dev/issues/2365)) use it.
+- **No pull-to-refresh.** While launched, the immersive cabinet keeps the
+  document from scrolling and from overscrolling, and a stage that takes
+  drags (the `fit` layout) sets `touch-action: none`.
+- **What the page cannot stop.** The iOS home-indicator swipe, and an iOS back
+  swipe that starts inside the system's own edge zone, leave the page without
+  a `popstate`. Both pause the run and save it through `visibilitychange` and
+  `pagehide`, and the next visit offers Resume.
+
 ### Rollout
 
 1. The shared foundation (epic #2351): this ADR, the game registry, the form

@@ -303,6 +303,22 @@ describe("CI run policy (#1773)", () => {
       ).toBe("Retro Labyrinth");
     });
 
+    it("ignores documentation, including the generated reference", () => {
+      expect(
+        arcadeDeviceGrep([
+          "docs/reference/api/lib/patty-drive-thru/presets/variables/SCENARIO_LIMITS.md",
+          "docs/reference/api/lib/study-director/index.md",
+          "docs/how-to/play-retro-labyrinth.md",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "docs/reference/api/lib/protocol-drift/index.md",
+          "components/protocol-drift/ProtocolDriftGame.tsx",
+        ])
+      ).toBe("Protocol Drift");
+    });
+
     it("runs nothing for a change outside the arcade", () => {
       expect(arcadeDeviceGrep(["components/Hero.tsx", "lib/seo.ts"])).toBe("");
     });

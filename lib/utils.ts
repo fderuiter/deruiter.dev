@@ -102,7 +102,12 @@ export interface GenerateIdOptions {
   timestamp?: boolean;
 }
 
-const ID_RANDOM_LENGTH = 9;
+/**
+ * 12 hex characters, 48 bits. At 9 (36 bits) 10,000 IDs collided about once
+ * in 1,400 batches (#2568); at 48 bits the same batch collides about once in
+ * 5.6 million.
+ */
+const ID_RANDOM_LENGTH = 12;
 
 function randomIdPart(): string {
   if (typeof crypto !== "undefined") {
@@ -111,7 +116,9 @@ function randomIdPart(): string {
         return crypto.randomUUID().replace(/-/g, "").slice(0, ID_RANDOM_LENGTH);
       }
       if (typeof crypto.getRandomValues === "function") {
-        const bytes = crypto.getRandomValues(new Uint8Array(5));
+        const bytes = crypto.getRandomValues(
+          new Uint8Array(Math.ceil(ID_RANDOM_LENGTH / 2))
+        );
         return Array.from(bytes, (b) => b.toString(16).padStart(2, "0"))
           .join("")
           .slice(0, ID_RANDOM_LENGTH);
@@ -131,7 +138,7 @@ function randomIdPart(): string {
  * Standardized random identifier generator for client-side and server-side
  * runtime identifiers (log entries, queue items, storage keys, message IDs).
  *
- * The random part is 9 hex characters drawn from Web Crypto when available.
+ * The random part is 12 hex characters drawn from Web Crypto when available.
  * A prefix is joined with `-`, unless it already ends in `-` or `_`, in which
  * case that delimiter is kept and reused before the timestamp's random part.
  *
@@ -140,7 +147,7 @@ function randomIdPart(): string {
  *
  * @param prefix Optional namespace, e.g. `"event"` or `"sim_msg_"`.
  * @param options Optional formatting, see {@link GenerateIdOptions}.
- * @returns An identifier such as `event-1759140000000-3f9a1c2b7`.
+ * @returns An identifier such as `event-1759140000000-3f9a1c2b7d04`.
  */
 export function generateId(
   prefix?: string,

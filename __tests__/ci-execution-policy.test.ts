@@ -149,9 +149,10 @@ describe("CI Execution Policy", () => {
   describe("device-gate", () => {
     const block = jobBlock("device-gate");
 
-    it("exists, needs only the run policy and the shared build, and gates on pull_request", () => {
+    it("exists, needs the run policy, the static checks and the shared build, and gates on pull_request", () => {
       expect(block).not.toBe("");
-      expect(needsList(block)).toEqual(["changes", "build"]);
+      // #2542: static-gate is a direct need now that build runs beside it.
+      expect(needsList(block)).toEqual(["changes", "static-gate", "build"]);
       expect(field(block, "if")).toBe(BROWSER_GATE_IF);
     });
 
@@ -173,7 +174,7 @@ describe("CI Execution Policy", () => {
 
     it("still gates on pull_request only, after the shared build", () => {
       expect(field(block, "if")).toBe(BROWSER_GATE_IF);
-      expect(needsList(block)).toEqual(["changes", "build"]);
+      expect(needsList(block)).toEqual(["changes", "static-gate", "build"]);
     });
 
     it("still runs the full e2e suite against chromium", () => {
@@ -286,6 +287,15 @@ describe("CI Execution Policy", () => {
         "npm run test:mutation -- --incremental --force"
       );
       expect(weekly).toMatch(/timeout-minutes: \d+/);
+    });
+
+    it("mutates the game engines weekly only, never in the PR gate (#2529)", () => {
+      const weekly = fs.readFileSync(
+        path.join(process.cwd(), ".github/workflows/mutation-weekly.yml"),
+        "utf8"
+      );
+      expect(weekly).toContain("npm run test:mutation -- --engines");
+      expect(block).not.toContain("--engines");
     });
   });
 

@@ -7,7 +7,11 @@ import {
   BENCHMARK_EVIDENCE_CHECK_ID,
   withoutBenchmarkEvidenceCheck,
 } from "../scripts/dx";
-import { buildStrykerArgs } from "../scripts/run-mutation-tests";
+import {
+  buildStrykerArgs,
+  fileBreakFailures,
+  fileScores,
+} from "../scripts/run-mutation-tests";
 import type { DiagnosticSummary } from "../lib/dx/doctor";
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -102,6 +106,65 @@ describe("CI support scripts (#1767)", () => {
         /Unknown mutation gate option/
       );
       expect(() => buildStrykerArgs(["--mutate", "lib/x.ts"])).toThrow();
+    });
+
+    it("runs the weekly engine scope from its own config (#2529)", () => {
+      expect(buildStrykerArgs(["--engines"])).toEqual([
+        "run",
+        "stryker.engines.config.mjs",
+      ]);
+      expect(buildStrykerArgs(["--engines", "--incremental"])).toEqual([
+        "run",
+        "stryker.engines.config.mjs",
+        "--incremental",
+      ]);
+      expect(buildStrykerArgs(["--force", "--engines"])).toEqual([
+        "run",
+        "stryker.engines.config.mjs",
+      ]);
+    });
+  });
+
+  describe("per-file mutation breaks (#2529)", () => {
+    const mutants = (statuses: string[]) => ({
+      mutants: statuses.map((status) => ({ status })),
+    });
+    const report = {
+      files: {
+        "lib/a.ts": mutants(["Killed", "Timeout", "Survived", "NoCoverage"]),
+        "lib/b.ts": mutants(["Killed", "CompileError", "Ignored"]),
+        "lib/c.ts": mutants(["RuntimeError"]),
+      },
+    };
+
+    it("scores detected over valid mutants, as Stryker does", () => {
+      expect(fileScores(report)).toEqual({
+        "lib/a.ts": 50,
+        "lib/b.ts": 100,
+        "lib/c.ts": 100,
+      });
+    });
+
+    it("fails a file below its break or missing from the report", () => {
+      const scores = fileScores(report);
+      expect(fileBreakFailures(scores, { "lib/a.ts": 50 })).toEqual([]);
+      expect(fileBreakFailures(scores, { "lib/a.ts": 51 })).toEqual([
+        "lib/a.ts: 50.00% is below its break of 51%",
+      ]);
+      expect(fileBreakFailures(scores, { "lib/z.ts": 0 })).toEqual([
+        "lib/z.ts: not in the report",
+      ]);
+    });
+
+    it("never lets an engine floor sit at zero once measured", async () => {
+      const { fileBreaks } = (await import(
+        path.join(process.cwd(), "stryker.engines.config.mjs")
+      )) as { fileBreaks: Record<string, number> };
+      expect(Object.keys(fileBreaks).length).toBeGreaterThan(0);
+      for (const [file, floor] of Object.entries(fileBreaks)) {
+        expect(fs.existsSync(path.join(process.cwd(), file)), file).toBe(true);
+        expect(floor, file).toBeGreaterThan(0);
+      }
     });
   });
 

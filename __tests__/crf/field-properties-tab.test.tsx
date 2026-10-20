@@ -137,6 +137,16 @@ describe("FieldPropertiesTab variable name", () => {
     expect(screen.queryByText(/Renamed everywhere/)).toBeNull();
   });
 
+  // Regression for #2577: the confirmation timer outlived the component.
+  it("cancels the pending confirmation timer when unmounted", () => {
+    vi.useFakeTimers();
+    const { unmount } = setup({ field: sysbp, onRenameEverywhere: vi.fn() });
+    fireEvent.click(screen.getByRole("button", { name: /Rename Everywhere/ }));
+    expect(vi.getTimerCount()).toBe(1);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it("resets the draft when a different field is selected", () => {
     const { rerender } = setup({ field: sysbp });
     fireEvent.change(variableInput(), { target: { value: "DRAFT" } });
@@ -906,6 +916,43 @@ describe("FieldPropertiesTab bulk paste", () => {
     expect(screen.queryByPlaceholderText(/Paste options here/)).toBeNull();
     openBulk();
     expect(bulkTextarea()).toHaveProperty("value", "");
+  });
+
+  // Regression for #2577: codes were cut to 16 characters after the trailing
+  // underscore was stripped, and lines that cleaned up alike shared a code.
+  it("trims a truncated code's trailing underscore and keeps codes unique", () => {
+    const { onUpdateField } = setup({ field: customRadio });
+    openBulk();
+    fireEvent.change(bulkTextarea(), {
+      target: {
+        value: [
+          "Abcdefghijklmno pq",
+          "Grade 3+",
+          "Grade 3-",
+          "Grade 3",
+          "Abcdefghijklmnop",
+          "Abcdefghijklmnop!",
+          "Opt 3",
+          "???",
+        ].join("\n"),
+      },
+    });
+    fireEvent.click(applyButton());
+    const options = onUpdateField.mock.calls[0]?.[0].customOptions ?? [];
+    expect(options.map((o) => o.code)).toEqual([
+      "ABCDEFGHIJKLMNO",
+      "GRADE_3",
+      "GRADE_3_2",
+      "GRADE_3_3",
+      "ABCDEFGHIJKLMNOP",
+      "ABCDEFGHIJKLMN_2",
+      "OPT_3",
+      "OPT_8",
+    ]);
+    for (const opt of options) {
+      expect(opt.code.length).toBeLessThanOrEqual(16);
+      expect(opt.code).not.toMatch(/^_|_$/);
+    }
   });
 
   it("ignores pasted text made only of separators", () => {

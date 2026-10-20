@@ -217,6 +217,20 @@ describe("useGesture (#2360)", () => {
       expect(onClick).not.toHaveBeenCalled();
     });
 
+    it("lets the next tap's click through when no click followed it", () => {
+      const onClick = vi.fn();
+      const el = mount({ onLongPress: vi.fn() });
+      el.addEventListener("click", onClick);
+      down(el);
+      vi.advanceTimersByTime(450);
+      up(el);
+      vi.advanceTimersByTime(100);
+      down(el);
+      up(el);
+      fireEvent.click(el);
+      expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
     it("holds back the touch context menu but not a right-click's", () => {
       const el = mount({ onLongPress: vi.fn() });
       down(el);

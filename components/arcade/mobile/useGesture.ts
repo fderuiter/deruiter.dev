@@ -92,6 +92,9 @@ export function useGesture(
     let lastPointerType = "";
 
     const onDown = (event: PointerEvent) => {
+      // A new press starts a new gesture: a click after it is its own, even
+      // when no click ever followed the last long-press or pan.
+      swallowUntil = 0;
       lastPointerType = event.pointerType;
       if (!recognizer.down(sample(event))) return;
       try {

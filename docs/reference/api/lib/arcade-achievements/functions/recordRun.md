@@ -38,4 +38,4 @@ The progress after the run and the trophies it unlocked.
 
 ### progress
 
-> **progress**: [`ArcadeProgress`](../interfaces/ArcadeProgress.md)
+> **progress**: [`ArcadeProgress`](../../arcade/progress/core/interfaces/ArcadeProgress.md)

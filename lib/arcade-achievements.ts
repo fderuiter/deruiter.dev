@@ -1,51 +1,25 @@
 /**
  * Arcade Achievement Registry & High Score System
  *
- * Provides event-driven, client-side progress tracking, trophy definitions,
- * legacy storage key auto-migration, and SafeStorageAdapter persistence
- * for all Arcade mini-games.
+ * Trophy definitions and the score and milestone API every arcade game
+ * reports to. Bests and trophies live in the `arcade.core` progress slice
+ * (`lib/arcade/progress`, #2548), which keeps the bytes of
+ * `arcade_unified_progress_v1`.
  */
 
-import {
-  safeGetItem,
-  safeSetItem,
-  safeGetRawItem,
-  safeSetRawItem,
-} from "@/lib/safe-storage";
 import { emitAppEvent } from "@/lib/event-bus";
-import type { FormFactor } from "@/lib/arcade";
+import {
+  ARCADE_UNIFIED_PROGRESS_KEY,
+  arcadeCoreSlice,
+  parseScoreValue,
+  read,
+  write,
+  type ArcadeProgress,
+  type FormFactor,
+} from "@/lib/arcade";
 
-/** Unified storage key for arcade progress envelope. */
-export const ARCADE_UNIFIED_PROGRESS_KEY = "arcade_unified_progress_v1";
-
-/** Individual game storage key map. */
-export const ARCADE_STORAGE_KEYS: Record<string, string> = {
-  "working-with-duck": "working_with_duck_high_score",
-  "laser-loon": "laser_loon_high_score",
-  "garmin-watch": "garmin_simulator_high_score",
-  "clinical-chaos": "clinical_chaos_highscore",
-  "trial-and-error": "trial_and_error_high_score",
-  "study-director": "study_director_high_score",
-  "patty-drive-thru": "patty_drive_thru_high_score",
-  "for-better-or-bulk": "for_better_or_bulk_high_score",
-  "protocol-drift": "protocol_drift_high_score",
-  "retro-labyrinth": "retro_labyrinth_highscore",
-};
-
-// These keys contain game-owned state, not score mirrors. Read existing values
-// during migration, but never replace a save or unlock flag with a number.
-const ARCADE_READ_ONLY_PROGRESS_KEYS: Record<string, string> = {
-  "quasi-puzzler": "quasi_perfect_puzzler_progress_v1",
-  "meme-vault": "unlocked_meme_vault",
-};
-
-/** Legacy storage key migration mapping. */
-export const ARCADE_LEGACY_KEY_MAP: Record<string, string> = {
-  working_duck_high_score: "working_with_duck_high_score",
-  garmin_runner_high_score: "garmin_simulator_high_score",
-  clinical_chaos_high_score: "clinical_chaos_highscore",
-  quasi_puzzle_high_score: "quasi_perfect_puzzler_progress_v1",
-};
+export { ARCADE_UNIFIED_PROGRESS_KEY, parseScoreValue };
+export type { ArcadeProgress };
 
 /** Trophy definition structure. */
 export interface ArcadeTrophy {
@@ -635,16 +609,6 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
   },
 ];
 
-/** Persistent Arcade Progress Schema. */
-export interface ArcadeProgress {
-  /** Map of gameId -> best numeric score recorded */
-  highScores: Record<string, number>;
-  /** Map of trophyId -> timestamp unlocked */
-  unlockedTrophies: Record<string, number>;
-  /** Timestamp of last update */
-  updatedAt: number;
-}
-
 /** Returns default initial arcade progress object. */
 export function getDefaultArcadeProgress(): ArcadeProgress {
   return {
@@ -654,171 +618,32 @@ export function getDefaultArcadeProgress(): ArcadeProgress {
   };
 }
 
-/**
- * Parses a raw storage value into a clean number.
- */
-export function parseScoreValue(
-  raw: string | null | number | undefined
-): number {
-  if (typeof raw === "number") return isNaN(raw) ? 0 : raw;
-  if (!raw) return 0;
-
-  try {
-    const trimmed = raw.trim();
-    // Handles raw numeric string e.g. "1250"
-    if (/^\d+$/.test(trimmed)) {
-      return parseInt(trimmed, 10);
-    }
-    // Handles JSON envelope or complex progress object
-    const parsed = JSON.parse(trimmed);
-    if (typeof parsed === "number") return parsed;
-    if (parsed && typeof parsed.value === "number") return parsed.value;
-    if (parsed && typeof parsed.score === "number") return parsed.score;
-    if (parsed && parsed.completedLevels) {
-      // Quasi-puzzler format: only honest proofs score. A level closed with
-      // `sorry` is saved with usedSorry and zero stars (#1939).
-      const levels: unknown[] = Object.values(parsed.completedLevels);
-      const proven = levels.filter((lvl) => {
-        if (!lvl) return false;
-        if (typeof lvl !== "object") return true;
-        const score = lvl as { usedSorry?: unknown; stars?: unknown };
-        return score.usedSorry !== true && score.stars !== 0;
-      });
-      return proven.length * 100;
-    }
-    if (Array.isArray(parsed)) {
-      // Meme Vault unlocked array format
-      return parsed.length * 100;
-    }
-  } catch {
-    // Return 0 if non-parsable
-  }
-
-  return 0;
+function copyProgress(progress: ArcadeProgress): ArcadeProgress {
+  return {
+    ...progress,
+    highScores: { ...progress.highScores },
+    unlockedTrophies: { ...progress.unlockedTrophies },
+  };
 }
 
 /**
- * Automatically migrates legacy storage keys to standardized keys.
- */
-export function migrateLegacyArcadeScores(progress: ArcadeProgress): boolean {
-  if (typeof window === "undefined") return false;
-  let migrated = false;
-
-  // 1. Check direct legacy keys mapped in ARCADE_LEGACY_KEY_MAP
-  for (const [legacyKey, standardKey] of Object.entries(
-    ARCADE_LEGACY_KEY_MAP
-  )) {
-    const legacyRaw = safeGetRawItem(legacyKey);
-    if (legacyRaw) {
-      const legacyScore = parseScoreValue(legacyRaw);
-      const gameId = Object.keys({
-        ...ARCADE_STORAGE_KEYS,
-        ...ARCADE_READ_ONLY_PROGRESS_KEYS,
-      }).find(
-        (id) =>
-          (ARCADE_STORAGE_KEYS[id] || ARCADE_READ_ONLY_PROGRESS_KEYS[id]) ===
-          standardKey
-      );
-
-      if (gameId && legacyScore > (progress.highScores[gameId] || 0)) {
-        progress.highScores[gameId] = legacyScore;
-        migrated = true;
-      }
-
-      // Sync to standard storage key as raw string
-      if (
-        !Object.values(ARCADE_READ_ONLY_PROGRESS_KEYS).includes(standardKey)
-      ) {
-        const currentStandardRaw = safeGetRawItem(standardKey);
-        if (
-          !currentStandardRaw ||
-          parseScoreValue(currentStandardRaw) < legacyScore
-        ) {
-          safeSetRawItem(standardKey, legacyScore.toString());
-        }
-      }
-    }
-  }
-
-  // 2. Scan all standard storage keys to populate missing values into progress
-  for (const [gameId, storageKey] of [
-    ...Object.entries(ARCADE_STORAGE_KEYS),
-    ...Object.entries(ARCADE_READ_ONLY_PROGRESS_KEYS),
-  ]) {
-    const rawVal = safeGetRawItem(storageKey);
-    if (rawVal) {
-      const val = parseScoreValue(rawVal);
-      if (val > (progress.highScores[gameId] || 0)) {
-        progress.highScores[gameId] = val;
-        migrated = true;
-      }
-    }
-  }
-
-  return migrated;
-}
-
-let cachedProgress: ArcadeProgress | null = null;
-let cachedProgressHash: string = "";
-
-function getStorageHash(): string {
-  if (typeof window === "undefined") return "";
-  const unifiedRaw = safeGetRawItem(ARCADE_UNIFIED_PROGRESS_KEY) || "";
-  let individualScores = "";
-  for (const key of [
-    ...Object.values(ARCADE_STORAGE_KEYS),
-    ...Object.values(ARCADE_READ_ONLY_PROGRESS_KEYS),
-  ]) {
-    individualScores += `${key}:${safeGetRawItem(key) || ""};`;
-  }
-  return `${unifiedRaw}|${individualScores}`;
-}
-
-/**
- * Reads the current Arcade progress from SafeStorage.
+ * Reads the current Arcade progress from the `arcade.core` slice. The
+ * first read after an upgrade folds the old per-game score keys in once.
+ * Returns a copy the caller may change and pass to saveArcadeProgress.
  */
 export function getArcadeProgress(): ArcadeProgress {
-  const fallback = getDefaultArcadeProgress();
-  if (typeof window === "undefined") return fallback;
-
-  const currentHash = getStorageHash();
-
-  if (cachedProgress && cachedProgressHash === currentHash) {
-    return cachedProgress;
-  }
-
-  let progress = safeGetItem<ArcadeProgress>(
-    ARCADE_UNIFIED_PROGRESS_KEY,
-    fallback
-  );
-
-  if (!progress || typeof progress !== "object" || !progress.highScores) {
-    progress = fallback;
-  }
-
-  // Auto-migrate legacy keys if necessary
-  const didMigrate = migrateLegacyArcadeScores(progress);
-  if (didMigrate) {
-    progress.updatedAt = Date.now();
-    safeSetItem(ARCADE_UNIFIED_PROGRESS_KEY, progress);
-  }
-
-  cachedProgress = progress;
-  cachedProgressHash = getStorageHash();
-
-  return progress;
+  if (typeof window === "undefined") return getDefaultArcadeProgress();
+  return copyProgress(read(arcadeCoreSlice));
 }
 
 /**
- * Saves Arcade progress to SafeStorage using envelope format.
+ * Saves Arcade progress to the `arcade.core` slice, in the same envelope
+ * format as before.
  */
 export function saveArcadeProgress(progress: ArcadeProgress): boolean {
   if (typeof window === "undefined") return false;
   progress.updatedAt = Date.now();
-  const ok = safeSetItem(ARCADE_UNIFIED_PROGRESS_KEY, progress);
-  cachedProgress = progress;
-  cachedProgressHash = getStorageHash();
-  return ok;
+  return write(arcadeCoreSlice, progress);
 }
 
 /** Game trophies (not cross-game ones) Hall of Famer counts toward. */
@@ -945,14 +770,9 @@ export function recordArcadeScore(
   const currentBest = progress.highScores[gameId] || 0;
   const isNewBest = score > currentBest;
 
+  // One home for a high score: no per-game mirror key is written (#2548).
   if (isNewBest) {
     progress.highScores[gameId] = score;
-
-    // Sync individual game storage key
-    const storageKey = ARCADE_STORAGE_KEYS[gameId];
-    if (storageKey) {
-      safeSetRawItem(storageKey, score.toString());
-    }
   }
 
   // Check trophy unlock conditions

@@ -16,7 +16,7 @@ Site A tracer bullet from #1091). The engine starts in BRIEF.
 
 ### options?
 
-`number` \| [`ProtocolDriftEngineOptions`](../interfaces/ProtocolDriftEngineOptions.md)
+`number` \| [`ProtocolDriftEngineOptions`](../interfaces/ProtocolDriftEngineOptions.md) = `{}`
 
 ## Returns
 

@@ -8,7 +8,7 @@ import { fromAny } from "@total-typescript/shoehorn";
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { MOVE_TOASTS } from "@/lib/garmin-moves";
+import { MOVE_TOASTS } from "@/lib/garmin/moves";
 import {
   allocateVariable,
   createInitialState,
@@ -17,8 +17,8 @@ import {
   GROUND_Y,
   PLAYER_X,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
 import { safeRemoveItem } from "@/lib/safe-storage";
 
 const mockAnnounce = vi.fn();
@@ -35,8 +35,8 @@ vi.mock("@/components/providers/AudioProvider", () => ({
 vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({ recordEvent: vi.fn().mockResolvedValue(true) }),
 }));
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return { ...actual, pressSlam: vi.fn(actual.pressSlam) };
 });
 

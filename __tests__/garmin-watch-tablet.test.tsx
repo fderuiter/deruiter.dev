@@ -28,9 +28,9 @@ import {
   pressJump,
   releaseJump,
   setRunInput,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
-import { PLAN_RUN_MODE, RACE_MODE_KEY } from "@/lib/garmin-race-store";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
+import { PLAN_RUN_MODE, RACE_MODE_KEY } from "@/lib/garmin/race-store";
 import { safeClear, safeSetRawItem } from "@/lib/safe-storage";
 
 const frame = vi.hoisted(() => ({
@@ -60,8 +60,8 @@ vi.mock("@/hooks/useAnimationFrame", async (importOriginal) => {
     },
   };
 });
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return {
     ...actual,
     // Runs start on a clear lane with GPS locked.

@@ -3,7 +3,7 @@
 import React, { useEffect, useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
-import { GEAR_ITEM_EFFECTS, bagCheck, restDayTargets } from "@/lib/garmin-bag";
+import { GEAR_ITEM_EFFECTS, bagCheck, restDayTargets } from "@/lib/garmin/bag";
 import {
   BAG_SIZE,
   GEAR_ITEMS,
@@ -11,7 +11,7 @@ import {
   planNode,
   type GearItem,
   type PlanSave,
-} from "@/lib/garmin-plan";
+} from "@/lib/garmin/plan";
 
 interface GearBagDialogProps {
   save: PlanSave;

@@ -42,8 +42,8 @@ vi.mock("@/lib/working-with-duck-engine", async (importOriginal) => {
   return { ...actual, stepDuckGame: vi.fn(actual.stepDuckGame) };
 });
 
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return {
     ...actual,
     updateGameSimulation: vi.fn(actual.updateGameSimulation),
@@ -178,7 +178,7 @@ import {
   createInitialState,
   startGame,
   updateGameSimulation,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import { tickShiftClocks } from "@/lib/clinical-trial-chaos";
 import { ENEMY_STEP_INTERVAL_MS, updateEnemyAI } from "@/lib/dungeon";
 

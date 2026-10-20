@@ -12,8 +12,8 @@ import {
   updateGameSimulation,
   type FinisherCard,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE, PX_PER_METER, stagePoleX } from "@/lib/garmin-course";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE, PX_PER_METER, stagePoleX } from "@/lib/garmin/course";
 import {
   CARD_CYCLE_MS,
   FINISHER_CARDS,
@@ -27,16 +27,16 @@ import {
   isPayoutBanner,
   payoutBanner,
   stepFinisherCard,
-} from "@/lib/garmin-finisher";
+} from "@/lib/garmin/finisher";
 import {
   PLAN_SEED,
   clearWorkout,
   newPlan,
   type PlanRun,
-} from "@/lib/garmin-plan";
-import { loadPlan, normalizePlan, savePlan } from "@/lib/garmin-plan-store";
-import { MAX_LIVES } from "@/lib/garmin-powerups";
-import { makeFoe } from "@/lib/garmin-foes";
+} from "@/lib/garmin/plan";
+import { loadPlan, normalizePlan, savePlan } from "@/lib/garmin/plan-store";
+import { MAX_LIVES } from "@/lib/garmin/powerups";
+import { makeFoe } from "@/lib/garmin/foes";
 import { safeClear } from "@/lib/safe-storage";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 

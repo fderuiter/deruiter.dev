@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { createCustomTheorem } from "@/lib/proof-custom";
 import * as fc from "fast-check";

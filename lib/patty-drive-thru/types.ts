@@ -17,6 +17,21 @@ export type KdsBand = "green" | "yellow" | "red";
 /** How a shift ended; `playing` until it does. */
 export type ShiftOutcome = "playing" | "completed" | "docked" | "breakdown";
 
+/** One line of a hand-built order on a custom shift (#2519). */
+export interface CustomOrderItem {
+  readonly itemId: MenuItemId;
+  /** The buried request, if any. Left out or null, the item has none. */
+  readonly modifier?: ModifierId | null;
+}
+
+/**
+ * An order a custom shift plays instead of drawing one (#2519). The shift
+ * plays its templates in turn and starts again from the first.
+ */
+export interface CustomOrderTemplate {
+  readonly items: readonly CustomOrderItem[];
+}
+
 /** One line of an order as the customer speaks it through the headset. */
 export interface OrderItem {
   readonly itemId: MenuItemId;
@@ -214,6 +229,13 @@ export interface ShiftConfig extends ShiftScenario {
    * from every dilemma a single shift can.
    */
   readonly dilemmaDeck?: readonly DilemmaId[];
+  /**
+   * The orders a custom shift plays, in turn and looping, in place of the
+   * seeded draw (#2519). At most `MAX_OPEN_ORDERS` templates of 1 to
+   * `MAX_ITEMS_PER_ORDER` items each; left out or empty, orders are drawn as
+   * usual. A shift with them never counts toward the score.
+   */
+  readonly customOrders?: readonly CustomOrderTemplate[];
 }
 
 /** The days of the week mode (#2086), Monday to Friday. */

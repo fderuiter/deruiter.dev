@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow } from "./mobile-harness";
+import { waitForAnimationFrames } from "./helpers/settle";
 
 // ADR 0061, tablet-first: For Better or Bulk on every iPad project (#2123).
 // These run only in the iPad projects in playwright.config.ts.
@@ -146,18 +147,29 @@ async function expectDayFits(page: Page) {
   await assertNoHorizontalOverflow(page);
 }
 
-/** Holds one finger on a point for a while through CDP, then lifts it. */
-async function holdTouch(page: Page, x: number, y: number, ms: number) {
+/**
+ * Holds one finger on a point through CDP while `whileHeld` runs, then lifts
+ * it, even if `whileHeld` throws.
+ */
+async function holdTouch(
+  page: Page,
+  x: number,
+  y: number,
+  whileHeld: () => Promise<void>
+) {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ x, y, id: 1 }],
   });
-  await page.waitForTimeout(ms);
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
+  try {
+    await whileHeld();
+  } finally {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  }
 }
 
 test.describe("For Better or Bulk on a tablet (iPad projects, #2123)", () => {
@@ -232,8 +244,9 @@ test.describe("For Better or Bulk on a tablet (iPad projects, #2123)", () => {
     await startDay(page);
     await page.evaluate(() => window.scrollTo(0, 300));
     await page.mouse.wheel(0, 400);
-    await holdTouch(page, 20, 300, 100);
-    await page.waitForTimeout(300);
+    await holdTouch(page, 20, 300, () => waitForAnimationFrames(page, 6));
+    // Give a scroll the frames it would need to land, then check it didn't.
+    await waitForAnimationFrames(page, 18);
     expect(await page.evaluate(() => window.scrollY)).toBe(0);
   });
 
@@ -262,16 +275,17 @@ test.describe("For Better or Bulk on a tablet (iPad projects, #2123)", () => {
     await expect(prompt).toContainText("Abbi has free hands.");
     const pad = (await page.getByTestId("fbb-stick-abbi").boundingBox())!;
     // A finger near the pad's left rim walks left, toward the LAMP crate.
+    // Keep the finger down until Abbi reaches the crate.
     await expect(async () => {
       await holdTouch(
         page,
         pad.x + pad.width * 0.1,
         pad.y + pad.height / 2,
-        400
-      );
-      await expect(prompt).toContainText(
-        "Use: Take the lantern from the LAMP crate",
-        { timeout: 500 }
+        () =>
+          expect(prompt).toContainText(
+            "Use: Take the lantern from the LAMP crate",
+            { timeout: 5000 }
+          )
       );
     }).toPass({ timeout: 30000 });
     await page.getByTestId("fbb-use-abbi").tap();

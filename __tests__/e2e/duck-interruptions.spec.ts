@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { waitForAnimationFrames } from "./helpers/settle";
 
 // Regression & E2E coverage for DUCK-01 (#602):
 // Suspend gameplay during manual pause and reading interruptions (Scrapbook / Wardrobe).
@@ -75,8 +76,8 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
       await progressMeter.getAttribute("aria-valuenow")
     );
 
-    // Wait 1.5 seconds: progress must remain completely unchanged
-    await page.waitForTimeout(1500);
+    // Let the loop run ~1.5 s of frames: progress must remain completely unchanged
+    await waitForAnimationFrames(page, 90);
     const progressAfterWait = Number(
       await progressMeter.getAttribute("aria-valuenow")
     );
@@ -124,8 +125,8 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
       await progressMeter.getAttribute("aria-valuenow")
     );
 
-    // Wait 1.5 seconds: simulation must be frozen
-    await page.waitForTimeout(1500);
+    // Let the loop run ~1.5 s of frames: simulation must be frozen
+    await waitForAnimationFrames(page, 90);
     const progressAfterWait = Number(
       await progressMeter.getAttribute("aria-valuenow")
     );
@@ -181,7 +182,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
     await expect(pauseOverlay).toBeVisible({ timeout: 5000 });
 
     // Progress must stay frozen
-    await page.waitForTimeout(1500);
+    await waitForAnimationFrames(page, 90);
     const progressAfterDismiss = Number(
       await progressMeter.getAttribute("aria-valuenow")
     );
@@ -226,8 +227,8 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
       await progressMeter.getAttribute("aria-valuenow")
     );
 
-    // Wait 1.5 seconds: simulation must be frozen
-    await page.waitForTimeout(1500);
+    // Let the loop run ~1.5 s of frames: simulation must be frozen
+    await waitForAnimationFrames(page, 90);
     const progressAfterWait = Number(
       await progressMeter.getAttribute("aria-valuenow")
     );
@@ -295,8 +296,8 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
       await progressMeter.getAttribute("aria-valuenow")
     );
 
-    // Wait 1.5 seconds: simulation must remain suspended
-    await page.waitForTimeout(1500);
+    // Let the loop run ~1.5 s of frames: simulation must remain suspended
+    await waitForAnimationFrames(page, 90);
     const progressAfterWait = Number(
       await progressMeter.getAttribute("aria-valuenow")
     );
@@ -339,8 +340,8 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
     const manualDialog = page.locator('[aria-labelledby="manual-title"]');
     await expect(manualDialog).toBeVisible({ timeout: 5000 });
 
-    // Wait 1.5 seconds: progress remains unchanged
-    await page.waitForTimeout(1500);
+    // Let the loop run ~1.5 s of frames: progress remains unchanged
+    await waitForAnimationFrames(page, 90);
     expect(Number(await progressMeter.getAttribute("aria-valuenow"))).toBe(
       pausedProgress
     );
@@ -351,7 +352,7 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // Pause overlay must still be visible and simulation frozen
     await expect(pauseOverlay).toBeVisible({ timeout: 5000 });
-    await page.waitForTimeout(1500);
+    await waitForAnimationFrames(page, 90);
     expect(Number(await progressMeter.getAttribute("aria-valuenow"))).toBe(
       pausedProgress
     );
@@ -393,8 +394,8 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
       await progressMeter.getAttribute("aria-valuenow")
     );
 
-    // Wait 1.5 seconds: simulation must remain suspended
-    await page.waitForTimeout(1500);
+    // Let the loop run ~1.5 s of frames: simulation must remain suspended
+    await waitForAnimationFrames(page, 90);
     const progressAfterWait = Number(
       await progressMeter.getAttribute("aria-valuenow")
     );
@@ -429,11 +430,13 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // 2. Transition viewport down to phone size 375x667
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.waitForTimeout(300);
 
-    // Open on phone size: visible mobile control must capture shortcut
-    await page.keyboard.press("h");
-    await expect(manualDialog).toBeVisible({ timeout: 5000 });
+    // Open on phone size: visible mobile control must capture shortcut. The
+    // layout swap lands after the resize, so retry the press until it does.
+    await expect(async () => {
+      if (!(await manualDialog.isVisible())) await page.keyboard.press("h");
+      await expect(manualDialog).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 10000 });
     await page.keyboard.press("Escape");
     await expect(manualDialog).toBeHidden({ timeout: 5000 });
   });

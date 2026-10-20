@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { DEVICE_PROFILES } from "@/lib/garmin-engine";
+import { DEVICE_PROFILES } from "@/lib/garmin/engine";
 
 // #1319 / #1214: the Garmin field manual described a different game (a SELECT
 // button, sensor widgets, GPS polling, heart-rate fog) and never mentioned

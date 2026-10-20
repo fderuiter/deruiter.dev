@@ -18,7 +18,7 @@ import {
   FLASH_STORAGE_KEY,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
@@ -30,7 +30,7 @@ import {
   stagePoleX,
   stageStartX,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 
 // The platformer layer of Monkey C Mayhem (#1950).
 

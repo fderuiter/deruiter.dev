@@ -18,7 +18,7 @@ Evaluates proof logical completion status based on graph edges and ASTs.
 
 ### theoremId?
 
-[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md)
+[`TheoremDefinition`](../interfaces/TheoremDefinition.md) \| [`TheoremId`](../type-aliases/TheoremId.md) = `"modus-ponens"`
 
 ## Returns
 

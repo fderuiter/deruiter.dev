@@ -37,6 +37,7 @@ import { useProtocolDriftStore } from "./store";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { TouchWireControls } from "./TouchWireControls";
 import { canRewire, resolveTouchWire } from "./touch-wire";
+import { useChipPickContext } from "./chip-pick";
 import {
   WORLD_WIDTH,
   frameAfterAdd,
@@ -408,6 +409,23 @@ function CanvasInner() {
     [addChip, flow]
   );
 
+  // Touch: a chip picked from the toolbox lands where the canvas is tapped,
+  // centred under the finger as a desktop drop is (#2360).
+  const chipPick = useChipPickContext();
+  const pickedChip = touch ? (chipPick?.picked ?? null) : null;
+  const placeChipPick = chipPick?.place;
+  const onPaneClick = useCallback(
+    (event: React.MouseEvent) => {
+      if (!placeChipPick) return;
+      const point = flow.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      placeChipPick({ x: point.x - CHIP_WIDTH / 2, y: point.y - 20 });
+    },
+    [flow, placeChipPick]
+  );
+
   const onDelete = useCallback(
     ({
       nodes: gone,
@@ -468,6 +486,7 @@ function CanvasInner() {
       <ReactFlow<ChipNode, WireEdge>
         nodes={flowNodes}
         onNodeClick={touch ? onNodeClick : undefined}
+        onPaneClick={pickedChip ? onPaneClick : undefined}
         edges={flowEdges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
@@ -507,6 +526,23 @@ function CanvasInner() {
         )}
       </ReactFlow>
       {touch ? <TouchWireControls /> : null}
+      {pickedChip && chipPick ? (
+        <div
+          data-testid="chip-pick-banner"
+          className="absolute inset-x-2 top-2 z-10 flex min-w-0 items-center gap-2 border border-amber-500 bg-[#13151a] px-2 font-mono text-xs text-zinc-100"
+        >
+          <span className="min-w-0 flex-1 break-words">
+            Tap the canvas to place {pickedChip}.
+          </span>
+          <button
+            type="button"
+            onClick={chipPick.cancel}
+            className="min-h-12 min-w-12 px-2 text-amber-400"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

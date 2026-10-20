@@ -3,8 +3,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import { CHIP_SPECS, type ChipKind } from "@/lib/protocol-drift";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
+import { useGesture } from "@/components/arcade/mobile/useGesture";
 import { CHIP_DRAG_TYPE, placeChip } from "./PipelineCanvas";
 import { useProtocolDriftStore } from "./store";
+import { useChipPickContext, type ChipPick } from "./chip-pick";
 
 const TOOLBOX_ORDER: ChipKind[] = [
   "SourceIngest",
@@ -49,6 +51,7 @@ export function Toolbox({
   const touch = useCabinetTouch();
   const navRef = useRef<HTMLElement | null>(null);
   const more = useScrollMore(touch ? navRef : null);
+  const pick = useChipPickContext();
 
   const nav = (
     <nav
@@ -65,6 +68,11 @@ export function Toolbox({
           Chips ({TOOLBOX_ORDER.length})
         </span>
       ) : null}
+      {touch && pick ? (
+        <span className="shrink-0 self-center px-1 text-[10px] text-zinc-300 whitespace-nowrap">
+          Hold a chip to place it
+        </span>
+      ) : null}
       {touch ? null : (
         <button
           type="button"
@@ -75,49 +83,16 @@ export function Toolbox({
           {compact ? "Chips" : "Collapse"}
         </button>
       )}
-      {TOOLBOX_ORDER.map((kind) => {
-        const spec = CHIP_SPECS[kind];
-        return (
-          <button
-            key={kind}
-            type="button"
-            draggable={editable}
-            disabled={!editable}
-            onDragStart={(event) => {
-              event.dataTransfer.setData(CHIP_DRAG_TYPE, kind);
-              event.dataTransfer.effectAllowed = "copy";
-            }}
-            onClick={() => void placeChip(kind, { touch })}
-            aria-label={`Add ${kind} chip`}
-            title={`${kind}: ${spec.summary}`}
-            className={`min-w-0 border border-zinc-800 bg-[#0d0e11] p-1.5 text-left text-[11px] transition-colors hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] ${
-              compact ? "text-center" : ""
-            }`}
-          >
-            {compact ? (
-              <span className={`font-semibold ${LANE_TEXT[spec.lane]}`}>
-                {initials(kind)}
-              </span>
-            ) : (
-              <>
-                <span className="block break-words font-semibold text-zinc-100">
-                  {kind}
-                </span>
-                <span className={`block text-[10px] ${LANE_TEXT[spec.lane]}`}>
-                  {spec.lane === "WALL"
-                    ? "WALL"
-                    : spec.lane === "ANALYSIS"
-                      ? "ADaM"
-                      : "SDTM"}
-                </span>
-                <span className="pd-chip-summary mt-0.5 block break-words text-[10px] leading-snug text-zinc-300">
-                  {spec.summary}
-                </span>
-              </>
-            )}
-          </button>
-        );
-      })}
+      {TOOLBOX_ORDER.map((kind) => (
+        <ToolboxChip
+          key={kind}
+          kind={kind}
+          compact={compact}
+          editable={editable}
+          touch={touch}
+          pick={touch ? pick : null}
+        />
+      ))}
     </nav>
   );
 
@@ -163,6 +138,87 @@ export function Toolbox({
         />
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One toolbox chip. A click, Enter or a tap adds it at a clear spot, and on
+ * desktop it drags onto the canvas. HTML5 drag does nothing on a touch
+ * screen, so on the touch cabinet a long-press picks the chip instead and a
+ * tap on the canvas places it there (#2360); a tap on the picked chip puts it
+ * back, and a tap on another chip picks that one.
+ */
+function ToolboxChip({
+  kind,
+  compact,
+  editable,
+  touch,
+  pick,
+}: {
+  kind: ChipKind;
+  compact: boolean;
+  editable: boolean;
+  touch: boolean;
+  pick: ChipPick | null;
+}) {
+  const ref = useRef<HTMLButtonElement | null>(null);
+  const spec = CHIP_SPECS[kind];
+  const picked = pick?.picked === kind;
+  useGesture(
+    ref,
+    { onLongPress: () => pick?.pick(kind) },
+    { enabled: pick !== null && editable }
+  );
+  const onClick = () => {
+    if (pick?.picked) {
+      pick.toggle(kind);
+      return;
+    }
+    void placeChip(kind, { touch });
+  };
+  return (
+    <button
+      ref={ref}
+      type="button"
+      draggable={editable}
+      disabled={!editable}
+      onDragStart={(event) => {
+        event.dataTransfer.setData(CHIP_DRAG_TYPE, kind);
+        event.dataTransfer.effectAllowed = "copy";
+      }}
+      onClick={onClick}
+      aria-label={`Add ${kind} chip`}
+      aria-pressed={pick ? picked : undefined}
+      data-picked={picked ? "true" : undefined}
+      title={`${kind}: ${spec.summary}`}
+      className={`min-w-0 border bg-[#0d0e11] p-1.5 text-left text-[11px] transition-colors hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98] ${
+        picked ? "border-amber-500 ring-2 ring-amber-500" : "border-zinc-800"
+      }${pick ? " select-none [-webkit-touch-callout:none]" : ""} ${
+        compact ? "text-center" : ""
+      }`}
+    >
+      {compact ? (
+        <span className={`font-semibold ${LANE_TEXT[spec.lane]}`}>
+          {initials(kind)}
+        </span>
+      ) : (
+        <>
+          <span className="block break-words font-semibold text-zinc-100">
+            {kind}
+          </span>
+          <span className={`block text-[10px] ${LANE_TEXT[spec.lane]}`}>
+            {spec.lane === "WALL"
+              ? "WALL"
+              : spec.lane === "ANALYSIS"
+                ? "ADaM"
+                : "SDTM"}
+          </span>
+          <span className="pd-chip-summary mt-0.5 block break-words text-[10px] leading-snug text-zinc-300">
+            {spec.summary}
+          </span>
+        </>
+      )}
+    </button>
   );
 }
 

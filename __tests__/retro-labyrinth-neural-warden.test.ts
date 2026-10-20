@@ -1,3 +1,4 @@
+// @vitest-environment node
 // The Neural Warden fights by its own rules, not as a FaceForge reskin (#2178).
 import { describe, it, expect } from "vitest";
 import {

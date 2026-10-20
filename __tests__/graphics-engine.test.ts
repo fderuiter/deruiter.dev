@@ -1,9 +1,10 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { 
-  resolveFontFamily, 
-  isBrowser, 
-  calculateColumnCount, 
-  calculateColumnWidth, 
+import {
+  resolveFontFamily,
+  isBrowser,
+  calculateColumnCount,
+  calculateColumnWidth,
   distributeItemsGreedily,
   mapDataToCoordinates,
   generateCubicSplinePath,
@@ -11,7 +12,7 @@ import {
   checkBeamContainerCollision,
   calculateCollisionPoint,
   generateExplosionTrajectories,
-  LRUCache
+  LRUCache,
 } from "@/lib/graphics-engine";
 
 describe("Centralized Graphics and Layout Engine", () => {
@@ -31,13 +32,19 @@ describe("Centralized Graphics and Layout Engine", () => {
   describe("B. Masonry Layout Math", () => {
     const config = {
       BREAKPOINTS: { MD: 768, LG: 1024 },
-      COLS: { SM: 1, MD: 2, LG: 3 }
+      COLS: { SM: 1, MD: 2, LG: 3 },
     };
 
     it("calculates correct responsive column counts", () => {
-      expect(calculateColumnCount(1200, config.BREAKPOINTS, config.COLS)).toBe(3);
-      expect(calculateColumnCount(800, config.BREAKPOINTS, config.COLS)).toBe(2);
-      expect(calculateColumnCount(500, config.BREAKPOINTS, config.COLS)).toBe(1);
+      expect(calculateColumnCount(1200, config.BREAKPOINTS, config.COLS)).toBe(
+        3
+      );
+      expect(calculateColumnCount(800, config.BREAKPOINTS, config.COLS)).toBe(
+        2
+      );
+      expect(calculateColumnCount(500, config.BREAKPOINTS, config.COLS)).toBe(
+        1
+      );
     });
 
     it("calculates exact column widths based on gap and container width", () => {
@@ -52,12 +59,12 @@ describe("Centralized Graphics and Layout Engine", () => {
         { id: "1", height: 100 },
         { id: "2", height: 150 },
         { id: "3", height: 80 },
-        { id: "4", height: 120 }
+        { id: "4", height: 120 },
       ];
 
       const { columns, columnHeights } = distributeItemsGreedily(items, 2, 10);
       expect(columns).toHaveLength(2);
-      
+
       // Greedy distribution trace:
       // Item 1 (h=100) -> Col 0 (heights: 100 + 10 = 110, 0)
       // Item 2 (h=150) -> Col 1 (heights: 110, 150 + 10 = 160)
@@ -83,7 +90,14 @@ describe("Centralized Graphics and Layout Engine", () => {
       const height = 50;
       const padding = 5;
 
-      const coordinates = mapDataToCoordinates(data, width, height, padding, 10, 30);
+      const coordinates = mapDataToCoordinates(
+        data,
+        width,
+        height,
+        padding,
+        10,
+        30
+      );
       expect(coordinates).toHaveLength(3);
 
       // x mapping: 0, 50, 100
@@ -99,15 +113,24 @@ describe("Centralized Graphics and Layout Engine", () => {
     });
 
     it("generates correct cubic Bezier spline path strings", () => {
-      const points = [{ x: 0, y: 50 }, { x: 50, y: 100 }];
+      const points = [
+        { x: 0, y: 50 },
+        { x: 50, y: 100 },
+      ];
       const paths = generateCubicSplinePath(points, 200);
 
       expect(paths.pathD).toBe("M 0 50 C 25 50, 25 100, 50 100");
-      expect(paths.areaD).toBe("M 0 50 C 25 50, 25 100, 50 100 L 50 200 L 0 200 Z");
+      expect(paths.areaD).toBe(
+        "M 0 50 C 25 50, 25 100, 50 100 L 50 200 L 0 200 Z"
+      );
     });
 
     it("generates correct cubic Hermite spline path strings", () => {
-      const points = [{ x: 0, y: 50 }, { x: 50, y: 100 }, { x: 100, y: 120 }];
+      const points = [
+        { x: 0, y: 50 },
+        { x: 50, y: 100 },
+        { x: 100, y: 120 },
+      ];
       const paths = generateHermiteSplinePath(points, 200);
 
       expect(paths.pathD).toContain("M 0 50");
@@ -117,18 +140,55 @@ describe("Centralized Graphics and Layout Engine", () => {
 
   describe("D. 2D Physics and Collision math", () => {
     it("detects beam container collision correctly", () => {
-      const beamRect = { top: 0, bottom: 205, left: 100, right: 101, width: 1, height: 205 };
-      const containerRect = { top: 200, bottom: 400, left: 0, right: 1000, width: 1000, height: 200 };
+      const beamRect = {
+        top: 0,
+        bottom: 205,
+        left: 100,
+        right: 101,
+        width: 1,
+        height: 205,
+      };
+      const containerRect = {
+        top: 200,
+        bottom: 400,
+        left: 0,
+        right: 1000,
+        width: 1000,
+        height: 200,
+      };
 
       expect(checkBeamContainerCollision(beamRect, containerRect)).toBe(true);
 
-      const standardRectNoCollide = { top: 0, bottom: 190, left: 100, right: 101, width: 1, height: 190 };
-      expect(checkBeamContainerCollision(standardRectNoCollide, containerRect)).toBe(false);
+      const standardRectNoCollide = {
+        top: 0,
+        bottom: 190,
+        left: 100,
+        right: 101,
+        width: 1,
+        height: 190,
+      };
+      expect(
+        checkBeamContainerCollision(standardRectNoCollide, containerRect)
+      ).toBe(false);
     });
 
     it("calculates relative collision point correctly", () => {
-      const beamRect = { top: 0, bottom: 205, left: 100, right: 101, width: 1, height: 205 };
-      const parentRect = { top: 50, bottom: 600, left: 20, right: 1200, width: 1180, height: 550 };
+      const beamRect = {
+        top: 0,
+        bottom: 205,
+        left: 100,
+        right: 101,
+        width: 1,
+        height: 205,
+      };
+      const parentRect = {
+        top: 50,
+        bottom: 600,
+        left: 20,
+        right: 1200,
+        width: 1180,
+        height: 550,
+      };
 
       const pt = calculateCollisionPoint(beamRect, parentRect);
       // relativeX = 100 - 20 + 0.5 = 80.5
@@ -141,7 +201,7 @@ describe("Centralized Graphics and Layout Engine", () => {
       const count = 10;
       const trajectories = generateExplosionTrajectories(count);
       expect(trajectories).toHaveLength(count);
-      
+
       trajectories.forEach((t, i) => {
         expect(t.id).toBe(i);
         expect(t.initialX).toBe(0);
@@ -162,7 +222,7 @@ describe("Centralized Graphics and Layout Engine", () => {
       cache.set("key1", "value1");
       cache.set("key2", "value2");
       expect(cache.get("key1")).toBe("value1");
-      
+
       cache.clear();
       expect(cache.get("key1")).toBeUndefined();
       expect(cache.get("key2")).toBeUndefined();

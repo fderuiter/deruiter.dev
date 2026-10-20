@@ -180,6 +180,14 @@ const ARCADE_SHARED_PATHS =
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
+ * Unit and component tests (`__tests__/` outside `e2e/`) run in Vitest and
+ * cannot change what a device spec sees, so they select no game (#2531). A
+ * test-only sweep that names many games otherwise queued every game's
+ * device specs, about 1,100 tests, and ran device-gate into its timeout.
+ */
+const UNIT_TEST_PATH = /^__tests__\/(?!e2e\/)/;
+
+/**
  * The Playwright `--grep` pattern for the arcade device specs a change set
  * touches. Empty when it touches no arcade code; `.` (everything) when the
  * change set is unknown, so the filter fails safe.
@@ -189,12 +197,13 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  */
 export function arcadeDeviceGrep(files) {
   if (!Array.isArray(files) || files.length === 0) return ".";
+  const relevant = files.filter((file) => !UNIT_TEST_PATH.test(file));
   const titles = [];
-  if (files.some((file) => ARCADE_SHARED_PATHS.test(file))) {
+  if (relevant.some((file) => ARCADE_SHARED_PATHS.test(file))) {
     titles.push(...ARCADE_KIT_TITLES);
   }
   for (const [name, paths] of ARCADE_DEVICE_GAMES) {
-    if (files.some((file) => paths.test(file))) titles.push(name);
+    if (relevant.some((file) => paths.test(file))) titles.push(name);
   }
   return titles.map(escapeRegExp).join("|");
 }

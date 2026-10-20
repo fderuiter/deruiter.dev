@@ -207,7 +207,10 @@ ADR 0061's phone bar, items 1 to 12, plus:
   [arcade playtest rubric](../docs/explanation/arcade-playtest-rubric.md) scores 9/10 or better
   at 320x568, 375x667, 393x852 and 430x932 plus one landscape size, with no
   blockers or should-fix findings, then a check on a real iPhone and a real
-  Android phone.
+  Android phone following the
+  [real-device check](../docs/how-to/run-an-arcade-real-device-check.md).
+  The rubric's view-specific checks list what the phone, tablet and desktop
+  views are each scored on.
 
 ### Fun guidelines for phones
 

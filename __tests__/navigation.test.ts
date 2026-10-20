@@ -59,6 +59,7 @@ describe("navigation structure (#1842, #1843)", () => {
     expect(sections.map((s) => s.label)).toEqual(["Simulators", "Studios"]);
     expect(sections[0].items.map((i) => i.href)).toEqual([
       "/protocol-drift",
+      "/platform",
       "/simulator",
       "/patrol",
     ]);
@@ -91,6 +92,7 @@ describe("navigation structure (#1842, #1843)", () => {
       "/acknowledgments",
       "/merch",
       "/protocol-drift",
+      "/platform",
     ]) {
       expect(reachable.has(href), href).toBe(true);
     }
@@ -106,7 +108,7 @@ describe("navigation structure (#1842, #1843)", () => {
     const sims = getNavGroup("simulators").sections[0].items;
     expect(
       filterNavItems(sims, "behind-the-scenes").map((i) => i.href)
-    ).toEqual(["/protocol-drift", "/patrol"]);
+    ).toEqual(["/protocol-drift", "/platform", "/patrol"]);
     expect(filterNavItems(sims, "professional")).toHaveLength(sims.length);
     const patrol = sims.find((i) => i.id === "patrol-shift")!;
     expect(getNavHref(patrol, "mobile")).toBe("/m/patrol");

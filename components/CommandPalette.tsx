@@ -1297,6 +1297,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Zero-CLS userland canvas text layout calibration",
         ],
       },
+      {
+        id: "nav-platform",
+        title: "Clinical Data Platform",
+        subtitle:
+          "A governed synthetic portfolio from source feeds to decisions.",
+        category: "navigation",
+        url: "/platform",
+        icon: <IconCpu className="h-4 w-4 text-amber-400" />,
+        badge: "Platform",
+        status: "Architecture Hub",
+        description:
+          "Trace the architecture and inspect a capability map with live demonstrations and issue-backed plans.",
+        techStack: ["Next.js 16", "TypeScript", "CDISC", "Semantic Layer"],
+        highlights: [
+          "Bronze, silver and gold data flow",
+          "Capability evidence linked to live demos",
+          "Synthetic data and regulatory scope made explicit",
+        ],
+      },
     ];
 
     const safeStudies = Array.isArray(studies) ? studies : [];

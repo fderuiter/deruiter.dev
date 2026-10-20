@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { CAPE_SPIN_MS, PACE_FILL_MS } from "@/lib/garmin-cape";
 import {

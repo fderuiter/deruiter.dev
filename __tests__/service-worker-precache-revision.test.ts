@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
@@ -87,7 +88,10 @@ describe("Build Fingerprint Derivation", () => {
   });
 
   it("changes when an asset is added", () => {
-    const buildC = [...buildA, { url: "/_next/static/chunks/new.js", revision: null }];
+    const buildC = [
+      ...buildA,
+      { url: "/_next/static/chunks/new.js", revision: null },
+    ];
     expect(fingerprint(buildA)).not.toBe(fingerprint(buildC));
   });
 

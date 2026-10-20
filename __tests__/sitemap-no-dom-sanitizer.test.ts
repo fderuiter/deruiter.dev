@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
 // Regression for #1340: a route that only reads content (the sitemap) must not

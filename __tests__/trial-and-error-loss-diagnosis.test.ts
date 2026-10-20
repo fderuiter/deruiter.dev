@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { fromPartial } from "@total-typescript/shoehorn";
 import { describeBlindLoss, type TableView } from "@/lib/trial-and-error";

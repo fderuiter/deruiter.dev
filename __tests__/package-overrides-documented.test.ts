@@ -9,7 +9,16 @@ import { describe, expect, it } from "vitest";
 const root = process.cwd();
 const pkg = JSON.parse(
   fs.readFileSync(path.join(root, "package.json"), "utf-8")
-) as { overrides?: Record<string, string> };
+) as { overrides?: Record<string, string | Record<string, string>> };
+// A nested override (`{ parent: { child: range } }`) pins `child` only inside
+// `parent`'s subtree, and is documented as `parent > child`.
+const pins = Object.entries(pkg.overrides ?? {}).flatMap(([name, range]) =>
+  typeof range === "string"
+    ? [[name, range]]
+    : Object.entries(range).map(([child, r]) => [`${name} > ${child}`, r])
+);
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const security = fs.readFileSync(path.join(root, "SECURITY.md"), "utf-8");
 
 describe("npm package overrides are documented (#1109)", () => {
@@ -19,14 +28,13 @@ describe("npm package overrides are documented (#1109)", () => {
     expect(section).not.toBe("");
   });
 
-  it.each(Object.entries(pkg.overrides ?? {}))(
-    "documents %s at its pinned range",
-    (name, range) => {
-      const row = section
-        .split("\n")
-        .find((line) => new RegExp(`^\\|\\s*\`${name}\`\\s*\\|`).test(line));
-      expect(row, `${name} needs a row in SECURITY.md`).toBeDefined();
-      expect(row).toContain(`\`${range}\``);
-    }
-  );
+  it.each(pins)("documents %s at its pinned range", (name, range) => {
+    const row = section
+      .split("\n")
+      .find((line) =>
+        new RegExp(`^\\|\\s*\`${escapeRegExp(name)}\`\\s*\\|`).test(line)
+      );
+    expect(row, `${name} needs a row in SECURITY.md`).toBeDefined();
+    expect(row).toContain(`\`${range}\``);
+  });
 });

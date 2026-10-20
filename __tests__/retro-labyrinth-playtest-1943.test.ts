@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Retro Labyrinth playtest fixes (#1943): engine-level findings.
 import { describe, it, expect } from "vitest";
 import {

@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Study Director 10/10 audit, third pass: visitors are announced (#2188) and
 // interruptions vary, lapse and are not blamed on an absent player (#2189).
 import { describe, expect, it } from "vitest";

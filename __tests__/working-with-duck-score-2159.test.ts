@@ -1,3 +1,4 @@
+// @vitest-environment node
 // #2159: score measures the work and the care, not the time spent.
 import { describe, it, expect } from "vitest";
 import {

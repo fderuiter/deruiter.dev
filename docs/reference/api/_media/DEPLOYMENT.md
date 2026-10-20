@@ -89,8 +89,9 @@ To catch silent production regressions, the repository runs automated, continuou
 
 - **Workflow File**: `.github/workflows/synthetic-probes.yml`
 - **Cron Schedule**: `17 7 * * *` (runs daily at 07:17 UTC)
-- **Runtime Environment**: Headless Chromium on `ubuntu-latest`, Node.js 24.x,
-  using cached Playwright binaries.
+- **Runtime Environment**: Headless Chromium on `ubuntu-latest`, Node.js 24, inside
+  the digest-pinned `mcr.microsoft.com/playwright` container image, so Chromium and
+  its OS libraries match the locked `@playwright/test` version.
 
 ### Manual Probe Execution & Custom Target URLs
 
@@ -135,11 +136,11 @@ When a synthetic probe alert triggers, on-call engineers should follow the dedic
 - **Triage Steps**:
   1. **Run Isolated Probe**:
      ```bash
-     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 1"
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 1:"
      ```
   2. **Inspect Pretext Canvas Measurement Context**: Verify that `@chenglou/pretext` initialized cleanly without SSR Canvas `measureText` exceptions.
   3. **Check Container Bounds**: Verify that root container `app/layout.tsx` and `app/page.tsx` maintain `#main-content` landmark and flex/grid layout constraints (`min-w-0`).
-  4. **Verify CSS & Font Loading**: Confirm Tailwind CSS v4 `@import "tailwindcss";` and Inter font variable `--font-inter` loaded without network stalls.
+  4. **Verify CSS & Font Loading**: Confirm Tailwind CSS v4 `@import "tailwindcss";` and the font variables from `app/layout.tsx` (`--font-lexend`, `--font-atkinson`, `--font-geist-mono`, `--font-opendyslexic`) loaded without network stalls.
 
 ### Runbook 2: Command Palette Discovery & Navigation Journey
 
@@ -149,7 +150,7 @@ When a synthetic probe alert triggers, on-call engineers should follow the dedic
 - **Triage Steps**:
   1. **Run Isolated Probe**:
      ```bash
-     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 2"
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 2:"
      ```
   2. **Verify React 19 Hydration**: Confirm that interactive search buttons are wrapped in hydration polling blocks (`expect(...).toPass({ timeout: 15000 })`) and event listeners have attached.
   3. **Inspect Case Studies API Endpoint**: Verify that `GET /api/case-studies` responds with `200 OK` and valid JSON array:
@@ -166,11 +167,11 @@ When a synthetic probe alert triggers, on-call engineers should follow the dedic
 - **Triage Steps**:
   1. **Run Isolated Probe**:
      ```bash
-     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 3"
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 3:"
      ```
   2. **Verify AST Evaluator Engine**: Run unit test suite to rule out cycle detection or stack overflow in propositional AST evaluator (`lib/proof-utils.ts`):
      ```bash
-     npm test __tests__/proof-engine.test.ts
+     npm test -- __tests__/proof-engine-extended.test.ts
      ```
   3. **Check WebGL / SVG Canvas Errors**: Inspect browser console for Framer Motion animation or SVG rendering errors on the graph canvas.
   4. **Validate Export Dialog**: Ensure `ModalContainer` trapped focus restored properly on `Escape` key press.
@@ -183,11 +184,11 @@ When a synthetic probe alert triggers, on-call engineers should follow the dedic
 - **Triage Steps**:
   1. **Run Isolated Probe**:
      ```bash
-     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 4"
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 4:"
      ```
   2. **Inspect Cabinet Launch Workflow**: Verify that `<PlayCabinet>` launch button `Launch Cabinet` receives click events after CRT monitor warmup.
   3. **Verify Canvas 2D Context Support**: Ensure headless browser has hardware acceleration or software WebGL/Canvas 2D fallbacks enabled (`vitest.setup.ts` canvas stubs).
-  4. **Check Web Audio Synthesizer**: Verify that Web Audio API initialization in `components/arcade/ControlDocks.tsx` handles `hover: none` touch environments defensively.
+  4. **Check Web Audio Synthesizer**: Verify that Web Audio API initialization in `components/providers/AudioProvider.tsx` handles `hover: none` touch environments defensively.
 
 ### Runbook 5: API Ingestion, Schema Guard & Rate Limiting Journey
 
@@ -197,7 +198,7 @@ When a synthetic probe alert triggers, on-call engineers should follow the dedic
 - **Triage Steps**:
   1. **Run Isolated Probe**:
      ```bash
-     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 5"
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 5:"
      ```
   2. **Test Valid Telemetry Ingestion Manually**:
      ```bash
@@ -216,26 +217,62 @@ When a synthetic probe alert triggers, on-call engineers should follow the dedic
      Verify HTTP status `400 Bad Request` and JSON error details.
   4. **Inspect Database & Redis Rate Limiter**: Check Neon PostgreSQL connection string (`DATABASE_URL`) and Upstash Redis rate limiting headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`).
 
-### Runbook 6: Warm Service Worker Arcade Navigation
+### Runbook 6: Patrol Shift Critical Journey (Dispatch to Debrief)
 
 - **Probe ID**: Probe 6 (`__tests__/e2e/synthetic-probes.spec.ts`)
-- **Covered Capabilities**: Service-worker installation and activation, controlled
-  navigation to `/arcade/working-with-duck`, truthful fallback messaging, and the
-  `<PlayCabinet>` canvas launch workflow.
-- **Failure Symptoms**: The worker never controls the page, the arcade navigation
-  serves the offline recovery view while online, or the game canvas does not mount.
+- **Covered Capabilities**: The `/patrol` route and `PatrolShiftContainer`, the intro to mountain map hand-off, taking a dispatch, the OEC scene, the OET transport canvas acquiring a 2D context, and a polite `aria-live` region for text-first radio traffic.
+- **Failure Symptoms**: `/patrol` returns 400 or above, `patrol-shift-container` never appears, a step button (`Skip Intro`, `Standby on Hill / Await Dispatch`, `Acknowledge & Respond`, `Stabilize & Prepare Toboggan`) does not advance the shift within the 15s retry window, or `oet-viewport-canvas` has no 2D context.
 - **Triage Steps**:
-  1. **Run the isolated probe against the intended deployment**:
+  1. **Run Isolated Probe**:
      ```bash
-     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 6" --project=chromium
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 6:" --project=chromium
      ```
-  2. **Inspect the deployed worker**: Confirm `/sw.js` contains the current
-     release's public route catalog and that the browser reports an active
-     controller after reload.
-  3. **Remove stale-worker ambiguity**: Test once in a fresh browser profile and
-     once after allowing the existing registration to update. A fresh-profile
-     pass with an upgrade-profile failure indicates an activation or cache
-     migration regression.
-  4. **Verify the response truthfully**: A real connectivity failure may render
-     the offline recovery view. An online navigation failure must identify the
-     page as unavailable and offer retry without claiming the visitor is offline.
+  2. **Find the Failing Step**: The trace names the last visible test ID (`patrol-mountain-map`, `patrol-dispatch-overlay`, `patrol-scene-interaction` or `patrol-oet-canvas`). Start in `components/patrol/PatrolShiftContainer.tsx` for that phase.
+  3. **Check the Transport Canvas**: If only the context check fails, inspect `components/patrol/OetCanvas.tsx` for errors thrown before the canvas mounts.
+  4. **Confirm the Live Region**: The journey must stay completable without audio, so a missing `aria-live="polite"` region is a real regression, not a flaky probe.
+
+There is no Probe 7. The numbering skips from 6 to 8.
+
+### Runbook 8: Canonical Host Redirect & Metadata Parity
+
+- **Probe ID**: Probe 8 (`__tests__/e2e/synthetic-probes.spec.ts`)
+- **Covered Capabilities**: The `www.deruiter.dev` to apex redirect, the apex serving directly, the canonical tag, `sitemap.xml` and `robots.txt` all naming `https://deruiter.dev` (regression guard for #720).
+- **Failure Symptoms**: `www` does not answer `301` or `308` with `Location: https://deruiter.dev/`, the apex redirects instead of returning `200`, the page HTML lacks `rel="canonical" href="https://deruiter.dev"` or mentions the `www` host, or the sitemap or robots file points at the wrong host. The probe skips itself when the target is not a `deruiter.dev` origin.
+- **Triage Steps**:
+  1. **Run Isolated Probe**:
+     ```bash
+     PLAYWRIGHT_TEST_BASE_URL="https://deruiter.dev" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 8:" --project=chromium
+     ```
+  2. **Check the Edge Redirect**:
+     ```bash
+     curl -sI https://www.deruiter.dev/ | grep -i -E "^(HTTP|location)"
+     curl -sI https://deruiter.dev/ | head -1
+     ```
+     A wrong redirect is a Vercel domain setting, not a code change. The apex must be the primary domain.
+  3. **Check Metadata Sources**: If redirects are correct but the HTML, sitemap or robots file is wrong, inspect `resolveBaseUrl()` in `lib/domain.ts`, `SITE_BASE_URL` in `lib/seo.ts`, `app/sitemap.ts` and `app/robots.ts`.
+
+### Runbook 9: Trial & Error Card Table Journey
+
+- **Probe ID**: Probe 9 (`__tests__/e2e/synthetic-probes.spec.ts`)
+- **Covered Capabilities**: `/arcade/trial-and-error?seed=shop-24` at 1280x800, the `Launch Cabinet` workflow, the dealt hand, keyboard inspection and correction in the inspect drawer, playing the Small Blind's winning hand by keyboard, the `Blind cleared` result, and cashing out into the Procurement Shop.
+- **Failure Symptoms**: `hand` never appears within 30s, the inspect drawer's first cell never takes focus, `blind-result` does not read `Blind cleared` within 15s, or `shop` and `shop-items` do not render after `Cash out`.
+- **Triage Steps**:
+  1. **Run Isolated Probe**:
+     ```bash
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 9:" --project=chromium
+     ```
+  2. **Rule Out a Changed Deal**: The probe relies on the fixed seed dealing draft `C-T14.1.1-A` and a winning first hand. If dealing or scoring logic changed on purpose, update the probe in the same change.
+  3. **Check Keyboard Handling**: A focus or key-press failure points at `components/trial-and-error/CardTable.tsx` and the inspect drawer's grid navigation.
+
+### Runbook 10: Patty's Drive-Thru Running Shift Journey
+
+- **Probe ID**: Probe 10 (`__tests__/e2e/synthetic-probes.spec.ts`)
+- **Covered Capabilities**: `/arcade/patty-drive-thru?seed=e2e-4` at 1280x800, the `Launch Cabinet` workflow, the intro, `Clock in`, the game shell and shift clock, the 3D booth canvas where WebGL exists or the flat register where it does not, and a running game loop.
+- **Failure Symptoms**: `pdt-intro` never appears within 30s, `pdt-game` or `pdt-clock` is missing after `Clock in`, neither `pdt-booth-canvas` nor `pdt-register` matches the reported `data-pdt-view`, or the clock text does not change within 10s.
+- **Triage Steps**:
+  1. **Run Isolated Probe**:
+     ```bash
+     PLAYWRIGHT_TEST_BASE_URL="<TARGET_URL>" npx playwright test __tests__/e2e/synthetic-probes.spec.ts -g "Probe 10:" --project=chromium
+     ```
+  2. **Check the View Choice**: Read `data-pdt-view` on `pdt-game`. A `3d` view with no booth canvas points at `components/patty-drive-thru/BoothScene.tsx`. A flat view with no register points at the fallback path in `components/patty-drive-thru/PattyDriveThruGame.tsx`.
+  3. **Check the Game Loop**: A clock that never changes means the loop did not start. Look for errors thrown after `Clock in` in the browser console.

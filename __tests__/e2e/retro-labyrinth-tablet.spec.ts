@@ -409,12 +409,18 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     await launchCabinet(page);
     const paused = page.getByText("PAUSED", { exact: true });
     await expect(paused).toHaveCount(0);
+    // The cabinet hands focus to the playfield after the game mounts; a key
+    // pressed before that lands nowhere.
+    await expect(page.locator(PLAYFIELD)).toBeFocused();
 
     await page.keyboard.press("p");
     await expect(paused).toBeVisible();
 
+    // The paused room takes Escape for itself: it resumes, and the touch
+    // cabinet stays open around it (#2569).
     await page.keyboard.press("Escape");
     await expect(paused).toHaveCount(0);
+    await expect(page.locator(IMMERSIVE)).toBeVisible();
 
     const start = await readPlayerGrid(page);
     const keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
@@ -783,13 +789,46 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
   }, testInfo) => {
     await launchCabinet(page);
 
-    await page
-      .getByRole("button", { name: "Market: open the darknet market" })
-      .tap();
+    // A roguelike run trades only at its rest stop, so the Market is shut in
+    // Room 01 (#2291). The classic subnets have no route and keep it open:
+    // switch to Subnet 01 from the options sheet to reach it.
+    const market = page.getByRole("button", {
+      name: "Market: open the darknet market",
+    });
+    await expect(
+      page.getByRole("button", {
+        name: "Market: Market opens at the rest stop",
+      })
+    ).toBeDisabled();
+    const sheet = page.getByTestId("labyrinth-options-sheet");
+    await expect(async () => {
+      if ((await sheet.count()) === 0) {
+        await page
+          .getByRole("button", { name: "Options", exact: true })
+          .tap({ timeout: 2000 });
+      }
+      await sheet
+        .getByRole("button", { name: "Subnet 01", exact: true })
+        .tap({ timeout: 2000 });
+      if ((await sheet.count()) > 0) {
+        await sheet
+          .getByRole("button", { name: "Close options" })
+          .tap({ timeout: 2000 });
+      }
+      await expect(sheet).toHaveCount(0, { timeout: 2000 });
+      await expect(market).toBeEnabled({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+    await expect(page.getByTestId("labyrinth-phone-floor")).toHaveText(
+      "SUBNET 01"
+    );
+
     const dialog = page.getByRole("dialog", {
       name: /DARKNET EXPLOIT BLACK-MARKET/,
     });
-    await expect(dialog).toBeVisible();
+    await expect(async () => {
+      if ((await dialog.count()) === 0) await market.tap({ timeout: 2000 });
+      await expect(dialog).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
     await expect(
       page.getByRole("heading", { level: 2, name: /DARKNET/ })
     ).toBeVisible();

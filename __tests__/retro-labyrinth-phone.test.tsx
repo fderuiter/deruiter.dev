@@ -187,6 +187,33 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(resume.className).toContain("min-h-11");
   });
 
+  it("keeps Escape from the touch cabinet while a room runs or is paused (#2569)", () => {
+    const { container, rerenderWithPause } = renderGame({
+      touch: true,
+      autoPauseCount: 0,
+    });
+    const boundary = () =>
+      container.querySelector('[data-keyboard-boundary="true"]');
+    expect(boundary()?.getAttribute("data-escape-docks")).toBe("true");
+
+    act(() => {
+      rerenderWithPause(1);
+    });
+    expect(screen.getByText("PAUSED")).toBeTruthy();
+    // Paused, Escape resumes the room instead of leaving the cabinet.
+    expect(boundary()?.getAttribute("data-escape-docks")).toBe("true");
+  });
+
+  it("leaves Escape to the cabinet on a desktop layout", () => {
+    stubPointer(false);
+    const { container } = renderGame({ touch: false });
+    expect(
+      container
+        .querySelector('[data-keyboard-boundary="true"]')
+        ?.hasAttribute("data-escape-docks")
+    ).toBe(false);
+  });
+
   it("the same pause count does not pause again after the player resumes", () => {
     const { rerenderWithPause } = renderGame({
       touch: true,

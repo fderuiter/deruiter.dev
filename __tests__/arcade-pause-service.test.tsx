@@ -32,7 +32,7 @@ import {
   useScreenWakeLock,
 } from "@/components/arcade/pause";
 import { useCabinetAutoPause } from "@/components/arcade/mobile";
-import { runSnapshotKey } from "@/lib/arcade";
+import { createRng, createStepClock, runSnapshotKey } from "@/lib/arcade";
 import type { CounterState } from "./fixtures/three-view-game/session";
 
 const announce = vi.hoisted(() => vi.fn());
@@ -540,6 +540,53 @@ describe("cabinet pause service (#2357)", () => {
       });
       canvas.dispatchEvent(new Event("webglcontextlost", { cancelable: true }));
       expect([...controller.getState().reasons]).toEqual(["hidden"]);
+    });
+
+    it("useRunSnapshot saves the stream state and step, and Resume continues them (#2544)", () => {
+      vi.useRealTimers();
+      const controller = createPauseController({
+        gameId: "fixture",
+        view: "phone",
+      });
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <CabinetPauseProvider controller={controller}>
+          {children}
+        </CabinetPauseProvider>
+      );
+      const format = { schema: 1, state: counterState };
+
+      const playing = {
+        ...makeSession(),
+        rng: createRng(42),
+        clock: createStepClock(),
+      };
+      playing.rng.next();
+      playing.rng.next();
+      playing.clock.advance(0.25);
+      playing.clock.advance(0.25);
+      const first = renderHook(() => useRunSnapshot(playing, format), {
+        wrapper,
+      });
+      act(() => first.result.current.save());
+      expect(savedRun()).toMatchObject({
+        rngState: playing.rng.getState(),
+        step: 30,
+      });
+      const expected = [playing.rng.next(), playing.rng.next()];
+      first.unmount();
+
+      const next = {
+        ...makeSession(),
+        rng: createRng(1),
+        clock: createStepClock(),
+      };
+      const second = renderHook(() => useRunSnapshot(next, format), {
+        wrapper,
+      });
+      expect(second.result.current.saved).toMatchObject({ view: "phone" });
+      act(() => second.result.current.resumeSaved());
+      expect(next.clock.getStep()).toBe(30);
+      expect([next.rng.next(), next.rng.next()]).toEqual(expected);
     });
 
     it("useCabinetAutoPause names the reason and suspends after a hide", () => {

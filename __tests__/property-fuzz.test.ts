@@ -51,6 +51,7 @@ import {
   boundingBoxOverlap,
   calculateScoreMultiplier,
   clamp,
+  createRng,
   createSeededRandom,
   lerp,
   scaleScoreWithMultiplier,
@@ -524,6 +525,45 @@ describe("Shift-Left Fuzz & Property-Based Verification", () => {
           );
         }),
         { numRuns: 80 }
+      );
+    });
+
+    it("session rng streams are repeatable, bounded and resume from any saved state (#2544)", () => {
+      fc.assert(
+        fc.property(
+          fc.oneof(
+            fc.integer({ min: -(2 ** 33), max: 2 ** 33 }),
+            fc.string({ maxLength: 24 })
+          ),
+          fc.integer({ min: 0, max: 64 }),
+          fc.integer({ min: 1, max: 1000 }),
+          (seed, savedAfter, bound) => {
+            const rng = createRng(seed);
+            const twin = createRng(seed);
+            for (let i = 0; i < savedAfter; i += 1) {
+              expect(rng.next()).toBe(twin.next());
+            }
+            const state = rng.getState();
+            expect(Number.isInteger(state)).toBe(true);
+            expect(state).toBeGreaterThanOrEqual(0);
+            expect(state).toBeLessThan(2 ** 32);
+            // The state survives a JSON round trip, as in a run snapshot.
+            const resumed = createRng(0);
+            resumed.setState(JSON.parse(JSON.stringify(state)));
+
+            for (let i = 0; i < 16; i += 1) {
+              const value = rng.next();
+              expect(value).toBeGreaterThanOrEqual(0);
+              expect(value).toBeLessThan(1);
+              expect(resumed.next()).toBe(value);
+              const n = rng.int(bound);
+              expect(resumed.int(bound)).toBe(n);
+              expect(Number.isInteger(n) && n >= 0 && n < bound).toBe(true);
+            }
+            expect(resumed.getState()).toBe(rng.getState());
+          }
+        ),
+        { numRuns: 120 }
       );
     });
 

@@ -899,13 +899,34 @@ describe("ActiveFormGrid panel interactions", () => {
       });
     });
 
-    // Current behaviour, tracked as a bug in #2576.
-    it("stores the literal codelist id 'none' that validation accepted", () => {
-      pasteAt("none", [7, COL.codelistId]);
-      expect(findField(lastStudy(), vsForm.id, "f_temp").codelistId).toBe(
-        "none"
-      );
-    });
+    // Regression for #2576: "none" passed validation as "no codelist" but
+    // was stored as the literal codelist id "none".
+    it.each(["none", "None", "NONE"])(
+      "clears the codelist when '%s' is pasted, like a blank cell",
+      (text) => {
+        const sec = vsForm.sections[0];
+        const form: CRFForm = {
+          ...vsForm,
+          sections: [
+            {
+              ...sec,
+              fields: sec.fields.map((f) =>
+                f.id === "f_temp" ? { ...f, codelistId: "CL_NY" } : f
+              ),
+            },
+          ],
+        };
+        const coded: StudyProtocol = {
+          ...study,
+          forms: study.forms.map((f) => (f.id === form.id ? form : f)),
+        };
+        pasteAt(text, [7, COL.codelistId], { form, study: coded });
+        expect(onUpdateStudy).toHaveBeenCalledTimes(1);
+        expect(
+          findField(lastStudy(), vsForm.id, "f_temp").codelistId
+        ).toBeUndefined();
+      }
+    );
 
     it("renames a variable without a label in the same row", () => {
       pasteAt("tempc", [7, COL.variableName]);

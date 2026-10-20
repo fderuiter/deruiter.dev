@@ -51,6 +51,26 @@ describe("run snapshot (#2357)", () => {
     });
   });
 
+  it("round-trips the stream state and step (#2544)", () => {
+    const storage = memoryStorage();
+    const seeded = { ...run, rngState: 0xfedcba98, step: 4321 };
+    writeRunSnapshot(storage, "loon", seeded);
+    expect(readRunSnapshot(storage, "loon", format)).toEqual({
+      status: "ok",
+      snapshot: seeded,
+    });
+  });
+
+  it("still reads a v1 save written before rngState and step existed", () => {
+    const storage = memoryStorage();
+    storage.setItem(runSnapshotKey("loon"), JSON.stringify(run));
+    const read = readRunSnapshot(storage, "loon", format);
+    expect(read).toEqual({ status: "ok", snapshot: run });
+    if (read.status !== "ok") throw new Error("expected a save");
+    expect("rngState" in read.snapshot).toBe(false);
+    expect("step" in read.snapshot).toBe(false);
+  });
+
   it("reads nothing when there is no save or no storage", () => {
     expect(readRunSnapshot(memoryStorage(), "loon", format)).toEqual({
       status: "empty",
@@ -76,6 +96,11 @@ describe("run snapshot (#2357)", () => {
     ["an unknown view", JSON.stringify({ ...run, view: "watch" })],
     ["bad tuning", JSON.stringify({ ...run, tuning: { aim: "high" } })],
     ["a state that fails its schema", JSON.stringify({ ...run, state: {} })],
+    ["a negative rngState", JSON.stringify({ ...run, rngState: -1 })],
+    ["a 33-bit rngState", JSON.stringify({ ...run, rngState: 2 ** 32 })],
+    ["a string rngState", JSON.stringify({ ...run, rngState: "7" })],
+    ["a fractional step", JSON.stringify({ ...run, step: 1.5 })],
+    ["a negative step", JSON.stringify({ ...run, step: -3 })],
   ])("discards %s without throwing", (_label, raw) => {
     const storage = memoryStorage();
     storage.setItem(runSnapshotKey("loon"), raw);

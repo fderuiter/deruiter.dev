@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForAnimationFrames } from "./helpers/settle";
 
 /**
  * Presentation-hardening checks from #925, split out in #1591 so they do not
@@ -451,10 +452,19 @@ test.describe("Trial & Error presentation hardening (#925, #1591)", () => {
       const sources = async () => (await readAudio(page)).sources;
       /** Asserts no new sources are scheduled over a quiet window. */
       const expectQuiet = async () => {
-        // Let any beat already inside the look-ahead window finish.
-        await page.waitForTimeout(400);
-        const settled = await sources();
-        await page.waitForTimeout(1200);
+        // Let any beat already inside the look-ahead window finish: the count
+        // holds still across ~400 ms of frames.
+        let last = -1;
+        await expect
+          .poll(async () => {
+            const prev = last;
+            await waitForAnimationFrames(page, 24);
+            last = await sources();
+            return last === prev;
+          })
+          .toBe(true);
+        const settled = last;
+        await waitForAnimationFrames(page, 72);
         expect(await sources()).toBe(settled);
       };
       await expect.poll(sources).toBeGreaterThan(0);

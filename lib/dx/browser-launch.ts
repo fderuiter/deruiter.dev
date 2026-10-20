@@ -6,7 +6,7 @@
 
 import { existsSync } from "node:fs";
 import path from "node:path";
-import { chromium, type Browser, type LaunchOptions } from "@playwright/test";
+import type { Browser, LaunchOptions } from "@playwright/test";
 import { getEnv } from "../env";
 
 /**
@@ -19,10 +19,15 @@ import { getEnv } from "../env";
  * rendering, so this avoids a hard failure without masking a genuine
  * "Playwright isn't installed at all" error (the fallback path only kicks in
  * when that specific binary actually exists).
+ *
+ * Playwright is imported on first call rather than at module load, so the
+ * test files that only read route tables from `page-bench` don't pay for
+ * loading it.
  */
 export async function launchChromiumWithFallback(
   options: LaunchOptions = {}
 ): Promise<Browser> {
+  const { chromium } = await import("@playwright/test");
   try {
     return await chromium.launch(options);
   } catch (error) {

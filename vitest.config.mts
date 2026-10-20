@@ -1,6 +1,93 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, type Plugin } from "vitest/config";
+import { readFileSync } from "fs";
 import path from "path";
 import os from "os";
+
+/**
+ * #2531: `@tabler/icons-react` has no `exports` map, so Node resolves the
+ * bare specifier to its CommonJS bundle, which defines all ~6,000 icons.
+ * Loading it cost about 190 ms in each of ~400 test files, the largest
+ * single import in the suite. `next build` avoids the same cost through
+ * `optimizePackageImports` (`next.config.ts`); this plugin does the
+ * equivalent for Vitest by rewriting each named icon import in source and
+ * test files to that icon's own ESM module. The name-to-module map is read
+ * from the package's ESM entry, so aliases such as `IconMessageCircle2`
+ * resolve to the same module the barrel would give, and a name missing from
+ * the map stays on the barrel.
+ */
+const TABLER_IMPORT =
+  /import\s*\{([^}]*)\}\s*from\s*["']@tabler\/icons-react["'];?/g;
+const TABLER_ESM_DIR = path.resolve(
+  import.meta.dirname,
+  "node_modules/@tabler/icons-react/dist/esm"
+);
+let tablerIconModules: Map<string, string> | undefined;
+
+function tablerIconModule(name: string): string | undefined {
+  if (!tablerIconModules) {
+    tablerIconModules = new Map();
+    const barrel = readFileSync(
+      path.join(TABLER_ESM_DIR, "tabler-icons-react.mjs"),
+      "utf8"
+    );
+    for (const [, names, file] of barrel.matchAll(
+      /export \{([^}]*)\} from '\.\/icons\/(\w+\.mjs)';/g
+    )) {
+      for (const [, exported] of names.matchAll(/default as (\w+)/g)) {
+        tablerIconModules.set(exported, file);
+      }
+    }
+  }
+  return tablerIconModules.get(name);
+}
+
+function tablerIconsPerIconImports(): Plugin {
+  return {
+    name: "tabler-icons-per-icon-imports",
+    enforce: "pre",
+    transform(code, id) {
+      if (
+        id.includes("/node_modules/") ||
+        !code.includes("@tabler/icons-react")
+      ) {
+        return null;
+      }
+      let changed = false;
+      const next = code.replace(
+        TABLER_IMPORT,
+        (statement, specifiers: string) => {
+          const direct: string[] = [];
+          const kept: string[] = [];
+          for (const raw of specifiers.split(",")) {
+            const specifier = raw.trim();
+            if (!specifier) continue;
+            const match = /^(Icon\w+)(?:\s+as\s+(\w+))?$/.exec(specifier);
+            const file = match && tablerIconModule(match[1]);
+            if (match && file) {
+              direct.push(
+                `import ${match[2] ?? match[1]} from "@tabler/icons-react/dist/esm/icons/${file}";`
+              );
+            } else {
+              kept.push(specifier);
+            }
+          }
+          if (direct.length === 0) return statement;
+          changed = true;
+          const rest = kept.length
+            ? `import { ${kept.join(", ")} } from "@tabler/icons-react";`
+            : "";
+          // Keep the statement's line count so later source positions, and
+          // the coverage report mapped from them, do not move.
+          const newlines = statement.split("\n").length - 1;
+          return (
+            [...direct, rest].filter(Boolean).join(" ") + "\n".repeat(newlines)
+          );
+        }
+      );
+      return changed ? { code: next, map: null } : null;
+    },
+  };
+}
 
 /**
  * #1775: CI runs the suite as three shards, each writing a blob report, and
@@ -14,6 +101,7 @@ const coverageThresholdsDeferred =
   process.env.VITEST_COVERAGE_THRESHOLDS === "deferred-to-merge";
 
 export default defineConfig({
+  plugins: [tablerIconsPerIconImports()],
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.ts"],

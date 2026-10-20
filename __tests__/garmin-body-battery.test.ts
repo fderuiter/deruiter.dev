@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   BODY_BATTERY_MAX,
@@ -13,7 +14,7 @@ import {
   effectiveRunInput,
   stepBodyBattery,
   type BodyBattery,
-} from "@/lib/garmin-body-battery";
+} from "@/lib/garmin/body-battery";
 
 describe("garmin body battery", () => {
   describe("constants", () => {

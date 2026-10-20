@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { fromAny } from "@total-typescript/shoehorn";
 // Monkey C Mayhem watch art (#1520): the data-field ring stays off the lane
 // and inside the round screen, obstacles map to pictograms, the crash face
@@ -13,7 +14,7 @@ import {
   startGame,
   type GameEngineState,
   type ObstacleType,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   FACE_CENTER,
   FACE_RADIUS,
@@ -28,8 +29,8 @@ import {
   runnerPose,
   stepsFor,
 } from "@/components/garmin-watch/watch-face-art";
-import { raceSetup } from "@/lib/garmin-race";
-import { AUTO_PAUSE_TEXT } from "@/lib/garmin-culture";
+import { raceSetup } from "@/lib/garmin/race";
+import { AUTO_PAUSE_TEXT } from "@/lib/garmin/culture";
 import {
   CASE_RADIUS,
   PUSHER_ANGLES,

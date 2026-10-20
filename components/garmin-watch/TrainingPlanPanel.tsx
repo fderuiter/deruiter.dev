@@ -13,8 +13,8 @@ import {
   trainingReadiness,
   type PlanNodeId,
   type PlanSave,
-} from "@/lib/garmin-plan";
-import { CARDS_PER_SET, FINISHER_CARD_NAMES } from "@/lib/garmin-finisher";
+} from "@/lib/garmin/plan";
+import { CARDS_PER_SET, FINISHER_CARD_NAMES } from "@/lib/garmin/finisher";
 import { GearBagDialog } from "./GearBagDialog";
 
 interface TrainingPlanPanelProps {

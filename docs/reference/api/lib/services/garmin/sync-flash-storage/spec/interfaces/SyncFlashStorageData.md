@@ -22,4 +22,4 @@
 
 ### variables
 
-> **variables**: [`FlashVariable`](../../../../../garmin-engine/interfaces/FlashVariable.md)[]
+> **variables**: [`FlashVariable`](../../../../../garmin/engine/interfaces/FlashVariable.md)[]

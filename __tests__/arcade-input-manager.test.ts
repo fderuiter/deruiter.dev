@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { ArcadeInputManager, ArcadeViewport } from "@/lib/arcade";
 import { fromPartial } from "@total-typescript/shoehorn";

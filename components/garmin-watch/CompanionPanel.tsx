@@ -9,19 +9,19 @@ import {
   DEVICE_PROFILES,
   type DeviceTarget,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   batteryTone,
   meterTone,
   stageProgress,
   type MeterTone,
 } from "./watch-face-art";
-import { STAGE_COUNT } from "@/lib/garmin-course";
+import { STAGE_COUNT } from "@/lib/garmin/course";
 import {
   bodyBatteryFraction,
   bodyBatteryLabel,
-} from "@/lib/garmin-body-battery";
-import { trainingEffectLabel } from "@/lib/garmin-culture";
+} from "@/lib/garmin/body-battery";
+import { trainingEffectLabel } from "@/lib/garmin/culture";
 import {
   RACE_CATEGORIES,
   RACE_CATEGORY_INFO,
@@ -29,8 +29,8 @@ import {
   RACE_COURSE_NAMES,
   type RaceCategory,
   type RaceCourse,
-} from "@/lib/garmin-race";
-import type { GhostTarget } from "@/lib/garmin-ghost-store";
+} from "@/lib/garmin/race";
+import type { GhostTarget } from "@/lib/garmin/ghost-store";
 import type { WatchBezelTheme } from "./WatchHardware";
 import {
   GROUND_STRIP_FIELDS,
@@ -38,7 +38,7 @@ import {
   GROUND_STRIP_SLOT_LABELS,
   type GroundStripField,
   type GroundStripLayout,
-} from "@/lib/garmin-ground-strip";
+} from "@/lib/garmin/ground-strip";
 
 /** Gauge fill colours: the shared arcade signals, never the world's cyan. */
 const TONE_STROKE: Record<MeterTone, string> = {

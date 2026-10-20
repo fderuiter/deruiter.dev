@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React from "react";
@@ -68,7 +69,7 @@ describe("useConsoleArt Hook", () => {
     mockEffectCallback!();
 
     expect(window.requestIdleCallback).toHaveBeenCalled();
-    
+
     // Wait for the final log assertion to be true
     await vi.waitFor(() => {
       expect(consoleLogMock).toHaveBeenCalled();
@@ -96,7 +97,7 @@ describe("useConsoleArt Hook", () => {
   it("should fall back to setTimeout if requestIdleCallback is not available in window", async () => {
     // Temporarily delete requestIdleCallback from window
     delete (window as any).requestIdleCallback;
-    
+
     vi.useFakeTimers();
     global.fetch = vi.fn();
 

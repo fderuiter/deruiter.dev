@@ -14,7 +14,7 @@ Creates the initial shift state.
 
 ### scenarioId?
 
-`string` \| `null`
+`string` \| `null` = `null`
 
 ### initialPhase?
 

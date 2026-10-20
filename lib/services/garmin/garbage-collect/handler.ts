@@ -7,7 +7,7 @@ import {
   triggerGarbageCollection,
   getCooldownRemainingMs,
   GC_COOLDOWN_MS,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 export class GarbageCollectHandler implements GarbageCollectSpec {

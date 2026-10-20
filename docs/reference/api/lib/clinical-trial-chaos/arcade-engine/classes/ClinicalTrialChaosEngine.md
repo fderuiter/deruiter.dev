@@ -88,7 +88,7 @@ component uses (#901); this class only holds the state and emits events.
 
 ##### level?
 
-`"INFO"` \| `"WARN"` \| `"CRITICAL"` \| `"COMPLIANT"`
+`"INFO"` \| `"WARN"` \| `"CRITICAL"` \| `"COMPLIANT"` = `"INFO"`
 
 ##### suspicionDelta?
 

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
 import {
   causeLabel,
   createInitialState,
@@ -11,14 +11,14 @@ import {
   updateGameSimulation,
   PLAYER_X,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin-course";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin/course";
 import {
   BODY_BATTERY_SPRINT_DRAIN_PER_S,
   FRESH_BODY_BATTERY,
   effectiveRunInput,
-} from "@/lib/garmin-body-battery";
-import { GPS_LOCK_MS, gpsBannerText } from "@/lib/garmin-culture";
+} from "@/lib/garmin/body-battery";
+import { GPS_LOCK_MS, gpsBannerText } from "@/lib/garmin/culture";
 import { endFaceFor } from "@/components/garmin-watch/watch-face-art";
 
 // The fitness rules of Monkey C Mayhem (#2010): no watch battery, heat, fog

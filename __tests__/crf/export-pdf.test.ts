@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi } from "vitest";
 import type jsPDF from "jspdf";
 import { generateStudyPdf, generateFormPdf } from "@/lib/crf";

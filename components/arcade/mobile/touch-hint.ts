@@ -1,6 +1,7 @@
 "use client";
 
 import { useInputModality } from "@/components/arcade/mobile/input-modality";
+import { actionHintText, type ActionDefinition } from "@/lib/arcade";
 
 /**
  * A control named two ways: the key on a keyboard and the gesture on a touch
@@ -32,6 +33,28 @@ export function controlHint(input: {
 }
 
 /**
+ * The control hint an action's labels make (#2356): its key label, its touch
+ * label, and "Press" with the key on a desktop.
+ *
+ * @param action - An action from a `defineActions` map.
+ * @returns A frozen hint for `resolveControlHint` or `useControlHint`.
+ */
+export function controlHintFromAction(action: ActionDefinition): ControlHint {
+  const text = actionHintText(action);
+  return Object.freeze({
+    key: text.key,
+    touch: text.touch,
+    desktop: text.desktop,
+  });
+}
+
+function isControlHint(
+  hint: ControlHint | ActionDefinition
+): hint is ControlHint {
+  return "desktop" in hint;
+}
+
+/**
  * Picks the phrase for the device.
  *
  * @param hint - The control hint.
@@ -58,11 +81,16 @@ export function useTouchHint(): boolean {
 }
 
 /**
- * The phrase for a control on this device.
+ * The phrase for a control on this device. It takes a hand-written hint or an
+ * action from the game's action map, whose labels then write the copy.
  *
- * @param hint - The control hint.
+ * @param hint - The control hint, or an action definition.
  * @returns "Tap" style copy after touch or pen, "Press Space" style elsewhere.
  */
-export function useControlHint(hint: ControlHint): string {
-  return resolveControlHint(hint, useTouchHint());
+export function useControlHint(hint: ControlHint | ActionDefinition): string {
+  const touch = useTouchHint();
+  return resolveControlHint(
+    isControlHint(hint) ? hint : controlHintFromAction(hint),
+    touch
+  );
 }

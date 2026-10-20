@@ -58,9 +58,26 @@ function getROIWorker(): Worker | null {
         }
       };
 
-      workerInstance.onerror = (err) => {
+      const worker = workerInstance;
+      worker.onerror = (err) => {
         logger.warn("ROI Analytics Web Worker error:", err);
+        // Settle every in-flight request through its main-thread fallback
+        // (an unsuccessful response), and retire the crashed worker so the
+        // next request starts a fresh one (#2532).
+        const inFlight = [...pendingRequests.entries()];
         pendingRequests.clear();
+        worker.terminate();
+        if (workerInstance === worker) workerInstance = null;
+        // Callbacks read only `success`, so `type` here is a placeholder.
+        for (const [id, callback] of inFlight) {
+          callback({
+            id,
+            seq: 0,
+            type: "histogram",
+            success: false,
+            error: "ROI analytics worker failed",
+          });
+        }
       };
     } catch {
       workerInstance = null;

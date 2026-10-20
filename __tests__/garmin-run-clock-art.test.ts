@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Monkey C Mayhem run clock art (#2018): the top-centre readout shows the run
 // clock during a run (0:00.00 while GPS holds), the score stays on the line
 // beneath it, TIME and PACE can fill a ground-strip slot, and a long lap
@@ -8,13 +9,13 @@ import {
   createInitialState,
   startGame,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   GROUND_STRIP_FIELDS,
   GROUND_STRIP_FIELD_LABELS,
   isGroundStripField,
   type GroundStripLayout,
-} from "@/lib/garmin-ground-strip";
+} from "@/lib/garmin/ground-strip";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 
 interface DrawnText {

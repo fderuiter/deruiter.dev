@@ -25,3 +25,5 @@ readonly `object`[]
 `"PLACEBO"` \| `"ACTIVE"` \| `"TOTAL"`
 
 ## Returns
+
+`object`[]

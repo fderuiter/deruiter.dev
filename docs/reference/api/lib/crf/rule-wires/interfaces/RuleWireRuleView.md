@@ -30,7 +30,7 @@ One rule projected into wires.
 
 ### ownedKeys
 
-> **ownedKeys**: keyof [`EditCheckRule`](../../types/interfaces/EditCheckRule.md)[]
+> **ownedKeys**: (keyof [`EditCheckRule`](../../types/interfaces/EditCheckRule.md))[]
 
 Which wire-owned keys were present on the rule, so absent stays absent.
 

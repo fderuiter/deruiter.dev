@@ -18,7 +18,7 @@ Instantiates an atomic CRF Field from a slash command with valid CDASH variable 
 
 ### optionsOrOffset?
 
-`number` \| [`InstantiateAtomicFieldOptions`](../interfaces/InstantiateAtomicFieldOptions.md)
+`number` \| [`InstantiateAtomicFieldOptions`](../interfaces/InstantiateAtomicFieldOptions.md) = `0`
 
 ## Returns
 

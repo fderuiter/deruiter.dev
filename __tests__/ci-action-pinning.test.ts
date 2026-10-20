@@ -62,4 +62,11 @@ describe("GitHub Actions SHA Pinning & Dependabot Verification", () => {
     expect(content).toContain('package-ecosystem: "github-actions"');
     expect(content).toContain('interval: "weekly"');
   });
+
+  it("has dependabot.yml grouping npm patch and minor updates and ignoring majors (#2511)", () => {
+    const content = fs.readFileSync(dependabotPath, "utf8");
+    expect(content).toContain('package-ecosystem: "npm"');
+    expect(content).toContain('"version-update:semver-major"');
+    expect(content).toMatch(/npm-minor-and-patch:[\s\S]*"minor"[\s\S]*"patch"/);
+  });
 });

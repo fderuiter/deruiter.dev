@@ -6,6 +6,6 @@
 
 # Variable: DILEMMA\_WINDOW\_LIMITS
 
-> `const` **DILEMMA\_WINDOW\_LIMITS**: readonly \[`number`, `number`\]
+> `const` **DILEMMA\_WINDOW\_LIMITS**: readonly \[`min`: `number`, `max`: `number`\]
 
 The range a configured answer window is held to.

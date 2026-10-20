@@ -16,7 +16,7 @@
 
 ### mode?
 
-`"campaign"` \| `"endless"`
+`"campaign"` \| `"endless"` = `"campaign"`
 
 ### preservedAccessories?
 

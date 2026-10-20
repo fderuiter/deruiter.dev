@@ -1,50 +1,29 @@
 "use client";
 
 import "./studio-theme.css";
-import React, { useState, useCallback, useEffect, useMemo } from "react";
-import { logger } from "@/lib/logger";
-import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
-import { clamp } from "@/lib/game-utils";
+import React, { useState, useCallback, useMemo } from "react";
 import { useClipboard } from "@/hooks/useClipboard";
 import { useToast } from "@/hooks/useToast";
 import {
-  captureFormTemplate,
-  saveFormTemplate,
-} from "@/lib/crf/form-templates";
-import {
-  StudyProtocol,
   StudioMode,
-  StudioTheme,
   DeviceViewport,
-  CRFForm,
-  CRFField,
-  CRFSection,
-  EditCheckRule,
-  StudyVisit,
-  StudyBaseline,
-  StudyReviewActor,
-  CodelistDefinition,
-  StudyBranding,
-  getPresetByIdSync,
-  getOncologyPresetSync,
-  loadStudyDraft,
-  saveStudyDraft,
-  saveStudySnapshot,
-  isDraftDirty,
-  StudyProtocolEngine,
-  generateCdashVariableName,
-  generateEngineId,
-  FieldImpactPreview,
-  SectionImpactPreview,
   SlashCommandItem,
   getStudyBranding,
-  EdcSimulationState,
 } from "@/lib/crf";
+import {
+  loadInitialStudy,
+  loadRecoveredDraftSavedAt,
+  resolveInsertionTarget,
+  scenarioStaleness,
+} from "./study-edit-ops";
+import { useStudyHistory } from "./useStudyHistory";
+import { useStudioNavigation } from "./useStudioNavigation";
+import { useStudyEditor } from "./useStudyEditor";
 import { useStudyAutosave } from "@/hooks/useStudyAutosave";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useWorkspaceAction } from "@/hooks/useWorkspaceAction";
 import { StudioHeader } from "./StudioHeader";
-import { StudySpine, LeftSidebarTab } from "./LeftSidebar/StudySpine";
+import { StudySpine } from "./LeftSidebar/StudySpine";
 import { WidgetPalette } from "./LeftSidebar/WidgetPalette";
 import { CdashScaffolderModal } from "./LeftSidebar/CdashScaffolderModal";
 import { FormCanvas } from "./CenterCanvas/FormCanvas";
@@ -102,12 +81,7 @@ const SpotlightTourOverlay = dynamic(
 import { StudioTerminal } from "./Terminal/StudioTerminal";
 import { FormTestDock } from "./Modes/FormTestDock";
 import { ScenarioImpactPanel } from "./Modes/ScenarioImpactPanel";
-import {
-  DEFAULT_TEST_SCOPE,
-  assessScenarioFreshness,
-  type ConditionalFieldValues,
-  type TestScenario,
-} from "@/lib/crf";
+import { DEFAULT_TEST_SCOPE, type ConditionalFieldValues } from "@/lib/crf";
 import { SlashPaletteModal } from "./SlashPaletteModal";
 import { StudyOmnibar } from "./StudyOmnibar";
 import type { OmnibarAction } from "@/lib/crf/study-omnibar";
@@ -160,7 +134,6 @@ const WorkflowWizardModal = dynamic(
     loading: () => <WorkflowWizardModalSkeleton />,
   }
 );
-import { useStudioHashParams } from "@/hooks/useStudioHashParams";
 import { useHotkeys } from "@/hooks/useHotkeys";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useTouchDragAndDrop } from "@/hooks/useTouchDragAndDrop";
@@ -171,50 +144,6 @@ import {
   IconSparkles,
   IconX,
 } from "@tabler/icons-react";
-
-const STARTUP_MODES: readonly StudioMode[] = [
-  "designer",
-  "grid",
-  "matrix",
-  "rules",
-  "edc",
-  "acrf",
-  "export",
-];
-
-const LEFT_SIDEBAR_TABS: readonly LeftSidebarTab[] = [
-  "spine",
-  "forms",
-  "palette",
-];
-
-/** The studio state a deep link restores on first render (#1451). */
-interface StartupHashState {
-  mode: StudioMode | null;
-  form: string | null;
-  field: string | null;
-  theme: StudioTheme | null;
-  compare: string | null;
-  visit: string;
-  tab: LeftSidebarTab | null;
-}
-
-function readStartupHashState(
-  params: Record<string, string>
-): StartupHashState {
-  const mode = params.mode as StudioMode | undefined;
-  const theme = params.theme;
-  const tab = params.tab as LeftSidebarTab | undefined;
-  return {
-    mode: mode && STARTUP_MODES.includes(mode) ? mode : null,
-    form: params.form || null,
-    field: params.field || null,
-    theme: theme === "light" || theme === "dark" ? theme : null,
-    compare: params.compare || null,
-    visit: params.visit || "",
-    tab: tab && LEFT_SIDEBAR_TABS.includes(tab) ? tab : null,
-  };
-}
 
 // Every Ctrl/Meta/Alt combination, so a binding fires regardless of held
 // modifiers exactly as the raw listener did. Shift is matched leniently.
@@ -268,41 +197,11 @@ export const CRFStudioContainer: React.FC = () => {
   // Polyfill touch drag-and-drop support across CRF Studio
   useTouchDragAndDrop();
 
-  // Recover the most recently acknowledged local draft (forms, visits, codelists,
-  // rules, and branding together) before falling back to the built-in example so
-  // a refresh never silently loses an author's in-progress study.
-  const [recoveredDraftSavedAt] = useState<string | null>(() => {
-    if (typeof window === "undefined") return null;
-    const draft = loadStudyDraft();
-    return draft.status === "recovered" ? draft.savedAt : null;
-  });
+  const [recoveredDraftSavedAt] = useState(loadRecoveredDraftSavedAt);
 
   // Study State & History
-  const [study, setStudy] = useState<StudyProtocol>(() => {
-    if (typeof window !== "undefined") {
-      const draft = loadStudyDraft();
-      if (draft.status === "recovered") {
-        return draft.study;
-      }
-    }
-
-    const preset = getOncologyPresetSync();
-    if (typeof window !== "undefined") {
-      try {
-        const cached = safeGetRawItem("crf_studio_default_branding");
-        if (cached) {
-          const parsedBranding = JSON.parse(cached);
-          return {
-            ...preset,
-            branding: parsedBranding,
-          };
-        }
-      } catch {
-        // Fallback to preset
-      }
-    }
-    return preset;
-  });
+  const studyHistory = useStudyHistory(loadInitialStudy);
+  const { study, canUndo, canRedo, undo, redo, commit } = studyHistory;
 
   const {
     status: draftSaveStatus,
@@ -310,88 +209,27 @@ export const CRFStudioContainer: React.FC = () => {
     downloadDraft,
   } = useStudyAutosave(study);
 
-  const [history, setHistory] = useState<StudyProtocol[]>([]);
-  const [future, setFuture] = useState<StudyProtocol[]>([]);
-  const [reviewAuthor, setReviewAuthor] = useState<StudyReviewActor>({
-    name: "Study author",
-    role: "Data Manager",
-  });
-  const [baselineStudy, setBaselineStudy] = useState<StudyProtocol>(study);
-  const [pendingStudyReplacement, setPendingStudyReplacement] = useState<{
-    targetStudy: StudyProtocol;
-    label: string;
-  } | null>(null);
-  const replaceStudyModalRef = useFocusTrap<HTMLDivElement>(
-    !!pendingStudyReplacement,
-    {
-      onEscape: () => setPendingStudyReplacement(null),
-    }
-  );
-  const [impactPendingDeletion, setImpactPendingDeletion] = useState<
-    | {
-        type: "field";
-        field: CRFField;
-        sectionId: string;
-        preview: FieldImpactPreview;
-      }
-    | {
-        type: "section";
-        section: CRFSection;
-        preview: SectionImpactPreview;
-      }
-    | null
-  >(null);
-  const impactDeletionModalRef = useFocusTrap<HTMLDivElement>(
-    impactPendingDeletion !== null,
-    {
-      onEscape: () => setImpactPendingDeletion(null),
-    }
-  );
-
-  const { params, setParam, setParams } = useStudioHashParams();
-  // Deep-link state is read from the shared hash store rather than parsed
-  // from window.location.hash; the useState initializers below only consult
-  // it on first render.
-  const startupHash = useMemo(() => readStartupHashState(params), [params]);
+  const navigation = useStudioNavigation(study);
+  const {
+    activeMode,
+    setActiveMode,
+    activeFormId,
+    setActiveFormId,
+    activeVisitId,
+    setActiveVisitId,
+    selectedFieldId,
+    setSelectedFieldId,
+    leftTab,
+    setLeftTab,
+    theme,
+    toggleTheme,
+    compareBaselineId,
+    setCompareBaselineId,
+    isCompareModalOpen,
+    setIsCompareModalOpen,
+  } = navigation;
   const { playSuccess } = useAudio();
   const toast = useToast();
-
-  // Studio Navigation & Selection State
-  const [activeMode, setActiveModeState] = useState<StudioMode>(
-    () => startupHash.mode ?? "designer"
-  );
-
-  const [activeFormId, setActiveFormIdState] = useState<string>("");
-
-  const hashFormId = startupHash.form;
-  useEffect(() => {
-    if (study && !activeFormId) {
-      if (hashFormId && study.forms.some((f) => f.id === hashFormId)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveFormIdState(hashFormId);
-        return;
-      }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveFormIdState(study.forms[0]?.id || "");
-    }
-  }, [study, activeFormId, hashFormId]);
-
-  const [selectedFieldId, setSelectedFieldIdState] = useState<string | null>(
-    () => startupHash.field
-  );
-
-  const [theme, setTheme] = useState<StudioTheme>(() => {
-    if (startupHash.theme) {
-      return startupHash.theme;
-    }
-    if (typeof window !== "undefined") {
-      const cached = safeGetRawItem("crf_studio_theme");
-      if (cached === "light" || cached === "dark") {
-        return cached;
-      }
-    }
-    return "dark";
-  });
 
   const [viewport, setViewport] = useState<DeviceViewport>("desktop");
 
@@ -406,8 +244,8 @@ export const CRFStudioContainer: React.FC = () => {
   const [isMobileWidgetDrawerOpen, setIsMobileWidgetDrawerOpen] =
     useState(false);
   // Section an in-flight "Add Field" palette open should insert into; null
-  // means "no explicit target", so handleAddField falls back to the
-  // selected field's section or the form's first section.
+  // means "no explicit target", so addField falls back to the selected
+  // field's section or the form's first section.
   const [addFieldTargetSectionId, setAddFieldTargetSectionId] = useState<
     string | null
   >(null);
@@ -416,6 +254,39 @@ export const CRFStudioContainer: React.FC = () => {
   // returning focus to the trigger button on close.
   const mobileWidgetSheetRef = useFocusTrap<HTMLDivElement>(
     isMobileWidgetDrawerOpen
+  );
+
+  const showCanvas = useCallback(() => setMobileActiveView("canvas"), []);
+  const closeWidgetDrawer = useCallback(
+    () => setIsMobileWidgetDrawerOpen(false),
+    []
+  );
+  const editor = useStudyEditor({
+    history: studyHistory,
+    navigation,
+    showCanvas,
+    closeWidgetDrawer,
+    playSuccess,
+    toast,
+  });
+  const {
+    activeForm,
+    reviewAuthor,
+    pendingStudyReplacement,
+    impactPendingDeletion,
+  } = editor;
+
+  const replaceStudyModalRef = useFocusTrap<HTMLDivElement>(
+    !!pendingStudyReplacement,
+    {
+      onEscape: editor.cancelStudyReplacement,
+    }
+  );
+  const impactDeletionModalRef = useFocusTrap<HTMLDivElement>(
+    impactPendingDeletion !== null,
+    {
+      onEscape: editor.cancelImpactDeletion,
+    }
   );
 
   // Modals & Panels State
@@ -436,187 +307,13 @@ export const CRFStudioContainer: React.FC = () => {
   const [isSlashPaletteOpen, setIsSlashPaletteOpen] = useState(false);
   const [isOmnibarOpen, setIsOmnibarOpen] = useState(false);
   const [isBaselinesModalOpen, setIsBaselinesModalOpen] = useState(false);
-  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
   const [isLibraryUpgradesOpen, setIsLibraryUpgradesOpen] = useState(false);
-  // Selected baseline for the comparison panel, seeded from the URL hash so
-  // reloading or reopening the page (#676) restores an equivalent comparison
-  // instead of silently dropping which baseline was being reviewed.
-  const [compareBaselineId, setCompareBaselineIdState] = useState<
-    string | null
-  >(() => startupHash.compare);
   const [slashTargetSectionId, setSlashTargetSectionId] = useState<
     string | undefined
   >();
   const [slashTargetIndex, setSlashTargetIndex] = useState<
     number | undefined
   >();
-  const [activeVisitId, setActiveVisitIdState] = useState<string>(
-    () => startupHash.visit
-  );
-
-  useEffect(() => {
-    if (study && !activeVisitId && study.visits[0]) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveVisitIdState(study.visits[0].id);
-    }
-  }, [study, activeVisitId]);
-
-  const [leftTab, setLeftTabState] = useState<LeftSidebarTab>(
-    () => startupHash.tab ?? "spine"
-  );
-
-  // Synchronize incoming hash state on mount or browser Back/Forward navigation
-  useEffect(() => {
-    const targetMode = (params.mode as StudioMode | undefined) || "designer";
-    if (
-      ["designer", "matrix", "rules", "edc", "acrf", "export"].includes(
-        targetMode
-      )
-    ) {
-      if (targetMode !== activeMode) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveModeState(targetMode);
-      }
-    }
-
-    const defaultFormId = study?.forms[0]?.id || "";
-    const targetForm =
-      params.form && study?.forms.some((f) => f.id === params.form)
-        ? params.form
-        : defaultFormId;
-    if (targetForm && targetForm !== activeFormId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setActiveFormIdState(targetForm);
-    }
-
-    const rawVisit = params.visit as string | undefined;
-    if (rawVisit && study?.visits.some((v) => v.id === rawVisit)) {
-      if (rawVisit !== activeVisitId) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setActiveVisitIdState(rawVisit);
-      }
-    }
-
-    const targetField = params.field || null;
-    if (targetField !== selectedFieldId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSelectedFieldIdState(targetField);
-    }
-
-    const targetTab = (params.tab as LeftSidebarTab | undefined) || "spine";
-    if (
-      ["spine", "forms", "palette"].includes(targetTab) &&
-      targetTab !== leftTab
-    ) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLeftTabState(targetTab);
-    }
-
-    const rawTheme = params.theme as StudioTheme | undefined;
-    if (rawTheme && (rawTheme === "light" || rawTheme === "dark")) {
-      if (rawTheme !== theme) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setTheme(rawTheme);
-      }
-    } else if (params.theme === "" && theme !== "dark") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTheme("dark");
-    }
-
-    const rawCompare = params.compare || null;
-    if (rawCompare !== compareBaselineId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setCompareBaselineIdState(rawCompare);
-    }
-    // Gated separately from the value-change check above: on first mount
-    // from a reopened/shared link, compareBaselineId is already seeded from
-    // the hash by its own initializer, so it can equal rawCompare on the
-    // very first effect run — this still needs to open the panel.
-    if (rawCompare && !isCompareModalOpen) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsCompareModalOpen(true);
-    }
-  }, [
-    params,
-    study?.forms,
-    study?.visits,
-    activeMode,
-    activeFormId,
-    activeVisitId,
-    selectedFieldId,
-    leftTab,
-    theme,
-    compareBaselineId,
-    isCompareModalOpen,
-  ]);
-
-  // Synchronized Setters with Hybrid Navigation
-  const setActiveMode = useCallback(
-    (mode: StudioMode) => {
-      setActiveModeState(mode);
-      setParam("mode", mode === "designer" ? null : mode, { replace: false });
-    },
-    [setParam]
-  );
-
-  const defaultFormId = study?.forms?.[0]?.id;
-  const setActiveFormId = useCallback(
-    (formId: string) => {
-      setActiveFormIdState(formId);
-      const isDefault = formId === defaultFormId;
-      setParams(
-        {
-          form: isDefault ? null : formId,
-          field: null,
-        },
-        { replace: true }
-      );
-    },
-    [setParams, defaultFormId]
-  );
-
-  const setActiveVisitId = useCallback(
-    (visitId: string) => {
-      setActiveVisitIdState(visitId);
-      setParam("visit", visitId, { replace: true });
-    },
-    [setParam]
-  );
-
-  const setSelectedFieldId = useCallback(
-    (fieldId: string | null) => {
-      setSelectedFieldIdState(fieldId);
-      setParam("field", fieldId, { replace: true });
-    },
-    [setParam]
-  );
-
-  const setCompareBaselineId = useCallback(
-    (baselineId: string | null) => {
-      setCompareBaselineIdState(baselineId);
-      setParam("compare", baselineId, { replace: true });
-    },
-    [setParam]
-  );
-
-  const setLeftTab = useCallback(
-    (tab: LeftSidebarTab) => {
-      setLeftTabState(tab);
-      setParam("tab", tab === "spine" ? null : tab, { replace: true });
-    },
-    [setParam]
-  );
-
-  const handleToggleTheme = useCallback(() => {
-    const nextTheme: StudioTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    if (typeof window !== "undefined") {
-      safeSetRawItem("crf_studio_theme", nextTheme, { retainInMemory: false });
-    }
-    setParam("theme", nextTheme === "dark" ? null : nextTheme, {
-      replace: true,
-    });
-  }, [theme, setParam]);
 
   useWorkspaceAction({
     id: "crf-studio:validate-cdash",
@@ -653,7 +350,7 @@ export const CRFStudioContainer: React.FC = () => {
     badge: "Theme",
     tags: ["theme", "dark", "light"],
     shortcut: "Alt+T",
-    handler: handleToggleTheme,
+    handler: toggleTheme,
   });
 
   const { copy: copyShareLink } = useClipboard({
@@ -676,124 +373,6 @@ export const CRFStudioContainer: React.FC = () => {
       copyShareLink(window.location.href);
     }
   }, [copyShareLink]);
-
-  // Push new state onto undo history stack
-  const updateStudyWithHistory = useCallback(
-    (newStudy: StudyProtocol) => {
-      setHistory((prev) => [...prev.slice(-20), study]);
-      setFuture([]);
-      setStudy(newStudy);
-    },
-    [study]
-  );
-
-  const handleUpdateSimulationState = useCallback(
-    (nextSimulationState: EdcSimulationState) => {
-      setStudy((prev) => {
-        if (prev.simulationState === nextSimulationState) return prev;
-        return {
-          ...prev,
-          simulationState: nextSimulationState,
-        };
-      });
-    },
-    []
-  );
-
-  const handleAddReviewComment = useCallback(
-    (fieldId: string, body: string, author: StudyReviewActor) => {
-      const result = StudyProtocolEngine.addReviewComment(
-        study,
-        fieldId,
-        body,
-        author
-      );
-      updateStudyWithHistory(result.study);
-    },
-    [study, updateStudyWithHistory]
-  );
-
-  const handleSetReviewThreadStatus = useCallback(
-    (
-      threadId: string,
-      status: "resolved" | "open",
-      author: StudyReviewActor
-    ) => {
-      updateStudyWithHistory(
-        StudyProtocolEngine.setReviewThreadStatus(
-          study,
-          threadId,
-          status,
-          author
-        )
-      );
-    },
-    [study, updateStudyWithHistory]
-  );
-
-  const handleCommitReviewTargetChange = useCallback(
-    (fieldId: string, updates?: Partial<CRFField>) => {
-      let updatedStudy = study;
-      const targetForm = study.forms.find((form) =>
-        StudyProtocolEngine.getField(study, form.id, fieldId)
-      );
-      if (updates && targetForm) {
-        if (updates.variableName !== undefined) {
-          const rename = StudyProtocolEngine.renameFieldEverywhere(
-            study,
-            targetForm.id,
-            fieldId,
-            updates.variableName,
-            updates.label,
-            reviewAuthor
-          );
-          if (rename.error) return;
-          updatedStudy = rename.study;
-        } else {
-          const edit = StudyProtocolEngine.updateField(
-            study,
-            targetForm.id,
-            fieldId,
-            updates
-          );
-          if (edit.error) return;
-          updatedStudy = StudyProtocolEngine.recordReviewTargetChange(
-            edit.study,
-            fieldId,
-            reviewAuthor
-          );
-        }
-      } else {
-        updatedStudy = StudyProtocolEngine.recordReviewTargetChange(
-          study,
-          fieldId,
-          reviewAuthor
-        );
-      }
-      if (updatedStudy !== study) updateStudyWithHistory(updatedStudy);
-    },
-    [reviewAuthor, study, updateStudyWithHistory]
-  );
-
-  const handleUndo = useCallback(() => {
-    if (history.length === 0) return;
-    const previous = history[history.length - 1];
-    const newHistory = history.slice(0, history.length - 1);
-
-    setFuture((prev) => [study, ...prev]);
-    setHistory(newHistory);
-    setStudy(previous);
-  }, [history, study]);
-
-  const handleRedo = useCallback(() => {
-    if (future.length === 0) return;
-    const next = future[0];
-    const newFuture = future.slice(1);
-
-    setHistory((prev) => [...prev, study]);
-    setFuture(newFuture);
-    setStudy(next);
-  }, [future, study]);
 
   // Global Keyboard Shortcuts (Undo, Redo, Sidebar Toggles, Mode Switching, Hotkeys)
   // The tour points at the designer's panes, so show them before it starts.
@@ -842,9 +421,9 @@ export const CRFStudioContainer: React.FC = () => {
       case "z":
         e.preventDefault();
         if (e.shiftKey) {
-          handleRedo();
+          redo();
         } else {
-          handleUndo();
+          undo();
         }
         return;
       // ⌘K / Ctrl+K stays with the site-wide search palette so the shortcut
@@ -885,22 +464,6 @@ export const CRFStudioContainer: React.FC = () => {
     }
   });
 
-  const handleSaveCodelist = useCallback(
-    (newCodelist: CodelistDefinition) => {
-      if (!study) return;
-      updateStudyWithHistory({
-        ...study,
-        codelists: [
-          ...study.codelists.filter((cl) => cl.id !== newCodelist.id),
-          newCodelist,
-        ],
-      });
-    },
-    [study, updateStudyWithHistory]
-  );
-
-  const activeForm =
-    study?.forms?.find((f) => f.id === activeFormId) || study?.forms?.[0];
   const allFields = activeForm
     ? activeForm.sections.flatMap((s) => s.fields)
     : [];
@@ -914,447 +477,26 @@ export const CRFStudioContainer: React.FC = () => {
     }
   };
 
-  // Study Replacement Handler with Unsaved Draft Dirty Checking
-  const requestStudyReplacement = useCallback(
-    (targetStudy: StudyProtocol, label: string) => {
-      if (isDraftDirty(study, baselineStudy)) {
-        setPendingStudyReplacement({ targetStudy, label });
-      } else {
-        setBaselineStudy(targetStudy);
-        updateStudyWithHistory(targetStudy);
-        setActiveFormId(targetStudy.forms[0]?.id || "");
-        setActiveVisitId(targetStudy.visits[0]?.id || "");
-        setSelectedFieldId(null);
-      }
-    },
-    [
-      study,
-      baselineStudy,
-      updateStudyWithHistory,
-      setActiveFormId,
-      setActiveVisitId,
-      setSelectedFieldId,
-    ]
-  );
-
-  // Preset Selector Handler
-  const handleSelectPreset = (presetId: string) => {
-    const preset = getPresetByIdSync(presetId);
-    if (preset) {
-      requestStudyReplacement(
-        preset,
-        `Preset "${preset.studyName || presetId}"`
-      );
-    }
-  };
-
-  // Form CRUD
-  const handleAddForm = () => {
-    const { study: updatedStudy, form: newForm } = StudyProtocolEngine.addForm(
-      study,
-      "CRF",
-      `New Custom Form ${study.forms.length + 1}`
-    );
-
-    updateStudyWithHistory(updatedStudy);
-    setActiveFormId(newForm.id);
-    setSelectedFieldId(null);
-    setMobileActiveView("canvas");
-  };
-
-  const handleSaveFormAsTemplate = (formId: string) => {
-    const form = study.forms.find((f) => f.id === formId);
-    if (!form) return;
-    const template = captureFormTemplate({ form, codelists: study.codelists });
-    const result = saveFormTemplate(template);
-    if (result.status === "saved") {
-      toast.success(`Saved "${template.name}" as a form template`);
-    } else if (result.status === "limit") {
-      toast.error(
-        `You can keep ${result.max} form templates. Delete one to save another.`
-      );
-    } else {
-      toast.error("This browser could not save the template.");
-    }
-  };
-
-  const handleDuplicateForm = (formId: string) => {
-    const { study: updatedStudy, duplicatedForm } =
-      StudyProtocolEngine.duplicateForm(study, formId);
-    if (!duplicatedForm) return;
-
-    updateStudyWithHistory(updatedStudy);
-    setActiveFormId(duplicatedForm.id);
-    setSelectedFieldId(null);
-    setMobileActiveView("canvas");
-  };
-
-  // Form variant (#675): creation and reassignment land as one history entry.
-  const handleCommitFormVariant = (
-    updatedStudy: StudyProtocol,
-    variantFormId: string
-  ) => {
-    updateStudyWithHistory(updatedStudy);
-    setActiveFormId(variantFormId);
-    setSelectedFieldId(null);
-  };
-
-  const handleDeleteForm = (formId: string) => {
-    if (study.forms.length <= 1) return;
-    const { study: updatedStudy, removedForm } = StudyProtocolEngine.removeForm(
-      study,
-      formId
-    );
-    if (!removedForm) return;
-
-    updateStudyWithHistory(updatedStudy);
-
-    // If active form was deleted, gracefully transition to first remaining form
-    if (
-      activeFormId === formId ||
-      !updatedStudy.forms.some((f) => f.id === activeFormId)
-    ) {
-      const nextActiveForm = updatedStudy.forms[0]?.id || "";
-      setActiveFormId(nextActiveForm);
-      setSelectedFieldId(null);
-    }
-  };
-
-  const handleAssignFormToVisit = useCallback(
-    (visitId: string, formId: string) => {
-      const updatedVisits = study.visits.map((v) => {
-        if (v.id !== visitId) return v;
-        if (v.assignedFormIds.includes(formId)) return v;
-        return {
-          ...v,
-          assignedFormIds: [...v.assignedFormIds, formId],
-        };
-      });
-      updateStudyWithHistory({ ...study, visits: updatedVisits });
-    },
-    [study, updateStudyWithHistory]
-  );
-
-  const handleUnassignFormFromVisit = useCallback(
-    (visitId: string, formId: string) => {
-      const updatedVisits = study.visits.map((v) => {
-        if (v.id !== visitId) return v;
-        return {
-          ...v,
-          assignedFormIds: v.assignedFormIds.filter((id) => id !== formId),
-        };
-      });
-      updateStudyWithHistory({ ...study, visits: updatedVisits });
-    },
-    [study, updateStudyWithHistory]
-  );
-
-  const handleAddVisit = useCallback(() => {
-    const nextIdx = study.visits.length + 1;
-    const newVisit: StudyVisit = {
-      id: `v_visit_${Date.now()}`,
-      oid: `SE.VISIT_${nextIdx}`,
-      name: `Visit ${nextIdx} (Day ${(nextIdx - 1) * 28})`,
-      visitType: "Scheduled",
-      targetDay: (nextIdx - 1) * 28,
-      windowBefore: 3,
-      windowAfter: 3,
-      assignedFormIds: study.forms.filter((f) => !f.isLogForm).map((f) => f.id),
-    };
-    updateStudyWithHistory({ ...study, visits: [...study.visits, newVisit] });
-    setActiveVisitId(newVisit.id);
-  }, [study, updateStudyWithHistory, setActiveVisitId]);
-
-  const handleDeleteVisit = useCallback(
-    (visitId: string) => {
-      if (study.visits.length <= 1) return;
-      const filtered = study.visits.filter((v) => v.id !== visitId);
-      updateStudyWithHistory({ ...study, visits: filtered });
-      if (activeVisitId === visitId) {
-        setActiveVisitId(filtered[0]?.id || "");
-      }
-    },
-    [study, activeVisitId, updateStudyWithHistory, setActiveVisitId]
-  );
-
-  const handleInjectCdashForm = useCallback(
-    (
-      newForm: CRFForm,
-      targetVisitId?: string,
-      newCodelists: CodelistDefinition[] = []
-    ) => {
-      const nextVisits = targetVisitId
-        ? study.visits.map((v) =>
-            v.id === targetVisitId
-              ? {
-                  ...v,
-                  assignedFormIds: Array.from(
-                    new Set([...v.assignedFormIds, newForm.id])
-                  ),
-                }
-              : v
-          )
-        : study.visits;
-
-      updateStudyWithHistory({
-        ...study,
-        forms: [...study.forms, newForm],
-        visits: nextVisits,
-        codelists: newCodelists.length
-          ? [...study.codelists, ...newCodelists]
-          : study.codelists,
-      });
-      setActiveFormId(newForm.id);
-      setSelectedFieldId(null);
-      setMobileActiveView("canvas");
-    },
-    [study, updateStudyWithHistory, setActiveFormId, setSelectedFieldId]
-  );
-
-  const handleUpdateFormMeta = (updates: Partial<CRFForm>) => {
-    if (!activeForm) return;
-    const updatedForms = study.forms.map((f) =>
-      f.id === activeForm.id ? { ...f, ...updates } : f
-    );
-    updateStudyWithHistory({ ...study, forms: updatedForms });
-  };
-
-  // Section CRUD
-  const handleAddSection = () => {
-    if (!activeForm) return;
-    const newSection: CRFSection = {
-      id: `sec_${Date.now()}`,
-      title: `Section ${activeForm.sections.length + 1}`,
-      fields: [],
-    };
-    const updatedForm: CRFForm = {
-      ...activeForm,
-      sections: [...activeForm.sections, newSection],
-    };
-    handleUpdateFormMeta(updatedForm);
-  };
-
-  const handleDeleteSection = (sectionId: string) => {
-    if (!activeForm || activeForm.sections.length <= 1) return;
-    const preview = StudyProtocolEngine.previewSectionRemoval(
-      study,
-      activeForm.id,
-      sectionId
-    );
-    if (!preview.canSafelyDelete && preview.totalReferencesCount > 0) {
-      const foundSec = activeForm.sections.find((s) => s.id === sectionId);
-      if (foundSec) {
-        setImpactPendingDeletion({
-          type: "section",
-          section: foundSec,
-          preview,
-        });
-        return;
-      }
-    }
-    const { study: updatedStudy } =
-      StudyProtocolEngine.removeSectionWithCascade(
-        study,
-        activeForm.id,
-        sectionId,
-        undefined,
-        reviewAuthor
-      );
-    updateStudyWithHistory(updatedStudy);
-  };
-
-  const handleUpdateSectionTitle = (sectionId: string, title: string) => {
-    if (!activeForm) return;
-    const updatedSections = activeForm.sections.map((s) =>
-      s.id === sectionId ? { ...s, title } : s
-    );
-    handleUpdateFormMeta({ sections: updatedSections });
-  };
-
-  // Field CRUD
-  const handleAddField = (
-    field: CRFField,
-    options?: { sectionId?: string; targetIndex?: number }
-  ) => {
-    if (!activeForm) return;
-
-    let targetSectionId = options?.sectionId;
-    let targetIndex = options?.targetIndex;
-
-    // If neither section nor index is provided, position relative to currently selected field
-    if (!targetSectionId && selectedFieldId) {
-      for (const s of activeForm.sections) {
-        const fIdx = s.fields.findIndex((f) => f.id === selectedFieldId);
-        if (fIdx !== -1) {
-          targetSectionId = s.id;
-          if (targetIndex === undefined) {
-            targetIndex = fIdx + 1;
-          }
-          break;
-        }
-      }
-    }
-
-    if (!targetSectionId && activeForm.sections.length > 0) {
-      targetSectionId = activeForm.sections[0].id;
-    }
-
-    // Ensure variable name is nonconflicting
-    const existingVars = new Set<string>();
-    for (const s of activeForm.sections) {
-      for (const f of s.fields) {
-        existingVars.add(f.variableName.toUpperCase());
-        if (f.repeatingColumns) {
-          for (const rc of f.repeatingColumns) {
-            existingVars.add(rc.variableName.toUpperCase());
-          }
-        }
-      }
-    }
-
-    let variableName = field.variableName;
-    if (existingVars.has(variableName.toUpperCase())) {
-      variableName = generateCdashVariableName(variableName, existingVars);
-    }
-    existingVars.add(variableName.toUpperCase());
-
-    let repeatingColumns = field.repeatingColumns;
-    if (repeatingColumns && repeatingColumns.length > 0) {
-      repeatingColumns = repeatingColumns.map((rc) => {
-        let rcVar = rc.variableName;
-        if (existingVars.has(rcVar.toUpperCase())) {
-          rcVar = generateCdashVariableName(rcVar, existingVars);
-        }
-        existingVars.add(rcVar.toUpperCase());
-        return {
-          ...rc,
-          id: generateEngineId("fld"),
-          variableName: rcVar,
-        };
-      });
-    }
-
-    const fieldToInsert: CRFField = {
-      ...field,
-      variableName,
-      ...(repeatingColumns ? { repeatingColumns } : {}),
-    };
-
-    const { study: updatedStudy, field: insertedField } =
-      StudyProtocolEngine.insertField(study, activeForm.id, fieldToInsert, {
-        sectionId: targetSectionId,
-        targetIndex,
-      });
-
-    if (insertedField) {
-      updateStudyWithHistory(updatedStudy);
-      setSelectedFieldId(insertedField.id);
-    } else {
-      // Fallback manual splice
-      const updatedSections = activeForm.sections.map((sec) => {
-        if (sec.id !== targetSectionId) return sec;
-        const fields = [...sec.fields];
-        const insertAt =
-          targetIndex !== undefined
-            ? clamp(targetIndex, 0, fields.length)
-            : fields.length;
-        fields.splice(insertAt, 0, fieldToInsert);
-        return { ...sec, fields };
-      });
-      handleUpdateFormMeta({ sections: updatedSections });
-      setSelectedFieldId(fieldToInsert.id);
-    }
-    setIsMobileWidgetDrawerOpen(false);
-  };
-
   const handleOpenSlashPalette = useCallback(
     (targetSectionId?: string, targetIndex?: number) => {
-      let resolvedSectionId = targetSectionId;
-      let resolvedIndex = targetIndex;
-
-      if (!resolvedSectionId && selectedFieldId && activeForm) {
-        for (const s of activeForm.sections) {
-          const fIdx = s.fields.findIndex((f) => f.id === selectedFieldId);
-          if (fIdx !== -1) {
-            resolvedSectionId = s.id;
-            if (resolvedIndex === undefined) {
-              resolvedIndex = fIdx + 1;
-            }
-            break;
-          }
-        }
-      }
-
-      if (!resolvedSectionId && activeForm?.sections.length) {
-        resolvedSectionId = activeForm.sections[0].id;
-      }
-
-      setSlashTargetSectionId(resolvedSectionId);
-      setSlashTargetIndex(resolvedIndex);
+      const target = activeForm
+        ? resolveInsertionTarget(activeForm, selectedFieldId, {
+            sectionId: targetSectionId,
+            index: targetIndex,
+          })
+        : { sectionId: targetSectionId, index: targetIndex };
+      setSlashTargetSectionId(target.sectionId);
+      setSlashTargetIndex(target.index);
       setIsSlashPaletteOpen(true);
     },
     [activeForm, selectedFieldId]
   );
 
   const handleSelectSlashCommand = (item: SlashCommandItem) => {
-    if (!activeForm) return;
-
-    let targetSecId = slashTargetSectionId;
-    let targetIdx = slashTargetIndex;
-
-    if (!targetSecId && selectedFieldId) {
-      for (const s of activeForm.sections) {
-        const fIdx = s.fields.findIndex((f) => f.id === selectedFieldId);
-        if (fIdx !== -1) {
-          targetSecId = s.id;
-          if (targetIdx === undefined) {
-            targetIdx = fIdx + 1;
-          }
-          break;
-        }
-      }
-    }
-
-    if (!targetSecId && activeForm.sections.length > 0) {
-      targetSecId = activeForm.sections[0].id;
-    }
-
-    if (item.action === "insert_smart_block" && item.smartBlockId) {
-      const res = StudyProtocolEngine.insertSmartBlock(
-        study,
-        activeForm.id,
-        item.smartBlockId,
-        {
-          targetSectionId: targetSecId,
-          targetIndex: targetIdx,
-        }
-      );
-      if (!res.error) {
-        updateStudyWithHistory(res.study);
-        if (res.insertedFields.length > 0) {
-          setSelectedFieldId(res.insertedFields[0].id);
-        }
-        playSuccess();
-      }
-    } else if (item.action === "insert_section") {
-      handleAddSection();
-      playSuccess();
-    } else if (item.action === "insert_field") {
-      const res = StudyProtocolEngine.insertAtomicSlashField(
-        study,
-        activeForm.id,
-        item.id,
-        {
-          targetSectionId: targetSecId,
-          targetIndex: targetIdx,
-        }
-      );
-      if (!res.error && res.insertedField) {
-        updateStudyWithHistory(res.study);
-        setSelectedFieldId(res.insertedField.id);
-        playSuccess();
-      }
-    }
+    editor.insertSlashCommand(item, {
+      sectionId: slashTargetSectionId,
+      index: slashTargetIndex,
+    });
   };
 
   // Study Omnibar (#544). Insertions clear any stale slash target so they
@@ -1406,161 +548,6 @@ export const CRFStudioContainer: React.FC = () => {
     }
   };
 
-  // Review packages (#680) label tests with the per-dependency freshness from
-  // #679; never-run tests fall back to the package's own fingerprint check.
-  const resolveReviewPackageStaleness = (scenario: TestScenario) => {
-    const assessment = assessScenarioFreshness(scenario, study);
-    if (assessment.freshness === "never_run") return undefined;
-    if (assessment.freshness === "current") return { stale: false };
-    return {
-      stale: true,
-      reason: assessment.reasons[0]?.message ?? assessment.label,
-    };
-  };
-
-  const handleUpdateField = (fieldId: string, updates: Partial<CRFField>) => {
-    if (!activeForm) return;
-    const res = StudyProtocolEngine.updateField(
-      study,
-      activeForm.id,
-      fieldId,
-      updates
-    );
-    if (!res.error && res.study) {
-      updateStudyWithHistory(res.study);
-    }
-  };
-
-  const handleDuplicateField = (sectionId: string, fieldId: string) => {
-    if (!activeForm) return;
-    const { study: updatedStudy, duplicatedField } =
-      StudyProtocolEngine.duplicateField(
-        study,
-        activeForm.id,
-        fieldId,
-        sectionId
-      );
-    if (!duplicatedField) return;
-
-    updateStudyWithHistory(updatedStudy);
-    setSelectedFieldId(duplicatedField.id);
-  };
-
-  const handleDeleteField = (sectionId: string, fieldId: string) => {
-    if (!activeForm) return;
-    const preview = StudyProtocolEngine.previewFieldRemoval(
-      study,
-      activeForm.id,
-      fieldId
-    );
-    if (!preview.canSafelyDelete && preview.references.length > 0) {
-      const foundField = activeForm.sections
-        .flatMap((s) => s.fields)
-        .find((f) => f.id === fieldId);
-      if (foundField) {
-        setImpactPendingDeletion({
-          type: "field",
-          field: foundField,
-          sectionId,
-          preview,
-        });
-        return;
-      }
-    }
-    const { study: updatedStudy } = StudyProtocolEngine.removeField(
-      study,
-      activeForm.id,
-      fieldId,
-      undefined,
-      reviewAuthor
-    );
-    updateStudyWithHistory(updatedStudy);
-    if (selectedFieldId === fieldId) {
-      setSelectedFieldId(null);
-    }
-  };
-
-  const handleConfirmImpactDeletion = () => {
-    if (!activeForm || !impactPendingDeletion) return;
-    if (impactPendingDeletion.type === "field") {
-      const { study: updatedStudy } =
-        StudyProtocolEngine.removeFieldWithCascade(
-          study,
-          activeForm.id,
-          impactPendingDeletion.field.id,
-          { purgeReferencingRules: true },
-          reviewAuthor
-        );
-      updateStudyWithHistory(updatedStudy);
-      if (selectedFieldId === impactPendingDeletion.field.id) {
-        setSelectedFieldId(null);
-      }
-    } else if (impactPendingDeletion.type === "section") {
-      const { study: updatedStudy } =
-        StudyProtocolEngine.removeSectionWithCascade(
-          study,
-          activeForm.id,
-          impactPendingDeletion.section.id,
-          { purgeReferencingRules: true },
-          reviewAuthor
-        );
-      updateStudyWithHistory(updatedStudy);
-    }
-    setImpactPendingDeletion(null);
-  };
-
-  const handleRenameFieldEverywhere = (
-    fieldId: string,
-    newVariableName: string,
-    author: StudyReviewActor = reviewAuthor
-  ) => {
-    if (!activeForm) return;
-    const { study: updatedStudy, error } =
-      StudyProtocolEngine.renameFieldEverywhere(
-        study,
-        activeForm.id,
-        fieldId,
-        newVariableName,
-        undefined,
-        author
-      );
-    if (error) {
-      logger.warn("Failed to rename field everywhere:", error);
-      return;
-    }
-    updateStudyWithHistory(updatedStudy);
-  };
-
-  const handleUpdateRules = (rules: EditCheckRule[]) => {
-    handleUpdateFormMeta({ rules });
-  };
-
-  const handleUpdateVisits = (visits: StudyVisit[]) => {
-    updateStudyWithHistory({ ...study, visits });
-  };
-
-  const handleUpdateBranding = (newBranding: StudyBranding) => {
-    updateStudyWithHistory({
-      ...study,
-      branding: newBranding,
-    });
-  };
-
-  const handleRestoreBaselineAsDraft = (
-    restoredStudy: StudyProtocol,
-    baseline: StudyBaseline
-  ) => {
-    setHistory([]);
-    setFuture([]);
-    setStudy(restoredStudy);
-    setBaselineStudy(restoredStudy);
-    setActiveFormId(restoredStudy.forms[0]?.id || "");
-    setActiveVisitId(restoredStudy.visits[0]?.id || "");
-    setSelectedFieldId(null);
-    playSuccess();
-    toast.success(`Restored draft from baseline ${baseline.versionTag}`);
-  };
-
   const handleCloseCompareModal = () => {
     setIsCompareModalOpen(false);
     setCompareBaselineId(null);
@@ -1579,15 +566,16 @@ export const CRFStudioContainer: React.FC = () => {
     () => ({
       reviewThreads: study.reviewThreads || [],
       reviewAuthor,
-      onReviewAuthorChange: setReviewAuthor,
-      onAddReviewComment: handleAddReviewComment,
-      onSetReviewThreadStatus: handleSetReviewThreadStatus,
-      onCommitReviewTargetChange: handleCommitReviewTargetChange,
+      onReviewAuthorChange: editor.setReviewAuthor,
+      onAddReviewComment: editor.addReviewComment,
+      onSetReviewThreadStatus: editor.setReviewThreadStatus,
+      onCommitReviewTargetChange: editor.commitReviewTargetChange,
     }),
     [
-      handleAddReviewComment,
-      handleCommitReviewTargetChange,
-      handleSetReviewThreadStatus,
+      editor.addReviewComment,
+      editor.commitReviewTargetChange,
+      editor.setReviewThreadStatus,
+      editor.setReviewAuthor,
       reviewAuthor,
       study.reviewThreads,
     ]
@@ -1619,10 +607,10 @@ export const CRFStudioContainer: React.FC = () => {
       <StudioHeader
         study={study}
         activeMode={activeMode}
-        canUndo={history.length > 0}
-        canRedo={future.length > 0}
+        canUndo={canUndo}
+        canRedo={canRedo}
         theme={theme}
-        onToggleTheme={handleToggleTheme}
+        onToggleTheme={toggleTheme}
         isLeftSidebarOpen={isLeftSidebarOpen}
         isRightInspectorOpen={isRightInspectorOpen}
         isTerminalOpen={isTerminalOpen}
@@ -1631,10 +619,10 @@ export const CRFStudioContainer: React.FC = () => {
         onToggleRightInspector={() => setIsRightInspectorOpen((prev) => !prev)}
         onToggleTerminal={() => setIsTerminalOpen((prev) => !prev)}
         onToggleTestDock={() => setIsTestDockOpen((prev) => !prev)}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
+        onUndo={undo}
+        onRedo={redo}
         onChangeMode={setActiveMode}
-        onSelectPreset={handleSelectPreset}
+        onSelectPreset={editor.selectPreset}
         onOpenDiagnostics={() => setIsDiagnosticsOpen(true)}
         onOpenCdashScaffolder={() => setIsScaffolderOpen(true)}
         onOpenBranding={() => setIsBrandingOpen(true)}
@@ -1702,22 +690,22 @@ export const CRFStudioContainer: React.FC = () => {
                     setActiveFormId(id);
                     setSelectedFieldId(null);
                   }}
-                  onAddVisit={handleAddVisit}
-                  onDeleteVisit={handleDeleteVisit}
-                  onAddForm={handleAddForm}
-                  onDuplicateForm={handleDuplicateForm}
-                  onDeleteForm={handleDeleteForm}
+                  onAddVisit={editor.addVisit}
+                  onDeleteVisit={editor.deleteVisit}
+                  onAddForm={editor.addForm}
+                  onDuplicateForm={editor.duplicateForm}
+                  onDeleteForm={editor.deleteForm}
                   onOpenCdashScaffolder={() => setIsScaffolderOpen(true)}
                   onAddField={(field) => {
-                    handleAddField(field, {
+                    editor.addField(field, {
                       sectionId: addFieldTargetSectionId ?? undefined,
                     });
                     setAddFieldTargetSectionId(null);
                   }}
-                  onAssignFormToVisit={handleAssignFormToVisit}
-                  onUnassignFormFromVisit={handleUnassignFormFromVisit}
-                  onInjectCdashForm={handleInjectCdashForm}
-                  onCommitFormVariant={handleCommitFormVariant}
+                  onAssignFormToVisit={editor.assignFormToVisit}
+                  onUnassignFormFromVisit={editor.unassignFormFromVisit}
+                  onInjectCdashForm={editor.injectCdashForm}
+                  onCommitFormVariant={editor.commitFormVariant}
                 />
               </aside>
             )}
@@ -1738,23 +726,23 @@ export const CRFStudioContainer: React.FC = () => {
                       setSelectedFieldId(null);
                       setMobileActiveView("canvas");
                     }}
-                    onAddVisit={handleAddVisit}
-                    onDeleteVisit={handleDeleteVisit}
-                    onAddForm={handleAddForm}
-                    onDuplicateForm={handleDuplicateForm}
-                    onDeleteForm={handleDeleteForm}
+                    onAddVisit={editor.addVisit}
+                    onDeleteVisit={editor.deleteVisit}
+                    onAddForm={editor.addForm}
+                    onDuplicateForm={editor.duplicateForm}
+                    onDeleteForm={editor.deleteForm}
                     onOpenCdashScaffolder={() => setIsScaffolderOpen(true)}
                     onAddField={(field) => {
-                      handleAddField(field, {
+                      editor.addField(field, {
                         sectionId: addFieldTargetSectionId ?? undefined,
                       });
                       setAddFieldTargetSectionId(null);
                       setMobileActiveView("canvas");
                     }}
-                    onAssignFormToVisit={handleAssignFormToVisit}
-                    onUnassignFormFromVisit={handleUnassignFormFromVisit}
-                    onInjectCdashForm={handleInjectCdashForm}
-                    onCommitFormVariant={handleCommitFormVariant}
+                    onAssignFormToVisit={editor.assignFormToVisit}
+                    onUnassignFormFromVisit={editor.unassignFormFromVisit}
+                    onInjectCdashForm={editor.injectCdashForm}
+                    onCommitFormVariant={editor.commitFormVariant}
                   />
                 </div>
               )}
@@ -1768,20 +756,20 @@ export const CRFStudioContainer: React.FC = () => {
                     codelists={study.codelists}
                     onChangeViewport={setViewport}
                     onSelectField={handleSelectField}
-                    onUpdateFormMeta={handleUpdateFormMeta}
-                    onAddSection={handleAddSection}
-                    onDeleteSection={handleDeleteSection}
-                    onUpdateSectionTitle={handleUpdateSectionTitle}
-                    onDuplicateField={handleDuplicateField}
-                    onDeleteField={handleDeleteField}
-                    onUpdateField={handleUpdateField}
-                    onCommitReviewTargetChange={handleCommitReviewTargetChange}
+                    onUpdateFormMeta={editor.updateFormMeta}
+                    onAddSection={editor.addSection}
+                    onDeleteSection={editor.deleteSection}
+                    onUpdateSectionTitle={editor.updateSectionTitle}
+                    onDuplicateField={editor.duplicateField}
+                    onDeleteField={editor.deleteField}
+                    onUpdateField={editor.updateField}
+                    onCommitReviewTargetChange={editor.commitReviewTargetChange}
                     onOpenPalette={(sectionId) => {
                       setAddFieldTargetSectionId(sectionId ?? null);
                       setIsMobileWidgetDrawerOpen(true);
                     }}
-                    onSaveAsTemplate={handleSaveFormAsTemplate}
-                    onDuplicateForm={handleDuplicateForm}
+                    onSaveAsTemplate={editor.saveFormAsTemplate}
+                    onDuplicateForm={editor.duplicateForm}
                     onOpenSlashPalette={handleOpenSlashPalette}
                   />
                 </div>
@@ -1798,23 +786,16 @@ export const CRFStudioContainer: React.FC = () => {
                       setSelectedFieldId(null);
                       setMobileActiveView("canvas");
                     }}
-                    onUpdateField={handleUpdateField}
-                    onUpdateFormMeta={handleUpdateFormMeta}
-                    onUpdateRules={handleUpdateRules}
-                    onSaveCodelist={handleSaveCodelist}
-                    onDuplicateField={(fId) => {
-                      if (activeForm) {
-                        const sec = activeForm.sections.find((s) =>
-                          s.fields.some((f) => f.id === fId)
-                        );
-                        if (sec) handleDuplicateField(sec.id, fId);
-                      }
-                    }}
-                    onDuplicateForm={(fId) => handleDuplicateForm(fId)}
+                    onUpdateField={editor.updateField}
+                    onUpdateFormMeta={editor.updateFormMeta}
+                    onUpdateRules={editor.updateRules}
+                    onSaveCodelist={editor.saveCodelist}
+                    onDuplicateField={editor.duplicateFieldById}
+                    onDuplicateForm={(fId) => editor.duplicateForm(fId)}
                     onRenameEverywhere={
                       selectedField
                         ? (newVar) =>
-                            handleRenameFieldEverywhere(
+                            editor.renameFieldEverywhere(
                               selectedField.id,
                               newVar
                             )
@@ -1837,21 +818,21 @@ export const CRFStudioContainer: React.FC = () => {
                 codelists={study.codelists}
                 onChangeViewport={setViewport}
                 onSelectField={handleSelectField}
-                onUpdateFormMeta={handleUpdateFormMeta}
-                onAddSection={handleAddSection}
-                onDeleteSection={handleDeleteSection}
-                onUpdateSectionTitle={handleUpdateSectionTitle}
-                onDuplicateField={handleDuplicateField}
-                onDeleteField={handleDeleteField}
-                onUpdateField={handleUpdateField}
-                onCommitReviewTargetChange={handleCommitReviewTargetChange}
+                onUpdateFormMeta={editor.updateFormMeta}
+                onAddSection={editor.addSection}
+                onDeleteSection={editor.deleteSection}
+                onUpdateSectionTitle={editor.updateSectionTitle}
+                onDuplicateField={editor.duplicateField}
+                onDeleteField={editor.deleteField}
+                onUpdateField={editor.updateField}
+                onCommitReviewTargetChange={editor.commitReviewTargetChange}
                 onOpenPalette={(sectionId) => {
                   setAddFieldTargetSectionId(sectionId ?? null);
                   setIsLeftSidebarOpen(true);
                   setLeftTab("palette");
                 }}
-                onSaveAsTemplate={handleSaveFormAsTemplate}
-                onDuplicateForm={handleDuplicateForm}
+                onSaveAsTemplate={editor.saveFormAsTemplate}
+                onDuplicateForm={editor.duplicateForm}
                 onOpenSlashPalette={handleOpenSlashPalette}
                 onSwitchMode={setActiveMode}
               />
@@ -1870,23 +851,16 @@ export const CRFStudioContainer: React.FC = () => {
                   codelists={study.codelists}
                   {...reviewThreadProps}
                   onClose={() => setSelectedFieldId(null)}
-                  onUpdateField={handleUpdateField}
-                  onUpdateFormMeta={handleUpdateFormMeta}
-                  onUpdateRules={handleUpdateRules}
-                  onSaveCodelist={handleSaveCodelist}
-                  onDuplicateField={(fId) => {
-                    if (activeForm) {
-                      const sec = activeForm.sections.find((s) =>
-                        s.fields.some((f) => f.id === fId)
-                      );
-                      if (sec) handleDuplicateField(sec.id, fId);
-                    }
-                  }}
-                  onDuplicateForm={(fId) => handleDuplicateForm(fId)}
+                  onUpdateField={editor.updateField}
+                  onUpdateFormMeta={editor.updateFormMeta}
+                  onUpdateRules={editor.updateRules}
+                  onSaveCodelist={editor.saveCodelist}
+                  onDuplicateField={editor.duplicateFieldById}
+                  onDuplicateForm={(fId) => editor.duplicateForm(fId)}
                   onRenameEverywhere={
                     selectedField
                       ? (newVar) =>
-                          handleRenameFieldEverywhere(selectedField.id, newVar)
+                          editor.renameFieldEverywhere(selectedField.id, newVar)
                       : undefined
                   }
                 />
@@ -1902,12 +876,12 @@ export const CRFStudioContainer: React.FC = () => {
               study={study}
               selectedFieldId={selectedFieldId}
               onSelectField={handleSelectField}
-              onUpdateField={handleUpdateField}
-              onCommitReviewTargetChange={handleCommitReviewTargetChange}
+              onUpdateField={editor.updateField}
+              onCommitReviewTargetChange={editor.commitReviewTargetChange}
               onRenameEverywhere={(fId, newVar) =>
-                handleRenameFieldEverywhere(fId, newVar)
+                editor.renameFieldEverywhere(fId, newVar)
               }
-              onUpdateStudy={updateStudyWithHistory}
+              onUpdateStudy={commit}
               onSwitchMode={setActiveMode}
               onAddField={(secId) => {
                 setAddFieldTargetSectionId(secId ?? null);
@@ -1927,23 +901,16 @@ export const CRFStudioContainer: React.FC = () => {
                   codelists={study.codelists}
                   {...reviewThreadProps}
                   onClose={() => setSelectedFieldId(null)}
-                  onUpdateField={handleUpdateField}
-                  onUpdateFormMeta={handleUpdateFormMeta}
-                  onUpdateRules={handleUpdateRules}
-                  onSaveCodelist={handleSaveCodelist}
-                  onDuplicateField={(fId) => {
-                    if (activeForm) {
-                      const sec = activeForm.sections.find((s) =>
-                        s.fields.some((f) => f.id === fId)
-                      );
-                      if (sec) handleDuplicateField(sec.id, fId);
-                    }
-                  }}
-                  onDuplicateForm={(fId) => handleDuplicateForm(fId)}
+                  onUpdateField={editor.updateField}
+                  onUpdateFormMeta={editor.updateFormMeta}
+                  onUpdateRules={editor.updateRules}
+                  onSaveCodelist={editor.saveCodelist}
+                  onDuplicateField={editor.duplicateFieldById}
+                  onDuplicateForm={(fId) => editor.duplicateForm(fId)}
                   onRenameEverywhere={
                     selectedField
                       ? (newVar) =>
-                          handleRenameFieldEverywhere(selectedField.id, newVar)
+                          editor.renameFieldEverywhere(selectedField.id, newVar)
                       : undefined
                   }
                 />
@@ -1955,7 +922,7 @@ export const CRFStudioContainer: React.FC = () => {
         {activeMode === "matrix" && (
           <VisitMatrixEditor
             study={study}
-            onUpdateVisits={handleUpdateVisits}
+            onUpdateVisits={editor.updateVisits}
           />
         )}
 
@@ -1966,7 +933,7 @@ export const CRFStudioContainer: React.FC = () => {
             key={study.id}
             study={study}
             simulationState={study.simulationState}
-            onUpdateSimulationState={handleUpdateSimulationState}
+            onUpdateSimulationState={editor.updateSimulationState}
           />
         )}
 
@@ -1983,7 +950,7 @@ export const CRFStudioContainer: React.FC = () => {
           <ExportImportModal
             study={study}
             onImportStudy={(imported) => {
-              requestStudyReplacement(imported, "Imported Study");
+              editor.requestStudyReplacement(imported, "Imported Study");
             }}
             onOpenExportDocument={() => setIsExportDocModalOpen(true)}
             onOpenBranding={() => setIsBrandingOpen(true)}
@@ -2011,7 +978,7 @@ export const CRFStudioContainer: React.FC = () => {
           values={testDockValues}
           scope={DEFAULT_TEST_SCOPE}
           activeVisitId={activeVisitId}
-          onUpdateStudy={updateStudyWithHistory}
+          onUpdateStudy={commit}
           onNavigate={handleNavigateFromCompare}
         />
       )}
@@ -2029,15 +996,7 @@ export const CRFStudioContainer: React.FC = () => {
           else if (modal === "diagnostics") setIsDiagnosticsOpen(true);
           else if (modal === "export") setIsExportDocModalOpen(true);
         }}
-        onUpdateStudy={(updated) => {
-          updateStudyWithHistory(updated);
-          if (
-            updated.forms[0] &&
-            !updated.forms.some((f) => f.id === activeFormId)
-          ) {
-            setActiveFormId(updated.forms[0].id);
-          }
-        }}
+        onUpdateStudy={editor.applyStudyUpdate}
       />
 
       {/* Mobile Stack Bottom Navigation Bar (Visible only in Designer mode on mobile < md) */}
@@ -2123,7 +1082,7 @@ export const CRFStudioContainer: React.FC = () => {
             </div>
             <WidgetPalette
               onAddField={(field) => {
-                handleAddField(field, {
+                editor.addField(field, {
                   sectionId: addFieldTargetSectionId ?? undefined,
                 });
                 setAddFieldTargetSectionId(null);
@@ -2137,7 +1096,7 @@ export const CRFStudioContainer: React.FC = () => {
       <CdashScaffolderModal
         isOpen={isScaffolderOpen}
         onClose={() => setIsScaffolderOpen(false)}
-        onInjectForm={handleInjectCdashForm}
+        onInjectForm={editor.injectCdashForm}
       />
 
       <DiagnosticsDrawer
@@ -2149,13 +1108,13 @@ export const CRFStudioContainer: React.FC = () => {
           setActiveMode("designer");
           setMobileActiveView("canvas");
         }}
-        onUpdateStudy={updateStudyWithHistory}
+        onUpdateStudy={commit}
       />
 
       {isBrandingOpen && (
         <BrandingConfigModal
           initialBranding={getStudyBranding(study)}
-          onSave={handleUpdateBranding}
+          onSave={editor.updateBranding}
           onClose={() => setIsBrandingOpen(false)}
         />
       )}
@@ -2175,7 +1134,7 @@ export const CRFStudioContainer: React.FC = () => {
       {isReviewPackageOpen && (
         <ReviewPackageModal
           study={study}
-          isScenarioStale={resolveReviewPackageStaleness}
+          isScenarioStale={(scenario) => scenarioStaleness(scenario, study)}
           onClose={() => setIsReviewPackageOpen(false)}
         />
       )}
@@ -2186,9 +1145,9 @@ export const CRFStudioContainer: React.FC = () => {
         study={study}
         onClose={() => setIsWizardOpen(false)}
         onSwitchMode={setActiveMode}
-        onLoadPreset={handleSelectPreset}
+        onLoadPreset={editor.selectPreset}
         onApplyStudy={(updated) => {
-          requestStudyReplacement(updated, "Wizard Protocol");
+          editor.requestStudyReplacement(updated, "Wizard Protocol");
           playSuccess();
         }}
         onStartSpotlightTour={startSpotlightTour}
@@ -2207,7 +1166,7 @@ export const CRFStudioContainer: React.FC = () => {
           aria-modal="true"
           aria-labelledby="replace-study-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setPendingStudyReplacement(null)}
+          onClick={() => editor.cancelStudyReplacement()}
         >
           <div
             ref={replaceStudyModalRef}
@@ -2232,7 +1191,7 @@ export const CRFStudioContainer: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setPendingStudyReplacement(null)}
+                onClick={() => editor.cancelStudyReplacement()}
                 className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-850 transition-colors"
                 aria-label="Cancel study replacement"
               >
@@ -2249,42 +1208,25 @@ export const CRFStudioContainer: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setPendingStudyReplacement(null)}
+                onClick={() => editor.cancelStudyReplacement()}
                 className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-xs font-mono text-zinc-300 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  const target = pendingStudyReplacement.targetStudy;
-                  setBaselineStudy(target);
-                  updateStudyWithHistory(target);
-                  setActiveFormId(target.forms[0]?.id || "");
-                  setActiveVisitId(target.visits[0]?.id || "");
-                  setSelectedFieldId(null);
-                  setPendingStudyReplacement(null);
-                }}
+                onClick={() =>
+                  editor.confirmStudyReplacement({ saveSnapshot: false })
+                }
                 className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-xs font-mono text-zinc-400 hover:text-red-400 border border-zinc-700 transition-colors"
               >
                 Discard &amp; Replace
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  saveStudySnapshot(
-                    study,
-                    `Snapshot before loading ${pendingStudyReplacement.label}`
-                  );
-                  saveStudyDraft(study);
-                  const target = pendingStudyReplacement.targetStudy;
-                  setBaselineStudy(target);
-                  updateStudyWithHistory(target);
-                  setActiveFormId(target.forms[0]?.id || "");
-                  setActiveVisitId(target.visits[0]?.id || "");
-                  setSelectedFieldId(null);
-                  setPendingStudyReplacement(null);
-                }}
+                onClick={() =>
+                  editor.confirmStudyReplacement({ saveSnapshot: true })
+                }
                 className="px-3.5 py-1.5 rounded-lg bg-brand-cyan hover:bg-brand-cyan/90 text-xs font-mono font-bold text-black transition-colors shadow-sm"
               >
                 Save Snapshot &amp; Replace
@@ -2301,7 +1243,7 @@ export const CRFStudioContainer: React.FC = () => {
           aria-modal="true"
           aria-labelledby="impact-deletion-modal-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150"
-          onClick={() => setImpactPendingDeletion(null)}
+          onClick={() => editor.cancelImpactDeletion()}
         >
           <div
             ref={impactDeletionModalRef}
@@ -2343,7 +1285,7 @@ export const CRFStudioContainer: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={() => setImpactPendingDeletion(null)}
+                onClick={() => editor.cancelImpactDeletion()}
                 className="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-850 transition-colors"
                 aria-label="Cancel deletion"
               >
@@ -2399,14 +1341,14 @@ export const CRFStudioContainer: React.FC = () => {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-1">
               <button
                 type="button"
-                onClick={() => setImpactPendingDeletion(null)}
+                onClick={() => editor.cancelImpactDeletion()}
                 className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-750 text-xs font-mono text-zinc-300 transition-colors"
               >
                 Cancel (Keep Field)
               </button>
               <button
                 type="button"
-                onClick={handleConfirmImpactDeletion}
+                onClick={editor.confirmImpactDeletion}
                 className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-xs font-mono font-bold text-white transition-colors shadow-sm"
               >
                 Delete &amp; Cascade Prune
@@ -2442,7 +1384,7 @@ export const CRFStudioContainer: React.FC = () => {
         isOpen={isBaselinesModalOpen}
         onClose={() => setIsBaselinesModalOpen(false)}
         study={study}
-        onRestoreBaselineAsDraft={handleRestoreBaselineAsDraft}
+        onRestoreBaselineAsDraft={editor.restoreBaselineAsDraft}
       />
 
       <BaselineCompareModal
@@ -2459,8 +1401,8 @@ export const CRFStudioContainer: React.FC = () => {
         isOpen={isLibraryUpgradesOpen}
         onClose={() => setIsLibraryUpgradesOpen(false)}
         study={study}
-        onApplyUpgrade={updateStudyWithHistory}
-        onUndoUpgrade={handleUndo}
+        onApplyUpgrade={commit}
+        onUndoUpgrade={undo}
       />
     </div>
   );

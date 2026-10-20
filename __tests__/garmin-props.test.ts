@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   BELT_WIDTH,
@@ -17,7 +18,7 @@ import {
   wallAhead,
   type CourseBelt,
   type CourseProps,
-} from "@/lib/garmin-props";
+} from "@/lib/garmin/props";
 import {
   BLOCK_SIZE,
   generateStage,
@@ -26,7 +27,7 @@ import {
   stagePoleX,
   stageStartX,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 
 const GROUND = 205;
 const STAGES = [1, 2, 3, 4, 5];

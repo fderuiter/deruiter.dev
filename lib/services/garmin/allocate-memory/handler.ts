@@ -7,7 +7,7 @@ import {
   allocateVariable,
   DEVICE_PROFILES,
   VARIABLE_RAM_COSTS,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 export class AllocateGarminMemoryHandler implements AllocateGarminMemorySpec {

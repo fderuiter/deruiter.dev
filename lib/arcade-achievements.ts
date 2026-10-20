@@ -21,7 +21,6 @@ export const ARCADE_UNIFIED_PROGRESS_KEY = "arcade_unified_progress_v1";
 export const ARCADE_STORAGE_KEYS: Record<string, string> = {
   "working-with-duck": "working_with_duck_high_score",
   "laser-loon": "laser_loon_high_score",
-  "quasi-puzzler": "quasi_perfect_puzzler_progress_v1",
   "garmin-watch": "garmin_simulator_high_score",
   "clinical-chaos": "clinical_chaos_highscore",
   "trial-and-error": "trial_and_error_high_score",
@@ -30,6 +29,12 @@ export const ARCADE_STORAGE_KEYS: Record<string, string> = {
   "for-better-or-bulk": "for_better_or_bulk_high_score",
   "protocol-drift": "protocol_drift_high_score",
   "retro-labyrinth": "retro_labyrinth_highscore",
+};
+
+// These keys contain game-owned state, not score mirrors. Read existing values
+// during migration, but never replace a save or unlock flag with a number.
+const ARCADE_READ_ONLY_PROGRESS_KEYS: Record<string, string> = {
+  "quasi-puzzler": "quasi_perfect_puzzler_progress_v1",
   "meme-vault": "unlocked_meme_vault",
 };
 
@@ -705,8 +710,13 @@ export function migrateLegacyArcadeScores(progress: ArcadeProgress): boolean {
     const legacyRaw = safeGetRawItem(legacyKey);
     if (legacyRaw) {
       const legacyScore = parseScoreValue(legacyRaw);
-      const gameId = Object.keys(ARCADE_STORAGE_KEYS).find(
-        (id) => ARCADE_STORAGE_KEYS[id] === standardKey
+      const gameId = Object.keys({
+        ...ARCADE_STORAGE_KEYS,
+        ...ARCADE_READ_ONLY_PROGRESS_KEYS,
+      }).find(
+        (id) =>
+          (ARCADE_STORAGE_KEYS[id] || ARCADE_READ_ONLY_PROGRESS_KEYS[id]) ===
+          standardKey
       );
 
       if (gameId && legacyScore > (progress.highScores[gameId] || 0)) {
@@ -715,18 +725,25 @@ export function migrateLegacyArcadeScores(progress: ArcadeProgress): boolean {
       }
 
       // Sync to standard storage key as raw string
-      const currentStandardRaw = safeGetRawItem(standardKey);
       if (
-        !currentStandardRaw ||
-        parseScoreValue(currentStandardRaw) < legacyScore
+        !Object.values(ARCADE_READ_ONLY_PROGRESS_KEYS).includes(standardKey)
       ) {
-        safeSetRawItem(standardKey, legacyScore.toString());
+        const currentStandardRaw = safeGetRawItem(standardKey);
+        if (
+          !currentStandardRaw ||
+          parseScoreValue(currentStandardRaw) < legacyScore
+        ) {
+          safeSetRawItem(standardKey, legacyScore.toString());
+        }
       }
     }
   }
 
   // 2. Scan all standard storage keys to populate missing values into progress
-  for (const [gameId, storageKey] of Object.entries(ARCADE_STORAGE_KEYS)) {
+  for (const [gameId, storageKey] of [
+    ...Object.entries(ARCADE_STORAGE_KEYS),
+    ...Object.entries(ARCADE_READ_ONLY_PROGRESS_KEYS),
+  ]) {
     const rawVal = safeGetRawItem(storageKey);
     if (rawVal) {
       const val = parseScoreValue(rawVal);
@@ -747,7 +764,10 @@ function getStorageHash(): string {
   if (typeof window === "undefined") return "";
   const unifiedRaw = safeGetRawItem(ARCADE_UNIFIED_PROGRESS_KEY) || "";
   let individualScores = "";
-  for (const key of Object.values(ARCADE_STORAGE_KEYS)) {
+  for (const key of [
+    ...Object.values(ARCADE_STORAGE_KEYS),
+    ...Object.values(ARCADE_READ_ONLY_PROGRESS_KEYS),
+  ]) {
     individualScores += `${key}:${safeGetRawItem(key) || ""};`;
   }
   return `${unifiedRaw}|${individualScores}`;

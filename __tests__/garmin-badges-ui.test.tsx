@@ -10,16 +10,16 @@ import {
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import { GAME_MANUALS } from "@/lib/game-manuals";
 import { getArcadeProgress } from "@/lib/arcade-achievements";
-import { BADGE_STORAGE_KEY, loadBadges } from "@/lib/garmin-badge-store";
-import { RACE_MODE_KEY } from "@/lib/garmin-race-store";
+import { BADGE_STORAGE_KEY, loadBadges } from "@/lib/garmin/badge-store";
+import { RACE_MODE_KEY } from "@/lib/garmin/race-store";
 import { safeClear, safeSetRawItem } from "@/lib/safe-storage";
 import {
   GROUND_Y,
   createInitialState,
   startGame,
   updateGameSimulation,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
 
 // Badges and run history in the simulator (#2021): runs are saved as they
 // end, new badges show on the result card and are read out, and the badge
@@ -57,8 +57,8 @@ vi.mock("@/hooks/useAnimationFrame", async (importOriginal) => {
     },
   };
 });
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return {
     ...actual,
     // Workouts start on a clear lane with GPS locked.

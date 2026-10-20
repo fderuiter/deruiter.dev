@@ -18,7 +18,7 @@ import {
   createInitialState,
   startGame,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 vi.mock("@/hooks/useAnnouncer", () => ({
   useAnnouncer: () => ({ announce: vi.fn() }),

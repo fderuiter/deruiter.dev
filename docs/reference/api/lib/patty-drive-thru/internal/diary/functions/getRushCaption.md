@@ -27,7 +27,7 @@ Which rush began, counting from 0.
 
 ### day?
 
-[`WeekdayId`](../../../types/type-aliases/WeekdayId.md) \| `null`
+[`WeekdayId`](../../../types/type-aliases/WeekdayId.md) \| `null` = `null`
 
 The day of the week being worked, or null for a single shift.
 

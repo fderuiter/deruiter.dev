@@ -36,7 +36,8 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   - `lib/navigation.ts`, the single data source for the top bar, desktop menus, mobile drawer and footer columns (one entry under the right group, per [ADR 0058](adr/0058-site-navigation-information-architecture.md)).
   - `app/sitemap.ts` and `lib/seo-metadata.ts` under `ROUTE_METADATA_CONFIGS` with canonical path and change frequency.
   - `app/<route>/opengraph-image.tsx` providing a 1200x630 dynamic social preview card matching the systems architecture design system (`lib/og-image.tsx`).
-  - `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` (see invariant 14).
+  - `PUBLIC_ROUTE_REGISTRY` in `lib/public-routes.ts`, which feeds `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` (see invariant 14).
+- An arcade game is also registered in `ARCADE_REGISTRY` (`lib/arcade/registry.ts`) with its listing and per-view readiness ([ADR 0062](adr/0062-three-views-per-arcade-game.md)); DX Doctor's `routes-arcade-registry-parity` check fails when a registry route is missing from the sitemap metadata, the public route registry or the Command Palette.
 
 ### 4. Hydration & React Best Practices
 
@@ -55,7 +56,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ### 6. Developer Suite (DX) & Quality Invariants
 
 - Run `npm run quality` (or `npm run verify`) to ensure type safety, zero ESLint warnings, docs synchronization, and every architectural invariant reported by DX Doctor passes.
-- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices and automatic `CommandPalette.tsx` registration.
+- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices (the `arcade` and `case-study` types also auto-register in `CommandPalette.tsx`).
 - Whenever public library or hook signatures change, regenerate TypeDoc markdown with `npm run compile-docs` and verify with `npm run check-docs-drift`.
 
 ### 7. Headless Canvas 2D & DOM Observer Testing Lifecycle
@@ -97,7 +98,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### 11. Defect Remediation & Root-Cause Regression Invariant
 
-- All bug fixes and defect remediations across core computational engines (`lib/proof-utils.ts`, `lib/garmin-engine.ts`, `lib/working-with-duck-engine.ts`, `lib/crf/ast-evaluator.ts`) must follow the strict Red-Green Remediation Protocol.
+- All bug fixes and defect remediations across core computational engines (`lib/proof-utils.ts`, `lib/garmin/engine.ts`, `lib/working-with-duck-engine.ts`, `lib/crf/ast-evaluator.ts`) must follow the strict Red-Green Remediation Protocol.
 - Every patch must include an isolated reproduction test in `__tests__/` verifying pre-fix failure and post-fix success, backed by regression test coverage in `__tests__/defect-remediation-regression.test.ts`.
 - Core calculation and state engines must enforce boundary defenses against division-by-zero, cyclic AST references, and out-of-bounds inputs with zero unhandled crash vectors.
 
@@ -129,7 +130,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ### 14. Continuous Real-Browser Page Benchmarking & Web Vitals Profiling
 
-- Any new first-class route, case study, or interactive mini-game must be registered in `CANONICAL_ROUTES` in `lib/dx/page-bench.ts`.
+- Any new first-class route, case study, or interactive mini-game must be registered in `PUBLIC_ROUTE_REGISTRY` in `lib/public-routes.ts`; `CANONICAL_ROUTES` in `lib/dx/page-bench.ts` is derived from it, and DX Doctor's `routes-public-registry-drift` check fails on a route missing from it.
 - Real-browser navigation timing and Core Web Vitals (TTFB, FCP, LCP, CLS) must be benchmarked against production builds via `npm run bench:pages` or `npx tsx scripts/benchmark-pages.ts`.
 - In CI and pre-release gates, performance budgets can be enforced via `--assert` / `--budget` flags, ensuring fleet median LCP <= 2500ms, TTFB <= 800ms, and CLS <= 0.1.
 

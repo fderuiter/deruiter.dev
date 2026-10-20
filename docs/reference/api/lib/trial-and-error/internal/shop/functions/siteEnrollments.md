@@ -62,3 +62,5 @@ The subjects the site enrolls. Their ids must be new to the study.
 `string`
 
 ## Returns
+
+`object`[]

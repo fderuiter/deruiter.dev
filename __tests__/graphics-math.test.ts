@@ -1,12 +1,13 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { 
-  calculateColumnCount, 
-  calculateColumnWidth, 
+import {
+  calculateColumnCount,
+  calculateColumnWidth,
   distributeItemsGreedily,
   mapDataToCoordinates,
   generateCubicSplinePath,
   generateHermiteSplinePath,
-  LRUCache
+  LRUCache,
 } from "@/lib/graphics-math";
 
 describe("Graphics Math Isolation Library (Browser-Free)", () => {
@@ -15,7 +16,7 @@ describe("Graphics Math Isolation Library (Browser-Free)", () => {
       // Temporarily stash globals if they exist in standard test environment (like jsdom)
       const oldWindow = globalThis.window;
       const oldDocument = globalThis.document;
-      
+
       try {
         // @ts-expect-error - testing environment-free behavior
         delete globalThis.window;
@@ -30,7 +31,11 @@ describe("Graphics Math Isolation Library (Browser-Free)", () => {
         expect(paths.pathD).toBeDefined();
         expect(paths.areaD).toBeDefined();
 
-        const colCount = calculateColumnCount(800, { MD: 768, LG: 1024 }, { SM: 1, MD: 2, LG: 3 });
+        const colCount = calculateColumnCount(
+          800,
+          { MD: 768, LG: 1024 },
+          { SM: 1, MD: 2, LG: 3 }
+        );
         expect(colCount).toBe(2);
 
         const colWidth = calculateColumnWidth(800, 2, 10);
@@ -66,7 +71,7 @@ describe("Graphics Math Isolation Library (Browser-Free)", () => {
         { id: "1", height: 100 },
         { id: "2", height: 150 },
         { id: "3", height: 80 },
-        { id: "4", height: 120 }
+        { id: "4", height: 120 },
       ];
 
       const { columns, columnHeights } = distributeItemsGreedily(items, 2, 10);
@@ -78,7 +83,10 @@ describe("Graphics Math Isolation Library (Browser-Free)", () => {
 
   describe("C. SVG Spline", () => {
     it("generates correct spline paths", () => {
-      const points = [{ x: 0, y: 50 }, { x: 50, y: 100 }];
+      const points = [
+        { x: 0, y: 50 },
+        { x: 50, y: 100 },
+      ];
       const paths = generateCubicSplinePath(points, 200);
       expect(paths.pathD).toBe("M 0 50 C 25 50, 25 100, 50 100");
     });
@@ -88,14 +96,18 @@ describe("Graphics Math Isolation Library (Browser-Free)", () => {
       const points = [
         { x: 0, y: 5 },
         { x: 50, y: 1 },
-        { x: 100, y: 50 }
+        { x: 100, y: 50 },
       ];
       const frameHeight = 60;
       const paths = generateHermiteSplinePath(points, frameHeight);
 
       // Parse cubic bezier control points from path string
       // Format: M 0 5 C cp1x cp1y, cp2x cp2y, endX endY ...
-      const matches = [...paths.pathD.matchAll(/C\s+([\d.-]+)\s+([\d.-]+),\s+([\d.-]+)\s+([\d.-]+)/g)];
+      const matches = [
+        ...paths.pathD.matchAll(
+          /C\s+([\d.-]+)\s+([\d.-]+),\s+([\d.-]+)\s+([\d.-]+)/g
+        ),
+      ];
       expect(matches.length).toBeGreaterThan(0);
 
       for (const match of matches) {

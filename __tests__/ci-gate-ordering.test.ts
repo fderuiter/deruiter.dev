@@ -165,9 +165,12 @@ describe("CI Gate Ordering", () => {
       );
     });
 
-    it("gates the build on the static checks", () => {
-      expect(needsOf("build")).toEqual(
-        expect.arrayContaining(["changes", "static-gate"])
+    // #2542: the build no longer waits for static-gate, so a queued run
+    // pays one fewer runner wait. The browser gates still need both.
+    it("starts the build after change detection only, in parallel with the static checks", () => {
+      expect(needsOf("build")).toEqual(["changes"]);
+      expect(needsOf("merge-gate")).toEqual(
+        expect.arrayContaining(["static-gate", "build"])
       );
     });
 

@@ -57,6 +57,10 @@ describe("roundRatio rounding-mode matrix", () => {
     expect(roundRatio(Number.NaN, 2, 1, "HALF_EVEN")).toBeNull();
   });
 
+  it("accepts the maximum precision of 12 places (#2529)", () => {
+    expect(roundRatio(1, 3, 12, "HALF_EVEN")).toBe("0.333333333333");
+  });
+
   it("counts displayed decimal places", () => {
     expect(decimalPlaces("45")).toBe(0);
     expect(decimalPlaces("45.2")).toBe(1);
@@ -240,6 +244,50 @@ describe("evaluateHand scoring pipeline", () => {
   });
 });
 
+describe("evaluateHand levels and empty modifiers (#2529)", () => {
+  const hand = (level?: number) =>
+    evaluateHand({
+      handType: "HIGH_TABLE",
+      cards: [card],
+      ruleResults: [],
+      level,
+    });
+
+  it("tags only a hand above level 1 and ignores invalid levels", () => {
+    const baseLabel = (level?: number) =>
+      hand(level).ledger.find((e) => e.sourceId === "HIGH_TABLE")?.label;
+    expect(baseLabel()).toBe("HIGH_TABLE base Chips");
+    expect(baseLabel(1)).toBe("HIGH_TABLE base Chips");
+    expect(baseLabel(2)).toBe("HIGH_TABLE base Chips (Lv.2)");
+    expect(hand(2.5)).toEqual(hand(1));
+    expect(hand(0)).toEqual(hand(1));
+    expect(hand(2).chips.base).toBeGreaterThan(hand(1).chips.base);
+  });
+
+  it("leaves a modifier's zero Chips and +Mult out of the ledger", () => {
+    const result = evaluateHand({
+      handType: "HIGH_TABLE",
+      cards: [card],
+      ruleResults: [],
+      modifiers: [
+        {
+          sourceId: "RELIC-IDLE",
+          label: "Idle",
+          chips: 0,
+          plusMult: 0,
+          xMult: 1,
+        },
+      ],
+    });
+    expect(
+      result.ledger
+        .filter((e) => e.sourceId === "RELIC-IDLE")
+        .map((e) => e.kind)
+    ).toEqual(["X_MULT"]);
+    expect(result.score).toBe(90);
+  });
+});
+
 describe("Demographics QC scoring cases", () => {
   const scenario = DEMOGRAPHICS_SCENARIO;
   const draftA = scenario.drawPile[0];
@@ -294,6 +342,25 @@ describe("Demographics QC scoring cases", () => {
     expect(result.score).toBe(456);
     // One corrected draft alone no longer clears the Small Blind (#2055).
     expect(result.score).toBeLessThan(scenario.blind.quota);
+  });
+
+  it("fails an uncorrected fatal finding and withholds the denominator credit only while one stands (#2529)", () => {
+    const nothingFixed = ruleResultsFor(report, scenario.rulebook, {
+      resolvedFindingIds: [],
+    });
+    const fatal = nothingFixed.find((r) => r.ruleId === "SAP-DM-01");
+    expect(fatal).toMatchObject({ passed: false, multMultiplier: 0 });
+    expect(nothingFixed.some((r) => r.chipsDelta === 12)).toBe(false);
+
+    // Only non-denominator findings left standing: the credit returns.
+    const denominatorFixed = ruleResultsFor(report, scenario.rulebook, {
+      resolvedFindingIds: allIds.filter((id) => id.startsWith("SAP-DM-01")),
+    });
+    expect(denominatorFixed[0]).toMatchObject({
+      ruleId: "SAP-DM-01",
+      passed: true,
+      chipsDelta: 12,
+    });
   });
 
   it("scores the known view from visible findings only", () => {

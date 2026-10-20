@@ -35,6 +35,7 @@ import {
   MAX_OPEN_ORDERS,
   MAX_STEP_SEC,
   METER_START,
+  MODIFIER_ITEMS,
   NO_PICKLES_CHANCE,
   ORDERABLE_ITEMS,
   POS_MENU,
@@ -58,8 +59,12 @@ import {
   YELLOW_AFTER_SEC,
 } from "../presets";
 import type {
+  CustomOrderItem,
+  CustomOrderTemplate,
   KdsBand,
+  MenuItemId,
   Meters,
+  ModifierId,
   Order,
   OrderItem,
   PayStub,
@@ -159,6 +164,47 @@ function startMetersOf(value: unknown): StartMeters | undefined {
   };
 }
 
+/** One line of a hand-built order, or null when its item is not on the menu. */
+function customItemOf(value: unknown): CustomOrderItem | null {
+  if (!value || typeof value !== "object") return null;
+  const { itemId, modifier } = value as Record<string, unknown>;
+  if (!ORDERABLE_ITEMS.includes(itemId as MenuItemId)) return null;
+  const item = itemId as MenuItemId;
+  const asked =
+    typeof modifier === "string" && Object.hasOwn(MODIFIER_ITEMS, modifier)
+      ? (modifier as ModifierId)
+      : null;
+  return {
+    itemId: item,
+    // A modifier the item cannot take, such as no pickles on fries, is dropped.
+    modifier: asked && MODIFIER_ITEMS[asked].includes(item) ? asked : null,
+  };
+}
+
+/**
+ * The hand-built orders a custom shift plays (#2519). At most
+ * `MAX_OPEN_ORDERS` templates and `MAX_ITEMS_PER_ORDER` items each are kept;
+ * an item that is not on the menu is dropped, and so is a template left with
+ * no items. Anything that is not a list, or a list left empty, is left out,
+ * so orders are drawn as usual.
+ */
+function customOrdersOf(
+  value: unknown
+): readonly CustomOrderTemplate[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const templates: CustomOrderTemplate[] = [];
+  for (const entry of value.slice(0, MAX_OPEN_ORDERS)) {
+    const raw = (entry as { items?: unknown } | null)?.items;
+    if (!Array.isArray(raw)) continue;
+    const items = raw
+      .slice(0, MAX_ITEMS_PER_ORDER)
+      .map(customItemOf)
+      .filter((item): item is CustomOrderItem => item !== null);
+    if (items.length > 0) templates.push({ items });
+  }
+  return templates.length > 0 ? templates : undefined;
+}
+
 /** The week-mode settings a config sets, each only when it is valid (#2086). */
 function weekSettings(
   config: Partial<ShiftConfig>
@@ -187,7 +233,8 @@ function weekSettings(
  * Starts a shift. A missing, empty or non-string seed falls back to the
  * default, and a duration that is not a finite number is replaced by the
  * default and then held between 10 seconds and one hour. Scenario dials are
- * clamped to their ranges.
+ * clamped to their ranges, and hand-built orders are capped and checked
+ * against the menu (#2519).
  */
 export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
   const seed =
@@ -201,9 +248,16 @@ export function createShift(config: Partial<ShiftConfig> = {}): ShiftState {
       : DEFAULT_SHIFT_CONFIG.durationSec;
   const durationSec = clamp(rawDuration, MIN_DURATION_SEC, MAX_DURATION_SEC);
   const week = weekSettings(config);
+  const customOrders = customOrdersOf(config.customOrders);
 
   return {
-    config: { seed, durationSec, ...scenarioDials(config), ...week },
+    config: {
+      seed,
+      durationSec,
+      ...scenarioDials(config),
+      ...week,
+      ...(customOrders ? { customOrders } : {}),
+    },
     time: 0,
     outcome: "playing",
     meters: {
@@ -359,13 +413,32 @@ export function computePayStub(state: ShiftState): PayStub {
   };
 }
 
-/** Draws a fresh order at `arrivedAt`, consuming draws from `draws` onward. */
+/**
+ * Draws a fresh order at `arrivedAt`, consuming draws from `draws` onward. A
+ * custom shift plays its hand-built orders in turn by order id instead, and
+ * consumes no draws (#2519).
+ */
 function drawOrder(
   seed: string,
   draws: number,
   id: number,
-  arrivedAt: number
+  arrivedAt: number,
+  templates?: readonly CustomOrderTemplate[]
 ): { order: Order; draws: number } {
+  if (templates && templates.length > 0) {
+    const template = templates[(id - 1) % templates.length];
+    const items: OrderItem[] = template.items.map((item) => {
+      const modifier = item.modifier ?? null;
+      return {
+        itemId: item.itemId,
+        modifier,
+        rung: false,
+        modifierDone: modifier === null,
+        dropped: false,
+      };
+    });
+    return { order: { id, arrivedAt, items, coworkerReadyAt: null }, draws };
+  }
   let cursor = draws;
   const count = 1 + drawInt(seed, cursor++, MAX_ITEMS_PER_ORDER);
   const items: OrderItem[] = [];
@@ -464,7 +537,13 @@ export function stepShift(state: ShiftState, dtSec: number): StepResult {
 
   while (nextArrivalAt <= time) {
     if (orders.length < MAX_OPEN_ORDERS) {
-      const drawn = drawOrder(seed, draws, nextOrderId, nextArrivalAt);
+      const drawn = drawOrder(
+        seed,
+        draws,
+        nextOrderId,
+        nextArrivalAt,
+        state.config.customOrders
+      );
       draws = drawn.draws;
       orders = [...orders, drawn.order];
       events.push({ type: "order-arrived", orderId: nextOrderId });

@@ -18,12 +18,12 @@ import {
   secondWindHudText,
 } from "@/components/garmin-watch/watch-face-art";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { EMPTY_COURSE } from "@/lib/garmin-course";
+import { EMPTY_COURSE } from "@/lib/garmin/course";
 import {
   hillTilt,
   startSecondWind,
   type SecondWind,
-} from "@/lib/garmin-second-wind";
+} from "@/lib/garmin/second-wind";
 import {
   createInitialState,
   pressAction,
@@ -31,9 +31,9 @@ import {
   GROUND_Y,
   PLAYER_X,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import type { Foe } from "@/lib/garmin-foes";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/engine";
+import type { Foe } from "@/lib/garmin/foes";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
 
 const motion = vi.hoisted(() => ({ reduced: false }));
 
@@ -55,8 +55,8 @@ vi.mock("@/hooks/useMediaQuery", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/hooks/useMediaQuery")>();
   return { ...actual, usePrefersReducedMotion: () => motion.reduced };
 });
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return { ...actual, pressAction: vi.fn(actual.pressAction) };
 });
 vi.mock("@/components/garmin-watch/watch-face-art", async (importOriginal) => {

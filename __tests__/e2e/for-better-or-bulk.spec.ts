@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
+import { waitForAnimationFrames } from "./helpers/settle";
 
 /** Eight times the clock, so a whole level fits in an end-to-end test. */
 const ROUTE = "/arcade/for-better-or-bulk?speed=8";
@@ -116,8 +117,8 @@ const RECEIPT_MARGIN_PX = 112;
 
 /**
  * Waits until the receipt's scroll has landed: either the receipt sits at its
- * scroll margin, or the page has stopped moving (two samples 200 ms apart are
- * equal and it is scrolled). Until then a title can already be clear of the
+ * scroll margin, or the page has stopped moving (two samples a dozen
+ * animation frames apart are equal and it is scrolled). Until then a title can already be clear of the
  * navbar for the wrong reason, before the scroll has run at all.
  */
 async function waitForReceiptScroll(page: Page) {
@@ -125,7 +126,7 @@ async function waitForReceiptScroll(page: Page) {
     .poll(
       async () => {
         const first = await page.evaluate(() => window.scrollY);
-        await page.waitForTimeout(200);
+        await waitForAnimationFrames(page, 12);
         const second = await page.evaluate(() => window.scrollY);
         const receipt = await page.getByTestId("fbb-receipt").boundingBox();
         const atMargin =
@@ -201,7 +202,7 @@ test.describe("For Better or Bulk (/arcade/for-better-or-bulk)", () => {
     await expect(page.getByText(/^Paused at/)).toBeVisible();
     const clock = page.getByTestId("fbb-clock");
     const before = await clock.textContent();
-    await page.waitForTimeout(1500);
+    await waitForAnimationFrames(page, 90);
     await expect(clock).toHaveText(before ?? "");
   });
 });

@@ -10,13 +10,13 @@ import {
   PLAYER_X,
   FLASH_STORAGE_KEY,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   STAGE_COUNT,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { BUFF_HEIGHT } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/course";
+import { BUFF_HEIGHT } from "@/lib/garmin/powerups";
 import {
   FOE_DEFEAT_SCORE,
   FOE_STOMP_SCORE,
@@ -36,7 +36,7 @@ import {
   type Foe,
   type FoeKind,
   type FoeShot,
-} from "@/lib/garmin-foes";
+} from "@/lib/garmin/foes";
 
 const WATER_KINDS: readonly FoeKind[] = ["jellyfish", "goggles"];
 const FRAME = 1000 / 60;

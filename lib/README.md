@@ -19,18 +19,24 @@ lib/
     core/             ← Private package subfolder (hidden from outside).
 ```
 
-### The 4 Canonical Boundary Rules
+### The 6 Canonical Boundary Rules (`.dependency-cruiser.cjs`)
 
 1. **Root Entry Points Are the Only Public Surface (`entrypoint-boundary-from-app`)**:
-   Outside code (`app/`, `components/`, `scripts/`) may only import from root files directly under `lib/<package>/` (e.g., `import { evaluateStudy } from "@/lib/crf"` or `import { STUDY_PRESETS } from "@/lib/crf/presets"`). Importing directly into subfolders (e.g., `@/lib/crf/presets/oncology-recist`) is strictly forbidden.
+   Outside code (`app/`, `components/`, `scripts/`) may only import from root files directly under `lib/<package>/` (e.g., `import { evaluateFormula } from "@/lib/crf"` or `import { STUDY_PRESETS } from "@/lib/crf/presets"`). Importing directly into subfolders (e.g., `@/lib/crf/presets/oncology-recist`) is strictly forbidden.
 
 2. **Intra-Module Freedom with Inter-Module Seams (`entrypoint-boundary-across-packages`)**:
    Files within a package (e.g., `lib/crf/*`) can import each other freely. When crossing package boundaries (e.g., `lib/laser-loon/` importing from `lib/arcade/`), access must go through the other package's public root entry point (`@/lib/arcade`), never its internal subfolders.
 
 3. **Tests Exercise Modules Through Entry Points (`tests-through-entrypoints`)**:
-   Unit and integration tests (`__tests__/`) must test behavior through public module entry points. Tests cannot reach into private internals or subfolders.
+   Unit and integration tests (`__tests__/`, and a package's own `lib/<pkg>/tests/`) must test behavior through public module entry points. Tests cannot reach into private internals or subfolders, except a package's own local fixtures under `lib/<pkg>/tests/`.
 
-4. **Zero Circular Dependencies (`no-circular`)**:
+4. **Test Fixtures Stay Private to Tests (`tests-folder-is-private`)**:
+   A package's `lib/<pkg>/tests/` folder is reachable only from tests (`__tests__/` or another `lib/<pkg>/tests/` folder). Production code may not import test fixtures.
+
+5. **Trial & Error Isolation (`trial-and-error-isolation`)**:
+   Trial & Error (ADR 0046) shares no code with Clinical Trial Chaos or CRF Studio, directly or through anything it transitively imports.
+
+6. **Zero Circular Dependencies (`no-circular`)**:
    No dependency cycles (`A → B → A` or `A → B → C → A`) are allowed anywhere across the workspace.
 
 ---

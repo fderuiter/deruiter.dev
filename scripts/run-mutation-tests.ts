@@ -8,12 +8,18 @@
  *                  mutants whose source and covering tests are unchanged.
  *   --force        Run every mutant even in incremental mode, then rewrite
  *                  the incremental report.
+ *   --engines      Run the weekly game engine scope (#2529) from
+ *                  stryker.engines.config.mjs instead, then hold every
+ *                  mutated file to its own floor in that config's
+ *                  `fileBreaks`.
  * With no flags it runs every mutant, as before. The score threshold in
  * stryker.config.mjs applies identically in every mode.
  */
 
 import { execFileSync } from "child_process";
+import fs from "fs";
 import path from "path";
+import { pathToFileURL } from "url";
 
 const workspaceRoot = path.resolve(__dirname, "..");
 const strykerCli = path.resolve(
@@ -22,7 +28,13 @@ const strykerCli = path.resolve(
 );
 
 /** Flags this runner forwards to Stryker; anything else is rejected. */
-export const MUTATION_GATE_FLAGS = ["--incremental", "--force"] as const;
+export const MUTATION_GATE_FLAGS = [
+  "--incremental",
+  "--force",
+  "--engines",
+] as const;
+
+const ENGINES_CONFIG = "stryker.engines.config.mjs";
 
 /** Validates runner arguments and returns the `stryker run` argv. */
 export function buildStrykerArgs(args: readonly string[]): string[] {
@@ -34,14 +46,78 @@ export function buildStrykerArgs(args: readonly string[]): string[] {
       `Unknown mutation gate option(s): ${unknown.join(", ")}. Allowed: ${MUTATION_GATE_FLAGS.join(", ")}.`
     );
   }
-  if (args.includes("--force") && !args.includes("--incremental")) {
+  const config = args.includes("--engines") ? [ENGINES_CONFIG] : [];
+  const modes = [...new Set(args)].filter((arg) => arg !== "--engines");
+  if (modes.includes("--force") && !modes.includes("--incremental")) {
     // Without --incremental every mutant already runs; --force is a no-op.
-    return ["run"];
+    return ["run", ...config];
   }
-  return ["run", ...new Set(args)];
+  return ["run", ...config, ...modes];
 }
 
-export function runMutationGate(args: readonly string[] = []): void {
+/** The slice of Stryker's JSON report the per-file floors read. */
+export interface MutationReport {
+  files: Record<string, { mutants: { status: string }[] }>;
+}
+
+const DETECTED = new Set(["Killed", "Timeout"]);
+const UNDETECTED = new Set(["Survived", "NoCoverage"]);
+
+/**
+ * Each file's mutation score as Stryker computes it: detected mutants over
+ * valid ones (compile and runtime errors and ignored mutants don't count).
+ */
+export function fileScores(report: MutationReport): Record<string, number> {
+  const scores: Record<string, number> = {};
+  for (const [file, { mutants }] of Object.entries(report.files)) {
+    const detected = mutants.filter((m) => DETECTED.has(m.status)).length;
+    const valid =
+      detected + mutants.filter((m) => UNDETECTED.has(m.status)).length;
+    scores[file.split(path.sep).join("/")] =
+      valid === 0 ? 100 : (detected / valid) * 100;
+  }
+  return scores;
+}
+
+/** Files below their floor, or missing from the report, one line each. */
+export function fileBreakFailures(
+  scores: Record<string, number>,
+  breaks: Record<string, number>
+): string[] {
+  return Object.entries(breaks).flatMap(([file, floor]) => {
+    const score = scores[file];
+    if (score === undefined) return [`${file}: not in the report`];
+    return score < floor
+      ? [`${file}: ${score.toFixed(2)}% is below its break of ${floor}%`]
+      : [];
+  });
+}
+
+async function checkEngineFileBreaks(): Promise<void> {
+  const { fileBreaks, ENGINES_JSON_REPORT } = (await import(
+    pathToFileURL(path.join(workspaceRoot, ENGINES_CONFIG)).href
+  )) as { fileBreaks: Record<string, number>; ENGINES_JSON_REPORT: string };
+  const report = JSON.parse(
+    fs.readFileSync(path.join(workspaceRoot, ENGINES_JSON_REPORT), "utf8")
+  ) as MutationReport;
+  const scores = fileScores(report);
+  for (const file of Object.keys(fileBreaks)) {
+    console.log(
+      `  ${file}: ${scores[file]?.toFixed(2) ?? "missing"}% (break ${fileBreaks[file]})`
+    );
+  }
+  const failures = fileBreakFailures(scores, fileBreaks);
+  if (failures.length > 0) {
+    console.error(
+      `\n❌ Per-file mutation breaks failed:\n${failures.join("\n")}`
+    );
+    process.exit(1);
+  }
+}
+
+export async function runMutationGate(
+  args: readonly string[] = []
+): Promise<void> {
   const strykerArgs = buildStrykerArgs(args);
   console.log(
     `\n🧬 Executing Stryker Mutation Testing Gate (stryker ${strykerArgs.join(" ")})...`
@@ -52,20 +128,19 @@ export function runMutationGate(args: readonly string[] = []): void {
       stdio: "inherit",
       env: process.env,
     });
-    console.log("\n✅ Stryker Mutation Testing Gate passed.\n");
   } catch (_error) {
     console.error(
       "\n❌ Stryker mutation testing failed or fell below threshold."
     );
     process.exit(1);
   }
+  if (args.includes("--engines")) await checkEngineFileBreaks();
+  console.log("\n✅ Stryker Mutation Testing Gate passed.\n");
 }
 
 if (require.main === module) {
-  try {
-    runMutationGate(process.argv.slice(2));
-  } catch (error) {
+  runMutationGate(process.argv.slice(2)).catch((error: unknown) => {
     console.error(error instanceof Error ? error.message : String(error));
     process.exit(1);
-  }
+  });
 }

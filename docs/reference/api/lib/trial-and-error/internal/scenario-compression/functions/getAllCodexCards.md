@@ -11,3 +11,5 @@
 Returns all available unique TLF cards across all built-in scenarios in the Codex.
 
 ## Returns
+
+`object`[]

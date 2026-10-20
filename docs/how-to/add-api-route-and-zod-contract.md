@@ -53,11 +53,13 @@ asserts 100% coverage against `openapi.json`, a new, undocumented route
 handler fails the drift gate. Regenerate it:
 
 ```bash
-npm run compile-docs
+npm run doctor:fix
 ```
 
-(or `npm run doctor:fix`, which also resolves other fixable architectural
-invariants in the same pass).
+`doctor:fix` also resolves other fixable architectural invariants in the same
+pass. To regenerate only the contract, run `npx tsx scripts/generate-openapi.ts`.
+`npm run compile-docs` does not touch `openapi.json`; it compiles the TypeDoc
+reference for public `lib/`, `hooks/` and `types/` exports.
 
 ## 4. Verify zero drift and stage the result
 
@@ -91,5 +93,5 @@ least one Zod validation failure.
   reformats errors duplicates that work and can leak internals in the
   process.
 - **Shipping a route the OpenAPI gate doesn't know about**: `npm run
-  check-docs-drift` (and CI's `rigor-pipeline`) fails fast specifically to
-  catch this before review.
+  check-docs-drift` (and CI's `static-gate` job, summarized by Merge Gate)
+  fails fast specifically to catch this before review.

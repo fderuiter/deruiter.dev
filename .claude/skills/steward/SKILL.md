@@ -23,6 +23,36 @@ that table doesn't say.
 - Changing an export in `lib/`, `hooks/` or `types/`, or an API route,
   means `npm run compile-docs` and committing the regenerated `docs/`.
 
+## Merge lane
+
+The repository's Actions account allows 20 concurrent jobs and a full PR
+run uses 16, so ready PRs that run CI side by side queue each other: one PR
+takes about 17 minutes alone and over two hours with three others. Build in
+parallel; merge one at a time.
+
+- **Claim before building.** Search open PRs for `Fixes #N` and check
+  `git log origin/main`, then add `status:in-progress` to the issue with a
+  comment naming the thread. A claim with no PR after 24 hours is stale.
+- **Open the PR as a draft**, and add labels, assignee and reviewer while
+  it is a draft. Every `labeled` event restarts the whole run, and a draft
+  runs only `static-gate` and `security-gate`.
+- **One ready PR at a time.** The project's lane file
+  (`/mnt/project-files/lanes/merge-lane.md` in Claude project sessions)
+  names the slot holder; only that PR may be non-draft. Join the queue once
+  the draft is green. When it is your turn, merge `main` into the branch
+  (a merge commit, not a rebase), rerun the fast checks if `main` moved,
+  push, mark ready and enable auto-merge once. Because the slot holder
+  always carries the latest `main`, every merge has been tested on the
+  `main` it lands on, which `strict: false` alone does not give.
+- **A red PR frees the slot.** If the fix needs more than one quick push,
+  convert it back to draft and let the next PR go.
+- **Hot files take a lock** in the lane file before you edit them:
+  `components/CommandPalette.tsx`, `lib/navigation.ts`, `app/sitemap.ts`,
+  `lib/seo-metadata.ts`, `lib/dx/page-bench.ts`, `package.json` and the
+  lockfile, `.github/workflows/ci.yml`, and `README.md`.
+- When GitHub and the lane file disagree, GitHub wins: if two PRs are
+  ready, the newer one goes back to draft.
+
 ## Gotchas
 
 - **Prettier only on the files you touched.** lint-staged formats every

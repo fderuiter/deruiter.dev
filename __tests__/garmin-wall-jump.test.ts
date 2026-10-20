@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   GROUND_Y,
@@ -8,19 +9,19 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin-course";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE, type CourseLayout } from "@/lib/garmin/course";
 import {
   EMPTY_PROPS,
   type CourseProps,
   type CourseStation,
-} from "@/lib/garmin-props";
+} from "@/lib/garmin/props";
 import {
   MOVE_TOASTS,
   SLAM_VY,
   WALL_JUMP_VY,
   WALL_SLIDE_MAX_VY,
-} from "@/lib/garmin-moves";
+} from "@/lib/garmin/moves";
 
 // The Wall Jump (#2023): a runner falling against a station's side slides
 // down slowly and can jump off it once per wall contact.

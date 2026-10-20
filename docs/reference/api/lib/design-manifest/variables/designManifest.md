@@ -213,13 +213,13 @@ Original CSS Variable: --layout-studio-header-height
 
 #### layout.viewportBudget
 
-> `readonly` **viewportBudget**: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\n  )" = "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\n  )"
+> `readonly` **viewportBudget**: "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\\n  )" = "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\\n  )"
 
 Original CSS Variable: --layout-viewport-budget
 
 #### layout.workspaceBudget
 
-> `readonly` **workspaceBudget**: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )" = "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )"
+> `readonly` **workspaceBudget**: "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\\n      var(--layout-studio-header-height, 0px)\\n  )" = "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\\n      var(--layout-studio-header-height, 0px)\\n  )"
 
 Original CSS Variable: --layout-workspace-budget
 

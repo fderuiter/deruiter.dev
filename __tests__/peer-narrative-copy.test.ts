@@ -1,3 +1,4 @@
+// @vitest-environment node
 /**
  * ADR 0047 regression gate: user-facing source must not drift back to
  * job-seeking or recruiter framing. The site is a peer engineering showcase.

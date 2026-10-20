@@ -15,7 +15,7 @@ for devices or browsers that do not support navigator.vibrate.
 
 ### pattern?
 
-`number` \| `number`[]
+`number` \| `number`[] = `15`
 
 Single duration in ms or pattern array of durations
 

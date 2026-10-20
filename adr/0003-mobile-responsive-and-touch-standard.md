@@ -1,8 +1,13 @@
 # 0003. Mobile Responsive & Touch Interaction Standard
 
+## Status
+
+Accepted. Touch-device behavior for arcade games is now governed by [ADR 0061](0061-mobile-first-arcade.md) and [ADR 0062](0062-three-views-per-arcade-game.md).
+
 ## Context
 
 The portfolio contains diverse surface areas:
+
 1. Editorial and marketing sections (Hero with dynamic Pretext typography, Bento grid, Skills grid, Contact form).
 2. Complex desktop-first engineering and scientific workspaces (CRF Studio with CDISC conformance and EDC simulation, Logical Proof Canvas with AST verification, Neuroimaging Processing Simulator with Multi-Planar MRI slices and 3D WebGL reconstruction).
 3. Six interactive canvas-based arcade games (Laser Loon, Retro Labyrinth, Garmin Watch Simulator, Clinical Trial Chaos, Working With Duck, Quasi-Perfect Puzzler).

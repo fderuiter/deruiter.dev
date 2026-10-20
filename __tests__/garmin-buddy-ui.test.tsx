@@ -8,8 +8,8 @@ import { fromAny } from "@total-typescript/shoehorn";
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { EMPTY_COURSE } from "@/lib/garmin-course";
-import type { ThrownBall } from "@/lib/garmin-medball";
+import { EMPTY_COURSE } from "@/lib/garmin/course";
+import type { ThrownBall } from "@/lib/garmin/medball";
 import {
   createInitialState,
   pressAction,
@@ -17,8 +17,8 @@ import {
   GROUND_Y,
   PLAYER_X,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT, PICKUP_SIZE } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT, PICKUP_SIZE } from "@/lib/garmin/powerups";
 
 const mockAnnounce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -34,8 +34,8 @@ vi.mock("@/components/providers/AudioProvider", () => ({
 vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({ recordEvent: vi.fn().mockResolvedValue(true) }),
 }));
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return { ...actual, pressAction: vi.fn(actual.pressAction) };
 });
 

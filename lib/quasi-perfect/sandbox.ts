@@ -1,3 +1,5 @@
+import { generateId } from "@/lib/utils";
+import { parseFormulaWithError, parseHypotheses } from "./compiler";
 import type { ASTNode, TacticId } from "./types";
 
 /** One ready-made Sandbox goal with RAM targets to chase (#2059). */
@@ -235,4 +237,261 @@ export function recordSandboxProof(
   const existing = progress[presetId];
   if (existing && existing.bestRamUsed <= ramUsed) return progress;
   return { ...progress, [presetId]: { verified: true, bestRamUsed: ramUsed } };
+}
+
+/** The most custom theorems the Sandbox keeps in browser storage. */
+export const MAX_CUSTOM_THEOREMS = 50;
+
+/** A goal the player wrote in the Sandbox formula editor and saved. */
+export interface CustomTheorem {
+  /** Assigned on save or import; never taken from an imported file. */
+  id: string;
+  title: string;
+  /** Goal formula in infix notation, trimmed. */
+  formula: string;
+  /** Hypotheses in the editor's notation, trimmed; empty when there are none. */
+  hypotheses: string;
+}
+
+/** The title, formula and hypotheses of a theorem that is not saved yet. */
+export type CustomTheoremDraft = Omit<CustomTheorem, "id">;
+
+/** Outcome of {@link saveCustomTheorem}. */
+export interface CustomTheoremSaveResult {
+  /** True when a new theorem was added. */
+  saved: boolean;
+  /** One sentence for the player saying what happened. */
+  message: string;
+  /** The collection after the save; the input collection when nothing was added. */
+  theorems: CustomTheorem[];
+}
+
+/** Outcome of {@link importCustomTheorems}. */
+export interface CustomTheoremImportResult {
+  /** The collection after the import; the input collection when nothing was added. */
+  theorems: CustomTheorem[];
+  /** How many entries were added. */
+  imported: number;
+  /** One line per skipped entry: invalid, a duplicate, or over the cap. */
+  warnings: string[];
+  /** Set when the file as a whole could not be read; nothing is imported then. */
+  error?: string;
+}
+
+function readString(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function theoremKey(
+  theorem: Pick<CustomTheorem, "formula" | "hypotheses">
+): string {
+  return `${theorem.formula.trim()}\u0000${theorem.hypotheses.trim()}`;
+}
+
+function draftError(draft: CustomTheoremDraft): string | null {
+  if (!draft.formula) return "The goal formula is empty.";
+  const goal = parseFormulaWithError(draft.formula, "custom-theorem");
+  if (!goal.ast) return `The goal formula does not parse: ${goal.error}`;
+  try {
+    parseHypotheses(draft.hypotheses, "custom-theorem-hyp");
+  } catch (e) {
+    return `The hypotheses do not parse: ${e instanceof Error ? e.message : String(e)}`;
+  }
+  return null;
+}
+
+function normalizeDraft(value: unknown): CustomTheoremDraft | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const formula = readString(record.formula);
+  return {
+    title: readString(record.title) || formula,
+    formula,
+    hypotheses: readString(record.hypotheses),
+  };
+}
+
+/**
+ * Parse the saved custom theorems without throwing. Malformed JSON, a
+ * non-array value and entries without a string id and formula are dropped,
+ * and anything past {@link MAX_CUSTOM_THEOREMS} is ignored.
+ *
+ * @param raw - The stored string, or null when nothing is stored.
+ * @returns The saved theorems, oldest first.
+ */
+export function parseCustomTheorems(raw: string | null): CustomTheorem[] {
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+  const out: CustomTheorem[] = [];
+  for (const entry of parsed) {
+    const draft = normalizeDraft(entry);
+    if (!draft?.formula) continue;
+    const id = readString((entry as Record<string, unknown>).id);
+    if (id) out.push({ id, ...draft });
+  }
+  return out.slice(0, MAX_CUSTOM_THEOREMS);
+}
+
+/**
+ * Add a theorem to the collection. A formula or hypotheses that do not
+ * parse, a full collection, and a theorem whose trimmed formula and
+ * hypotheses are already saved all leave the collection unchanged.
+ *
+ * @param theorems - The saved collection.
+ * @param draft - The theorem to add; an empty title falls back to the formula.
+ * @returns Whether it was saved, a message for the player, and the collection.
+ */
+export function saveCustomTheorem(
+  theorems: readonly CustomTheorem[],
+  draft: CustomTheoremDraft
+): CustomTheoremSaveResult {
+  const current = [...theorems];
+  const clean = normalizeDraft(draft);
+  if (!clean) {
+    return { saved: false, message: "Nothing to save.", theorems: current };
+  }
+  const error = draftError(clean);
+  if (error) {
+    return { saved: false, message: `Not saved. ${error}`, theorems: current };
+  }
+  const duplicate = current.find((t) => theoremKey(t) === theoremKey(clean));
+  if (duplicate) {
+    return {
+      saved: false,
+      message: `Already saved as "${duplicate.title}". Nothing changed.`,
+      theorems: current,
+    };
+  }
+  if (current.length >= MAX_CUSTOM_THEOREMS) {
+    return {
+      saved: false,
+      message: `Not saved. The collection is full (${MAX_CUSTOM_THEOREMS} theorems); delete one first.`,
+      theorems: current,
+    };
+  }
+  return {
+    saved: true,
+    message: `Saved "${clean.title}".`,
+    theorems: [...current, { id: generateId("custom-theorem"), ...clean }],
+  };
+}
+
+/**
+ * Remove a theorem from the collection.
+ *
+ * @param theorems - The saved collection.
+ * @param id - The id of the theorem to remove.
+ * @returns The collection without that theorem.
+ */
+export function deleteCustomTheorem(
+  theorems: readonly CustomTheorem[],
+  id: string
+): CustomTheorem[] {
+  return theorems.filter((t) => t.id !== id);
+}
+
+/**
+ * Serialize the collection for download. Ids are left out, because an
+ * import always assigns new ones.
+ *
+ * @param theorems - The saved collection.
+ * @returns Pretty-printed JSON with a version and a theorems array.
+ */
+export function exportCustomTheorems(
+  theorems: readonly CustomTheorem[]
+): string {
+  return JSON.stringify(
+    {
+      version: 1,
+      theorems: theorems.map(({ title, formula, hypotheses }) => ({
+        title,
+        formula,
+        hypotheses,
+      })),
+    },
+    null,
+    2
+  );
+}
+
+/**
+ * Merge theorems from an exported JSON file into the collection. The file
+ * may be an object with a theorems array or a bare array. Each entry gets a
+ * fresh id; ids in the file are ignored. Entries whose formula or
+ * hypotheses do not parse, entries whose trimmed formula and hypotheses are
+ * already in the collection or earlier in the file, and entries past
+ * {@link MAX_CUSTOM_THEOREMS} are skipped with a warning each.
+ *
+ * @param theorems - The saved collection.
+ * @param json - The file contents.
+ * @returns The merged collection, the number added and any warnings.
+ */
+export function importCustomTheorems(
+  theorems: readonly CustomTheorem[],
+  json: string
+): CustomTheoremImportResult {
+  const current = [...theorems];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    return {
+      theorems: current,
+      imported: 0,
+      warnings: [],
+      error: "The file is not valid JSON.",
+    };
+  }
+  const entries: unknown = Array.isArray(parsed)
+    ? parsed
+    : (parsed as { theorems?: unknown } | null)?.theorems;
+  if (!Array.isArray(entries)) {
+    return {
+      theorems: current,
+      imported: 0,
+      warnings: [],
+      error: "The file has no theorems array.",
+    };
+  }
+
+  const warnings: string[] = [];
+  const seen = new Set(current.map(theoremKey));
+  const merged = [...current];
+  entries.forEach((entry, index) => {
+    const label = `Entry ${index + 1}`;
+    const draft = normalizeDraft(entry);
+    if (!draft) {
+      warnings.push(`${label} skipped: not a theorem object.`);
+      return;
+    }
+    const error = draftError(draft);
+    if (error) {
+      warnings.push(`${label} skipped: ${error}`);
+      return;
+    }
+    if (seen.has(theoremKey(draft))) {
+      warnings.push(`${label} skipped: "${draft.title}" is already saved.`);
+      return;
+    }
+    if (merged.length >= MAX_CUSTOM_THEOREMS) {
+      warnings.push(
+        `${label} skipped: the collection is full (${MAX_CUSTOM_THEOREMS} theorems).`
+      );
+      return;
+    }
+    seen.add(theoremKey(draft));
+    merged.push({ id: generateId("custom-theorem"), ...draft });
+  });
+
+  return {
+    theorems: merged,
+    imported: merged.length - current.length,
+    warnings,
+  };
 }

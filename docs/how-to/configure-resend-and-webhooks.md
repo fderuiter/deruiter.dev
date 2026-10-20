@@ -142,7 +142,10 @@ retry and idempotency then apply to the send.
 **Why this cannot exhaust Resend's 100 emails a day:**
 
 - Queued mail goes out only from the daily run, at most 15 per run
-  (`EMAIL_RETRY_BATCH_SIZE`), and there is exactly one run a day.
+  (`EMAIL_RETRY_BATCH_SIZE`), and there is exactly one run a day. When QStash
+  is configured, `app/api/webhooks/qstash/retry/route.ts` also retries a
+  queued row within the day, one row per delivery, after a retryable send
+  failure (5 minutes, then 15 minutes, then 1 hour).
 - The newsletter phase enqueues at most 10 per run
   (`NEWSLETTER_DISPATCH_CAP`), and never more than the room left in the next
   batch after retries already waiting. Several posts published the same day

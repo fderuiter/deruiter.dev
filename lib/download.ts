@@ -87,6 +87,27 @@ export function canDownloadFiles(): boolean {
 }
 
 /**
+ * Turns a title or identifier into a file name stem that is safe on every
+ * common file system. Accents are folded to their base letters, each run of
+ * characters other than ASCII letters, digits, dots, underscores and hyphens
+ * becomes one underscore, and leading or trailing dots, underscores and
+ * hyphens are removed, so the result is never a hidden file.
+ *
+ * @param name - The text to derive the stem from, such as a theorem name.
+ * @param fallback - Returned when nothing usable is left of `name`.
+ * @returns The sanitized stem, without an extension.
+ */
+export function sanitizeFilename(name: string, fallback: string): string {
+  const stem = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w.-]+/g, "_")
+    .replace(/_{2,}/g, "_")
+    .replace(/^[._-]+|[._-]+$/g, "");
+  return stem || fallback;
+}
+
+/**
  * Saves data to the user's device as a file named `filename`.
  *
  * The temporary anchor is attached to the document before the click and

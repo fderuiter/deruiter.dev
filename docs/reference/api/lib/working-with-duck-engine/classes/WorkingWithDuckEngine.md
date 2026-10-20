@@ -27,7 +27,7 @@ Zero framework dependencies. Testable in pure Node.js/Vitest.
 
 ##### mode?
 
-`"campaign"` \| `"endless"`
+`"campaign"` \| `"endless"` = `"campaign"`
 
 #### Returns
 

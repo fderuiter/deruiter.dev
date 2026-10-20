@@ -15,13 +15,13 @@ import {
   FLASH_STORAGE_KEY,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   generateStage,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   BUFF_HEIGHT,
   START_LIVES,
@@ -31,7 +31,7 @@ import {
   emergePickup,
   playerHeightFor,
   type Pickup,
-} from "@/lib/garmin-powerups";
+} from "@/lib/garmin/powerups";
 import {
   CAPE_CEILING_Y,
   CAPE_FLAP_VY,
@@ -53,7 +53,7 @@ import {
   paceSegments,
   startsFlight,
   stepPaceMeter,
-} from "@/lib/garmin-cape";
+} from "@/lib/garmin/cape";
 import { GAME_MANUALS } from "@/lib/game-manuals";
 
 // The pace meter and the Compression Cape in Monkey C Mayhem (#1990).

@@ -56,8 +56,11 @@ async function quietPhone(page: Page) {
     name: "The phone is ringing",
   });
   for (let call = 0; call < 12 && (await ringing.isVisible()); call += 1) {
+    // Each call is its own dialog (keyed by call): wait for this one to go
+    // before checking whether the next is already ringing.
+    const call = await ringing.elementHandle();
     await ringing.getByRole("button", { name: "Send to voicemail" }).click();
-    await page.waitForTimeout(150);
+    await page.waitForFunction((el) => !el?.isConnected, call);
   }
 }
 

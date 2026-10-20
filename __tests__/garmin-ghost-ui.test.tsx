@@ -11,18 +11,18 @@ import {
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { raceSetup, type RaceSetup } from "@/lib/garmin-race";
+import { raceSetup, type RaceSetup } from "@/lib/garmin/race";
 import {
   GHOST_FLAG,
   GHOST_SAMPLE_MS,
   type GhostTrack,
-} from "@/lib/garmin-ghost";
+} from "@/lib/garmin/ghost";
 import {
   GHOST_ON_KEY,
   GHOST_TARGET_KEY,
   loadGhost,
   saveGhost,
-} from "@/lib/garmin-ghost-store";
+} from "@/lib/garmin/ghost-store";
 import { safeClear, safeGetRawItem } from "@/lib/safe-storage";
 import {
   GROUND_Y,
@@ -30,8 +30,8 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
 
 // The Virtual Partner in the simulator (#2020): the options, the ghost and
 // gap on the face, the lap banner gap, saving a new best as the ghost, and
@@ -69,8 +69,8 @@ vi.mock("@/hooks/useAnimationFrame", async (importOriginal) => {
     },
   };
 });
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return {
     ...actual,
     // Races start on a clear lane with GPS locked, so the clock runs at once.

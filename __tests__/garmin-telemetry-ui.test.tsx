@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { createInitialState, startGame } from "@/lib/garmin-engine";
+import { createInitialState, startGame } from "@/lib/garmin/engine";
 
 global.ResizeObserver = class {
   observe = vi.fn();

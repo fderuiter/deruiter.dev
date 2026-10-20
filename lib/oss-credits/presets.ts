@@ -185,6 +185,10 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Testing",
     reason: "Automated accessibility checks in the browser.",
   },
+  "axe-core": {
+    group: "Testing",
+    reason: "Accessibility rules that the component unit tests run in jsdom.",
+  },
   "fast-check": {
     group: "Testing",
     reason: "Property-based fuzz testing of the engines.",

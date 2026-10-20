@@ -505,7 +505,8 @@ export const DEMOGRAPHICS_SCENARIO: Scenario = {
   deck: DEMOGRAPHICS_DECK,
   // The review this Blind teaches: the three drafts of Table 14.1.1, their
   // supporting listing and the disposition table are always in the opening
-  // hand. The rest of the deck is shuffled.
+  // hand. The rest of the deck is shuffled. A run opening on this Blind may
+  // deal another setup from its opener pool instead (#2413, deal.ts).
   pinned: [
     "C-T14.1.1-A",
     "C-L16.2.4",

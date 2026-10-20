@@ -6,7 +6,7 @@
 
 # Function: createRunState()
 
-> **createRunState**(`authored`, `seed?`, `options?`, `dealing?`, `decks?`, `shops?`): [`RunState`](../interfaces/RunState.md)
+> **createRunState**(`authored`, `seed?`, `options?`, `dealing?`, `decks?`, `shops?`, `openers?`): [`RunState`](../interfaces/RunState.md)
 
 A fresh run for `seed`: the first act's Boss drawn from its pool, and the
 first Blind dealt with full CPU. The first Blind draws no crisis. A later
@@ -22,7 +22,9 @@ the run, which records only what differs from the defaults.
 then AUTHORED deals every Blind in its written order, as it was recorded.
 `decks` is AUTHORED for a save from before the run deck (#2082), and
 `shops` is CLASSIC for a save from before each act had its own shop
-(#2083), so every act stocks the shared catalog, drawn evenly.
+(#2083), so every act stocks the shared catalog, drawn evenly. `openers`
+is FIXED for a save from before first-Blind openers (#2413), so the first
+Blind deals its own scripted setup whatever the seed.
 
 ## Parameters
 
@@ -49,6 +51,10 @@ then AUTHORED deals every Blind in its written order, as it was recorded.
 ### shops?
 
 [`ShopLibrary`](../type-aliases/ShopLibrary.md) = `"PER_ACT"`
+
+### openers?
+
+[`OpenerDealing`](../../deal/type-aliases/OpenerDealing.md) = `"POOL"`
 
 ## Returns
 

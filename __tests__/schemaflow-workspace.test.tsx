@@ -12,11 +12,18 @@ import {
 import SchemaFlowWorkspace from "@/components/SchemaFlowWorkspace";
 
 describe("SchemaFlowWorkspace Component Architectural & Logical Validation", () => {
-  const componentPath = path.resolve(
-    __dirname,
-    "../components/SchemaFlowWorkspace.tsx"
-  );
-  const content = fs.readFileSync(componentPath, "utf-8");
+  // The workspace's state and handlers live in hooks beside it (#2530), so
+  // the architectural checks read the container and its hooks together.
+  const content = [
+    "../components/SchemaFlowWorkspace.tsx",
+    "../components/schemaflow/proof-graph.ts",
+    "../components/schemaflow/useConsoleLog.ts",
+    "../components/schemaflow/useProofGraph.ts",
+    "../components/schemaflow/useSolverTelemetry.ts",
+    "../components/schemaflow/useTacticConsole.ts",
+  ]
+    .map((file) => fs.readFileSync(path.resolve(__dirname, file), "utf-8"))
+    .join("\n");
 
   beforeEach(() => {
     vi.useFakeTimers();

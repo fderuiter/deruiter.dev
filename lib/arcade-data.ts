@@ -10,7 +10,6 @@ export interface ArcadeGameMetadata {
   accentColor: string;
   borderHover: string;
   badgeBg: string;
-  storageKey?: string;
   route: string;
 }
 
@@ -33,7 +32,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)]",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "working_with_duck_high_score",
     route: "/arcade/working-with-duck",
   },
   {
@@ -59,7 +57,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-red-500/50 hover:shadow-[0_0_30px_rgba(239,68,68,0.15)]",
     badgeBg: "bg-red-500/10 text-red-400 border-red-500/30",
-    storageKey: "laser_loon_high_score",
     route: "/arcade/laser-loon",
   },
   {
@@ -80,7 +77,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]",
     badgeBg: "bg-purple-500/10 text-purple-300 border-purple-500/30",
-    storageKey: "quasi_perfect_puzzler_progress_v1",
     route: "/arcade/quasi-puzzler",
   },
   {
@@ -106,7 +102,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-amber-500/50 hover:shadow-[0_0_30px_rgba(245,158,11,0.15)]",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "garmin_simulator_high_score",
     route: "/arcade/garmin-watch",
   },
   {
@@ -131,7 +126,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]",
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-    storageKey: "clinical_chaos_highscore",
     route: "/arcade/clinical-chaos",
   },
   {
@@ -151,7 +145,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-amber-400",
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "trial_and_error_high_score",
     route: "/arcade/trial-and-error",
   },
   {
@@ -178,7 +171,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-amber-400",
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
   {
@@ -205,7 +197,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-lime-200",
     borderHover: "hover:border-lime-200/50",
     badgeBg: "bg-lime-200/10 text-lime-200 border-lime-200/30",
-    storageKey: "patty_drive_thru_high_score",
     route: "/arcade/patty-drive-thru",
   },
   {
@@ -232,7 +223,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-rose-300",
     borderHover: "hover:border-rose-300/50",
     badgeBg: "bg-rose-300/10 text-rose-300 border-rose-300/30",
-    storageKey: "for_better_or_bulk_high_score",
     route: "/arcade/for-better-or-bulk",
   },
   // Protocol Drift lives with the simulators at /protocol-drift (#1841). It
@@ -260,7 +250,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     accentColor: "text-amber-400",
     borderHover: "hover:border-amber-500/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "protocol_drift_high_score",
     route: "/protocol-drift",
   },
   {
@@ -285,7 +274,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-rose-500/50 hover:shadow-[0_0_30px_rgba(244,63,94,0.15)]",
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
-    storageKey: "retro_labyrinth_highscore",
     route: "/arcade/retro-labyrinth",
   },
   {
@@ -312,7 +300,6 @@ export const ARCADE_GAMES_METADATA: ArcadeGameMetadata[] = [
     borderHover:
       "hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.15)]",
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-    storageKey: "unlocked_meme_vault",
     route: "/arcade/meme-vault",
   },
 ];

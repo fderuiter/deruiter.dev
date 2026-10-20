@@ -302,7 +302,7 @@ export class SoundEngine {
   /**
    * Why sound is bypassed: `"reduced-motion"` when that preference is the
    * only cause (a page may offer an opt-in), `"contrast"` for forced colours,
-   * high contrast or the stored setting, or `null` when sound is not bypassed.
+   * or high contrast, or `null` when sound is not bypassed.
    */
   public getBypassReason(): "reduced-motion" | "contrast" | null {
     if (typeof window === "undefined") return null;
@@ -318,20 +318,12 @@ export class SoundEngine {
       const documentHtmlContrast =
         document.documentElement?.getAttribute("data-contrast") || "";
 
-      let storageBypass = false;
-      if (this.storage) {
-        try {
-          storageBypass = this.storage.getItem("sound_a11y_bypass") === "true";
-        } catch {}
-      }
-
       if (
         forcedColors ||
         msHighContrast ||
         documentClasses.includes("high-contrast") ||
         documentClasses.includes("contrast") ||
-        documentHtmlContrast === "high" ||
-        storageBypass
+        documentHtmlContrast === "high"
       ) {
         return "contrast";
       }

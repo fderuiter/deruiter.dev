@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useSyncExternalStore } from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
@@ -21,14 +21,18 @@ import {
 } from "@tabler/icons-react";
 import { FieldManualButton } from "@/components/FieldManualButton";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { ARCADE_GAME_COUNT, isPhoneGated } from "@/lib/arcade";
-import { safeGetRawItem } from "@/lib/safe-storage";
+import {
+  ARCADE_GAME_COUNT,
+  arcadeCoreSlice,
+  isPhoneGated,
+  onArcadeProgressNotice,
+  useProgress,
+} from "@/lib/arcade";
 import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
 import { ArcadeTrailer } from "@/components/arcade/ArcadeTrailer";
 import { ArcadeDailyPanel } from "@/components/arcade/ArcadeDailyPanel";
-import { onAppEvent } from "@/lib/event-bus";
-import { getEchoBest } from "@/lib/meme-data";
-import { countHonestProofs, parseGameProgress } from "@/lib/quasi-perfect";
+import { echoBestStore } from "@/lib/meme-data";
+import { useToast } from "@/hooks/useToast";
 
 interface ArcadeGameCard {
   id: string;
@@ -43,41 +47,12 @@ interface ArcadeGameCard {
   accentColor: string;
   borderHover: string;
   badgeBg: string;
-  storageKey?: string;
   route: string;
 }
 
-const subscribeStorage = (callback: () => void) => {
-  if (typeof window === "undefined") return () => {};
-  const cleanupScore = onAppEvent("arcade_score_updated", callback);
-  const handleStorage = () => callback();
-  window.addEventListener("storage", handleStorage);
-  return () => {
-    cleanupScore();
-    window.removeEventListener("storage", handleStorage);
-  };
-};
-
-const getScore = (key?: string) => () => {
-  if (!key || typeof window === "undefined") return "0";
-  try {
-    return safeGetRawItem(key) || "0";
-  } catch {
-    return "0";
-  }
-};
-
-const getServerScore = () => "0";
-
-const getServerEchoBest = () => 0;
-
 /** The vault card's Echo best, read from this browser (#2126). */
 function MemeVaultEchoBest() {
-  const best = useSyncExternalStore(
-    subscribeStorage,
-    getEchoBest,
-    getServerEchoBest
-  );
+  const best = echoBestStore.useValue();
   return (
     <p
       className="mt-2 font-mono text-[11px] uppercase tracking-wider text-zinc-300"
@@ -125,7 +100,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "working_with_duck_high_score",
     route: "/arcade/working-with-duck",
   },
   {
@@ -151,7 +125,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-red-500/20 via-red-500/5 to-transparent",
     borderHover: "hover:border-red-400/50",
     badgeBg: "bg-red-500/10 text-red-400 border-red-500/30",
-    storageKey: "laser_loon_high_score",
     route: "/arcade/laser-loon",
   },
   {
@@ -177,7 +150,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-purple-500/20 via-purple-500/5 to-transparent",
     borderHover: "hover:border-purple-400/50",
     badgeBg: "bg-purple-500/10 text-purple-300 border-purple-500/30",
-    storageKey: "quasi_perfect_puzzler_progress_v1",
     route: "/arcade/quasi-puzzler",
   },
   {
@@ -203,7 +175,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "garmin_simulator_high_score",
     route: "/arcade/garmin-watch",
   },
   {
@@ -229,7 +200,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-emerald-500/20 via-emerald-500/5 to-transparent",
     borderHover: "hover:border-emerald-400/50",
     badgeBg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/30",
-    storageKey: "clinical_chaos_highscore",
     route: "/arcade/clinical-chaos",
   },
   {
@@ -255,7 +225,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "trial_and_error_high_score",
     route: "/arcade/trial-and-error",
   },
   {
@@ -283,7 +252,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-amber-500/20 via-amber-500/5 to-transparent",
     borderHover: "hover:border-amber-400/50",
     badgeBg: "bg-amber-500/10 text-amber-300 border-amber-500/30",
-    storageKey: "study_director_high_score",
     route: "/arcade/study-director",
   },
   {
@@ -311,7 +279,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-lime-200/20 via-lime-200/5 to-transparent",
     borderHover: "hover:border-lime-200/50",
     badgeBg: "bg-lime-200/10 text-lime-200 border-lime-200/30",
-    storageKey: "patty_drive_thru_high_score",
     route: "/arcade/patty-drive-thru",
   },
   {
@@ -339,7 +306,6 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-rose-300/20 via-rose-300/5 to-transparent",
     borderHover: "hover:border-rose-300/50",
     badgeBg: "bg-rose-300/10 text-rose-300 border-rose-300/30",
-    storageKey: "for_better_or_bulk_high_score",
     route: "/arcade/for-better-or-bulk",
   },
   {
@@ -365,28 +331,19 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
     accentColor: "from-rose-500/20 via-rose-500/5 to-transparent",
     borderHover: "hover:border-rose-400/50",
     badgeBg: "bg-rose-500/10 text-rose-300 border-rose-500/30",
-    storageKey: "retro_labyrinth_highscore",
     route: "/arcade/retro-labyrinth",
   },
 ];
 
 function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
   const shouldReduceMotion = useReducedMotion();
-  const getSnapshot = React.useCallback(
-    () => getScore(game.storageKey)(),
-    [game.storageKey]
-  );
+  // The best lives in one place, the arcade.core slice (#2548).
+  const best = useProgress(arcadeCoreSlice).highScores[game.id] ?? 0;
 
-  const rawScore = useSyncExternalStore(
-    subscribeStorage,
-    getSnapshot,
-    getServerScore
-  );
-
-  let formattedScore = rawScore;
-  if (game.id === "quasi-puzzler" && rawScore !== "0") {
-    // Honest proofs only; a level closed with sorry is not a proof (#2198).
-    const count = countHonestProofs(parseGameProgress(rawScore));
+  let formattedScore = best > 0 ? String(best) : "0";
+  if (game.id === "quasi-puzzler" && best > 0) {
+    // Honest proofs only, 100 points each; sorry is not a proof (#2198).
+    const count = Math.floor(best / 100);
     formattedScore = `${count} ${count === 1 ? "Proof" : "Proofs"}`;
   }
 
@@ -521,8 +478,31 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
   );
 }
 
+/**
+ * Tells the player, once, when a saved record could not be read and was set
+ * aside (#2548). The damaged text is kept under `<key>:corrupt`.
+ */
+function useProgressNotices() {
+  const toast = useToast();
+  const toastRef = useRef(toast);
+  useEffect(() => {
+    toastRef.current = toast;
+  });
+  useEffect(
+    () =>
+      onArcadeProgressNotice(() => {
+        toastRef.current.warning("Some arcade progress could not be read", {
+          description:
+            "A saved record in this browser was damaged. It has been set aside, and that game starts fresh.",
+        });
+      }),
+    []
+  );
+}
+
 export const ArcadeHubClient: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
+  useProgressNotices();
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       {/* Top Ambient Glows */}

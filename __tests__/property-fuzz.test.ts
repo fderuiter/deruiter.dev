@@ -38,10 +38,16 @@ import {
   calculateColumnWidth,
   distributeItemsGreedily,
 } from "@/lib/graphics-engine";
+import {
+  parseArcadeDailyProgress,
+  type ArcadeDailyProgress,
+} from "@/lib/arcade/daily";
 import { sanitizeString, sanitizeError } from "@/lib/error-sanitization";
 import { validateSyncRequest } from "@/lib/security";
 import { NextRequest } from "next/server";
 import {
+  arcadeCoreSlice,
+  arcadeDailySlice,
   boundingBoxOverlap,
   calculateScoreMultiplier,
   clamp,
@@ -49,6 +55,7 @@ import {
   createSeededRandom,
   lerp,
   scaleScoreWithMultiplier,
+  type ArcadeProgress,
   type Rect,
 } from "@/lib/arcade";
 import { calculateFOV, hasLineOfSight } from "@/lib/dungeon";
@@ -79,7 +86,16 @@ import {
 import {
   ACT_I,
   ACT_I_CRISES,
+  BIOSTAT_OPS_CAMPAIGN,
   DEMOGRAPHICS_SCENARIO,
+  GUIDED_BLIND_SCENARIO,
+  ScenarioSchema,
+  dealSeed,
+  deriveRunView,
+  openerIndex,
+  openerPool,
+  shuffledDeckOrder,
+  withOpener,
   advanceDesk,
   advanceRun,
   createRunState,
@@ -1676,6 +1692,110 @@ describe("Trial & Error run seeds (#1528)", () => {
   });
 });
 
+describe("Trial & Error first-Blind openers (#2413)", () => {
+  const codecSeed = fc
+    .uint8Array({ minLength: 5, maxLength: 5 })
+    .map((raw) => seedFromBytes(raw));
+  const daily = fc
+    .date({
+      min: new Date("2000-01-01T00:00:00Z"),
+      max: new Date("2100-12-31T23:59:59Z"),
+      noInvalidDate: true,
+    })
+    .map((when) => dailySeed(when.toISOString().slice(0, 10)));
+  const seed = fc.oneof(codecSeed, daily);
+  const choice = fc.record({
+    sponsorId: fc.constantFrom(...SPONSOR_ORDER),
+    stake: fc.integer({ min: 1, max: MAX_STAKE }),
+  });
+
+  it("picks the same opener for the same seed, every time", () => {
+    fc.assert(
+      fc.property(seed, fc.integer({ min: 1, max: 12 }), (s, size) => {
+        const index = openerIndex(s, size);
+        expect(Number.isInteger(index)).toBe(true);
+        expect(index).toBeGreaterThanOrEqual(0);
+        expect(index).toBeLessThan(size);
+        expect(openerIndex(s, size)).toBe(index);
+      }),
+      { numRuns: 1000 }
+    );
+  });
+
+  it("opens a run on its seed's opener, and the same seed deals the same opening hand", () => {
+    fc.assert(
+      fc.property(seed, choice, (s, c) => {
+        const run = createRunState(BIOSTAT_OPS_CAMPAIGN, s, c);
+        const blind = deriveRunView(BIOSTAT_OPS_CAMPAIGN, run).blind;
+        const pool = openerPool(blind);
+        const opener = pool[openerIndex(s, pool.length)];
+        const fits = opener.length;
+        expect([...run.table.hand.slice(0, fits)].sort()).toEqual(
+          [...opener].sort()
+        );
+        expect(createRunState(BIOSTAT_OPS_CAMPAIGN, s, c).table).toEqual(
+          run.table
+        );
+      }),
+      { numRuns: 150 }
+    );
+  });
+
+  it("deals every opener as a legal setup of the first Blind, under any sponsor and stake", () => {
+    fc.assert(
+      fc.property(seed, choice, (s, c) => {
+        const run = createRunState(BIOSTAT_OPS_CAMPAIGN, s, c);
+        const blind = deriveRunView(BIOSTAT_OPS_CAMPAIGN, run).blind;
+        const pool = openerPool(blind);
+        expect(pool.length).toBeGreaterThan(1);
+        pool.forEach((opener, index) => {
+          // A legal setup: distinct cards the deck holds, all in one hand.
+          expect(new Set(opener).size).toBe(opener.length);
+          expect(opener.length).toBeLessThanOrEqual(blind.table.handSize);
+          const opened = withOpener(blind, index);
+          expect(ScenarioSchema.safeParse(opened).success).toBe(true);
+          // A legal deal: a permutation of the deck, the opener on top.
+          const order = shuffledDeckOrder(opened, dealSeed(s, 0, 0));
+          expect([...order].sort((a, b) => a - b)).toEqual(
+            blind.deck.map((_, i) => i)
+          );
+          expect(
+            order
+              .slice(0, opener.length)
+              .map((i) => blind.deck[i].id)
+              .sort()
+          ).toEqual([...opener].sort());
+        });
+      }),
+      { numRuns: 100 }
+    );
+  });
+
+  it("keeps the fixed openers for the tutorial and for named seeds", () => {
+    expect(openerPool(GUIDED_BLIND_SCENARIO)).toEqual([
+      GUIDED_BLIND_SCENARIO.pinned,
+    ]);
+    // The pool opens on the Blind's own setup first, and a Blind whose
+    // setup was rewritten keeps it.
+    expect(openerPool(DEMOGRAPHICS_SCENARIO)[0]).toEqual(
+      DEMOGRAPHICS_SCENARIO.pinned
+    );
+    const wholeDeck = DEMOGRAPHICS_SCENARIO.deck.map((card) => card.id);
+    expect(openerPool({ ...DEMOGRAPHICS_SCENARIO, pinned: wholeDeck })).toEqual(
+      [wholeDeck]
+    );
+    const named = fc.stringMatching(/^[a-z]{1,5}-[0-9]{1,2}$/);
+    fc.assert(
+      fc.property(named, (s) => {
+        expect(openerIndex(s, openerPool(DEMOGRAPHICS_SCENARIO).length)).toBe(
+          0
+        );
+      }),
+      { numRuns: 300 }
+    );
+  });
+});
+
 describe("Trial & Error Codex document (#1529)", () => {
   it("reads any string or JSON value without throwing, always as a valid Codex", () => {
     fc.assert(
@@ -1885,5 +2005,170 @@ describe("Clinical Trial Chaos procedural observations - property fuzzing", () =
       }),
       { numRuns: 200 }
     );
+  });
+});
+
+// #2548, design §5: profile slices merge by joins, so two devices converge
+// whatever order they sync in and a merge never takes progress away.
+describe("Arcade progress merge laws", () => {
+  const gameIds = fc.constantFrom(
+    "laser-loon",
+    "quasi-puzzler",
+    "trial-and-error",
+    "meme-vault"
+  );
+  const trophyIds = fc.constantFrom(
+    "laser_loon_novice",
+    "quasi_first_proof",
+    "meme_vault_echo_5",
+    "arcade_triathlon"
+  );
+  const coreArb: fc.Arbitrary<ArcadeProgress> = fc
+    .record({
+      highScores: fc.dictionary(gameIds, fc.integer({ min: 0, max: 1e6 })),
+      unlockedTrophies: fc.dictionary(
+        trophyIds,
+        fc.integer({ min: 1, max: 2e12 })
+      ),
+      updatedAt: fc.integer({ min: 0, max: 2e12 }),
+      migratedAt: fc.option(fc.integer({ min: 1, max: 2e12 }), {
+        nil: undefined,
+      }),
+    })
+    .map((p) =>
+      p.migratedAt === undefined
+        ? {
+            highScores: p.highScores,
+            unlockedTrophies: p.unlockedTrophies,
+            updatedAt: p.updatedAt,
+          }
+        : p
+    );
+
+  const dates = fc
+    .integer({ min: 0, max: 40 })
+    .map((d) =>
+      new Date(Date.UTC(2026, 8, 1) + d * 86_400_000).toISOString().slice(0, 10)
+    );
+  const resultArb = fc.record(
+    {
+      score: fc.integer({ min: 0, max: 5000 }),
+      label: fc.constantFrom("A", "B", "Grade A, 4 stars"),
+    },
+    { requiredKeys: ["score"] }
+  );
+  const dailyArb: fc.Arbitrary<ArcadeDailyProgress> = fc
+    .record({
+      bests: fc.record(
+        {
+          "for-better-or-bulk": fc.dictionary(dates, resultArb),
+          "protocol-drift": fc.dictionary(dates, resultArb),
+        },
+        { requiredKeys: [] }
+      ),
+      played: fc.uniqueArray(dates),
+      longest: fc.integer({ min: 0, max: 50 }),
+    })
+    .map((raw) => parseArcadeDailyProgress(raw));
+
+  const laws = <T>(
+    name: string,
+    arb: fc.Arbitrary<T>,
+    merge: (a: T, b: T) => T,
+    normalize: (value: T) => unknown
+  ) => {
+    it(`${name} merge is commutative`, () => {
+      fc.assert(
+        fc.property(arb, arb, (a, b) => {
+          expect(normalize(merge(a, b))).toEqual(normalize(merge(b, a)));
+        })
+      );
+    });
+    it(`${name} merge is associative`, () => {
+      fc.assert(
+        fc.property(arb, arb, arb, (a, b, c) => {
+          expect(normalize(merge(merge(a, b), c))).toEqual(
+            normalize(merge(a, merge(b, c)))
+          );
+        })
+      );
+    });
+    it(`${name} merge is idempotent`, () => {
+      fc.assert(
+        fc.property(arb, arb, (a, b) => {
+          const ab = merge(a, b);
+          expect(normalize(merge(ab, ab))).toEqual(normalize(ab));
+          expect(normalize(merge(ab, b))).toEqual(normalize(ab));
+        })
+      );
+    });
+  };
+
+  const sortedCore = (p: ArcadeProgress) => ({
+    ...p,
+    highScores: Object.fromEntries(Object.entries(p.highScores).sort()),
+    unlockedTrophies: Object.fromEntries(
+      Object.entries(p.unlockedTrophies).sort()
+    ),
+  });
+  const sortedDaily = (p: ArcadeDailyProgress) => ({
+    ...p,
+    bests: Object.fromEntries(
+      Object.entries(p.bests)
+        .sort()
+        .map(([game, days]) => [
+          game,
+          Object.fromEntries(Object.entries(days ?? {}).sort()),
+        ])
+    ),
+  });
+
+  laws("arcade.core", coreArb, arcadeCoreSlice.merge, sortedCore);
+  laws("arcade.daily", dailyArb, arcadeDailySlice.merge, sortedDaily);
+
+  it("arcade.core merge of a copy with itself is that copy", () => {
+    fc.assert(
+      fc.property(coreArb, (a) => {
+        expect(sortedCore(arcadeCoreSlice.merge(a, a))).toEqual(sortedCore(a));
+      })
+    );
+  });
+
+  it("arcade.core merge never lowers a local best or loses a trophy", () => {
+    fc.assert(
+      fc.property(coreArb, coreArb, (local, other) => {
+        const merged = arcadeCoreSlice.merge(local, other);
+        for (const [game, best] of Object.entries(local.highScores)) {
+          expect(merged.highScores[game]).toBeGreaterThanOrEqual(best);
+        }
+        for (const [id, at] of Object.entries(local.unlockedTrophies)) {
+          expect(merged.unlockedTrophies[id]).toBeLessThanOrEqual(at);
+        }
+      })
+    );
+  });
+
+  it("arcade.daily merge never lowers a local best, played day or streak", () => {
+    fc.assert(
+      fc.property(dailyArb, dailyArb, (local, other) => {
+        const merged = arcadeDailySlice.merge(local, other);
+        for (const [game, days] of Object.entries(local.bests)) {
+          for (const [date, result] of Object.entries(days ?? {})) {
+            const kept =
+              merged.bests[game as keyof typeof merged.bests]?.[date];
+            expect(kept?.score).toBeGreaterThanOrEqual(result.score);
+          }
+        }
+        expect(merged.played).toEqual(
+          expect.arrayContaining([...local.played])
+        );
+        expect(merged.longest).toBeGreaterThanOrEqual(local.longest);
+      })
+    );
+  });
+
+  it("marks neither profile slice spendable", () => {
+    expect(arcadeCoreSlice.spendable).toBe(false);
+    expect(arcadeDailySlice.spendable).toBe(false);
   });
 });

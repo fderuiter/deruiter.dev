@@ -2131,9 +2131,10 @@ export const RunActionSchema = z.discriminatedUnion("type", [
  * a v1 save migrates to v2 with `dealing: "AUTHORED"`. v3 (#2082) adds the
  * run deck; a v2 save migrates to v3 with `decks: "AUTHORED"`. v4 (#2083)
  * gives each act its own shop and draws relics by rarity; a v3 save
- * migrates to v4 with `shops: "CLASSIC"`.
+ * migrates to v4 with `shops: "CLASSIC"`. v5 (#2413) lets the seed pick the
+ * first Blind's opener; a v4 save migrates to v5 with `openers: "FIXED"`.
  */
-export const RUN_SAVE_VERSION = 4;
+export const RUN_SAVE_VERSION = 5;
 
 /**
  * A saved run (#1079): the act, the seed and every move since the run
@@ -2166,6 +2167,12 @@ export const RunSaveSchema = z.object({
    * rarity.
    */
   shops: z.literal("CLASSIC").optional(),
+  /**
+   * FIXED for a run first saved before first-Blind openers (#2413): the
+   * first Blind deals its own scripted setup, as it did when the moves were
+   * made. Absent means the seed picks the opener.
+   */
+  openers: z.literal("FIXED").optional(),
   actions: z.array(RunActionSchema).max(5000),
   /**
    * How the seed was chosen (#1528). Optional, so saves from before it load

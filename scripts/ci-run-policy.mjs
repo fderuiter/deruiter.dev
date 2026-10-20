@@ -6,7 +6,8 @@
  * installed, so it has no dependencies. It decides, for one workflow run,
  * which gate groups execute:
  *
- * - `run_unit`: the Vitest shards and the Stryker gate.
+ * - `run_unit`: the Vitest shards and the Stryker gate. Off for drafts and
+ *   unpromoted bot PRs, which run only the static and security gates.
  * - `run_browser`: the build, the Playwright shards, the device gate and the
  *   Web Vitals bench.
  *
@@ -179,6 +180,14 @@ const ARCADE_SHARED_PATHS =
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
+ * Unit and component tests (`__tests__/` outside `e2e/`) run in Vitest and
+ * cannot change what a device spec sees, so they select no game (#2531). A
+ * test-only sweep that names many games otherwise queued every game's
+ * device specs, about 1,100 tests, and ran device-gate into its timeout.
+ */
+const UNIT_TEST_PATH = /^__tests__\/(?!e2e\/)/;
+
+/**
  * The Playwright `--grep` pattern for the arcade device specs a change set
  * touches. Empty when it touches no arcade code; `.` (everything) when the
  * change set is unknown, so the filter fails safe.
@@ -188,12 +197,13 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
  */
 export function arcadeDeviceGrep(files) {
   if (!Array.isArray(files) || files.length === 0) return ".";
+  const relevant = files.filter((file) => !UNIT_TEST_PATH.test(file));
   const titles = [];
-  if (files.some((file) => ARCADE_SHARED_PATHS.test(file))) {
+  if (relevant.some((file) => ARCADE_SHARED_PATHS.test(file))) {
     titles.push(...ARCADE_KIT_TITLES);
   }
   for (const [name, paths] of ARCADE_DEVICE_GAMES) {
-    if (files.some((file) => paths.test(file))) titles.push(name);
+    if (relevant.some((file) => paths.test(file))) titles.push(name);
   }
   return titles.map(escapeRegExp).join("|");
 }
@@ -231,18 +241,22 @@ export function computeRunPolicy(input) {
   const botPr = isBotBranch(input.headRef);
   const promoted = (input.labels ?? []).includes(FULL_SUITE_LABEL);
   const draft = input.draft === true;
-  const quickOnly = botPr && !promoted;
+  // #2541: a draft runs quick checks too. The full local suite is required
+  // before every push, and on the 20-job free runner pool the draft's unit
+  // shards only delay the one ready PR in the merge lane.
+  const quickOnly = (botPr && !promoted) || draft;
   const runUnit = !quickOnly;
-  const runBrowser = !quickOnly && !draft && appChanged;
+  const runBrowser = !quickOnly && appChanged;
   const strykerForce =
     !Array.isArray(files) ||
     files.some((file) => STRYKER_INPUTS.includes(file));
 
   let reason;
-  if (quickOnly) {
+  if (botPr && !promoted) {
     reason = `bot PR (${input.headRef}): static and security checks only until a maintainer applies '${FULL_SUITE_LABEL}'.`;
   } else if (draft) {
-    reason = "draft PR: browser gates run once the PR is marked ready.";
+    reason =
+      "draft PR: static and security checks only; every gate runs once the PR is marked ready.";
   } else if (!appChanged) {
     reason = "docs-only PR: build, Playwright, device and bench gates skipped.";
   } else {

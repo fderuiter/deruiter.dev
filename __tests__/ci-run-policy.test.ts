@@ -18,8 +18,8 @@ import { validateBranchName } from "../lib/dx/git-guard";
 /**
  * #1773: the `changes` job in ci.yml runs scripts/ci-run-policy.mjs to decide
  * which gate groups run. These cases pin the decision table Merge Gate relies
- * on: docs-only PRs skip only the browser gates, drafts skip them until
- * ready, bot PRs run quick checks until promoted, and anything unknown counts
+ * on: docs-only PRs skip only the browser gates, drafts run quick checks
+ * until ready (#2541), bot PRs run quick checks until promoted, and anything unknown counts
  * as a code change.
  */
 describe("CI run policy (#1773)", () => {
@@ -160,12 +160,13 @@ describe("CI run policy (#1773)", () => {
       });
     });
 
-    it("keeps the cheap gates but not the browser gates on a draft", () => {
+    it("runs quick checks only on a draft (#2541)", () => {
       expect(pr({ draft: true })).toMatchObject({
         draft: true,
-        runUnit: true,
+        runUnit: false,
         runBrowser: false,
       });
+      expect(pr({ draft: true }).reason).toContain("draft PR");
     });
 
     it("runs quick checks only for an unpromoted bot PR", () => {
@@ -284,6 +285,22 @@ describe("CI run policy (#1773)", () => {
       expect(arcadeDeviceGrep(["scripts/ci-run-policy.mjs"])).toBe(
         "Tablet arcade kit|Mobile arcade kit"
       );
+    });
+
+    it("ignores unit tests, which cannot change what a device spec sees", () => {
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/retro-labyrinth-run-rules.test.ts",
+          "__tests__/patty-drive-thru-dilemmas.test.ts",
+          "__tests__/crf/scenario-impact.test.ts",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/garmin-ceiling.test.ts",
+          "__tests__/e2e/retro-labyrinth-tablet.spec.ts",
+        ])
+      ).toBe("Retro Labyrinth");
     });
 
     it("runs nothing for a change outside the arcade", () => {

@@ -63,8 +63,8 @@ exit 0
   revision than the pinned `@playwright/test`, and the Playwright download
   CDN is not on the Trusted list. `lib/dx/browser-launch.ts` falls back to
   the preinstalled build, so the Mermaid corpus test and
-  `npm run bench:pages` work. The `npm run test:e2e` suite does not use
-  that fallback and is left to CI.
+  `npm run bench:pages` work. The Playwright suite (`npx playwright test`)
+  does not use that fallback and is left to CI.
 - The container cannot reach `deruiter.dev` or the Vercel and Neon
   control planes directly; use the claude.ai connectors instead.
 - Branch names must use an allowed prefix (`feat/`, `fix/`, `chore/`,

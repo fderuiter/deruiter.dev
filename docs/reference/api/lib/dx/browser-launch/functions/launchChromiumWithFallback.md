@@ -18,6 +18,10 @@ rendering, so this avoids a hard failure without masking a genuine
 "Playwright isn't installed at all" error (the fallback path only kicks in
 when that specific binary actually exists).
 
+Playwright is imported on first call rather than at module load, so the
+test files that only read route tables from `page-bench` don't pay for
+loading it.
+
 ## Parameters
 
 ### options?

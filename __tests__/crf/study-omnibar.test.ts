@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import type { StudyProtocol } from "@/lib/crf/types";

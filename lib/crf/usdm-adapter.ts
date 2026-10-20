@@ -27,6 +27,32 @@ import {
 } from "./universal-schema";
 import { cloneDeep } from "../utils";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
+import {
+  USDM_V4_VERSION,
+  type UsdmV4Activity,
+  type UsdmV4AliasCode,
+  type UsdmV4BiomedicalConcept,
+  type UsdmV4Code,
+  type UsdmV4Document,
+  type UsdmV4Encounter,
+  type UsdmV4ExtensionAttribute,
+  type UsdmV4InterventionalStudyDesign,
+  type UsdmV4ScheduleTimeline,
+  type UsdmV4StudyArm,
+  type UsdmV4StudyCell,
+  type UsdmV4StudyCohort,
+  type UsdmV4StudyElement,
+  type UsdmV4StudyEpoch,
+  type UsdmV4Timing,
+} from "./usdm-v4-types";
+import {
+  USDM_TIMING_AFTER,
+  USDM_TIMING_BEFORE,
+  USDM_TIMING_FIXED_REFERENCE,
+  formatIsoDurationDays,
+  getUsdmV4EncounterSchedule,
+  studyDayDistance,
+} from "./usdm-v4-schedule";
 
 export interface UsdmBiomedicalConceptProperty {
   id: string;
@@ -297,11 +323,13 @@ export interface UsdmDiffSummary {
 }
 
 /**
- * Transforms a CRF Studio StudyProtocol into a CDISC USDM Graph representation.
- * Decouples field-level presentation properties into independent BiomedicalConcept nodes.
- * Maps linear visit target days to epoch-based encounter schedules.
+ * Builds the flat, pre-v4 USDM graph that CRF Studio exported up to
+ * USDM 3.0.0. It is still the intermediate shape both directions pass
+ * through: export lifts it into USDM v4.0 (`liftLegacyToUsdmV4`), and
+ * import lowers a v4 document back into it (`lowerUsdmV4ToLegacy`), so the
+ * v3 reader keeps working unchanged for files exported before the upgrade.
  */
-export function exportStudyToUsdmObject(study: StudyProtocol): UsdmDocument {
+function buildLegacyUsdmDocument(study: StudyProtocol): UsdmDocument {
   const biomedicalConcepts: UsdmBiomedicalConcept[] = (
     study.biomedicalConcepts || []
   ).map((bc) => ({
@@ -542,6 +570,18 @@ export function exportStudyToUsdmObject(study: StudyProtocol): UsdmDocument {
 }
 
 /**
+ * Transforms a CRF Studio StudyProtocol into a CDISC USDM v4.0 document.
+ * Decouples field-level presentation properties into independent BiomedicalConcept nodes,
+ * places arms, epochs, study cells, encounters and activities on an interventional study design,
+ * and expresses visit target days and windows as schedule timeline timings.
+ * CRF Studio data with no USDM home (form layouts, edit checks, codelists) travels in
+ * USDM extension attributes, so the export stays valid against the USDM v4 schema and re-imports losslessly.
+ */
+export function exportStudyToUsdmObject(study: StudyProtocol): UsdmV4Document {
+  return liftLegacyToUsdmV4(buildLegacyUsdmDocument(study));
+}
+
+/**
  * Serializes a StudyProtocol into standard CDISC USDM JSON string.
  */
 export function exportStudyToUsdm(study: StudyProtocol, pretty = true): string {
@@ -667,10 +707,14 @@ function normalizeImportedRules(raw: unknown): EditCheckRule[] {
  * maps windowBefore and windowAfter visit tolerances to constrain study schedule rules, and resolves decoupled BiomedicalConcept definitions.
  */
 export function importStudyFromUsdm(
-  usdmInput: string | UsdmDocument | Record<string, unknown>
+  usdmInput: string | UsdmDocument | UsdmV4Document | Record<string, unknown>
 ): StudyProtocol {
+  const parsed: unknown =
+    typeof usdmInput === "string" ? JSON.parse(usdmInput) : usdmInput;
   const doc = (
-    typeof usdmInput === "string" ? JSON.parse(usdmInput) : usdmInput
+    getUsdmDocumentVersion(parsed) === "4"
+      ? lowerUsdmV4ToLegacy(parsed as Record<string, unknown>)
+      : parsed
   ) as Record<string, unknown> & UsdmDocument;
 
   // Support direct StudyProtocol JSON fallback if user pasted a Universal CRF JSON
@@ -1036,8 +1080,8 @@ export function importStudyFromUsdm(
  * Identifies added, modified, or removed arms, epochs, cohorts, biomedical concepts, encounters, and activities.
  */
 export function diffUsdmProtocols(
-  usdmAInput: string | UsdmDocument | Record<string, unknown>,
-  usdmBInput: string | UsdmDocument | Record<string, unknown>
+  usdmAInput: string | UsdmDocument | UsdmV4Document | Record<string, unknown>,
+  usdmBInput: string | UsdmDocument | UsdmV4Document | Record<string, unknown>
 ): UsdmDiffSummary {
   const studyA = importStudyFromUsdm(usdmAInput);
   const studyB = importStudyFromUsdm(usdmBInput);
@@ -1172,4 +1216,936 @@ export function diffUsdmProtocols(
     addedActivities,
     removedActivities,
   };
+}
+
+// ---------------------------------------------------------------------------
+// USDM v4.0
+// ---------------------------------------------------------------------------
+
+/** Base URL of the extension attributes CRF Studio writes into a USDM v4 export. */
+export const CRF_STUDIO_USDM_EXTENSION_BASE =
+  "https://deruiter.dev/usdm/extensions/crf-studio/";
+
+/**
+ * Extension attribute URL carrying an activity's SDTM domain code (`VS`, `AE`, ...).
+ * USDM v4 links activities to SDTM only through biomedical concepts and dataset
+ * specializations, so a plain domain hint travels as an extension.
+ */
+export const USDM_SDTM_DOMAIN_EXTENSION_URL =
+  "https://deruiter.dev/usdm/extensions/sdtm-domain";
+
+const CDISC_CT_SYSTEM = "http://www.cdisc.org";
+const CDISC_CT_VERSION = "2024-09-27";
+const CRF_STUDIO_CODE_SYSTEM = "https://deruiter.dev/crf-studio";
+
+function v4Code(
+  id: string,
+  code: string,
+  decode: string,
+  codeSystem = CDISC_CT_SYSTEM
+): UsdmV4Code {
+  return {
+    id,
+    code,
+    codeSystem,
+    codeSystemVersion:
+      codeSystem === CDISC_CT_SYSTEM ? CDISC_CT_VERSION : "1.0",
+    decode,
+    instanceType: "Code",
+  };
+}
+
+function v4AliasCode(id: string, standardCode: UsdmV4Code): UsdmV4AliasCode {
+  return {
+    id,
+    standardCode,
+    standardCodeAliases: [],
+    instanceType: "AliasCode",
+  };
+}
+
+/** Maps a free-text label onto a CDISC CT code when it is one we recognise. */
+function ctCodeFor(
+  id: string,
+  table: Record<string, [string, string]>,
+  label: string | undefined
+): UsdmV4Code {
+  const key = (label ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const hit = table[key];
+  if (hit) return v4Code(id, hit[0], hit[1]);
+  const text = label && label.length > 0 ? label : "Unspecified";
+  return v4Code(id, text, text, CRF_STUDIO_CODE_SYSTEM);
+}
+
+const ARM_TYPE_CT: Record<string, [string, string]> = {
+  experimental: ["C174266", "Experimental Arm"],
+  experimentalarm: ["C174266", "Experimental Arm"],
+  activecomparator: ["C174267", "Active Comparator Arm"],
+  activecomparatorarm: ["C174267", "Active Comparator Arm"],
+  placebocomparator: ["C174268", "Placebo Comparator Arm"],
+  placebocomparatorarm: ["C174268", "Placebo Comparator Arm"],
+  placebo: ["C174268", "Placebo Comparator Arm"],
+  shamcomparator: ["C174269", "Sham Comparator Arm"],
+  nointervention: ["C174270", "No Intervention Arm"],
+};
+
+const EPOCH_TYPE_CT: Record<string, [string, string]> = {
+  screening: ["C48262", "Screening"],
+  runin: ["C98779", "Run-in"],
+  washout: ["C42872", "Washout"],
+  treatment: ["C101526", "Treatment"],
+  followup: ["C99158", "Follow-Up"],
+};
+
+const PHASE_CT: Record<string, [string, string]> = {
+  "Phase I": ["C15600", "Phase I Trial"],
+  "Phase I/II": ["C15693", "Phase I/II Trial"],
+  "Phase II": ["C15601", "Phase II Trial"],
+  "Phase III": ["C15602", "Phase III Trial"],
+  "Phase IV": ["C15603", "Phase IV Trial"],
+};
+
+function crfExtension(
+  ownerId: string,
+  kind: string,
+  payload: Record<string, unknown>
+): UsdmV4ExtensionAttribute {
+  return {
+    id: `${ownerId}__ext_${kind}`,
+    url: `${CRF_STUDIO_USDM_EXTENSION_BASE}${kind}`,
+    valueString: JSON.stringify(sortKeysDeep(payload)),
+    instanceType: "ExtensionAttribute",
+  };
+}
+
+/**
+ * Orders object keys alphabetically at every depth, so an extension payload
+ * serialises identically however its source object was assembled.
+ */
+function sortKeysDeep(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeysDeep);
+  if (value && typeof value === "object") {
+    const record = value as Record<string, unknown>;
+    return Object.fromEntries(
+      Object.keys(record)
+        .sort()
+        .map((key) => [key, sortKeysDeep(record[key])])
+    );
+  }
+  return value;
+}
+
+function sdtmDomainExtension(
+  ownerId: string,
+  domain: string
+): UsdmV4ExtensionAttribute {
+  return {
+    id: `${ownerId}__ext_sdtm_domain`,
+    url: USDM_SDTM_DOMAIN_EXTENSION_URL,
+    valueString: domain,
+    instanceType: "ExtensionAttribute",
+  };
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
+function findExtension(
+  owner: unknown,
+  url: string
+): Record<string, unknown> | undefined {
+  return asArray(asRecord(owner)?.extensionAttributes)
+    .map(asRecord)
+    .find((ext) => ext?.url === url);
+}
+
+/** Reads a CRF Studio extension payload, or `undefined` when absent or unreadable. */
+function readCrfExtension(
+  owner: unknown,
+  kind: string
+): Record<string, unknown> | undefined {
+  const ext = findExtension(owner, `${CRF_STUDIO_USDM_EXTENSION_BASE}${kind}`);
+  const raw = asString(ext?.valueString);
+  if (raw === undefined) return undefined;
+  try {
+    return asRecord(JSON.parse(raw));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Reads the SDTM domain code an activity declares through the
+ * `USDM_SDTM_DOMAIN_EXTENSION_URL` extension attribute, if any.
+ */
+export function getUsdmV4ActivityDomain(activity: unknown): string | undefined {
+  return asString(
+    findExtension(activity, USDM_SDTM_DOMAIN_EXTENSION_URL)?.valueString
+  );
+}
+
+/** Drops `undefined` members the same way `JSON.stringify` does. */
+function withoutUndefined<T extends object>(obj: T): T {
+  return JSON.parse(JSON.stringify(obj)) as T;
+}
+
+function linkSequence<T extends { id: string }>(
+  items: T[]
+): (T & { previousId: string | null; nextId: string | null })[] {
+  return items.map((item, idx) => ({
+    ...item,
+    previousId: idx > 0 ? items[idx - 1].id : null,
+    nextId: idx < items.length - 1 ? items[idx + 1].id : null,
+  }));
+}
+
+function isNciCode(value: string | undefined): value is string {
+  return typeof value === "string" && /^C\d+$/.test(value);
+}
+
+function epochTypeCode(id: string, label: string | undefined): UsdmV4Code {
+  const key = (label ?? "").toLowerCase().replace(/[^a-z]/g, "");
+  const match = Object.keys(EPOCH_TYPE_CT).find((k) => key.includes(k));
+  return match
+    ? v4Code(id, EPOCH_TYPE_CT[match][0], EPOCH_TYPE_CT[match][1])
+    : ctCodeFor(id, {}, label);
+}
+
+function liftBiomedicalConcept(
+  bc: UsdmBiomedicalConcept
+): UsdmV4BiomedicalConcept {
+  const codeValue = bc.code || bc.conceptId || bc.id;
+  const nci = isNciCode(codeValue);
+  return {
+    id: bc.id,
+    name: bc.name,
+    label: bc.label ?? null,
+    synonyms: (bc.synonyms || []).filter(
+      (s): s is string => typeof s === "string"
+    ),
+    reference: nci
+      ? `https://evsexplore.semantics.cancer.gov/evsexplore/concept/ncit/${codeValue}`
+      : `${CRF_STUDIO_CODE_SYSTEM}/biomedical-concepts/${bc.id}`,
+    properties: [],
+    code: v4AliasCode(
+      `${bc.id}__code`,
+      v4Code(
+        `${bc.id}__code_std`,
+        codeValue,
+        bc.label || bc.name || codeValue,
+        nci ? CDISC_CT_SYSTEM : CRF_STUDIO_CODE_SYSTEM
+      )
+    ),
+    extensionAttributes: [
+      crfExtension(bc.id, "biomedical-concept", withoutUndefined({ ...bc })),
+    ],
+    instanceType: "BiomedicalConcept",
+  };
+}
+
+function buildMainTimeline(
+  design: UsdmStudyDesign,
+  epochIds: Set<string>
+): UsdmV4ScheduleTimeline[] {
+  const encounters = design.encounters || [];
+  if (encounters.length === 0) return [];
+  const dayOf = (enc: UsdmEncounter) =>
+    typeof enc.targetDay === "number" && Number.isFinite(enc.targetDay)
+      ? enc.targetDay
+      : 0;
+  // Unscheduled encounters have no planned timing, so they get none.
+  const planned = encounters.filter((enc) => enc.type !== "Unscheduled");
+  const anchor = planned.reduce<UsdmEncounter | undefined>(
+    (best, enc) =>
+      !best || Math.abs(dayOf(enc) - 1) < Math.abs(dayOf(best) - 1)
+        ? enc
+        : best,
+    undefined
+  );
+  const exitId = `${design.id}__timeline_exit`;
+  const instanceId = (enc: UsdmEncounter) => `${enc.id}__sai`;
+  const timingFor = (
+    enc: UsdmEncounter,
+    anchor: UsdmEncounter
+  ): UsdmV4Timing => {
+    const isAnchor = enc === anchor;
+    const distance = studyDayDistance(dayOf(anchor), dayOf(enc));
+    const typeId = `${enc.id}__timing_type`;
+    const type = isAnchor
+      ? v4Code(typeId, USDM_TIMING_FIXED_REFERENCE, "Fixed Reference")
+      : distance < 0
+        ? v4Code(typeId, USDM_TIMING_BEFORE, "Before")
+        : v4Code(typeId, USDM_TIMING_AFTER, "After");
+    const windowBefore = Math.abs(enc.windowBefore || 0);
+    const windowAfter = Math.abs(enc.windowAfter || 0);
+    return {
+      id: `${enc.id}__timing`,
+      name: `Timing for ${enc.name || enc.id}`,
+      label: null,
+      description: null,
+      type,
+      value: formatIsoDurationDays(isAnchor ? 0 : distance),
+      valueLabel: `Day ${dayOf(enc)}`,
+      relativeToFrom: v4Code(
+        `${enc.id}__timing_rel`,
+        "C201355",
+        "Start to Start"
+      ),
+      relativeFromScheduledInstanceId: instanceId(enc),
+      relativeToScheduledInstanceId: isAnchor ? null : instanceId(anchor),
+      windowLower: formatIsoDurationDays(windowBefore),
+      windowUpper: formatIsoDurationDays(windowAfter),
+      windowLabel: `-${windowBefore}/+${windowAfter} days`,
+      instanceType: "Timing",
+    };
+  };
+  const timings: UsdmV4Timing[] = anchor
+    ? planned.map((enc) => timingFor(enc, anchor))
+    : [];
+  return [
+    {
+      id: `${design.id}__timeline`,
+      name: "Main timeline",
+      label: null,
+      description: "Schedule of activities exported from CRF Studio",
+      mainTimeline: true,
+      entryCondition: "Subject has given informed consent",
+      entryId: instanceId(encounters[0]),
+      exits: [{ id: exitId, instanceType: "ScheduleTimelineExit" }],
+      timings,
+      instances: encounters.map((enc, idx) => ({
+        id: instanceId(enc),
+        name: enc.name || enc.id,
+        label: null,
+        description: null,
+        epochId: enc.epochId && epochIds.has(enc.epochId) ? enc.epochId : null,
+        timelineId: null,
+        timelineExitId: idx === encounters.length - 1 ? exitId : null,
+        activityIds: [...(enc.assignedFormIds || [])],
+        encounterId: enc.id,
+        instanceType: "ScheduledActivityInstance",
+      })),
+      instanceType: "ScheduleTimeline",
+    },
+  ];
+}
+
+function buildStudyCells(design: UsdmStudyDesign, epochIds: Set<string>) {
+  const elements: UsdmV4StudyElement[] = [];
+  const studyCells: UsdmV4StudyCell[] = [];
+  for (const arm of design.arms) {
+    const armEpochs =
+      arm.epochIds && arm.epochIds.length > 0
+        ? arm.epochIds.filter((id) => epochIds.has(id))
+        : design.epochs.map((e) => e.id);
+    for (const epochId of armEpochs) {
+      const elementId = `${arm.id}__${epochId}__element`;
+      const epochName =
+        design.epochs.find((e) => e.id === epochId)?.name || epochId;
+      elements.push({
+        id: elementId,
+        name: `${arm.name || arm.id} - ${epochName}`,
+        label: null,
+        description: null,
+        studyInterventionIds: [],
+        instanceType: "StudyElement",
+      });
+      studyCells.push({
+        id: `${arm.id}__${epochId}__cell`,
+        armId: arm.id,
+        epochId,
+        elementIds: [elementId],
+        instanceType: "StudyCell",
+      });
+    }
+  }
+  return { elements, studyCells };
+}
+
+function liftDesign(design: UsdmStudyDesign, phaseLabel: string | undefined) {
+  const epochIds = new Set(design.epochs.map((e) => e.id));
+
+  const arms: UsdmV4StudyArm[] = design.arms.map((arm) => ({
+    id: arm.id,
+    name: arm.name,
+    label: null,
+    description: arm.description ?? null,
+    type: ctCodeFor(`${arm.id}__type`, ARM_TYPE_CT, arm.type),
+    dataOriginDescription: "Data collected in this study",
+    dataOriginType: v4Code(
+      `${arm.id}__origin`,
+      "C188866",
+      "Data Generated Within Study"
+    ),
+    populationIds: [],
+    extensionAttributes: [
+      crfExtension(
+        arm.id,
+        "arm",
+        withoutUndefined({ type: arm.type, epochIds: arm.epochIds })
+      ),
+    ],
+    instanceType: "StudyArm",
+  }));
+
+  const epochs: UsdmV4StudyEpoch[] = linkSequence(
+    design.epochs.map((epoch) => ({
+      id: epoch.id,
+      name: epoch.name,
+      label: null,
+      description: epoch.description ?? null,
+      type: epochTypeCode(`${epoch.id}__type`, epoch.type ?? epoch.name),
+      extensionAttributes: [
+        crfExtension(
+          epoch.id,
+          "epoch",
+          withoutUndefined({
+            sequenceNumber: epoch.sequenceNumber,
+            type: epoch.type,
+          })
+        ),
+      ],
+      instanceType: "StudyEpoch" as const,
+    }))
+  );
+
+  const cohorts: UsdmV4StudyCohort[] = (design.cohorts || []).map((c) => ({
+    id: c.id,
+    name: c.name,
+    label: null,
+    description: c.description ?? null,
+    includesHealthySubjects: false,
+    plannedEnrollmentNumber:
+      typeof c.targetSize === "number" && Number.isFinite(c.targetSize)
+        ? {
+            id: `${c.id}__planned`,
+            value: c.targetSize,
+            unit: null,
+            instanceType: "Quantity",
+          }
+        : null,
+    extensionAttributes: [
+      crfExtension(
+        c.id,
+        "cohort",
+        withoutUndefined({ armIds: c.armIds, targetSize: c.targetSize })
+      ),
+    ],
+    instanceType: "StudyCohort",
+  }));
+
+  const encounters: UsdmV4Encounter[] = linkSequence(
+    design.encounters.map((enc) => ({
+      id: enc.id,
+      name: enc.name,
+      label: null,
+      description: null,
+      type: v4Code(`${enc.id}__type`, "C25716", "Visit"),
+      scheduledAtId: null,
+      environmentalSettings: [],
+      contactModes: [],
+      extensionAttributes: [
+        crfExtension(
+          enc.id,
+          "encounter",
+          withoutUndefined({
+            oid: enc.oid,
+            type: enc.type,
+            targetDay: enc.targetDay,
+            timepointDays: enc.timepointDays,
+            windowBefore: enc.windowBefore,
+            windowAfter: enc.windowAfter,
+            epochId: enc.epochId,
+            armIds: enc.armIds,
+            assignedFormIds: enc.assignedFormIds,
+            armFormAssignments: enc.armFormAssignments,
+            isRepeating: enc.isRepeating,
+            repeatMax: enc.repeatMax,
+          })
+        ),
+      ],
+      instanceType: "Encounter" as const,
+    }))
+  );
+
+  const activities: UsdmV4Activity[] = linkSequence(
+    design.activities.map((act) => {
+      const conceptIds = new Set<string>();
+      (act.sections || []).forEach((sec) =>
+        (sec.fields || []).forEach((fld) => {
+          if (fld.conceptId) conceptIds.add(fld.conceptId);
+        })
+      );
+      return {
+        id: act.id,
+        name: act.name,
+        label: null,
+        description: act.description ?? null,
+        childIds: [],
+        definedProcedures: [],
+        biomedicalConceptIds: [...conceptIds],
+        bcCategoryIds: [],
+        bcSurrogateIds: [],
+        timelineId: null,
+        extensionAttributes: [
+          sdtmDomainExtension(act.id, act.domain),
+          crfExtension(
+            act.id,
+            "activity",
+            withoutUndefined({
+              domain: act.domain,
+              description: act.description,
+              version: act.version,
+              sections: act.sections,
+              rules: act.rules,
+              isLogForm: act.isLogForm,
+            })
+          ),
+        ],
+        instanceType: "Activity" as const,
+      };
+    })
+  );
+
+  const phase = phaseLabel ? PHASE_CT[phaseLabel] : undefined;
+  const { elements, studyCells } = buildStudyCells(design, epochIds);
+  const v4Design: UsdmV4InterventionalStudyDesign = {
+    id: design.id,
+    name: design.name,
+    label: null,
+    description: null,
+    studyType: v4Code(
+      `${design.id}__study_type`,
+      "C98388",
+      "Interventional Study"
+    ),
+    studyPhase: phase
+      ? v4AliasCode(
+          `${design.id}__phase`,
+          v4Code(`${design.id}__phase_std`, phase[0], phase[1])
+        )
+      : null,
+    therapeuticAreas: [],
+    characteristics: [],
+    encounters,
+    activities,
+    arms,
+    studyCells,
+    rationale: "Study design exported from CRF Studio",
+    epochs,
+    elements,
+    estimands: [],
+    studyInterventionIds: [],
+    objectives: [],
+    population: {
+      id: `${design.id}__population`,
+      name: "Study population",
+      label: null,
+      description: null,
+      includesHealthySubjects: false,
+      cohorts,
+      instanceType: "StudyDesignPopulation",
+    },
+    scheduleTimelines: buildMainTimeline(design, epochIds),
+    eligibilityCriteria: [],
+    analysisPopulations: [],
+    model: v4Code(`${design.id}__model`, "C82639", "Parallel Study"),
+    instanceType: "InterventionalStudyDesign",
+  };
+  return v4Design;
+}
+
+/**
+ * Lifts the legacy (pre-v4) USDM graph into a USDM v4.0 document. Every
+ * legacy value that has no USDM v4 property is kept in a CRF Studio
+ * extension attribute on the object it belongs to, so `lowerUsdmV4ToLegacy`
+ * restores the legacy graph exactly.
+ */
+function liftLegacyToUsdmV4(legacy: UsdmDocument): UsdmV4Document {
+  const study = legacy.study;
+  const design: UsdmStudyDesign = (study.studyDesigns || [])[0] || {
+    id: "design_main",
+    name: "Main Study Design",
+    arms: [],
+    epochs: [],
+    cohorts: [],
+    encounters: [],
+    activities: [],
+    biomedicalConcepts: [],
+  };
+  const sponsorOrgId = "org_sponsor";
+  const protocolNumber =
+    study.protocolNumber || study.name || study.id || "CRF-STUDY";
+
+  return {
+    usdmVersion: USDM_V4_VERSION,
+    systemName: "CRF Studio (deruiter.dev)",
+    systemVersion: "1.0.0",
+    study: {
+      id: null,
+      name: study.name || protocolNumber,
+      label: study.title ?? null,
+      description: null,
+      extensionAttributes: [
+        crfExtension(
+          "study",
+          "study",
+          withoutUndefined({
+            id: study.id,
+            name: study.name,
+            title: study.title,
+            protocolNumber: study.protocolNumber,
+            protocolId: study.protocolId,
+            phase: study.phase,
+            sponsor: study.sponsor,
+            therapeuticArea: study.therapeuticArea,
+            version: study.version,
+            lastModified: study.lastModified,
+            codeLists: study.codeLists,
+            valueSets: study.valueSets,
+            rules: study.rules,
+            simulationState: study.simulationState,
+            provenance: study.provenance,
+            design: {
+              codeLists: design.codeLists,
+              valueSets: design.valueSets,
+              rules: design.rules,
+              scheduleRules: design.scheduleRules,
+            },
+          })
+        ),
+      ],
+      versions: [
+        {
+          id: "study_version_1",
+          versionIdentifier: study.version || "1.0",
+          rationale: "Exported from CRF Studio",
+          studyIdentifiers: [
+            {
+              id: "study_identifier_sponsor",
+              text: protocolNumber,
+              scopeId: sponsorOrgId,
+              instanceType: "StudyIdentifier",
+            },
+          ],
+          titles: [
+            {
+              id: "study_title_official",
+              text: study.title || protocolNumber,
+              type: v4Code(
+                "study_title_official__type",
+                "C207616",
+                "Official Study Title"
+              ),
+              instanceType: "StudyTitle",
+            },
+          ],
+          organizations: [
+            {
+              id: sponsorOrgId,
+              name: study.sponsor || "Clinical Sponsor",
+              label: null,
+              type: v4Code(
+                `${sponsorOrgId}__type`,
+                "C70793",
+                "Clinical Study Sponsor"
+              ),
+              identifierScheme: "Sponsor",
+              identifier: protocolNumber,
+              instanceType: "Organization",
+            },
+          ],
+          biomedicalConcepts: (design.biomedicalConcepts || []).map(
+            liftBiomedicalConcept
+          ),
+          studyDesigns: [liftDesign(design, study.phase)],
+          instanceType: "StudyVersion",
+        },
+      ],
+      instanceType: "Study",
+    },
+  };
+}
+
+/**
+ * Says which USDM generation a parsed document belongs to: `"4"` for a
+ * USDM v4 Wrapper (a `usdmVersion` of 4.x, or a study holding `versions`),
+ * otherwise `"3"`, which covers CRF Studio's pre-v4 graph and other flat
+ * USDM-like JSON.
+ */
+export function getUsdmDocumentVersion(doc: unknown): "3" | "4" {
+  const record = asRecord(doc);
+  if (!record) return "3";
+  const usdmVersion = asString(record.usdmVersion);
+  if (usdmVersion && /^4(\.|$)/.test(usdmVersion)) return "4";
+  const study = asRecord(record.study);
+  return study &&
+    study.instanceType === "Study" &&
+    Array.isArray(study.versions)
+    ? "4"
+    : "3";
+}
+
+function nativeName(
+  obj: Record<string, unknown> | undefined,
+  fallback: string
+) {
+  return asString(obj?.name) ?? fallback;
+}
+
+function nativeDescription(obj: Record<string, unknown> | undefined) {
+  return asString(obj?.description) ?? undefined;
+}
+
+function codeDecode(code: unknown): string | undefined {
+  const rec = asRecord(code);
+  return asString(rec?.decode) ?? asString(asRecord(rec?.standardCode)?.decode);
+}
+
+/**
+ * Lowers a USDM v4 document into the legacy graph the v3 reader consumes.
+ * CRF Studio extension payloads restore their objects exactly; documents
+ * from other tools are read from native USDM v4 properties, with visit days
+ * and windows resolved from the main schedule timeline.
+ */
+function lowerUsdmV4ToLegacy(doc: Record<string, unknown>): UsdmDocument {
+  const study = asRecord(doc.study) ?? {};
+  const crfStudyExt = readCrfExtension(study, "study");
+  const fromCrf = crfStudyExt !== undefined;
+  const studyExt = crfStudyExt ?? {};
+  const version = asRecord(asArray(study.versions)[0]) ?? {};
+  const design = asRecord(asArray(version.studyDesigns)[0]) ?? {};
+  const designExt = asRecord(studyExt.design) ?? {};
+  const designId = asString(design.id) ?? "design_main";
+
+  const timelineSchedule = new Map(
+    getUsdmV4EncounterSchedule(
+      design as Pick<UsdmV4InterventionalStudyDesign, "scheduleTimelines">
+    ).map((s) => [s.encounterId, s])
+  );
+
+  const cellEpochsByArm = new Map<string, string[]>();
+  asArray(design.studyCells).forEach((raw) => {
+    const cell = asRecord(raw);
+    const armId = asString(cell?.armId);
+    const epochId = asString(cell?.epochId);
+    if (!armId || !epochId) return;
+    const list = cellEpochsByArm.get(armId) ?? [];
+    if (!list.includes(epochId)) list.push(epochId);
+    cellEpochsByArm.set(armId, list);
+  });
+
+  const arms: UsdmArm[] = asArray(design.arms)
+    .map(asRecord)
+    .filter((a): a is Record<string, unknown> => Boolean(a))
+    .map((arm, idx) => {
+      const id = asString(arm.id) ?? `arm_${idx + 1}`;
+      const ext = readCrfExtension(arm, "arm");
+      return withoutUndefined({
+        id,
+        name: nativeName(arm, id),
+        type: ext
+          ? (asString(ext.type) as string)
+          : (codeDecode(arm.type) ?? "Experimental"),
+        description: nativeDescription(arm),
+        epochIds: ext
+          ? (ext.epochIds as string[] | undefined)
+          : cellEpochsByArm.get(id),
+      });
+    });
+
+  const epochs: UsdmEpoch[] = asArray(design.epochs)
+    .map(asRecord)
+    .filter((e): e is Record<string, unknown> => Boolean(e))
+    .map((epoch, idx) => {
+      const id = asString(epoch.id) ?? `epoch_${idx + 1}`;
+      const ext = readCrfExtension(epoch, "epoch");
+      return withoutUndefined({
+        id,
+        name: nativeName(epoch, id),
+        sequenceNumber: ext ? (ext.sequenceNumber as number) : idx + 1,
+        type: ext ? asString(ext.type) : codeDecode(epoch.type),
+        description: nativeDescription(epoch),
+      });
+    });
+
+  const cohorts: UsdmCohort[] = asArray(asRecord(design.population)?.cohorts)
+    .map(asRecord)
+    .filter((c): c is Record<string, unknown> => Boolean(c))
+    .map((cohort, idx) => {
+      const id = asString(cohort.id) ?? `cohort_${idx + 1}`;
+      const ext = readCrfExtension(cohort, "cohort");
+      const planned = asRecord(cohort.plannedEnrollmentNumber);
+      return withoutUndefined({
+        id,
+        name: nativeName(cohort, id),
+        description: nativeDescription(cohort),
+        armIds: ext ? (ext.armIds as string[] | undefined) : undefined,
+        targetSize: ext
+          ? (ext.targetSize as number | undefined)
+          : typeof planned?.value === "number"
+            ? planned.value
+            : undefined,
+      });
+    });
+
+  const encounters: UsdmEncounter[] = asArray(design.encounters)
+    .map(asRecord)
+    .filter((e): e is Record<string, unknown> => Boolean(e))
+    .map((enc, idx) => {
+      const id = asString(enc.id) ?? `encounter_${idx + 1}`;
+      const ext = readCrfExtension(enc, "encounter");
+      const name = nativeName(enc, id);
+      if (ext) {
+        return { id, ...ext, name } as unknown as UsdmEncounter;
+      }
+      const sched = timelineSchedule.get(id);
+      return withoutUndefined({
+        id,
+        name,
+        type:
+          sched && sched.targetDay !== null
+            ? ("Scheduled" as const)
+            : ("Unscheduled" as const),
+        targetDay: sched?.targetDay ?? 0,
+        windowBefore: sched?.windowBefore ?? 0,
+        windowAfter: sched?.windowAfter ?? 0,
+        epochId: sched?.epochId ?? undefined,
+        assignedFormIds: sched?.activityIds ?? [],
+      });
+    });
+
+  const activities: UsdmActivity[] = asArray(design.activities)
+    .map(asRecord)
+    .filter((a): a is Record<string, unknown> => Boolean(a))
+    .map((act, idx) => {
+      const id = asString(act.id) ?? `activity_${idx + 1}`;
+      const ext = readCrfExtension(act, "activity");
+      if (ext) {
+        return {
+          id,
+          name: nativeName(act, id),
+          ...ext,
+        } as unknown as UsdmActivity;
+      }
+      return withoutUndefined({
+        id,
+        name: nativeName(act, id),
+        domain: getUsdmV4ActivityDomain(act) ?? "GENERAL",
+        description: nativeDescription(act),
+      });
+    });
+
+  const biomedicalConcepts: UsdmBiomedicalConcept[] = asArray(
+    version.biomedicalConcepts
+  )
+    .map(asRecord)
+    .filter((b): b is Record<string, unknown> => Boolean(b))
+    .map((bc, idx) => {
+      const ext = readCrfExtension(bc, "biomedical-concept");
+      if (ext) return ext as unknown as UsdmBiomedicalConcept;
+      const id = asString(bc.id) ?? `bc_${idx + 1}`;
+      const std = asRecord(asRecord(bc.code)?.standardCode);
+      return withoutUndefined({
+        id,
+        name: nativeName(bc, id),
+        conceptId: asString(std?.code) ?? id,
+        code: asString(std?.code),
+        synonyms: asArray(bc.synonyms).filter(
+          (s): s is string => typeof s === "string"
+        ),
+        label: asString(bc.label),
+        properties: asArray(bc.properties)
+          .map(asRecord)
+          .filter((p): p is Record<string, unknown> => Boolean(p))
+          .map((p, pIdx) => ({
+            id: asString(p.id) ?? `${id}_prop_${pIdx + 1}`,
+            name: asString(p.name) ?? "",
+            code: asString(asRecord(asRecord(p.code)?.standardCode)?.code),
+            datatype: asString(p.datatype),
+          })),
+      });
+    });
+
+  const legacyDesign: UsdmStudyDesign = withoutUndefined({
+    id: designId,
+    name: nativeName(design, "Main Study Design"),
+    arms,
+    epochs,
+    cohorts,
+    encounters,
+    activities,
+    biomedicalConcepts,
+    codeLists: designExt.codeLists as UsdmStudyDesign["codeLists"],
+    valueSets: designExt.valueSets as UsdmStudyDesign["valueSets"],
+    rules: designExt.rules as UsdmStudyDesign["rules"],
+    scheduleRules: designExt.scheduleRules as UsdmStudyDesign["scheduleRules"],
+  });
+
+  const identifiers = asArray(version.studyIdentifiers).map(asRecord);
+  const officialTitle = asArray(version.titles)
+    .map(asRecord)
+    .find((t) => /official/i.test(codeDecode(t?.type) ?? ""));
+  const sponsorOrg = asArray(version.organizations)
+    .map(asRecord)
+    .find((o) => /sponsor/i.test(codeDecode(o?.type) ?? ""));
+  const phaseDecode = codeDecode(design.studyPhase);
+  const phase = Object.entries(PHASE_CT).find(
+    ([, [code]]) =>
+      code ===
+      asString(asRecord(asRecord(design.studyPhase)?.standardCode)?.code)
+  )?.[0];
+
+  const legacyStudy: UsdmStudy = {
+    ...(withoutUndefined({
+      id:
+        asString(studyExt.id) ??
+        asString(study.id) ??
+        asString(study.name) ??
+        "imported_usdm_study",
+      name: fromCrf ? asString(studyExt.name) : asString(study.name),
+      title: fromCrf
+        ? asString(studyExt.title)
+        : (asString(officialTitle?.text) ?? asString(study.label)),
+      protocolNumber: fromCrf
+        ? asString(studyExt.protocolNumber)
+        : (asString(identifiers[0]?.text) ?? asString(study.name)),
+      protocolId: asString(studyExt.protocolId),
+      phase: fromCrf ? asString(studyExt.phase) : (phase ?? phaseDecode),
+      sponsor: fromCrf
+        ? asString(studyExt.sponsor)
+        : asString(sponsorOrg?.name),
+      therapeuticArea: asString(studyExt.therapeuticArea),
+      version: fromCrf
+        ? asString(studyExt.version)
+        : asString(version.versionIdentifier),
+      lastModified: asString(studyExt.lastModified),
+    }) as UsdmStudy),
+    studyDesigns: [legacyDesign],
+    ...(withoutUndefined({
+      codeLists: studyExt.codeLists,
+      valueSets: studyExt.valueSets,
+      rules: studyExt.rules,
+    }) as Partial<UsdmStudy>),
+  };
+  if (studyExt.simulationState !== undefined) {
+    legacyStudy.simulationState =
+      studyExt.simulationState as UsdmStudy["simulationState"];
+  }
+  if (studyExt.provenance !== undefined) {
+    legacyStudy.provenance = studyExt.provenance as UsdmStudy["provenance"];
+  }
+
+  return { study: legacyStudy };
 }

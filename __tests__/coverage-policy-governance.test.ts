@@ -57,11 +57,23 @@ describe("Coverage Policy Governance & Threshold Guardrails", () => {
     >;
     expect(thresholds).toBeDefined();
 
-    expect(thresholds["components/**"]).toBeDefined();
-    expect(thresholds["components/**"].statements).toBeGreaterThanOrEqual(60);
+    // Ratchet floors (#2513): these only go up.
+    expect(thresholds["components/**"]).toMatchObject({
+      statements: expect.any(Number),
+      branches: expect.any(Number),
+      lines: expect.any(Number),
+      functions: expect.any(Number),
+    });
+    expect(thresholds["components/**"].statements).toBeGreaterThanOrEqual(79);
+    expect(thresholds["components/**"].branches).toBeGreaterThanOrEqual(75);
+    expect(thresholds["components/**"].lines).toBeGreaterThanOrEqual(81);
+    expect(thresholds["components/**"].functions).toBeGreaterThanOrEqual(74);
 
     expect(thresholds["app/**"]).toBeDefined();
-    expect(thresholds["app/**"].statements).toBeGreaterThanOrEqual(50);
+    expect(thresholds["app/**"].statements).toBeGreaterThanOrEqual(65);
+    expect(thresholds["app/**"].branches).toBeGreaterThanOrEqual(53);
+    expect(thresholds["app/**"].lines).toBeGreaterThanOrEqual(67);
+    expect(thresholds["app/**"].functions).toBeGreaterThanOrEqual(59);
   });
 
   it("maintains strict thresholds for critical domain modules", () => {

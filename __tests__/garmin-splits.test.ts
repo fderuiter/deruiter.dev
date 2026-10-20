@@ -14,13 +14,13 @@ import {
   paceSecondsPerKm,
   splitToast,
   type GarminBests,
-} from "@/lib/garmin-splits";
+} from "@/lib/garmin/splits";
 import {
   SPLITS_STORAGE_KEY,
   bestsKey,
   loadBests,
   saveBests,
-} from "@/lib/garmin-bests-store";
+} from "@/lib/garmin/bests-store";
 import { safeRemoveItem, safeSetRawItem } from "@/lib/safe-storage";
 
 const store: Record<string, string> = {};

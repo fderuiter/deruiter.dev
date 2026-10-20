@@ -11,12 +11,12 @@ import {
   FLASH_STORAGE_KEY,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   BASE_HEIGHT,
   BOLT_BOUNCE_VY,
@@ -40,7 +40,7 @@ import {
   stepBolts,
   type Bolt,
   type Pickup,
-} from "@/lib/garmin-powerups";
+} from "@/lib/garmin/powerups";
 
 import { GAME_MANUALS } from "@/lib/game-manuals";
 

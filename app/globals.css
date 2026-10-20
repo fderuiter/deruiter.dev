@@ -32,13 +32,10 @@
   --muted-strong: #d2d4db;
   --text-secondary: #9da2af;
   --brand-cyan: #06b6d4;
-  --brand-cyan-glow: rgba(6, 182, 212, 0.15);
-  --cyan-glow: #38bdf8;
   --emerald-accent: #4ade80;
   --badge-muted-bg: #1e293b;
   --badge-muted-text: #7dd3fc;
   --brand-blue: #3b82f6;
-  --brand-blue-glow: rgba(59, 130, 246, 0.1);
   --brand-dark: #0d0e11;
   --success: #10b981;
   --error: #ef4444;
@@ -56,6 +53,18 @@
   --layout-masonry-padding-without-stats: 254px;
   --layout-gap: 16px;
   --layout-card-padding: 20px;
+
+  /* Spacing scale (#2314): the 4px steps new spacing should come from, named
+     by multiples of 4. They are the same steps as Tailwind's p-1, p-2, p-3,
+     p-4, p-6, p-8, p-12 and p-16, so a card or section can use either form. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
 
   /* Vertical Layout Budget Tokens */
   --layout-header-height: 7rem;
@@ -93,6 +102,25 @@
   --breakpoint-2xl: 1536px;
 }
 
+/*
+ * Three corner radii (#2314): 6px for badges and chips, 12px for cards,
+ * controls and dialogs, and full for pills and dots. Every Tailwind radius
+ * step resolves to one of the first two, so existing rounded-* classes
+ * already match.
+ */
+@theme {
+  --radius-badge: 6px;
+  --radius-card: 12px;
+  --radius-xs: 6px;
+  --radius-sm: 6px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
+  --radius-4xl: 12px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -104,13 +132,10 @@
   --color-muted-strong: var(--muted-strong);
   --color-text-secondary: var(--text-secondary);
   --color-brand-cyan: var(--brand-cyan);
-  --color-brand-cyan-glow: var(--brand-cyan-glow);
-  --color-cyan-glow: var(--cyan-glow);
   --color-emerald-accent: var(--emerald-accent);
   --color-badge-muted-bg: var(--badge-muted-bg);
   --color-badge-muted-text: var(--badge-muted-text);
   --color-brand-blue: var(--brand-blue);
-  --color-brand-blue-glow: var(--brand-blue-glow);
   --color-brand-dark: var(--brand-dark);
   --color-success: var(--success);
   --color-error: var(--error);
@@ -319,7 +344,7 @@ body {
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  border-radius: 0.375rem;
+  border-radius: var(--radius-badge);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
   color: var(--muted-strong);
@@ -329,53 +354,23 @@ body {
   letter-spacing: -0.035em;
 }
 
-/* Glassmorphism & Neon Glow Utilities */
+/* Solid surface utilities. Site chrome carries no glow (#2312): emphasis
+   comes from the hairline border and the single amber accent. */
 .glass-panel {
   background: var(--surface-1);
   border: 1px solid var(--border);
 }
 
 /* Standardized SVG Visual Filters */
-.svg-glow-cyan {
-  filter: drop-shadow(0 0 1.5px rgba(6, 182, 212, 0.8))
-    drop-shadow(0 0 4px rgba(6, 182, 212, 0.45));
-}
-
-.svg-glow-blue {
-  filter: drop-shadow(0 0 1.5px rgba(59, 130, 246, 0.8))
-    drop-shadow(0 0 4px rgba(59, 130, 246, 0.45));
-}
-
 .svg-shadow {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-}
-
-.glass-panel-glow {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  box-shadow: 0 0 25px -5px var(--brand-cyan-glow);
-}
-
-.glow-cyan-sm {
-  box-shadow: 0 0 15px -3px rgba(6, 182, 212, 0.2);
-}
-
-.glow-cyan-md {
-  box-shadow: 0 0 30px -5px rgba(6, 182, 212, 0.25);
-}
-
-.glow-cyan-border {
-  border-color: rgba(6, 182, 212, 0.4);
-  box-shadow:
-    0 0 20px -3px rgba(6, 182, 212, 0.15),
-    inset 0 0 15px -3px rgba(6, 182, 212, 0.05);
 }
 
 /* Tool Shell & Precision Editorial Utilities */
 .tool-shell {
   background: var(--surface-1);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem;
+  border-radius: var(--radius-card);
 }
 
 .kbd-badge {
@@ -390,7 +385,7 @@ body {
   color: #94a3b8;
   background-color: rgba(20, 22, 28, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.375rem;
+  border-radius: var(--radius-badge);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -666,14 +661,14 @@ body {
 }
 
 .blog-prose a:focus-visible {
-  border-radius: 0.15rem;
+  border-radius: var(--radius-badge);
   outline: 2px solid #67e8f9;
   outline-offset: 3px;
 }
 
 .blog-prose :not(pre) > code {
   border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 0.3rem;
+  border-radius: var(--radius-badge);
   background: #13151a;
   color: #e2e8f0;
   font-family: var(--font-geist-mono);

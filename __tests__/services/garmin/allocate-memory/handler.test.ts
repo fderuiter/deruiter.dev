@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { AllocateGarminMemoryHandler } from "@/lib/services";
 
-import { createInitialState } from "@/lib/garmin-engine";
+import { createInitialState } from "@/lib/garmin/engine";
 
 describe("AllocateGarminMemoryHandler (Logic Test)", () => {
   const handler = new AllocateGarminMemoryHandler();

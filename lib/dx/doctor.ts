@@ -2254,7 +2254,7 @@ export function checkDefectRemediationInvariants(
       label: "Proof AST recursion limit guard",
     },
     {
-      file: "lib/garmin-engine.ts",
+      file: "lib/garmin/engine.ts",
       pattern: /safeDelta\s*=\s*Number\.isFinite/,
       label: "Garmin telemetry finite delta guard",
     },

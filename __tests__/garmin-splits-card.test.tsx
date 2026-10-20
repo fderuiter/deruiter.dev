@@ -7,13 +7,13 @@ import {
   SPLITS_STORAGE_KEY,
   loadBests,
   saveBests,
-} from "@/lib/garmin-bests-store";
+} from "@/lib/garmin/bests-store";
 import {
   createInitialState,
   startGame,
   setRules,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 const mockAnnounce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({

@@ -9,18 +9,18 @@ import {
   startGame,
   type BonusRoom,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
   stageStartX,
   type CourseCeiling,
   type CourseCurrent,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS, type CourseBelt } from "@/lib/garmin-props";
-import { FOE_SIZE, type Foe, type FoeKind } from "@/lib/garmin-foes";
-import type { Pickup } from "@/lib/garmin-powerups";
-import { STAGE_THEMES, themeForStage } from "@/lib/garmin-themes";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS, type CourseBelt } from "@/lib/garmin/props";
+import { FOE_SIZE, type Foe, type FoeKind } from "@/lib/garmin/foes";
+import type { Pickup } from "@/lib/garmin/powerups";
+import { STAGE_THEMES, themeForStage } from "@/lib/garmin/themes";
 import {
   THEME_PALETTE,
   lengthCount,

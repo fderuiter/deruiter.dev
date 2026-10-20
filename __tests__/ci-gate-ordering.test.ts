@@ -254,7 +254,7 @@ describe("CI Gate Ordering", () => {
       expect(needsOf("heavy-gate-report")).toEqual(
         expect.arrayContaining(["heavy-gate", "bench-gate", "build"])
       );
-      expect(report).toMatch(/if: \$\{\{ always\(\) &&/);
+      expect(report).toMatch(/if: \$\{\{ !cancelled\(\) &&/);
       const merge = report.indexOf("playwright merge-reports");
       const flaky = report.indexOf("report-playwright-flaky.js");
       const verify = report.indexOf(
@@ -413,7 +413,7 @@ describe("CI Gate Ordering", () => {
     it("merges the shards and enforces thresholds without deferring them", () => {
       const block = jobBlock("unit-coverage");
       expect(needsOf("unit-coverage")).toContain("unit-gate");
-      expect(block).toMatch(/if: \$\{\{ always\(\) &&/);
+      expect(block).toMatch(/if: \$\{\{ !cancelled\(\) &&/);
       expect(block).toContain("run: npm run test:ci:merge");
       expect(block).not.toContain("VITEST_COVERAGE_THRESHOLDS");
       expect(pkg.scripts["test:ci:merge"]).toBe(

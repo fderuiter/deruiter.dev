@@ -81,9 +81,6 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
 
       {/* SVG Canvas Sparkline Graph */}
       <div className="relative bg-zinc-950/40 border border-zinc-900/60 rounded-xl p-2.5 overflow-hidden flex items-center justify-center">
-        {/* Glow ambient accent light */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-12 rounded-full bg-accent/5 blur-2xl pointer-events-none" />
-
         <svg
           viewBox="0 0 300 60"
           className="w-full h-[60px] overflow-visible relative z-10"
@@ -122,7 +119,7 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
             className="transition-all duration-300"
           />
 
-          {/* Sparkline Neon Path */}
+          {/* Sparkline Path */}
           <path
             d={pathD}
             fill="none"
@@ -130,7 +127,7 @@ export const CommitSparkline: React.FC<CommitSparklineProps> = ({
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="svg-glow-cyan transition-all duration-300"
+            className="transition-all duration-300"
           />
         </svg>
       </div>

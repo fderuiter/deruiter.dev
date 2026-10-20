@@ -11,9 +11,9 @@ import {
   PLAYER_HEIGHT,
   PLAYER_X,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE, PX_PER_METER } from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE, PX_PER_METER } from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
 
 // The run clock and auto lap splits (#2018): game time while playing, a lap
 // per stage clear.

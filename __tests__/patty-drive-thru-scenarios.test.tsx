@@ -247,7 +247,7 @@ describe("Patty's Drive-Thru scenario picker (#1887)", () => {
       });
   };
 
-  it("offers each scenario and the week, and starts with the standard shift selected", () => {
+  it("offers each scenario, the custom shift and the week, and starts with the standard shift selected", () => {
     render(
       <PattyDriveThruGame
         config={{ seed: "pick-1", durationSec: 10 }}
@@ -255,8 +255,9 @@ describe("Patty's Drive-Thru scenario picker (#1887)", () => {
       />
     );
     const radios = screen.getAllByRole("radio");
-    // Every practice scenario, plus the week of shifts (#2086).
-    expect(radios).toHaveLength(SCENARIO_PRESETS.length + 1);
+    // Every practice scenario, plus the custom shift (#2519) and the week
+    // of shifts (#2086).
+    expect(radios).toHaveLength(SCENARIO_PRESETS.length + 2);
     expect(
       (
         screen.getByRole("radio", {

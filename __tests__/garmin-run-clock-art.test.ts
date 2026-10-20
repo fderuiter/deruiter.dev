@@ -9,13 +9,13 @@ import {
   createInitialState,
   startGame,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   GROUND_STRIP_FIELDS,
   GROUND_STRIP_FIELD_LABELS,
   isGroundStripField,
   type GroundStripLayout,
-} from "@/lib/garmin-ground-strip";
+} from "@/lib/garmin/ground-strip";
 import { renderWatchFace } from "@/components/garmin-watch/watch-face-art";
 
 interface DrawnText {

@@ -56,9 +56,9 @@ import {
   startGame,
   pressJump,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { EMPTY_COURSE } from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
+} from "@/lib/garmin/engine";
+import { EMPTY_COURSE } from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
 import {
   clampBounds,
   createInitialDuckGameState,
@@ -1734,7 +1734,7 @@ describe("Custom Proof session regression (#1225)", () => {
 describe("Garmin setup options reach the engine (#1209)", () => {
   it("maps difficulty and loadout ids to distinct, testable engine parameters", async () => {
     const { resolveRunTuning, DEFAULT_RUN_TUNING } =
-      await import("@/lib/garmin-engine");
+      await import("@/lib/garmin/engine");
     expect(resolveRunTuning("normal", "standard-ram")).toEqual(
       DEFAULT_RUN_TUNING
     );
@@ -1751,7 +1751,7 @@ describe("Garmin setup options reach the engine (#1209)", () => {
 
   it("startGame carries the tuning into the run and keeps it on restart", async () => {
     const { createInitialState, startGame, resolveRunTuning } =
-      await import("@/lib/garmin-engine");
+      await import("@/lib/garmin/engine");
     const tuning = resolveRunTuning("hard", "low-power");
     const run = startGame(createInitialState("fenix", 0), "fenix", tuning);
     expect(run.gameState).toBe("playing");
@@ -1766,7 +1766,7 @@ describe("Garmin setup options reach the engine (#1209)", () => {
       resolveRunTuning,
       triggerGarbageCollection,
       updateGameSimulation,
-    } = await import("@/lib/garmin-engine");
+    } = await import("@/lib/garmin/engine");
     const run = (loadout: string) =>
       startGame(
         createInitialState("fenix", 0),
@@ -1807,7 +1807,7 @@ describe("Garmin setup options reach the engine (#1209)", () => {
       startGame,
       resolveRunTuning,
       updateGameSimulation,
-    } = await import("@/lib/garmin-engine");
+    } = await import("@/lib/garmin/engine");
     vi.spyOn(Math, "random").mockReturnValue(0.99);
     try {
       const speed = (difficulty: string) => {
@@ -1847,7 +1847,7 @@ describe("Garmin NV flash clear survives a restart (#1210)", () => {
       },
     });
     const { createInitialState, clearFlashStorage } =
-      await import("@/lib/garmin-engine");
+      await import("@/lib/garmin/engine");
     // First boot seeds sys_log.dat.
     const first = createInitialState("fenix", 0);
     expect(first.allocatedFlashKb).toBe(4);
@@ -2035,7 +2035,7 @@ describe("Garmin progression is refresh-rate independent (#1212)", () => {
 describe("Garmin obstacles crash with their own type (#1318)", () => {
   it("maps NULL to Null Pointer and STK to Stack Overflow", async () => {
     const { createInitialState, startGame, updateGameSimulation, GROUND_Y } =
-      await import("@/lib/garmin-engine");
+      await import("@/lib/garmin/engine");
     const crash = (type: "null_pointer" | "stack_overflow", label: string) =>
       updateGameSimulation(
         {

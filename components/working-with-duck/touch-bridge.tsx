@@ -6,27 +6,46 @@ import React, {
   useContext,
   useSyncExternalStore,
 } from "react";
+import { ActionSinkProvider, type ActionInput } from "@/lib/arcade";
+import {
+  DUCK_ACTIONS,
+  type DuckActionName,
+} from "@/lib/working-with-duck-actions";
+
+/** Duck actions that carry or drop Duck, or pause on Escape: keyboard and gamepad only. */
+type DuckKeyOnlyAction =
+  "escape" | "drag-up" | "drag-down" | "drag-left" | "drag-right" | "drop";
 
 /**
- * The game actions the keyboard and the touch cabinet both perform (ADR 0061).
- * A key or a touch button names one of these, and the game runs it, so the
- * two inputs cannot drift apart.
+ * The game actions the keyboard, the gamepad and the touch cabinet all
+ * perform (ADR 0061, #2356). They are the actions of `DUCK_ACTIONS`, less the
+ * key-only carry and Escape, plus the cabinet's auto-pause. A key or a touch
+ * button names one of these, and the game runs it, so the inputs cannot
+ * drift apart.
  */
 export type DuckCommand =
-  | "toy-1"
-  | "toy-2"
-  | "toy-3"
-  | "treat"
-  | "trick-sit"
-  | "trick-high-five"
-  | "trick-drop-it"
-  | "trick-spin"
-  | "space"
-  | "steer-up"
-  | "steer-down"
-  | "package"
-  | "pause"
-  | "auto-pause";
+  Exclude<DuckActionName, DuckKeyOnlyAction> | "auto-pause";
+
+const KEY_ONLY_ACTIONS: ReadonlySet<string> = new Set<DuckKeyOnlyAction>([
+  "escape",
+  "drag-up",
+  "drag-down",
+  "drag-left",
+  "drag-right",
+  "drop",
+]);
+
+/**
+ * Whether an action is one the bridge runs as a command.
+ *
+ * @param action - A Duck action name.
+ * @returns True for every action but the key-only carry and Escape.
+ */
+export function isDuckCommand(
+  action: DuckActionName
+): action is Exclude<DuckActionName, DuckKeyOnlyAction> {
+  return !KEY_ONLY_ACTIONS.has(action);
+}
 
 /** The part of the game the touch dock shows controls for. */
 export interface DuckTouchSnapshot {
@@ -105,6 +124,8 @@ const DuckTouchContext = createContext<DuckTouchBridge | null>(null);
 
 /**
  * Hands one bridge to the game and to the cabinet's control dock below it.
+ * The dock's action-bound buttons send their actions through it to the game's
+ * runner: a press runs the command, a release does nothing.
  *
  * @param props - The bridge and the cabinet.
  * @returns The children, with the bridge in context.
@@ -116,9 +137,19 @@ export function DuckTouchProvider({
   bridge: DuckTouchBridge;
   children: React.ReactNode;
 }) {
+  const runAction = useCallback(
+    (input: ActionInput<DuckActionName>) => {
+      if (input.phase === "down" && isDuckCommand(input.action)) {
+        bridge.run(input.action);
+      }
+    },
+    [bridge]
+  );
   return (
     <DuckTouchContext.Provider value={bridge}>
-      {children}
+      <ActionSinkProvider actions={DUCK_ACTIONS} onAction={runAction}>
+        {children}
+      </ActionSinkProvider>
     </DuckTouchContext.Provider>
   );
 }

@@ -428,6 +428,12 @@ Re-exports [classifyFormFactor](form-factor/functions/classifyFormFactor.md)
 
 ***
 
+### clearRunSnapshot
+
+Re-exports [clearRunSnapshot](run-snapshot/functions/clearRunSnapshot.md)
+
+***
+
 ### codeForKeyEvent
 
 Re-exports [codeForKeyEvent](input/actions/functions/codeForKeyEvent.md)
@@ -614,6 +620,12 @@ Re-exports [getOrCreatePhosphorPattern](crt-pipeline/functions/getOrCreatePhosph
 
 ***
 
+### getRunSnapshotStorage
+
+Re-exports [getRunSnapshotStorage](run-snapshot/functions/getRunSnapshotStorage.md)
+
+***
+
 ### HintModality
 
 Re-exports [HintModality](input/actions/type-aliases/HintModality.md)
@@ -788,6 +800,12 @@ Re-exports [read](progress/slice/functions/read.md)
 
 ***
 
+### readRunSnapshot
+
+Re-exports [readRunSnapshot](run-snapshot/functions/readRunSnapshot.md)
+
+***
+
 ### Rect
 
 Re-exports [Rect](utils/interfaces/Rect.md)
@@ -809,6 +827,42 @@ Re-exports [renderCRTEffects](crt-pipeline/functions/renderCRTEffects.md)
 ### resolveActionHint
 
 Re-exports [resolveActionHint](input/actions/functions/resolveActionHint.md)
+
+***
+
+### RunSnapshot
+
+Re-exports [RunSnapshot](run-snapshot/interfaces/RunSnapshot.md)
+
+***
+
+### RunSnapshotDiscardReason
+
+Re-exports [RunSnapshotDiscardReason](run-snapshot/type-aliases/RunSnapshotDiscardReason.md)
+
+***
+
+### RunSnapshotFormat
+
+Re-exports [RunSnapshotFormat](run-snapshot/interfaces/RunSnapshotFormat.md)
+
+***
+
+### runSnapshotKey
+
+Re-exports [runSnapshotKey](run-snapshot/functions/runSnapshotKey.md)
+
+***
+
+### RunSnapshotRead
+
+Re-exports [RunSnapshotRead](run-snapshot/type-aliases/RunSnapshotRead.md)
+
+***
+
+### RunSnapshotStorage
+
+Re-exports [RunSnapshotStorage](run-snapshot/type-aliases/RunSnapshotStorage.md)
 
 ***
 
@@ -905,3 +959,9 @@ Re-exports [VirtualDirection](core/input/type-aliases/VirtualDirection.md)
 ### write
 
 Re-exports [write](progress/slice/functions/write.md)
+
+***
+
+### writeRunSnapshot
+
+Re-exports [writeRunSnapshot](run-snapshot/functions/writeRunSnapshot.md)

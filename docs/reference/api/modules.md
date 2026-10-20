@@ -75,6 +75,7 @@
 - [lib/arcade/progress/slice](lib/arcade/progress/slice/README.md)
 - [lib/arcade/progress/store](lib/arcade/progress/store/README.md)
 - [lib/arcade/registry](lib/arcade/registry/README.md)
+- [lib/arcade/run-snapshot](lib/arcade/run-snapshot/README.md)
 - [lib/arcade/utils](lib/arcade/utils/README.md)
 - [lib/audio](lib/audio/README.md)
 - [lib/audio/sound-engine](lib/audio/sound-engine/README.md)

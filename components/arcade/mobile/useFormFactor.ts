@@ -17,6 +17,11 @@ export interface UseFormFactorOptions {
    * wins over this, so tests and debugging can force any view.
    */
   readonly override?: FormFactor | "auto";
+  /**
+   * Whether to measure at all (default true). A cabinet that hosts no views
+   * passes false, so it adds no listeners and always reads `"desktop"`.
+   */
+  readonly enabled?: boolean;
 }
 
 const NON_TEXT_INPUT_TYPES = new Set([
@@ -131,12 +136,18 @@ const noUrlOverride = (): FormFactor | null => null;
  * @returns The view to show.
  */
 export function useFormFactor(options: UseFormFactorOptions = {}): FormFactor {
-  const measured = useSyncExternalStore(subscribe, getSnapshot, serverSnapshot);
+  const enabled = options.enabled ?? true;
+  const measured = useSyncExternalStore(
+    enabled ? subscribe : noSubscription,
+    enabled ? getSnapshot : serverSnapshot,
+    serverSnapshot
+  );
   const urlOverride = useSyncExternalStore(
     noSubscription,
     readUrlOverride,
     noUrlOverride
   );
+  if (!enabled) return "desktop";
   if (urlOverride) return urlOverride;
   if (options.override && options.override !== "auto") return options.override;
   return measured;

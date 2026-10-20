@@ -87,7 +87,7 @@ export const Card = ({
     "--duration": "300ms",
     "--foil-size": "100%",
     "--opacity": "0",
-    "--radius": "24px",
+    "--radius": "var(--radius-card)",
     "--easing": "ease",
     "--transition": "var(--duration) var(--easing)",
     ...style,

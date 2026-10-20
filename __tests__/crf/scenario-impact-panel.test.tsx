@@ -281,7 +281,7 @@ describe("[#679] Saved test impact panel", () => {
     expect(source).toContain(
       "{isTestDockOpen && (\n        <ScenarioImpactPanel"
     );
-    expect(mount).toContain("onUpdateStudy={updateStudyWithHistory}");
+    expect(mount).toContain("onUpdateStudy={commit}");
     expect(mount).toContain("onNavigate={handleNavigateFromCompare}");
   });
 });

@@ -3296,6 +3296,153 @@ export function checkServiceResultTypes(
 }
 
 /**
+ * A call that reads unseeded randomness or wall time. A reference without a
+ * call, such as a `random = Math.random` default parameter, is the migration
+ * path #2544 prescribes and is not flagged.
+ */
+const NONDETERMINISTIC_CALL = /\b(Math\.random|Date\.now)\s*\(/g;
+
+/** A session hook: a file named `use*Session*`, such as `useLoonSession.ts`. */
+const SESSION_HOOK_FILE = /^use[A-Za-z0-9]*Session[A-Za-z0-9]*\.tsx?$/;
+
+/** An engine module by name: `engine.ts`, `*-engine.ts`, `session.ts`, `*-session.ts`. */
+const SESSION_ENGINE_FILE =
+  /^(?:(?:[a-z0-9-]+-)?engine|(?:[a-z0-9-]+-)?session)\.tsx?$/;
+
+/**
+ * Engine-named modules under `lib/` that no arcade session owns, so they may
+ * read the clock and `Math.random`: audio, CRF Studio, layout, macros, the
+ * neuro QA engine and Patrol.
+ */
+const NON_SESSION_ENGINE_PATHS = [
+  "lib/audio/",
+  "lib/crf/",
+  "lib/graphics-engine.ts",
+  "lib/macro-engine.ts",
+  "lib/neuro/",
+  "lib/patrol/",
+];
+
+/**
+ * Session-owned modules whose names do not say so, which the check also
+ * scans: game-state code that #2544 found drawing outside a seeded stream.
+ */
+const SESSION_OWNED_MODULES = [
+  "lib/clinical-trial-chaos/scenarios.ts",
+  "components/RetroLabyrinth.tsx",
+];
+
+/**
+ * Existing callers, allowed until their game's seam issue threads a seeded
+ * `rng` through them (#2544). Remove an entry when its game migrates; the
+ * check warns about an entry that no longer has a call, so the list only
+ * shrinks.
+ */
+export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
+  "app/proof/useProofSession.ts": "Proof Studio log ids, not an arcade session",
+  "components/RetroLabyrinth.tsx": "Retro Labyrinth pilot seam (ADR 0062)",
+  "lib/clinical-trial-chaos/engine.ts": "Clinical Trial Chaos seam",
+  "lib/clinical-trial-chaos/scenarios.ts": "Clinical Trial Chaos seam",
+  "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",
+  "lib/laser-loon/engine.ts": "Laser Loon seam",
+  "lib/quasi-perfect/engine.ts": "Quasi-Perfect Puzzler seam",
+  "lib/working-with-duck-engine.ts": "Working with Duck seam",
+};
+
+function toPosix(relative: string): string {
+  return relative.split(path.sep).join("/");
+}
+
+function isSessionOwned(relative: string): boolean {
+  if (relative.includes(".test.") || relative.includes(".spec.")) return false;
+  const base = path.posix.basename(relative);
+  if (SESSION_HOOK_FILE.test(base)) return true;
+  if (SESSION_OWNED_MODULES.includes(relative)) return true;
+  return (
+    relative.startsWith("lib/") &&
+    SESSION_ENGINE_FILE.test(base) &&
+    !NON_SESSION_ENGINE_PATHS.some((prefix) => relative.startsWith(prefix))
+  );
+}
+
+/**
+ * Check Session Determinism (#2544, ADR 0062): a session's randomness and
+ * time are under its control, so seeded replays and restored runs match.
+ * Flags `Math.random()` and `Date.now()` calls in files named `use*Session*`
+ * and in the engine modules a session owns, except the allow-listed callers
+ * that have not migrated yet.
+ */
+export function checkSessionDeterminism(root: string): DiagnosticCheckResult {
+  const id = "architecture-session-determinism";
+  const name = "Session Determinism Guard (#2544, ADR 0062)";
+  const candidates = ["app", "components", "hooks", "lib"].flatMap((dir) =>
+    findFiles(path.join(root, dir), /\.tsx?$/)
+  );
+
+  const violations: string[] = [];
+  const allowedWithCalls = new Set<string>();
+  let scanned = 0;
+
+  for (const file of candidates) {
+    const relative = toPosix(path.relative(root, file));
+    if (!isSessionOwned(relative)) continue;
+    scanned += 1;
+    const lines = fs.readFileSync(file, "utf-8").split("\n");
+    const hits: string[] = [];
+    lines.forEach((line, idx) => {
+      if (isCommentLine(line)) return;
+      for (const match of line.matchAll(NONDETERMINISTIC_CALL)) {
+        hits.push(
+          `${relative}:${idx + 1} -> ${match[1]}() in session-owned code`
+        );
+      }
+    });
+    if (hits.length === 0) continue;
+    if (relative in SESSION_DETERMINISM_ALLOWLIST) {
+      allowedWithCalls.add(relative);
+      continue;
+    }
+    violations.push(...hits);
+  }
+
+  if (violations.length > 0) {
+    return {
+      id,
+      name,
+      category: "architecture",
+      status: "fail",
+      message: `${violations.length} Math.random()/Date.now() call(s) in session-owned code. Draw game-state randomness from the session's createRng(seed) stream and step time from createStepClock() (lib/arcade); keep cosmetic randomness in views.`,
+      details: violations,
+      fixable: false,
+    };
+  }
+
+  const stale = Object.keys(SESSION_DETERMINISM_ALLOWLIST).filter(
+    (entry) =>
+      fs.existsSync(path.join(root, entry)) && !allowedWithCalls.has(entry)
+  );
+  if (stale.length > 0) {
+    return {
+      id,
+      name,
+      category: "architecture",
+      status: "warn",
+      message: `${stale.length} allow-list entr${stale.length === 1 ? "y has" : "ies have"} no Math.random()/Date.now() call left. Remove ${stale.length === 1 ? "it" : "them"} from SESSION_DETERMINISM_ALLOWLIST in lib/dx/doctor.ts.`,
+      details: stale,
+      fixable: false,
+    };
+  }
+
+  return {
+    id,
+    name,
+    category: "architecture",
+    status: "pass",
+    message: `Scanned ${scanned} session-owned module(s): no Math.random()/Date.now() calls outside the ${allowedWithCalls.size} allow-listed caller(s) waiting for their game to migrate.`,
+  };
+}
+
+/**
  * Check Lockfile Dependency License Compliance Guard
  */
 export function checkLicenseCompliance(root: string): DiagnosticCheckResult {
@@ -3390,6 +3537,7 @@ export async function runDiagnostics(
     checkTouchTargetDimensions(root, fix),
     checkSectionStructures(root, fix),
     checkServiceResultTypes(root, fix),
+    checkSessionDeterminism(root),
     checkEnvironmentVariables(root, fix),
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),

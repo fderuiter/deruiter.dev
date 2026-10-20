@@ -14,6 +14,11 @@ export const TOUCH_DEVICE_QUERY = "(pointer: coarse)";
  * iPad mini in portrait is a tablet, while every iPad Split View pane of a
  * 1024px screen (507px, 678px) is a phone. A landscape phone is caught by its
  * short height. The desktop-only gate (ADR 0048) uses this query.
+ *
+ * Only CSS-first surfaces should use it: the gate and the hub's badges, which
+ * must be right before hydration. Inside a game, choose the view with
+ * `useFormFactor` (ADR 0062), which measures the cabinet and needs no coarse
+ * pointer for a narrow window to get the phone view.
  */
 export const PHONE_QUERY =
   "(pointer: coarse) and ((max-width: 743px) or (max-height: 500px))";

@@ -47,6 +47,17 @@ Shortest gap between car arrivals, in seconds.
 
 ***
 
+### customOrders?
+
+> `readonly` `optional` **customOrders?**: readonly [`CustomOrderTemplate`](CustomOrderTemplate.md)[]
+
+The orders a custom shift plays, in turn and looping, in place of the
+seeded draw (#2519). At most `MAX_OPEN_ORDERS` templates of 1 to
+`MAX_ITEMS_PER_ORDER` items each; left out or empty, orders are drawn as
+usual. A shift with them never counts toward the score.
+
+***
+
 ### dilemmaDeck?
 
 > `readonly` `optional` **dilemmaDeck?**: readonly [`DilemmaId`](../type-aliases/DilemmaId.md)[]

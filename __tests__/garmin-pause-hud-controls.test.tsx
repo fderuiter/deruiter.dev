@@ -24,7 +24,7 @@ import {
   GROUND_Y,
   type GameEngineState,
   type ObstacleType,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 global.ResizeObserver = class {
   observe = vi.fn();

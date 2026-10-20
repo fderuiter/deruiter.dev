@@ -1,3 +1,4 @@
+// @vitest-environment node
 // #2161: each campaign sprint after the first adds one twist, so the five
 // sprints play differently.
 import { describe, it, expect, vi, afterEach } from "vitest";

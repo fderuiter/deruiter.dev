@@ -52,7 +52,7 @@ const storageGlobalRestrictions = ["localStorage", "sessionStorage"].map(
 // Files where direct Web Storage access is deliberate (#1631). Add a file here
 // only when lib/safe-storage genuinely cannot be used, with its reason:
 //   lib/safe-storage.ts        the wrapper itself.
-//   lib/garmin-engine.ts       also bundled alone into public/garmin-engine.js as
+//   lib/garmin/engine.ts       also bundled alone into public/garmin-engine.js as
 //                              a browser IIFE (scripts/build-standalone-engine.ts);
 //                              lib/safe-storage pulls in the logger, Sentry and
 //                              Next.js code that bundle cannot resolve (#1633).
@@ -63,7 +63,7 @@ const storageGlobalRestrictions = ["localStorage", "sessionStorage"].map(
 // localStorage inside a string literal, which these rules do not inspect.
 const storageExemptFiles = [
   "lib/safe-storage.ts",
-  "lib/garmin-engine.ts",
+  "lib/garmin/engine.ts",
   "components/patrol/MedicalDisclaimerBanner.tsx",
 ];
 
@@ -222,6 +222,30 @@ const eslintConfig = defineConfig([
     files: restrictedSyntaxHelperFiles,
     rules: {
       "no-restricted-syntax": ["error", processEnvRestriction],
+    },
+  },
+  // Playwright specs wait on state, never on the clock (#2528). A fixed sleep
+  // is either wasted time or a flake on a slower runner. Wait on a web-first
+  // assertion, expect.poll or toPass, or count frames with the helpers in
+  // __tests__/e2e/helpers/settle.ts. The two ignored files belong to the
+  // mobile harness rewrite (#2365), which removes their sleeps; drop them
+  // from the list when it lands. The other blocks that set
+  // no-restricted-syntax ignore __tests__/**, so nothing here is replaced.
+  {
+    files: ["__tests__/e2e/**/*.ts"],
+    ignores: [
+      "__tests__/e2e/tablet-kit.spec.ts",
+      "__tests__/e2e/mobile-harness.ts",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='waitForTimeout']",
+          message:
+            "Do not use waitForTimeout in e2e tests. Wait on the state it stands in for (a web-first assertion, expect.poll, toPass) or count frames with waitForAnimationFrames / waitForVisualSettle from __tests__/e2e/helpers/settle.ts.",
+        },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.

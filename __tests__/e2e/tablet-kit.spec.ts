@@ -2797,9 +2797,18 @@ test.describe("Patty's Drive-Thru on a tablet (iPad projects, #2116)", () => {
     await dragBooth(page, 0.1, 0.95);
     await dragBooth(page, 0.1, 0.95);
     await expect.poll(() => pdtFacing(page)).not.toBe("window");
-    // The dock keys hold while the finger is down.
-    await pdtKey(page, "Pause shift").tap();
-    await page.getByRole("button", { name: "Resume shift" }).tap();
+    // The dock keys hold while the finger is down. A tap right after a fast
+    // drag can land on the drag's fling, which the browser swallows, so the
+    // pause is retried until its dialog shows.
+    const resume = page.getByRole("button", { name: "Resume shift" });
+    await expect(async () => {
+      if (!(await resume.isVisible())) {
+        await pdtKey(page, "Pause shift").tap({ timeout: 3000 });
+      }
+      await expect(resume).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 30000 });
+    await resume.tap();
+    await expect(resume).toBeHidden();
     const left = pdtKey(page, "Turn left");
     const right = pdtKey(page, "Turn right");
     for (const key of [left, right]) {

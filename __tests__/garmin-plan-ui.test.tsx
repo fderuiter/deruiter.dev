@@ -16,12 +16,12 @@ import {
   newPlan,
   type PlanNodeId,
   type PlanSave,
-} from "@/lib/garmin-plan";
-import { loadPlan, savePlan } from "@/lib/garmin-plan-store";
-import { PLAN_RUN_MODE, RACE_MODE_KEY } from "@/lib/garmin-race-store";
+} from "@/lib/garmin/plan";
+import { loadPlan, savePlan } from "@/lib/garmin/plan-store";
+import { PLAN_RUN_MODE, RACE_MODE_KEY } from "@/lib/garmin/race-store";
 import { safeClear, safeSetRawItem } from "@/lib/safe-storage";
-import { GROUND_Y, startGame, updateGameSimulation } from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
+import { GROUND_Y, startGame, updateGameSimulation } from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
 
 // The Training Plan in the simulator (#1994): the run mode, the Morning
 // Report and map on the watch, starting and settling workouts, practice,
@@ -59,8 +59,8 @@ vi.mock("@/hooks/useAnimationFrame", async (importOriginal) => {
     },
   };
 });
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return {
     ...actual,
     // Workouts start on a clear lane with GPS locked.

@@ -28,7 +28,7 @@ Creates a new StudyState initialized from a validated StudyScenario.
 
 #### setup
 
-\{ `budget`: `number`; `clinicalPhase`: `string`; `complexity`: `number`; `design`: `string`; `durationDays`: `number`; `id`: `string`; `protocolMaturity`: `"solid"` \| `"questionable"` \| `"shaky"`; `regulatoryRisk`: `"moderate"` \| `"high"` \| `"low"`; `sponsor`: \{ `archetype`: `"firstTimeBiotech"` \| `"bigPharma"`; `name`: `string`; \}; `subjects`: `number`; `title`: `string`; \} = `StudySetupSchema`
+\{ `budget`: `number`; `clinicalPhase`: `string`; `complexity`: `number`; `design`: `string`; `durationDays`: `number`; `id`: `string`; `protocolMaturity`: `"solid"` \| `"questionable"` \| `"shaky"`; `regulatoryRisk`: `"high"` \| `"moderate"` \| `"low"`; `sponsor`: \{ `archetype`: `"firstTimeBiotech"` \| `"bigPharma"`; `name`: `string`; \}; `subjects`: `number`; `title`: `string`; \} = `StudySetupSchema`
 
 #### setup.budget
 
@@ -60,7 +60,7 @@ Creates a new StudyState initialized from a validated StudyScenario.
 
 #### setup.regulatoryRisk
 
-`"moderate"` \| `"high"` \| `"low"` = `RegulatoryRiskSchema`
+`"high"` \| `"moderate"` \| `"low"` = `RegulatoryRiskSchema`
 
 #### setup.sponsor
 
@@ -100,7 +100,7 @@ Creates a new StudyState initialized from a validated StudyScenario.
 
 ### difficulty?
 
-`"calm"` \| `"standard"` \| `"rescue"`
+`"standard"` \| `"calm"` \| `"rescue"`
 
 ## Returns
 

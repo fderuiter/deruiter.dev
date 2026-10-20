@@ -1,11 +1,12 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { BUDDY_SPEED, isEdibleFoe } from "@/lib/garmin-buddy";
+import { BUDDY_SPEED, isEdibleFoe } from "@/lib/garmin/buddy";
 import {
   EMPTY_COURSE,
   generateStage,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import type { FoeKind, FoeMode } from "@/lib/garmin-foes";
+} from "@/lib/garmin/course";
+import type { FoeKind, FoeMode } from "@/lib/garmin/foes";
 import {
   PICKUP_EMERGE_MS,
   blockReward,
@@ -14,10 +15,10 @@ import {
   stepPickups,
   type Pickup,
   type PowerTier,
-} from "@/lib/garmin-powerups";
-import { themeForStage, isWaterTheme } from "@/lib/garmin-themes";
+} from "@/lib/garmin/powerups";
+import { themeForStage, isWaterTheme } from "@/lib/garmin/themes";
 
-/** Lane top used by the engine (GROUND_Y in lib/garmin-engine.ts). */
+/** Lane top used by the engine (GROUND_Y in lib/garmin/engine.ts). */
 const GROUND_Y = 205;
 const STAGES = [1, 2, 3, 4, 5];
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);

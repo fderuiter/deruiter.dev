@@ -23,7 +23,7 @@ import {
   GROUND_Y,
   PLAYER_HEIGHT,
   JUMP_FORCE,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 
 describe("GarminWatchSimulator Architecture & Feature Completeness", () => {
   const componentPath = path.resolve(
@@ -71,7 +71,7 @@ describe("GarminWatchSimulator Architecture & Feature Completeness", () => {
   });
 });
 
-describe("Garmin Connect IQ Simulation Engine (lib/garmin-engine.ts)", () => {
+describe("Garmin Connect IQ Simulation Engine (lib/garmin/engine.ts)", () => {
   it("should enforce strict RAM limits per device profile", () => {
     expect(DEVICE_PROFILES.fenix.ramLimitKb).toBe(32.0);
     expect(DEVICE_PROFILES.forerunner.ramLimitKb).toBe(64.0);

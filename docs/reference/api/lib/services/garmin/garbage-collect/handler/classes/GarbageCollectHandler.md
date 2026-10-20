@@ -32,7 +32,7 @@
 
 ###### state
 
-[`GameEngineState`](../../../../../garmin-engine/interfaces/GameEngineState.md) = `...`
+[`GameEngineState`](../../../../../garmin/engine/interfaces/GameEngineState.md) = `...`
 
 #### Returns
 

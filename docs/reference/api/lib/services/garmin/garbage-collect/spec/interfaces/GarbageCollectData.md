@@ -22,4 +22,4 @@
 
 ### state
 
-> **state**: [`GameEngineState`](../../../../../garmin-engine/interfaces/GameEngineState.md)
+> **state**: [`GameEngineState`](../../../../../garmin/engine/interfaces/GameEngineState.md)

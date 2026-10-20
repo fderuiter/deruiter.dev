@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   HILL_SPEED_SWING,
@@ -13,7 +14,7 @@ import {
   windGravityScale,
   type SecondWind,
   type SecondWindTick,
-} from "@/lib/garmin-second-wind";
+} from "@/lib/garmin/second-wind";
 
 // The pure Second Wind timing and scoring (#2026): each event's goal, its
 // timer, the gravity and hill scales the engine reads, and the guards.

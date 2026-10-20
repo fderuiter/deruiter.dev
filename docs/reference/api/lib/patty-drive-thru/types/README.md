@@ -9,6 +9,8 @@
 ## Interfaces
 
 - [BoothCrew](interfaces/BoothCrew.md)
+- [CustomOrderItem](interfaces/CustomOrderItem.md)
+- [CustomOrderTemplate](interfaces/CustomOrderTemplate.md)
 - [DayChoice](interfaces/DayChoice.md)
 - [DiaryIntro](interfaces/DiaryIntro.md)
 - [Dilemma](interfaces/Dilemma.md)

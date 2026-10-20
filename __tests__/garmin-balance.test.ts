@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import {
   createInitialState,
@@ -10,7 +11,7 @@ import {
   PLAYER_X,
   RACK_CLEAR,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
@@ -18,17 +19,17 @@ import {
   generateStage,
   stageStartX,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS, PLYO_HEIGHT, PLYO_WIDTH } from "@/lib/garmin-props";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS, PLYO_HEIGHT, PLYO_WIDTH } from "@/lib/garmin/props";
 import {
   FOE_GAP_CLEAR,
   REPMAX_THROW_MS,
   generateFoes,
-} from "@/lib/garmin-foes";
-import { themeForStage } from "@/lib/garmin-themes";
-import { BONK_OVER_TEXT, REST_DAY_OVER_TEXT } from "@/lib/garmin-culture";
-import { MOVE_TOASTS } from "@/lib/garmin-moves";
-import { COACH_SATURDAY_MS, type RaceSetup } from "@/lib/garmin-race";
+} from "@/lib/garmin/foes";
+import { themeForStage } from "@/lib/garmin/themes";
+import { BONK_OVER_TEXT, REST_DAY_OVER_TEXT } from "@/lib/garmin/culture";
+import { MOVE_TOASTS } from "@/lib/garmin/moves";
+import { COACH_SATURDAY_MS, type RaceSetup } from "@/lib/garmin/race";
 
 // The balance pass and finish (#2022). A lookahead bot played every stage
 // in Race Mode, the Training Plan and Race Day, and found four rules that

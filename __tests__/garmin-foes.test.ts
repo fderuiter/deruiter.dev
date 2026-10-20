@@ -1,4 +1,4 @@
-import { themeForStage } from "@/lib/garmin-themes";
+import { themeForStage } from "@/lib/garmin/themes";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   CANVAS_SIZE,
@@ -13,7 +13,7 @@ import {
   FLASH_STORAGE_KEY,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
@@ -23,8 +23,8 @@ import {
   stagePoleX,
   stageStartX,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { BUFF_HEIGHT, START_LIVES } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/course";
+import { BUFF_HEIGHT, START_LIVES } from "@/lib/garmin/powerups";
 import {
   REPMAX_GRACE_MS,
   REPMAX_HP,
@@ -57,7 +57,7 @@ import {
   stompFoe,
   type Foe,
   type FoeShot,
-} from "@/lib/garmin-foes";
+} from "@/lib/garmin/foes";
 import { GAME_MANUALS } from "@/lib/game-manuals";
 
 // The course enemy roster in Monkey C Mayhem (#1991).

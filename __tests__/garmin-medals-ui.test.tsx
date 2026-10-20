@@ -14,9 +14,9 @@ import {
   POLE_HEIGHT,
   STAGE_COUNT,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
-import { MEDALS_PER_STAGE, medalId } from "@/lib/garmin-medals";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
+import { MEDALS_PER_STAGE, medalId } from "@/lib/garmin/medals";
 import {
   createInitialState,
   pressAction,
@@ -25,8 +25,8 @@ import {
   PLAYER_X,
   type BonusRoom,
   type GameEngineState,
-} from "@/lib/garmin-engine";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
+} from "@/lib/garmin/engine";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
 
 const mockAnnounce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({
@@ -42,8 +42,8 @@ vi.mock("@/components/providers/AudioProvider", () => ({
 vi.mock("@/hooks/useTelemetry", () => ({
   useTelemetry: () => ({ recordEvent: vi.fn().mockResolvedValue(true) }),
 }));
-vi.mock("@/lib/garmin-engine", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/lib/garmin-engine")>();
+vi.mock("@/lib/garmin/engine", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/garmin/engine")>();
   return { ...actual, pressAction: vi.fn(actual.pressAction) };
 });
 

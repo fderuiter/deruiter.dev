@@ -41,3 +41,4 @@ export { HoldDpad } from "./HoldDpad";
 export type { HoldDpadProps } from "./HoldDpad";
 export { swipeDirection, type SwipeDirection } from "./swipe";
 export { CabinetTouchContext, useCabinetTouch } from "./CabinetTouchContext";
+export { useFormFactor, type UseFormFactorOptions } from "./useFormFactor";

@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { GarbageCollectHandler } from "@/lib/services";
 
-import { createInitialState, startGame } from "@/lib/garmin-engine";
+import { createInitialState, startGame } from "@/lib/garmin/engine";
 
 describe("GarbageCollectHandler (Logic Test)", () => {
   const handler = new GarbageCollectHandler();

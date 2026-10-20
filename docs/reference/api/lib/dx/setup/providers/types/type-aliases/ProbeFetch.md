@@ -6,7 +6,7 @@
 
 # Type Alias: ProbeFetch
 
-> **ProbeFetch** = (`url`, `init`) => `Promise`\<\{ `ok`: `boolean`; `status`: `number`; `text`: `Promise`\<`string`\>; \}\>
+> **ProbeFetch** = (`url`, `init`) => `Promise`\<\{ `ok`: `boolean`; `status`: `number`; `text`(): `Promise`\<`string`\>; \}\>
 
 Network access handed to a probe; tests pass a fake.
 
@@ -32,4 +32,4 @@ Network access handed to a probe; tests pass a fake.
 
 ## Returns
 
-`Promise`\<\{ `ok`: `boolean`; `status`: `number`; `text`: `Promise`\<`string`\>; \}\>
+`Promise`\<\{ `ok`: `boolean`; `status`: `number`; `text`(): `Promise`\<`string`\>; \}\>

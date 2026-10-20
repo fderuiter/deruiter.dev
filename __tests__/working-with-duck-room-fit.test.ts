@@ -1,3 +1,4 @@
+// @vitest-environment node
 // #2039: the touch cabinet's room fits its stage on both axes, so the top of
 // the room is never cropped under the HUD.
 

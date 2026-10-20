@@ -18,7 +18,7 @@ readonly `string`[]
 
 ### rows
 
-readonly readonly `unknown`[][]
+readonly (readonly `unknown`[])[]
 
 ## Returns
 

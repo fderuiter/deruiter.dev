@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Monkey C Mayhem run clock art (#2018): the top-centre readout shows the run
 // clock during a run (0:00.00 while GPS holds), the score stays on the line
 // beneath it, TIME and PACE can fill a ground-strip slot, and a long lap

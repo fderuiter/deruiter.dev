@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { fromAny } from "@total-typescript/shoehorn";
 // Monkey C Mayhem watch art (#1520): the data-field ring stays off the lane
 // and inside the round screen, obstacles map to pictograms, the crash face

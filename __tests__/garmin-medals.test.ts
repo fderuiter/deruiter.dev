@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { GROUND_Y, PLAYER_WIDTH } from "@/lib/garmin/engine";
 import {

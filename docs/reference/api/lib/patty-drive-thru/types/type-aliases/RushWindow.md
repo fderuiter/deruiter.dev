@@ -6,7 +6,7 @@
 
 # Type Alias: RushWindow
 
-> **RushWindow** = readonly \[`number`, `number`\]
+> **RushWindow** = readonly \[`startFraction`: `number`, `endFraction`: `number`\]
 
 A stretch of the shift when cars come faster (#1938, #2086), as fractions
 of the shift from 0 to 1. The start is inclusive and the end exclusive.

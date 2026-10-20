@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { fromAny } from "@total-typescript/shoehorn";
 // Monkey C Mayhem stage themes (#1993): the pool, open water and basement
 // gym art, the Tri Suit and water foes, the swim pose, the LENGTH readout and

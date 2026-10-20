@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -50,11 +51,13 @@ describe("Interactive Console API and Sandbox Event Bridge", () => {
           if (typeof cmdText !== "string") {
             return;
           }
-          win.dispatchEvent(new CustomEvent("terminal:run", { detail: { command: cmdText } }));
+          win.dispatchEvent(
+            new CustomEvent("terminal:run", { detail: { command: cmdText } })
+          );
         },
         help: () => {
           console.log("Supported API commands...");
-        }
+        },
       };
 
       win.terminal = terminalApi;
@@ -99,7 +102,9 @@ describe("Interactive Console API and Sandbox Event Bridge", () => {
       const terminalApi = {
         run: (cmdText: string) => {
           if (typeof cmdText !== "string") return;
-          win.dispatchEvent(new CustomEvent("terminal:run", { detail: { command: cmdText } }));
+          win.dispatchEvent(
+            new CustomEvent("terminal:run", { detail: { command: cmdText } })
+          );
         },
       };
       win.terminal = terminalApi;

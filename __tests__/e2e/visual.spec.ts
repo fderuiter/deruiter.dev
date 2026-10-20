@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
+import { waitForVisualSettle } from "./helpers/settle";
 
 // Detect any uncontained element overflowing the horizontal viewport boundary
 function findOverflowingElements(page: Page) {
@@ -112,8 +113,8 @@ test.describe("Visual Regression & Drift Detection", () => {
       );
     });
 
-    // Give a brief moment for layout/scroll coordinates to settle completely
-    await page.waitForTimeout(500);
+    // Let layout and scroll coordinates settle completely
+    await waitForVisualSettle(page);
 
     // Wait for the current project dossiers to be present and hydrated.
     await page.waitForSelector('[data-testid="featured-project-card"]');

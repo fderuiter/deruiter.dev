@@ -6,6 +6,6 @@
 
 # Variable: SCENARIO\_LIMITS
 
-> `const` **SCENARIO\_LIMITS**: `Readonly`\<`Record`\<keyof [`ShiftScenario`](../../types/interfaces/ShiftScenario.md), readonly \[`number`, `number`\]\>\>
+> `const` **SCENARIO\_LIMITS**: `Readonly`\<`Record`\<keyof [`ShiftScenario`](../../types/interfaces/ShiftScenario.md), readonly \[`min`: `number`, `max`: `number`\]\>\>
 
 The range each scenario dial is held to, so no input can break the shift.

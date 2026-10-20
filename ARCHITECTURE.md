@@ -14,7 +14,8 @@ app/                                       # Next.js 16 App Router routes, layou
 ├── layout.tsx                             # Global layout shell, Providers & Cmd+K palette portal
 ├── arcade/                                # Games only: Laser Loon, Study Director, Quasi-Puzzler,
 │                                          #   Trial & Error, Retro Labyrinth, Working With Duck,
-│                                          #   Meme Vault, Clinical Trial Chaos, Garmin Watch
+│                                          #   Meme Vault, Clinical Trial Chaos, Garmin Watch,
+│                                          #   Patty's Drive-Thru, For Better or Bulk
 ├── protocol-drift/                        # Protocol Drift data-pipeline simulation (Simulators menu)
 ├── simulator/ patrol/ crf/ proof/ neuro/  # Simulators and studios (Architecture, Patrol Shift, CRF,
 │                                          #   Proof Workspace, NeuroRecon); m/ holds mobile entry routes
@@ -22,6 +23,7 @@ app/                                       # Next.js 16 App Router routes, layou
 ├── case-studies/ blog/                    # Editorial case studies and the Systems Dispatch blog
 ├── merch/ acknowledgments/                # Merch page and Open Source Credits
 ├── schedule/ stack/ contact/ admin/       # Schedule, stack lab, contact form, Clerk-gated admin
+├── wedding/ offline/                      # Wedding archive and the service-worker offline fallback
 └── api/                                   # Route handlers with Zod contracts (see openapi.json):
                                            #   admin, blog, case-studies, contact, cron/maintenance,
                                            #   media, newsletter, quasi-perfect, telemetry, webhooks
@@ -35,10 +37,13 @@ components/                                # React UI Component Ecosystem
 │   study-director/ study-director-world/
 │   trial-and-error/ working-with-duck/
 │   clinical-trial-chaos/ garmin-watch/
+│   patty-drive-thru/ for-better-or-bulk/
 ├── crf/ neuro/ patrol/ proof/ stack/      # Studio and simulator workspaces
 │   simulator/ protocol-drift/
 ├── blog/ merch/ acknowledgments/ admin/   # Feature slices for their routes
-├── providers/                             # React context providers (A11y, Audio, Persona, Search)
+│   wedding/
+├── providers/                             # React context providers (A11y, Audio, Persona, Search,
+│                                          #   Terminology, Toast) & Serwist SW registration
 ├── CommandPalette.tsx                     # Cmd+K spotlight search palette portal
 ├── Navbar.tsx                             # Top bar shell around the nav data
 └── Footer.tsx                             # Global footer & telemetry ticker
@@ -244,7 +249,7 @@ The interaction subsystem is structured around two dedicated Prisma models:
   - `comments`: Free-form constructive user text feedback (3–2000 characters).
   - `connectionHash`: SHA-256 hash derived from the client's connection context (`IP:User-Agent`).
   - `createdAt`: Timestamp defaults to current date/time.
-  - Indexes: Single-field indexes on `caseStudySlug` and `connectionHash`.
+  - Indexes: Single-field indexes on `caseStudySlug` and `connectionHash`, plus compound indexes on `[caseStudySlug, createdAt]` and `[caseStudySlug, connectionHash, createdAt]`.
 
 - **`CaseStudyReaction` Model:**
   - `id`: Unique string primary key (`cuid`).
@@ -252,7 +257,7 @@ The interaction subsystem is structured around two dedicated Prisma models:
   - `reactionType`: String enum token (`"insightful"`, `"mind_blowing"`, `"actionable"`, or `"thorough"`).
   - `connectionHash`: SHA-256 hash derived from the client's connection context (`IP:User-Agent`).
   - `createdAt`: Timestamp defaults to current date/time.
-  - Indexes: Single-field index on `caseStudySlug`, compound index on `[caseStudySlug, reactionType]`, and single-field index on `connectionHash`.
+  - Constraints & indexes: Unique constraint on `[caseStudySlug, connectionHash, reactionType]`, single-field index on `caseStudySlug`, compound index on `[caseStudySlug, reactionType]`, and single-field index on `connectionHash`.
 
 - **Relationship to Core `CaseStudy` Content:**
   - Feedback and reaction records maintain a decoupled slug-based relation (`caseStudySlug` matching `CaseStudy.slug`), eliminating foreign key constraints for fast serverless execution.
@@ -367,8 +372,8 @@ To prevent Stored Cross-Site Scripting (XSS) attacks when rendering complex HTML
 
 - **isomorphic-dompurify:** We selected `isomorphic-dompurify` because it seamlessly resolves to standard `dompurify` in browser environments and transparently handles JSDOM simulation in Server-Side Rendering (SSR) / React Server Components (RSC).
 - **Strict Security Allowlist:** Sanitization is handled by the dedicated `<RichNarrative className="..." html="..." />` component, which forces an audited allowlist:
-  - Allowed Tags: `h2`, `h3`, `h4`, `p`, `code`, `pre`, `strong`, `em`, `a`, `ul`, `ol`, `li`
-  - Allowed Attributes: `href`, `target`, `rel`, `class`
+  - Allowed Tags: `h2`, `h3`, `h4`, `p`, `code`, `pre`, `strong`, `em`, `a`, `ul`, `ol`, `li`, `span`, `abbr`
+  - Allowed Attributes: `id`, `href`, `target`, `rel`, `class`, `data-term`, `data-definition`, `data-key`, `role`, `tabindex`, `aria-label`, `aria-describedby`, `aria-hidden`, `aria-expanded`, `aria-checked`
 - **Hydration & Parsing Safety:** Strips malicious nodes (such as `<script>`, `<iframe/>`, or event triggers like `<img onerror="...">`) server-side to guarantee that browser parser states hydrations are safe and match server outputs identically.
 
 ## SEO, Open Graph & Crawling Optimization (Issue #36)
@@ -378,7 +383,7 @@ To optimize discovering technical showcase materials for peer engineers and craw
 - **Canonical Alternates:** Automatically generates unique dynamic `<link rel="canonical">` elements on per-page view states using Next.js Metadata API.
 - **Dynamic Case Study Serialization:** Implements custom `generateMetadata()` on `/case-studies/[slug]` routes to dynamically extract and construct SEO/Open Graph descriptions, article tags, and published timelines directly from Prisma database schemas.
 - **Sitemap & Robots Automation:**
-  - `app/sitemap.ts` programmatically compiles primary routes (`/arcade/*`, `/proof`, `/simulator`, `/schedule`) and Neon DB published case study slugs into a standards-compliant XML sitemap.
+  - `app/sitemap.ts` programmatically compiles primary routes (`/arcade/*`, `/proof`, `/simulator`, `/schedule`) Neon DB published case study slugs, and published blog post slugs into a standards-compliant XML sitemap.
   - `app/robots.ts` restricts crawlers from access logs and internal compilation maps while routing standard bots directly to our primary indexing endpoints.
 
 ## Staggered Bento Skills & Scroll-Driven Career Timeline (Issue #37)
@@ -398,7 +403,7 @@ To support rich social card visual motifs and compliant structural metadata repr
 - **Dynamic ImageResponse Routes:** Rather than statically exporting templates, we place `opengraph-image.tsx` inside `/case-studies/[slug]/`. It leverages the Next.js `ImageResponse` canvas compilation API running on a standard NodeJS runtime to guarantee pooled, safe connection fetches from serverless Neon PostgreSQL instances.
 - **Visual Motif Design:** Programmatically compiles dynamic titles, primary languages, and category tag chips on a deep charcoal card featuring glowing radial ambient overlays in brand-cyan (`rgba(6, 182, 212, 0.08)`) and high-tech blue (`rgba(59, 130, 246, 0.05)`).
 - **JSON-LD Schema Utility Layer (`lib/seo.ts`):** Establishes type-safe constructors for Schema.org formats:
-  - **getPersonSchema:** Serializes professional developer profiles loaded site-wide in `app/layout.tsx`.
+  - **getUnifiedGraphSchema:** Serializes a single `@graph` of the professional developer profile and website nodes (`getUnifiedGraphSchema([getPersonNode(), getWebsiteNode()])`) loaded site-wide in `app/layout.tsx`.
   - **getSoftwareSourceCodeSchema:** Serializes dynamic case study items in `app/case-studies/[slug]/page.tsx`, directly incorporating cached stars and forks telemetry fetched from the GitHub client.
 - **XSS Sanitization Compliance:** Prevents stored script vectors from escaping structured data by programmatically replacing `<` bracket tags with unicode escapes (`\u003c`) inside the JSON-LD serialization pipeline.
 
@@ -407,7 +412,7 @@ To support rich social card visual motifs and compliant structural metadata repr
 To visually showcase developmental pace metrics on dynamic case study cards, we engineered dynamic inline SVG sparkline timelines:
 
 - **Cached Weekly Activity Fetching:** We extended the decoupled `lib/github.ts` API client to fetch weekly commit counts directly from GitHub's `/stats/commit_activity` endpoint. These metrics are stored in the cached `GitHubStats` payload, returning a 52-week activity integer array refreshed every 3600 seconds.
-- **Resilient Fallback Generation:** To protect development environments and offline builds against API rate limit blocks, the client auto-generates a mock 52-week activity sine-wave pattern (`5 + sin(x/3) * 4`) mimicking active repo commit patterns.
+- **Resilient Fallback Generation:** To protect development environments and offline builds against API rate limit blocks, the client auto-generates a mock 52-week activity sine-wave pattern via `generateMockCommitActivity()` (`max(1, 4 + round(sin(i / 2.5) * 3) + (i % 7 === 0 ? 4 : 0))`) mimicking active repo commit patterns.
 - **Cubic Bezier Path Mapping:** The `<CommitSparkline />` component maps the 52-week dataset into a dynamic coordinate grid bounded inside `(0, 0)` and `(300, 60)`. It connects the points using mathematically smooth SVG cubic bezier commands (`C cp1X cp1Y, cp2X cp2Y, targetX targetY`), yielding zero jagged edges.
 - **High-Tech Aesthetic HUD Graping:** The SVG path is styled with glowing linear gradients sweeping from cyan (`#06b6d4`) to blue (`#3b82f6`), coupled with stdDeviation blur filters and a fading, semi-transparent backdrop area fill.
 - **Zero-Reflow Layout Constraints:** Swapping the bulky badges row for sparkline timelines increases bento grid paddings by `70px`. To ensure absolutely zero visual layout shifts (CLS) during client-side hydration, we synchronized the Pretext predicted layout limits from `390px` to `460px` across both `CaseStudyShowcase.tsx` and `components/ui/CaseStudyBentoCard.tsx`.
@@ -417,7 +422,7 @@ To visually showcase developmental pace metrics on dynamic case study cards, we 
 To deliver a premium, centralized navigation HUD accessible from any section of the portfolio, we engineered a unified command palette interface:
 
 - **Dynamic Case Study Indexing API Route (`/api/case-studies`):** Queries Prisma database records serverless pools using a force-dynamic fetch handler. Selects and returns lightweight search tokens (`id`, `slug`, `title`, `primary_language`, `tags`) to keep initial connection payloads highly optimized.
-- **Lazy-Loaded Dynamic Import (`ssr: false`):** To preserve strict compile-time server component purity and bypass hydration failures, the `<CommandPalette />` container is loaded dynamically inside the `app/layout.tsx` layout shell using Next.js `dynamic()` with server-side rendering disabled.
+- **Lazy-Loaded Dynamic Import (`ssr: false`):** To preserve strict compile-time server component purity and bypass hydration failures, the `<CommandPalette />` container is loaded dynamically by the client `components/SearchWrapper.tsx` (rendered in the `app/layout.tsx` layout shell) using Next.js `dynamic()` with server-side rendering disabled.
 - **React Portals & Body Mounting:** Teleports the active React DOM nodes directly to the root layout's `document.body` layer using `createPortal`, isolating key events, animations, and stacking contexts from standard container bounds.
 - **Rigorous Keyboard Listeners & Fuzzy Search:**
   - Listens globally for trigger shortcuts (`Cmd+K` on macOS, `Ctrl+K` on Windows/Linux).
@@ -437,7 +442,7 @@ To capture and display user engagement metrics in real-time without introducing 
 - **Append-Only Schema Partitioning (`TelemetryEvent`):** Addressed transactional analytics overhead by storing events in a partitioned, append-only `TelemetryEvent` model indexed on `projectSlug` and `eventType`. This isolates metrics from case study core contents, allowing swift Neon Postgres DB writes.
 - **Serverless Edge-Cached API Route (`/api/telemetry`):**
   - **GET**: Computes high-performance aggregate database counts (`groupBy` grouping views and clicks) on demand. The response payload is wrapped in edge-level cache headers (`Cache-Control: public, max-age=10, s-maxage=60, stale-while-revalidate=600`) to let CDNs cache aggregated counts and bypass database requests.
-  - **POST**: Commits dynamic transactional views (`page_view`) and clicks (`project_click`) into serverless pools.
+  - **POST**: Commits dynamic transactional events into serverless pools. Accepted `eventType` values (`TelemetryEventSchema` in `lib/schemas.ts`): `page_view`, `project_click`, `route_error`, `simulator_option_select`, `simulator_milestone_reached`, and `simulator_report_copy`.
 - **Anonymized IP Sliding-Window Rate Limiter:** To safeguard the Neon database from spam and DoS attempts without harvesting PII, the API route processes client IPs, hashes them instantly using a native SHA-256 digest wrapper (`crypto`), and checks request timestamps against a sliding 60-second limit (max 100 req/min).
 - **Instant Stale-While-Revalidate (SWR) Client Sync:**
   - The client `useTelemetry()` hook extracts stats from `localStorage` immediately upon DOM initialization, ensuring the Bento grid mounts instantly with **zero Cumulative Layout Shift (CLS)**.
@@ -475,7 +480,7 @@ To guarantee that technical specifications, API documentation, and internal arch
   - Contributors run `npm run check-docs-drift` prior to committing to detect uncommitted documentation mutations or undocumented API routes.
   - `scripts/check-drift.ts` verifies zero uncommitted modifications and zero untracked documentation files.
 - **DX Doctor Invariant Verification & One-Command Auto-Remediation:**
-  - `npm run dx doctor` and `npm run verify` check documentation and API parity alongside 9 core architectural invariants.
+  - `npm run dx doctor` and `npm run verify` check documentation and API parity alongside the architectural invariants registered in `lib/dx/doctor.ts`.
   - Running `npm run doctor:fix` automatically synchronizes `openapi.json` and recompiles TypeDoc markdown files.
 - **Strict Hygiene Boundaries:**
   - Brainstorming notes, intermediate agent traces, and temporary scratchpad directories (`.scratch/`, `scratch/`, `tmp/`) are excluded from markdown linting and repository tracking to preserve documentation integrity. Curated agent skills in `.agents/skills/` are tracked.
@@ -550,6 +555,6 @@ During the manual hold, an operator starts Production from Vercel Dashboard → 
 
 - **Manual Canary Analysis (`scripts/canary-analyzer.ts`)**: A library and demo command that compares caller-supplied metric windows against 0.5% 5xx error limits, 800ms p95 latency ceilings, 25% relative latency regression limits, and 2.0x Sentry exception spike ratios. No workflow or build step invokes it, and it has no live metrics source.
 - **Rollback**: A person uses Vercel's Instant Rollback. The `executeAutomatedRollback` helper only builds a webhook payload and has no caller; nothing rolls back automatically.
-- **Scheduled Synthetic Journey Monitoring (`.github/workflows/synthetic-probes.yml`)**: A daily cron (`17 7 * * *`) executing Playwright headless probes across 5 critical user journeys (Landing Pretext layout, Command Palette discovery, Proof Assistant DAG studio, Arcade canvas lifecycle, and Telemetry API schemas).
+- **Scheduled Synthetic Journey Monitoring (`.github/workflows/synthetic-probes.yml`)**: A daily cron (`17 7 * * *`) executing Playwright headless probes on Chromium across 9 critical user journeys (probes numbered 1–6 and 8–10: Landing Pretext layout, Command Palette discovery, Proof Assistant DAG studio, Arcade canvas lifecycle, Telemetry API schemas, Patrol Shift dispatch to debrief, canonical host redirect and metadata parity, Trial & Error Card Table, and Patty's Drive-Thru).
 
 Detailed operational evaluation commands, webhook payload structures, custom target URL overrides, and step-by-step failure triage runbooks are maintained in [**`DEPLOYMENT.md`**](DEPLOYMENT.md).

@@ -1,10 +1,15 @@
 # 0018. Resilient Transactional Email Architecture, Zero-Dependency Templates & Frictionless Bot Defense
 
+## Status
+
+Accepted
+
 ## Context
 
 The portfolio showcases interactive software engineering systems, clinical CDISC engines, and research case studies. To facilitate direct communication with recruiters, collaborators, and technical peers, the site requires an integrated messaging channel, alongside automated administrative notifications when visitors leave feedback on case studies.
 
 Key constraints & requirements:
+
 1. **Zero Public Performance Degradation**: Outbound email processing must not block edge routing, introduce heavy third-party client scripts (such as CAPTCHA iframes), or bloat client bundles with unnecessary libraries.
 2. **Frictionless Bot Defense**: The public contact endpoint must withstand spam bots and email flooding without imposing invasive CAPTCHA challenges on human visitors.
 3. **Architectural Aesthetic & Type Safety**: Email templates must reflect the portfolio's Swiss editorial design system (`#0d0e11` graphite, Precision Amber `#f59e0b`, hairline micro-borders), and the email dispatcher must be governed by strict Zod schemas and typed result contracts.

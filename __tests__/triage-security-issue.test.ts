@@ -1,3 +1,4 @@
+// @vitest-environment node
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { spawnSync, type SpawnSyncReturns } from "child_process";

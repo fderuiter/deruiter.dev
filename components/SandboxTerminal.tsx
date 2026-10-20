@@ -646,7 +646,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
                 {
                   id: outputId,
                   type: "error",
-                  text: `✖ Parameter validation error: Missing required flag(s) ${missingFlags.join(", ")} for '${registeredAction.cliName || registeredAction.title}'.`,
+                  text: `Parameter validation error: Missing required flag(s) ${missingFlags.join(", ")} for '${registeredAction.cliName || registeredAction.title}'.`,
                 },
               ]);
               announce(
@@ -1174,23 +1174,30 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
 
     const highlightValue = (valStr: string) => {
       const trimmed = valStr.trim();
-      if (trimmed === '"[VERIFY_SECURITY_LOGS]"') {
+      // Every key but the last carries JSON's trailing comma, so compare
+      // the bare value and render the comma after it (#2532).
+      const value = trimmed.replace(/,$/, "");
+      const comma = value === trimmed ? "" : ",";
+      if (value === '"[VERIFY_SECURITY_LOGS]"') {
         return (
-          <a
-            href="/proof"
-            className="text-brand-cyan underline font-bold cursor-pointer hover:text-brand-cyan/80 focus:outline-none focus:ring-2 focus:ring-brand-cyan/50 focus:ring-offset-1 focus:ring-offset-zinc-950 rounded"
-          >
-            [LIVE_VERIFICATION_LINK]
-          </a>
+          <>
+            <a
+              href="/proof"
+              className="text-brand-cyan underline font-bold cursor-pointer hover:text-brand-cyan/80 focus:outline-none focus:ring-2 focus:ring-brand-cyan/50 focus:ring-offset-1 focus:ring-offset-zinc-950 rounded"
+            >
+              [LIVE_VERIFICATION_LINK]
+            </a>
+            {comma}
+          </>
         );
       }
       if (trimmed.startsWith('"')) {
         return <span className="text-emerald-400">{trimmed}</span>;
       }
-      if (trimmed === "true" || trimmed === "false") {
+      if (value === "true" || value === "false") {
         return <span className="text-amber-500 font-bold">{trimmed}</span>;
       }
-      if (trimmed === "null") {
+      if (value === "null") {
         return <span className="text-red-400 italic">{trimmed}</span>;
       }
       if (!isNaN(Number(trimmed.replace(/,$/, "")))) {

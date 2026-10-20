@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Retro Labyrinth polish (#2291): the pure run rules the cabinet applies.
 import { describe, it, expect } from "vitest";
 import { fromPartial } from "@total-typescript/shoehorn";

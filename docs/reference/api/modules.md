@@ -60,6 +60,7 @@
 - [lib/arcade/crt-pipeline](lib/arcade/crt-pipeline/README.md)
 - [lib/arcade/daily](lib/arcade/daily/README.md)
 - [lib/arcade/daily-store](lib/arcade/daily-store/README.md)
+- [lib/arcade/form-factor](lib/arcade/form-factor/README.md)
 - [lib/arcade/games](lib/arcade/games/README.md)
 - [lib/arcade/registry](lib/arcade/registry/README.md)
 - [lib/arcade/utils](lib/arcade/utils/README.md)

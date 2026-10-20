@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Patty's Drive-Thru 10/10 re-audit, second pass: the shift ramps up to a
 // dinner rush (#2138), and a week deals its dilemmas without repeats, with
 // rush calls and mid-week day pages that fit the day (#2139).

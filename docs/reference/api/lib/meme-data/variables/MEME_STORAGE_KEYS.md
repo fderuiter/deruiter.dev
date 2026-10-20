@@ -22,10 +22,6 @@ Storage helpers for achievements and meme vault unlock state
 
 Best Echo streak, a bare integer string (#2049).
 
-### RETRO\_CHAOS\_MODE
-
-> `readonly` **RETRO\_CHAOS\_MODE**: `"retro_chaos_mode_active"` = `"retro_chaos_mode_active"`
-
 ### VAULT\_UNLOCKED
 
 > `readonly` **VAULT\_UNLOCKED**: `"unlocked_meme_vault"` = `"unlocked_meme_vault"`

@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [ArcadeProgress](interfaces/ArcadeProgress.md)
+- [ArcadeRun](interfaces/ArcadeRun.md)
 - [ArcadeTrophy](interfaces/ArcadeTrophy.md)
 
 ## Variables
@@ -28,5 +29,6 @@
 - [parseScoreValue](functions/parseScoreValue.md)
 - [recordArcadeMilestone](functions/recordArcadeMilestone.md)
 - [recordArcadeScore](functions/recordArcadeScore.md)
+- [recordRun](functions/recordRun.md)
 - [saveArcadeProgress](functions/saveArcadeProgress.md)
 - [unlockArcadeTrophies](functions/unlockArcadeTrophies.md)

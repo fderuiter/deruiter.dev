@@ -13,6 +13,7 @@ import {
   safeSetRawItem,
 } from "@/lib/safe-storage";
 import { emitAppEvent } from "@/lib/event-bus";
+import type { FormFactor } from "@/lib/arcade";
 
 /** Unified storage key for arcade progress envelope. */
 export const ARCADE_UNIFIED_PROGRESS_KEY = "arcade_unified_progress_v1";
@@ -974,4 +975,35 @@ export function recordArcadeScore(
   }
 
   return { progress, newlyUnlocked };
+}
+
+/** One finished run, as a game reports it to the arcade (#2371). */
+export interface ArcadeRun {
+  /** The run's score; the best one is kept. */
+  score: number;
+  /** The view the run was played in (ADR 0062), for launch telemetry. */
+  view: FormFactor;
+  /** The game's mode, e.g. "campaign" or "daily". */
+  mode?: string;
+  /** How long the run took, in milliseconds. */
+  durationMs?: number;
+}
+
+/**
+ * Records a finished run: keeps the best score, checks trophies and tells
+ * the hub, as {@link recordArcadeScore} does, with the run's view, mode and
+ * duration passed on in the event's metadata.
+ *
+ * @param gameId - The game's registry slug.
+ * @param run - The finished run.
+ * @returns The progress after the run and the trophies it unlocked.
+ */
+export function recordRun(
+  gameId: string,
+  run: ArcadeRun
+): { progress: ArcadeProgress; newlyUnlocked: ArcadeTrophy[] } {
+  const metadata: Record<string, unknown> = { view: run.view };
+  if (run.mode !== undefined) metadata.mode = run.mode;
+  if (run.durationMs !== undefined) metadata.durationMs = run.durationMs;
+  return recordArcadeScore(gameId, run.score, metadata);
 }

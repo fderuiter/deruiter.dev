@@ -16,9 +16,11 @@
 
 - [EASTER\_EGG\_ACHIEVEMENTS](variables/EASTER_EGG_ACHIEVEMENTS.md)
 - [ECHO\_TROPHY\_STREAKS](variables/ECHO_TROPHY_STREAKS.md)
+- [echoBestStore](variables/echoBestStore.md)
 - [FORTUNES](variables/FORTUNES.md)
 - [MEME\_QUOTES](variables/MEME_QUOTES.md)
 - [MEME\_STORAGE\_KEYS](variables/MEME_STORAGE_KEYS.md)
+- [memeAchievementsStore](variables/memeAchievementsStore.md)
 - [SANDBOX\_TERMINAL\_HREF](variables/SANDBOX_TERMINAL_HREF.md)
 - [SOUNDBOARD\_BUTTONS](variables/SOUNDBOARD_BUTTONS.md)
 - [STATUS\_TICKER\_ITEMS](variables/STATUS_TICKER_ITEMS.md)

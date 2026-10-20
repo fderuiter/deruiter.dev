@@ -11,8 +11,8 @@ import {
   runResult,
   type BadgeId,
   type BadgeSave,
-} from "@/lib/garmin-badges";
-import { localDay } from "@/lib/garmin-race";
+} from "@/lib/garmin/badges";
+import { localDay } from "@/lib/garmin/race";
 
 interface BadgeCasePanelProps {
   /** The badges and history, or null before they have been read from storage. */

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { CAPE_SPIN_MS, PACE_FILL_MS } from "@/lib/garmin-cape";
+import { CAPE_SPIN_MS, PACE_FILL_MS } from "@/lib/garmin/cape";
 import {
   GROUND_Y,
   PLAYER_HEIGHT,
@@ -13,21 +13,21 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
   type CourseBlock,
   type CourseLayout,
   type CourseMedBall,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS, PR_BOARD_SCORE } from "@/lib/garmin-props";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS, PR_BOARD_SCORE } from "@/lib/garmin/props";
 import {
   BUFF_HEIGHT,
   DAMAGE_GRACE_MS,
   START_LIVES,
-} from "@/lib/garmin-powerups";
-import { makeFoe, type Foe } from "@/lib/garmin-foes";
+} from "@/lib/garmin/powerups";
+import { makeFoe, type Foe } from "@/lib/garmin/foes";
 import {
   MEDBALL_FILL_SCALE,
   MEDBALL_KO_SCORE,
@@ -36,7 +36,7 @@ import {
   MEDBALL_THROW_VY,
   MEDBALL_TOAST,
   throwBall,
-} from "@/lib/garmin-medball";
+} from "@/lib/garmin/medball";
 
 // The Medicine Ball (#2024) in the engine: picking it up in reach, throwing it,
 // the flight that knocks out a foe or breaks a brick, the pace meter while

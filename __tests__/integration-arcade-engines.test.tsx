@@ -30,7 +30,7 @@ import {
   updateGameSimulation,
   triggerGarbageCollection,
   jettisonOldestVariable,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   createInitialScoreState,
   createInitialAuditorState,

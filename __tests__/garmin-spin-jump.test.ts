@@ -11,16 +11,16 @@ import {
   startGame,
   updateGameSimulation,
   type GameEngineState,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS, PR_BOARD_SCORE } from "@/lib/garmin-props";
-import { FOE_STOMP_SCORE, makeFoe, type Foe } from "@/lib/garmin-foes";
-import { MOVE_TOASTS, SPIN_JUMP_VY } from "@/lib/garmin-moves";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS, PR_BOARD_SCORE } from "@/lib/garmin/props";
+import { FOE_STOMP_SCORE, makeFoe, type Foe } from "@/lib/garmin/foes";
+import { MOVE_TOASTS, SPIN_JUMP_VY } from "@/lib/garmin/moves";
 
 // The Spin Jump (#2023): the action key in the air is a floatier jump that
 // bounces off spiky foes, but breaks no blocks.

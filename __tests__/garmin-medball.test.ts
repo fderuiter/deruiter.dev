@@ -9,13 +9,13 @@ import {
   pruneCourse,
   type CourseLayout,
   type CourseMedBall,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   SWITCH_WIDTH,
   generateStageProps,
   restDaySwap,
-} from "@/lib/garmin-props";
-import { themeForStage, isWaterTheme } from "@/lib/garmin-themes";
+} from "@/lib/garmin/props";
+import { themeForStage, isWaterTheme } from "@/lib/garmin/themes";
 import {
   MEDBALL_GRAVITY,
   MEDBALL_REACH,
@@ -26,9 +26,9 @@ import {
   stepThrownBall,
   throwBall,
   type ThrownBall,
-} from "@/lib/garmin-medball";
+} from "@/lib/garmin/medball";
 
-/** Lane top used by the engine (GROUND_Y in lib/garmin-engine.ts). */
+/** Lane top used by the engine (GROUND_Y in lib/garmin/engine.ts). */
 const GROUND_Y = 205;
 const STAGES = [1, 2, 3, 4, 5];
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);

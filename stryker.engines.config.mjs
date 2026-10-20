@@ -14,7 +14,7 @@ import baseConfig from "./stryker.config.mjs";
  * `fileBreaks` holds each file's floor: its measured score, floored.
  * `scripts/run-mutation-tests.ts` fails the run when any file drops below
  * its floor. Raise a floor as survivors get killed; never lower one.
- * `lib/garmin-engine.ts` joins after #2512 moves it into a deep module.
+ * `lib/garmin/engine.ts` (moved there by #2512) can join once its floor is measured.
  *
  * Measured 2026-10-19 on 4 cores: first run rounding 95.18, scoring 89.52,
  * validator 91.41, Duck 51.35; after the cheapest survivors got tests,

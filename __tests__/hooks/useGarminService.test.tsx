@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useGarminService } from "@/hooks/useGarminService";
-import { createInitialState } from "@/lib/garmin-engine";
+import { createInitialState } from "@/lib/garmin/engine";
 
 describe("useGarminService Hook", () => {
   beforeEach(() => {

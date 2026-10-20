@@ -10,7 +10,7 @@ import {
   stagePoleX,
   stageStartX,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   BUOY_PERIOD_MS,
   BUOY_RANGE,
@@ -19,17 +19,17 @@ import {
   generateStageProps,
   restDaySwap,
   type CourseProps,
-} from "@/lib/garmin-props";
-import { BASE_HEIGHT } from "@/lib/garmin-powerups";
-import { BUOY_Y } from "@/lib/garmin-swim";
+} from "@/lib/garmin/props";
+import { BASE_HEIGHT } from "@/lib/garmin/powerups";
+import { BUOY_Y } from "@/lib/garmin/swim";
 import {
   STAGE_THEMES,
   isWaterTheme,
   themeForStage,
   type StageTheme,
-} from "@/lib/garmin-themes";
+} from "@/lib/garmin/themes";
 
-/** Lane top used by the engine (GROUND_Y in lib/garmin-engine.ts). */
+/** Lane top used by the engine (GROUND_Y in lib/garmin/engine.ts). */
 const GROUND_Y = 205;
 const STAGES = [1, 2, 3, 4, 5];
 const SEEDS = Array.from({ length: 20 }, (_, i) => i + 1);

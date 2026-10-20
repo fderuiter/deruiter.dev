@@ -30,7 +30,7 @@ with Zod input validation and zero-exception ServiceResult error handling.
 
 ###### state
 
-[`GameEngineState`](../../../lib/garmin-engine/interfaces/GameEngineState.md) = `...`
+[`GameEngineState`](../../../lib/garmin/engine/interfaces/GameEngineState.md) = `...`
 
 ###### type
 
@@ -50,7 +50,7 @@ with Zod input validation and zero-exception ServiceResult error handling.
 
 ###### state
 
-[`GameEngineState`](../../../lib/garmin-engine/interfaces/GameEngineState.md) = `...`
+[`GameEngineState`](../../../lib/garmin/engine/interfaces/GameEngineState.md) = `...`
 
 #### Returns
 

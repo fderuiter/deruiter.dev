@@ -6,7 +6,7 @@ import {
 import {
   loadPersistedFlashStorage,
   savePersistedFlashStorage,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import { createSuccess, createFailure } from "@/lib/services/service-result";
 
 export class SyncFlashStorageHandler implements SyncFlashStorageSpec {

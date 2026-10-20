@@ -160,7 +160,7 @@ export const ARCADE_DEVICE_GAMES = Object.freeze([
   ["Patty's Drive-Thru", /patty-?drive-?thru/i],
   ["Trial & Error", /trial-and-error/i],
   ["For Better or Bulk", /for-?better-?or-?bulk/i],
-  ["Monkey C Mayhem", /garmin-?watch|^lib\/garmin-/i],
+  ["Monkey C Mayhem", /garmin-?watch|^lib\/garmin[-/]/i],
 ]);
 
 /** `describe` titles of the shared device kit specs. */

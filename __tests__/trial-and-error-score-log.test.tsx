@@ -138,7 +138,9 @@ describe("score log (#1082)", () => {
   });
 
   it("logs each hand played at the table", () => {
-    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} />);
+    // A named seed opens on the Blind's own setup (#2413), which holds the
+    // disposition table; a fresh seed may pick another opener.
+    render(<CardTable scenario={DEMOGRAPHICS_SCENARIO} seed="score-log" />);
     fireEvent.click(toggle());
     expect(entries()).toHaveLength(0);
     fireEvent.click(card("C-T14.1.2"));

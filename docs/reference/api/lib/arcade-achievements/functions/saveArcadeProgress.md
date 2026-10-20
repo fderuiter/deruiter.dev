@@ -8,13 +8,14 @@
 
 > **saveArcadeProgress**(`progress`): `boolean`
 
-Saves Arcade progress to SafeStorage using envelope format.
+Saves Arcade progress to the `arcade.core` slice, in the same envelope
+format as before.
 
 ## Parameters
 
 ### progress
 
-[`ArcadeProgress`](../interfaces/ArcadeProgress.md)
+[`ArcadeProgress`](../../arcade/progress/core/interfaces/ArcadeProgress.md)
 
 ## Returns
 

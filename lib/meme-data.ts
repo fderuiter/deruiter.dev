@@ -4,16 +4,17 @@
  */
 
 import {
-  safeGetItem,
   safeGetRawItem,
   safeIsAvailable,
   safeSetRawItem,
 } from "@/lib/safe-storage";
 import { emitAppEvent } from "@/lib/event-bus";
+import { recordArcadeMilestone, recordRun } from "@/lib/arcade-achievements";
 import {
-  recordArcadeMilestone,
-  recordArcadeScore,
-} from "@/lib/arcade-achievements";
+  classifyFormFactor,
+  createArcadeStore,
+  type FormFactor,
+} from "@/lib/arcade";
 import { isNewEchoBest, parseEchoBest } from "@/lib/meme-echo";
 
 export interface MemeQuote {
@@ -367,24 +368,67 @@ export const FORTUNES: string[] = [
 export const MEME_STORAGE_KEYS = {
   VAULT_UNLOCKED: "unlocked_meme_vault",
   ACHIEVEMENTS: "meme_achievements_unlocked",
-  RETRO_CHAOS_MODE: "retro_chaos_mode_active",
   /** Best Echo streak, a bare integer string (#2049). */
   ECHO_BEST: "meme_vault_echo_best",
 } as const;
+
+const NO_ACHIEVEMENTS: readonly string[] = Object.freeze([]);
+
+/**
+ * The Meme Vault trophies found in this browser (#2371): a plain JSON array
+ * of ids, the same bytes the vault always wrote. Anything else stored there
+ * is set aside under `meme_achievements_unlocked:corrupt` and reads empty.
+ */
+export const memeAchievementsStore = createArcadeStore<readonly string[]>(
+  MEME_STORAGE_KEYS.ACHIEVEMENTS,
+  {
+    parse: (raw) => {
+      const parsed: unknown = JSON.parse(raw);
+      if (!Array.isArray(parsed)) {
+        throw new TypeError("Meme achievements are not a list");
+      }
+      return parsed.filter((id): id is string => typeof id === "string");
+    },
+    serialize: (ids) => JSON.stringify(ids),
+    fallback: NO_ACHIEVEMENTS,
+  }
+);
+
+/**
+ * The best Echo streak (#2049) as a bare integer string. A malformed value
+ * reads as 0, as it always did, so it is never set aside.
+ */
+export const echoBestStore = createArcadeStore<number>(
+  MEME_STORAGE_KEYS.ECHO_BEST,
+  {
+    parse: (raw) => parseEchoBest(raw),
+    serialize: (best) => String(Math.floor(best)),
+    fallback: 0,
+  }
+);
+
+/** The view this browser shows the arcade in, for run records. */
+function currentView(): FormFactor {
+  if (typeof window === "undefined") return "desktop";
+  let coarse = false;
+  try {
+    coarse = window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  } catch {
+    coarse = false;
+  }
+  return classifyFormFactor({
+    width: window.innerWidth,
+    height: window.innerHeight,
+    coarse,
+  });
+}
 
 export function getUnlockedAchievements(): string[] {
   if (typeof window === "undefined" || !safeIsAvailable()) {
     return [];
   }
-  try {
-    // Stored as a plain JSON array; malformed JSON comes back from
-    // safeGetItem as a string, which is not an array. Copy so callers never
-    // mutate safeStorage's cached value.
-    const stored = safeGetItem<unknown>(MEME_STORAGE_KEYS.ACHIEVEMENTS);
-    return Array.isArray(stored) ? ([...stored] as string[]) : [];
-  } catch {
-    return [];
-  }
+  // A copy, so callers never mutate the store's cached value.
+  return [...memeAchievementsStore.get()];
 }
 
 export function unlockAchievement(achievementId: string): boolean {
@@ -395,13 +439,15 @@ export function unlockAchievement(achievementId: string): boolean {
     const current = getUnlockedAchievements();
     if (!current.includes(achievementId)) {
       const next = [...current, achievementId];
-      if (
-        !safeSetRawItem(MEME_STORAGE_KEYS.ACHIEVEMENTS, JSON.stringify(next))
-      ) {
+      if (!memeAchievementsStore.set(next)) {
         return false;
       }
       emitAppEvent("meme_achievement_unlocked", { id: achievementId });
-      recordArcadeScore("meme-vault", next.length * 100);
+      recordRun("meme-vault", {
+        score: next.length * 100,
+        view: currentView(),
+        mode: "trophies",
+      });
       return true;
     }
     return false;
@@ -462,11 +508,7 @@ export function recordEchoMilestones(streak: number): void {
  */
 export function getEchoBest(): number {
   if (typeof window === "undefined") return 0;
-  try {
-    return parseEchoBest(safeGetRawItem(MEME_STORAGE_KEYS.ECHO_BEST));
-  } catch {
-    return 0;
-  }
+  return echoBestStore.get();
 }
 
 /**
@@ -476,12 +518,6 @@ export function getEchoBest(): number {
  */
 export function recordEchoStreak(streak: number): boolean {
   if (!isNewEchoBest(streak, getEchoBest())) return false;
-  if (typeof window !== "undefined") {
-    try {
-      safeSetRawItem(MEME_STORAGE_KEYS.ECHO_BEST, String(Math.floor(streak)));
-    } catch {
-      // Ignore storage errors in restricted contexts
-    }
-  }
+  echoBestStore.set(Math.floor(streak));
   return true;
 }

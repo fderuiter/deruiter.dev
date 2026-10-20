@@ -175,7 +175,40 @@ if (typeof window !== "undefined") {
 }
 
 /**
+ * Moves a queued item to the dead-letter queue, replacing any dead letter that
+ * already holds its id, then logs it and announces it to listeners.
+ */
+function moveToDeadLetterQueue(
+  item: QueuedRequest,
+  statusCode: number,
+  failureReason: string,
+  message: string
+): void {
+  const deadLetterItem: DeadLetterItem = {
+    ...item,
+    failedAt: Date.now(),
+    statusCode,
+    failureReason,
+  };
+
+  const currentDLQ = readDLQStorage().filter((i) => i.id !== item.id);
+  writeDLQStorage([...currentDLQ, deadLetterItem]);
+  dequeueOfflineRequest(item.id);
+
+  logger.error(message, { deadLetterItem });
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(DLQ_ERROR_EVENT, { detail: deadLetterItem })
+    );
+  }
+}
+
+/**
  * Enqueue a request to be executed when online.
+ *
+ * An `id` that is already queued replaces that entry in place: the newer body
+ * is the one sent, once, and its retry count starts again from zero.
  *
  * @param request Request configuration excluding auto-generated metadata.
  * @returns Complete QueuedRequest object with assigned ID.
@@ -201,7 +234,13 @@ export function enqueueOfflineRequest<T = unknown>(
     maxRetries: request.maxRetries ?? 5,
   };
 
-  const updated = [...current, newEntry as QueuedRequest];
+  const existingIndex = current.findIndex((item) => item.id === id);
+  const updated =
+    existingIndex === -1
+      ? [...current, newEntry as QueuedRequest]
+      : current.map((item, index) =>
+          index === existingIndex ? (newEntry as QueuedRequest) : item
+        );
   writeStorage(updated);
 
   if (typeof navigator !== "undefined" && navigator.onLine) {
@@ -466,34 +505,30 @@ export async function flushOfflineQueue(): Promise<{
           // ignore parsing error
         }
 
-        const deadLetterItem: DeadLetterItem = {
-          ...item,
-          failedAt: Date.now(),
-          statusCode: res.status,
+        moveToDeadLetterQueue(
+          item,
+          res.status,
           failureReason,
-        };
-
-        const currentDLQ = readDLQStorage();
-        writeDLQStorage([...currentDLQ, deadLetterItem]);
-        dequeueOfflineRequest(item.id);
-
-        logger.error(
-          `Offline request failed with status ${res.status} and moved to DLQ`,
-          { deadLetterItem }
+          `Offline request failed with status ${res.status} and moved to DLQ`
         );
-
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(
-            new CustomEvent(DLQ_ERROR_EVENT, { detail: deadLetterItem })
-          );
-        }
       } else {
         failed++;
         const nextRetries = item.retries + 1;
         const maxRetries = item.maxRetries ?? 5;
 
         if (nextRetries >= maxRetries) {
-          dequeueOfflineRequest(item.id);
+          const failureReason =
+            typeof res.error === "string" && res.error.trim().length > 0
+              ? res.error
+              : res.status > 0
+                ? `HTTP ${res.status}`
+                : "Network error";
+          moveToDeadLetterQueue(
+            item,
+            res.status,
+            failureReason,
+            `Offline request exhausted ${maxRetries} retries (last status ${res.status}) and moved to DLQ`
+          );
         } else {
           const updatedQueue = readStorage().map((i) =>
             i.id === item.id ? { ...i, retries: nextRetries } : i
@@ -509,13 +544,22 @@ export async function flushOfflineQueue(): Promise<{
           break;
         }
       }
-    } catch {
+    } catch (error) {
       failed++;
       const nextRetries = item.retries + 1;
       const maxRetries = item.maxRetries ?? 5;
 
       if (nextRetries >= maxRetries) {
-        dequeueOfflineRequest(item.id);
+        const failureReason =
+          error instanceof Error && error.message.trim().length > 0
+            ? error.message
+            : "Request failed";
+        moveToDeadLetterQueue(
+          item,
+          0,
+          failureReason,
+          `Offline request exhausted ${maxRetries} retries after a thrown error and moved to DLQ`
+        );
       } else {
         const updatedQueue = readStorage().map((i) =>
           i.id === item.id ? { ...i, retries: nextRetries } : i

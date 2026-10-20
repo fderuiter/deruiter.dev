@@ -28,6 +28,19 @@ An Arcade Daily result was recorded (#2113).
 
 ***
 
+### arcade\_progress\_changed
+
+> **arcade\_progress\_changed**: `object`
+
+An arcade store or progress slice wrote its key in this tab (#2371).
+Other tabs hear the same write through the native `storage` event.
+
+#### key
+
+> **key**: `string`
+
+***
+
 ### arcade\_score\_updated
 
 > **arcade\_score\_updated**: `object`

@@ -350,9 +350,21 @@ Re-exports [controlsFromActions](input/actions/functions/controlsFromActions.md)
 
 ***
 
+### createRng
+
+Re-exports [createRng](rng/functions/createRng.md)
+
+***
+
 ### createSeededRandom
 
 Re-exports [createSeededRandom](utils/functions/createSeededRandom.md)
+
+***
+
+### createStepClock
+
+Re-exports [createStepClock](step-clock/functions/createStepClock.md)
 
 ***
 
@@ -542,6 +554,18 @@ Re-exports [isReducedMotionPreferred](crt-pipeline/functions/isReducedMotionPref
 
 ***
 
+### isRngState
+
+Re-exports [isRngState](rng/functions/isRngState.md)
+
+***
+
+### isStepCount
+
+Re-exports [isStepCount](step-clock/functions/isStepCount.md)
+
+***
+
 ### isTextEntryTarget
 
 Re-exports [isTextEntryTarget](input/controller/functions/isTextEntryTarget.md)
@@ -680,6 +704,18 @@ Re-exports [resolveActionHint](input/actions/functions/resolveActionHint.md)
 
 ***
 
+### RngSeed
+
+Re-exports [RngSeed](rng/type-aliases/RngSeed.md)
+
+***
+
+### rngStateFromSeed
+
+Re-exports [rngStateFromSeed](rng/functions/rngStateFromSeed.md)
+
+***
+
 ### RunSnapshot
 
 Re-exports [RunSnapshot](run-snapshot/interfaces/RunSnapshot.md)
@@ -734,9 +770,45 @@ Re-exports [screenToGameCoords](core/viewport/functions/screenToGameCoords.md)
 
 ***
 
+### SESSION\_STEP\_MS
+
+Re-exports [SESSION_STEP_MS](step-clock/variables/SESSION_STEP_MS.md)
+
+***
+
+### SESSION\_STEP\_SECONDS
+
+Re-exports [SESSION_STEP_SECONDS](step-clock/variables/SESSION_STEP_SECONDS.md)
+
+***
+
+### SessionRng
+
+Re-exports [SessionRng](rng/interfaces/SessionRng.md)
+
+***
+
 ### shouldCabinetDrawCrt
 
 Re-exports [shouldCabinetDrawCrt](crt-pipeline/functions/shouldCabinetDrawCrt.md)
+
+***
+
+### stepChance
+
+Re-exports [stepChance](step-clock/functions/stepChance.md)
+
+***
+
+### StepClock
+
+Re-exports [StepClock](step-clock/interfaces/StepClock.md)
+
+***
+
+### StepClockOptions
+
+Re-exports [StepClockOptions](step-clock/interfaces/StepClockOptions.md)
 
 ***
 

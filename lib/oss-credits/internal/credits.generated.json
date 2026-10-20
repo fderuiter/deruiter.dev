@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1196,
-    "runtime": 575,
+    "total": 1195,
+    "runtime": 574,
     "tooling": 621,
     "direct": 72
   },
@@ -1948,7 +1948,7 @@
     },
     {
       "name": "@playwright/test",
-      "version": "1.63.0",
+      "version": "1.64.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": true,
@@ -8933,7 +8933,7 @@
     },
     {
       "name": "playwright",
-      "version": "1.63.0",
+      "version": "1.64.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -8942,7 +8942,7 @@
     },
     {
       "name": "playwright-core",
-      "version": "1.63.0",
+      "version": "1.64.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -9189,23 +9189,23 @@
     },
     {
       "name": "react",
-      "version": "19.2.4",
+      "version": "19.3.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
       "homepage": "https://react.dev",
-      "repository": "https://github.com/facebook/react",
+      "repository": "https://github.com/react/react",
       "group": "Framework and runtime",
       "reason": "The UI library every page and game is written in."
     },
     {
       "name": "react-dom",
-      "version": "19.2.4",
+      "version": "19.3.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
       "homepage": "https://react.dev",
-      "repository": "https://github.com/facebook/react",
+      "repository": "https://github.com/react/react",
       "group": "Framework and runtime",
       "reason": "Renders React in the browser and on the server."
     },
@@ -9543,15 +9543,6 @@
       "direct": false,
       "homepage": "https://github.com/lddubeau/saxes",
       "repository": "https://github.com/lddubeau/saxes"
-    },
-    {
-      "name": "scheduler",
-      "version": "0.27.0",
-      "license": "MIT",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://react.dev",
-      "repository": "https://github.com/facebook/react"
     },
     {
       "name": "scheduler",
@@ -10144,7 +10135,7 @@
     },
     {
       "name": "three",
-      "version": "0.185.1",
+      "version": "0.186.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,

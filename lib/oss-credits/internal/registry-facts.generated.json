@@ -2401,8 +2401,8 @@
       ],
       "notices": []
     },
-    "@playwright/test@1.63.0": {
-      "integrity": "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==",
+    "@playwright/test@1.64.1": {
+      "integrity": "sha512-IaYGml/nSOiZWROfPtuIL7neuu9qDOZ3TNvNljUIrhDMxiGTgPjzj/g9p9RxpS2tSepPDRY+UwAaEeiKtUvIAg==",
       "homepage": "https://playwright.dev",
       "repository": "git+https://github.com/microsoft/playwright.git",
       "author": "Microsoft Corporation",
@@ -10704,8 +10704,8 @@
       ],
       "notices": []
     },
-    "playwright-core@1.63.0": {
-      "integrity": "sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==",
+    "playwright-core@1.64.1": {
+      "integrity": "sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==",
       "homepage": "https://playwright.dev",
       "repository": "git+https://github.com/microsoft/playwright.git",
       "author": "Microsoft Corporation",
@@ -10720,8 +10720,8 @@
         "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d"
       ]
     },
-    "playwright@1.63.0": {
-      "integrity": "sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==",
+    "playwright@1.64.1": {
+      "integrity": "sha512-HCrVhHr5QQuwYoswEUGTb7gGp522yflbv/ST8nF4sFWGuLjQCt17Q/EubpGGSNKYn1tsTCPZxqHhHCfVURu7UA==",
       "homepage": "https://playwright.dev",
       "repository": "git+https://github.com/microsoft/playwright.git",
       "author": "Microsoft Corporation",
@@ -11034,10 +11034,10 @@
       ],
       "notices": []
     },
-    "react-dom@19.2.4": {
-      "integrity": "sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==",
+    "react-dom@19.3.1": {
+      "integrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
       "homepage": "https://react.dev/",
-      "repository": "git+https://github.com/facebook/react.git",
+      "repository": "git+https://github.com/react/react.git",
       "author": null,
       "licenses": [
         {
@@ -11078,10 +11078,10 @@
       ],
       "notices": []
     },
-    "react@19.2.4": {
-      "integrity": "sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==",
+    "react@19.3.1": {
+      "integrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
       "homepage": "https://react.dev/",
-      "repository": "git+https://github.com/facebook/react.git",
+      "repository": "git+https://github.com/react/react.git",
       "author": null,
       "licenses": [
         {
@@ -11482,20 +11482,6 @@
           "name": "ISC",
           "sha": "10b3c732f4cb6977bd237d4168c30ffc6f10a029d0fb1883b979b66a0950f951",
           "holder": "Louis-Dominique Dubeau"
-        }
-      ],
-      "notices": []
-    },
-    "scheduler@0.27.0": {
-      "integrity": "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==",
-      "homepage": "https://react.dev/",
-      "repository": "git+https://github.com/facebook/react.git",
-      "author": null,
-      "licenses": [
-        {
-          "kind": "file",
-          "name": "LICENSE",
-          "sha": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
         }
       ],
       "notices": []
@@ -12202,8 +12188,8 @@
       ],
       "notices": []
     },
-    "three@0.185.1": {
-      "integrity": "sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg==",
+    "three@0.186.1": {
+      "integrity": "sha512-blFeqb49wRCSGUGj7gtpfnSGHy2lwDk94RhUmS1c/hTby70kvChbWpkJ4Pm1390LqzzvTmzgXKHPEafJwCb8jA==",
       "homepage": "https://threejs.org/",
       "repository": "git+https://github.com/mrdoob/three.js.git",
       "author": "mrdoob",

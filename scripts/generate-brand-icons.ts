@@ -8,9 +8,6 @@ const SVG_BRAND_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 
       <stop offset="0%" stop-color="#06B6D4" />
       <stop offset="100%" stop-color="#10B981" />
     </linearGradient>
-    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="0" stdDeviation="1" flood-color="#10B981" flood-opacity="0.6"/>
-    </filter>
   </defs>
 
   <style>
@@ -31,7 +28,7 @@ const SVG_BRAND_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 
     .bg-box { fill: #090D16; stroke: #1E293B; stroke-width: 1.5; rx: 7; }
     .glyph-stem { fill: #F8FAFC; }
     .glyph-bar { fill: url(#fd-grad); }
-    .telemetry-dot { fill: #10B981; filter: url(#glow); }
+    .telemetry-dot { fill: #10B981; }
   </style>
 
   <!-- Container Tile -->
@@ -48,7 +45,7 @@ const SVG_BRAND_MARK = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 
   <rect class="glyph-bar" fill="url(#fd-grad)" x="13" y="14" width="6" height="3.5" rx="1.5" />
 
   <!-- Real-time Systems Telemetry Dot -->
-  <circle class="telemetry-dot" fill="#10B981" filter="url(#glow)" cx="24.5" cy="7.5" r="2" />
+  <circle class="telemetry-dot" fill="#10B981" cx="24.5" cy="7.5" r="2" />
 </svg>
 `;
 

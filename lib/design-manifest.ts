@@ -25,10 +25,6 @@ export const designManifest = {
     "text-secondary": "#9da2af",
     /** Original CSS Variable: --brand-cyan */
     "brand-cyan": "#06b6d4",
-    /** Original CSS Variable: --brand-cyan-glow */
-    "brand-cyan-glow": "rgba(6, 182, 212, 0.15)",
-    /** Original CSS Variable: --cyan-glow */
-    "cyan-glow": "#38bdf8",
     /** Original CSS Variable: --emerald-accent */
     "emerald-accent": "#4ade80",
     /** Original CSS Variable: --badge-muted-bg */
@@ -37,8 +33,6 @@ export const designManifest = {
     "badge-muted-text": "#7dd3fc",
     /** Original CSS Variable: --brand-blue */
     "brand-blue": "#3b82f6",
-    /** Original CSS Variable: --brand-blue-glow */
-    "brand-blue-glow": "rgba(59, 130, 246, 0.1)",
     /** Original CSS Variable: --brand-dark */
     "brand-dark": "#0d0e11",
     /** Original CSS Variable: --success */

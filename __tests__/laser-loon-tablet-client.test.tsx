@@ -3,7 +3,6 @@ import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
 import { PHONE_QUERY } from "@/components/arcade/mobile";
-import { requestLaserLoonAutoPause } from "@/components/laser-loon/auto-pause";
 
 const cabinetProps = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
@@ -25,10 +24,11 @@ describe("LaserLoonClient cabinet wiring (#2081)", () => {
   });
   afterEach(() => cleanup());
 
-  it("fits the touch cabinet and pauses a run when the cabinet asks", () => {
+  it("fits the touch cabinet and pauses through the cabinet's pause service", () => {
     render(<LaserLoonClient />);
     expect(cabinetProps.current?.mobileLayout).toBe("fit");
-    expect(cabinetProps.current?.onAutoPause).toBe(requestLaserLoonAutoPause);
+    // Laser Loon reads useCabinetPause() instead of a window event (#2357).
+    expect(cabinetProps.current?.onAutoPause).toBeUndefined();
   });
 
   it("keeps the cabinet's F-for-fullscreen because no game key is F", () => {

@@ -6,7 +6,7 @@
 
 # Type Alias: AppEventArgs\<K\>
 
-> **AppEventArgs**\<`K`\> = `undefined` *extends* [`AppEventMap`](../interfaces/AppEventMap.md)\[`K`\] ? \[[`AppEventMap`](../interfaces/AppEventMap.md)\[`K`\]\] : \[[`AppEventMap`](../interfaces/AppEventMap.md)\[`K`\]\]
+> **AppEventArgs**\<`K`\> = `undefined` *extends* [`AppEventMap`](../interfaces/AppEventMap.md)\[`K`\] ? \[`detail?`: [`AppEventMap`](../interfaces/AppEventMap.md)\[`K`\]\] : \[`detail`: [`AppEventMap`](../interfaces/AppEventMap.md)\[`K`\]\]
 
 Trailing arguments of [emitAppEvent](../functions/emitAppEvent.md) for event `K`: the detail is
 optional when the event's payload type admits `undefined`, required otherwise.

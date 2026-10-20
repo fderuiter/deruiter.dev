@@ -25,7 +25,7 @@ A form that does not match the applicable version goes to review.
 
 ### routeBy?
 
-`"assessedAt"` \| `"submittedAt"`
+`"assessedAt"` \| `"submittedAt"` = `"assessedAt"`
 
 ## Returns
 

@@ -18,7 +18,7 @@ Picks the next sponsor email, avoiding an immediate repeat. `rand` must return a
 
 ### lastRequestId?
 
-`string` \| `null`
+`string` \| `null` = `null`
 
 ## Returns
 

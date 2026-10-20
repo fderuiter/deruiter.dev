@@ -100,7 +100,7 @@ Creates a new StudyState initialized from a validated StudyScenario.
 
 ### difficulty?
 
-`"standard"` \| `"calm"` \| `"rescue"`
+`"standard"` \| `"calm"` \| `"rescue"` = `"standard"`
 
 ## Returns
 

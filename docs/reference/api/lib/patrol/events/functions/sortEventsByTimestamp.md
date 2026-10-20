@@ -18,7 +18,7 @@ Sorts PatrolEvents by timestamp.
 
 ### order?
 
-`"asc"` \| `"desc"`
+`"asc"` \| `"desc"` = `"asc"`
 
 ## Returns
 

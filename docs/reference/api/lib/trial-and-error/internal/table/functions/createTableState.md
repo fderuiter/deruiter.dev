@@ -237,15 +237,15 @@ Absent means none.
 
 ### crisis?
 
-\{ `choices`: `object`[]; `description`: `string`; `id`: `string`; `name`: `string`; \} \| `null`
+\{ `choices`: `object`[]; `description`: `string`; `id`: `string`; `name`: `string`; \} \| `null` = `null`
 
 ### deviation?
 
-[`ScheduledDeviation`](../interfaces/ScheduledDeviation.md) \| `null`
+[`ScheduledDeviation`](../interfaces/ScheduledDeviation.md) \| `null` = `null`
 
 ### deckOrder?
 
-readonly `number`[] \| `null`
+readonly `number`[] \| `null` = `null`
 
 ## Returns
 

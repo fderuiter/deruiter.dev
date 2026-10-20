@@ -28,7 +28,9 @@ import {
 import { cloneDeep } from "../utils";
 import { STANDARD_CODELISTS } from "./cdisc-controlled-terminology";
 import {
+  USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_V4_VERSION,
+  getUsdmV4ExtensionString,
   type UsdmV4Activity,
   type UsdmV4AliasCode,
   type UsdmV4BiomedicalConcept,
@@ -1226,16 +1228,8 @@ export function diffUsdmProtocols(
 export const CRF_STUDIO_USDM_EXTENSION_BASE =
   "https://deruiter.dev/usdm/extensions/crf-studio/";
 
-/**
- * Extension attribute URL carrying an activity's SDTM domain code (`VS`, `AE`, ...).
- * USDM v4 links activities to SDTM only through biomedical concepts and dataset
- * specializations, so a plain domain hint travels as an extension.
- */
-export const USDM_SDTM_DOMAIN_EXTENSION_URL =
-  "https://deruiter.dev/usdm/extensions/sdtm-domain";
-
 const CDISC_CT_SYSTEM = "http://www.cdisc.org";
-const CDISC_CT_VERSION = "2024-09-27";
+const CDISC_CT_VERSION = "2026-09-25";
 const CRF_STUDIO_CODE_SYSTEM = "https://deruiter.dev/crf-studio";
 
 function v4Code(
@@ -1390,9 +1384,7 @@ function readCrfExtension(
  * `USDM_SDTM_DOMAIN_EXTENSION_URL` extension attribute, if any.
  */
 export function getUsdmV4ActivityDomain(activity: unknown): string | undefined {
-  return asString(
-    findExtension(activity, USDM_SDTM_DOMAIN_EXTENSION_URL)?.valueString
-  );
+  return getUsdmV4ExtensionString(activity, USDM_SDTM_DOMAIN_EXTENSION_URL);
 }
 
 /** Drops `undefined` members the same way `JSON.stringify` does. */

@@ -1556,6 +1556,12 @@ Re-exports [getUsdmV4EncounterSchedule](usdm-v4-schedule/functions/getUsdmV4Enco
 
 ***
 
+### getUsdmV4ExtensionString
+
+Re-exports [getUsdmV4ExtensionString](usdm-v4-types/functions/getUsdmV4ExtensionString.md)
+
+***
+
 ### getUsdmV4MainTimeline
 
 Re-exports [getUsdmV4MainTimeline](usdm-v4-schedule/functions/getUsdmV4MainTimeline.md)
@@ -3190,7 +3196,19 @@ Re-exports [upsertScenario](test-scenarios/functions/upsertScenario.md)
 
 ### USDM\_SDTM\_DOMAIN\_EXTENSION\_URL
 
-Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](usdm-adapter/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
+Re-exports [USDM_SDTM_DOMAIN_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
+
+***
+
+### USDM\_SDTM\_STRESU\_EXTENSION\_URL
+
+Re-exports [USDM_SDTM_STRESU_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_STRESU_EXTENSION_URL.md)
+
+***
+
+### USDM\_SDTM\_TESTCD\_EXTENSION\_URL
+
+Re-exports [USDM_SDTM_TESTCD_EXTENSION_URL](usdm-v4-types/variables/USDM_SDTM_TESTCD_EXTENSION_URL.md)
 
 ***
 

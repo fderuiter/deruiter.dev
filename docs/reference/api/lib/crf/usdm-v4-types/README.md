@@ -49,4 +49,11 @@
 
 ## Variables
 
+- [USDM\_SDTM\_DOMAIN\_EXTENSION\_URL](variables/USDM_SDTM_DOMAIN_EXTENSION_URL.md)
+- [USDM\_SDTM\_STRESU\_EXTENSION\_URL](variables/USDM_SDTM_STRESU_EXTENSION_URL.md)
+- [USDM\_SDTM\_TESTCD\_EXTENSION\_URL](variables/USDM_SDTM_TESTCD_EXTENSION_URL.md)
 - [USDM\_V4\_VERSION](variables/USDM_V4_VERSION.md)
+
+## Functions
+
+- [getUsdmV4ExtensionString](functions/getUsdmV4ExtensionString.md)

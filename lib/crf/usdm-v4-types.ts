@@ -18,6 +18,53 @@
 /** The USDM release these types and the adapter's export target. */
 export const USDM_V4_VERSION = "4.0.0";
 
+/**
+ * Extension attribute URL carrying an activity's SDTM domain code (`VS`, `AE`, ...).
+ * USDM v4 links activities to SDTM only through biomedical concepts and dataset
+ * specializations, so a plain domain hint travels as an extension.
+ */
+export const USDM_SDTM_DOMAIN_EXTENSION_URL =
+  "https://deruiter.dev/usdm/extensions/sdtm-domain";
+
+/**
+ * Extension attribute URL carrying a biomedical concept's SDTM test short
+ * name (`--TESTCD`, for example `SYSBP`).
+ */
+export const USDM_SDTM_TESTCD_EXTENSION_URL =
+  "https://deruiter.dev/usdm/extensions/sdtm-testcd";
+
+/**
+ * Extension attribute URL carrying a biomedical concept's standard result
+ * unit (`--STRESU`, for example `mmHg`).
+ */
+export const USDM_SDTM_STRESU_EXTENSION_URL =
+  "https://deruiter.dev/usdm/extensions/sdtm-stresu";
+
+/**
+ * Reads the `valueString` of the first extension attribute with the given URL
+ * on any USDM object, or `undefined` when the object has none.
+ */
+export function getUsdmV4ExtensionString(
+  owner: unknown,
+  url: string
+): string | undefined {
+  if (!owner || typeof owner !== "object") return undefined;
+  const attrs = (owner as { extensionAttributes?: unknown })
+    .extensionAttributes;
+  if (!Array.isArray(attrs)) return undefined;
+  for (const attr of attrs) {
+    if (
+      attr &&
+      typeof attr === "object" &&
+      (attr as { url?: unknown }).url === url
+    ) {
+      const value = (attr as { valueString?: unknown }).valueString;
+      return typeof value === "string" ? value : undefined;
+    }
+  }
+  return undefined;
+}
+
 /** A USDM v4 extension attribute: the model's mechanism for sponsor-specific data. */
 export interface UsdmV4ExtensionAttribute {
   id: string;

@@ -117,17 +117,223 @@ export interface Dataset {
   readonly rowCount: number;
 }
 
+/** A coded value as USDM carries it: an NCI EVS code and its decode. */
+export interface CodedValue {
+  /** The code, for example `C174268`. */
+  readonly code: string;
+  /** The human-readable decode, for example `Placebo Comparator Arm`. */
+  readonly decode: string;
+}
+
+/** One protocol arm (one SDTM `ARMCD`). */
+export interface ArmDefinition {
+  /** USDM arm id. */
+  readonly id: string;
+  /** Short arm code, up to 20 characters (`ARMCD`). */
+  readonly armCode: string;
+  /** Arm name (`ARM`). */
+  readonly name: string;
+  /** Arm description. */
+  readonly description: string;
+  /** Arm type from controlled terminology. */
+  readonly type: CodedValue;
+}
+
+/** One epoch of the trial design (`EPOCH`). */
+export interface EpochDefinition {
+  /** USDM epoch id. */
+  readonly id: string;
+  /** Epoch name, for example `TREATMENT`. */
+  readonly name: string;
+  /** Epoch type from controlled terminology. */
+  readonly type: CodedValue;
+  /** One-based position in the epoch sequence. */
+  readonly order: number;
+}
+
+/** One element of the trial design (an SDTM TE record). */
+export interface ElementDefinition {
+  /** USDM element id. */
+  readonly id: string;
+  /** Short element code (`ETCD`). */
+  readonly elementCode: string;
+  /** Element name (`ELEMENT`). */
+  readonly name: string;
+  /** Element description. */
+  readonly description: string;
+}
+
+/** The element an arm passes through in one epoch (a USDM study cell). */
+export interface StudyCellDefinition {
+  /** Arm id. */
+  readonly armId: string;
+  /** Epoch id. */
+  readonly epochId: string;
+  /** Element ids, in order. */
+  readonly elementIds: readonly string[];
+}
+
+/** One planned visit (one SDTM `VISITNUM`), from a USDM encounter and its timing. */
+export interface VisitDefinition {
+  /** USDM encounter id. */
+  readonly id: string;
+  /** Visit number (`VISITNUM`), one-based in schedule order. */
+  readonly visitNum: number;
+  /** Visit name (`VISIT`), for example `WEEK 12`. */
+  readonly name: string;
+  /** Epoch the visit belongs to. */
+  readonly epochId: string;
+  /** Planned study day (`VISITDY`). There is no Day 0. */
+  readonly targetDay: number;
+  /** Days the visit may fall before `targetDay`. */
+  readonly windowBefore: number;
+  /** Days the visit may fall after `targetDay`. */
+  readonly windowAfter: number;
+}
+
+/** One measurement an activity collects, from a USDM biomedical concept. */
+export interface AssessmentDefinition {
+  /** USDM biomedical concept id. */
+  readonly conceptId: string;
+  /** NCI EVS code of the concept, for example `C25298`. */
+  readonly nciCode: string;
+  /** Test short name (`--TESTCD`), for example `SYSBP`. */
+  readonly testCode: string;
+  /** Test name (`--TEST`), for example `Systolic Blood Pressure`. */
+  readonly testName: string;
+  /** Standard result unit (`--STRESU`), when the test has one. */
+  readonly unit?: string;
+}
+
+/** One activity in the schedule of activities. */
+export interface ActivityDefinition {
+  /** USDM activity id. */
+  readonly id: string;
+  /** Activity name. */
+  readonly name: string;
+  /** SDTM domain the activity's data is tabulated in, for example `VS`. */
+  readonly domain: string;
+  /** Measurements the activity collects, empty for event and intervention domains. */
+  readonly assessments: readonly AssessmentDefinition[];
+}
+
+/** One cell of the schedule of activities: an activity planned at a visit. */
+export interface ScheduledActivity {
+  /** Visit id. */
+  readonly visitId: string;
+  /** Activity id. */
+  readonly activityId: string;
+}
+
+/** One endpoint of an objective. */
+export interface EndpointDefinition {
+  /** USDM endpoint id. */
+  readonly id: string;
+  /** Endpoint name. */
+  readonly name: string;
+  /** Endpoint text, as written in the protocol. */
+  readonly text: string;
+  /** Level from controlled terminology (primary, secondary, ...). */
+  readonly level: CodedValue;
+  /** Purpose, for example `Efficacy` or `Safety`. */
+  readonly purpose: string;
+}
+
+/** One study objective with its endpoints. */
+export interface ObjectiveDefinition {
+  /** USDM objective id. */
+  readonly id: string;
+  /** Objective name. */
+  readonly name: string;
+  /** Objective text. */
+  readonly text: string;
+  /** Level from controlled terminology. */
+  readonly level: CodedValue;
+  /** Endpoints that measure the objective. */
+  readonly endpoints: readonly EndpointDefinition[];
+}
+
+/** An intercurrent event and the ICH E9(R1) strategy that handles it. */
+export interface IntercurrentEventDefinition {
+  /** Event name. */
+  readonly name: string;
+  /** Event description. */
+  readonly text: string;
+  /** Strategy, for example `Treatment policy` or `Hypothetical`. */
+  readonly strategy: string;
+}
+
+/** An ICH E9(R1) estimand. */
+export interface EstimandDefinition {
+  /** USDM estimand id. */
+  readonly id: string;
+  /** Estimand name. */
+  readonly name: string;
+  /** Endpoint id the estimand's variable of interest is. */
+  readonly endpointId: string;
+  /** Analysis population id. */
+  readonly analysisPopulationId: string;
+  /** Population-level summary, for example a difference in means. */
+  readonly populationSummary: string;
+  /** Intercurrent events and their strategies. */
+  readonly intercurrentEvents: readonly IntercurrentEventDefinition[];
+}
+
+/** A named analysis population. */
+export interface AnalysisPopulationDefinition {
+  /** USDM analysis population id. */
+  readonly id: string;
+  /** Population name, for example `Full Analysis Set`. */
+  readonly name: string;
+  /** Defining text. */
+  readonly text: string;
+}
+
+/** The study design the pipeline reads from the USDM document. */
+export interface StudyDesignDefinition {
+  /** Trial phase decode, for example `Phase III Trial`. */
+  readonly phase: string;
+  /** Intervention model decode, for example `Parallel Study`. */
+  readonly model: string;
+  /** Blinding decode, for example `Double Blind Study`. */
+  readonly blinding: string;
+  /** Planned number of subjects. */
+  readonly plannedEnrollment: number;
+  /** Arms, in protocol order. */
+  readonly arms: readonly ArmDefinition[];
+  /** Epochs, in sequence. */
+  readonly epochs: readonly EpochDefinition[];
+  /** Trial design elements. */
+  readonly elements: readonly ElementDefinition[];
+  /** Arm by epoch study cells. */
+  readonly cells: readonly StudyCellDefinition[];
+  /** Planned visits, in schedule order. */
+  readonly visits: readonly VisitDefinition[];
+  /** Activities, in protocol order. */
+  readonly activities: readonly ActivityDefinition[];
+  /** Schedule of activities: which activity is planned at which visit. */
+  readonly schedule: readonly ScheduledActivity[];
+  /** Objectives and their endpoints. */
+  readonly objectives: readonly ObjectiveDefinition[];
+  /** Estimands. */
+  readonly estimands: readonly EstimandDefinition[];
+  /** Analysis populations. */
+  readonly analysisPopulations: readonly AnalysisPopulationDefinition[];
+}
+
 /**
- * The study the pipeline runs: an identifier, a title and the USDM v4.0
- * document that defines the schedule, arms, visits and endpoints.
+ * The study the pipeline runs: an identifier, a title, the USDM v4.0
+ * document that defines it, and the design read from that document.
  */
 export interface StudyDefinition {
   /** Study identifier, for example `DEMO-301`. */
   readonly studyId: string;
   /** Protocol title. */
   readonly title: string;
-  /** The USDM v4.0 study document, read through the USDM adapter. */
+  /** The USDM v4.0 study document the definition was read from. */
   readonly usdm: unknown;
+  /** Arms, visits, schedule of activities and endpoints, read from `usdm`. */
+  readonly design: StudyDesignDefinition;
 }
 
 /** Inputs that, with the study definition, fully determine a run. */

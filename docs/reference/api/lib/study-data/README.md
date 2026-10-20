@@ -8,9 +8,39 @@
 
 ## References
 
+### ActivityDefinition
+
+Re-exports [ActivityDefinition](types/interfaces/ActivityDefinition.md)
+
+***
+
+### AnalysisPopulationDefinition
+
+Re-exports [AnalysisPopulationDefinition](types/interfaces/AnalysisPopulationDefinition.md)
+
+***
+
+### ArmDefinition
+
+Re-exports [ArmDefinition](types/interfaces/ArmDefinition.md)
+
+***
+
+### AssessmentDefinition
+
+Re-exports [AssessmentDefinition](types/interfaces/AssessmentDefinition.md)
+
+***
+
 ### CellValue
 
 Re-exports [CellValue](types/type-aliases/CellValue.md)
+
+***
+
+### CodedValue
+
+Re-exports [CodedValue](types/interfaces/CodedValue.md)
 
 ***
 
@@ -38,6 +68,42 @@ Re-exports [DEFAULT_SUBJECT_COUNT](presets/variables/DEFAULT_SUBJECT_COUNT.md)
 
 ***
 
+### DEMO\_301\_STUDY
+
+Re-exports [DEMO_301_STUDY](presets/variables/DEMO_301_STUDY.md)
+
+***
+
+### DEMO\_301\_USDM
+
+Re-exports [DEMO_301_USDM](presets/demo-301/variables/DEMO_301_USDM.md)
+
+***
+
+### ElementDefinition
+
+Re-exports [ElementDefinition](types/interfaces/ElementDefinition.md)
+
+***
+
+### EndpointDefinition
+
+Re-exports [EndpointDefinition](types/interfaces/EndpointDefinition.md)
+
+***
+
+### EpochDefinition
+
+Re-exports [EpochDefinition](types/interfaces/EpochDefinition.md)
+
+***
+
+### EstimandDefinition
+
+Re-exports [EstimandDefinition](types/interfaces/EstimandDefinition.md)
+
+***
+
 ### Finding
 
 Re-exports [Finding](types/interfaces/Finding.md)
@@ -50,9 +116,21 @@ Re-exports [FindingSeverity](types/type-aliases/FindingSeverity.md)
 
 ***
 
+### IntercurrentEventDefinition
+
+Re-exports [IntercurrentEventDefinition](types/interfaces/IntercurrentEventDefinition.md)
+
+***
+
 ### ManifestEntry
 
 Re-exports [ManifestEntry](types/interfaces/ManifestEntry.md)
+
+***
+
+### ObjectiveDefinition
+
+Re-exports [ObjectiveDefinition](types/interfaces/ObjectiveDefinition.md)
 
 ***
 
@@ -86,6 +164,12 @@ Re-exports [PipelineStageId](types/type-aliases/PipelineStageId.md)
 
 ***
 
+### readStudyDefinition
+
+Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/readStudyDefinition.md)
+
+***
+
 ### RunManifest
 
 Re-exports [RunManifest](types/interfaces/RunManifest.md)
@@ -95,6 +179,12 @@ Re-exports [RunManifest](types/interfaces/RunManifest.md)
 ### runPipeline
 
 Re-exports [runPipeline](internal/engine/functions/runPipeline.md)
+
+***
+
+### ScheduledActivity
+
+Re-exports [ScheduledActivity](types/interfaces/ScheduledActivity.md)
 
 ***
 
@@ -116,9 +206,27 @@ Re-exports [StandardVersions](types/type-aliases/StandardVersions.md)
 
 ***
 
+### StudyCellDefinition
+
+Re-exports [StudyCellDefinition](types/interfaces/StudyCellDefinition.md)
+
+***
+
 ### StudyDefinition
 
 Re-exports [StudyDefinition](types/interfaces/StudyDefinition.md)
+
+***
+
+### StudyDefinitionError
+
+Re-exports [StudyDefinitionError](internal/usdm/read-study-definition/classes/StudyDefinitionError.md)
+
+***
+
+### StudyDesignDefinition
+
+Re-exports [StudyDesignDefinition](types/interfaces/StudyDesignDefinition.md)
 
 ***
 
@@ -155,3 +263,9 @@ Re-exports [VariableOrigin](types/type-aliases/VariableOrigin.md)
 ### VariableRole
 
 Re-exports [VariableRole](types/type-aliases/VariableRole.md)
+
+***
+
+### VisitDefinition
+
+Re-exports [VisitDefinition](types/interfaces/VisitDefinition.md)

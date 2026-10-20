@@ -4,7 +4,9 @@
  * Changing a version here is a controlled upgrade with an impact report, not
  * an edit (ADR 0065).
  */
-import type { PipelineStage, StandardVersions } from "./types";
+import { readStudyDefinition } from "./internal/usdm/read-study-definition";
+import { DEMO_301_USDM } from "./presets/demo-301";
+import type { PipelineStage, StandardVersions, StudyDefinition } from "./types";
 
 /**
  * The standard versions every run applies and declares in TS, Define-XML and
@@ -84,3 +86,14 @@ export const SUBJECT_COUNT_LIMITS = Object.freeze({ min: 1, max: 5000 });
 /** Notice carried by every dataset, table and download. */
 export const SYNTHETIC_DATA_NOTICE =
   "Synthetic data for demonstration. Not from any real study.";
+
+/**
+ * The fictional DEMO-301 study as a USDM v4.0.0 document: randomised,
+ * double-blind, placebo-controlled, three arms, seven visits from screening
+ * to end of study.
+ */
+export { DEMO_301_USDM };
+
+/** DEMO-301 read into the pipeline's study definition. */
+export const DEMO_301_STUDY: StudyDefinition =
+  readStudyDefinition(DEMO_301_USDM);

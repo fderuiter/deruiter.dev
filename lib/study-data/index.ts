@@ -10,3 +10,7 @@
 export * from "./types";
 export * from "./presets";
 export { runPipeline } from "./internal/engine";
+export {
+  readStudyDefinition,
+  StudyDefinitionError,
+} from "./internal/usdm/read-study-definition";

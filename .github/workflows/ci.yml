@@ -290,10 +290,13 @@ jobs:
   # #1775: one coverage verdict for the whole suite. Merging the shards'
   # blobs reapplies the thresholds from vitest.config.mts to the combined
   # coverage, exactly as the unsharded `npm run test:ci` did.
+  # `!cancelled()`, not `always()` (#2524): it still reports thresholds after
+  # a shard fails, but a superseded run's cancelled shards upload no blobs,
+  # and merging nothing failed with ENOENT as a red check on the PR.
   unit-coverage:
     name: Unit Gate (Merged Coverage Thresholds)
     needs: [changes, unit-gate]
-    if: ${{ always() && needs.changes.outputs.run_unit == 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.run_unit == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Blob reports record absolute file paths, and the shards run in the
@@ -641,11 +644,12 @@ jobs:
   # health dashboard read one result, lists tests that passed only on retry,
   # and re-runs the doctor over the merged accessibility scans (the full
   # verify, with benchmark evidence, runs in bench-gate). It fails unless
-  # every shard and the bench succeeded.
+  # every shard and the bench succeeded. Like unit-coverage it skips a
+  # cancelled run, which has no shard reports to merge (#2524).
   heavy-gate-report:
     name: Heavy Gate (Merged Report, Accessibility, Verify)
     needs: [changes, build, heavy-gate, bench-gate]
-    if: ${{ always() && github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true' }}
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 

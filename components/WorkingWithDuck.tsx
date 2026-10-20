@@ -1759,6 +1759,14 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         (uiState.status === "won" || uiState.status === "failed");
       if (sprintOver && uiState.totalScore > 0) {
         recordArcadeScore("working-with-duck", uiState.totalScore);
+        // Duck keeps its own best: the arcade no longer mirrors scores into
+        // game keys (#2548).
+        if (uiState.totalScore > (parseInt(getHighScoreSnapshot(), 10) || 0)) {
+          safeSetRawItem(
+            "working_with_duck_high_score",
+            String(uiState.totalScore)
+          );
+        }
       }
       if (
         uiState.status === "won" &&

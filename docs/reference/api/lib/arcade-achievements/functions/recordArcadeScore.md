@@ -35,4 +35,4 @@ and dispatch typed event-bus events.
 
 ### progress
 
-> **progress**: [`ArcadeProgress`](../interfaces/ArcadeProgress.md)
+> **progress**: [`ArcadeProgress`](../../arcade/progress/core/interfaces/ArcadeProgress.md)

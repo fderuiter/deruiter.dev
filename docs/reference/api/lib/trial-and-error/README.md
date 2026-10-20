@@ -1682,6 +1682,24 @@ Re-exports [OpenedPack](internal/run/interfaces/OpenedPack.md)
 
 ***
 
+### OpenerDealing
+
+Re-exports [OpenerDealing](internal/deal/type-aliases/OpenerDealing.md)
+
+***
+
+### openerIndex
+
+Re-exports [openerIndex](internal/seed/functions/openerIndex.md)
+
+***
+
+### openerPool
+
+Re-exports [openerPool](internal/deal/functions/openerPool.md)
+
+***
+
 ### originLabel
 
 Re-exports [originLabel](internal/codex/functions/originLabel.md)
@@ -3155,3 +3173,9 @@ Re-exports [validate](internal/validator/functions/validate.md)
 ### validateKm
 
 Re-exports [validateKm](internal/km/functions/validateKm.md)
+
+***
+
+### withOpener
+
+Re-exports [withOpener](internal/deal/functions/withOpener.md)

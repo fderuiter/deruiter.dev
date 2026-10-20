@@ -20,7 +20,9 @@ import {
   checkTouchTargetDimensions,
   checkSectionStructures,
   checkServiceResultTypes,
+  checkSessionDeterminism,
   checkSubRoutePerformance,
+  SESSION_DETERMINISM_ALLOWLIST,
   checkSeoSocialIntegrity,
   runDiagnostics,
   printDoctorReport,
@@ -694,6 +696,105 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
       const updated = fs.readFileSync(path.join(docsDir, "guide.md"), "utf-8");
       expect(updated).toContain("# Guide");
+    });
+  });
+
+  describe("checkSessionDeterminism (#2544)", () => {
+    const write = (relative: string, body: string) => {
+      const file = path.join(tempDir, ...relative.split("/"));
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      fs.writeFileSync(file, body);
+    };
+
+    it("flags Math.random() and Date.now() in session hooks and session-owned engines", () => {
+      write(
+        "components/arcade/loon/useLoonSession.ts",
+        "export const roll = () => Math.random();\n"
+      );
+      write(
+        "lib/new-game/engine.ts",
+        "export const now = () => Date.now();\nexport const r = Math.random() + Math.random();\n"
+      );
+      write(
+        "lib/new-game/internal/spawn-engine.ts",
+        "export const r = () => Math.random();\n"
+      );
+
+      const result = checkSessionDeterminism(tempDir);
+      expect(result.status).toBe("fail");
+      expect(result.message).toContain("createRng(seed)");
+      expect(result.details).toEqual([
+        "components/arcade/loon/useLoonSession.ts:1 -> Math.random() in session-owned code",
+        "lib/new-game/engine.ts:1 -> Date.now() in session-owned code",
+        "lib/new-game/engine.ts:2 -> Math.random() in session-owned code",
+        "lib/new-game/engine.ts:2 -> Math.random() in session-owned code",
+        "lib/new-game/internal/spawn-engine.ts:1 -> Math.random() in session-owned code",
+      ]);
+    });
+
+    it("allows a Math.random default parameter, comments, views, tests and non-session engines", () => {
+      write(
+        "lib/new-game/engine.ts",
+        [
+          "/** Rolls with Math.random() unless a seeded rng is passed. */",
+          "export function roll(random: () => number = Math.random) {",
+          "  // Never Date.now() here.",
+          "  return random();",
+          "}",
+        ].join("\n")
+      );
+      write(
+        "components/arcade/loon/LoonPhoneView.tsx",
+        "export const spark = () => Math.random();\n"
+      );
+      write(
+        "components/arcade/loon/useLoonSession.test.ts",
+        "export const r = Math.random();\n"
+      );
+      write("lib/crf/study-engine.ts", "export const t = Date.now();\n");
+      write("lib/patrol/engine.ts", "export const t = Date.now();\n");
+      write("lib/new-game/scoring.ts", "export const r = Math.random();\n");
+
+      const result = checkSessionDeterminism(tempDir);
+      expect(result.status).toBe("pass");
+      expect(result.message).toContain("Scanned 1 session-owned module(s)");
+    });
+
+    it("allows the existing callers until their game migrates, and warns about a stale entry", () => {
+      write(
+        "lib/laser-loon/engine.ts",
+        "export const r = () => Math.random();\n"
+      );
+      write(
+        "components/RetroLabyrinth.tsx",
+        "export const r = () => Math.random();\n"
+      );
+      expect(checkSessionDeterminism(tempDir).status).toBe("pass");
+
+      // Laser Loon migrates: its entry must leave the allow-list.
+      write(
+        "lib/laser-loon/engine.ts",
+        "export const r = (rng: { next(): number }) => rng.next();\n"
+      );
+      const result = checkSessionDeterminism(tempDir);
+      expect(result.status).toBe("warn");
+      expect(result.details).toEqual(["lib/laser-loon/engine.ts"]);
+    });
+
+    it("lists every caller #2544 found", () => {
+      expect(Object.keys(SESSION_DETERMINISM_ALLOWLIST)).toEqual(
+        expect.arrayContaining([
+          "lib/working-with-duck-engine.ts",
+          "lib/laser-loon/engine.ts",
+          "lib/clinical-trial-chaos/engine.ts",
+          "lib/clinical-trial-chaos/scenarios.ts",
+          "components/RetroLabyrinth.tsx",
+        ])
+      );
+    });
+
+    it("passes on this repository", () => {
+      expect(checkSessionDeterminism(process.cwd()).status).toBe("pass");
     });
   });
 

@@ -3,10 +3,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
-import {
-  ARCADE_STORAGE_KEYS,
-  ARCADE_TROPHIES,
-} from "@/lib/arcade-achievements";
+import { ARCADE_TROPHIES } from "@/lib/arcade-achievements";
+import { getArcadeCatalogEntry } from "@/lib/arcade";
 import { GAME_MANUALS } from "@/lib/game-manuals";
 import { PUBLIC_ROUTE_PATHS } from "@/lib/public-routes";
 import { ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
@@ -52,7 +50,9 @@ describe("Protocol Drift arcade registrations", () => {
   it("keeps its card, manual, storage key and trophies", () => {
     const card = ARCADE_GAMES_METADATA.find((g) => g.id === "protocol-drift");
     expect(card?.route).toBe(ROUTE);
-    expect(card?.storageKey).toBe(ARCADE_STORAGE_KEYS["protocol-drift"]);
+    expect(getArcadeCatalogEntry("protocol-drift")?.scoreKey).toBe(
+      "protocol_drift_high_score"
+    );
     expect(GAME_MANUALS["protocol-drift"]?.route).toBe(ROUTE);
     expect(
       ARCADE_TROPHIES.filter((t) => t.gameId === "protocol-drift").length

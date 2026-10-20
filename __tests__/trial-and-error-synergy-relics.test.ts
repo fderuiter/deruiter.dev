@@ -781,7 +781,8 @@ describe("saves from before per-act shops (#2083)", () => {
       {},
       "SHUFFLED",
       "RUN",
-      "CLASSIC"
+      "CLASSIC",
+      "FIXED"
     );
     const stock: string[][] = [];
     const blinds: V3Fixture["blinds"] = [];

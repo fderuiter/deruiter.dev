@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useSyncExternalStore, useId } from "react";
+import React, { useState, useId } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
@@ -22,47 +22,9 @@ import {
   IconFilter,
   IconPlayerPlay,
 } from "@tabler/icons-react";
-import {
-  ARCADE_TROPHIES,
-  getArcadeProgress,
-  ArcadeProgress,
-} from "@/lib/arcade-achievements";
+import { ARCADE_TROPHIES } from "@/lib/arcade-achievements";
 import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
-import { onAppEvent } from "@/lib/event-bus";
-
-const subscribeArcadeStorage = (callback: () => void) => {
-  if (typeof window === "undefined") return () => {};
-  const cleanupScore = onAppEvent("arcade_score_updated", callback);
-  const cleanupTrophy = onAppEvent("arcade_trophy_unlocked", callback);
-
-  const handleStorage = (event: StorageEvent) => {
-    if (!event.key || event.key.includes("arcade")) {
-      callback();
-    }
-  };
-
-  window.addEventListener("storage", handleStorage);
-
-  return () => {
-    cleanupScore();
-    cleanupTrophy();
-    window.removeEventListener("storage", handleStorage);
-  };
-};
-
-const getSnapshot = (): ArcadeProgress => {
-  return getArcadeProgress();
-};
-
-// useSyncExternalStore compares snapshots by identity, so the server
-// snapshot must be one stable object rather than a fresh literal per call.
-const SERVER_SNAPSHOT: ArcadeProgress = {
-  highScores: {},
-  unlockedTrophies: {},
-  updatedAt: 0,
-};
-
-const getServerSnapshot = (): ArcadeProgress => SERVER_SNAPSHOT;
+import { arcadeCoreSlice, useProgress } from "@/lib/arcade";
 
 function getTrophyIcon(iconName: string) {
   switch (iconName) {
@@ -97,11 +59,9 @@ function getTrophyIcon(iconName: string) {
 
 export const ArcadeTrophyCabinet: React.FC = () => {
   const shouldReduceMotion = useReducedMotion();
-  const progress = useSyncExternalStore(
-    subscribeArcadeStorage,
-    getSnapshot,
-    getServerSnapshot
-  );
+  // Bests and trophies from the arcade.core slice (#2548). The server and
+  // hydration render read its one empty value, so the snapshot is stable.
+  const progress = useProgress(arcadeCoreSlice);
 
   const [statusFilter, setStatusFilter] = useState<
     "all" | "unlocked" | "locked"

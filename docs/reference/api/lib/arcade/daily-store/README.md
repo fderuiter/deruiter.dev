@@ -9,5 +9,4 @@
 ## Functions
 
 - [getArcadeDailyProgress](functions/getArcadeDailyProgress.md)
-- [getArcadeDailySnapshot](functions/getArcadeDailySnapshot.md)
 - [recordArcadeDailyResult](functions/recordArcadeDailyResult.md)

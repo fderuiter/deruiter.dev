@@ -54,7 +54,7 @@ Lazily resolves or instantiates the active AudioContext.
 
 Why sound is bypassed: `"reduced-motion"` when that preference is the
 only cause (a page may offer an opt-in), `"contrast"` for forced colours,
-high contrast or the stored setting, or `null` when sound is not bypassed.
+or high contrast, or `null` when sound is not bypassed.
 
 #### Returns
 

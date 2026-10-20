@@ -62,12 +62,6 @@
 
 ***
 
-### storageKey?
-
-> `optional` **storageKey?**: `string`
-
-***
-
 ### subtitle
 
 > **subtitle**: `string`

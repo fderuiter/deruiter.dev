@@ -543,7 +543,8 @@ function summarizeLog(
     { sponsorId: log.sponsorId, stake: log.stake },
     log.dealing ?? "SHUFFLED",
     log.decks ?? "RUN",
-    log.shops ?? "PER_ACT"
+    log.shops ?? "PER_ACT",
+    log.openers ?? "POOL"
   );
   let best: RunHistoryEntry["bestHand"] = null;
   const consider = (state: RunState) => {

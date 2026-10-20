@@ -1930,7 +1930,7 @@
     },
     {
       "name": "@oxc-project/types",
-      "version": "0.149.0",
+      "version": "0.152.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -1939,7 +1939,7 @@
     },
     {
       "name": "@oxc-project/types",
-      "version": "0.152.0",
+      "version": "0.154.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2201,7 +2201,7 @@
     },
     {
       "name": "@rolldown/binding-android-arm-eabi",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2210,7 +2210,7 @@
     },
     {
       "name": "@rolldown/binding-android-arm64",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2219,7 +2219,7 @@
     },
     {
       "name": "@rolldown/binding-darwin-arm64",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2228,7 +2228,7 @@
     },
     {
       "name": "@rolldown/binding-darwin-x64",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2237,7 +2237,7 @@
     },
     {
       "name": "@rolldown/binding-freebsd-x64",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2246,7 +2246,7 @@
     },
     {
       "name": "@rolldown/binding-linux-arm-gnueabihf",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2255,7 +2255,7 @@
     },
     {
       "name": "@rolldown/binding-linux-arm64-gnu",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2264,7 +2264,7 @@
     },
     {
       "name": "@rolldown/binding-linux-arm64-musl",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2273,7 +2273,7 @@
     },
     {
       "name": "@rolldown/binding-linux-ppc64-gnu",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2282,7 +2282,7 @@
     },
     {
       "name": "@rolldown/binding-linux-s390x-gnu",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2291,7 +2291,7 @@
     },
     {
       "name": "@rolldown/binding-linux-x64-gnu",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2300,7 +2300,7 @@
     },
     {
       "name": "@rolldown/binding-linux-x64-musl",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2309,7 +2309,7 @@
     },
     {
       "name": "@rolldown/binding-openharmony-arm64",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2318,7 +2318,7 @@
     },
     {
       "name": "@rolldown/binding-win32-arm64-msvc",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2327,7 +2327,7 @@
     },
     {
       "name": "@rolldown/binding-win32-x64-msvc",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -8072,7 +8072,7 @@
     },
     {
       "name": "markdown-it",
-      "version": "14.3.2",
+      "version": "14.3.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -8517,7 +8517,7 @@
     },
     {
       "name": "nanoid",
-      "version": "3.3.18",
+      "version": "3.3.20",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -8996,7 +8996,7 @@
     },
     {
       "name": "postcss",
-      "version": "8.5.28",
+      "version": "8.5.31",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -9402,7 +9402,7 @@
     },
     {
       "name": "rolldown",
-      "version": "1.2.8",
+      "version": "1.2.14",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -10586,7 +10586,7 @@
     },
     {
       "name": "vite",
-      "version": "8.3.0",
+      "version": "8.3.4",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,

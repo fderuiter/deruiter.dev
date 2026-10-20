@@ -6,10 +6,10 @@
 
 # Function: getDefaultArcadeProgress()
 
-> **getDefaultArcadeProgress**(): [`ArcadeProgress`](../interfaces/ArcadeProgress.md)
+> **getDefaultArcadeProgress**(): [`ArcadeProgress`](../../arcade/progress/core/interfaces/ArcadeProgress.md)
 
 Returns default initial arcade progress object.
 
 ## Returns
 
-[`ArcadeProgress`](../interfaces/ArcadeProgress.md)
+[`ArcadeProgress`](../../arcade/progress/core/interfaces/ArcadeProgress.md)

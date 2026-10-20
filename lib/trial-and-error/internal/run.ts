@@ -14,7 +14,15 @@ import type {
 } from "../types";
 import { POPULATION_LABELS, shopEntryId } from "../types";
 import { CLASSIC_SHOP } from "../scenarios";
-import { dealSeed, shuffledDeckOrder, type DeckDealing } from "./deal";
+import {
+  dealSeed,
+  openerPool,
+  shuffledDeckOrder,
+  withOpener,
+  type DeckDealing,
+  type OpenerDealing,
+} from "./deal";
+import { openerIndex } from "./seed";
 import { raiseQuotas } from "./quotas";
 import {
   ARCHIVE_PRICE,
@@ -175,6 +183,12 @@ export interface RunState {
    * the shop draws it evenly. Absent means a shop per act, drawn by rarity.
    */
   shops?: "CLASSIC";
+  /**
+   * FIXED for a run replayed from a save recorded before first-Blind
+   * openers (#2413): the first Blind deals its own scripted setup whatever
+   * the seed. Absent means the seed picks the opener.
+   */
+  openers?: "FIXED";
   /**
    * The run deck (#2082): shells bought, copies made and cards archived,
    * carried from Blind to Blind and act to act. Absent means no changes.
@@ -1598,16 +1612,22 @@ function drawDeviation(
 
 /**
  * The order a run's Blind deals its deck in (#2055): shuffled on the Blind's
- * own deal stream, or null for a run that deals in written order.
+ * own deal stream, or null for a run that deals in written order. The run's
+ * first Blind opens on the scripted setup its seed picks from the Blind's
+ * opener pool (#2413), unless the run keeps the FIXED opener.
  */
 function deckOrderFor(
-  run: { seed: string; dealing?: DeckDealing },
+  run: { seed: string; dealing?: DeckDealing; openers?: OpenerDealing },
   scenario: Scenario,
   actIndex: number,
   blindIndex: number
 ): number[] | null {
   if (run.dealing === "AUTHORED") return null;
-  return shuffledDeckOrder(scenario, dealSeed(run.seed, actIndex, blindIndex));
+  const opens = actIndex === 0 && blindIndex === 0 && run.openers !== "FIXED";
+  const dealt = opens
+    ? withOpener(scenario, openerIndex(run.seed, openerPool(scenario).length))
+    : scenario;
+  return shuffledDeckOrder(dealt, dealSeed(run.seed, actIndex, blindIndex));
 }
 
 /** A fresh table for a Blind, announcing it with a sequence that follows `after`. */
@@ -1732,7 +1752,9 @@ function endlessRefusal(plan: RunPlan, run: RunState): string | null {
  * then AUTHORED deals every Blind in its written order, as it was recorded.
  * `decks` is AUTHORED for a save from before the run deck (#2082), and
  * `shops` is CLASSIC for a save from before each act had its own shop
- * (#2083), so every act stocks the shared catalog, drawn evenly.
+ * (#2083), so every act stocks the shared catalog, drawn evenly. `openers`
+ * is FIXED for a save from before first-Blind openers (#2413), so the first
+ * Blind deals its own scripted setup whatever the seed.
  */
 export function createRunState(
   authored: RunPlan,
@@ -1740,7 +1762,8 @@ export function createRunState(
   options: Partial<RunChoice> = {},
   dealing: DeckDealing = "SHUFFLED",
   decks: DeckLibrary = "RUN",
-  shops: ShopLibrary = "PER_ACT"
+  shops: ShopLibrary = "PER_ACT",
+  openers: OpenerDealing = "POOL"
 ): RunState {
   const choice = resolveRunChoice(options);
   const plan = ruledPlan(stockedPlan(authored, shops), choice);
@@ -1777,6 +1800,7 @@ export function createRunState(
     ...(dealing === "AUTHORED" && { dealing }),
     ...(decks === "AUTHORED" && { decks }),
     ...(shops === "CLASSIC" && { shops }),
+    ...(openers === "FIXED" && { openers }),
     drawIndex,
     draws,
     bossIds: [boss.bossId],
@@ -1788,7 +1812,7 @@ export function createRunState(
       inventory,
       null,
       deviation,
-      deckOrderFor({ seed, dealing }, first.blinds[0], 0, 0)
+      deckOrderFor({ seed, dealing, openers }, first.blinds[0], 0, 0)
     ),
     cashOut: null,
     shop: null,

@@ -1,14 +1,9 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { SoundboardButton } from "@/lib/meme-data";
 import {
+  echoBestStore,
   getEchoBest,
   recordEchoMilestones,
   recordEchoStreak,
@@ -21,7 +16,6 @@ import {
   submitEchoInput,
   type EchoRound,
 } from "@/lib/meme-echo";
-import { STORAGE_CHANGE_EVENT } from "@/lib/safe-storage";
 
 /** Pause before the first playback, so the start press's own sound clears. */
 const LEAD_IN_MS = 450;
@@ -64,20 +58,6 @@ interface EchoGame {
   press: (padIndex: number) => boolean;
 }
 
-function subscribeBest(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  window.addEventListener("storage", callback);
-  window.addEventListener(STORAGE_CHANGE_EVENT, callback);
-  return () => {
-    window.removeEventListener("storage", callback);
-    window.removeEventListener(STORAGE_CHANGE_EVENT, callback);
-  };
-}
-
-function getBestServerSnapshot(): number {
-  return 0;
-}
-
 function makeSeed(): string {
   return `${Date.now().toString(36)}-${Math.floor(Math.random() * 0x100000000).toString(36)}`;
 }
@@ -99,11 +79,7 @@ export function useEchoGame({
   const [early, setEarly] = useState(false);
   const [missedId, setMissedId] = useState<string | null>(null);
   const earlyRef = useRef(false);
-  const best = useSyncExternalStore(
-    subscribeBest,
-    getEchoBest,
-    getBestServerSnapshot
-  );
+  const best = echoBestStore.useValue();
 
   const roundRef = useRef<EchoRound | null>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);

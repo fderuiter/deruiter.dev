@@ -99,6 +99,16 @@ const DATA_TYPE_OPTIONS: { value: ClinicalDataType; label: string }[] = [
   { value: "signature", label: "e-Signature" },
 ];
 
+/**
+ * Whether a pasted Codelist cell means "no codelist": blank, or the word
+ * `none` in any case. Validation and commit share it so a value accepted as
+ * "no codelist" is never stored as a literal id (#2576).
+ */
+const isNoCodelistCell = (value: string): boolean => {
+  const trimmed = value.trim();
+  return trimmed === "" || trimmed.toLowerCase() === "none";
+};
+
 export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
   form,
   study,
@@ -658,7 +668,7 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
               error = `Required must be true/false or yes/no (got '${newVal}')`;
             }
           } else if (col.key === "codelistId") {
-            if (newVal && newVal !== "none" && newVal !== "") {
+            if (!isNoCodelistCell(newVal)) {
               const clExists = study.codelists.some((c) => c.id === newVal);
               if (!clExists) {
                 isValid = false;
@@ -792,7 +802,9 @@ export const ActiveFormGrid: React.FC<ActiveFormGridProps> = ({
           } else if (upd.colKey === "columnSpan") {
             fieldPartial.columnSpan = parseInt(upd.newValue, 10);
           } else if (upd.colKey === "codelistId") {
-            fieldPartial.codelistId = upd.newValue || undefined;
+            fieldPartial.codelistId = isNoCodelistCell(upd.newValue)
+              ? undefined
+              : upd.newValue;
           } else if (upd.colKey === "acrfAnnotation") {
             const meta = currentField?.cdashMetadata || {
               domain: form.domain,

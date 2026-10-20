@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   CRFField,
   CodelistDefinition,
@@ -183,6 +183,39 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
   },
 ];
 
+/** Longest submission code bulk paste generates. */
+const MAX_OPTION_CODE_LENGTH = 16;
+
+/**
+ * Derives a submission code for each pasted option line: uppercase
+ * alphanumerics joined by single underscores, cut to the length limit before
+ * the edge underscores are stripped, and made unique with a `_2`, `_3`, ...
+ * suffix that still fits the limit (#2577).
+ */
+const deriveOptionCodes = (lines: string[]): string[] => {
+  const used = new Set<string>();
+  return lines.map((line, idx) => {
+    const base =
+      line
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "_")
+        .replace(/_+/g, "_")
+        .replace(/^_/, "")
+        .slice(0, MAX_OPTION_CODE_LENGTH)
+        .replace(/_$/, "") || `OPT_${idx + 1}`;
+    let code = base;
+    for (let n = 2; used.has(code); n++) {
+      const suffix = `_${n}`;
+      code =
+        base
+          .slice(0, MAX_OPTION_CODE_LENGTH - suffix.length)
+          .replace(/_$/, "") + suffix;
+    }
+    used.add(code);
+    return code;
+  });
+};
+
 export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
   field,
   allFieldsInForm,
@@ -207,6 +240,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
   const [bulkInput, setBulkInput] = useState("");
   const toast = useToast();
   const [renameSuccess, setRenameSuccess] = useState<string | null>(null);
+  const renameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [variableNameDraft, setVariableNameDraft] = useState(
     field.variableName
   );
@@ -215,6 +249,24 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setVariableNameDraft(field.variableName);
   }, [field.id, field.variableName]);
+
+  useEffect(
+    () => () => {
+      if (renameTimerRef.current) clearTimeout(renameTimerRef.current);
+    },
+    []
+  );
+
+  const handleRenameEverywhere = (newVar: string) => {
+    if (!onRenameEverywhere) return;
+    onRenameEverywhere(newVar);
+    setRenameSuccess("Renamed everywhere");
+    if (renameTimerRef.current) clearTimeout(renameTimerRef.current);
+    renameTimerRef.current = setTimeout(() => {
+      renameTimerRef.current = null;
+      setRenameSuccess(null);
+    }, 3000);
+  };
 
   // Active options list (custom or resolved from codelist)
   const currentCodelist = codelists.find((cl) => cl.id === field.codelistId);
@@ -315,22 +367,12 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
 
     if (lines.length === 0) return;
 
-    const generated: CodelistOption[] = lines.map((line, idx) => {
-      // Create a clean submission code (alphanumeric uppercase with underscores)
-      const sanitizedCode =
-        line
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, "_")
-          .replace(/_+/g, "_")
-          .replace(/^_|_$/g, "")
-          .slice(0, 16) || `OPT_${idx + 1}`;
-
-      return {
-        code: sanitizedCode,
-        label: line,
-        order: idx + 1,
-      };
-    });
+    const codes = deriveOptionCodes(lines);
+    const generated: CodelistOption[] = lines.map((line, idx) => ({
+      code: codes[idx],
+      label: line,
+      order: idx + 1,
+    }));
 
     onUpdateField({
       customOptions: generated,
@@ -404,11 +446,7 @@ export const FieldPropertiesTab: React.FC<FieldPropertiesTabProps> = ({
           <div className="mt-1.5 flex items-center gap-2">
             <button
               type="button"
-              onClick={() => {
-                onRenameEverywhere(variableNameDraft);
-                setRenameSuccess("Renamed everywhere");
-                setTimeout(() => setRenameSuccess(null), 3000);
-              }}
+              onClick={() => handleRenameEverywhere(variableNameDraft)}
               className="px-2 py-0.5 rounded bg-brand-cyan/10 hover:bg-brand-cyan/20 border border-brand-cyan/30 text-[10px] font-mono text-brand-cyan flex items-center gap-1 transition-colors"
               title="Atomically updates variable name and all AST rules, conditions, and formulas"
             >

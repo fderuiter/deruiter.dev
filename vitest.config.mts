@@ -153,6 +153,8 @@ export default defineConfig({
         "lib/working-with-duck-types.ts",
         "lib/telemetry/index.ts",
         "lib/trial-and-error/index.ts",
+        "lib/study-data/types.ts",
+        "lib/study-data/index.ts",
       ],
       thresholds: coverageThresholdsDeferred
         ? undefined

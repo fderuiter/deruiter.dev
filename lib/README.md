@@ -6,7 +6,7 @@ Modules in `lib/` are structured as **Deep Modules**: a lot of rich behaviour be
 
 ## 1. Directory Structure & Boundary Invariants
 
-Every module package under `lib/` (e.g., `lib/crf/`, `lib/laser-loon/`, `lib/neuro/`, `lib/arcade/`, `lib/clinical-trial-chaos/`, `lib/services/`) follows depth-based encapsulation:
+Every module package under `lib/` (e.g., `lib/crf/`, `lib/laser-loon/`, `lib/neuro/`, `lib/arcade/`, `lib/clinical-trial-chaos/`, `lib/study-data/`, `lib/services/`) follows depth-based encapsulation:
 
 ```text
 lib/
@@ -18,6 +18,8 @@ lib/
     presets/          ← Private package subfolder (hidden from outside).
     core/             ← Private package subfolder (hidden from outside).
 ```
+
+A module with several pipeline stages keeps one private folder per stage under `internal/`. `lib/study-data/` ([ADR 0065](../adr/0065-study-data-pipeline-architecture.md)) is the reference: `internal/usdm`, `internal/synth`, `internal/sdtm`, `internal/conformance`, `internal/adam`, `internal/define`, `internal/export`, `internal/tlf` and `internal/lineage`, all reached only through `runPipeline` and the types and presets at the package root.
 
 ### The 6 Canonical Boundary Rules (`.dependency-cruiser.cjs`)
 

@@ -452,13 +452,15 @@ Re-exports [controlsFromActions](input/actions/functions/controlsFromActions.md)
 
 ***
 
-### createRng
-
-Re-exports [createRng](rng/functions/createRng.md)
-
 ### createArcadeStore
 
 Re-exports [createArcadeStore](progress/store/functions/createArcadeStore.md)
+
+***
+
+### createRng
+
+Re-exports [createRng](rng/functions/createRng.md)
 
 ***
 
@@ -957,6 +959,8 @@ Re-exports [StepClock](step-clock/interfaces/StepClock.md)
 ### StepClockOptions
 
 Re-exports [StepClockOptions](step-clock/interfaces/StepClockOptions.md)
+
+***
 
 ### subscribe
 

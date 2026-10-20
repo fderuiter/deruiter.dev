@@ -287,6 +287,22 @@ describe("CI run policy (#1773)", () => {
       );
     });
 
+    it("ignores unit tests, which cannot change what a device spec sees", () => {
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/retro-labyrinth-run-rules.test.ts",
+          "__tests__/patty-drive-thru-dilemmas.test.ts",
+          "__tests__/crf/scenario-impact.test.ts",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/garmin-ceiling.test.ts",
+          "__tests__/e2e/retro-labyrinth-tablet.spec.ts",
+        ])
+      ).toBe("Retro Labyrinth");
+    });
+
     it("runs nothing for a change outside the arcade", () => {
       expect(arcadeDeviceGrep(["components/Hero.tsx", "lib/seo.ts"])).toBe("");
     });

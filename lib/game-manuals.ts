@@ -1,4 +1,6 @@
 import { FieldManualData } from "@/types/game-manual";
+import { manualControlsFromActions } from "@/lib/arcade";
+import { DUCK_ACTIONS } from "@/lib/working-with-duck-actions";
 
 export const GAME_MANUALS: Record<string, FieldManualData> = {
   proof: {
@@ -243,30 +245,36 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     quickSummary:
       "Toss toys to divert Duck from power cables, command training tricks (Q-W-E-R), push active coding commits (Space), scrub belly rubs during the flop, jump agility hurdles in the Dog Park, and wash in the Bathtub when muddy.",
     controls: [
-      {
-        action: "Active Code Burst",
-        description:
-          "In the office, press Spacebar (Focus Work Sprint) to rapidly push code commits and squash bugs with Good Boy multiplier bonuses.",
-        key: "Spacebar / Desk Click",
-      },
-      {
-        action: "Training Tricks",
-        description:
-          "In the office, press Q (Sit), W (High Five), E (Drop It), or R (Spin) for immediate obedience, focus recovery, and Good Boy score multipliers.",
-        key: "Q, W, E, R",
-      },
-      {
-        action: "Toss Toys & Treats",
-        description:
-          "Press 1 (Tennis Ball), 2 (Kong Chew), 3 (Squeaky Toy), or 4 (Treat) to divert Duck away from server cables and trade stolen items.",
-        key: "1, 2, 3, 4 Hotkeys",
-      },
-      {
-        action: "Answer the Door",
-        description:
-          "When a delivery knocks at the back door, press D, click the door, or use the Get the package button to bring it in before it is gone.",
-        key: "D / Door Click",
-      },
+      // The key column comes from the game's action map (#2356), so the
+      // manual names the keys the game binds.
+      ...manualControlsFromActions(DUCK_ACTIONS, [
+        {
+          group: "work",
+          action: "Active Code Burst",
+          description:
+            "In the office, press Spacebar (Focus Work Sprint) to rapidly push code commits and squash bugs with Good Boy multiplier bonuses.",
+          alsoKey: "Desk Click",
+        },
+        {
+          group: "tricks",
+          action: "Training Tricks",
+          description:
+            "In the office, press Q (Sit), W (High Five), E (Drop It), or R (Spin) for immediate obedience, focus recovery, and Good Boy score multipliers.",
+        },
+        {
+          group: "toys",
+          action: "Toss Toys & Treats",
+          description:
+            "Press 1 (Tennis Ball), 2 (Kong Chew), 3 (Squeaky Toy), or 4 (Treat) to divert Duck away from server cables and trade stolen items.",
+        },
+        {
+          group: "door",
+          action: "Answer the Door",
+          description:
+            "When a delivery knocks at the back door, press D, click the door, or use the Get the package button to bring it in before it is gone.",
+          alsoKey: "Door Click",
+        },
+      ]),
       {
         action: "Bathtub Wash & Rinse",
         description:

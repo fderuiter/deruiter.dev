@@ -5,12 +5,7 @@
  * guarded: unreadable storage or a corrupt ghost reads as no ghost.
  */
 
-import {
-  COURSE_VERSION,
-  boardKey,
-  dailySeed,
-  type RaceSetup,
-} from "./race";
+import { COURSE_VERSION, boardKey, dailySeed, type RaceSetup } from "./race";
 import { decodeGhost, encodeGhost, type GhostTrack } from "./ghost";
 import { safeGetRawItem, safeSetRawItem } from "../safe-storage";
 

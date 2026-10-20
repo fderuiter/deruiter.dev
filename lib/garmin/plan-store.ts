@@ -20,7 +20,11 @@ import {
 import { packableOnly } from "./bag";
 import { cardsOf } from "./finisher";
 import { START_LIVES } from "./powerups";
-import { safeGetRawItem, safeRemoveItem, safeSetRawItem } from "../safe-storage";
+import {
+  safeGetRawItem,
+  safeRemoveItem,
+  safeSetRawItem,
+} from "../safe-storage";
 
 /** localStorage key holding the Training Plan save, as JSON. */
 export const PLAN_STORAGE_KEY = "garmin_training_plan";

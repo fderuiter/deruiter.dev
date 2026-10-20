@@ -161,7 +161,9 @@ describe("Arcade Engines & Game Simulation Integration Suite", () => {
       // 1. Heap Allocation
       const alloc1 = allocateVariable(state, "array", "buffer_sensor");
       state = alloc1.state;
-      expect(state.variables.some((v) => v.name === "buffer_sensor")).toBe(true);
+      expect(state.variables.some((v) => v.name === "buffer_sensor")).toBe(
+        true
+      );
 
       // 2. Jettison oldest variable
       const initialVarCount = state.variables.length;
@@ -213,7 +215,11 @@ describe("Arcade Engines & Game Simulation Integration Suite", () => {
       };
 
       // 1. Verify 21 CFR submission
-      const subResult = verify21CFRSubmission(mockSubject, "Intent to Submit", "VS");
+      const subResult = verify21CFRSubmission(
+        mockSubject,
+        "Intent to Submit",
+        "VS"
+      );
       expect(subResult.success).toBe(true);
       expect(subResult.level).toBe("COMPLIANT");
 

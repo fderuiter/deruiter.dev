@@ -64,47 +64,58 @@ In the Vercel dashboard for the `portfolio` project:
 
 ### Main Branch Protection
 
-Verified through the GitHub API on 2026-09-28 for `fderuiter/deruiter.dev`:
+Since 2026-10-20, `main` is governed by the repository ruleset **`main`**
+(ID `25476036`, targeting the default branch). It replaced the classic branch
+protection rule, which was deleted, so
+`gh api repos/fderuiter/deruiter.dev/branches/main/protection` now returns
+`404 Branch not protected`. That is expected.
 
-- Pull requests are required, including for administrators unless the
-  [Owner Merge Override](#owner-merge-override) is on. No approving
-  reviewer is required for this solo repository.
-- The exact required check is **Merge Gate (Required Checks Summary)**,
-  bound to the GitHub Actions app (ID `15368`). It summarizes every required
-  CI job; a pending or failed summary blocks merging.
-- Linear history and conversation resolution are required. Force pushes and
-  deletion of `main` are disabled. Squash merging remains the normal path;
-  GitHub automatically deletes merged feature branches.
-- The up-to-date branch requirement is disabled (`strict: false`) to avoid
-  repeating the full browser pipeline after every unrelated `main` merge.
-  Resolve conflicts and revalidate when base changes affect the work.
+- Pull requests are required. No approving reviewer is required for this
+  solo repository, and review threads must be resolved before merging.
+- The only required check is **Merge Gate (Required Checks Summary)**,
+  bound to the GitHub Actions app (integration ID `15368`). It summarizes
+  every CI job; a pending or failed summary blocks merging. Do not add the
+  individual jobs: the matrix jobs report under their literal
+  `${{ matrix.shard }}` names when skipped, and the browser gates do not run
+  on drafts or docs-only pull requests, so those checks would never report.
+- Squash is the only allowed merge method. Linear history is required, and
+  force pushes and deletion of `main` are blocked. GitHub automatically
+  deletes merged feature branches.
+- The up-to-date branch requirement is off
+  (`strict_required_status_checks_policy: false`) to avoid repeating the
+  full browser pipeline after every unrelated `main` merge. The merge lane
+  gives the same guarantee: the slot holder merges `main` in before it goes
+  ready.
+- The repository admin role may bypass the ruleset only through a pull
+  request (`bypass_mode: pull_request`); see
+  [Owner Merge Override](#owner-merge-override). Nobody can push to `main`
+  directly.
 
 Audit these settings monthly and whenever the CI workflow or Merge Gate name
-changes. Use **Settings → Branches → Branch protection rules → main**, or:
+changes. Use **Settings → Rules → Rulesets → main**, or:
 
 ```bash
-gh api repos/fderuiter/deruiter.dev/branches/main/protection \
-  --jq '{checks: .required_status_checks.checks, strict: .required_status_checks.strict, admins: .enforce_admins.enabled, reviews: .required_pull_request_reviews.required_approving_review_count, linear: .required_linear_history.enabled, force: .allow_force_pushes.enabled, deletion: .allow_deletions.enabled, conversations: .required_conversation_resolution.enabled}'
+gh api repos/fderuiter/deruiter.dev/rulesets/25476036 \
+  --jq '{enforcement, bypass: .bypass_actors, rules: [.rules[] | {type, parameters}]}'
 ```
 
-Compare the configured check name and app ID with a recent successful PR's
-check runs. Do not use `gh pr merge --admin` to bypass pending CI. When using
-`gh pr merge --auto --squash`, verify that the PR remains open with auto merge
-enabled while Merge Gate is pending, then confirm it merges after success.
-Issue [#1247](https://github.com/fderuiter/deruiter.dev/issues/1247) tracks the
+Compare the configured check name and integration ID with a recent
+successful PR's check runs. Do not use `gh pr merge --admin` to bypass pending
+CI. When using `gh pr merge --auto --squash`, verify that the PR remains open
+with auto merge enabled while Merge Gate is pending, then confirm it merges
+after success. Issue
+[#1247](https://github.com/fderuiter/deruiter.dev/issues/1247) tracks the
 pending-CI verification.
 
 ### Owner Merge Override
 
 CI runs on GitHub's shared free queue and can be slow. The repository owner
-may merge a pull request before Merge Gate finishes, and nobody else can:
-
-1. **Settings → Branches → Branch protection rules → main**, then clear
-   **Do not allow bypassing the above settings** (`enforce_admins` off). Keep
-   **Require status checks to pass** and the Merge Gate entry as they are.
-2. On a pull request, the owner then sees **Merge without waiting for
-   requirements to be met (bypass branch protections)**. Everyone else, and
-   auto-merge, still waits for Merge Gate.
+may merge a pull request before Merge Gate finishes, and nobody else can.
+The `main` ruleset lists the repository admin role as a bypass actor in
+pull-request mode, so on a pull request the owner sees **Merge without
+waiting for requirements to be met (bypass rules)**. Everyone else, and
+auto-merge, still waits for Merge Gate. The bypass never allows a direct push
+to `main`.
 
 Production stays manual, so a bypass merge does not deploy. The cost is that a
 bypass merge that breaks `main` turns CI red on every other open pull request

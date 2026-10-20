@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useSyncExternalStore } from "react";
+import React, { useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   IconCalendarEvent,
@@ -13,10 +13,8 @@ import {
   arcadeDailyDate,
   arcadeDailyHref,
   arcadeDailyStreak,
-  parseArcadeDailyProgress,
 } from "@/lib/arcade/daily";
-import { getArcadeDailySnapshot } from "@/lib/arcade/daily-store";
-import { onAppEvent } from "@/lib/event-bus";
+import { arcadeDailySlice, useProgress } from "@/lib/arcade";
 
 // Same query as DesktopOnlyGate (PHONE_QUERY, ADR 0061): phones only.
 const SHOW_ON_TOUCH_COMPACT_INLINE =
@@ -30,24 +28,6 @@ function subscribeClock(onChange: () => void): () => void {
 const readToday = () => arcadeDailyDate(Date.now());
 const noDate = () => null;
 
-function subscribeRecord(onChange: () => void): () => void {
-  const stop = onAppEvent("arcade_daily_updated", onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    stop();
-    window.removeEventListener("storage", onChange);
-  };
-}
-const noRecord = () => "";
-
-function parseRecord(raw: string) {
-  try {
-    return parseArcadeDailyProgress(raw ? JSON.parse(raw) : null);
-  } catch {
-    return parseArcadeDailyProgress(null);
-  }
-}
-
 function days(n: number): string {
   return `${n} day${n === 1 ? "" : "s"}`;
 }
@@ -60,12 +40,8 @@ function days(n: number): string {
  */
 export function ArcadeDailyPanel() {
   const today = useSyncExternalStore(subscribeClock, readToday, noDate);
-  const raw = useSyncExternalStore(
-    subscribeRecord,
-    getArcadeDailySnapshot,
-    noRecord
-  );
-  const progress = useMemo(() => parseRecord(raw), [raw]);
+  // The arcade.daily slice, kept in step across tabs (#2548).
+  const progress = useProgress(arcadeDailySlice);
   const streak = today ? arcadeDailyStreak(progress, today) : null;
 
   return (

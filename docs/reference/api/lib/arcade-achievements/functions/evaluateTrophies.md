@@ -14,7 +14,7 @@ Evaluates and unlocks any earned trophies based on current high scores.
 
 ### progress
 
-[`ArcadeProgress`](../interfaces/ArcadeProgress.md)
+[`ArcadeProgress`](../../arcade/progress/core/interfaces/ArcadeProgress.md)
 
 ## Returns
 

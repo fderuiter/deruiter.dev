@@ -10,6 +10,9 @@
 
 Enqueue a request to be executed when online.
 
+An `id` that is already queued replaces that entry in place: the newer body
+is the one sent, once, and its retry count starts again from zero.
+
 ## Type Parameters
 
 ### T

@@ -565,13 +565,13 @@ describe("replay and saves (#2082)", () => {
   });
 
   it("writes the current version, and records an authored-deck run's mode", () => {
-    expect(RUN_SAVE_VERSION).toBe(4);
+    expect(RUN_SAVE_VERSION).toBe(5);
     const json = serializeRun(
       { actId: C.id, seed: "alpha", decks: "AUTHORED", actions: [] },
       SAVED_AT
     );
     expect(RunSaveSchema.parse(JSON.parse(json))).toMatchObject({
-      version: 4,
+      version: 5,
       decks: "AUTHORED",
     });
     expect(
@@ -613,6 +613,7 @@ describe("replay and saves (#2082)", () => {
         seed: "legacy",
         decks: "AUTHORED",
         shops: "CLASSIC",
+        openers: "FIXED",
         actions: [{ type: "DISCARD" }],
       })
     );

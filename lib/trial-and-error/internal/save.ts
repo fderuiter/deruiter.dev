@@ -45,6 +45,12 @@ export interface RunLog {
    * per act, drawn by rarity.
    */
   shops?: "CLASSIC";
+  /**
+   * FIXED for a run first saved before first-Blind openers (#2413): the
+   * first Blind deals its own scripted setup. Absent means the seed picks
+   * the opener.
+   */
+  openers?: "FIXED";
   actions: LoggedAction[];
   /** How the seed was chosen; absent means a random run. */
   origin?: RunOrigin;
@@ -70,11 +76,15 @@ export interface RestoredRun {
  * v3 to v4 (#2083): v3 runs stocked every act from one shared catalog, drawn
  * evenly, and their shop moves name the slots that draw stocked, so they
  * keep that catalog and that draw.
+ *
+ * v4 to v5 (#2413): v4 runs opened every first Blind on its own scripted
+ * setup, and their first moves name the cards it dealt, so they keep it.
  */
 const MIGRATIONS: Readonly<Record<number, (doc: unknown) => unknown>> = {
   1: (doc) => ({ ...(doc as object), version: 2, dealing: "AUTHORED" }),
   2: (doc) => ({ ...(doc as object), version: 3, decks: "AUTHORED" }),
   3: (doc) => ({ ...(doc as object), version: 4, shops: "CLASSIC" }),
+  4: (doc) => ({ ...(doc as object), version: 5, openers: "FIXED" }),
 };
 
 function migrate(doc: unknown): unknown | null {
@@ -104,6 +114,7 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
       ...(log.dealing ? { dealing: log.dealing } : {}),
       ...(log.decks ? { decks: log.decks } : {}),
       ...(log.shops ? { shops: log.shops } : {}),
+      ...(log.openers ? { openers: log.openers } : {}),
       actions: log.actions,
       ...(log.origin ? { origin: log.origin } : {}),
     })
@@ -111,9 +122,8 @@ export function serializeRun(log: RunLog, savedAt: Date): string {
 }
 
 /**
- * Replays a log from its seed, sponsor, stake, deal mode, deck mode and shop
- * mode. The
- * same seed, choice and moves give the same run.
+ * Replays a log from its seed, sponsor, stake, deal mode, deck mode, shop
+ * mode and opener mode. The same seed, choice and moves give the same run.
  */
 export function replayRun(act: RunPlan, log: RunLog): RunState {
   return log.actions.reduce(
@@ -124,7 +134,8 @@ export function replayRun(act: RunPlan, log: RunLog): RunState {
       { sponsorId: log.sponsorId, stake: log.stake },
       log.dealing ?? "SHUFFLED",
       log.decks ?? "RUN",
-      log.shops ?? "PER_ACT"
+      log.shops ?? "PER_ACT",
+      log.openers ?? "POOL"
     )
   );
 }
@@ -161,6 +172,7 @@ export function parseRunSave(
       ...(save.dealing !== undefined && { dealing: save.dealing }),
       ...(save.decks !== undefined && { decks: save.decks }),
       ...(save.shops !== undefined && { shops: save.shops }),
+      ...(save.openers !== undefined && { openers: save.openers }),
       actions: [...save.actions, ...deselect],
       ...(save.origin ? { origin: save.origin } : {}),
     };

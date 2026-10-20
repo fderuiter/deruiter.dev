@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { waitForVisualSettle } from "./helpers/settle";
+import { waitForLayoutReady } from "./helpers/settle";
 
 // Six arcade games show a desktop-only notice on phones and portrait tablets
 // (ADR 0048). These specs exercise the touch controls behind it, so they take
@@ -60,7 +60,7 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
       page,
     }) => {
       await page.goto(route);
-      await waitForVisualSettle(page);
+      await waitForLayoutReady(page);
 
       // Verify that document scrollWidth does not exceed viewport innerWidth
       const isOverflowing = await page.evaluate(() => {
@@ -177,7 +177,7 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
   }) => {
     await page.goto("/crf");
     await page.waitForSelector("text=CRF Studio", { timeout: 15000 });
-    await waitForVisualSettle(page);
+    await waitForLayoutReady(page);
 
     if (isMobile) {
       const mobileNav = page.getByLabel(/mobile view navigation/i);

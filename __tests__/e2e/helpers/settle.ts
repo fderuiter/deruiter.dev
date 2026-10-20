@@ -100,3 +100,22 @@ export async function waitForVisualSettle(
     { polling: "raf", timeout }
   );
 }
+
+/**
+ * Waits until the page has loaded, its web fonts have resolved, and `frames`
+ * more animation frames have painted, so a layout measurement reads final
+ * line breaks and box sizes.
+ *
+ * Use it where only geometry matters, such as a horizontal overflow check.
+ * Unlike `waitForVisualSettle`, it does not wait for every style or class
+ * mutation to stop, which on some routes (a live clock, a typing effect, a
+ * studio autosave) never happens under WebKit.
+ */
+export async function waitForLayoutReady(
+  page: Page,
+  frames = 18
+): Promise<void> {
+  await page.waitForLoadState("load");
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  await waitForAnimationFrames(page, frames);
+}

@@ -243,7 +243,7 @@ export const Navbar: React.FC = () => {
             onClick={(e) => handleNavClick(e, "/#hero")}
             onMouseEnter={handleLinkHover}
             className="group flex min-h-6 items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground cursor-pointer focus-visible:ring-2 focus-visible:ring-accent rounded-md shrink-0"
-            aria-label="Frederick de Ruiter Homepage"
+            aria-label="FDERUITER, Frederick de Ruiter home page"
           >
             <span className="relative flex h-2 w-2">
               <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-75"></span>
@@ -336,13 +336,17 @@ export const Navbar: React.FC = () => {
               onClick={openSearch}
               onMouseEnter={handleLinkHover}
               className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60 hover:border-accent/40 hover:bg-zinc-900 text-zinc-400 hover:text-white transition-all cursor-pointer shadow-sm focus:outline-none focus:ring-2 focus:ring-accent/40 shrink-0 whitespace-nowrap"
-              aria-label="Search portfolio and commands (Press Command+K)"
+              aria-keyshortcuts="Meta+K"
             >
-              <IconSearch className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+              <IconSearch
+                className="w-3.5 h-3.5 text-zinc-400 shrink-0"
+                aria-hidden="true"
+              />
               <span className="text-xs font-mono hidden lg:inline">Search</span>
               <kbd className="kbd-badge text-[10px] text-zinc-400 font-mono">
                 ⌘K
               </kbd>
+              <span className="sr-only">: search portfolio and commands</span>
             </button>
 
             <PreferencesMenu

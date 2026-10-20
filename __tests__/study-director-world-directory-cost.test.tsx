@@ -36,7 +36,7 @@ describe("OfficeDirectory walk costs", () => {
       expect(c.textContent).toMatch(/^(under a minute|about \d+ minutes?)$/);
   });
 
-  it("describes a walk by its cost without changing the button's name", () => {
+  it("names a walk by what the button shows, cost included", () => {
     const onWalk = vi.fn();
     render(
       <OfficeDirectory
@@ -49,14 +49,18 @@ describe("OfficeDirectory walk costs", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: /office directory/i }));
     const first = entries[0];
+    // Speech input users say what they see, so the name carries the
+    // visible label, detail and cost (axe label-content-name-mismatch).
+    const shown =
+      first.target.kind === "room"
+        ? first.label
+        : `${first.label}, ${first.detail}`;
     const button = screen.getByRole("button", {
-      name: `Walk to ${first.label}, ${first.detail}`,
+      name: new RegExp(
+        `^Walk to ${shown}, (under a minute|about \\d+ minutes?)$`
+      ),
     });
-    const describedBy = button.getAttribute("aria-describedby");
-    expect(describedBy).toBeTruthy();
-    expect(document.getElementById(describedBy ?? "")?.textContent).toMatch(
-      /minute/
-    );
+    expect(button.hasAttribute("aria-describedby")).toBe(false);
     fireEvent.click(button);
     expect(onWalk).toHaveBeenCalledWith(first);
   });

@@ -645,9 +645,7 @@ describe("MemeVaultClient oscilloscope loop (#1624, #1526)", () => {
 
   it("stays still when a pad is pressed with sound off", () => {
     const { container } = render(<MemeVaultClient />);
-    const pad = container.querySelector<HTMLButtonElement>(
-      "button[aria-label^='Play ']"
-    );
+    const pad = container.querySelector<HTMLButtonElement>("button.meme-pad");
     if (!pad) throw new Error("pad not rendered");
     fireEvent.click(pad);
     expect(pad.getAttribute("data-lit")).toBe("true");

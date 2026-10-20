@@ -17,7 +17,7 @@ test.describe("Arcade Daily panel", () => {
 
     await expect(async () => {
       await panel
-        .getByRole("link", { name: "Play today's Trial & Error daily" })
+        .getByRole("link", { name: "Play daily: today's Trial & Error" })
         .click();
       await expect(page).toHaveURL(/\/arcade\/trial-and-error#daily=/, {
         timeout: 3000,

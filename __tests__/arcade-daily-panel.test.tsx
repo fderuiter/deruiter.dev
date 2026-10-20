@@ -37,7 +37,7 @@ describe("ArcadeDailyPanel (#2113)", () => {
     for (const game of ARCADE_DAILY_GAMES) {
       const row = screen.getByTestId(`arcade-daily-${game.id}`);
       const link = within(row).getByRole("link", {
-        name: `Play today's ${game.title} daily`,
+        name: `Play daily: today's ${game.title}`,
       });
       expect(link.getAttribute("href")).toBe(
         arcadeDailyHref(game.id, "2026-10-14")

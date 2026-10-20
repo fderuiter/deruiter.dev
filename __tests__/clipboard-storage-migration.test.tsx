@@ -292,7 +292,7 @@ describe("clipboard call sites on useClipboard (#1565)", () => {
 
   function renderAssets() {
     render(<AssetDistributionViewer />);
-    return screen.getByRole("button", { name: "Share case study link" });
+    return screen.getByRole("button", { name: "Share Assets" });
   }
 
   it("InspectorPanel copies the CLI command and announces it once", async () => {

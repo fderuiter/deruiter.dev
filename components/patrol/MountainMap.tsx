@@ -650,7 +650,7 @@ export const MountainMap: React.FC<MountainMapProps> = ({
             onClick={() => setIsResponsibilityModalOpen(true)}
             data-testid="safety-code-btn"
             className="min-h-[44px] min-w-[44px] px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-800 text-xs font-mono text-zinc-300 hover:text-white hover:border-zinc-700 inline-flex items-center gap-1.5 cursor-pointer transition-colors"
-            aria-label="View Your Responsibility Code"
+            aria-label="Safety Code: view Your Responsibility Code"
           >
             <IconShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="hidden sm:inline">Safety Code</span>

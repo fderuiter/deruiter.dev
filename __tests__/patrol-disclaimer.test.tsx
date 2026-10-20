@@ -151,7 +151,7 @@ describe("Patrol Shift — M5 Accessible Medical Disclaimer Banner (#751)", () =
       expect(dismissBtn.className).toContain("min-h-[44px]");
       expect(dismissBtn.className).toContain("min-w-[44px]");
       expect(dismissBtn.getAttribute("aria-label")).toBe(
-        "Dismiss medical disclaimer for this session"
+        "Dismiss for Session: the medical disclaimer"
       );
     });
   });

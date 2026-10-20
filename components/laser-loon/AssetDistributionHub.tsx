@@ -289,7 +289,6 @@ export const AssetDistributionHub: React.FC<AssetDistributionHubProps> = ({
           <button
             onClick={handleShare}
             className="inline-flex items-center justify-center gap-2 px-4 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono text-xs font-bold rounded-xl transition-colors active:scale-[0.98] cursor-pointer"
-            aria-label="Share case study link"
           >
             {copied ? (
               <IconCheck className="w-4 h-4 text-emerald-400" />

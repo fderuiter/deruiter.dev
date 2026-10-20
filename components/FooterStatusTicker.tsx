@@ -207,12 +207,12 @@ export const FooterStatusTicker: React.FC = () => {
               type="button"
               className="group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] transition-transform active:scale-95 focus:outline-none focus:ring-1 focus:ring-amber-400"
               title="Click to pet Duck the Golden Retriever puppy!"
-              aria-label="Pet Duck the puppy"
+              aria-label={`Duck, ${duckBarks > 0 ? `+${duckBarks} barks` : "pet me"}: pet Duck the puppy`}
             >
               <span className="text-sm transition-transform group-hover:scale-125">
                 🐕
-              </span>
-              <span className="hidden sm:inline">Duck</span>
+              </span>{" "}
+              <span className="hidden sm:inline">Duck</span>{" "}
               <span className="text-[10px] text-amber-400/80 bg-amber-400/10 px-1 rounded">
                 {duckBarks > 0 ? `+${duckBarks} barks` : "pet me"}
               </span>

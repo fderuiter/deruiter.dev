@@ -80,7 +80,7 @@ describe("FooterStatusTicker rotation (#952)", () => {
   const bubble = () => container.querySelector("p.font-sans");
   const duck = () =>
     container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Pet Duck the puppy"]'
+      'button[aria-label$="pet Duck the puppy"]'
     )!;
 
   it("keeps a newer duck quote up for the full 3.5s after the latest click (#1136)", async () => {

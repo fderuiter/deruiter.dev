@@ -90,7 +90,7 @@ function renderVault() {
 const status = () => screen.getByTestId("meme-echo-status").textContent ?? "";
 const pad = (index: number) =>
   screen.getByRole("button", {
-    name: `Play ${SOUNDBOARD_BUTTONS[index].label}`,
+    name: (name) => name.includes(SOUNDBOARD_BUTTONS[index].label),
   });
 
 /** One tap: pointerdown, pointerup, then the click a browser sends. */

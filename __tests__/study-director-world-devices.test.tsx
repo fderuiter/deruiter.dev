@@ -47,7 +47,9 @@ describe("device overlays", () => {
       const onClose = vi.fn();
       render(<Harness device={device} onClose={onClose} />);
       expect(screen.getByTestId("screen").dataset.device).toBe(device);
-      fireEvent.click(screen.getByRole("button", { name: "Close window" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: "Esc, close window" })
+      );
       expect(onClose).toHaveBeenCalledTimes(1);
     }
   );
@@ -86,7 +88,9 @@ describe("device overlays", () => {
 
   it("has no device chrome without a device", () => {
     render(<Harness onClose={() => {}} />);
-    expect(screen.queryByRole("button", { name: "Close window" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Esc, close window" })
+    ).toBeNull();
     expect(screen.getByTestId("screen").dataset.device).toBeUndefined();
   });
 });

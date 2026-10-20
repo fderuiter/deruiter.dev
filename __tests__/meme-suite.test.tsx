@@ -283,7 +283,7 @@ describe("Meme UI Components Rendering", () => {
 
     expect(container.textContent).toContain("Footnotes:");
     const petButton = container.querySelector(
-      "button[aria-label='Pet Duck the puppy']"
+      "button[aria-label$='pet Duck the puppy']"
     );
     expect(petButton).toBeTruthy();
 
@@ -314,9 +314,7 @@ describe("Meme UI Components Rendering", () => {
     expect(container.textContent).toContain("Easter Egg Trophy Case");
     expect(container.textContent).toContain("Web Audio Synthesis Engine");
 
-    const soundButtons = container.querySelectorAll(
-      "button[aria-label^='Play ']"
-    );
+    const soundButtons = container.querySelectorAll("button.meme-pad");
     expect(soundButtons.length).toBe(8);
 
     act(() => {

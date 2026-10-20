@@ -54,7 +54,7 @@ describe("Given premises vs pending deductions (#1229)", () => {
   it("shows GIVEN on canvas and ledger, never PENDING for premises", () => {
     render(<ProofWorkspaceClient />);
     const premise = screen.getByRole("button", {
-      name: /^Node D, Q → R, premise, given premise/,
+      name: /^Node D, GIVEN, Q → R, .*, premise,/,
     });
     expect(premise.textContent).toContain("GIVEN");
     expect(premise.textContent).not.toContain("PENDING");

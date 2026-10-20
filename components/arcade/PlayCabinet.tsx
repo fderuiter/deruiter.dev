@@ -54,10 +54,13 @@ import {
 import {
   CabinetPauseProvider,
   PauseOverlay,
+  createCabinetHistory,
   createPauseController,
+  resolveBack,
   resolveEscape,
   showsPauseOverlay,
   useScreenWakeLock,
+  type BackOutcome,
   type PauseReason,
 } from "@/components/arcade/pause";
 import {
@@ -168,6 +171,22 @@ function findOpenGameDialog(cabinet: HTMLElement): Element | null {
       (dialog) => !dialog.hasAttribute("data-pause-overlay")
     ) ?? null
   );
+}
+
+// The sheet a phone Back closes: the top game dialog, but never the cabinet's
+// own pause overlay, the rotate prompt, or a dialog that must be accepted
+// rather than dismissed (data-escape-holds).
+function findBackSheet(cabinet: HTMLElement): HTMLElement | null {
+  const dialogs = Array.from(
+    cabinet.querySelectorAll<HTMLElement>(
+      '[role="dialog"], [role="alertdialog"], [aria-modal="true"]'
+    )
+  ).filter(
+    (dialog) =>
+      !dialog.closest("[data-pause-overlay], [data-rotate-prompt]") &&
+      dialog.getAttribute("data-escape-holds") !== "true"
+  );
+  return dialogs[dialogs.length - 1] ?? null;
 }
 
 /**
@@ -364,6 +383,18 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     };
   }, [isFullscreen]);
 
+  // No pull-to-refresh while a touch cabinet is open (#2545): the document
+  // keeps no overscroll in real fullscreen too, where the pin below is off.
+  useEffect(() => {
+    if (!touchImmersive || !isFullscreen) return;
+    const root = document.documentElement;
+    const previousOverscroll = root.style.overscrollBehavior;
+    root.style.overscrollBehavior = "none";
+    return () => {
+      root.style.overscrollBehavior = previousOverscroll;
+    };
+  }, [touchImmersive, isFullscreen]);
+
   // The immersive touch cabinet locks page scroll while it is open and gives
   // the back of the page no overscroll bounce. Both are restored on exit.
   // The pin's restore frame, and whether the cabinet is unmounting (navigation
@@ -486,6 +517,36 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     hostsViews && !showWizard && showsPauseOverlay(pauseState.reasons);
   const [exitOffered, setExitOffered] = useState(false);
   if (exitOffered && !overlayOpen) setExitOffered(false);
+
+  // Phone Back and browser Back (#2545): one history entry per launch, and
+  // popstate walks the Escape ladder. backRef holds this render's ladder,
+  // set below once handleBack exists.
+  const backRef = useRef<() => BackOutcome>(() => "exit");
+  const [cabinetHistory] = useState(() =>
+    createCabinetHistory({ slug: gameId })
+  );
+  useEffect(() => {
+    // A reload while launched leaves the old launch's entry; strip it so the
+    // next Back leaves the page as it would have before Launch.
+    cabinetHistory.discardStale();
+    const handlePopState = () =>
+      cabinetHistory.handlePopState(() => backRef.current());
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+      // Unmounting (a link followed, say) leaves history alone.
+      cabinetHistory.abandon();
+    };
+  }, [cabinetHistory]);
+  // A cabinet without views has no pause overlay to read, so a first Back
+  // arms the cabinet and says that the next Back exits. Touching or typing in
+  // the game disarms it, as does the game resuming through the service.
+  const [backArmed, setBackArmed] = useState(false);
+  // True while the cabinet dispatches the Escape that closes a sheet on Back,
+  // so its own key rules and the disarm listener leave that press alone.
+  const syntheticEscapeRef = useRef(false);
+  const launchButtonRef = useRef<HTMLButtonElement>(null);
+  const focusTriggerOnExitRef = useRef(false);
   const resumeFromOverlay = () => {
     setExitOffered(false);
     pauseController.resume();
@@ -549,6 +610,8 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
       document.documentElement.style.overflowAnchor = "none";
     }
     setLaunchedOnTouch(isTouchDevice);
+    setBackArmed(false);
+    cabinetHistory.push();
     handlePrefetch();
     setIsWarmingUp(true);
     setBootProgress(0);
@@ -694,6 +757,11 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
   }, [isLaunched]);
 
   const handleExit = () => {
+    // Exiting by the cabinet's own controls pops the launch's history entry;
+    // after a Back it is already gone.
+    cabinetHistory.release();
+    setBackArmed(false);
+    focusTriggerOnExitRef.current = true;
     // The next launch starts unpaused.
     setExitOffered(false);
     pauseController.resume();
@@ -706,6 +774,96 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
     setBootProgress(0);
     onExit?.();
   };
+
+  // Closes a sheet the way its own Escape does: the press goes to the sheet
+  // (or the control focused in it), and the cabinet's key rules ignore it.
+  const closeSheet = (sheet: HTMLElement) => {
+    const active = document.activeElement;
+    const target =
+      active instanceof HTMLElement && sheet.contains(active) ? active : sheet;
+    syntheticEscapeRef.current = true;
+    try {
+      target.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Escape",
+          code: "Escape",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    } finally {
+      syntheticEscapeRef.current = false;
+    }
+  };
+
+  // One Back: the Escape ladder with exit in place of "offer exit".
+  const handleBack = (): BackOutcome => {
+    const cabinet = cabinetRef.current;
+    // Back while the CRT warms up, or on the rotate prompt, leaves.
+    if (!isLaunched || !cabinet || rotateBlocked) {
+      handleExit();
+      return "exit";
+    }
+    if (showWizard) {
+      setShowWizard(false);
+      return "stay";
+    }
+    const sheet = findBackSheet(cabinet);
+    if (hostsViews) {
+      const action = resolveBack({ sheetOpen: sheet !== null, overlayOpen });
+      if (action === "close-sheet" && sheet) {
+        closeSheet(sheet);
+        return "stay";
+      }
+      if (action === "pause") {
+        pauseController.pause("user");
+        return "stay";
+      }
+      handleExit();
+      return "exit";
+    }
+    // Without views: armed exits first, so a game whose pause menu is itself
+    // a dialog never loops between pausing and closing that menu.
+    if (backArmed) {
+      handleExit();
+      return "exit";
+    }
+    if (sheet) {
+      closeSheet(sheet);
+      return "stay";
+    }
+    pauseController.pause("user");
+    onAutoPause?.();
+    setBackArmed(true);
+    return "stay";
+  };
+  useEffect(() => {
+    backRef.current = handleBack;
+  });
+
+  useEffect(() => {
+    if (!backArmed) return;
+    const cabinet = cabinetRef.current;
+    if (!cabinet) return;
+    const disarm = () => {
+      if (!syntheticEscapeRef.current) setBackArmed(false);
+    };
+    cabinet.addEventListener("pointerdown", disarm, true);
+    cabinet.addEventListener("keydown", disarm, true);
+    const stopResume = pauseController.onResume(() => setBackArmed(false));
+    return () => {
+      cabinet.removeEventListener("pointerdown", disarm, true);
+      cabinet.removeEventListener("keydown", disarm, true);
+      stopResume();
+    };
+  }, [backArmed, pauseController]);
+
+  // Focus goes back to Launch when the cabinet closes (AGENTS.md section 10).
+  useEffect(() => {
+    if (isLaunched || isWarmingUp || !focusTriggerOnExitRef.current) return;
+    focusTriggerOnExitRef.current = false;
+    launchButtonRef.current?.focus({ preventScroll: true });
+  }, [isLaunched, isWarmingUp]);
 
   if (isLaunched) {
     const bezelClasses =
@@ -730,6 +888,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
             // Field Manual) still bubbles through it in React. It belongs
             // to that overlay, so its Escape closes the overlay, not the game.
             !event.currentTarget.contains(target) ||
+            syntheticEscapeRef.current ||
             showWizard ||
             event.repeat ||
             event.ctrlKey ||
@@ -1171,6 +1330,17 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
           </div>
         )}
 
+        {backArmed && (
+          <p
+            role="status"
+            data-testid="cabinet-back-hint"
+            className="pointer-events-none absolute left-1/2 z-50 max-w-[calc(100%-32px)] -translate-x-1/2 rounded-xl border border-zinc-700/80 bg-black/90 px-4 py-2 text-center font-mono text-sm text-zinc-100 shadow-2xl"
+            style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 16px)" }}
+          >
+            Press Back again to exit
+          </p>
+        )}
+
         {rotateBlocked && mobileOrientation !== "either" && (
           <RotateDevicePrompt target={mobileOrientation} onExit={handleExit} />
         )}
@@ -1330,6 +1500,7 @@ export const PlayCabinet: React.FC<PlayCabinetProps> = ({
               {/* Glowing Play Button */}
               <div className="flex justify-end w-full">
                 <button
+                  ref={launchButtonRef}
                   onMouseEnter={handlePrefetch}
                   onFocus={handlePrefetch}
                   onClick={handleLaunch}

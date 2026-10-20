@@ -147,6 +147,8 @@ export default defineConfig({
         "lib/laser-loon/types.ts",
         "lib/laser-loon/index.ts",
         "lib/clinical-trial-chaos/types.ts",
+        "lib/clinical-platform/types.ts",
+        "lib/clinical-platform/index.ts",
         "lib/quasi-perfect/types.ts",
         "lib/quasi-perfect/index.ts",
         "lib/garmin-types.ts",

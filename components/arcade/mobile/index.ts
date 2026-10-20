@@ -42,3 +42,4 @@ export type { HoldDpadProps } from "./HoldDpad";
 export { swipeDirection, type SwipeDirection } from "./swipe";
 export { CabinetTouchContext, useCabinetTouch } from "./CabinetTouchContext";
 export { useFormFactor, type UseFormFactorOptions } from "./useFormFactor";
+export { EDGE_KEEP_OUT_PX, inEdgeKeepOut } from "./edge-keep-out";

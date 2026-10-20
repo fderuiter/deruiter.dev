@@ -22,6 +22,7 @@
 - [dailySeed](functions/dailySeed.md)
 - [isIsoDate](functions/isIsoDate.md)
 - [normalizeSeed](functions/normalizeSeed.md)
+- [openerIndex](functions/openerIndex.md)
 - [parseChallengeHash](functions/parseChallengeHash.md)
 - [parseSeed](functions/parseSeed.md)
 - [seedFromBytes](functions/seedFromBytes.md)

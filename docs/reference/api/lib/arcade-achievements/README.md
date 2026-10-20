@@ -8,15 +8,12 @@
 
 ## Interfaces
 
-- [ArcadeProgress](interfaces/ArcadeProgress.md)
+- [ArcadeRun](interfaces/ArcadeRun.md)
 - [ArcadeTrophy](interfaces/ArcadeTrophy.md)
 
 ## Variables
 
-- [ARCADE\_LEGACY\_KEY\_MAP](variables/ARCADE_LEGACY_KEY_MAP.md)
-- [ARCADE\_STORAGE\_KEYS](variables/ARCADE_STORAGE_KEYS.md)
 - [ARCADE\_TROPHIES](variables/ARCADE_TROPHIES.md)
-- [ARCADE\_UNIFIED\_PROGRESS\_KEY](variables/ARCADE_UNIFIED_PROGRESS_KEY.md)
 - [HALL\_OF\_FAME\_TROPHY\_COUNT](variables/HALL_OF_FAME_TROPHY_COUNT.md)
 
 ## Functions
@@ -24,9 +21,26 @@
 - [evaluateTrophies](functions/evaluateTrophies.md)
 - [getArcadeProgress](functions/getArcadeProgress.md)
 - [getDefaultArcadeProgress](functions/getDefaultArcadeProgress.md)
-- [migrateLegacyArcadeScores](functions/migrateLegacyArcadeScores.md)
-- [parseScoreValue](functions/parseScoreValue.md)
 - [recordArcadeMilestone](functions/recordArcadeMilestone.md)
 - [recordArcadeScore](functions/recordArcadeScore.md)
+- [recordRun](functions/recordRun.md)
 - [saveArcadeProgress](functions/saveArcadeProgress.md)
 - [unlockArcadeTrophies](functions/unlockArcadeTrophies.md)
+
+## References
+
+### ARCADE\_UNIFIED\_PROGRESS\_KEY
+
+Re-exports [ARCADE_UNIFIED_PROGRESS_KEY](../arcade/progress/core/variables/ARCADE_UNIFIED_PROGRESS_KEY.md)
+
+***
+
+### ArcadeProgress
+
+Re-exports [ArcadeProgress](../arcade/progress/core/interfaces/ArcadeProgress.md)
+
+***
+
+### parseScoreValue
+
+Re-exports [parseScoreValue](../arcade/progress/core/functions/parseScoreValue.md)

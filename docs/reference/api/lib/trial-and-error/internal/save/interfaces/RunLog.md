@@ -43,6 +43,16 @@ run with a run deck.
 
 ***
 
+### openers?
+
+> `optional` **openers?**: `"FIXED"`
+
+FIXED for a run first saved before first-Blind openers (#2413): the
+first Blind deals its own scripted setup. Absent means the seed picks
+the opener.
+
+***
+
 ### origin?
 
 > `optional` **origin?**: [`RunOrigin`](../../seed/type-aliases/RunOrigin.md)

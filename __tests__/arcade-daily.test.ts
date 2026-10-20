@@ -27,7 +27,6 @@ import {
 } from "@/lib/arcade/daily";
 import {
   getArcadeDailyProgress,
-  getArcadeDailySnapshot,
   recordArcadeDailyResult,
 } from "@/lib/arcade/daily-store";
 import { onAppEvent } from "@/lib/event-bus";
@@ -360,7 +359,7 @@ describe("Arcade Daily store", () => {
         "2026-10-14"
       )
     ).toEqual({ score: 41 });
-    expect(JSON.parse(getArcadeDailySnapshot()).played).toEqual(["2026-10-14"]);
+    expect(getArcadeDailyProgress().played).toEqual(["2026-10-14"]);
     expect(window.localStorage.getItem(ARCADE_DAILY_STORAGE_KEY)).not.toBe(
       null
     );
@@ -375,12 +374,16 @@ describe("Arcade Daily store", () => {
         NOON
       )
     ).toBe(false);
-    expect(getArcadeDailySnapshot()).toBe("");
+    expect(window.localStorage.getItem(ARCADE_DAILY_STORAGE_KEY)).toBeNull();
   });
 
   it("reads empty from a damaged record", () => {
     window.localStorage.setItem(ARCADE_DAILY_STORAGE_KEY, "{oops");
     expect(getArcadeDailyProgress()).toEqual(emptyArcadeDailyProgress());
+    // Set aside, never thrown away (#2548).
+    expect(
+      window.localStorage.getItem(`${ARCADE_DAILY_STORAGE_KEY}:corrupt`)
+    ).toBe("{oops");
   });
 });
 

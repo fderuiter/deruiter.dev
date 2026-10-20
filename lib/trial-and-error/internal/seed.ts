@@ -5,7 +5,7 @@ import {
   encodeCustomScenario,
 } from "./scenario-compression";
 import { arcadeDailyKey, isArcadeDailyDate } from "@/lib/arcade/daily";
-import { uniformAt } from "./rng";
+import { drawInt, uniformAt } from "./rng";
 import type { RunChoice } from "./run-rules";
 import { DEFAULT_SPONSOR_ID } from "./sponsors";
 import { DEFAULT_STAKE, MAX_STAKE } from "./stakes";
@@ -79,6 +79,20 @@ export function normalizeSeed(input: string): string | null {
 export function parseSeed(input: string): string | null {
   const trimmed = input.trim();
   return normalizeSeed(trimmed) ?? (LEGACY_SEED.test(trimmed) ? trimmed : null);
+}
+
+/**
+ * Which of a first Blind's `size` openers a run on `seed` opens on (#2413),
+ * from 0. The pick is a pure function of the seed, on a stream of its own,
+ * so a seed replays the same opener every time and no other draw moves. Only
+ * a codec seed picks: the Daily Protocol's, a random run's or one typed in
+ * or opened from a challenge link. A named seed from before the codec opens
+ * on the Blind's own setup, opener 0, as it always did, so old links still
+ * deal what they dealt.
+ */
+export function openerIndex(seed: string, size: number): number {
+  if (size <= 1 || normalizeSeed(seed) === null) return 0;
+  return drawInt(`${seed}/opener`, 0, size);
 }
 
 /** True for a real calendar date written `YYYY-MM-DD`. */

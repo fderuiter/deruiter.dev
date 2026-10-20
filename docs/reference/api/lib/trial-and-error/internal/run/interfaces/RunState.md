@@ -132,6 +132,16 @@ Form 483 (stake 5): the relic slot locked this act, from 0.
 
 ***
 
+### openers?
+
+> `optional` **openers?**: `"FIXED"`
+
+FIXED for a run replayed from a save recorded before first-Blind
+openers (#2413): the first Blind deals its own scripted setup whatever
+the seed. Absent means the seed picks the opener.
+
+***
+
 ### seed
 
 > **seed**: `string`

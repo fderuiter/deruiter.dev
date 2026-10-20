@@ -8,6 +8,7 @@ import {
   recordArcadeMilestone,
   unlockArcadeTrophies,
   getArcadeProgress,
+  saveArcadeProgress,
   parseScoreValue,
   ARCADE_TROPHIES,
   ARCADE_UNIFIED_PROGRESS_KEY,
@@ -49,7 +50,7 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
   });
 
   describe("Legacy High Score Key Migration", () => {
-    it("automatically migrates legacy storage keys into unified progress", () => {
+    it("folds legacy storage keys into unified progress once", () => {
       // Set legacy keys
       safeSetRawItem("working_duck_high_score", "350");
       safeSetRawItem("garmin_runner_high_score", "800");
@@ -251,6 +252,7 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
     it("keeps trophies unlocked under the old score rules", () => {
       const progress = getArcadeProgress();
       progress.unlockedTrophies.trial_error_csr_lock = 1;
+      saveArcadeProgress(progress);
       recordArcadeScore("trial-and-error", 10);
       expect(
         getArcadeProgress().unlockedTrophies.trial_error_csr_lock

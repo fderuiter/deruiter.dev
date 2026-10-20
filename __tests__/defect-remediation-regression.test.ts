@@ -2632,3 +2632,74 @@ describe("Proof console autocomplete never offers whitespace (#2532)", () => {
     expect(getSuggestion("connect A")).toBe("connect A ");
   });
 });
+
+describe("Offline queue keeps every write it cannot send (#2552)", () => {
+  async function loadQueue() {
+    vi.resetModules();
+    const { apiClient } = await import("@/lib/api-client");
+    const queue = await import("@/hooks/useOfflineQueue");
+    queue.clearOfflineQueue();
+    queue.clearDLQ();
+    return { apiClient, queue };
+  }
+
+  function setOnline(value: boolean) {
+    Object.defineProperty(navigator, "onLine", {
+      value,
+      writable: true,
+      configurable: true,
+    });
+  }
+
+  afterEach(() => {
+    setOnline(true);
+    vi.restoreAllMocks();
+  });
+
+  it("dead-letters a retryable write once its retries run out instead of dropping it", async () => {
+    const { apiClient, queue } = await loadQueue();
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const post = vi
+      .spyOn(apiClient, "post")
+      .mockResolvedValue(
+        fromPartial({ ok: false, status: 503, error: "Service Unavailable" })
+      );
+
+    setOnline(false);
+    queue.enqueueOfflineRequest({
+      type: "feedback",
+      endpoint: "/api/case-studies/feedback",
+      body: { caseStudySlug: "s" },
+      maxRetries: 1,
+    });
+    setOnline(true);
+    await queue.flushOfflineQueue();
+
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(queue.getOfflineQueueLength()).toBe(0);
+    expect(queue.getDLQ()).toEqual([
+      expect.objectContaining({
+        statusCode: 503,
+        failureReason: "Service Unavailable",
+      }),
+    ]);
+    queue.clearDLQ();
+  });
+
+  it("sends the newer body when a second write reuses a queued id", async () => {
+    const { apiClient, queue } = await loadQueue();
+    const post = vi
+      .spyOn(apiClient, "post")
+      .mockResolvedValue(fromPartial({ ok: true, status: 200 }));
+
+    setOnline(false);
+    const write = { type: "reaction", endpoint: "/api/r", id: "same" };
+    queue.enqueueOfflineRequest({ ...write, body: { v: 1 } });
+    queue.enqueueOfflineRequest({ ...write, body: { v: 2 } });
+    setOnline(true);
+    await queue.flushOfflineQueue();
+
+    expect(post).toHaveBeenCalledTimes(1);
+    expect(post.mock.calls[0][1]).toEqual({ v: 2 });
+  });
+});

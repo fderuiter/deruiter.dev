@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -97,12 +97,22 @@ describe("Vercel Retention & Storage Inventory", () => {
   });
 
   it("executes verification check without errors", () => {
-    const result = runRetentionInventoryVerification({
-      json: false,
-      candidates: false,
-    });
-    expect(result.success).toBe(true);
-    expect(result.data.candidates).toHaveLength(0);
+    // Capture the report: the snapshot fixture's near-full Functions Storage
+    // reading otherwise reads like a live alert in CI logs (#2532).
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    try {
+      const result = runRetentionInventoryVerification({
+        json: false,
+        candidates: false,
+      });
+      expect(result.success).toBe(true);
+      expect(result.data.candidates).toHaveLength(0);
+      expect(log.mock.calls.flat().join("\n")).toContain(
+        "=== Vercel Retention & Storage Inventory ==="
+      );
+    } finally {
+      log.mockRestore();
+    }
   });
 
   it("detects safety violations if a protected target is added as a candidate", () => {

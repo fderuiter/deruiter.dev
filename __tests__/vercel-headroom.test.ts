@@ -1,5 +1,13 @@
 // @vitest-environment node
-import { describe, it, expect, vi } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  it,
+  expect,
+  vi,
+  type MockInstance,
+} from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import {
@@ -18,6 +26,22 @@ import {
 } from "../scripts/vercel-headroom";
 
 describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
+  // runHeadroomVerification prints its report to the console. The snapshot
+  // fixture is deliberately over the critical threshold, so capture the
+  // output: uncaptured, it reads as a real "[CRITICAL]" alert in CI logs.
+  let consoleLog: MockInstance<typeof console.log>;
+  let consoleError: MockInstance<typeof console.error>;
+
+  beforeEach(() => {
+    consoleLog = vi.spyOn(console, "log").mockImplementation(() => {});
+    consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    consoleLog.mockRestore();
+    consoleError.mockRestore();
+  });
+
   const root = path.resolve(__dirname, "..");
   const howToPath = path.join(
     root,
@@ -372,6 +396,12 @@ describe("Vercel Hobby Storage & Build Headroom Tracker", () => {
         evalTime: fixedNow,
       });
       expect(strictResult.success).toBe(false); // Fails strict mode due to critical Functions Storage
+
+      const printed = consoleLog.mock.calls.flat().join("\n");
+      expect(printed).toContain("[CRITICAL] CRITICAL: Functions Storage");
+      expect(consoleError).toHaveBeenCalledWith(
+        expect.stringContaining("Strict failure")
+      );
     });
 
     it("verifies that docs/how-to/monitor-vercel-headroom.md exists and covers key requirements", () => {

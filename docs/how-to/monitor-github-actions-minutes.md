@@ -88,11 +88,16 @@ a gate or lowering a threshold:
 - `mutation-gate` runs Stryker. PRs and `main` pushes run incrementally
   against the newest report a `main` push saved; a PR that changes Stryker's
   configuration or the lockfile forces a full run, and
-  `mutation-weekly.yml` runs every mutant weekly (#1772).
+  `mutation-weekly.yml` runs every mutant weekly (#1772). The same workflow
+  mutates the game engines (Trial & Error scoring and validation, the Duck
+  engine) in a separate `mutation-engines` job, bounded at 45 minutes, with
+  a break per file in `stryker.engines.config.mjs`; PRs never run it
+  (#2529).
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
-- `build` runs `npm run build` once per PR after `static-gate`, checks the
-  bundle budgets, and uploads the build as an artifact (#1769).
+- `build` runs `npm run build` once per PR, in parallel with `static-gate`
+  (#2542), checks the bundle budgets, and uploads the build as an artifact
+  (#1769).
 - `heavy-gate` runs the full chromium e2e suite in three shards against that
   artifact (#1770). `bench-gate` measures Web Vitals on the same build:
   `bench:pages --assert` validates `.next/build-provenance.json` instead of
@@ -128,7 +133,7 @@ a gate or lowering a threshold:
 | --- | --- | --- |
 | Code change, ready for review | Every gate | Green when every gate passes |
 | Docs-only change | Every gate except `build`, `heavy-gate`, `bench-gate`, `heavy-gate-report`, `device-gate` | Green when the rest pass |
-| Draft | Static, unit, mutation and security gates | Red until marked ready, which re-runs everything |
+| Draft | Static and security gates only (#2541) | Red until marked ready, which re-runs everything |
 | Bot branch (`stitch/`, `jules/`) without `ci:full` | Static and security gates only | Red: "bot PR: full suite runs when marked ready" |
 | Bot branch with the `ci:full` label | Every gate the change needs | Green when they pass |
 
@@ -138,7 +143,8 @@ in `scripts/ci-run-policy.mjs`: Markdown outside the app source directories,
 named files. Any other path counts as code. To promote a bot PR, a
 maintainer applies the `ci:full` label; the `labeled` trigger re-runs CI.
 Adding any label re-runs the whole workflow, because the new run cancels the
-one in progress. The bot prefix list lives in `scripts/ci-run-policy.mjs`,
+one in progress, so open a pull request as a draft and add labels before
+marking it ready. The bot prefix list lives in `scripts/ci-run-policy.mjs`,
 and `__tests__/ci-run-policy.test.ts` ties it to `validateBranchName()`.
 
 ## CI-02: targeted device coverage gates pull requests to `main`

@@ -211,7 +211,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
         </button>
         <button
           onClick={() => setActiveTab("review")}
-          aria-label={`Review threads (${openReviewThreadCount} open in study)`}
+          aria-label={`Review (${openReviewThreadCount} open threads in study)`}
           className={`flex-1 min-w-0 px-1 py-2 text-center text-xs font-mono whitespace-nowrap transition-colors border-b-2 flex items-center justify-center gap-1.5 ${
             activeTab === "review"
               ? "border-amber-400 text-amber-300 font-bold bg-zinc-900/40"
@@ -219,7 +219,7 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({
           }`}
         >
           <span>Review</span>
-          <span className="rounded bg-zinc-800 px-1 text-[9px]">
+          <span aria-hidden className="rounded bg-zinc-800 px-1 text-[9px]">
             {openReviewThreadCount}
           </span>
         </button>

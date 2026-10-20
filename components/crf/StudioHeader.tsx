@@ -306,7 +306,10 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
             >
               <IconSearch className="w-3.5 h-3.5" aria-hidden />
               <span className="hidden lg:inline">Find</span>
-              <kbd className="hidden lg:inline-block text-[9px] px-1 rounded bg-zinc-950 border border-zinc-700 text-zinc-400">
+              <kbd
+                aria-hidden
+                className="hidden lg:inline-block text-[9px] px-1 rounded bg-zinc-950 border border-zinc-700 text-zinc-400"
+              >
                 F
               </kbd>
             </button>

@@ -35,8 +35,10 @@ for (const width of [320, 375, 768, 1440]) {
       )
     ).toEqual([]);
 
+    const screenshotPath = testInfo.outputPath(`platform-${width}.png`);
+    await page.screenshot({ path: screenshotPath, fullPage: true });
     await testInfo.attach(`platform-${width}`, {
-      body: await page.screenshot({ fullPage: true }),
+      path: screenshotPath,
       contentType: "image/png",
     });
   });

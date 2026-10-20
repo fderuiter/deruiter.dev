@@ -1,5 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import React from "react";
 import {
   render,
@@ -18,14 +26,47 @@ import {
   StudyProtocol,
 } from "@/lib/crf";
 
+/**
+ * Runs the autosave debounce (800ms) and any other pending timers on the
+ * fake clock. Waiting on the wall clock instead raced the debounce against
+ * whatever else a loaded machine was doing (#2601).
+ */
+async function advanceClock(ms: number) {
+  await act(async () => {
+    await vi.advanceTimersByTimeAsync(ms);
+  });
+}
+
 describe("EDC Simulation State Integration", () => {
+  beforeAll(async () => {
+    // The studio loads these modes through next/dynamic. Importing them once
+    // here means each mode renders after a few microtasks rather than after
+    // transforming and loading its module, which on a loaded machine took
+    // longer than findBy's one-second limit (#2601).
+    await Promise.all([
+      import("@/components/crf/Modes/LiveEdcSimulator"),
+      import("@/components/crf/Modes/VisitMatrixEditor"),
+      import("@/components/crf/Modes/ExportImportModal"),
+    ]);
+  });
+
   beforeEach(() => {
     window.location.hash = "";
     localStorage.clear();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    // Testing Library drives a fake clock only when it finds Jest's API:
+    // given it, findBy advances fake time between checks, so its one-second
+    // limit is one second of the test's clock, not of the machine's.
+    vi.stubGlobal("jest", {
+      advanceTimersByTime: (ms: number) => vi.advanceTimersByTime(ms),
+    });
   });
 
   afterEach(() => {
     cleanup();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
     window.location.hash = "";
     localStorage.clear();
   });
@@ -102,9 +143,7 @@ describe("EDC Simulation State Integration", () => {
     expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
 
     // Wait for useStudyAutosave debounce (800ms)
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    await advanceClock(1000);
 
     // Check draft saved in localStorage contains electronic signature
     const draft = loadStudyDraft();
@@ -244,9 +283,7 @@ describe("EDC Simulation State Integration", () => {
     expect(await screen.findByText(/001-CUSTOM-999/i)).toBeDefined();
 
     // Wait for autosave debounce to ensure simulationState is persisted to draft
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    await advanceClock(1000);
     const draftBefore = loadStudyDraft();
     expect(draftBefore.status).toBe("recovered");
     if (draftBefore.status === "recovered") {
@@ -272,9 +309,7 @@ describe("EDC Simulation State Integration", () => {
     // Confirm that custom subject is NOT present in new study UI or autosaved simulationState
     expect(screen.queryByText(/001-CUSTOM-999/i)).toBeNull();
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    await advanceClock(1000);
     const draftAfterPreset = loadStudyDraft();
     if (draftAfterPreset.status === "recovered") {
       expect(
@@ -298,9 +333,7 @@ describe("EDC Simulation State Integration", () => {
 
     expect(await screen.findByText(/001-SAME-ID-CUSTOM/i)).toBeDefined();
 
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    await advanceClock(1000);
     const draftBeforeSameId = loadStudyDraft();
     expect(draftBeforeSameId.status).toBe("recovered");
 
@@ -328,10 +361,8 @@ describe("EDC Simulation State Integration", () => {
       const importBtn = await screen.findByRole("button", {
         name: /Import Protocol into Studio/i,
       });
-      await act(async () => {
-        fireEvent.click(importBtn);
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      });
+      fireEvent.click(importBtn);
+      await advanceClock(50);
 
       const confirmReplacementBtn2 = await screen.findByRole("button", {
         name: /Discard & Replace/i,
@@ -347,9 +378,7 @@ describe("EDC Simulation State Integration", () => {
       // Verify custom subject is gone and state is isolated even for same-ID study replacement
       expect(screen.queryByText(/001-SAME-ID-CUSTOM/i)).toBeNull();
 
-      await act(async () => {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      });
+      await advanceClock(1000);
       const draftAfterSameId = loadStudyDraft();
       if (draftAfterSameId.status === "recovered") {
         expect(
@@ -487,9 +516,7 @@ describe("EDC Simulation State Integration", () => {
     expect(await screen.findByText(/Locked \(PI\)/i)).toBeDefined();
 
     // Wait for useStudyAutosave debounce (1000ms) to ensure draft is saved
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    await advanceClock(1000);
 
     const draftBefore = loadStudyDraft();
     expect(draftBefore.status).toBe("recovered");
@@ -565,10 +592,8 @@ describe("EDC Simulation State Integration", () => {
       name: /Import Protocol into Studio/i,
     });
 
-    await act(async () => {
-      fireEvent.click(importBtn);
-      await new Promise((resolve) => setTimeout(resolve, 50));
-    });
+    fireEvent.click(importBtn);
+    await advanceClock(50);
 
     // Assert error message is displayed in modal
     expect(
@@ -576,9 +601,7 @@ describe("EDC Simulation State Integration", () => {
     ).toBeDefined();
 
     // Wait for autosave tick
-    await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-    });
+    await advanceClock(1000);
 
     // Assert saved draft in localStorage remains unchanged and compare recovered simulationState deep equal
     const draftAfter = loadStudyDraft();

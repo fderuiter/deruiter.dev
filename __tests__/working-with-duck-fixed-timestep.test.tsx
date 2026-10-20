@@ -171,13 +171,22 @@ async function runAtFrameRate(frameDurationMs: number, frameCount: number) {
   });
   await clickByText(container, /Start Sprint 1/);
 
+  // The loop keeps its simulation in refs and reads the clock only from the
+  // timestamps passed here, so several callbacks can share one React commit.
+  // Committing about every 250ms of display time, rather than per callback,
+  // gives the three rates about the same 40 renders each: a commit per
+  // callback made the 120Hz run 1,200 renders, and on a loaded machine the
+  // test ran past the per-test time limit (#2601).
+  const framesPerCommit = Math.max(1, Math.round(250 / frameDurationMs));
   let timestamp = 0;
-  for (let i = 0; i < frameCount; i++) {
-    timestamp += i === 0 ? 0 : frameDurationMs;
-    const cb = rafCallback.current;
-    expect(cb).not.toBeNull();
+  for (let i = 0; i < frameCount; i += framesPerCommit) {
     await act(async () => {
-      cb!(timestamp);
+      for (let j = i; j < Math.min(i + framesPerCommit, frameCount); j++) {
+        timestamp += j === 0 ? 0 : frameDurationMs;
+        const cb = rafCallback.current;
+        expect(cb).not.toBeNull();
+        cb!(timestamp);
+      }
     });
   }
 
@@ -199,15 +208,29 @@ async function runAtFrameRate(frameDurationMs: number, frameCount: number) {
 describe("Working With Duck - Fixed-Timestep Simulation (#600)", () => {
   let randomSpy: ReturnType<typeof vi.spyOn>;
 
+  const realRaf = window.requestAnimationFrame;
+  const realCancelRaf = window.cancelAnimationFrame;
+
   beforeEach(() => {
     // Deterministic: avoid low-probability random events (surprise
     // deliveries, impulse rolls) diverging the three Hz runs for reasons
     // unrelated to timing.
     randomSpy = vi.spyOn(Math, "random").mockReturnValue(0.95);
+    // The sound cues' delayed notes are timers; with fake timers they never
+    // fire on the wall clock while a test runs (#2601).
+    vi.useFakeTimers({
+      toFake: ["setTimeout", "clearTimeout", "setInterval", "clearInterval"],
+    });
   });
 
   afterEach(() => {
     randomSpy.mockRestore();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    // A test that fails part-way leaves its frame stub installed.
+    window.requestAnimationFrame = realRaf;
+    window.cancelAnimationFrame = realCancelRaf;
+    document.body.innerHTML = "";
   });
 
   it("advances equivalent progress and score over equal elapsed time at 30Hz, 60Hz, and 120Hz", async () => {

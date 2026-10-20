@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import type { SessionRng, StepClock } from "@/lib/arcade";
 import { useArcadeSession } from "./ArcadeSessionProvider";
 
 /** Paints one frame. `alpha` is how far the loop is between fixed steps. */
@@ -31,8 +32,23 @@ export interface ArcadeSession<State, Intent> {
    * pause service (#2357) defines the versioned envelope around it.
    */
   readonly snapshot?: () => unknown;
-  /** Restores a run from {@link ArcadeSession.snapshot}'s data. */
+  /**
+   * Restores a run from {@link ArcadeSession.snapshot}'s data. The saved
+   * `rng` state and `step` are applied after it returns, so `restore` keeps
+   * the same `rng` and `clock` objects rather than replacing them.
+   */
   readonly restore?: (data: unknown) => void;
+  /**
+   * The gameplay random stream (#2544), from `createRng(seed)`. Every draw
+   * that changes game state or score comes from it; views keep their own
+   * cosmetic randomness. Its state is saved with the run as `rngState`.
+   */
+  readonly rng?: SessionRng;
+  /**
+   * The fixed-step clock (#2544), from `createStepClock()`. The loop runs the
+   * game in its constant `dt`; its step count is saved with the run.
+   */
+  readonly clock?: StepClock;
   /** The input tuning this run plays with, such as touch assist strengths. */
   readonly tuning?: Readonly<Record<string, number | boolean>>;
 }

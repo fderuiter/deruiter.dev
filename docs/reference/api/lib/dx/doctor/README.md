@@ -18,6 +18,7 @@
 ## Variables
 
 - [CANONICAL\_SETUP\_COMMAND](variables/CANONICAL_SETUP_COMMAND.md)
+- [SESSION\_DETERMINISM\_ALLOWLIST](variables/SESSION_DETERMINISM_ALLOWLIST.md)
 
 ## Functions
 
@@ -46,6 +47,7 @@
 - [checkSectionStructures](functions/checkSectionStructures.md)
 - [checkSeoSocialIntegrity](functions/checkSeoSocialIntegrity.md)
 - [checkServiceResultTypes](functions/checkServiceResultTypes.md)
+- [checkSessionDeterminism](functions/checkSessionDeterminism.md)
 - [checkSetupContractDocs](functions/checkSetupContractDocs.md)
 - [checkSubRoutePerformance](functions/checkSubRoutePerformance.md)
 - [checkTechnicalGuideSchemaParity](functions/checkTechnicalGuideSchemaParity.md)

@@ -14,15 +14,15 @@ import {
   updateGameSimulation,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   EMPTY_COURSE,
   PX_PER_METER,
   type CourseBlock,
   type CourseLayout,
-} from "@/lib/garmin-course";
-import { EMPTY_PROPS } from "@/lib/garmin-props";
-import { FULL_PACE_JUMP_FORCE } from "@/lib/garmin-cape";
+} from "@/lib/garmin/course";
+import { EMPTY_PROPS } from "@/lib/garmin/props";
+import { FULL_PACE_JUMP_FORCE } from "@/lib/garmin/cape";
 import {
   BASE_HEIGHT,
   BUFF_HEIGHT,
@@ -35,7 +35,7 @@ import {
   stepPickups,
   SUIT_FLOAT_Y,
   type Pickup,
-} from "@/lib/garmin-powerups";
+} from "@/lib/garmin/powerups";
 import {
   SUIT_GRAVITY_SCALE,
   SUIT_LAND_JUMP_VY,
@@ -47,7 +47,7 @@ import {
   SWIM_PACE,
   SWIM_STROKE_MS,
   SWIM_STROKE_VY,
-} from "@/lib/garmin-swim";
+} from "@/lib/garmin/swim";
 
 // The Tri Suit power tier (#1993): swims, sinks slowly, hops lower on land.
 

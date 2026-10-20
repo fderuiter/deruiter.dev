@@ -11,7 +11,7 @@ import {
   trainingEffectLabel,
   trainingStatus,
   type StageEffort,
-} from "@/lib/garmin-culture";
+} from "@/lib/garmin/culture";
 
 const effort = (overrides: Partial<StageEffort> = {}): StageEffort => ({
   foesDefeated: 0,

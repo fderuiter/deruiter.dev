@@ -4,9 +4,9 @@
  * reduced motion changes nothing here.
  */
 
-import { CANVAS_SIZE } from "@/lib/garmin-engine";
+import { CANVAS_SIZE } from "@/lib/garmin/engine";
 import { gameFont } from "@/lib/game-utils";
-import { FINISHER_CARD_NAMES } from "@/lib/garmin-finisher";
+import { FINISHER_CARD_NAMES } from "@/lib/garmin/finisher";
 import {
   BAG_SIZE,
   GEAR_ITEM_NAMES,
@@ -20,7 +20,7 @@ import {
   type PlanNode,
   type PlanNodeId,
   type PlanSave,
-} from "@/lib/garmin-plan";
+} from "@/lib/garmin/plan";
 
 type Ctx = CanvasRenderingContext2D;
 

@@ -2,6 +2,7 @@
 import { test, expect, Page, TestInfo } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { settleFooterTicker } from "./helpers/footer-ticker";
+import { waitForVisualSettle } from "./helpers/settle";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -187,7 +188,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
         elements.every((el) => !el.textContent?.includes("MEASURING..."))
       );
     });
-    await page.waitForTimeout(300);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Default Landing Page State");
   });
@@ -207,7 +208,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     const filterBtn = page.locator('button:has-text("TypeScript")');
     if (await filterBtn.isVisible()) {
       await filterBtn.click();
-      await page.waitForTimeout(300);
+      await waitForVisualSettle(page);
     }
 
     await auditAndAssert(
@@ -236,7 +237,8 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await expect(combobox).toBeVisible();
 
     await combobox.fill("TypeScript");
-    await page.waitForTimeout(200);
+    await expect(combobox).toHaveValue("TypeScript");
+    await waitForVisualSettle(page);
 
     await auditAndAssert(
       page,
@@ -304,12 +306,15 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
 
       const menuContainer = page.locator("#mobile-navigation");
       await expect(menuContainer).toBeVisible();
-      await page.waitForTimeout(200);
 
-      const isFocusedInitiallyInside = await page.evaluate(() => {
-        return !!document.activeElement?.closest("#mobile-navigation");
-      });
-      expect(isFocusedInitiallyInside).toBe(true);
+      // The trap moves focus in once the drawer mounts.
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => !!document.activeElement?.closest("#mobile-navigation")
+          )
+        )
+        .toBe(true);
 
       await auditAndAssert(page, testInfo, "Mobile Navigation Open State");
 
@@ -368,10 +373,9 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     );
 
     // framer-motion drives the entrance through inline style, so the ancestor
-    // walk above can report 1 while descendants are still interpolating. A
-    // short settle — the same approach the Proof Workspace audit uses — makes
-    // the scan deterministic.
-    await page.waitForTimeout(600);
+    // walk above can report 1 while descendants are still interpolating. Wait
+    // for the dialog's inline styles to stop changing before the scan.
+    await waitForVisualSettle(page, { root: '[role="dialog"]' });
   }
 
   test("Audit: Patrol Shift Intro, Briefing, Map Hub & Field Manual", async ({
@@ -519,7 +523,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await expect(
       page.getByRole("button", { name: /Share/i }).first()
     ).toBeVisible({ timeout: 15000 });
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(
       page,
@@ -628,7 +632,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
       .first();
     if (await toolBtn.isVisible()) {
       await toolBtn.click();
-      await page.waitForTimeout(300);
+      await waitForVisualSettle(page);
     }
 
     await auditAndAssert(
@@ -641,7 +645,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Consultation & Schedule Page", async ({ page }, testInfo) => {
     await page.goto("/schedule");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(300);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Schedule Page Default State");
   });
@@ -649,7 +653,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Wedding Archive", async ({ page }, testInfo) => {
     await page.goto("/wedding");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(300);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Wedding Archive Default State");
   });
@@ -657,7 +661,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Case Study Deep-Dive Reader", async ({ page }, testInfo) => {
     await page.goto("/case-studies/clinical-data-mapper");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(300);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Case Study Reader State");
   });
@@ -665,7 +669,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Arcade Hub & Game Suite", async ({ page }, testInfo) => {
     await page.goto("/arcade");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(800);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Hub Default State");
   });
@@ -673,7 +677,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Arcade Game - Clinical Chaos", async ({ page }, testInfo) => {
     await page.goto("/arcade/clinical-chaos");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Clinical Chaos");
   });
@@ -683,7 +687,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   }, testInfo) => {
     await page.goto("/arcade/garmin-watch");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Garmin Watch");
   });
@@ -691,7 +695,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Arcade Game - Laser Loon", async ({ page }, testInfo) => {
     await page.goto("/arcade/laser-loon");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Laser Loon");
   });
@@ -701,7 +705,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   }, testInfo) => {
     await page.goto("/arcade/quasi-puzzler");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Quasi Puzzler");
   });
@@ -709,7 +713,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Arcade Game - Retro Labyrinth", async ({ page }, testInfo) => {
     await page.goto("/arcade/retro-labyrinth");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Retro Labyrinth");
   });
@@ -717,7 +721,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   test("Audit: Arcade Game - Working With Duck", async ({ page }, testInfo) => {
     await page.goto("/arcade/working-with-duck");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Working With Duck");
   });
@@ -727,7 +731,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   }, testInfo) => {
     await page.goto("/arcade/patty-drive-thru");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: Patty's Drive-Thru");
   });
@@ -737,7 +741,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
   }, testInfo) => {
     await page.goto("/arcade/for-better-or-bulk");
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(400);
+    await waitForVisualSettle(page);
 
     await auditAndAssert(page, testInfo, "Arcade Game: For Better or Bulk");
   });

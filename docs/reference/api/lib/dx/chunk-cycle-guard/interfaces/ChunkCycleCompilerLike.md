@@ -50,7 +50,7 @@ A webpack compiler, reduced to what the plugin reads.
 
 #### WebpackError?
 
-> `optional` **WebpackError?**: (`message`) => `Error`
+> `optional` **WebpackError?**: new (`message`) => `Error`
 
 ##### Parameters
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { GameEngineState } from "@/lib/garmin-engine";
+import type { GameEngineState } from "@/lib/garmin/engine";
 import type { ServiceResult } from "@/lib/services/service-result";
 
 export const VariableTypeSchema = z.enum(["int", "float", "string", "array"]);

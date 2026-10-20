@@ -63,14 +63,15 @@ describe("Mobile GPU blur budget", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("keeps the mobile navigation drawer visually intact", () => {
-    // The drawer is a mobile surface, so its blur pair is substituted with a
-    // radial gradient rather than gated away to nothing.
+  it("keeps the mobile navigation drawer a solid surface with no glow wash", () => {
+    // Site chrome carries no ambient glow (#2312): the drawer is an opaque
+    // graphite sheet, with neither blurred orbs nor a radial-gradient stand-in.
     const navbar = fs.readFileSync(
       path.join(workspaceRoot, "components/Navbar.tsx"),
       "utf8"
     );
-    expect(navbar).toContain("sm:hidden");
-    expect(navbar).toContain("radial-gradient");
+    expect(navbar).toContain("bg-zinc-950/98");
+    expect(navbar).not.toMatch(/blur-\[\d+px\]/u);
+    expect(navbar).not.toContain("radial-gradient");
   });
 });

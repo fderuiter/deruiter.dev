@@ -12,7 +12,7 @@ import {
   PLAYER_X,
   type GameEngineState,
   type Obstacle,
-} from "@/lib/garmin-engine";
+} from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   EMPTY_COURSE,
@@ -20,7 +20,7 @@ import {
   type CourseBlock,
   type CourseKudos,
   type CourseLayout,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   BELT_WIDTH,
   EMPTY_PROPS,
@@ -40,9 +40,9 @@ import {
   type CourseProps,
   type CourseStation,
   type CourseSwitch,
-} from "@/lib/garmin-props";
-import { START_LIVES } from "@/lib/garmin-powerups";
-import { STALLED_ALERT_MS, STALLED_ALERT_TEXT } from "@/lib/garmin-culture";
+} from "@/lib/garmin/props";
+import { START_LIVES } from "@/lib/garmin/powerups";
+import { STALLED_ALERT_MS, STALLED_ALERT_TEXT } from "@/lib/garmin/culture";
 
 // Course props on the Monkey C Mayhem course (#1992): Water Stations and their
 // bonus rooms, Plyo Boxes, the Rest Day Switch, Treadmill Belts and PR Boards.

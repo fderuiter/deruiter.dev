@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FinisherCard, GameEngineState } from "@/lib/garmin-engine";
+import type { FinisherCard, GameEngineState } from "@/lib/garmin/engine";
 import { clamp } from "@/lib/game-utils";
 import {
   GEAR_ITEM_NAMES,
@@ -19,14 +19,14 @@ import {
   type PlanNodeId,
   type PlanRun,
   type PlanSave,
-} from "@/lib/garmin-plan";
+} from "@/lib/garmin/plan";
 import {
   applyGearItem,
   loadoutApplies,
   unpackGearItem,
-} from "@/lib/garmin-bag";
-import { loadPlan, savePlan } from "@/lib/garmin-plan-store";
-import { formatRaceTime } from "@/lib/garmin-race";
+} from "@/lib/garmin/bag";
+import { loadPlan, savePlan } from "@/lib/garmin/plan-store";
+import { formatRaceTime } from "@/lib/garmin/race";
 import {
   planScreenLabel,
   type PlanOutcome,

@@ -23,9 +23,9 @@ import {
   trainingReadiness,
   type PlanNodeId,
   type PlanSave,
-} from "@/lib/garmin-plan";
-import { START_LIVES } from "@/lib/garmin-powerups";
-import { createInitialState } from "@/lib/garmin-engine";
+} from "@/lib/garmin/plan";
+import { START_LIVES } from "@/lib/garmin/powerups";
+import { createInitialState } from "@/lib/garmin/engine";
 import { workoutOutcome } from "@/components/garmin-watch/useTrainingPlan";
 
 // The Training Plan's rules (#1994): the map graph and its unlocks, the

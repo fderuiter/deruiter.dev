@@ -203,6 +203,8 @@ export function PattyDriveThruGame({
 
   // The scenario last picked, so "Work another shift" plays the same one.
   const scenario = useRef<ScenarioId>("standard");
+  // The custom shift's dials and orders when it was the last pick (#2519).
+  const customSetup = useRef<Partial<ShiftConfig> | null>(null);
 
   // A longer dilemma timer (#2087): on by default under reduced motion, and
   // a choice on the intro page for anyone who wants more time.
@@ -212,16 +214,28 @@ export function PattyDriveThruGame({
 
   const clockIn = useCallback(
     (picked?: ScenarioId) => {
-      if (picked) scenario.current = picked;
+      if (picked) {
+        scenario.current = picked;
+        customSetup.current = null;
+      }
       setPaused(false);
       store.getState().clockIn({
         ...(config?.seed ? {} : { seed: seedFromUrl() ?? freshSeed() }),
-        ...scenarioDialsFor(scenario.current),
+        ...(customSetup.current ?? scenarioDialsFor(scenario.current)),
         ...(dilemmaWindowSec !== undefined ? { dilemmaWindowSec } : {}),
       });
       boundaryRef.current?.focus({ preventScroll: true });
     },
     [store, config?.seed, dilemmaWindowSec, setPaused]
+  );
+
+  // A custom shift (#2519): the player's own dials and order queue.
+  const clockInCustom = useCallback(
+    (setup: Partial<ShiftConfig>) => {
+      customSetup.current = setup;
+      clockIn();
+    },
+    [clockIn]
   );
 
   // A week of shifts (#2086): a new one from a fresh seed, or one resumed.
@@ -642,6 +656,7 @@ export function PattyDriveThruGame({
       <div className={pageClass}>
         <DiaryIntroPage
           onClockIn={clockIn}
+          onClockInCustom={clockInCustom}
           onStartWeek={() => startWeek()}
           onResumeWeek={startWeek}
           savedWeek={savedWeek}

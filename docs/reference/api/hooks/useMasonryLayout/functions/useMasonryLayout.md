@@ -42,7 +42,7 @@
 
 #### layoutState.columns
 
-> **columns**: `T` & `object`[][]
+> **columns**: (`T` & `object`)[][]
 
 #### layoutState.isReady
 

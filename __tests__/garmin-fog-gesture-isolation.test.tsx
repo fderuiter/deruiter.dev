@@ -9,7 +9,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { GarminWatchSimulator } from "@/components/GarminWatchSimulator";
-import { wipeScreenFog } from "@/lib/garmin-engine";
+import { wipeScreenFog } from "@/lib/garmin/engine";
 
 const mockAnnounce = vi.fn();
 vi.mock("@/hooks/useAnnouncer", () => ({

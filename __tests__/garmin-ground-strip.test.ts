@@ -8,7 +8,7 @@ import {
   isGroundStripField,
   loadGroundStrip,
   saveGroundStrip,
-} from "@/lib/garmin-ground-strip";
+} from "@/lib/garmin/ground-strip";
 
 let store: Record<string, string>;
 

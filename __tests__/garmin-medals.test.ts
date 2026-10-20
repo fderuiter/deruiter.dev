@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
-import { GROUND_Y, PLAYER_WIDTH } from "@/lib/garmin-engine";
+import { GROUND_Y, PLAYER_WIDTH } from "@/lib/garmin/engine";
 import {
   BLOCK_SIZE,
   MEDAL_SIZE,
@@ -10,12 +10,12 @@ import {
   stageStartX,
   type CourseLayout,
   type CourseMedal,
-} from "@/lib/garmin-course";
+} from "@/lib/garmin/course";
 import {
   generateStageProps,
   propFootings,
   type CourseProps,
-} from "@/lib/garmin-props";
+} from "@/lib/garmin/props";
 import {
   MEDALS_PER_STAGE,
   hideFoundMedals,
@@ -25,9 +25,9 @@ import {
   placeStageExtras,
   stageMedalCount,
   stageMedalSlots,
-} from "@/lib/garmin-medals";
-import { SWIM_SURFACE_Y } from "@/lib/garmin-swim";
-import { isWaterTheme, themeForStage } from "@/lib/garmin-themes";
+} from "@/lib/garmin/medals";
+import { SWIM_SURFACE_Y } from "@/lib/garmin/swim";
+import { isWaterTheme, themeForStage } from "@/lib/garmin/themes";
 
 // The pure placement of Finisher Medals, the Aid Station and secret exits
 // (#2025): every stage gets three medals, each reachable, a checkpoint on clear

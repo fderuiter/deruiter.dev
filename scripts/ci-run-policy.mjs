@@ -160,7 +160,7 @@ export const ARCADE_DEVICE_GAMES = Object.freeze([
   ["Patty's Drive-Thru", /patty-?drive-?thru/i],
   ["Trial & Error", /trial-and-error/i],
   ["For Better or Bulk", /for-?better-?or-?bulk/i],
-  ["Monkey C Mayhem", /garmin-?watch|^lib\/garmin-/i],
+  ["Monkey C Mayhem", /garmin-?watch|^lib\/garmin[-/]/i],
 ]);
 
 /** `describe` titles of the shared device kit specs. */
@@ -188,6 +188,14 @@ const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const UNIT_TEST_PATH = /^__tests__\/(?!e2e\/)/;
 
 /**
+ * Documentation, including the TypeDoc reference generated from `lib/`, is
+ * never served to a device spec. A tooling bump that regenerates the
+ * reference names a dozen games by path and otherwise queued their device
+ * specs and ran device-gate into its timeout (#2511).
+ */
+const DOCS_PATH = /^docs\//;
+
+/**
  * The Playwright `--grep` pattern for the arcade device specs a change set
  * touches. Empty when it touches no arcade code; `.` (everything) when the
  * change set is unknown, so the filter fails safe.
@@ -197,7 +205,9 @@ const UNIT_TEST_PATH = /^__tests__\/(?!e2e\/)/;
  */
 export function arcadeDeviceGrep(files) {
   if (!Array.isArray(files) || files.length === 0) return ".";
-  const relevant = files.filter((file) => !UNIT_TEST_PATH.test(file));
+  const relevant = files.filter(
+    (file) => !UNIT_TEST_PATH.test(file) && !DOCS_PATH.test(file)
+  );
   const titles = [];
   if (relevant.some((file) => ARCADE_SHARED_PATHS.test(file))) {
     titles.push(...ARCADE_KIT_TITLES);

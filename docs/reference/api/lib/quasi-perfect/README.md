@@ -80,6 +80,36 @@ Re-exports [countHonestProofs](progress/functions/countHonestProofs.md)
 
 ***
 
+### CustomTheorem
+
+Re-exports [CustomTheorem](sandbox/interfaces/CustomTheorem.md)
+
+***
+
+### CustomTheoremDraft
+
+Re-exports [CustomTheoremDraft](sandbox/type-aliases/CustomTheoremDraft.md)
+
+***
+
+### CustomTheoremImportResult
+
+Re-exports [CustomTheoremImportResult](sandbox/interfaces/CustomTheoremImportResult.md)
+
+***
+
+### CustomTheoremSaveResult
+
+Re-exports [CustomTheoremSaveResult](sandbox/interfaces/CustomTheoremSaveResult.md)
+
+***
+
+### deleteCustomTheorem
+
+Re-exports [deleteCustomTheorem](sandbox/functions/deleteCustomTheorem.md)
+
+***
+
 ### describeModeRules
 
 Re-exports [describeModeRules](ram/functions/describeModeRules.md)
@@ -107,6 +137,12 @@ Re-exports [evaluateBooleanExpression](engine/functions/evaluateBooleanExpressio
 ### EXHAUSTION\_RULE
 
 Re-exports [EXHAUSTION_RULE](ram/variables/EXHAUSTION_RULE.md)
+
+***
+
+### exportCustomTheorems
+
+Re-exports [exportCustomTheorems](sandbox/functions/exportCustomTheorems.md)
 
 ***
 
@@ -179,6 +215,12 @@ Re-exports [getTacticBlock](ram/functions/getTacticBlock.md)
 ### gradeSandboxRun
 
 Re-exports [gradeSandboxRun](sandbox/functions/gradeSandboxRun.md)
+
+***
+
+### importCustomTheorems
+
+Re-exports [importCustomTheorems](sandbox/functions/importCustomTheorems.md)
 
 ***
 
@@ -290,6 +332,12 @@ Re-exports [matchPattern](engine/functions/matchPattern.md)
 
 ***
 
+### MAX\_CUSTOM\_THEOREMS
+
+Re-exports [MAX_CUSTOM_THEOREMS](sandbox/variables/MAX_CUSTOM_THEOREMS.md)
+
+***
+
 ### mergeLevelScore
 
 Re-exports [mergeLevelScore](progress/functions/mergeLevelScore.md)
@@ -323,6 +371,12 @@ Re-exports [normalizeClearedVariants](variants/functions/normalizeClearedVariant
 ### occursFree
 
 Re-exports [occursFree](engine/functions/occursFree.md)
+
+***
+
+### parseCustomTheorems
+
+Re-exports [parseCustomTheorems](sandbox/functions/parseCustomTheorems.md)
 
 ***
 
@@ -461,6 +515,12 @@ Re-exports [SandboxPresetRecord](sandbox/interfaces/SandboxPresetRecord.md)
 ### SandboxProgress
 
 Re-exports [SandboxProgress](sandbox/type-aliases/SandboxProgress.md)
+
+***
+
+### saveCustomTheorem
+
+Re-exports [saveCustomTheorem](sandbox/functions/saveCustomTheorem.md)
 
 ***
 

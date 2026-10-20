@@ -11,8 +11,6 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { getNavGroupForHref } from "@/lib/navigation";
-import { hexToRgba } from "@/lib/utils";
-import { designManifest } from "@/lib/design-manifest";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -1653,17 +1651,8 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         exit={{ scale: 0.97, y: -8 }}
         transition={{ duration: 0.18, ease: "easeOut" }}
         ref={trapRef}
-        style={
-          {
-            "--cmd-glow": `0 0 50px ${hexToRgba(designManifest.colors["accent"], 0.06)}`,
-          } as React.CSSProperties
-        }
-        className="w-full max-w-3xl bg-[#13151a] border border-zinc-800/90 shadow-[var(--cmd-glow)] rounded-3xl overflow-hidden flex flex-col relative my-auto sm:my-0 max-h-[85vh]"
+        className="w-full max-w-3xl bg-[#13151a] border border-zinc-800/90 rounded-3xl overflow-hidden flex flex-col relative my-auto sm:my-0 max-h-[85vh]"
       >
-        {/* Circular glow visual elements inside modal */}
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-accent/5 rounded-full blur-3xl pointer-events-none" />
-
         {/* Input Header container */}
         <div className="relative z-10 flex items-center border-b border-zinc-800/60 p-3 sm:p-4 gap-2 sm:gap-3">
           <IconSearch className="w-5 h-5 text-zinc-500 flex-shrink-0" />
@@ -1728,18 +1717,10 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
                         isActive ? "palette-preview-pane" : undefined
                       }
                       onClick={() => handleSelectItem(item)}
-                      style={
-                        {
-                          "--cmd-item-glow": hexToRgba(
-                            designManifest.colors["accent"],
-                            0.04
-                          ),
-                        } as React.CSSProperties
-                      }
                       onMouseEnter={() => handleItemHover(index)}
                       className={`flex items-center gap-3.5 px-3.5 py-3 rounded-xl cursor-pointer select-none transition-all duration-200 border ${
                         isActive
-                          ? "bg-zinc-950 border-accent/25 shadow-[0_0_15px_var(--cmd-item-glow)]"
+                          ? "bg-zinc-950 border-accent/25"
                           : "bg-transparent border-transparent hover:bg-zinc-950/40"
                       }`}
                     >

@@ -61,9 +61,40 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
       expect(safeGetRawItem("working_with_duck_high_score")).toBe("350");
       expect(safeGetRawItem("garmin_simulator_high_score")).toBe("800");
     });
+
+    it("keeps the Quasi Puzzler save intact when importing its legacy score", () => {
+      const savedProgress = JSON.stringify({
+        completedLevels: { first: { stars: 3 } },
+      });
+      safeSetRawItem("quasi_perfect_puzzler_progress_v1", savedProgress);
+      safeSetRawItem("quasi_puzzle_high_score", "300");
+
+      expect(getArcadeProgress().highScores["quasi-puzzler"]).toBe(300);
+      expect(safeGetRawItem("quasi_perfect_puzzler_progress_v1")).toBe(
+        savedProgress
+      );
+    });
   });
 
   describe("Score Recording and Trophy Engine", () => {
+    it("never overwrites keys owned by Meme Vault or Quasi Puzzler", () => {
+      const savedProgress = JSON.stringify({
+        completedLevels: { first: { stars: 3 } },
+      });
+      safeSetRawItem("unlocked_meme_vault", "true");
+      safeSetRawItem("quasi_perfect_puzzler_progress_v1", savedProgress);
+
+      const meme = recordArcadeScore("meme-vault", 100);
+      const quasi = recordArcadeScore("quasi-puzzler", 200);
+
+      expect(meme.progress.highScores["meme-vault"]).toBe(100);
+      expect(quasi.progress.highScores["quasi-puzzler"]).toBe(200);
+      expect(safeGetRawItem("unlocked_meme_vault")).toBe("true");
+      expect(safeGetRawItem("quasi_perfect_puzzler_progress_v1")).toBe(
+        savedProgress
+      );
+    });
+
     it("updates high score and dispatches arcade_score_updated event", () => {
       const scoreHandler = vi.fn();
       const unsubscribe = onAppEvent("arcade_score_updated", scoreHandler);

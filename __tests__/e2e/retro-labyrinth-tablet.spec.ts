@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow } from "./mobile-harness";
+import { waitForAnimationFrames } from "./helpers/settle";
 import {
   replayTspMoves,
   solveTspRoom,
@@ -525,21 +526,34 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     const before = await readPlayerGrid(page);
 
     const cdp = await page.context().newCDPSession(page);
+    const cellOf = (text: string) =>
+      (/\((\d+), (\d+)\)/.exec(text) ?? []).slice(1).map(Number);
+    const [startX, startY] = cellOf(before);
     await cdp.send("Input.dispatchTouchEvent", {
       type: "touchStart",
       touchPoints: [{ x: cx, y: cy }],
     });
-    await page.waitForTimeout(900);
-    await cdp.send("Input.dispatchTouchEvent", {
-      type: "touchEnd",
-      touchPoints: [],
-    });
+    try {
+      // A press moves one cell; only the hold repeat moves a second.
+      await expect
+        .poll(
+          async () => {
+            const [x, y] = cellOf(await readPlayerGrid(page));
+            return Math.abs(x - startX) + Math.abs(y - startY);
+          },
+          { message: "a held arrow should walk more than one cell" }
+        )
+        .toBeGreaterThan(1);
+    } finally {
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+    }
     const held = await readPlayerGrid(page);
-    expect(held, "a held arrow should walk more than one cell").not.toBe(
-      before
-    );
 
-    await page.waitForTimeout(600);
+    // Several repeat intervals' worth of frames: the walk must have stopped.
+    await waitForAnimationFrames(page, 36);
     expect(await readPlayerGrid(page)).toBe(held);
   });
 

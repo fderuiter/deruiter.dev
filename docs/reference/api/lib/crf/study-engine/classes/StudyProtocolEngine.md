@@ -162,7 +162,7 @@ Add Clinical Field to Form (Appends or Inserts at Target Index)
 
 ##### sectionIndexOrOptions?
 
-`number` \| \{ `actor?`: [`ActorContext`](../type-aliases/ActorContext.md); `sectionId?`: `string`; `sectionIndex?`: `number`; `targetIndex?`: `number`; \}
+`number` \| \{ `actor?`: [`ActorContext`](../type-aliases/ActorContext.md); `sectionId?`: `string`; `sectionIndex?`: `number`; `targetIndex?`: `number`; \} = `0`
 
 ##### actor?
 

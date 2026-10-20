@@ -93,35 +93,17 @@ Original CSS Variable: --border-active
 
 Original CSS Variable: --brand-blue
 
-#### colors.brand-blue-glow
-
-> `readonly` **brand-blue-glow**: `"rgba(59, 130, 246, 0.1)"` = `"rgba(59, 130, 246, 0.1)"`
-
-Original CSS Variable: --brand-blue-glow
-
 #### colors.brand-cyan
 
 > `readonly` **brand-cyan**: `"#06b6d4"` = `"#06b6d4"`
 
 Original CSS Variable: --brand-cyan
 
-#### colors.brand-cyan-glow
-
-> `readonly` **brand-cyan-glow**: `"rgba(6, 182, 212, 0.15)"` = `"rgba(6, 182, 212, 0.15)"`
-
-Original CSS Variable: --brand-cyan-glow
-
 #### colors.brand-dark
 
 > `readonly` **brand-dark**: `"#0d0e11"` = `"#0d0e11"`
 
 Original CSS Variable: --brand-dark
-
-#### colors.cyan-glow
-
-> `readonly` **cyan-glow**: `"#38bdf8"` = `"#38bdf8"`
-
-Original CSS Variable: --cyan-glow
 
 #### colors.emerald-accent
 
@@ -231,13 +213,13 @@ Original CSS Variable: --layout-studio-header-height
 
 #### layout.viewportBudget
 
-> `readonly` **viewportBudget**: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\n  )" = "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\n  )"
+> `readonly` **viewportBudget**: "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\\n  )" = "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px)\\n  )"
 
 Original CSS Variable: --layout-viewport-budget
 
 #### layout.workspaceBudget
 
-> `readonly` **workspaceBudget**: "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )" = "calc(\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\n      var(--layout-studio-header-height, 0px)\n  )"
+> `readonly` **workspaceBudget**: "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\\n      var(--layout-studio-header-height, 0px)\\n  )" = "calc(\\n    100dvh - var(--layout-header-height) - var(--layout-dock-height, 0px) -\\n      var(--layout-studio-header-height, 0px)\\n  )"
 
 Original CSS Variable: --layout-workspace-budget
 
@@ -360,6 +342,58 @@ Original CSS Variable: --layout-masonry-padding-with-stats
 #### motion.springs.timeline.type
 
 > `readonly` **type**: `"spring"` = `"spring"`
+
+### spacing
+
+> `readonly` **spacing**: `object`
+
+#### spacing.1
+
+> `readonly` **1**: `4` = `4`
+
+Original CSS Variable: --space-1
+
+#### spacing.12
+
+> `readonly` **12**: `48` = `48`
+
+Original CSS Variable: --space-12
+
+#### spacing.16
+
+> `readonly` **16**: `64` = `64`
+
+Original CSS Variable: --space-16
+
+#### spacing.2
+
+> `readonly` **2**: `8` = `8`
+
+Original CSS Variable: --space-2
+
+#### spacing.3
+
+> `readonly` **3**: `12` = `12`
+
+Original CSS Variable: --space-3
+
+#### spacing.4
+
+> `readonly` **4**: `16` = `16`
+
+Original CSS Variable: --space-4
+
+#### spacing.6
+
+> `readonly` **6**: `24` = `24`
+
+Original CSS Variable: --space-6
+
+#### spacing.8
+
+> `readonly` **8**: `32` = `32`
+
+Original CSS Variable: --space-8
 
 ### typography
 

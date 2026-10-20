@@ -11,7 +11,7 @@
 Standardized random identifier generator for client-side and server-side
 runtime identifiers (log entries, queue items, storage keys, message IDs).
 
-The random part is 9 hex characters drawn from Web Crypto when available.
+The random part is 12 hex characters drawn from Web Crypto when available.
 A prefix is joined with `-`, unless it already ends in `-` or `_`, in which
 case that delimiter is kept and reused before the timestamp's random part.
 
@@ -36,4 +36,4 @@ Optional formatting, see [GenerateIdOptions](../interfaces/GenerateIdOptions.md)
 
 `string`
 
-An identifier such as `event-1759140000000-3f9a1c2b7`.
+An identifier such as `event-1759140000000-3f9a1c2b7d04`.

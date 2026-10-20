@@ -136,7 +136,7 @@ describe("Unified Shared Utility Suite (lib/utils.ts)", () => {
 
     it("produces a fixed-length random part", () => {
       for (let i = 0; i < 200; i++) {
-        expect(generateId()).toMatch(/^[a-z0-9]{9}$/);
+        expect(generateId()).toMatch(/^[a-z0-9]{12}$/);
       }
     });
 
@@ -144,16 +144,16 @@ describe("Unified Shared Utility Suite (lib/utils.ts)", () => {
       vi.spyOn(Date, "now").mockReturnValue(1759140000000);
       try {
         expect(generateId("event", { timestamp: true })).toMatch(
-          /^event-1759140000000-[a-z0-9]{9}$/
+          /^event-1759140000000-[a-z0-9]{12}$/
         );
         expect(generateId("offline_", { timestamp: true })).toMatch(
-          /^offline_1759140000000_[a-z0-9]{9}$/
+          /^offline_1759140000000_[a-z0-9]{12}$/
         );
         expect(generateId("log-", { timestamp: true })).toMatch(
-          /^log-1759140000000-[a-z0-9]{9}$/
+          /^log-1759140000000-[a-z0-9]{12}$/
         );
         expect(generateId(undefined, { timestamp: true })).toMatch(
-          /^1759140000000-[a-z0-9]{9}$/
+          /^1759140000000-[a-z0-9]{12}$/
         );
       } finally {
         vi.restoreAllMocks();
@@ -181,7 +181,7 @@ describe("Unified Shared Utility Suite (lib/utils.ts)", () => {
         getRandomValues: (arr: Uint8Array) => arr.fill(0xab),
       });
       try {
-        expect(generateId("fb")).toBe("fb-ababababa");
+        expect(generateId("fb")).toBe("fb-abababababab");
       } finally {
         vi.unstubAllGlobals();
       }
@@ -193,7 +193,7 @@ describe("Unified Shared Utility Suite (lib/utils.ts)", () => {
       try {
         const id = generateId("ssr");
         expect(mathSpy).toHaveBeenCalled();
-        expect(id).toMatch(/^ssr-[a-z0-9]{9}$/);
+        expect(id).toMatch(/^ssr-[a-z0-9]{12}$/);
       } finally {
         vi.restoreAllMocks();
         vi.unstubAllGlobals();

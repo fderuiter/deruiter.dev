@@ -165,8 +165,8 @@ per PR) is unchanged, just relocated to before the merge instead of after.
 `static-gate`, `unit-gate`, `unit-coverage`, `mutation-gate` and
 `security-gate`, a safety net for a direct push that bypasses PR review.
 The non-gating `cache-warm` job also runs on `main` pushes.
-Branch protection on `main` was verified through the GitHub API on
-2026-09-28; see [Main Branch Protection](release-and-deploy.md#main-branch-protection).
+The `main` ruleset (which replaced classic branch protection on 2026-10-20)
+is described in [Main Branch Protection](release-and-deploy.md#main-branch-protection).
 The bounded push jobs are not a repeat of the build/Playwright work the merged
 PR already did. The full
 four-device matrix remains a one-click `workflow_dispatch` job
@@ -178,9 +178,10 @@ automatically (it doesn't).
 `.github/workflows/ci.yml` exposes one job whose sole purpose is to be the
 required status check: **`Merge Gate (Required Checks Summary)`** (the
 `merge-gate` job's `name:`). Require exactly that check for `main` under
-Settings → Branches → branch protection → "Require status checks to pass
-before merging". This was verified through the GitHub API on 2026-09-28,
-with Merge Gate as the required check; see [Main Branch Protection](release-and-deploy.md#main-branch-protection). The retired `dev` → `main` consolidation PR (#1029) was gated on the
+the `main` ruleset's "Require status checks to pass" rule, bound to the
+GitHub Actions app (integration ID `15368`). The ruleset has required exactly
+that check since 2026-10-20 (classic branch protection required it from
+2026-09-28 until then); see [Main Branch Protection](release-and-deploy.md#main-branch-protection). The retired `dev` → `main` consolidation PR (#1029) was gated on the
 same `main` rule.
 
 This replaces the two check names #732 originally listed
@@ -271,8 +272,8 @@ need verification:
   execute it across simulated event and status permutations (`pull_request`,
   `push`, `workflow_dispatch`, `success`, `failure`, `cancelled`, `skipped`).
 - **Server-side protection is verified**: GitHub currently reports this
-  repository as public. Branch protection on `main`, with Merge Gate as the
-  required check, was verified through the GitHub API on 2026-09-28; see
+  repository as public. The `main` ruleset, with Merge Gate as the only
+  required check, has governed `main` since 2026-10-20; see
   [Main Branch Protection](release-and-deploy.md#main-branch-protection). Client-side guardrails remain defense-in-depth. Since
   [ADR 0049](../../adr/0049-deploy-main-on-green-ci.md), no GitHub workflow or
   environment deploys. During the manual hold, an operator starts Production from

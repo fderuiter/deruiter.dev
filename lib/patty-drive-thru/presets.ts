@@ -185,6 +185,13 @@ export const MODIFIER_LABELS: Readonly<Record<ModifierId, string>> = {
   "no-pickles": "No pickles",
 };
 
+/** The items each buried modifier can be asked for on (#2519). */
+export const MODIFIER_ITEMS: Readonly<
+  Record<ModifierId, readonly MenuItemId[]>
+> = {
+  "no-pickles": ["burger", "cheeseburger"],
+};
+
 /**
  * The player stands still and pivots: half a turn either way reaches the
  * drive-thru window on the left and the kitchen on the right.
@@ -298,9 +305,9 @@ export const SCENARIO_PRESETS: readonly ScenarioPreset[] = [
 ];
 
 /**
- * True when a shift has no scenario dial set and is not a day of the week
- * mode, so its own score counts. A week's days add up to the week's score
- * instead (#2086).
+ * True when a shift has no scenario dial set, no hand-built orders (#2519)
+ * and is not a day of the week mode, so its own score counts. A week's days
+ * add up to the week's score instead (#2086).
  */
 export function isStandardScenario(config: Partial<ShiftConfig>): boolean {
   return (
@@ -310,7 +317,8 @@ export function isStandardScenario(config: Partial<ShiftConfig>): boolean {
     config.rushWindows === undefined &&
     config.ageUnlocked === undefined &&
     config.startMeters === undefined &&
-    config.dilemmaDeck === undefined
+    config.dilemmaDeck === undefined &&
+    (config.customOrders?.length ?? 0) === 0
   );
 }
 
@@ -576,7 +584,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 2,
         solidarity: 10,
         payCents: 0,
-        diary: "A regular asked for a free large drink and I gave it. Bo never counts the cups.",
+        diary:
+          "A regular asked for a free large drink and I gave it. Bo never counts the cups.",
       },
       {
         id: "charge",
@@ -585,11 +594,13 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 0,
         solidarity: -10,
         payCents: 0,
-        diary: "I charged a regular for the large drink, by the book. They called me something I won't write down.",
+        diary:
+          "I charged a regular for the large drink, by the book. They called me something I won't write down.",
       },
     ],
     defaultOptionId: "charge",
-    timeoutDiary: "I didn't answer, so the drink went on their bill. They were not happy at the window.",
+    timeoutDiary:
+      "I didn't answer, so the drink went on their bill. They were not happy at the window.",
   },
   "swap-saturday": {
     id: "swap-saturday",
@@ -612,7 +623,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 2,
         solidarity: -10,
         payCents: 0,
-        diary: "I told Dale I couldn't take Saturday. Dale said it was fine. It didn't sound fine.",
+        diary:
+          "I told Dale I couldn't take Saturday. Dale said it was fine. It didn't sound fine.",
       },
     ],
     defaultOptionId: "pass",
@@ -621,7 +633,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "upsell-day": {
     id: "upsell-day",
     speaker: "manager",
-    prompt: "Corporate is counting upsells today. Offer the large combo to every car.",
+    prompt:
+      "Corporate is counting upsells today. Offer the large combo to every car.",
     options: [
       {
         id: "push",
@@ -630,7 +643,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -4,
         solidarity: -10,
         payCents: 0,
-        diary: "I asked every car if they wanted to make it a large. Most said no. One laughed.",
+        diary:
+          "I asked every car if they wanted to make it a large. Most said no. One laughed.",
       },
       {
         id: "skip",
@@ -639,16 +653,19 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 2,
         solidarity: 10,
         payCents: 0,
-        diary: "I didn't push the large combos. Bo checked the numbers at close and sighed.",
+        diary:
+          "I didn't push the large combos. Bo checked the numbers at close and sighed.",
       },
     ],
     defaultOptionId: "push",
-    timeoutDiary: "I said nothing, so Bo stood behind me to make sure I asked every car.",
+    timeoutDiary:
+      "I said nothing, so Bo stood behind me to make sure I asked every car.",
   },
   "onion-name": {
     id: "onion-name",
     speaker: "customer",
-    prompt: "There were onions on my burger. I said no onions. Who made it? I want a name.",
+    prompt:
+      "There were onions on my burger. I said no onions. Who made it? I want a name.",
     options: [
       {
         id: "me",
@@ -657,7 +674,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -3,
         solidarity: 10,
         payCents: 0,
-        diary: "A customer wanted a name for the onions on their burger. I gave mine, not Dale's.",
+        diary:
+          "A customer wanted a name for the onions on their burger. I gave mine, not Dale's.",
       },
       {
         id: "dale",
@@ -666,7 +684,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -2,
         solidarity: -10,
         payCents: 0,
-        diary: "A customer wanted a name for the onions. I said Dale. Bo heard.",
+        diary:
+          "A customer wanted a name for the onions. I said Dale. Bo heard.",
       },
     ],
     defaultOptionId: "me",
@@ -675,7 +694,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "ice-machine": {
     id: "ice-machine",
     speaker: "coworker",
-    prompt: "The ice machine is leaking again. If we tell Bo, we're both mopping till close.",
+    prompt:
+      "The ice machine is leaking again. If we tell Bo, we're both mopping till close.",
     options: [
       {
         id: "towel",
@@ -693,7 +713,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 3,
         solidarity: -10,
         payCents: 0,
-        diary: "I told Bo about the ice machine. Dale mopped next to me and didn't talk.",
+        diary:
+          "I told Bo about the ice machine. Dale mopped next to me and didn't talk.",
       },
     ],
     defaultOptionId: "towel",
@@ -711,7 +732,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -3,
         solidarity: -10,
         payCents: 0,
-        diary: "I got Bo for a cold burger. Bo blamed the grill, which meant Dale.",
+        diary:
+          "I got Bo for a cold burger. Bo blamed the grill, which meant Dale.",
       },
       {
         id: "remake",
@@ -720,13 +742,14 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 4,
         solidarity: 10,
         payCents: 0,
-        diary: "I remade the cold burger myself before Bo noticed. Dale owes me one.",
+        diary:
+          "I remade the cold burger myself before Bo noticed. Dale owes me one.",
       },
     ],
     defaultOptionId: "bo",
     timeoutDiary: "I froze, and the customer honked until Bo came over.",
   },
-  "bathrooms": {
+  bathrooms: {
     id: "bathrooms",
     speaker: "manager",
     prompt: "Somebody has to clean the bathrooms. Dale told me it's your turn.",
@@ -738,7 +761,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -3,
         solidarity: 10,
         payCents: 0,
-        diary: "It was not my turn to clean the bathrooms. I cleaned them anyway, so Dale didn't have to.",
+        diary:
+          "It was not my turn to clean the bathrooms. I cleaned them anyway, so Dale didn't have to.",
       },
       {
         id: "dale",
@@ -747,7 +771,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 3,
         solidarity: -10,
         payCents: 0,
-        diary: "I said it was Dale's turn for the bathrooms. It was. Dale went, slowly.",
+        diary:
+          "I said it was Dale's turn for the bathrooms. It was. Dale went, slowly.",
       },
     ],
     defaultOptionId: "go",
@@ -756,7 +781,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "new-kid": {
     id: "new-kid",
     speaker: "coworker",
-    prompt: "The new kid is crying in the walk-in. Cover the window so I can talk to her?",
+    prompt:
+      "The new kid is crying in the walk-in. Cover the window so I can talk to her?",
     options: [
       {
         id: "cover",
@@ -765,7 +791,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 3,
         solidarity: 10,
         payCents: 0,
-        diary: "I worked the window alone while Dale talked to the new kid. She came back out smiling.",
+        diary:
+          "I worked the window alone while Dale talked to the new kid. She came back out smiling.",
       },
       {
         id: "busy",
@@ -774,7 +801,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -2,
         solidarity: -10,
         payCents: 0,
-        diary: "I told Dale I couldn't cover the window. Bo would have noticed. The new kid came out on her own.",
+        diary:
+          "I told Dale I couldn't cover the window. Bo would have noticed. The new kid came out on her own.",
       },
     ],
     defaultOptionId: "busy",
@@ -783,7 +811,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
   "early-bump": {
     id: "early-bump",
     speaker: "manager",
-    prompt: "Hit bump the second they pull up. The timer looks better that way.",
+    prompt:
+      "Hit bump the second they pull up. The timer looks better that way.",
     options: [
       {
         id: "bump",
@@ -792,7 +821,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -5,
         solidarity: -10,
         payCents: 0,
-        diary: "I bumped orders before the food was in the bag, so the timer looked good. Dale got yelled at for being slow.",
+        diary:
+          "I bumped orders before the food was in the bag, so the timer looked good. Dale got yelled at for being slow.",
       },
       {
         id: "honest",
@@ -801,16 +831,19 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 3,
         solidarity: 10,
         payCents: 0,
-        diary: "I kept bumping orders when they were done. The timer looked bad. Dale noticed.",
+        diary:
+          "I kept bumping orders when they were done. The timer looked bad. Dale noticed.",
       },
     ],
     defaultOptionId: "bump",
-    timeoutDiary: "I didn't answer, so Bo reached over and bumped the order for me.",
+    timeoutDiary:
+      "I didn't answer, so Bo reached over and bumped the order for me.",
   },
   "eighteen-close": {
     id: "eighteen-close",
     speaker: "manager",
-    prompt: "You're eighteen now. Want to close tonight? Extra hours, and you clean the shake machine.",
+    prompt:
+      "You're eighteen now. Want to close tonight? Extra hours, and you clean the shake machine.",
     options: [
       {
         id: "take",
@@ -819,7 +852,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: -3,
         solidarity: -10,
         payCents: 0,
-        diary: "Bo gave me the closing hours Dale usually gets. I cleaned the shake machine at midnight.",
+        diary:
+          "Bo gave me the closing hours Dale usually gets. I cleaned the shake machine at midnight.",
       },
       {
         id: "decline",
@@ -828,7 +862,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 2,
         solidarity: 10,
         payCents: 0,
-        diary: "I told Bo to give the closing hours to Dale. Dale needs them more.",
+        diary:
+          "I told Bo to give the closing hours to Dale. Dale needs them more.",
       },
     ],
     defaultOptionId: "take",
@@ -846,7 +881,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 4,
         solidarity: 10,
         payCents: 0,
-        diary: "Dale and I snuck the whole crew a box of fries. Best part of the week.",
+        diary:
+          "Dale and I snuck the whole crew a box of fries. Best part of the week.",
       },
       {
         id: "pass",
@@ -855,7 +891,8 @@ export const DILEMMAS: Readonly<Record<DilemmaId, Dilemma>> = {
         dignity: 0,
         solidarity: -10,
         payCents: 0,
-        diary: "I didn't want to get caught sneaking fries. Dale ate them alone in the walk-in.",
+        diary:
+          "I didn't want to get caught sneaking fries. Dale ate them alone in the walk-in.",
       },
     ],
     defaultOptionId: "pass",
@@ -889,8 +926,9 @@ export const DILEMMA_IDS: readonly DilemmaId[] = [
  * puts in that day's middle slot and a single shift never draws: closing
  * hours on the eighteenth birthday, and the crew's fries on Fry Friday.
  */
-export const WEEK_DAY_DILEMMAS: Readonly<Partial<Record<WeekdayId, DilemmaId>>> =
-  {
-    thursday: "eighteen-close",
-    friday: "fry-box",
-  };
+export const WEEK_DAY_DILEMMAS: Readonly<
+  Partial<Record<WeekdayId, DilemmaId>>
+> = {
+  thursday: "eighteen-close",
+  friday: "fry-box",
+};

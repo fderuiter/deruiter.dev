@@ -1,5 +1,9 @@
 # 0012. Resilient Hybrid Fallback Data Architecture for Serverless Database Prerendering
 
+## Status
+
+Accepted
+
 ## Context
 
 During production builds on Vercel (`VERCEL_ENV="production"`), Next.js performs static generation and prerendering of route entrypoints (including `/work/laser-loon`, `/case-studies/[slug]`, and `/case-studies`). When `CaseStudyPage` queried the remote Neon PostgreSQL database, newly added static case studies or unseeded database tables caused `findMany` / `findUnique` queries to miss requested records. Because production mode enforced strict database-only lookups and threw unhandled runtime exceptions (`throw new Error("Unable to fetch case study records...")`), static prerendering crashed with exit code 1, halting the entire deployment.

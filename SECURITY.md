@@ -51,31 +51,33 @@ values.
 The security audit CLI evaluates vulnerability severity levels and enforces the following policy:
 
 - **High & Critical Severities:** Automatically trigger failure of the security check unless matched by a valid, active vulnerability override rule in `security-audit-ignore.json`.
-- **Low & Moderate Severities:** Do not block execution by default, though developers are encouraged to remediate them during routine maintenance.
+- **Low & Moderate Severities:** Do not block a local run by default, though developers are encouraged to remediate them during routine maintenance.
+- **CI Security Gate:** CI runs `npm run audit:security -- --fail-on-warning --severity=moderate`, so unhandled moderate advisories and overrides inside their pre-expiration warning window also fail the Security Gate.
 
 ## CI Pipeline Security Gate Enforcement
 
 Automated security checks are enforced across continuous integration and release workflows:
 
 - **Pre-Commit Hook Gate:** Local commits perform dependency security vulnerability checks via `npm run audit:security` in `.husky/pre-commit` before remote push.
-- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job executes both audits against full Git history on every push to `main` and pull request targeting `main`. Unhandled vulnerabilities or unallowlisted secret-shaped values fail the gate.
+- **Pull Request & Branch CI Gate:** In `.github/workflows/ci.yml`, the `security-gate` job executes three audits (dependency vulnerabilities, licenses and secrets in full Git history) on every push to `main` and pull request targeting `main`. Unhandled vulnerabilities or unallowlisted secret-shaped values fail the gate.
 - **Production Build Gate:** Vercel’s production build of `main` runs the offline migration integrity checks, applies migrations through the environment-guarded block in `scripts/build.js`, and then compiles the application. Dependency and secret audits remain mandatory CI and pre-commit gates; production database credentials remain confined to Vercel.
 
 ## Vulnerability Override Governance Rules
 
-When a high or critical third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `security-audit-ignore.json` (at the root of the repository or in `scripts/security-audit-ignore.json`).
+When a critical, high, or moderate third-party vulnerability cannot be immediately resolved upstream (e.g., dev-only dependencies or non-exploitable utility modules), temporary suppressions can be configured in `security-audit-ignore.json` (at the root of the repository or in `scripts/security-audit-ignore.json`).
 
 ### Mandatory Override Parameters
 
 All suppression rules in `security-audit-ignore.json` must strictly adhere to the following governance requirements:
 
 1. **Advisory Identifier (`advisory` / `advisoryId` / `cve` / `ghsa` / `id`):** Must specify a valid advisory identifier (e.g., `GHSA-c2qf-rxjj-4v5w` or `CVE-XXXX-XXXX`). Entries missing an advisory ID are invalid and rejected by the audit tool.
-2. **Severity Classification (`severity`):** Specifies the vulnerability severity (`critical` or `high`). If omitted, rules default to Critical severity validation limits (**14 days**) to fail closed.
+2. **Severity Classification (`severity`):** Specifies the vulnerability severity (`critical`, `high` or `moderate`). If omitted, rules default to Critical severity validation limits (**14 days**) to fail closed.
 3. **Business Justification (`reason` / `justification`):** Must contain a clear description of why the vulnerability is non-actionable or safe in the current deployment context (e.g., dev-only tool, build-time utility with no production runtime exposure).
 4. **Risk Owner & Follow-Up Ticket (`owner` & `followUp`):** Must designate a responsible risk owner and linked follow-up issue/ticket.
 5. **Expiration Date & Tiered Lifespan Limits (`expiresAt` / `expires`):** Must provide a valid ISO timestamp specifying when the override expires. Overrides are capped based on severity:
    - **Critical Severity:** Capped at a maximum lifespan of **14 days**.
    - **High Severity:** Capped at a maximum lifespan of **30 days**.
+   - **Moderate Severity:** Capped at a maximum lifespan of **90 days**.
      Overrides exceeding their severity duration limit or creation threshold are flagged as invalid and fail the audit.
 6. **Target Package Scope (`package` / `name`):** Optional parameter to restrict the override to a specific package name.
 
@@ -84,33 +86,38 @@ All suppression rules in `security-audit-ignore.json` must strictly adhere to th
 During local, CI, or scheduled daily execution, the audit tool validates all active override rules and enforces reporting policies:
 
 - **Expired Rules:** Rules whose expiration date has passed (`expiresAt <= now`) are rejected and cause the security audit to fail.
-- **Invalid Rules:** Rules missing required fields, containing invalid severity values, or exceeding severity lifespan limits (14 days for Critical, 30 days for High) trigger explicit validation errors and fail the audit.
+- **Invalid Rules:** Rules missing required fields, containing invalid severity values, or exceeding severity lifespan limits (14 days for Critical, 30 days for High, 90 days for Moderate) trigger explicit validation errors and fail the audit.
 - **Tiered Pre-Expiration Warnings:** Pre-expiration warnings are logged prior to expiration:
   - **Critical Overrides:** Warning triggered when **7 days** or fewer remain.
   - **High Overrides:** Warning triggered when **14 days** or fewer remain.
-- **Categorized Reporting:** CLI console logs and GitHub Step Summaries categorize vulnerabilities and overrides into distinct Critical and High severity reporting tables.
+  - **Moderate Overrides:** Warning triggered when **14 days** or fewer remain.
+- **Categorized Reporting:** CLI console logs and GitHub Step Summaries categorize vulnerabilities and overrides into distinct Critical, High, and Moderate severity reporting tables.
 - **Automated Issue Triage Escalation:** Daily scheduled audit failures in `.github/workflows/scheduled-security-audit.yml` automatically create or update dedicated GitHub issues labeled `security-triage`, deduplicated by advisory identifier.
 
 ## npm Package Overrides
 
-The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports only the three moderate advisories already tracked in `security-audit-ignore.json` (fast-uri, js-yaml, markdownlint-cli).
+The `overrides` block in `package.json` pins transitive dependencies that an upstream package would otherwise resolve to a vulnerable or incompatible version. Each pin was re-audited on 2026-10-02 (#1109) by removing it in a scratch copy, regenerating the lockfile with `npm install --package-lock-only`, and running `npm audit`. With every pin in place, `npm audit` reports no advisories, and `security-audit-ignore.json` holds no waivers (the fast-uri and js-yaml waivers were replaced by the two pins added on 2026-10-19, #2510).
 
-| Override        | Pinned to                | Pulled in by                                            | Resolves to without the pin | Effect of removing it                                 |
-| --------------- | ------------------------ | ------------------------------------------------------- | --------------------------- | ----------------------------------------------------- |
-| `deepmerge-ts`  | `^8.0.1`                 | `prisma` through `@prisma/config`                       | 7.1.5                       | 3 new high advisories                                 |
-| `browserslist`  | `^4.28.8`                | `@serwist` build tooling                                | 4.28.6                      | 2 new high advisories                                 |
-| `mysql2`        | `^3.24.3`                | `prisma`                                                | 3.15.3                      | 1 new high and 1 new moderate advisory                |
-| `lodash-es`     | `^4.18.1`                | `mermaid` through `chevrotain`                          | 4.17.23                     | 5 new high advisories                                 |
-| `qs`            | `6.16.0`                 | Stryker through `typed-rest-client`                     | 6.15.1                      | 2 new moderate advisories                             |
-| `jsdom`         | `26.1.0`                 | `isomorphic-dompurify`                                  | a second copy at 30.1.1     | no new advisories; kept for runtime compatibility     |
-| `source-map-js` | `^1.2.2`                 | `postcss` through Next.js                               | below 1.2.2                 | 1 new high advisory (GHSA-68fv-2mgg-jv7q)             |
-| `katex`         | `^0.18.11`               | `markdownlint-cli`                                      | below 0.18.11               | 1 new moderate advisory (GHSA-238p-pmpm-9mq7)         |
-| `smol-toml`     | `^1.9.0`                 | `markdownlint-cli`                                      | below 1.9.0                 | 1 new moderate advisory (GHSA-r4xh-jqrq-34v2)         |
-| `sharp`         | `^0.35.5`                | `next` (image optimization)                             | 0.35.4                      | 1 new high advisory (GHSA-wq5f-xc86-pv6w)             |
-| `shell-quote`   | `^1.11.0`                | `concurrently`                                          | 1.9.0                       | 1 new critical advisory (GHSA-pqg4-j6r4-53mv)         |
-| `fast-glob`     | `npm:tinyglobby@^0.2.17` | `eslint-config-next` through `@next/eslint-plugin-next` | 3.3.1                       | 1 new high advisory in `braces` (GHSA-vfj7-8cjw-p6xm) |
+| Override                     | Pinned to                | Pulled in by                                            | Resolves to without the pin | Effect of removing it                                 |
+| ---------------------------- | ------------------------ | ------------------------------------------------------- | --------------------------- | ----------------------------------------------------- |
+| `deepmerge-ts`               | `^8.0.1`                 | `prisma` through `@prisma/config`                       | 7.1.5                       | 3 new high advisories                                 |
+| `browserslist`               | `^4.28.8`                | `@serwist` build tooling                                | 4.28.6                      | 2 new high advisories                                 |
+| `mysql2`                     | `^3.24.3`                | `prisma`                                                | 3.15.3                      | 1 new high and 1 new moderate advisory                |
+| `lodash-es`                  | `^4.18.1`                | `mermaid` through `chevrotain`                          | 4.17.23                     | 5 new high advisories                                 |
+| `qs`                         | `6.16.0`                 | Stryker through `typed-rest-client`                     | 6.15.1                      | 2 new moderate advisories                             |
+| `jsdom`                      | `26.1.0`                 | `isomorphic-dompurify`                                  | a second copy at 30.1.1     | no new advisories; kept for runtime compatibility     |
+| `source-map-js`              | `^1.2.2`                 | `postcss` through Next.js                               | below 1.2.2                 | 1 new high advisory (GHSA-68fv-2mgg-jv7q)             |
+| `katex`                      | `^0.18.11`               | `markdownlint-cli`                                      | below 0.18.11               | 1 new moderate advisory (GHSA-238p-pmpm-9mq7)         |
+| `smol-toml`                  | `^1.9.0`                 | `markdownlint-cli`                                      | below 1.9.0                 | 1 new moderate advisory (GHSA-r4xh-jqrq-34v2)         |
+| `sharp`                      | `^0.35.5`                | `next` (image optimization)                             | 0.35.4                      | 1 new high advisory (GHSA-wq5f-xc86-pv6w)             |
+| `shell-quote`                | `^1.11.0`                | `concurrently`                                          | 1.9.0                       | 1 new critical advisory (GHSA-pqg4-j6r4-53mv)         |
+| `fast-glob`                  | `npm:tinyglobby@^0.2.17` | `eslint-config-next` through `@next/eslint-plugin-next` | 3.3.1                       | 1 new high advisory in `braces` (GHSA-vfj7-8cjw-p6xm) |
+| `fast-uri`                   | `^3.1.8`                 | `ajv` through Stryker and `@prisma/dev`                 | 3.1.7                       | 1 new moderate advisory (GHSA-hrr3-gc8f-f4qj)         |
+| `markdownlint-cli > js-yaml` | `~5.4.3`                 | `markdownlint-cli`                                      | 5.2.3                       | 1 new moderate advisory (GHSA-r3ph-w7gj-g6xm)         |
 
 The `fast-glob` override swaps the package for `tinyglobby` rather than pinning a version (#1783). `fast-glob` reaches `braces` through `micromatch`, and GHSA-vfj7-8cjw-p6xm affects every `braces` release with no patched version published, so no pin can clear it. The only consumer is `@next/eslint-plugin-next`, whose single call is `globSync(rootDir, { onlyDirectories: true })` for the `settings.next.rootDir` option; `tinyglobby` exports the same function and option, and builds on `picomatch` without `braces`. One difference matters: `tinyglobby` expands a literal directory pattern to its subdirectories and `fast-glob` does not, so `settings.next.rootDir` must stay unset in `eslint.config.mjs` while the override stands. `__tests__/fast-glob-override.test.ts` checks that contract, that the setting is unset, and that `braces` stays out of the lockfile. Drop the override once `@next/eslint-plugin-next` no longer depends on `fast-glob` or a patched `braces` ships.
+
+The `js-yaml` pin is scoped to `markdownlint-cli` so ESLint keeps its own js-yaml 4. It stops at 5.4.x because js-yaml 5.5 moves to `argparse` 3, which is PSF-2.0 and not in `license-policy.json`. Drop it once `markdownlint-cli` depends on js-yaml 5.4.1 or later.
 
 The `jsdom` pin is not a vulnerability fix. jsdom 27 and later depend on the ESM-only `@exodus/bytes`, which made serverless functions fail with `ERR_REQUIRE_ESM` (#995). `next.config.ts` keeps those packages out of the server bundle and `__tests__/deploy-config.test.ts` guards that, but lifting the pin also needs a deployed check of the routes that sanitize HTML, so it stays until that check is done.
 

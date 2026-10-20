@@ -1,6 +1,7 @@
 import { test, expect, type Locator, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { assertNoHorizontalOverflow } from "./mobile-harness";
+import { waitForAnimationFrames } from "./helpers/settle";
 
 // Monkey C Mayhem on the iPad (#2122, ADR 0061). These run only in the iPad
 // projects in playwright.config.ts: the watch, its touch dock and the Connect
@@ -100,8 +101,15 @@ async function expectTouchSizes(page: Page) {
   expect(small).toEqual([]);
 }
 
-/** Holds a dock key with a finger for `ms`, then lifts it. */
-async function holdKey(page: Page, locator: Locator, ms: number) {
+/**
+ * Holds a dock key with a finger while `whileHeld` runs, then lifts it, even
+ * if `whileHeld` throws.
+ */
+async function holdKey(
+  page: Page,
+  locator: Locator,
+  whileHeld: () => Promise<void>
+) {
   const box = (await locator.boundingBox())!;
   const cdp = await page.context().newCDPSession(page);
   await cdp.send("Input.dispatchTouchEvent", {
@@ -110,11 +118,14 @@ async function holdKey(page: Page, locator: Locator, ms: number) {
       { x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 },
     ],
   });
-  await page.waitForTimeout(ms);
-  await cdp.send("Input.dispatchTouchEvent", {
-    type: "touchEnd",
-    touchPoints: [],
-  });
+  try {
+    await whileHeld();
+  } finally {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  }
 }
 
 test.describe("Monkey C Mayhem on a tablet (iPad projects, #2122)", () => {
@@ -216,8 +227,13 @@ test.describe("Monkey C Mayhem on a tablet (iPad projects, #2122)", () => {
         )?.[1] ?? 0
       );
     const before = await scoreOf();
-    await holdKey(page, dockKey(page, "sprint"), 1500);
-    await holdKey(page, dockKey(page, "jump"), 300);
+    // Sprint until the run scores, then a held jump (about 300 ms of frames).
+    await holdKey(page, dockKey(page, "sprint"), () =>
+      expect.poll(scoreOf).toBeGreaterThan(before)
+    );
+    await holdKey(page, dockKey(page, "jump"), () =>
+      waitForAnimationFrames(page, 18)
+    );
     expect(await scoreOf()).toBeGreaterThan(before);
     await expect(face(page)).toHaveAttribute("aria-label", /Status: playing/);
   });

@@ -26,7 +26,7 @@ Stub event dispatcher and queue management for patrol shifts.
 
 ### severity?
 
-[`IncidentSeverity`](../../types/type-aliases/IncidentSeverity.md) \| `undefined`
+[`IncidentSeverity`](../../types/type-aliases/IncidentSeverity.md) \| `undefined` = `"info"`
 
 ## Returns
 

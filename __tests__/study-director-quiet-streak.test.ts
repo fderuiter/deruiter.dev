@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Study Director: the quiet-site line counts how long a site has gone
 // without anyone looking (#2288), from saved state so a reload or a replay
 // of the same seed says the same thing.

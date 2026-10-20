@@ -2302,9 +2302,9 @@ export function getSuggestion(
       }
     }
 
-    if (tokens.length === 2 && inputVal.endsWith(" ")) {
-      return `${tokens[0]} ${secondWord} `;
-    }
+    // "connect A " splits into three tokens, so two tokens ending in a space
+    // means a bare "connect ": there is nothing to suggest yet, and a
+    // whitespace-only suggestion would trap Tab in the console (#2532).
 
     if (tokens.length === 3 && !inputVal.endsWith(" ")) {
       const matchNode = VALID_NODE_IDS.find((id) => id.startsWith(thirdWord));

@@ -20,10 +20,11 @@ name: CI Pipeline
 #
 #   changes ──┬─ unit-gate (3 Vitest shards) ── unit-coverage (merged thresholds)
 #             └─ mutation-gate (Stryker, incremental against main's report)
-#   static-gate (drift, docs, typecheck, lint, verify) ── build (once per PR)
-#        build ──┬─ heavy-gate (3 Playwright chromium shards) ─┐
-#                ├─ bench-gate (Web Vitals, then verify) ──────┴─ heavy-gate-report
-#                └─ device-gate (Tablet Safari, Mobile Safari, Mobile Chrome)
+#   static-gate (drift, docs, typecheck, lint, verify)
+#   changes ── build (once per PR, in parallel with static-gate since #2542)
+#   static-gate + build ──┬─ heavy-gate (3 Playwright chromium shards) ─┐
+#                         ├─ bench-gate (Web Vitals, then verify) ──────┴─ heavy-gate-report
+#                         └─ device-gate (Tablet Safari, Mobile Safari, Mobile Chrome)
 #   security-gate
 #   merge-gate (the single required check) needs every job above.
 #
@@ -31,9 +32,9 @@ name: CI Pipeline
 # bench-gate, device-gate) runs in the digest-pinned Playwright image (#1771).
 #
 # `changes` (#1773) runs scripts/ci-run-policy.mjs: docs-only PRs skip the
-# browser gates, draft PRs skip them until marked ready, and bot-branch PRs
-# (stitch/, jules/) run only static-gate and security-gate until a
-# maintainer applies the `ci:full` label. Merge Gate fails on a draft and on
+# browser gates, and draft PRs (#2541) and bot-branch PRs (stitch/, jules/)
+# run only static-gate and security-gate, until marked ready or until a
+# maintainer applies the `ci:full` label respectively. Merge Gate fails on a draft and on
 # an unpromoted bot PR, so neither can merge on partial checks.
 #
 # `merge-gate` is the single job branch protection (#732) should require: a
@@ -100,6 +101,7 @@ jobs:
       run_unit: ${{ steps.policy.outputs.run_unit }}
       run_browser: ${{ steps.policy.outputs.run_browser }}
       stryker_force: ${{ steps.policy.outputs.stryker_force }}
+      arcade_device_grep: ${{ steps.policy.outputs.arcade_device_grep }}
 
     steps:
       - name: Checkout Code
@@ -125,7 +127,7 @@ jobs:
           PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
 
   # #1768: the static slice of the old Fast Gate. It never needs a built app
-  # or a browser, runs on every trigger, and gates the build.
+  # or a browser and runs on every trigger.
   static-gate:
     name: Static Gate (Drift, Docs, Typecheck, Lint, Invariants)
     runs-on: ubuntu-latest
@@ -422,7 +424,10 @@ jobs:
   # provenance record scripts/build.js writes (.next/build-provenance.json).
   build:
     name: Build (Production Artifact, Bundle Budgets)
-    needs: [changes, static-gate]
+    # #2542: no `static-gate` dependency, so the build and the static checks
+    # share one queue wait instead of two. The browser gates below still need
+    # both, so a static failure never spends their runner time.
+    needs: [changes]
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -502,7 +507,7 @@ jobs:
   # full four-device breadth remains available via `cross-device-matrix`.
   heavy-gate:
     name: Heavy Gate (Playwright chromium shard ${{ matrix.shard }}/3)
-    needs: [changes, build]
+    needs: [changes, static-gate, build]
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -574,7 +579,7 @@ jobs:
   # evidence this runner wrote moments earlier.
   bench-gate:
     name: Bench Gate (Real-Browser Sub-Route Web Vitals)
-    needs: [changes, build]
+    needs: [changes, static-gate, build]
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -751,12 +756,15 @@ jobs:
   # specs that are genuinely device-engine dependent (pixel-diffing and
   # touch-input emulation) against the three non-chromium projects. There is
   # no post-merge repeat of it on the `main` push.
+  # #2517: it also runs the arcade tablet and phone specs for the games the PR
+  # touches, on the iPad and phone projects, selected by the run policy's
+  # `arcade_device_grep`. The full arcade device matrix stays on demand.
   device-gate:
     name: Device Coverage Gate (Tablet Safari, Mobile Safari, Mobile Chrome)
-    needs: [changes, build]
+    needs: [changes, static-gate, build]
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     # #1771: browsers and their OS libraries ship in the official Playwright
     # image, pinned by digest to the locked @playwright/test version
     # (__tests__/ci-toolchain-pinning.test.ts keeps them equal), so this job
@@ -794,6 +802,17 @@ jobs:
           npx --no-install playwright test __tests__/e2e/visual.spec.ts __tests__/e2e/touch-controls.spec.ts \
             --project="Tablet Safari" --project="Mobile Safari" --project="Mobile Chrome"
         env:
+          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+          CRON_SECRET: "ci_placeholder_cron_secret"
+
+      - name: Run Arcade Device Specs for Touched Games (iPad, Small Phone, Phone Landscape)
+        if: needs.changes.outputs.arcade_device_grep != ''
+        run: |
+          npx --no-install playwright test \
+            --project="iPad*" --project="Small Phone" --project="Phone Landscape" \
+            --grep "$ARCADE_DEVICE_GREP" --pass-with-no-tests
+        env:
+          ARCADE_DEVICE_GREP: ${{ needs.changes.outputs.arcade_device_grep }}
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
 

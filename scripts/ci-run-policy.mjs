@@ -6,7 +6,8 @@
  * installed, so it has no dependencies. It decides, for one workflow run,
  * which gate groups execute:
  *
- * - `run_unit`: the Vitest shards and the Stryker gate.
+ * - `run_unit`: the Vitest shards and the Stryker gate. Off for drafts and
+ *   unpromoted bot PRs, which run only the static and security gates.
  * - `run_browser`: the build, the Playwright shards, the device gate and the
  *   Web Vitals bench.
  *
@@ -127,6 +128,8 @@ export function isBotBranch(headRef) {
  * @property {boolean} runUnit
  * @property {boolean} runBrowser
  * @property {boolean} strykerForce
+ * @property {string} arcadeDeviceGrep `--grep` for the arcade device specs
+ *   `device-gate` runs; empty runs none.
  * @property {string} reason
  */
 
@@ -137,6 +140,83 @@ const STRYKER_INPUTS = [
   "package.json",
   "package-lock.json",
 ];
+
+/**
+ * Arcade games by the display name their device specs' `describe` titles
+ * carry ("Laser Loon on a tablet"), with the paths that belong to each
+ * (#2517). `device-gate` greps the iPad and phone projects for the names a
+ * PR touches, so a new `*-phone.spec.ts` is picked up by naming its game the
+ * same way.
+ */
+export const ARCADE_DEVICE_GAMES = Object.freeze([
+  ["Retro Labyrinth", /retro-?labyrinth|RetroLabyrinth|^lib\/dungeon\//i],
+  ["Working With Duck", /working-?with-?duck/i],
+  ["Quasi-Perfect Puzzler", /quasi-?perfect|quasi-puzzler/i],
+  ["Protocol Drift", /protocol-?drift/i],
+  ["Meme Vault", /meme-vault|^lib\/meme-/i],
+  ["Study Director", /study-?director/i],
+  ["Laser Loon", /laser-?loon/i],
+  ["Clinical Trial Chaos", /clinical-?(trial-)?chaos/i],
+  ["Patty's Drive-Thru", /patty-?drive-?thru/i],
+  ["Trial & Error", /trial-and-error/i],
+  ["For Better or Bulk", /for-?better-?or-?bulk/i],
+  ["Monkey C Mayhem", /garmin-?watch|^lib\/garmin-/i],
+]);
+
+/** `describe` titles of the shared device kit specs. */
+const ARCADE_KIT_TITLES = Object.freeze([
+  "Tablet arcade kit",
+  "Mobile arcade kit",
+]);
+
+/**
+ * Paths shared by every game's cabinet: a change here runs the kit specs.
+ * This policy file is one of them, so a change to the selection runs the
+ * step it feeds at least once before it merges.
+ */
+const ARCADE_SHARED_PATHS =
+  /^(components\/arcade\/|lib\/arcade\/|lib\/haptics\.ts$|app\/arcade\/(layout\.tsx|arcade\.css)$|playwright\.config\.ts$|scripts\/ci-run-policy\.mjs$|__tests__\/e2e\/(mobile-harness\.ts|tablet-kit\.spec\.ts|mobile-kit\.spec\.ts)$)/;
+
+const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * Unit and component tests (`__tests__/` outside `e2e/`) run in Vitest and
+ * cannot change what a device spec sees, so they select no game (#2531). A
+ * test-only sweep that names many games otherwise queued every game's
+ * device specs, about 1,100 tests, and ran device-gate into its timeout.
+ */
+const UNIT_TEST_PATH = /^__tests__\/(?!e2e\/)/;
+
+/**
+ * Documentation, including the TypeDoc reference generated from `lib/`, is
+ * never served to a device spec. A tooling bump that regenerates the
+ * reference names a dozen games by path and otherwise queued their device
+ * specs and ran device-gate into its timeout (#2511).
+ */
+const DOCS_PATH = /^docs\//;
+
+/**
+ * The Playwright `--grep` pattern for the arcade device specs a change set
+ * touches. Empty when it touches no arcade code; `.` (everything) when the
+ * change set is unknown, so the filter fails safe.
+ *
+ * @param {string[] | null | undefined} files
+ * @returns {string}
+ */
+export function arcadeDeviceGrep(files) {
+  if (!Array.isArray(files) || files.length === 0) return ".";
+  const relevant = files.filter(
+    (file) => !UNIT_TEST_PATH.test(file) && !DOCS_PATH.test(file)
+  );
+  const titles = [];
+  if (relevant.some((file) => ARCADE_SHARED_PATHS.test(file))) {
+    titles.push(...ARCADE_KIT_TITLES);
+  }
+  for (const [name, paths] of ARCADE_DEVICE_GAMES) {
+    if (relevant.some((file) => paths.test(file))) titles.push(name);
+  }
+  return titles.map(escapeRegExp).join("|");
+}
 
 /**
  * Decides which gate groups run. Pure, so the tests can drive every case.
@@ -157,6 +237,7 @@ export function computeRunPolicy(input) {
       runUnit: true,
       runBrowser: false,
       strykerForce: false,
+      arcadeDeviceGrep: "",
       reason: `${eventName}: unit and mutation gates run; browser gates are pull_request only.`,
     };
   }
@@ -170,18 +251,22 @@ export function computeRunPolicy(input) {
   const botPr = isBotBranch(input.headRef);
   const promoted = (input.labels ?? []).includes(FULL_SUITE_LABEL);
   const draft = input.draft === true;
-  const quickOnly = botPr && !promoted;
+  // #2541: a draft runs quick checks too. The full local suite is required
+  // before every push, and on the 20-job free runner pool the draft's unit
+  // shards only delay the one ready PR in the merge lane.
+  const quickOnly = (botPr && !promoted) || draft;
   const runUnit = !quickOnly;
-  const runBrowser = !quickOnly && !draft && appChanged;
+  const runBrowser = !quickOnly && appChanged;
   const strykerForce =
     !Array.isArray(files) ||
     files.some((file) => STRYKER_INPUTS.includes(file));
 
   let reason;
-  if (quickOnly) {
+  if (botPr && !promoted) {
     reason = `bot PR (${input.headRef}): static and security checks only until a maintainer applies '${FULL_SUITE_LABEL}'.`;
   } else if (draft) {
-    reason = "draft PR: browser gates run once the PR is marked ready.";
+    reason =
+      "draft PR: static and security checks only; every gate runs once the PR is marked ready.";
   } else if (!appChanged) {
     reason = "docs-only PR: build, Playwright, device and bench gates skipped.";
   } else {
@@ -196,6 +281,7 @@ export function computeRunPolicy(input) {
     runUnit,
     runBrowser,
     strykerForce,
+    arcadeDeviceGrep: runBrowser ? arcadeDeviceGrep(files) : "",
     reason,
   };
 }
@@ -216,6 +302,7 @@ export function formatOutputs(policy) {
     `run_unit=${flag(policy.runUnit)}`,
     `run_browser=${flag(policy.runBrowser)}`,
     `stryker_force=${flag(policy.strykerForce)}`,
+    `arcade_device_grep=${policy.arcadeDeviceGrep}`,
     "",
   ].join("\n");
 }
@@ -275,6 +362,9 @@ function main() {
   });
 
   console.log(`Run policy: ${policy.reason}`);
+  console.log(
+    `Arcade device specs: ${policy.arcadeDeviceGrep ? `--grep "${policy.arcadeDeviceGrep}"` : "none"}`
+  );
   if (Array.isArray(changedFiles) && eventName === "pull_request") {
     console.log(`Changed files (${changedFiles.length}):`);
     for (const file of changedFiles) {

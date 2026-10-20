@@ -92,7 +92,9 @@ test.describe("Arcade Cabinet Fullscreen & In-Game Playability Suite", () => {
 
       // 3. Toggle Fullscreen ON
       await fullscreenBtn.click();
-      await page.waitForTimeout(300);
+      await expect(
+        page.locator('button[aria-label*="Exit Fullscreen"]').first()
+      ).toBeVisible();
 
       // Verify zero horizontal overflow while in fullscreen
       const isOverflowInFullscreen = await page.evaluate(
@@ -112,7 +114,9 @@ test.describe("Arcade Cabinet Fullscreen & In-Game Playability Suite", () => {
       } else {
         await page.keyboard.press("f");
       }
-      await page.waitForTimeout(300);
+      await expect(
+        page.locator('button[aria-label*="Exit Fullscreen"]')
+      ).toHaveCount(0);
 
       // Verify zero horizontal overflow after returning to windowed mode
       const isOverflowAfter = await page.evaluate(

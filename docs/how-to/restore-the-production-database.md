@@ -152,8 +152,9 @@ the incident being recovered from is itself a data change, in which case the
 CaseStudy fingerprint should differ and the schema fingerprint should not.
 
 Then verify application connectivity against the restored branch, not just raw
-SQL. `_prisma_migrations` must contain 11 rows; a mismatch means the restore
-point predates a migration and the application code will not match the schema.
+SQL. `_prisma_migrations` must contain one row per directory in
+`prisma/migrations/` (18 as of 2026-10-19); a mismatch means the restore point
+predates a migration and the application code will not match the schema.
 
 ### 6. Cut over
 

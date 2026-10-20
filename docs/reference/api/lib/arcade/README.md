@@ -26,6 +26,12 @@ Re-exports [ARCADE_GAME_ROUTES](games/variables/ARCADE_GAME_ROUTES.md)
 
 ***
 
+### ARCADE\_REGISTRY
+
+Re-exports [ARCADE_REGISTRY](registry/variables/ARCADE_REGISTRY.md)
+
+***
+
 ### ArcadeEngine
 
 Re-exports [ArcadeEngine](core/engine/classes/ArcadeEngine.md)
@@ -50,9 +56,21 @@ Re-exports [ArcadeGameRoute](games/type-aliases/ArcadeGameRoute.md)
 
 ***
 
+### ArcadeGameSlug
+
+Re-exports [ArcadeGameSlug](registry/type-aliases/ArcadeGameSlug.md)
+
+***
+
 ### ArcadeInputManager
 
 Re-exports [ArcadeInputManager](core/input/classes/ArcadeInputManager.md)
+
+***
+
+### ArcadeListing
+
+Re-exports [ArcadeListing](registry/type-aliases/ArcadeListing.md)
 
 ***
 
@@ -62,9 +80,27 @@ Re-exports [ArcadeNeighbor](games/interfaces/ArcadeNeighbor.md)
 
 ***
 
+### ArcadePhoneOrientation
+
+Re-exports [ArcadePhoneOrientation](registry/type-aliases/ArcadePhoneOrientation.md)
+
+***
+
+### ArcadeRegistryEntry
+
+Re-exports [ArcadeRegistryEntry](registry/interfaces/ArcadeRegistryEntry.md)
+
+***
+
 ### ArcadeViewport
 
 Re-exports [ArcadeViewport](core/viewport/classes/ArcadeViewport.md)
+
+***
+
+### ArcadeViewReadiness
+
+Re-exports [ArcadeViewReadiness](registry/type-aliases/ArcadeViewReadiness.md)
 
 ***
 
@@ -134,6 +170,12 @@ Re-exports [clamp](utils/functions/clamp.md)
 
 ***
 
+### classifyFormFactor
+
+Re-exports [classifyFormFactor](form-factor/functions/classifyFormFactor.md)
+
+***
+
 ### computeCanvasResolution
 
 Re-exports [computeCanvasResolution](core/viewport/functions/computeCanvasResolution.md)
@@ -194,6 +236,30 @@ Re-exports [DEFAULT_CRT_PRESET_ID](crt-pipeline/variables/DEFAULT_CRT_PRESET_ID.
 
 ***
 
+### FORM\_FACTOR\_HYSTERESIS
+
+Re-exports [FORM_FACTOR_HYSTERESIS](form-factor/variables/FORM_FACTOR_HYSTERESIS.md)
+
+***
+
+### FORM\_FACTORS
+
+Re-exports [FORM_FACTORS](form-factor/variables/FORM_FACTORS.md)
+
+***
+
+### FormFactor
+
+Re-exports [FormFactor](form-factor/type-aliases/FormFactor.md)
+
+***
+
+### FormFactorInput
+
+Re-exports [FormFactorInput](form-factor/interfaces/FormFactorInput.md)
+
+***
+
 ### GamePoint
 
 Re-exports [GamePoint](core/viewport/interfaces/GamePoint.md)
@@ -203,6 +269,12 @@ Re-exports [GamePoint](core/viewport/interfaces/GamePoint.md)
 ### getArcadeNeighbors
 
 Re-exports [getArcadeNeighbors](games/functions/getArcadeNeighbors.md)
+
+***
+
+### getArcadeRegistryEntry
+
+Re-exports [getArcadeRegistryEntry](registry/functions/getArcadeRegistryEntry.md)
 
 ***
 
@@ -233,6 +305,12 @@ Re-exports [InputSnapshot](core/input/interfaces/InputSnapshot.md)
 ### isCabinetCrtFilter
 
 Re-exports [isCabinetCrtFilter](crt-pipeline/functions/isCabinetCrtFilter.md)
+
+***
+
+### isPhoneGated
+
+Re-exports [isPhoneGated](registry/functions/isPhoneGated.md)
 
 ***
 
@@ -275,6 +353,24 @@ Re-exports [ObjectPool](core/pool/classes/ObjectPool.md)
 ### ObjectPoolConfig
 
 Re-exports [ObjectPoolConfig](core/pool/interfaces/ObjectPoolConfig.md)
+
+***
+
+### parseViewOverride
+
+Re-exports [parseViewOverride](form-factor/functions/parseViewOverride.md)
+
+***
+
+### PHONE\_MAX\_SHORT\_SIDE
+
+Re-exports [PHONE_MAX_SHORT_SIDE](form-factor/variables/PHONE_MAX_SHORT_SIDE.md)
+
+***
+
+### PHONE\_MAX\_WIDTH\_EXCLUSIVE
+
+Re-exports [PHONE_MAX_WIDTH_EXCLUSIVE](form-factor/variables/PHONE_MAX_WIDTH_EXCLUSIVE.md)
 
 ***
 

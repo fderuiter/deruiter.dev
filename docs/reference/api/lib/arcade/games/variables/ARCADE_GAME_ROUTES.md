@@ -6,7 +6,9 @@
 
 # Variable: ARCADE\_GAME\_ROUTES
 
-> `const` **ARCADE\_GAME\_ROUTES**: readonly \[`"/arcade/working-with-duck"`, `"/arcade/laser-loon"`, `"/arcade/quasi-puzzler"`, `"/arcade/garmin-watch"`, `"/arcade/clinical-chaos"`, `"/arcade/trial-and-error"`, `"/arcade/study-director"`, `"/arcade/patty-drive-thru"`, `"/arcade/for-better-or-bulk"`, `"/arcade/retro-labyrinth"`\]
+> `const` **ARCADE\_GAME\_ROUTES**: readonly [`ArcadeGameRoute`](../type-aliases/ArcadeGameRoute.md)[]
 
-Single source of truth for the playable arcade games listed on the hub.
-Public copy that states a game count derives it from this list.
+The playable games listed on the hub, in hub order, derived from
+`ARCADE_REGISTRY`. Public copy that states a game count derives it from
+this list. Meme Vault (a page) and Protocol Drift (listed with the
+simulators, #1841) are in the registry but not on this list.

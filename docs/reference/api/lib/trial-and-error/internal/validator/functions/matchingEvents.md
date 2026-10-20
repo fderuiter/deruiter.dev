@@ -67,3 +67,5 @@ Treatment-emergent adverse events. Absent means none were reported.
 `"F"` \| `"M"` = `...`
 
 ## Returns
+
+`object`[]

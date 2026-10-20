@@ -1,3 +1,4 @@
+// @vitest-environment node
 // Monkey C Mayhem prop art (#1992): the Water Stations, Plyo Boxes, Treadmill
 // Belts and Rest Day Switch draw on the lane, a bonus room replaces the sky,
 // and the rest-day countdown pill reads its seconds.

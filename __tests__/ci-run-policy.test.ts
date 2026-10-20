@@ -4,8 +4,10 @@ import fs from "fs";
 import path from "path";
 import {
   BOT_BRANCH_PREFIXES,
+  ARCADE_DEVICE_GAMES,
   FULL_SUITE_LABEL,
   HUMAN_BRANCH_PREFIXES,
+  arcadeDeviceGrep,
   computeRunPolicy,
   formatOutputs,
   isBotBranch,
@@ -16,8 +18,8 @@ import { validateBranchName } from "../lib/dx/git-guard";
 /**
  * #1773: the `changes` job in ci.yml runs scripts/ci-run-policy.mjs to decide
  * which gate groups run. These cases pin the decision table Merge Gate relies
- * on: docs-only PRs skip only the browser gates, drafts skip them until
- * ready, bot PRs run quick checks until promoted, and anything unknown counts
+ * on: docs-only PRs skip only the browser gates, drafts run quick checks
+ * until ready (#2541), bot PRs run quick checks until promoted, and anything unknown counts
  * as a code change.
  */
 describe("CI run policy (#1773)", () => {
@@ -158,12 +160,13 @@ describe("CI run policy (#1773)", () => {
       });
     });
 
-    it("keeps the cheap gates but not the browser gates on a draft", () => {
+    it("runs quick checks only on a draft (#2541)", () => {
       expect(pr({ draft: true })).toMatchObject({
         draft: true,
-        runUnit: true,
+        runUnit: false,
         runBrowser: false,
       });
+      expect(pr({ draft: true }).reason).toContain("draft PR");
     });
 
     it("runs quick checks only for an unpromoted bot PR", () => {
@@ -222,7 +225,8 @@ describe("CI run policy (#1773)", () => {
       expect(declared.length).toBeGreaterThan(0);
       for (const [, name, source] of declared) {
         expect(name).toBe(source);
-        expect(output).toMatch(new RegExp(`^${source}=(true|false)$`, "m"));
+        const value = source === "arcade_device_grep" ? ".*" : "(true|false)";
+        expect(output).toMatch(new RegExp(`^${source}=${value}$`, "m"));
       }
     });
 
@@ -234,6 +238,128 @@ describe("CI run policy (#1773)", () => {
       expect(ci).toContain(
         `bot PR: full suite runs when marked ready (a maintainer applies the '${FULL_SUITE_LABEL}' label)`
       );
+    });
+  });
+
+  describe("arcade device specs for touched games (#2517)", () => {
+    const grep = (files: string[] | null) =>
+      new RegExp(arcadeDeviceGrep(files) || "(?!)");
+
+    it("selects only the game a change belongs to", () => {
+      const pattern = arcadeDeviceGrep(["components/LaserLoon.tsx"]);
+      expect(pattern).toBe("Laser Loon");
+      expect(
+        grep(["components/laser-loon/PauseMenu.tsx"]).test(
+          "Laser Loon on a tablet (iPad projects, #2081)"
+        )
+      ).toBe(true);
+    });
+
+    it("maps engine and spec paths to their game", () => {
+      expect(arcadeDeviceGrep(["lib/dungeon/generator.ts"])).toBe(
+        "Retro Labyrinth"
+      );
+      expect(arcadeDeviceGrep(["lib/garmin-engine.ts"])).toBe(
+        "Monkey C Mayhem"
+      );
+      expect(
+        arcadeDeviceGrep(["__tests__/e2e/for-better-or-bulk-tablet.spec.ts"])
+      ).toBe("For Better or Bulk");
+      expect(arcadeDeviceGrep(["app/arcade/meme-vault/page.tsx"])).toBe(
+        "Meme Vault"
+      );
+    });
+
+    it("adds the shared kit blocks when cabinet code changes", () => {
+      const pattern = grep(["components/arcade/PlayCabinet.tsx"]);
+      expect(
+        pattern.test("Tablet arcade kit (iPad projects) /arcade/laser-loon")
+      ).toBe(true);
+      expect(pattern.test("Mobile arcade kit: immersive touch cabinet")).toBe(
+        true
+      );
+      expect(pattern.test("Laser Loon on a tablet")).toBe(false);
+    });
+
+    it("runs the kit blocks when this selection logic itself changes", () => {
+      expect(arcadeDeviceGrep(["scripts/ci-run-policy.mjs"])).toBe(
+        "Tablet arcade kit|Mobile arcade kit"
+      );
+    });
+
+    it("ignores unit tests, which cannot change what a device spec sees", () => {
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/retro-labyrinth-run-rules.test.ts",
+          "__tests__/patty-drive-thru-dilemmas.test.ts",
+          "__tests__/crf/scenario-impact.test.ts",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "__tests__/garmin-ceiling.test.ts",
+          "__tests__/e2e/retro-labyrinth-tablet.spec.ts",
+        ])
+      ).toBe("Retro Labyrinth");
+    });
+
+    it("ignores documentation, including the generated reference", () => {
+      expect(
+        arcadeDeviceGrep([
+          "docs/reference/api/lib/patty-drive-thru/presets/variables/SCENARIO_LIMITS.md",
+          "docs/reference/api/lib/study-director/index.md",
+          "docs/how-to/play-retro-labyrinth.md",
+        ])
+      ).toBe("");
+      expect(
+        arcadeDeviceGrep([
+          "docs/reference/api/lib/protocol-drift/index.md",
+          "components/protocol-drift/ProtocolDriftGame.tsx",
+        ])
+      ).toBe("Protocol Drift");
+    });
+
+    it("runs nothing for a change outside the arcade", () => {
+      expect(arcadeDeviceGrep(["components/Hero.tsx", "lib/seo.ts"])).toBe("");
+    });
+
+    it("runs everything when the change set is unknown", () => {
+      expect(arcadeDeviceGrep(null)).toBe(".");
+      expect(arcadeDeviceGrep([])).toBe(".");
+    });
+
+    it("gives every game a pattern that matches its own spec titles", () => {
+      for (const [name] of ARCADE_DEVICE_GAMES) {
+        expect(new RegExp(name).test(`${name} on a tablet`)).toBe(true);
+      }
+      const both = grep([
+        "components/patty-drive-thru/BoothScene.tsx",
+        "components/trial-and-error/CardTable.tsx",
+      ]);
+      expect(
+        both.test("Patty's Drive-Thru on a tablet (iPad projects, #2116)")
+      ).toBe(true);
+      expect(
+        both.test("Trial & Error on a tablet (iPad projects, #2120)")
+      ).toBe(true);
+      expect(both.test("Laser Loon on a tablet")).toBe(false);
+    });
+
+    it("is emitted on a code PR and empty when browser gates are skipped", () => {
+      const code = computeRunPolicy({
+        eventName: "pull_request",
+        headRef: "feat/x",
+        changedFiles: ["components/RetroLabyrinth.tsx"],
+      });
+      expect(code.arcadeDeviceGrep).toBe("Retro Labyrinth");
+      const draft = computeRunPolicy({
+        eventName: "pull_request",
+        headRef: "feat/x",
+        draft: true,
+        changedFiles: ["components/RetroLabyrinth.tsx"],
+      });
+      expect(draft.arcadeDeviceGrep).toBe("");
+      expect(computeRunPolicy({ eventName: "push" }).arcadeDeviceGrep).toBe("");
     });
   });
 });

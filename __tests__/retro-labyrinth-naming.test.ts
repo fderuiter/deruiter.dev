@@ -6,7 +6,7 @@ import {
   generateRoguelikeCampaign,
 } from "@/lib/dungeon";
 import { GAME_MANUALS } from "@/lib/game-manuals";
-import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
+import { getArcadeCatalogEntry } from "@/lib/arcade";
 
 // #1322: room 1 read "TIER 03" and room 2 "ROOM 02", and the manual named a
 // high-score key the game never wrote.
@@ -39,9 +39,8 @@ describe("Retro Labyrinth high-score key (#1322)", () => {
     expect(GAME_MANUALS["retro-labyrinth"].storageKey).toBe(
       RETRO_LABYRINTH_HIGH_SCORE_KEY
     );
-    expect(
-      ARCADE_GAMES_METADATA.find((g) => g.route === "/arcade/retro-labyrinth")
-        ?.storageKey
-    ).toBe(RETRO_LABYRINTH_HIGH_SCORE_KEY);
+    expect(getArcadeCatalogEntry("retro-labyrinth")?.scoreKey).toBe(
+      RETRO_LABYRINTH_HIGH_SCORE_KEY
+    );
   });
 });

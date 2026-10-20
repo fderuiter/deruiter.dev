@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { clamp } from "@/lib/game-utils";
+import React from "react";
 import {
   IconTerminal,
   IconCornerDownLeft,
@@ -11,435 +10,73 @@ import {
   IconCheck,
   IconCircleDot,
 } from "@tabler/icons-react";
+import {
+  edgeColor,
+  isNodeProven,
+  tooltipPosition,
+} from "./schemaflow/proof-graph";
+import { useConsoleLog } from "./schemaflow/useConsoleLog";
+import { useProofGraph } from "./schemaflow/useProofGraph";
+import { useSolverTelemetry } from "./schemaflow/useSolverTelemetry";
+import { useTacticConsole } from "./schemaflow/useTacticConsole";
 
-interface Node {
-  id: string;
-  label: string;
-  type: "premise" | "intermediate" | "conclusion";
-  formula: string;
-  description: string;
-  x: number;
-  y: number;
-}
-
-interface Edge {
-  source: string;
-  target: string;
-}
-
-interface ConsoleLog {
-  id: string;
-  type: "command" | "output" | "error" | "info" | "success";
-  text: string;
-}
-
-const DEFAULT_NODES: Node[] = [
-  {
-    id: "A",
-    label: "NODE A",
-    type: "premise",
-    formula: "P",
-    description: "Premise P: Fact verification complete.",
-    x: 100,
-    y: 80,
-  },
-  {
-    id: "B",
-    label: "NODE B",
-    type: "premise",
-    formula: "P → Q",
-    description: "Premise P → Q: Verification implies proper mapping.",
-    x: 100,
-    y: 280,
-  },
-  {
-    id: "C",
-    label: "NODE C",
-    type: "intermediate",
-    formula: "Q",
-    description: "Intermediate Goal Q: Data mapping is consistent.",
-    x: 360,
-    y: 180,
-  },
-  {
-    id: "D",
-    label: "NODE D",
-    type: "premise",
-    formula: "Q → R",
-    description: "Premise Q → R: Consistent mapping implies valid schema.",
-    x: 360,
-    y: 340,
-  },
-  {
-    id: "E",
-    label: "NODE E",
-    type: "conclusion",
-    formula: "R",
-    description: "Goal R: Database schema is correct and optimal.",
-    x: 620,
-    y: 260,
-  },
+const QUICK_COMMANDS = [
+  "connect A C",
+  "connect B C",
+  "connect C E",
+  "connect D E",
+  "rollback",
 ];
 
-const DEFAULT_EDGES: Edge[] = [{ source: "A", target: "C" }];
-
 export default function SchemaFlowWorkspace() {
-  const [nodes] = useState<Node[]>(DEFAULT_NODES);
-  const [edges, setEdges] = useState<Edge[]>(DEFAULT_EDGES);
-  const [history, setHistory] = useState<Edge[][]>([]);
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
-
-  const hoveredNode = hoveredNodeId
-    ? nodes.find((n) => n.id === hoveredNodeId)
-    : null;
-  const activeInspectorNode = hoveredNode
-    ? hoveredNode
-    : selectedNodeId
-      ? nodes.find((n) => n.id === selectedNodeId)
-      : null;
-
-  // CLI State
-  const [consoleInput, setConsoleInput] = useState("");
-  const [consoleLogs, setConsoleLogs] = useState<ConsoleLog[]>([
-    {
-      id: "welcome",
-      type: "info",
-      text: "Logical Proof Assistant CLI v2.4\nType 'help' to review syntax. Hover or tap nodes to read specifications.",
-    },
-  ]);
-  const [cliHistory, setCliHistory] = useState<string[]>([]);
-  const [cliHistoryIdx, setCliHistoryIdx] = useState(-1);
-  const terminalLogsContainerRef = useRef<HTMLDivElement>(null);
-  const consoleInputRef = useRef<HTMLInputElement>(null);
-
-  // Telemetry Gauge State & Direct DOM Refs
-  const ramValRef = useRef(42.5);
-  const gaugeContainerRef = useRef<HTMLDivElement>(null);
-  const ramTextRef = useRef<HTMLSpanElement>(null);
-  const [isSolverLoopActive, setIsSolverLoopActive] = useState(false);
-  const telemetryIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Helper to add log messages
-  const addLog = (type: ConsoleLog["type"], text: string) => {
-    setConsoleLogs((prev) => [
-      ...prev,
-      {
-        id: `log-${Date.now()}-${Math.random()}`,
-        type,
-        text,
-      },
-    ]);
-  };
-
-  // Proof status evaluator memoized to re-calculate only when graph edges or nodes change
-  const { isC_Proven, isE_Proven } = React.useMemo(() => {
-    // C is proven if both A and B point to C
-    const hasAtoC = edges.some((e) => e.source === "A" && e.target === "C");
-    const hasBtoC = edges.some((e) => e.source === "B" && e.target === "C");
-    const isC_Proven = hasAtoC && hasBtoC;
-
-    // E is proven if isC_Proven and both C and D point to E
-    const hasCtoE = edges.some((e) => e.source === "C" && e.target === "E");
-    const hasDtoE = edges.some((e) => e.source === "D" && e.target === "E");
-    const isE_Proven = isC_Proven && hasCtoE && hasDtoE;
-
-    return { isC_Proven, isE_Proven };
-  }, [edges]);
-
-  const toggleSolverLoop = (newState?: boolean) => {
-    setIsSolverLoopActive((prev) => {
-      const next = newState !== undefined ? newState : !prev;
-      if (next) {
-        addLog(
-          "info",
-          "High-frequency mathematical solver loop initiated. RAM Telemetry active."
-        );
-      } else {
-        addLog("info", "Solver loop telemetry simulation suspended.");
-      }
-      return next;
-    });
-  };
-
-  // Handle high-frequency telemetry solver loop animation with direct DOM mutations
-  useEffect(() => {
-    if (isSolverLoopActive) {
-      const baseVal = 42.5;
-      let tick = 0;
-      telemetryIntervalRef.current = setInterval(() => {
-        tick += 1;
-        // Fluctuating RAM simulating real solver calculation cycles
-        const noise = Math.sin(tick * 0.4) * 8 + Math.cos(tick * 0.15) * 4;
-        const newPercent = clamp(
-          baseVal +
-            noise +
-            (tick % 7 === 0 ? 10 : 0) -
-            (tick % 11 === 0 ? 8 : 0),
-          30.2,
-          98.4
-        );
-        ramValRef.current = newPercent;
-
-        // Direct DOM mutations to transient telemetry UI metrics - zero Virtual DOM re-renders
-        if (gaugeContainerRef.current) {
-          gaugeContainerRef.current.style.setProperty(
-            "--gauge-progress",
-            newPercent.toString()
-          );
-        }
-        if (ramTextRef.current) {
-          ramTextRef.current.textContent = `${newPercent.toFixed(0)}%`;
-        }
-      }, 80); // ~12.5 updates per second
-    } else {
-      if (telemetryIntervalRef.current) {
-        clearInterval(telemetryIntervalRef.current);
-        telemetryIntervalRef.current = null;
-      }
-    }
-
-    return () => {
-      if (telemetryIntervalRef.current) {
-        clearInterval(telemetryIntervalRef.current);
-        telemetryIntervalRef.current = null;
-      }
-    };
-  }, [isSolverLoopActive]);
+  const { consoleLogs, addLog, clearLogs } = useConsoleLog();
+  const {
+    nodes,
+    edges,
+    history,
+    status,
+    isC_Proven,
+    isE_Proven,
+    selectedNodeId,
+    hoveredNodeId,
+    hoveredNode,
+    inspectorNode: activeInspectorNode,
+    setHoveredNodeId,
+    connectNodes,
+    disconnectNodes,
+    executeRollback,
+    resetCanvas,
+    handleNodeClick,
+  } = useProofGraph(addLog);
+  const {
+    isSolverLoopActive,
+    toggleSolverLoop,
+    gaugeContainerRef,
+    ramTextRef,
+  } = useSolverTelemetry(addLog);
+  const {
+    consoleInput,
+    setConsoleInput,
+    suggestion,
+    runCliCommand,
+    handleKeyDown,
+  } = useTacticConsole({
+    addLog,
+    clearLogs,
+    connectNodes,
+    disconnectNodes,
+    executeRollback,
+    toggleSolverLoop,
+  });
+  const terminalLogsContainerRef = React.useRef<HTMLDivElement>(null);
 
   // Scroll console internally to bottom without shifting viewport
-  useEffect(() => {
+  React.useEffect(() => {
     if (terminalLogsContainerRef.current) {
       terminalLogsContainerRef.current.scrollTop =
         terminalLogsContainerRef.current.scrollHeight;
     }
   }, [consoleLogs]);
-
-  // Connect two nodes
-  const connectNodes = (src: string, tgt: string, quiet = false) => {
-    const validIds = nodes.map((n) => n.id);
-    if (!validIds.includes(src) || !validIds.includes(tgt)) {
-      if (!quiet)
-        addLog(
-          "error",
-          `Invalid node IDs: [${src}, ${tgt}]. Use A, B, C, D, E.`
-        );
-      return;
-    }
-    if (src === tgt) {
-      if (!quiet) addLog("error", "Self-connections are forbidden.");
-      return;
-    }
-    // Prevent reverse connections or duplicates
-    const alreadyConnected = edges.some(
-      (e) => e.source === src && e.target === tgt
-    );
-    if (alreadyConnected) {
-      if (!quiet)
-        addLog(
-          "error",
-          `Pathway from Node ${src} to Node ${tgt} is already active.`
-        );
-      return;
-    }
-
-    // Capture state in rollback stack
-    setHistory((prev) => [...prev, edges]);
-    setEdges((prev) => [...prev, { source: src, target: tgt }]);
-    if (!quiet) {
-      addLog("success", `Established directed path: Node ${src} → Node ${tgt}`);
-    }
-  };
-
-  // Disconnect two nodes
-  const disconnectNodes = (src: string, tgt: string) => {
-    const edgeIndex = edges.findIndex(
-      (e) => e.source === src && e.target === tgt
-    );
-
-    if (edgeIndex === -1) {
-      addLog(
-        "error",
-        `No active pathway from Node ${src} to Node ${tgt} exists.`
-      );
-      return;
-    }
-
-    // Capture state in rollback stack
-    setHistory((prev) => [...prev, edges]);
-    setEdges((prev) => prev.filter((_, idx) => idx !== edgeIndex));
-    addLog("success", `Severed path: Node ${src} ↛ Node ${tgt}`);
-  };
-
-  // Rollback state function
-  const executeRollback = () => {
-    if (history.length > 0) {
-      const previousEdges = history[history.length - 1];
-      setHistory((prev) => prev.slice(0, -1));
-      setEdges(previousEdges);
-      addLog(
-        "success",
-        "Successfully rolled back proof connection configuration to previous state."
-      );
-    } else {
-      addLog("error", "Rollback failed: No historical step state recorded.");
-    }
-  };
-
-  // Click handler on nodes
-  const handleNodeClick = (nodeId: string) => {
-    if (selectedNodeId === null) {
-      setSelectedNodeId(nodeId);
-      addLog(
-        "info",
-        `Selected Node ${nodeId}. Click another node to establish a directed pathway.`
-      );
-    } else {
-      if (selectedNodeId === nodeId) {
-        setSelectedNodeId(null);
-        addLog("info", `Deselected Node ${nodeId}.`);
-      } else {
-        // Attempt connect
-        connectNodes(selectedNodeId, nodeId);
-        setSelectedNodeId(null);
-      }
-    }
-  };
-
-  // Command parser
-  const runCliCommand = (cmdText: string) => {
-    const trimmed = cmdText.trim();
-    if (!trimmed) return;
-
-    // Log command
-    setConsoleLogs((prev) => [
-      ...prev,
-      { id: `cmd-${Date.now()}`, type: "command", text: trimmed },
-    ]);
-    setConsoleInput("");
-
-    // History queue
-    setCliHistory((prev) => {
-      const filtered = prev.filter((c) => c !== trimmed);
-      return [...filtered, trimmed];
-    });
-    setCliHistoryIdx(-1);
-
-    const tokens = trimmed.split(/\s+/);
-    const op = tokens[0].toLowerCase();
-    const arg1 = tokens[1]?.toUpperCase();
-    const arg2 = tokens[2]?.toUpperCase();
-
-    if (op === "help") {
-      addLog(
-        "info",
-        "Command Reference Checklist:\n" +
-          "  Hover or tap nodes to inspect specifications and formulas.\n" +
-          "  connect <S> <T>    - Establish pathway from Node S to Node T (e.g. connect A C)\n" +
-          "  disconnect <S> <T> - Sever pathway from Node S to Node T\n" +
-          "  rollback           - Roll back to previous connection structure\n" +
-          "  simulate           - Toggle simulated mathematical solver loops (RAM updates)\n" +
-          "  clear              - Clear terminal workspace\n" +
-          "  help               - View commands"
-      );
-      return;
-    }
-
-    if (op === "clear") {
-      setConsoleLogs([]);
-      return;
-    }
-
-    if (op === "rollback") {
-      executeRollback();
-      return;
-    }
-
-    if (op === "simulate") {
-      toggleSolverLoop();
-      return;
-    }
-
-    if (op === "connect") {
-      if (!arg1 || !arg2) {
-        addLog(
-          "error",
-          "Syntax Error: 'connect' requires source and target. Example: connect A C"
-        );
-        return;
-      }
-      connectNodes(arg1, arg2);
-      return;
-    }
-
-    if (op === "disconnect") {
-      if (!arg1 || !arg2) {
-        addLog(
-          "error",
-          "Syntax Error: 'disconnect' requires source and target. Example: disconnect A C"
-        );
-        return;
-      }
-      disconnectNodes(arg1, arg2);
-      return;
-    }
-
-    addLog(
-      "error",
-      `Unrecognized command: '${tokens[0]}'. Type 'help' for registry references.`
-    );
-  };
-
-  // Auto-complete suggestion
-  const getSuggestion = (inputVal: string): string => {
-    const val = inputVal.trim().toLowerCase();
-    if (!val) return "";
-    const commands = [
-      "connect",
-      "disconnect",
-      "rollback",
-      "simulate",
-      "clear",
-      "help",
-    ];
-    const match = commands.find((c) => c.startsWith(val));
-    return match ? match : "";
-  };
-
-  const suggestion = getSuggestion(consoleInput);
-
-  // Keyboard controls in Terminal
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      runCliCommand(consoleInput);
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      if (suggestion) {
-        setConsoleInput(suggestion);
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (cliHistory.length === 0) return;
-      const nextIdx =
-        cliHistoryIdx === -1
-          ? cliHistory.length - 1
-          : Math.max(0, cliHistoryIdx - 1);
-      setCliHistoryIdx(nextIdx);
-      setConsoleInput(cliHistory[nextIdx]);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (cliHistoryIdx === -1) return;
-      const nextIdx = cliHistoryIdx + 1;
-      if (nextIdx >= cliHistory.length) {
-        setCliHistoryIdx(-1);
-        setConsoleInput("");
-      } else {
-        setCliHistoryIdx(nextIdx);
-        setConsoleInput(cliHistory[nextIdx]);
-      }
-    }
-  };
 
   return (
     <div className="w-full flex flex-col gap-6 font-sans">
@@ -499,11 +136,7 @@ export default function SchemaFlowWorkspace() {
                 Rollback ({history.length})
               </button>
               <button
-                onClick={() => {
-                  setHistory((prev) => [...prev, edges]);
-                  setEdges([]);
-                  addLog("info", "All pathways cleared.");
-                }}
+                onClick={resetCanvas}
                 className="flex items-center gap-1 px-2.5 py-1 text-xs font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 rounded-xl hover:text-white cursor-pointer"
               >
                 <IconRefresh className="w-3.5 h-3.5" />
@@ -555,23 +188,12 @@ export default function SchemaFlowWorkspace() {
                 const t = nodes.find((n) => n.id === edge.target);
                 if (!s || !t) return null;
 
-                // Absolute line coordinate calculations
-                const x1 = s.x + 90;
-                const y1 = s.y + 40;
-                const x2 = t.x + 90;
-                const y2 = t.y + 40;
-
-                // Double check if connection is part of proven proof branch
-                const isC_Active =
-                  isC_Proven && (edge.source === "C" || edge.target === "C");
-                const pathColor =
-                  isC_Active || isE_Proven ? "#06b6d4" : "#0891b2";
-
+                // Edges run between node centres
                 return (
                   <path
                     key={`edge-${idx}`}
-                    d={`M ${x1} ${y1} L ${x2} ${y2}`}
-                    stroke={pathColor}
+                    d={`M ${s.x + 90} ${s.y + 40} L ${t.x + 90} ${t.y + 40}`}
+                    stroke={edgeColor(edge, status)}
                     strokeWidth="2.5"
                     fill="none"
                     className="flow-path"
@@ -583,11 +205,7 @@ export default function SchemaFlowWorkspace() {
               {/* Declarative Nodes as Groups (Completely layout-calculation free!) */}
               {nodes.map((node) => {
                 const isSelected = selectedNodeId === node.id;
-
-                // Determine proven/active state dynamically
-                let isProven = true; // Premises default true
-                if (node.id === "C") isProven = isC_Proven;
-                if (node.id === "E") isProven = isE_Proven;
+                const isProven = isNodeProven(node.id, status);
 
                 const cardWidth = 180;
                 const cardHeight = 80;
@@ -676,11 +294,8 @@ export default function SchemaFlowWorkspace() {
               {/* Floating Specification Tooltip Overlay */}
               {hoveredNode &&
                 (() => {
-                  const tooltipX = clamp(hoveredNode.x - 20, 10, 520);
-                  const tooltipY =
-                    hoveredNode.y > 100
-                      ? hoveredNode.y - 52
-                      : hoveredNode.y + 88;
+                  const { x: tooltipX, y: tooltipY } =
+                    tooltipPosition(hoveredNode);
 
                   return (
                     <g
@@ -757,9 +372,7 @@ export default function SchemaFlowWorkspace() {
 
             {activeInspectorNode ? (
               (() => {
-                let isProven = true;
-                if (activeInspectorNode.id === "C") isProven = isC_Proven;
-                if (activeInspectorNode.id === "E") isProven = isE_Proven;
+                const isProven = isNodeProven(activeInspectorNode.id, status);
 
                 return (
                   <div className="flex flex-col gap-3 min-w-0">
@@ -1039,7 +652,6 @@ export default function SchemaFlowWorkspace() {
                 )}
 
                 <input
-                  ref={consoleInputRef}
                   type="text"
                   value={consoleInput}
                   onChange={(e) => setConsoleInput(e.target.value)}
@@ -1066,36 +678,15 @@ export default function SchemaFlowWorkspace() {
 
             {/* Suggested command line helpers */}
             <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-900 select-none">
-              <button
-                onClick={() => setConsoleInput("connect A C")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                connect A C
-              </button>
-              <button
-                onClick={() => setConsoleInput("connect B C")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                connect B C
-              </button>
-              <button
-                onClick={() => setConsoleInput("connect C E")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                connect C E
-              </button>
-              <button
-                onClick={() => setConsoleInput("connect D E")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                connect D E
-              </button>
-              <button
-                onClick={() => setConsoleInput("rollback")}
-                className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
-              >
-                rollback
-              </button>
+              {QUICK_COMMANDS.map((command) => (
+                <button
+                  key={command}
+                  onClick={() => setConsoleInput(command)}
+                  className="px-2 py-0.5 text-[9px] font-mono bg-zinc-900 border border-zinc-850 text-zinc-400 hover:text-brand-cyan hover:border-brand-cyan/20 rounded-md cursor-pointer"
+                >
+                  {command}
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -1,8 +1,8 @@
-[**fderuiter-portfolio**](../../../README.md)
+[**fderuiter-portfolio**](../../../../../README.md)
 
 ***
 
-[fderuiter-portfolio](../../../modules.md) / [lib/arcade-achievements](../README.md) / ArcadeProgress
+[fderuiter-portfolio](../../../../../modules.md) / [lib/arcade/progress/core](../README.md) / ArcadeProgress
 
 # Interface: ArcadeProgress
 
@@ -15,6 +15,15 @@ Persistent Arcade Progress Schema.
 > **highScores**: `Record`\<`string`, `number`\>
 
 Map of gameId -> best numeric score recorded
+
+***
+
+### migratedAt?
+
+> `optional` **migratedAt?**: `number`
+
+When the per-game and legacy score keys were folded in, once. Unset
+until then.
 
 ***
 

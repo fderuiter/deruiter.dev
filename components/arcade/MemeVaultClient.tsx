@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useSyncExternalStore,
-  useCallback,
-  useRef,
-} from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   MEME_QUOTES,
@@ -17,6 +11,7 @@ import {
   ASCII_LASER_LOON,
   ASCII_TRAIN,
   getUnlockedAchievements,
+  memeAchievementsStore,
   unlockAchievement,
   SANDBOX_TERMINAL_HREF,
   type SoundboardButton,
@@ -35,7 +30,7 @@ import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { useToast } from "@/hooks/useToast";
 import { useAppEvent } from "@/hooks/useAppEvent";
-import { emitAppEvent, onAppEvent } from "@/lib/event-bus";
+import { emitAppEvent } from "@/lib/event-bus";
 import {
   IconSparkles,
   IconTrophy,
@@ -59,24 +54,6 @@ import { padKeyLabel } from "@/components/arcade/meme-vault/vault-geometry";
 /** How long a newly unlocked trophy keeps its stamp class. */
 const STAMP_MS = 900;
 
-function subscribeAchievements(callback: () => void) {
-  if (typeof window === "undefined") return () => {};
-  const offUnlock = onAppEvent("meme_achievement_unlocked", callback);
-  window.addEventListener("storage", callback);
-  return () => {
-    offUnlock();
-    window.removeEventListener("storage", callback);
-  };
-}
-
-function getAchievementsSnapshot(): string {
-  return JSON.stringify(getUnlockedAchievements());
-}
-
-function getAchievementsServerSnapshot(): string {
-  return "[]";
-}
-
 export const MemeVaultClient: React.FC = () => {
   const { announce } = useAnnouncer();
   const toast = useToast();
@@ -89,19 +66,8 @@ export const MemeVaultClient: React.FC = () => {
   });
   useEffect(() => () => setOptInRef.current?.(false), []);
 
-  const rawAchievements = useSyncExternalStore(
-    subscribeAchievements,
-    getAchievementsSnapshot,
-    getAchievementsServerSnapshot
-  );
-
-  const unlockedIds: string[] = React.useMemo(() => {
-    try {
-      return JSON.parse(rawAchievements);
-    } catch {
-      return [];
-    }
-  }, [rawAchievements]);
+  // One store for the trophy list, kept in step across tabs (#2371).
+  const unlockedIds = memeAchievementsStore.useValue();
 
   const [activeSound, setActiveSound] = useState<string | null>(null);
   const [activeSoundLabel, setActiveSoundLabel] = useState<string>("");

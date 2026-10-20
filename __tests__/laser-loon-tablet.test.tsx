@@ -15,9 +15,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
 import {
-  LASER_LOON_AUTO_PAUSE_EVENT,
-  requestLaserLoonAutoPause,
-} from "@/components/laser-loon/auto-pause";
+  CabinetPauseProvider,
+  createPauseController,
+  type PauseController,
+} from "@/components/arcade/pause";
 import { LaserLoon } from "@/components/LaserLoon";
 
 const playNote = vi.hoisted(() => vi.fn());
@@ -45,10 +46,19 @@ const shots = () =>
 
 let now = 10_000;
 
+/** The cabinet's pause service, fresh for each render. */
+let pauseService: PauseController = createPauseController();
+
 function renderLoon(touch: boolean) {
+  pauseService = createPauseController({
+    gameId: "laser-loon",
+    view: "desktop",
+  });
   return render(
     <CabinetTouchContext.Provider value={touch}>
-      <LaserLoon />
+      <CabinetPauseProvider controller={pauseService}>
+        <LaserLoon />
+      </CabinetPauseProvider>
     </CabinetTouchContext.Provider>
   );
 }
@@ -213,25 +223,48 @@ describe("Laser Loon in the touch cabinet (#2081)", () => {
 
   it("pauses a run when the cabinet asks, and leaves the title screen alone", () => {
     renderLoon(true);
-    act(() => requestLaserLoonAutoPause());
+    act(() => pauseService.pause("hidden"));
     expect(screen.queryByText("GAME PAUSED")).toBeNull();
+    // With no run to pause, the cabinet is released at once.
+    expect(pauseService.getState().paused).toBe(false);
 
     startRun();
     expect(screen.getByRole("button", { name: "Pause Game" })).toBeDefined();
-    act(() => requestLaserLoonAutoPause());
+    act(() => pauseService.pause("hidden"));
     expect(screen.getByText("GAME PAUSED")).toBeDefined();
     // The HUD key now offers Resume.
     expect(screen.getByRole("button", { name: "Resume Game" })).toBeDefined();
   });
 
-  it("listens for the auto-pause event only while mounted", () => {
+  it("mirrors its pause into the cabinet, and Resume clears the automatic reason", () => {
+    renderLoon(true);
+    startRun();
+    act(() => pauseService.pause("blur"));
+    expect(pauseService.getState().reasons).toEqual(new Set(["blur", "user"]));
+
+    fireEvent.click(screen.getByRole("button", { name: /RESUME GAME/ }));
+    expect(screen.queryByText("GAME PAUSED")).toBeNull();
+    expect(pauseService.getState().paused).toBe(false);
+
+    // A second interruption pauses again.
+    act(() => pauseService.pause("hidden"));
+    expect(screen.getByText("GAME PAUSED")).toBeDefined();
+  });
+
+  it("ignores the cabinet's own pauses, such as Setup", () => {
+    renderLoon(true);
+    startRun();
+    act(() => pauseService.pause("setup"));
+    expect(screen.queryByText("GAME PAUSED")).toBeNull();
+  });
+
+  it("stops listening once unmounted", () => {
     const { unmount } = renderLoon(true);
+    startRun();
     unmount();
-    const listener = vi.fn();
-    window.addEventListener(LASER_LOON_AUTO_PAUSE_EVENT, listener);
-    requestLaserLoonAutoPause();
-    window.removeEventListener(LASER_LOON_AUTO_PAUSE_EVENT, listener);
-    expect(listener).toHaveBeenCalledTimes(1);
+    expect(() => act(() => pauseService.pause("hidden"))).not.toThrow();
+    // The unmounted game no longer mirrors the pause as its own.
+    expect(pauseService.getState().reasons).toEqual(new Set(["hidden"]));
   });
 
   it("a run in progress claims Escape for the pause, and a paused one does not", () => {

@@ -16,6 +16,22 @@ export interface RouteMetaConfig {
 }
 
 export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
+  platform: {
+    title: "Clinical Data Platform Architecture",
+    description:
+      "Explore a synthetic clinical sponsor portfolio, its governed data architecture, and a capability map linking live demonstrations with planned evidence.",
+    path: "/platform",
+    keywords: [
+      "Clinical Data Platform",
+      "Clinical Data Products",
+      "Semantic Layer",
+      "CDISC",
+      "Clinical Operations Analytics",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   blog: {
     title: "Engineering Dispatches: Blog",
     description:

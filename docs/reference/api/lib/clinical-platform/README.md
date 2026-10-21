@@ -8,6 +8,12 @@
 
 ## References
 
+### cashFlow
+
+Re-exports [cashFlow](internal/strategy/engine/functions/cashFlow.md)
+
+***
+
 ### checkLayerFlow
 
 Re-exports [checkLayerFlow](internal/policy/functions/checkLayerFlow.md)
@@ -47,6 +53,12 @@ Re-exports [DataContract](types/interfaces/DataContract.md)
 ### DataProduct
 
 Re-exports [DataProduct](types/interfaces/DataProduct.md)
+
+***
+
+### decisionMemo
+
+Re-exports [decisionMemo](internal/strategy/engine/functions/decisionMemo.md)
 
 ***
 
@@ -122,6 +134,12 @@ Re-exports [OperatingModel](types/type-aliases/OperatingModel.md)
 
 ***
 
+### planRoadmap
+
+Re-exports [planRoadmap](internal/strategy/engine/functions/planRoadmap.md)
+
+***
+
 ### PLATFORM\_STAGES
 
 Re-exports [PLATFORM_STAGES](presets/variables/PLATFORM_STAGES.md)
@@ -164,9 +182,63 @@ Re-exports [REGULATORY_WORDING](presets/variables/REGULATORY_WORDING.md)
 
 ***
 
+### RoadmapItem
+
+Re-exports [RoadmapItem](types/interfaces/RoadmapItem.md)
+
+***
+
+### scoreVendors
+
+Re-exports [scoreVendors](internal/strategy/engine/functions/scoreVendors.md)
+
+***
+
+### sensitivity
+
+Re-exports [sensitivity](internal/strategy/engine/functions/sensitivity.md)
+
+***
+
 ### Site
 
 Re-exports [Site](types/interfaces/Site.md)
+
+***
+
+### StrategyCashFlow
+
+Re-exports [StrategyCashFlow](types/interfaces/StrategyCashFlow.md)
+
+***
+
+### StrategyCriterion
+
+Re-exports [StrategyCriterion](types/interfaces/StrategyCriterion.md)
+
+***
+
+### StrategyMemo
+
+Re-exports [StrategyMemo](types/interfaces/StrategyMemo.md)
+
+***
+
+### StrategyScenario
+
+Re-exports [StrategyScenario](types/interfaces/StrategyScenario.md)
+
+***
+
+### StrategyScore
+
+Re-exports [StrategyScore](types/interfaces/StrategyScore.md)
+
+***
+
+### StrategyVendor
+
+Re-exports [StrategyVendor](types/interfaces/StrategyVendor.md)
 
 ***
 
@@ -197,6 +269,12 @@ Re-exports [StudyStatus](types/type-aliases/StudyStatus.md)
 ### SYNTHETIC\_DATA\_NOTICE
 
 Re-exports [SYNTHETIC_DATA_NOTICE](presets/variables/SYNTHETIC_DATA_NOTICE.md)
+
+***
+
+### tornado
+
+Re-exports [tornado](internal/strategy/engine/functions/tornado.md)
 
 ***
 

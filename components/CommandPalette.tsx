@@ -1298,6 +1298,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-platform-strategy",
+        title: "Platform Strategy Toolkit",
+        subtitle:
+          "Fictional vendor scoring and five-year investment decisions.",
+        category: "navigation",
+        url: "/platform/strategy",
+        icon: <IconCpu className="h-4 w-4 text-amber-400" />,
+        badge: "Toolkit",
+        status: "Interactive",
+        description:
+          "Compare fictional options, test weight sensitivity, plan a roadmap and export a decision memo.",
+        techStack: ["Next.js 16", "TypeScript", "NPV", "DAMA-DMBOK"],
+        highlights: [
+          "Weighted scoring",
+          "Five-year economics",
+          "HTML and Markdown memos",
+        ],
+      },
+      {
         id: "nav-platform",
         title: "Clinical Data Platform",
         subtitle:

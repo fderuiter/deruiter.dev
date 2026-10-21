@@ -93,6 +93,7 @@
 - [lib/client-sentry](lib/client-sentry/README.md)
 - [lib/clinical-platform](lib/clinical-platform/README.md)
 - [lib/clinical-platform/internal/policy](lib/clinical-platform/internal/policy/README.md)
+- [lib/clinical-platform/internal/strategy/engine](lib/clinical-platform/internal/strategy/engine/README.md)
 - [lib/clinical-platform/presets](lib/clinical-platform/presets/README.md)
 - [lib/clinical-platform/types](lib/clinical-platform/types/README.md)
 - [lib/clinical-trial-chaos](lib/clinical-trial-chaos/README.md)

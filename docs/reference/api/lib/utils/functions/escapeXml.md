@@ -20,7 +20,7 @@ Supports configurable single quote entity formatting.
 
 ### options?
 
-`boolean` \| [`EscapeXmlOptions`](../interfaces/EscapeXmlOptions.md) \| `"&apos;"` \| `"&#39;"`
+`boolean` \| `"&#39;"` \| [`EscapeXmlOptions`](../interfaces/EscapeXmlOptions.md) \| `"&apos;"`
 
 ## Returns
 

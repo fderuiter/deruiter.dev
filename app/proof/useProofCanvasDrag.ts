@@ -72,7 +72,8 @@ export function useProofCanvasDrag({
     initOffsetX: number;
     initOffsetY: number;
   } | null>(null);
-  const lastSnapAudioTimeRef = useRef(0);
+  // The first snap should tick even if it happens just after page load.
+  const lastSnapAudioTimeRef = useRef(Number.NEGATIVE_INFINITY);
   const nodeDragRafIdRef = useRef<number | null>(null);
   const pendingNodeDragRef = useRef<{
     clientX: number;

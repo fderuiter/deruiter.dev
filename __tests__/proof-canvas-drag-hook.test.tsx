@@ -66,6 +66,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
@@ -83,6 +84,7 @@ describe("useProofCanvasDrag: moving nodes", () => {
   });
 
   it("snaps to the 20px grid and ticks once for a quick run of snaps", () => {
+    vi.spyOn(performance, "now").mockReturnValue(100);
     const { result, props } = setup(true);
     act(() => result.current.handleNodePointerDown(pointer(0, 0), "A"));
     act(() => result.current.handleNodePointerMove(pointer(33, 17), "A"));

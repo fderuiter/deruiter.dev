@@ -53,6 +53,14 @@ Formal inference rules used to derive logical steps from valid premises:
 
 ## CRF Studio (Clinical Form & Protocol Designer)
 
+### AI-assisted design review
+
+- **CRF Agent Proposal**: A typed, reviewable candidate change to synthetic study design metadata at a specific draft revision. It has no authority to change the study until the author accepts it.
+- **Deterministic Finding**: A reproducible result from a named schema, rule, linter, or simulator version against a specific study revision. Its conclusion is limited to the rule actually executed.
+- **Source-Backed Fact**: A statement tied to a reviewable source location or a named, versioned standards or catalog entry; its application to the current study still requires human review.
+- **Model Hypothesis**: An inferred requirement or explanation that lacks sufficient source or deterministic proof and remains marked for review.
+- **CRF Agent Entitlement**: A separately granted permission to request AI design proposals; it does not grant admin access or change anonymous manual editing rights.
+
 ### Clinical Data Architecture & CDISC Standards
 
 - **CDASH (Clinical Data Acquisition Standards Harmonization)**: CDISC standard establishing basic rules for clinical data acquisition and standard variable names (e.g. `DM`, `VS`, `AE`, `CM`, `LB`).

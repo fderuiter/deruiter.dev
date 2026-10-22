@@ -58,6 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
     if (
       isSimulatorPage ||
+      config.path === "/platform" ||
       config.path === "/stack" ||
       config.path === "/work/laser-loon"
     ) {

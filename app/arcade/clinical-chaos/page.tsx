@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { ClinicalChaosClient } from "@/components/arcade/ClinicalChaosClient";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 
 import { PageLayout } from "@/components/PageLayout";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.clinicalChaos);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.clinicalChaos
+);
 
 export default function ClinicalChaosPage() {
   return (
@@ -32,6 +35,14 @@ export default function ClinicalChaosPage() {
           ]),
         }}
       />
+      <div className="mx-auto mb-4 w-full max-w-5xl">
+        <Link
+          href="/platform"
+          className="text-xs text-slate-300 underline decoration-zinc-600 underline-offset-4 hover:text-white"
+        >
+          Explore the Clinical Data Platform behind this game
+        </Link>
+      </div>
       <ClinicalChaosClient />
     </PageLayout>
   );

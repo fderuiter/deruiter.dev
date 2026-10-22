@@ -49,6 +49,8 @@ const engine = vi.hoisted(() => ({
   /** The finish time the forced end reports; null leaves the day unfinished. */
   finishedAt: null as number | null,
   inputs: [] as Frame[],
+  /** Set by a step that takes the level out of play: the brothers' text or the end of the day. */
+  stopped: false,
 }));
 
 vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
@@ -59,8 +61,12 @@ vi.mock("@/lib/for-better-or-bulk", async (importOriginal) => {
     stepGame: (state: GameState, input: Frame) => {
       engine.inputs.push(input);
       const result = actual.stepGame(state, input);
-      if (!engine.finishNext) return result;
+      if (!engine.finishNext) {
+        if (result.state.phase !== "playing") engine.stopped = true;
+        return result;
+      }
       engine.finishNext = false;
+      engine.stopped = true;
       return {
         ...result,
         state: {
@@ -92,9 +98,16 @@ vi.mock("@/lib/arcade-achievements", async (importOriginal) => ({
 
 import { ForBetterOrBulkGame } from "@/components/for-better-or-bulk/ForBetterOrBulkGame";
 
-/** Runs the loop in quarter-second frames until a condition holds. */
-function runUntil(done: () => boolean, maxFrames = 4000) {
-  for (let i = 0; i < maxFrames && !done(); i++) {
+/**
+ * Runs the loop in quarter-second frames until a condition holds.
+ *
+ * `framesPerCommit` frames share one React commit. A batch ends on the frame
+ * whose step takes the level out of play, so it never runs a frame that one
+ * commit per frame would have skipped.
+ */
+function runUntil(done: () => boolean, maxFrames = 4000, framesPerCommit = 1) {
+  let frames = 0;
+  while (frames < maxFrames && !done()) {
     // The ceremony playback is not a frame: a viewer skips it.
     const playback = screen.queryByTestId("fbb-playback");
     if (playback) {
@@ -103,12 +116,32 @@ function runUntil(done: () => boolean, maxFrames = 4000) {
           name: /Skip|Continue to the receipt/,
         })
       );
+      frames++;
       continue;
     }
     act(() => {
-      if (frame.active) frame.callback?.(250);
+      engine.stopped = false;
+      for (let i = 0; i < framesPerCommit && frames < maxFrames; i++) {
+        frames++;
+        if (frame.active) frame.callback?.(250);
+        if (engine.stopped) break;
+      }
     });
   }
+}
+
+/**
+ * Runs the loop until the engine stops play and `testId` shows: the
+ * brothers' text (`fbb-brothers`) or the receipt (`fbb-receipt`).
+ *
+ * Getting there takes hundreds of frames. With a React commit per frame
+ * these were the slowest tests in the file, and on a loaded machine they ran
+ * past the per-test time limit (#2601). The engine halts on the stopping
+ * step, so committing every four frames (one second of game time) reaches
+ * the same state through the same frames with a quarter of the renders.
+ */
+function runToStop(testId: "fbb-brothers" | "fbb-receipt") {
+  runUntil(() => screen.queryByTestId(testId) !== null, 4000, 4);
 }
 
 function game(): HTMLElement {
@@ -166,14 +199,14 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     stubLoud(true);
     const { unmount } = render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     expect(screen.getByText("The brothers are texting")).toBeTruthy();
     unmount();
 
     stubLoud(false);
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     expect(screen.queryByText("The brothers are texting")).toBeNull();
   });
 
@@ -181,14 +214,14 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     expect(sfx.play).toHaveBeenCalledWith("brothers");
   });
 
   it("plays no sound above 1x", () => {
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     expect(sfx.play).not.toHaveBeenCalled();
   });
 
@@ -265,7 +298,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     const dialog = screen.getByRole("dialog", {
       name: "Text from Fred's brothers",
     });
@@ -275,7 +308,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     );
     expect(screen.queryByTestId("fbb-brothers")).toBeNull();
 
-    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    runToStop("fbb-receipt");
     expect(screen.getByTestId("fbb-title").textContent).toBe("Married Anyway");
     expect(screen.getByTestId("fbb-follow-through").textContent).toContain(
       LEFT_LINE
@@ -291,13 +324,13 @@ describe("For Better or Bulk cabinet (#1906)", () => {
   it("keeps a sped-up run off the leaderboard (#1914)", () => {
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", {
         name: /Go with them/,
       })
     );
-    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    runToStop("fbb-receipt");
     expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
     expect(scores.record).not.toHaveBeenCalled();
   });
@@ -376,7 +409,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     await act(async () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
     });
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     const heading = screen.getByRole("heading", {
       name: "Text from Fred's brothers",
     });
@@ -565,7 +598,7 @@ describe("For Better or Bulk cabinet (#1906)", () => {
     render(<ForBetterOrBulkGame />);
     fireEvent.click(screen.getByRole("checkbox", { name: /^Paper lanterns/ }));
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.click(screen.getByRole("button", { name: /Take a short break/ }));
     const dialog = screen.getByRole("dialog");
     expect(
@@ -694,7 +727,7 @@ describe("For Better or Bulk coach strip and counts", () => {
   it("shows Fred as out with his brothers while he is away", () => {
     render(<ForBetterOrBulkGame initialMode="coop" />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     const coach = screen.getByTestId("fbb-coach");
     // His absence is said once, in his prompt, not repeated in the coach list.
@@ -805,13 +838,13 @@ describe("For Better or Bulk day seed on the page (#1918)", () => {
     );
     render(<ForBetterOrBulkGame />);
     fireEvent.click(screen.getByRole("button", { name: "Start setup" }));
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", {
         name: /Go with them/,
       })
     );
-    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    runToStop("fbb-receipt");
     expect(screen.getByTestId("fbb-receipt")).toBeTruthy();
     expect(scores.record).not.toHaveBeenCalled();
   });
@@ -977,7 +1010,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
   it("keeps Fred visible with his return time while Abbi plays alone", () => {
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
     const fred = screen.getByTestId("fbb-prompt-fred").textContent ?? "";
@@ -988,7 +1021,7 @@ describe("For Better or Bulk side panel: helper, partner and day (fbb round)", (
   it("does not let Tab hand the keys to a partner who is out", () => {
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.click(screen.getByRole("button", { name: /Go with them/ }));
     expect(screen.getByTestId("fbb-active").textContent).toContain("Abbi");
     // The hint says why Tab does not swap (round 16, round 18 S-1).
@@ -1142,7 +1175,7 @@ describe("the brothers' text (round 8, B1)", () => {
     window.history.replaceState(null, "", "/arcade/for-better-or-bulk?speed=1");
     render(<ForBetterOrBulkGame />);
     start();
-    runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+    runToStop("fbb-brothers");
     fireEvent.keyDown(game(), { key: "Escape" });
     expect(screen.queryByText(/^Paused at/)).toBeNull();
     expect(screen.getByTestId("fbb-brothers")).toBeTruthy();
@@ -1153,7 +1186,7 @@ describe("the brothers' text (round 8, B1)", () => {
     for (const mode of ["solo", "coop"] as const) {
       const { unmount } = render(<ForBetterOrBulkGame initialMode={mode} />);
       start();
-      runUntil(() => screen.queryByTestId("fbb-brothers") !== null);
+      runToStop("fbb-brothers");
       expect(screen.getByTestId("fbb-brothers")).toBeTruthy();
       const toast = Array.from(document.querySelectorAll("li")).some(
         (li) => li.textContent === "Fred's brothers are texting."
@@ -1278,7 +1311,7 @@ describe("For Better or Bulk time challenge (#2056)", () => {
     start();
     engine.finishedAt = finishedAt;
     engine.finishNext = true;
-    runUntil(() => screen.queryByTestId("fbb-receipt") !== null);
+    runToStop("fbb-receipt");
   }
 
   it("records a finished solo day's time as a best that persists, and keeps the board score as placements", () => {

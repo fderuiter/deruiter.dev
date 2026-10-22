@@ -1,6 +1,7 @@
 "use client";
 
 import React, {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -32,6 +33,7 @@ import {
 import { useWorkbenchKeys } from "./useWorkbenchKeys";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
 import { PROTOCOL_DRIFT_AUTO_PAUSE_EVENT } from "./auto-pause";
+import { ChipPickContext, useChipPick } from "./chip-pick";
 
 /** Container width from which the toolbox shows chip names (1024 viewport). */
 const TOOLBOX_OPEN_PX = 820;
@@ -70,7 +72,23 @@ export function ProtocolDriftGame() {
   const [toolboxOpen, setToolboxOpen] = useState<boolean | null>(null);
   const [railOpen, setRailOpen] = useState<boolean | null>(null);
   const [debriefOpen, setDebriefOpen] = useState(true);
-  const onKeyDown = useWorkbenchKeys();
+  const workbenchKeys = useWorkbenchKeys();
+  // A toolbox chip picked up on touch, waiting for a tap on the canvas (#2360).
+  const chipPick = useChipPick();
+  const { picked: pickedChip, cancel: cancelChipPick } = chipPick;
+  const onKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      // Escape puts a picked chip back before it docks or leaves the cabinet.
+      if (event.key === "Escape" && pickedChip) {
+        event.preventDefault();
+        event.stopPropagation();
+        cancelChipPick();
+        return;
+      }
+      workbenchKeys(event);
+    },
+    [cancelChipPick, pickedChip, workbenchKeys]
+  );
   // The touch cabinet (ADR 0061) lays the workbench out to fit its stage. Its
   // panels stay open, since there is no keyboard toggle to reopen them.
   const touch = useCabinetTouch();
@@ -179,121 +197,126 @@ export function ProtocolDriftGame() {
   ) : null;
 
   return (
-    <div
-      ref={root}
-      tabIndex={0}
-      data-keyboard-boundary="true"
-      data-game="protocol-drift"
-      data-fsm={fsm ?? "BRIEF"}
-      // A touch cabinet's Escape closes the open sheet or cancels a started
-      // wire before it leaves the cabinet (#2045).
-      data-escape-docks={
-        touch && (inspectorExpanded || wireFrom || wireSheet)
-          ? "true"
-          : undefined
-      }
-      onKeyDown={onKeyDown}
-      // A tap clears the last notice, so a message never sits over the canvas
-      // after the next tap (#2045).
-      onPointerDownCapture={
-        touch && notice ? () => clearNotice(notice.id) : undefined
-      }
-      // Desktop: the whole workbench fits under the navbar and the cabinet's
-      // title bar, so focus returning to it never scrolls the header out of
-      // view (#2166).
-      className={
-        touch
-          ? "pd-touch @container relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
-          : "@container relative flex h-[max(560px,calc(100dvh-9rem))] scroll-mt-nav-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
-      }
-    >
-      <HeaderBar />
-      <ObjectiveStrip />
-      <div className={`flex min-h-0 flex-1 ${touch ? "pd-touch-body" : ""}`}>
-        <Toolbox
-          compact={compactToolbox}
-          onToggle={() => setToolboxOpen(compactToolbox)}
-        />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
-          <div className="relative min-h-[200px] flex-1">
-            <PipelineCanvas />
-            {/* On desktop the notice sits at the foot of the canvas, clear of
+    <ChipPickContext.Provider value={chipPick}>
+      <div
+        ref={root}
+        tabIndex={0}
+        data-keyboard-boundary="true"
+        data-game="protocol-drift"
+        data-fsm={fsm ?? "BRIEF"}
+        // A touch cabinet's Escape closes the open sheet or cancels a started
+        // wire before it leaves the cabinet (#2045).
+        data-escape-docks={
+          touch && (inspectorExpanded || wireFrom || wireSheet || pickedChip)
+            ? "true"
+            : undefined
+        }
+        onKeyDown={onKeyDown}
+        // A tap clears the last notice, so a message never sits over the canvas
+        // after the next tap (#2045).
+        onPointerDownCapture={
+          touch && notice ? () => clearNotice(notice.id) : undefined
+        }
+        // Desktop: the whole workbench fits under the navbar and the cabinet's
+        // title bar, so focus returning to it never scrolls the header out of
+        // view (#2166).
+        className={
+          touch
+            ? "pd-touch @container relative flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+            : "@container relative flex h-[max(560px,calc(100dvh-9rem))] scroll-mt-nav-24 w-full min-w-0 flex-col overflow-hidden bg-[#0d0e11] text-zinc-100 outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
+        }
+      >
+        <HeaderBar />
+        <ObjectiveStrip />
+        <div className={`flex min-h-0 flex-1 ${touch ? "pd-touch-body" : ""}`}>
+          <Toolbox
+            compact={compactToolbox}
+            onToggle={() => setToolboxOpen(compactToolbox)}
+          />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto">
+            <div className="relative min-h-[200px] flex-1">
+              <PipelineCanvas />
+              {/* On desktop the notice sits at the foot of the canvas, clear of
                 the chips the player is wiring (#2274). */}
-            {!touch ? toast : null}
-            {tracerDone && !waveSummary ? (
-              <button
-                type="button"
-                onClick={() => void init("full")}
-                className="absolute right-3 top-3 z-10 min-h-9 border border-amber-500 bg-[#0d0e11] px-3 font-mono text-xs text-amber-400"
-              >
-                Start the full study
-              </button>
-            ) : null}
-            {fsm === "LOCKED" && !showDebrief ? (
-              <button
-                type="button"
-                onClick={() => setDebriefOpen(true)}
-                className="absolute right-3 top-3 z-10 min-h-9 border border-amber-500 bg-[#0d0e11] px-3 font-mono text-xs text-amber-400"
-              >
-                Show debrief
-              </button>
-            ) : null}
+              {!touch ? toast : null}
+              {tracerDone && !waveSummary ? (
+                <button
+                  type="button"
+                  onClick={() => void init("full")}
+                  className="absolute right-3 top-3 z-10 min-h-9 border border-amber-500 bg-[#0d0e11] px-3 font-mono text-xs text-amber-400"
+                >
+                  Start the full study
+                </button>
+              ) : null}
+              {fsm === "LOCKED" && !showDebrief ? (
+                <button
+                  type="button"
+                  onClick={() => setDebriefOpen(true)}
+                  className="absolute right-3 top-3 z-10 min-h-9 border border-amber-500 bg-[#0d0e11] px-3 font-mono text-xs text-amber-400"
+                >
+                  Show debrief
+                </button>
+              ) : null}
+            </div>
+            <PipelineTextView />
           </div>
-          <PipelineTextView />
+          <SiteRail
+            compact={compactRail}
+            onToggle={() => setRailOpen(compactRail)}
+          />
         </div>
-        <SiteRail
-          compact={compactRail}
-          onToggle={() => setRailOpen(compactRail)}
-        />
-      </div>
-      <Inspector />
-      <footer className="flex min-h-8 flex-wrap items-center gap-x-4 gap-y-0.5 border-t border-zinc-800 bg-[#0d0e11] px-3 font-mono text-[11px] text-zinc-300">
-        <span>
-          Seed #{view?.seed ?? DEFAULT_SEED}
-          {dailyDate ? ` · Arcade Daily ${dailyDate}` : ""}
-        </span>
-        {/* Below a 1024px cabinet the key hints give way to the gate badges;
-            each control still names its key (#2274). */}
-        <span className={hintClass}>[Space] Pause</span>
-        <span className={hintClass}>[N] Step</span>
-        <span className={hintClass}>[S] Skip</span>
-        <span className={hintClass}>[I] Inspect</span>
-        <span className={hintClass}>[Esc] Return</span>
-        {touch ? null : (
-          <span
-            role="group"
-            aria-label="Gates"
-            className="flex items-center gap-1.5 @5xl:hidden"
-          >
-            <GateBadges />
+        <Inspector />
+        <footer className="flex min-h-8 flex-wrap items-center gap-x-4 gap-y-0.5 border-t border-zinc-800 bg-[#0d0e11] px-3 font-mono text-[11px] text-zinc-300">
+          <span>
+            Seed #{view?.seed ?? DEFAULT_SEED}
+            {dailyDate ? ` · Arcade Daily ${dailyDate}` : ""}
           </span>
-        )}
-        <span className="ml-auto flex items-center gap-2">
-          {touch ? null : <SaveButtons compact />}
-        </span>
-        <span>engine: {mode ?? "starting"}</span>
-      </footer>
+          {/* Below a 1024px cabinet the key hints give way to the gate badges;
+            each control still names its key (#2274). */}
+          <span className={hintClass}>[Space] Pause</span>
+          <span className={hintClass}>[N] Step</span>
+          <span className={hintClass}>[S] Skip</span>
+          <span className={hintClass}>[I] Inspect</span>
+          <span className={hintClass}>[Esc] Return</span>
+          {touch ? null : (
+            <span
+              role="group"
+              aria-label="Gates"
+              className="flex items-center gap-1.5 @5xl:hidden"
+            >
+              <GateBadges />
+            </span>
+          )}
+          <span className="ml-auto flex items-center gap-2">
+            {touch ? null : <SaveButtons compact />}
+          </span>
+          <span>engine: {mode ?? "starting"}</span>
+        </footer>
 
-      <div role="status" aria-live="polite" className="sr-only">
-        {notice?.text}
+        <div role="status" aria-live="polite" className="sr-only">
+          {notice?.text}
+        </div>
+        <p {...chipPick.liveRegionProps} data-testid="chip-pick-status">
+          {chipPick.announcement}
+        </p>
+        {touch && notice && notice.text !== pausedReason ? toast : null}
+
+        {ready && fsm === "BRIEF" ? <BriefingModal /> : null}
+        {fsm === "LOCK_REVIEW" && lockAudit && view ? (
+          <LockReviewModal audit={lockAudit} view={view} />
+        ) : null}
+        {showDebrief ? (
+          <DebriefModal
+            scorecard={scorecard}
+            view={view}
+            onClose={() => setDebriefOpen(false)}
+          />
+        ) : null}
+        {memoOpen && fsm !== "LOCK_REVIEW" ? <AmendmentMemoModal /> : null}
+        {waveSummary && fsm === "WAVE_REVIEW" && !memoOpen ? (
+          <WaveReviewModal summary={waveSummary} />
+        ) : null}
       </div>
-      {touch && notice && notice.text !== pausedReason ? toast : null}
-
-      {ready && fsm === "BRIEF" ? <BriefingModal /> : null}
-      {fsm === "LOCK_REVIEW" && lockAudit && view ? (
-        <LockReviewModal audit={lockAudit} view={view} />
-      ) : null}
-      {showDebrief ? (
-        <DebriefModal
-          scorecard={scorecard}
-          view={view}
-          onClose={() => setDebriefOpen(false)}
-        />
-      ) : null}
-      {memoOpen && fsm !== "LOCK_REVIEW" ? <AmendmentMemoModal /> : null}
-      {waveSummary && fsm === "WAVE_REVIEW" && !memoOpen ? (
-        <WaveReviewModal summary={waveSummary} />
-      ) : null}
-    </div>
+    </ChipPickContext.Provider>
   );
 }

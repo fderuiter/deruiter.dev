@@ -196,6 +196,24 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "CDISC",
   },
   {
+    id: "clinical-platform",
+    title: "Clinical Data Platform",
+    subtitle: "Governed portfolio architecture and capability evidence",
+    href: "/platform",
+    icon: "cpu",
+    tone: "amber",
+    badge: "Platform",
+  },
+  {
+    id: "platform-strategy",
+    title: "Platform Strategy",
+    subtitle: "Fictional vendor scoring and investment decisions",
+    href: "/platform/strategy",
+    icon: "clipboard",
+    tone: "amber",
+    badge: "Toolkit",
+  },
+  {
     id: "incident-simulator",
     title: "Incident Simulator",
     subtitle: "Architecture bias and outage triage",
@@ -363,7 +381,14 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
     ],
     activeWhen: {
       exact: ["/protocol-drift", "/simulator", "/crf", "/proof", "/neuro"],
-      prefixes: ["/patrol", "/m/crf", "/m/proof", "/m/neuro", "/m/patrol"],
+      prefixes: [
+        "/platform",
+        "/patrol",
+        "/m/crf",
+        "/m/proof",
+        "/m/neuro",
+        "/m/patrol",
+      ],
     },
   },
   {

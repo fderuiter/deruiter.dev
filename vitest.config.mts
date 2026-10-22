@@ -147,6 +147,8 @@ export default defineConfig({
         "lib/laser-loon/types.ts",
         "lib/laser-loon/index.ts",
         "lib/clinical-trial-chaos/types.ts",
+        "lib/clinical-platform/types.ts",
+        "lib/clinical-platform/index.ts",
         "lib/quasi-perfect/types.ts",
         "lib/quasi-perfect/index.ts",
         "lib/garmin-types.ts",
@@ -178,20 +180,21 @@ export default defineConfig({
               branches: 70,
             },
             // UI floors ratchet: set just below the coverage measured on
-            // main (2026-10-19: components 80.9/76.7/82.4/75.8, app
-            // 66.9/55.2/68.5/61.0 statements/branches/lines/functions).
-            // Raise them as coverage grows; never lower them (#2513).
+            // main (2026-10-20, after the studio splits in #2530: components
+            // 83.9/79.7/85.4/79.6, app 88.9/81.0/89.1/79.8
+            // statements/branches/lines/functions). Raise them as coverage
+            // grows; never lower them (#2513).
             "components/**": {
-              statements: 79,
-              branches: 75,
-              lines: 81,
-              functions: 74,
+              statements: 83,
+              branches: 78,
+              lines: 84,
+              functions: 78,
             },
             "app/**": {
-              statements: 65,
-              branches: 53,
-              lines: 67,
-              functions: 59,
+              statements: 88,
+              branches: 80,
+              lines: 88,
+              functions: 79,
             },
             // Trial & Error validation and scoring carry a stricter gate (#890, #909).
             "lib/trial-and-error/**": {

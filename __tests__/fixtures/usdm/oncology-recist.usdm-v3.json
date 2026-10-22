@@ -1,0 +1,5473 @@
+{
+  "$schema": "https://www.cdisc.org/schemas/usdm/v3/usdm.schema.json",
+  "schemaVersion": "3.0.0",
+  "study": {
+    "id": "study_onc_003",
+    "name": "ONC-2026-003",
+    "title": "A Randomized, Double-Blind Phase III Study of Dual Immune Checkpoint Inhibition in Advanced Solid Tumors",
+    "protocolNumber": "ONC-2026-003",
+    "protocolId": "ONC-2026-003",
+    "phase": "Phase III",
+    "sponsor": "Aura Oncology Therapeutics",
+    "therapeuticArea": "Oncology",
+    "version": "3.2",
+    "lastModified": "2026-08-15",
+    "studyDesigns": [
+      {
+        "id": "design_main",
+        "name": "A Randomized, Double-Blind Phase III Study of Dual Immune Checkpoint Inhibition in Advanced Solid Tumors",
+        "arms": [
+          {
+            "id": "arm_exp",
+            "name": "Arm A: Pembrolizumab 200mg IV Q3W + Investigational Agent",
+            "type": "Experimental",
+            "description": "Active treatment combination arm",
+            "epochIds": ["ep_scrn", "e_trt", "e_fup"]
+          },
+          {
+            "id": "arm_ctrl",
+            "name": "Arm B: Standard of Care Chemotherapy",
+            "type": "Active Comparator",
+            "description": "Investigator's choice standard chemotherapy",
+            "epochIds": ["ep_scrn", "e_trt", "e_fup"]
+          }
+        ],
+        "epochs": [
+          {
+            "id": "ep_scrn",
+            "name": "Screening Epoch",
+            "sequenceNumber": 1,
+            "type": "Screening",
+            "description": "Informed consent and eligibility evaluation"
+          },
+          {
+            "id": "e_trt",
+            "name": "Treatment Epoch",
+            "sequenceNumber": 2,
+            "type": "Treatment",
+            "description": "Dosing cycles and restaging tumor response assessments"
+          },
+          {
+            "id": "e_fup",
+            "name": "Follow-Up Epoch",
+            "sequenceNumber": 3,
+            "type": "Follow-up",
+            "description": "Safety and survival monitoring"
+          }
+        ],
+        "cohorts": [
+          {
+            "id": "cohort_1",
+            "name": "Intent-to-Treat Cohort",
+            "description": "All randomized subjects",
+            "armIds": ["arm_exp", "arm_ctrl"],
+            "targetSize": 450
+          }
+        ],
+        "encounters": [
+          {
+            "id": "v_screen",
+            "oid": "SE.SCRN",
+            "name": "Screening (Day -28 to -1)",
+            "type": "Scheduled",
+            "targetDay": -1,
+            "windowBefore": 27,
+            "windowAfter": 0,
+            "epochId": "ep_scrn",
+            "armIds": ["arm_exp", "arm_ctrl"],
+            "assignedFormIds": ["form_dm_onc", "form_vs_onc", "form_lb_onc"],
+            "armFormAssignments": {
+              "arm_exp": ["form_dm_onc", "form_vs_onc", "form_lb_onc"],
+              "arm_ctrl": ["form_dm_onc", "form_vs_onc", "form_lb_onc"]
+            }
+          },
+          {
+            "id": "v_c1d1",
+            "oid": "SE.C1D1",
+            "name": "Cycle 1 Day 1 (Baseline)",
+            "type": "Scheduled",
+            "targetDay": 1,
+            "windowBefore": 0,
+            "windowAfter": 2,
+            "epochId": "e_trt",
+            "armIds": ["arm_exp", "arm_ctrl"],
+            "assignedFormIds": [
+              "form_vs_onc",
+              "form_recist_onc",
+              "form_lb_onc"
+            ],
+            "armFormAssignments": {
+              "arm_exp": ["form_vs_onc", "form_recist_onc", "form_lb_onc"],
+              "arm_ctrl": ["form_vs_onc", "form_lb_onc"]
+            }
+          },
+          {
+            "id": "v_c2d1",
+            "oid": "SE.C2D1",
+            "name": "Cycle 2 Day 1",
+            "type": "Scheduled",
+            "targetDay": 22,
+            "windowBefore": 3,
+            "windowAfter": 3,
+            "epochId": "e_trt",
+            "armIds": ["arm_exp", "arm_ctrl"],
+            "assignedFormIds": ["form_vs_onc", "form_lb_onc"]
+          },
+          {
+            "id": "v_c3d1",
+            "oid": "SE.C3D1",
+            "name": "Cycle 3 Day 1 (Restaging CT/MRI)",
+            "type": "Scheduled",
+            "targetDay": 43,
+            "windowBefore": 3,
+            "windowAfter": 3,
+            "epochId": "e_trt",
+            "armIds": ["arm_exp", "arm_ctrl"],
+            "assignedFormIds": [
+              "form_vs_onc",
+              "form_recist_onc",
+              "form_lb_onc"
+            ],
+            "armFormAssignments": {
+              "arm_exp": ["form_vs_onc", "form_recist_onc", "form_lb_onc"],
+              "arm_ctrl": ["form_vs_onc", "form_lb_onc"]
+            }
+          },
+          {
+            "id": "v_eos",
+            "oid": "SE.EOS",
+            "name": "End of Study / Safety Follow-up",
+            "type": "Scheduled",
+            "targetDay": 120,
+            "windowBefore": 7,
+            "windowAfter": 7,
+            "epochId": "e_fup",
+            "armIds": ["arm_exp", "arm_ctrl"],
+            "assignedFormIds": ["form_vs_onc", "form_lb_onc"]
+          },
+          {
+            "id": "v_unsched",
+            "oid": "SE.UNSCHED",
+            "name": "Unscheduled Visit",
+            "type": "Unscheduled",
+            "targetDay": 0,
+            "windowBefore": 0,
+            "windowAfter": 0,
+            "assignedFormIds": ["form_vs_onc", "form_lb_onc"]
+          }
+        ],
+        "activities": [
+          {
+            "id": "form_dm_onc",
+            "name": "Demographics & Informed Consent",
+            "domain": "DM",
+            "description": "Subject baseline characteristics, demographics, and consent tracking",
+            "version": "1.0",
+            "sections": [
+              {
+                "id": "sec_ic_1792506875606",
+                "title": "Informed Consent",
+                "fields": [
+                  {
+                    "id": "f_icdat_1792506875606",
+                    "variableName": "ICDAT",
+                    "label": "Date Informed Consent Signed",
+                    "dataType": "date",
+                    "columnSpan": 6,
+                    "required": true,
+                    "cdashMetadata": {
+                      "domain": "DM",
+                      "sdtmVariable": "ICDAT",
+                      "cdashLabel": "Informed Consent Date",
+                      "core": "R",
+                      "acrfAnnotation": "DS.DSSTDTC [DSDECOD=INFORMED CONSENT OBTAINED]",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_dm_icdat"
+                  },
+                  {
+                    "id": "f_icyn_1792506875606",
+                    "variableName": "ICYN",
+                    "label": "Did subject provide written consent prior to any protocol procedures?",
+                    "dataType": "radio",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_NY",
+                    "conceptId": "bc_dm_icyn"
+                  }
+                ]
+              },
+              {
+                "id": "sec_dm_1792506875607",
+                "title": "Baseline Demographics",
+                "fields": [
+                  {
+                    "id": "f_brthyr_1792506875606",
+                    "variableName": "BRTHYR",
+                    "label": "Year of Birth (YYYY)",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": true,
+                    "minValue": 1900,
+                    "maxValue": 2026,
+                    "placeholder": "e.g. 1985",
+                    "cdashMetadata": {
+                      "domain": "DM",
+                      "sdtmVariable": "BRTHYR",
+                      "cdashLabel": "Year of Birth",
+                      "core": "HR",
+                      "acrfAnnotation": "DM.BRTHYR",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_dm_brthyr"
+                  },
+                  {
+                    "id": "f_age_1792506875607",
+                    "variableName": "AGE",
+                    "label": "Age at Screening",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": true,
+                    "minValue": 18,
+                    "maxValue": 120,
+                    "unit": "Years",
+                    "cdashMetadata": {
+                      "domain": "DM",
+                      "sdtmVariable": "AGE",
+                      "cdashLabel": "Age",
+                      "core": "HR",
+                      "acrfAnnotation": "DM.AGE",
+                      "dataCategory": "Qualifier"
+                    },
+                    "conceptId": "bc_age"
+                  },
+                  {
+                    "id": "f_sex_1792506875608",
+                    "variableName": "SEX",
+                    "label": "Sex assigned at birth",
+                    "dataType": "single_select",
+                    "columnSpan": 4,
+                    "required": true,
+                    "codelistId": "CL_SEX",
+                    "cdashMetadata": {
+                      "domain": "DM",
+                      "sdtmVariable": "SEX",
+                      "cdashLabel": "Sex",
+                      "core": "R",
+                      "acrfAnnotation": "DM.SEX",
+                      "dataCategory": "Topic",
+                      "nciConceptId": "C66742"
+                    },
+                    "conceptId": "bc_dm_sex"
+                  },
+                  {
+                    "id": "f_race_1792506875609",
+                    "variableName": "RACE",
+                    "label": "Race (Select primary)",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_RACE",
+                    "cdashMetadata": {
+                      "domain": "DM",
+                      "sdtmVariable": "RACE",
+                      "cdashLabel": "Race",
+                      "core": "HR",
+                      "acrfAnnotation": "DM.RACE",
+                      "dataCategory": "Topic",
+                      "nciConceptId": "C74457"
+                    },
+                    "conceptId": "bc_dm_race"
+                  },
+                  {
+                    "id": "f_ethnic_1792506875610",
+                    "variableName": "ETHNIC",
+                    "label": "Ethnicity",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_ETHNIC",
+                    "cdashMetadata": {
+                      "domain": "DM",
+                      "sdtmVariable": "ETHNIC",
+                      "cdashLabel": "Ethnicity",
+                      "core": "HR",
+                      "acrfAnnotation": "DM.ETHNIC",
+                      "dataCategory": "Topic",
+                      "nciConceptId": "C66790"
+                    },
+                    "conceptId": "bc_dm_ethnic"
+                  }
+                ]
+              }
+            ],
+            "rules": []
+          },
+          {
+            "id": "form_vs_onc",
+            "name": "Vital Signs & Physical Metrics",
+            "domain": "VS",
+            "description": "Sitting blood pressure, pulse, temperature, height, weight, and automated BMI",
+            "version": "1.0",
+            "sections": [
+              {
+                "id": "sec_vs_1792506875606",
+                "title": "Vital Signs Measurements",
+                "fields": [
+                  {
+                    "id": "f_vsdat",
+                    "variableName": "VSDAT",
+                    "label": "Assessment Date & Time",
+                    "dataType": "datetime",
+                    "columnSpan": 6,
+                    "required": true,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "VSDAT",
+                      "cdashLabel": "Vital Signs Assessment Date",
+                      "core": "R",
+                      "acrfAnnotation": "VS.VSDTC",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_vs_vsdat"
+                  },
+                  {
+                    "id": "f_height",
+                    "variableName": "HEIGHT",
+                    "label": "Height",
+                    "dataType": "number",
+                    "columnSpan": 3,
+                    "required": true,
+                    "unit": "cm",
+                    "minValue": 50,
+                    "maxValue": 250,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "HEIGHT",
+                      "cdashLabel": "Height",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=HEIGHT]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_vs_height"
+                  },
+                  {
+                    "id": "f_weight",
+                    "variableName": "WEIGHT",
+                    "label": "Weight",
+                    "dataType": "number",
+                    "columnSpan": 3,
+                    "required": true,
+                    "unit": "kg",
+                    "minValue": 20,
+                    "maxValue": 300,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "WEIGHT",
+                      "cdashLabel": "Weight",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=WEIGHT]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_vs_weight"
+                  },
+                  {
+                    "id": "f_bmi",
+                    "variableName": "BMI",
+                    "label": "Calculated Body Mass Index (BMI)",
+                    "dataType": "calculated",
+                    "columnSpan": 4,
+                    "required": false,
+                    "readOnly": true,
+                    "unit": "kg/m²",
+                    "calculationFormula": "weight / ((height/100) * (height/100))",
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "BMI",
+                      "cdashLabel": "Body Mass Index",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=BMI]",
+                      "dataCategory": "Derived"
+                    },
+                    "conceptId": "bc_vs_bmi"
+                  },
+                  {
+                    "id": "f_sysbp",
+                    "variableName": "SYSBP",
+                    "label": "Systolic Blood Pressure",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "mmHg",
+                    "minValue": 60,
+                    "maxValue": 260,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "SYSBP",
+                      "cdashLabel": "Systolic Blood Pressure",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=SYSBP]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_sysbp"
+                  },
+                  {
+                    "id": "f_diabp",
+                    "variableName": "DIABP",
+                    "label": "Diastolic Blood Pressure",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "mmHg",
+                    "minValue": 30,
+                    "maxValue": 160,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "DIABP",
+                      "cdashLabel": "Diastolic Blood Pressure",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=DIABP]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_diabp"
+                  },
+                  {
+                    "id": "f_pulse",
+                    "variableName": "PULSE",
+                    "label": "Heart / Pulse Rate",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "beats/min",
+                    "minValue": 30,
+                    "maxValue": 220,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "PULSE",
+                      "cdashLabel": "Pulse Rate",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=PULSE]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_vs_pulse"
+                  },
+                  {
+                    "id": "f_temp",
+                    "variableName": "TEMP",
+                    "label": "Body Temperature",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "°C",
+                    "minValue": 32,
+                    "maxValue": 43,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "TEMP",
+                      "cdashLabel": "Temperature",
+                      "core": "HR",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=TEMP]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_vs_temp"
+                  },
+                  {
+                    "id": "f_resp",
+                    "variableName": "RESP",
+                    "label": "Respiratory Rate",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": false,
+                    "unit": "breaths/min",
+                    "minValue": 8,
+                    "maxValue": 60,
+                    "cdashMetadata": {
+                      "domain": "VS",
+                      "sdtmVariable": "RESP",
+                      "cdashLabel": "Respiratory Rate",
+                      "core": "O",
+                      "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=RESP]",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_vs_resp"
+                  }
+                ]
+              }
+            ],
+            "rules": [
+              {
+                "id": "rule_bmi_1792506875606",
+                "name": "Automated BMI Derivation",
+                "description": "Calculate BMI automatically when height and weight are entered",
+                "triggerFieldIds": ["f_height", "f_weight"],
+                "actionType": "set_value",
+                "targetFieldId": "f_bmi",
+                "conditions": [
+                  {
+                    "fieldId": "f_height",
+                    "operator": "gt",
+                    "value": 0
+                  },
+                  {
+                    "fieldId": "f_weight",
+                    "operator": "gt",
+                    "value": 0
+                  }
+                ],
+                "logicalOperator": "AND",
+                "formulaExpression": "round(weight / ((height / 100) * (height / 100)), 1)"
+              },
+              {
+                "id": "rule_sysbp_check_1792506875607",
+                "name": "Severe Hypertension Range Alert",
+                "description": "Raise query if Systolic BP > 180 mmHg or Diastolic > 110 mmHg",
+                "triggerFieldIds": ["f_sysbp", "f_diabp"],
+                "actionType": "raise_query",
+                "targetFieldId": "f_sysbp",
+                "conditions": [
+                  {
+                    "fieldId": "f_sysbp",
+                    "operator": "gt",
+                    "value": 180
+                  }
+                ],
+                "logicalOperator": "OR",
+                "querySeverity": "warning",
+                "queryMessage": "Systolic Blood Pressure > 180 mmHg exceeds protocol threshold. Please confirm repeat measurement."
+              }
+            ]
+          },
+          {
+            "id": "form_recist_onc",
+            "name": "Oncology RECIST 1.1 Tumor Assessment",
+            "domain": "TR",
+            "description": "Target & non-target lesion tracking with automated sum of longest diameters (SLD) and percent change from baseline",
+            "version": "1.0",
+            "sections": [
+              {
+                "id": "sec_recist_meta_1792506875606",
+                "title": "Radiological Scan Assessment",
+                "fields": [
+                  {
+                    "id": "f_recist_dat",
+                    "variableName": "TRDAT",
+                    "label": "Radiological Imaging Date (CT/MRI)",
+                    "dataType": "date",
+                    "columnSpan": 6,
+                    "required": true,
+                    "conceptId": "bc_tr_trdat"
+                  },
+                  {
+                    "id": "f_recist_modality",
+                    "variableName": "TRMETHOD",
+                    "label": "Imaging Modality",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "customOptions": [
+                      {
+                        "code": "CT",
+                        "label": "CT Scan with Contrast",
+                        "order": 1
+                      },
+                      {
+                        "code": "MRI",
+                        "label": "MRI Scan",
+                        "order": 2
+                      },
+                      {
+                        "code": "PET_CT",
+                        "label": "PET/CT Hybrid",
+                        "order": 3
+                      }
+                    ],
+                    "conceptId": "bc_tr_trmethod"
+                  }
+                ]
+              },
+              {
+                "id": "sec_recist_target_1792506875607",
+                "title": "Target Lesion Measurements (Longest Diameter in mm)",
+                "fields": [
+                  {
+                    "id": "f_recist_t1",
+                    "variableName": "TRL1",
+                    "label": "Target Lesion 1: Longest Diameter (mm) & Anatomical Site",
+                    "dataType": "number",
+                    "columnSpan": 6,
+                    "required": true,
+                    "unit": "mm",
+                    "minValue": 0,
+                    "maxValue": 300,
+                    "placeholder": "e.g. 24.5",
+                    "conceptId": "bc_tr_trl1"
+                  },
+                  {
+                    "id": "f_recist_t2",
+                    "variableName": "TRL2",
+                    "label": "Target Lesion 2: Longest Diameter (mm) & Anatomical Site",
+                    "dataType": "number",
+                    "columnSpan": 6,
+                    "required": false,
+                    "unit": "mm",
+                    "minValue": 0,
+                    "maxValue": 300,
+                    "conceptId": "bc_tr_trl2"
+                  },
+                  {
+                    "id": "f_recist_sld_base",
+                    "variableName": "TRSLDBAS",
+                    "label": "Baseline Sum of Diameters (Reference)",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "mm",
+                    "minValue": 1,
+                    "conceptId": "bc_tr_trsldbas"
+                  },
+                  {
+                    "id": "f_recist_sld_curr",
+                    "variableName": "TRSLDCUR",
+                    "label": "Current Sum of Longest Diameters (SLD)",
+                    "dataType": "calculated",
+                    "columnSpan": 4,
+                    "required": false,
+                    "readOnly": true,
+                    "unit": "mm",
+                    "calculationFormula": "trl1 + trl2",
+                    "conceptId": "bc_tr_trsldcur"
+                  },
+                  {
+                    "id": "f_recist_change",
+                    "variableName": "TRPCTCHG",
+                    "label": "% Change in SLD vs Baseline",
+                    "dataType": "calculated",
+                    "columnSpan": 4,
+                    "required": false,
+                    "readOnly": true,
+                    "unit": "%",
+                    "calculationFormula": "round(((trl1 + trl2 - trsldbas) / trsldbas) * 100, 1)",
+                    "conceptId": "bc_tr_trpctchg"
+                  },
+                  {
+                    "id": "f_recist_resp",
+                    "variableName": "TRRESP",
+                    "label": "Overall Target Lesion Response (RECIST 1.1)",
+                    "dataType": "single_select",
+                    "columnSpan": 12,
+                    "required": true,
+                    "codelistId": "CL_RECIST_RESP",
+                    "conceptId": "bc_tr_trresp"
+                  }
+                ]
+              }
+            ],
+            "rules": [
+              {
+                "id": "rule_recist_resp_1792506875606",
+                "name": "RECIST 1.1 Target Lesion Response Auto-Evaluation",
+                "description": "Derive response (PD >= +20% SLD increase, PR <= -30% SLD decrease, CR = 0mm)",
+                "triggerFieldIds": ["f_recist_change"],
+                "actionType": "set_value",
+                "targetFieldId": "f_recist_resp",
+                "conditions": [
+                  {
+                    "fieldId": "f_recist_change",
+                    "operator": "is_not_empty",
+                    "value": ""
+                  }
+                ],
+                "logicalOperator": "AND"
+              }
+            ]
+          },
+          {
+            "id": "form_ae_onc",
+            "name": "Adverse Events Log",
+            "domain": "AE",
+            "description": "Continuous log form for capturing adverse events, CTCAE grading, seriousness, and attribution",
+            "version": "1.0",
+            "sections": [
+              {
+                "id": "sec_ae_1792506875606",
+                "title": "Adverse Event Record",
+                "fields": [
+                  {
+                    "id": "f_ae_term",
+                    "variableName": "AETERM",
+                    "label": "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
+                    "dataType": "text",
+                    "columnSpan": 12,
+                    "required": true,
+                    "placeholder": "e.g. Febrile Neutropenia, Peripheral Neuropathy",
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AETERM",
+                      "cdashLabel": "Reported Term for Adverse Event",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AETERM",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_ae_aeterm"
+                  },
+                  {
+                    "id": "f_ae_stdtc",
+                    "variableName": "AESTDTC",
+                    "label": "Start Date / Time",
+                    "dataType": "partial_date",
+                    "columnSpan": 4,
+                    "required": true,
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AESTDTC",
+                      "cdashLabel": "AE Start Date/Time",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AESTDTC",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_ae_aestdtc"
+                  },
+                  {
+                    "id": "f_ae_endtc",
+                    "variableName": "AEENDTC",
+                    "label": "Resolution / End Date",
+                    "dataType": "partial_date",
+                    "columnSpan": 4,
+                    "required": false,
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AEENDTC",
+                      "cdashLabel": "AE End Date/Time",
+                      "core": "HR",
+                      "acrfAnnotation": "AE.AEENDTC",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_ae_aeendtc"
+                  },
+                  {
+                    "id": "f_ae_ongo",
+                    "variableName": "AEONGO",
+                    "label": "Event is Ongoing at time of report",
+                    "dataType": "checkbox",
+                    "columnSpan": 4,
+                    "required": false,
+                    "codelistId": "CL_NY",
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AEONGO",
+                      "cdashLabel": "Ongoing Adverse Event",
+                      "core": "HR",
+                      "acrfAnnotation": "AE.AEENRTPT [AEENRTPT=ONGOING]",
+                      "dataCategory": "Qualifier"
+                    },
+                    "conceptId": "bc_ae_aeongo"
+                  },
+                  {
+                    "id": "f_ae_sev",
+                    "variableName": "AESEV",
+                    "label": "Severity / CTCAE v5.0 Grade",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_AESEV",
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AESEV",
+                      "cdashLabel": "Severity / Grade",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AESEV",
+                      "dataCategory": "Qualifier",
+                      "nciConceptId": "C66769"
+                    },
+                    "conceptId": "bc_ae_aesev"
+                  },
+                  {
+                    "id": "f_ae_ser",
+                    "variableName": "AESER",
+                    "label": "Is this a Serious Adverse Event (SAE)?",
+                    "dataType": "radio",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_NY",
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AESER",
+                      "cdashLabel": "Serious Event",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AESER",
+                      "dataCategory": "Qualifier",
+                      "nciConceptId": "C66741"
+                    },
+                    "conceptId": "bc_ae_aeser"
+                  },
+                  {
+                    "id": "f_ae_rel",
+                    "variableName": "AEREL",
+                    "label": "Relationship to Investigational Product",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_AEREL",
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AEREL",
+                      "cdashLabel": "Causality / Relatedness",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AEREL",
+                      "dataCategory": "Qualifier",
+                      "nciConceptId": "C66768"
+                    },
+                    "conceptId": "bc_ae_aerel"
+                  },
+                  {
+                    "id": "f_ae_acn",
+                    "variableName": "AEACN",
+                    "label": "Action Taken with Study Treatment",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "customOptions": [
+                      {
+                        "code": "DOSE NOT CHANGED",
+                        "label": "Dose Not Changed",
+                        "order": 1
+                      },
+                      {
+                        "code": "DOSE REDUCED",
+                        "label": "Dose Reduced",
+                        "order": 2
+                      },
+                      {
+                        "code": "DRUG INTERRUPTED",
+                        "label": "Drug Interrupted",
+                        "order": 3
+                      },
+                      {
+                        "code": "DRUG WITHDRAWN",
+                        "label": "Drug Withdrawn",
+                        "order": 4
+                      },
+                      {
+                        "code": "NOT APPLICABLE",
+                        "label": "Not Applicable",
+                        "order": 5
+                      }
+                    ],
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AEACN",
+                      "cdashLabel": "Action Taken with Study Treatment",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AEACN",
+                      "dataCategory": "Qualifier"
+                    },
+                    "conceptId": "bc_ae_aeacn"
+                  },
+                  {
+                    "id": "f_ae_out",
+                    "variableName": "AEOUT",
+                    "label": "Outcome of Adverse Event",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_AEOUT",
+                    "cdashMetadata": {
+                      "domain": "AE",
+                      "sdtmVariable": "AEOUT",
+                      "cdashLabel": "Outcome of Event",
+                      "core": "R",
+                      "acrfAnnotation": "AE.AEOUT",
+                      "dataCategory": "Qualifier",
+                      "nciConceptId": "C66767"
+                    },
+                    "conceptId": "bc_ae_aeout"
+                  }
+                ]
+              }
+            ],
+            "rules": [
+              {
+                "id": "rule_ae_ongo_1792506875606",
+                "name": "Hide End Date when AE is Ongoing",
+                "description": "If Ongoing is checked, hide AE End Date requirement",
+                "triggerFieldIds": ["f_ae_ongo"],
+                "actionType": "hide_field",
+                "targetFieldId": "f_ae_endtc",
+                "conditions": [
+                  {
+                    "fieldId": "f_ae_ongo",
+                    "operator": "eq",
+                    "value": true
+                  }
+                ],
+                "logicalOperator": "AND"
+              }
+            ],
+            "isLogForm": true
+          },
+          {
+            "id": "form_cm_onc",
+            "name": "Prior & Concomitant Medications",
+            "domain": "CM",
+            "description": "Log of prescription drugs, over-the-counter medications, and supplements",
+            "version": "1.0",
+            "sections": [
+              {
+                "id": "sec_cm_1792506875607",
+                "title": "Medication Details",
+                "fields": [
+                  {
+                    "id": "f_cm_trt",
+                    "variableName": "CMTRT",
+                    "label": "Medication / Treatment Name (Trade or Generic)",
+                    "dataType": "text",
+                    "columnSpan": 6,
+                    "required": true,
+                    "placeholder": "e.g. Paracetamol, Pembrolizumab",
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMTRT",
+                      "cdashLabel": "Reported Name of Drug / Therapy",
+                      "core": "R",
+                      "acrfAnnotation": "CM.CMTRT",
+                      "dataCategory": "Topic"
+                    },
+                    "conceptId": "bc_cm_cmtrt"
+                  },
+                  {
+                    "id": "f_cm_indc",
+                    "variableName": "CMINDC",
+                    "label": "Indication / Reason for Treatment",
+                    "dataType": "text",
+                    "columnSpan": 6,
+                    "required": true,
+                    "placeholder": "e.g. Headache, Cancer Pain",
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMINDC",
+                      "cdashLabel": "Indication",
+                      "core": "HR",
+                      "acrfAnnotation": "CM.CMINDC",
+                      "dataCategory": "Qualifier"
+                    },
+                    "conceptId": "bc_cm_cmindc"
+                  },
+                  {
+                    "id": "f_cm_dose",
+                    "variableName": "CMDOSE",
+                    "label": "Dose per Administration",
+                    "dataType": "number",
+                    "columnSpan": 3,
+                    "required": true,
+                    "minValue": 0.1,
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMDOSE",
+                      "cdashLabel": "Dose per Administration",
+                      "core": "HR",
+                      "acrfAnnotation": "CM.CMDOSE",
+                      "dataCategory": "Qualifier"
+                    },
+                    "conceptId": "bc_cm_cmdose"
+                  },
+                  {
+                    "id": "f_cm_dosu",
+                    "variableName": "CMDOSU",
+                    "label": "Dose Unit",
+                    "dataType": "text",
+                    "columnSpan": 3,
+                    "required": true,
+                    "placeholder": "mg, mL, IU",
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMDOSU",
+                      "cdashLabel": "Dose Units",
+                      "core": "HR",
+                      "acrfAnnotation": "CM.CMDOSU",
+                      "dataCategory": "Qualifier"
+                    },
+                    "conceptId": "bc_cm_cmdosu"
+                  },
+                  {
+                    "id": "f_cm_route",
+                    "variableName": "CMROUTE",
+                    "label": "Route of Administration",
+                    "dataType": "single_select",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_ROUTE",
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMROUTE",
+                      "cdashLabel": "Route",
+                      "core": "HR",
+                      "acrfAnnotation": "CM.CMROUTE",
+                      "dataCategory": "Qualifier",
+                      "nciConceptId": "C66729"
+                    },
+                    "conceptId": "bc_cm_cmroute"
+                  },
+                  {
+                    "id": "f_cm_stdtc",
+                    "variableName": "CMSTDTC",
+                    "label": "Start Date",
+                    "dataType": "partial_date",
+                    "columnSpan": 6,
+                    "required": true,
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMSTDTC",
+                      "cdashLabel": "Medication Start Date",
+                      "core": "R",
+                      "acrfAnnotation": "CM.CMSTDTC",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_cm_cmstdtc"
+                  },
+                  {
+                    "id": "f_cm_endtc",
+                    "variableName": "CMENDTC",
+                    "label": "Stop Date",
+                    "dataType": "partial_date",
+                    "columnSpan": 6,
+                    "required": false,
+                    "cdashMetadata": {
+                      "domain": "CM",
+                      "sdtmVariable": "CMENDTC",
+                      "cdashLabel": "Medication End Date",
+                      "core": "O",
+                      "acrfAnnotation": "CM.CMENDTC",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_cm_cmendtc"
+                  }
+                ]
+              }
+            ],
+            "rules": [],
+            "isLogForm": true
+          },
+          {
+            "id": "form_lb_onc",
+            "name": "Central & Local Laboratory Panel",
+            "domain": "LB",
+            "description": "Serum chemistry, hematology, and urinalysis values",
+            "version": "1.0",
+            "sections": [
+              {
+                "id": "sec_lb_1792506875607",
+                "title": "Blood Chemistry & Hematology",
+                "fields": [
+                  {
+                    "id": "f_lb_dat",
+                    "variableName": "LBDAT",
+                    "label": "Collection Date & Time",
+                    "dataType": "datetime",
+                    "columnSpan": 6,
+                    "required": true,
+                    "cdashMetadata": {
+                      "domain": "LB",
+                      "sdtmVariable": "LBDAT",
+                      "cdashLabel": "Sample Collection Date",
+                      "core": "R",
+                      "acrfAnnotation": "LB.LBDTC",
+                      "dataCategory": "Timing"
+                    },
+                    "conceptId": "bc_lb_lbdat"
+                  },
+                  {
+                    "id": "f_lb_fast",
+                    "variableName": "LBFAST",
+                    "label": "Was subject fasting >= 8 hours?",
+                    "dataType": "radio",
+                    "columnSpan": 6,
+                    "required": true,
+                    "codelistId": "CL_NY",
+                    "conceptId": "bc_lb_lbfast"
+                  },
+                  {
+                    "id": "f_lb_alt",
+                    "variableName": "ALT",
+                    "label": "Alanine Aminotransferase (ALT/SGPT)",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "U/L",
+                    "minValue": 1,
+                    "maxValue": 2000,
+                    "conceptId": "bc_lb_alt"
+                  },
+                  {
+                    "id": "f_lb_ast",
+                    "variableName": "AST",
+                    "label": "Aspartate Aminotransferase (AST/SGOT)",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "U/L",
+                    "minValue": 1,
+                    "maxValue": 2000,
+                    "conceptId": "bc_lb_ast"
+                  },
+                  {
+                    "id": "f_lb_bili",
+                    "variableName": "BILI",
+                    "label": "Total Bilirubin",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "mg/dL",
+                    "minValue": 0.1,
+                    "maxValue": 40,
+                    "conceptId": "bc_lb_bili"
+                  },
+                  {
+                    "id": "f_lb_creat",
+                    "variableName": "CREAT",
+                    "label": "Serum Creatinine",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "mg/dL",
+                    "minValue": 0.1,
+                    "maxValue": 20,
+                    "conceptId": "bc_lb_creat"
+                  },
+                  {
+                    "id": "f_lb_anc",
+                    "variableName": "ANC",
+                    "label": "Absolute Neutrophil Count (ANC)",
+                    "dataType": "number",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "10^9/L",
+                    "minValue": 0,
+                    "maxValue": 50,
+                    "conceptId": "bc_lb_anc"
+                  },
+                  {
+                    "id": "f_lb_plt",
+                    "variableName": "PLAT",
+                    "label": "Platelet Count",
+                    "dataType": "integer",
+                    "columnSpan": 4,
+                    "required": true,
+                    "unit": "10^9/L",
+                    "minValue": 1,
+                    "maxValue": 1500,
+                    "conceptId": "bc_lb_plat"
+                  }
+                ]
+              }
+            ],
+            "rules": []
+          }
+        ],
+        "biomedicalConcepts": [
+          {
+            "id": "bc_age",
+            "name": "Subject Age",
+            "conceptId": "C25150",
+            "code": "C25150",
+            "domain": "DM",
+            "synonyms": ["AGE", "Age at Informed Consent"],
+            "properties": {},
+            "variableName": "AGE",
+            "dataType": "integer",
+            "label": "Age at Informed Consent",
+            "unit": "years"
+          },
+          {
+            "id": "bc_sysbp",
+            "name": "Systolic Blood Pressure",
+            "conceptId": "C25298",
+            "code": "C25298",
+            "domain": "VS",
+            "synonyms": ["SYSBP", "Systolic Blood Pressure"],
+            "properties": {},
+            "variableName": "SYSBP",
+            "dataType": "integer",
+            "label": "Systolic Blood Pressure",
+            "unit": "mmHg"
+          },
+          {
+            "id": "bc_diabp",
+            "name": "Diastolic Blood Pressure",
+            "conceptId": "C25299",
+            "code": "C25299",
+            "domain": "VS",
+            "synonyms": ["DIABP", "Diastolic Blood Pressure"],
+            "properties": {},
+            "variableName": "DIABP",
+            "dataType": "integer",
+            "label": "Diastolic Blood Pressure",
+            "unit": "mmHg"
+          },
+          {
+            "id": "bc_dm_icdat",
+            "name": "Date Informed Consent Signed",
+            "conceptId": "bc_dm_icdat",
+            "domain": "DM",
+            "synonyms": ["ICDAT", "Date Informed Consent Signed"],
+            "properties": {
+              "dataType": "date",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "DM",
+                "sdtmVariable": "ICDAT",
+                "cdashLabel": "Informed Consent Date",
+                "core": "R",
+                "acrfAnnotation": "DS.DSSTDTC [DSDECOD=INFORMED CONSENT OBTAINED]",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "ICDAT",
+            "dataType": "date",
+            "label": "Date Informed Consent Signed"
+          },
+          {
+            "id": "bc_dm_icyn",
+            "name": "Did subject provide written consent prior to any protocol procedures?",
+            "conceptId": "bc_dm_icyn",
+            "domain": "DM",
+            "synonyms": [
+              "ICYN",
+              "Did subject provide written consent prior to any protocol procedures?"
+            ],
+            "properties": {
+              "dataType": "radio",
+              "required": true,
+              "codelistId": "CL_NY"
+            },
+            "variableName": "ICYN",
+            "dataType": "radio",
+            "label": "Did subject provide written consent prior to any protocol procedures?"
+          },
+          {
+            "id": "bc_dm_brthyr",
+            "name": "Year of Birth (YYYY)",
+            "conceptId": "bc_dm_brthyr",
+            "domain": "DM",
+            "synonyms": ["BRTHYR", "Year of Birth (YYYY)"],
+            "properties": {
+              "dataType": "integer",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "DM",
+                "sdtmVariable": "BRTHYR",
+                "cdashLabel": "Year of Birth",
+                "core": "HR",
+                "acrfAnnotation": "DM.BRTHYR",
+                "dataCategory": "Topic"
+              },
+              "minValue": 1900,
+              "maxValue": 2026
+            },
+            "variableName": "BRTHYR",
+            "dataType": "integer",
+            "label": "Year of Birth (YYYY)"
+          },
+          {
+            "id": "bc_dm_sex",
+            "name": "Sex assigned at birth",
+            "conceptId": "C66742",
+            "code": "C66742",
+            "domain": "DM",
+            "synonyms": ["SEX", "Sex assigned at birth"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "DM",
+                "sdtmVariable": "SEX",
+                "cdashLabel": "Sex",
+                "core": "R",
+                "acrfAnnotation": "DM.SEX",
+                "dataCategory": "Topic",
+                "nciConceptId": "C66742"
+              },
+              "codelistId": "CL_SEX"
+            },
+            "variableName": "SEX",
+            "dataType": "single_select",
+            "label": "Sex assigned at birth"
+          },
+          {
+            "id": "bc_dm_race",
+            "name": "Race (Select primary)",
+            "conceptId": "C74457",
+            "code": "C74457",
+            "domain": "DM",
+            "synonyms": ["RACE", "Race (Select primary)"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "DM",
+                "sdtmVariable": "RACE",
+                "cdashLabel": "Race",
+                "core": "HR",
+                "acrfAnnotation": "DM.RACE",
+                "dataCategory": "Topic",
+                "nciConceptId": "C74457"
+              },
+              "codelistId": "CL_RACE"
+            },
+            "variableName": "RACE",
+            "dataType": "single_select",
+            "label": "Race (Select primary)"
+          },
+          {
+            "id": "bc_dm_ethnic",
+            "name": "Ethnicity",
+            "conceptId": "C66790",
+            "code": "C66790",
+            "domain": "DM",
+            "synonyms": ["ETHNIC", "Ethnicity"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "DM",
+                "sdtmVariable": "ETHNIC",
+                "cdashLabel": "Ethnicity",
+                "core": "HR",
+                "acrfAnnotation": "DM.ETHNIC",
+                "dataCategory": "Topic",
+                "nciConceptId": "C66790"
+              },
+              "codelistId": "CL_ETHNIC"
+            },
+            "variableName": "ETHNIC",
+            "dataType": "single_select",
+            "label": "Ethnicity"
+          },
+          {
+            "id": "bc_vs_vsdat",
+            "name": "Assessment Date & Time",
+            "conceptId": "bc_vs_vsdat",
+            "domain": "VS",
+            "synonyms": ["VSDAT", "Assessment Date & Time"],
+            "properties": {
+              "dataType": "datetime",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "VSDAT",
+                "cdashLabel": "Vital Signs Assessment Date",
+                "core": "R",
+                "acrfAnnotation": "VS.VSDTC",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "VSDAT",
+            "dataType": "datetime",
+            "label": "Assessment Date & Time"
+          },
+          {
+            "id": "bc_vs_height",
+            "name": "Height",
+            "conceptId": "bc_vs_height",
+            "domain": "VS",
+            "synonyms": ["HEIGHT", "Height"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "HEIGHT",
+                "cdashLabel": "Height",
+                "core": "HR",
+                "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=HEIGHT]",
+                "dataCategory": "Topic"
+              },
+              "unit": "cm",
+              "minValue": 50,
+              "maxValue": 250
+            },
+            "variableName": "HEIGHT",
+            "dataType": "number",
+            "label": "Height",
+            "unit": "cm"
+          },
+          {
+            "id": "bc_vs_weight",
+            "name": "Weight",
+            "conceptId": "bc_vs_weight",
+            "domain": "VS",
+            "synonyms": ["WEIGHT", "Weight"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "WEIGHT",
+                "cdashLabel": "Weight",
+                "core": "HR",
+                "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=WEIGHT]",
+                "dataCategory": "Topic"
+              },
+              "unit": "kg",
+              "minValue": 20,
+              "maxValue": 300
+            },
+            "variableName": "WEIGHT",
+            "dataType": "number",
+            "label": "Weight",
+            "unit": "kg"
+          },
+          {
+            "id": "bc_vs_bmi",
+            "name": "Calculated Body Mass Index (BMI)",
+            "conceptId": "bc_vs_bmi",
+            "domain": "VS",
+            "synonyms": ["BMI", "Calculated Body Mass Index (BMI)"],
+            "properties": {
+              "dataType": "calculated",
+              "required": false,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "BMI",
+                "cdashLabel": "Body Mass Index",
+                "core": "HR",
+                "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=BMI]",
+                "dataCategory": "Derived"
+              },
+              "unit": "kg/m²",
+              "calculationFormula": "weight / ((height/100) * (height/100))"
+            },
+            "variableName": "BMI",
+            "dataType": "calculated",
+            "label": "Calculated Body Mass Index (BMI)",
+            "unit": "kg/m²"
+          },
+          {
+            "id": "bc_vs_pulse",
+            "name": "Heart / Pulse Rate",
+            "conceptId": "bc_vs_pulse",
+            "domain": "VS",
+            "synonyms": ["PULSE", "Heart / Pulse Rate"],
+            "properties": {
+              "dataType": "integer",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "PULSE",
+                "cdashLabel": "Pulse Rate",
+                "core": "HR",
+                "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=PULSE]",
+                "dataCategory": "Topic"
+              },
+              "unit": "beats/min",
+              "minValue": 30,
+              "maxValue": 220
+            },
+            "variableName": "PULSE",
+            "dataType": "integer",
+            "label": "Heart / Pulse Rate",
+            "unit": "beats/min"
+          },
+          {
+            "id": "bc_vs_temp",
+            "name": "Body Temperature",
+            "conceptId": "bc_vs_temp",
+            "domain": "VS",
+            "synonyms": ["TEMP", "Body Temperature"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "TEMP",
+                "cdashLabel": "Temperature",
+                "core": "HR",
+                "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=TEMP]",
+                "dataCategory": "Topic"
+              },
+              "unit": "°C",
+              "minValue": 32,
+              "maxValue": 43
+            },
+            "variableName": "TEMP",
+            "dataType": "number",
+            "label": "Body Temperature",
+            "unit": "°C"
+          },
+          {
+            "id": "bc_vs_resp",
+            "name": "Respiratory Rate",
+            "conceptId": "bc_vs_resp",
+            "domain": "VS",
+            "synonyms": ["RESP", "Respiratory Rate"],
+            "properties": {
+              "dataType": "integer",
+              "required": false,
+              "cdashMetadata": {
+                "domain": "VS",
+                "sdtmVariable": "RESP",
+                "cdashLabel": "Respiratory Rate",
+                "core": "O",
+                "acrfAnnotation": "VS.VSSTRESN [VSTESTCD=RESP]",
+                "dataCategory": "Topic"
+              },
+              "unit": "breaths/min",
+              "minValue": 8,
+              "maxValue": 60
+            },
+            "variableName": "RESP",
+            "dataType": "integer",
+            "label": "Respiratory Rate",
+            "unit": "breaths/min"
+          },
+          {
+            "id": "bc_tr_trdat",
+            "name": "Radiological Imaging Date (CT/MRI)",
+            "conceptId": "bc_tr_trdat",
+            "domain": "TR",
+            "synonyms": ["TRDAT", "Radiological Imaging Date (CT/MRI)"],
+            "properties": {
+              "dataType": "date",
+              "required": true
+            },
+            "variableName": "TRDAT",
+            "dataType": "date",
+            "label": "Radiological Imaging Date (CT/MRI)"
+          },
+          {
+            "id": "bc_tr_trmethod",
+            "name": "Imaging Modality",
+            "conceptId": "bc_tr_trmethod",
+            "domain": "TR",
+            "synonyms": ["TRMETHOD", "Imaging Modality"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true
+            },
+            "variableName": "TRMETHOD",
+            "dataType": "single_select",
+            "label": "Imaging Modality"
+          },
+          {
+            "id": "bc_tr_trl1",
+            "name": "Target Lesion 1: Longest Diameter (mm) & Anatomical Site",
+            "conceptId": "bc_tr_trl1",
+            "domain": "TR",
+            "synonyms": [
+              "TRL1",
+              "Target Lesion 1: Longest Diameter (mm) & Anatomical Site"
+            ],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "mm",
+              "minValue": 0,
+              "maxValue": 300
+            },
+            "variableName": "TRL1",
+            "dataType": "number",
+            "label": "Target Lesion 1: Longest Diameter (mm) & Anatomical Site",
+            "unit": "mm"
+          },
+          {
+            "id": "bc_tr_trl2",
+            "name": "Target Lesion 2: Longest Diameter (mm) & Anatomical Site",
+            "conceptId": "bc_tr_trl2",
+            "domain": "TR",
+            "synonyms": [
+              "TRL2",
+              "Target Lesion 2: Longest Diameter (mm) & Anatomical Site"
+            ],
+            "properties": {
+              "dataType": "number",
+              "required": false,
+              "unit": "mm",
+              "minValue": 0,
+              "maxValue": 300
+            },
+            "variableName": "TRL2",
+            "dataType": "number",
+            "label": "Target Lesion 2: Longest Diameter (mm) & Anatomical Site",
+            "unit": "mm"
+          },
+          {
+            "id": "bc_tr_trsldbas",
+            "name": "Baseline Sum of Diameters (Reference)",
+            "conceptId": "bc_tr_trsldbas",
+            "domain": "TR",
+            "synonyms": ["TRSLDBAS", "Baseline Sum of Diameters (Reference)"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "mm",
+              "minValue": 1
+            },
+            "variableName": "TRSLDBAS",
+            "dataType": "number",
+            "label": "Baseline Sum of Diameters (Reference)",
+            "unit": "mm"
+          },
+          {
+            "id": "bc_tr_trsldcur",
+            "name": "Current Sum of Longest Diameters (SLD)",
+            "conceptId": "bc_tr_trsldcur",
+            "domain": "TR",
+            "synonyms": ["TRSLDCUR", "Current Sum of Longest Diameters (SLD)"],
+            "properties": {
+              "dataType": "calculated",
+              "required": false,
+              "unit": "mm",
+              "calculationFormula": "trl1 + trl2"
+            },
+            "variableName": "TRSLDCUR",
+            "dataType": "calculated",
+            "label": "Current Sum of Longest Diameters (SLD)",
+            "unit": "mm"
+          },
+          {
+            "id": "bc_tr_trpctchg",
+            "name": "% Change in SLD vs Baseline",
+            "conceptId": "bc_tr_trpctchg",
+            "domain": "TR",
+            "synonyms": ["TRPCTCHG", "% Change in SLD vs Baseline"],
+            "properties": {
+              "dataType": "calculated",
+              "required": false,
+              "unit": "%",
+              "calculationFormula": "round(((trl1 + trl2 - trsldbas) / trsldbas) * 100, 1)"
+            },
+            "variableName": "TRPCTCHG",
+            "dataType": "calculated",
+            "label": "% Change in SLD vs Baseline",
+            "unit": "%"
+          },
+          {
+            "id": "bc_tr_trresp",
+            "name": "Overall Target Lesion Response (RECIST 1.1)",
+            "conceptId": "bc_tr_trresp",
+            "domain": "TR",
+            "synonyms": [
+              "TRRESP",
+              "Overall Target Lesion Response (RECIST 1.1)"
+            ],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "codelistId": "CL_RECIST_RESP"
+            },
+            "variableName": "TRRESP",
+            "dataType": "single_select",
+            "label": "Overall Target Lesion Response (RECIST 1.1)"
+          },
+          {
+            "id": "bc_ae_aeterm",
+            "name": "Adverse Event Reported Term (Diagnosis or Sign/Symptom)",
+            "conceptId": "bc_ae_aeterm",
+            "domain": "AE",
+            "synonyms": [
+              "AETERM",
+              "Adverse Event Reported Term (Diagnosis or Sign/Symptom)"
+            ],
+            "properties": {
+              "dataType": "text",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AETERM",
+                "cdashLabel": "Reported Term for Adverse Event",
+                "core": "R",
+                "acrfAnnotation": "AE.AETERM",
+                "dataCategory": "Topic"
+              }
+            },
+            "variableName": "AETERM",
+            "dataType": "text",
+            "label": "Adverse Event Reported Term (Diagnosis or Sign/Symptom)"
+          },
+          {
+            "id": "bc_ae_aestdtc",
+            "name": "Start Date / Time",
+            "conceptId": "bc_ae_aestdtc",
+            "domain": "AE",
+            "synonyms": ["AESTDTC", "Start Date / Time"],
+            "properties": {
+              "dataType": "partial_date",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AESTDTC",
+                "cdashLabel": "AE Start Date/Time",
+                "core": "R",
+                "acrfAnnotation": "AE.AESTDTC",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "AESTDTC",
+            "dataType": "partial_date",
+            "label": "Start Date / Time"
+          },
+          {
+            "id": "bc_ae_aeendtc",
+            "name": "Resolution / End Date",
+            "conceptId": "bc_ae_aeendtc",
+            "domain": "AE",
+            "synonyms": ["AEENDTC", "Resolution / End Date"],
+            "properties": {
+              "dataType": "partial_date",
+              "required": false,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AEENDTC",
+                "cdashLabel": "AE End Date/Time",
+                "core": "HR",
+                "acrfAnnotation": "AE.AEENDTC",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "AEENDTC",
+            "dataType": "partial_date",
+            "label": "Resolution / End Date"
+          },
+          {
+            "id": "bc_ae_aeongo",
+            "name": "Event is Ongoing at time of report",
+            "conceptId": "bc_ae_aeongo",
+            "domain": "AE",
+            "synonyms": ["AEONGO", "Event is Ongoing at time of report"],
+            "properties": {
+              "dataType": "checkbox",
+              "required": false,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AEONGO",
+                "cdashLabel": "Ongoing Adverse Event",
+                "core": "HR",
+                "acrfAnnotation": "AE.AEENRTPT [AEENRTPT=ONGOING]",
+                "dataCategory": "Qualifier"
+              },
+              "codelistId": "CL_NY"
+            },
+            "variableName": "AEONGO",
+            "dataType": "checkbox",
+            "label": "Event is Ongoing at time of report"
+          },
+          {
+            "id": "bc_ae_aesev",
+            "name": "Severity / CTCAE v5.0 Grade",
+            "conceptId": "C66769",
+            "code": "C66769",
+            "domain": "AE",
+            "synonyms": ["AESEV", "Severity / CTCAE v5.0 Grade"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AESEV",
+                "cdashLabel": "Severity / Grade",
+                "core": "R",
+                "acrfAnnotation": "AE.AESEV",
+                "dataCategory": "Qualifier",
+                "nciConceptId": "C66769"
+              },
+              "codelistId": "CL_AESEV"
+            },
+            "variableName": "AESEV",
+            "dataType": "single_select",
+            "label": "Severity / CTCAE v5.0 Grade"
+          },
+          {
+            "id": "bc_ae_aeser",
+            "name": "Is this a Serious Adverse Event (SAE)?",
+            "conceptId": "C66741",
+            "code": "C66741",
+            "domain": "AE",
+            "synonyms": ["AESER", "Is this a Serious Adverse Event (SAE)?"],
+            "properties": {
+              "dataType": "radio",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AESER",
+                "cdashLabel": "Serious Event",
+                "core": "R",
+                "acrfAnnotation": "AE.AESER",
+                "dataCategory": "Qualifier",
+                "nciConceptId": "C66741"
+              },
+              "codelistId": "CL_NY"
+            },
+            "variableName": "AESER",
+            "dataType": "radio",
+            "label": "Is this a Serious Adverse Event (SAE)?"
+          },
+          {
+            "id": "bc_ae_aerel",
+            "name": "Relationship to Investigational Product",
+            "conceptId": "C66768",
+            "code": "C66768",
+            "domain": "AE",
+            "synonyms": ["AEREL", "Relationship to Investigational Product"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AEREL",
+                "cdashLabel": "Causality / Relatedness",
+                "core": "R",
+                "acrfAnnotation": "AE.AEREL",
+                "dataCategory": "Qualifier",
+                "nciConceptId": "C66768"
+              },
+              "codelistId": "CL_AEREL"
+            },
+            "variableName": "AEREL",
+            "dataType": "single_select",
+            "label": "Relationship to Investigational Product"
+          },
+          {
+            "id": "bc_ae_aeacn",
+            "name": "Action Taken with Study Treatment",
+            "conceptId": "bc_ae_aeacn",
+            "domain": "AE",
+            "synonyms": ["AEACN", "Action Taken with Study Treatment"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AEACN",
+                "cdashLabel": "Action Taken with Study Treatment",
+                "core": "R",
+                "acrfAnnotation": "AE.AEACN",
+                "dataCategory": "Qualifier"
+              }
+            },
+            "variableName": "AEACN",
+            "dataType": "single_select",
+            "label": "Action Taken with Study Treatment"
+          },
+          {
+            "id": "bc_ae_aeout",
+            "name": "Outcome of Adverse Event",
+            "conceptId": "C66767",
+            "code": "C66767",
+            "domain": "AE",
+            "synonyms": ["AEOUT", "Outcome of Adverse Event"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "AE",
+                "sdtmVariable": "AEOUT",
+                "cdashLabel": "Outcome of Event",
+                "core": "R",
+                "acrfAnnotation": "AE.AEOUT",
+                "dataCategory": "Qualifier",
+                "nciConceptId": "C66767"
+              },
+              "codelistId": "CL_AEOUT"
+            },
+            "variableName": "AEOUT",
+            "dataType": "single_select",
+            "label": "Outcome of Adverse Event"
+          },
+          {
+            "id": "bc_cm_cmtrt",
+            "name": "Medication / Treatment Name (Trade or Generic)",
+            "conceptId": "bc_cm_cmtrt",
+            "domain": "CM",
+            "synonyms": [
+              "CMTRT",
+              "Medication / Treatment Name (Trade or Generic)"
+            ],
+            "properties": {
+              "dataType": "text",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMTRT",
+                "cdashLabel": "Reported Name of Drug / Therapy",
+                "core": "R",
+                "acrfAnnotation": "CM.CMTRT",
+                "dataCategory": "Topic"
+              }
+            },
+            "variableName": "CMTRT",
+            "dataType": "text",
+            "label": "Medication / Treatment Name (Trade or Generic)"
+          },
+          {
+            "id": "bc_cm_cmindc",
+            "name": "Indication / Reason for Treatment",
+            "conceptId": "bc_cm_cmindc",
+            "domain": "CM",
+            "synonyms": ["CMINDC", "Indication / Reason for Treatment"],
+            "properties": {
+              "dataType": "text",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMINDC",
+                "cdashLabel": "Indication",
+                "core": "HR",
+                "acrfAnnotation": "CM.CMINDC",
+                "dataCategory": "Qualifier"
+              }
+            },
+            "variableName": "CMINDC",
+            "dataType": "text",
+            "label": "Indication / Reason for Treatment"
+          },
+          {
+            "id": "bc_cm_cmdose",
+            "name": "Dose per Administration",
+            "conceptId": "bc_cm_cmdose",
+            "domain": "CM",
+            "synonyms": ["CMDOSE", "Dose per Administration"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMDOSE",
+                "cdashLabel": "Dose per Administration",
+                "core": "HR",
+                "acrfAnnotation": "CM.CMDOSE",
+                "dataCategory": "Qualifier"
+              },
+              "minValue": 0.1
+            },
+            "variableName": "CMDOSE",
+            "dataType": "number",
+            "label": "Dose per Administration"
+          },
+          {
+            "id": "bc_cm_cmdosu",
+            "name": "Dose Unit",
+            "conceptId": "bc_cm_cmdosu",
+            "domain": "CM",
+            "synonyms": ["CMDOSU", "Dose Unit"],
+            "properties": {
+              "dataType": "text",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMDOSU",
+                "cdashLabel": "Dose Units",
+                "core": "HR",
+                "acrfAnnotation": "CM.CMDOSU",
+                "dataCategory": "Qualifier"
+              }
+            },
+            "variableName": "CMDOSU",
+            "dataType": "text",
+            "label": "Dose Unit"
+          },
+          {
+            "id": "bc_cm_cmroute",
+            "name": "Route of Administration",
+            "conceptId": "C66729",
+            "code": "C66729",
+            "domain": "CM",
+            "synonyms": ["CMROUTE", "Route of Administration"],
+            "properties": {
+              "dataType": "single_select",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMROUTE",
+                "cdashLabel": "Route",
+                "core": "HR",
+                "acrfAnnotation": "CM.CMROUTE",
+                "dataCategory": "Qualifier",
+                "nciConceptId": "C66729"
+              },
+              "codelistId": "CL_ROUTE"
+            },
+            "variableName": "CMROUTE",
+            "dataType": "single_select",
+            "label": "Route of Administration"
+          },
+          {
+            "id": "bc_cm_cmstdtc",
+            "name": "Start Date",
+            "conceptId": "bc_cm_cmstdtc",
+            "domain": "CM",
+            "synonyms": ["CMSTDTC", "Start Date"],
+            "properties": {
+              "dataType": "partial_date",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMSTDTC",
+                "cdashLabel": "Medication Start Date",
+                "core": "R",
+                "acrfAnnotation": "CM.CMSTDTC",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "CMSTDTC",
+            "dataType": "partial_date",
+            "label": "Start Date"
+          },
+          {
+            "id": "bc_cm_cmendtc",
+            "name": "Stop Date",
+            "conceptId": "bc_cm_cmendtc",
+            "domain": "CM",
+            "synonyms": ["CMENDTC", "Stop Date"],
+            "properties": {
+              "dataType": "partial_date",
+              "required": false,
+              "cdashMetadata": {
+                "domain": "CM",
+                "sdtmVariable": "CMENDTC",
+                "cdashLabel": "Medication End Date",
+                "core": "O",
+                "acrfAnnotation": "CM.CMENDTC",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "CMENDTC",
+            "dataType": "partial_date",
+            "label": "Stop Date"
+          },
+          {
+            "id": "bc_lb_lbdat",
+            "name": "Collection Date & Time",
+            "conceptId": "bc_lb_lbdat",
+            "domain": "LB",
+            "synonyms": ["LBDAT", "Collection Date & Time"],
+            "properties": {
+              "dataType": "datetime",
+              "required": true,
+              "cdashMetadata": {
+                "domain": "LB",
+                "sdtmVariable": "LBDAT",
+                "cdashLabel": "Sample Collection Date",
+                "core": "R",
+                "acrfAnnotation": "LB.LBDTC",
+                "dataCategory": "Timing"
+              }
+            },
+            "variableName": "LBDAT",
+            "dataType": "datetime",
+            "label": "Collection Date & Time"
+          },
+          {
+            "id": "bc_lb_lbfast",
+            "name": "Was subject fasting >= 8 hours?",
+            "conceptId": "bc_lb_lbfast",
+            "domain": "LB",
+            "synonyms": ["LBFAST", "Was subject fasting >= 8 hours?"],
+            "properties": {
+              "dataType": "radio",
+              "required": true,
+              "codelistId": "CL_NY"
+            },
+            "variableName": "LBFAST",
+            "dataType": "radio",
+            "label": "Was subject fasting >= 8 hours?"
+          },
+          {
+            "id": "bc_lb_alt",
+            "name": "Alanine Aminotransferase (ALT/SGPT)",
+            "conceptId": "bc_lb_alt",
+            "domain": "LB",
+            "synonyms": ["ALT", "Alanine Aminotransferase (ALT/SGPT)"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "U/L",
+              "minValue": 1,
+              "maxValue": 2000
+            },
+            "variableName": "ALT",
+            "dataType": "number",
+            "label": "Alanine Aminotransferase (ALT/SGPT)",
+            "unit": "U/L"
+          },
+          {
+            "id": "bc_lb_ast",
+            "name": "Aspartate Aminotransferase (AST/SGOT)",
+            "conceptId": "bc_lb_ast",
+            "domain": "LB",
+            "synonyms": ["AST", "Aspartate Aminotransferase (AST/SGOT)"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "U/L",
+              "minValue": 1,
+              "maxValue": 2000
+            },
+            "variableName": "AST",
+            "dataType": "number",
+            "label": "Aspartate Aminotransferase (AST/SGOT)",
+            "unit": "U/L"
+          },
+          {
+            "id": "bc_lb_bili",
+            "name": "Total Bilirubin",
+            "conceptId": "bc_lb_bili",
+            "domain": "LB",
+            "synonyms": ["BILI", "Total Bilirubin"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "mg/dL",
+              "minValue": 0.1,
+              "maxValue": 40
+            },
+            "variableName": "BILI",
+            "dataType": "number",
+            "label": "Total Bilirubin",
+            "unit": "mg/dL"
+          },
+          {
+            "id": "bc_lb_creat",
+            "name": "Serum Creatinine",
+            "conceptId": "bc_lb_creat",
+            "domain": "LB",
+            "synonyms": ["CREAT", "Serum Creatinine"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "mg/dL",
+              "minValue": 0.1,
+              "maxValue": 20
+            },
+            "variableName": "CREAT",
+            "dataType": "number",
+            "label": "Serum Creatinine",
+            "unit": "mg/dL"
+          },
+          {
+            "id": "bc_lb_anc",
+            "name": "Absolute Neutrophil Count (ANC)",
+            "conceptId": "bc_lb_anc",
+            "domain": "LB",
+            "synonyms": ["ANC", "Absolute Neutrophil Count (ANC)"],
+            "properties": {
+              "dataType": "number",
+              "required": true,
+              "unit": "10^9/L",
+              "minValue": 0,
+              "maxValue": 50
+            },
+            "variableName": "ANC",
+            "dataType": "number",
+            "label": "Absolute Neutrophil Count (ANC)",
+            "unit": "10^9/L"
+          },
+          {
+            "id": "bc_lb_plat",
+            "name": "Platelet Count",
+            "conceptId": "bc_lb_plat",
+            "domain": "LB",
+            "synonyms": ["PLAT", "Platelet Count"],
+            "properties": {
+              "dataType": "integer",
+              "required": true,
+              "unit": "10^9/L",
+              "minValue": 1,
+              "maxValue": 1500
+            },
+            "variableName": "PLAT",
+            "dataType": "integer",
+            "label": "Platelet Count",
+            "unit": "10^9/L"
+          }
+        ],
+        "codeLists": [
+          {
+            "id": "CL_NY",
+            "name": "No Yes Response (NY)",
+            "nciCodelistCode": "C66741",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "N",
+                "label": "No",
+                "nciCode": "C49487",
+                "order": 1
+              },
+              {
+                "code": "Y",
+                "label": "Yes",
+                "nciCode": "C49488",
+                "order": 2
+              }
+            ]
+          },
+          {
+            "id": "CL_SEX",
+            "name": "Sex (SEX)",
+            "nciCodelistCode": "C66742",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "M",
+                "label": "Male",
+                "nciCode": "C20197",
+                "order": 1
+              },
+              {
+                "code": "F",
+                "label": "Female",
+                "nciCode": "C16576",
+                "order": 2
+              },
+              {
+                "code": "UNDIFFERENTIATED",
+                "label": "Undifferentiated",
+                "nciCode": "C45908",
+                "order": 3
+              },
+              {
+                "code": "UNKNOWN",
+                "label": "Unknown",
+                "nciCode": "C17998",
+                "order": 4
+              }
+            ]
+          },
+          {
+            "id": "CL_RACE",
+            "name": "Race (RACE)",
+            "nciCodelistCode": "C74457",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "AMERICAN INDIAN OR ALASKA NATIVE",
+                "label": "American Indian or Alaska Native",
+                "nciCode": "C41259",
+                "order": 1
+              },
+              {
+                "code": "ASIAN",
+                "label": "Asian",
+                "nciCode": "C41260",
+                "order": 2
+              },
+              {
+                "code": "BLACK OR AFRICAN AMERICAN",
+                "label": "Black or African American",
+                "nciCode": "C16352",
+                "order": 3
+              },
+              {
+                "code": "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER",
+                "label": "Native Hawaiian or Other Pacific Islander",
+                "nciCode": "C41219",
+                "order": 4
+              },
+              {
+                "code": "WHITE",
+                "label": "White",
+                "nciCode": "C41261",
+                "order": 5
+              },
+              {
+                "code": "OTHER",
+                "label": "Other",
+                "nciCode": "C17649",
+                "order": 6
+              }
+            ]
+          },
+          {
+            "id": "CL_ETHNIC",
+            "name": "Ethnicity (ETHNIC)",
+            "nciCodelistCode": "C66790",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "HISPANIC OR LATINO",
+                "label": "Hispanic or Latino",
+                "nciCode": "C41222",
+                "order": 1
+              },
+              {
+                "code": "NOT HISPANIC OR LATINO",
+                "label": "Not Hispanic or Latino",
+                "nciCode": "C41221",
+                "order": 2
+              },
+              {
+                "code": "NOT REPORTED",
+                "label": "Not Reported",
+                "nciCode": "C43234",
+                "order": 3
+              },
+              {
+                "code": "UNKNOWN",
+                "label": "Unknown",
+                "nciCode": "C17998",
+                "order": 4
+              }
+            ]
+          },
+          {
+            "id": "CL_AESEV",
+            "name": "Severity / CTCAE Grade (AESEV)",
+            "nciCodelistCode": "C66769",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "GRADE 1 - MILD",
+                "label": "Grade 1 (Mild / Asymptomatic)",
+                "nciCode": "C48275",
+                "order": 1
+              },
+              {
+                "code": "GRADE 2 - MODERATE",
+                "label": "Grade 2 (Moderate / Minimal Local Intervention)",
+                "nciCode": "C48276",
+                "order": 2
+              },
+              {
+                "code": "GRADE 3 - SEVERE",
+                "label": "Grade 3 (Severe / Medically Significant)",
+                "nciCode": "C48277",
+                "order": 3
+              },
+              {
+                "code": "GRADE 4 - LIFE-THREATENING",
+                "label": "Grade 4 (Life-threatening / Urgent Intervention)",
+                "nciCode": "C48278",
+                "order": 4
+              },
+              {
+                "code": "GRADE 5 - DEATH",
+                "label": "Grade 5 (Death Related to AE)",
+                "nciCode": "C48279",
+                "order": 5
+              }
+            ]
+          },
+          {
+            "id": "CL_AEREL",
+            "name": "Causality / Relationship to Study Drug (AEREL)",
+            "nciCodelistCode": "C66768",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "NOT RELATED",
+                "label": "Not Related",
+                "nciCode": "C48280",
+                "order": 1
+              },
+              {
+                "code": "UNLIKELY RELATED",
+                "label": "Unlikely Related",
+                "nciCode": "C48281",
+                "order": 2
+              },
+              {
+                "code": "POSSIBLY RELATED",
+                "label": "Possibly Related",
+                "nciCode": "C48282",
+                "order": 3
+              },
+              {
+                "code": "PROBABLY RELATED",
+                "label": "Probably Related",
+                "nciCode": "C48283",
+                "order": 4
+              },
+              {
+                "code": "DEFINITELY RELATED",
+                "label": "Definitely Related",
+                "nciCode": "C48284",
+                "order": 5
+              }
+            ]
+          },
+          {
+            "id": "CL_AEOUT",
+            "name": "Outcome of Adverse Event (AEOUT)",
+            "nciCodelistCode": "C66767",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "RECOVERED/RESOLVED",
+                "label": "Recovered / Resolved",
+                "nciCode": "C49494",
+                "order": 1
+              },
+              {
+                "code": "RECOVERING/RESOLVING",
+                "label": "Recovering / Resolving",
+                "nciCode": "C49495",
+                "order": 2
+              },
+              {
+                "code": "NOT RECOVERED/NOT RESOLVED",
+                "label": "Not Recovered / Not Resolved",
+                "nciCode": "C49496",
+                "order": 3
+              },
+              {
+                "code": "RECOVERED WITH SEQUELAE",
+                "label": "Recovered with Sequelae",
+                "nciCode": "C49497",
+                "order": 4
+              },
+              {
+                "code": "FATAL",
+                "label": "Fatal",
+                "nciCode": "C49498",
+                "order": 5
+              },
+              {
+                "code": "UNKNOWN",
+                "label": "Unknown",
+                "nciCode": "C17998",
+                "order": 6
+              }
+            ]
+          },
+          {
+            "id": "CL_RECIST_RESP",
+            "name": "RECIST 1.1 Target Response (TRRESP)",
+            "nciCodelistCode": "C96642",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "CR",
+                "label": "Complete Response (CR)",
+                "nciCode": "C48270",
+                "order": 1
+              },
+              {
+                "code": "PR",
+                "label": "Partial Response (PR)",
+                "nciCode": "C48271",
+                "order": 2
+              },
+              {
+                "code": "SD",
+                "label": "Stable Disease (SD)",
+                "nciCode": "C48272",
+                "order": 3
+              },
+              {
+                "code": "PD",
+                "label": "Progressive Disease (PD)",
+                "nciCode": "C48273",
+                "order": 4
+              },
+              {
+                "code": "NE",
+                "label": "Not Evaluable (NE)",
+                "nciCode": "C48274",
+                "order": 5
+              }
+            ]
+          },
+          {
+            "id": "CL_ROUTE",
+            "name": "Route of Administration (ROUTE)",
+            "nciCodelistCode": "C66729",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "ORAL",
+                "label": "Oral (PO)",
+                "nciCode": "C38288",
+                "order": 1
+              },
+              {
+                "code": "INTRAVENOUS",
+                "label": "Intravenous (IV)",
+                "nciCode": "C38276",
+                "order": 2
+              },
+              {
+                "code": "SUBCUTANEOUS",
+                "label": "Subcutaneous (SC)",
+                "nciCode": "C38299",
+                "order": 3
+              },
+              {
+                "code": "INTRAMUSCULAR",
+                "label": "Intramuscular (IM)",
+                "nciCode": "C38209",
+                "order": 4
+              },
+              {
+                "code": "TOPICAL",
+                "label": "Topical",
+                "nciCode": "C38304",
+                "order": 5
+              },
+              {
+                "code": "INHALATION",
+                "label": "Inhalation",
+                "nciCode": "C38216",
+                "order": 6
+              }
+            ]
+          },
+          {
+            "id": "CL_DEDEF",
+            "name": "Device Deficiency / Incident Type (DEDEFIC)",
+            "nciCodelistCode": "C112023",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "MALFUNCTION",
+                "label": "Device Malfunction / Failure",
+                "nciCode": "C48285",
+                "order": 1
+              },
+              {
+                "code": "USE ERROR",
+                "label": "User / Operator Error",
+                "nciCode": "C50414",
+                "order": 2
+              },
+              {
+                "code": "INADEQUATE LABELING",
+                "label": "Inadequate IFU / Labeling",
+                "nciCode": "C112025",
+                "order": 3
+              },
+              {
+                "code": "EARLY DETERIORATION",
+                "label": "Premature Wear / Deterioration",
+                "nciCode": "C112026",
+                "order": 4
+              },
+              {
+                "code": "OTHER DEFICIENCY",
+                "label": "Other Device Deficiency",
+                "nciCode": "C17649",
+                "order": 5
+              }
+            ]
+          },
+          {
+            "id": "CL_DEREL",
+            "name": "Device Relationship / Causality (DEREL)",
+            "nciCodelistCode": "C112024",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "DEFINITELY RELATED",
+                "label": "Definitely Related to Device",
+                "nciCode": "C48284",
+                "order": 1
+              },
+              {
+                "code": "PROBABLY RELATED",
+                "label": "Probably Related to Device",
+                "nciCode": "C48283",
+                "order": 2
+              },
+              {
+                "code": "POSSIBLY RELATED",
+                "label": "Possibly Related to Device",
+                "nciCode": "C48282",
+                "order": 3
+              },
+              {
+                "code": "NOT RELATED",
+                "label": "Not Related to Device",
+                "nciCode": "C48280",
+                "order": 4
+              },
+              {
+                "code": "PROCEDURE RELATED",
+                "label": "Related to Implantation Procedure Only",
+                "nciCode": "C112027",
+                "order": 5
+              }
+            ]
+          },
+          {
+            "id": "CL_DEACT",
+            "name": "Action Taken with Medical Device (DEACT)",
+            "nciCodelistCode": "C112028",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "EXPLANTED/REMOVED",
+                "label": "Explanted / Removed from Subject",
+                "nciCode": "C112029",
+                "order": 1
+              },
+              {
+                "code": "REPLACED",
+                "label": "Replaced with New Device",
+                "nciCode": "C112030",
+                "order": 2
+              },
+              {
+                "code": "REPROGRAMMED/ADJUSTED",
+                "label": "Reprogrammed / Settings Adjusted",
+                "nciCode": "C112031",
+                "order": 3
+              },
+              {
+                "code": "REPAIRED",
+                "label": "Repaired In-Situ",
+                "nciCode": "C112032",
+                "order": 4
+              },
+              {
+                "code": "NO ACTION TAKEN",
+                "label": "No Action Taken / Kept In-Situ",
+                "nciCode": "C48286",
+                "order": 5
+              }
+            ]
+          },
+          {
+            "id": "CL_DISTAT",
+            "name": "Device Implantation / Tracking Status (DISTAT)",
+            "nciCodelistCode": "C112033",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "IMPLANTED ACTIVE",
+                "label": "Implanted & Active In-Situ",
+                "nciCode": "C112034",
+                "order": 1
+              },
+              {
+                "code": "EXPLANTED",
+                "label": "Explanted",
+                "nciCode": "C112029",
+                "order": 2
+              },
+              {
+                "code": "DEPLOYMENT FAILED",
+                "label": "Deployment Failed / Never Implanted",
+                "nciCode": "C112035",
+                "order": 3
+              },
+              {
+                "code": "STORED",
+                "label": "In Site Inventory / Stored",
+                "nciCode": "C112036",
+                "order": 4
+              }
+            ]
+          },
+          {
+            "id": "CL_DUPROC",
+            "name": "Procedural Deployment Success (DUPROC)",
+            "nciCodelistCode": "C112037",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "COMPLETE SUCCESS",
+                "label": "Complete Procedural Success",
+                "nciCode": "C112038",
+                "order": 1
+              },
+              {
+                "code": "PARTIAL SUCCESS",
+                "label": "Partial Success (Sub-optimal deployment)",
+                "nciCode": "C112039",
+                "order": 2
+              },
+              {
+                "code": "PROCEDURE ABORTED",
+                "label": "Procedure Aborted / Cancelled",
+                "nciCode": "C112040",
+                "order": 3
+              },
+              {
+                "code": "CONVERTED SURGERY",
+                "label": "Converted to Emergent Open Surgery",
+                "nciCode": "C112041",
+                "order": 4
+              }
+            ]
+          },
+          {
+            "id": "CL_DSCONT",
+            "name": "Disposition & Discontinuation Reason (DSCONT)",
+            "nciCodelistCode": "C66735",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "COMPLETED",
+                "label": "Completed Protocol Defined Period",
+                "nciCode": "C25250",
+                "order": 1
+              },
+              {
+                "code": "ADVERSE EVENT",
+                "label": "Adverse Event / Safety Concern",
+                "nciCode": "C41331",
+                "order": 2
+              },
+              {
+                "code": "LACK OF EFFICACY",
+                "label": "Lack of Efficacy / Disease Progression",
+                "nciCode": "C48269",
+                "order": 3
+              },
+              {
+                "code": "WITHDRAWAL BY SUBJECT",
+                "label": "Withdrawal of Consent by Subject",
+                "nciCode": "C49491",
+                "order": 4
+              },
+              {
+                "code": "LOST TO FOLLOW-UP",
+                "label": "Lost to Follow-Up",
+                "nciCode": "C48288",
+                "order": 5
+              },
+              {
+                "code": "PHYSICIAN DECISION",
+                "label": "Investigator / Physician Decision",
+                "nciCode": "C49490",
+                "order": 6
+              },
+              {
+                "code": "PROTOCOL VIOLATION",
+                "label": "Protocol Deviation / Violation",
+                "nciCode": "C49492",
+                "order": 7
+              },
+              {
+                "code": "DEATH",
+                "label": "Death",
+                "nciCode": "C28554",
+                "order": 8
+              }
+            ]
+          },
+          {
+            "id": "CL_DARECON",
+            "name": "Drug Accountability Reconciliation (DARECON)",
+            "nciCodelistCode": "C66736",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "RECONCILED",
+                "label": "Fully Reconciled (100% Accounted)",
+                "nciCode": "C49488",
+                "order": 1
+              },
+              {
+                "code": "DISCREPANCY",
+                "label": "Discrepancy Documented",
+                "nciCode": "C48285",
+                "order": 2
+              },
+              {
+                "code": "LOST/DESTROYED",
+                "label": "Lost / Accidental Destruction",
+                "nciCode": "C48286",
+                "order": 3
+              }
+            ]
+          },
+          {
+            "id": "CL_DOSU",
+            "name": "Standard Dose Units (DOSU)",
+            "nciCodelistCode": "C71620",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "MG",
+                "label": "Milligram (mg)",
+                "nciCode": "C28253",
+                "order": 1
+              },
+              {
+                "code": "G",
+                "label": "Gram (g)",
+                "nciCode": "C48155",
+                "order": 2
+              },
+              {
+                "code": "MCG",
+                "label": "Microgram (mcg/µg)",
+                "nciCode": "C48153",
+                "order": 3
+              },
+              {
+                "code": "ML",
+                "label": "Milliliter (mL)",
+                "nciCode": "C28254",
+                "order": 4
+              },
+              {
+                "code": "MG/KG",
+                "label": "Milligrams per Kilogram (mg/kg)",
+                "nciCode": "C67417",
+                "order": 5
+              },
+              {
+                "code": "MG/M2",
+                "label": "Milligrams per m² (mg/m²)",
+                "nciCode": "C67418",
+                "order": 6
+              },
+              {
+                "code": "IU",
+                "label": "International Units (IU)",
+                "nciCode": "C48154",
+                "order": 7
+              },
+              {
+                "code": "TABLETS",
+                "label": "Tablets / Capsules",
+                "nciCode": "C42998",
+                "order": 8
+              }
+            ]
+          },
+          {
+            "id": "CL_MHCAT",
+            "name": "Medical History Body System (MHCAT)",
+            "nciCodelistCode": "C66737",
+            "isStandard": true,
+            "options": [
+              {
+                "code": "CARDIOVASCULAR",
+                "label": "Cardiovascular / Vascular",
+                "nciCode": "C12727",
+                "order": 1
+              },
+              {
+                "code": "RESPIRATORY",
+                "label": "Respiratory / Pulmonary",
+                "nciCode": "C12728",
+                "order": 2
+              },
+              {
+                "code": "GASTROINTESTINAL",
+                "label": "Gastrointestinal / Hepatic",
+                "nciCode": "C12729",
+                "order": 3
+              },
+              {
+                "code": "NEUROLOGICAL",
+                "label": "Neurological / Psychiatric",
+                "nciCode": "C12730",
+                "order": 4
+              },
+              {
+                "code": "ENDOCRINE",
+                "label": "Endocrine / Metabolic (e.g. Diabetes)",
+                "nciCode": "C12731",
+                "order": 5
+              },
+              {
+                "code": "ONCOLOGY",
+                "label": "Oncology / Prior Malignancy",
+                "nciCode": "C12732",
+                "order": 6
+              },
+              {
+                "code": "MUSCULOSKELETAL",
+                "label": "Musculoskeletal / Rheumatology",
+                "nciCode": "C12733",
+                "order": 7
+              },
+              {
+                "code": "OTHER",
+                "label": "Other Medical History",
+                "nciCode": "C17649",
+                "order": 8
+              }
+            ]
+          }
+        ],
+        "valueSets": [
+          {
+            "id": "vs_CL_NY",
+            "name": "No Yes Response (NY) Value Set",
+            "codeListId": "CL_NY",
+            "codeList": {
+              "id": "CL_NY",
+              "name": "No Yes Response (NY)",
+              "nciCodelistCode": "C66741",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "N",
+                  "label": "No",
+                  "nciCode": "C49487",
+                  "order": 1
+                },
+                {
+                  "code": "Y",
+                  "label": "Yes",
+                  "nciCode": "C49488",
+                  "order": 2
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_SEX",
+            "name": "Sex (SEX) Value Set",
+            "codeListId": "CL_SEX",
+            "codeList": {
+              "id": "CL_SEX",
+              "name": "Sex (SEX)",
+              "nciCodelistCode": "C66742",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "M",
+                  "label": "Male",
+                  "nciCode": "C20197",
+                  "order": 1
+                },
+                {
+                  "code": "F",
+                  "label": "Female",
+                  "nciCode": "C16576",
+                  "order": 2
+                },
+                {
+                  "code": "UNDIFFERENTIATED",
+                  "label": "Undifferentiated",
+                  "nciCode": "C45908",
+                  "order": 3
+                },
+                {
+                  "code": "UNKNOWN",
+                  "label": "Unknown",
+                  "nciCode": "C17998",
+                  "order": 4
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_RACE",
+            "name": "Race (RACE) Value Set",
+            "codeListId": "CL_RACE",
+            "codeList": {
+              "id": "CL_RACE",
+              "name": "Race (RACE)",
+              "nciCodelistCode": "C74457",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "AMERICAN INDIAN OR ALASKA NATIVE",
+                  "label": "American Indian or Alaska Native",
+                  "nciCode": "C41259",
+                  "order": 1
+                },
+                {
+                  "code": "ASIAN",
+                  "label": "Asian",
+                  "nciCode": "C41260",
+                  "order": 2
+                },
+                {
+                  "code": "BLACK OR AFRICAN AMERICAN",
+                  "label": "Black or African American",
+                  "nciCode": "C16352",
+                  "order": 3
+                },
+                {
+                  "code": "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER",
+                  "label": "Native Hawaiian or Other Pacific Islander",
+                  "nciCode": "C41219",
+                  "order": 4
+                },
+                {
+                  "code": "WHITE",
+                  "label": "White",
+                  "nciCode": "C41261",
+                  "order": 5
+                },
+                {
+                  "code": "OTHER",
+                  "label": "Other",
+                  "nciCode": "C17649",
+                  "order": 6
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_ETHNIC",
+            "name": "Ethnicity (ETHNIC) Value Set",
+            "codeListId": "CL_ETHNIC",
+            "codeList": {
+              "id": "CL_ETHNIC",
+              "name": "Ethnicity (ETHNIC)",
+              "nciCodelistCode": "C66790",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "HISPANIC OR LATINO",
+                  "label": "Hispanic or Latino",
+                  "nciCode": "C41222",
+                  "order": 1
+                },
+                {
+                  "code": "NOT HISPANIC OR LATINO",
+                  "label": "Not Hispanic or Latino",
+                  "nciCode": "C41221",
+                  "order": 2
+                },
+                {
+                  "code": "NOT REPORTED",
+                  "label": "Not Reported",
+                  "nciCode": "C43234",
+                  "order": 3
+                },
+                {
+                  "code": "UNKNOWN",
+                  "label": "Unknown",
+                  "nciCode": "C17998",
+                  "order": 4
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_AESEV",
+            "name": "Severity / CTCAE Grade (AESEV) Value Set",
+            "codeListId": "CL_AESEV",
+            "codeList": {
+              "id": "CL_AESEV",
+              "name": "Severity / CTCAE Grade (AESEV)",
+              "nciCodelistCode": "C66769",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "GRADE 1 - MILD",
+                  "label": "Grade 1 (Mild / Asymptomatic)",
+                  "nciCode": "C48275",
+                  "order": 1
+                },
+                {
+                  "code": "GRADE 2 - MODERATE",
+                  "label": "Grade 2 (Moderate / Minimal Local Intervention)",
+                  "nciCode": "C48276",
+                  "order": 2
+                },
+                {
+                  "code": "GRADE 3 - SEVERE",
+                  "label": "Grade 3 (Severe / Medically Significant)",
+                  "nciCode": "C48277",
+                  "order": 3
+                },
+                {
+                  "code": "GRADE 4 - LIFE-THREATENING",
+                  "label": "Grade 4 (Life-threatening / Urgent Intervention)",
+                  "nciCode": "C48278",
+                  "order": 4
+                },
+                {
+                  "code": "GRADE 5 - DEATH",
+                  "label": "Grade 5 (Death Related to AE)",
+                  "nciCode": "C48279",
+                  "order": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_AEREL",
+            "name": "Causality / Relationship to Study Drug (AEREL) Value Set",
+            "codeListId": "CL_AEREL",
+            "codeList": {
+              "id": "CL_AEREL",
+              "name": "Causality / Relationship to Study Drug (AEREL)",
+              "nciCodelistCode": "C66768",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "NOT RELATED",
+                  "label": "Not Related",
+                  "nciCode": "C48280",
+                  "order": 1
+                },
+                {
+                  "code": "UNLIKELY RELATED",
+                  "label": "Unlikely Related",
+                  "nciCode": "C48281",
+                  "order": 2
+                },
+                {
+                  "code": "POSSIBLY RELATED",
+                  "label": "Possibly Related",
+                  "nciCode": "C48282",
+                  "order": 3
+                },
+                {
+                  "code": "PROBABLY RELATED",
+                  "label": "Probably Related",
+                  "nciCode": "C48283",
+                  "order": 4
+                },
+                {
+                  "code": "DEFINITELY RELATED",
+                  "label": "Definitely Related",
+                  "nciCode": "C48284",
+                  "order": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_AEOUT",
+            "name": "Outcome of Adverse Event (AEOUT) Value Set",
+            "codeListId": "CL_AEOUT",
+            "codeList": {
+              "id": "CL_AEOUT",
+              "name": "Outcome of Adverse Event (AEOUT)",
+              "nciCodelistCode": "C66767",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "RECOVERED/RESOLVED",
+                  "label": "Recovered / Resolved",
+                  "nciCode": "C49494",
+                  "order": 1
+                },
+                {
+                  "code": "RECOVERING/RESOLVING",
+                  "label": "Recovering / Resolving",
+                  "nciCode": "C49495",
+                  "order": 2
+                },
+                {
+                  "code": "NOT RECOVERED/NOT RESOLVED",
+                  "label": "Not Recovered / Not Resolved",
+                  "nciCode": "C49496",
+                  "order": 3
+                },
+                {
+                  "code": "RECOVERED WITH SEQUELAE",
+                  "label": "Recovered with Sequelae",
+                  "nciCode": "C49497",
+                  "order": 4
+                },
+                {
+                  "code": "FATAL",
+                  "label": "Fatal",
+                  "nciCode": "C49498",
+                  "order": 5
+                },
+                {
+                  "code": "UNKNOWN",
+                  "label": "Unknown",
+                  "nciCode": "C17998",
+                  "order": 6
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_RECIST_RESP",
+            "name": "RECIST 1.1 Target Response (TRRESP) Value Set",
+            "codeListId": "CL_RECIST_RESP",
+            "codeList": {
+              "id": "CL_RECIST_RESP",
+              "name": "RECIST 1.1 Target Response (TRRESP)",
+              "nciCodelistCode": "C96642",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "CR",
+                  "label": "Complete Response (CR)",
+                  "nciCode": "C48270",
+                  "order": 1
+                },
+                {
+                  "code": "PR",
+                  "label": "Partial Response (PR)",
+                  "nciCode": "C48271",
+                  "order": 2
+                },
+                {
+                  "code": "SD",
+                  "label": "Stable Disease (SD)",
+                  "nciCode": "C48272",
+                  "order": 3
+                },
+                {
+                  "code": "PD",
+                  "label": "Progressive Disease (PD)",
+                  "nciCode": "C48273",
+                  "order": 4
+                },
+                {
+                  "code": "NE",
+                  "label": "Not Evaluable (NE)",
+                  "nciCode": "C48274",
+                  "order": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_ROUTE",
+            "name": "Route of Administration (ROUTE) Value Set",
+            "codeListId": "CL_ROUTE",
+            "codeList": {
+              "id": "CL_ROUTE",
+              "name": "Route of Administration (ROUTE)",
+              "nciCodelistCode": "C66729",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "ORAL",
+                  "label": "Oral (PO)",
+                  "nciCode": "C38288",
+                  "order": 1
+                },
+                {
+                  "code": "INTRAVENOUS",
+                  "label": "Intravenous (IV)",
+                  "nciCode": "C38276",
+                  "order": 2
+                },
+                {
+                  "code": "SUBCUTANEOUS",
+                  "label": "Subcutaneous (SC)",
+                  "nciCode": "C38299",
+                  "order": 3
+                },
+                {
+                  "code": "INTRAMUSCULAR",
+                  "label": "Intramuscular (IM)",
+                  "nciCode": "C38209",
+                  "order": 4
+                },
+                {
+                  "code": "TOPICAL",
+                  "label": "Topical",
+                  "nciCode": "C38304",
+                  "order": 5
+                },
+                {
+                  "code": "INHALATION",
+                  "label": "Inhalation",
+                  "nciCode": "C38216",
+                  "order": 6
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DEDEF",
+            "name": "Device Deficiency / Incident Type (DEDEFIC) Value Set",
+            "codeListId": "CL_DEDEF",
+            "codeList": {
+              "id": "CL_DEDEF",
+              "name": "Device Deficiency / Incident Type (DEDEFIC)",
+              "nciCodelistCode": "C112023",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "MALFUNCTION",
+                  "label": "Device Malfunction / Failure",
+                  "nciCode": "C48285",
+                  "order": 1
+                },
+                {
+                  "code": "USE ERROR",
+                  "label": "User / Operator Error",
+                  "nciCode": "C50414",
+                  "order": 2
+                },
+                {
+                  "code": "INADEQUATE LABELING",
+                  "label": "Inadequate IFU / Labeling",
+                  "nciCode": "C112025",
+                  "order": 3
+                },
+                {
+                  "code": "EARLY DETERIORATION",
+                  "label": "Premature Wear / Deterioration",
+                  "nciCode": "C112026",
+                  "order": 4
+                },
+                {
+                  "code": "OTHER DEFICIENCY",
+                  "label": "Other Device Deficiency",
+                  "nciCode": "C17649",
+                  "order": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DEREL",
+            "name": "Device Relationship / Causality (DEREL) Value Set",
+            "codeListId": "CL_DEREL",
+            "codeList": {
+              "id": "CL_DEREL",
+              "name": "Device Relationship / Causality (DEREL)",
+              "nciCodelistCode": "C112024",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "DEFINITELY RELATED",
+                  "label": "Definitely Related to Device",
+                  "nciCode": "C48284",
+                  "order": 1
+                },
+                {
+                  "code": "PROBABLY RELATED",
+                  "label": "Probably Related to Device",
+                  "nciCode": "C48283",
+                  "order": 2
+                },
+                {
+                  "code": "POSSIBLY RELATED",
+                  "label": "Possibly Related to Device",
+                  "nciCode": "C48282",
+                  "order": 3
+                },
+                {
+                  "code": "NOT RELATED",
+                  "label": "Not Related to Device",
+                  "nciCode": "C48280",
+                  "order": 4
+                },
+                {
+                  "code": "PROCEDURE RELATED",
+                  "label": "Related to Implantation Procedure Only",
+                  "nciCode": "C112027",
+                  "order": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DEACT",
+            "name": "Action Taken with Medical Device (DEACT) Value Set",
+            "codeListId": "CL_DEACT",
+            "codeList": {
+              "id": "CL_DEACT",
+              "name": "Action Taken with Medical Device (DEACT)",
+              "nciCodelistCode": "C112028",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "EXPLANTED/REMOVED",
+                  "label": "Explanted / Removed from Subject",
+                  "nciCode": "C112029",
+                  "order": 1
+                },
+                {
+                  "code": "REPLACED",
+                  "label": "Replaced with New Device",
+                  "nciCode": "C112030",
+                  "order": 2
+                },
+                {
+                  "code": "REPROGRAMMED/ADJUSTED",
+                  "label": "Reprogrammed / Settings Adjusted",
+                  "nciCode": "C112031",
+                  "order": 3
+                },
+                {
+                  "code": "REPAIRED",
+                  "label": "Repaired In-Situ",
+                  "nciCode": "C112032",
+                  "order": 4
+                },
+                {
+                  "code": "NO ACTION TAKEN",
+                  "label": "No Action Taken / Kept In-Situ",
+                  "nciCode": "C48286",
+                  "order": 5
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DISTAT",
+            "name": "Device Implantation / Tracking Status (DISTAT) Value Set",
+            "codeListId": "CL_DISTAT",
+            "codeList": {
+              "id": "CL_DISTAT",
+              "name": "Device Implantation / Tracking Status (DISTAT)",
+              "nciCodelistCode": "C112033",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "IMPLANTED ACTIVE",
+                  "label": "Implanted & Active In-Situ",
+                  "nciCode": "C112034",
+                  "order": 1
+                },
+                {
+                  "code": "EXPLANTED",
+                  "label": "Explanted",
+                  "nciCode": "C112029",
+                  "order": 2
+                },
+                {
+                  "code": "DEPLOYMENT FAILED",
+                  "label": "Deployment Failed / Never Implanted",
+                  "nciCode": "C112035",
+                  "order": 3
+                },
+                {
+                  "code": "STORED",
+                  "label": "In Site Inventory / Stored",
+                  "nciCode": "C112036",
+                  "order": 4
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DUPROC",
+            "name": "Procedural Deployment Success (DUPROC) Value Set",
+            "codeListId": "CL_DUPROC",
+            "codeList": {
+              "id": "CL_DUPROC",
+              "name": "Procedural Deployment Success (DUPROC)",
+              "nciCodelistCode": "C112037",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "COMPLETE SUCCESS",
+                  "label": "Complete Procedural Success",
+                  "nciCode": "C112038",
+                  "order": 1
+                },
+                {
+                  "code": "PARTIAL SUCCESS",
+                  "label": "Partial Success (Sub-optimal deployment)",
+                  "nciCode": "C112039",
+                  "order": 2
+                },
+                {
+                  "code": "PROCEDURE ABORTED",
+                  "label": "Procedure Aborted / Cancelled",
+                  "nciCode": "C112040",
+                  "order": 3
+                },
+                {
+                  "code": "CONVERTED SURGERY",
+                  "label": "Converted to Emergent Open Surgery",
+                  "nciCode": "C112041",
+                  "order": 4
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DSCONT",
+            "name": "Disposition & Discontinuation Reason (DSCONT) Value Set",
+            "codeListId": "CL_DSCONT",
+            "codeList": {
+              "id": "CL_DSCONT",
+              "name": "Disposition & Discontinuation Reason (DSCONT)",
+              "nciCodelistCode": "C66735",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "COMPLETED",
+                  "label": "Completed Protocol Defined Period",
+                  "nciCode": "C25250",
+                  "order": 1
+                },
+                {
+                  "code": "ADVERSE EVENT",
+                  "label": "Adverse Event / Safety Concern",
+                  "nciCode": "C41331",
+                  "order": 2
+                },
+                {
+                  "code": "LACK OF EFFICACY",
+                  "label": "Lack of Efficacy / Disease Progression",
+                  "nciCode": "C48269",
+                  "order": 3
+                },
+                {
+                  "code": "WITHDRAWAL BY SUBJECT",
+                  "label": "Withdrawal of Consent by Subject",
+                  "nciCode": "C49491",
+                  "order": 4
+                },
+                {
+                  "code": "LOST TO FOLLOW-UP",
+                  "label": "Lost to Follow-Up",
+                  "nciCode": "C48288",
+                  "order": 5
+                },
+                {
+                  "code": "PHYSICIAN DECISION",
+                  "label": "Investigator / Physician Decision",
+                  "nciCode": "C49490",
+                  "order": 6
+                },
+                {
+                  "code": "PROTOCOL VIOLATION",
+                  "label": "Protocol Deviation / Violation",
+                  "nciCode": "C49492",
+                  "order": 7
+                },
+                {
+                  "code": "DEATH",
+                  "label": "Death",
+                  "nciCode": "C28554",
+                  "order": 8
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DARECON",
+            "name": "Drug Accountability Reconciliation (DARECON) Value Set",
+            "codeListId": "CL_DARECON",
+            "codeList": {
+              "id": "CL_DARECON",
+              "name": "Drug Accountability Reconciliation (DARECON)",
+              "nciCodelistCode": "C66736",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "RECONCILED",
+                  "label": "Fully Reconciled (100% Accounted)",
+                  "nciCode": "C49488",
+                  "order": 1
+                },
+                {
+                  "code": "DISCREPANCY",
+                  "label": "Discrepancy Documented",
+                  "nciCode": "C48285",
+                  "order": 2
+                },
+                {
+                  "code": "LOST/DESTROYED",
+                  "label": "Lost / Accidental Destruction",
+                  "nciCode": "C48286",
+                  "order": 3
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_DOSU",
+            "name": "Standard Dose Units (DOSU) Value Set",
+            "codeListId": "CL_DOSU",
+            "codeList": {
+              "id": "CL_DOSU",
+              "name": "Standard Dose Units (DOSU)",
+              "nciCodelistCode": "C71620",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "MG",
+                  "label": "Milligram (mg)",
+                  "nciCode": "C28253",
+                  "order": 1
+                },
+                {
+                  "code": "G",
+                  "label": "Gram (g)",
+                  "nciCode": "C48155",
+                  "order": 2
+                },
+                {
+                  "code": "MCG",
+                  "label": "Microgram (mcg/µg)",
+                  "nciCode": "C48153",
+                  "order": 3
+                },
+                {
+                  "code": "ML",
+                  "label": "Milliliter (mL)",
+                  "nciCode": "C28254",
+                  "order": 4
+                },
+                {
+                  "code": "MG/KG",
+                  "label": "Milligrams per Kilogram (mg/kg)",
+                  "nciCode": "C67417",
+                  "order": 5
+                },
+                {
+                  "code": "MG/M2",
+                  "label": "Milligrams per m² (mg/m²)",
+                  "nciCode": "C67418",
+                  "order": 6
+                },
+                {
+                  "code": "IU",
+                  "label": "International Units (IU)",
+                  "nciCode": "C48154",
+                  "order": 7
+                },
+                {
+                  "code": "TABLETS",
+                  "label": "Tablets / Capsules",
+                  "nciCode": "C42998",
+                  "order": 8
+                }
+              ]
+            }
+          },
+          {
+            "id": "vs_CL_MHCAT",
+            "name": "Medical History Body System (MHCAT) Value Set",
+            "codeListId": "CL_MHCAT",
+            "codeList": {
+              "id": "CL_MHCAT",
+              "name": "Medical History Body System (MHCAT)",
+              "nciCodelistCode": "C66737",
+              "isStandard": true,
+              "options": [
+                {
+                  "code": "CARDIOVASCULAR",
+                  "label": "Cardiovascular / Vascular",
+                  "nciCode": "C12727",
+                  "order": 1
+                },
+                {
+                  "code": "RESPIRATORY",
+                  "label": "Respiratory / Pulmonary",
+                  "nciCode": "C12728",
+                  "order": 2
+                },
+                {
+                  "code": "GASTROINTESTINAL",
+                  "label": "Gastrointestinal / Hepatic",
+                  "nciCode": "C12729",
+                  "order": 3
+                },
+                {
+                  "code": "NEUROLOGICAL",
+                  "label": "Neurological / Psychiatric",
+                  "nciCode": "C12730",
+                  "order": 4
+                },
+                {
+                  "code": "ENDOCRINE",
+                  "label": "Endocrine / Metabolic (e.g. Diabetes)",
+                  "nciCode": "C12731",
+                  "order": 5
+                },
+                {
+                  "code": "ONCOLOGY",
+                  "label": "Oncology / Prior Malignancy",
+                  "nciCode": "C12732",
+                  "order": 6
+                },
+                {
+                  "code": "MUSCULOSKELETAL",
+                  "label": "Musculoskeletal / Rheumatology",
+                  "nciCode": "C12733",
+                  "order": 7
+                },
+                {
+                  "code": "OTHER",
+                  "label": "Other Medical History",
+                  "nciCode": "C17649",
+                  "order": 8
+                }
+              ]
+            }
+          }
+        ],
+        "rules": [
+          {
+            "id": "rule_sched_v_screen",
+            "name": "Schedule Rule: Screening (Day -28 to -1)",
+            "description": "Schedule window rule for Screening (Day -28 to -1): Target Day -1 (-27/+0 days; allowed window Day -28 to Day -1)",
+            "triggerFieldIds": ["v_screen_day"],
+            "actionType": "raise_query",
+            "targetFieldId": "v_screen",
+            "conditions": [
+              {
+                "fieldId": "v_screen_day",
+                "operator": "gte",
+                "value": -28
+              },
+              {
+                "fieldId": "v_screen_day",
+                "operator": "lte",
+                "value": -1
+              }
+            ],
+            "logicalOperator": "AND",
+            "querySeverity": "warning",
+            "queryMessage": "Visit Screening (Day -28 to -1) is outside allowed schedule window [Day -28, Day -1]",
+            "formulaExpression": "visit_day >= -28 && visit_day <= -1"
+          },
+          {
+            "id": "rule_sched_v_c1d1",
+            "name": "Schedule Rule: Cycle 1 Day 1 (Baseline)",
+            "description": "Schedule window rule for Cycle 1 Day 1 (Baseline): Target Day 1 (-0/+2 days; allowed window Day 1 to Day 3)",
+            "triggerFieldIds": ["v_c1d1_day"],
+            "actionType": "raise_query",
+            "targetFieldId": "v_c1d1",
+            "conditions": [
+              {
+                "fieldId": "v_c1d1_day",
+                "operator": "gte",
+                "value": 1
+              },
+              {
+                "fieldId": "v_c1d1_day",
+                "operator": "lte",
+                "value": 3
+              }
+            ],
+            "logicalOperator": "AND",
+            "querySeverity": "warning",
+            "queryMessage": "Visit Cycle 1 Day 1 (Baseline) is outside allowed schedule window [Day 1, Day 3]",
+            "formulaExpression": "visit_day >= 1 && visit_day <= 3"
+          },
+          {
+            "id": "rule_sched_v_c2d1",
+            "name": "Schedule Rule: Cycle 2 Day 1",
+            "description": "Schedule window rule for Cycle 2 Day 1: Target Day 22 (-3/+3 days; allowed window Day 19 to Day 25)",
+            "triggerFieldIds": ["v_c2d1_day"],
+            "actionType": "raise_query",
+            "targetFieldId": "v_c2d1",
+            "conditions": [
+              {
+                "fieldId": "v_c2d1_day",
+                "operator": "gte",
+                "value": 19
+              },
+              {
+                "fieldId": "v_c2d1_day",
+                "operator": "lte",
+                "value": 25
+              }
+            ],
+            "logicalOperator": "AND",
+            "querySeverity": "warning",
+            "queryMessage": "Visit Cycle 2 Day 1 is outside allowed schedule window [Day 19, Day 25]",
+            "formulaExpression": "visit_day >= 19 && visit_day <= 25"
+          },
+          {
+            "id": "rule_sched_v_c3d1",
+            "name": "Schedule Rule: Cycle 3 Day 1 (Restaging CT/MRI)",
+            "description": "Schedule window rule for Cycle 3 Day 1 (Restaging CT/MRI): Target Day 43 (-3/+3 days; allowed window Day 40 to Day 46)",
+            "triggerFieldIds": ["v_c3d1_day"],
+            "actionType": "raise_query",
+            "targetFieldId": "v_c3d1",
+            "conditions": [
+              {
+                "fieldId": "v_c3d1_day",
+                "operator": "gte",
+                "value": 40
+              },
+              {
+                "fieldId": "v_c3d1_day",
+                "operator": "lte",
+                "value": 46
+              }
+            ],
+            "logicalOperator": "AND",
+            "querySeverity": "warning",
+            "queryMessage": "Visit Cycle 3 Day 1 (Restaging CT/MRI) is outside allowed schedule window [Day 40, Day 46]",
+            "formulaExpression": "visit_day >= 40 && visit_day <= 46"
+          },
+          {
+            "id": "rule_sched_v_eos",
+            "name": "Schedule Rule: End of Study / Safety Follow-up",
+            "description": "Schedule window rule for End of Study / Safety Follow-up: Target Day 120 (-7/+7 days; allowed window Day 113 to Day 127)",
+            "triggerFieldIds": ["v_eos_day"],
+            "actionType": "raise_query",
+            "targetFieldId": "v_eos",
+            "conditions": [
+              {
+                "fieldId": "v_eos_day",
+                "operator": "gte",
+                "value": 113
+              },
+              {
+                "fieldId": "v_eos_day",
+                "operator": "lte",
+                "value": 127
+              }
+            ],
+            "logicalOperator": "AND",
+            "querySeverity": "warning",
+            "queryMessage": "Visit End of Study / Safety Follow-up is outside allowed schedule window [Day 113, Day 127]",
+            "formulaExpression": "visit_day >= 113 && visit_day <= 127"
+          },
+          {
+            "id": "rule_sched_v_unsched",
+            "name": "Schedule Rule: Unscheduled Visit",
+            "description": "Schedule window rule for Unscheduled Visit: Target Day 0 (-0/+0 days; allowed window Day 0 to Day 0)",
+            "triggerFieldIds": ["v_unsched_day"],
+            "actionType": "raise_query",
+            "targetFieldId": "v_unsched",
+            "conditions": [
+              {
+                "fieldId": "v_unsched_day",
+                "operator": "gte",
+                "value": 0
+              },
+              {
+                "fieldId": "v_unsched_day",
+                "operator": "lte",
+                "value": 0
+              }
+            ],
+            "logicalOperator": "AND",
+            "querySeverity": "warning",
+            "queryMessage": "Visit Unscheduled Visit is outside allowed schedule window [Day 0, Day 0]",
+            "formulaExpression": "visit_day >= 0 && visit_day <= 0"
+          }
+        ]
+      }
+    ],
+    "codeLists": [
+      {
+        "id": "CL_NY",
+        "name": "No Yes Response (NY)",
+        "nciCodelistCode": "C66741",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "N",
+            "label": "No",
+            "nciCode": "C49487",
+            "order": 1
+          },
+          {
+            "code": "Y",
+            "label": "Yes",
+            "nciCode": "C49488",
+            "order": 2
+          }
+        ]
+      },
+      {
+        "id": "CL_SEX",
+        "name": "Sex (SEX)",
+        "nciCodelistCode": "C66742",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "M",
+            "label": "Male",
+            "nciCode": "C20197",
+            "order": 1
+          },
+          {
+            "code": "F",
+            "label": "Female",
+            "nciCode": "C16576",
+            "order": 2
+          },
+          {
+            "code": "UNDIFFERENTIATED",
+            "label": "Undifferentiated",
+            "nciCode": "C45908",
+            "order": 3
+          },
+          {
+            "code": "UNKNOWN",
+            "label": "Unknown",
+            "nciCode": "C17998",
+            "order": 4
+          }
+        ]
+      },
+      {
+        "id": "CL_RACE",
+        "name": "Race (RACE)",
+        "nciCodelistCode": "C74457",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "AMERICAN INDIAN OR ALASKA NATIVE",
+            "label": "American Indian or Alaska Native",
+            "nciCode": "C41259",
+            "order": 1
+          },
+          {
+            "code": "ASIAN",
+            "label": "Asian",
+            "nciCode": "C41260",
+            "order": 2
+          },
+          {
+            "code": "BLACK OR AFRICAN AMERICAN",
+            "label": "Black or African American",
+            "nciCode": "C16352",
+            "order": 3
+          },
+          {
+            "code": "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER",
+            "label": "Native Hawaiian or Other Pacific Islander",
+            "nciCode": "C41219",
+            "order": 4
+          },
+          {
+            "code": "WHITE",
+            "label": "White",
+            "nciCode": "C41261",
+            "order": 5
+          },
+          {
+            "code": "OTHER",
+            "label": "Other",
+            "nciCode": "C17649",
+            "order": 6
+          }
+        ]
+      },
+      {
+        "id": "CL_ETHNIC",
+        "name": "Ethnicity (ETHNIC)",
+        "nciCodelistCode": "C66790",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "HISPANIC OR LATINO",
+            "label": "Hispanic or Latino",
+            "nciCode": "C41222",
+            "order": 1
+          },
+          {
+            "code": "NOT HISPANIC OR LATINO",
+            "label": "Not Hispanic or Latino",
+            "nciCode": "C41221",
+            "order": 2
+          },
+          {
+            "code": "NOT REPORTED",
+            "label": "Not Reported",
+            "nciCode": "C43234",
+            "order": 3
+          },
+          {
+            "code": "UNKNOWN",
+            "label": "Unknown",
+            "nciCode": "C17998",
+            "order": 4
+          }
+        ]
+      },
+      {
+        "id": "CL_AESEV",
+        "name": "Severity / CTCAE Grade (AESEV)",
+        "nciCodelistCode": "C66769",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "GRADE 1 - MILD",
+            "label": "Grade 1 (Mild / Asymptomatic)",
+            "nciCode": "C48275",
+            "order": 1
+          },
+          {
+            "code": "GRADE 2 - MODERATE",
+            "label": "Grade 2 (Moderate / Minimal Local Intervention)",
+            "nciCode": "C48276",
+            "order": 2
+          },
+          {
+            "code": "GRADE 3 - SEVERE",
+            "label": "Grade 3 (Severe / Medically Significant)",
+            "nciCode": "C48277",
+            "order": 3
+          },
+          {
+            "code": "GRADE 4 - LIFE-THREATENING",
+            "label": "Grade 4 (Life-threatening / Urgent Intervention)",
+            "nciCode": "C48278",
+            "order": 4
+          },
+          {
+            "code": "GRADE 5 - DEATH",
+            "label": "Grade 5 (Death Related to AE)",
+            "nciCode": "C48279",
+            "order": 5
+          }
+        ]
+      },
+      {
+        "id": "CL_AEREL",
+        "name": "Causality / Relationship to Study Drug (AEREL)",
+        "nciCodelistCode": "C66768",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "NOT RELATED",
+            "label": "Not Related",
+            "nciCode": "C48280",
+            "order": 1
+          },
+          {
+            "code": "UNLIKELY RELATED",
+            "label": "Unlikely Related",
+            "nciCode": "C48281",
+            "order": 2
+          },
+          {
+            "code": "POSSIBLY RELATED",
+            "label": "Possibly Related",
+            "nciCode": "C48282",
+            "order": 3
+          },
+          {
+            "code": "PROBABLY RELATED",
+            "label": "Probably Related",
+            "nciCode": "C48283",
+            "order": 4
+          },
+          {
+            "code": "DEFINITELY RELATED",
+            "label": "Definitely Related",
+            "nciCode": "C48284",
+            "order": 5
+          }
+        ]
+      },
+      {
+        "id": "CL_AEOUT",
+        "name": "Outcome of Adverse Event (AEOUT)",
+        "nciCodelistCode": "C66767",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "RECOVERED/RESOLVED",
+            "label": "Recovered / Resolved",
+            "nciCode": "C49494",
+            "order": 1
+          },
+          {
+            "code": "RECOVERING/RESOLVING",
+            "label": "Recovering / Resolving",
+            "nciCode": "C49495",
+            "order": 2
+          },
+          {
+            "code": "NOT RECOVERED/NOT RESOLVED",
+            "label": "Not Recovered / Not Resolved",
+            "nciCode": "C49496",
+            "order": 3
+          },
+          {
+            "code": "RECOVERED WITH SEQUELAE",
+            "label": "Recovered with Sequelae",
+            "nciCode": "C49497",
+            "order": 4
+          },
+          {
+            "code": "FATAL",
+            "label": "Fatal",
+            "nciCode": "C49498",
+            "order": 5
+          },
+          {
+            "code": "UNKNOWN",
+            "label": "Unknown",
+            "nciCode": "C17998",
+            "order": 6
+          }
+        ]
+      },
+      {
+        "id": "CL_RECIST_RESP",
+        "name": "RECIST 1.1 Target Response (TRRESP)",
+        "nciCodelistCode": "C96642",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "CR",
+            "label": "Complete Response (CR)",
+            "nciCode": "C48270",
+            "order": 1
+          },
+          {
+            "code": "PR",
+            "label": "Partial Response (PR)",
+            "nciCode": "C48271",
+            "order": 2
+          },
+          {
+            "code": "SD",
+            "label": "Stable Disease (SD)",
+            "nciCode": "C48272",
+            "order": 3
+          },
+          {
+            "code": "PD",
+            "label": "Progressive Disease (PD)",
+            "nciCode": "C48273",
+            "order": 4
+          },
+          {
+            "code": "NE",
+            "label": "Not Evaluable (NE)",
+            "nciCode": "C48274",
+            "order": 5
+          }
+        ]
+      },
+      {
+        "id": "CL_ROUTE",
+        "name": "Route of Administration (ROUTE)",
+        "nciCodelistCode": "C66729",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "ORAL",
+            "label": "Oral (PO)",
+            "nciCode": "C38288",
+            "order": 1
+          },
+          {
+            "code": "INTRAVENOUS",
+            "label": "Intravenous (IV)",
+            "nciCode": "C38276",
+            "order": 2
+          },
+          {
+            "code": "SUBCUTANEOUS",
+            "label": "Subcutaneous (SC)",
+            "nciCode": "C38299",
+            "order": 3
+          },
+          {
+            "code": "INTRAMUSCULAR",
+            "label": "Intramuscular (IM)",
+            "nciCode": "C38209",
+            "order": 4
+          },
+          {
+            "code": "TOPICAL",
+            "label": "Topical",
+            "nciCode": "C38304",
+            "order": 5
+          },
+          {
+            "code": "INHALATION",
+            "label": "Inhalation",
+            "nciCode": "C38216",
+            "order": 6
+          }
+        ]
+      },
+      {
+        "id": "CL_DEDEF",
+        "name": "Device Deficiency / Incident Type (DEDEFIC)",
+        "nciCodelistCode": "C112023",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "MALFUNCTION",
+            "label": "Device Malfunction / Failure",
+            "nciCode": "C48285",
+            "order": 1
+          },
+          {
+            "code": "USE ERROR",
+            "label": "User / Operator Error",
+            "nciCode": "C50414",
+            "order": 2
+          },
+          {
+            "code": "INADEQUATE LABELING",
+            "label": "Inadequate IFU / Labeling",
+            "nciCode": "C112025",
+            "order": 3
+          },
+          {
+            "code": "EARLY DETERIORATION",
+            "label": "Premature Wear / Deterioration",
+            "nciCode": "C112026",
+            "order": 4
+          },
+          {
+            "code": "OTHER DEFICIENCY",
+            "label": "Other Device Deficiency",
+            "nciCode": "C17649",
+            "order": 5
+          }
+        ]
+      },
+      {
+        "id": "CL_DEREL",
+        "name": "Device Relationship / Causality (DEREL)",
+        "nciCodelistCode": "C112024",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "DEFINITELY RELATED",
+            "label": "Definitely Related to Device",
+            "nciCode": "C48284",
+            "order": 1
+          },
+          {
+            "code": "PROBABLY RELATED",
+            "label": "Probably Related to Device",
+            "nciCode": "C48283",
+            "order": 2
+          },
+          {
+            "code": "POSSIBLY RELATED",
+            "label": "Possibly Related to Device",
+            "nciCode": "C48282",
+            "order": 3
+          },
+          {
+            "code": "NOT RELATED",
+            "label": "Not Related to Device",
+            "nciCode": "C48280",
+            "order": 4
+          },
+          {
+            "code": "PROCEDURE RELATED",
+            "label": "Related to Implantation Procedure Only",
+            "nciCode": "C112027",
+            "order": 5
+          }
+        ]
+      },
+      {
+        "id": "CL_DEACT",
+        "name": "Action Taken with Medical Device (DEACT)",
+        "nciCodelistCode": "C112028",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "EXPLANTED/REMOVED",
+            "label": "Explanted / Removed from Subject",
+            "nciCode": "C112029",
+            "order": 1
+          },
+          {
+            "code": "REPLACED",
+            "label": "Replaced with New Device",
+            "nciCode": "C112030",
+            "order": 2
+          },
+          {
+            "code": "REPROGRAMMED/ADJUSTED",
+            "label": "Reprogrammed / Settings Adjusted",
+            "nciCode": "C112031",
+            "order": 3
+          },
+          {
+            "code": "REPAIRED",
+            "label": "Repaired In-Situ",
+            "nciCode": "C112032",
+            "order": 4
+          },
+          {
+            "code": "NO ACTION TAKEN",
+            "label": "No Action Taken / Kept In-Situ",
+            "nciCode": "C48286",
+            "order": 5
+          }
+        ]
+      },
+      {
+        "id": "CL_DISTAT",
+        "name": "Device Implantation / Tracking Status (DISTAT)",
+        "nciCodelistCode": "C112033",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "IMPLANTED ACTIVE",
+            "label": "Implanted & Active In-Situ",
+            "nciCode": "C112034",
+            "order": 1
+          },
+          {
+            "code": "EXPLANTED",
+            "label": "Explanted",
+            "nciCode": "C112029",
+            "order": 2
+          },
+          {
+            "code": "DEPLOYMENT FAILED",
+            "label": "Deployment Failed / Never Implanted",
+            "nciCode": "C112035",
+            "order": 3
+          },
+          {
+            "code": "STORED",
+            "label": "In Site Inventory / Stored",
+            "nciCode": "C112036",
+            "order": 4
+          }
+        ]
+      },
+      {
+        "id": "CL_DUPROC",
+        "name": "Procedural Deployment Success (DUPROC)",
+        "nciCodelistCode": "C112037",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "COMPLETE SUCCESS",
+            "label": "Complete Procedural Success",
+            "nciCode": "C112038",
+            "order": 1
+          },
+          {
+            "code": "PARTIAL SUCCESS",
+            "label": "Partial Success (Sub-optimal deployment)",
+            "nciCode": "C112039",
+            "order": 2
+          },
+          {
+            "code": "PROCEDURE ABORTED",
+            "label": "Procedure Aborted / Cancelled",
+            "nciCode": "C112040",
+            "order": 3
+          },
+          {
+            "code": "CONVERTED SURGERY",
+            "label": "Converted to Emergent Open Surgery",
+            "nciCode": "C112041",
+            "order": 4
+          }
+        ]
+      },
+      {
+        "id": "CL_DSCONT",
+        "name": "Disposition & Discontinuation Reason (DSCONT)",
+        "nciCodelistCode": "C66735",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "COMPLETED",
+            "label": "Completed Protocol Defined Period",
+            "nciCode": "C25250",
+            "order": 1
+          },
+          {
+            "code": "ADVERSE EVENT",
+            "label": "Adverse Event / Safety Concern",
+            "nciCode": "C41331",
+            "order": 2
+          },
+          {
+            "code": "LACK OF EFFICACY",
+            "label": "Lack of Efficacy / Disease Progression",
+            "nciCode": "C48269",
+            "order": 3
+          },
+          {
+            "code": "WITHDRAWAL BY SUBJECT",
+            "label": "Withdrawal of Consent by Subject",
+            "nciCode": "C49491",
+            "order": 4
+          },
+          {
+            "code": "LOST TO FOLLOW-UP",
+            "label": "Lost to Follow-Up",
+            "nciCode": "C48288",
+            "order": 5
+          },
+          {
+            "code": "PHYSICIAN DECISION",
+            "label": "Investigator / Physician Decision",
+            "nciCode": "C49490",
+            "order": 6
+          },
+          {
+            "code": "PROTOCOL VIOLATION",
+            "label": "Protocol Deviation / Violation",
+            "nciCode": "C49492",
+            "order": 7
+          },
+          {
+            "code": "DEATH",
+            "label": "Death",
+            "nciCode": "C28554",
+            "order": 8
+          }
+        ]
+      },
+      {
+        "id": "CL_DARECON",
+        "name": "Drug Accountability Reconciliation (DARECON)",
+        "nciCodelistCode": "C66736",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "RECONCILED",
+            "label": "Fully Reconciled (100% Accounted)",
+            "nciCode": "C49488",
+            "order": 1
+          },
+          {
+            "code": "DISCREPANCY",
+            "label": "Discrepancy Documented",
+            "nciCode": "C48285",
+            "order": 2
+          },
+          {
+            "code": "LOST/DESTROYED",
+            "label": "Lost / Accidental Destruction",
+            "nciCode": "C48286",
+            "order": 3
+          }
+        ]
+      },
+      {
+        "id": "CL_DOSU",
+        "name": "Standard Dose Units (DOSU)",
+        "nciCodelistCode": "C71620",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "MG",
+            "label": "Milligram (mg)",
+            "nciCode": "C28253",
+            "order": 1
+          },
+          {
+            "code": "G",
+            "label": "Gram (g)",
+            "nciCode": "C48155",
+            "order": 2
+          },
+          {
+            "code": "MCG",
+            "label": "Microgram (mcg/µg)",
+            "nciCode": "C48153",
+            "order": 3
+          },
+          {
+            "code": "ML",
+            "label": "Milliliter (mL)",
+            "nciCode": "C28254",
+            "order": 4
+          },
+          {
+            "code": "MG/KG",
+            "label": "Milligrams per Kilogram (mg/kg)",
+            "nciCode": "C67417",
+            "order": 5
+          },
+          {
+            "code": "MG/M2",
+            "label": "Milligrams per m² (mg/m²)",
+            "nciCode": "C67418",
+            "order": 6
+          },
+          {
+            "code": "IU",
+            "label": "International Units (IU)",
+            "nciCode": "C48154",
+            "order": 7
+          },
+          {
+            "code": "TABLETS",
+            "label": "Tablets / Capsules",
+            "nciCode": "C42998",
+            "order": 8
+          }
+        ]
+      },
+      {
+        "id": "CL_MHCAT",
+        "name": "Medical History Body System (MHCAT)",
+        "nciCodelistCode": "C66737",
+        "isStandard": true,
+        "options": [
+          {
+            "code": "CARDIOVASCULAR",
+            "label": "Cardiovascular / Vascular",
+            "nciCode": "C12727",
+            "order": 1
+          },
+          {
+            "code": "RESPIRATORY",
+            "label": "Respiratory / Pulmonary",
+            "nciCode": "C12728",
+            "order": 2
+          },
+          {
+            "code": "GASTROINTESTINAL",
+            "label": "Gastrointestinal / Hepatic",
+            "nciCode": "C12729",
+            "order": 3
+          },
+          {
+            "code": "NEUROLOGICAL",
+            "label": "Neurological / Psychiatric",
+            "nciCode": "C12730",
+            "order": 4
+          },
+          {
+            "code": "ENDOCRINE",
+            "label": "Endocrine / Metabolic (e.g. Diabetes)",
+            "nciCode": "C12731",
+            "order": 5
+          },
+          {
+            "code": "ONCOLOGY",
+            "label": "Oncology / Prior Malignancy",
+            "nciCode": "C12732",
+            "order": 6
+          },
+          {
+            "code": "MUSCULOSKELETAL",
+            "label": "Musculoskeletal / Rheumatology",
+            "nciCode": "C12733",
+            "order": 7
+          },
+          {
+            "code": "OTHER",
+            "label": "Other Medical History",
+            "nciCode": "C17649",
+            "order": 8
+          }
+        ]
+      }
+    ],
+    "valueSets": [
+      {
+        "id": "vs_CL_NY",
+        "name": "No Yes Response (NY) Value Set",
+        "codeListId": "CL_NY",
+        "codeList": {
+          "id": "CL_NY",
+          "name": "No Yes Response (NY)",
+          "nciCodelistCode": "C66741",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "N",
+              "label": "No",
+              "nciCode": "C49487",
+              "order": 1
+            },
+            {
+              "code": "Y",
+              "label": "Yes",
+              "nciCode": "C49488",
+              "order": 2
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_SEX",
+        "name": "Sex (SEX) Value Set",
+        "codeListId": "CL_SEX",
+        "codeList": {
+          "id": "CL_SEX",
+          "name": "Sex (SEX)",
+          "nciCodelistCode": "C66742",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "M",
+              "label": "Male",
+              "nciCode": "C20197",
+              "order": 1
+            },
+            {
+              "code": "F",
+              "label": "Female",
+              "nciCode": "C16576",
+              "order": 2
+            },
+            {
+              "code": "UNDIFFERENTIATED",
+              "label": "Undifferentiated",
+              "nciCode": "C45908",
+              "order": 3
+            },
+            {
+              "code": "UNKNOWN",
+              "label": "Unknown",
+              "nciCode": "C17998",
+              "order": 4
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_RACE",
+        "name": "Race (RACE) Value Set",
+        "codeListId": "CL_RACE",
+        "codeList": {
+          "id": "CL_RACE",
+          "name": "Race (RACE)",
+          "nciCodelistCode": "C74457",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "AMERICAN INDIAN OR ALASKA NATIVE",
+              "label": "American Indian or Alaska Native",
+              "nciCode": "C41259",
+              "order": 1
+            },
+            {
+              "code": "ASIAN",
+              "label": "Asian",
+              "nciCode": "C41260",
+              "order": 2
+            },
+            {
+              "code": "BLACK OR AFRICAN AMERICAN",
+              "label": "Black or African American",
+              "nciCode": "C16352",
+              "order": 3
+            },
+            {
+              "code": "NATIVE HAWAIIAN OR OTHER PACIFIC ISLANDER",
+              "label": "Native Hawaiian or Other Pacific Islander",
+              "nciCode": "C41219",
+              "order": 4
+            },
+            {
+              "code": "WHITE",
+              "label": "White",
+              "nciCode": "C41261",
+              "order": 5
+            },
+            {
+              "code": "OTHER",
+              "label": "Other",
+              "nciCode": "C17649",
+              "order": 6
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_ETHNIC",
+        "name": "Ethnicity (ETHNIC) Value Set",
+        "codeListId": "CL_ETHNIC",
+        "codeList": {
+          "id": "CL_ETHNIC",
+          "name": "Ethnicity (ETHNIC)",
+          "nciCodelistCode": "C66790",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "HISPANIC OR LATINO",
+              "label": "Hispanic or Latino",
+              "nciCode": "C41222",
+              "order": 1
+            },
+            {
+              "code": "NOT HISPANIC OR LATINO",
+              "label": "Not Hispanic or Latino",
+              "nciCode": "C41221",
+              "order": 2
+            },
+            {
+              "code": "NOT REPORTED",
+              "label": "Not Reported",
+              "nciCode": "C43234",
+              "order": 3
+            },
+            {
+              "code": "UNKNOWN",
+              "label": "Unknown",
+              "nciCode": "C17998",
+              "order": 4
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_AESEV",
+        "name": "Severity / CTCAE Grade (AESEV) Value Set",
+        "codeListId": "CL_AESEV",
+        "codeList": {
+          "id": "CL_AESEV",
+          "name": "Severity / CTCAE Grade (AESEV)",
+          "nciCodelistCode": "C66769",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "GRADE 1 - MILD",
+              "label": "Grade 1 (Mild / Asymptomatic)",
+              "nciCode": "C48275",
+              "order": 1
+            },
+            {
+              "code": "GRADE 2 - MODERATE",
+              "label": "Grade 2 (Moderate / Minimal Local Intervention)",
+              "nciCode": "C48276",
+              "order": 2
+            },
+            {
+              "code": "GRADE 3 - SEVERE",
+              "label": "Grade 3 (Severe / Medically Significant)",
+              "nciCode": "C48277",
+              "order": 3
+            },
+            {
+              "code": "GRADE 4 - LIFE-THREATENING",
+              "label": "Grade 4 (Life-threatening / Urgent Intervention)",
+              "nciCode": "C48278",
+              "order": 4
+            },
+            {
+              "code": "GRADE 5 - DEATH",
+              "label": "Grade 5 (Death Related to AE)",
+              "nciCode": "C48279",
+              "order": 5
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_AEREL",
+        "name": "Causality / Relationship to Study Drug (AEREL) Value Set",
+        "codeListId": "CL_AEREL",
+        "codeList": {
+          "id": "CL_AEREL",
+          "name": "Causality / Relationship to Study Drug (AEREL)",
+          "nciCodelistCode": "C66768",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "NOT RELATED",
+              "label": "Not Related",
+              "nciCode": "C48280",
+              "order": 1
+            },
+            {
+              "code": "UNLIKELY RELATED",
+              "label": "Unlikely Related",
+              "nciCode": "C48281",
+              "order": 2
+            },
+            {
+              "code": "POSSIBLY RELATED",
+              "label": "Possibly Related",
+              "nciCode": "C48282",
+              "order": 3
+            },
+            {
+              "code": "PROBABLY RELATED",
+              "label": "Probably Related",
+              "nciCode": "C48283",
+              "order": 4
+            },
+            {
+              "code": "DEFINITELY RELATED",
+              "label": "Definitely Related",
+              "nciCode": "C48284",
+              "order": 5
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_AEOUT",
+        "name": "Outcome of Adverse Event (AEOUT) Value Set",
+        "codeListId": "CL_AEOUT",
+        "codeList": {
+          "id": "CL_AEOUT",
+          "name": "Outcome of Adverse Event (AEOUT)",
+          "nciCodelistCode": "C66767",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "RECOVERED/RESOLVED",
+              "label": "Recovered / Resolved",
+              "nciCode": "C49494",
+              "order": 1
+            },
+            {
+              "code": "RECOVERING/RESOLVING",
+              "label": "Recovering / Resolving",
+              "nciCode": "C49495",
+              "order": 2
+            },
+            {
+              "code": "NOT RECOVERED/NOT RESOLVED",
+              "label": "Not Recovered / Not Resolved",
+              "nciCode": "C49496",
+              "order": 3
+            },
+            {
+              "code": "RECOVERED WITH SEQUELAE",
+              "label": "Recovered with Sequelae",
+              "nciCode": "C49497",
+              "order": 4
+            },
+            {
+              "code": "FATAL",
+              "label": "Fatal",
+              "nciCode": "C49498",
+              "order": 5
+            },
+            {
+              "code": "UNKNOWN",
+              "label": "Unknown",
+              "nciCode": "C17998",
+              "order": 6
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_RECIST_RESP",
+        "name": "RECIST 1.1 Target Response (TRRESP) Value Set",
+        "codeListId": "CL_RECIST_RESP",
+        "codeList": {
+          "id": "CL_RECIST_RESP",
+          "name": "RECIST 1.1 Target Response (TRRESP)",
+          "nciCodelistCode": "C96642",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "CR",
+              "label": "Complete Response (CR)",
+              "nciCode": "C48270",
+              "order": 1
+            },
+            {
+              "code": "PR",
+              "label": "Partial Response (PR)",
+              "nciCode": "C48271",
+              "order": 2
+            },
+            {
+              "code": "SD",
+              "label": "Stable Disease (SD)",
+              "nciCode": "C48272",
+              "order": 3
+            },
+            {
+              "code": "PD",
+              "label": "Progressive Disease (PD)",
+              "nciCode": "C48273",
+              "order": 4
+            },
+            {
+              "code": "NE",
+              "label": "Not Evaluable (NE)",
+              "nciCode": "C48274",
+              "order": 5
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_ROUTE",
+        "name": "Route of Administration (ROUTE) Value Set",
+        "codeListId": "CL_ROUTE",
+        "codeList": {
+          "id": "CL_ROUTE",
+          "name": "Route of Administration (ROUTE)",
+          "nciCodelistCode": "C66729",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "ORAL",
+              "label": "Oral (PO)",
+              "nciCode": "C38288",
+              "order": 1
+            },
+            {
+              "code": "INTRAVENOUS",
+              "label": "Intravenous (IV)",
+              "nciCode": "C38276",
+              "order": 2
+            },
+            {
+              "code": "SUBCUTANEOUS",
+              "label": "Subcutaneous (SC)",
+              "nciCode": "C38299",
+              "order": 3
+            },
+            {
+              "code": "INTRAMUSCULAR",
+              "label": "Intramuscular (IM)",
+              "nciCode": "C38209",
+              "order": 4
+            },
+            {
+              "code": "TOPICAL",
+              "label": "Topical",
+              "nciCode": "C38304",
+              "order": 5
+            },
+            {
+              "code": "INHALATION",
+              "label": "Inhalation",
+              "nciCode": "C38216",
+              "order": 6
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DEDEF",
+        "name": "Device Deficiency / Incident Type (DEDEFIC) Value Set",
+        "codeListId": "CL_DEDEF",
+        "codeList": {
+          "id": "CL_DEDEF",
+          "name": "Device Deficiency / Incident Type (DEDEFIC)",
+          "nciCodelistCode": "C112023",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "MALFUNCTION",
+              "label": "Device Malfunction / Failure",
+              "nciCode": "C48285",
+              "order": 1
+            },
+            {
+              "code": "USE ERROR",
+              "label": "User / Operator Error",
+              "nciCode": "C50414",
+              "order": 2
+            },
+            {
+              "code": "INADEQUATE LABELING",
+              "label": "Inadequate IFU / Labeling",
+              "nciCode": "C112025",
+              "order": 3
+            },
+            {
+              "code": "EARLY DETERIORATION",
+              "label": "Premature Wear / Deterioration",
+              "nciCode": "C112026",
+              "order": 4
+            },
+            {
+              "code": "OTHER DEFICIENCY",
+              "label": "Other Device Deficiency",
+              "nciCode": "C17649",
+              "order": 5
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DEREL",
+        "name": "Device Relationship / Causality (DEREL) Value Set",
+        "codeListId": "CL_DEREL",
+        "codeList": {
+          "id": "CL_DEREL",
+          "name": "Device Relationship / Causality (DEREL)",
+          "nciCodelistCode": "C112024",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "DEFINITELY RELATED",
+              "label": "Definitely Related to Device",
+              "nciCode": "C48284",
+              "order": 1
+            },
+            {
+              "code": "PROBABLY RELATED",
+              "label": "Probably Related to Device",
+              "nciCode": "C48283",
+              "order": 2
+            },
+            {
+              "code": "POSSIBLY RELATED",
+              "label": "Possibly Related to Device",
+              "nciCode": "C48282",
+              "order": 3
+            },
+            {
+              "code": "NOT RELATED",
+              "label": "Not Related to Device",
+              "nciCode": "C48280",
+              "order": 4
+            },
+            {
+              "code": "PROCEDURE RELATED",
+              "label": "Related to Implantation Procedure Only",
+              "nciCode": "C112027",
+              "order": 5
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DEACT",
+        "name": "Action Taken with Medical Device (DEACT) Value Set",
+        "codeListId": "CL_DEACT",
+        "codeList": {
+          "id": "CL_DEACT",
+          "name": "Action Taken with Medical Device (DEACT)",
+          "nciCodelistCode": "C112028",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "EXPLANTED/REMOVED",
+              "label": "Explanted / Removed from Subject",
+              "nciCode": "C112029",
+              "order": 1
+            },
+            {
+              "code": "REPLACED",
+              "label": "Replaced with New Device",
+              "nciCode": "C112030",
+              "order": 2
+            },
+            {
+              "code": "REPROGRAMMED/ADJUSTED",
+              "label": "Reprogrammed / Settings Adjusted",
+              "nciCode": "C112031",
+              "order": 3
+            },
+            {
+              "code": "REPAIRED",
+              "label": "Repaired In-Situ",
+              "nciCode": "C112032",
+              "order": 4
+            },
+            {
+              "code": "NO ACTION TAKEN",
+              "label": "No Action Taken / Kept In-Situ",
+              "nciCode": "C48286",
+              "order": 5
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DISTAT",
+        "name": "Device Implantation / Tracking Status (DISTAT) Value Set",
+        "codeListId": "CL_DISTAT",
+        "codeList": {
+          "id": "CL_DISTAT",
+          "name": "Device Implantation / Tracking Status (DISTAT)",
+          "nciCodelistCode": "C112033",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "IMPLANTED ACTIVE",
+              "label": "Implanted & Active In-Situ",
+              "nciCode": "C112034",
+              "order": 1
+            },
+            {
+              "code": "EXPLANTED",
+              "label": "Explanted",
+              "nciCode": "C112029",
+              "order": 2
+            },
+            {
+              "code": "DEPLOYMENT FAILED",
+              "label": "Deployment Failed / Never Implanted",
+              "nciCode": "C112035",
+              "order": 3
+            },
+            {
+              "code": "STORED",
+              "label": "In Site Inventory / Stored",
+              "nciCode": "C112036",
+              "order": 4
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DUPROC",
+        "name": "Procedural Deployment Success (DUPROC) Value Set",
+        "codeListId": "CL_DUPROC",
+        "codeList": {
+          "id": "CL_DUPROC",
+          "name": "Procedural Deployment Success (DUPROC)",
+          "nciCodelistCode": "C112037",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "COMPLETE SUCCESS",
+              "label": "Complete Procedural Success",
+              "nciCode": "C112038",
+              "order": 1
+            },
+            {
+              "code": "PARTIAL SUCCESS",
+              "label": "Partial Success (Sub-optimal deployment)",
+              "nciCode": "C112039",
+              "order": 2
+            },
+            {
+              "code": "PROCEDURE ABORTED",
+              "label": "Procedure Aborted / Cancelled",
+              "nciCode": "C112040",
+              "order": 3
+            },
+            {
+              "code": "CONVERTED SURGERY",
+              "label": "Converted to Emergent Open Surgery",
+              "nciCode": "C112041",
+              "order": 4
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DSCONT",
+        "name": "Disposition & Discontinuation Reason (DSCONT) Value Set",
+        "codeListId": "CL_DSCONT",
+        "codeList": {
+          "id": "CL_DSCONT",
+          "name": "Disposition & Discontinuation Reason (DSCONT)",
+          "nciCodelistCode": "C66735",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "COMPLETED",
+              "label": "Completed Protocol Defined Period",
+              "nciCode": "C25250",
+              "order": 1
+            },
+            {
+              "code": "ADVERSE EVENT",
+              "label": "Adverse Event / Safety Concern",
+              "nciCode": "C41331",
+              "order": 2
+            },
+            {
+              "code": "LACK OF EFFICACY",
+              "label": "Lack of Efficacy / Disease Progression",
+              "nciCode": "C48269",
+              "order": 3
+            },
+            {
+              "code": "WITHDRAWAL BY SUBJECT",
+              "label": "Withdrawal of Consent by Subject",
+              "nciCode": "C49491",
+              "order": 4
+            },
+            {
+              "code": "LOST TO FOLLOW-UP",
+              "label": "Lost to Follow-Up",
+              "nciCode": "C48288",
+              "order": 5
+            },
+            {
+              "code": "PHYSICIAN DECISION",
+              "label": "Investigator / Physician Decision",
+              "nciCode": "C49490",
+              "order": 6
+            },
+            {
+              "code": "PROTOCOL VIOLATION",
+              "label": "Protocol Deviation / Violation",
+              "nciCode": "C49492",
+              "order": 7
+            },
+            {
+              "code": "DEATH",
+              "label": "Death",
+              "nciCode": "C28554",
+              "order": 8
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DARECON",
+        "name": "Drug Accountability Reconciliation (DARECON) Value Set",
+        "codeListId": "CL_DARECON",
+        "codeList": {
+          "id": "CL_DARECON",
+          "name": "Drug Accountability Reconciliation (DARECON)",
+          "nciCodelistCode": "C66736",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "RECONCILED",
+              "label": "Fully Reconciled (100% Accounted)",
+              "nciCode": "C49488",
+              "order": 1
+            },
+            {
+              "code": "DISCREPANCY",
+              "label": "Discrepancy Documented",
+              "nciCode": "C48285",
+              "order": 2
+            },
+            {
+              "code": "LOST/DESTROYED",
+              "label": "Lost / Accidental Destruction",
+              "nciCode": "C48286",
+              "order": 3
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_DOSU",
+        "name": "Standard Dose Units (DOSU) Value Set",
+        "codeListId": "CL_DOSU",
+        "codeList": {
+          "id": "CL_DOSU",
+          "name": "Standard Dose Units (DOSU)",
+          "nciCodelistCode": "C71620",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "MG",
+              "label": "Milligram (mg)",
+              "nciCode": "C28253",
+              "order": 1
+            },
+            {
+              "code": "G",
+              "label": "Gram (g)",
+              "nciCode": "C48155",
+              "order": 2
+            },
+            {
+              "code": "MCG",
+              "label": "Microgram (mcg/µg)",
+              "nciCode": "C48153",
+              "order": 3
+            },
+            {
+              "code": "ML",
+              "label": "Milliliter (mL)",
+              "nciCode": "C28254",
+              "order": 4
+            },
+            {
+              "code": "MG/KG",
+              "label": "Milligrams per Kilogram (mg/kg)",
+              "nciCode": "C67417",
+              "order": 5
+            },
+            {
+              "code": "MG/M2",
+              "label": "Milligrams per m² (mg/m²)",
+              "nciCode": "C67418",
+              "order": 6
+            },
+            {
+              "code": "IU",
+              "label": "International Units (IU)",
+              "nciCode": "C48154",
+              "order": 7
+            },
+            {
+              "code": "TABLETS",
+              "label": "Tablets / Capsules",
+              "nciCode": "C42998",
+              "order": 8
+            }
+          ]
+        }
+      },
+      {
+        "id": "vs_CL_MHCAT",
+        "name": "Medical History Body System (MHCAT) Value Set",
+        "codeListId": "CL_MHCAT",
+        "codeList": {
+          "id": "CL_MHCAT",
+          "name": "Medical History Body System (MHCAT)",
+          "nciCodelistCode": "C66737",
+          "isStandard": true,
+          "options": [
+            {
+              "code": "CARDIOVASCULAR",
+              "label": "Cardiovascular / Vascular",
+              "nciCode": "C12727",
+              "order": 1
+            },
+            {
+              "code": "RESPIRATORY",
+              "label": "Respiratory / Pulmonary",
+              "nciCode": "C12728",
+              "order": 2
+            },
+            {
+              "code": "GASTROINTESTINAL",
+              "label": "Gastrointestinal / Hepatic",
+              "nciCode": "C12729",
+              "order": 3
+            },
+            {
+              "code": "NEUROLOGICAL",
+              "label": "Neurological / Psychiatric",
+              "nciCode": "C12730",
+              "order": 4
+            },
+            {
+              "code": "ENDOCRINE",
+              "label": "Endocrine / Metabolic (e.g. Diabetes)",
+              "nciCode": "C12731",
+              "order": 5
+            },
+            {
+              "code": "ONCOLOGY",
+              "label": "Oncology / Prior Malignancy",
+              "nciCode": "C12732",
+              "order": 6
+            },
+            {
+              "code": "MUSCULOSKELETAL",
+              "label": "Musculoskeletal / Rheumatology",
+              "nciCode": "C12733",
+              "order": 7
+            },
+            {
+              "code": "OTHER",
+              "label": "Other Medical History",
+              "nciCode": "C17649",
+              "order": 8
+            }
+          ]
+        }
+      }
+    ],
+    "rules": [
+      {
+        "id": "rule_sched_v_screen",
+        "name": "Schedule Rule: Screening (Day -28 to -1)",
+        "description": "Schedule window rule for Screening (Day -28 to -1): Target Day -1 (-27/+0 days; allowed window Day -28 to Day -1)",
+        "triggerFieldIds": ["v_screen_day"],
+        "actionType": "raise_query",
+        "targetFieldId": "v_screen",
+        "conditions": [
+          {
+            "fieldId": "v_screen_day",
+            "operator": "gte",
+            "value": -28
+          },
+          {
+            "fieldId": "v_screen_day",
+            "operator": "lte",
+            "value": -1
+          }
+        ],
+        "logicalOperator": "AND",
+        "querySeverity": "warning",
+        "queryMessage": "Visit Screening (Day -28 to -1) is outside allowed schedule window [Day -28, Day -1]",
+        "formulaExpression": "visit_day >= -28 && visit_day <= -1"
+      },
+      {
+        "id": "rule_sched_v_c1d1",
+        "name": "Schedule Rule: Cycle 1 Day 1 (Baseline)",
+        "description": "Schedule window rule for Cycle 1 Day 1 (Baseline): Target Day 1 (-0/+2 days; allowed window Day 1 to Day 3)",
+        "triggerFieldIds": ["v_c1d1_day"],
+        "actionType": "raise_query",
+        "targetFieldId": "v_c1d1",
+        "conditions": [
+          {
+            "fieldId": "v_c1d1_day",
+            "operator": "gte",
+            "value": 1
+          },
+          {
+            "fieldId": "v_c1d1_day",
+            "operator": "lte",
+            "value": 3
+          }
+        ],
+        "logicalOperator": "AND",
+        "querySeverity": "warning",
+        "queryMessage": "Visit Cycle 1 Day 1 (Baseline) is outside allowed schedule window [Day 1, Day 3]",
+        "formulaExpression": "visit_day >= 1 && visit_day <= 3"
+      },
+      {
+        "id": "rule_sched_v_c2d1",
+        "name": "Schedule Rule: Cycle 2 Day 1",
+        "description": "Schedule window rule for Cycle 2 Day 1: Target Day 22 (-3/+3 days; allowed window Day 19 to Day 25)",
+        "triggerFieldIds": ["v_c2d1_day"],
+        "actionType": "raise_query",
+        "targetFieldId": "v_c2d1",
+        "conditions": [
+          {
+            "fieldId": "v_c2d1_day",
+            "operator": "gte",
+            "value": 19
+          },
+          {
+            "fieldId": "v_c2d1_day",
+            "operator": "lte",
+            "value": 25
+          }
+        ],
+        "logicalOperator": "AND",
+        "querySeverity": "warning",
+        "queryMessage": "Visit Cycle 2 Day 1 is outside allowed schedule window [Day 19, Day 25]",
+        "formulaExpression": "visit_day >= 19 && visit_day <= 25"
+      },
+      {
+        "id": "rule_sched_v_c3d1",
+        "name": "Schedule Rule: Cycle 3 Day 1 (Restaging CT/MRI)",
+        "description": "Schedule window rule for Cycle 3 Day 1 (Restaging CT/MRI): Target Day 43 (-3/+3 days; allowed window Day 40 to Day 46)",
+        "triggerFieldIds": ["v_c3d1_day"],
+        "actionType": "raise_query",
+        "targetFieldId": "v_c3d1",
+        "conditions": [
+          {
+            "fieldId": "v_c3d1_day",
+            "operator": "gte",
+            "value": 40
+          },
+          {
+            "fieldId": "v_c3d1_day",
+            "operator": "lte",
+            "value": 46
+          }
+        ],
+        "logicalOperator": "AND",
+        "querySeverity": "warning",
+        "queryMessage": "Visit Cycle 3 Day 1 (Restaging CT/MRI) is outside allowed schedule window [Day 40, Day 46]",
+        "formulaExpression": "visit_day >= 40 && visit_day <= 46"
+      },
+      {
+        "id": "rule_sched_v_eos",
+        "name": "Schedule Rule: End of Study / Safety Follow-up",
+        "description": "Schedule window rule for End of Study / Safety Follow-up: Target Day 120 (-7/+7 days; allowed window Day 113 to Day 127)",
+        "triggerFieldIds": ["v_eos_day"],
+        "actionType": "raise_query",
+        "targetFieldId": "v_eos",
+        "conditions": [
+          {
+            "fieldId": "v_eos_day",
+            "operator": "gte",
+            "value": 113
+          },
+          {
+            "fieldId": "v_eos_day",
+            "operator": "lte",
+            "value": 127
+          }
+        ],
+        "logicalOperator": "AND",
+        "querySeverity": "warning",
+        "queryMessage": "Visit End of Study / Safety Follow-up is outside allowed schedule window [Day 113, Day 127]",
+        "formulaExpression": "visit_day >= 113 && visit_day <= 127"
+      },
+      {
+        "id": "rule_sched_v_unsched",
+        "name": "Schedule Rule: Unscheduled Visit",
+        "description": "Schedule window rule for Unscheduled Visit: Target Day 0 (-0/+0 days; allowed window Day 0 to Day 0)",
+        "triggerFieldIds": ["v_unsched_day"],
+        "actionType": "raise_query",
+        "targetFieldId": "v_unsched",
+        "conditions": [
+          {
+            "fieldId": "v_unsched_day",
+            "operator": "gte",
+            "value": 0
+          },
+          {
+            "fieldId": "v_unsched_day",
+            "operator": "lte",
+            "value": 0
+          }
+        ],
+        "logicalOperator": "AND",
+        "querySeverity": "warning",
+        "queryMessage": "Visit Unscheduled Visit is outside allowed schedule window [Day 0, Day 0]",
+        "formulaExpression": "visit_day >= 0 && visit_day <= 0"
+      }
+    ]
+  }
+}

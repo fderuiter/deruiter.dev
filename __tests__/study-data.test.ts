@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DEMO_301_STUDY,
   DEFAULT_SEED,
   DEFAULT_SUBJECT_COUNT,
   PIPELINE_STAGES,
@@ -10,11 +11,7 @@ import {
   type StudyDefinition,
 } from "@/lib/study-data";
 
-const definition: StudyDefinition = {
-  studyId: "DEMO-301",
-  title: "A synthetic placebo-controlled study",
-  usdm: {},
-};
+const definition: StudyDefinition = DEMO_301_STUDY;
 
 describe("study-data presets", () => {
   it("pins the standard versions ADR 0065 records", () => {

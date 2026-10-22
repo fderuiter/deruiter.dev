@@ -11,6 +11,8 @@ import {
   validateUniversalCrf,
   diffUniversalCrfStudies,
   getUniversalCrfSchemaUrl,
+  getUsdmV4ActivityDomain,
+  getUsdmV4EncounterSchedule,
 } from "@/lib/crf";
 
 describe("Graph-Extended Schema & USDM Bidirectional Adapter", () => {
@@ -86,17 +88,18 @@ describe("Graph-Extended Schema & USDM Bidirectional Adapter", () => {
     expect(typeof usdmJson).toBe("string");
 
     const usdmObj = JSON.parse(usdmJson);
-    expect(usdmObj.schemaVersion).toBe("3.0.0");
-    expect(usdmObj.study.protocolNumber).toBe("ONC-2026-003");
-    expect(usdmObj.study.studyDesigns.length).toBe(1);
+    expect(usdmObj.usdmVersion).toBe("4.0.0");
+    const version = usdmObj.study.versions[0];
+    expect(version.studyIdentifiers[0].text).toBe("ONC-2026-003");
+    expect(version.studyDesigns.length).toBe(1);
 
-    const design = usdmObj.study.studyDesigns[0];
+    const design = version.studyDesigns[0];
     expect(design.arms.length).toBe(2);
     expect(design.epochs.length).toBe(3);
-    expect(design.cohorts.length).toBe(1);
+    expect(design.population.cohorts.length).toBe(1);
     expect(design.encounters.length).toBe(6);
     expect(design.activities.length).toBe(6);
-    expect(design.biomedicalConcepts.length).toBeGreaterThanOrEqual(3);
+    expect(version.biomedicalConcepts.length).toBeGreaterThanOrEqual(3);
 
     const imported = importStudyFromUsdm(usdmJson);
     expect(imported.$schema).toBe(getUniversalCrfSchemaUrl());
@@ -136,24 +139,37 @@ describe("Graph-Extended Schema & USDM Bidirectional Adapter", () => {
 
   it("decouples field presentation properties into biomedical concepts during export", () => {
     const usdmObj = exportStudyToUsdmObject(ONCOLOGY_RECIST_PRESET);
-    const design = usdmObj.study.studyDesigns![0];
+    const version = usdmObj.study.versions![0];
 
-    const sysbpConcept = design.biomedicalConcepts.find(
-      (c) => c.variableName === "SYSBP" || c.name.includes("Systolic")
+    const sysbpConcept = version.biomedicalConcepts!.find((c) =>
+      c.name.includes("Systolic")
     );
     expect(sysbpConcept).toBeDefined();
-    expect(sysbpConcept?.domain).toBe("VS");
-    expect(sysbpConcept?.dataType).toBe("integer");
+    expect(sysbpConcept?.code.standardCode.code).toBe("C25298");
+    const vsActivity = version.studyDesigns![0].activities!.find((a) =>
+      a.biomedicalConceptIds?.includes(sysbpConcept!.id)
+    );
+    expect(getUsdmV4ActivityDomain(vsActivity)).toBe("VS");
+
+    const reimported = importStudyFromUsdm(usdmObj);
+    const sysbp = reimported.biomedicalConcepts?.find(
+      (c) => c.id === sysbpConcept?.id
+    );
+    expect(sysbp?.domain).toBe("VS");
+    expect(sysbp?.dataType).toBe("integer");
   });
 
   it("maps linear visit target days to USDM epoch encounters on export and reassembles on import", () => {
     const usdmObj = exportStudyToUsdmObject(ONCOLOGY_RECIST_PRESET);
-    const design = usdmObj.study.studyDesigns![0];
+    const design = usdmObj.study.versions![0].studyDesigns![0];
 
-    const c1d1Encounter = design.encounters.find((e) => e.id === "v_c1d1");
+    const c1d1Encounter = design.encounters!.find((e) => e.id === "v_c1d1");
     expect(c1d1Encounter).toBeDefined();
-    expect(c1d1Encounter?.targetDay).toBe(1);
-    expect(c1d1Encounter?.epochId).toBe("e_trt");
+    const c1d1Schedule = getUsdmV4EncounterSchedule(design).find(
+      (s) => s.encounterId === "v_c1d1"
+    );
+    expect(c1d1Schedule?.targetDay).toBe(1);
+    expect(c1d1Schedule?.epochId).toBe("e_trt");
 
     const reimported = importStudyFromUsdm(usdmObj);
     const c1d1Visit = reimported.visits.find((v) => v.id === "v_c1d1");

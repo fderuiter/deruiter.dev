@@ -41,6 +41,8 @@ export * from "./odm-xml-parser";
 export * from "./csv-spec-parser";
 export * from "./file-ingestion";
 export * from "./usdm-adapter";
+export * from "./usdm-v4-types";
+export * from "./usdm-v4-schedule";
 export * from "./precision-date";
 export * from "./visit-window";
 export * from "./form-variants";

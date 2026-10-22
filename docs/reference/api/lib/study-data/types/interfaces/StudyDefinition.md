@@ -6,10 +6,18 @@
 
 # Interface: StudyDefinition
 
-The study the pipeline runs: an identifier, a title and the USDM v4.0
-document that defines the schedule, arms, visits and endpoints.
+The study the pipeline runs: an identifier, a title, the USDM v4.0
+document that defines it, and the design read from that document.
 
 ## Properties
+
+### design
+
+> `readonly` **design**: [`StudyDesignDefinition`](StudyDesignDefinition.md)
+
+Arms, visits, schedule of activities and endpoints, read from `usdm`.
+
+***
 
 ### studyId
 
@@ -31,4 +39,4 @@ Protocol title.
 
 > `readonly` **usdm**: `unknown`
 
-The USDM v4.0 study document, read through the USDM adapter.
+The USDM v4.0 study document the definition was read from.

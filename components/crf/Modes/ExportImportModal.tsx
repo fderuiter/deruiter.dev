@@ -576,7 +576,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           }`}
         >
           <IconCode className="w-4 h-4 text-purple-400" />
-          <span>CDISC USDM Graph (.json)</span>
+          <span>CDISC USDM v4.0 (.json)</span>
         </button>
 
         <button

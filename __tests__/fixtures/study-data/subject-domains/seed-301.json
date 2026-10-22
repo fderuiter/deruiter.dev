@@ -1,0 +1,34 @@
+{
+  "DM": {
+    "rows": 90,
+    "sha256": "ecc6314df49adfa336f41ccdabab3998bee5d0cd9f93288125c55764bb7a6066"
+  },
+  "SV": {
+    "rows": 582,
+    "sha256": "50bdf3ac22e19cbbbb4260963dfdd7917513af382e97ef02840721e0493a94a6"
+  },
+  "EX": {
+    "rows": 81,
+    "sha256": "80ac32f90e3d7568599b00c422c25978075069ccfa4b69811288e24bfa327b72"
+  },
+  "AE": {
+    "rows": 44,
+    "sha256": "a8849220809d2e1133a65ca90980c2f66a3fb927137db30c92dd0a60bd00bce4"
+  },
+  "VS": {
+    "rows": 2244,
+    "sha256": "19d8a58210c0821a9ebeb7a6037ae5da5a0ff2a09dcb165277437461e4e13100"
+  },
+  "LB": {
+    "rows": 2592,
+    "sha256": "2b5e7d6eeec2f9c1474929b5c3a4e5e71dca83445388f83dfd25c1b0dbe55773"
+  },
+  "DS": {
+    "rows": 261,
+    "sha256": "f665cbf7ebcd48b96d9ba1002158528bf891ace9e38941a2478954dfc7e8b21e"
+  },
+  "SUPPDM": {
+    "rows": 180,
+    "sha256": "ebe3d9994a2673cb4aae211c87f53f837803e1e9b12bca6cf4adf713a0e9b0f5"
+  }
+}

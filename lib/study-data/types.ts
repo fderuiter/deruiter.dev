@@ -115,6 +115,8 @@ export interface Dataset {
   readonly columns: Readonly<Record<string, readonly CellValue[]>>;
   /** Number of records. */
   readonly rowCount: number;
+  /** Source record ids for each row, outside SDTM submission columns. */
+  readonly lineage?: readonly (readonly string[])[];
 }
 
 /** A coded value as USDM carries it: an NCI EVS code and its decode. */

@@ -1,0 +1,156 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { describe, expect, it } from "vitest";
+import { DEMO_301_STUDY, runPipeline, type Dataset } from "@/lib/study-data";
+
+const run = runPipeline(DEMO_301_STUDY, { seed: 301, nSubjects: 90 });
+const source = run.datasets.filter((dataset) => dataset.layer === "collected");
+const sdtm = run.datasets.filter(
+  (dataset) => dataset.layer === "sdtm" && dataset.class !== "Trial Design"
+);
+const get = (name: string) => sdtm.find((dataset) => dataset.name === name)!;
+const records = (dataset: Dataset) =>
+  Array.from({ length: dataset.rowCount }, (_, index) =>
+    Object.fromEntries(
+      dataset.variables.map(({ name }) => [name, dataset.columns[name][index]])
+    )
+  );
+
+describe("SDTM subject tabulation", () => {
+  it("matches the seed-301 golden file for all eight subject domains", () => {
+    const expected = JSON.parse(
+      readFileSync(
+        resolve(
+          process.cwd(),
+          "__tests__/fixtures/study-data/subject-domains/seed-301.json"
+        ),
+        "utf8"
+      )
+    );
+    const actual = Object.fromEntries(
+      sdtm.map((dataset) => [
+        dataset.name,
+        {
+          rows: dataset.rowCount,
+          sha256: createHash("sha256")
+            .update(JSON.stringify(dataset))
+            .digest("hex"),
+        },
+      ])
+    );
+    expect(actual).toEqual(expected);
+  });
+
+  it("preserves row lineage in metadata and keeps analysis variables out of SDTM", () => {
+    const ids = new Set(
+      source.flatMap((dataset) => dataset.columns.SRCID as string[])
+    );
+    for (const dataset of sdtm) {
+      expect(dataset.lineage).toHaveLength(dataset.rowCount);
+      expect(
+        dataset.lineage!.every(
+          (sources) => sources.length > 0 && sources.every((id) => ids.has(id))
+        )
+      ).toBe(true);
+      expect(
+        dataset.variables.every(
+          (variable) =>
+            !["SRCID", "BASE", "CHG", "AVAL", "TRTEMFL"].includes(variable.name)
+        )
+      ).toBe(true);
+    }
+  });
+
+  it("maps screen failures without reference treatment dates or exposure", () => {
+    const dm = records(get("DM"));
+    const failures = dm.filter((record) => record.ARMCD === "SCRNFAIL");
+    expect(failures.length).toBeGreaterThan(0);
+    expect(
+      failures.every(
+        (record) => record.RFSTDTC === null && record.RFXSTDTC === null
+      )
+    ).toBe(true);
+    const exposed = new Set(get("EX").columns.USUBJID);
+    expect(failures.every((record) => !exposed.has(record.USUBJID))).toBe(true);
+  });
+
+  it("has ISO partial AE dates, no study day zero, and sequential per-subject records", () => {
+    const ae = records(get("AE"));
+    expect(
+      ae.some(
+        (record) =>
+          typeof record.AESTDTC === "string" &&
+          /^\d{4}-\d{2}$/.test(record.AESTDTC)
+      )
+    ).toBe(true);
+    expect(
+      ae
+        .filter(
+          (record) =>
+            typeof record.AESTDTC === "string" &&
+            /^\d{4}-\d{2}$/.test(record.AESTDTC)
+        )
+        .every((record) => record.AESTDY === null)
+    ).toBe(true);
+    for (const dataset of sdtm) {
+      for (const variable of dataset.variables.filter((column) =>
+        column.name.endsWith("DY")
+      ))
+        expect(dataset.columns[variable.name]).not.toContain(0);
+      const seq = `${dataset.name}SEQ`;
+      if (!dataset.columns[seq]) continue;
+      const bySubject = new Map<string, number[]>();
+      for (const record of records(dataset)) {
+        const subject = String(record.USUBJID);
+        bySubject.set(subject, [
+          ...(bySubject.get(subject) ?? []),
+          Number(record[seq]),
+        ]);
+      }
+      for (const values of bySubject.values())
+        expect(values).toEqual(values.map((_, index) => index + 1));
+    }
+  });
+
+  it("uses TV visits and TA epochs, including unscheduled visits", () => {
+    const sv = records(get("SV"));
+    const tv = run.datasets.find((dataset) => dataset.name === "TV")!;
+    const planned = new Map(
+      records(tv).map((record) => [record.VISITNUM, record.VISIT])
+    );
+    expect(
+      sv.some(
+        (record) => record.VISIT === "UNSCHEDULED" && record.VISITNUM === 99
+      )
+    ).toBe(true);
+    expect(
+      sv
+        .filter((record) => record.VISITNUM !== 99)
+        .every((record) => record.VISIT === planned.get(record.VISITNUM))
+    ).toBe(true);
+    const epochs = new Set(
+      run.datasets.find((dataset) => dataset.name === "TA")!.columns.EPOCH
+    );
+    expect(
+      sv.every((record) => record.EPOCH === null || epochs.has(record.EPOCH))
+    ).toBe(true);
+  });
+
+  it("flags the last pre-dose observation per subject and test", () => {
+    for (const domain of ["VS", "LB"] as const) {
+      const data = records(get(domain));
+      const flagged = data.filter(
+        (record) => record[`${domain}LOBXFL`] === "Y"
+      );
+      expect(flagged.length).toBeGreaterThan(0);
+      const keys = flagged.map(
+        (record) => `${record.USUBJID}|${record[`${domain}TESTCD`]}`
+      );
+      expect(new Set(keys).size).toBe(keys.length);
+      expect(
+        flagged.every((record) => Number(record[`${domain}DY`]) <= 1)
+      ).toBe(true);
+    }
+  });
+});

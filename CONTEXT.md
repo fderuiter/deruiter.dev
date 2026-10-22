@@ -256,6 +256,15 @@ Formal inference rules used to derive logical steps from valid premises:
 - **Single-Command Actionable Remediation CTA**: Deterministic copy-pasteable shell commands (`npm run doctor:fix`, `npm run dx env -- --fix`) embedded in both ANSI visual output and structured JSON remediation arrays whenever an architectural or environmental invariant fails.
 - **Runtime CLI Schema Introspection (`dx describe` / `--help --json`)**: Self-describing command discovery protocol exposing complete command specifications, option types, default values, mutability indicators, and payload schemas as JSON at runtime.
 
+## Study Data Pipeline
+
+- **Study Definition**: The protocol design read from a USDM v4 study document, including arms, planned visits, and the schedule of activities. It contains no subject observations.
+- **Schedule of Activities**: The protocol's mapping of planned activities to visits. An activity may define measurements, while a visit supplies planned timing and its allowed window.
+- **Screened Subject**: A synthetic person who has consented and entered screening, whether or not they later qualify for randomization. `nSubjects` counts screened subjects; avoid *enrolled subject* for this whole group.
+- **Randomized Subject**: A screened subject assigned to one of the study's protocol arms. Only randomized subjects can have study treatment exposure.
+- **Collected Record**: A synthetic source observation or event produced for one subject before SDTM tabulation. Each record has a stable collected-source identifier for later lineage; it is distinct from an SDTM or analysis record.
+- **Consent Date**: The complete date on which a synthetic subject enters the study. No visit may precede it; partial dates belong to selected source observations, not consent.
+
 ## Synthetic Reliability, Telemetry & Watch Emulation
 
 ### Headless Synthetic Journey Probing

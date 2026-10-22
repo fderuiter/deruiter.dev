@@ -86,6 +86,12 @@ Re-exports [ElementDefinition](types/interfaces/ElementDefinition.md)
 
 ***
 
+### EligibilityCriterionDefinition
+
+Re-exports [EligibilityCriterionDefinition](types/interfaces/EligibilityCriterionDefinition.md)
+
+***
+
 ### EndpointDefinition
 
 Re-exports [EndpointDefinition](types/interfaces/EndpointDefinition.md)

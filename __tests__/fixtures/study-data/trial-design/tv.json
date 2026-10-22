@@ -1,0 +1,105 @@
+{
+  "name": "TV",
+  "label": "Trial Visits",
+  "layer": "sdtm",
+  "class": "Trial Design",
+  "keys": ["STUDYID", "VISITNUM"],
+  "variables": [
+    {
+      "name": "STUDYID",
+      "label": "Study Identifier",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "DOMAIN",
+      "label": "Domain Abbreviation",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "VISITNUM",
+      "label": "Visit Number",
+      "type": "integer",
+      "role": "Timing",
+      "origin": "Protocol"
+    },
+    {
+      "name": "VISIT",
+      "label": "Visit Name",
+      "type": "text",
+      "length": 200,
+      "role": "Topic",
+      "origin": "Protocol"
+    },
+    {
+      "name": "VISITDY",
+      "label": "Planned Study Day",
+      "type": "integer",
+      "role": "Timing",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TVSTRL",
+      "label": "Rule for Start of Visit",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TVENRL",
+      "label": "Rule for End of Visit",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    }
+  ],
+  "columns": {
+    "STUDYID": [
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301"
+    ],
+    "DOMAIN": ["TV", "TV", "TV", "TV", "TV", "TV", "TV"],
+    "VISITNUM": [1, 2, 3, 4, 5, 6, 7],
+    "VISIT": [
+      "SCREENING",
+      "BASELINE",
+      "WEEK 2",
+      "WEEK 4",
+      "WEEK 8",
+      "WEEK 12",
+      "END OF STUDY"
+    ],
+    "VISITDY": [-14, 1, 15, 29, 57, 85, 99],
+    "TVSTRL": [
+      "-28 study days after reference start",
+      "1 study days after reference start",
+      "12 study days after reference start",
+      "26 study days after reference start",
+      "52 study days after reference start",
+      "80 study days after reference start",
+      "96 study days after reference start"
+    ],
+    "TVENRL": [
+      "-1 study days after reference start",
+      "1 study days after reference start",
+      "18 study days after reference start",
+      "32 study days after reference start",
+      "62 study days after reference start",
+      "90 study days after reference start",
+      "106 study days after reference start"
+    ]
+  },
+  "rowCount": 7
+}

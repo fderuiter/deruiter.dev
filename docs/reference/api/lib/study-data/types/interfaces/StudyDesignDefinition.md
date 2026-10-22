@@ -42,6 +42,14 @@ Blinding decode, for example `Double Blind Study`.
 
 ***
 
+### blindingCode
+
+> `readonly` **blindingCode**: `string`
+
+Blinding NCI EVS code.
+
+***
+
 ### cells
 
 > `readonly` **cells**: readonly [`StudyCellDefinition`](StudyCellDefinition.md)[]
@@ -55,6 +63,14 @@ Arm by epoch study cells.
 > `readonly` **elements**: readonly [`ElementDefinition`](ElementDefinition.md)[]
 
 Trial design elements.
+
+***
+
+### eligibilityCriteria
+
+> `readonly` **eligibilityCriteria**: readonly [`EligibilityCriterionDefinition`](EligibilityCriterionDefinition.md)[]
+
+Inclusion and exclusion criteria, in protocol order.
 
 ***
 
@@ -82,6 +98,14 @@ Intervention model decode, for example `Parallel Study`.
 
 ***
 
+### modelCode
+
+> `readonly` **modelCode**: `string`
+
+Intervention model NCI EVS code.
+
+***
+
 ### objectives
 
 > `readonly` **objectives**: readonly [`ObjectiveDefinition`](ObjectiveDefinition.md)[]
@@ -95,6 +119,14 @@ Objectives and their endpoints.
 > `readonly` **phase**: `string`
 
 Trial phase decode, for example `Phase III Trial`.
+
+***
+
+### phaseCode
+
+> `readonly` **phaseCode**: `string`
+
+Trial phase NCI EVS code.
 
 ***
 

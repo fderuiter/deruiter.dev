@@ -1,0 +1,133 @@
+{
+  "name": "TA",
+  "label": "Trial Arms",
+  "layer": "sdtm",
+  "class": "Trial Design",
+  "keys": ["STUDYID", "ARMCD", "TAETORD"],
+  "variables": [
+    {
+      "name": "STUDYID",
+      "label": "Study Identifier",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "DOMAIN",
+      "label": "Domain Abbreviation",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "ARMCD",
+      "label": "Planned Arm Code",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "ARM",
+      "label": "Description of Planned Arm",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TAETORD",
+      "label": "Element Order",
+      "type": "integer",
+      "role": "Timing",
+      "origin": "Protocol"
+    },
+    {
+      "name": "ETCD",
+      "label": "Element Code",
+      "type": "text",
+      "length": 200,
+      "role": "Topic",
+      "origin": "Protocol"
+    },
+    {
+      "name": "ELEMENT",
+      "label": "Description of Element",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "EPOCH",
+      "label": "Epoch",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    }
+  ],
+  "columns": {
+    "STUDYID": [
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301"
+    ],
+    "DOMAIN": ["TA", "TA", "TA", "TA", "TA", "TA", "TA", "TA", "TA"],
+    "ARMCD": [
+      "PBO",
+      "PBO",
+      "PBO",
+      "DMX10",
+      "DMX10",
+      "DMX10",
+      "DMX20",
+      "DMX20",
+      "DMX20"
+    ],
+    "ARM": [
+      "Placebo",
+      "Placebo",
+      "Placebo",
+      "Demoxacin 10 mg",
+      "Demoxacin 10 mg",
+      "Demoxacin 10 mg",
+      "Demoxacin 20 mg",
+      "Demoxacin 20 mg",
+      "Demoxacin 20 mg"
+    ],
+    "TAETORD": [1, 2, 3, 1, 2, 3, 1, 2, 3],
+    "ETCD": ["SCRN", "PBO", "FU", "SCRN", "DMX10", "FU", "SCRN", "DMX20", "FU"],
+    "ELEMENT": [
+      "Screening",
+      "Placebo",
+      "Follow-up",
+      "Screening",
+      "Demoxacin 10 mg",
+      "Follow-up",
+      "Screening",
+      "Demoxacin 20 mg",
+      "Follow-up"
+    ],
+    "EPOCH": [
+      "SCREENING",
+      "TREATMENT",
+      "FOLLOW-UP",
+      "SCREENING",
+      "TREATMENT",
+      "FOLLOW-UP",
+      "SCREENING",
+      "TREATMENT",
+      "FOLLOW-UP"
+    ]
+  },
+  "rowCount": 9
+}

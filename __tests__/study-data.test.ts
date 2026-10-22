@@ -60,17 +60,25 @@ describe("runPipeline", () => {
       "LB",
       "AE",
       "DS",
+      "TA",
+      "TE",
+      "TV",
+      "TI",
+      "TS",
     ]);
-    expect(run.datasets.every((dataset) => dataset.layer === "collected")).toBe(
-      true
-    );
+    expect(
+      run.datasets.filter((dataset) => dataset.layer === "collected")
+    ).toHaveLength(8);
+    expect(
+      run.datasets.filter((dataset) => dataset.layer === "sdtm")
+    ).toHaveLength(5);
     expect(run.findings).toEqual([]);
     expect(run.manifest).toEqual({
       studyId: "DEMO-301",
       seed: DEFAULT_SEED,
       nSubjects: DEFAULT_SUBJECT_COUNT,
       standards: STANDARD_VERSIONS,
-      stages: ["usdm", "synth"],
+      stages: ["usdm", "synth", "sdtm"],
       outputs: [],
     });
   });

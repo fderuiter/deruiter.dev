@@ -1,0 +1,188 @@
+{
+  "name": "TS",
+  "label": "Trial Summary",
+  "layer": "sdtm",
+  "class": "Trial Design",
+  "keys": ["STUDYID", "TSPARMCD", "TSSEQ"],
+  "variables": [
+    {
+      "name": "STUDYID",
+      "label": "Study Identifier",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "DOMAIN",
+      "label": "Domain Abbreviation",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSSEQ",
+      "label": "Sequence Number",
+      "type": "integer",
+      "role": "Timing",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSPARMCD",
+      "label": "Trial Summary Parameter Short Name",
+      "type": "text",
+      "length": 200,
+      "role": "Topic",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSPARM",
+      "label": "Trial Summary Parameter",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSVAL",
+      "label": "Parameter Value",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSVALCD",
+      "label": "Parameter Value Code",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSVCDREF",
+      "label": "Value Code Reference",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TSVCDVER",
+      "label": "Value Code Version",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    }
+  ],
+  "columns": {
+    "STUDYID": [
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301",
+      "DEMO-301"
+    ],
+    "DOMAIN": [
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS",
+      "TS"
+    ],
+    "TSSEQ": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "TSPARMCD": [
+      "TITLE",
+      "TPHASE",
+      "STYPE",
+      "INTMODEL",
+      "TBLIND",
+      "PLANSUB",
+      "NARMS",
+      "RANDOM",
+      "SDTMIGVER",
+      "ADAMIGVER",
+      "CTVERS"
+    ],
+    "TSPARM": [
+      "Trial Title",
+      "Trial Phase Classification",
+      "Study Type",
+      "Intervention Model",
+      "Trial Blinding Schema",
+      "Planned Number of Subjects",
+      "Number of Arms",
+      "Randomized Trial",
+      "SDTM Implementation Guide Version",
+      "ADaM Implementation Guide Version",
+      "Controlled Terminology Version"
+    ],
+    "TSVAL": [
+      "A Randomised, Double-Blind, Placebo-Controlled Study of Demoxacin in Adults with Mild Hypertension",
+      "Phase III Trial",
+      "INTERVENTIONAL",
+      "PARALLEL",
+      "DOUBLE BLIND",
+      "90",
+      "3",
+      "Y",
+      "3.4",
+      "1.3",
+      "2026-09-25"
+    ],
+    "TSVALCD": [
+      null,
+      "C15602",
+      "C98388",
+      "C82639",
+      "C15228",
+      null,
+      null,
+      "C49488",
+      null,
+      null,
+      null
+    ],
+    "TSVCDREF": [
+      null,
+      "CDISC",
+      "CDISC",
+      "CDISC",
+      "CDISC",
+      null,
+      null,
+      "CDISC",
+      null,
+      null,
+      null
+    ],
+    "TSVCDVER": [
+      null,
+      "2026-09-25",
+      "2026-09-25",
+      "2026-09-25",
+      "2026-09-25",
+      null,
+      null,
+      "2026-09-25",
+      null,
+      null,
+      null
+    ]
+  },
+  "rowCount": 11
+}

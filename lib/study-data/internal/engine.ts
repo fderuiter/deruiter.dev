@@ -9,6 +9,7 @@ import type { PipelineOptions, PipelineRun, StudyDefinition } from "../types";
 import { generateCollectedData } from "./synth/generate-collected-data";
 import { deriveTrialDesign } from "./sdtm/trial-design";
 import { deriveSubjectDomains } from "./sdtm/subject-domains";
+import { runConformance } from "./conformance/run-conformance";
 
 const MAX_SEED = 0xffffffff;
 
@@ -62,15 +63,17 @@ export function runPipeline(
     ...trialDesign,
     ...deriveSubjectDomains(definition, collected, trialDesign),
   ];
+  const conformance = runConformance(datasets);
   return {
     datasets,
-    findings: [],
+    findings: conformance.findings,
+    conformance: conformance.report,
     manifest: {
       studyId: definition.studyId,
       seed: options.seed,
       nSubjects: options.nSubjects,
       standards: STANDARD_VERSIONS,
-      stages: ["usdm", "synth", "sdtm"],
+      stages: ["usdm", "synth", "sdtm", "conformance"],
       outputs: [],
     },
   };

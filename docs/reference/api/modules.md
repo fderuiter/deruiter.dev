@@ -442,6 +442,8 @@
 - [lib/services/telemetry-service](lib/services/telemetry-service/README.md)
 - [lib/simulator](lib/simulator/README.md)
 - [lib/study-data](lib/study-data/README.md)
+- [lib/study-data/internal/conformance/rules](lib/study-data/internal/conformance/rules/README.md)
+- [lib/study-data/internal/conformance/run-conformance](lib/study-data/internal/conformance/run-conformance/README.md)
 - [lib/study-data/internal/engine](lib/study-data/internal/engine/README.md)
 - [lib/study-data/internal/sdtm/subject-domains](lib/study-data/internal/sdtm/subject-domains/README.md)
 - [lib/study-data/internal/sdtm/trial-design](lib/study-data/internal/sdtm/trial-design/README.md)

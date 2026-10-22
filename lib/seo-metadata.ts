@@ -16,6 +16,22 @@ export interface RouteMetaConfig {
 }
 
 export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
+  platformStrategy: {
+    title: "Clinical Platform Strategy Toolkit",
+    description:
+      "Compare fictional platform vendors with weighted scoring, sensitivity, five-year build versus buy economics, maturity and roadmap tools, then export a memo.",
+    path: "/platform/strategy",
+    keywords: [
+      "Clinical Data Platform",
+      "Vendor Evaluation",
+      "Build vs Buy",
+      "NPV",
+      "Data Strategy",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platform: {
     title: "Clinical Data Platform Architecture",
     description:

@@ -29,6 +29,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
   { path: "/m/neuro", name: "Mobile Neuro 3D Simulator", category: "tool" },
   { path: "/crf", name: "CRF Builder & AST", category: "tool" },
   { path: "/platform", name: "Clinical Data Platform", category: "tool" },
+  {
+    path: "/platform/strategy",
+    name: "Platform Strategy Toolkit",
+    category: "tool",
+  },
   { path: "/m/crf", name: "Mobile CRF Builder & AST", category: "tool" },
   { path: "/patrol", name: "Patrol Shift Studio", category: "tool" },
   { path: "/m/patrol", name: "Mobile Patrol Shift Studio", category: "tool" },

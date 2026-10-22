@@ -37,7 +37,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
         href: "https://github.com/fderuiter/deruiter.dev/blob/main/adr/0066-clinical-data-platform-architecture.md",
         kind: "artifact",
       },
-      issue(2645, "Strategy toolkit plan"),
+      route("/platform/strategy", "Strategy toolkit"),
     ],
   },
   {
@@ -106,7 +106,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "Weighted evaluation, build versus buy, five-year cost and decision memos.",
     evidence: [
-      issue(2645, "Strategy toolkit plan"),
+      route("/platform/strategy", "Strategy toolkit"),
       issue(2646, "Vendor oversight plan"),
     ],
   },

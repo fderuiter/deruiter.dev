@@ -205,6 +205,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Platform",
   },
   {
+    id: "platform-strategy",
+    title: "Platform Strategy",
+    subtitle: "Fictional vendor scoring and investment decisions",
+    href: "/platform/strategy",
+    icon: "clipboard",
+    tone: "amber",
+    badge: "Toolkit",
+  },
+  {
     id: "incident-simulator",
     title: "Incident Simulator",
     subtitle: "Architecture bias and outage triage",

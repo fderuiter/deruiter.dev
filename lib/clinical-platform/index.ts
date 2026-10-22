@@ -9,3 +9,11 @@
 export * from "./types";
 export * from "./presets";
 export { checkLayerFlow, checkRegulatoryWording } from "./internal/policy";
+export {
+  scoreVendors,
+  sensitivity,
+  cashFlow,
+  tornado,
+  planRoadmap,
+  decisionMemo,
+} from "./internal/strategy/engine";

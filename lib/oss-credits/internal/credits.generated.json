@@ -4178,7 +4178,7 @@
     },
     {
       "name": "@vitest/coverage-v8",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -4189,7 +4189,7 @@
     },
     {
       "name": "@vitest/expect",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4198,7 +4198,7 @@
     },
     {
       "name": "@vitest/mocker",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4207,7 +4207,7 @@
     },
     {
       "name": "@vitest/pretty-format",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4216,7 +4216,7 @@
     },
     {
       "name": "@vitest/runner",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4225,7 +4225,7 @@
     },
     {
       "name": "@vitest/snapshot",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4234,7 +4234,7 @@
     },
     {
       "name": "@vitest/spy",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4243,7 +4243,7 @@
     },
     {
       "name": "@vitest/utils",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4724,7 +4724,7 @@
     },
     {
       "name": "chai",
-      "version": "6.2.2",
+      "version": "6.3.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -10595,7 +10595,7 @@
     },
     {
       "name": "vitest",
-      "version": "4.1.11",
+      "version": "4.1.12",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,

@@ -6,9 +6,25 @@
 
 # Interface: Portfolio
 
-One synthetic sponsor portfolio: studies, their sites and vendors.
+One synthetic sponsor portfolio: studies, sites, vendors and bronze feeds.
 
 ## Properties
+
+### asOf
+
+> `readonly` **asOf**: `string`
+
+ISO 8601 data cut: no record describes anything after this date.
+
+***
+
+### feeds
+
+> `readonly` **feeds**: [`BronzeFeeds`](BronzeFeeds.md)
+
+Bronze-layer operational feeds.
+
+***
 
 ### id
 
@@ -23,6 +39,14 @@ Stable portfolio id.
 > `readonly` **seed**: `number`
 
 Seed the portfolio was generated from.
+
+***
+
+### signals
+
+> `readonly` **signals**: readonly [`PortfolioSignal`](PortfolioSignal.md)[]
+
+Patterns planted on purpose for analytics to find.
 
 ***
 
@@ -47,6 +71,14 @@ Fictional sponsor name.
 > `readonly` **studies**: readonly [`Study`](Study.md)[]
 
 Studies in the portfolio.
+
+***
+
+### studyDataRuns
+
+> `readonly` **studyDataRuns**: readonly [`StudyDataRunReference`](StudyDataRunReference.md)[]
+
+Study Data Pipeline runs that supplied study records, one per study.
 
 ***
 

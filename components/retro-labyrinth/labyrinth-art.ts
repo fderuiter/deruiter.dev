@@ -1,8 +1,9 @@
 /**
- * Retro Labyrinth presentation rules (epic #1522): the pixel grid, integer
- * scaling, the tile palette, sprite choice, the floor route and the room
- * plates. Everything here is pure, so it is unit tested without a canvas;
- * `labyrinth-atlas.ts` turns these rules into pixels.
+ * Retro Labyrinth presentation rules (epic #1522): the pixel grid, the tile
+ * palette, sprite choice, the floor route and the room plates. Everything
+ * here is pure, so it is unit tested without a canvas; `labyrinth-atlas.ts`
+ * turns these rules into pixels. The canvas is sized by `useStageFit`
+ * (#2358).
  *
  * Nothing here changes a game rule. The maze, entities and FOV come from
  * `@/lib/dungeon` unchanged; this module only decides how they look.
@@ -39,93 +40,6 @@ export const LABYRINTH_INK = {
   steel: "#94a3b8",
   ice: "#7dd3fc",
 } as const;
-
-/** How the canvas is sized so each art pixel is a whole number of device pixels. */
-export interface IntegerCanvasSize {
-  /** Device pixels per art pixel. Always a whole number of at least 1. */
-  scale: number;
-  /** Backing store size, in device pixels. */
-  backingWidth: number;
-  backingHeight: number;
-  /** Size the canvas element is displayed at, in CSS pixels. */
-  cssWidth: number;
-  cssHeight: number;
-}
-
-/**
- * Picks the largest whole-number scale at which the logical canvas fits the
- * available CSS box on a display with the given device pixel ratio. Scaling
- * by a whole number of device pixels is what keeps nearest-neighbour
- * sampling free of uneven pixels and blur. A box too small for 1x still gets
- * 1x, shown shrunk, rather than nothing.
- */
-export function computeIntegerCanvasSize(
-  availableCssWidth: number,
-  availableCssHeight: number,
-  devicePixelRatio: number,
-  logicalWidth: number = LOGICAL_WIDTH,
-  logicalHeight: number = LOGICAL_HEIGHT
-): IntegerCanvasSize {
-  const dpr =
-    Number.isFinite(devicePixelRatio) && devicePixelRatio > 0
-      ? devicePixelRatio
-      : 1;
-  const w = Number.isFinite(availableCssWidth) ? availableCssWidth : 0;
-  const h = Number.isFinite(availableCssHeight) ? availableCssHeight : 0;
-  const fit = Math.min((w * dpr) / logicalWidth, (h * dpr) / logicalHeight);
-  // A hair of tolerance so a box that is exactly 3x does not round to 2x.
-  const scale = Math.max(1, Math.floor(fit + 1e-6));
-  const backingWidth = logicalWidth * scale;
-  const backingHeight = logicalHeight * scale;
-  const fits = fit >= 1;
-  return {
-    scale,
-    backingWidth,
-    backingHeight,
-    cssWidth: fits ? backingWidth / dpr : w,
-    cssHeight: fits ? backingHeight / dpr : (w * logicalHeight) / logicalWidth,
-  };
-}
-
-/**
- * Fits the logical canvas into a box at its own aspect ratio, as large as the
- * box allows, for the touch cabinet. The CSS size is a whole number of px
- * (a multiple of 5, so the 5:3 shape stays exact) and the backing store is
- * the same size in device pixels, so pixel art stays sharp at any
- * devicePixelRatio. Sampling is nearest-neighbour (`image-rendering:
- * pixelated`), and the draw code scales to whatever backing size it is given.
- */
-export function computeFillCanvasSize(
-  availableCssWidth: number,
-  availableCssHeight: number,
-  devicePixelRatio: number,
-  logicalWidth: number = LOGICAL_WIDTH,
-  logicalHeight: number = LOGICAL_HEIGHT
-): IntegerCanvasSize {
-  const dpr =
-    Number.isFinite(devicePixelRatio) && devicePixelRatio > 0
-      ? devicePixelRatio
-      : 1;
-  const w = Number.isFinite(availableCssWidth)
-    ? Math.max(0, availableCssWidth)
-    : 0;
-  const h = Number.isFinite(availableCssHeight)
-    ? Math.max(0, availableCssHeight)
-    : 0;
-  const fitWidth = Math.min(w, (h * logicalWidth) / logicalHeight);
-  // Multiples of 5 keep the 240:144 (5:3) shape exact in whole pixels.
-  const cssWidth = Math.max(0, Math.floor(fitWidth / 5) * 5);
-  const cssHeight = (cssWidth * logicalHeight) / logicalWidth;
-  const backingWidth = Math.round(cssWidth * dpr);
-  const backingHeight = Math.round(cssHeight * dpr);
-  return {
-    scale: backingWidth / logicalWidth,
-    backingWidth,
-    backingHeight,
-    cssWidth,
-    cssHeight,
-  };
-}
 
 /** Bits of {@link wallEdgeMask}: which sides of a wall face open floor. */
 export const EDGE_N = 1;

@@ -1805,3 +1805,200 @@
 .field-manual-touch .text-\[11px\] {
   font-size: 0.75rem;
 }
+
+/* Phone and tablet stages (#2358, ADR 0062): one layout for the HUD row, the
+   stage slot, the status line, the thumb docks and a tablet side panel.
+   PhoneStage and TabletStage (components/arcade/stage) set the attributes
+   these rules read. They sit in the components layer, so a game's Tailwind
+   classes on a slot win over them without !important.
+
+   Landscape is a row: move dock, stage (with the status line under it), side
+   panel, action dock. The docks are only as wide as their keys, and the
+   stage's side padding adds the safe-area insets. Portrait is a grid: the
+   stage, the status line and the panel on full-width rows, and the two docks
+   sharing the bottom row. Gaps sit on the slots rather than the grid, so a
+   missing or hidden slot leaves no gap behind. */
+@layer components {
+  .arcade-stage {
+    /* Between the HUD row and the body. */
+    --arcade-stage-gap: 4px;
+    /* Between the docks, the stage and the panel. */
+    --arcade-stage-dock-gap: 4px;
+    /* The fewest pixels under a portrait dock; the safe-area inset wins when
+       it is larger. */
+    --arcade-stage-dock-floor: 0px;
+    /* Padding a game already puts between the stage and the cabinet edge,
+       which the toolbar inset counts too. */
+    --arcade-stage-edge: 0px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--arcade-stage-gap);
+    flex: 1 1 0%;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    max-height: 100dvh;
+    container: arcade-stage / inline-size;
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .arcade-stage[data-stage="tablet"] {
+    --arcade-stage-dock-floor: 0.75rem;
+  }
+
+  /* The HUD row: 44px, its right end kept clear of the touch toolbar. */
+  .arcade-stage-hud {
+    display: flex;
+    align-items: stretch;
+    flex: none;
+    height: 44px;
+    min-width: 0;
+    padding-right: max(
+      0px,
+      calc(var(--cabinet-toolbar-inset, 0px) - var(--arcade-stage-edge))
+    );
+  }
+
+  .arcade-stage-body {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: var(--arcade-stage-dock-gap);
+    flex: 1 1 0%;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+  .arcade-stage-center {
+    display: flex;
+    flex-direction: column;
+    gap: var(--arcade-stage-dock-gap);
+    flex: 1 1 0%;
+    min-width: 0;
+    min-height: 0;
+    order: 3;
+  }
+  .arcade-stage-slot {
+    display: flex;
+    flex: 1 1 0%;
+    min-width: 0;
+    min-height: 0;
+  }
+  .arcade-stage-status {
+    flex: none;
+    min-width: 0;
+  }
+  .arcade-stage-dock {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-shrink: 0;
+    min-width: 0;
+    min-height: 0;
+  }
+  .arcade-stage[data-dock-align="end"] .arcade-stage-dock {
+    justify-content: flex-end;
+  }
+  .arcade-stage-panel {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    order: 4;
+  }
+  .arcade-stage-panel[data-panel-side="left"] {
+    order: 2;
+  }
+  /* Right-handed: movement on the left, actions on the right. Left-handed
+     mirrors the docks and leaves the panel on its side. */
+  .arcade-stage-dock[data-dock="move"] {
+    order: 1;
+  }
+  .arcade-stage-dock[data-dock="action"] {
+    order: 5;
+  }
+  .arcade-stage[data-handedness="left"] .arcade-stage-dock[data-dock="move"] {
+    order: 5;
+  }
+  .arcade-stage[data-handedness="left"] .arcade-stage-dock[data-dock="action"] {
+    order: 1;
+  }
+
+  /* Portrait. */
+  .arcade-stage[data-stage-orientation="portrait"] {
+    --arcade-stage-dock-gap: 8px;
+  }
+  .arcade-stage[data-stage-orientation="portrait"] .arcade-stage-body {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr) auto auto auto;
+    grid-template-areas:
+      "stage stage"
+      "status status"
+      "panel panel"
+      "move action";
+    align-content: start;
+    gap: 0 var(--arcade-stage-dock-gap);
+    padding-bottom: max(
+      var(--arcade-stage-dock-floor),
+      env(safe-area-inset-bottom, 0px)
+    );
+  }
+  /* The stage keeps its own height and the dock row takes the rest, so the
+     keys can grow into it. */
+  .arcade-stage[data-stage-orientation="portrait"][data-portrait-fill="dock"]
+    .arcade-stage-body {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+  }
+  .arcade-stage[data-stage-orientation="portrait"][data-handedness="left"]
+    .arcade-stage-body {
+    grid-template-areas:
+      "stage stage"
+      "status status"
+      "panel panel"
+      "action move";
+  }
+  .arcade-stage[data-stage-orientation="portrait"] .arcade-stage-center {
+    display: contents;
+  }
+  .arcade-stage[data-stage-orientation="portrait"] .arcade-stage-slot {
+    grid-area: stage;
+  }
+  .arcade-stage[data-stage-orientation="portrait"] .arcade-stage-status {
+    grid-area: status;
+    margin-top: var(--arcade-stage-dock-gap);
+  }
+  .arcade-stage[data-stage-orientation="portrait"] .arcade-stage-panel {
+    grid-area: panel;
+    margin-top: var(--arcade-stage-dock-gap);
+  }
+  /* A dock pads rather than margins its gap: a dock that fills its row
+     (height: 100%, or a size container scaling its keys) then keeps the
+     gap inside the row instead of overflowing it by the gap. */
+  .arcade-stage[data-stage-orientation="portrait"]
+    .arcade-stage-dock[data-dock="move"] {
+    grid-area: move;
+    padding-top: var(--arcade-stage-dock-gap);
+  }
+  .arcade-stage[data-stage-orientation="portrait"]
+    .arcade-stage-dock[data-dock="action"] {
+    grid-area: action;
+    padding-top: var(--arcade-stage-dock-gap);
+  }
+  /* A tablet's two-hand corner dock: each dock in its bottom corner. */
+  .arcade-stage[data-stage="tablet"][data-stage-orientation="portrait"]
+    .arcade-stage-dock {
+    align-self: end;
+  }
+  .arcade-stage[data-stage="tablet"][data-stage-orientation="portrait"]
+    .arcade-stage-dock[data-dock="move"] {
+    align-items: flex-start;
+  }
+  .arcade-stage[data-stage="tablet"][data-stage-orientation="portrait"]
+    .arcade-stage-dock[data-dock="action"] {
+    align-items: flex-end;
+  }
+}

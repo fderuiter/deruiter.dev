@@ -234,11 +234,23 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
   });
 });
 
+/** The touch maze fit (#2358): the largest 5:3 box, following the device. */
+async function computeFillCanvasSize(
+  width: number,
+  height: number,
+  dpr: number
+) {
+  const { computeStageFit } = await import("@/lib/arcade");
+  return computeStageFit({ width, height }, dpr, {
+    aspect: { width: 240, height: 144 },
+    scale: "fractional",
+    maxDpr: Number.POSITIVE_INFINITY,
+  });
+}
+
 describe("computeFillCanvasSize (touch maze fill)", () => {
   it("fills a box that is short of width at its own 5:3 shape", async () => {
-    const { computeFillCanvasSize } =
-      await import("@/components/retro-labyrinth/labyrinth-art");
-    const size = computeFillCanvasSize(500, 320, 2);
+    const size = await computeFillCanvasSize(500, 320, 2);
     expect(size.cssWidth).toBe(500);
     expect(size.cssHeight).toBe(300);
     expect(size.backingWidth).toBe(1000);
@@ -246,9 +258,7 @@ describe("computeFillCanvasSize (touch maze fill)", () => {
   });
 
   it("is width-bound in a wide, short box and never overflows", async () => {
-    const { computeFillCanvasSize } =
-      await import("@/components/retro-labyrinth/labyrinth-art");
-    const size = computeFillCanvasSize(316, 264, 2);
+    const size = await computeFillCanvasSize(316, 264, 2);
     expect(size.cssWidth).toBe(315);
     expect(size.cssHeight).toBeCloseTo(189, 6);
     expect(size.cssWidth).toBeLessThanOrEqual(316);
@@ -256,10 +266,10 @@ describe("computeFillCanvasSize (touch maze fill)", () => {
   });
 
   it("returns an empty canvas for a zero box and tolerates bad input", async () => {
-    const { computeFillCanvasSize } =
-      await import("@/components/retro-labyrinth/labyrinth-art");
-    expect(computeFillCanvasSize(0, 100, 2).cssWidth).toBe(0);
-    expect(computeFillCanvasSize(Number.NaN, 100, Number.NaN).cssWidth).toBe(0);
+    expect((await computeFillCanvasSize(0, 100, 2)).cssWidth).toBe(0);
+    expect(
+      (await computeFillCanvasSize(Number.NaN, 100, Number.NaN)).cssWidth
+    ).toBe(0);
   });
 });
 

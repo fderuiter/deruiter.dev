@@ -56,6 +56,7 @@
 - [lib/arcade/core/game-loop](lib/arcade/core/game-loop/README.md)
 - [lib/arcade/core/input](lib/arcade/core/input/README.md)
 - [lib/arcade/core/pool](lib/arcade/core/pool/README.md)
+- [lib/arcade/core/stage-fit](lib/arcade/core/stage-fit/README.md)
 - [lib/arcade/core/viewport](lib/arcade/core/viewport/README.md)
 - [lib/arcade/crt-pipeline](lib/arcade/crt-pipeline/README.md)
 - [lib/arcade/daily](lib/arcade/daily/README.md)

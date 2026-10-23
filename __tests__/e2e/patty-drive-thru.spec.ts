@@ -47,7 +47,7 @@ test.describe("Patty's Drive-Thru (/arcade/patty-drive-thru)", () => {
 
     const order = page
       .getByRole("toolbar", { name: "Open orders" })
-      .getByRole("button", { name: /^Order 1/ });
+      .getByRole("button", { name: /#1, order/ });
     await expect(order).toBeVisible();
     await page.getByTestId("pdt-game").focus();
     await page.keyboard.press("1");

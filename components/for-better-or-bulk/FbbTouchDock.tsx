@@ -194,7 +194,7 @@ function ActionKeys({ keys, named, onKey }: ActionKeysProps) {
         onRelease={() => onKey(keys.work, false)}
         className="fbb-key fbb-key-work"
       >
-        <span aria-hidden="true">{TOUCH_WORK_NAME}</span>
+        <span aria-hidden="true">{TOUCH_WORK_NAME}</span>{" "}
         <span aria-hidden="true" className="fbb-key-note">
           hold
         </span>

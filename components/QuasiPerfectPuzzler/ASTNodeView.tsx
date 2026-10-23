@@ -97,7 +97,11 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
         onMouseLeave={() => {
           if (isInteractive) onHoverTarget(null);
         }}
-        aria-label={nodeAccessibleLabel(node, renderASTString(node))}
+        aria-label={nodeAccessibleLabel(
+          node,
+          renderASTString(node),
+          item.isRoot
+        )}
         className={`qp-node qp-focus absolute left-0 top-0 inline-flex items-center justify-center rounded-xl select-none ${
           isInteractive ? "cursor-pointer" : "cursor-default"
         } ${isTargetEligible ? "cursor-crosshair" : ""}`}
@@ -124,6 +128,13 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
         whileHover={calm || !isInteractive ? undefined : { scale: 1.06 }}
         whileTap={calm || !isInteractive ? undefined : { scale: 0.96 }}
       >
+        {/* The tag is positioned, so it comes first in the source and the
+            name can start with it as it is read (#2571). */}
+        {item.isRoot && (
+          <span className="qp-chip-accent absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full border px-1.5 text-[9px] font-bold font-mono tracking-wider">
+            GOAL
+          </span>
+        )}{" "}
         <span
           className={`${glyphClass} leading-none ${
             item.isRoot ? "text-[28px] font-semibold" : "text-[22px]"
@@ -131,11 +142,6 @@ export const ASTNodeView: React.FC<ASTNodeViewProps> = React.memo(
         >
           {glyph}
         </span>
-        {item.isRoot && (
-          <span className="qp-chip-accent absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full border px-1.5 text-[9px] font-bold font-mono tracking-wider">
-            GOAL
-          </span>
-        )}
       </motion.button>
     );
   }

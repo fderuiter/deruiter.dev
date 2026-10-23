@@ -105,7 +105,7 @@ describe("desktop toolbox placement (#2324)", () => {
       const before = store().nodes.length;
       await act(async () => {
         fireEvent.click(
-          screen.getByRole("button", { name: `Add ${kind} chip` })
+          screen.getByRole("button", { name: new RegExp(`add ${kind} `, "i") })
         );
       });
       await waitFor(() => expect(store().nodes.length).toBe(before + 1));

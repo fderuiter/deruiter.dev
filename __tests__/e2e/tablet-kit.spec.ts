@@ -626,7 +626,9 @@ test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () =>
       "PivotToObservation",
       "CDISCSink",
     ]) {
-      await page.getByRole("button", { name: `Add ${kind} chip` }).tap();
+      await page
+        .getByRole("button", { name: new RegExp(`add ${kind} `, "i") })
+        .tap();
       await expect(page.locator(PD_CHIP(kind))).toBeVisible();
     }
     // Wiring goes through the lists, so it does not depend on which chips are
@@ -1487,7 +1489,7 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
     await launchStudyDirector(page);
     await closeWorldIntro(page);
     await page
-      .getByRole("button", { name: /^How are you\? \(F\)/ })
+      .getByRole("button", { name: /^F, How are you\?/ })
       .tap({ timeout: 15000 });
     const card = page.getByTestId("world-outcome");
     await expect(card).toBeVisible();
@@ -2299,7 +2301,7 @@ test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
     const second = page.getByRole("button", { name: /^SUBJ-\d+/ }).nth(1);
     await second.tap();
     await expect(second).toHaveAttribute("aria-pressed", "true");
-    const coffee = page.getByRole("button", { name: /^Lifeline Q:/ });
+    const coffee = page.getByRole("button", { name: /^Lifeline Q / });
     await expect(coffee).toBeVisible();
     const box = (await coffee.boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(44);
@@ -2933,9 +2935,9 @@ test.describe("Patty's Drive-Thru on a tablet (iPad projects, #2116)", () => {
     const bump = sheet.getByRole("button", { name: /Bump order/ });
     await expect(bump).toBeEnabled({ timeout: 20000 });
     await bump.tap();
-    await expect(
-      orders.getByRole("button", { name: /^Order 1[:,]/ })
-    ).toHaveCount(0);
+    await expect(orders.getByRole("button", { name: /#1, order/ })).toHaveCount(
+      0
+    );
   });
 
   test("the register sheet traps focus, and Escape pressed at once after Enter closes it", async ({

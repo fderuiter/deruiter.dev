@@ -285,8 +285,8 @@ describe("variants on the board", () => {
       '[data-tactic-id="rw"][data-banned="true"]'
     );
     expect(card?.textContent).toContain("Banned");
-    expect(card?.getAttribute("aria-label")).toContain(
-      "Banned in this variant"
+    expect(card?.getAttribute("aria-label")).toMatch(
+      /^Tactic rw( \[[^\]]*\])?, banned\. /
     );
     const apply = screen.getByRole("button", {
       name: /Apply Tactic: rw( \[[^\]]*\])? to the goal \(banned in this variant\)/i,

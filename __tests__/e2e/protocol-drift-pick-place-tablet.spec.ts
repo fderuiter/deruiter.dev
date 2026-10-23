@@ -65,7 +65,7 @@ test.describe("Protocol Drift toolbox pick and place (iPad projects, #2360)", ()
     page,
   }) => {
     await launch(page);
-    const source = page.getByRole("button", { name: "Add SourceIngest chip" });
+    const source = page.getByRole("button", { name: /add SourceIngest /i });
     await longPress(source);
     await expect(source).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(BANNER)).toContainText(
@@ -83,7 +83,7 @@ test.describe("Protocol Drift toolbox pick and place (iPad projects, #2360)", ()
     page,
   }) => {
     await launch(page);
-    const extract = page.getByRole("button", { name: "Add ExtractField chip" });
+    const extract = page.getByRole("button", { name: /add ExtractField /i });
     await longPress(extract);
     await expect(extract).toHaveAttribute("aria-pressed", "true");
     await page.locator(BANNER).getByRole("button", { name: "Cancel" }).tap();

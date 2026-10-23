@@ -1713,7 +1713,7 @@ describe("Sandbox target regression (#1234)", () => {
       );
       expect(screen.queryByText("Q.E.D. (Proof Complete)")).toBeNull();
       expect(
-        screen.getByRole("button", { name: /^Equality node/ })
+        screen.getByRole("button", { name: /^Goal\. Equality node/ })
       ).toBeDefined();
     } finally {
       cleanup();

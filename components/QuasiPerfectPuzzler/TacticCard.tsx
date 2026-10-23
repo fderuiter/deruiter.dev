@@ -86,46 +86,14 @@ export const TacticCard: React.FC<TacticCardProps> = ({
           onSelect();
         }
       }}
-      aria-label={`Tactic ${displayLabel}.${banned ? " Banned in this variant." : ""} Costs ${tactic.baseRamCost} GB RAM. ${tactic.description}`}
+      // The name reads the card's text in source order: name, Banned stamp,
+      // description, then the RAM cost (axe 4.14 label-in-name, #2571). The
+      // foot comes first in the source and is drawn last with order-last.
+      aria-label={`Tactic ${displayLabel}${banned ? ", banned" : ""}. ${tactic.description} ${tactic.baseRamCost} GB RAM.`}
     >
-      {banned && (
-        <span
-          aria-hidden="true"
-          className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 -rotate-12 border-y border-rose-400 bg-zinc-950/90 py-0.5 text-center text-[11px] font-bold uppercase tracking-widest text-rose-200"
-        >
-          Banned
-        </span>
-      )}
       {/* Rarity edge */}
       <span aria-hidden="true" className="qp-card-edge h-1 w-full shrink-0" />
-
-      {/* Corner index: glyph and RAM cost */}
-      <div
-        aria-hidden="true"
-        className="flex items-start justify-between px-2 pt-1.5"
-      >
-        <span className="qp-card-glyph qp-math text-sm leading-none">
-          {art.glyph}
-        </span>
-        <span className="text-[13px] font-bold leading-none tabular-nums text-zinc-100">
-          {tactic.baseRamCost}
-          <span className="text-[9px] font-bold tracking-wider text-zinc-400">
-            {" GB"}
-          </span>
-        </span>
-      </div>
-
-      {/* Face */}
-      <div
-        aria-hidden="true"
-        className={`qp-card-glyph qp-math flex flex-1 items-center justify-center leading-none ${
-          compact ? "text-3xl" : "text-4xl"
-        }`}
-      >
-        {art.glyph}
-      </div>
-
-      <div className="qp-card-foot px-2 pb-2">
+      <div className="qp-card-foot order-last px-2 pb-2">
         <span
           // Long names such as trans [succ_le_double] wrap to two lines
           // instead of being cut off (#2249).
@@ -135,7 +103,15 @@ export const TacticCard: React.FC<TacticCardProps> = ({
           title={displayLabel}
         >
           {displayLabel}
-        </span>
+        </span>{" "}
+        {banned && (
+          <span
+            aria-hidden="true"
+            className="absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 -rotate-12 border-y border-rose-400 bg-zinc-950/90 py-0.5 text-center text-[11px] font-bold uppercase tracking-widest text-rose-200"
+          >
+            Banned
+          </span>
+        )}{" "}
         <p
           className={`mt-0.5 text-center text-[9px] leading-tight text-zinc-400 break-words ${
             compact ? "line-clamp-1" : "line-clamp-2"
@@ -157,6 +133,30 @@ export const TacticCard: React.FC<TacticCardProps> = ({
             />
           ))}
         </div>
+      </div>{" "}
+      {/* Corner index: glyph and RAM cost, the cost first in the source */}
+      <div
+        aria-hidden="true"
+        className="flex flex-row-reverse items-start justify-between px-2 pt-1.5"
+      >
+        <span className="text-[13px] font-bold leading-none tabular-nums text-zinc-100">
+          {tactic.baseRamCost}
+          <span className="text-[9px] font-bold tracking-wider text-zinc-400">
+            {" GB"}
+          </span>
+        </span>{" "}
+        <span className="qp-card-glyph qp-math text-sm leading-none">
+          {art.glyph}
+        </span>
+      </div>{" "}
+      {/* Face */}
+      <div
+        aria-hidden="true"
+        className={`qp-card-glyph qp-math flex flex-1 items-center justify-center leading-none ${
+          compact ? "text-3xl" : "text-4xl"
+        }`}
+      >
+        {art.glyph}
       </div>
     </motion.div>
   );

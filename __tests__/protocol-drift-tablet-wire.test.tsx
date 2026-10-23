@@ -407,7 +407,7 @@ describe("touch chip placement (#2045)", () => {
     flow.fitView.mockClear();
     await act(async () => {
       fireEvent.click(
-        screen.getByRole("button", { name: "Add SourceIngest chip" })
+        screen.getByRole("button", { name: /add SourceIngest /i })
       );
     });
     await waitFor(() => expect(flow.fitView).toHaveBeenCalled());
@@ -421,7 +421,7 @@ describe("touch chip placement (#2045)", () => {
     flow.setViewport.mockClear();
     await act(async () => {
       fireEvent.click(
-        screen.getByRole("button", { name: "Add SourceIngest chip" })
+        screen.getByRole("button", { name: /add SourceIngest /i })
       );
     });
     await waitFor(() => expect(store().nodes.length).toBeGreaterThan(0));

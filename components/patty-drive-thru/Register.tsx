@@ -30,8 +30,11 @@ const STATUS_TONE: Record<TicketLineStatus, string> = {
   "ready-to-ring": "text-[var(--pdt-screen-ok)]",
 };
 
-/** Ticket strip label for screen readers: the order number and its lines. */
-function ticketLabel(ticket: KdsTicket): string {
+/**
+ * Ticket strip label for screen readers: the key and number the tab shows,
+ * in that order, then the order's lines.
+ */
+function ticketLabel(ticket: KdsTicket, index: number): string {
   const lines = ticket.lines
     .map((line) =>
       line.modifier
@@ -39,7 +42,8 @@ function ticketLabel(ticket: KdsTicket): string {
         : line.label
     )
     .join("; ");
-  return `Order ${ticket.orderId}${ticket.ready ? ", ready to bump" : ""}: ${lines}`;
+  const key = index < 9 ? `Key ${index + 1}: ` : "";
+  return `${key}#${ticket.orderId}, order${ticket.ready ? " ready to bump" : ""}: ${lines}`;
 }
 
 interface RegisterProps {
@@ -100,7 +104,7 @@ export const Register = React.forwardRef<HTMLDivElement, RegisterProps>(
                 key={ticket.orderId}
                 type="button"
                 aria-pressed={ticket.active}
-                aria-label={ticketLabel(ticket)}
+                aria-label={ticketLabel(ticket, index)}
                 aria-keyshortcuts={index < 9 ? String(index + 1) : undefined}
                 onClick={() =>
                   act({ type: "selectOrder", orderId: ticket.orderId })

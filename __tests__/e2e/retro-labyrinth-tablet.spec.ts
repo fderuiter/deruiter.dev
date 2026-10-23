@@ -681,6 +681,64 @@ test.describe("Retro Labyrinth on a tablet (#2032)", () => {
     }
   });
 
+  test("lays the cabinet out on a phone or tablet stage inside the safe area (#2358)", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== "chromium", "safe-area emulation needs CDP");
+    const insets = { top: 0, left: 24, right: 32, bottom: 20 };
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets });
+    await launchCabinet(page);
+
+    const viewport = page.viewportSize()!;
+    const stage = page.locator(`${PLAYFIELD} .arcade-stage`);
+    await expect(stage).toHaveCount(1);
+    // A phone, or an iPad window too narrow to be a tablet (PHONE_QUERY).
+    const phone = viewport.width < 744 || viewport.height <= 500;
+    const portrait = viewport.height >= viewport.width;
+    await expect(stage).toHaveAttribute(
+      "data-stage",
+      phone ? "phone" : "tablet"
+    );
+    await expect(stage).toHaveAttribute(
+      "data-stage-orientation",
+      portrait ? "portrait" : "landscape"
+    );
+
+    const padding = await stage.evaluate((el) => {
+      const body = el.querySelector(".arcade-stage-body")!;
+      return {
+        left: getComputedStyle(el).paddingLeft,
+        right: getComputedStyle(el).paddingRight,
+        bottom: getComputedStyle(body).paddingBottom,
+      };
+    });
+    expect(padding.left).toBe(`${insets.left}px`);
+    expect(padding.right).toBe(`${insets.right}px`);
+    if (portrait) expect(padding.bottom).toBe(`${insets.bottom}px`);
+
+    // The maze stays inside its slot, and the slot inside the viewport.
+    const slot = await stage.locator("[data-stage-slot]").boundingBox();
+    const canvas = await page
+      .locator(`${PLAYFIELD} canvas`)
+      .first()
+      .boundingBox();
+    expect(slot).not.toBeNull();
+    expect(canvas).not.toBeNull();
+    expect(canvas!.x).toBeGreaterThanOrEqual(slot!.x - 0.5);
+    expect(canvas!.y).toBeGreaterThanOrEqual(slot!.y - 0.5);
+    expect(canvas!.x + canvas!.width).toBeLessThanOrEqual(
+      slot!.x + slot!.width + 0.5
+    );
+    expect(canvas!.y + canvas!.height).toBeLessThanOrEqual(
+      slot!.y + slot!.height + 0.5
+    );
+    expect(slot!.x + slot!.width).toBeLessThanOrEqual(viewport.width);
+    expect(slot!.y + slot!.height).toBeLessThanOrEqual(viewport.height);
+    await assertNoHorizontalOverflow(page);
+  });
+
   test("has no blocking axe violations over the cabinet", async ({ page }) => {
     await launchCabinet(page);
 

@@ -50,9 +50,21 @@ Re-exports [CanvasResolution](viewport/interfaces/CanvasResolution.md)
 
 ***
 
+### capStageDpr
+
+Re-exports [capStageDpr](stage-fit/functions/capStageDpr.md)
+
+***
+
 ### computeCanvasResolution
 
 Re-exports [computeCanvasResolution](viewport/functions/computeCanvasResolution.md)
+
+***
+
+### computeStageFit
+
+Re-exports [computeStageFit](stage-fit/functions/computeStageFit.md)
 
 ***
 
@@ -65,6 +77,18 @@ Re-exports [GamePoint](viewport/interfaces/GamePoint.md)
 ### InputSnapshot
 
 Re-exports [InputSnapshot](input/interfaces/InputSnapshot.md)
+
+***
+
+### mapClientToStage
+
+Re-exports [mapClientToStage](stage-fit/functions/mapClientToStage.md)
+
+***
+
+### mapStageToClient
+
+Re-exports [mapStageToClient](stage-fit/functions/mapStageToClient.md)
 
 ***
 
@@ -101,6 +125,60 @@ Re-exports [PrimaryPointerState](input/interfaces/PrimaryPointerState.md)
 ### screenToGameCoords
 
 Re-exports [screenToGameCoords](viewport/functions/screenToGameCoords.md)
+
+***
+
+### StageAspect
+
+Re-exports [StageAspect](stage-fit/interfaces/StageAspect.md)
+
+***
+
+### StageFit
+
+Re-exports [StageFit](stage-fit/interfaces/StageFit.md)
+
+***
+
+### StageFitOptions
+
+Re-exports [StageFitOptions](stage-fit/interfaces/StageFitOptions.md)
+
+***
+
+### StagePoint
+
+Re-exports [StagePoint](stage-fit/interfaces/StagePoint.md)
+
+***
+
+### StageRect
+
+Re-exports [StageRect](stage-fit/interfaces/StageRect.md)
+
+***
+
+### StageScaleMode
+
+Re-exports [StageScaleMode](stage-fit/type-aliases/StageScaleMode.md)
+
+***
+
+### StageSlot
+
+Re-exports [StageSlot](stage-fit/interfaces/StageSlot.md)
+
+***
+
+### stageSnapStep
+
+Re-exports [stageSnapStep](stage-fit/functions/stageSnapStep.md)
+
+***
+
+### stageViewportMetrics
+
+Re-exports [stageViewportMetrics](stage-fit/functions/stageViewportMetrics.md)
 
 ***
 

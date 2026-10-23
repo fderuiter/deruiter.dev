@@ -88,23 +88,23 @@ describe("Direct Inline Coordinate Scaling & Index Clamping Invariants", () => {
   );
   const content = fs.readFileSync(componentPath, "utf-8");
 
+  // The mapping itself is the stage fit's (#2358), unit tested in
+  // arcade-stage-fit.test.ts: an empty canvas rect maps to null.
   it("includes defensive zero-dimension guard for canvas bounding box", () => {
-    expect(content).toContain(
-      "if (rect.width <= 0 || rect.height <= 0) return;"
-    );
+    expect(content).toContain("if (!point) return;");
   });
 
-  it("calculates scaling ratio based on internal canvas resolution and bounding rect", () => {
-    expect(content).toContain("const scaleX = canvas.width / rect.width;");
-    expect(content).toContain("const scaleY = canvas.height / rect.height;");
+  it("maps the pointer through the stage fit and the canvas's shown rect", () => {
+    expect(content).toContain("const point = canvasToGame(");
+    expect(content).toContain("canvas.getBoundingClientRect()");
   });
 
-  it("transforms client event offsets to internal canvas logical coordinates", () => {
+  it("transforms game units to grid cells by the room's column and row count", () => {
     expect(content).toContain(
-      "const canvasX = (e.clientX - rect.left) * scaleX;"
+      "const rawGridX = Math.floor(point.x / (LOGICAL_WIDTH / cols));"
     );
     expect(content).toContain(
-      "const canvasY = (e.clientY - rect.top) * scaleY;"
+      "const rawGridY = Math.floor(point.y / (LOGICAL_HEIGHT / rows));"
     );
   });
 

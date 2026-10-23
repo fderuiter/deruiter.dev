@@ -14,7 +14,6 @@ import {
   TILE,
   boardSafeColor,
   clampLabelCenter,
-  computeIntegerCanvasSize,
   enemySprite,
   enemyTint,
   fitFontSize,
@@ -44,7 +43,17 @@ import {
   resolveLabyrinthCrt,
 } from "@/components/retro-labyrinth/labyrinth-crt";
 import { CRT_PRESETS } from "@/lib/arcade/crt-pipeline";
+import { computeStageFit } from "@/lib/arcade";
 import { CRT_THEMES, STAGE_1_MAZE } from "@/lib/dungeon";
+
+/** The desktop maze fit (#1522, #2358): whole device pixels per art pixel. */
+function computeIntegerCanvasSize(width: number, height: number, dpr: number) {
+  return computeStageFit({ width, height }, dpr, {
+    aspect: { width: LOGICAL_WIDTH, height: LOGICAL_HEIGHT },
+    scale: "integer",
+    maxDpr: Number.POSITIVE_INFINITY,
+  });
+}
 
 describe("integer-scale canvas sizing (#1522)", () => {
   it("uses the largest whole scale that fits, in device pixels", () => {
@@ -74,12 +83,12 @@ describe("integer-scale canvas sizing (#1522)", () => {
     expect(computeIntegerCanvasSize(480, 288, 1).scale).toBe(2);
   });
 
-  it("falls back to 1x, shown shrunk, when the box is too small", () => {
+  it("falls back to 1x, shrunk into the box, when the box is too small", () => {
     const size = computeIntegerCanvasSize(200, 100, 1);
     expect(size.scale).toBe(1);
     expect(size.backingWidth).toBe(LOGICAL_WIDTH);
-    expect(size.cssWidth).toBe(200);
-    expect(size.cssHeight).toBeCloseTo((200 * LOGICAL_HEIGHT) / LOGICAL_WIDTH);
+    expect(size.cssHeight).toBe(100);
+    expect(size.cssWidth).toBeCloseTo((100 * LOGICAL_WIDTH) / LOGICAL_HEIGHT);
   });
 
   it("survives zero, negative and non-finite input", () => {

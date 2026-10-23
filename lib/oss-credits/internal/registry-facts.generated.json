@@ -13063,20 +13063,6 @@
       "licenses": [],
       "notices": []
     },
-    "zod@4.6.5": {
-      "integrity": "sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==",
-      "homepage": "https://zod.dev",
-      "repository": "git+https://github.com/colinhacks/zod.git",
-      "author": "Colin McDonnell",
-      "licenses": [
-        {
-          "kind": "file",
-          "name": "LICENSE",
-          "sha": "3f1189b28e3866e0d979968d466b78f813f76827cfdca1fbb124cc0a5c8841f8"
-        }
-      ],
-      "notices": []
-    },
     "zod@4.6.7": {
       "integrity": "sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==",
       "homepage": "https://zod.dev",

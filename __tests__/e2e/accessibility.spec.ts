@@ -522,7 +522,7 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await page.goto("/proof", { waitUntil: "domcontentloaded" });
     await expect(
       page.getByRole("button", { name: /Share/i }).first()
-    ).toBeVisible({ timeout: 15000 });
+    ).toBeEnabled({ timeout: 15000 });
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible({
       timeout: 15000,
     });

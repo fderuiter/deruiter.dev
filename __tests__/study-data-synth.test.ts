@@ -19,10 +19,9 @@ function collected(
   nSubjects: number
 ): Map<string, Record<string, string | number | null>[]> {
   return new Map(
-    runPipeline(DEMO_301_STUDY, { seed, nSubjects }).datasets.map((dataset) => [
-      dataset.name,
-      records(dataset),
-    ])
+    runPipeline(DEMO_301_STUDY, { seed, nSubjects })
+      .datasets.filter((dataset) => dataset.layer === "collected")
+      .map((dataset) => [dataset.name, records(dataset)])
   );
 }
 
@@ -31,7 +30,7 @@ describe("seeded synthetic collection", () => {
     const datasets = runPipeline(DEMO_301_STUDY, {
       seed: 301,
       nSubjects: 90,
-    }).datasets;
+    }).datasets.filter((dataset) => dataset.layer === "collected");
     const digest = createHash("sha256")
       .update(JSON.stringify(datasets))
       .digest("hex");

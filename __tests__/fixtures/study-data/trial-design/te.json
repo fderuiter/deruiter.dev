@@ -1,0 +1,93 @@
+{
+  "name": "TE",
+  "label": "Trial Elements",
+  "layer": "sdtm",
+  "class": "Trial Design",
+  "keys": ["STUDYID", "ETCD"],
+  "variables": [
+    {
+      "name": "STUDYID",
+      "label": "Study Identifier",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "DOMAIN",
+      "label": "Domain Abbreviation",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "ETCD",
+      "label": "Element Code",
+      "type": "text",
+      "length": 200,
+      "role": "Topic",
+      "origin": "Protocol"
+    },
+    {
+      "name": "ELEMENT",
+      "label": "Description of Element",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TESTRL",
+      "label": "Rule for Start of Element",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TEENRL",
+      "label": "Rule for End of Element",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TEDUR",
+      "label": "Planned Duration of Element",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    }
+  ],
+  "columns": {
+    "STUDYID": ["DEMO-301", "DEMO-301", "DEMO-301", "DEMO-301", "DEMO-301"],
+    "DOMAIN": ["TE", "TE", "TE", "TE", "TE"],
+    "ETCD": ["SCRN", "PBO", "DMX10", "DMX20", "FU"],
+    "ELEMENT": [
+      "Screening",
+      "Placebo",
+      "Demoxacin 10 mg",
+      "Demoxacin 20 mg",
+      "Follow-up"
+    ],
+    "TESTRL": [
+      "At SCREENING (planned study day -14)",
+      "At BASELINE (planned study day 1)",
+      "At BASELINE (planned study day 1)",
+      "At BASELINE (planned study day 1)",
+      "At END OF STUDY (planned study day 99)"
+    ],
+    "TEENRL": [
+      "After SCREENING (planned study day -14)",
+      "After WEEK 12 (planned study day 85)",
+      "After WEEK 12 (planned study day 85)",
+      "After WEEK 12 (planned study day 85)",
+      "After END OF STUDY (planned study day 99)"
+    ],
+    "TEDUR": ["P0D", "P84D", "P84D", "P84D", "P0D"]
+  },
+  "rowCount": 5
+}

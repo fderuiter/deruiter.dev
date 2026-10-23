@@ -1,0 +1,61 @@
+{
+  "name": "TI",
+  "label": "Trial Inclusion Exclusion Criteria",
+  "layer": "sdtm",
+  "class": "Trial Design",
+  "keys": ["STUDYID", "IETESTCD"],
+  "variables": [
+    {
+      "name": "STUDYID",
+      "label": "Study Identifier",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "DOMAIN",
+      "label": "Domain Abbreviation",
+      "type": "text",
+      "length": 200,
+      "role": "Identifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "IETESTCD",
+      "label": "Criterion Short Name",
+      "type": "text",
+      "length": 200,
+      "role": "Topic",
+      "origin": "Protocol"
+    },
+    {
+      "name": "IETEST",
+      "label": "Criterion Text",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    },
+    {
+      "name": "IECAT",
+      "label": "Criterion Category",
+      "type": "text",
+      "length": 200,
+      "role": "Variable Qualifier",
+      "origin": "Protocol"
+    }
+  ],
+  "columns": {
+    "STUDYID": ["DEMO-301", "DEMO-301", "DEMO-301"],
+    "DOMAIN": ["TI", "TI", "TI"],
+    "IETESTCD": ["INC01", "INC02", "EXC01"],
+    "IETEST": [
+      "Aged 18 to 75 years at screening.",
+      "Seated systolic blood pressure from 140 to 159 mmHg at screening and baseline.",
+      "Estimated glomerular filtration rate below 45 mL/min/1.73 m2."
+    ],
+    "IECAT": ["INCLUSION", "INCLUSION", "EXCLUSION"]
+  },
+  "rowCount": 3
+}

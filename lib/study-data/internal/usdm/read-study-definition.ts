@@ -141,6 +141,9 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
   const conceptsById = new Map(
     list(version.biomedicalConcepts).map((bc) => [bc.id, bc])
   );
+  const criterionItemsById = new Map(
+    list(version.eligibilityCriterionItems).map((item) => [item.id, item])
+  );
 
   const arms: ArmDefinition[] = list(design.arms).map((arm) => ({
     id: arm.id,
@@ -197,8 +200,11 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
     usdm,
     design: {
       phase: design.studyPhase?.standardCode?.decode ?? "",
+      phaseCode: design.studyPhase?.standardCode?.code ?? "",
       model: design.model?.decode ?? "",
+      modelCode: design.model?.code ?? "",
       blinding: design.blindingSchema?.standardCode?.decode ?? "",
+      blindingCode: design.blindingSchema?.standardCode?.code ?? "",
       plannedEnrollment,
       arms,
       epochs,
@@ -216,6 +222,21 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
       visits,
       activities,
       schedule,
+      eligibilityCriteria: list(design.eligibilityCriteria).map(
+        (criterion) => ({
+          id: criterion.id,
+          identifier: criterion.identifier,
+          category:
+            criterion.category.decode === "Inclusion Criteria"
+              ? ("INCLUSION" as const)
+              : ("EXCLUSION" as const),
+          text:
+            criterionItemsById.get(criterion.criterionItemId)?.text ??
+            fail(
+              `criterion ${criterion.id} references unknown item ${criterion.criterionItemId}`
+            ),
+        })
+      ),
       objectives: list(design.objectives).map((obj) => ({
         id: obj.id,
         name: obj.name,

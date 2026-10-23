@@ -225,6 +225,18 @@ export interface ScheduledActivity {
   readonly activityId: string;
 }
 
+/** A protocol eligibility criterion used by the TI trial-design domain. */
+export interface EligibilityCriterionDefinition {
+  /** USDM criterion id. */
+  readonly id: string;
+  /** Inclusion or exclusion criterion identifier. */
+  readonly identifier: string;
+  /** INCLUSION or EXCLUSION. */
+  readonly category: "INCLUSION" | "EXCLUSION";
+  /** Exact protocol criterion text. */
+  readonly text: string;
+}
+
 /** One endpoint of an objective. */
 export interface EndpointDefinition {
   /** USDM endpoint id. */
@@ -293,10 +305,16 @@ export interface AnalysisPopulationDefinition {
 export interface StudyDesignDefinition {
   /** Trial phase decode, for example `Phase III Trial`. */
   readonly phase: string;
+  /** Trial phase NCI EVS code. */
+  readonly phaseCode: string;
   /** Intervention model decode, for example `Parallel Study`. */
   readonly model: string;
+  /** Intervention model NCI EVS code. */
+  readonly modelCode: string;
   /** Blinding decode, for example `Double Blind Study`. */
   readonly blinding: string;
+  /** Blinding NCI EVS code. */
+  readonly blindingCode: string;
   /** Planned number of subjects. */
   readonly plannedEnrollment: number;
   /** Arms, in protocol order. */
@@ -313,6 +331,8 @@ export interface StudyDesignDefinition {
   readonly activities: readonly ActivityDefinition[];
   /** Schedule of activities: which activity is planned at which visit. */
   readonly schedule: readonly ScheduledActivity[];
+  /** Inclusion and exclusion criteria, in protocol order. */
+  readonly eligibilityCriteria: readonly EligibilityCriterionDefinition[];
   /** Objectives and their endpoints. */
   readonly objectives: readonly ObjectiveDefinition[];
   /** Estimands. */

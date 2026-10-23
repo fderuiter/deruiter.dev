@@ -15,6 +15,7 @@
 - [CodedValue](interfaces/CodedValue.md)
 - [Dataset](interfaces/Dataset.md)
 - [ElementDefinition](interfaces/ElementDefinition.md)
+- [EligibilityCriterionDefinition](interfaces/EligibilityCriterionDefinition.md)
 - [EndpointDefinition](interfaces/EndpointDefinition.md)
 - [EpochDefinition](interfaces/EpochDefinition.md)
 - [EstimandDefinition](interfaces/EstimandDefinition.md)

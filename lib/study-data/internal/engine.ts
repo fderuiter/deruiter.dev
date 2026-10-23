@@ -6,6 +6,7 @@
  */
 import { STANDARD_VERSIONS, SUBJECT_COUNT_LIMITS } from "../presets";
 import type { PipelineOptions, PipelineRun, StudyDefinition } from "../types";
+import { generateCollectedData } from "./synth/generate-collected-data";
 
 const MAX_SEED = 0xffffffff;
 
@@ -52,15 +53,16 @@ export function runPipeline(
   options: PipelineOptions
 ): PipelineRun {
   assertValidInputs(definition, options);
+  const datasets = generateCollectedData(definition, options);
   return {
-    datasets: [],
+    datasets,
     findings: [],
     manifest: {
       studyId: definition.studyId,
       seed: options.seed,
       nSubjects: options.nSubjects,
       standards: STANDARD_VERSIONS,
-      stages: [],
+      stages: ["usdm", "synth"],
       outputs: [],
     },
   };

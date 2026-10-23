@@ -51,14 +51,26 @@ describe("runPipeline", () => {
 
   it("returns a manifest that records the inputs and pinned standards", () => {
     const run = runPipeline(definition, options);
-    expect(run.datasets).toEqual([]);
+    expect(run.datasets.map((dataset) => dataset.name)).toEqual([
+      "DM",
+      "RAND",
+      "SV",
+      "EX",
+      "VS",
+      "LB",
+      "AE",
+      "DS",
+    ]);
+    expect(run.datasets.every((dataset) => dataset.layer === "collected")).toBe(
+      true
+    );
     expect(run.findings).toEqual([]);
     expect(run.manifest).toEqual({
       studyId: "DEMO-301",
       seed: DEFAULT_SEED,
       nSubjects: DEFAULT_SUBJECT_COUNT,
       standards: STANDARD_VERSIONS,
-      stages: [],
+      stages: ["usdm", "synth"],
       outputs: [],
     });
   });

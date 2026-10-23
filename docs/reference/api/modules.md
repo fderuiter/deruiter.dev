@@ -443,6 +443,7 @@
 - [lib/simulator](lib/simulator/README.md)
 - [lib/study-data](lib/study-data/README.md)
 - [lib/study-data/internal/engine](lib/study-data/internal/engine/README.md)
+- [lib/study-data/internal/synth/generate-collected-data](lib/study-data/internal/synth/generate-collected-data/README.md)
 - [lib/study-data/internal/usdm/read-study-definition](lib/study-data/internal/usdm/read-study-definition/README.md)
 - [lib/study-data/presets](lib/study-data/presets/README.md)
 - [lib/study-data/presets/demo-301](lib/study-data/presets/demo-301/README.md)

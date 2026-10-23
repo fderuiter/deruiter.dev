@@ -112,7 +112,7 @@ The `overrides` block in `package.json` pins transitive dependencies that an ups
 | `sharp`                      | `^0.35.5`                | `next` (image optimization)                             | 0.35.4                      | 1 new high advisory (GHSA-wq5f-xc86-pv6w)             |
 | `shell-quote`                | `^1.11.0`                | `concurrently`                                          | 1.9.0                       | 1 new critical advisory (GHSA-pqg4-j6r4-53mv)         |
 | `fast-glob`                  | `npm:tinyglobby@^0.2.17` | `eslint-config-next` through `@next/eslint-plugin-next` | 3.3.1                       | 1 new high advisory in `braces` (GHSA-vfj7-8cjw-p6xm) |
-| `fast-uri`                   | `^3.1.8`                 | `ajv` through Stryker and `@prisma/dev`                 | 3.1.7                       | 1 new moderate advisory (GHSA-hrr3-gc8f-f4qj)         |
+| `fast-uri`                   | `^3.1.9`                 | `ajv` through Stryker and `@prisma/dev`                 | 3.1.8                       | 4 new moderate advisories (#2723)                     |
 | `markdownlint-cli > js-yaml` | `~5.4.3`                 | `markdownlint-cli`                                      | 5.2.3                       | 1 new moderate advisory (GHSA-r3ph-w7gj-g6xm)         |
 | `zod`                        | `$zod`                   | `@serwist/next` and its build plugins                   | 4.6.5                       | 1 new high advisory (GHSA-mrhx-c7xc-m3w5)             |
 

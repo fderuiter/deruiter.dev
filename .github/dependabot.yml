@@ -27,10 +27,6 @@ updates:
         update-types: ["version-update:semver-major"]
       # Pinned for runtime compatibility (SECURITY.md, #995).
       - dependency-name: "jsdom"
-      # axe-core 4.14 adds a serious rule the Study Director overlays fail;
-      # held at 4.13 until #2571 fixes the labels.
-      - dependency-name: "axe-core"
-      - dependency-name: "@axe-core/playwright"
     groups:
       nextjs:
         patterns:

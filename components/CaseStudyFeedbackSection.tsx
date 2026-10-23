@@ -389,7 +389,7 @@ export function CaseStudyFeedbackSection({
                   onClick={() => handleReactionClick(type)}
                   disabled={isLoading}
                   aria-pressed={isReacted}
-                  aria-label={`React with ${label}, current count ${count}`}
+                  aria-label={`React with ${label}: ${count} so far`}
                   className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-mono font-medium border transition-all duration-150 active:scale-95 ${
                     isReacted
                       ? "bg-accent/15 border-accent/40 text-accent shadow-sm shadow-accent/10"
@@ -399,7 +399,7 @@ export function CaseStudyFeedbackSection({
                   <IconComponent
                     className={`w-4 h-4 ${isReacted ? "text-accent" : "text-zinc-400"}`}
                   />
-                  <span>{label}</span>
+                  <span>{label}</span>{" "}
                   <span
                     className={`ml-1 px-1.5 py-0.5 rounded text-[11px] font-bold ${
                       isReacted

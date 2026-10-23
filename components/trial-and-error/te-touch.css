@@ -62,11 +62,11 @@
 .te-touch [data-testid="hand"] > div {
   width: calc(8.5rem * var(--te-card-w-scale, 1));
 }
-.te-touch [data-testid="hand"] button[data-card-id] {
+.te-touch [data-testid="hand"] [data-hand-card] {
   height: calc(15rem * var(--te-card-scale, 1));
 }
 /* The card's table or listing preview grows with the card. */
-.te-touch [data-testid="hand"] button[data-card-id] .h-\[4\.75rem\] {
+.te-touch [data-testid="hand"] [data-hand-card] .h-\[4\.75rem\] {
   height: calc(4.75rem * var(--te-card-scale, 1));
 }
 /* The reorder grip is a 44px target straddling the card's top edge. */

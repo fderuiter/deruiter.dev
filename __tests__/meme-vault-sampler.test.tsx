@@ -253,7 +253,7 @@ describe("Meme Vault sampler face (#1526)", () => {
       SOUNDBOARD_BUTTONS[2].synthType
     );
     const pad = screen.getByRole("button", {
-      name: `Play ${SOUNDBOARD_BUTTONS[2].label}`,
+      name: (name) => name.includes(SOUNDBOARD_BUTTONS[2].label),
     });
     expect(pad.getAttribute("data-lit")).toBe("true");
     act(() => {

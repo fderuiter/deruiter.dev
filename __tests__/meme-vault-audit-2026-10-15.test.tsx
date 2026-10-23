@@ -141,7 +141,7 @@ describe("Meme Vault audit 2026-10-15", () => {
       renderVault();
       const echo = screen.getByTestId("meme-echo");
       const scope = screen.getByTestId("meme-oscilloscope");
-      const pad = screen.getByRole("button", { name: /Play Puppy Woof/ });
+      const pad = screen.getByRole("button", { name: /Puppy Woof/ });
       expect(
         echo.compareDocumentPosition(scope) & Node.DOCUMENT_POSITION_FOLLOWING
       ).toBeTruthy();
@@ -210,7 +210,7 @@ describe("Meme Vault audit 2026-10-15", () => {
       const pad = SOUNDBOARD_BUTTONS[expected];
       const marked = document.querySelectorAll('[data-missed="true"]');
       expect(marked).toHaveLength(1);
-      expect(marked[0].getAttribute("aria-label")).toBe(`Play ${pad.label}`);
+      expect(marked[0].textContent).toContain(pad.label);
       expect(status()).toContain(
         `The vault played ${expected + 1} · ${pad.label}`
       );

@@ -32,7 +32,9 @@ describe("Proof terminal connect uses its parsed arguments (#1226)", () => {
     runCommand("connect C E");
     runCommand("connect D E");
     expect(
-      screen.getByRole("button", { name: /^Node E, R, conclusion, proven/ })
+      screen.getByRole("button", {
+        name: /^Node E, PROVEN, R, .*, conclusion,/,
+      })
     ).toBeTruthy();
   });
 
@@ -42,7 +44,9 @@ describe("Proof terminal connect uses its parsed arguments (#1226)", () => {
     runCommand("connect C E");
     runCommand("connect D E");
     expect(
-      screen.getByRole("button", { name: /^Node E, R, conclusion, proven/ })
+      screen.getByRole("button", {
+        name: /^Node E, PROVEN, R, .*, conclusion,/,
+      })
     ).toBeTruthy();
   });
 
@@ -50,7 +54,9 @@ describe("Proof terminal connect uses its parsed arguments (#1226)", () => {
     render(<ProofWorkspaceClient />);
     runCommand("connect A E");
     expect(
-      screen.queryByRole("button", { name: /^Node E, R, conclusion, proven/ })
+      screen.queryByRole("button", {
+        name: /^Node E, PROVEN, R, .*, conclusion,/,
+      })
     ).toBeNull();
     expect(screen.getAllByText(/FALLACY DETECTED/).length).toBeGreaterThan(0);
   });

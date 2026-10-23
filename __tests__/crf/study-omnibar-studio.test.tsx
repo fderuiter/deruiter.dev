@@ -74,7 +74,7 @@ describe("Study Omnibar in CRF Studio (#544)", () => {
 
   async function openFromHeader() {
     const trigger = container.querySelector(
-      'button[aria-label="Find in study"]'
+      'button[aria-label="Find, F: search the study"]'
     ) as HTMLButtonElement;
     expect(trigger).toBeTruthy();
     await act(async () => {

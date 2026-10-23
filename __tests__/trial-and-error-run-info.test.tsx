@@ -114,7 +114,7 @@ describe("Guidance cards in the tray (T&E-UX-05)", () => {
     expect(item.textContent).toContain("FDA Study Data TCG");
     expect(item.textContent).toContain("+10 Chips +1 Mult");
     const use = within(item).getByRole("button", {
-      name: /Use FDA Study Data TCG: level High Table up from Lv\.1 to Lv\.2/,
+      name: /^Use GD FDA Study Data TCG, Use: High Table Lv\.2 .*Levels High Table up from Lv\.1 to Lv\.2/,
     });
     fireEvent.click(use);
 
@@ -159,7 +159,7 @@ describe("Guidance cards in the tray (T&E-UX-05)", () => {
     render(<CardTable scenario={authored(WITH_GUIDANCE)} seed="tick" />);
     fireEvent.click(
       within(screen.getByTestId("consumable")).getByRole("button", {
-        name: /Use FDA Study Data TCG/,
+        name: /^Use GD FDA Study Data TCG/,
       })
     );
     const plate = screen.getByTestId("level-up");

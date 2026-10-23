@@ -6,7 +6,9 @@ test("Study Omnibar finds a field in another form and restores focus", async ({
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/crf");
 
-  const trigger = page.getByRole("button", { name: "Find in study" });
+  const trigger = page.getByRole("button", {
+    name: "Find, F: search the study",
+  });
   const dialog = page.getByRole("dialog", { name: "Find in Study" });
   const input = dialog.getByRole("combobox", {
     name: "Search forms, fields, visits and actions",

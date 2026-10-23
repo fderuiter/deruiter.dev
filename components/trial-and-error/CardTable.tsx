@@ -1976,21 +1976,22 @@ export function CardTable({
                   const chip =
                     "flex min-h-11 w-full min-w-0 flex-col items-center justify-center border border-emerald-500/60 bg-emerald-500/5 px-1.5 py-1 text-center text-xs font-bold leading-tight text-emerald-300";
                   const phase = RELIC_PHASE_LABELS[relicPhase(relic)];
-                  const face = (
-                    <>
-                      <span
-                        className="line-clamp-2 min-w-0 break-words"
-                        data-testid="relic-name"
-                      >
-                        {relicChipLabel(relic)}
-                      </span>
-                      <span
-                        className="text-xs font-normal text-zinc-400"
-                        data-testid="relic-phase"
-                      >
-                        {phase}
-                      </span>
-                    </>
+                  const chipLabel = relicChipLabel(relic);
+                  const chipName = (
+                    <span
+                      className="line-clamp-2 min-w-0 break-words"
+                      data-testid="relic-name"
+                    >
+                      {chipLabel}
+                    </span>
+                  );
+                  const chipPhase = (
+                    <span
+                      className="text-xs font-normal text-zinc-400"
+                      data-testid="relic-phase"
+                    >
+                      {phase}
+                    </span>
                   );
                   return (
                     <li
@@ -2002,7 +2003,10 @@ export function CardTable({
                       {shopView ? (
                         <button
                           type="button"
-                          aria-label={`${relic.name}, ${phase}: ${relic.description} Sells for $${shopView.relicSellValues[relic.id]}k. Press S or Enter to sell.`}
+                          // The name opens with the chip's own words, so
+                          // speech input users can say what they see (axe
+                          // label-content-name-mismatch).
+                          aria-label={`${chipLabel} ${phase}${chipLabel === relic.name ? "" : `, ${relic.name}`}: ${relic.description} Sells for $${shopView.relicSellValues[relic.id]}k. Press S or Enter to sell.`}
                           onClick={() => setSellRelicId(relic.id)}
                           onKeyDown={(e) => {
                             if (e.key === "s" || e.key === "S") {
@@ -2013,10 +2017,13 @@ export function CardTable({
                           className={`${chip} touch-manipulation hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]`}
                           data-testid="relic-sell"
                         >
-                          {face}
+                          {chipName} {chipPhase}
                         </button>
                       ) : (
-                        <span className={chip}>{face}</span>
+                        <span className={chip}>
+                          {chipName}
+                          {chipPhase}
+                        </span>
                       )}
                     </li>
                   );
@@ -2095,6 +2102,10 @@ export function CardTable({
                     const preview = view.amendmentPreviews.find(
                       (p) => p.consumableId === item.id
                     );
+                    const shown =
+                      preview && preview.refusal === null
+                        ? `Use: ${preview.ruleLabel} +${preview.bonus.to} Mult · stales ${preview.staled.length}`
+                        : (preview?.refusal ?? amendment.description);
                     return (
                       <span
                         key={item.id}
@@ -2112,7 +2123,10 @@ export function CardTable({
                             preview.refusal !== null
                           }
                           title={preview?.refusal ?? amendment.description}
-                          aria-label={`Use ${amendment.name}: ${amendment.description}${preview?.refusal ? ` ${preview.refusal}` : ""}`}
+                          // The name holds the badge, name and line the tile
+                          // shows, in order, so speech input users can say
+                          // what they see (axe label-content-name-mismatch).
+                          aria-label={`Use ${amendment.code} ${amendment.name}, ${shown}${shown === amendment.description ? "" : `. ${amendment.description}`}`}
                           className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
                         >
                           <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-amber-300">
@@ -2121,15 +2135,13 @@ export function CardTable({
                               className="flex h-4 w-4 shrink-0 items-center justify-center border border-amber-400 bg-amber-950 text-[7px]"
                             >
                               {amendment.code}
-                            </span>
+                            </span>{" "}
                             <span className="min-w-0 break-words">
                               {amendment.name}
                             </span>
-                          </span>
+                          </span>{" "}
                           <span className="block text-zinc-300 break-words">
-                            {preview && preview.refusal === null
-                              ? `Use: ${preview.ruleLabel} +${preview.bonus.to} Mult · stales ${preview.staled.length}`
-                              : (preview?.refusal ?? amendment.description)}
+                            {shown}
                           </span>
                         </button>
                         {sellButton}
@@ -2157,7 +2169,7 @@ export function CardTable({
                           }
                           disabled={view.status !== "REVIEWING" || playing}
                           title={`${guidance.document}. ${guidance.flavor}`}
-                          aria-label={`Use ${guidance.name}: level ${HAND_NAMES[guidance.handType]} up from Lv.${level} to Lv.${level + 1}, +${bonus.chips} Chips and +${bonus.mult} Mult.`}
+                          aria-label={`Use GD ${guidance.name}, Use: ${HAND_NAMES[guidance.handType]} Lv.${level + 1} · +${bonus.chips} Chips +${bonus.mult} Mult. Levels ${HAND_NAMES[guidance.handType]} up from Lv.${level} to Lv.${level + 1}.`}
                           className="min-h-[44px] min-w-0 flex-1 px-2 py-1 text-left touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 disabled:text-zinc-400"
                         >
                           <span className="flex items-start gap-1 font-bold uppercase tracking-wider text-sky-300">
@@ -2166,11 +2178,11 @@ export function CardTable({
                               className="flex h-4 w-4 shrink-0 items-center justify-center border border-sky-400 bg-sky-950 text-[7px]"
                             >
                               GD
-                            </span>
+                            </span>{" "}
                             <span className="min-w-0 break-words">
                               {guidance.name}
                             </span>
-                          </span>
+                          </span>{" "}
                           <span className="block text-zinc-300 break-words">
                             Use: {HAND_NAMES[guidance.handType]} Lv.{level + 1}{" "}
                             · +{bonus.chips} Chips +{bonus.mult} Mult

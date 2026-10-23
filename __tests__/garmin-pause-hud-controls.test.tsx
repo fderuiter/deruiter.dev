@@ -355,7 +355,7 @@ describe("Garmin controls (#1318)", () => {
       startButton().click();
     });
     expect(startButton().textContent).toContain("RESUME");
-    expect(startButton().getAttribute("aria-label")).toBe("Resume (Enter / P)");
+    expect(startButton().getAttribute("aria-label")).toBe("Resume, Enter or P");
     await act(async () => {
       startButton().click();
     });

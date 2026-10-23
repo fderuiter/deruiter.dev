@@ -170,7 +170,7 @@ export const MedicalDisclaimerBanner: React.FC<
           type="button"
           onClick={handleDismiss}
           data-testid="medical-disclaimer-dismiss"
-          aria-label="Dismiss medical disclaimer for this session"
+          aria-label="Dismiss for Session: the medical disclaimer"
           className="min-h-[44px] min-w-[44px] shrink-0 self-end sm:self-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 active:scale-[0.98] border border-amber-500/40 hover:border-amber-500/60 text-amber-300 hover:text-white transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
         >
           <IconX className="w-4 h-4" />

@@ -39,7 +39,7 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
     // Open Command Palette via visible Search trigger button in Navbar with hydration retry
     await expect(async () => {
       const desktopSearchBtn = page.getByRole("button", {
-        name: "Search portfolio and commands (Press Command+K)",
+        name: /search portfolio and commands/i,
       });
       const mobileSearchBtn = page.getByRole("button", {
         name: "Open Command Search",

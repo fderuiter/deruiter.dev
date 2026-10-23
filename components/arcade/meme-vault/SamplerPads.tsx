@@ -69,7 +69,6 @@ export function SamplerPads({
               key={pad.id}
               type="button"
               onClick={() => onPress(pad)}
-              aria-label={`Play ${pad.label}`}
               aria-keyshortcuts={key}
               aria-describedby={`meme-pad-desc-${pad.id}`}
               data-lit={isLit ? "true" : "false"}
@@ -79,14 +78,17 @@ export function SamplerPads({
               {/* Emerald press glow: an opacity-only layer, lit while the
                   pad's sound plays. */}
               <span aria-hidden="true" className="meme-pad-glow" />
+              {/* The visible key, category and label are the name, so
+                  speech input users can say what they see. */}
+              <span className="sr-only">Play </span>
               <span className="relative flex items-start justify-between gap-2">
                 <kbd className="inline-flex h-6 min-w-6 items-center justify-center rounded border border-white/[0.12] bg-[#0d0e11] px-1.5 font-mono text-[11px] pointer-coarse:text-xs font-semibold tabular-nums text-zinc-300 shadow-[0_1px_0_rgba(255,255,255,0.06)] group-data-[missed=true]:border-amber-400/70 group-data-[missed=true]:text-amber-300 group-data-[lit=true]:border-emerald-500/60 group-data-[lit=true]:text-emerald-300">
                   {key}
-                </kbd>
+                </kbd>{" "}
                 <span className="font-mono text-[10px] pointer-coarse:text-xs uppercase tracking-wider text-zinc-400">
                   {pad.category}
                 </span>
-              </span>
+              </span>{" "}
               {renderPadPictogram(pad.id, {
                 stroke: 1.5,
                 className:
@@ -95,7 +97,7 @@ export function SamplerPads({
               <span className="relative min-w-0">
                 <span className="block text-[13px] font-semibold leading-tight text-zinc-100 @lg:text-sm">
                   {pad.label}
-                </span>
+                </span>{" "}
                 <span
                   id={`meme-pad-desc-${pad.id}`}
                   className="mt-1 hidden font-sans text-[11px] pointer-coarse:text-xs leading-snug text-zinc-400 @3xl:line-clamp-2"

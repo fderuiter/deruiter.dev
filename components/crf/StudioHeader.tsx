@@ -301,11 +301,11 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
               onClick={onOpenOmnibar}
               className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors inline-flex items-center gap-1 text-[11px] font-mono shrink-0 active:scale-[0.98]"
               title="Find forms, fields, visits and actions (F)"
-              aria-label="Find in study"
+              aria-label="Find, F: search the study"
               aria-keyshortcuts="F"
             >
               <IconSearch className="w-3.5 h-3.5" aria-hidden />
-              <span className="hidden lg:inline">Find</span>
+              <span className="hidden lg:inline">Find</span>{" "}
               <kbd className="hidden lg:inline-block text-[9px] px-1 rounded bg-zinc-950 border border-zinc-700 text-zinc-400">
                 F
               </kbd>

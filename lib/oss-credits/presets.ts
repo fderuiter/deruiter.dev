@@ -206,6 +206,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Testing",
     reason: "Runs Vitest under Stryker.",
   },
+  ajv: {
+    group: "Testing",
+    reason:
+      "Validates the study data package's Dataset-JSON files against the published CDISC JSON schema.",
+  },
   "@total-typescript/shoehorn": {
     group: "Testing",
     reason: "Type-safe partial mocks in tests.",

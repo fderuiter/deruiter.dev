@@ -5,7 +5,7 @@
     "total": 1196,
     "runtime": 575,
     "tooling": 621,
-    "direct": 72
+    "direct": 73
   },
   "packages": [
     {
@@ -4338,9 +4338,11 @@
       "version": "8.20.0",
       "license": "MIT",
       "scope": "runtime",
-      "direct": false,
+      "direct": true,
       "homepage": "https://ajv.js.org",
-      "repository": "https://github.com/ajv-validator/ajv"
+      "repository": "https://github.com/ajv-validator/ajv",
+      "group": "Testing",
+      "reason": "Validates the study data package's Dataset-JSON files against the published CDISC JSON schema."
     },
     {
       "name": "angular-html-parser",

@@ -1,0 +1,1022 @@
+// @vitest-environment node
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import * as fc from "fast-check";
+import { describe, expect, it } from "vitest";
+import {
+  DEFAULT_PORTFOLIO_SEED,
+  SCD2_OPEN_END,
+  SYNTHETIC_DATA_NOTICE,
+  WAREHOUSE_SCHEMA,
+  buildWarehouse,
+  checkLayerFlow,
+  checkRegulatoryWording,
+  checkWarehouse,
+  emitDdl,
+  exportWarehouse,
+  findClinicalClaims,
+  generatePortfolio,
+  renderWarehouseErd,
+  renderWarehouseReference,
+  siteStaffFeed,
+  warehouseLineage,
+  type Portfolio,
+  type SqlDialect,
+  type Warehouse,
+  type WarehouseRow,
+  type WarehouseSchema,
+  type WarehouseTable,
+} from "@/lib/clinical-platform";
+import {
+  WAREHOUSE_DDL_GOLDENS,
+  WAREHOUSE_REFERENCE_PAGE,
+  warehouseArtifacts,
+} from "../scripts/generate-warehouse-artifacts";
+
+/**
+ * SHA-256 of `JSON.stringify(buildWarehouse(generatePortfolio({ seed: 301 })))`.
+ * A change to the portfolio, the schema or the build that alters any row
+ * changes it. Update it deliberately, with `GOLDEN_ROW_COUNTS`, and say why.
+ */
+const GOLDEN_SHA256 =
+  "a4492a0746645d29f0b69d8faa9a465be199f7d4cfd38fe73927d3114061777b";
+
+/** Rows per table for the default seed: the readable half of the golden. */
+const GOLDEN_ROW_COUNTS = {
+  "silver.study": 8,
+  "silver.planned_visit": 56,
+  "silver.site": 120,
+  "silver.vendor": 7,
+  "silver.edc_subject": 1808,
+  "silver.edc_visit": 7727,
+  "silver.edc_query": 3559,
+  "silver.ctms_milestone": 72,
+  "silver.ctms_monitoring_visit": 1123,
+  "silver.ctms_deviation": 329,
+  "silver.ctms_site_staff": 129,
+  "silver.irt_randomization": 1098,
+  "silver.irt_kit": 3342,
+  "silver.etmf_document": 656,
+  "silver.finance_line": 363,
+  "silver.cec_adjudication": 39,
+  "gold.dim_study": 8,
+  "gold.dim_site": 265,
+  "gold.dim_country": 12,
+  "gold.dim_date": 1827,
+  "gold.dim_vendor": 8,
+  "gold.dim_milestone": 9,
+  "gold.fct_enrollment": 3727,
+  "gold.fct_visit": 7727,
+  "gold.fct_query": 3559,
+  "gold.fct_deviation": 329,
+  "gold.fct_monitoring_visit": 1123,
+  "gold.fct_milestone": 72,
+  "gold.fct_spend": 1089,
+  "gold.fct_kri_snapshot": 7944,
+};
+
+const portfolio = generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED });
+const warehouse = buildWarehouse(portfolio);
+const root = process.cwd();
+
+function rows(name: string, w: Warehouse = warehouse): readonly WarehouseRow[] {
+  const found = w.tables[name];
+  if (found === undefined) throw new Error(`no table ${name}`);
+  return found;
+}
+
+function table(name: string): WarehouseTable {
+  const found = WAREHOUSE_SCHEMA.tables.find(
+    (t) => `${t.layer}.${t.name}` === name
+  );
+  if (found === undefined) throw new Error(`no table ${name}`);
+  return found;
+}
+
+function withRows(
+  name: string,
+  edit: (current: readonly WarehouseRow[]) => readonly WarehouseRow[]
+): Warehouse {
+  return {
+    ...warehouse,
+    tables: { ...warehouse.tables, [name]: edit(rows(name)) },
+  };
+}
+
+/** The `dim_site` version a site was in on a day. */
+function siteVersionOn(
+  w: Warehouse,
+  siteId: string,
+  day: string
+): WarehouseRow | undefined {
+  return rows("gold.dim_site", w).find(
+    (v) =>
+      v.site_id === siteId &&
+      String(v.valid_from) <= day &&
+      day < String(v.valid_to)
+  );
+}
+
+function dateOfKey(key: unknown): string {
+  const text = String(key);
+  return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+}
+
+describe("buildWarehouse: determinism and budget", () => {
+  it("matches the golden hash and row counts for the default seed", () => {
+    const counts = Object.fromEntries(
+      Object.entries(warehouse.tables).map(([name, r]) => [name, r.length])
+    );
+    expect(counts).toEqual(GOLDEN_ROW_COUNTS);
+    expect(
+      createHash("sha256").update(JSON.stringify(warehouse)).digest("hex")
+    ).toBe(GOLDEN_SHA256);
+  });
+
+  it("gives byte-identical output for the same portfolio", () => {
+    expect(JSON.stringify(buildWarehouse(portfolio))).toBe(
+      JSON.stringify(warehouse)
+    );
+  });
+
+  it("builds the default warehouse in well under 500 ms", () => {
+    // Best of five: a slower algorithm fails it, a busy machine does not.
+    const runs = Array.from({ length: 5 }, () => {
+      const start = performance.now();
+      buildWarehouse(portfolio);
+      return performance.now() - start;
+    });
+    expect(Math.min(...runs)).toBeLessThan(500);
+  });
+
+  it("holds every table of the schema, in schema order", () => {
+    expect(Object.keys(warehouse.tables)).toEqual(
+      WAREHOUSE_SCHEMA.tables.map((t) => `${t.layer}.${t.name}`)
+    );
+    expect(warehouse.portfolioId).toBe(portfolio.id);
+    expect(warehouse.asOf).toBe(portfolio.asOf);
+    for (const [name, tableRows] of Object.entries(warehouse.tables)) {
+      expect(tableRows.length, name).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("buildWarehouse: integrity", () => {
+  it("passes every schema check for the default seed", () => {
+    expect(checkWarehouse(WAREHOUSE_SCHEMA, warehouse)).toEqual([]);
+  });
+
+  it("passes every schema check for other seeds", () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 0xffffffff }), (seed) => {
+        const w = buildWarehouse(generatePortfolio({ seed }));
+        expect(checkWarehouse(WAREHOUSE_SCHEMA, w)).toEqual([]);
+      }),
+      { numRuns: 2, seed: 2623 }
+    );
+  });
+
+  it("is unique at every fact's declared grain", () => {
+    for (const t of WAREHOUSE_SCHEMA.tables.filter((x) => x.kind === "fact")) {
+      const r = rows(`gold.${t.name}`);
+      const keys = new Set(
+        r.map((row) => JSON.stringify(t.primaryKey.map((c) => row[c])))
+      );
+      expect(keys.size, t.name).toBe(r.length);
+      expect(t.grain, t.name).toMatch(/^One row per /);
+    }
+  });
+
+  it("resolves every foreign key to its dimension", () => {
+    let checked = 0;
+    for (const t of WAREHOUSE_SCHEMA.tables) {
+      for (const column of t.columns) {
+        if (column.references === null) continue;
+        const target = new Set(
+          rows(column.references.table).map(
+            (r) => r[column.references?.column ?? ""]
+          )
+        );
+        for (const row of rows(`${t.layer}.${t.name}`)) {
+          const value = row[column.name];
+          if (value === null) continue;
+          expect(target.has(value), `${t.name}.${column.name}`).toBe(true);
+          checked += 1;
+        }
+      }
+    }
+    expect(checked).toBeGreaterThan(100_000);
+  });
+
+  it("ties every fact to every conformed dimension it declares", () => {
+    const declared = (name: string) =>
+      new Set(
+        table(`gold.${name}`)
+          .columns.filter((c) => c.references !== null)
+          .map((c) => c.references?.table)
+      );
+    for (const name of [
+      "fct_enrollment",
+      "fct_visit",
+      "fct_query",
+      "fct_deviation",
+      "fct_monitoring_visit",
+      "fct_kri_snapshot",
+    ]) {
+      for (const dim of ["dim_study", "dim_site", "dim_country", "dim_date"]) {
+        expect(declared(name).has(`gold.${dim}`), `${name} ${dim}`).toBe(true);
+      }
+    }
+    expect(declared("fct_spend")).toEqual(
+      new Set(["gold.dim_study", "gold.dim_vendor", "gold.dim_date"])
+    );
+    expect(declared("fct_milestone")).toEqual(
+      new Set(["gold.dim_study", "gold.dim_milestone", "gold.dim_date"])
+    );
+  });
+
+  it("keeps one fct_spend row per study, vendor and month, summing to finance", () => {
+    const spend = rows("gold.fct_spend");
+    const sum = (r: readonly WarehouseRow[], c: string) =>
+      r.reduce((acc, row) => acc + Number(row[c]), 0);
+    expect(sum(spend, "budget_usd")).toBe(
+      portfolio.feeds.finance.reduce((acc, f) => acc + f.budgetUsd, 0)
+    );
+    expect(sum(spend, "actual_usd")).toBe(
+      portfolio.feeds.finance.reduce((acc, f) => acc + f.actualUsd, 0)
+    );
+    expect(spend.every((r) => String(r.month_date_key).endsWith("01"))).toBe(
+      true
+    );
+    expect(spend.some((r) => r.vendor_key === 0)).toBe(true);
+    expect(
+      spend.every(
+        (r) => r.variance_usd === Number(r.actual_usd) - Number(r.budget_usd)
+      )
+    ).toBe(true);
+  });
+
+  it("covers every fact date with whole calendar years in dim_date", () => {
+    const dates = rows("gold.dim_date");
+    expect(String(dates[0].calendar_date)).toMatch(/-01-01$/);
+    expect(String(dates[dates.length - 1].calendar_date)).toMatch(/-12-31$/);
+    const first = dates.find((d) => d.calendar_date === "2026-09-30");
+    expect(first).toMatchObject({
+      date_key: 20260930,
+      year_number: 2026,
+      quarter_number: 3,
+      month_number: 9,
+      month_name: "September",
+      iso_day_of_week: 3,
+      year_quarter: "2026-Q3",
+      is_month_end: true,
+    });
+    const leap = dates.find((d) => d.calendar_date === "2028-02-29");
+    expect(leap?.is_month_end).toBe(true);
+    expect(
+      dates.find((d) => d.calendar_date === "2025-01-05")?.iso_day_of_week
+    ).toBe(7);
+  });
+
+  it("snapshots four KRIs per active site month, cumulative and never decreasing", () => {
+    const kri = rows("gold.fct_kri_snapshot");
+    expect(new Set(kri.map((r) => r.kri_id))).toEqual(
+      new Set([
+        "query-rate",
+        "missed-visit-rate",
+        "important-deviation-rate",
+        "entry-lag-days",
+      ])
+    );
+    const site = new Map(
+      rows("gold.dim_site").map((s) => [s.site_key, s.site_id])
+    );
+    const series = new Map<string, WarehouseRow[]>();
+    for (const row of kri) {
+      const id = `${String(site.get(row.site_key))}|${String(row.kri_id)}`;
+      series.set(id, [...(series.get(id) ?? []), row]);
+    }
+    for (const [id, points] of series) {
+      for (let i = 1; i < points.length; i += 1) {
+        expect(Number(points[i].denominator), id).toBeGreaterThanOrEqual(
+          Number(points[i - 1].denominator)
+        );
+        expect(Number(points[i].snapshot_date_key)).toBeGreaterThan(
+          Number(points[i - 1].snapshot_date_key)
+        );
+      }
+    }
+    expect(
+      kri.every((r) =>
+        r.denominator === 0
+          ? r.kri_value === null
+          : r.kri_value ===
+            Math.round((Number(r.numerator) / Number(r.denominator)) * 10_000) /
+              10_000
+      )
+    ).toBe(true);
+    expect(kri.every((r) => Number(r.snapshot_date_key) <= 20260930)).toBe(
+      true
+    );
+  });
+});
+
+describe("buildWarehouse: SCD type 2 on dim_site", () => {
+  const sites = rows("gold.dim_site");
+  const changed = sites.find(
+    (s) =>
+      s.version_number !== 1 &&
+      String(s.principal_investigator_id).endsWith("-2")
+  );
+
+  it("opens a new version on each status and principal investigator change", () => {
+    expect(new Set(sites.map((s) => s.site_id)).size).toBe(
+      portfolio.sites.length
+    );
+    const changes = sites.filter((s) =>
+      String(s.principal_investigator_id).endsWith("-2")
+    );
+    const changedSites = new Set(changes.map((s) => s.site_id));
+    expect(changedSites.size).toBeGreaterThan(0);
+    expect(changedSites.size).toBe(
+      siteStaffFeed(portfolio).filter((a) => a.investigatorId.endsWith("-2"))
+        .length
+    );
+    expect(sites.filter((s) => s.is_current).length).toBe(
+      portfolio.sites.length
+    );
+    expect(sites.filter((s) => s.site_status === "closed").length).toBe(
+      new Set(
+        portfolio.feeds.ctms.monitoringVisits
+          .filter((m) => m.type === "COV")
+          .map((m) => m.siteId)
+      ).size
+    );
+  });
+
+  it("closes the old version the day the new principal investigator starts", () => {
+    expect(changed).toBeDefined();
+    const versions = sites
+      .filter((s) => s.site_id === changed?.site_id)
+      .sort((a, b) => Number(a.version_number) - Number(b.version_number));
+    const index = versions.findIndex((v) => v.site_key === changed?.site_key);
+    const before = versions[index - 1];
+    expect(before.valid_to).toBe(changed?.valid_from);
+    expect(String(before.principal_investigator_id)).toMatch(/-1$/);
+    expect(before.is_current).toBe(false);
+    expect(versions[versions.length - 1].valid_to).toBe(SCD2_OPEN_END);
+    const assignment = siteStaffFeed(portfolio).find(
+      (a) => a.siteId === changed?.site_id && a.investigatorId.endsWith("-2")
+    );
+    expect(assignment?.startOn).toBe(changed?.valid_from);
+  });
+
+  it("joins each fact to the version in force on the fact's date", () => {
+    const siteOf = new Map(sites.map((s) => [s.site_key, s]));
+    const visitSite = new Map(
+      portfolio.feeds.edc.visits.map((v) => [v.visitId, v.siteId])
+    );
+    let before = 0;
+    let after = 0;
+    for (const visit of rows("gold.fct_visit")) {
+      const day = dateOfKey(visit.visit_date_key ?? visit.planned_date_key);
+      const siteId = String(visitSite.get(String(visit.visit_id)));
+      const expected = siteVersionOn(warehouse, siteId, day);
+      expect(siteOf.get(visit.site_key)?.site_key).toBe(expected?.site_key);
+      if (siteId === changed?.site_id) {
+        if (day < String(changed.valid_from)) before += 1;
+        else after += 1;
+      }
+    }
+    expect(before).toBeGreaterThan(0);
+    expect(after).toBeGreaterThan(0);
+    const querySite = new Map(
+      portfolio.feeds.edc.queries.map((q) => [q.queryId, q.siteId])
+    );
+    for (const query of rows("gold.fct_query")) {
+      const expected = siteVersionOn(
+        warehouse,
+        String(querySite.get(String(query.query_id))),
+        dateOfKey(query.opened_date_key)
+      );
+      expect(query.site_key).toBe(expected?.site_key);
+    }
+  });
+
+  it("creates a new row for a principal investigator change given as a fixture", () => {
+    const site = portfolio.sites.find(
+      (s) =>
+        !siteStaffFeed(portfolio).some(
+          (a) => a.siteId === s.id && a.investigatorId.endsWith("-2")
+        ) &&
+        portfolio.feeds.edc.visits.filter((v) => v.siteId === s.id).length > 20
+    );
+    if (site === undefined) throw new Error("no fixture site");
+    const visitDates = portfolio.feeds.edc.visits
+      .filter((v) => v.siteId === site.id && v.visitDate !== null)
+      .map((v) => String(v.visitDate))
+      .sort();
+    const changeOn = visitDates[Math.floor(visitDates.length / 2)];
+    const staff = siteStaffFeed(portfolio).flatMap((a) =>
+      a.siteId !== site.id
+        ? [a]
+        : [
+            { ...a, endOn: "2000-01-01" },
+            {
+              ...a,
+              assignmentId: `${site.id}-FIXTURE`,
+              investigatorId: "INV-FIXTURE",
+              startOn: changeOn,
+              endOn: null,
+            },
+          ]
+    );
+    const w = buildWarehouse(portfolio, { siteStaff: staff });
+    expect(checkWarehouse(WAREHOUSE_SCHEMA, w)).toEqual([]);
+    expect(rows("gold.dim_site", w).length).toBe(sites.length + 1);
+    const versions = rows("gold.dim_site", w).filter(
+      (v) => v.site_id === site.id
+    );
+    const fresh = versions.find(
+      (v) => v.principal_investigator_id === "INV-FIXTURE"
+    );
+    expect(fresh).toMatchObject({ valid_from: changeOn });
+    const previous = versions.find(
+      (v) => v.version_number === Number(fresh?.version_number) - 1
+    );
+    expect(previous).toMatchObject({ valid_to: changeOn, is_current: false });
+    expect(previous?.principal_investigator_id).not.toBe("INV-FIXTURE");
+
+    const piOf = new Map(
+      rows("gold.dim_site", w).map((v) => [
+        v.site_key,
+        v.principal_investigator_id,
+      ])
+    );
+    const visitDateOf = new Map(
+      portfolio.feeds.edc.visits.map((v) => [v.visitId, v.visitDate])
+    );
+    let joined = 0;
+    for (const visit of rows("gold.fct_visit", w)) {
+      const date = visitDateOf.get(String(visit.visit_id));
+      if (
+        !portfolio.feeds.edc.visits.some(
+          (v) => v.visitId === visit.visit_id && v.siteId === site.id
+        ) ||
+        date === null ||
+        date === undefined
+      )
+        continue;
+      expect(piOf.get(visit.site_key), String(visit.visit_id)).toBe(
+        date < changeOn ? previous?.principal_investigator_id : "INV-FIXTURE"
+      );
+      joined += 1;
+    }
+    expect(joined).toBe(visitDates.length);
+  });
+});
+
+describe("silver layer", () => {
+  it("conforms keys, ISO 8601 dates and UTC timestamps", () => {
+    const isoDate = /^\d{4}-\d{2}-\d{2}$/;
+    const utc = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+    for (const t of WAREHOUSE_SCHEMA.tables.filter(
+      (x) => x.layer === "silver"
+    )) {
+      for (const row of rows(`silver.${t.name}`)) {
+        for (const column of t.columns) {
+          const value = row[column.name];
+          if (value === null) continue;
+          if (column.type === "date") expect(value).toMatch(isoDate);
+          if (column.type === "timestamp") expect(value).toMatch(utc);
+        }
+      }
+    }
+    expect(
+      rows("silver.site").every((s) =>
+        /^[A-Z]{2}$/.test(String(s.country_code))
+      )
+    ).toBe(true);
+    expect(rows("silver.finance_line")[0]).toMatchObject({
+      fiscal_quarter: portfolio.feeds.finance[0].period,
+      quarter_start_on: expect.stringMatching(/^\d{4}-(01|04|07|10)-01$/),
+    });
+  });
+
+  it("keeps one row per key, the later delivery winning", () => {
+    const { edc } = portfolio.feeds;
+    const resent = { ...edc.subjects[0], status: "discontinued" as const };
+    const duplicated: Portfolio = {
+      ...portfolio,
+      feeds: {
+        ...portfolio.feeds,
+        edc: { ...edc, subjects: [...edc.subjects, resent] },
+      },
+    };
+    const w = buildWarehouse(duplicated);
+    const subjects = rows("silver.edc_subject", w);
+    expect(subjects).toHaveLength(edc.subjects.length);
+    expect(subjects[0]).toMatchObject({
+      subject_id: resent.subjectId,
+      subject_status: "discontinued",
+    });
+    expect(checkWarehouse(WAREHOUSE_SCHEMA, w)).toEqual([]);
+  });
+
+  it("rejects a malformed quarter or timestamp", () => {
+    const badQuarter: Portfolio = {
+      ...portfolio,
+      feeds: {
+        ...portfolio.feeds,
+        finance: [{ ...portfolio.feeds.finance[0], period: "2026-Q5" }],
+      },
+    };
+    expect(() => buildWarehouse(badQuarter)).toThrow(RangeError);
+    const { edc } = portfolio.feeds;
+    const badTime: Portfolio = {
+      ...portfolio,
+      feeds: {
+        ...portfolio.feeds,
+        edc: {
+          ...edc,
+          queries: [{ ...edc.queries[0], openedAt: "yesterday" }],
+        },
+      },
+    };
+    expect(() => buildWarehouse(badTime)).toThrow(RangeError);
+  });
+
+  it("normalises a timestamp with an offset to UTC", () => {
+    const { edc } = portfolio.feeds;
+    const offset: Portfolio = {
+      ...portfolio,
+      feeds: {
+        ...portfolio.feeds,
+        edc: {
+          ...edc,
+          queries: [
+            { ...edc.queries[0], openedAt: "2025-04-16T13:25:00+02:00" },
+          ],
+        },
+      },
+    };
+    expect(rows("silver.edc_query", buildWarehouse(offset))[0].opened_at).toBe(
+      "2025-04-16T11:25:00Z"
+    );
+  });
+});
+
+describe("checkWarehouse", () => {
+  const rules = (w: Warehouse) =>
+    checkWarehouse(WAREHOUSE_SCHEMA, w).map((f) => f.rule);
+
+  it("finds a duplicate at a fact's grain and a duplicate natural key", () => {
+    expect(rules(withRows("gold.fct_visit", (r) => [...r, r[0]]))).toContain(
+      "grain"
+    );
+    expect(
+      rules(
+        withRows("gold.dim_study", (r) => [...r, { ...r[0], study_key: 99 }])
+      )
+    ).toContain("unique");
+  });
+
+  it("finds a foreign key with no dimension row", () => {
+    expect(
+      rules(
+        withRows("gold.fct_query", (r) => [
+          { ...r[0], study_key: 999 },
+          ...r.slice(1),
+        ])
+      )
+    ).toEqual(["foreign-key"]);
+  });
+
+  it("finds wrong types, nulls, lengths and unknown or missing columns", () => {
+    const [first, ...rest] = rows("silver.site");
+    const edits: [WarehouseRow, string][] = [
+      [{ ...first, planned_enrollment: "nine" }, "type"],
+      [{ ...first, planned_enrollment: 1.5 }, "type"],
+      [{ ...first, activated_on: "2025-02-30" }, "type"],
+      [{ ...first, site_name: null }, "nullability"],
+      [{ ...first, country_code: "USA" }, "length"],
+      [{ ...first, extra: 1 }, "column"],
+    ];
+    for (const [row, rule] of edits) {
+      expect(
+        rules(withRows("silver.site", () => [row, ...rest])),
+        rule
+      ).toContain(rule);
+    }
+    const { site_name: _dropped, ...missing } = first;
+    void _dropped;
+    expect(rules(withRows("silver.site", () => [missing, ...rest]))).toContain(
+      "column"
+    );
+    const [query, ...queries] = rows("silver.edc_query");
+    expect(
+      rules(
+        withRows("silver.edc_query", () => [
+          { ...query, opened_at: "2025-04-16 11:25" },
+          ...queries,
+        ])
+      )
+    ).toContain("type");
+    const [kri, ...kris] = rows("gold.fct_kri_snapshot");
+    expect(
+      rules(
+        withRows("gold.fct_kri_snapshot", () => [
+          { ...kri, kri_value: 0.12345 },
+          ...kris,
+        ])
+      )
+    ).toContain("type");
+    const [flag, ...flags] = rows("gold.dim_date");
+    expect(
+      rules(
+        withRows("gold.dim_date", () => [
+          { ...flag, is_month_end: "no" },
+          ...flags,
+        ])
+      )
+    ).toContain("type");
+  });
+
+  it("finds missing and unknown tables", () => {
+    const { ["gold.fct_spend"]: _spend, ...others } = warehouse.tables;
+    void _spend;
+    expect(rules({ ...warehouse, tables: others })).toEqual(["table"]);
+    expect(
+      rules({ ...warehouse, tables: { ...warehouse.tables, "gold.extra": [] } })
+    ).toEqual(["table"]);
+  });
+
+  it("finds broken SCD type 2 histories", () => {
+    const sites = rows("gold.dim_site");
+    const multi = sites.findIndex(
+      (s, i) => sites[i + 1]?.site_id === s.site_id
+    );
+    const breaks: ((r: WarehouseRow) => WarehouseRow)[] = [
+      (r) => ({ ...r, valid_to: "2000-01-01" }),
+      (r) => ({ ...r, is_current: true }),
+      (r) => ({ ...r, version_number: 7 }),
+    ];
+    for (const edit of breaks) {
+      const w = withRows("gold.dim_site", (r) =>
+        r.map((row, i) => (i === multi ? edit(row) : row))
+      );
+      expect(rules(w)).toContain("scd2");
+    }
+    const lastOf = sites.findIndex(
+      (s, i) => s.is_current && sites[i - 1]?.site_id === s.site_id
+    );
+    const open = withRows("gold.dim_site", (r) =>
+      r.map((row, i) =>
+        i === lastOf ? { ...row, valid_to: "2030-01-01" } : row
+      )
+    );
+    expect(rules(open)).toContain("scd2");
+    const same = withRows("gold.dim_site", (r) =>
+      r.map((row, i) =>
+        i === multi + 1
+          ? {
+              ...row,
+              site_status: r[multi].site_status,
+              principal_investigator_id: r[multi].principal_investigator_id,
+            }
+          : row
+      )
+    );
+    expect(rules(same)).toContain("scd2");
+  });
+});
+
+describe("lineage", () => {
+  const edges = warehouseLineage(WAREHOUSE_SCHEMA);
+  const columns = new Set(
+    WAREHOUSE_SCHEMA.tables.flatMap((t) =>
+      t.columns.map((c) => `${t.layer}.${t.name}.${c.name}`)
+    )
+  );
+  const bronze: Record<string, object | undefined> = {
+    "bronze.portfolio.studies": portfolio.studies[0],
+    "bronze.portfolio.sites": portfolio.sites[0],
+    "bronze.portfolio.vendors": portfolio.vendors[0],
+    "bronze.edc.subjects": portfolio.feeds.edc.subjects[0],
+    "bronze.edc.visits": portfolio.feeds.edc.visits[0],
+    "bronze.edc.queries": portfolio.feeds.edc.queries[0],
+    "bronze.ctms.milestones": portfolio.feeds.ctms.milestones[0],
+    "bronze.ctms.monitoringVisits": portfolio.feeds.ctms.monitoringVisits[0],
+    "bronze.ctms.deviations": portfolio.feeds.ctms.deviations[0],
+    "bronze.ctms.siteStaff": siteStaffFeed(portfolio)[0],
+    "bronze.irt.randomizations": portfolio.feeds.irt.randomizations[0],
+    "bronze.irt.kits": portfolio.feeds.irt.kits[0],
+    "bronze.etmf": portfolio.feeds.etmf[0],
+    "bronze.finance": portfolio.feeds.finance[0],
+    "bronze.cec": portfolio.feeds.cec[0],
+  };
+
+  it("passes checkLayerFlow on every silver and gold edge", () => {
+    expect(edges.length).toBeGreaterThan(300);
+    expect(edges.map(checkLayerFlow).filter((f) => f !== null)).toEqual([]);
+    expect(
+      checkLayerFlow({
+        from: {
+          productId: "gold.fct_visit",
+          layer: "gold",
+          column: "visit_id",
+        },
+        to: {
+          productId: "silver.edc_visit",
+          layer: "silver",
+          column: "visit_id",
+        },
+        transformation: "identity",
+      })
+    ).not.toBeNull();
+  });
+
+  it("names only columns that exist, and feeds silver from bronze and gold from silver", () => {
+    for (const edge of edges) {
+      const ref = `${edge.from.productId}.${edge.from.column}`;
+      if (edge.from.layer === "bronze") {
+        const sample = bronze[edge.from.productId];
+        expect(sample, ref).toBeDefined();
+        expect(Object.keys(sample ?? {}), ref).toContain(edge.from.column);
+        expect(edge.to.layer, ref).toBe("silver");
+      } else {
+        expect(columns.has(ref), ref).toBe(true);
+        expect(edge.to.layer, ref).toBe("gold");
+      }
+    }
+  });
+
+  it("traces every silver column to bronze and every foreign key to its dimension", () => {
+    for (const t of WAREHOUSE_SCHEMA.tables) {
+      for (const column of t.columns) {
+        if (t.layer === "silver") {
+          expect(
+            column.lineage.length,
+            `${t.name}.${column.name}`
+          ).toBeGreaterThan(0);
+        }
+        if (
+          column.references !== null &&
+          column.references.table !== "gold.dim_date"
+        ) {
+          expect(column.lineage).toContain(
+            `${column.references.table}.${column.references.column}`
+          );
+        }
+      }
+    }
+  });
+});
+
+/** Removes string literals so their content cannot fool a structural check. */
+function code(sql: string): string {
+  return sql
+    .split("\n")
+    .filter((line) => !line.startsWith("--"))
+    .join("\n")
+    .replace(/N?'(?:[^']|'')*'/g, "''");
+}
+
+describe("DDL", () => {
+  const dialects: SqlDialect[] = ["duckdb", "postgres", "tsql"];
+
+  it.each(dialects)("matches the %s golden file", (dialect) => {
+    expect(emitDdl(WAREHOUSE_SCHEMA, dialect)).toBe(
+      readFileSync(path.join(root, WAREHOUSE_DDL_GOLDENS[dialect]), "utf8")
+    );
+  });
+
+  it.each(dialects)(
+    "%s DDL is balanced and declares every table and key",
+    (dialect) => {
+      const ddl = emitDdl(WAREHOUSE_SCHEMA, dialect);
+      const body = code(ddl);
+      let depth = 0;
+      for (const char of body) {
+        if (char === "(") depth += 1;
+        if (char === ")") depth -= 1;
+        expect(depth).toBeGreaterThanOrEqual(0);
+      }
+      expect(depth).toBe(0);
+      const q = (id: string) => (dialect === "tsql" ? `[${id}]` : `"${id}"`);
+      for (const t of WAREHOUSE_SCHEMA.tables) {
+        expect(body).toContain(`CREATE TABLE ${q(t.layer)}.${q(t.name)} (`);
+        expect(body).toContain(
+          `PRIMARY KEY (${t.primaryKey.map(q).join(", ")})`
+        );
+        for (const column of t.columns) {
+          if (column.references === null) continue;
+          const [layer, name] = column.references.table.split(".");
+          expect(body).toContain(
+            `FOREIGN KEY (${q(column.name)}) REFERENCES ${q(layer)}.${q(name)} (${q(column.references.column)})`
+          );
+        }
+      }
+      const names = [...body.matchAll(/CONSTRAINT [["]([^\]"]+)[\]"]/g)].map(
+        (m) => m[1]
+      );
+      expect(new Set(names).size).toBe(names.length);
+      expect(names.every((n) => n.length <= 63)).toBe(true);
+      const columnCount = WAREHOUSE_SCHEMA.tables.reduce(
+        (n, t) => n + t.columns.length,
+        0
+      );
+      const described =
+        dialect === "tsql"
+          ? ddl.match(/sp_addextendedproperty/g)?.length
+          : ddl.match(/^COMMENT ON (?:TABLE|COLUMN) /gm)?.length;
+      expect(described).toBe(WAREHOUSE_SCHEMA.tables.length + columnCount);
+      expect(ddl.startsWith("-- Clinical Data Platform warehouse")).toBe(true);
+      expect(ddl).toContain(SYNTHETIC_DATA_NOTICE);
+    }
+  );
+
+  it("uses each dialect's quoting and types", () => {
+    const duck = code(emitDdl(WAREHOUSE_SCHEMA, "duckdb"));
+    const pg = code(emitDdl(WAREHOUSE_SCHEMA, "postgres"));
+    const tsql = code(emitDdl(WAREHOUSE_SCHEMA, "tsql"));
+    for (const sql of [duck, pg]) {
+      expect(sql).not.toMatch(/\[\w+\]/);
+      expect(sql).toContain('"gold"."dim_site"');
+      expect(sql).toContain("TIMESTAMPTZ");
+    }
+    expect(duck).toMatch(/"study_id"\s+VARCHAR NOT NULL/);
+    expect(duck).toContain("DECIMAL(12, 4)");
+    expect(pg).toMatch(/"study_id"\s+VARCHAR\(64\) NOT NULL/);
+    expect(pg).toContain("NUMERIC(12, 4)");
+    expect(tsql).not.toMatch(/"\w+"/);
+    expect(tsql).toContain("[gold].[dim_site]");
+    expect(tsql).toMatch(/\[is_current\]\s+BIT NOT NULL/);
+    expect(tsql).toMatch(/\[opened_at\]\s+DATETIMEOFFSET\(0\) NOT NULL/);
+    expect(tsql).toMatch(/\[study_id\]\s+NVARCHAR\(64\) NOT NULL/);
+    expect(tsql.match(/^GO$/gm)?.length).toBe(
+      WAREHOUSE_SCHEMA.tables.length + 1
+    );
+  });
+
+  it("escapes quotes in identifiers and descriptions", () => {
+    const base = table("gold.dim_country");
+    const odd: WarehouseSchema = {
+      version: "0.0.0",
+      tables: [
+        {
+          ...base,
+          name: 'odd"name]',
+          description: "It's a test.",
+          columns: [
+            { ...base.columns[0], name: 'col"]', description: "O'Brien" },
+          ],
+          primaryKey: ['col"]'],
+          uniqueKeys: [],
+        },
+      ],
+    };
+    const duck = emitDdl(odd, "duckdb");
+    expect(duck).toContain('"odd""name]"');
+    expect(duck).toContain("'O''Brien'");
+    const tsql = emitDdl(odd, "tsql");
+    expect(tsql).toContain('[odd"name]]]');
+    expect(tsql).toContain("N'O''Brien'");
+  });
+});
+
+describe("exports, ERD and reference page", () => {
+  const { files, manifest } = exportWarehouse(WAREHOUSE_SCHEMA, warehouse);
+
+  it("writes one CSV per table with a header, and a typed manifest", () => {
+    expect(files.map((f) => f.table)).toEqual(Object.keys(warehouse.tables));
+    for (const file of files) {
+      const t = table(file.table);
+      const lines = file.text.trimEnd().split("\n");
+      expect(lines[0]).toBe(t.columns.map((c) => c.name).join(","));
+      expect(lines.length - 1).toBe(file.rowCount);
+      expect(file.rowCount).toBe(rows(file.table).length);
+      expect(file.path).toBe(`${t.layer}/${t.name}.csv`);
+    }
+    expect(manifest).toMatchObject({
+      notice: SYNTHETIC_DATA_NOTICE,
+      schemaVersion: WAREHOUSE_SCHEMA.version,
+      portfolioId: portfolio.id,
+    });
+    const site = manifest.tables.find((t) => t.table === "gold.dim_site");
+    expect(site?.columns.find((c) => c.name === "site_key")?.parquet).toEqual({
+      physicalType: "INT32",
+      logicalType: "INT(32, true)",
+      repetition: "REQUIRED",
+    });
+    expect(
+      site?.columns.find((c) => c.name === "activated_on")?.parquet
+    ).toEqual({
+      physicalType: "INT32",
+      logicalType: "DATE",
+      repetition: "OPTIONAL",
+    });
+    const kinds = new Set(
+      manifest.tables.flatMap((t) =>
+        t.columns.map(
+          (c) => `${c.type}:${c.parquet.physicalType}:${c.parquet.logicalType}`
+        )
+      )
+    );
+    expect(kinds).toEqual(
+      new Set([
+        "string:BYTE_ARRAY:STRING",
+        "integer:INT32:INT(32, true)",
+        "decimal:INT64:DECIMAL(12, 4)",
+        "boolean:BOOLEAN:null",
+        "date:INT32:DATE",
+        "timestamp:INT64:TIMESTAMP(isAdjustedToUTC=true, unit=MILLIS)",
+      ])
+    );
+  });
+
+  it("quotes text that needs it and leaves null empty", () => {
+    const base = table("silver.vendor");
+    const tiny: WarehouseSchema = { version: "0.0.0", tables: [base] };
+    const {
+      files: [file],
+    } = exportWarehouse(tiny, {
+      ...warehouse,
+      tables: {
+        "silver.vendor": [
+          {
+            vendor_id: "A",
+            vendor_name: 'Comma, "quoted"',
+            service: "",
+            is_synthetic: true,
+          },
+          {
+            vendor_id: "B",
+            vendor_name: " padded",
+            service: "Multi\nline",
+            is_synthetic: false,
+          },
+          {
+            vendor_id: "C",
+            vendor_name: "Plain",
+            service: null,
+            is_synthetic: true,
+          },
+        ],
+      },
+    });
+    expect(file.text.split("\n").slice(1).join("\n")).toBe(
+      'A,"Comma, ""quoted""","",true\nB," padded","Multi\nline",false\nC,Plain,,true\n'
+    );
+    const kri = exportWarehouse(
+      { version: "0.0.0", tables: [table("gold.fct_kri_snapshot")] },
+      warehouse
+    ).files[0];
+    expect(kri.text.split("\n")[1]).toMatch(/,\d+\.\d{4},true$|,,true$/);
+  });
+
+  it("keeps the checked-in DDL goldens and reference page in step with the schema", () => {
+    for (const [file, contents] of Object.entries(warehouseArtifacts())) {
+      expect(readFileSync(path.join(root, file), "utf8"), file).toBe(contents);
+    }
+  });
+
+  it("draws every gold table and foreign key in the ERD", () => {
+    const erd = renderWarehouseErd(WAREHOUSE_SCHEMA);
+    expect(erd.startsWith("erDiagram\n")).toBe(true);
+    const gold = WAREHOUSE_SCHEMA.tables.filter((t) => t.layer === "gold");
+    for (const t of gold) {
+      expect(erd).toContain(`  ${t.name} {`);
+      for (const c of t.columns) {
+        if (c.references === null) continue;
+        const target = c.references.table.split(".")[1];
+        expect(erd).toContain(
+          `  ${target} ${c.nullable ? "|o" : "||"}--o{ ${t.name} : "${c.name}"`
+        );
+      }
+    }
+    expect(erd).not.toMatch(/silver/);
+    const page = readFileSync(
+      path.join(root, WAREHOUSE_REFERENCE_PAGE),
+      "utf8"
+    );
+    expect(page).toContain("```mermaid\n" + erd + "\n```");
+    expect(renderWarehouseReference(WAREHOUSE_SCHEMA)).toBe(page);
+  });
+
+  it("makes no compliance or validation claim in any generated text", () => {
+    const texts = [
+      ...Object.values(warehouseArtifacts()),
+      ...WAREHOUSE_SCHEMA.tables.flatMap((t) => [
+        t.description,
+        t.grain,
+        ...t.columns.map((c) => c.description),
+      ]),
+    ];
+    for (const text of texts) {
+      expect(checkRegulatoryWording(text)).toEqual([]);
+      expect(findClinicalClaims(text)).toEqual([]);
+    }
+  });
+});

@@ -14,6 +14,24 @@ export {
   findClinicalClaims,
 } from "./internal/policy";
 export { generatePortfolio } from "./internal/portfolio/generate";
+export { siteStaffFeed } from "./internal/portfolio/staff";
+export {
+  WAREHOUSE_SCHEMA,
+  WAREHOUSE_SCHEMA_VERSION,
+} from "./internal/warehouse/schema";
+export {
+  buildWarehouse,
+  type WarehouseOptions,
+} from "./internal/warehouse/build";
+export { buildScd2Versions } from "./internal/warehouse/scd2";
+export { checkWarehouse } from "./internal/warehouse/check";
+export { emitDdl } from "./internal/warehouse/ddl";
+export { exportWarehouse } from "./internal/warehouse/export";
+export {
+  renderWarehouseErd,
+  renderWarehouseReference,
+} from "./internal/warehouse/erd";
+export { warehouseLineage } from "./internal/warehouse/lineage";
 export {
   scoreVendors,
   sensitivity,

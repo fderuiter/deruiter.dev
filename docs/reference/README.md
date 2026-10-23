@@ -12,6 +12,8 @@ lookup rather than sequential reading.
   environment boundaries.
 - [Setup wizard](setup.md), the fresh-clone command, its flags, profiles,
   mutation boundaries and recovery steps.
+- [Clinical Data Platform star schema](clinical-platform-star-schema.md), the
+  generated silver and gold tables, fact grains, keys and ERD.
 
 ## Operations and Release Evidence
 

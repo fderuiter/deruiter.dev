@@ -367,6 +367,27 @@ export interface FinanceLine extends BronzeRecord {
   readonly actualUsd: number;
 }
 
+/**
+ * One principal investigator assignment at one site, as CTMS holds it. The
+ * feed comes from `siteStaffFeed`, not from `generatePortfolio`.
+ */
+export interface SiteStaffAssignment extends BronzeRecord {
+  /** Assignment id. */
+  readonly assignmentId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Staff role. Only principal investigators are tracked. */
+  readonly role: "principal-investigator";
+  /** Fictional investigator id. */
+  readonly investigatorId: string;
+  /** ISO 8601 first day in the role. */
+  readonly startOn: string;
+  /** ISO 8601 last day in the role, or `null` while still in it. */
+  readonly endOn: string | null;
+}
+
 /** Importance of a protocol deviation, after ICH E3 "important" deviations. */
 export type DeviationImportance = "important" | "not-important";
 
@@ -741,4 +762,232 @@ export interface StrategyMemo {
   criteria: string;
   recommendation: string;
   risks: string;
+}
+
+/** Layer a warehouse table is published in. Bronze stays as received. */
+export type WarehouseLayer = Exclude<MedallionLayer, "bronze">;
+
+/** Logical column type, mapped to each SQL dialect and to Parquet. */
+export type WarehouseColumnType =
+  "string" | "integer" | "decimal" | "boolean" | "date" | "timestamp";
+
+/** Role a table plays in the warehouse. */
+export type WarehouseTableKind = "conformed" | "dimension" | "fact";
+
+/** The column a foreign key points at. */
+export interface WarehouseReference {
+  /** Qualified table name, for example `gold.dim_site`. */
+  readonly table: string;
+  /** Referenced column: the target table's primary key. */
+  readonly column: string;
+}
+
+/** One column of a warehouse table: the single source for DDL, exports and the ERD. */
+export interface WarehouseColumn {
+  /** Column name, in snake case. */
+  readonly name: string;
+  /** Logical type. */
+  readonly type: WarehouseColumnType;
+  /** Whether the column may hold `null`. */
+  readonly nullable: boolean;
+  /** Business description. */
+  readonly description: string;
+  /** Data classification of the values the column holds. */
+  readonly classification: DataClassification;
+  /** Maximum length of a `string` value, in characters; `null` for other types. */
+  readonly length: number | null;
+  /** Total digits of a `decimal` value; `null` for other types. */
+  readonly precision: number | null;
+  /** Digits after the decimal point of a `decimal` value; `null` for other types. */
+  readonly scale: number | null;
+  /** Foreign key target, or `null` when the column is not a foreign key. */
+  readonly references: WarehouseReference | null;
+  /**
+   * Source columns, each as `layer.product.column`, for example
+   * `bronze.edc.subjects.subjectId` or `silver.edc_visit.visit_date`.
+   * Empty for generated columns such as surrogate keys.
+   */
+  readonly lineage: readonly string[];
+  /** How the value is derived from its sources, for example `identity` or `cast`. */
+  readonly transformation: string;
+}
+
+/** Slowly changing dimension type 2 settings of a dimension table. */
+export interface Scd2Definition {
+  /** Natural key column that identifies one member across its versions. */
+  readonly naturalKey: string;
+  /** Columns whose change opens a new version. */
+  readonly trackedColumns: readonly string[];
+  /** Column holding the version number, from 1. */
+  readonly version: string;
+  /** Column holding the first day a version is in force (inclusive). */
+  readonly validFrom: string;
+  /** Column holding the day the next version takes over (exclusive). */
+  readonly validTo: string;
+  /** Column flagging the latest version. */
+  readonly isCurrent: string;
+}
+
+/** One warehouse table: silver conformed data, or a gold dimension or fact. */
+export interface WarehouseTable {
+  /** Layer, which is also the SQL schema name. */
+  readonly layer: WarehouseLayer;
+  /** Table name, unique across the warehouse. */
+  readonly name: string;
+  /** Role of the table. */
+  readonly kind: WarehouseTableKind;
+  /** One sentence on what the table holds. */
+  readonly description: string;
+  /** What one row stands for. */
+  readonly grain: string;
+  /** Primary key columns, which enforce the grain. */
+  readonly primaryKey: readonly string[];
+  /** Further unique column sets, such as a dimension's natural key. */
+  readonly uniqueKeys: readonly (readonly string[])[];
+  /** SCD type 2 settings, or `null` for a table that keeps no history. */
+  readonly scd2: Scd2Definition | null;
+  /** Columns, in table order. */
+  readonly columns: readonly WarehouseColumn[];
+}
+
+/** The typed description of the silver and gold layers. */
+export interface WarehouseSchema {
+  /** Semantic version of the schema. */
+  readonly version: string;
+  /** Tables in creation order: silver, then gold dimensions, then gold facts. */
+  readonly tables: readonly WarehouseTable[];
+}
+
+/** A value in a warehouse row. Dates and timestamps are ISO 8601 text. */
+export type WarehouseValue = string | number | boolean | null;
+
+/** One warehouse row, keyed by column name. */
+export type WarehouseRow = Readonly<Record<string, WarehouseValue>>;
+
+/** The silver and gold layers built from one portfolio. */
+export interface Warehouse {
+  /** Id of the portfolio the warehouse was built from. */
+  readonly portfolioId: string;
+  /** Seed of that portfolio. */
+  readonly seed: number;
+  /** ISO 8601 data cut. */
+  readonly asOf: string;
+  /** Rows per qualified table name (`silver.edc_subject`), in schema order. */
+  readonly tables: Readonly<Record<string, readonly WarehouseRow[]>>;
+}
+
+/** SQL dialect a DDL emitter writes. */
+export type SqlDialect = "duckdb" | "postgres" | "tsql";
+
+/** A broken warehouse invariant, reported by `checkWarehouse`. */
+export interface WarehouseFinding {
+  /** Invariant that failed. */
+  readonly rule:
+    | "table"
+    | "column"
+    | "type"
+    | "nullability"
+    | "length"
+    | "grain"
+    | "unique"
+    | "foreign-key"
+    | "scd2";
+  /** Qualified table name. */
+  readonly table: string;
+  /** What is wrong, in one sentence. */
+  readonly message: string;
+}
+
+/** One version of a slowly changing dimension member. */
+export interface Scd2Version {
+  /** Version number, from 1. */
+  readonly version: number;
+  /** ISO 8601 first day in force (inclusive). */
+  readonly validFrom: string;
+  /** ISO 8601 day the next version takes over (exclusive), or `SCD2_OPEN_END`. */
+  readonly validTo: string;
+  /** Whether this is the latest version. */
+  readonly isCurrent: boolean;
+  /** Tracked attribute values in force during the version. */
+  readonly attributes: Readonly<Record<string, WarehouseValue>>;
+}
+
+/** A dated change to some tracked attributes of a dimension member. */
+export interface Scd2Change {
+  /** ISO 8601 day the change takes effect. */
+  readonly effectiveOn: string;
+  /** Attributes that change; the others keep their value. */
+  readonly attributes: Readonly<Record<string, WarehouseValue>>;
+}
+
+/** One CSV file of a warehouse export. */
+export interface WarehouseCsvFile {
+  /** Relative path, for example `gold/dim_site.csv`. */
+  readonly path: string;
+  /** Qualified table name. */
+  readonly table: string;
+  /** Number of data rows, header excluded. */
+  readonly rowCount: number;
+  /** CSV text: a header row, RFC 4180 quoting, LF line ends; `null` is an empty unquoted field. */
+  readonly text: string;
+}
+
+/** Parquet type a manifest column maps to. */
+export interface ParquetColumnType {
+  /** Parquet physical type. */
+  readonly physicalType: "BYTE_ARRAY" | "INT32" | "INT64" | "BOOLEAN";
+  /** Parquet logical type annotation, or `null` when there is none. */
+  readonly logicalType: string | null;
+  /** `REQUIRED` for a non-nullable column, otherwise `OPTIONAL`. */
+  readonly repetition: "REQUIRED" | "OPTIONAL";
+}
+
+/** One column in an export manifest. */
+export interface WarehouseManifestColumn {
+  /** Column name. */
+  readonly name: string;
+  /** Logical type. */
+  readonly type: WarehouseColumnType;
+  /** Whether the column may hold `null`. */
+  readonly nullable: boolean;
+  /** Data classification. */
+  readonly classification: DataClassification;
+  /** Parquet type a writer should use. */
+  readonly parquet: ParquetColumnType;
+}
+
+/** One table in an export manifest. */
+export interface WarehouseManifestTable {
+  /** Qualified table name. */
+  readonly table: string;
+  /** CSV path. */
+  readonly path: string;
+  /** Number of data rows. */
+  readonly rowCount: number;
+  /** Primary key columns. */
+  readonly primaryKey: readonly string[];
+  /** Columns, in file order. */
+  readonly columns: readonly WarehouseManifestColumn[];
+}
+
+/** The column and type manifest shipped next to the CSV files. */
+export interface WarehouseExportManifest {
+  /** Synthetic data notice. */
+  readonly notice: string;
+  /** Warehouse schema version. */
+  readonly schemaVersion: string;
+  /** Portfolio id. */
+  readonly portfolioId: string;
+  /** ISO 8601 data cut. */
+  readonly asOf: string;
+  /** One entry per CSV file, in schema order. */
+  readonly tables: readonly WarehouseManifestTable[];
+}
+
+/** CSV files and their manifest for one warehouse. */
+export interface WarehouseExport {
+  /** One CSV file per table, in schema order. */
+  readonly files: readonly WarehouseCsvFile[];
+  /** Column and type manifest. */
+  readonly manifest: WarehouseExportManifest;
 }

@@ -10,6 +10,7 @@ import { generateCollectedData } from "./synth/generate-collected-data";
 import { deriveTrialDesign } from "./sdtm/trial-design";
 import { deriveSubjectDomains } from "./sdtm/subject-domains";
 import { runConformance } from "./conformance/run-conformance";
+import { deriveAdamCore } from "./adam/core";
 
 const MAX_SEED = 0xffffffff;
 
@@ -58,10 +59,17 @@ export function runPipeline(
   assertValidInputs(definition, options);
   const collected = generateCollectedData(definition, options);
   const trialDesign = deriveTrialDesign(definition, STANDARD_VERSIONS);
-  const datasets = [
+  const sdtmDatasets = [
     ...collected,
     ...trialDesign,
     ...deriveSubjectDomains(definition, collected, trialDesign),
+  ];
+  const datasets = [
+    ...sdtmDatasets,
+    ...deriveAdamCore(
+      definition,
+      sdtmDatasets.filter((dataset) => dataset.layer === "sdtm")
+    ),
   ];
   const conformance = runConformance(datasets);
   return {
@@ -73,7 +81,7 @@ export function runPipeline(
       seed: options.seed,
       nSubjects: options.nSubjects,
       standards: STANDARD_VERSIONS,
-      stages: ["usdm", "synth", "sdtm", "conformance"],
+      stages: ["usdm", "synth", "sdtm", "conformance", "adam"],
       outputs: [],
     },
   };

@@ -14,6 +14,7 @@ const CORPUS_FILES = [
   "CASE_STUDY.md",
   "docs/CASE_STUDY.md",
   "PRODUCT_EXCELLENCE_EVALUATION.md",
+  "docs/reference/clinical-platform-star-schema.md",
 ];
 
 const HTML_MERMAID_REGEX =

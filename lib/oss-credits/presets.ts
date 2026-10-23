@@ -193,6 +193,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Testing",
     reason: "Property-based fuzz testing of the engines.",
   },
+  "@duckdb/node-api": {
+    group: "Testing",
+    reason:
+      "Runs the Clinical Data Platform's generated DuckDB DDL and integrity checks in a unit test.",
+  },
   "@react-three/test-renderer": {
     group: "Testing",
     reason:

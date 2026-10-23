@@ -8,6 +8,10 @@
 
 One investigator site in one study.
 
+## Extends
+
+- [`SyntheticRecord`](SyntheticRecord.md)
+
 ## Properties
 
 ### activatedOn
@@ -50,8 +54,28 @@ Enrollment target for this site.
 
 ***
 
+### siteNumber
+
+> `readonly` **siteNumber**: `string`
+
+Site number within the study, as printed on the site's documents.
+
+***
+
 ### studyId
 
 > `readonly` **studyId**: `string`
 
 Id of the study the site belongs to.
+
+***
+
+### synthetic
+
+> `readonly` **synthetic**: `true`
+
+Always `true`: the record is synthetic and describes nothing real.
+
+#### Inherited from
+
+[`SyntheticRecord`](SyntheticRecord.md).[`synthetic`](SyntheticRecord.md#synthetic)

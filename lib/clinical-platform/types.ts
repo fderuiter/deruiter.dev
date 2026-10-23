@@ -5,6 +5,7 @@
  * governed as data products with versioned contracts, and served to every
  * consumer through one semantic layer of metric definitions (ADR 0066).
  */
+import type { StandardVersions } from "@/lib/study-data";
 
 /**
  * Medallion layer. Bronze holds raw source feeds, silver holds conformed and
@@ -64,12 +65,33 @@ export type OperatingModel = "sponsor" | "cro";
 export type StudyStatus =
   "planned" | "start-up" | "enrolling" | "follow-up" | "closed";
 
+/**
+ * Provenance every generated record carries. The platform holds synthetic
+ * data only, and each record says so on its own, so a row copied out of a
+ * table or a download keeps the label.
+ */
+export interface SyntheticRecord {
+  /** Always `true`: the record is synthetic and describes nothing real. */
+  readonly synthetic: true;
+}
+
+/** Operational source system a bronze feed record comes from. */
+export type SourceSystem = "EDC" | "CTMS" | "IRT" | "eTMF" | "Finance" | "CEC";
+
+/** A raw record in a bronze feed, as received from its source system. */
+export interface BronzeRecord extends SyntheticRecord {
+  /** Source system the record was received from. */
+  readonly source: SourceSystem;
+}
+
 /** One investigator site in one study. */
-export interface Site {
+export interface Site extends SyntheticRecord {
   /** Stable site id, unique within the portfolio. */
   readonly id: string;
   /** Id of the study the site belongs to. */
   readonly studyId: string;
+  /** Site number within the study, as printed on the site's documents. */
+  readonly siteNumber: string;
   /** ISO 3166-1 alpha-2 country code. */
   readonly country: string;
   /** Fictional site name. */
@@ -80,12 +102,31 @@ export interface Site {
   readonly activatedOn: string | null;
 }
 
+/**
+ * One planned encounter in a study's schedule, shaped after a USDM
+ * encounter with its timing and window.
+ */
+export interface PlannedVisit {
+  /** Stable visit id within the study, for example `W12`. */
+  readonly id: string;
+  /** Display name, for example `Week 12`. */
+  readonly name: string;
+  /** Planned day relative to the enrollment visit, which is day 0. */
+  readonly day: number;
+  /** Allowed deviation from the planned day, in days either side. */
+  readonly windowDays: number;
+  /** Whether investigational product is dispensed at the visit. */
+  readonly dispensesProduct: boolean;
+}
+
 /** One study in the portfolio. */
-export interface Study {
+export interface Study extends SyntheticRecord {
   /** Stable protocol id, for example `DEMO-301`. */
   readonly id: string;
   /** Short title. */
   readonly title: string;
+  /** Therapeutic area. */
+  readonly therapeuticArea: string;
   /** Investigational product type. */
   readonly productType: ProductType;
   /** Development phase or device study stage. */
@@ -96,10 +137,25 @@ export interface Study {
   readonly operatingModel: OperatingModel;
   /** Fictional vendor id of the CRO, when `operatingModel` is `cro`. */
   readonly croVendorId: string | null;
-  /** Lifecycle status. */
+  /** Lifecycle status at the portfolio's data cut. */
   readonly status: StudyStatus;
+  /** ISO 8601 study start: the date the protocol was finalised. */
+  readonly startOn: string;
   /** Enrollment target across all sites. */
   readonly plannedEnrollment: number;
+  /** Whether subjects are randomised through IRT. */
+  readonly randomized: boolean;
+  /** Treatment arms, or the single open-label arm. */
+  readonly arms: readonly string[];
+  /** Planned schedule of visits, screening first. */
+  readonly plannedVisits: readonly PlannedVisit[];
+  /**
+   * Where the schedule comes from: the USDM study definition the Study Data
+   * Pipeline runs, or the portfolio's own blueprint.
+   */
+  readonly scheduleSource: "usdm" | "blueprint";
+  /** Whether a clinical events committee adjudicates endpoint events. */
+  readonly cecAdjudication: boolean;
   /**
    * Id of the Study Data Pipeline data product that supplies this study's
    * SDTM and ADaM (ADR 0065), or `null` when the study has none.
@@ -108,7 +164,7 @@ export interface Study {
 }
 
 /** A fictional vendor: CRO, EDC, IRT, CTMS, eTMF or central lab provider. */
-export interface Vendor {
+export interface Vendor extends SyntheticRecord {
   /** Stable vendor id. */
   readonly id: string;
   /** Fictional name. Never the name of a real company. */
@@ -117,7 +173,350 @@ export interface Vendor {
   readonly service: "CRO" | "EDC" | "IRT" | "CTMS" | "eTMF" | "Central lab";
 }
 
-/** One synthetic sponsor portfolio: studies, their sites and vendors. */
+/** Lifecycle status of a subject in the EDC. */
+export type SubjectStatus =
+  "screening" | "screen-failed" | "enrolled" | "completed" | "discontinued";
+
+/** EDC subject record: screening, enrollment and disposition. */
+export interface EdcSubject extends BronzeRecord {
+  /** Subject id, unique within the portfolio. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** ISO 8601 date of the screening visit. */
+  readonly screenedOn: string;
+  /** ISO 8601 enrollment date, or `null` when not enrolled. */
+  readonly enrolledOn: string | null;
+  /** ISO 8601 date the subject completed the study, or `null`. */
+  readonly completedOn: string | null;
+  /** ISO 8601 date the subject discontinued, or `null`. */
+  readonly discontinuedOn: string | null;
+  /** Status at the data cut. */
+  readonly status: SubjectStatus;
+}
+
+/** EDC visit record, with its data entry time. */
+export interface EdcVisit extends BronzeRecord {
+  /** Visit record id. */
+  readonly visitId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Planned visit id from the study schedule. */
+  readonly plannedVisitId: string;
+  /** ISO 8601 visit date, or `null` for a missed visit. */
+  readonly visitDate: string | null;
+  /** Actual minus planned day; `null` for a missed visit. */
+  readonly dayOffset: number | null;
+  /** ISO 8601 timestamp the site entered the visit's data, or `null`. */
+  readonly dataEnteredAt: string | null;
+  /** Entry state at the data cut. */
+  readonly status: "entered" | "pending-entry" | "missed";
+}
+
+/** EDC data query, with its open, answer and close times. */
+export interface EdcQuery extends BronzeRecord {
+  /** Query id. */
+  readonly queryId: string;
+  /** Visit record id the query is raised on. */
+  readonly visitId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Queried field, as `DOMAIN.VARIABLE`. */
+  readonly field: string;
+  /** How the query was raised. */
+  readonly origin: "edit-check" | "manual";
+  /** ISO 8601 timestamp the query was opened. */
+  readonly openedAt: string;
+  /** ISO 8601 timestamp the site answered, or `null`. */
+  readonly answeredAt: string | null;
+  /** ISO 8601 timestamp the query was closed, or `null`. */
+  readonly closedAt: string | null;
+  /** State at the data cut. */
+  readonly status: "open" | "answered" | "closed";
+}
+
+/** Study milestone kind, covering drug and ISO 14155 device milestones. */
+export type MilestoneKind =
+  | "protocol-final"
+  | "regulatory-approval"
+  | "first-site-activated"
+  | "first-subject-in"
+  | "fifty-percent-enrolled"
+  | "last-subject-in"
+  | "last-subject-last-visit"
+  | "database-lock"
+  | "final-report";
+
+/** CTMS study milestone, planned and actual. */
+export interface CtmsMilestone extends BronzeRecord {
+  /** Study id. */
+  readonly studyId: string;
+  /** Milestone kind. */
+  readonly kind: MilestoneKind;
+  /** Display label in the study's own vocabulary (drug or device). */
+  readonly label: string;
+  /** ISO 8601 planned date. */
+  readonly plannedOn: string;
+  /** ISO 8601 actual date, or `null` when not yet reached. */
+  readonly actualOn: string | null;
+}
+
+/** CTMS monitoring visit, with source data verification counts. */
+export interface CtmsMonitoringVisit extends BronzeRecord {
+  /** Monitoring visit id. */
+  readonly monitoringVisitId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Visit type: site initiation, interim monitoring or close-out. */
+  readonly type: "SIV" | "IMV" | "COV";
+  /** On-site or remote. */
+  readonly mode: "on-site" | "remote";
+  /** ISO 8601 visit date. */
+  readonly visitDate: string;
+  /** ISO 8601 date the visit report was finalised, or `null`. */
+  readonly reportFinalOn: string | null;
+  /** CRF pages due for source data verification at the visit. */
+  readonly sdvPagesDue: number;
+  /** CRF pages source-verified at the visit. */
+  readonly sdvPagesVerified: number;
+  /** Action items raised. */
+  readonly actionItems: number;
+}
+
+/** IRT randomisation record. */
+export interface IrtRandomization extends BronzeRecord {
+  /** Randomisation number. */
+  readonly randomizationId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** ISO 8601 randomisation timestamp. */
+  readonly randomizedAt: string;
+  /** Assigned arm. Blinded consumers must not read it. */
+  readonly arm: string;
+}
+
+/** IRT investigational product kit. */
+export interface IrtKit extends BronzeRecord {
+  /** Kit number. */
+  readonly kitId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id holding the kit. */
+  readonly siteId: string;
+  /** Subject the kit was dispensed to, or `null`. */
+  readonly subjectId: string | null;
+  /** ISO 8601 date the site received the kit. */
+  readonly receivedOn: string;
+  /** ISO 8601 dispensing date, or `null`. */
+  readonly dispensedOn: string | null;
+  /** ISO 8601 expiry date. */
+  readonly expiresOn: string;
+  /** State at the data cut. */
+  readonly status: "available" | "dispensed" | "expired";
+}
+
+/** eTMF expected document, filed against the TMF Reference Model. */
+export interface EtmfDocument extends BronzeRecord {
+  /** Document id. */
+  readonly documentId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id, or `null` for a trial-level document. */
+  readonly siteId: string | null;
+  /** TMF Reference Model zone. */
+  readonly zone: string;
+  /** Artifact name. */
+  readonly artifact: string;
+  /** ISO 8601 date the document is due. */
+  readonly dueOn: string;
+  /** ISO 8601 filing date, or `null`. */
+  readonly filedOn: string | null;
+  /** State at the data cut: filed, overdue and missing, or not yet due. */
+  readonly status: "filed" | "missing" | "expected";
+}
+
+/** Finance line: budget against actual for one study, vendor and quarter. */
+export interface FinanceLine extends BronzeRecord {
+  /** Study id. */
+  readonly studyId: string;
+  /** Vendor id, or `null` for investigator grants paid to sites. */
+  readonly vendorId: string | null;
+  /** Cost category. */
+  readonly category: string;
+  /** Calendar quarter, for example `2026-Q3`. */
+  readonly period: string;
+  /** Budgeted amount, whole US dollars. */
+  readonly budgetUsd: number;
+  /** Actual spend, whole US dollars. */
+  readonly actualUsd: number;
+}
+
+/** Importance of a protocol deviation, after ICH E3 "important" deviations. */
+export type DeviationImportance = "important" | "not-important";
+
+/** Protocol deviation, as logged in CTMS. */
+export interface ProtocolDeviation extends BronzeRecord {
+  /** Deviation id. */
+  readonly deviationId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Deviation category. */
+  readonly category: string;
+  /** Importance per ICH E3. */
+  readonly importance: DeviationImportance;
+  /** ISO 8601 date the deviation occurred. */
+  readonly occurredOn: string;
+  /** ISO 8601 date the deviation was identified. */
+  readonly identifiedOn: string;
+}
+
+/** Clinical events committee adjudication of one site-reported event. */
+export interface CecAdjudication extends BronzeRecord {
+  /** Event id. */
+  readonly eventId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Event type as reported by the site. */
+  readonly siteEventType: string;
+  /** Whether the site judged the event device-related. */
+  readonly siteDeviceRelated: boolean;
+  /** ISO 8601 date the event occurred. */
+  readonly occurredOn: string;
+  /** ISO 8601 date the site reported the event. */
+  readonly reportedOn: string;
+  /** ISO 8601 adjudication date, or `null` while pending. */
+  readonly adjudicatedOn: string | null;
+  /** Event type as adjudicated, or `null` while pending. */
+  readonly cecEventType: string | null;
+  /** Whether the committee judged the event device-related, or `null`. */
+  readonly cecDeviceRelated: boolean | null;
+}
+
+/** The EDC feed: subjects, visits and queries. */
+export interface EdcFeed {
+  /** Subject records. */
+  readonly subjects: readonly EdcSubject[];
+  /** Visit records. */
+  readonly visits: readonly EdcVisit[];
+  /** Query records. */
+  readonly queries: readonly EdcQuery[];
+}
+
+/** The CTMS feed: milestones, monitoring visits and protocol deviations. */
+export interface CtmsFeed {
+  /** Study milestones. */
+  readonly milestones: readonly CtmsMilestone[];
+  /** Monitoring visits. */
+  readonly monitoringVisits: readonly CtmsMonitoringVisit[];
+  /** Protocol deviations. */
+  readonly deviations: readonly ProtocolDeviation[];
+}
+
+/** The IRT feed: randomisations and kits. */
+export interface IrtFeed {
+  /** Randomisation records. */
+  readonly randomizations: readonly IrtRandomization[];
+  /** Kit records. */
+  readonly kits: readonly IrtKit[];
+}
+
+/** The raw operational feeds of the bronze layer, grouped by source. */
+export interface BronzeFeeds {
+  /** Electronic data capture. */
+  readonly edc: EdcFeed;
+  /** Clinical trial management system. */
+  readonly ctms: CtmsFeed;
+  /** Interactive response technology. */
+  readonly irt: IrtFeed;
+  /** Electronic trial master file: expected documents. */
+  readonly etmf: readonly EtmfDocument[];
+  /** Finance: budget against actual. */
+  readonly finance: readonly FinanceLine[];
+  /** Clinical events committee adjudications, for studies that have one. */
+  readonly cec: readonly CecAdjudication[];
+}
+
+/** Kind of pattern planted in the portfolio for analytics to find. */
+export type PortfolioSignalKind =
+  | "slow-enrolling-site"
+  | "data-integrity"
+  | "study-behind-plan"
+  | "vendor-over-budget";
+
+/**
+ * A pattern the generator planted on purpose, so dashboards, RBQM and tests
+ * can check that it is found. The answer key, not an input to any metric.
+ */
+export interface PortfolioSignal extends SyntheticRecord {
+  /** Signal kind. */
+  readonly kind: PortfolioSignalKind;
+  /** Study the signal is in, or `null` for a vendor-wide signal. */
+  readonly studyId: string | null;
+  /** Site, for site-level signals; otherwise `null`. */
+  readonly siteId: string | null;
+  /** Vendor, for vendor signals; otherwise `null`. */
+  readonly vendorId: string | null;
+  /** What was planted, in one sentence. */
+  readonly description: string;
+}
+
+/**
+ * The Study Data Pipeline run a study's bronze records were taken from
+ * (ADR 0065, ADR 0066). Rerunning `runPipeline` from `@/lib/study-data` with
+ * the study's definition, `seed` and `nSubjects` reproduces the source
+ * datasets; adding `dateShiftDays` to their dates gives the portfolio's.
+ */
+export interface StudyDataRunReference extends SyntheticRecord {
+  /** Study id, for example `DEMO-301`. */
+  readonly studyId: string;
+  /** Id of the gold data product the run publishes (`STUDY_DATA_PRODUCT_ID`). */
+  readonly productId: string;
+  /** Seed the pipeline ran with. */
+  readonly seed: number;
+  /** Number of subjects the pipeline generated, screen failures included. */
+  readonly nSubjects: number;
+  /** Collected-layer datasets the bronze feeds were read from. */
+  readonly sourceDatasets: readonly string[];
+  /**
+   * Whole days added to every pipeline date to place the study on the
+   * portfolio's calendar. Study days and visit order are unchanged.
+   */
+  readonly dateShiftDays: number;
+  /** Standard versions the run declares, from its manifest. */
+  readonly standards: StandardVersions;
+}
+
+/** Options for generating a portfolio. */
+export interface PortfolioOptions {
+  /** Seed: an integer from 0 to 4294967295. The same seed gives the same portfolio. */
+  readonly seed: number;
+}
+
+/** One synthetic sponsor portfolio: studies, sites, vendors and bronze feeds. */
 export interface Portfolio {
   /** Stable portfolio id. */
   readonly id: string;
@@ -125,12 +524,20 @@ export interface Portfolio {
   readonly sponsor: string;
   /** Seed the portfolio was generated from. */
   readonly seed: number;
+  /** ISO 8601 data cut: no record describes anything after this date. */
+  readonly asOf: string;
   /** Studies in the portfolio. */
   readonly studies: readonly Study[];
   /** Sites across all studies. */
   readonly sites: readonly Site[];
   /** Fictional vendors the studies use. */
   readonly vendors: readonly Vendor[];
+  /** Bronze-layer operational feeds. */
+  readonly feeds: BronzeFeeds;
+  /** Patterns planted on purpose for analytics to find. */
+  readonly signals: readonly PortfolioSignal[];
+  /** Study Data Pipeline runs that supplied study records, one per study. */
+  readonly studyDataRuns: readonly StudyDataRunReference[];
 }
 
 /** Data classification of a data product. */

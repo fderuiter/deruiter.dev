@@ -86,6 +86,7 @@
   },
   "packageManager": "npm@10.9.2",
   "overrides": {
+    "zod": "$zod",
     "deepmerge-ts": "^8.0.1",
     "browserslist": "^4.28.8",
     "mysql2": "^3.24.3",

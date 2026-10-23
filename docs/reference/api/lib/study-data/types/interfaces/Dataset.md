@@ -50,6 +50,14 @@ The layer the dataset belongs to.
 
 ***
 
+### lineage?
+
+> `readonly` `optional` **lineage?**: readonly (readonly `string`[])[]
+
+Source record ids for each row, outside SDTM submission columns.
+
+***
+
 ### name
 
 > `readonly` **name**: `string`

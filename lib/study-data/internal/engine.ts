@@ -8,6 +8,7 @@ import { STANDARD_VERSIONS, SUBJECT_COUNT_LIMITS } from "../presets";
 import type { PipelineOptions, PipelineRun, StudyDefinition } from "../types";
 import { generateCollectedData } from "./synth/generate-collected-data";
 import { deriveTrialDesign } from "./sdtm/trial-design";
+import { deriveSubjectDomains } from "./sdtm/subject-domains";
 
 const MAX_SEED = 0xffffffff;
 
@@ -54,9 +55,12 @@ export function runPipeline(
   options: PipelineOptions
 ): PipelineRun {
   assertValidInputs(definition, options);
+  const collected = generateCollectedData(definition, options);
+  const trialDesign = deriveTrialDesign(definition, STANDARD_VERSIONS);
   const datasets = [
-    ...generateCollectedData(definition, options),
-    ...deriveTrialDesign(definition, STANDARD_VERSIONS),
+    ...collected,
+    ...trialDesign,
+    ...deriveSubjectDomains(definition, collected, trialDesign),
   ];
   return {
     datasets,

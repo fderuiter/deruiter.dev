@@ -65,13 +65,21 @@ describe("runPipeline", () => {
       "TV",
       "TI",
       "TS",
+      "DM",
+      "SV",
+      "EX",
+      "AE",
+      "VS",
+      "LB",
+      "DS",
+      "SUPPDM",
     ]);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "collected")
     ).toHaveLength(8);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "sdtm")
-    ).toHaveLength(5);
+    ).toHaveLength(13);
     expect(run.findings).toEqual([]);
     expect(run.manifest).toEqual({
       studyId: "DEMO-301",

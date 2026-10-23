@@ -364,7 +364,17 @@ function adamRule(
         if (kind === "trtemfl") {
           const start = fullDate(at(dataset, "ASTDT", row));
           const first = fullDate(at(dataset, "TRTSDT", row));
-          const expected = start && first ? (start >= first ? "Y" : "N") : null;
+          const last = fullDate(at(dataset, "TRTEDT", row));
+          const contact = fullDate(at(dataset, "LSTALVDT", row));
+          const end = last ? last.getTime() + 14 * 86_400_000 : null;
+          const expected =
+            start && first && end
+              ? start.getTime() >= first.getTime() &&
+                start.getTime() <= end &&
+                (!contact || start.getTime() <= contact.getTime())
+                ? "Y"
+                : "N"
+              : null;
           if (expected !== null && at(dataset, "TRTEMFL", row) !== expected)
             issues.push({
               row,

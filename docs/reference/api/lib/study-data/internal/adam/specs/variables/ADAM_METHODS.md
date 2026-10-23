@@ -12,6 +12,18 @@ Versioned analysis method text shared by derivations and future Define-XML.
 
 ## Type Declaration
 
+### ADAE\_IMPUTE
+
+> `readonly` **ADAE\_IMPUTE**: `"Impute month-only AE starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days."` = `"Impute month-only AE starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days."`
+
+### ADAE\_OCC
+
+> `readonly` **ADAE\_OCC**: `"Flag the first treatment-emergent occurrence overall, by body system and by preferred term, ordered by analysis start date and AE sequence."` = `"Flag the first treatment-emergent occurrence overall, by body system and by preferred term, ordered by analysis start date and AE sequence."`
+
+### ADAE\_TEAE
+
+> `readonly` **ADAE\_TEAE**: `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."` = `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."`
+
 ### ADSL\_DISP
 
 > `readonly` **ADSL\_DISP**: `"End-of-study status and discontinuation reason come from the final DS disposition event."` = `"End-of-study status and discontinuation reason come from the final DS disposition event."`
@@ -23,6 +35,14 @@ Versioned analysis method text shared by derivations and future Define-XML.
 ### ADSL\_TRT
 
 > `readonly` **ADSL\_TRT**: `"Planned treatment comes from DM. Actual treatment and dates come from first and last EX records."` = `"Planned treatment comes from DM. Actual treatment and dates come from first and last EX records."`
+
+### ADTTE\_CENSOR
+
+> `readonly` **ADTTE\_CENSOR**: `"For a dosed subject without an event, censor at the earlier of last known contact and discontinuation for another reason; count first-dose day as day 1."` = `"For a dosed subject without an event, censor at the earlier of last known contact and discontinuation for another reason; count first-dose day as day 1."`
+
+### ADTTE\_EVENT
+
+> `readonly` **ADTTE\_EVENT**: `"An event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition; event date is AE start date."` = `"An event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition; event date is AE start date."`
 
 ### BDS\_ANALYSIS
 

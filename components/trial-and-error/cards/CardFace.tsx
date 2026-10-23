@@ -108,8 +108,8 @@ function SealSlot({ view }: { view: TableCardView }) {
  * Boss Blind disables the card's suit or the card is stale), the unverified
  * "?" badge, the seal slot and the stamp slot. A blank shell prints its
  * empty skeleton and the analysis sets it accepts instead of a suit.
- * Decorative inside the card button, whose accessible name carries the same
- * facts.
+ * Decorative beside the card button laid over it, whose accessible name
+ * carries the same facts.
  */
 export function CardFace({ view }: { view: TableCardView }) {
   const { card } = view;

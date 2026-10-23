@@ -197,7 +197,7 @@ test.describe("Study Director world: the stage (#1829 to #1834)", () => {
       "EDC monitor"
     );
     await shot(page, testInfo, "device-edc-1280");
-    await edc.getByRole("button", { name: "Close window" }).click();
+    await edc.getByRole("button", { name: "Esc, close window" }).click();
     await expect(edc).toBeHidden();
 
     // Move the day to the afternoon, when the sponsor's call is due.

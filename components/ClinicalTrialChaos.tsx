@@ -3786,12 +3786,14 @@ export const ClinicalTrialChaos: React.FC = () => {
             </button>
           ))}
 
-          {/* Stress Control & BIMO Stream Toggle Button */}
+          {/* Stress Control & BIMO Stream Toggle Button. Its visible words
+              are its name, so speech input users can say what they see (axe
+              label-content-name-mismatch, #2571); the title says more. */}
           <button
             type="button"
             onClick={() => setIsStressDrawerOpen((prev) => !prev)}
             aria-expanded={isStressDrawerOpen}
-            aria-label="Toggle Interactive Stress Control Panel and Live BIMO Stream"
+            title="Toggle the interactive stress control panel and live BIMO stream"
             className={`flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-bold transition border ${
               isStressDrawerOpen
                 ? "border-amber-500 bg-amber-500/20 text-amber-200"
@@ -3799,8 +3801,8 @@ export const ClinicalTrialChaos: React.FC = () => {
             }`}
           >
             <IconBolt className="h-4 w-4 text-amber-400" />
-            <span className="hidden sm:inline">Stress & BIMO Stream</span>
-            <span className="sm:hidden">Stress</span>
+            <span className="hidden sm:inline">Stress & BIMO Stream</span>{" "}
+            <span className="sm:hidden">Stress</span>{" "}
             {headerBimoReport && (
               <span
                 className={`rounded px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${

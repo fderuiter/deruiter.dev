@@ -194,7 +194,7 @@ describe("MountainMap responsibility-code modal on ModalContainer", () => {
         onCompleteShift={vi.fn()}
       />
     );
-    return screen.getByLabelText("View Your Responsibility Code");
+    return screen.getByLabelText("Safety Code: view Your Responsibility Code");
   }
 
   it("keeps the lighter mobile scrim without backdrop blur", () => {

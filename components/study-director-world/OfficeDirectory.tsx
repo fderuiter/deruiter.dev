@@ -10,6 +10,19 @@ const GROUPS: Array<{ kind: DirectoryEntry["target"]["kind"]; title: string }> =
     { kind: "room", title: "Rooms" },
   ];
 
+/**
+ * The button's accessible name: "Walk to" followed by exactly the words the
+ * button shows, in order, so speech input users can say what they see (axe
+ * `label-content-name-mismatch`). Rooms show no detail line, so their name
+ * leaves it out too.
+ */
+function walkLabel(entry: DirectoryEntry, minutes: number | null): string {
+  const parts = [entry.label];
+  if (entry.target.kind !== "room") parts.push(entry.detail);
+  if (minutes !== null) parts.push(walkCostText(minutes));
+  return `Walk to ${parts.join(", ")}`;
+}
+
 /** The clock cost of a walk, in words: shown before the player commits. */
 function walkCostText(minutes: number): string {
   if (minutes < 1) return "under a minute";
@@ -90,31 +103,26 @@ export const OfficeDirectory: React.FC<{
                   >
                     {items.map((entry) => {
                       const minutes = minutesTo?.(entry) ?? null;
-                      const costId = `${panelId}-cost-${entry.id}`;
                       return (
                         <li key={entry.id} className="min-w-0">
                           <button
                             type="button"
                             disabled={disabled}
-                            aria-label={`Walk to ${entry.label}, ${entry.detail}`}
-                            aria-describedby={
-                              minutes === null ? undefined : costId
-                            }
+                            aria-label={walkLabel(entry, minutes)}
                             aria-pressed={walkingTo === entry.id}
                             onClick={() => onWalk(entry)}
                             className="flex min-h-12 w-full min-w-0 flex-col items-start justify-center gap-0.5 border border-[var(--sd-hairline)] px-2 py-1 text-left text-xs text-zinc-200 hover:border-[var(--sd-amber)] focus-visible:border-[var(--sd-amber)] active:scale-[0.98] disabled:opacity-50 aria-pressed:border-[var(--sd-amber)]"
                           >
                             <span className="max-w-full min-w-0 break-words">
                               {entry.label}
-                            </span>
+                            </span>{" "}
                             {entry.target.kind === "room" ? null : (
                               <span className="max-w-full min-w-0 text-[10px] break-words text-[var(--sd-muted)]">
                                 {entry.detail}
                               </span>
-                            )}
+                            )}{" "}
                             {minutes === null ? null : (
                               <span
-                                id={costId}
                                 data-testid="walk-cost"
                                 className="text-[10px] text-[var(--sd-steel)] tabular-nums"
                               >

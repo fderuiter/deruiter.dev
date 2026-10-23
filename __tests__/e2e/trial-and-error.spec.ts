@@ -67,6 +67,9 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 const card = (page: Page, id: string) => page.locator(`[data-card-id="${id}"]`);
+/** The printed face a hand card's button lies over (#2571). */
+const face = (page: Page, id: string) =>
+  page.locator("[data-hand-card]").filter({ has: card(page, id) });
 const player = (page: Page) => page.getByTestId("score-player");
 
 interface TeProbe {
@@ -265,8 +268,12 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
     await expect(page.getByTestId("current-snapshot")).toHaveText("SNAP-P1-v2");
     const stale = card(page, "C-T14.3.2.5-A");
     await expect(stale).toHaveAttribute("data-stale", "true");
-    await expect(stale.locator('[data-stamp="STALE"]')).toBeVisible();
-    await expect(stale.getByTestId("stale-badge")).toHaveText("25 → 0 Chips");
+    await expect(
+      face(page, "C-T14.3.2.5-A").locator('[data-stamp="STALE"]')
+    ).toBeVisible();
+    await expect(
+      face(page, "C-T14.3.2.5-A").getByTestId("stale-badge")
+    ).toHaveText("25 → 0 Chips");
     await expect(card(page, "C-L16.1.1")).not.toHaveAttribute(
       "data-stale",
       "true"
@@ -346,7 +353,9 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       .click();
     await blank.focus();
     await page.keyboard.press("Enter");
-    await expect(blank.getByTestId("seal-badge")).toHaveCount(1);
+    await expect(face(page, "C-T14.1.3").getByTestId("seal-badge")).toHaveCount(
+      1
+    );
     await expect(page.getByTestId("consumable")).toHaveCount(1);
     await expectNoBlockingViolations(page, "sealed card and tray");
 
@@ -736,14 +745,16 @@ test.describe("Trial & Error: Biostat Ops Card Table", () => {
       await launch(page);
       const cards = page.locator("[data-card-id]");
       await expect(cards).toHaveCount(8);
+      const faces = page.locator("[data-hand-card]");
+      await expect(faces).toHaveCount(8);
       for (let i = 0; i < 8; i++) {
-        await expect(cards.nth(i).locator("[data-face-kind]")).toHaveCount(1);
+        await expect(faces.nth(i).locator("[data-face-kind]")).toHaveCount(1);
       }
       await expect(
-        card(page, "C-L16.2.4").locator('[data-face-kind="LISTING"]')
+        face(page, "C-L16.2.4").locator('[data-face-kind="LISTING"]')
       ).toContainText("S-001");
       await expect(
-        card(page, "C-T14.3.1").locator('[data-face-kind="TABLE"]')
+        face(page, "C-T14.3.1").locator('[data-face-kind="TABLE"]')
       ).toContainText("Any TEAE");
     });
 

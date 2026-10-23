@@ -75,7 +75,7 @@ describe("Clinical Trial Chaos on the desktop cabinet (#2105)", () => {
     expect(screen.queryByTestId("cc-touch-dock")).toBeNull();
     expect(board(container).hasAttribute("data-escape-docks")).toBe(false);
     fireEvent.click(
-      screen.getByRole("button", { name: /Stress Control Panel/i })
+      screen.getByRole("button", { name: /^Stress & BIMO Stream/ })
     );
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(
@@ -177,7 +177,7 @@ describe("Clinical Trial Chaos in the touch cabinet (#2105)", () => {
     const { container } = renderGame(true);
     startShift();
     fireEvent.click(
-      screen.getByRole("button", { name: /Stress Control Panel/i })
+      screen.getByRole("button", { name: /^Stress & BIMO Stream/ })
     );
     const sheet = screen.getByTestId("cc-stress-sheet");
     expect(sheet.getAttribute("role")).toBe("dialog");

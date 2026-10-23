@@ -46,7 +46,7 @@ function runCommand(command: string) {
 
 const hashParams = () => new URLSearchParams(window.location.hash.slice(1));
 const provenConclusion = () =>
-  screen.queryByRole("button", { name: /^Node E, R, conclusion, proven/ });
+  screen.queryByRole("button", { name: /^Node E, PROVEN, R, .*, conclusion,/ });
 const postedTypes = () =>
   workers.flatMap((w) => w.postMessage.mock.calls.map((c) => c[0].type));
 
@@ -64,7 +64,7 @@ describe("Proof Studio custom theorems", () => {
     expect(screen.getByRole("alert").textContent).not.toBe("");
     expect(hashParams().get("theorem")).toBeNull();
     expect(
-      screen.getByRole("button", { name: /^Node A, P, premise/ })
+      screen.getByRole("button", { name: /^Node A, \w+, P, / })
     ).toBeTruthy();
   });
 

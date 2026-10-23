@@ -688,7 +688,7 @@ export const Brain3DViewer: React.FC<Brain3DViewerProps> = ({
         <button
           onClick={() => triggerSimulation(800)}
           title="Simulate WebGL Context Loss & Recovery (GPU Resilience Test)"
-          aria-label="Simulate WebGL Context Loss and Recovery"
+          aria-label="GPU Test: simulate WebGL context loss and recovery"
           className="flex items-center gap-1 px-2 py-0.5 rounded text-zinc-400 hover:text-amber-300 hover:bg-zinc-800 transition"
         >
           <IconRefresh className="w-2.5 h-2.5 text-amber-400" />

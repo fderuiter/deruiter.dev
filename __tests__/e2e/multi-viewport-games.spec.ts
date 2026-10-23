@@ -170,7 +170,7 @@ test.describe("Multi-Viewport Arcade Games & Cabinets Suite", () => {
     const heading = page.getByRole("heading", { name: /Meme Vault/i }).first();
     await expect(heading).toBeVisible();
 
-    const playBtn = page.locator("button[aria-label^='Play ']").first();
+    const playBtn = page.locator("button.meme-pad").first();
     await expect(playBtn).toBeVisible();
     await playBtn.click();
   });

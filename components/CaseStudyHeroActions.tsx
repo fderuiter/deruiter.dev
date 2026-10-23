@@ -10,6 +10,28 @@ import {
 import type { GitHubStats } from "@/lib/github";
 import { parseGitHubUrl } from "@/lib/github";
 
+/**
+ * The repository link's name starts with exactly what the link shows (repo,
+ * stars, commits) so speech input users can say it (axe
+ * label-content-name-mismatch), then spells the numbers out.
+ */
+function githubLinkName(
+  repoDisplay: string | null | undefined,
+  stats: GitHubStats | null | undefined
+): string {
+  const stars = typeof stats?.stars === "number" ? stats.stars : null;
+  const commits =
+    typeof stats?.commitsCount === "number" && stats.commitsCount > 0
+      ? stats.commitsCount
+      : null;
+  const shown = [repoDisplay, stars, commits].filter((v) => v !== null);
+  const spelled = [
+    stars === null ? null : `${stars} stars`,
+    commits === null ? null : `${commits} commits`,
+  ].filter(Boolean);
+  return `${shown.join(" ")}: view on GitHub${spelled.length ? `, ${spelled.join(", ")}` : ""}`;
+}
+
 interface CaseStudyHeroActionsProps {
   slug?: string;
   githubUrl?: string | null;
@@ -45,19 +67,19 @@ export function CaseStudyHeroActions({
           href={githubUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`View on GitHub: ${repoDisplay}`}
+          aria-label={githubLinkName(repoDisplay, stats)}
           className="inline-flex items-center gap-2.5 px-4 py-2 rounded-lg bg-zinc-900/90 hover:bg-zinc-800/90 border border-zinc-800 hover:border-zinc-700 text-zinc-100 text-sm font-medium transition-all shadow-sm group focus:outline-none focus:ring-2 focus:ring-accent/50 active:scale-[0.98]"
         >
           <IconBrandGithub className="w-4 h-4 text-accent transition-transform group-hover:scale-110" />
           <span className="font-mono text-xs md:text-sm font-semibold">
             {repoDisplay}
-          </span>
+          </span>{" "}
           {stats && typeof stats.stars === "number" && (
             <span className="inline-flex items-center gap-1 ml-1.5 pl-2 border-l border-zinc-700 text-xs font-mono text-zinc-400">
               <IconStar className="w-3.5 h-3.5 text-amber-400 fill-amber-400/20" />
               <span>{stats.stars}</span>
             </span>
-          )}
+          )}{" "}
           {stats &&
             typeof stats.commitsCount === "number" &&
             stats.commitsCount > 0 && (
@@ -75,10 +97,9 @@ export function CaseStudyHeroActions({
           href={externalPlatformUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label="Explore on Kaggle Notebook"
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-amber-950/40 hover:bg-amber-900/50 border border-amber-500/30 hover:border-amber-400/50 text-amber-200 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-amber-400/50 active:scale-[0.98]"
         >
-          <span className="font-bold text-amber-400 font-mono text-xs">K</span>
+          <span className="font-bold text-amber-400 font-mono text-xs">K</span>{" "}
           <span className="text-xs md:text-sm font-semibold">
             Explore on Kaggle
           </span>
@@ -92,7 +113,6 @@ export function CaseStudyHeroActions({
           href={externalPlatformUrl}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`View external project: ${externalPlatformType || "Resource"}`}
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 text-sm font-medium transition-all focus:outline-none focus:ring-2 focus:ring-zinc-400/50 active:scale-[0.98]"
         >
           <IconExternalLink className="w-4 h-4 text-zinc-400" />

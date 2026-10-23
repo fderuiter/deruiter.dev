@@ -42,7 +42,9 @@ for (const layout of [
     await expect(node("C")).toHaveAttribute("aria-pressed", "true");
     await tabToNode(page, canvas, node("E"));
     await page.keyboard.press("Space");
-    await expect(node("E")).toHaveAccessibleName(/conclusion, pending/);
+    await expect(node("E")).toHaveAccessibleName(
+      /^Node E, PENDING,.*, conclusion,/
+    );
     await tabToNode(
       page,
       canvas,
@@ -53,7 +55,9 @@ for (const layout of [
     await page.keyboard.press("Enter");
     await tabToNode(page, canvas, node("E"));
     await page.keyboard.press("Enter");
-    await expect(node("E")).toHaveAccessibleName(/conclusion, proven/);
+    await expect(node("E")).toHaveAccessibleName(
+      /^Node E, PROVEN,.*, conclusion,/
+    );
     await tabToNode(page, canvas, node("E"));
     await page.keyboard.press("Enter");
     await tabToNode(page, canvas, node("A"));
@@ -75,7 +79,9 @@ for (const layout of [
     const mp = page.getByTitle(/^Modus Ponens:/);
     await mp.focus();
     await page.keyboard.press("Enter");
-    await expect(node("E")).toHaveAccessibleName(/conclusion, proven/);
+    await expect(node("E")).toHaveAccessibleName(
+      /^Node E, PROVEN,.*, conclusion,/
+    );
     for (const handle of await canvas
       .getByRole("button", { name: /^Drag connection handle/ })
       .all()) {

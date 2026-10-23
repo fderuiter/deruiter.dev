@@ -137,7 +137,7 @@ export function ArcadeDailyPanel() {
                 </div>
                 <Link
                   href={arcadeDailyHref(game.id, today)}
-                  aria-label={`Play today's ${game.title} daily`}
+                  aria-label={`Play daily: today's ${game.title}`}
                   className="inline-flex min-h-[44px] items-center justify-center gap-2 self-start border border-amber-500/60 px-4 font-mono text-xs font-bold text-amber-300 uppercase transition-colors hover:bg-amber-500/10 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none active:scale-[0.98]"
                 >
                   <IconPlayerPlay className="h-3.5 w-3.5" aria-hidden="true" />

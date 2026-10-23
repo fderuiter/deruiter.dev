@@ -109,7 +109,7 @@ describe("Clinical Trial Chaos - Stress Control & Live BIMO Stream", () => {
     it("renders the Stress & BIMO Stream HUD toggle button", () => {
       render(<ClinicalTrialChaos />);
       const toggleBtn = screen.getByRole("button", {
-        name: /Toggle Interactive Stress Control Panel and Live BIMO Stream/i,
+        name: /^Stress & BIMO Stream/,
       });
       expect(toggleBtn).toBeDefined();
     });
@@ -117,7 +117,7 @@ describe("Clinical Trial Chaos - Stress Control & Live BIMO Stream", () => {
     it("opens and closes the Stress Control Drawer when toggled", () => {
       render(<ClinicalTrialChaos />);
       const toggleBtn = screen.getByRole("button", {
-        name: /Toggle Interactive Stress Control Panel and Live BIMO Stream/i,
+        name: /^Stress & BIMO Stream/,
       });
 
       // Drawer closed initially
@@ -161,7 +161,7 @@ describe("Clinical Trial Chaos - Stress Control & Live BIMO Stream", () => {
     it("applies presets and updates parameter sliders in real time", () => {
       render(<ClinicalTrialChaos />);
       const toggleBtn = screen.getByRole("button", {
-        name: /Toggle Interactive Stress Control Panel and Live BIMO Stream/i,
+        name: /^Stress & BIMO Stream/,
       });
       fireEvent.click(toggleBtn);
 
@@ -198,7 +198,7 @@ describe("Clinical Trial Chaos - Stress Control & Live BIMO Stream", () => {
     it("displays live BIMO score, trend indicator, and findings feed", () => {
       render(<ClinicalTrialChaos />);
       const toggleBtn = screen.getByRole("button", {
-        name: /Toggle Interactive Stress Control Panel and Live BIMO Stream/i,
+        name: /^Stress & BIMO Stream/,
       });
       fireEvent.click(toggleBtn);
 

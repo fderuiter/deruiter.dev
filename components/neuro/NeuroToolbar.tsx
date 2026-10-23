@@ -199,11 +199,12 @@ export const NeuroToolbar: React.FC<NeuroToolbarProps> = ({
         <button
           onClick={onOpenFieldManual}
           title="Open FreeSurfer Field Manual & Defect Guide [M]"
-          aria-label="Open Field Manual"
+          aria-label="Open Field Manual, M"
+          aria-keyshortcuts="M"
           className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl bg-zinc-950 border border-zinc-800 text-brand-cyan hover:bg-zinc-900 text-xs font-mono font-bold transition-all"
         >
           <IconBook className="w-4 h-4" />
-          <span className="hidden sm:inline">FIELD MANUAL</span>
+          <span className="hidden sm:inline">FIELD MANUAL</span>{" "}
           <span className="text-[10px] text-zinc-400 font-mono hidden lg:inline">
             [M]
           </span>

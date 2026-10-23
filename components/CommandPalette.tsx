@@ -1725,7 +1725,7 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close command search"
+            aria-label="ESC, close command search"
             className="min-h-10 min-w-10 flex items-center justify-center text-xs font-mono font-bold tracking-wider text-zinc-300 px-2.5 py-1 bg-zinc-950 border border-zinc-700 hover:border-accent/40 hover:text-accent rounded-xl cursor-pointer select-none transition"
           >
             ESC

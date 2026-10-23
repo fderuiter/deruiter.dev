@@ -130,54 +130,15 @@ export function HandCard({
       >
         ⠿
       </span>
-      <motion.button
-        type="button"
-        ref={buttonRef}
-        tabIndex={interaction.tabIndex}
-        aria-pressed={view.selected}
-        aria-label={label}
-        data-card-id={view.card.id}
-        onClick={interaction.onClick}
-        onFocus={(e) => {
-          setRaised(true);
-          interaction.onFocus();
-          // The hand scrolls sideways when it outgrows the table, so bring
-          // the card keyboard focus lands on into view (#1944). Focus that a
-          // tap or the cabinet's own focus moved here is not a reason to scroll
-          // the stage: it would push the table's HUD off the top.
-          if (isKeyboardFocus(e.currentTarget)) {
-            e.currentTarget.scrollIntoView?.({
-              inline: "nearest",
-              block: "nearest",
-            });
-          }
-        }}
-        onBlur={() => setRaised(false)}
-        onKeyDown={interaction.onKeyDown}
-        onPointerEnter={() => setRaised(true)}
-        onPointerLeave={() => {
-          setRaised(false);
-          tiltX.set(0);
-          tiltY.set(0);
-          interaction.onPointerEnd();
-        }}
-        onPointerDown={interaction.onPointerDown}
-        onPointerMove={(e) => {
-          interaction.onPointerMove(e);
-          if (!physical || e.pointerType !== "mouse") return;
-          const rect = e.currentTarget.getBoundingClientRect();
-          tiltY.set(
-            ((e.clientX - rect.left) / rect.width - 0.5) * 2 * TILT_DEG
-          );
-          tiltX.set(
-            -((e.clientY - rect.top) / rect.height - 0.5) * 2 * TILT_DEG
-          );
-        }}
-        onPointerUp={interaction.onPointerEnd}
-        onPointerCancel={interaction.onPointerEnd}
-        onContextMenu={interaction.onContextMenu}
-        onDragOver={interaction.onDragOver}
-        onDrop={interaction.onDrop}
+      {/* The card is a picture with an invisible button laid over it. The
+          face prints a mini-output of the card's data, far more text than a
+          name can carry, and a button's name has to contain the words it
+          shows (WCAG 2.5.3, axe label-content-name-mismatch, #2571). So the
+          face sits beside the button, not in it, and the button's name opens
+          with the card's number and title, the words a speech input user
+          reads off the card. */}
+      <motion.div
+        data-hand-card=""
         animate={{
           y: (physical ? offset * offset * ARC_DROP_PX : 0) + lift,
           rotate: physical && !raised ? offset * FAN_DEG : 0,
@@ -189,10 +150,7 @@ export function HandCard({
             : { duration: 0 }
         }
         style={{ rotateX: tiltX, rotateY: tiltY, transformPerspective: 700 }}
-        data-stale={view.stale || undefined}
-        data-blank={view.blank || undefined}
-        data-face-down={view.faceDown || undefined}
-        className={`relative block h-[13.5rem] w-full min-w-0 border border-l-4 text-left text-xs touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${view.blank ? "border-dashed border-l-zinc-500" : SUIT_BORDER[view.card.population]} ${interaction.sealTarget ? "outline outline-1 outline-dashed outline-amber-400/70" : ""} ${
+        className={`relative block h-[13.5rem] w-full min-w-0 border border-l-4 text-left text-xs select-none ${view.blank ? "border-dashed border-l-zinc-500" : SUIT_BORDER[view.card.population]} ${interaction.sealTarget ? "outline outline-1 outline-dashed outline-amber-400/70" : ""} ${
           view.selected
             ? "border-amber-400 bg-[#1f1a10]"
             : "border-zinc-700 bg-[color:var(--te-surface-1)]"
@@ -239,7 +197,62 @@ export function HandCard({
             />
           }
         />
-      </motion.button>
+        {/* Covers the card's border box exactly (1px borders, 4px on the
+            left), so the hit area and focus ring are the card's own. */}
+        <button
+          type="button"
+          ref={buttonRef}
+          tabIndex={interaction.tabIndex}
+          aria-pressed={view.selected}
+          aria-label={label}
+          data-card-id={view.card.id}
+          onClick={interaction.onClick}
+          onFocus={(e) => {
+            setRaised(true);
+            interaction.onFocus();
+            // The hand scrolls sideways when it outgrows the table, so bring
+            // the card keyboard focus lands on into view (#1944). Focus that a
+            // tap or the cabinet's own focus moved here is not a reason to
+            // scroll the stage: it would push the table's HUD off the top.
+            if (isKeyboardFocus(e.currentTarget)) {
+              e.currentTarget.scrollIntoView?.({
+                inline: "nearest",
+                block: "nearest",
+              });
+            }
+          }}
+          onBlur={() => setRaised(false)}
+          onKeyDown={interaction.onKeyDown}
+          onPointerEnter={() => setRaised(true)}
+          onPointerLeave={() => {
+            setRaised(false);
+            tiltX.set(0);
+            tiltY.set(0);
+            interaction.onPointerEnd();
+          }}
+          onPointerDown={interaction.onPointerDown}
+          onPointerMove={(e) => {
+            interaction.onPointerMove(e);
+            if (!physical || e.pointerType !== "mouse") return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            tiltY.set(
+              ((e.clientX - rect.left) / rect.width - 0.5) * 2 * TILT_DEG
+            );
+            tiltX.set(
+              -((e.clientY - rect.top) / rect.height - 0.5) * 2 * TILT_DEG
+            );
+          }}
+          onPointerUp={interaction.onPointerEnd}
+          onPointerCancel={interaction.onPointerEnd}
+          onContextMenu={interaction.onContextMenu}
+          onDragOver={interaction.onDragOver}
+          onDrop={interaction.onDrop}
+          data-stale={view.stale || undefined}
+          data-blank={view.blank || undefined}
+          data-face-down={view.faceDown || undefined}
+          className="absolute -top-px -right-px -bottom-px -left-1 z-20 block touch-manipulation select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        />
+      </motion.div>
     </Reorder.Item>
   );
 }

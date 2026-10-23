@@ -71,6 +71,14 @@ describe("ADSL, ADVS and ADLB", () => {
     expect(adsl.some((row) => row.EFFFL === "Y" && row.BSYSBP !== null)).toBe(
       true
     );
+    const exposure = new Map(
+      records(get("EX")).map((row) => [row.USUBJID, row.EXTRT])
+    );
+    expect(
+      adsl
+        .filter((row) => row.SAFFL === "Y")
+        .every((row) => row.TRT01A === exposure.get(row.USUBJID))
+    ).toBe(true);
     expect(get("ADSL").lineage?.every((links) => links.length > 0)).toBe(true);
   });
 

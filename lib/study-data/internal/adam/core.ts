@@ -221,6 +221,9 @@ export function deriveAdsl(
   const armNumber = new Map(
     definition.design.arms.map((arm, index) => [arm.armCode, index + 1])
   );
+  const treatmentNumber = new Map(
+    definition.design.arms.map((arm, index) => [arm.name, index + 1])
+  );
   const data: AnalysisRow[] = [];
   const lineage: (readonly string[])[] = [];
   for (const subjectRow of dm) {
@@ -229,8 +232,8 @@ export function deriveAdsl(
     const exposure = [...(ex.get(subject) ?? [])].sort((a, b) =>
       (date(a.row.EXSTDTC) ?? "").localeCompare(date(b.row.EXSTDTC) ?? "")
     );
-    const firstDose =
-      exposure.map(({ row }) => date(row.EXSTDTC)).find(Boolean) ?? null;
+    const firstExposure = exposure.find(({ row }) => date(row.EXSTDTC));
+    const firstDose = date(firstExposure?.row.EXSTDTC);
     const lastDose =
       exposure
         .map(({ row }) => date(row.EXENDTC))
@@ -238,7 +241,7 @@ export function deriveAdsl(
         .sort()
         .at(-1) ?? null;
     const planned = string(source.ARMCD);
-    const actual = firstDose ? string(source.ACTARMCD) : null;
+    const actual = firstDose ? string(firstExposure?.row.EXTRT) : null;
     const randomized = planned !== null && planned !== "SCRNFAIL";
     const systolicBaseline = baseline(
       vs.get(subject) ?? [],
@@ -274,8 +277,8 @@ export function deriveAdsl(
       USUBJID: subject,
       TRT01P: randomized ? source.ARM : null,
       TRT01PN: randomized ? (armNumber.get(planned!) ?? null) : null,
-      TRT01A: actual ? source.ACTARM : null,
-      TRT01AN: actual ? (armNumber.get(actual) ?? null) : null,
+      TRT01A: actual,
+      TRT01AN: actual ? (treatmentNumber.get(actual) ?? null) : null,
       TRTSDT: firstDose,
       TRTEDT: lastDose,
       SAFFL: firstDose ? "Y" : "N",

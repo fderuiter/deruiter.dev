@@ -7,6 +7,8 @@
 import { readStudyDefinition } from "./internal/usdm/read-study-definition";
 import { DEMO_301_USDM } from "./presets/demo-301";
 import type { PipelineStage, StandardVersions, StudyDefinition } from "./types";
+export { ADAM_METHODS } from "./internal/adam/specs";
+export type { AdamMethodId } from "./internal/adam/specs";
 
 /**
  * The standard versions every run applies and declares in TS, Define-XML and

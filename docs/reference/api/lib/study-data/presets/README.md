@@ -18,6 +18,18 @@
 
 ## References
 
+### ADAM\_METHODS
+
+Re-exports [ADAM_METHODS](../internal/adam/specs/variables/ADAM_METHODS.md)
+
+***
+
+### AdamMethodId
+
+Re-exports [AdamMethodId](../internal/adam/specs/type-aliases/AdamMethodId.md)
+
+***
+
 ### DEMO\_301\_USDM
 
 Re-exports [DEMO_301_USDM](demo-301/variables/DEMO_301_USDM.md)

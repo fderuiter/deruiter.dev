@@ -14,6 +14,18 @@ Re-exports [ActivityDefinition](types/interfaces/ActivityDefinition.md)
 
 ***
 
+### ADAM\_METHODS
+
+Re-exports [ADAM_METHODS](internal/adam/specs/variables/ADAM_METHODS.md)
+
+***
+
+### AdamMethodId
+
+Re-exports [AdamMethodId](internal/adam/specs/type-aliases/AdamMethodId.md)
+
+***
+
 ### AnalysisPopulationDefinition
 
 Re-exports [AnalysisPopulationDefinition](types/interfaces/AnalysisPopulationDefinition.md)

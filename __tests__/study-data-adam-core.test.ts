@@ -3,8 +3,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { DEMO_301_STUDY, runPipeline, type Dataset } from "@/lib/study-data";
-import { ADAM_METHODS } from "@/lib/study-data/internal/adam/specs";
+import {
+  ADAM_METHODS,
+  DEMO_301_STUDY,
+  runPipeline,
+  type Dataset,
+} from "@/lib/study-data";
 
 function records(dataset: Dataset) {
   return Array.from({ length: dataset.rowCount }, (_, index) =>

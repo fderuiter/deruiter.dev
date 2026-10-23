@@ -824,7 +824,7 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                     }`}
                   >
                     {validationReport.isCompliant
-                      ? "✔ 100% Compliant"
+                      ? "✔ No findings"
                       : `✖ ${validationReport.errors.length} Issues`}
                   </span>
                 </div>
@@ -833,8 +833,8 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                   <p className="text-xs text-zinc-300 font-sans">
                     All {draftStudy.forms.length} clinical domains,{" "}
                     {draftStudy.visits.length} Schedule of Activities visits,
-                    and AST rule graphs comply with CDISC CDASH 2.2 and 21 CFR
-                    Part 11 requirements cleanly.
+                    and AST rule graphs pass the implemented design checks (a
+                    CDASHIG 2.2 subset). This is not a regulatory validation.
                   </p>
                 ) : (
                   <div className="space-y-1.5 max-h-36 overflow-y-auto">

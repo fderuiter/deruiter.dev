@@ -24,6 +24,7 @@ import {
   validatePrecisionDate,
   CDISC_NULL_FLAVORS,
 } from "@/lib/crf/precision-date";
+import { NoPhiNotice } from "../NoPhiNotice";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import {
   IconShieldCheck,
@@ -743,13 +744,15 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
               <IconShieldCheck className="w-5 h-5" />
             </span>
             <h2 className="text-base sm:text-lg font-bold text-white font-mono truncate">
-              Live 21 CFR Part 11 EDC Simulation Mode
+              Live EDC Simulation
             </h2>
           </div>
           <p className="text-xs text-zinc-400 font-sans mt-1">
-            Test live subject patient entry, CRA source data verification (SDV),
-            investigator locking, and longitudinal visit matrix.
+            Try a Part 11-style workflow: subject data entry, CRA source data
+            verification (SDV), investigator locking and the longitudinal visit
+            matrix.
           </p>
+          <NoPhiNotice className="mt-2" />
         </div>
 
         {/* User Role Switcher */}
@@ -781,7 +784,7 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       </div>
 
       {/* Sub-View Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto scrollbar-none">
+      <div className="flex shrink-0 items-center gap-2 border-b border-zinc-800 pb-2 overflow-x-auto scrollbar-none">
         <button
           onClick={() => setSubView("form_entry")}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono whitespace-nowrap transition-all ${
@@ -1997,13 +2000,13 @@ export const LiveEdcSimulator: React.FC<LiveEdcSimulatorProps> = ({
       {subView === "audit_trail" && (
         <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
           <h2 className="text-sm font-bold text-white font-mono">
-            21 CFR Part 11 Immutable Audit Trail Log
+            Part 11-style audit trail (simulation)
           </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs border-collapse">
               <caption className="sr-only">
-                21 CFR Part 11 Immutable Audit Trail Log
+                Part 11-style audit trail (simulation)
               </caption>
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">

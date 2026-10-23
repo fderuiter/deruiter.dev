@@ -160,7 +160,7 @@ describe("Table Accessibility Remediation", () => {
     const auditTable = container.querySelector("table");
     expect(auditTable).not.toBeNull();
     expect(auditTable?.querySelector("caption")?.textContent).toContain(
-      "21 CFR Part 11 Immutable Audit Trail Log"
+      "Part 11-style audit trail (simulation)"
     );
     auditTable?.querySelectorAll("th").forEach((th) => {
       expect(th.getAttribute("scope")).toBe("col");

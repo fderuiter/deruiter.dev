@@ -23,7 +23,7 @@ const rawFallbackBlogPosts: BlogPostData[] = [
     id: "fallback-blog-1",
     slug: "cdisc-odm-sdtm-clinical-data-pipelines",
     title: "Architecting CDISC ODM & SDTM Clinical Data Pipelines",
-    dek: "How to design deterministic, streaming XML compilation pipelines for FDA-compliant CDISC ODM and SDTM datasets without memory blowouts.",
+    dek: "How to design deterministic, streaming XML compilation pipelines for submission-style CDISC ODM and SDTM datasets without memory blowouts.",
     pillar: "clinical-data-engineering",
     tags: "cdisc, odm, sdtm, edc, fda, clinical-data-systems",
     published: true,
@@ -71,11 +71,11 @@ interface ClinicalSubjectStream {
 <ul>
   <li><strong>Controlled Terminology Alignment:</strong> Validating coded entries against quarterly NCI EVS dictionary codelists with pinned snapshot versions.</li>
   <li><strong>Deterministic ISO 8601 Standardization:</strong> Reconciling partial dates into valid SDTM character representations without silent truncation.</li>
-  <li><strong>21 CFR Part 11 Audit Trails:</strong> Cryptographic SHA-256 input hashing on every derived observation to prove record provenance and immutability.</li>
+  <li><strong>Part 11-Style Audit Trails:</strong> SHA-256 hashing of the inputs to every derived observation, so a reviewer can check record provenance and detect tampering.</li>
 </ul>
 
 <h3>Cryptographic Audit Trails &amp; Provenance</h3>
-<p>Rather than relying on volatile database transaction logs, every transformed observation carries an immutable hash certificate linking the emitted tabulation record directly back to the source ODM XML token offset and transformation rule version:</p>
+<p>Rather than relying on volatile database transaction logs, every transformed observation carries a hash linking the emitted tabulation record directly back to the source ODM XML token offset and transformation rule version:</p>
 
 <pre><code class="language-typescript">
 interface ProvenanceCertificate {
@@ -268,7 +268,7 @@ type ASTNode =
 <ul>
   <li><strong>Static Cycle Detection:</strong> The rule graph is analyzed before execution to ensure absence of cyclic dependency loops across form fields.</li>
   <li><strong>Depth-Bounded Tree Traversal:</strong> Tree depth is capped at 32 levels, guaranteeing that evaluation finishes in under 1 millisecond per form item.</li>
-  <li><strong>Deterministic Derivation Trails:</strong> Every evaluation yields an inspectable derivation tree explaining <em>why</em> a validation failed, satisfying FDA 21 CFR Part 11 electronic record requirements.</li>
+  <li><strong>Deterministic Derivation Trails:</strong> Every evaluation yields an inspectable derivation tree explaining <em>why</em> a validation failed, the kind of traceability a Part 11 reviewer looks for.</li>
 </ul>
 
 <h3>Zero-ReDoS Guarantees &amp; Step-by-Step Derivation</h3>

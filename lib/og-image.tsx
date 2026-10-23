@@ -129,7 +129,7 @@ export const PRESET_CONFIGS: Record<
   CLINICAL_SYSTEMS: {
     category: "CLINICAL DATA SYSTEMS",
     badge: "CDISC 2.2",
-    systemStatus: "CDISC COMPLIANT // GxP READY",
+    systemStatus: "SYNTHETIC DATA // DESIGN CHECKS",
     tags: [
       "CDISC CDASH",
       "ODM-XML",

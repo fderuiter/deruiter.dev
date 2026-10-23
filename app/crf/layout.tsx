@@ -16,7 +16,7 @@ export default function CRFLayout({ children }: { children: React.ReactNode }) {
           __html: getWebApplicationSchema({
             name: "CRF Studio: Next-Gen Clinical Form & Protocol Designer",
             description:
-              "Zero-latency clinical trial form designer and EDC simulator with 12-column responsive layout, AST-powered edit checks, CDISC CDASH 2.2 / ODM-XML v1.3.2 compliance, and live publication aCRF overlays.",
+              "Zero-latency clinical trial form designer and EDC simulator with 12-column responsive layout, AST-powered edit checks, CDASHIG 2.2-modelled forms, ODM-XML v1.3.2 export, and live publication aCRF overlays.",
             url: "/crf",
             applicationCategory: "DeveloperApplication",
             genre: "Clinical Data Management Engine",

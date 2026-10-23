@@ -7,7 +7,7 @@
 # Class: StudyAuditor
 
 Deep domain engine for unified clinical study, form, and formula quality auditing.
-Consolidates AST syntax checking, CDISC CDASH 2.2 regulatory compliance,
+Consolidates AST syntax checking, a subset of CDISC CDASHIG 2.2 design checks,
 Schedule of Activities (SoA) consistency, form health telemetry, and 1-click auto-fix remediation.
 
 ## Constructors

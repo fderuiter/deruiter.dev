@@ -12,11 +12,16 @@ type Row = Record<string, CellValue>;
 type Domain = "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "AE" | "DS";
 
 const BASE_DATE = "2030-01-01";
+/**
+ * A fictional four-term adverse event dictionary. It borrows MedDRA-style
+ * names and each term's primary system organ class, but it is not MedDRA
+ * and carries no MedDRA codes or version.
+ */
 const AE_TERMS = [
   { soc: "Nervous system disorders", pt: "Headache" },
   { soc: "Gastrointestinal disorders", pt: "Nausea" },
   { soc: "General disorders", pt: "Fatigue" },
-  { soc: "Vascular disorders", pt: "Dizziness" },
+  { soc: "Nervous system disorders", pt: "Dizziness" },
 ] as const;
 
 function draw(

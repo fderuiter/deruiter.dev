@@ -1,6 +1,6 @@
 /**
  * Automated SAS Export Script Generator for CRF Studio
- * Generates CDASH-compliant SAS programs (.sas) including:
+ * Generates CDASH-modelled SAS programs (.sas) including:
  * 1. Comprehensive Header Metadata & Study Specifications
  * 2. PROC FORMAT libraries for NCI Thesaurus & Custom Codelists
  * 3. Modular DATA steps per Form/Domain with explicit ATTRIB definitions

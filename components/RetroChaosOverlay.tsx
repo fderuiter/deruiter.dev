@@ -146,7 +146,7 @@ export const RetroChaosOverlay: React.FC = () => {
               <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300">
                 <IconCheck className="w-4 h-4 mt-px text-amber-400 shrink-0" />
                 <span className="min-w-0 break-words leading-snug">
-                  21 CFR Part 11: Valid
+                  Part 11 Audit: Simulated
                 </span>
               </div>
               <div className="flex min-w-0 items-start gap-2 p-2 rounded-lg bg-purple-950/40 border border-purple-500/30 text-purple-300">

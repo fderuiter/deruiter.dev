@@ -8,6 +8,7 @@
 
 ## Variables
 
+- [DEFAULT\_PORTFOLIO\_SEED](variables/DEFAULT_PORTFOLIO_SEED.md)
 - [DQ\_DIMENSIONS](variables/DQ_DIMENSIONS.md)
 - [LAYER\_RANK](variables/LAYER_RANK.md)
 - [MEDALLION\_LAYERS](variables/MEDALLION_LAYERS.md)

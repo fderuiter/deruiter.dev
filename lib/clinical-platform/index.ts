@@ -13,6 +13,7 @@ export {
   checkRegulatoryWording,
   findClinicalClaims,
 } from "./internal/policy";
+export { generatePortfolio } from "./internal/portfolio/generate";
 export {
   scoreVendors,
   sensitivity,

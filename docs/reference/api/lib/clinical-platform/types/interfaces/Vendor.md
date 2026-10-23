@@ -8,6 +8,10 @@
 
 A fictional vendor: CRO, EDC, IRT, CTMS, eTMF or central lab provider.
 
+## Extends
+
+- [`SyntheticRecord`](SyntheticRecord.md)
+
 ## Properties
 
 ### id
@@ -28,6 +32,18 @@ Fictional name. Never the name of a real company.
 
 ### service
 
-> `readonly` **service**: `"CRO"` \| `"EDC"` \| `"IRT"` \| `"CTMS"` \| `"eTMF"` \| `"Central lab"`
+> `readonly` **service**: `"EDC"` \| `"CTMS"` \| `"IRT"` \| `"eTMF"` \| `"CRO"` \| `"Central lab"`
 
 Service the vendor provides.
+
+***
+
+### synthetic
+
+> `readonly` **synthetic**: `true`
+
+Always `true`: the record is synthetic and describes nothing real.
+
+#### Inherited from
+
+[`SyntheticRecord`](SyntheticRecord.md).[`synthetic`](SyntheticRecord.md#synthetic)

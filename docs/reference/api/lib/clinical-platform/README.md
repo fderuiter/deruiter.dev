@@ -86,6 +86,12 @@ Re-exports [DqSeverity](types/type-aliases/DqSeverity.md)
 
 ***
 
+### findClinicalClaims
+
+Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)
+
+***
+
 ### LAYER\_RANK
 
 Re-exports [LAYER_RANK](presets/variables/LAYER_RANK.md)

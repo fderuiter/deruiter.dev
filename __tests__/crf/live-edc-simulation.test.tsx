@@ -11,7 +11,7 @@ import { LiveEdcSimulator } from "@/components/crf/Modes/LiveEdcSimulator";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 import { StudyProtocol } from "@/lib/crf/types";
 
-describe("Live 21 CFR Part 11 EDC Simulation Suite", () => {
+describe("Live EDC Simulation Suite", () => {
   let container: HTMLDivElement;
   let root: Root;
 
@@ -36,9 +36,7 @@ describe("Live 21 CFR Part 11 EDC Simulation Suite", () => {
       root.render(<LiveEdcSimulator study={ONCOLOGY_RECIST_PRESET} />);
     });
 
-    expect(container.textContent).toContain(
-      "Live 21 CFR Part 11 EDC Simulation Mode"
-    );
+    expect(container.textContent).toContain("Live EDC Simulation");
     expect(container.textContent).toContain("Patient Form Entry");
     expect(container.textContent).toContain("Subject Status Matrix");
     expect(container.textContent).toContain("Discrepancy Queries");
@@ -86,7 +84,7 @@ describe("Live 21 CFR Part 11 EDC Simulation Suite", () => {
     });
 
     expect(container.textContent).toContain(
-      "21 CFR Part 11 Immutable Audit Trail Log"
+      "Part 11-style audit trail (simulation)"
     );
   });
 

@@ -38,11 +38,25 @@ describe("Clinical Data Platform hub", () => {
         }
       }
       expect(capabilityStatus(capability)).toBe(
-        capability.evidence.some((evidence) => evidence.kind === "route")
+        capability.evidence.some(
+          (evidence) =>
+            evidence.kind === "route" && !evidence.href.startsWith("/arcade/")
+        )
           ? "Live demo"
           : "In progress"
       );
     }
+  });
+
+  it("never counts an arcade game as live control evidence", () => {
+    const regulations = PLATFORM_CAPABILITIES.find(
+      (capability) => capability.id === "regulations"
+    );
+    if (!regulations) throw new Error("regulations capability missing");
+    expect(
+      regulations.evidence.some((link) => link.href.startsWith("/arcade/"))
+    ).toBe(true);
+    expect(capabilityStatus(regulations)).toBe("In progress");
   });
 
   it("renders the architecture, synthetic scope and a registered route", () => {

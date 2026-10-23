@@ -31,9 +31,7 @@ const VisitMatrixEditor = () => (
 const RuleGraphStudio = () => (
   <div>Logic Dependency DAG &amp; AST Rule Studio</div>
 );
-const LiveEdcSimulator = () => (
-  <div>Live 21 CFR Part 11 EDC Simulation Mode</div>
-);
+const LiveEdcSimulator = () => <div>Live EDC Simulation</div>;
 const AcrfOverlayViewer = () => (
   <div>Visual Annotated CRF (aCRF) Submission Studio</div>
 );

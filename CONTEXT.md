@@ -75,15 +75,15 @@ Formal inference rules used to derive logical steps from valid premises:
 - **Dynamic Edit Checks**: Cross-field conditional triggers for showing/hiding questions, dynamic mandatory flags, boundary checking, and discrepancy query firing.
 - **Logic Dependency DAG (Rule Graph)**: Directed Acyclic Graph modeling cascading edit check trigger fields, rule operators, action targets, and circular dependency detection.
 
-### 21 CFR Part 11 Electronic Data Capture (EDC) Simulation
+### Part 11-Style Electronic Data Capture (EDC) Simulation
 
 - **Multi-Role Simulation**: Role-based access control modeling Site Coordinator (data entry), Principal Investigator (e-signature & review), CRA Monitor (SDV & discrepancy management), and Data Manager.
 - **Subject Status Matrix**: Medidata Rave / Veeva Vault CDMS style 2D matrix visualizing multi-subject longitudinal visit progression and form completeness (Complete, Incomplete, Locked, Open Query, SDV Verified).
 - **Source Data Verification (SDV)**: CRA clinical monitoring activity verifying that electronic data captured in the EDC accurately reflects raw subject medical records / source charts.
 - **Reason for Change Prompt**: Mandatory justification audit prompts when modifying existing clinical data points.
-- **Immutable Chronological Audit Log**: Timestamped record tracking previous value, new value, user identity, role, and justification.
+- **Chronological Audit Log (simulation)**: Timestamped record tracking previous value, new value, user identity, role, and justification. It lives in browser state, so it is append-only by convention, not tamper-proof.
 - **Electronic Signatures**: Cryptographic simulated SHA-256 digital signatures attesting investigator review and data lock.
-- **Universal CRF Specification (`.crf.json` / `.crf.yaml`)**: The canonical, human-readable, and machine-verifiable clinical protocol schema defined via strict Zod validation that acts as the single source of truth across Web Studio and CLI tooling with 100% lossless bidirectional compilation to CDISC ODM-XML 1.3.2, HL7 FHIR SDC, SAS, R, and Docx/PDF.
+- **Universal CRF Specification (`.crf.json` / `.crf.yaml`)**: The canonical, human-readable, and machine-verifiable clinical protocol schema defined via strict Zod validation that acts as the single source of truth across Web Studio and CLI tooling, with exports to CDISC ODM-XML 1.3.2, HL7 FHIR SDC, SAS, R, and Docx/PDF. The exports are not guaranteed to be lossless.
 - **Unified Clinical Protocol Business Logic Engine (`StudyProtocolEngine`)**: A pure, framework-agnostic functional service and command reducer encapsulating all clinical protocol mutations, AST dependency reconciliation, Schedule of Activities (SoA) synchronization, CDISC CDASH 2.2 invariants, and multi-standard exports across both Web Studio and CLI environments.
 - **Context-Aware Tri-Pane Workspace**: A fluid 3-column clinical IDE layout composing the Study Spine & Library (Left), WYSIWYG Canvas or Bi-Directional Grid (Center), and Dynamic Context-Aware Inspector (Right), eliminating tab-switching during form and rule design.
 - **Study Spine**: A unified left-hand study navigation tree representing the longitudinal trial timeline (Screening ➔ Baseline ➔ Treatment Cycles ➔ Follow-up) paired with a drag-and-drop Global Library of standardized clinical forms and smart blocks.
@@ -295,7 +295,7 @@ Formal inference rules used to derive logical steps from valid premises:
 
 ### Visual Identity & Interactive Telemetry
 
-- **Hero Engineering Console**: An interactive, multi-modal hero telemetry component allowing visitors to interactively test and verify domain invariants (AST Premise Discharging in Formal Logic, CDISC 21 CFR Part 11 Conformance Auditing, and Garmin 32KB Memory Heap Allocation) with contextual handoff links to full interactive studio workspaces.
+- **Hero Engineering Console**: An interactive, multi-modal hero telemetry component allowing visitors to interactively test and verify domain invariants (AST Premise Discharging in Formal Logic, Part 11-style CDISC audit simulation, and Garmin 32KB Memory Heap Allocation) with contextual handoff links to full interactive studio workspaces.
 - **Scientific & Engineering Editorial Design System**: A high-assurance visual and interaction design architecture emphasizing Swiss grid precision, deep architectural graphite surfaces (`#0d0e11`, `#13151a`), crisp hairline structural borders (`rgba(255, 255, 255, 0.08)` / `border-zinc-800`), and semantic status indicators (Precision Amber `#f59e0b`, Emerald `#10b981`, Steel `#94a3b8`) eliminating generic AI tropes (falling collision particles, diffuse neon glows).
 - **Dual-Layer Editorial Persona**: An editorial and narrative framework blending warm, self-deprecating storytelling with dry, battle-tested engineering and clinical operations wit as the baseline voice, while using the Dual-Layer Narrative Perspective toggles ("Professional vs. Behind the Scenes") and micro-copy to expose unvarnished, hilarious technical reality.
 - **Dual-Layer Narrative Perspective**: The site-wide reading mode (`PersonaProvider`, `lib/persona.ts`) that lets a visitor read every surface in two layers: Professional Mode or Behind the Scenes Mode. The site is a peer engineering showcase written by someone happy in their current role, so neither layer is addressed to hiring audiences (ADR 0047).

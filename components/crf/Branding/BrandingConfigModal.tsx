@@ -363,7 +363,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                       footerText: e.target.value,
                     }))
                   }
-                  placeholder="e.g. CDISC CDASH v2.2 Compliant"
+                  placeholder="e.g. Modelled on CDASHIG 2.2 (synthetic demo)"
                   className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
                 />
               </div>

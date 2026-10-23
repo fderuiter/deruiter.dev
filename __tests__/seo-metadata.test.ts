@@ -1064,7 +1064,7 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       const post = {
         slug: "cdisc-odm-sdtm-clinical-data-pipelines",
         title: "Architecting CDISC ODM & SDTM Clinical Data Pipelines",
-        dek: "How to design deterministic, streaming XML compilation pipelines for FDA-compliant CDISC ODM and SDTM datasets without memory blowouts.",
+        dek: "How to design deterministic, streaming XML compilation pipelines for submission-style CDISC ODM and SDTM datasets without memory blowouts.",
         pillar: "clinical-data-engineering" as const,
         tags: ["cdisc", "odm", "sdtm", "fda"],
         publishedAt: new Date("2026-03-01T00:00:00.000Z"),

@@ -48,7 +48,9 @@ describe("cli-engine — info command edge paths", () => {
     expect(res.success).toBe(true);
     expect(plain).toContain("(No forms defined in study.");
     expect(plain).toContain("(No visits scheduled.");
-    expect(plain).toContain("✔ All 0 forms pass CDISC CDASH 2.2");
+    expect(plain).toContain(
+      "✔ All 0 forms pass the implemented CDASHIG 2.2 subset"
+    );
   });
 
   it("omits the visit window suffix when both windows are zero", () => {
@@ -67,7 +69,7 @@ describe("cli-engine — info command edge paths", () => {
 
     const plain = stripAnsi(executeInfoCommand(study).document);
     expect(plain).toContain(
-      `ℹ ${val.warnings.length} warnings flagged. Protocol is compliant.`
+      `ℹ ${val.warnings.length} warnings flagged, no errors.`
     );
   });
 
@@ -93,7 +95,7 @@ describe("cli-engine — validate command edge paths", () => {
     const res = executeValidateCommand(assignedVsStudy());
     const plain = stripAnsi(res.document);
     expect(res.success).toBe(true);
-    expect(plain).toContain("✔ 100% CDISC & AST Conformance Verified");
+    expect(plain).toContain("✔ No findings from the implemented checks");
     expect(plain).toContain("All 1 forms, 2 visits");
   });
 

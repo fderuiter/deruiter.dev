@@ -120,3 +120,11 @@ export const SYNTHETIC_DATA_NOTICE =
  */
 export const REGULATORY_WORDING =
   "Designed to these controls. Not a validated system and not a compliance claim.";
+
+/**
+ * Seed of the default portfolio every platform page and golden file uses.
+ * It equals the Study Data Pipeline's default seed, so the default
+ * portfolio's DEMO-301 is the pipeline's default run. Any other integer seed
+ * gives a different portfolio of the same shape.
+ */
+export const DEFAULT_PORTFOLIO_SEED = 301;

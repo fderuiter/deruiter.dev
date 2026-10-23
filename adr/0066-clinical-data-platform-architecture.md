@@ -185,9 +185,16 @@ imports `runPipeline` and the types from `@/lib/study-data` only, never its
   catalog facts;
 - the pipeline's conformance findings feed the data quality scorecards.
 
-Until the pipeline's generator lands
-([#2584](https://github.com/fderuiter/deruiter.dev/issues/2584)), the
-portfolio generator stubs DEMO-301 behind the same contract.
+The portfolio generator
+([#2622](https://github.com/fderuiter/deruiter.dev/issues/2622)) takes
+DEMO-301's protocol from the USDM definition the pipeline reads, runs the
+pipeline with the portfolio's seed, and reads the run's collected layer
+(DM, RAND, SV, EX and DS) into the bronze EDC and IRT feeds, moving its
+dates by one whole number of days onto the portfolio calendar. The collected
+layer is the raw data a site enters, so bronze is fed from the pipeline's
+raw layer while its SDTM and ADaM stay in gold, and nothing flows from gold
+back into bronze. The portfolio records the run's seed, subject count, date
+shift and standard versions so the run can be reproduced.
 
 ### Synthetic data and fictional vendors
 

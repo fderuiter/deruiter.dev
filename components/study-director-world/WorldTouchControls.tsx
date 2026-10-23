@@ -83,14 +83,14 @@ export const WorldTouchControls: React.FC<{
       </div>
       <div className="flex min-w-0 gap-1.5">
         <TouchButton
-          label="Use or talk (E)"
+          label={`E, ${action ?? "Use / talk"}`}
           disabled={disabled}
           onPress={onUse}
           className={`${KEY} min-w-0 gap-2 px-3 ${action ? "border-amber-500/70 text-amber-300" : ""}`}
         >
           <span aria-hidden="true" className="border border-current px-1.5">
             E
-          </span>
+          </span>{" "}
           <span
             className="line-clamp-2 min-w-0 break-words text-left leading-tight"
             data-testid="world-use-label"
@@ -99,14 +99,14 @@ export const WorldTouchControls: React.FC<{
           </span>
         </TouchButton>
         <TouchButton
-          label="How are you? (F)"
+          label="F, How are you?"
           disabled={disabled}
           onPress={onSelf}
           className={`${KEY} gap-2 px-3`}
         >
           <span aria-hidden="true" className="border border-current px-1.5">
             F
-          </span>
+          </span>{" "}
           <span>How are you?</span>
         </TouchButton>
       </div>

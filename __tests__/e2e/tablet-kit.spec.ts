@@ -1461,7 +1461,7 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
       .getByRole("button", { name: /^Office directory/ })
       .tap({ timeout: 15000 });
     await page.getByRole("button", { name: /^Walk to Maya/ }).tap();
-    const use = page.getByRole("button", { name: /^Use or talk/ });
+    const use = page.getByRole("button", { name: /^E, / });
     await expect(page.getByTestId("world-use-label")).toHaveText(/Talk to/, {
       timeout: 30000,
     });

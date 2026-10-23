@@ -167,7 +167,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       SEQ("EX"),
       collected("EXTRT", "Name of Treatment", "EX.EXTRT"),
       collected("EXDOSE", "Dose", "EX.EXDOSE", "Record Qualifier", "float"),
-      collected("EXDOSU", "Dose Units", "EX.EXDOSU", "Variable Qualifier"),
+      derived("EXDOSU", "Dose Units", "CT_UNIT_MAPPING", "Variable Qualifier"),
       collected(
         "EXSTDTC",
         "Start Date of Treatment",
@@ -213,7 +213,12 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Record Qualifier"
       ),
       collected("AESER", "Serious Event", "AE.AESER", "Record Qualifier"),
-      collected("AEREL", "Causality", "AE.AEREL", "Record Qualifier"),
+      derived(
+        "AEREL",
+        "Causality",
+        "CT_RELATIONSHIP_MAPPING",
+        "Record Qualifier"
+      ),
       collected(
         "AEACN",
         "Action Taken with Study Treatment",
@@ -627,7 +632,7 @@ export function deriveSubjectDomains(
         ...common(record.USUBJID, "EX"),
         EXTRT: record.EXTRT,
         EXDOSE: record.EXDOSE,
-        EXDOSU: record.EXDOSU,
+        EXDOSU: record.EXDOSU === "TABLET" ? "TABLETS" : record.EXDOSU,
         EXSTDTC: record.EXSTDTC,
         EXENDTC: record.EXENDTC,
         EXSTDY: 1,
@@ -645,7 +650,7 @@ export function deriveSubjectDomains(
         AEDECOD: record.AEDECOD,
         AEBODSYS: record.AEBODSYS,
         AESER: record.AESER,
-        AEREL: record.AEREL,
+        AEREL: record.AEREL === "RELATED" ? "POSSIBLY RELATED" : record.AEREL,
         AEACN: record.AEACN,
         AESTDTC: record.AESTDTC,
         AEENDTC: record.AEENDTC,

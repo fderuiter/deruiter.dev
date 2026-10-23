@@ -389,6 +389,34 @@ export interface Finding {
   readonly citation?: string;
 }
 
+/** Outcome of one identifiable, versioned conformance rule on one dataset. */
+export interface ConformanceRuleResult {
+  readonly ruleId: string;
+  readonly dataset: string;
+  readonly status: "pass" | "warning" | "error";
+  readonly findingCount: number;
+  readonly citation: string;
+}
+
+/** Rule outcome counts for one domain. */
+export interface ConformanceDomainSummary {
+  readonly dataset: string;
+  readonly pass: number;
+  readonly warning: number;
+  readonly error: number;
+}
+
+/** Explicit pipeline gate status and a pointer to the full CORE rule set. */
+export interface ConformanceReport {
+  readonly status: "pass" | "warning" | "failed";
+  readonly rulesVersion: string;
+  readonly terminologyVersion: string;
+  readonly scopeNotice: string;
+  readonly coreUrl: string;
+  readonly domains: readonly ConformanceDomainSummary[];
+  readonly ruleResults: readonly ConformanceRuleResult[];
+}
+
 /** One output file recorded in the run manifest. */
 export interface ManifestEntry {
   /** Package-relative path, for example `m5/datasets/tabulations/sdtm/dm.json`. */
@@ -424,6 +452,8 @@ export interface PipelineRun {
   readonly datasets: readonly Dataset[];
   /** Conformance findings, across all layers. */
   readonly findings: readonly Finding[];
+  /** Dataset-level conformance gate result. */
+  readonly conformance: ConformanceReport;
   /** Reproducibility manifest. */
   readonly manifest: RunManifest;
 }

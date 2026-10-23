@@ -10,6 +10,14 @@ The result of one pipeline run.
 
 ## Properties
 
+### conformance
+
+> `readonly` **conformance**: [`ConformanceReport`](ConformanceReport.md)
+
+Dataset-level conformance gate result.
+
+***
+
 ### datasets
 
 > `readonly` **datasets**: readonly [`Dataset`](Dataset.md)[]

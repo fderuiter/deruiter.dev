@@ -32,6 +32,12 @@ Re-exports [AssessmentDefinition](types/interfaces/AssessmentDefinition.md)
 
 ***
 
+### CDISC\_CORE\_URL
+
+Re-exports [CDISC_CORE_URL](internal/conformance/rules/variables/CDISC_CORE_URL.md)
+
+***
+
 ### CellValue
 
 Re-exports [CellValue](types/type-aliases/CellValue.md)
@@ -41,6 +47,48 @@ Re-exports [CellValue](types/type-aliases/CellValue.md)
 ### CodedValue
 
 Re-exports [CodedValue](types/interfaces/CodedValue.md)
+
+***
+
+### CONFORMANCE\_RULES
+
+Re-exports [CONFORMANCE_RULES](internal/conformance/rules/variables/CONFORMANCE_RULES.md)
+
+***
+
+### CONFORMANCE\_RULES\_VERSION
+
+Re-exports [CONFORMANCE_RULES_VERSION](internal/conformance/rules/variables/CONFORMANCE_RULES_VERSION.md)
+
+***
+
+### ConformanceDomainSummary
+
+Re-exports [ConformanceDomainSummary](types/interfaces/ConformanceDomainSummary.md)
+
+***
+
+### ConformanceOutcome
+
+Re-exports [ConformanceOutcome](internal/conformance/run-conformance/interfaces/ConformanceOutcome.md)
+
+***
+
+### ConformanceReport
+
+Re-exports [ConformanceReport](types/interfaces/ConformanceReport.md)
+
+***
+
+### ConformanceRule
+
+Re-exports [ConformanceRule](internal/conformance/rules/interfaces/ConformanceRule.md)
+
+***
+
+### ConformanceRuleResult
+
+Re-exports [ConformanceRuleResult](types/interfaces/ConformanceRuleResult.md)
 
 ***
 
@@ -173,6 +221,18 @@ Re-exports [PipelineStageId](types/type-aliases/PipelineStageId.md)
 ### readStudyDefinition
 
 Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/readStudyDefinition.md)
+
+***
+
+### RuleIssue
+
+Re-exports [RuleIssue](internal/conformance/rules/interfaces/RuleIssue.md)
+
+***
+
+### runConformance
+
+Re-exports [runConformance](internal/conformance/run-conformance/functions/runConformance.md)
 
 ***
 

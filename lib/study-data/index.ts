@@ -10,6 +10,14 @@
 export * from "./types";
 export * from "./presets";
 export { runPipeline } from "./internal/engine";
+export { runConformance } from "./internal/conformance/run-conformance";
+export {
+  CONFORMANCE_RULES,
+  CONFORMANCE_RULES_VERSION,
+  CDISC_CORE_URL,
+} from "./internal/conformance/rules";
+export type { ConformanceRule, RuleIssue } from "./internal/conformance/rules";
+export type { ConformanceOutcome } from "./internal/conformance/run-conformance";
 export {
   readStudyDefinition,
   StudyDefinitionError,

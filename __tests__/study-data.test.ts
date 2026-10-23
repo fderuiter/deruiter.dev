@@ -80,13 +80,17 @@ describe("runPipeline", () => {
     expect(
       run.datasets.filter((dataset) => dataset.layer === "sdtm")
     ).toHaveLength(13);
-    expect(run.findings).toEqual([]);
+    expect(run.conformance?.status).toBe("warning");
+    expect(run.findings.length).toBeGreaterThan(0);
+    expect(
+      run.findings.every((finding) => finding.ruleId && finding.citation)
+    ).toBe(true);
     expect(run.manifest).toEqual({
       studyId: "DEMO-301",
       seed: DEFAULT_SEED,
       nSubjects: DEFAULT_SUBJECT_COUNT,
       standards: STANDARD_VERSIONS,
-      stages: ["usdm", "synth", "sdtm"],
+      stages: ["usdm", "synth", "sdtm", "conformance"],
       outputs: [],
     });
   });

@@ -1,6 +1,6 @@
 /**
  * Clinical Smart Blocks Engine
- * Provides standardized CDASH-compliant compound section bundles and atomic field templates
+ * Provides standardized CDASH-modelled compound section bundles and atomic field templates
  * for in-canvas slash command palettes (`/vitals`, `/recist`, `/conmeds`, `/ae`, etc.).
  */
 

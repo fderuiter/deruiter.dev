@@ -10,3 +10,4 @@
 
 - [checkLayerFlow](functions/checkLayerFlow.md)
 - [checkRegulatoryWording](functions/checkRegulatoryWording.md)
+- [findClinicalClaims](functions/findClinicalClaims.md)

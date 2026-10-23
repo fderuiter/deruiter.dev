@@ -9,7 +9,7 @@ const SDTM_CITATION =
 const ADAM_CITATION =
   "ADaMIG 1.3: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3";
 const CT_CITATION =
-  "NCI EVS CDISC CT (2026-09-25): https://evs.nci.nih.gov/ftp1/CDISC/";
+  "Local CT subset aligned to NCI EVS CDISC CT 2026-09-25, not verified against the package: https://evs.nci.nih.gov/ftp1/CDISC/";
 
 export interface RuleIssue {
   readonly row?: number;

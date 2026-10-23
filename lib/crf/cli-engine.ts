@@ -154,11 +154,11 @@ export function executeInfoCommand(
   );
   if (valResult.totalIssues === 0) {
     lines.push(
-      `  ${ansi.green}✔ All ${study.forms.length} forms pass CDISC CDASH 2.2 and AST logic checks cleanly.${ansi.reset}`
+      `  ${ansi.green}✔ All ${study.forms.length} forms pass the implemented CDASHIG 2.2 subset and AST logic checks.${ansi.reset}`
     );
   } else if (valResult.isCompliant) {
     lines.push(
-      `  ${ansi.brightYellow}ℹ ${valResult.warnings.length} warnings flagged. Protocol is compliant. Run 'crf validate' for details.${ansi.reset}`
+      `  ${ansi.brightYellow}ℹ ${valResult.warnings.length} warnings flagged, no errors. Run 'crf validate' for details.${ansi.reset}`
     );
   } else {
     lines.push(
@@ -217,10 +217,10 @@ export function executeValidateCommand(
 
   if (result.issues.length === 0) {
     lines.push(
-      `${ansi.bold}${ansi.brightGreen}✔ 100% CDISC & AST Conformance Verified${ansi.reset}`
+      `${ansi.bold}${ansi.brightGreen}✔ No findings from the implemented checks${ansi.reset}`
     );
     lines.push(
-      `All ${study.forms.length} forms, ${study.visits.length} visits, and rule graphs comply with regulatory standards.\n`
+      `All ${study.forms.length} forms, ${study.visits.length} visits, and rule graphs pass the implemented design checks. This is not a regulatory validation.\n`
     );
   } else {
     lines.push(

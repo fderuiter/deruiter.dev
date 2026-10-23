@@ -163,11 +163,16 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
   },
 ];
 
+/**
+ * Arcade games illustrate a topic; they are never evidence that a control
+ * or capability exists, so they do not make a row live.
+ */
+const isLiveEvidence = (link: CapabilityLink): boolean =>
+  link.kind === "route" && !link.href.startsWith("/arcade/");
+
 /** The badge follows the evidence actually linked in this release. */
 export function capabilityStatus(
   capability: PlatformCapability
 ): "Live demo" | "In progress" {
-  return capability.evidence.some((link) => link.kind === "route")
-    ? "Live demo"
-    : "In progress";
+  return capability.evidence.some(isLiveEvidence) ? "Live demo" : "In progress";
 }

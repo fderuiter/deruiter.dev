@@ -599,7 +599,7 @@ export type StudioMode =
   | "grid" // Active-Form Spreadsheet Grid
   | "matrix" // Visit x Form Matrix
   | "rules" // Visual Logic & AST Edit Check Graph
-  | "edc" // Live 21 CFR Part 11 EDC Simulator
+  | "edc" // Live EDC simulation (Part 11-style workflow)
   | "acrf" // Annotated CRF Preview & Overlay
   | "export"; // ODM-XML, JSON, FHIR & Define-XML Export
 

@@ -28,9 +28,7 @@ const VisitMatrixEditor = () => (
 const RuleGraphStudio = () => (
   <div>Logic Dependency DAG &amp; AST Rule Studio</div>
 );
-const LiveEdcSimulator = () => (
-  <div>Live 21 CFR Part 11 EDC Simulation Mode</div>
-);
+const LiveEdcSimulator = () => <div>Live EDC Simulation</div>;
 const AcrfOverlayViewer = () => (
   <div>Visual Annotated CRF (aCRF) Submission Studio</div>
 );
@@ -140,7 +138,7 @@ describe("CRFStudioContainer Component", () => {
     expect(container.textContent).toContain("Form Designer");
     expect(container.textContent).toContain("Visit Matrix (SoA)");
     expect(container.textContent).toContain("Logic & AST Rules");
-    expect(container.textContent).toContain("Live 21 CFR EDC");
+    expect(container.textContent).toContain("Live EDC Simulation");
   });
 
   // #1632: loadStudyDraft read localStorage unguarded, so a store that
@@ -193,14 +191,12 @@ describe("CRFStudioContainer Component", () => {
 
       // Click Live EDC Test
       const edcBtn = Array.from(container.querySelectorAll("button")).find(
-        (b) => b.textContent?.includes("Live 21 CFR EDC")
+        (b) => b.textContent?.includes("Live EDC Simulation")
       );
       await act(async () => {
         edcBtn?.click();
       });
-      expect(container.textContent).toContain(
-        "Live 21 CFR Part 11 EDC Simulation Mode"
-      );
+      expect(container.textContent).toContain("Live EDC Simulation");
 
       // Click Submission aCRF
       const acrfBtn = Array.from(container.querySelectorAll("button")).find(

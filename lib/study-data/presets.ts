@@ -13,7 +13,9 @@ export type { AdamMethodId } from "./internal/adam/specs";
 /**
  * The standard versions every run applies and declares in TS, Define-XML and
  * the run manifest. The CT entry is the date of the NCI EVS CDISC
- * Controlled Terminology package.
+ * Controlled Terminology package that the local codelist subset is aligned
+ * to. The subset is hand-curated and has not been verified against that
+ * package, so it is not a claim of conformance to it.
  */
 export const STANDARD_VERSIONS: StandardVersions = Object.freeze({
   USDM: "4.0",

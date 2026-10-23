@@ -14,6 +14,7 @@ import {
   detectAndParseStudyFile,
   ParsedStudyFileResult,
 } from "@/lib/crf/file-ingestion";
+import { NoPhiNotice } from "./NoPhiNotice";
 
 interface ImportDropzoneProps {
   onFileParsed: (result: ParsedStudyFileResult, rawText: string) => void;
@@ -258,6 +259,8 @@ export const ImportDropzone: React.FC<ImportDropzoneProps> = ({
           )}
         </div>
       </div>
+
+      <NoPhiNotice />
     </div>
   );
 };

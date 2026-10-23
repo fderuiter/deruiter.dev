@@ -1,4 +1,5 @@
 import fc from "fast-check";
+import { fromAny } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 import {
   CONFORMANCE_RULES,
@@ -252,9 +253,7 @@ describe("versioned dataset conformance", () => {
           columns: item,
           class: "Events",
         }));
-        expect(() =>
-          runConformance(malformed as unknown as Dataset[])
-        ).not.toThrow();
+        expect(() => runConformance(fromAny(malformed))).not.toThrow();
       }),
       { numRuns: 100 }
     );

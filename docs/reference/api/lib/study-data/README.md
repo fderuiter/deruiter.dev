@@ -20,6 +20,12 @@ Re-exports [ADAM_METHODS](internal/adam/specs/variables/ADAM_METHODS.md)
 
 ***
 
+### AdamDerivation
+
+Re-exports [AdamDerivation](internal/adam/derive-adam/interfaces/AdamDerivation.md)
+
+***
+
 ### AdamMethodId
 
 Re-exports [AdamMethodId](internal/adam/specs/type-aliases/AdamMethodId.md)
@@ -137,6 +143,12 @@ Re-exports [DEMO_301_STUDY](presets/variables/DEMO_301_STUDY.md)
 ### DEMO\_301\_USDM
 
 Re-exports [DEMO_301_USDM](presets/demo-301/variables/DEMO_301_USDM.md)
+
+***
+
+### deriveAdamDatasets
+
+Re-exports [deriveAdamDatasets](internal/adam/derive-adam/functions/deriveAdamDatasets.md)
 
 ***
 

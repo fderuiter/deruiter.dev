@@ -270,6 +270,9 @@ Formal inference rules used to derive logical steps from valid premises:
 - **Baseline Assessment**: The last eligible nonmissing measurement for a subject and parameter at or before first dose; a measurement at the designated Baseline visit on first-dose day is eligible.
 - **Analysis Visit**: A protocol visit to which an observed measurement is assigned for analysis using the visit's allowed timing window. Scheduled and unscheduled measurements can both be assigned.
 - **AE-Related Treatment Discontinuation**: A treatment withdrawal attributed to an adverse event and corroborated by both the adverse-event action and the subject's disposition record.
+- **Treatment-Emergent Adverse Event**: An adverse event whose observed or explicitly imputed start falls from first dose through the study's post-treatment safety window, before last known contact.
+- **Censoring Record**: The subject contact or disposition record that supplies the end of observed time when the specified event has not occurred.
+- **LOCF Sensitivity Row**: A clearly flagged analysis row that carries an earlier postbaseline value into a missing planned visit for sensitivity analysis; it is not a primary observed assessment.
 
 ## Synthetic Reliability, Telemetry & Watch Emulation
 

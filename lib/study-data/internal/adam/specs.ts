@@ -16,6 +16,16 @@ export const ADAM_METHODS = {
     "For each subject, parameter and analysis visit, select the observed row closest to target day, then earlier date, then lower source sequence.",
   BDS_LOCF:
     "For a missing postbaseline visit, carry the latest earlier postbaseline result as a flagged sensitivity row; exclude it from primary ANL01FL selection.",
+  ADAE_IMPUTE:
+    "Impute month-only AE starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days.",
+  ADAE_TEAE:
+    "A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact.",
+  ADAE_OCC:
+    "Flag the first treatment-emergent occurrence overall, by body system and by preferred term, ordered by analysis start date and AE sequence.",
+  ADTTE_EVENT:
+    "An event is the first treatment-emergent AE with drug withdrawal corroborated by an adverse-event DS disposition; event date is AE start date.",
+  ADTTE_CENSOR:
+    "For a dosed subject without an event, censor at the earlier of last known contact and discontinuation for another reason; count first-dose day as day 1.",
 } as const;
 
 export type AdamMethodId = keyof typeof ADAM_METHODS;

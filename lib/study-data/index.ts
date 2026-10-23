@@ -10,6 +10,8 @@
 export * from "./types";
 export * from "./presets";
 export { runPipeline } from "./internal/engine";
+export { deriveAdamDatasets } from "./internal/adam/derive-adam";
+export type { AdamDerivation } from "./internal/adam/derive-adam";
 export { runConformance } from "./internal/conformance/run-conformance";
 export {
   CONFORMANCE_RULES,

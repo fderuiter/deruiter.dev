@@ -132,6 +132,8 @@ function baseFor(rule: ConformanceRule): {
     USUBJID: "01",
     ASTDT: "2030-01-02",
     TRTSDT: "2030-01-01",
+    TRTEDT: "2030-01-10",
+    LSTALVDT: "2030-01-24",
     TRTEMFL: "Y",
   });
   return { good, context: [good] };

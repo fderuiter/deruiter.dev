@@ -260,10 +260,16 @@ Formal inference rules used to derive logical steps from valid premises:
 
 - **Study Definition**: The protocol design read from a USDM v4 study document, including arms, planned visits, and the schedule of activities. It contains no subject observations.
 - **Schedule of Activities**: The protocol's mapping of planned activities to visits. An activity may define measurements, while a visit supplies planned timing and its allowed window.
-- **Screened Subject**: A synthetic person who has consented and entered screening, whether or not they later qualify for randomization. `nSubjects` counts screened subjects; avoid *enrolled subject* for this whole group.
+- **Screened Subject**: A synthetic person who has consented and entered screening, whether or not they later qualify for randomization. `nSubjects` counts screened subjects; avoid _enrolled subject_ for this whole group.
 - **Randomized Subject**: A screened subject assigned to one of the study's protocol arms. Only randomized subjects can have study treatment exposure.
 - **Collected Record**: A synthetic source observation or event produced for one subject before SDTM tabulation. Each record has a stable collected-source identifier for later lineage; it is distinct from an SDTM or analysis record.
 - **Consent Date**: The complete date on which a synthetic subject enters the study. No visit may precede it; partial dates belong to selected source observations, not consent.
+- **Safety Set**: Subjects who received at least one dose of study treatment, classified by treatment received. Represented by `SAFFL` in ADSL.
+- **Full Analysis Set**: Randomized subjects who received at least one dose, classified by assigned treatment. DEMO-301 represents this population with `ITTFL`; avoid treating all randomized subjects as the Full Analysis Set.
+- **Efficacy Evaluable Set**: Full Analysis Set subjects with a usable baseline and at least one postbaseline efficacy assessment. Represented by `EFFFL`.
+- **Baseline Assessment**: The last eligible nonmissing measurement for a subject and parameter at or before first dose; a measurement at the designated Baseline visit on first-dose day is eligible.
+- **Analysis Visit**: A protocol visit to which an observed measurement is assigned for analysis using the visit's allowed timing window. Scheduled and unscheduled measurements can both be assigned.
+- **AE-Related Treatment Discontinuation**: A treatment withdrawal attributed to an adverse event and corroborated by both the adverse-event action and the subject's disposition record.
 
 ## Synthetic Reliability, Telemetry & Watch Emulation
 

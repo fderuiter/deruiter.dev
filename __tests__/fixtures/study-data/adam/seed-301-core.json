@@ -1,0 +1,14 @@
+{
+  "ADSL": {
+    "rows": 90,
+    "sha256": "4ef6fefa39ee74f7d719fc6dc1c70af55676e3cf1f7b7daa7e42866d0227d253"
+  },
+  "ADVS": {
+    "rows": 2380,
+    "sha256": "8dbc958ed058949701a2522f6e5dea05c1dd1c717d43919811ef1d833ee3f9d2"
+  },
+  "ADLB": {
+    "rows": 2640,
+    "sha256": "0e4510c880616be6fa617bf1684e3bb1432740bb39a589285be0d345b1bb2a6c"
+  }
+}

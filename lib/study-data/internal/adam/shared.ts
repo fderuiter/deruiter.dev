@@ -1,0 +1,99 @@
+import type { CellValue, Dataset, VariableMeta } from "../../types";
+
+export type AnalysisRow = Record<string, CellValue>;
+
+export function rows(dataset: Dataset | undefined): AnalysisRow[] {
+  if (!dataset) return [];
+  return Array.from({ length: dataset.rowCount }, (_, index) =>
+    Object.fromEntries(
+      dataset.variables.map(({ name }) => [
+        name,
+        dataset.columns[name]?.[index] ?? null,
+      ])
+    )
+  );
+}
+
+export function string(value: CellValue | undefined): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+export function number(value: CellValue | undefined): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+export function date(value: CellValue | undefined): string | null {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value))
+    return null;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) ||
+    parsed.toISOString().slice(0, 10) !== value
+    ? null
+    : value;
+}
+
+export function addDays(value: string, count: number): string {
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  parsed.setUTCDate(parsed.getUTCDate() + count);
+  return parsed.toISOString().slice(0, 10);
+}
+
+export function daysBetween(start: string, end: string): number {
+  return (
+    (Date.parse(`${end}T00:00:00.000Z`) -
+      Date.parse(`${start}T00:00:00.000Z`)) /
+    86_400_000
+  );
+}
+
+export function column(
+  name: string,
+  label: string,
+  type: VariableMeta["type"] = "text",
+  origin: VariableMeta["origin"] = "Derived",
+  method?: string,
+  source?: string
+): VariableMeta {
+  return {
+    name,
+    label,
+    type,
+    origin,
+    ...(type === "text" ? { length: 80 } : {}),
+    ...(method ? { method } : {}),
+    ...(source ? { source } : {}),
+  };
+}
+
+export function table(
+  name: string,
+  label: string,
+  structure: string,
+  variables: readonly VariableMeta[],
+  data: readonly AnalysisRow[],
+  lineage: readonly (readonly string[])[],
+  keys: readonly string[] = ["STUDYID", "USUBJID", "ASEQ"]
+): Dataset {
+  const columns: Record<string, CellValue[]> = {};
+  for (const variable of variables) {
+    columns[variable.name] = data.map((row) => row[variable.name] ?? null);
+  }
+  return {
+    name,
+    label,
+    layer: "adam",
+    class: structure,
+    keys,
+    variables,
+    columns,
+    rowCount: data.length,
+    lineage,
+  };
+}
+
+export function sourceLineage(
+  dataset: Dataset | undefined,
+  index: number
+): readonly string[] {
+  return dataset?.lineage?.[index] ?? [];
+}

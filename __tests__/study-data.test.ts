@@ -73,6 +73,9 @@ describe("runPipeline", () => {
       "LB",
       "DS",
       "SUPPDM",
+      "ADSL",
+      "ADVS",
+      "ADLB",
     ]);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "collected")
@@ -80,6 +83,9 @@ describe("runPipeline", () => {
     expect(
       run.datasets.filter((dataset) => dataset.layer === "sdtm")
     ).toHaveLength(13);
+    expect(
+      run.datasets.filter((dataset) => dataset.layer === "adam")
+    ).toHaveLength(3);
     expect(run.conformance?.status).toBe("warning");
     expect(run.findings.length).toBeGreaterThan(0);
     expect(
@@ -90,7 +96,7 @@ describe("runPipeline", () => {
       seed: DEFAULT_SEED,
       nSubjects: DEFAULT_SUBJECT_COUNT,
       standards: STANDARD_VERSIONS,
-      stages: ["usdm", "synth", "sdtm", "conformance"],
+      stages: ["usdm", "synth", "sdtm", "conformance", "adam"],
       outputs: [],
     });
   });

@@ -50,7 +50,7 @@ export const BRANDING_PRESETS: BrandingPalettePreset[] = [
       primaryColor: "#1e3a8a",
       accentColor: "#2563eb",
       tableHeaderColor: "#172554",
-      headerText: "REGULATORY COMPLIANT CASE REPORT FORM BOOK",
+      headerText: "CASE REPORT FORM BOOK (SYNTHETIC DEMO)",
       footerText: "Sponsor Approved Clinical Documentation",
       confidentialityNotice:
         "Proprietary and Confidential. For authorized clinical investigator and regulatory authority use only.",
@@ -88,7 +88,7 @@ export const BRANDING_PRESETS: BrandingPalettePreset[] = [
       tableHeaderColor: "#064e3b",
       headerText: "CLINICAL STUDY SPECIFICATION & DATA DICTIONARY",
       footerText:
-        "Clinical Data Interchange Standards Consortium (CDISC) Compliant",
+        "Modelled on CDISC CDASHIG 2.2. Synthetic demo, not a validated system.",
       confidentialityNotice:
         "Confidential clinical data acquisition instrument.",
       showPageNumbers: true,

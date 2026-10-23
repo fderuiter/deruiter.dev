@@ -1,5 +1,5 @@
 /**
- * CDISC ODM-XML v1.3.2 / v2.0 Deserializer and Parser
+ * CDISC ODM-XML v1.3.2 Deserializer and Parser (ODM v2.0 namespaces are not handled)
  * Converts CDISC ODM XML DOM nodes into CRF Studio StudyProtocol.
  */
 

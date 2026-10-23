@@ -61,7 +61,9 @@ describe("DiagnosticsDrawer & CDISC Conformance Studio Suite", () => {
     expect(container.textContent).toContain(
       "CDISC Conformance & Regulatory Validation Studio"
     );
-    expect(container.textContent).toContain("100% CDISC & SDTM Compliant");
+    expect(container.textContent).toContain(
+      "No findings from the implemented checks"
+    );
   });
 
   it("displays violations and allows 1-Click Auto-Fixing when schema issues exist", async () => {

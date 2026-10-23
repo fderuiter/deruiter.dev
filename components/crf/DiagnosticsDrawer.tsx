@@ -242,12 +242,13 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                 <IconCheck className="w-5 h-5" />
               </div>
               <div className="text-sm font-bold text-white font-mono">
-                100% CDISC &amp; SDTM Compliant
+                No findings from the implemented checks
               </div>
               <p className="text-xs text-zinc-400">
-                All forms, variable identifiers, formulas, codelists, and
-                Schedule of Activities visits conform strictly to CDASH 2.2 and
-                SDTMIG v3.4.
+                Forms, variable identifiers, formulas, codelists and Schedule of
+                Activities visits pass the design checks this studio implements,
+                a subset of CDASHIG 2.2 and SDTMIG 3.4 rules. This is not a full
+                conformance validation.
               </p>
             </div>
           ) : (

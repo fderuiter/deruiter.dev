@@ -1,6 +1,6 @@
 /**
  * Automated R & Pharmaverse-Ready Scaffolding Generator for CRF Studio
- * Generates CDASH-compliant R programs (.R) including:
+ * Generates CDASH-modelled R programs (.R) including:
  * 1. Comprehensive Header Metadata & Study Specifications
  * 2. Codelist Factor definitions with explicit levels and labels
  * 3. Modular tibble::tibble data frames per Form/Domain

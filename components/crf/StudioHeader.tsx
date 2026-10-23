@@ -194,7 +194,7 @@ export const StudioHeader: React.FC<StudioHeaderProps> = ({
     },
     {
       mode: "edc",
-      label: "Live 21 CFR EDC",
+      label: "Live EDC Simulation",
       shortLabel: "Live EDC",
       shortcut: "5",
       description:

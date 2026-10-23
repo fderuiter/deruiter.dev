@@ -170,6 +170,12 @@ Re-exports [FinanceLine](types/interfaces/FinanceLine.md)
 
 ***
 
+### findClinicalClaims
+
+Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)
+
+***
+
 ### generatePortfolio
 
 Re-exports [generatePortfolio](internal/portfolio/generate/functions/generatePortfolio.md)

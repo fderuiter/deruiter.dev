@@ -8,7 +8,11 @@
  */
 export * from "./types";
 export * from "./presets";
-export { checkLayerFlow, checkRegulatoryWording } from "./internal/policy";
+export {
+  checkLayerFlow,
+  checkRegulatoryWording,
+  findClinicalClaims,
+} from "./internal/policy";
 export { generatePortfolio } from "./internal/portfolio/generate";
 export {
   scoreVendors,

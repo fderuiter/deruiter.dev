@@ -1153,38 +1153,6 @@ export interface MetricGap {
   readonly nearestMetricId: string | null;
 }
 
-/** Data quality dimension, after DAMA-DMBOK. */
-export type DqDimension =
-  | "completeness"
-  | "validity"
-  | "uniqueness"
-  | "consistency"
-  | "timeliness"
-  | "accuracy";
-
-/** Severity of a data quality rule breach. */
-export type DqSeverity = "info" | "warning" | "error" | "critical";
-
-/** One data quality rule. */
-export interface DqRule {
-  /** Stable rule id, for example `DQ-SITE-001`. */
-  readonly id: string;
-  /** Id of the product the rule checks. */
-  readonly productId: string;
-  /** Column the rule checks, or `null` for a table-level rule. */
-  readonly column: string | null;
-  /** Quality dimension. */
-  readonly dimension: DqDimension;
-  /** Severity of a breach. */
-  readonly severity: DqSeverity;
-  /** Minimum pass rate, from 0 to 1. */
-  readonly threshold: number;
-  /** What the rule checks, in one sentence. */
-  readonly description: string;
-  /** Accountable owner (a role). */
-  readonly owner: string;
-}
-
 /** A column in a data product, located in its layer. */
 export interface ColumnRef {
   /** Id of the data product. */
@@ -1845,4 +1813,153 @@ export interface OperationsDashboard {
   readonly milestones: readonly OperationsMilestone[] | null;
   /** Data products the numbers shown read, in id order. */
   readonly sources: readonly OperationsSource[];
+}
+
+/** Data quality dimension, after DAMA-DMBOK (#2636). */
+export type DqDimension =
+  | "completeness"
+  | "validity"
+  | "uniqueness"
+  | "consistency"
+  | "timeliness"
+  | "accuracy";
+
+/** How much a failing data quality rule matters (#2636). */
+export type DqSeverity = "critical" | "major" | "minor";
+
+/** One data quality rule over a data product (#2636). */
+export interface DqRule {
+  /** Stable id: `DQ-` and a dimension letter for platform rules, the conformance rule id for ingested ones. */
+  readonly id: string;
+  /** Data product the rule checks: a warehouse table, or the Study Data Pipeline. */
+  readonly productId: string;
+  /** Dataset within the product, for an ingested conformance rule; `null` otherwise. */
+  readonly dataset: string | null;
+  readonly dimension: DqDimension;
+  /** What the rule asks, in a sentence. */
+  readonly name: string;
+  /** The check as a SQL-style predicate over the product's rows. */
+  readonly expression: string;
+  readonly severity: DqSeverity;
+  /** Least share of checked rows that must pass, from 0 to 1. */
+  readonly threshold: number;
+  /** Data steward of the product, from its contract registration. */
+  readonly owner: string;
+  /** Why the rule exists. */
+  readonly rationale: string;
+  /** `platform` for rules written here, `conformance` for Study Data Pipeline rules ingested as they are. */
+  readonly source: "platform" | "conformance";
+  /** Published rule or guide the rule models, for ingested rules; `null` otherwise. */
+  readonly citation: string | null;
+}
+
+/** Whether a rule met its threshold (#2636). */
+export type DqStatus = "pass" | "warn" | "fail" | "not-applicable";
+
+/** One rule's result over one warehouse and pipeline run (#2636). */
+export interface DqRuleResult {
+  readonly ruleId: string;
+  /** Rows, or groups of rows for a reconciliation, the rule checked. */
+  readonly checked: number;
+  readonly failed: number;
+  /** Share of checked rows that pass, or `null` when nothing was checked. */
+  readonly passRate: number | null;
+  /**
+   * `pass` at or above the threshold, `fail` below it, `not-applicable` when
+   * nothing was checked. An ingested rule takes the pipeline gate's status,
+   * where `warn` is a finding to review rather than a defect.
+   */
+  readonly status: DqStatus;
+  /** Keys of up to five failing rows, in key order. */
+  readonly sample: readonly string[];
+}
+
+/** A score over a set of rules: a product, a dimension or the whole run (#2636). */
+export interface DqScore {
+  /** Product id, dimension, or `overall`. */
+  readonly key: string;
+  readonly label: string;
+  /** Rules that checked something. */
+  readonly rules: number;
+  /** Of those, the rules that passed or warned. */
+  readonly passing: number;
+  /** Mean pass rate of those rules, from 0 to 1, or `null` when there are none. */
+  readonly score: number | null;
+}
+
+/** Data quality results and scorecards at one data cut (#2636). */
+export interface DqAssessment {
+  /** ISO 8601 data cut. */
+  readonly dataCut: string;
+  /** One result per rule, in rule order. */
+  readonly results: readonly DqRuleResult[];
+  readonly overall: DqScore;
+  /** Scores by data product, in product id order. */
+  readonly byProduct: readonly DqScore[];
+  /** Scores by dimension, in DAMA order. */
+  readonly byDimension: readonly DqScore[];
+}
+
+/**
+ * A named defect of the kind real source feeds deliver, applied to a
+ * warehouse to show which rules catch it (#2636).
+ */
+export interface DqScenario {
+  /** Stable id, for example `finance-double-load`. */
+  readonly id: string;
+  readonly name: string;
+  /** What went wrong at the source, in a sentence or two. */
+  readonly story: string;
+  /** Source system the defect arrives from. */
+  readonly sourceSystem: string;
+  /** Rules whose failing count the defect raises, in rule order. */
+  readonly ruleIds: readonly string[];
+}
+
+/** Where a data quality issue is in its lifecycle (#2636). */
+export type DqIssueStatus =
+  "detected" | "assigned" | "root-cause" | "fixed" | "verified";
+
+/** One entry in the append-only data quality issue log (#2636). */
+export interface DqIssueEvent {
+  /** Issue id, for example `DQI-001`. */
+  readonly issueId: string;
+  readonly status: DqIssueStatus;
+  /** ISO 8601 date. */
+  readonly on: string;
+  /** Role that made the entry. */
+  readonly actor: string;
+  readonly note: string;
+  /** Defect the issue records; set on the `detected` entry and `null` after it. */
+  readonly scenarioId: string | null;
+  /** Rules that raised the issue; set on the `detected` entry and empty after it. */
+  readonly ruleIds: readonly string[];
+}
+
+/** A data quality issue as its log entries leave it (#2636). */
+export interface DqIssue {
+  readonly issueId: string;
+  readonly scenarioId: string;
+  readonly ruleIds: readonly string[];
+  /** Status of the latest entry. */
+  readonly status: DqIssueStatus;
+  /** ISO 8601 date the issue was detected. */
+  readonly detectedOn: string;
+  /** ISO 8601 date the fix landed, or `null` while the defect is in the data. */
+  readonly fixedOn: string | null;
+  /** The issue's log entries, oldest first. */
+  readonly history: readonly DqIssueEvent[];
+}
+
+/** The data quality scorecard as it read at the end of one week (#2636). */
+export interface DqTrendPoint {
+  /** ISO 8601 date the week ends. */
+  readonly weekEnding: string;
+  readonly overall: DqScore;
+  /** Scores by dimension, in DAMA order. */
+  readonly byDimension: readonly DqScore[];
+  /** Rules that failed that week, in rule order. */
+  readonly failingRuleIds: readonly string[];
+  /** Issues whose defect was in the data that week, in id order. */
+  readonly openIssueIds: readonly string[];
 }

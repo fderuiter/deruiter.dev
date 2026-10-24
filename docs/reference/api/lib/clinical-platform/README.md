@@ -8,6 +8,30 @@
 
 ## References
 
+### appendDqIssueEvent
+
+Re-exports [appendDqIssueEvent](internal/quality/issues/functions/appendDqIssueEvent.md)
+
+***
+
+### applyDqScenario
+
+Re-exports [applyDqScenario](internal/quality/faults/functions/applyDqScenario.md)
+
+***
+
+### assessDataQuality
+
+Re-exports [assessDataQuality](internal/quality/assess/functions/assessDataQuality.md)
+
+***
+
+### breakDataQualityRule
+
+Re-exports [breakDataQualityRule](internal/quality/assess/functions/breakDataQualityRule.md)
+
+***
+
 ### BronzeFeeds
 
 Re-exports [BronzeFeeds](types/interfaces/BronzeFeeds.md)
@@ -206,6 +230,12 @@ Re-exports [CtmsMonitoringVisit](types/interfaces/CtmsMonitoringVisit.md)
 
 ***
 
+### DATA\_QUALITY\_RULES
+
+Re-exports [DATA_QUALITY_RULES](internal/quality/assess/variables/DATA_QUALITY_RULES.md)
+
+***
+
 ### DataClassification
 
 Re-exports [DataClassification](types/type-aliases/DataClassification.md)
@@ -260,6 +290,12 @@ Re-exports [dataProducts](internal/governance/contracts/derive/functions/dataPro
 
 ***
 
+### dataQualityTrend
+
+Re-exports [dataQualityTrend](internal/quality/issues/functions/dataQualityTrend.md)
+
+***
+
 ### DataRetention
 
 Re-exports [DataRetention](types/interfaces/DataRetention.md)
@@ -296,9 +332,51 @@ Re-exports [DQ_DIMENSIONS](presets/variables/DQ_DIMENSIONS.md)
 
 ***
 
+### DQ\_ISSUE\_LOG
+
+Re-exports [DQ_ISSUE_LOG](internal/quality/issues/variables/DQ_ISSUE_LOG.md)
+
+***
+
+### DQ\_SCENARIOS
+
+Re-exports [DQ_SCENARIOS](internal/quality/faults/variables/DQ_SCENARIOS.md)
+
+***
+
+### DqAssessment
+
+Re-exports [DqAssessment](types/interfaces/DqAssessment.md)
+
+***
+
 ### DqDimension
 
 Re-exports [DqDimension](types/type-aliases/DqDimension.md)
+
+***
+
+### DqIssue
+
+Re-exports [DqIssue](types/interfaces/DqIssue.md)
+
+***
+
+### DqIssueEvent
+
+Re-exports [DqIssueEvent](types/interfaces/DqIssueEvent.md)
+
+***
+
+### dqIssues
+
+Re-exports [dqIssues](internal/quality/issues/functions/dqIssues.md)
+
+***
+
+### DqIssueStatus
+
+Re-exports [DqIssueStatus](types/type-aliases/DqIssueStatus.md)
 
 ***
 
@@ -308,9 +386,39 @@ Re-exports [DqRule](types/interfaces/DqRule.md)
 
 ***
 
+### DqRuleResult
+
+Re-exports [DqRuleResult](types/interfaces/DqRuleResult.md)
+
+***
+
+### DqScenario
+
+Re-exports [DqScenario](types/interfaces/DqScenario.md)
+
+***
+
+### DqScore
+
+Re-exports [DqScore](types/interfaces/DqScore.md)
+
+***
+
 ### DqSeverity
 
 Re-exports [DqSeverity](types/type-aliases/DqSeverity.md)
+
+***
+
+### DqStatus
+
+Re-exports [DqStatus](types/type-aliases/DqStatus.md)
+
+***
+
+### DqTrendPoint
+
+Re-exports [DqTrendPoint](types/interfaces/DqTrendPoint.md)
 
 ***
 
@@ -1235,3 +1343,9 @@ Re-exports [WarehouseTableKind](types/type-aliases/WarehouseTableKind.md)
 ### WarehouseValue
 
 Re-exports [WarehouseValue](types/type-aliases/WarehouseValue.md)
+
+***
+
+### withOpenDqIssues
+
+Re-exports [withOpenDqIssues](internal/quality/issues/functions/withOpenDqIssues.md)

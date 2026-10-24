@@ -14,6 +14,12 @@ Re-exports [CDASH_STANDARD_VARIABLES](../cdash-domain-templates/variables/CDASH_
 
 ***
 
+### CDISC\_CT\_PACKAGE\_VERSION
+
+Re-exports [CDISC_CT_PACKAGE_VERSION](../cdisc-controlled-terminology/variables/CDISC_CT_PACKAGE_VERSION.md)
+
+***
+
 ### findCodelistById
 
 Re-exports [findCodelistById](../cdisc-controlled-terminology/functions/findCodelistById.md)

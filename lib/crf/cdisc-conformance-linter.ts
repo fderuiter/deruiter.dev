@@ -300,16 +300,18 @@ export function autoFixViolation(
           dataType:
             stdVar.dataCategory === "Timing"
               ? "date"
-              : stdVar.nciConceptId
+              : stdVar.codelistId || stdVar.nciConceptId
                 ? "single_select"
                 : "text",
           columnSpan: 6,
           required: stdVar.core === "R",
-          codelistId: stdVar.nciConceptId
-            ? STANDARD_CODELISTS.find(
-                (c) => c.nciCodelistCode === stdVar.nciConceptId
-              )?.id
-            : undefined,
+          codelistId:
+            stdVar.codelistId ??
+            (stdVar.nciConceptId
+              ? STANDARD_CODELISTS.find(
+                  (c) => c.nciCodelistCode === stdVar.nciConceptId
+                )?.id
+              : undefined),
           cdashMetadata: stdVar,
         };
 

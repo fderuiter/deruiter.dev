@@ -17,6 +17,7 @@ describe("Vitest configs load as native ESM (#1368)", () => {
       "vitest.stryker.config",
       "vitest.stryker-engines.config",
       "vitest.stryker-garmin.config",
+      "vitest.stryker-study-data.config",
     ]) {
       expect(fs.existsSync(path.join(root, `${name}.mts`))).toBe(true);
       expect(fs.existsSync(path.join(root, `${name}.ts`))).toBe(false);
@@ -30,6 +31,9 @@ describe("Vitest configs load as native ESM (#1368)", () => {
     expect(read("stryker.garmin.config.mjs")).toContain(
       'configFile: "vitest.stryker-garmin.config.mts"'
     );
+    expect(read("stryker.study-data.config.mjs")).toContain(
+      'configFile: "vitest.stryker-study-data.config.mts"'
+    );
   });
 
   it("resolves paths with import.meta.dirname, not CommonJS __dirname", () => {
@@ -38,6 +42,7 @@ describe("Vitest configs load as native ESM (#1368)", () => {
       "vitest.stryker.config.mts",
       "vitest.stryker-engines.config.mts",
       "vitest.stryker-garmin.config.mts",
+      "vitest.stryker-study-data.config.mts",
     ]) {
       const source = read(file);
       expect(source).toContain("import.meta.dirname");

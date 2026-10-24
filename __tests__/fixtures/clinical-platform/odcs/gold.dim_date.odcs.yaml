@@ -1,0 +1,153 @@
+# ODCS v3.2.0 data contract for gold.dim_date. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_date"
+name: "Date dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - public
+  - synthetic
+description:
+  purpose: "Conformed calendar dimension, whole years around every fact date."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_date
+    name: dim_date
+    physicalName: gold.dim_date
+    physicalType: table
+    logicalType: object
+    description: "Conformed calendar dimension, whole years around every fact date."
+    dataGranularityDescription: "One row per calendar day."
+    properties:
+      - name: date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Smart key, YYYYMMDD."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: public
+      - name: calendar_date
+        logicalType: date
+        physicalType: DATE
+        description: "The day."
+        required: true
+        classification: public
+      - name: year_number
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Calendar year."
+        required: true
+        classification: public
+      - name: quarter_number
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Calendar quarter, 1 to 4."
+        required: true
+        classification: public
+      - name: month_number
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Calendar month, 1 to 12."
+        required: true
+        classification: public
+      - name: month_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 9
+        physicalType: "VARCHAR(9)"
+        description: "English month name."
+        required: true
+        classification: public
+      - name: day_of_month
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Day of the month."
+        required: true
+        classification: public
+      - name: iso_day_of_week
+        logicalType: integer
+        physicalType: INTEGER
+        description: "ISO 8601 day of the week, Monday 1 to Sunday 7."
+        required: true
+        classification: public
+      - name: year_month
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 7
+        physicalType: "VARCHAR(7)"
+        description: "Year and month, for example 2026-09."
+        required: true
+        classification: public
+      - name: year_quarter
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 7
+        physicalType: "VARCHAR(7)"
+        description: "Year and quarter, for example 2026-Q3."
+        required: true
+        classification: public
+      - name: is_month_end
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the day is the last of its month."
+        required: true
+        classification: public
+    quality:
+      - id: dim_date_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - date_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (date_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: data-platform-lead
+      name: "Data Platform Lead"
+      role: owner
+    - username: platform-data-steward
+      name: "Platform Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: public
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value: []
+  - property: consumers
+    value: []

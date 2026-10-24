@@ -1,0 +1,139 @@
+# ODCS v3.2.0 data contract for gold.fct_milestone. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_milestone"
+name: "Milestone facts"
+version: "1.0.0"
+status: active
+domain: "Portfolio mart"
+tags:
+  - gold
+  - internal
+  - synthetic
+description:
+  purpose: "Study milestones, planned against actual."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_milestone
+    name: fct_milestone
+    physicalName: gold.fct_milestone
+    physicalType: table
+    logicalType: object
+    description: "Study milestones, planned against actual."
+    dataGranularityDescription: "One row per study and milestone kind."
+    properties:
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: milestone_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Milestone kind."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: milestone_label
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: "VARCHAR(120)"
+        description: "Label in the study's own vocabulary."
+        required: true
+        classification: internal
+      - name: planned_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned date."
+        required: true
+        classification: internal
+      - name: actual_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual date, or null when not reached."
+        required: false
+        classification: internal
+      - name: variance_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual minus planned date, in days."
+        required: false
+        classification: internal
+      - name: is_reached
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the milestone was reached by the data cut."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_milestone_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - study_key
+            - milestone_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (study_key, milestone_key) identifies one row."
+team:
+  name: "Portfolio mart"
+  members:
+    - username: portfolio-management-lead
+      name: "Portfolio Management Lead"
+      role: owner
+    - username: portfolio-data-steward
+      name: "Portfolio Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_milestone
+      - gold.dim_study
+      - silver.ctms_milestone
+  - property: consumers
+    value:
+      - "metric:fpi_to_lpi_days"
+      - "metric:lplv_to_dbl_days"

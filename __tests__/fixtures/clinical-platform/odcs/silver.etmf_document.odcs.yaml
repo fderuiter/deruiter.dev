@@ -1,0 +1,156 @@
+# ODCS v3.2.0 data contract for silver.etmf_document. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.etmf_document"
+name: "TMF documents"
+version: "1.0.0"
+status: active
+domain: eTMF
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "eTMF expected documents, filed against the TMF Reference Model."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: etmf_document
+    name: etmf_document
+    physicalName: silver.etmf_document
+    physicalType: table
+    logicalType: object
+    description: "eTMF expected documents, filed against the TMF Reference Model."
+    dataGranularityDescription: "One row per expected document."
+    properties:
+      - name: document_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Document id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id, or null for a trial-level document."
+        required: false
+        classification: internal
+      - name: tmf_zone
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "TMF Reference Model zone."
+        required: true
+        classification: internal
+      - name: artifact
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: "VARCHAR(120)"
+        description: "Artifact name."
+        required: true
+        classification: internal
+      - name: due_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the document is due."
+        required: true
+        classification: internal
+      - name: filed_on
+        logicalType: date
+        physicalType: DATE
+        description: "Filing date."
+        required: false
+        classification: internal
+      - name: document_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Filed, missing or expected."
+        required: true
+        classification: internal
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: etmf_document_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - document_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (document_id) identifies one row."
+team:
+  name: eTMF
+  members:
+    - username: trial-master-file-lead
+      name: "Trial Master File Lead"
+      role: owner
+    - username: tmf-data-steward
+      name: "TMF Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.etmf
+  - property: consumers
+    value: []

@@ -1,0 +1,197 @@
+# ODCS v3.2.0 data contract for gold.dim_site. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_site"
+name: "Site dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - confidential
+  - synthetic
+description:
+  purpose: "Conformed site dimension, slowly changing type 2 on site status and principal investigator."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_site
+    name: dim_site
+    physicalName: gold.dim_site
+    physicalType: table
+    logicalType: object
+    description: "Conformed site dimension, slowly changing type 2 on site status and principal investigator."
+    dataGranularityDescription: "One row per site version: a new row each time the status or the principal investigator changes."
+    properties:
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Surrogate key of the version."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id, the natural key."
+        required: true
+        classification: internal
+      - name: version_number
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Version of the site, from 1."
+        required: true
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_number
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site number within the study."
+        required: true
+        classification: internal
+      - name: site_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: "VARCHAR(120)"
+        description: "Fictional site name."
+        required: true
+        classification: internal
+      - name: country_code
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 2
+        physicalType: "VARCHAR(2)"
+        description: "ISO 3166-1 alpha-2 country code."
+        required: true
+        classification: internal
+      - name: planned_enrollment
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Enrollment target for the site."
+        required: true
+        classification: internal
+      - name: activated_on
+        logicalType: date
+        physicalType: DATE
+        description: "Activation date."
+        required: false
+        classification: internal
+      - name: site_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Status during the version: start-up, active or closed."
+        required: true
+        classification: internal
+      - name: principal_investigator_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Fictional id of the principal investigator during the version, or null when none is on file."
+        required: false
+        classification: confidential
+      - name: valid_from
+        logicalType: date
+        physicalType: DATE
+        description: "First day the version is in force (inclusive)."
+        required: true
+        classification: internal
+      - name: valid_to
+        logicalType: date
+        physicalType: DATE
+        description: "Day the next version takes over (exclusive), or 9999-12-31."
+        required: true
+        classification: internal
+      - name: is_current
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether this is the latest version."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: dim_site_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - site_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (site_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: clinical-operations-lead
+      name: "Clinical Operations Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - silver.ctms_monitoring_visit
+      - silver.ctms_site_staff
+      - silver.site
+      - silver.study
+  - property: consumers
+    value:
+      - "product:gold.fct_enrollment"
+      - "product:gold.fct_visit"
+      - "product:gold.fct_query"
+      - "product:gold.fct_deviation"
+      - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_kri_snapshot"
+      - "metric:enrollment_vs_plan"
+      - "metric:site_activation_cycle_time"

@@ -1,0 +1,147 @@
+{
+  "description": "A breaking change released as a minor version: silver.edc_visit 1.1.0 removes data_entered_at and retypes visit_date from a date to text. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.",
+  "previous": {
+    "id": "clinical-platform/silver.edc_visit",
+    "productId": "silver.edc_visit",
+    "version": "1.0.0",
+    "objects": [
+      {
+        "name": "edc_visit",
+        "physicalName": "silver.edc_visit",
+        "description": "EDC visits.",
+        "grain": "One row per visit.",
+        "primaryKey": [
+          "visit_id"
+        ],
+        "columns": [
+          {
+            "name": "visit_id",
+            "type": "string",
+            "nullable": false,
+            "description": "Visit id.",
+            "classification": "internal",
+            "maxLength": 64,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          },
+          {
+            "name": "subject_id",
+            "type": "string",
+            "nullable": false,
+            "description": "Subject id.",
+            "classification": "confidential",
+            "maxLength": 64,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          },
+          {
+            "name": "visit_date",
+            "type": "date",
+            "nullable": false,
+            "description": "Date of the visit.",
+            "classification": "internal",
+            "maxLength": null,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          },
+          {
+            "name": "data_entered_at",
+            "type": "timestamp",
+            "nullable": true,
+            "description": "When the visit was entered.",
+            "classification": "internal",
+            "maxLength": null,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          }
+        ]
+      }
+    ],
+    "sla": {
+      "freshnessHours": 24,
+      "completeness": 1,
+      "availability": 0.99
+    },
+    "retention": {
+      "years": 25,
+      "basis": "Regulation (EU) No 536/2014, Article 58.",
+      "regulatory": true
+    }
+  },
+  "next": {
+    "id": "clinical-platform/silver.edc_visit",
+    "productId": "silver.edc_visit",
+    "version": "1.1.0",
+    "objects": [
+      {
+        "name": "edc_visit",
+        "physicalName": "silver.edc_visit",
+        "description": "EDC visits.",
+        "grain": "One row per visit.",
+        "primaryKey": [
+          "visit_id"
+        ],
+        "columns": [
+          {
+            "name": "visit_id",
+            "type": "string",
+            "nullable": false,
+            "description": "Visit id.",
+            "classification": "internal",
+            "maxLength": 64,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          },
+          {
+            "name": "subject_id",
+            "type": "string",
+            "nullable": false,
+            "description": "Subject id.",
+            "classification": "confidential",
+            "maxLength": 64,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          },
+          {
+            "name": "visit_date",
+            "type": "string",
+            "nullable": false,
+            "description": "Date of the visit.",
+            "classification": "internal",
+            "maxLength": null,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          },
+          {
+            "name": "visit_status",
+            "type": "string",
+            "nullable": true,
+            "description": "Visit status.",
+            "classification": "internal",
+            "maxLength": 32,
+            "precision": null,
+            "scale": null,
+            "pattern": null
+          }
+        ]
+      }
+    ],
+    "sla": {
+      "freshnessHours": 24,
+      "completeness": 1,
+      "availability": 0.99
+    },
+    "retention": {
+      "years": 25,
+      "basis": "Regulation (EU) No 536/2014, Article 58.",
+      "regulatory": true
+    }
+  }
+}

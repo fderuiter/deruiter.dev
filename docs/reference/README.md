@@ -17,6 +17,9 @@ lookup rather than sequential reading.
 - [Clinical Data Platform metric registry](clinical-platform-metrics.md), the
   generated catalog of governed metrics, their definitions, values on the
   default seed and the metrics the gold model cannot yet compute.
+- [Clinical Data Platform data contracts](clinical-platform-data-contracts.md),
+  the generated catalog of data products, their owners, classifications,
+  service levels, retention and versioned contracts.
 
 ## Operations and Release Evidence
 

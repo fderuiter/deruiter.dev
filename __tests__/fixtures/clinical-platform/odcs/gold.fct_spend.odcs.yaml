@@ -1,0 +1,134 @@
+# ODCS v3.2.0 data contract for gold.fct_spend. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_spend"
+name: "Spend facts"
+version: "1.0.0"
+status: active
+domain: "Finance mart"
+tags:
+  - gold
+  - confidential
+  - synthetic
+description:
+  purpose: "Budget against actual spend, with each quarter spread evenly over its three months."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_spend
+    name: fct_spend
+    physicalName: gold.fct_spend
+    physicalType: table
+    logicalType: object
+    description: "Budget against actual spend, with each quarter spread evenly over its three months."
+    dataGranularityDescription: "One row per study, vendor and calendar month."
+    properties:
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: vendor_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Vendor; 0 for investigator grants."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: month_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "First day of the month."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: internal
+      - name: budget_usd
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Budgeted amount, whole US dollars."
+        required: true
+        classification: confidential
+      - name: actual_usd
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual spend, whole US dollars."
+        required: true
+        classification: confidential
+      - name: variance_usd
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual minus budget, whole US dollars."
+        required: true
+        classification: confidential
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_spend_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - study_key
+            - vendor_key
+            - month_date_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (study_key, vendor_key, month_date_key) identifies one row."
+team:
+  name: "Finance mart"
+  members:
+    - username: clinical-finance-lead
+      name: "Clinical Finance Lead"
+      role: owner
+    - username: finance-data-steward
+      name: "Finance Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 744
+    unit: h
+    driver: operational
+    description: "The latest load is at most 744 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_study
+      - gold.dim_vendor
+      - silver.finance_line
+  - property: consumers
+    value:
+      - "metric:budget_burn_vs_plan"
+      - "metric:cost_per_enrolled_subject"

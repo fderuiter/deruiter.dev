@@ -86,7 +86,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     query_aging_mean: 2.91666666667,
     query_resolution_time_median: 5,
     sdv_completion: 0.853482293855,
-    monitoring_reports_overdue: 1,
+    monitoring_reports_overdue: 2,
+    monitoring_visits_overdue: 5,
     monitoring_report_cycle_time_median: 14,
     important_deviation_rate: 13.680781759,
     non_important_deviation_rate: 13.1107491857,
@@ -105,8 +106,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 25 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(25);
+  it("defines 26 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(26);
     expect(checkMetricRegistry()).toEqual([]);
   });
 
@@ -124,6 +125,8 @@ describe("the metric registry", () => {
       "non_important_deviation_rate",
       "sdv_completion",
       "monitoring_reports_overdue",
+      // The monitoring plan (#2736) made this computable.
+      "monitoring_visits_overdue",
       "fpi_to_lpi_days",
       "lplv_to_dbl_days",
       "budget_burn_vs_plan",
@@ -141,7 +144,6 @@ describe("the metric registry", () => {
       "Forecast at completion",
       "Cost per randomised subject",
       "Query rate per 100 CRF pages",
-      "Monitoring visits overdue against the monitoring plan",
       "Enrollment against a time-phased plan",
       "Adverse event reporting rate (key risk indicator)",
       "Primary endpoint missing data (quality tolerance limit)",
@@ -380,11 +382,24 @@ describe("the evaluator at its boundaries", () => {
     expect(total(m, visits([0, 0]))).toBeNull();
     expect(total(m, visits([4, 0]))).toBe(0);
     const overdue = metric("monitoring_reports_overdue");
+    // Due on the data cut is not yet overdue; due the day before is.
     const reports = withTables({
       "gold.fct_monitoring_visit": [
-        { visit_date_key: 20260901, report_final_date_key: null },
-        { visit_date_key: 20260910, report_final_date_key: null },
-        { visit_date_key: 20260901, report_final_date_key: 20260905 },
+        {
+          visit_date_key: 20260901,
+          report_final_date_key: null,
+          report_due_date_key: 20260929,
+        },
+        {
+          visit_date_key: 20260910,
+          report_final_date_key: null,
+          report_due_date_key: 20260930,
+        },
+        {
+          visit_date_key: 20260901,
+          report_final_date_key: 20260905,
+          report_due_date_key: 20260915,
+        },
       ],
       "gold.dim_study": [],
     });
@@ -756,16 +771,26 @@ describe("certified reports", () => {
           "certified report ops cannot use deprecated metric screen_failure_rate",
       },
     ]);
+    const withDraft = METRIC_REGISTRY.map((m) =>
+      m.id === "monitoring_reports_overdue"
+        ? { ...m, status: "draft" as const }
+        : m
+    );
     expect(
-      checkReportMetrics({
-        id: "ops",
-        title: "Operations",
-        certified: true,
-        metricIds: ["monitoring_reports_overdue"],
-      }).map((f) => f.message)
+      checkReportMetrics(
+        {
+          id: "ops",
+          title: "Operations",
+          certified: true,
+          metricIds: ["monitoring_reports_overdue"],
+        },
+        withDraft
+      ).map((f) => f.message)
     ).toEqual([
       "certified report ops cannot use draft metric monitoring_reports_overdue",
     ]);
+    // Every metric in the registry itself is certified (#2736).
+    expect(METRIC_REGISTRY.filter((m) => m.status !== "certified")).toEqual([]);
   });
 
   it("lets an uncertified report use any registry metric, and no report an unknown one", () => {

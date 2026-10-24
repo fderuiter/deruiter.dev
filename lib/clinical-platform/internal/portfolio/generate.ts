@@ -6,6 +6,7 @@ import { DEFAULT_SUBJECT_COUNT } from "@/lib/study-data";
 import type {
   CecAdjudication,
   CtmsMilestone,
+  CtmsMonitoringPlan,
   CtmsMonitoringVisit,
   EdcQuery,
   EdcSubject,
@@ -81,6 +82,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
     },
     ctms: {
       milestones: [] as CtmsMilestone[],
+      monitoringPlans: [] as CtmsMonitoringPlan[],
       monitoringVisits: [] as CtmsMonitoringVisit[],
       deviations: [] as ProtocolDeviation[],
     },
@@ -189,6 +191,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
     feeds.edc.visits.push(...sim.visits);
     feeds.edc.queries.push(...sim.queries);
     feeds.ctms.milestones.push(...ops.milestones);
+    feeds.ctms.monitoringPlans.push(ops.monitoringPlan);
     feeds.ctms.monitoringVisits.push(...ops.monitoringVisits);
     feeds.ctms.deviations.push(...sim.deviations);
     feeds.irt.randomizations.push(...sim.randomizations);

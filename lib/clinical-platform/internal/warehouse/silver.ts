@@ -155,6 +155,17 @@ export function conformBronze(
       source_system: m.source,
       is_synthetic: m.synthetic,
     })),
+    ctms_monitoring_plan: ctms.monitoringPlans.map((p) => ({
+      monitoring_plan_id: p.monitoringPlanId,
+      study_id: p.studyId,
+      plan_version: p.version,
+      effective_on: p.effectiveOn,
+      interim_interval_days: p.interimIntervalDays,
+      visit_window_days: p.visitWindowDays,
+      report_due_days: p.reportDueDays,
+      source_system: p.source,
+      is_synthetic: p.synthetic,
+    })),
     ctms_monitoring_visit: ctms.monitoringVisits.map((m) => ({
       monitoring_visit_id: m.monitoringVisitId,
       study_id: m.studyId,

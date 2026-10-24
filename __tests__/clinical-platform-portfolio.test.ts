@@ -26,7 +26,7 @@ import {
  * same commit, together with `GOLDEN_SUMMARY`, and say why.
  */
 const GOLDEN_SHA256 =
-  "366bc6444886ee579c6926977a60f617d6b1796cbaaa83cd219b0d92b8c6b9ba";
+  "9fa9e188786b23a12bfd83dfacecf72e8f266c774212f905f38cd3bfe8f59a84";
 
 /** Record counts per study for the default seed: the readable half of the golden. */
 const GOLDEN_SUMMARY = {

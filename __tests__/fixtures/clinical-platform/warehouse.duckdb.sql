@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.0.0, DuckDB dialect.
+-- Clinical Data Platform warehouse, schema 1.1.0, DuckDB dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -200,6 +200,29 @@ COMMENT ON COLUMN "silver"."ctms_milestone"."planned_on" IS 'Planned date.';
 COMMENT ON COLUMN "silver"."ctms_milestone"."actual_on" IS 'Actual date, or null when not reached.';
 COMMENT ON COLUMN "silver"."ctms_milestone"."source_system" IS 'Source system the record came from.';
 COMMENT ON COLUMN "silver"."ctms_milestone"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "silver"."ctms_monitoring_plan" (
+  "monitoring_plan_id"    VARCHAR NOT NULL,
+  "study_id"              VARCHAR NOT NULL,
+  "plan_version"          VARCHAR NOT NULL,
+  "effective_on"          DATE NOT NULL,
+  "interim_interval_days" INTEGER NOT NULL,
+  "visit_window_days"     INTEGER NOT NULL,
+  "report_due_days"       INTEGER NOT NULL,
+  "source_system"         VARCHAR NOT NULL,
+  "is_synthetic"          BOOLEAN NOT NULL,
+  CONSTRAINT "pk_ctms_monitoring_plan" PRIMARY KEY ("monitoring_plan_id")
+);
+COMMENT ON TABLE "silver"."ctms_monitoring_plan" IS 'CTMS monitoring plans: the interim visit cadence and report deadline each study''s plan sets. Grain: One row per monitoring plan version.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."monitoring_plan_id" IS 'Monitoring plan id.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."study_id" IS 'Protocol id.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."plan_version" IS 'Plan version.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."effective_on" IS 'Date the plan took effect.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."interim_interval_days" IS 'Planned days from one monitoring visit at a site to the next interim visit.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."visit_window_days" IS 'Days an interim visit may fall after its planned date and still be on time.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."report_due_days" IS 'Days from a visit by which its report must be final.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."source_system" IS 'Source system the record came from.';
+COMMENT ON COLUMN "silver"."ctms_monitoring_plan"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "silver"."ctms_monitoring_visit" (
   "monitoring_visit_id" VARCHAR NOT NULL,
@@ -554,6 +577,31 @@ COMMENT ON COLUMN "gold"."dim_milestone"."milestone_kind" IS 'Milestone kind.';
 COMMENT ON COLUMN "gold"."dim_milestone"."milestone_name" IS 'Neutral display name.';
 COMMENT ON COLUMN "gold"."dim_milestone"."milestone_sequence" IS 'Position in the study lifecycle, from 1.';
 
+CREATE TABLE "gold"."dim_monitoring_plan" (
+  "monitoring_plan_key"   INTEGER NOT NULL,
+  "monitoring_plan_id"    VARCHAR NOT NULL,
+  "study_id"              VARCHAR NOT NULL,
+  "plan_version"          VARCHAR NOT NULL,
+  "effective_date_key"    INTEGER NOT NULL,
+  "interim_interval_days" INTEGER NOT NULL,
+  "visit_window_days"     INTEGER NOT NULL,
+  "report_due_days"       INTEGER NOT NULL,
+  "is_synthetic"          BOOLEAN NOT NULL,
+  CONSTRAINT "pk_dim_monitoring_plan" PRIMARY KEY ("monitoring_plan_key"),
+  CONSTRAINT "uq_dim_monitoring_plan_1" UNIQUE ("monitoring_plan_id"),
+  CONSTRAINT "fk_dim_monitoring_plan_effective_date_key" FOREIGN KEY ("effective_date_key") REFERENCES "gold"."dim_date" ("date_key")
+);
+COMMENT ON TABLE "gold"."dim_monitoring_plan" IS 'Monitoring plan dimension: the cadence and report deadline each study''s plan sets, which monitoring is measured against. Grain: One row per monitoring plan version.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."monitoring_plan_key" IS 'Surrogate key.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."monitoring_plan_id" IS 'Monitoring plan id.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."study_id" IS 'Protocol id.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."plan_version" IS 'Plan version.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."effective_date_key" IS 'Date the plan took effect.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."interim_interval_days" IS 'Planned days from one monitoring visit at a site to the next interim visit.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."visit_window_days" IS 'Days an interim visit may fall after its planned date and still be on time.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."report_due_days" IS 'Days from a visit by which its report must be final.';
+COMMENT ON COLUMN "gold"."dim_monitoring_plan"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
 CREATE TABLE "gold"."fct_enrollment" (
   "subject_id"     VARCHAR NOT NULL,
   "event_type"     VARCHAR NOT NULL,
@@ -699,6 +747,8 @@ CREATE TABLE "gold"."fct_monitoring_visit" (
   "country_key"           INTEGER NOT NULL,
   "visit_date_key"        INTEGER NOT NULL,
   "report_final_date_key" INTEGER,
+  "monitoring_plan_key"   INTEGER NOT NULL,
+  "report_due_date_key"   INTEGER NOT NULL,
   "visit_type"            VARCHAR NOT NULL,
   "visit_mode"            VARCHAR NOT NULL,
   "sdv_pages_due"         INTEGER NOT NULL,
@@ -711,7 +761,9 @@ CREATE TABLE "gold"."fct_monitoring_visit" (
   CONSTRAINT "fk_fct_monitoring_visit_site_key" FOREIGN KEY ("site_key") REFERENCES "gold"."dim_site" ("site_key"),
   CONSTRAINT "fk_fct_monitoring_visit_country_key" FOREIGN KEY ("country_key") REFERENCES "gold"."dim_country" ("country_key"),
   CONSTRAINT "fk_fct_monitoring_visit_visit_date_key" FOREIGN KEY ("visit_date_key") REFERENCES "gold"."dim_date" ("date_key"),
-  CONSTRAINT "fk_fct_monitoring_visit_report_final_date_key" FOREIGN KEY ("report_final_date_key") REFERENCES "gold"."dim_date" ("date_key")
+  CONSTRAINT "fk_fct_monitoring_visit_report_final_date_key" FOREIGN KEY ("report_final_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "fk_fct_monitoring_visit_monitoring_plan_key" FOREIGN KEY ("monitoring_plan_key") REFERENCES "gold"."dim_monitoring_plan" ("monitoring_plan_key"),
+  CONSTRAINT "fk_fct_monitoring_visit_report_due_date_key" FOREIGN KEY ("report_due_date_key") REFERENCES "gold"."dim_date" ("date_key")
 );
 COMMENT ON TABLE "gold"."fct_monitoring_visit" IS 'Monitoring visits with source data verification and report timeliness. Grain: One row per monitoring visit.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."monitoring_visit_id" IS 'Monitoring visit id (degenerate dimension).';
@@ -720,6 +772,8 @@ COMMENT ON COLUMN "gold"."fct_monitoring_visit"."site_key" IS 'Site version in f
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."country_key" IS 'Country of the site.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."visit_date_key" IS 'Visit date.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."report_final_date_key" IS 'Date the report was finalised.';
+COMMENT ON COLUMN "gold"."fct_monitoring_visit"."monitoring_plan_key" IS 'Monitoring plan in force on the visit date.';
+COMMENT ON COLUMN "gold"."fct_monitoring_visit"."report_due_date_key" IS 'Date the report is due: the visit date plus the plan''s report deadline.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."visit_type" IS 'SIV, IMV or COV.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."visit_mode" IS 'On-site or remote.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."sdv_pages_due" IS 'CRF pages due for source data verification.';
@@ -727,6 +781,40 @@ COMMENT ON COLUMN "gold"."fct_monitoring_visit"."sdv_pages_verified" IS 'CRF pag
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."action_items" IS 'Action items raised.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."days_to_final_report" IS 'Days from the visit to the final report.';
 COMMENT ON COLUMN "gold"."fct_monitoring_visit"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "gold"."fct_planned_monitoring_visit" (
+  "planned_visit_id"    VARCHAR NOT NULL,
+  "monitoring_plan_key" INTEGER NOT NULL,
+  "study_key"           INTEGER NOT NULL,
+  "site_key"            INTEGER NOT NULL,
+  "country_key"         INTEGER NOT NULL,
+  "planned_date_key"    INTEGER NOT NULL,
+  "due_date_key"        INTEGER NOT NULL,
+  "monitoring_visit_id" VARCHAR,
+  "actual_date_key"     INTEGER,
+  "days_late"           INTEGER,
+  "is_synthetic"        BOOLEAN NOT NULL,
+  CONSTRAINT "pk_fct_planned_monitoring_visit" PRIMARY KEY ("planned_visit_id"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_monitoring_plan_key" FOREIGN KEY ("monitoring_plan_key") REFERENCES "gold"."dim_monitoring_plan" ("monitoring_plan_key"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_site_key" FOREIGN KEY ("site_key") REFERENCES "gold"."dim_site" ("site_key"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_country_key" FOREIGN KEY ("country_key") REFERENCES "gold"."dim_country" ("country_key"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_planned_date_key" FOREIGN KEY ("planned_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_due_date_key" FOREIGN KEY ("due_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "fk_fct_planned_monitoring_visit_actual_date_key" FOREIGN KEY ("actual_date_key") REFERENCES "gold"."dim_date" ("date_key")
+);
+COMMENT ON TABLE "gold"."fct_planned_monitoring_visit" IS 'Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it. Grain: One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."planned_visit_id" IS 'Planned visit id (degenerate dimension): the site id and its sequence.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."monitoring_plan_key" IS 'Monitoring plan the visit is scheduled under.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."study_key" IS 'Study.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."site_key" IS 'Site version in force on the planned date.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."country_key" IS 'Country of the site.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."planned_date_key" IS 'Planned date: the previous monitoring visit at the site plus the plan''s interval.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."due_date_key" IS 'Last on-time date: the planned date plus the plan''s visit window.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."monitoring_visit_id" IS 'Interim visit that met the planned visit, or null while it is outstanding.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."actual_date_key" IS 'Date of the visit that met it, or null while it is outstanding.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."days_late" IS 'Days the visit fell after its due date, 0 when on time, or null while it is outstanding.';
+COMMENT ON COLUMN "gold"."fct_planned_monitoring_visit"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_milestone" (
   "study_key"        INTEGER NOT NULL,

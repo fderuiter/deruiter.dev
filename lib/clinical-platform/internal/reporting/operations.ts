@@ -133,8 +133,6 @@ function registryGap(name: string, issue: number | null): OperationsGap {
 const BREAKDOWNS_ISSUE = 2759;
 /** The issue that adds activation stages, screen failure reasons and CEC adjudication to gold. */
 const GOLD_FACTS_ISSUE = 2760;
-/** The issue that adds the monitoring plan to gold. */
-const MONITORING_PLAN_ISSUE = 2736;
 
 const SECTIONS: readonly SectionPlan[] = [
   {
@@ -286,14 +284,15 @@ const SECTIONS: readonly SectionPlan[] = [
         id: "monitoring-and-sdv",
         title: "Monitoring and source data verification",
         purpose:
-          "Source data verification progress, monitoring report turnaround and overdue reports. The overdue count is a draft metric until the monitoring plan reaches gold.",
+          "Source data verification progress, monitoring report turnaround, and the reports and interim visits overdue against each study's monitoring plan.",
         audience: "Clinical operations",
         owner: MONITORING,
-        tier: "exploratory",
+        tier: "managed",
         metrics: [
           "sdv_completion",
           "monitoring_report_cycle_time_median",
           "monitoring_reports_overdue",
+          "monitoring_visits_overdue",
         ],
         visual: "table",
         siteVisual: "table",
@@ -308,10 +307,6 @@ const SECTIONS: readonly SectionPlan[] = [
         issue: BREAKDOWNS_ISSUE,
       },
       registryGap("eTMF completeness", null),
-      registryGap(
-        "Monitoring visits overdue against the monitoring plan",
-        MONITORING_PLAN_ISSUE
-      ),
     ],
   },
   {

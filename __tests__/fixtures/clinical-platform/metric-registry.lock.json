@@ -642,6 +642,134 @@
           "operating_model",
           "site",
           "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_monitoring_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "report_final_date_key",
+                "isNull": true,
+                "kind": "null"
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "report_due_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">",
+                "right": {
+                  "kind": "literal",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "monitoring visits"
+      },
+      "id": "monitoring_reports_overdue",
+      "status": "certified",
+      "version": "2.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_planned_monitoring_visit",
+            "timeKey": "due_date_key",
+            "where": [
+              {
+                "column": "actual_date_key",
+                "isNull": true,
+                "kind": "null"
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "due_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">",
+                "right": {
+                  "kind": "literal",
+                  "value": 0
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "planned visits"
+      },
+      "id": "monitoring_visits_overdue",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
           "region"
         ],
         "defaultFilters": [],

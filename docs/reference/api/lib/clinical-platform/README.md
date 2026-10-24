@@ -194,6 +194,12 @@ Re-exports [CtmsMilestone](types/interfaces/CtmsMilestone.md)
 
 ***
 
+### CtmsMonitoringPlan
+
+Re-exports [CtmsMonitoringPlan](types/interfaces/CtmsMonitoringPlan.md)
+
+***
+
 ### CtmsMonitoringVisit
 
 Re-exports [CtmsMonitoringVisit](types/interfaces/CtmsMonitoringVisit.md)

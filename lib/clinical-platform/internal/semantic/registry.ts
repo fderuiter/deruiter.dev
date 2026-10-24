@@ -23,6 +23,7 @@ const VISIT = "gold.fct_visit";
 const QUERY = "gold.fct_query";
 const DEVIATION = "gold.fct_deviation";
 const MONITORING = "gold.fct_monitoring_visit";
+const PLANNED_MONITORING = "gold.fct_planned_monitoring_visit";
 const SPEND = "gold.fct_spend";
 const SITE = "gold.dim_site";
 
@@ -128,7 +129,11 @@ type Draft = Omit<
 > &
   Partial<Pick<MetricDefinition, "status" | "defaultFilters" | "grain">>;
 
-function define(draft: Draft): MetricDefinition {
+/**
+ * A metric's first version. `issue` is the one that added it to the
+ * registry: #2624 for the metrics the registry started with.
+ */
+function define(draft: Draft, issue = 2624): MetricDefinition {
   return {
     grain: "portfolio",
     defaultFilters: [],
@@ -139,9 +144,26 @@ function define(draft: Draft): MetricDefinition {
       {
         version: "1.0.0",
         date: REGISTERED_ON,
-        summary: "First definition in the governed metric registry (#2624).",
+        summary: `First definition in the governed metric registry (#${issue}).`,
       },
     ],
+  };
+}
+
+/**
+ * A later version of a metric: the version and a change log entry on top of
+ * its first definition. A formula change is a major version (#2735).
+ */
+function revise(
+  metric: MetricDefinition,
+  version: string,
+  date: string,
+  summary: string
+): MetricDefinition {
+  return {
+    ...metric,
+    version,
+    changeLog: [...metric.changeLog, { version, date, summary }],
   };
 }
 
@@ -506,30 +528,64 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     glossaryTerm: "sdv-term",
     displayFolder: "Monitoring",
   }),
-  define({
-    id: "monitoring_reports_overdue",
-    name: "Overdue monitoring visit reports",
-    description:
-      "Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline.",
-    formula: {
-      kind: "simple",
-      measure: count(
-        MONITORING,
-        "visit_date_key",
-        absent("report_final_date_key"),
-        compare(daysBetween(keyDate("visit_date_key"), DATA_CUT), ">", lit(20))
-      ),
+  revise(
+    define({
+      id: "monitoring_reports_overdue",
+      name: "Overdue monitoring visit reports",
+      description:
+        "Monitoring visits whose report was still not final after its due date, at the data cut. The due date is the visit date plus the report deadline in the study's monitoring plan.",
+      formula: {
+        kind: "simple",
+        measure: count(
+          MONITORING,
+          "visit_date_key",
+          absent("report_final_date_key"),
+          compare(
+            daysBetween(keyDate("report_due_date_key"), DATA_CUT),
+            ">",
+            lit(0)
+          )
+        ),
+      },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      defaultFilters: ONGOING_STUDIES,
+      unit: "monitoring visits",
+      format: WHOLE,
+      owner: "Clinical Monitoring Lead",
+      steward: OPS_STEWARD,
+      glossaryTerm: null,
+      displayFolder: "Monitoring",
+    }),
+    "2.0.0",
+    "2026-10-24",
+    "Reads each report's deadline from the study's monitoring plan (gold.fct_monitoring_visit.report_due_date_key) instead of an assumed 20 days, and is certified (#2736)."
+  ),
+  define(
+    {
+      id: "monitoring_visits_overdue",
+      name: "Overdue interim monitoring visits",
+      description:
+        "Interim monitoring visits the monitoring plan scheduled whose visit window closed before the data cut with no visit made. Each site's next visit is planned the plan's interval after its previous visit and is on time until the plan's window closes.",
+      formula: {
+        kind: "simple",
+        measure: count(
+          PLANNED_MONITORING,
+          "due_date_key",
+          absent("actual_date_key"),
+          compare(daysBetween(keyDate("due_date_key"), DATA_CUT), ">", lit(0))
+        ),
+      },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      defaultFilters: ONGOING_STUDIES,
+      unit: "planned visits",
+      format: WHOLE,
+      owner: "Clinical Monitoring Lead",
+      steward: OPS_STEWARD,
+      glossaryTerm: null,
+      displayFolder: "Monitoring",
     },
-    allowedDimensions: MONTHLY_DIMENSIONS,
-    defaultFilters: ONGOING_STUDIES,
-    status: "draft",
-    unit: "monitoring visits",
-    format: WHOLE,
-    owner: "Clinical Monitoring Lead",
-    steward: OPS_STEWARD,
-    glossaryTerm: null,
-    displayFolder: "Monitoring",
-  }),
+    2736
+  ),
   define({
     id: "monitoring_report_cycle_time_median",
     name: "Monitoring report cycle time (median)",
@@ -704,7 +760,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
 
 /**
  * Metrics a clinical operations or portfolio lead would expect that the gold
- * model (warehouse schema 1.0.0) cannot compute. Each names the gold data it
+ * model (warehouse schema 1.1.0) cannot compute. Each names the gold data it
  * lacks and, where one exists, the registry metric that covers part of it.
  */
 export const METRIC_GAPS: readonly MetricGap[] = Object.freeze([
@@ -738,14 +794,6 @@ export const METRIC_GAPS: readonly MetricGap[] = Object.freeze([
       "No gold table counts the CRF pages a visit produces; sdv_pages_due counts only the pages due for source data verification.",
     missing: "The number of CRF pages entered per visit in gold.fct_visit.",
     nearestMetricId: "query_rate_per_100_visits",
-  },
-  {
-    name: "Monitoring visits overdue against the monitoring plan",
-    reason:
-      "Gold holds the monitoring visits that happened, not the ones the monitoring plan scheduled.",
-    missing:
-      "Planned monitoring visit dates, or the planned interval, per site.",
-    nearestMetricId: "monitoring_reports_overdue",
   },
   {
     name: "Enrollment against a time-phased plan",

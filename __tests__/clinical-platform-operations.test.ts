@@ -5,6 +5,8 @@ import {
   METRIC_REGISTRY,
   buildWarehouse,
   checkReportSpec,
+  dataContracts,
+  dataProducts,
   evaluateMetric,
   generatePortfolio,
   operationsDashboard,
@@ -14,6 +16,7 @@ import {
   type ReportData,
   type WarehouseRow,
 } from "@/lib/clinical-platform";
+import { DEMO_301_STUDY, runPipeline } from "@/lib/study-data";
 
 const warehouse = buildWarehouse(
   generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED })
@@ -441,5 +444,77 @@ describe("operations sections (#2630)", () => {
     expect(cec("DEV-402")).toEqual(["CEC adjudication backlog"]);
     expect(cec("DEV-401")).toEqual([]);
     expect(cec("DEMO-301")).toEqual([]);
+  });
+});
+
+describe("operations data freshness (#2630, #2626)", () => {
+  // Contracts describe the schema, not the rows, so a small run will do.
+  const run = runPipeline(DEMO_301_STUDY, { seed: 7, nSubjects: 24 });
+  const contracts = new Map(dataContracts(run).map((c) => [c.productId, c]));
+  const products = dataProducts(run);
+  const readBy = (metricIds: readonly string[]) =>
+    products
+      .filter((p) =>
+        p.consumers.some((c) => c.kind === "metric" && metricIds.includes(c.id))
+      )
+      .map((p) => p.id);
+  const reports = (d: OperationsDashboard) => [
+    d.glance,
+    ...d.sections.flatMap((s) => s.reports),
+  ];
+
+  it("lists every data product the numbers read, with its contract's freshness", () => {
+    for (const scope of EVERY_SCOPE) {
+      const dashboard = operationsDashboard(warehouse, scope);
+      const metricIds = reports(dashboard).flatMap((r) => r.spec.metrics);
+      const expected = new Set(readBy(metricIds));
+      if (dashboard.milestones !== null) {
+        expected.add("gold.dim_milestone");
+        expected.add("gold.fct_milestone");
+      }
+      expect(dashboard.sources.map((s) => s.productId)).toEqual(
+        [...expected].sort()
+      );
+      for (const source of dashboard.sources) {
+        const contract = contracts.get(source.productId)!;
+        expect(source.freshnessHours).toBe(contract.sla.freshnessHours);
+        expect(source.contractVersion).toBe(contract.version);
+        expect(source.name).toBe(
+          products.find((p) => p.id === source.productId)!.name
+        );
+      }
+    }
+  });
+
+  it("promises no report fresher than the products it reads", () => {
+    for (const scope of EVERY_SCOPE) {
+      for (const report of reports(operationsDashboard(warehouse, scope))) {
+        const slowest = Math.max(
+          ...readBy(report.spec.metrics).map(
+            (id) => contracts.get(id)!.sla.freshnessHours
+          )
+        );
+        expect(
+          report.spec.refreshSlaHours,
+          report.spec.id
+        ).toBeGreaterThanOrEqual(slowest);
+      }
+    }
+  });
+
+  it("reads only daily gold loads on the portfolio dashboard", () => {
+    const { sources } = operationsDashboard(warehouse);
+    expect(sources.map((s) => s.productId)).toEqual([
+      "gold.dim_site",
+      "gold.fct_deviation",
+      "gold.fct_enrollment",
+      "gold.fct_milestone",
+      "gold.fct_monitoring_visit",
+      "gold.fct_query",
+      "gold.fct_visit",
+    ]);
+    expect(new Set(sources.map((s) => s.freshnessHours))).toEqual(
+      new Set([24])
+    );
   });
 });

@@ -692,6 +692,12 @@ Re-exports [OperationsSectionId](types/type-aliases/OperationsSectionId.md)
 
 ***
 
+### OperationsSource
+
+Re-exports [OperationsSource](types/interfaces/OperationsSource.md)
+
+***
+
 ### OperationsStudyProfile
 
 Re-exports [OperationsStudyProfile](types/interfaces/OperationsStudyProfile.md)

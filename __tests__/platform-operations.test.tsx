@@ -121,6 +121,23 @@ describe("OperationsView (#2630)", () => {
     ).toBe("2026-09-30");
   });
 
+  it("states the freshness the data contracts promise, product by product", () => {
+    view({ study: "DEV-402" }, "milestones");
+    expect(document.querySelector("details > summary")?.textContent).toBe(
+      "Data as of 2026-09-30 · freshness target daily"
+    );
+    const table = screen.getByRole("table", {
+      name: "Data products behind these numbers, with their contract freshness targets",
+    });
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(at({ study: "DEV-402" }).sources.length);
+    expect(
+      within(table).getByRole("rowheader", { name: /gold\.fct_milestone/ })
+    ).toBeTruthy();
+    expect(rows[0].textContent).toContain("daily");
+    expect(rows[0].textContent).toContain("v1.0.0");
+  });
+
   it("links each study, then each country, then each site, keeping the section", () => {
     view({}, "quality");
     const studies = screen.getByRole("navigation", { name: "Studies" });

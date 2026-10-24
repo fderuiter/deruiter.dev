@@ -62,6 +62,7 @@
 - [OperationsRunByOption](interfaces/OperationsRunByOption.md)
 - [OperationsScope](interfaces/OperationsScope.md)
 - [OperationsSection](interfaces/OperationsSection.md)
+- [OperationsSource](interfaces/OperationsSource.md)
 - [OperationsStudyProfile](interfaces/OperationsStudyProfile.md)
 - [ParquetColumnType](interfaces/ParquetColumnType.md)
 - [PlannedVisit](interfaces/PlannedVisit.md)

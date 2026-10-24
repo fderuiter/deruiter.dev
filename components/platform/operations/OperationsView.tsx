@@ -50,6 +50,85 @@ export function operationsHash(
   return `#${params.toString()}`;
 }
 
+function cadence(hours: number): string {
+  if (hours % 24 !== 0) return `every ${hours} hours`;
+  const days = hours / 24;
+  return days === 1 ? "daily" : `every ${days} days`;
+}
+
+/**
+ * The data cut, and the freshness the data contracts of the products the
+ * numbers read promise, with the products listed on demand.
+ */
+function Freshness({ dashboard }: { dashboard: OperationsDashboard }) {
+  const hours = dashboard.sources.map((source) => source.freshnessHours);
+  const fastest = Math.min(...hours);
+  const slowest = Math.max(...hours);
+  const target =
+    fastest === slowest
+      ? cadence(fastest)
+      : `${cadence(fastest)} to ${cadence(slowest)}`;
+  return (
+    <details className="min-w-0 max-w-full text-xs text-slate-400">
+      <summary className="cursor-pointer font-mono marker:text-slate-500">
+        Data as of{" "}
+        <time dateTime={dashboard.dataCut} className="text-slate-200">
+          {dashboard.dataCut}
+        </time>{" "}
+        · freshness target {target}
+      </summary>
+      <div className="mt-2 border border-white/[0.08] bg-[#13151a] p-3">
+        <p className="leading-relaxed text-slate-300">
+          The numbers below read {dashboard.sources.length} gold data products.
+          Each one&apos;s data contract sets the longest gap allowed between
+          loads; this synthetic portfolio is a single data cut, so the targets
+          describe the design rather than a live feed.
+        </p>
+        <div className="mt-3 overflow-x-auto">
+          <table className="w-full min-w-0 text-left">
+            <caption className="sr-only">
+              Data products behind these numbers, with their contract freshness
+              targets
+            </caption>
+            <thead className="text-slate-500">
+              <tr>
+                <th scope="col" className="py-1 pr-3 font-normal">
+                  Data product
+                </th>
+                <th scope="col" className="py-1 pr-3 font-normal">
+                  Freshness target
+                </th>
+                <th scope="col" className="py-1 font-normal">
+                  Contract
+                </th>
+              </tr>
+            </thead>
+            <tbody className="text-slate-300">
+              {dashboard.sources.map((source) => (
+                <tr
+                  key={source.productId}
+                  className="border-t border-white/[0.06]"
+                >
+                  <th scope="row" className="py-1 pr-3 font-normal">
+                    {source.name}{" "}
+                    <span className="font-mono break-all text-slate-500">
+                      {source.productId}
+                    </span>
+                  </th>
+                  <td className="py-1 pr-3">
+                    {cadence(source.freshnessHours)}
+                  </td>
+                  <td className="py-1 font-mono">v{source.contractVersion}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  );
+}
+
 function Breadcrumbs({
   dashboard,
   view,
@@ -399,12 +478,7 @@ export function OperationsView({
     <div className="space-y-8" aria-busy={busy}>
       <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/[0.08] pb-4">
         <Breadcrumbs dashboard={dashboard} view={view} />
-        <p className="font-mono text-xs text-slate-400">
-          Data as of{" "}
-          <time dateTime={dashboard.dataCut} className="text-slate-200">
-            {dashboard.dataCut}
-          </time>
-        </p>
+        <Freshness dashboard={dashboard} />
       </div>
 
       {dashboard.notice !== null && (

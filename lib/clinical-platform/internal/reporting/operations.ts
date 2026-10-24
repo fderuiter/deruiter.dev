@@ -20,6 +20,7 @@ import type {
   OperationsScope,
   OperationsSection,
   OperationsSectionId,
+  OperationsSource,
   OperationsStudyProfile,
   ReportSpec,
   ReportTier,
@@ -27,7 +28,9 @@ import type {
   Warehouse,
   WarehouseRow,
 } from "../../types";
-import { METRIC_GAPS } from "../semantic/registry";
+import { PRODUCT_REGISTRATIONS } from "../governance/contracts/registry";
+import { formulaSources } from "../semantic/plan";
+import { METRIC_GAPS, METRIC_REGISTRY } from "../semantic/registry";
 import { buildReport } from "./build";
 
 /** Run-by choice that keeps the studies the sponsor runs itself. */
@@ -779,6 +782,40 @@ function milestones(
     }));
 }
 
+/** Tables the milestone table reads, outside any metric. */
+const MILESTONE_TABLES = ["gold.dim_milestone", "gold.fct_milestone"];
+
+/**
+ * The data products behind the numbers shown: every gold table a shown
+ * metric's formula reads, and the milestone tables when the milestone
+ * table is shown, each with the freshness its data contract promises.
+ */
+function sources(
+  specs: readonly ReportSpec[],
+  readsMilestones: boolean
+): OperationsSource[] {
+  const tables = new Set(readsMilestones ? MILESTONE_TABLES : []);
+  const shown = new Set(specs.flatMap((spec) => spec.metrics));
+  for (const metric of METRIC_REGISTRY) {
+    if (!shown.has(metric.id)) continue;
+    for (const source of formulaSources(metric.formula)) {
+      tables.add(source.table);
+    }
+  }
+  return [...tables].sort().map((productId) => {
+    const registration = PRODUCT_REGISTRATIONS[productId];
+    if (registration === undefined) {
+      throw new Error(`${productId} is not a registered data product`);
+    }
+    return {
+      productId,
+      name: registration.name,
+      freshnessHours: registration.freshnessHours,
+      contractVersion: registration.version,
+    };
+  });
+}
+
 /**
  * The operations dashboard at a scope: the glance, one section per tab
  * with its reports and gaps, the breadcrumb trail, and the studies,
@@ -810,6 +847,11 @@ export function operationsDashboard(
       ),
     gaps: section.gaps(study),
   }));
+  const glance = buildReport(warehouse, glanceSpec(resolved.level, filters));
+  const studyMilestones =
+    resolved.level === "study" && resolved.study !== null
+      ? milestones(warehouse, resolved.study)
+      : null;
   return {
     scope: resolved.scope,
     level: resolved.level,
@@ -820,11 +862,14 @@ export function operationsDashboard(
     members: members(warehouse, resolved),
     runByOptions: resolved.level === "portfolio" ? runByOptions(warehouse) : [],
     study,
-    glance: buildReport(warehouse, glanceSpec(resolved.level, filters)),
+    glance,
     sections,
-    milestones:
-      resolved.level === "study" && resolved.study !== null
-        ? milestones(warehouse, resolved.study)
-        : null,
+    milestones: studyMilestones,
+    sources: sources(
+      [glance, ...sections.flatMap((section) => section.reports)].map(
+        (r) => r.spec
+      ),
+      studyMilestones !== null
+    ),
   };
 }

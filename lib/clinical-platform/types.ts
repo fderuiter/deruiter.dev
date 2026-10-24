@@ -1779,6 +1779,21 @@ export interface OperationsSection {
   readonly gaps: readonly OperationsGap[];
 }
 
+/**
+ * A data product the dashboard's numbers read, with the freshness its data
+ * contract promises (#2626).
+ */
+export interface OperationsSource {
+  /** Data product id: the qualified gold table, for example `gold.fct_query`. */
+  readonly productId: string;
+  /** Product name. */
+  readonly name: string;
+  /** Longest gap between loads the product's contract allows, in hours. */
+  readonly freshnessHours: number;
+  /** Version of the contract in force. */
+  readonly contractVersion: string;
+}
+
 /** The operations dashboard at one scope, evaluated over one warehouse. */
 export interface OperationsDashboard {
   /** The scope shown: the one asked for, cut back to its deepest valid level. */
@@ -1803,4 +1818,6 @@ export interface OperationsDashboard {
   readonly sections: readonly OperationsSection[];
   /** The study's milestones at the study level; `null` at every other level. */
   readonly milestones: readonly OperationsMilestone[] | null;
+  /** Data products the numbers shown read, in id order. */
+  readonly sources: readonly OperationsSource[];
 }

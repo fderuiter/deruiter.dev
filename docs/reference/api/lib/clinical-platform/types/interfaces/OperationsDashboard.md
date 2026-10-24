@@ -94,6 +94,14 @@ The scope shown: the one asked for, cut back to its deepest valid level.
 
 ***
 
+### sources
+
+> `readonly` **sources**: readonly [`OperationsSource`](OperationsSource.md)[]
+
+Data products the numbers shown read, in id order.
+
+***
+
 ### study
 
 > `readonly` **study**: [`OperationsStudyProfile`](OperationsStudyProfile.md) \| `null`

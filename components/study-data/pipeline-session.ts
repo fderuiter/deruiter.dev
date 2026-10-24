@@ -248,6 +248,7 @@ export function createStudyDataSession() {
     if (kind === "submission") {
       const pkg = await buildStudyDataPackage(result, {
         generatedAt: new Date().toISOString(),
+        reportingEvent: current(runId).outputs.reportingEvent,
       });
       return {
         fileName: `${base}-datasets.zip`,

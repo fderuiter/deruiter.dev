@@ -508,6 +508,8 @@
 - [lib/study-data/internal/export/oids](lib/study-data/internal/export/oids/README.md)
 - [lib/study-data/internal/export/package](lib/study-data/internal/export/package/README.md)
 - [lib/study-data/internal/export/xpt](lib/study-data/internal/export/xpt/README.md)
+- [lib/study-data/internal/guides/render-reviewer-guide](lib/study-data/internal/guides/render-reviewer-guide/README.md)
+- [lib/study-data/internal/guides/reviewer-guides](lib/study-data/internal/guides/reviewer-guides/README.md)
 - [lib/study-data/internal/lineage/model](lib/study-data/internal/lineage/model/README.md)
 - [lib/study-data/internal/lineage/trace](lib/study-data/internal/lineage/trace/README.md)
 - [lib/study-data/internal/sdtm/codelists](lib/study-data/internal/sdtm/codelists/README.md)

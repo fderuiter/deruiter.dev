@@ -134,6 +134,12 @@ Re-exports [applyCanvasScale](core/viewport/functions/applyCanvasScale.md)
 
 ***
 
+### ARCADE\_COACH\_MARKS\_KEY
+
+Re-exports [ARCADE_COACH_MARKS_KEY](progress/coach-marks-slice/variables/ARCADE_COACH_MARKS_KEY.md)
+
+***
+
 ### ARCADE\_CORRUPT\_SUFFIX
 
 Re-exports [ARCADE_CORRUPT_SUFFIX](progress/store/variables/ARCADE_CORRUPT_SUFFIX.md)
@@ -179,6 +185,18 @@ Re-exports [ARCADE_UNIFIED_PROGRESS_KEY](progress/core/variables/ARCADE_UNIFIED_
 ### ArcadeCatalogEntry
 
 Re-exports [ArcadeCatalogEntry](progress/catalog/interfaces/ArcadeCatalogEntry.md)
+
+***
+
+### ArcadeCoachMarks
+
+Re-exports [ArcadeCoachMarks](progress/coach-marks-slice/interfaces/ArcadeCoachMarks.md)
+
+***
+
+### arcadeCoachMarksSlice
+
+Re-exports [arcadeCoachMarksSlice](progress/coach-marks-slice/variables/arcadeCoachMarksSlice.md)
 
 ***
 
@@ -650,6 +668,12 @@ Re-exports [getRunSnapshotStorage](run-snapshot/functions/getRunSnapshotStorage.
 
 ***
 
+### hasSeenCoachMarks
+
+Re-exports [hasSeenCoachMarks](progress/coach-marks-slice/functions/hasSeenCoachMarks.md)
+
+***
+
 ### HintModality
 
 Re-exports [HintModality](input/actions/type-aliases/HintModality.md)
@@ -959,6 +983,12 @@ Re-exports [SESSION_STEP_SECONDS](step-clock/variables/SESSION_STEP_SECONDS.md)
 ### SessionRng
 
 Re-exports [SessionRng](rng/interfaces/SessionRng.md)
+
+***
+
+### setCoachMarksSeen
+
+Re-exports [setCoachMarksSeen](progress/coach-marks-slice/functions/setCoachMarksSeen.md)
 
 ***
 

@@ -5,6 +5,7 @@ import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
+import { ShowTipsAgain } from "@/components/arcade/mobile/ui";
 import {
   getDefaultCrtFilter,
   isCabinetCrtFilter,
@@ -768,6 +769,9 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                   ))}
                 </div>
               </div>
+
+              {/* First-run coach marks, once this device has seen them (#2361) */}
+              <ShowTipsAgain gameId={gameId} />
             </div>
           )}
 

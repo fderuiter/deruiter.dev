@@ -288,7 +288,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     id: "site_activation_cycle_time",
     name: "Site activation cycle time",
     description:
-      "Median days from the study's protocol finalisation to a site's activation, over activated sites. The protocol date is the first day of the site's first version in gold.dim_site, which the warehouse opens on the study start.",
+      "Median days from the study's protocol finalisation to a site's activation, over activated sites. Protocol finalisation is gold.dim_study.start_on; the metric reads it as the first day of the site's first gold.dim_site version, which the gold build opens on that date.",
     formula: {
       kind: "simple",
       measure: measure(
@@ -510,7 +510,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     id: "monitoring_reports_overdue",
     name: "Overdue monitoring visit reports",
     description:
-      "Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft until an owner confirms it.",
+      "Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline.",
     formula: {
       kind: "simple",
       measure: count(

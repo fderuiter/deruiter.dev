@@ -118,7 +118,7 @@ Subjects who discontinued before completing the study, as a share of subjects en
 
 ### Site activation cycle time
 
-Median days from the study's protocol finalisation to a site's activation, over activated sites. The protocol date is the first day of the site's first version in gold.dim_site, which the warehouse opens on the study start.
+Median days from the study's protocol finalisation to a site's activation, over activated sites. Protocol finalisation is gold.dim_study.start_on; the metric reads it as the first day of the site's first gold.dim_site version, which the gold build opens on that date.
 
 - Id: `site_activation_cycle_time`, version 1.0.0, certified.
 - Formula: median of days from valid_from to activated_on over gold.dim_site rows where version_number = 1 and activated_on is not null.
@@ -256,7 +256,7 @@ CRF pages source-verified at monitoring visits as a share of the pages due for s
 
 ### Overdue monitoring visit reports
 
-Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft until an owner confirms it.
+Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline.
 
 - Id: `monitoring_reports_overdue`, version 1.0.0, draft.
 - Formula: count of gold.fct_monitoring_visit rows where report_final_date_key is null and days from date(visit_date_key) to the data cut > 20.

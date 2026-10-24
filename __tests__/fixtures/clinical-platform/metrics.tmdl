@@ -68,7 +68,7 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
-	/// Median days from the study's protocol finalisation to a site's activation, over activated sites. The protocol date is the first day of the site's first version in gold.dim_site, which the warehouse opens on the study start. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	/// Median days from the study's protocol finalisation to a site's activation, over activated sites. Protocol finalisation is gold.dim_study.start_on; the metric reads it as the first day of the site's first gold.dim_site version, which the gold build opens on that date. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
 	measure 'Site activation cycle time' =
 			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[activated_on])), DATEDIFF('dim_site'[valid_from], 'dim_site'[activated_on], DAY))
 		formatString: #,0.0
@@ -208,7 +208,7 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
-	/// Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft until an owner confirms it. Version 1.0.0, draft. Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward. Unit: monitoring visits.
+	/// Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline. Version 1.0.0, draft. Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward. Unit: monitoring visits.
 	measure 'Overdue monitoring visit reports' =
 			COUNTROWS(FILTER('fct_monitoring_visit', ISBLANK('fct_monitoring_visit'[report_final_date_key]) && DATEDIFF(DATE(QUOTIENT('fct_monitoring_visit'[visit_date_key], 10000), MOD(QUOTIENT('fct_monitoring_visit'[visit_date_key], 100), 100), MOD('fct_monitoring_visit'[visit_date_key], 100)), DATE(2026, 9, 30), DAY) > 20 && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
 		formatString: #,0

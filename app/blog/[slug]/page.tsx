@@ -159,9 +159,6 @@ export default async function BlogPostPage({ params }: PageProps) {
           __html: getBlogPostingSchema(post),
         }}
       />
-      {/* Background Blurs */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 w-80 h-80 rounded-full bg-accent/5 blur-[120px] pointer-events-none hidden sm:block" />
 
       <div className="relative z-10 w-full max-w-5xl">
         {/* Breadcrumbs Navigation */}

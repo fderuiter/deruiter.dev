@@ -129,6 +129,148 @@ describe("reviewer guides", () => {
     expect(issue?.explanation).toMatch(/defect/);
   });
 
+  it("explains results that disagree with the findings, and errors on expected rules", () => {
+    const odd: PipelineRun = {
+      ...run,
+      findings: [
+        ...run.findings.filter((f) => f.ruleId !== "SD-031"),
+        {
+          ruleId: "SD-900",
+          severity: "notice",
+          layer: "sdtm",
+          message: "A finding on no dataset.",
+        },
+      ],
+      conformance: {
+        ...run.conformance,
+        ruleResults: run.conformance.ruleResults.map((result) =>
+          result.ruleId === "SD-031" ? { ...result, status: "error" } : result
+        ),
+      },
+    };
+    const issue = buildReviewerGuides(odd).csdrg.conformance.issues.find(
+      (item) => item.ruleId === "SD-031"
+    );
+    expect(issue).toMatchObject({
+      severity: "error",
+      message: "",
+      expected: false,
+    });
+    expect(issue?.explanation).toMatch(/defect/);
+  });
+
+  it("describes a dataset without a structure and refuses a method with no text", () => {
+    const dm = run.datasets.find((d) => d.name === "DM" && d.layer === "sdtm")!;
+    const { structure: _structure, ...bare } = dm;
+    const withBare: PipelineRun = {
+      ...run,
+      datasets: run.datasets.map((d) => (d === dm ? bare : d)),
+    };
+    expect(
+      buildReviewerGuides(withBare).csdrg.datasets.find((d) => d.name === "DM")
+        ?.structure
+    ).toBe("");
+    const unknown: PipelineRun = {
+      ...run,
+      datasets: run.datasets.map((d) =>
+        d === dm
+          ? {
+              ...d,
+              variables: d.variables.map((v, i) =>
+                i === 0 ? { ...v, origin: "Derived", method: "NO_SUCH" } : v
+              ),
+            }
+          : d
+      ),
+    };
+    expect(() => buildReviewerGuides(unknown)).toThrow(
+      "Method NO_SUCH has no derivation text."
+    );
+  });
+
+  it("indexes only the outputs and analyses the reporting event defines", () => {
+    const [first] = reportingEvent.outputs;
+    const [analysis] = reportingEvent.analyses;
+    const event = {
+      ...reportingEvent,
+      outputs: [{ ...first!, displays: [] }],
+      analyses: [{ ...analysis!, analysisSetId: "Set_X", methodId: "Mth_X" }],
+      mainListOfContents: {
+        ...reportingEvent.mainListOfContents,
+        contentsList: {
+          listItems: [
+            { name: "No output", level: 1, order: 1 },
+            { name: "Unknown", level: 1, order: 2, outputId: "Out_X" },
+            { name: "Bare", level: 1, order: 3, outputId: first!.id },
+            {
+              name: "Listed",
+              level: 1,
+              order: 4,
+              outputId: first!.id,
+              sublist: {
+                listItems: [
+                  { name: "Heading", level: 2, order: 1 },
+                  { name: "Gone", level: 2, order: 2, analysisId: "An_X" },
+                  {
+                    name: "Kept",
+                    level: 2,
+                    order: 3,
+                    analysisId: analysis!.id,
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    };
+    const outputs = buildReviewerGuides(run, event).adrg.outputs;
+    expect(outputs).toEqual([
+      { id: first!.id, name: first!.name, title: first!.name, analyses: [] },
+      {
+        id: first!.id,
+        name: first!.name,
+        title: first!.name,
+        analyses: [
+          {
+            id: analysis!.id,
+            name: analysis!.name,
+            dataset: analysis!.dataset,
+            variable: analysis!.variable,
+            population: "Set_X",
+            method: "Mth_X",
+          },
+        ],
+      },
+    ]);
+    const html = renderReviewerGuideHtml({
+      ...buildReviewerGuides(run, event).adrg,
+    });
+    expect(html).toContain(
+      `<td>${first!.name}</td><td>${first!.name}</td><td></td>`
+    );
+  });
+
+  it("says so when no rule raised a finding", () => {
+    expect(renderReviewerGuideHtml(guides.adrg)).toContain(
+      "No rule raised a finding on these datasets."
+    );
+    const one = renderReviewerGuideHtml({
+      ...guides.csdrg,
+      conformance: {
+        ...guides.csdrg.conformance,
+        issues: guides.csdrg.conformance.issues.slice(0, 1).map((issue) => ({
+          ...issue,
+          count: 1,
+        })),
+      },
+    });
+    expect(one).toContain(
+      "1 rule check raised findings; 1 of them is expected"
+    );
+    expect(one).toMatch(/: 1 warning \(expected\)/);
+  });
+
   it("lists every derivation method a derived variable names", () => {
     for (const [guide, layer, methods] of [
       [guides.csdrg, "sdtm", SDTM_METHODS],

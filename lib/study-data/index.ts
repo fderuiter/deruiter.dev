@@ -76,3 +76,28 @@ export type {
   PackageOptions,
   StudyDataPackage,
 } from "./internal/export/package";
+export {
+  descriptiveStatistics,
+  formatDecimal,
+  formatPercent,
+  inferDecimalPlaces,
+  statisticDecimals,
+  MAX_RAW_DECIMALS,
+  STATISTIC_PRECISION,
+} from "./internal/tlf/stats";
+export type { StatisticKind } from "./internal/tlf/stats";
+export {
+  adamRowId,
+  indexAdamRows,
+  resolveResultRows,
+} from "./internal/tlf/row-ids";
+export { selectAdamRows } from "./internal/tlf/where";
+export { escapeHtml, writeTableHtml } from "./internal/tlf/html";
+export { escapeRtf, writeTableRtf } from "./internal/tlf/rtf";
+export {
+  buildTlfOutputs,
+  writeArsJson,
+  writeTlfFiles,
+  ARS_REPORTING_EVENT_PATH,
+  TLF_OUTPUT_DIR,
+} from "./internal/tlf/outputs";

@@ -20,6 +20,12 @@ Re-exports [BronzeRecord](types/interfaces/BronzeRecord.md)
 
 ***
 
+### buildReport
+
+Re-exports [buildReport](internal/reporting/build/functions/buildReport.md)
+
+***
+
 ### buildScd2Versions
 
 Re-exports [buildScd2Versions](internal/warehouse/scd2/functions/buildScd2Versions.md)
@@ -71,6 +77,12 @@ Re-exports [checkRegulatoryWording](internal/policy/functions/checkRegulatoryWor
 ### checkReportMetrics
 
 Re-exports [checkReportMetrics](internal/semantic/check/functions/checkReportMetrics.md)
+
+***
+
+### checkReportSpec
+
+Re-exports [checkReportSpec](internal/reporting/check/functions/checkReportSpec.md)
 
 ***
 
@@ -233,6 +245,12 @@ Re-exports [FinanceLine](types/interfaces/FinanceLine.md)
 ### findClinicalClaims
 
 Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)
+
+***
+
+### formatMetricValue
+
+Re-exports [formatMetricValue](internal/reporting/format/functions/formatMetricValue.md)
 
 ***
 
@@ -458,6 +476,18 @@ Re-exports [MilestoneKind](types/type-aliases/MilestoneKind.md)
 
 ***
 
+### NO\_METRIC\_ROWS
+
+Re-exports [NO_METRIC_ROWS](internal/reporting/format/variables/NO_METRIC_ROWS.md)
+
+***
+
+### NO\_METRIC\_VALUE
+
+Re-exports [NO_METRIC_VALUE](internal/reporting/format/variables/NO_METRIC_VALUE.md)
+
+***
+
 ### OperatingModel
 
 Re-exports [OperatingModel](types/type-aliases/OperatingModel.md)
@@ -560,6 +590,114 @@ Re-exports [renderWarehouseReference](internal/warehouse/erd/functions/renderWar
 
 ***
 
+### REPORT\_PACK
+
+Re-exports [REPORT_PACK](internal/reporting/pack/variables/REPORT_PACK.md)
+
+***
+
+### ReportCalculation
+
+Re-exports [ReportCalculation](types/interfaces/ReportCalculation.md)
+
+***
+
+### reportCatalog
+
+Re-exports [reportCatalog](internal/reporting/catalog/functions/reportCatalog.md)
+
+***
+
+### ReportCatalogEntry
+
+Re-exports [ReportCatalogEntry](types/interfaces/ReportCatalogEntry.md)
+
+***
+
+### ReportCatalogOptions
+
+Re-exports [ReportCatalogOptions](internal/reporting/catalog/interfaces/ReportCatalogOptions.md)
+
+***
+
+### ReportCatalogQuery
+
+Re-exports [ReportCatalogQuery](types/interfaces/ReportCatalogQuery.md)
+
+***
+
+### ReportCell
+
+Re-exports [ReportCell](types/interfaces/ReportCell.md)
+
+***
+
+### ReportColumn
+
+Re-exports [ReportColumn](types/interfaces/ReportColumn.md)
+
+***
+
+### ReportData
+
+Re-exports [ReportData](types/interfaces/ReportData.md)
+
+***
+
+### ReportFinding
+
+Re-exports [ReportFinding](types/interfaces/ReportFinding.md)
+
+***
+
+### ReportRow
+
+Re-exports [ReportRow](types/interfaces/ReportRow.md)
+
+***
+
+### ReportScale
+
+Re-exports [ReportScale](types/interfaces/ReportScale.md)
+
+***
+
+### ReportSignOff
+
+Re-exports [ReportSignOff](types/interfaces/ReportSignOff.md)
+
+***
+
+### ReportSpec
+
+Re-exports [ReportSpec](types/interfaces/ReportSpec.md)
+
+***
+
+### reportTelemetrySlug
+
+Re-exports [reportTelemetrySlug](internal/reporting/catalog/functions/reportTelemetrySlug.md)
+
+***
+
+### ReportTick
+
+Re-exports [ReportTick](types/interfaces/ReportTick.md)
+
+***
+
+### ReportTier
+
+Re-exports [ReportTier](types/type-aliases/ReportTier.md)
+
+***
+
+### ReportVisual
+
+Re-exports [ReportVisual](types/type-aliases/ReportVisual.md)
+
+***
+
 ### RoadmapItem
 
 Re-exports [RoadmapItem](types/interfaces/RoadmapItem.md)
@@ -593,6 +731,12 @@ Re-exports [Scd2Version](types/interfaces/Scd2Version.md)
 ### scoreVendors
 
 Re-exports [scoreVendors](internal/strategy/engine/functions/scoreVendors.md)
+
+***
+
+### searchReportCatalog
+
+Re-exports [searchReportCatalog](internal/reporting/catalog/functions/searchReportCatalog.md)
 
 ***
 

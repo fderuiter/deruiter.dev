@@ -24,7 +24,12 @@ import type {
   TlfOutputs,
   VisitDefinition,
 } from "../../types";
-import { adamRowId, indexAdamRows, resolveResultRows } from "../tlf/row-ids";
+import {
+  adamRowId,
+  indexAdamRows,
+  resolveResultRows,
+  rowSetRowIds,
+} from "../tlf/row-ids";
 import type {
   LineageDisplayCell,
   LineageLevel,
@@ -405,7 +410,7 @@ export function createLineageIndex(
     for (const set of event.rowSets) {
       const resultIds = bySet.get(set.id);
       if (!resultIds) continue;
-      for (const rowId of set.rowIds) {
+      for (const rowId of rowSetRowIds(event, set.id)) {
         const ids = resultsByRow.get(rowId) ?? [];
         ids.push(...resultIds);
         resultsByRow.set(rowId, ids);

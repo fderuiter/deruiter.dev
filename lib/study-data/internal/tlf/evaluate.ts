@@ -21,7 +21,11 @@ import type {
   CellValue,
   Dataset,
 } from "../../types";
-import { evaluateTimeToEvent, isTimeToEventMethod } from "./km-evaluate";
+import {
+  atRiskReference,
+  evaluateTimeToEvent,
+  isTimeToEventMethod,
+} from "./km-evaluate";
 import type { AnalysisSpec, ReportingPlan } from "./plan";
 import { IDS, SUMMARY_OPERATIONS } from "./plan";
 import { RowSetRegistry } from "./row-sets";
@@ -367,17 +371,29 @@ export function evaluateAnalyses(
           `The engine has no evaluator for method ${analysisMethod.id}.`
         );
       }
+      // A number-at-risk count is a Kaplan-Meier risk set, and names its
+      // rows the way the Kaplan-Meier results do (#2729).
+      const atRiskDay = combination.prespecified.find(
+        ([factor]) => factor.id === IDS.atRiskDay
+      )?.[0];
       const rowReferences = [
         registry.reference(
           adsl,
           populationRows.map((record) => record.rowIndex),
           "population"
         ),
-        registry.reference(
-          data,
-          analysed.map((record) => record.rowIndex),
-          "analysis"
-        ),
+        atRiskDay
+          ? atRiskReference(
+              registry,
+              data,
+              analysed,
+              atRiskDay.groupingVariable
+            )
+          : registry.reference(
+              data,
+              analysed.map((record) => record.rowIndex),
+              "analysis"
+            ),
       ].filter((reference) => reference !== null);
       for (const value of values) {
         const result: ArsOperationResult = {

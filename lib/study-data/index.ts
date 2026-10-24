@@ -125,6 +125,7 @@ export {
   adamRowId,
   indexAdamRows,
   resolveResultRows,
+  rowSetRowIds,
 } from "./internal/tlf/row-ids";
 export { selectAdamRows } from "./internal/tlf/where";
 export { escapeHtml, writeTableHtml } from "./internal/tlf/html";

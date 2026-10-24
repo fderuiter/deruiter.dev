@@ -123,6 +123,21 @@ describe("CI support scripts (#1767)", () => {
         "stryker.engines.config.mjs",
       ]);
     });
+
+    it("runs the weekly Garmin scope from its own config (#2564)", () => {
+      expect(buildStrykerArgs(["--garmin"])).toEqual([
+        "run",
+        "stryker.garmin.config.mjs",
+      ]);
+      expect(buildStrykerArgs(["--garmin", "--incremental"])).toEqual([
+        "run",
+        "stryker.garmin.config.mjs",
+        "--incremental",
+      ]);
+      expect(() => buildStrykerArgs(["--engines", "--garmin"])).toThrow(
+        /Pick one mutation scope/
+      );
+    });
   });
 
   describe("per-file mutation breaks (#2529)", () => {
@@ -156,15 +171,38 @@ describe("CI support scripts (#1767)", () => {
       ]);
     });
 
-    it("never lets an engine floor sit at zero once measured", async () => {
-      const { fileBreaks } = (await import(
-        path.join(process.cwd(), "stryker.engines.config.mjs")
-      )) as { fileBreaks: Record<string, number> };
-      expect(Object.keys(fileBreaks).length).toBeGreaterThan(0);
-      for (const [file, floor] of Object.entries(fileBreaks)) {
-        expect(fs.existsSync(path.join(process.cwd(), file)), file).toBe(true);
-        expect(floor, file).toBeGreaterThan(0);
+    it.each(["stryker.engines.config.mjs", "stryker.garmin.config.mjs"])(
+      "never lets a %s floor sit at zero once measured",
+      async (config) => {
+        const { fileBreaks } = (await import(
+          path.join(process.cwd(), config)
+        )) as { fileBreaks: Record<string, number> };
+        expect(Object.keys(fileBreaks).length).toBeGreaterThan(0);
+        for (const [file, floor] of Object.entries(fileBreaks)) {
+          expect(fs.existsSync(path.join(process.cwd(), file)), file).toBe(
+            true
+          );
+          expect(floor, file).toBeGreaterThan(0);
+        }
       }
+    );
+
+    it("keeps the two weekly scopes' files and reports apart (#2564)", async () => {
+      const load = async (config: string) =>
+        (await import(path.join(process.cwd(), config))) as {
+          fileBreaks: Record<string, number>;
+          ENGINES_JSON_REPORT: string;
+          default: { incrementalFile: string };
+        };
+      const engines = await load("stryker.engines.config.mjs");
+      const garmin = await load("stryker.garmin.config.mjs");
+      for (const file of Object.keys(garmin.fileBreaks)) {
+        expect(engines.fileBreaks, file).not.toHaveProperty(file);
+      }
+      expect(garmin.ENGINES_JSON_REPORT).not.toBe(engines.ENGINES_JSON_REPORT);
+      expect(garmin.default.incrementalFile).not.toBe(
+        engines.default.incrementalFile
+      );
     });
   });
 

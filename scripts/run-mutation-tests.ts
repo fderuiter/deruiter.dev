@@ -12,6 +12,9 @@
  *                  stryker.engines.config.mjs instead, then hold every
  *                  mutated file to its own floor in that config's
  *                  `fileBreaks`.
+ *   --garmin       Run the weekly Garmin engine scope (#2564) from
+ *                  stryker.garmin.config.mjs the same way. Pass one scope
+ *                  at most.
  * With no flags it runs every mutant, as before. The score threshold in
  * stryker.config.mjs applies identically in every mode.
  */
@@ -32,9 +35,18 @@ export const MUTATION_GATE_FLAGS = [
   "--incremental",
   "--force",
   "--engines",
+  "--garmin",
 ] as const;
 
-const ENGINES_CONFIG = "stryker.engines.config.mjs";
+/**
+ * Weekly scopes that run from their own config and hold a break per file
+ * (#2529). The Garmin engine has its own scope (#2564) because its 4,000
+ * mutants would push the shared engine job past its time bound.
+ */
+const SCOPE_CONFIGS: Record<string, string> = {
+  "--engines": "stryker.engines.config.mjs",
+  "--garmin": "stryker.garmin.config.mjs",
+};
 
 /** Validates runner arguments and returns the `stryker run` argv. */
 export function buildStrykerArgs(args: readonly string[]): string[] {
@@ -46,8 +58,16 @@ export function buildStrykerArgs(args: readonly string[]): string[] {
       `Unknown mutation gate option(s): ${unknown.join(", ")}. Allowed: ${MUTATION_GATE_FLAGS.join(", ")}.`
     );
   }
-  const config = args.includes("--engines") ? [ENGINES_CONFIG] : [];
-  const modes = [...new Set(args)].filter((arg) => arg !== "--engines");
+  const scopes = Object.keys(SCOPE_CONFIGS).filter((flag) =>
+    args.includes(flag)
+  );
+  if (scopes.length > 1) {
+    throw new Error(
+      `Pick one mutation scope, not ${scopes.join(" and ")}: each runs as its own job.`
+    );
+  }
+  const config = scopes.map((flag) => SCOPE_CONFIGS[flag]);
+  const modes = [...new Set(args)].filter((arg) => !(arg in SCOPE_CONFIGS));
   if (modes.includes("--force") && !modes.includes("--incremental")) {
     // Without --incremental every mutant already runs; --force is a no-op.
     return ["run", ...config];
@@ -93,9 +113,9 @@ export function fileBreakFailures(
   });
 }
 
-async function checkEngineFileBreaks(): Promise<void> {
+async function checkScopeFileBreaks(config: string): Promise<void> {
   const { fileBreaks, ENGINES_JSON_REPORT } = (await import(
-    pathToFileURL(path.join(workspaceRoot, ENGINES_CONFIG)).href
+    pathToFileURL(path.join(workspaceRoot, config)).href
   )) as { fileBreaks: Record<string, number>; ENGINES_JSON_REPORT: string };
   const report = JSON.parse(
     fs.readFileSync(path.join(workspaceRoot, ENGINES_JSON_REPORT), "utf8")
@@ -134,7 +154,8 @@ export async function runMutationGate(
     );
     process.exit(1);
   }
-  if (args.includes("--engines")) await checkEngineFileBreaks();
+  const scope = Object.keys(SCOPE_CONFIGS).find((flag) => args.includes(flag));
+  if (scope) await checkScopeFileBreaks(SCOPE_CONFIGS[scope]);
   console.log("\n✅ Stryker Mutation Testing Gate passed.\n");
 }
 

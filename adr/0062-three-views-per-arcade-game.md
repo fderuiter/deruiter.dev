@@ -212,6 +212,13 @@ ADR 0061's phone bar, items 1 to 12, plus:
   The rubric's view-specific checks list what the phone, tablet and desktop
   views are each scored on.
 
+Phone views meet items 14 and 16, and the one-focus guideline below, with the
+shared parts in `components/arcade/mobile/ui/` (#2361) rather than their own:
+`BottomSheet` for anything beside the stage, `PhoneHud` for the stat row,
+`CoachMarks` for the first-run sequence, and `TouchTip` for help. Information
+that only a `title=` holds moves into a `TouchTip` or into visible text; a
+`title=` may stay as a desktop extra only when its words are also on screen.
+
 ### Fun guidelines for phones
 
 - **Thumb-first verbs.** Tap, hold, drag and swipe; a d-pad is the last resort.

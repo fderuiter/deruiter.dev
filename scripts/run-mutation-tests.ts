@@ -13,8 +13,10 @@
  *                  mutated file to its own floor in that config's
  *                  `fileBreaks`.
  *   --garmin       Run the weekly Garmin engine scope (#2564) from
- *                  stryker.garmin.config.mjs the same way. Pass one scope
- *                  at most.
+ *                  stryker.garmin.config.mjs the same way.
+ *   --study-data   Run the weekly study data derivation scope (#2607) from
+ *                  stryker.study-data.config.mjs the same way. Pass one
+ *                  scope at most.
  * With no flags it runs every mutant, as before. The score threshold in
  * stryker.config.mjs applies identically in every mode.
  */
@@ -36,16 +38,19 @@ export const MUTATION_GATE_FLAGS = [
   "--force",
   "--engines",
   "--garmin",
+  "--study-data",
 ] as const;
 
 /**
  * Weekly scopes that run from their own config and hold a break per file
  * (#2529). The Garmin engine has its own scope (#2564) because its 4,000
- * mutants would push the shared engine job past its time bound.
+ * mutants would push the shared engine job past its time bound, and the
+ * study data derivations (#2607) for the same reason.
  */
 const SCOPE_CONFIGS: Record<string, string> = {
   "--engines": "stryker.engines.config.mjs",
   "--garmin": "stryker.garmin.config.mjs",
+  "--study-data": "stryker.study-data.config.mjs",
 };
 
 /** Validates runner arguments and returns the `stryker run` argv. */

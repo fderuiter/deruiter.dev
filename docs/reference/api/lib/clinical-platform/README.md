@@ -50,9 +50,27 @@ Re-exports [checkLayerFlow](internal/policy/functions/checkLayerFlow.md)
 
 ***
 
+### checkMetricChange
+
+Re-exports [checkMetricChange](internal/semantic/check/functions/checkMetricChange.md)
+
+***
+
+### checkMetricRegistry
+
+Re-exports [checkMetricRegistry](internal/semantic/check/functions/checkMetricRegistry.md)
+
+***
+
 ### checkRegulatoryWording
 
 Re-exports [checkRegulatoryWording](internal/policy/functions/checkRegulatoryWording.md)
+
+***
+
+### checkReportMetrics
+
+Re-exports [checkReportMetrics](internal/semantic/check/functions/checkReportMetrics.md)
 
 ***
 
@@ -122,6 +140,12 @@ Re-exports [DEFAULT_PORTFOLIO_SEED](presets/variables/DEFAULT_PORTFOLIO_SEED.md)
 
 ***
 
+### describeMetricFormula
+
+Re-exports [describeMetricFormula](internal/semantic/describe/functions/describeMetricFormula.md)
+
+***
+
 ### DeviationImportance
 
 Re-exports [DeviationImportance](types/type-aliases/DeviationImportance.md)
@@ -185,6 +209,12 @@ Re-exports [emitDdl](internal/warehouse/ddl/functions/emitDdl.md)
 ### EtmfDocument
 
 Re-exports [EtmfDocument](types/interfaces/EtmfDocument.md)
+
+***
+
+### evaluateMetric
+
+Re-exports [evaluateMetric](internal/semantic/evaluate/functions/evaluateMetric.md)
 
 ***
 
@@ -260,15 +290,165 @@ Re-exports [MedallionLayer](types/type-aliases/MedallionLayer.md)
 
 ***
 
+### METRIC\_DIMENSIONS
+
+Re-exports [METRIC_DIMENSIONS](internal/semantic/dimensions/variables/METRIC_DIMENSIONS.md)
+
+***
+
+### METRIC\_GAPS
+
+Re-exports [METRIC_GAPS](internal/semantic/registry/variables/METRIC_GAPS.md)
+
+***
+
+### METRIC\_REGISTRY
+
+Re-exports [METRIC_REGISTRY](internal/semantic/registry/variables/METRIC_REGISTRY.md)
+
+***
+
+### MetricAggregation
+
+Re-exports [MetricAggregation](types/type-aliases/MetricAggregation.md)
+
+***
+
+### MetricChangeLogEntry
+
+Re-exports [MetricChangeLogEntry](types/interfaces/MetricChangeLogEntry.md)
+
+***
+
+### MetricComparison
+
+Re-exports [MetricComparison](types/type-aliases/MetricComparison.md)
+
+***
+
+### MetricCompileOptions
+
+Re-exports [MetricCompileOptions](types/interfaces/MetricCompileOptions.md)
+
+***
+
+### MetricContract
+
+Re-exports [MetricContract](types/interfaces/MetricContract.md)
+
+***
+
 ### MetricDefinition
 
 Re-exports [MetricDefinition](types/interfaces/MetricDefinition.md)
 
 ***
 
+### MetricDimension
+
+Re-exports [MetricDimension](types/interfaces/MetricDimension.md)
+
+***
+
+### MetricDimensionId
+
+Re-exports [MetricDimensionId](types/type-aliases/MetricDimensionId.md)
+
+***
+
+### MetricExpression
+
+Re-exports [MetricExpression](types/type-aliases/MetricExpression.md)
+
+***
+
+### MetricFilter
+
+Re-exports [MetricFilter](types/interfaces/MetricFilter.md)
+
+***
+
+### MetricFinding
+
+Re-exports [MetricFinding](types/interfaces/MetricFinding.md)
+
+***
+
+### MetricFormat
+
+Re-exports [MetricFormat](types/interfaces/MetricFormat.md)
+
+***
+
+### MetricFormula
+
+Re-exports [MetricFormula](types/type-aliases/MetricFormula.md)
+
+***
+
+### MetricGap
+
+Re-exports [MetricGap](types/interfaces/MetricGap.md)
+
+***
+
 ### MetricGrain
 
 Re-exports [MetricGrain](types/type-aliases/MetricGrain.md)
+
+***
+
+### MetricMeasure
+
+Re-exports [MetricMeasure](types/interfaces/MetricMeasure.md)
+
+***
+
+### MetricPredicate
+
+Re-exports [MetricPredicate](types/type-aliases/MetricPredicate.md)
+
+***
+
+### MetricQuery
+
+Re-exports [MetricQuery](types/interfaces/MetricQuery.md)
+
+***
+
+### metricRelease
+
+Re-exports [metricRelease](internal/semantic/check/functions/metricRelease.md)
+
+***
+
+### MetricRelease
+
+Re-exports [MetricRelease](types/interfaces/MetricRelease.md)
+
+***
+
+### MetricReport
+
+Re-exports [MetricReport](types/interfaces/MetricReport.md)
+
+***
+
+### MetricResult
+
+Re-exports [MetricResult](types/interfaces/MetricResult.md)
+
+***
+
+### MetricResultRow
+
+Re-exports [MetricResultRow](types/interfaces/MetricResultRow.md)
+
+***
+
+### MetricStatus
+
+Re-exports [MetricStatus](types/type-aliases/MetricStatus.md)
 
 ***
 
@@ -536,9 +716,27 @@ Re-exports [SyntheticRecord](types/interfaces/SyntheticRecord.md)
 
 ***
 
+### toMetricFlowYaml
+
+Re-exports [toMetricFlowYaml](internal/semantic/metricflow/functions/toMetricFlowYaml.md)
+
+***
+
 ### tornado
 
 Re-exports [tornado](internal/strategy/engine/functions/tornado.md)
+
+***
+
+### toSql
+
+Re-exports [toSql](internal/semantic/sql/functions/toSql.md)
+
+***
+
+### toTmdl
+
+Re-exports [toTmdl](internal/semantic/tmdl/functions/toTmdl.md)
 
 ***
 

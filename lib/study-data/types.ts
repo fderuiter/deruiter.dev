@@ -669,14 +669,23 @@ export type ArsRowRole = "population" | "analysis";
  * A deduplicated set of ADaM rows that results refer to. Row ids are built
  * by `adamRowId`: the dataset name and the values of its key variables
  * other than `STUDYID`, for example `ADVS:DEMO-301-0001:5`.
+ *
+ * A set holds its own `rowIds` and every row of the sets it `includes`.
+ * Nested sets, such as the Kaplan-Meier risk sets, use this so each row is
+ * listed once rather than once per set it belongs to.
  */
 export interface ArsRowSet {
   /** Stable id, for example `RowSet_0001`. */
   readonly id: string;
   /** Dataset the rows belong to. */
   readonly dataset: string;
-  /** Row ids, in dataset order. */
+  /** Row ids the set lists itself, in dataset order; may be empty. */
   readonly rowIds: readonly string[];
+  /**
+   * Row sets of the same dataset whose rows this set also holds. Each one
+   * is listed before this set, so inclusion never forms a cycle.
+   */
+  readonly includes?: readonly string[];
 }
 
 /** A link from a result to a set of ADaM rows. */

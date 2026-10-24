@@ -4,7 +4,10 @@
  * groups. Like the rest of the engine, every result names the ADaM rows it
  * was computed from:
  *
- * - n at risk at t: the ADTTE records whose AVAL is t or later;
+ * - n at risk at t: the ADTTE records whose AVAL is t or later. Each
+ *   risk set is written as the events and censorings at t plus the risk
+ *   set at the next time, so a record is listed once however many risk
+ *   sets it belongs to (#2729);
  * - n events and n censored at t: the records with that outcome at t;
  * - the estimate, its standard error and limits: every analysable record
  *   of the group, which is what the product-limit estimate at t is
@@ -123,10 +126,10 @@ function arms(input: TimeToEventInput): {
   };
 }
 
-function references(
+function withPopulation(
   input: TimeToEventInput,
   population: readonly RecordContext[],
-  analysed: readonly Analysable[]
+  analysis: ArsRowReference | null
 ): readonly ArsRowReference[] {
   return [
     input.registry.reference(
@@ -134,12 +137,109 @@ function references(
       population.map((record) => record.rowIndex),
       "population"
     ),
-    input.registry.reference(
-      input.data,
-      analysed.map((item) => item.record.rowIndex),
-      "analysis"
-    ),
+    analysis,
   ].filter((reference) => reference !== null);
+}
+
+/** The Kaplan-Meier risk sets of some records, as row sets. */
+interface RiskSets {
+  /** Every record: the risk set at the first observed time. */
+  readonly all: ArsRowReference | null;
+  /** The records with this outcome at exactly this time. */
+  at(time: number, event: boolean): ArsRowReference | null;
+  /** The records whose time is this time or later. */
+  from(time: number): ArsRowReference | null;
+}
+
+/**
+ * Registers the risk sets of some records. The risk set at an observed
+ * time t is written as the events at t, the censorings at t and the risk
+ * set at the next observed time, so a record is listed once however many
+ * risk sets hold it (#2729). A risk set depends only on the records at or
+ * after its time, so any two calls that share those records share the set.
+ */
+function riskSets(
+  registry: RowSetRegistry,
+  data: Dataset,
+  analysable: readonly Analysable[]
+): RiskSets {
+  const rowsByTime = new Map<
+    number,
+    { readonly events: number[]; readonly censored: number[] }
+  >();
+  for (const { record, observation } of analysable) {
+    let rows = rowsByTime.get(observation.time);
+    if (!rows) {
+      rows = { events: [], censored: [] };
+      rowsByTime.set(observation.time, rows);
+    }
+    (observation.event ? rows.events : rows.censored).push(record.rowIndex);
+  }
+  const times = [...rowsByTime.keys()].sort((a, b) => a - b);
+  const sets = new Map<
+    number,
+    {
+      readonly events: ArsRowReference | null;
+      readonly censored: ArsRowReference | null;
+      readonly from: ArsRowReference | null;
+    }
+  >();
+  // Building from the last time back lets each risk set include the next.
+  let next: ArsRowReference | null = null;
+  for (const time of [...times].reverse()) {
+    const rows = rowsByTime.get(time)!;
+    const events = registry.reference(data, rows.events, "analysis");
+    const censored = registry.reference(data, rows.censored, "analysis");
+    next = registry.union(data, [], [events, censored, next], "analysis");
+    sets.set(time, { events, censored, from: next });
+  }
+  return {
+    all: next,
+    at(time, event) {
+      const set = sets.get(time);
+      return set ? (event ? set.events : set.censored) : null;
+    },
+    from(time) {
+      // The first observed time on or after `time`.
+      let low = 0;
+      let high = times.length;
+      while (low < high) {
+        const middle = (low + high) >>> 1;
+        if (times[middle] < time) low = middle + 1;
+        else high = middle;
+      }
+      return low < times.length ? sets.get(times[low])!.from : null;
+    },
+  };
+}
+
+/**
+ * The analysis rows of a number-at-risk count: the Kaplan-Meier risk set
+ * of its records, so the count and the Kaplan-Meier results at the same
+ * time share one row set (#2729). When a record has no valid time or
+ * censoring flag it cannot be placed in a risk set, and the rows are
+ * listed instead.
+ *
+ * @param timeVariable - The time variable of `data`, such as AVAL.
+ * @returns `null` when there are no records.
+ */
+export function atRiskReference(
+  registry: RowSetRegistry,
+  data: Dataset,
+  records: readonly RecordContext[],
+  timeVariable: string
+): ArsRowReference | null {
+  const analysable = records.flatMap((record) => {
+    const observation = observationOf(record, data.name, timeVariable);
+    return observation ? [{ record, observation }] : [];
+  });
+  return analysable.length === records.length
+    ? riskSets(registry, data, analysable).all
+    : registry.reference(
+        data,
+        records.map((record) => record.rowIndex),
+        "analysis"
+      );
 }
 
 function estimateText(value: number | null): {
@@ -188,22 +288,17 @@ function kaplanMeierResults(input: TimeToEventInput): ArsOperationResult[] {
     const estimate = kaplanMeierEstimate(
       arm.analysable.map((item) => item.observation)
     );
-    const everything = references(input, arm.population, arm.analysable);
+    const sets = riskSets(input.registry, input.data, arm.analysable);
+    const everything = withPopulation(input, arm.population, sets.all);
     for (const step of [originStep(estimate.n), ...estimate.steps]) {
-      const atTime = (event: boolean) =>
-        arm.analysable.filter(
-          (item) =>
-            item.observation.time === step.time &&
-            item.observation.event === event
-        );
       const rowsFor = {
-        atRisk: references(
+        atRisk: withPopulation(input, arm.population, sets.from(step.time)),
+        events: withPopulation(input, arm.population, sets.at(step.time, true)),
+        censored: withPopulation(
           input,
           arm.population,
-          arm.analysable.filter((item) => item.observation.time >= step.time)
+          sets.at(step.time, false)
         ),
-        events: references(input, arm.population, atTime(true)),
-        censored: references(input, arm.population, atTime(false)),
       };
       const resultGroups: readonly ArsResultGroup[] = [
         ...arm.groups,
@@ -236,11 +331,30 @@ function logRankResults(input: TimeToEventInput): ArsOperationResult[] {
   const test = logRankTest(
     groups.map((arm) => arm.analysable.map((item) => item.observation))
   );
-  const rowReferences = references(
-    input,
-    groups.flatMap((arm) => arm.population),
-    groups.flatMap((arm) => arm.analysable)
-  );
+  // Every analysable record of every group: the union of each group's
+  // risk sets, and of each group's population.
+  const rowReferences = [
+    input.registry.union(
+      input.adsl,
+      [],
+      groups.map((arm) =>
+        input.registry.reference(
+          input.adsl,
+          arm.population.map((record) => record.rowIndex),
+          "population"
+        )
+      ),
+      "population"
+    ),
+    input.registry.union(
+      input.data,
+      [],
+      groups.map(
+        (arm) => riskSets(input.registry, input.data, arm.analysable).all
+      ),
+      "analysis"
+    ),
+  ].filter((reference) => reference !== null);
   const values: readonly {
     readonly operationId: string;
     readonly rawValue?: string;

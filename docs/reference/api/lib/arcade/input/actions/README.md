@@ -53,3 +53,4 @@
 - [manualControlsFromActions](functions/manualControlsFromActions.md)
 - [resolveActionHint](functions/resolveActionHint.md)
 - [touchActionInput](functions/touchActionInput.md)
+- [touchAxisInput](functions/touchAxisInput.md)

@@ -219,6 +219,13 @@ shared parts in `components/arcade/mobile/ui/` (#2361) rather than their own:
 that only a `title=` holds moves into a `TouchTip` or into visible text; a
 `title=` may stay as a desktop extra only when its words are also on screen.
 
+Touch controls come from the presets in `components/arcade/mobile/docks/`
+(#2359): `DpadDock`, `StickDock`, `DragPad`, `ActionCluster`, `ActionStrip`
+and `HoldButton`, laid out by `ActionDock` or the stage's dock slots. Each
+takes action ids from the game's action map, so a key's name is the action's
+label, and sends through the session's `ActionSinkProvider`. A game's own dock
+becomes a preset or a thin wrapper around one.
+
 ### Fun guidelines for phones
 
 - **Thumb-first verbs.** Tap, hold, drag and swipe; a d-pad is the last resort.

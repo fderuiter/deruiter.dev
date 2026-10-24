@@ -1,0 +1,147 @@
+# ODCS v3.2.0 data contract for silver.ctms_monitoring_plan. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.ctms_monitoring_plan"
+name: "Monitoring plans"
+version: "1.0.0"
+status: active
+domain: CTMS
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "CTMS monitoring plans: the interim visit cadence and report deadline each study's plan sets."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: ctms_monitoring_plan
+    name: ctms_monitoring_plan
+    physicalName: silver.ctms_monitoring_plan
+    physicalType: table
+    logicalType: object
+    description: "CTMS monitoring plans: the interim visit cadence and report deadline each study's plan sets."
+    dataGranularityDescription: "One row per monitoring plan version."
+    properties:
+      - name: monitoring_plan_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Monitoring plan id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: plan_version
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 16
+        physicalType: "VARCHAR(16)"
+        description: "Plan version."
+        required: true
+        classification: internal
+      - name: effective_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the plan took effect."
+        required: true
+        classification: internal
+      - name: interim_interval_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned days from one monitoring visit at a site to the next interim visit."
+        required: true
+        classification: internal
+      - name: visit_window_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days an interim visit may fall after its planned date and still be on time."
+        required: true
+        classification: internal
+      - name: report_due_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days from a visit by which its report must be final."
+        required: true
+        classification: internal
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: ctms_monitoring_plan_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - monitoring_plan_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (monitoring_plan_id) identifies one row."
+team:
+  name: CTMS
+  members:
+    - username: clinical-monitoring-lead
+      name: "Clinical Monitoring Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 168
+    unit: h
+    driver: operational
+    description: "The latest load is at most 168 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.ctms.monitoringPlans
+  - property: consumers
+    value:
+      - "product:gold.dim_monitoring_plan"
+      - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_planned_monitoring_visit"

@@ -20,6 +20,29 @@ import type {
   Vendor,
 } from "../../types";
 
+/**
+ * What a study's monitoring plan sets. These are plan decisions, which
+ * monitoring is measured against; they are not a regulatory standard.
+ */
+export interface MonitoringPlanTerms {
+  /** Planned days from one monitoring visit at a site to the next interim visit. */
+  readonly interimIntervalDays: number;
+  /** Days an interim visit may fall after its planned date and still be on time. */
+  readonly visitWindowDays: number;
+  /** Days from a visit by which its report must be final. */
+  readonly reportDueDays: number;
+}
+
+/** Report deadline in the sponsor's monitoring SOP, which its own plans adopt. */
+const SPONSOR_REPORT_DUE_DAYS = 20;
+/** Report deadline the CROs' plans commit to under their contracts. */
+const CRO_REPORT_DUE_DAYS = 15;
+
+/** Visits every eight weeks with two weeks' grace: the default cadence. */
+const STANDARD_CADENCE = { interimIntervalDays: 56, visitWindowDays: 14 };
+/** Visits every six weeks for higher-risk studies (Phase III, pivotal). */
+const CLOSE_CADENCE = { interimIntervalDays: 42, visitWindowDays: 14 };
+
 /** The operational plan for one study, before the seed fills in operations. */
 export interface StudyOperationsPlan {
   readonly id: string;
@@ -43,6 +66,8 @@ export interface StudyOperationsPlan {
   /** Mean EDC queries per entered visit. */
   readonly queryRate: number;
   readonly cecAdjudication: boolean;
+  /** The study's monitoring plan. */
+  readonly monitoring: MonitoringPlanTerms;
   /** Annual budget per vendor service, whole US dollars. */
   readonly annualBudgetUsd: Readonly<Record<string, number>>;
 }
@@ -189,6 +214,7 @@ const DEMO_301_OPERATIONS: StudyOperationsPlan = {
   dropoutRate: 0.11,
   queryRate: 0.4,
   cecAdjudication: false,
+  monitoring: { ...CLOSE_CADENCE, reportDueDays: SPONSOR_REPORT_DUE_DAYS },
   annualBudgetUsd: { ...DRUG_BUDGET, Investigator: 700_000 },
 };
 
@@ -223,6 +249,12 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
       ["D29", "Follow-up", 28, 2],
     ],
     cecAdjudication: false,
+    monitoring: {
+      // Phase I units are monitored closely during dosing.
+      interimIntervalDays: 28,
+      visitWindowDays: 7,
+      reportDueDays: SPONSOR_REPORT_DUE_DAYS,
+    },
     annualBudgetUsd: { ...DRUG_BUDGET, Investigator: 420_000 },
   },
   {
@@ -255,6 +287,7 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
       ["FU", "Follow-up", 140, 7],
     ],
     cecAdjudication: false,
+    monitoring: { ...STANDARD_CADENCE, reportDueDays: CRO_REPORT_DUE_DAYS },
     annualBudgetUsd: {
       ...DRUG_BUDGET,
       CRO: 1_900_000,
@@ -290,6 +323,7 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
       ["FU", "Follow-up", 112, 7],
     ],
     cecAdjudication: false,
+    monitoring: { ...STANDARD_CADENCE, reportDueDays: SPONSOR_REPORT_DUE_DAYS },
     annualBudgetUsd: { ...DRUG_BUDGET, Investigator: 950_000 },
   },
   {
@@ -322,6 +356,7 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
       ["EOT", "End of treatment", 175, 7],
     ],
     cecAdjudication: false,
+    monitoring: { ...STANDARD_CADENCE, reportDueDays: CRO_REPORT_DUE_DAYS },
     annualBudgetUsd: { ...DRUG_BUDGET, CRO: 1_500_000, Investigator: 900_000 },
   },
   {
@@ -355,6 +390,7 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
       ["FU", "Follow-up", 378, 7],
     ],
     cecAdjudication: false,
+    monitoring: { ...CLOSE_CADENCE, reportDueDays: CRO_REPORT_DUE_DAYS },
     annualBudgetUsd: {
       ...DRUG_BUDGET,
       CRO: 4_800_000,
@@ -382,6 +418,7 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
     arms: ["Investigational device"],
     visits: DEVICE_VISITS,
     cecAdjudication: false,
+    monitoring: { ...STANDARD_CADENCE, reportDueDays: SPONSOR_REPORT_DUE_DAYS },
     annualBudgetUsd: {
       EDC: 110_000,
       CTMS: 30_000,
@@ -411,6 +448,12 @@ const BLUEPRINT_STUDIES: readonly BlueprintEntry[] = [
     arms: ["Investigational device", "Surgical repair"],
     visits: DEVICE_VISITS,
     cecAdjudication: true,
+    monitoring: {
+      // The pivotal device study allows only a week's slip.
+      interimIntervalDays: 42,
+      visitWindowDays: 7,
+      reportDueDays: SPONSOR_REPORT_DUE_DAYS,
+    },
     annualBudgetUsd: {
       EDC: 220_000,
       IRT: 60_000,

@@ -8,6 +8,7 @@
 
 ## Interfaces
 
+- [MonitoringPlanTerms](interfaces/MonitoringPlanTerms.md)
 - [StudyBlueprint](interfaces/StudyBlueprint.md)
 - [StudyOperationsPlan](interfaces/StudyOperationsPlan.md)
 

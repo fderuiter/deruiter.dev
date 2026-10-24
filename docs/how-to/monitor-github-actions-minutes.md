@@ -94,7 +94,9 @@ a gate or lowering a threshold:
   a break per file in `stryker.engines.config.mjs`; PRs never run it
   (#2529). The Garmin engine runs the same way in its own
   `mutation-garmin` job, bounded at 90 minutes, with its breaks in
-  `stryker.garmin.config.mjs` (#2564).
+  `stryker.garmin.config.mjs` (#2564). The study data SDTM, ADaM and TLF
+  derivations run in `mutation-study-data`, bounded at 150 minutes, with
+  their breaks in `stryker.study-data.config.mjs` (#2607).
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

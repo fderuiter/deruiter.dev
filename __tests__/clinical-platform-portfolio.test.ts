@@ -30,7 +30,7 @@ import {
  * record changed; the hash with the standards field left out is the same.
  */
 const GOLDEN_SHA256 =
-  "71ac4dfcefcf12c45bd40329d290519471db53bea92ceb8aa23c0b42708a3ee2";
+  "b4ab4b6361c6d9b4f28624fb47765b9be71abf72dbad2fa1f18dc75961a250ce";
 
 /** Record counts per study for the default seed: the readable half of the golden. */
 const GOLDEN_SUMMARY = {

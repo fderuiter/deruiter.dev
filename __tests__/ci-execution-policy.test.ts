@@ -305,8 +305,10 @@ describe("CI Execution Policy", () => {
       );
       expect(weekly).toContain("npm run test:mutation -- --engines");
       expect(weekly).toContain("npm run test:mutation -- --garmin");
+      expect(weekly).toContain("npm run test:mutation -- --study-data");
       expect(block).not.toContain("--engines");
       expect(block).not.toContain("--garmin");
+      expect(block).not.toContain("--study-data");
     });
   });
 

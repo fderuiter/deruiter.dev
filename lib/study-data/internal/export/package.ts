@@ -1,8 +1,8 @@
 /**
  * The study data package: every SDTM and ADaM dataset as Dataset-JSON, CSV
- * and XPT, and a Define-XML document per layer, laid out like eCTD module 5,
- * with a README, a manifest of SHA-256 hashes and one declared timestamp
- * file.
+ * and XPT, a Define-XML document and a reviewer guide per layer, laid out
+ * like eCTD module 5, with a README, a manifest of SHA-256 hashes and one
+ * declared timestamp file.
  *
  * Only `RUN-TIMESTAMP.json` depends on when the package was built. Every
  * other file, the manifest and the zip archive depend only on the run, so the
@@ -17,6 +17,7 @@ import {
   SYNTHETIC_DATA_NOTICE,
 } from "../../presets";
 import type {
+  ArsReportingEvent,
   Dataset,
   Finding,
   ManifestEntry,
@@ -27,6 +28,8 @@ import type {
 } from "../../types";
 import { buildDefine, DEFINE_XML_VERSION } from "../define/build-define";
 import { writeDefineXml } from "../define/write-define-xml";
+import { writeReviewerGuideDocument } from "../guides/render-reviewer-guide";
+import { buildReviewerGuides } from "../guides/reviewer-guides";
 import { utf8 } from "./columns";
 import { writeCsv } from "./csv";
 import { writeDatasetJson } from "./dataset-json";
@@ -40,6 +43,10 @@ export const ADAM_PACKAGE_DIR = "m5/datasets/analysis/adam";
 export const SDTM_DEFINE_PATH = `${SDTM_PACKAGE_DIR}/define.xml`;
 /** The ADaM Define-XML document, beside the datasets it describes. */
 export const ADAM_DEFINE_PATH = `${ADAM_PACKAGE_DIR}/define.xml`;
+/** The cSDRG-lite, beside the SDTM datasets it describes. */
+export const CSDRG_PATH = `${SDTM_PACKAGE_DIR}/csdrg.html`;
+/** The ADRG-lite, beside the ADaM datasets it describes. */
+export const ADRG_PATH = `${ADAM_PACKAGE_DIR}/adrg.html`;
 /** The manifest file at the package root. */
 export const PACKAGE_MANIFEST_PATH = "MANIFEST.json";
 /** The README at the package root. */
@@ -62,6 +69,7 @@ const MEDIA_TYPES = {
   xpt: "application/x-sas-xport",
   txt: "text/plain",
   xml: "application/xml",
+  html: "text/html",
 } as const;
 
 const ISO_TIMESTAMP =
@@ -86,7 +94,7 @@ export interface PackageManifest {
   readonly nSubjects: number;
   readonly standards: StandardVersions;
   readonly fileFormats: Readonly<
-    Record<"json" | "csv" | "xpt" | "xml", string>
+    Record<"json" | "csv" | "xpt" | "xml" | "html", string>
   >;
   readonly stages: readonly PipelineStageId[];
   readonly fixedTimestamp: string;
@@ -122,6 +130,11 @@ export interface PackageOptions {
    * `RUN-TIMESTAMP.json` only and is not hashed.
    */
   readonly generatedAt: string;
+  /**
+   * The run's ARS reporting event, from `buildTlfOutputs`. When given, the
+   * ADRG-lite lists every output and the analyses it displays.
+   */
+  readonly reportingEvent?: ArsReportingEvent;
 }
 
 const CSV_NOTICE =
@@ -174,6 +187,10 @@ function readme(run: PipelineRun, generatedFiles: readonly string[]): string {
     "",
     `Each folder also holds define.xml, Define-XML ${DEFINE_XML_VERSION} metadata for its datasets, generated from the same specifications as the data. Its def:leaf entries point to the .xpt files. The notice is in its study description.`,
     "",
+    "Reviewer guides, generated from this run and modelled on the PHUSE templates:",
+    `  ${CSDRG_PATH}  cSDRG-lite: data flow, standards, SDTM datasets, conformance findings explained, derivations`,
+    `  ${ADRG_PATH}  ADRG-lite: the same for ADaM, plus the analysis output index`,
+    "",
     CSV_NOTICE.replace("this manifest", PACKAGE_MANIFEST_PATH),
     "",
     `${PACKAGE_MANIFEST_PATH} lists the SHA-256 of every file except itself and ${PACKAGE_TIMESTAMP_PATH}.`,
@@ -195,17 +212,20 @@ function readme(run: PipelineRun, generatedFiles: readonly string[]): string {
  * Builds the study data package for a pipeline run.
  *
  * Every SDTM and ADaM dataset is written as Dataset-JSON, CSV and XPT under
- * the eCTD module 5 folders, and each folder gets a Define-XML document for
- * its datasets; collected data is not exported. The returned run manifest has
+ * the eCTD module 5 folders, and each folder gets a Define-XML document and
+ * a reviewer guide (cSDRG-lite or ADRG-lite) for its datasets; collected data
+ * is not exported. The returned run manifest has
  * `outputs` filled with the path, media type and SHA-256 of every hashed
  * file, and `define` and `export` added to its stages.
  *
  * @param run - A pipeline run from `runPipeline`.
- * @param options - When the package was built.
+ * @param options - When the package was built, and the reporting event for
+ *   the ADRG-lite's output index.
  * @returns The files, the manifest and the findings the formats raised.
  * @throws RangeError when `generatedAt` is not an ISO 8601 timestamp, two
- *   exported datasets share a name, a dataset cannot be written as XPT, or
- *   the metadata cannot be written as Define-XML (see `buildDefine`).
+ *   exported datasets share a name, a dataset cannot be written as XPT, the
+ *   metadata cannot be written as Define-XML (see `buildDefine`), or a
+ *   derived variable names a method with no derivation text.
  */
 export async function buildStudyDataPackage(
   run: PipelineRun,
@@ -271,9 +291,21 @@ export async function buildStudyDataPackage(
         )
       ),
     }));
+  const guides = buildReviewerGuides(run, options.reportingEvent);
+  const guideFiles: PackageFile[] = [
+    { path: CSDRG_PATH, guide: guides.csdrg },
+    { path: ADRG_PATH, guide: guides.adrg },
+  ]
+    .filter(({ guide }) => guide.datasets.length > 0)
+    .map(({ path, guide }) => ({
+      path,
+      mediaType: MEDIA_TYPES.html,
+      bytes: utf8(writeReviewerGuideDocument(guide)),
+    }));
   const contentFiles: (PackageFile & { readonly dataset?: string })[] = [
     ...datasetFiles,
     ...defineFiles,
+    ...guideFiles,
   ].sort((a, b) => compareCodePoints(a.path, b.path));
 
   const readmeFile: PackageFile = {
@@ -316,6 +348,7 @@ export async function buildStudyDataPackage(
       csv: "RFC 4180",
       xpt: "SAS XPORT v5",
       xml: `Define-XML ${DEFINE_XML_VERSION}`,
+      html: "HTML reviewer guides (cSDRG-lite, ADRG-lite)",
     },
     stages,
     fixedTimestamp: PACKAGE_FIXED_TIMESTAMP,

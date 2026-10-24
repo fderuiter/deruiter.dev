@@ -233,6 +233,124 @@ function siteVersions(silver: SilverTables) {
   return { rows, bySite, closeOn };
 }
 
+/** The terms of one monitoring plan, with its surrogate key. */
+interface PlanTerms {
+  readonly key: number;
+  readonly effectiveOn: string;
+  readonly intervalDays: number;
+  readonly windowDays: number;
+  readonly reportDueDays: number;
+}
+
+/**
+ * Indexes the monitoring plans by study, so a visit can be measured against
+ * the plan version in force on its date.
+ */
+function monitoringPlans(rows: readonly WarehouseRow[]) {
+  const byStudy = new Map<string, PlanTerms[]>();
+  rows.forEach((row, index) => {
+    const study = str(row, "study_id");
+    const terms: PlanTerms = {
+      key: index + 1,
+      effectiveOn: str(row, "effective_on"),
+      intervalDays: num(row, "interim_interval_days"),
+      windowDays: num(row, "visit_window_days"),
+      reportDueDays: num(row, "report_due_days"),
+    };
+    const versions = [...(byStudy.get(study) ?? []), terms];
+    versions.sort((a, b) =>
+      a.effectiveOn < b.effectiveOn ? -1 : a.effectiveOn > b.effectiveOn ? 1 : 0
+    );
+    byStudy.set(study, versions);
+  });
+  return {
+    /** The latest plan version that took effect on or before the day. */
+    inForce(study: string, day: string): PlanTerms {
+      const versions = byStudy.get(study) ?? [];
+      const found = versions.filter((v) => v.effectiveOn <= day).at(-1);
+      if (found === undefined) {
+        throw new Error(`no monitoring plan of ${study} in force on ${day}`);
+      }
+      return found;
+    },
+  };
+}
+
+/** One interim visit the monitoring plan schedules at a site. */
+interface PlannedVisit {
+  readonly id: string;
+  readonly planKey: number;
+  readonly studyId: string;
+  readonly siteId: string;
+  readonly plannedOn: string;
+  readonly dueOn: string;
+  readonly visitId: string | null;
+  readonly visitedOn: string | null;
+}
+
+/**
+ * The interim visits each site's monitoring plan schedules. The schedule
+ * rolls: the next interim visit is planned the plan's interval after the
+ * previous visit actually made, starting from the initiation visit, and is
+ * on time until the visit window closes. Each interim visit made meets one
+ * planned visit. A site still being monitored, one with no close-out visit
+ * in a study whose last subject has not had its last visit, also has its
+ * next visit outstanding.
+ */
+function plannedMonitoringVisits(
+  silver: SilverTables,
+  closeOn: ReadonlyMap<string, string>,
+  plans: ReturnType<typeof monitoringPlans>
+): PlannedVisit[] {
+  const finished = new Set(
+    silver.ctms_milestone
+      .filter(
+        (m) =>
+          m.milestone_kind === "last-subject-last-visit" &&
+          optStr(m, "actual_on") !== null
+      )
+      .map((m) => str(m, "study_id"))
+  );
+  const bySite = new Map<string, WarehouseRow[]>();
+  for (const visit of silver.ctms_monitoring_visit) {
+    const site = str(visit, "site_id");
+    bySite.set(site, [...(bySite.get(site) ?? []), visit]);
+  }
+  const planned: PlannedVisit[] = [];
+  for (const [siteId, visits] of bySite) {
+    const ordered = [...visits].sort((a, b) => {
+      const [x, y] = [str(a, "visit_date"), str(b, "visit_date")];
+      return x < y ? -1 : x > y ? 1 : 0;
+    });
+    const initiation = ordered.find((v) => v.visit_type === "SIV");
+    if (initiation === undefined) continue;
+    const studyId = str(initiation, "study_id");
+    let previous = str(initiation, "visit_date");
+    let sequence = 0;
+    const schedule = (visit: WarehouseRow | null) => {
+      const plan = plans.inForce(studyId, previous);
+      const plannedOn = addDays(previous, plan.intervalDays);
+      sequence += 1;
+      planned.push({
+        id: `${siteId}-PV${String(sequence).padStart(2, "0")}`,
+        planKey: plan.key,
+        studyId,
+        siteId,
+        plannedOn,
+        dueOn: addDays(plannedOn, plan.windowDays),
+        visitId: visit === null ? null : str(visit, "monitoring_visit_id"),
+        visitedOn: visit === null ? null : str(visit, "visit_date"),
+      });
+      if (visit !== null) previous = str(visit, "visit_date");
+    };
+    for (const visit of ordered) {
+      if (visit.visit_type === "IMV") schedule(visit);
+    }
+    if (!closeOn.has(siteId) && !finished.has(studyId)) schedule(null);
+  }
+  return planned;
+}
+
 /**
  * Builds the gold layer from de-duplicated silver tables.
  *
@@ -444,14 +562,30 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     };
   });
 
+  const dimMonitoringPlan = silver.ctms_monitoring_plan.map((p, index) => ({
+    monitoring_plan_key: index + 1,
+    monitoring_plan_id: p.monitoring_plan_id,
+    study_id: p.study_id,
+    plan_version: p.plan_version,
+    effective_date_key: dk(str(p, "effective_on")),
+    interim_interval_days: p.interim_interval_days,
+    visit_window_days: p.visit_window_days,
+    report_due_days: p.report_due_days,
+    is_synthetic: p.is_synthetic,
+  }));
+  const plans = monitoringPlans(silver.ctms_monitoring_plan);
+
   const fctMonitoringVisit = silver.ctms_monitoring_visit.map((m) => {
     const visited = str(m, "visit_date");
     const reported = optStr(m, "report_final_on");
+    const plan = plans.inForce(str(m, "study_id"), visited);
     return {
       monitoring_visit_id: m.monitoring_visit_id,
       ...dims(m, visited),
       visit_date_key: dk(visited),
       report_final_date_key: optDk(reported),
+      monitoring_plan_key: plan.key,
+      report_due_date_key: dk(addDays(visited, plan.reportDueDays)),
       visit_type: m.visit_type,
       visit_mode: m.visit_mode,
       sdv_pages_due: m.sdv_pages_due,
@@ -462,6 +596,27 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
       is_synthetic: m.is_synthetic,
     };
   });
+
+  const fctPlannedMonitoringVisit = plannedMonitoringVisits(
+    silver,
+    sites.closeOn,
+    plans
+  ).map((v) => ({
+    planned_visit_id: v.id,
+    monitoring_plan_key: v.planKey,
+    study_key: lookup(studyKey, v.studyId, "study"),
+    site_key: siteKeyOn(v.siteId, v.plannedOn),
+    country_key: lookup(siteCountry, v.siteId, "site"),
+    planned_date_key: dk(v.plannedOn),
+    due_date_key: dk(v.dueOn),
+    monitoring_visit_id: v.visitId,
+    actual_date_key: optDk(v.visitedOn),
+    days_late:
+      v.visitedOn === null
+        ? null
+        : Math.max(0, daysBetween(v.dueOn, v.visitedOn)),
+    is_synthetic: true,
+  }));
 
   const fctMilestone = silver.ctms_milestone.map((m) => {
     const plannedOn = str(m, "planned_on");
@@ -540,11 +695,13 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     dim_date: dimDate,
     dim_vendor: dimVendor,
     dim_milestone: dimMilestone,
+    dim_monitoring_plan: dimMonitoringPlan,
     fct_enrollment: fctEnrollment,
     fct_visit: fctVisit,
     fct_query: fctQuery,
     fct_deviation: fctDeviation,
     fct_monitoring_visit: fctMonitoringVisit,
+    fct_planned_monitoring_visit: fctPlannedMonitoringVisit,
     fct_milestone: fctMilestone,
     fct_spend: fctSpend,
     fct_kri_snapshot: fctKri,

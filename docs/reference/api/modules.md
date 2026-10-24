@@ -79,6 +79,7 @@
 - [lib/arcade/registry](lib/arcade/registry/README.md)
 - [lib/arcade/rng](lib/arcade/rng/README.md)
 - [lib/arcade/run-snapshot](lib/arcade/run-snapshot/README.md)
+- [lib/arcade/run-tags](lib/arcade/run-tags/README.md)
 - [lib/arcade/step-clock](lib/arcade/step-clock/README.md)
 - [lib/arcade/utils](lib/arcade/utils/README.md)
 - [lib/audio](lib/audio/README.md)

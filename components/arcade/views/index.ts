@@ -22,3 +22,4 @@ export {
   type ArcadeSession,
   type FramePainter,
 } from "./session-store";
+export { useRunFairness } from "./useRunFairness";

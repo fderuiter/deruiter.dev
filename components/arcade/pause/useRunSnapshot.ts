@@ -49,7 +49,7 @@ export interface RunSnapshotControls {
 
 type SnapshotSession = Pick<
   ArcadeSession<unknown, unknown>,
-  "snapshot" | "restore" | "tuning" | "rng" | "clock"
+  "snapshot" | "restore" | "tuning" | "rng" | "clock" | "fairness"
 >;
 
 /**
@@ -62,7 +62,8 @@ type SnapshotSession = Pick<
  *
  * A session with a seeded `rng` or a `clock` also saves their `rngState` and
  * `step`, and Resume puts them back after `restore`, so the restored run draws
- * the same numbers (#2544).
+ * the same numbers (#2544). A session with a `fairness` record saves its
+ * tags, and Resume puts them back, so the ratchet survives a reload (#2547).
  *
  * Call it in the game's session holder, under the cabinet, with a session
  * that offers `snapshot` and `restore`. Without them this saves nothing.
@@ -113,6 +114,7 @@ export function useRunSnapshot<State>(
       state,
       rngState: current.rng?.getState(),
       step: current.clock?.getStep(),
+      tags: current.fairness?.getTags(),
     });
   }, [controller, format.schema]);
 
@@ -145,6 +147,8 @@ export function useRunSnapshot<State>(
       // the run is the run that was saved, not a re-roll.
       if (run.rngState !== undefined) current.rng?.setState(run.rngState);
       if (run.step !== undefined) current.clock?.setStep(run.step);
+      // The resumed run keeps the assists it had reached (#2547).
+      if (run.tags) current.fairness?.restore(run.tags);
     } catch {
       // A restore that throws leaves the fresh run in place.
       clear();

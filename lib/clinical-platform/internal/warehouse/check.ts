@@ -16,7 +16,13 @@ import { qualifiedName } from "./schema";
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
 
-function validDate(value: string): boolean {
+/**
+ * Whether text is a calendar date written `YYYY-MM-DD`.
+ *
+ * @param value - Text to test.
+ * @returns `true` for a real date, such as `2026-02-28` but not `2026-02-30`.
+ */
+export function validDate(value: string): boolean {
   if (!DATE.test(value)) return false;
   const ms = Date.parse(`${value}T00:00:00Z`);
   return !Number.isNaN(ms) && new Date(ms).toISOString().startsWith(value);

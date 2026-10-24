@@ -14,7 +14,15 @@ A governed data product: a dataset with an owner, a contract and consumers.
 
 > `readonly` **classification**: [`DataClassification`](../type-aliases/DataClassification.md)
 
-Data classification.
+Highest classification of any column the product holds.
+
+***
+
+### consumers
+
+> `readonly` **consumers**: readonly [`DataProductConsumer`](DataProductConsumer.md)[]
+
+Known consumers: downstream products and governed metrics.
 
 ***
 
@@ -34,11 +42,20 @@ One sentence on what the product holds.
 
 ***
 
+### domain
+
+> `readonly` **domain**: `string`
+
+Business domain, for example `EDC` or `Operations mart`.
+
+***
+
 ### id
 
 > `readonly` **id**: `string`
 
-Stable product id.
+Stable product id: the qualified table name for a warehouse table, for
+example `silver.edc_subject`, or `STUDY_DATA_PRODUCT_ID`.
 
 ***
 
@@ -66,6 +83,16 @@ Accountable business owner (a role, not a person).
 
 ***
 
+### personalHealthData
+
+> `readonly` **personalHealthData**: `boolean`
+
+Whether rows describe study subjects, which makes the product personal
+health data however its columns are classified. The data here is
+synthetic; the label is the one the real data would carry.
+
+***
+
 ### steward
 
 > `readonly` **steward**: `string`
@@ -78,4 +105,6 @@ Data steward (a role, not a person).
 
 > `readonly` **upstream**: readonly `string`[]
 
-Ids of the products this one is built from.
+What the product is built from: other product ids, bronze feeds such as
+`bronze.edc.subjects`, or the USDM study definition the Study Data
+Pipeline reads, as `usdm.<study id>`.

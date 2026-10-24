@@ -1,0 +1,111 @@
+# ODCS v3.2.0 data contract for gold.dim_milestone. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_milestone"
+name: "Milestone dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - public
+  - synthetic
+description:
+  purpose: "Conformed milestone dimension: the milestone kinds in lifecycle order."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_milestone
+    name: dim_milestone
+    physicalName: gold.dim_milestone
+    physicalType: table
+    logicalType: object
+    description: "Conformed milestone dimension: the milestone kinds in lifecycle order."
+    dataGranularityDescription: "One row per milestone kind."
+    properties:
+      - name: milestone_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Surrogate key."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: public
+      - name: milestone_kind
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Milestone kind."
+        required: true
+        classification: public
+      - name: milestone_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Neutral display name."
+        required: true
+        classification: public
+      - name: milestone_sequence
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Position in the study lifecycle, from 1."
+        required: true
+        classification: public
+    quality:
+      - id: dim_milestone_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - milestone_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (milestone_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: portfolio-management-lead
+      name: "Portfolio Management Lead"
+      role: owner
+    - username: portfolio-data-steward
+      name: "Portfolio Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: public
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - silver.ctms_milestone
+  - property: consumers
+    value:
+      - "product:gold.fct_milestone"

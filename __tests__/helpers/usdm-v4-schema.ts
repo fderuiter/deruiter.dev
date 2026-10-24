@@ -4,15 +4,16 @@ import { z } from "zod";
 
 /**
  * Validator for the official CDISC USDM v4.0.0 Wrapper schema, vendored at
- * `__tests__/fixtures/usdm/usdm-v4.0.0-wrapper.schema.json` (source, hash and
+ * `lib/crf/usdm-v4.0.0-wrapper.schema.json` (source, hash and
  * MIT licence are recorded inside the file). The JSON Schema is compiled with
  * zod's `fromJSONSchema`, so no extra validator dependency is needed.
  */
 const SCHEMA_PATH = path.resolve(
   __dirname,
   "..",
-  "fixtures",
-  "usdm",
+  "..",
+  "lib",
+  "crf",
   "usdm-v4.0.0-wrapper.schema.json"
 );
 

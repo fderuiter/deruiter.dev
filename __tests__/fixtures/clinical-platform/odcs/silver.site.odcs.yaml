@@ -1,0 +1,148 @@
+# ODCS v3.2.0 data contract for silver.site. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.site"
+name: Sites
+version: "1.0.0"
+status: active
+domain: "Site management"
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "Investigator sites, one row per site in one study."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: site
+    name: site
+    physicalName: silver.site
+    physicalType: table
+    logicalType: object
+    description: "Investigator sites, one row per site in one study."
+    dataGranularityDescription: "One row per site."
+    properties:
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id, unique within the portfolio."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_number
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site number within the study."
+        required: true
+        classification: internal
+      - name: country_code
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 2
+        physicalType: "VARCHAR(2)"
+        description: "ISO 3166-1 alpha-2 country code, upper case."
+        required: true
+        classification: internal
+      - name: site_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: "VARCHAR(120)"
+        description: "Fictional site name."
+        required: true
+        classification: internal
+      - name: planned_enrollment
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Enrollment target for the site."
+        required: true
+        classification: internal
+      - name: activated_on
+        logicalType: date
+        physicalType: DATE
+        description: "Activation date, or null before activation."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: site_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - site_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (site_id) identifies one row."
+team:
+  name: "Site management"
+  members:
+    - username: clinical-operations-lead
+      name: "Clinical Operations Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.portfolio.sites
+  - property: consumers
+    value:
+      - "product:gold.dim_site"
+      - "product:gold.dim_country"
+      - "product:gold.fct_enrollment"
+      - "product:gold.fct_visit"
+      - "product:gold.fct_query"
+      - "product:gold.fct_deviation"
+      - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_kri_snapshot"

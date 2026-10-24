@@ -1,0 +1,118 @@
+# ODCS v3.2.0 data contract for gold.dim_country. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_country"
+name: "Country dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - public
+  - synthetic
+description:
+  purpose: "Conformed country dimension."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_country
+    name: dim_country
+    physicalName: gold.dim_country
+    physicalType: table
+    logicalType: object
+    description: "Conformed country dimension."
+    dataGranularityDescription: "One row per country with a site."
+    properties:
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Surrogate key."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: public
+      - name: country_code
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 2
+        physicalType: "VARCHAR(2)"
+        description: "ISO 3166-1 alpha-2 country code."
+        required: true
+        classification: public
+      - name: country_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "English short name."
+        required: true
+        classification: public
+      - name: region
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Operational region."
+        required: true
+        classification: public
+    quality:
+      - id: dim_country_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - country_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (country_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: clinical-operations-lead
+      name: "Clinical Operations Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: public
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - silver.site
+  - property: consumers
+    value:
+      - "product:gold.fct_enrollment"
+      - "product:gold.fct_visit"
+      - "product:gold.fct_query"
+      - "product:gold.fct_deviation"
+      - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_kri_snapshot"

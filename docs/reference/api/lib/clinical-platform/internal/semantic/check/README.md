@@ -11,5 +11,6 @@
 - [checkMetricChange](functions/checkMetricChange.md)
 - [checkMetricRegistry](functions/checkMetricRegistry.md)
 - [checkReportMetrics](functions/checkReportMetrics.md)
+- [compareVersions](functions/compareVersions.md)
 - [metricRelease](functions/metricRelease.md)
 - [semver](functions/semver.md)

@@ -13,3 +13,4 @@ app/generated/prisma
 package-lock.json
 docs
 openapi.json
+__tests__/fixtures/schemas

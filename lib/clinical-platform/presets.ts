@@ -128,3 +128,10 @@ export const REGULATORY_WORDING =
  * gives a different portfolio of the same shape.
  */
 export const DEFAULT_PORTFOLIO_SEED = 301;
+
+/**
+ * `valid_to` of the version of a slowly changing dimension member that is
+ * still in force. A far-future date rather than `null`, so a join on
+ * `date >= valid_from AND date < valid_to` needs no null test.
+ */
+export const SCD2_OPEN_END = "9999-12-31";

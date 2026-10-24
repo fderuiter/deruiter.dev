@@ -416,6 +416,12 @@ Re-exports [CanvasResolution](core/viewport/interfaces/CanvasResolution.md)
 
 ***
 
+### capStageDpr
+
+Re-exports [capStageDpr](core/stage-fit/functions/capStageDpr.md)
+
+***
+
 ### clamp
 
 Re-exports [clamp](utils/functions/clamp.md)
@@ -443,6 +449,12 @@ Re-exports [codeForKeyEvent](input/actions/functions/codeForKeyEvent.md)
 ### computeCanvasResolution
 
 Re-exports [computeCanvasResolution](core/viewport/functions/computeCanvasResolution.md)
+
+***
+
+### computeStageFit
+
+Re-exports [computeStageFit](core/stage-fit/functions/computeStageFit.md)
 
 ***
 
@@ -728,6 +740,18 @@ Re-exports [ManualControlSpec](input/actions/interfaces/ManualControlSpec.md)
 
 ***
 
+### mapClientToStage
+
+Re-exports [mapClientToStage](core/stage-fit/functions/mapClientToStage.md)
+
+***
+
+### mapStageToClient
+
+Re-exports [mapStageToClient](core/stage-fit/functions/mapStageToClient.md)
+
+***
+
 ### MAX\_CANVAS\_DPR
 
 Re-exports [MAX_CANVAS_DPR](core/viewport/variables/MAX_CANVAS_DPR.md)
@@ -941,6 +965,60 @@ Re-exports [SessionRng](rng/interfaces/SessionRng.md)
 ### shouldCabinetDrawCrt
 
 Re-exports [shouldCabinetDrawCrt](crt-pipeline/functions/shouldCabinetDrawCrt.md)
+
+***
+
+### StageAspect
+
+Re-exports [StageAspect](core/stage-fit/interfaces/StageAspect.md)
+
+***
+
+### StageFit
+
+Re-exports [StageFit](core/stage-fit/interfaces/StageFit.md)
+
+***
+
+### StageFitOptions
+
+Re-exports [StageFitOptions](core/stage-fit/interfaces/StageFitOptions.md)
+
+***
+
+### StagePoint
+
+Re-exports [StagePoint](core/stage-fit/interfaces/StagePoint.md)
+
+***
+
+### StageRect
+
+Re-exports [StageRect](core/stage-fit/interfaces/StageRect.md)
+
+***
+
+### StageScaleMode
+
+Re-exports [StageScaleMode](core/stage-fit/type-aliases/StageScaleMode.md)
+
+***
+
+### StageSlot
+
+Re-exports [StageSlot](core/stage-fit/interfaces/StageSlot.md)
+
+***
+
+### stageSnapStep
+
+Re-exports [stageSnapStep](core/stage-fit/functions/stageSnapStep.md)
+
+***
+
+### stageViewportMetrics
+
+Re-exports [stageViewportMetrics](core/stage-fit/functions/stageViewportMetrics.md)
 
 ***
 

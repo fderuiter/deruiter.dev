@@ -1,3 +1,7 @@
 # Keep LF line endings in every checkout, including Windows editors that
 # touch a WSL clone; tests pin content hashes and compare generated output (#939).
 * text=auto eol=lf
+
+# Vendored third-party files keep their upstream bytes, CRLF included, so
+# the SHA-256 recorded in each SOURCE.md matches the checkout.
+__tests__/fixtures/schemas/dataset-json-1.1/dataset.schema.json -text

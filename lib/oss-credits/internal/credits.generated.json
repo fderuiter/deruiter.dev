@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1195,
+    "total": 1205,
     "runtime": 574,
-    "tooling": 621,
-    "direct": 72
+    "tooling": 631,
+    "direct": 74
   },
   "packages": [
     {
@@ -717,6 +717,98 @@
       "direct": false,
       "homepage": "https://rapier.rs",
       "repository": "https://github.com/dimforge/rapier.js"
+    },
+    {
+      "name": "@duckdb/node-api",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": true,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo",
+      "group": "Testing",
+      "reason": "Runs the Clinical Data Platform's generated DuckDB DDL and integrity checks in a unit test."
+    },
+    {
+      "name": "@duckdb/node-bindings",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-darwin-arm64",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-darwin-x64",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-linux-arm64",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-linux-arm64-musl",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-linux-x64",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-linux-x64-musl",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-win32-arm64",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
+    },
+    {
+      "name": "@duckdb/node-bindings-win32-x64",
+      "version": "1.5.6-r.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/duckdb/duckdb-node-neo",
+      "repository": "https://github.com/duckdb/duckdb-node-neo"
     },
     {
       "name": "@electric-sql/pglite",
@@ -4338,9 +4430,11 @@
       "version": "8.20.0",
       "license": "MIT",
       "scope": "runtime",
-      "direct": false,
+      "direct": true,
       "homepage": "https://ajv.js.org",
-      "repository": "https://github.com/ajv-validator/ajv"
+      "repository": "https://github.com/ajv-validator/ajv",
+      "group": "Testing",
+      "reason": "Validates the study data package's Dataset-JSON files against the published CDISC JSON schema."
     },
     {
       "name": "angular-html-parser",

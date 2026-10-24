@@ -32,7 +32,6 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import {
   controlHint,
-  DockFrame,
   HoldDpad,
   TouchControlsGate,
   swipeDirection,
@@ -43,6 +42,11 @@ import {
   useInputModality,
   type Handedness,
 } from "@/components/arcade/mobile";
+import {
+  PhoneStage,
+  TabletStage,
+  useStageFit,
+} from "@/components/arcade/stage";
 import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/arcade/DynamicCRTCalibrationModal";
 import {
   CRTCalibrationConfig,
@@ -61,8 +65,6 @@ import {
   TILE,
   boardSafeColor,
   clampLabelCenter,
-  computeFillCanvasSize,
-  computeIntegerCanvasSize,
   fitFontSize,
   enemySprite,
   enemyTint,
@@ -75,7 +77,6 @@ import {
   routeTiles,
   tilePaletteFor,
   wallEdgeMask,
-  type IntegerCanvasSize,
 } from "@/components/retro-labyrinth/labyrinth-art";
 import {
   ATLAS,
@@ -256,6 +257,15 @@ const WEAPON_SHORT_LABELS: Record<WeaponId, string> = {
   mitm_spoof: "MitM Spoof",
   ransomware_lock: "Ransomware",
 };
+
+/** The maze's logical size, which the stage fit keeps the shape of. */
+const MAZE_ASPECT = { width: LOGICAL_WIDTH, height: LOGICAL_HEIGHT } as const;
+/**
+ * The maze follows the device's pixel ratio with no cap. Its pixel art is
+ * stamped nearest-neighbour, so a backing store capped below a 3x phone would
+ * be stretched by 1.5 and draw uneven pixels.
+ */
+const MAZE_MAX_DPR = Number.POSITIVE_INFINITY;
 
 /** Short tool names for the phone grid, so each fits a 44px key at 9px. */
 const PHONE_TOOL_LABELS: Partial<Record<WeaponId, string>> = {
@@ -615,45 +625,19 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // The canvas is sized to a whole number of device pixels per art pixel,
-  // the largest that fits its frame, so nearest-neighbour stamping stays
-  // crisp at any devicePixelRatio (#1522).
+  // The canvas frame is the stage slot (#2358). The touch cabinet fills it
+  // with the largest 5:3 box; the desktop keeps a whole number of device
+  // pixels per art pixel, so nearest-neighbour stamping stays crisp at any
+  // devicePixelRatio (#1522).
   const canvasFrameRef = useRef<HTMLDivElement>(null);
-  const [canvasSize, setCanvasSize] = useState<IntegerCanvasSize | null>(null);
-  useEffect(() => {
-    const frame = canvasFrameRef.current;
-    if (!isMounted || !frame) return;
-    const measure = () => {
-      const rect = frame.getBoundingClientRect();
-      if (rect.width <= 0 || rect.height <= 0) return;
-      // The phone fills its dock with the largest 5:3 box. The desktop keeps
-      // whole-pixel art scaling (#1522).
-      const next = phoneCabinet
-        ? computeFillCanvasSize(
-            rect.width,
-            rect.height,
-            window.devicePixelRatio || 1
-          )
-        : computeIntegerCanvasSize(
-            rect.width,
-            rect.height,
-            window.devicePixelRatio || 1
-          );
-      setCanvasSize((prev) =>
-        prev &&
-        prev.backingWidth === next.backingWidth &&
-        prev.cssWidth === next.cssWidth &&
-        prev.cssHeight === next.cssHeight
-          ? prev
-          : next
-      );
-    };
-    measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(frame);
-    return () => observer.disconnect();
-  }, [isMounted, phoneCabinet]);
+  const { fit: canvasSize, toGame: canvasToGame } = useStageFit(
+    canvasFrameRef,
+    {
+      aspect: MAZE_ASPECT,
+      scale: phoneCabinet ? "fractional" : "integer",
+      maxDpr: MAZE_MAX_DPR,
+    }
+  );
   // The fog texture and the maps it was painted from, rebuilt only when the
   // field of view changes.
   const fogRef = useRef<{
@@ -1959,25 +1943,18 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
-
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-
-    const canvasX = (e.clientX - rect.left) * scaleX;
-    const canvasY = (e.clientY - rect.top) * scaleY;
+    const point = canvasToGame(
+      e.clientX,
+      e.clientY,
+      canvas.getBoundingClientRect()
+    );
+    if (!point) return;
 
     const cols = currentMaze[0]?.length || 15;
     const rows = currentMaze.length || 9;
 
-    const cellW = canvas.width / cols;
-    const cellH = canvas.height / rows;
-
-    if (cellW <= 0 || cellH <= 0) return;
-
-    const rawGridX = Math.floor(canvasX / cellW);
-    const rawGridY = Math.floor(canvasY / cellH);
+    const rawGridX = Math.floor(point.x / (LOGICAL_WIDTH / cols));
+    const rawGridY = Math.floor(point.y / (LOGICAL_HEIGHT / rows));
 
     const gridX = clamp(rawGridX, 0, cols - 1);
     const gridY = clamp(rawGridY, 0, rows - 1);
@@ -2957,12 +2934,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
       : `SUBNET 0${stage}`;
 
   const phoneHud = (
-    <div
-      className="flex h-11 w-full min-w-0 shrink-0 items-center gap-2 border-b border-neutral-900/60 pl-1 text-xs font-bold"
-      // The touch toolbar sits over this row's right end. The playfield already
-      // pads 4px, so the row pads the toolbar's width less that.
-      style={{ paddingRight: "calc(var(--cabinet-toolbar-inset, 0px) - 4px)" }}
-    >
+    <div className="flex h-full w-full min-w-0 items-center gap-2 pl-1 text-xs font-bold">
       <span
         className="shrink-0 text-neutral-300"
         data-testid="labyrinth-phone-floor"
@@ -3054,7 +3026,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     <section
       aria-label="Room status"
       data-testid="labyrinth-room-panel"
-      className="hidden min-h-0 flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-xs portrait:min-[480px]:flex portrait:min-[480px]:col-span-2 portrait:min-[480px]:row-start-2"
+      className="flex min-h-0 flex-col gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950/80 px-3 py-2 font-mono text-xs"
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
@@ -3387,7 +3359,7 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
         ref={canvasFrameRef}
         className={`arcade-labyrinth-canvas relative ${
           phoneCabinet
-            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:col-span-2 portrait:row-start-1 portrait:w-full portrait:aspect-[5/3] portrait:h-auto portrait:flex-none"
+            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:w-full portrait:aspect-[5/3] portrait:h-auto portrait:flex-none"
             : isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
               : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
@@ -4139,24 +4111,34 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
     </>
   );
 
-  // Landscape: movement, maze, tools in one row. Portrait (the tablet held
-  // upright): the maze takes the first full-width line and the movement and
-  // tool docks share the line below it, so the controls sit under the thumbs.
-  // Both orders hold under DockFrame's row reversal for left-handed players.
-  // Portrait is a two-column grid: the maze on the top row, and the docks on a
-  // second row that takes the rest of the height. Each dock is a size container,
-  // so its keys scale to fill it.
-  const leftHanded = handedness === "left";
+  // The touch layout is a stage (#2358): PhoneStage on a phone, TabletStage
+  // on a tablet. Landscape: movement, maze, tools in one row. Portrait (the
+  // tablet held upright): the maze takes the first full-width row at its own
+  // height, the room panel the next, and the movement and tool docks share
+  // the rest, so the controls sit under the thumbs. Each portrait dock is a
+  // size container below 480px, so its keys scale to fill it. The stage
+  // mirrors the docks for left-handed players.
+  const TouchStage = phoneDevice ? PhoneStage : TabletStage;
   const phoneRow = (
-    <DockFrame
+    <TouchStage
+      hud={phoneHud}
       handedness={handedness}
-      className="min-h-0 flex-1 portrait:grid portrait:grid-cols-2 portrait:grid-rows-[auto_minmax(0,1fr)] portrait:content-start portrait:gap-2 portrait:min-[480px]:grid-rows-[auto_auto_minmax(0,1fr)] portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,16vw,120px)]"
-    >
-      {/* The controls sit in a gate: a keyboard hides them, a touch brings
-          them back (ADR 0061). */}
-      <div
-        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:grid portrait:min-h-0 portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[480px]:row-start-3 portrait:min-[480px]:self-end portrait:min-[480px]:justify-items-start portrait:min-[480px]:[container-type:normal] ${leftHanded ? "portrait:col-start-2" : "portrait:col-start-1"}`}
-      >
+      portraitFill="dock"
+      // The playfield already pads 4px, which the toolbar inset counts too.
+      className="[--arcade-stage-edge:4px]"
+      classNames={{
+        hud: "border-b border-neutral-900/60",
+        body: "portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,16vw,120px)]",
+        // The room panel shows on a portrait screen 480px wide or more.
+        status: "hidden portrait:min-[480px]:block",
+        moveDock:
+          "portrait:grid portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[480px]:self-end portrait:min-[480px]:justify-items-start portrait:min-[480px]:[container-type:normal]",
+        actionDock:
+          "portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[480px]:h-auto portrait:min-[480px]:self-end portrait:min-[480px]:items-end portrait:min-[480px]:[container-type:normal]",
+      }}
+      // The controls sit in a gate: a keyboard hides them, a touch brings
+      // them back (ADR 0061).
+      moveDock={
         <TouchControlsGate>
           <HoldDpad
             onMove={handleDirectionalMove}
@@ -4165,15 +4147,12 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             paused={gameStatus !== "playing" || optionsOpen}
           />
         </TouchControlsGate>
-      </div>
+      }
+      status={phoneRoomPanel}
+      actionDock={<TouchControlsGate>{phoneActionGrid}</TouchControlsGate>}
+    >
       {canvasFrameNode}
-      {phoneRoomPanel}
-      <div
-        className={`flex min-h-0 min-w-0 shrink-0 flex-col justify-center portrait:row-start-2 portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[480px]:row-start-3 portrait:min-[480px]:h-auto portrait:min-[480px]:self-end portrait:min-[480px]:items-end portrait:min-[480px]:[container-type:normal] ${leftHanded ? "portrait:col-start-1" : "portrait:col-start-2"}`}
-      >
-        <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
-      </div>
-    </DockFrame>
+    </TouchStage>
   );
 
   return (
@@ -4224,15 +4203,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             ? "border-amber-500/60 ring-2 ring-amber-500/10"
             : "border-neutral-900"
         }`}
-        style={
-          phoneCabinet
-            ? {
-                // Notches and rounded corners sit outside the docks.
-                paddingLeft: "calc(4px + env(safe-area-inset-left, 0px))",
-                paddingRight: "calc(4px + env(safe-area-inset-right, 0px))",
-              }
-            : undefined
-        }
       >
         {!phoneCabinet && (
           <FullscreenButton
@@ -4400,7 +4370,6 @@ export const RetroLabyrinth: React.FC<RetroLabyrinthProps> = ({
             </p>
           </>
         )}
-        {phoneCabinet && phoneHud}
         {phoneCabinet ? phoneRow : canvasFrameNode}
         {!phoneCabinet && footerNode}
       </div>

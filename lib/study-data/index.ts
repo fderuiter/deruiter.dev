@@ -24,3 +24,55 @@ export {
   readStudyDefinition,
   StudyDefinitionError,
 } from "./internal/usdm/read-study-definition";
+export {
+  itemGroupOid,
+  itemOid,
+  metaDataVersionOid,
+  studyOid,
+} from "./internal/export/oids";
+export { exportColumns } from "./internal/export/columns";
+export type { ExportColumn, StorageKind } from "./internal/export/columns";
+export {
+  toDatasetJson,
+  writeDatasetJson,
+  DATASET_JSON_ORIGINATOR,
+  EXPORT_SOURCE_SYSTEM,
+} from "./internal/export/dataset-json";
+export type {
+  DatasetJson,
+  DatasetJsonColumn,
+  DatasetJsonDataType,
+  DatasetJsonOptions,
+} from "./internal/export/dataset-json";
+export { writeCsv } from "./internal/export/csv";
+export {
+  encodeIbmFloat,
+  SAS_MISSING_NUMERIC,
+} from "./internal/export/ibm-float";
+export {
+  writeXpt,
+  XPT_LABEL_PREFIX,
+  XPT_MAX_LABEL_BYTES,
+  XPT_MAX_NAME_LENGTH,
+  XPT_MAX_TEXT_BYTES,
+  XPT_RECORD_LENGTH,
+} from "./internal/export/xpt";
+export type { XptResult } from "./internal/export/xpt";
+export {
+  buildStudyDataPackage,
+  zipStudyDataPackage,
+  sha256Hex,
+  ADAM_PACKAGE_DIR,
+  SDTM_PACKAGE_DIR,
+  PACKAGE_FIXED_TIMESTAMP,
+  PACKAGE_FORMAT_VERSION,
+  PACKAGE_MANIFEST_PATH,
+  PACKAGE_README_PATH,
+  PACKAGE_TIMESTAMP_PATH,
+} from "./internal/export/package";
+export type {
+  PackageFile,
+  PackageManifest,
+  PackageOptions,
+  StudyDataPackage,
+} from "./internal/export/package";

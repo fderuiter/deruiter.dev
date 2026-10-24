@@ -1,6 +1,6 @@
 # Manage Dependency Licenses
 
-Documentation last reconciled: 2026-10-04.
+Documentation last reconciled: 2026-10-24.
 
 This page covers what to do when you add or upgrade a dependency, when the
 license audit fails, and how credits and notices stay current. The reasoning
@@ -36,6 +36,37 @@ is in [ADR 0057](../../adr/0057-open-source-acknowledgments-and-license-complian
 `npm test` fails with the exact fix command if any of these drift. The check is
 byte-exact and offline. To confirm the committed facts against the registry
 itself, run `npm run oss:credits -- --verify-registry`.
+
+## When a Dependabot PR is red
+
+Dependabot cannot run project scripts, so its npm PRs arrive with stale
+credits, and a `@playwright/test` bump arrives with CI still pinned to the old
+Playwright image. The pre-push guard only accepts the branch prefixes in
+`validateBranchName()`, so carry the PR on a `chore/` branch instead of pushing
+to `dependabot/*`:
+
+```bash
+git fetch origin dependabot/npm_and_yarn/<group-branch>
+git checkout -b chore/deps-<date> FETCH_HEAD
+git merge origin/main        # when the branch is behind
+npx npm@10.9.2 ci
+npm run deps:fix
+```
+
+`deps:fix` moves every `mcr.microsoft.com/playwright` image in
+`.github/workflows/` to the locked `@playwright/test` version, pinned by the
+image index digest from MCR, and then runs `npm run oss:credits`. Commit what
+it changed, push, open a PR that says "Replaces #N", and close Dependabot's PR
+with a link to it. Closing a grouped PR is safe because the next weekly run
+proposes anything newer.
+
+`npm run deps:fix -- --check` reports the same drift offline without writing.
+
+Dependabot's npm also records the bundled dependencies of
+`@tailwindcss/oxide-wasm32-wasi` as lock entries with no tarball of their own.
+They are dev-only and travel inside their parent, so the credits skip them. A
+bundled entry on a shipped package is not skipped: it stops `oss:credits`, and
+needs a person to decide how it is credited.
 
 ## When `audit:licenses` fails
 

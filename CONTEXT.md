@@ -568,3 +568,13 @@ When refactoring authored copy, select replacement punctuation based on the gram
 - **Documentation Synchronization**: When editing exported JSDoc comments or public API descriptions, regenerate TypeDoc markdown using `npm run compile-docs` and verify zero drift with `npm run check-docs-drift`.
 - **Database-Backed CMS Content**: Update repository-controlled seed data (`prisma/seed.ts`) and static fallbacks (`lib/fallback-blog-posts.ts`) within the pull request. For live Neon PostgreSQL records, provide an explicit record-by-record checklist for the content owner to update through the authorized `/admin` CMS flow.
 - **Verification Standard**: Verify copy changes with desktop and narrow-mobile smoke tests (320px viewport clearance) to ensure replacement punctuation introduces no text overflow or layout wrapping regressions.
+
+## Clinical Data Platform Metrics
+
+- **Governed Metric**: An operational measure of the platform's synthetic portfolio defined once in `METRIC_REGISTRY` (`lib/clinical-platform`) over the gold star schema, with an owner, a steward, a unit, a version and a status. Dashboards, SQL, MetricFlow YAML and Power BI measures are compiled from that one definition and never compute the metric themselves (ADR 0066).
+- **Metric Status**: `draft`, `certified` or `deprecated`. A certified report may use only certified metrics; a deprecated metric is kept for history and cannot return to use.
+- **Metric Contract**: The parts of a definition that decide its numbers: formula, grain, unit, default filters and allowed dimensions. Names, descriptions and display folders are not part of it.
+- **Breaking Metric Change**: A change to a certified metric's formula, grain, unit or default filters, or the removal of an allowed dimension. It needs a major version bump, and the registry lock records the new release.
+- **Metric Grain**: `portfolio` for a metric that rolls up to one value across every study, or `study` for one defined only per study, such as the days from first patient in to last patient in. A study grain metric is always grouped by study.
+- **Data Cut**: The date a metric is measured as of, such as the age of a query still open. It is the warehouse's `asOf` date for the TypeScript evaluator, and an option of the SQL compiler that writes it into the query as a date literal; it is never the current date.
+- **Metric Gap**: A metric the platform needs but the gold model cannot compute, listed in `METRIC_GAPS` with the data it is missing rather than approximated.

@@ -1,0 +1,1382 @@
+# Clinical Data Platform governed metrics as dbt MetricFlow semantic models and metrics.
+# Generated from METRIC_REGISTRY in lib/clinical-platform; do not edit by hand.
+# Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+# Expressions are DuckDB SQL. Data cut: 2026-09-30.
+semantic_models:
+  - name: dim_country
+    description: "Conformed country dimension. Grain: One row per country with a site."
+    model: "ref('dim_country')"
+    entities:
+      - name: country
+        type: primary
+        expr: country_key
+    dimensions:
+      - name: country_code
+        type: categorical
+        description: "ISO 3166-1 alpha-2 country code."
+      - name: region
+        type: categorical
+        description: "Operational region."
+  - name: dim_milestone
+    description: "Conformed milestone dimension: the milestone kinds in lifecycle order. Grain: One row per milestone kind."
+    model: "ref('dim_milestone')"
+    entities:
+      - name: milestone
+        type: primary
+        expr: milestone_key
+    dimensions:
+      - name: milestone_kind
+        type: categorical
+        description: "Milestone kind."
+  - name: dim_site
+    description: "Conformed site dimension, slowly changing type 2 on site status and principal investigator. Grain: One row per site version: a new row each time the status or the principal investigator changes."
+    model: "ref('dim_site')"
+    defaults:
+      agg_time_dimension: valid_from
+    entities:
+      - name: site
+        type: primary
+        expr: site_key
+    dimensions:
+      - name: site_id
+        type: categorical
+        description: "Site id, the natural key."
+      - name: study_id
+        type: categorical
+        description: "Protocol id."
+      - name: country_code
+        type: categorical
+        description: "ISO 3166-1 alpha-2 country code."
+      - name: valid_from
+        type: time
+        expr: valid_from
+        type_params:
+          time_granularity: day
+    measures:
+      - name: enrollment_vs_plan__denominator
+        description: "The denominator of enrollment_vs_plan."
+        agg: sum
+        expr: "CASE WHEN is_current = TRUE THEN CAST(planned_enrollment AS DOUBLE) ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: site_activation_cycle_time__value
+        description: "Measure of site_activation_cycle_time."
+        agg: median
+        expr: "CASE WHEN version_number = 1 AND activated_on IS NOT NULL THEN CAST(date_diff('day', valid_from, activated_on) AS DOUBLE) END"
+        agg_time_dimension: valid_from
+  - name: dim_study
+    description: "Conformed study dimension. Grain: One row per study."
+    model: "ref('dim_study')"
+    entities:
+      - name: study
+        type: primary
+        expr: study_key
+    dimensions:
+      - name: study_id
+        type: categorical
+        description: "Protocol id, the natural key."
+      - name: therapeutic_area
+        type: categorical
+        description: "Therapeutic area."
+      - name: product_type
+        type: categorical
+        description: "Investigational product type."
+      - name: phase
+        type: categorical
+        description: "Development phase or device study stage."
+      - name: operating_model
+        type: categorical
+        description: "Sponsor or CRO."
+      - name: study_status
+        type: categorical
+        description: "Lifecycle status at the data cut."
+  - name: dim_vendor
+    description: "Conformed vendor dimension, with key 0 for spend that has no vendor (investigator grants). Grain: One row per vendor, plus the not-applicable member."
+    model: "ref('dim_vendor')"
+    entities:
+      - name: vendor
+        type: primary
+        expr: vendor_key
+    dimensions:
+      - name: vendor_name
+        type: categorical
+        description: "Fictional vendor name."
+  - name: fct_deviation
+    description: "Protocol deviations with their time to identification. Grain: One row per protocol deviation."
+    model: "ref('fct_deviation')"
+    defaults:
+      agg_time_dimension: occurred_date
+    entities:
+      - name: fct_deviation
+        type: primary
+        expr: deviation_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: occurred_date
+        type: time
+        expr: "CAST(strptime(CAST(occurred_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: important_deviation_rate__numerator
+        description: "The numerator of important_deviation_rate."
+        agg: sum
+        expr: "CASE WHEN is_important = TRUE THEN 1 ELSE 0 END"
+        agg_time_dimension: occurred_date
+      - name: non_important_deviation_rate__numerator
+        description: "The numerator of non_important_deviation_rate."
+        agg: sum
+        expr: "CASE WHEN is_important = FALSE THEN 1 ELSE 0 END"
+        agg_time_dimension: occurred_date
+      - name: subjects_with_important_deviation__numerator
+        description: "The numerator of subjects_with_important_deviation."
+        agg: count_distinct
+        expr: "CASE WHEN is_important = TRUE THEN subject_id END"
+        agg_time_dimension: occurred_date
+  - name: fct_enrollment
+    description: "Subject enrollment events: screened, enrolled, completed and discontinued. Grain: One row per subject per enrollment event."
+    model: "ref('fct_enrollment')"
+    defaults:
+      agg_time_dimension: event_date
+    entities:
+      - name: fct_enrollment
+        type: primary
+        expr: "CAST(subject_id AS VARCHAR) || '|' || CAST(event_type AS VARCHAR)"
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: event_date
+        type: time
+        expr: "CAST(strptime(CAST(event_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: subjects_screened__value
+        description: "Measure of subjects_screened."
+        agg: sum
+        expr: "CASE WHEN event_type = 'screened' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: subjects_enrolled__value
+        description: "Measure of subjects_enrolled."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: enrollment_vs_plan__numerator
+        description: "The numerator of enrollment_vs_plan."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: screen_failure_rate__numerator
+        description: "The numerator of screen_failure_rate."
+        agg: sum
+        expr: "CASE WHEN event_type = 'screened' AND subject_status = 'screen-failed' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: screen_failure_rate__denominator
+        description: "The denominator of screen_failure_rate."
+        agg: sum
+        expr: "CASE WHEN event_type = 'screened' AND subject_status <> 'screening' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: early_termination_rate__numerator
+        description: "The numerator of early_termination_rate."
+        agg: sum
+        expr: "CASE WHEN event_type = 'discontinued' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: early_termination_rate__denominator
+        description: "The denominator of early_termination_rate."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: important_deviation_rate__denominator
+        description: "The denominator of important_deviation_rate."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: non_important_deviation_rate__denominator
+        description: "The denominator of non_important_deviation_rate."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: subjects_with_important_deviation__denominator
+        description: "The denominator of subjects_with_important_deviation."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: cost_per_enrolled_subject__denominator
+        description: "The denominator of cost_per_enrolled_subject."
+        agg: sum
+        expr: "CASE WHEN event_type = 'enrolled' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+  - name: fct_milestone
+    description: "Study milestones, planned against actual. Grain: One row per study and milestone kind."
+    model: "ref('fct_milestone')"
+    defaults:
+      agg_time_dimension: actual_date
+    entities:
+      - name: fct_milestone
+        type: primary
+        expr: "CAST(study_key AS VARCHAR) || '|' || CAST(milestone_key AS VARCHAR)"
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: milestone
+        type: foreign
+        expr: milestone_key
+    dimensions:
+      - name: actual_date
+        type: time
+        expr: "CAST(strptime(CAST(actual_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: fpi_to_lpi_days__actual_date
+        description: "Actual milestone date of fpi_to_lpi_days."
+        agg: max
+        expr: "CAST(strptime(CAST(actual_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        agg_time_dimension: actual_date
+      - name: lplv_to_dbl_days__actual_date
+        description: "Actual milestone date of lplv_to_dbl_days."
+        agg: max
+        expr: "CAST(strptime(CAST(actual_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        agg_time_dimension: actual_date
+  - name: fct_monitoring_visit
+    description: "Monitoring visits with source data verification and report timeliness. Grain: One row per monitoring visit."
+    model: "ref('fct_monitoring_visit')"
+    defaults:
+      agg_time_dimension: visit_date
+    entities:
+      - name: fct_monitoring_visit
+        type: primary
+        expr: monitoring_visit_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: visit_date
+        type: time
+        expr: "CAST(strptime(CAST(visit_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: sdv_completion__numerator
+        description: "The numerator of sdv_completion."
+        agg: sum
+        expr: "CAST(sdv_pages_verified AS DOUBLE)"
+        agg_time_dimension: visit_date
+      - name: sdv_completion__denominator
+        description: "The denominator of sdv_completion."
+        agg: sum
+        expr: "CAST(sdv_pages_due AS DOUBLE)"
+        agg_time_dimension: visit_date
+      - name: monitoring_reports_overdue__value
+        description: "Measure of monitoring_reports_overdue."
+        agg: sum
+        expr: "CASE WHEN report_final_date_key IS NULL AND date_diff('day', CAST(strptime(CAST(visit_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') > 20 THEN 1 ELSE 0 END"
+        agg_time_dimension: visit_date
+      - name: monitoring_report_cycle_time_median__value
+        description: "Measure of monitoring_report_cycle_time_median."
+        agg: median
+        expr: "CASE WHEN days_to_final_report IS NOT NULL THEN CAST(days_to_final_report AS DOUBLE) END"
+        agg_time_dimension: visit_date
+  - name: fct_query
+    description: "Data queries with their resolution times. Grain: One row per query."
+    model: "ref('fct_query')"
+    defaults:
+      agg_time_dimension: opened_date
+    entities:
+      - name: fct_query
+        type: primary
+        expr: query_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: opened_date
+        type: time
+        expr: "CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: query_rate_per_100_visits__numerator
+        description: "The numerator of query_rate_per_100_visits."
+        agg: sum
+        expr: "1"
+        agg_time_dimension: opened_date
+      - name: open_query_count__value
+        description: "Measure of open_query_count."
+        agg: sum
+        expr: "CASE WHEN query_status IN ('open', 'answered') THEN 1 ELSE 0 END"
+        agg_time_dimension: opened_date
+      - name: query_aging_mean__value
+        description: "Measure of query_aging_mean."
+        agg: average
+        expr: "CASE WHEN query_status IN ('open', 'answered') THEN CAST(date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') AS DOUBLE) END"
+        agg_time_dimension: opened_date
+      - name: query_resolution_time_median__value
+        description: "Measure of query_resolution_time_median."
+        agg: median
+        expr: "CASE WHEN closed_date_key IS NOT NULL THEN CAST(date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), CAST(strptime(CAST(closed_date_key AS VARCHAR), '%Y%m%d') AS DATE)) AS DOUBLE) END"
+        agg_time_dimension: opened_date
+  - name: fct_spend
+    description: "Budget against actual spend, with each quarter spread evenly over its three months. Grain: One row per study, vendor and calendar month."
+    model: "ref('fct_spend')"
+    defaults:
+      agg_time_dimension: month_date
+    entities:
+      - name: fct_spend
+        type: primary
+        expr: "CAST(study_key AS VARCHAR) || '|' || CAST(vendor_key AS VARCHAR) || '|' || CAST(month_date_key AS VARCHAR)"
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: vendor
+        type: foreign
+        expr: vendor_key
+    dimensions:
+      - name: month_date
+        type: time
+        expr: "CAST(strptime(CAST(month_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: budget_burn_vs_plan__numerator
+        description: "The numerator of budget_burn_vs_plan."
+        agg: sum
+        expr: "CAST(actual_usd AS DOUBLE)"
+        agg_time_dimension: month_date
+      - name: budget_burn_vs_plan__denominator
+        description: "The denominator of budget_burn_vs_plan."
+        agg: sum
+        expr: "CAST(budget_usd AS DOUBLE)"
+        agg_time_dimension: month_date
+      - name: cost_per_enrolled_subject__numerator
+        description: "The numerator of cost_per_enrolled_subject."
+        agg: sum
+        expr: "CAST(actual_usd AS DOUBLE)"
+        agg_time_dimension: month_date
+  - name: fct_visit
+    description: "Subject visits against the schedule, with entry timeliness. Grain: One row per subject visit record."
+    model: "ref('fct_visit')"
+    defaults:
+      agg_time_dimension: visit_date
+    entities:
+      - name: fct_visit
+        type: primary
+        expr: visit_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: visit_date
+        type: time
+        expr: "CAST(strptime(CAST(visit_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+      - name: planned_date
+        type: time
+        expr: "CAST(strptime(CAST(planned_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: data_entry_lag_median__value
+        description: "Measure of data_entry_lag_median."
+        agg: median
+        expr: "CASE WHEN entry_lag_days IS NOT NULL AND visit_date_key IS NOT NULL THEN CAST(entry_lag_days AS DOUBLE) END"
+        agg_time_dimension: visit_date
+      - name: data_entry_lag_p90__value
+        description: "Measure of data_entry_lag_p90."
+        agg: percentile
+        expr: "CASE WHEN entry_lag_days IS NOT NULL AND visit_date_key IS NOT NULL THEN CAST(entry_lag_days AS DOUBLE) END"
+        agg_params:
+          percentile: 0.9
+          use_discrete_percentile: false
+        agg_time_dimension: visit_date
+      - name: data_entry_lag_mean__value
+        description: "Measure of data_entry_lag_mean."
+        agg: average
+        expr: "CASE WHEN entry_lag_days IS NOT NULL AND visit_date_key IS NOT NULL THEN CAST(entry_lag_days AS DOUBLE) END"
+        agg_time_dimension: visit_date
+      - name: missed_visit_rate__numerator
+        description: "The numerator of missed_visit_rate."
+        agg: sum
+        expr: "CASE WHEN visit_status = 'missed' THEN 1 ELSE 0 END"
+        agg_time_dimension: planned_date
+      - name: missed_visit_rate__denominator
+        description: "The denominator of missed_visit_rate."
+        agg: sum
+        expr: "1"
+        agg_time_dimension: planned_date
+      - name: out_of_window_visit_rate__numerator
+        description: "The numerator of out_of_window_visit_rate."
+        agg: sum
+        expr: "CASE WHEN visit_date_key IS NOT NULL AND is_out_of_window = TRUE THEN 1 ELSE 0 END"
+        agg_time_dimension: visit_date
+      - name: out_of_window_visit_rate__denominator
+        description: "The denominator of out_of_window_visit_rate."
+        agg: sum
+        expr: "CASE WHEN visit_date_key IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: visit_date
+      - name: query_rate_per_100_visits__denominator
+        description: "The denominator of query_rate_per_100_visits."
+        agg: sum
+        expr: "CASE WHEN visit_date_key IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: visit_date
+metrics:
+  - name: subjects_screened
+    label: "Subjects screened"
+    description: "Subjects who entered screening, counted on their screening date. Each counts once, whatever the screening outcome."
+    type: simple
+    type_params:
+      measure:
+        name: subjects_screened__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: subjects
+        format: "number, 0 decimals"
+        display_folder: Enrollment
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: subjects_enrolled
+    label: "Subjects enrolled"
+    description: "Subjects enrolled into a study, counted on their enrollment date. Subjects who later completed or discontinued still count."
+    type: simple
+    type_params:
+      measure:
+        name: subjects_enrolled__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: subjects
+        format: "number, 0 decimals"
+        display_folder: Enrollment
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: enrollment_vs_plan__numerator
+    label: "Enrollment vs plan (numerator)"
+    description: "Enrollment vs plan (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: enrollment_vs_plan__numerator
+        fill_nulls_with: 0
+  - name: enrollment_vs_plan__denominator
+    label: "Enrollment vs plan (denominator)"
+    description: "Enrollment vs plan (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: enrollment_vs_plan__denominator
+        fill_nulls_with: 0
+  - name: enrollment_vs_plan
+    label: "Enrollment vs plan"
+    description: "Enrolled subjects as a share of the planned enrollment, the sum of the current site targets. The plan is the whole-study target, not a time-phased curve, so an enrolling study is expected to sit below 100%."
+    type: ratio
+    type_params:
+      numerator: enrollment_vs_plan__numerator
+      denominator: enrollment_vs_plan__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of target"
+        format: "percent, 1 decimals"
+        display_folder: Enrollment
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: screen_failure_rate__numerator
+    label: "Screen failure rate (numerator)"
+    description: "Screen failure rate (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: screen_failure_rate__numerator
+        fill_nulls_with: 0
+  - name: screen_failure_rate__denominator
+    label: "Screen failure rate (denominator)"
+    description: "Screen failure rate (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: screen_failure_rate__denominator
+        fill_nulls_with: 0
+  - name: screen_failure_rate
+    label: "Screen failure rate"
+    description: "Share of screened subjects whose screening ended in a screen failure, by screening date. Subjects still in screening at the data cut have no outcome yet and are left out of both counts."
+    type: ratio
+    type_params:
+      numerator: screen_failure_rate__numerator
+      denominator: screen_failure_rate__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of screened subjects"
+        format: "percent, 1 decimals"
+        display_folder: Enrollment
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: early_termination_rate__numerator
+    label: "Early termination rate (numerator)"
+    description: "Early termination rate (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: early_termination_rate__numerator
+        fill_nulls_with: 0
+  - name: early_termination_rate__denominator
+    label: "Early termination rate (denominator)"
+    description: "Early termination rate (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: early_termination_rate__denominator
+        fill_nulls_with: 0
+  - name: early_termination_rate
+    label: "Early termination rate"
+    description: "Subjects who discontinued before completing the study, as a share of subjects enrolled."
+    type: ratio
+    type_params:
+      numerator: early_termination_rate__numerator
+      denominator: early_termination_rate__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of enrolled subjects"
+        format: "percent, 1 decimals"
+        display_folder: Enrollment
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+  - name: site_activation_cycle_time
+    label: "Site activation cycle time"
+    description: "Median days from the study's protocol finalisation to a site's activation, over activated sites. Protocol finalisation is gold.dim_study.start_on; the metric reads it as the first day of the site's first gold.dim_site version, which the gold build opens on that date."
+    type: simple
+    type_params:
+      measure:
+        name: site_activation_cycle_time__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Site start-up"
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: data_entry_lag_median
+    label: "Data entry lag (median)"
+    description: "Median days from a visit to the entry of its data in the EDC, over visits with data entered."
+    type: simple
+    type_params:
+      measure:
+        name: data_entry_lag_median__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Visits and data entry"
+        glossary_term: edc-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: data_entry_lag_p90
+    label: "Data entry lag (90th percentile)"
+    description: "90th percentile of days from a visit to the entry of its data in the EDC, interpolated linearly between ranked values. It shows the slow tail the median hides."
+    type: simple
+    type_params:
+      measure:
+        name: data_entry_lag_p90__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Visits and data entry"
+        glossary_term: edc-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: data_entry_lag_mean
+    label: "Data entry lag (mean)"
+    description: "Mean days from a visit to the entry of its data in the EDC, over visits with data entered. The key risk indicator for entry timeliness."
+    type: simple
+    type_params:
+      measure:
+        name: data_entry_lag_mean__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Visits and data entry"
+        glossary_term: edc-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: missed_visit_rate__numerator
+    label: "Missed visit rate (numerator)"
+    description: "Missed visit rate (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: missed_visit_rate__numerator
+        fill_nulls_with: 0
+  - name: missed_visit_rate__denominator
+    label: "Missed visit rate (denominator)"
+    description: "Missed visit rate (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: missed_visit_rate__denominator
+        fill_nulls_with: 0
+  - name: missed_visit_rate
+    label: "Missed visit rate"
+    description: "Missed visits as a share of all visits due by the data cut, dated by the planned visit date."
+    type: ratio
+    type_params:
+      numerator: missed_visit_rate__numerator
+      denominator: missed_visit_rate__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of visits due"
+        format: "percent, 1 decimals"
+        display_folder: "Visits and data entry"
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: out_of_window_visit_rate__numerator
+    label: "Out-of-window visit rate (numerator)"
+    description: "Out-of-window visit rate (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: out_of_window_visit_rate__numerator
+        fill_nulls_with: 0
+  - name: out_of_window_visit_rate__denominator
+    label: "Out-of-window visit rate (denominator)"
+    description: "Out-of-window visit rate (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: out_of_window_visit_rate__denominator
+        fill_nulls_with: 0
+  - name: out_of_window_visit_rate
+    label: "Out-of-window visit rate"
+    description: "Visits performed outside their protocol window, as a share of visits performed."
+    type: ratio
+    type_params:
+      numerator: out_of_window_visit_rate__numerator
+      denominator: out_of_window_visit_rate__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of visits performed"
+        format: "percent, 1 decimals"
+        display_folder: "Visits and data entry"
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: query_rate_per_100_visits__numerator
+    label: "Query rate per 100 visits (numerator)"
+    description: "Query rate per 100 visits (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: query_rate_per_100_visits__numerator
+        fill_nulls_with: 0
+  - name: query_rate_per_100_visits__denominator
+    label: "Query rate per 100 visits (denominator)"
+    description: "Query rate per 100 visits (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: query_rate_per_100_visits__denominator
+        fill_nulls_with: 0
+  - name: query_rate_per_100_visits
+    label: "Query rate per 100 visits"
+    description: "Data queries opened per 100 visits performed. The gold model holds no CRF page counts, so the rate is per visit rather than per 100 CRF pages."
+    type: derived
+    type_params:
+      expr: "100 * numerator / NULLIF(denominator, 0)"
+      metrics:
+        - name: query_rate_per_100_visits__numerator
+          alias: numerator
+        - name: query_rate_per_100_visits__denominator
+          alias: denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: "queries per 100 visits"
+        format: "number, 1 decimals"
+        display_folder: Queries
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: open_query_count
+    label: "Open queries"
+    description: "Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history."
+    type: simple
+    type_params:
+      measure:
+        name: open_query_count__value
+        fill_nulls_with: 0
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: queries
+        format: "number, 0 decimals"
+        display_folder: Queries
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: query_aging_mean
+    label: "Query aging"
+    description: "Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history."
+    type: simple
+    type_params:
+      measure:
+        name: query_aging_mean__value
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: Queries
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: query_resolution_time_median
+    label: "Query resolution time (median)"
+    description: "Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates."
+    type: simple
+    type_params:
+      measure:
+        name: query_resolution_time_median__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: Queries
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: sdv_completion__numerator
+    label: "SDV completion (numerator)"
+    description: "SDV completion (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: sdv_completion__numerator
+        fill_nulls_with: 0
+  - name: sdv_completion__denominator
+    label: "SDV completion (denominator)"
+    description: "SDV completion (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: sdv_completion__denominator
+        fill_nulls_with: 0
+  - name: sdv_completion
+    label: "SDV completion"
+    description: "CRF pages source-verified at monitoring visits as a share of the pages due for source data verification at those visits."
+    type: ratio
+    type_params:
+      numerator: sdv_completion__numerator
+      denominator: sdv_completion__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Monitoring Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of pages due"
+        format: "percent, 1 decimals"
+        display_folder: Monitoring
+        glossary_term: sdv-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: monitoring_reports_overdue
+    label: "Overdue monitoring visit reports"
+    description: "Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline."
+    type: simple
+    type_params:
+      measure:
+        name: monitoring_reports_overdue__value
+        fill_nulls_with: 0
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
+        version: "1.0.0"
+        status: draft
+        owner: "Clinical Monitoring Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "monitoring visits"
+        format: "number, 0 decimals"
+        display_folder: Monitoring
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: monitoring_report_cycle_time_median
+    label: "Monitoring report cycle time (median)"
+    description: "Median days from a monitoring visit to its final report, over visits whose report is final."
+    type: simple
+    type_params:
+      measure:
+        name: monitoring_report_cycle_time_median__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Monitoring Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: Monitoring
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: important_deviation_rate__numerator
+    label: "Important deviations per 100 subjects (numerator)"
+    description: "Important deviations per 100 subjects (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: important_deviation_rate__numerator
+        fill_nulls_with: 0
+  - name: important_deviation_rate__denominator
+    label: "Important deviations per 100 subjects (denominator)"
+    description: "Important deviations per 100 subjects (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: important_deviation_rate__denominator
+        fill_nulls_with: 0
+  - name: important_deviation_rate
+    label: "Important deviations per 100 subjects"
+    description: "Protocol deviations classed as important (after ICH E3) per 100 enrolled subjects."
+    type: derived
+    type_params:
+      expr: "100 * numerator / NULLIF(denominator, 0)"
+      metrics:
+        - name: important_deviation_rate__numerator
+          alias: numerator
+        - name: important_deviation_rate__denominator
+          alias: denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Quality Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "deviations per 100 enrolled subjects"
+        format: "number, 1 decimals"
+        display_folder: "Protocol deviations"
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+  - name: non_important_deviation_rate__numerator
+    label: "Non-important deviations per 100 subjects (numerator)"
+    description: "Non-important deviations per 100 subjects (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: non_important_deviation_rate__numerator
+        fill_nulls_with: 0
+  - name: non_important_deviation_rate__denominator
+    label: "Non-important deviations per 100 subjects (denominator)"
+    description: "Non-important deviations per 100 subjects (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: non_important_deviation_rate__denominator
+        fill_nulls_with: 0
+  - name: non_important_deviation_rate
+    label: "Non-important deviations per 100 subjects"
+    description: "Protocol deviations not classed as important per 100 enrolled subjects."
+    type: derived
+    type_params:
+      expr: "100 * numerator / NULLIF(denominator, 0)"
+      metrics:
+        - name: non_important_deviation_rate__numerator
+          alias: numerator
+        - name: non_important_deviation_rate__denominator
+          alias: denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Quality Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "deviations per 100 enrolled subjects"
+        format: "number, 1 decimals"
+        display_folder: "Protocol deviations"
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+  - name: subjects_with_important_deviation__numerator
+    label: "Subjects with an important deviation (numerator)"
+    description: "Subjects with an important deviation (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: subjects_with_important_deviation__numerator
+        fill_nulls_with: 0
+  - name: subjects_with_important_deviation__denominator
+    label: "Subjects with an important deviation (denominator)"
+    description: "Subjects with an important deviation (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: subjects_with_important_deviation__denominator
+        fill_nulls_with: 0
+  - name: subjects_with_important_deviation
+    label: "Subjects with an important deviation"
+    description: "Share of enrolled subjects with at least one important protocol deviation, a common study-level quality tolerance limit parameter."
+    type: ratio
+    type_params:
+      numerator: subjects_with_important_deviation__numerator
+      denominator: subjects_with_important_deviation__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Quality Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "share of enrolled subjects"
+        format: "percent, 1 decimals"
+        display_folder: "Protocol deviations"
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+  - name: fpi_to_lpi_days__from_date
+    label: "First subject in to last subject in (start date)"
+    description: "First subject in to last subject in (start date): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: fpi_to_lpi_days__actual_date
+    filter: "{{ Dimension('milestone__milestone_kind') }} = 'first-subject-in'"
+  - name: fpi_to_lpi_days__to_date
+    label: "First subject in to last subject in (end date)"
+    description: "First subject in to last subject in (end date): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: fpi_to_lpi_days__actual_date
+    filter: "{{ Dimension('milestone__milestone_kind') }} = 'last-subject-in'"
+  - name: fpi_to_lpi_days
+    label: "First subject in to last subject in"
+    description: "Days from the first subject's enrollment to the last subject's in one study: the enrollment period. A study that has not reached both milestones has no value."
+    type: derived
+    type_params:
+      expr: "date_diff('day', from_date, to_date)"
+      metrics:
+        - name: fpi_to_lpi_days__from_date
+          alias: from_date
+        - name: fpi_to_lpi_days__to_date
+          alias: to_date
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Portfolio Management Lead"
+        steward: "Portfolio Data Steward"
+        grain: study
+        unit: days
+        format: "number, 0 decimals"
+        display_folder: Milestones
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+        required_group_by:
+          - study__study_id
+  - name: lplv_to_dbl_days__from_date
+    label: "Last subject last visit to database lock (start date)"
+    description: "Last subject last visit to database lock (start date): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: lplv_to_dbl_days__actual_date
+    filter: "{{ Dimension('milestone__milestone_kind') }} = 'last-subject-last-visit'"
+  - name: lplv_to_dbl_days__to_date
+    label: "Last subject last visit to database lock (end date)"
+    description: "Last subject last visit to database lock (end date): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: lplv_to_dbl_days__actual_date
+    filter: "{{ Dimension('milestone__milestone_kind') }} = 'database-lock'"
+  - name: lplv_to_dbl_days
+    label: "Last subject last visit to database lock"
+    description: "Days from the last subject's last visit to database lock in one study. A study that has not reached both milestones has no value."
+    type: derived
+    type_params:
+      expr: "date_diff('day', from_date, to_date)"
+      metrics:
+        - name: lplv_to_dbl_days__from_date
+          alias: from_date
+        - name: lplv_to_dbl_days__to_date
+          alias: to_date
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Portfolio Management Lead"
+        steward: "Portfolio Data Steward"
+        grain: study
+        unit: days
+        format: "number, 0 decimals"
+        display_folder: Milestones
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+        required_group_by:
+          - study__study_id
+  - name: budget_burn_vs_plan__numerator
+    label: "Budget burn vs plan (numerator)"
+    description: "Budget burn vs plan (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: budget_burn_vs_plan__numerator
+        fill_nulls_with: 0
+  - name: budget_burn_vs_plan__denominator
+    label: "Budget burn vs plan (denominator)"
+    description: "Budget burn vs plan (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: budget_burn_vs_plan__denominator
+        fill_nulls_with: 0
+  - name: budget_burn_vs_plan
+    label: "Budget burn vs plan"
+    description: "Actual spend as a share of the budget for the same months, up to the data cut. Above 100% means spend runs ahead of budget."
+    type: ratio
+    type_params:
+      numerator: budget_burn_vs_plan__numerator
+      denominator: budget_burn_vs_plan__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: "share of budget"
+        format: "percent, 1 decimals"
+        display_folder: Finance
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - vendor
+          - month
+  - name: cost_per_enrolled_subject__numerator
+    label: "Cost per enrolled subject (numerator)"
+    description: "Cost per enrolled subject (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: cost_per_enrolled_subject__numerator
+        fill_nulls_with: 0
+  - name: cost_per_enrolled_subject__denominator
+    label: "Cost per enrolled subject (denominator)"
+    description: "Cost per enrolled subject (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: cost_per_enrolled_subject__denominator
+        fill_nulls_with: 0
+  - name: cost_per_enrolled_subject
+    label: "Cost per enrolled subject"
+    description: "Actual spend up to the data cut divided by the number of subjects enrolled. The gold model holds no randomisation fact, so the denominator is enrolled rather than randomised subjects."
+    type: ratio
+    type_params:
+      numerator: cost_per_enrolled_subject__numerator
+      denominator: cost_per_enrolled_subject__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: "USD per enrolled subject"
+        format: "currency, 0 decimals"
+        display_folder: Finance
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model

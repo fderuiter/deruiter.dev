@@ -6,32 +6,35 @@
 
 # Interface: MetricDefinition
 
-One governed metric in the semantic layer. Defined once and compiled to
-every consumer; no dashboard computes a metric itself.
+One governed metric of the semantic layer (ADR 0066). Defined once over the
+gold star schema and compiled to every consumer: the TypeScript evaluator,
+SQL for three dialects, dbt MetricFlow and Power BI TMDL. No dashboard
+computes a metric itself.
 
 ## Properties
 
-### aggregation
+### allowedDimensions
 
-> `readonly` **aggregation**: `"count"` \| `"sum"` \| `"avg"` \| `"ratio"` \| `"median"`
+> `readonly` **allowedDimensions**: readonly [`MetricDimensionId`](../type-aliases/MetricDimensionId.md)[]
 
-Aggregation applied to the measure.
-
-***
-
-### certified
-
-> `readonly` **certified**: `boolean`
-
-Whether the metric is certified for use in certified reports.
+Dimensions a query may group or filter by.
 
 ***
 
-### denominator
+### changeLog
 
-> `readonly` **denominator**: `string` \| `null`
+> `readonly` **changeLog**: readonly [`MetricChangeLogEntry`](MetricChangeLogEntry.md)[]
 
-Denominator expression, for `ratio` metrics only.
+Changes to the definition, oldest first; the last entry is the current version.
+
+***
+
+### defaultFilters
+
+> `readonly` **defaultFilters**: readonly [`MetricFilter`](MetricFilter.md)[]
+
+Filters applied unless a query filters the same dimension, in which case
+the query's filter replaces the default.
 
 ***
 
@@ -39,15 +42,39 @@ Denominator expression, for `ratio` metrics only.
 
 > `readonly` **description**: `string`
 
-Business definition in one or two sentences.
+Business definition in one to three sentences.
 
 ***
 
-### expression
+### displayFolder
 
-> `readonly` **expression**: `string`
+> `readonly` **displayFolder**: `string`
 
-Measure expression, in the registry's own expression syntax.
+Folder the metric is listed under in BI tools, for example `Enrollment`.
+
+***
+
+### format
+
+> `readonly` **format**: [`MetricFormat`](MetricFormat.md)
+
+Display format.
+
+***
+
+### formula
+
+> `readonly` **formula**: [`MetricFormula`](../type-aliases/MetricFormula.md)
+
+How the value is computed from the gold model.
+
+***
+
+### glossaryTerm
+
+> `readonly` **glossaryTerm**: `string` \| `null`
+
+Key of the business glossary term (`CANONICAL_GLOSSARY` in `lib/term-glossary.ts`), or `null`.
 
 ***
 
@@ -55,7 +82,7 @@ Measure expression, in the registry's own expression syntax.
 
 > `readonly` **grain**: [`MetricGrain`](../type-aliases/MetricGrain.md)
 
-Finest grain the metric is valid at.
+Level the value is defined at.
 
 ***
 
@@ -63,7 +90,7 @@ Finest grain the metric is valid at.
 
 > `readonly` **id**: `string`
 
-Stable metric id, for example `screen_failure_rate`.
+Stable metric id in snake case, for example `screen_failure_rate`.
 
 ***
 
@@ -79,15 +106,23 @@ Display name.
 
 > `readonly` **owner**: `string`
 
-Accountable owner (a role).
+Accountable owner (a role, not a person).
 
 ***
 
-### sourceProductId
+### status
 
-> `readonly` **sourceProductId**: `string`
+> `readonly` **status**: [`MetricStatus`](../type-aliases/MetricStatus.md)
 
-Id of the gold data product the metric reads.
+Lifecycle status.
+
+***
+
+### steward
+
+> `readonly` **steward**: `string`
+
+Data steward (a role, not a person).
 
 ***
 
@@ -95,7 +130,7 @@ Id of the gold data product the metric reads.
 
 > `readonly` **unit**: `string`
 
-Unit for display, for example `%` or `days`.
+Unit of the value, for example `days` or `queries per 100 visits`.
 
 ***
 
@@ -103,4 +138,5 @@ Unit for display, for example `%` or `days`.
 
 > `readonly` **version**: `string`
 
-Semantic version of the definition.
+Semantic version. Changing what a certified metric computes needs a
+major version bump; `checkMetricChange` enforces it.

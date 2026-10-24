@@ -252,3 +252,36 @@ What gets harder:
   one study's standards; the platform is about many studies' operations and
   governance. Keeping them apart keeps each module deep and lets the
   platform consume the pipeline like any other product.
+
+## Amendment 2026-10-24: The registry's shape
+
+[#2624](https://github.com/fderuiter/deruiter.dev/issues/2624) built the
+registry in `internal/semantic`. Three details differ from the decision
+above.
+
+- **A status, not a certified flag.** A metric is `draft`, `certified` or
+  `deprecated`. A certified report may use only certified metrics, and a
+  deprecated metric cannot return to use.
+- **A formula tree, not an expression and a denominator.** The formula is
+  a small tree over the gold star schema: a measure (table, aggregation,
+  expression, conditions, time key), a ratio of two measures with a scale,
+  or the span between two study milestones. Every compiler and the
+  TypeScript evaluator walk the same tree, so no target parses another's
+  text. Dimensions are named, not written as columns, and each compiler
+  resolves them through the schema's keys.
+- **Versions enforced by a lock file.** The formula, grain, unit, default
+  filters and allowed dimensions form the metric's contract. Changing a
+  certified metric's contract needs a major version bump; adding a
+  dimension or changing the status needs at least a minor one.
+  `__tests__/fixtures/clinical-platform/metric-registry.lock.json` records
+  each release, and a test fails when the registry and the lock disagree.
+
+The parity test in this step runs each metric's generated DuckDB SQL on the
+seeded gold tables and compares it with the TypeScript evaluator. The
+PostgreSQL and T-SQL output, the MetricFlow YAML and the TMDL are golden
+files only. Running them on their own engines belongs to the dbt project
+(#2627), SQL Server in CI (#2628) and the Power BI project (#2629). Metrics
+the gold model cannot compute, such as eTMF completeness or an adverse event
+reporting rate, are listed with what they need in the
+[metric catalog](../docs/reference/clinical-platform-metrics.md) rather
+than approximated.

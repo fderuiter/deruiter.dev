@@ -6,6 +6,9 @@
 
 # Type Alias: MetricGrain
 
-> **MetricGrain** = `"portfolio"` \| `"study"` \| `"site"` \| `"country"` \| `"month"`
+> **MetricGrain** = `"portfolio"` \| `"study"`
 
-Grain a metric is computed at.
+Level a metric's value is defined at. A `portfolio` metric aggregates every
+row in scope, so it rolls up to one portfolio value and can be grouped by
+any of its allowed dimensions. A `study` metric is computed once per study
+and has no value above the study, so every query of it groups by `study`.

@@ -158,7 +158,7 @@ function parseInlineNodes(
       nodes.push(
         <code
           key={`code-${matchIndex}`}
-          className="px-1.5 py-0.5 mx-0.5 text-[11px] font-mono font-bold bg-accent/10 border border-accent/20 text-accent rounded-md inline-block shadow-[0_0_10px_rgba(245,158,11,0.05)] align-baseline leading-none"
+          className="px-1.5 py-0.5 mx-0.5 text-[11px] font-mono font-bold bg-accent/10 border border-accent/20 text-accent rounded-md inline-block align-baseline leading-none"
         >
           {unescapeEntities(cleanCode)}
         </code>
@@ -464,7 +464,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
               onClick={() => handleToggleMode("pitch")}
               className={`min-h-[44px] px-3.5 py-1.5 rounded-md border text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 mode === "pitch"
-                  ? "bg-zinc-900 text-accent border-accent/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                  ? "bg-zinc-900 text-accent border-accent/30"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
               }`}
             >
@@ -474,7 +474,7 @@ export const CaseStudyBentoCard: React.FC<CaseStudyBentoCardProps> = ({
               onClick={() => handleToggleMode("reality")}
               className={`min-h-[44px] px-3.5 py-1.5 rounded-md border text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center ${
                 mode === "reality"
-                  ? "bg-zinc-900 text-accent border-accent/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                  ? "bg-zinc-900 text-accent border-accent/30"
                   : "border-transparent text-zinc-400 hover:text-zinc-200"
               }`}
             >

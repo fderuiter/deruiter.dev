@@ -28,6 +28,25 @@ const TABLET_DEVICES: ReadonlyArray<readonly [string, number, number]> = [
   ["iPad Pro 13", 1024, 1366],
 ];
 
+/**
+ * The phone matrix (#2365): the 320px floor, the common portrait sizes, and
+ * two of them held landscape. Every name starts with "Phone", so
+ * `--project="Phone*"` selects them all. A spec runs here when it is the
+ * phone kit or a game's `*-phone.spec.ts`.
+ */
+const PHONE_TEST_MATCH = [/phone-kit\.spec\.ts$/, /-phone\.spec\.ts$/];
+const PHONE_DEVICES: ReadonlyArray<
+  readonly [name: string, width: number, height: number, dpr: number]
+> = [
+  ["Phone small Android", 320, 568, 2],
+  ["Phone iPhone SE", 375, 667, 2],
+  ["Phone iPhone 15", 393, 852, 3],
+  ["Phone Pro Max", 430, 932, 3],
+  ["Phone Pixel 7", 412, 915, 3],
+  ["Phone iPhone 15 landscape", 852, 393, 3],
+  ["Phone Pixel 7 landscape", 915, 412, 3],
+];
+
 export default defineConfig({
   testDir: "./__tests__/e2e",
   fullyParallel: true,
@@ -86,23 +105,20 @@ export default defineConfig({
         },
       }))
     ),
-    // ADR 0061: the 320px floor and a landscape phone for the immersive
-    // cabinet. Only the mobile kit and Retro Labyrinth's phone spec run here,
-    // so the rest of the suite does not multiply by two.
-    {
-      name: "Small Phone",
-      testMatch: /(mobile-kit|retro-labyrinth-tablet)\.spec\.ts$/,
+    // #2365: the phone matrix. Chromium with touch stands in for the phone
+    // browsers; WebKit's "Mobile Safari" above stays for the device-gate
+    // specs. Only the phone kit and the games' phone specs run here.
+    ...PHONE_DEVICES.map(([name, width, height, deviceScaleFactor]) => ({
+      name,
+      testMatch: PHONE_TEST_MATCH,
       use: {
-        ...devices["Pixel 5"],
-        viewport: { width: 320, height: 568 },
-        deviceScaleFactor: 2,
+        userAgent: devices["Pixel 7"].userAgent,
+        hasTouch: true,
+        isMobile: true,
+        deviceScaleFactor,
+        viewport: { width, height },
       },
-    },
-    {
-      name: "Phone Landscape",
-      testMatch: /(mobile-kit|retro-labyrinth-tablet)\.spec\.ts$/,
-      use: { ...devices["iPhone 12 landscape"] },
-    },
+    })),
   ],
   // Only manage a local server when there is no external target to probe.
   webServer: externalBaseUrl

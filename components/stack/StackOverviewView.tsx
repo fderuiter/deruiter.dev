@@ -53,11 +53,6 @@ export const StackOverviewView: React.FC = () => {
 
   return (
     <div className="bg-zinc-950 text-foreground pb-24 px-4 sm:px-6 md:px-12 lg:px-24 relative overflow-hidden">
-      {/* Ambient Atmospheric Glows */}
-      <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[700px] h-[340px] bg-brand-cyan/5 blur-[140px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-      <div className="absolute top-[600px] right-1/4 w-[500px] h-[300px] bg-purple-500/5 blur-[140px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-      <div className="absolute top-[1200px] left-1/4 w-[500px] h-[300px] bg-emerald-500/5 blur-[140px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-
       <div className="max-w-6xl mx-auto flex flex-col items-center relative z-10">
         {/* Navigation Breadcrumbs & Live Status */}
         <div className="w-full flex items-center justify-between mb-8 gap-4 flex-wrap">

@@ -70,6 +70,7 @@
 - [lib/arcade/input/react](lib/arcade/input/react/README.md)
 - [lib/arcade/progress](lib/arcade/progress/README.md)
 - [lib/arcade/progress/catalog](lib/arcade/progress/catalog/README.md)
+- [lib/arcade/progress/coach-marks-slice](lib/arcade/progress/coach-marks-slice/README.md)
 - [lib/arcade/progress/core](lib/arcade/progress/core/README.md)
 - [lib/arcade/progress/daily-slice](lib/arcade/progress/daily-slice/README.md)
 - [lib/arcade/progress/react](lib/arcade/progress/react/README.md)

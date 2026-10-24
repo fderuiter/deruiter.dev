@@ -102,7 +102,7 @@ describe("Quasi Puzzler Act 2 (#2091)", () => {
 
     const goal = node("∀ n, n + 0 = n");
     expect(goal.getAttribute("aria-label")).toBe(
-      "Universal quantifier: for all n. Expression: ∀ n, n + 0 = n"
+      "Goal ∀n. Universal quantifier: for all n. Expression: ∀ n, n + 0 = n"
     );
 
     click(card(/Tactic intro/i));

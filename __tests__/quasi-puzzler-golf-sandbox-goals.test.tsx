@@ -250,7 +250,9 @@ describe("Sandbox preset goals", () => {
     expect(screen.getByTestId("sandbox-verified").dataset.verified).toBe(
       "false"
     );
-    fireEvent.click(screen.getByRole("button", { name: /^Equality node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
+    );
     fireEvent.click(screen.getByRole("button", { name: /^Tactic ring\./ }));
     expect(screen.getByTestId("sandbox-ram-used").textContent).toContain(
       "This attempt: 4 GB · Gold"
@@ -276,7 +278,9 @@ describe("Sandbox preset goals", () => {
 
   it("does not verify a preset admitted with sorry", () => {
     render(<SandboxMode />);
-    fireEvent.click(screen.getByRole("button", { name: /^Equality node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
+    );
     fireEvent.click(
       screen.getByRole("button", { name: /^Tactic (Use )?sorry\./ })
     );

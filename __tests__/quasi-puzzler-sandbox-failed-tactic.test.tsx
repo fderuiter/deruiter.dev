@@ -20,7 +20,9 @@ describe("Sandbox failed tactic stays armed (#2323)", () => {
     fireEvent.click(card("rfl"));
     expect(card("rfl").getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.click(screen.getByRole("button", { name: /^Equality node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
+    );
     expect(screen.queryByText("Q.E.D. (Proof Complete)")).toBeNull();
     expect(card("rfl").getAttribute("aria-pressed")).toBe("true");
 
@@ -28,7 +30,9 @@ describe("Sandbox failed tactic stays armed (#2323)", () => {
     fireEvent.click(card("rfl"));
     fireEvent.click(card("ring"));
     expect(card("ring").getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: /^Equality node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
+    );
     expect(screen.getByText("Q.E.D. (Proof Complete)")).toBeDefined();
     expect(card("ring").getAttribute("aria-pressed")).toBe("false");
   });

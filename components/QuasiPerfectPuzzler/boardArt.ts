@@ -66,23 +66,47 @@ export function nodeGlyph(node: ASTNode): string {
   return MATH_GLYPHS[raw] ?? raw;
 }
 
+/** True when a glyph holds a letter or digit, which axe reads as words. */
+function glyphHasWords(glyph: string): boolean {
+  return /[\p{L}\p{N}]/u.test(glyph.normalize("NFKD"));
+}
+
 /**
  * What a screen reader hears for a proof-board node. Quantifiers are read as
  * words (#2091), since "Forall node with value n" says nothing about what
  * the binder means; every other node keeps its established label.
  *
+ * The name holds the words the node shows (#2571): the root starts with the
+ * GOAL tag and the glyph, and a glyph that is not the node's own value, such
+ * as xⁿ for `^`, is named as shown.
+ *
  * @param node - The AST node.
  * @param expression - The node's formula, from `renderASTString`.
+ * @param isRoot - True for the goal at the root of the board.
  * @returns The accessible name.
  */
-export function nodeAccessibleLabel(node: ASTNode, expression: string): string {
+export function nodeAccessibleLabel(
+  node: ASTNode,
+  expression: string,
+  isRoot = false
+): string {
+  const glyph = nodeGlyph(node);
+  const goal = isRoot
+    ? glyphHasWords(glyph)
+      ? `Goal ${glyph}. `
+      : "Goal. "
+    : "";
   if (node.type === "Forall") {
-    return `Universal quantifier: for all ${String(node.value)}. Expression: ${expression}`;
+    return `${goal}Universal quantifier: for all ${String(node.value)}. Expression: ${expression}`;
   }
   if (node.type === "Exists") {
-    return `Existential quantifier: there exists ${String(node.value)}. Expression: ${expression}`;
+    return `${goal}Existential quantifier: there exists ${String(node.value)}. Expression: ${expression}`;
   }
-  return `${node.type} node with value ${node.value}. Expression: ${expression}`;
+  const shown =
+    glyph !== String(node.value) && glyphHasWords(glyph)
+      ? `, shown as ${glyph}`
+      : "";
+  return `${goal}${node.type} node with value ${node.value}${shown}. Expression: ${expression}`;
 }
 
 /** True for nodes drawn as math variables (italic serif). */

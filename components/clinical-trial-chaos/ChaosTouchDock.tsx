@@ -23,7 +23,7 @@ import type {
 /** The four lifelines in key order (Q, W, E, R). */
 const LIFELINES: ReadonlyArray<{
   type: PowerUpType;
-  /** The name on the key; the full name is its accessible name. */
+  /** The name on the key; the accessible name adds the full name after it. */
   short: string;
   icon: React.ReactNode;
 }> = [
@@ -48,6 +48,14 @@ const LIFELINES: ReadonlyArray<{
     icon: <IconBolt className="cc-dock-icon" aria-hidden="true" />,
   },
 ];
+
+/** The word under a station key for each state of the open dossier. */
+const STATION_STATE_TEXT = {
+  accepts: "Accepts",
+  fix: "Fix first",
+  other: "Other",
+  idle: "Idle",
+} as const;
 
 interface ChaosTouchDockProps {
   /** The active stations in key order, so the first is key 1. */
@@ -127,7 +135,9 @@ export function ChaosTouchDock({
               <button
                 key={station.id}
                 type="button"
-                aria-label={`Station ${index + 1}: ${station.label}${
+                aria-label={`Station ${index + 1} ${station.id}, ${
+                  STATION_STATE_TEXT[state]
+                }: ${station.label}${
                   watchedStationId === station.id
                     ? ", watched by the FDA investigator"
                     : ""
@@ -148,17 +158,12 @@ export function ChaosTouchDock({
                   style={{ backgroundColor: station.color }}
                 />
                 <span aria-hidden="true" className="cc-station-top">
-                  <span className="cc-key-num">{index + 1}</span>
+                  <span className="cc-key-num">{index + 1}</span>{" "}
                   <span className="cc-station-id">{station.id}</span>
-                </span>
+                </span>{" "}
                 <span aria-hidden="true" className="cc-station-state">
-                  {accepts
-                    ? "Accepts ✓"
-                    : matches
-                      ? "Fix first"
-                      : activeSubject
-                        ? "Other"
-                        : "Idle"}
+                  {STATION_STATE_TEXT[state]}
+                  {accepts ? " ✓" : ""}
                 </span>
               </button>
             );
@@ -196,7 +201,7 @@ export function ChaosTouchDock({
               <button
                 key={type}
                 type="button"
-                aria-label={`Lifeline ${p.hotkey}: ${p.name}, ${status}`}
+                aria-label={`Lifeline ${p.hotkey} ${short}, ${status}: ${p.name}`}
                 aria-keyshortcuts={p.hotkey}
                 disabled={refusal !== null}
                 data-state={active ? "active" : ready ? "ready" : "charging"}
@@ -214,9 +219,9 @@ export function ChaosTouchDock({
                 {icon}
                 <span aria-hidden="true" className="cc-lifeline-text">
                   <span className="cc-lifeline-name">
-                    <span className="cc-key-num">{p.hotkey}</span>
+                    <span className="cc-key-num">{p.hotkey}</span>{" "}
                     <span className="cc-lifeline-label">{short}</span>
-                  </span>
+                  </span>{" "}
                   <span className="cc-lifeline-status">{status}</span>
                 </span>
               </button>

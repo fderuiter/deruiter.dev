@@ -831,7 +831,9 @@ test.describe("Shift+Tab back from the footer clears the fixed navbar (#2325)", 
     await briefing.getByRole("button", { name: /accept assignment/i }).click();
     await expect(briefing).toBeHidden();
     for (const kind of ["SourceIngest", "ExtractField", "CDISCSink"]) {
-      await page.getByRole("button", { name: `Add ${kind} chip` }).click();
+      await page
+        .getByRole("button", { name: new RegExp(`add ${kind} `, "i") })
+        .click();
     }
 
     const { checked, offenders } = await shiftTabUnderNavbar(page, 80);

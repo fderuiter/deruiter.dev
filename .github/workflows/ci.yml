@@ -763,8 +763,12 @@ jobs:
   # #2517: it also runs the arcade tablet and phone specs for the games the PR
   # touches, on the iPad and phone projects, selected by the run policy's
   # `arcade_device_grep`. The full arcade device matrix stays on demand.
+  # #2722: both Playwright steps are split into four shards. A PR that touches
+  # the shared tablet kit selects every game (about 1,300 arcade device tests),
+  # which took longer than the timeout as one job with the config's two
+  # workers. Every selected test still runs; each shard runs a quarter.
   device-gate:
-    name: Device Coverage Gate (Tablet Safari, Mobile Safari, Mobile Chrome)
+    name: Device Coverage Gate (Tablet Safari, Mobile Safari, Mobile Chrome, shard ${{ matrix.shard }}/4)
     needs: [changes, static-gate, build]
     if: github.event_name == 'pull_request' && needs.changes.outputs.run_browser == 'true'
     runs-on: ubuntu-latest
@@ -777,6 +781,11 @@ jobs:
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
       options: --user 1001 --ipc=host
+
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
 
     steps:
       - name: Checkout Code
@@ -804,7 +813,8 @@ jobs:
       - name: Run Device-Dependent Specs (Tablet Safari, Mobile Safari, Mobile Chrome)
         run: |
           npx --no-install playwright test __tests__/e2e/visual.spec.ts __tests__/e2e/touch-controls.spec.ts \
-            --project="Tablet Safari" --project="Mobile Safari" --project="Mobile Chrome"
+            --project="Tablet Safari" --project="Mobile Safari" --project="Mobile Chrome" \
+            --shard=${{ matrix.shard }}/4 --pass-with-no-tests
         env:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
@@ -814,7 +824,7 @@ jobs:
         run: |
           npx --no-install playwright test \
             --project="iPad*" --project="Small Phone" --project="Phone Landscape" \
-            --grep "$ARCADE_DEVICE_GREP" --pass-with-no-tests
+            --grep "$ARCADE_DEVICE_GREP" --shard=${{ matrix.shard }}/4 --pass-with-no-tests
         env:
           ARCADE_DEVICE_GREP: ${{ needs.changes.outputs.arcade_device_grep }}
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"

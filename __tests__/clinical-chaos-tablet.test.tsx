@@ -98,12 +98,12 @@ describe("Clinical Trial Chaos in the touch cabinet (#2105)", () => {
     expect(screen.queryByRole("region", { name: "Lifelines" })).toBeNull();
     for (const n of [1, 2, 3, 4]) {
       expect(
-        screen.getByRole("button", { name: new RegExp(`^Station ${n}:`) })
+        screen.getByRole("button", { name: new RegExp(`^Station ${n} `) })
       ).toBeDefined();
     }
     for (const key of ["Q", "W", "E", "R"]) {
       expect(
-        screen.getByRole("button", { name: new RegExp(`^Lifeline ${key}:`) })
+        screen.getByRole("button", { name: new RegExp(`^Lifeline ${key} `) })
       ).toBeDefined();
     }
   });
@@ -112,7 +112,7 @@ describe("Clinical Trial Chaos in the touch cabinet (#2105)", () => {
     renderGame(true);
     startShift();
     touchInput();
-    fireEvent.click(screen.getByRole("button", { name: /^Station 2:/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Station 2 / }));
     // The first dossier still has a flagged field, so routing is refused.
     expect(screen.getByText(/Resolve 1 flagged observation/i)).toBeDefined();
   });

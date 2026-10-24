@@ -112,7 +112,9 @@ a gate or lowering a threshold:
   tag and the lockfile disagree, so bump them together.
 - `device-gate` runs the two device-engine-dependent specs
   (`visual.spec.ts`, `touch-controls.spec.ts`) against the three non-chromium
-  projects, on the same artifact.
+  projects, on the same artifact, plus the arcade tablet and phone specs for
+  the games a PR touches (#2517). It runs as four shards (#2722), because a PR
+  that touches the shared tablet kit selects every game.
 - `cache-warm` runs only on `main` pushes and is not a gate. It saves the
   `main` webpack cache that PR builds fall back to, because a PR's own
   caches are invisible to other PRs (#1769).
@@ -282,7 +284,7 @@ need verification:
 - **Runtime measurements**: The `timeout-minutes` values (`changes` 5,
   `static-gate` 20, `unit-gate` 20 per shard, `unit-coverage` 10,
   `mutation-gate` 20, `security-gate` 15, `build` 25, `heavy-gate` 30 per
-  shard, `bench-gate` 20, `heavy-gate-report` 15, `device-gate` 25,
+  shard, `bench-gate` 20, `heavy-gate-report` 15, `device-gate` 45 per shard,
   `merge-gate` 5, `cache-warm` 30) remain upper bounds, not measured runtimes.
   The #1767 baseline (run 37025796528) took about 33 minutes to Merge Gate. Review successful GitHub run
   durations before tightening them; standard public-runner minutes are free,

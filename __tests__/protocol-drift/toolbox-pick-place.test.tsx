@@ -44,7 +44,7 @@ vi.mock("@/lib/audio", () => ({
 
 const store = () => useProtocolDriftStore.getState();
 const chip = (kind: string) =>
-  screen.getByRole("button", { name: `Add ${kind} chip` });
+  screen.getByRole("button", { name: new RegExp(`add ${kind} `, "i") });
 const status = () => screen.getByTestId("chip-pick-status");
 const pane = () => document.querySelector<HTMLElement>(".react-flow__pane")!;
 

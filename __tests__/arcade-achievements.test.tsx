@@ -164,6 +164,12 @@ describe("Arcade Achievements & Leaderboard Registry", () => {
           (t) => t.id
         )
       ).toEqual(["duck_master"]);
+      // Halloween (#2740): a sprint shipped in the duck costume.
+      expect(
+        recordArcadeMilestone("working-with-duck", "duck_costume_sprint").map(
+          (t) => t.id
+        )
+      ).toEqual(["duck_trick_or_treat"]);
     });
 
     it("unlocks a trophy from its game's milestone, once", () => {

@@ -98,6 +98,53 @@ export const GAME_CARD_COPY = {
 /** A game slug with its own screenshot link preview. */
 export type GameCardSlug = keyof typeof GAME_CARD_COPY;
 
+/**
+ * October link previews (#2740), for the games with a Halloween mode. Each
+ * uses `public/images/arcade/previews/<slug>-halloween.webp`.
+ */
+export const GAME_CARD_HALLOWEEN_COPY = {
+  "working-with-duck": {
+    title: "Working With Duck",
+    tagline:
+      "Duck is dressed as a duck, and the trick-or-treaters are at the door. The deadline did not move.",
+  },
+} as const satisfies Partial<Record<GameCardSlug, GameCardCopy>>;
+
+/** A game slug with an October link preview. */
+export type HalloweenCardSlug = keyof typeof GAME_CARD_HALLOWEEN_COPY;
+
+/** The site's home clock, so October ends after Halloween night in Minnesota, not at 7 PM. */
+const HOME_TIME_ZONE = "America/Chicago";
+
+/**
+ * Whether the October link preview is in season: any moment of October on
+ * the site's home clock (US Central). UTC would turn the card back at 7 PM
+ * on Halloween itself.
+ *
+ * @param date - The moment to check.
+ * @returns True through October in US Central time.
+ */
+export function isHalloweenCardSeason(date: Date): boolean {
+  const month = new Intl.DateTimeFormat("en-US", {
+    timeZone: HOME_TIME_ZONE,
+    month: "numeric",
+  }).format(date);
+  return month === "10";
+}
+
+/** Options for one game's link preview. */
+export interface GameCardOptions {
+  /**
+   * Render the October card. Seasonal cards, and a seasonal game's everyday
+   * card, are cached for an hour rather than a year, so a crawler sees the
+   * change of month.
+   */
+  halloween?: boolean;
+}
+
+/** How long a seasonal game's card may be cached, matching its route's revalidate. */
+export const SEASONAL_CARD_MAX_AGE_SECONDS = 3600;
+
 /** Alt text for one game's link preview. */
 export function gameCardAlt(slug: GameCardSlug): string {
   const copy = GAME_CARD_COPY[slug];
@@ -291,12 +338,13 @@ function fallbackRedirect(): Response {
   });
 }
 
-function jpegResponse(body: Buffer): Response {
+function jpegResponse(body: Buffer, seasonal = false): Response {
   return new Response(new Uint8Array(body), {
     headers: {
       "Content-Type": ARCADE_SHOWCASE_CONTENT_TYPE,
-      "Cache-Control":
-        "public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400",
+      "Cache-Control": seasonal
+        ? `public, max-age=${SEASONAL_CARD_MAX_AGE_SECONDS}, s-maxage=${SEASONAL_CARD_MAX_AGE_SECONDS}`
+        : "public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400",
     },
   });
 }
@@ -310,10 +358,11 @@ function jpegResponse(body: Buffer): Response {
  */
 async function renderJpegCard(
   cacheKey: string,
-  build: () => Promise<ReactElement>
+  build: () => Promise<ReactElement>,
+  seasonal = false
 ): Promise<Response> {
   const cached = cardCache.get(cacheKey);
-  if (cached) return jpegResponse(cached);
+  if (cached) return jpegResponse(cached, seasonal);
   // getOgFonts logs its own failure once per process.
   const fonts = getOgFonts();
   if (fonts.length === 0) return fallbackRedirect();
@@ -326,7 +375,7 @@ async function renderJpegCard(
       .jpeg({ quality: 82, mozjpeg: true })
       .toBuffer();
     cardCache.set(cacheKey, jpeg);
-    return jpegResponse(jpeg);
+    return jpegResponse(jpeg, seasonal);
   } catch (error) {
     logger.error("Screenshot link preview could not be rendered", error, {
       card: cacheKey,
@@ -375,22 +424,37 @@ export function createArcadeShowcaseImageResponse(): Promise<Response> {
   });
 }
 
-/** Renders one game's link preview: its arcade screenshot beside its title and a one-line pitch. */
-export function createGameImageResponse(slug: GameCardSlug): Promise<Response> {
-  const copy = GAME_CARD_COPY[slug];
-  return renderJpegCard(slug, async () => (
-    <CardFrame
-      kicker="DERUITER.DEV / ARCADE"
-      headline={copy.title}
-      headlineSize={copy.title.length > 16 ? 46 : 54}
-      textWidth={360}
-      body={copy.tagline}
-    >
-      <Screenshot
-        src={await readScreenshot(slug)}
-        width={HERO_WIDTH}
-        height={HERO_HEIGHT}
-      />
-    </CardFrame>
-  ));
+/**
+ * Renders one game's link preview: its arcade screenshot beside its title and
+ * a one-line pitch. A game with a Halloween mode can ask for its October card.
+ */
+export function createGameImageResponse(
+  slug: GameCardSlug,
+  options: GameCardOptions = {}
+): Promise<Response> {
+  const seasonal = slug in GAME_CARD_HALLOWEEN_COPY;
+  const halloween = seasonal && options.halloween === true;
+  const key = halloween ? `${slug}-halloween` : slug;
+  const copy: GameCardCopy = halloween
+    ? GAME_CARD_HALLOWEEN_COPY[slug as HalloweenCardSlug]
+    : GAME_CARD_COPY[slug];
+  return renderJpegCard(
+    key,
+    async () => (
+      <CardFrame
+        kicker="DERUITER.DEV / ARCADE"
+        headline={copy.title}
+        headlineSize={copy.title.length > 16 ? 46 : 54}
+        textWidth={360}
+        body={copy.tagline}
+      >
+        <Screenshot
+          src={await readScreenshot(key)}
+          width={HERO_WIDTH}
+          height={HERO_HEIGHT}
+        />
+      </CardFrame>
+    ),
+    seasonal
+  );
 }

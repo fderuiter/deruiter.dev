@@ -41,6 +41,7 @@ import {
   drawCostumeBody,
   drawCostumeHead,
   drawHalloweenOffice,
+  drawTrickOrTreaters,
 } from "./halloween-art";
 
 type Ctx = CanvasRenderingContext2D;
@@ -2097,6 +2098,28 @@ export function drawOfficeScene(
     pill(
       ctx,
       touchHints ? "Sign for the package" : "D: sign for the package",
+      BACK_DOOR_BOUNDS.x - 30,
+      BACK_DOOR_BOUNDS.y + 22,
+      "#fbbf24",
+      smallFont()
+    );
+  }
+
+  // Trick-or-treaters at the door, in Halloween mode (#2740)
+  if (state.activeSurpriseEvent?.type === "trick-or-treat") {
+    drawTrickOrTreaters(
+      ctx,
+      BACK_DOOR_BOUNDS.x,
+      BACK_DOOR_BOUNDS.y + BACK_DOOR_BOUNDS.height - 4,
+      state.ticks,
+      calm
+    );
+    // The key is named off touch, as the package names D (#2259).
+    pill(
+      ctx,
+      touchHints
+        ? "Sit for the trick-or-treaters"
+        : "Q: Sit for the trick-or-treaters",
       BACK_DOOR_BOUNDS.x - 30,
       BACK_DOOR_BOUNDS.y + 22,
       "#fbbf24",

@@ -19,6 +19,7 @@ import {
   IconRings,
   IconDeviceGamepad2,
   IconHeart,
+  IconPumpkinScary,
   IconFilter,
   IconPlayerPlay,
 } from "@tabler/icons-react";
@@ -50,6 +51,8 @@ function getTrophyIcon(iconName: string) {
       return <IconDeviceGamepad2 className="w-5 h-5 text-rose-400" />;
     case "Heart":
       return <IconHeart className="w-5 h-5 text-amber-400" />;
+    case "Pumpkin":
+      return <IconPumpkinScary className="w-5 h-5 text-orange-400" />;
     case "Sparkles":
       return <IconSparkles className="w-5 h-5 text-[#94a3b8]" />;
     default:

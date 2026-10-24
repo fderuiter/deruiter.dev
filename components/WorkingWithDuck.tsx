@@ -1909,6 +1909,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         if (uiState.sprintStars?.count === 3) {
           recordArcadeMilestone("working-with-duck", "three_star_sprint");
         }
+        // Halloween (#2740): a sprint shipped with Duck dressed as a duck.
+        // Read from the ref, so changing clothes on the result card neither
+        // reruns this effect nor earns the trophy after the fact.
+        if (gameStateRef.current.activeAccessory === "duck-costume") {
+          recordArcadeMilestone("working-with-duck", "duck_costume_sprint");
+        }
       }
       if (sprintOver && uiState.highScore > loadedHighScore) {
         safeSetRawItem(
@@ -2055,7 +2061,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           // terminal win/fail transition so the victory/failure panel is
           // never hidden behind a stale throttled frame.
           applyTransition((state) => {
-            const stepped = stepDuckGame(state);
+            // The engine reads Halloween mode from the state (#2740).
+            const stepped = stepDuckGame(
+              state.halloween === halloweenRef.current
+                ? state
+                : { ...state, halloween: halloweenRef.current }
+            );
             if (stepped.soundCueQueue.length > 0) {
               cuesToPlay = stepped.soundCueQueue;
               return { ...stepped, soundCueQueue: [] };
@@ -2444,6 +2455,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const lastAnnouncedWorkProgressRef = useRef(0);
   const lastAnnouncedQuarterRef = useRef(1);
   const lastAnnouncedHiccupsRef = useRef(false);
+  const lastAnnouncedTrickOrTreatRef = useRef(false);
 
   useEffect(() => {
     if (!uiState) return;
@@ -2504,6 +2516,15 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
       announce("Duck has the hiccups. Time tricks between hiccups.", "polite");
     }
     lastAnnouncedHiccupsRef.current = hasHiccups;
+    const hasTrickOrTreaters =
+      uiState.activeSurpriseEvent?.type === "trick-or-treat";
+    if (hasTrickOrTreaters && !lastAnnouncedTrickOrTreatRef.current) {
+      announce(
+        "Trick-or-treaters at the door. Call Sit (Q) before they leave.",
+        "polite"
+      );
+    }
+    lastAnnouncedTrickOrTreatRef.current = hasTrickOrTreaters;
 
     // Announce high bladder
     const isBladderHigh = uiState.bladder > 80;

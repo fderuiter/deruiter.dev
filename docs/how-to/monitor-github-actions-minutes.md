@@ -97,6 +97,12 @@ a gate or lowering a threshold:
   `stryker.garmin.config.mjs` (#2564). The study data SDTM, ADaM and TLF
   derivations run in `mutation-study-data`, bounded at 150 minutes, with
   their breaks in `stryker.study-data.config.mjs` (#2607).
+- `study-data-core.yml` is a separate workflow, not a gate in `ci.yml`. It
+  runs the CDISC Rules Engine (CORE) on the Study Data Pipeline's seed-301
+  SDTM and the USDM fixture, and fails on any finding that
+  `scripts/study-data-core-allowlist.json` does not explain (#2603). It
+  runs only on changes to `lib/study-data/**` or its own files, and weekly,
+  bounded at 30 minutes.
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

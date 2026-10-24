@@ -1,7 +1,15 @@
 {
   "tlf/ars-reporting-event.json": {
-    "bytes": 304328,
-    "sha256": "4d0e3f12ce3b63ba29931065434955ff52f646f90ffa904f5d950bbab2587787"
+    "bytes": 548074,
+    "sha256": "fb808654dca6e81c8cb729455c41107de2b9a7aa4004708945b32c1e4b084991"
+  },
+  "tlf/f-14-2-2.html": {
+    "bytes": 27539,
+    "sha256": "738a0f0df1fd89d963a917db81e513bf717fdee235a8b2560bb0f8c4a3c1cda9"
+  },
+  "tlf/f-14-2-2.svg": {
+    "bytes": 9494,
+    "sha256": "0445f180a11d736970fff5cb9d9ff77b3287be7d545ca7972a43b3011d3566c7"
   },
   "tlf/t-14-1-1.html": {
     "bytes": 7990,

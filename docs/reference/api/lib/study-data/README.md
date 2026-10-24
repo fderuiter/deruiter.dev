@@ -296,6 +296,12 @@ Re-exports [CellValue](types/type-aliases/CellValue.md)
 
 ***
 
+### chiSquareSurvival
+
+Re-exports [chiSquareSurvival](internal/tlf/km/functions/chiSquareSurvival.md)
+
+***
+
 ### CodedValue
 
 Re-exports [CodedValue](types/interfaces/CodedValue.md)
@@ -518,6 +524,12 @@ Re-exports [formatPercent](internal/tlf/stats/functions/formatPercent.md)
 
 ***
 
+### formatPValue
+
+Re-exports [formatPValue](internal/tlf/km-evaluate/functions/formatPValue.md)
+
+***
+
 ### indexAdamRows
 
 Re-exports [indexAdamRows](internal/tlf/row-ids/functions/indexAdamRows.md)
@@ -548,6 +560,42 @@ Re-exports [itemOid](internal/export/oids/functions/itemOid.md)
 
 ***
 
+### kaplanMeierEstimate
+
+Re-exports [kaplanMeierEstimate](internal/tlf/km/functions/kaplanMeierEstimate.md)
+
+***
+
+### KaplanMeierEstimate
+
+Re-exports [KaplanMeierEstimate](types/interfaces/KaplanMeierEstimate.md)
+
+***
+
+### KaplanMeierStep
+
+Re-exports [KaplanMeierStep](types/interfaces/KaplanMeierStep.md)
+
+***
+
+### KM\_CONFIDENCE\_LEVEL
+
+Re-exports [KM_CONFIDENCE_LEVEL](internal/tlf/km/variables/KM_CONFIDENCE_LEVEL.md)
+
+***
+
+### logRankTest
+
+Re-exports [logRankTest](internal/tlf/km/functions/logRankTest.md)
+
+***
+
+### LogRankTest
+
+Re-exports [LogRankTest](types/interfaces/LogRankTest.md)
+
+***
+
 ### ManifestEntry
 
 Re-exports [ManifestEntry](types/interfaces/ManifestEntry.md)
@@ -563,6 +611,12 @@ Re-exports [MAX_RAW_DECIMALS](internal/tlf/stats/variables/MAX_RAW_DECIMALS.md)
 ### metaDataVersionOid
 
 Re-exports [metaDataVersionOid](internal/export/oids/functions/metaDataVersionOid.md)
+
+***
+
+### NORMAL\_QUANTILE\_975
+
+Re-exports [NORMAL_QUANTILE_975](internal/tlf/km/variables/NORMAL_QUANTILE_975.md)
 
 ***
 
@@ -806,6 +860,12 @@ Re-exports [SUBJECT_COUNT_LIMITS](presets/variables/SUBJECT_COUNT_LIMITS.md)
 
 ***
 
+### SurvivalObservation
+
+Re-exports [SurvivalObservation](types/interfaces/SurvivalObservation.md)
+
+***
+
 ### SYNTHETIC\_DATA\_NOTICE
 
 Re-exports [SYNTHETIC_DATA_NOTICE](presets/variables/SYNTHETIC_DATA_NOTICE.md)
@@ -818,6 +878,18 @@ Re-exports [TLF_OUTPUT_DIR](internal/tlf/outputs/variables/TLF_OUTPUT_DIR.md)
 
 ***
 
+### TlfAtRiskRow
+
+Re-exports [TlfAtRiskRow](types/interfaces/TlfAtRiskRow.md)
+
+***
+
+### TlfAtRiskTime
+
+Re-exports [TlfAtRiskTime](types/interfaces/TlfAtRiskTime.md)
+
+***
+
 ### TlfCell
 
 Re-exports [TlfCell](types/interfaces/TlfCell.md)
@@ -827,6 +899,24 @@ Re-exports [TlfCell](types/interfaces/TlfCell.md)
 ### TlfColumn
 
 Re-exports [TlfColumn](types/interfaces/TlfColumn.md)
+
+***
+
+### TlfKmCurve
+
+Re-exports [TlfKmCurve](types/interfaces/TlfKmCurve.md)
+
+***
+
+### TlfKmFigure
+
+Re-exports [TlfKmFigure](types/interfaces/TlfKmFigure.md)
+
+***
+
+### TlfKmPoint
+
+Re-exports [TlfKmPoint](types/interfaces/TlfKmPoint.md)
 
 ***
 
@@ -905,6 +995,18 @@ Re-exports [writeCsv](internal/export/csv/functions/writeCsv.md)
 ### writeDatasetJson
 
 Re-exports [writeDatasetJson](internal/export/dataset-json/functions/writeDatasetJson.md)
+
+***
+
+### writeKmFigureHtml
+
+Re-exports [writeKmFigureHtml](internal/tlf/km-svg/functions/writeKmFigureHtml.md)
+
+***
+
+### writeKmFigureSvg
+
+Re-exports [writeKmFigureSvg](internal/tlf/km-svg/functions/writeKmFigureSvg.md)
 
 ***
 

@@ -1,6 +1,7 @@
 /**
  * The reporting stage: runs the reporting plan against a pipeline run and
- * returns the ARS reporting event and the tables, and writes them as files.
+ * returns the ARS reporting event, the tables and the figure, and writes
+ * them as files.
  */
 import { STANDARD_VERSIONS, SYNTHETIC_DATA_NOTICE } from "../../presets";
 import type {
@@ -10,6 +11,7 @@ import type {
   ArsReportingEvent,
   PipelineRun,
   StudyDefinition,
+  TlfKmFigure,
   TlfOutputs,
   TlfTable,
 } from "../../types";
@@ -17,11 +19,13 @@ import { utf8 } from "../export/columns";
 import type { PackageFile } from "../export/package";
 import { evaluateAnalyses } from "./evaluate";
 import { writeTableHtml } from "./html";
+import { buildKmFigure } from "./km-figure";
+import { writeKmFigureHtml, writeKmFigureSvg } from "./km-svg";
 import { buildReportingPlan, type ReportingPlan } from "./plan";
 import { writeTableRtf } from "./rtf";
 import { buildTables } from "./tables";
 
-/** Folder the table files are written to. */
+/** Folder the table and figure files are written to. */
 export const TLF_OUTPUT_DIR = "tlf";
 /** Path of the ARS reporting event JSON, next to the tables. */
 export const ARS_REPORTING_EVENT_PATH = `${TLF_OUTPUT_DIR}/ars-reporting-event.json`;
@@ -37,6 +41,74 @@ function analysisIdsOf(table: TlfTable): readonly string[] {
     }
   }
   return [...ids];
+}
+
+function figureAnalysisIds(figure: TlfKmFigure): readonly string[] {
+  const ids = new Set<string>();
+  const add = (resultId: string) => ids.add(resultId.replace(/\.\d+$/, ""));
+  for (const curve of figure.curves) {
+    add(curve.bigNResultId);
+    for (const point of curve.points) point.resultIds.forEach(add);
+  }
+  for (const row of figure.atRisk) {
+    for (const cell of row.cells) cell.resultIds.forEach(add);
+  }
+  figure.test.resultIds.forEach(add);
+  return [...ids];
+}
+
+function figureOutput(figure: TlfKmFigure): ArsOutput {
+  const subSections = (prefix: string, texts: readonly string[]) =>
+    texts.map((text, index) => ({
+      order: index + 1,
+      subSection: { id: `${figure.displayId}_${prefix}${index + 1}`, text },
+    }));
+  return {
+    id: figure.outputId,
+    name: `Figure ${figure.number}`,
+    version: 1,
+    fileSpecifications: (["html", "svg"] as const).map((type) => ({
+      name: `${figure.fileBase}.${type}`,
+      fileType: { controlledTerm: type },
+      location: `${figure.fileBase}.${type}`,
+    })),
+    displays: [
+      {
+        order: 1,
+        display: {
+          id: figure.displayId,
+          name: `Figure ${figure.number}`,
+          version: 1,
+          displayTitle: `Figure ${figure.number}: ${figure.title} (${figure.population})`,
+          displaySections: [
+            {
+              sectionType: "Title",
+              orderedSubSections: subSections("Title", [
+                `Figure ${figure.number}`,
+                figure.title,
+                figure.population,
+              ]),
+            },
+            {
+              sectionType: "Legend",
+              orderedSubSections: subSections(
+                "Legend",
+                figure.curves.map((curve) => `${curve.label} (N=${curve.bigN})`)
+              ),
+            },
+            {
+              sectionType: "Footnote",
+              orderedSubSections: subSections("Footnote", [
+                figure.test.text,
+                ...figure.footnotes,
+                figure.notice,
+              ]),
+            },
+          ],
+        },
+      },
+    ],
+  };
 }
 
 function displaySections(table: TlfTable): ArsDisplaySection[] {
@@ -97,16 +169,29 @@ function reportingEvent(
   run: PipelineRun,
   plan: ReportingPlan,
   evaluation: ReturnType<typeof evaluateAnalyses>,
-  tables: readonly TlfTable[]
+  tables: readonly TlfTable[],
+  figures: readonly TlfKmFigure[]
 ): ArsReportingEvent {
   const { manifest } = run;
-  const listItems: ArsListItem[] = tables.map((table, index) => ({
-    name: `Table ${table.number}: ${table.title}`,
+  const entries = [
+    ...tables.map((table) => ({
+      name: `Table ${table.number}: ${table.title}`,
+      outputId: table.outputId,
+      analysisIds: analysisIdsOf(table),
+    })),
+    ...figures.map((figure) => ({
+      name: `Figure ${figure.number}: ${figure.title}`,
+      outputId: figure.outputId,
+      analysisIds: figureAnalysisIds(figure),
+    })),
+  ];
+  const listItems: ArsListItem[] = entries.map((entry, index) => ({
+    name: entry.name,
     level: 1,
     order: index + 1,
-    outputId: table.outputId,
+    outputId: entry.outputId,
     sublist: {
-      listItems: analysisIdsOf(table).map((analysisId, position) => ({
+      listItems: entry.analysisIds.map((analysisId, position) => ({
         name:
           evaluation.analyses.find((analysis) => analysis.id === analysisId)
             ?.name ?? analysisId,
@@ -127,7 +212,7 @@ function reportingEvent(
     nSubjects: manifest.nSubjects,
     standards: { ARS: STANDARD_VERSIONS.ARS, ADaMIG: STANDARD_VERSIONS.ADaMIG },
     mainListOfContents: {
-      name: "Tables",
+      name: "Tables and figures",
       contentsList: { listItems },
     },
     analysisSets: plan.analysisSets,
@@ -135,7 +220,7 @@ function reportingEvent(
     dataSubsets: plan.dataSubsets,
     methods: plan.methods,
     analyses: evaluation.analyses,
-    outputs: tables.map(output),
+    outputs: [...tables.map(output), ...figures.map(figureOutput)],
     rowSets: evaluation.rowSets,
   };
 }
@@ -144,19 +229,22 @@ function reportingEvent(
  * Runs the reporting plan against a pipeline run: Table 14.1.1
  * (demographic and baseline characteristics, Safety Set), Table 14.2.1
  * (systolic blood pressure, observed values and change from baseline by
- * visit, Full Analysis Set) and Table 14.3.1 (TEAEs by system organ class
- * and preferred term, Safety Set).
+ * visit, Full Analysis Set), Table 14.3.1 (TEAEs by system organ class
+ * and preferred term, Safety Set) and Figure 14.2.2 (Kaplan-Meier estimate
+ * of time to first TEAE leading to discontinuation, with the number at
+ * risk, Greenwood log-log 95% limits and the log-rank test, Safety Set).
  *
  * Analysis sets, groupings, data subsets, methods and analyses are declared
  * as data and returned in an ARS 1.0-shaped reporting event. Every result
  * records, through row sets, the ADaM rows it was computed from: the ADSL
- * rows of its population and the records it counted or summarised. Nothing
+ * rows of its population and the records it counted, summarised or
+ * estimated from. Nothing
  * depends on the clock, so the same run always gives the same outputs.
  *
  * @param definition - The study the run was made from; treatment groups and
  *   visits come from it.
  * @param run - A run from `runPipeline`.
- * @returns The reporting event and the three tables.
+ * @returns The reporting event, the three tables and the figure.
  * @throws RangeError when the run is of another study, an ADaM dataset the
  *   plan reads is missing, or two ADaM rows share an id.
  */
@@ -172,9 +260,11 @@ export function buildTlfOutputs(
   const plan = buildReportingPlan(definition);
   const evaluation = evaluateAnalyses(run.datasets, plan);
   const tables = buildTables(definition, plan, evaluation.analyses);
+  const figures = [buildKmFigure(definition, plan, evaluation.analyses)];
   return {
-    reportingEvent: reportingEvent(run, plan, evaluation, tables),
+    reportingEvent: reportingEvent(run, plan, evaluation, tables, figures),
     tables,
+    figures,
   };
 }
 
@@ -189,7 +279,8 @@ export function writeArsJson(event: ArsReportingEvent): string {
 
 /**
  * Every output of {@link buildTlfOutputs} as a file: each table as HTML and
- * RTF, and the reporting event as JSON, all under {@link TLF_OUTPUT_DIR}.
+ * RTF, each figure as HTML (with its data tables) and SVG, and the reporting
+ * event as JSON, all under {@link TLF_OUTPUT_DIR}.
  * Files are in path order and hold no timestamps.
  */
 export function writeTlfFiles(outputs: TlfOutputs): readonly PackageFile[] {
@@ -211,6 +302,20 @@ export function writeTlfFiles(outputs: TlfOutputs): readonly PackageFile[] {
         path: `${TLF_OUTPUT_DIR}/${table.fileBase}.rtf`,
         mediaType: "application/rtf",
         bytes: utf8(writeTableRtf(table)),
+      }
+    );
+  }
+  for (const figure of outputs.figures) {
+    files.push(
+      {
+        path: `${TLF_OUTPUT_DIR}/${figure.fileBase}.html`,
+        mediaType: "text/html",
+        bytes: utf8(writeKmFigureHtml(figure)),
+      },
+      {
+        path: `${TLF_OUTPUT_DIR}/${figure.fileBase}.svg`,
+        mediaType: "image/svg+xml",
+        bytes: utf8(writeKmFigureSvg(figure)),
       }
     );
   }

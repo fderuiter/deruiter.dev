@@ -8,4 +8,4 @@
 
 > `const` **TLF\_OUTPUT\_DIR**: `"tlf"` = `"tlf"`
 
-Folder the table files are written to.
+Folder the table and figure files are written to.

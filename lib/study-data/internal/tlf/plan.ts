@@ -1,9 +1,9 @@
 /**
  * The reporting plan, declared as data: analysis sets, grouping factors,
  * data subsets, methods and analyses, in the shape of ARS 1.0. The engine
- * in `evaluate.ts` reads this plan and knows nothing about the tables, so
- * another output (the Kaplan-Meier figure, #2716) adds its own sets,
- * methods and analyses here without changing the engine.
+ * in `evaluate.ts` reads this plan and knows nothing about the outputs: the
+ * tables and the Kaplan-Meier figure each add their own groupings, subsets,
+ * methods and analyses here.
  */
 import type {
   ArsAnalysis,
@@ -80,7 +80,85 @@ export const IDS = {
   teaeAny: "An_14_3_1_ANY",
   teaeSoc: "An_14_3_1_SOC",
   teaePt: "An_14_3_1_PT",
+  tteTime: "AnlsGrouping_ADTTE_AVAL",
+  atRiskDay: "AnlsGrouping_ADTTE_ATRISK",
+  ttadisc: "Dss_TTADISC",
+  km: "Mth_KM",
+  kmNRisk: "Mth_KM_NRISK",
+  kmNEvent: "Mth_KM_NEVENT",
+  kmNCens: "Mth_KM_NCENS",
+  kmSurv: "Mth_KM_SURV",
+  kmSe: "Mth_KM_SE",
+  kmLcl: "Mth_KM_LCL",
+  kmUcl: "Mth_KM_UCL",
+  logRank: "Mth_LogRank",
+  logRankChiSq: "Mth_LogRank_CHISQ",
+  logRankDf: "Mth_LogRank_DF",
+  logRankP: "Mth_LogRank_PVAL",
+  kmN: "An_14_2_2_N",
+  kmAtRisk: "An_14_2_2_ATRISK",
+  kmCurve: "An_14_2_2_KM",
+  kmLogRank: "An_14_2_2_LOGRANK",
 } as const;
+
+/** Decimals the survival estimate, its SE and its limits are shown with. */
+export const KM_DECIMALS = 4;
+
+/** Kaplan-Meier operations in display order, with what each reports. */
+export const KM_OPERATIONS = [
+  {
+    id: IDS.kmNRisk,
+    name: "n at risk",
+    kind: "atRisk",
+    label: "Subjects with AVAL at or after t, an integer",
+    resultPattern: "XX",
+  },
+  {
+    id: IDS.kmNEvent,
+    name: "n events",
+    kind: "events",
+    label: "Events at t, an integer",
+    resultPattern: "XX",
+  },
+  {
+    id: IDS.kmNCens,
+    name: "n censored",
+    kind: "censored",
+    label: "Censorings at t, an integer",
+    resultPattern: "XX",
+  },
+  {
+    id: IDS.kmSurv,
+    name: "Survival",
+    kind: "survival",
+    label: `Survival estimate after t, ${KM_DECIMALS} decimals`,
+    resultPattern: "X.XXXX",
+  },
+  {
+    id: IDS.kmSe,
+    name: "SE",
+    kind: "standardError",
+    label: `Greenwood standard error, ${KM_DECIMALS} decimals`,
+    resultPattern: "X.XXXX",
+  },
+  {
+    id: IDS.kmLcl,
+    name: "Lower 95% CL",
+    kind: "lower",
+    label: `Lower 95% confidence limit, log-log transform, ${KM_DECIMALS} decimals`,
+    resultPattern: "X.XXXX",
+  },
+  {
+    id: IDS.kmUcl,
+    name: "Upper 95% CL",
+    kind: "upper",
+    label: `Upper 95% confidence limit, log-log transform, ${KM_DECIMALS} decimals`,
+    resultPattern: "X.XXXX",
+  },
+] as const;
+
+/** The ADTTE parameter the figure analyses. */
+export const KM_PARAMCD = "TTADISC";
 
 /** Summary operations in display order, with their row labels. */
 export const SUMMARY_OPERATIONS = [
@@ -158,6 +236,24 @@ export function reportedVisits(definition: StudyDefinition): {
     );
   }
   return { baseline, post };
+}
+
+/**
+ * The days of the number-at-risk table: the scheduled day of every visit on
+ * or after day 1, in schedule order. AVAL counts the first-dose day as day
+ * 1, so a subject is at risk on day t when AVAL is t or later.
+ */
+export function atRiskDays(
+  definition: StudyDefinition
+): readonly { readonly time: number; readonly label: string }[] {
+  const days = [
+    ...new Set(
+      definition.design.visits
+        .map((visit) => visit.targetDay)
+        .filter((day) => day >= 1)
+    ),
+  ].sort((a, b) => a - b);
+  return days.map((time) => ({ time, label: `Day ${time}` }));
 }
 
 function treatmentGrouping(
@@ -287,13 +383,60 @@ const METHODS: readonly ArsAnalysisMethod[] = [
       ...(operation.kind === "n" ? { resultPattern: "XX" } : {}),
     })),
   },
+  {
+    id: IDS.km,
+    name: "Kaplan-Meier estimate",
+    label: "Product-limit estimate with Greenwood SE and log-log 95% CI",
+    description:
+      "The product-limit estimate of the probability of no event, at every time at which an event (CNSR = 0) or a censoring (CNSR = 1) was observed, from the time variable AVAL in days. Every subject whose time is t is at risk at t; the d events at t make one factor of (1 - d/n), and censorings at t leave the risk set after it. The standard error is Greenwood's, S(t) times the square root of the sum of d/(n(n - d)) over event times up to t, and 0 once S(t) is 0. The 95% confidence limits are pointwise, on the log-log scale: exp(-exp(log(-log S) +/- 1.96 sigma)), where sigma is the square root of Greenwood's sum divided by |log S|; they are not estimable (NE) where S is 1 or 0. A result at time 0 gives the start of the curve.",
+    operations: KM_OPERATIONS.map((operation, index) => ({
+      id: operation.id,
+      name: operation.name,
+      label: operation.label,
+      order: index + 1,
+      resultPattern: operation.resultPattern,
+    })),
+  },
+  {
+    id: IDS.logRank,
+    name: "Log-rank test",
+    label: "Log-rank chi-square, degrees of freedom and p-value",
+    description:
+      "The unstratified log-rank test that the treatment groups have the same survival distribution. At each distinct event time each group contributes observed minus expected events, n_j d / n, with the hypergeometric covariance. The statistic is U'V-U, with V- a generalised inverse of the covariance, referred to a chi-square distribution with degrees of freedom equal to the rank of V: the number of groups with information, less one. Not estimable (NE) with no events or fewer than two such groups.",
+    operations: [
+      {
+        id: IDS.logRankChiSq,
+        name: "Chi-square",
+        label: "Log-rank chi-square statistic, two decimals",
+        order: 1,
+        resultPattern: "XX.XX",
+      },
+      {
+        id: IDS.logRankDf,
+        name: "DF",
+        label: "Degrees of freedom, an integer",
+        order: 2,
+        resultPattern: "X",
+      },
+      {
+        id: IDS.logRankP,
+        name: "p-value",
+        label:
+          "Upper-tail chi-square probability, four decimals, <0.0001 below that",
+        order: 3,
+        resultPattern: "X.XXXX",
+      },
+    ],
+  },
 ];
 
 /**
  * The reporting plan for a study: Table 14.1.1 (demographics, Safety Set),
  * Table 14.2.1 (systolic blood pressure change from baseline, Full Analysis
- * Set) and Table 14.3.1 (TEAEs by system organ class and preferred term,
- * Safety Set). Treatment groups and visits come from the study definition.
+ * Set), Table 14.3.1 (TEAEs by system organ class and preferred term,
+ * Safety Set) and Figure 14.2.2 (Kaplan-Meier estimate of time to first TEAE
+ * leading to discontinuation, Safety Set). Treatment groups, visits and the
+ * days of the number-at-risk table come from the study definition.
  */
 export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
   const { baseline, post } = reportedVisits(definition);
@@ -382,6 +525,29 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
     where("ADVS", "PARAMCD", "EQ", "SYSBP"),
     where("ADVS", "ANL01FL", "EQ", "Y")
   );
+  const timeToEvent = (
+    id: string,
+    name: string,
+    methodId: string,
+    resultsByGroup: boolean
+  ): AnalysisSpec => ({
+    id,
+    name,
+    version: 1,
+    reason: SPECIFIED_IN_SAP,
+    purpose: secondary,
+    dataset: "ADTTE",
+    variable: "AVAL",
+    analysisSetId: IDS.saf,
+    dataSubsetId: IDS.ttadisc,
+    methodId,
+    orderedGroupings: [
+      { order: 1, groupingId: IDS.trt01a, resultsByGroup },
+      ...(resultsByGroup
+        ? [{ order: 2, groupingId: IDS.tteTime, resultsByGroup: true }]
+        : []),
+    ],
+  });
 
   return {
     analysisSets: [
@@ -462,6 +628,34 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
       },
       visitGrouping(IDS.visitAll, "Analysis visit", [baseline, ...post]),
       visitGrouping(IDS.visitPost, "Postbaseline analysis visit", post),
+      {
+        id: IDS.tteTime,
+        name: "Analysis time",
+        label: "Time to event or censoring in days (AVAL)",
+        groupingDataset: "ADTTE",
+        groupingVariable: "AVAL",
+        dataDriven: true,
+        groups: [],
+      },
+      {
+        id: IDS.atRiskDay,
+        name: "At risk on a scheduled day",
+        label:
+          "Subjects still at risk on a scheduled study day (AVAL on or after the day)",
+        groupingDataset: "ADTTE",
+        groupingVariable: "AVAL",
+        dataDriven: false,
+        groups: atRiskDays(definition).map((day, index) =>
+          group(
+            "ATRISK",
+            String(day.time),
+            day.label,
+            `At risk on ${day.label}`,
+            index + 1,
+            where("ADTTE", "AVAL", "GE", String(day.time))
+          )
+        ),
+      },
     ],
     dataSubsets: [
       {
@@ -490,6 +684,14 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
           sysbp,
           where("ADVS", "AVISITN", "GT", String(baseline.visitNum))
         ),
+      },
+      {
+        id: IDS.ttadisc,
+        name: "Time to first TEAE leading to discontinuation",
+        label: `PARAMCD = ${KM_PARAMCD}`,
+        level: 1,
+        order: 4,
+        ...where("ADTTE", "PARAMCD", "EQ", KM_PARAMCD),
       },
     ],
     methods: METHODS,
@@ -600,6 +802,40 @@ export function buildReportingPlan(definition: StudyDefinition): ReportingPlan {
         [IDS.trt01a, IDS.soc, IDS.pt],
         IDS.teaeN,
         { dataSubsetId: IDS.teae, purpose: secondary }
+      ),
+      bigN(
+        IDS.kmN,
+        "Subjects in the Safety Set by treatment received",
+        IDS.saf,
+        IDS.trt01a
+      ),
+      {
+        id: IDS.kmAtRisk,
+        name: "Subjects at risk on each scheduled day",
+        version: 1,
+        reason: SPECIFIED_IN_SAP,
+        purpose: secondary,
+        dataset: "ADTTE",
+        variable: "USUBJID",
+        analysisSetId: IDS.saf,
+        dataSubsetId: IDS.ttadisc,
+        methodId: IDS.count,
+        orderedGroupings: [
+          { order: 1, groupingId: IDS.trt01a, resultsByGroup: true },
+          { order: 2, groupingId: IDS.atRiskDay, resultsByGroup: true },
+        ],
+      },
+      timeToEvent(
+        IDS.kmCurve,
+        "Kaplan-Meier estimate of time to first TEAE leading to discontinuation",
+        IDS.km,
+        true
+      ),
+      timeToEvent(
+        IDS.kmLogRank,
+        "Log-rank test across treatment groups",
+        IDS.logRank,
+        false
       ),
     ],
   };

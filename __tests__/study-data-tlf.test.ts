@@ -478,6 +478,7 @@ describe("ARS reporting event", () => {
       "Out_14_1_1",
       "Out_14_2_1",
       "Out_14_3_1",
+      "Out_14_2_2",
     ]);
     const analysisIds = new Set(event.analyses.map((analysis) => analysis.id));
     for (const item of items) {
@@ -485,7 +486,9 @@ describe("ARS reporting event", () => {
         expect(analysisIds.has(child.analysisId!)).toBe(true);
       }
     }
-    expect(event.outputs.map((item) => item.fileSpecifications)).toEqual(
+    expect(
+      event.outputs.slice(0, 3).map((item) => item.fileSpecifications)
+    ).toEqual(
       outputs.tables.map((source) => [
         {
           name: `${source.fileBase}.html`,
@@ -754,9 +757,11 @@ describe("Table 14.2.1, change from baseline in SYSBP", () => {
 describe("HTML, RTF and ARS JSON files", () => {
   const files = writeTlfFiles(outputs);
 
-  it("writes each table as HTML and RTF next to the ARS JSON", () => {
+  it("writes each table as HTML and RTF, and the figure as HTML and SVG, next to the ARS JSON", () => {
     expect(files.map((file) => [file.path, file.mediaType])).toEqual([
       [ARS_REPORTING_EVENT_PATH, "application/json"],
+      [`${TLF_OUTPUT_DIR}/f-14-2-2.html`, "text/html"],
+      [`${TLF_OUTPUT_DIR}/f-14-2-2.svg`, "image/svg+xml"],
       [`${TLF_OUTPUT_DIR}/t-14-1-1.html`, "text/html"],
       [`${TLF_OUTPUT_DIR}/t-14-1-1.rtf`, "application/rtf"],
       [`${TLF_OUTPUT_DIR}/t-14-2-1.html`, "text/html"],

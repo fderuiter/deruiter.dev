@@ -6,7 +6,7 @@
 
 # Interface: ArsOutput
 
-One output: a numbered table, its displays and its files.
+One output: a numbered table or figure, its displays and its files.
 
 ## Properties
 

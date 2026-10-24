@@ -796,7 +796,7 @@ export interface ArsFileSpecification {
   readonly location: string;
 }
 
-/** One output: a numbered table, its displays and its files. */
+/** One output: a numbered table or figure, its displays and its files. */
 export interface ArsOutput {
   /** Stable id, for example `Out_14_1_1`. */
   readonly id: string;
@@ -967,10 +967,174 @@ export interface TlfTable {
   readonly fileBase: string;
 }
 
-/** The analysis results of a run: the reporting event and its tables. */
+/** The analysis results of a run: the reporting event, its tables and its figures. */
 export interface TlfOutputs {
   /** The ARS reporting event, with results and row sets. */
   readonly reportingEvent: ArsReportingEvent;
   /** The tables, in output order. */
   readonly tables: readonly TlfTable[];
+  /** The figures, in output order. */
+  readonly figures: readonly TlfKmFigure[];
+}
+
+/** One subject's time to an event or to censoring. */
+export interface SurvivalObservation {
+  /** Time from the start of risk, finite and not negative. */
+  readonly time: number;
+  /** `true` for an event, `false` for a censored time. */
+  readonly event: boolean;
+}
+
+/**
+ * The product-limit estimate at one observed time: the events and
+ * censorings at the time and the estimate just after it.
+ */
+export interface KaplanMeierStep {
+  /** The time. */
+  readonly time: number;
+  /** Subjects at risk at the time: those whose time is the same or later. */
+  readonly atRisk: number;
+  /** Events at the time. */
+  readonly events: number;
+  /** Censorings at the time. */
+  readonly censored: number;
+  /** The survival estimate just after the time. */
+  readonly survival: number;
+  /** Greenwood standard error of the estimate. */
+  readonly standardError: number;
+  /** Lower 95% limit (log-log), or `null` when not estimable. */
+  readonly lower: number | null;
+  /** Upper 95% limit (log-log), or `null` when not estimable. */
+  readonly upper: number | null;
+}
+
+/** A Kaplan-Meier estimate with Greenwood standard errors. */
+export interface KaplanMeierEstimate {
+  /** Subjects. */
+  readonly n: number;
+  /** Subjects with an event. */
+  readonly events: number;
+  /** Subjects censored. */
+  readonly censored: number;
+  /** Confidence level of the limits, 0.95. */
+  readonly confidenceLevel: number;
+  /** Transform the limits are computed on. */
+  readonly confidenceTransform: "log-log";
+  /** One step per distinct observed time, in ascending order. */
+  readonly steps: readonly KaplanMeierStep[];
+}
+
+/** An unstratified log-rank test across groups. */
+export interface LogRankTest {
+  /** Observed events per group. */
+  readonly observed: readonly number[];
+  /** Expected events per group under equal survival. */
+  readonly expected: readonly number[];
+  /** Covariance of observed minus expected, one row per group. */
+  readonly covariance: readonly (readonly number[])[];
+  /** Rank of the covariance: groups with information less one. */
+  readonly degreesOfFreedom: number;
+  /** The chi-square statistic, or `null` when not estimable. */
+  readonly chiSquare: number | null;
+  /** Upper-tail chi-square probability, or `null` when not estimable. */
+  readonly pValue: number | null;
+}
+
+/** One plotted time of a Kaplan-Meier curve and the results it shows. */
+export interface TlfKmPoint {
+  /** The time, in days; 0 is the start of the curve. */
+  readonly time: number;
+  /** Subjects at risk at the time. */
+  readonly atRisk: number;
+  /** Events at the time. */
+  readonly events: number;
+  /** Censorings at the time, each marked on the curve. */
+  readonly censored: number;
+  /** The survival estimate just after the time. */
+  readonly survival: number;
+  /** Lower 95% limit, or `null` when not estimable. */
+  readonly lower: number | null;
+  /** Upper 95% limit, or `null` when not estimable. */
+  readonly upper: number | null;
+  /** The estimate as displayed. */
+  readonly survivalText: string;
+  /** The Greenwood standard error as displayed. */
+  readonly standardErrorText: string;
+  /** The 95% limits as displayed, for example `(0.6197, 0.9516)`, or `NE`. */
+  readonly limitsText: string;
+  /** Ids of the results the point is drawn from. */
+  readonly resultIds: readonly string[];
+}
+
+/** One treatment group's Kaplan-Meier curve. */
+export interface TlfKmCurve {
+  /** Stable id, for example `curve1`. */
+  readonly id: string;
+  /** The treatment, for example `Placebo`. */
+  readonly label: string;
+  /** The grouping factor of the curve. */
+  readonly groupingId: string;
+  /** The group of the curve. */
+  readonly groupId: string;
+  /** Subjects in the analysis set and group (N). */
+  readonly bigN: number;
+  /** The result that N comes from. */
+  readonly bigNResultId: string;
+  /** Plotted times in ascending order, starting at 0; empty for a group with no records. */
+  readonly points: readonly TlfKmPoint[];
+}
+
+/** A column of the number-at-risk table. */
+export interface TlfAtRiskTime {
+  /** The day, for example 15. */
+  readonly time: number;
+  /** Column label, for example `Day 15`. */
+  readonly label: string;
+}
+
+/** A treatment group's row of the number-at-risk table. */
+export interface TlfAtRiskRow {
+  /** The curve the row belongs to. */
+  readonly curveId: string;
+  /** The treatment. */
+  readonly label: string;
+  /** One count per at-risk time. */
+  readonly cells: readonly TlfCell[];
+}
+
+/**
+ * A Kaplan-Meier figure as a render model, which the SVG and HTML writers
+ * read and a page can render directly.
+ */
+export interface TlfKmFigure {
+  /** The ARS output. */
+  readonly outputId: string;
+  /** The ARS display. */
+  readonly displayId: string;
+  /** Figure number, for example `14.2.2`. */
+  readonly number: string;
+  /** Title. */
+  readonly title: string;
+  /** Population line, for example `Safety Set`. */
+  readonly population: string;
+  /** Horizontal axis title. */
+  readonly xLabel: string;
+  /** Vertical axis title. */
+  readonly yLabel: string;
+  /** One curve per treatment group, in protocol order. */
+  readonly curves: readonly TlfKmCurve[];
+  /** Columns of the number-at-risk table, in time order. */
+  readonly atRiskTimes: readonly TlfAtRiskTime[];
+  /** Rows of the number-at-risk table, one per curve. */
+  readonly atRisk: readonly TlfAtRiskRow[];
+  /** The log-rank test line and the results it shows. */
+  readonly test: TlfCell;
+  /** Text alternative: what the figure shows, in words. */
+  readonly summary: string;
+  /** Footnotes, in order. */
+  readonly footnotes: readonly string[];
+  /** The synthetic-data notice. */
+  readonly notice: string;
+  /** File name without extension, for example `f-14-2-2`. */
+  readonly fileBase: string;
 }

@@ -23,6 +23,10 @@ export function listLockedPackages(lockfile: LockfileShape): LockedPackage[] {
   const byKey = new Map<string, LockedPackage>();
   for (const [lockPath, entry] of Object.entries(lockfile.packages)) {
     if (lockPath === "" || entry.link) continue;
+    // A dev-only bundled dependency ships inside its parent's tarball, has no
+    // registry tarball of its own and never reaches visitors. A shipped one
+    // still needs its own notice, so it falls through and fails loudly.
+    if (entry.inBundle && entry.dev) continue;
     // An npm alias installs under another name; credit what was published.
     const name = entry.name ?? packageNameFromLockPath(lockPath);
     if (!name || !entry.version) continue;

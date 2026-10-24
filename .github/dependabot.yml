@@ -1,16 +1,23 @@
 version: 2
 updates:
+  # One weekly PR for every action bump instead of one PR per action.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   # npm updates arrive as one grouped weekly PR for patch and minor releases
   # (#2511). Majors are ignored here and taken one per PR by hand, because
   # each needs its own migration (vitest, eslint, jsdom, framer-motion).
   # `next` and `eslint-config-next` are exact pins that must move together,
-  # so they get their own group. A version bump of a shipped package also
-  # needs `npm run oss:credits` pushed to the PR, or audit:licenses fails.
+  # so they get their own group. Every npm PR then needs `npm run deps:fix`
+  # pushed to it: it regenerates the OSS credits and moves the Playwright CI
+  # images to a new @playwright/test (#2730). See
+  # docs/how-to/manage-dependency-licenses.md.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:

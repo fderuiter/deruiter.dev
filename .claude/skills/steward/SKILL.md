@@ -88,3 +88,8 @@ parallel; merge one at a time.
   device suite only run in CI. Tools built on
   `launchChromiumWithFallback()` (`bench:pages`, the mermaid test) do run
   locally.
+- **Dependabot npm PRs need `npm run deps:fix`.** It regenerates the OSS
+  credits and moves the Playwright CI images to a bumped
+  `@playwright/test`. Merge `main` in first when the branch is behind, then
+  run `npx npm@10.9.2 ci` so the credits see `main`'s packages too (see
+  `docs/how-to/manage-dependency-licenses.md`).

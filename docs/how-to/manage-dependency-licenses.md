@@ -1,6 +1,6 @@
 # Manage Dependency Licenses
 
-Documentation last reconciled: 2026-10-04.
+Documentation last reconciled: 2026-10-24.
 
 This page covers what to do when you add or upgrade a dependency, when the
 license audit fails, and how credits and notices stay current. The reasoning
@@ -36,6 +36,32 @@ is in [ADR 0057](../../adr/0057-open-source-acknowledgments-and-license-complian
 `npm test` fails with the exact fix command if any of these drift. The check is
 byte-exact and offline. To confirm the committed facts against the registry
 itself, run `npm run oss:credits -- --verify-registry`.
+
+## When a Dependabot PR is red
+
+Dependabot cannot run project scripts, so its npm PRs arrive with stale
+credits, and a `@playwright/test` bump arrives with CI still pinned to the old
+Playwright image. Check out the PR branch, merge `main` into it if it is
+behind, install, and run one command:
+
+```bash
+npx npm@10.9.2 ci
+npm run deps:fix
+```
+
+It moves every `mcr.microsoft.com/playwright` image in `.github/workflows/` to
+the locked `@playwright/test` version, pinned by the image index digest from
+MCR, and then runs `npm run oss:credits`. Commit what it changed and push.
+`npm run deps:fix -- --check` reports the same drift offline without writing.
+
+Dependabot's npm also records the bundled dependencies of
+`@tailwindcss/oxide-wasm32-wasi` as lock entries with no tarball of their own.
+They are dev-only and travel inside their parent, so the credits skip them. A
+bundled entry on a shipped package is not skipped: it stops `oss:credits`, and
+needs a person to decide how it is credited.
+
+If someone comments `@dependabot recreate`, Dependabot rewrites the branch and
+drops pushed fixes. Run `npm run deps:fix` again afterwards.
 
 ## When `audit:licenses` fails
 

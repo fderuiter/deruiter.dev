@@ -207,6 +207,7 @@ customProperties:
       - "product:gold.fct_query"
       - "product:gold.fct_deviation"
       - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_planned_monitoring_visit"
       - "product:gold.fct_milestone"
       - "product:gold.fct_spend"
       - "product:gold.fct_kri_snapshot"

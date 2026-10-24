@@ -13,6 +13,7 @@ const root = process.cwd();
 const SCANNED = [
   "app/crf",
   "app/platform",
+  "components/platform",
   "app/study-data",
   "components/crf",
   "lib/crf",

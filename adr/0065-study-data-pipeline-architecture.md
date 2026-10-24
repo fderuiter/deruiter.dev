@@ -104,15 +104,20 @@ every output file, and holds no timestamps.
 
 `STANDARD_VERSIONS` in `presets.ts` pins every standard the pipeline applies.
 The run declares them in TS (`SDTMIGVER` and similar parameters), in
-Define-XML and in the manifest.
+Define-XML and in the manifest. Since
+[#2706](https://github.com/fderuiter/deruiter.dev/issues/2706), every value
+comes from `CLINICAL_STANDARDS_PROFILE` in `lib/study-data/standards.ts`, the
+one profile that CRF Studio, the platform and the arcade also read.
 
 | Standard                      | Version    |
 | ----------------------------- | ---------- |
-| USDM                          | 4.0        |
+| USDM                          | 4.0.0      |
 | SDTM                          | 2.0        |
 | SDTMIG                        | 3.4        |
 | ADaM                          | 2.1        |
 | ADaMIG                        | 1.3        |
+| ADaM OCCDS                    | 1.0        |
+| ADaM Conformance Rules        | 5.0        |
 | Define-XML                    | 2.1        |
 | Dataset-JSON                  | 1.1        |
 | ARS                           | 1.0        |

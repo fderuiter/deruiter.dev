@@ -6,9 +6,20 @@
  */
 import { readStudyDefinition } from "./internal/usdm/read-study-definition";
 import { DEMO_301_USDM } from "./presets/demo-301";
+import { CLINICAL_STANDARDS_PROFILE } from "./standards";
 import type { PipelineStage, StandardVersions, StudyDefinition } from "./types";
 export { ADAM_METHODS } from "./internal/adam/specs";
 export type { AdamMethodId } from "./internal/adam/specs";
+export {
+  CLINICAL_STANDARDS_PROFILE,
+  controlledTerminologyCitation,
+  standardCitation,
+} from "./standards";
+export type {
+  ClinicalStandardsProfile,
+  ControlledTerminologyClaim,
+  ProfileStandard,
+} from "./standards";
 export { SDTM_METHODS } from "./internal/sdtm/methods";
 export type { SdtmMethodId } from "./internal/sdtm/methods";
 export {
@@ -28,18 +39,21 @@ export type { ValueLevelSpec } from "./internal/define/value-level";
  * the run manifest. The CT entry is the date of the NCI EVS CDISC
  * Controlled Terminology package that the local codelist subset is aligned
  * to. The subset is hand-curated and has not been verified against that
- * package, so it is not a claim of conformance to it.
+ * package, so it is not a claim of conformance to it. Every value comes from
+ * {@link CLINICAL_STANDARDS_PROFILE}.
  */
 export const STANDARD_VERSIONS: StandardVersions = Object.freeze({
-  USDM: "4.0",
-  SDTM: "2.0",
-  SDTMIG: "3.4",
-  ADaM: "2.1",
-  ADaMIG: "1.3",
-  "Define-XML": "2.1",
-  "Dataset-JSON": "1.1",
-  ARS: "1.0",
-  "NCI-EVS-CT": "2026-09-25",
+  USDM: CLINICAL_STANDARDS_PROFILE.USDM,
+  SDTM: CLINICAL_STANDARDS_PROFILE.SDTM,
+  SDTMIG: CLINICAL_STANDARDS_PROFILE.SDTMIG,
+  ADaM: CLINICAL_STANDARDS_PROFILE.ADaM,
+  ADaMIG: CLINICAL_STANDARDS_PROFILE.ADaMIG,
+  OCCDS: CLINICAL_STANDARDS_PROFILE.OCCDS,
+  "ADaM-CR": CLINICAL_STANDARDS_PROFILE["ADaM-CR"],
+  "Define-XML": CLINICAL_STANDARDS_PROFILE["Define-XML"],
+  "Dataset-JSON": CLINICAL_STANDARDS_PROFILE["Dataset-JSON"],
+  ARS: CLINICAL_STANDARDS_PROFILE.ARS,
+  "NCI-EVS-CT": CLINICAL_STANDARDS_PROFILE.CT.packageDate,
 });
 
 /** Pipeline stages in execution order. */

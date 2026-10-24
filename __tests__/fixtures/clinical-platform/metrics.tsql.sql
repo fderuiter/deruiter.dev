@@ -620,7 +620,7 @@ FULL OUTER JOIN [denominator] AS [d]
   ON [d].[study] = [n].[study] AND [d].[month] = [n].[month]
 ORDER BY 1, 2;
 
--- Overdue monitoring visit reports: monitoring_reports_overdue 1.0.0 (draft), SQL Server T-SQL.
+-- Overdue monitoring visit reports: monitoring_reports_overdue 2.0.0 (certified), SQL Server T-SQL.
 -- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
 WITH [measure] AS (
   SELECT
@@ -628,12 +628,12 @@ WITH [measure] AS (
   FROM [gold].[fct_monitoring_visit] AS [f]
   JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
   WHERE [f].[report_final_date_key] IS NULL
-    AND DATEDIFF(DAY, CONVERT(DATE, CAST([f].[visit_date_key] AS CHAR(8)), 112), CAST(N'2026-09-30' AS DATE)) > 20
+    AND DATEDIFF(DAY, CONVERT(DATE, CAST([f].[report_due_date_key] AS CHAR(8)), 112), CAST(N'2026-09-30' AS DATE)) > 0
     AND [dim_study].[study_status] NOT IN (N'closed')
 )
 SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
 
--- Overdue monitoring visit reports: monitoring_reports_overdue 1.0.0 (draft), SQL Server T-SQL.
+-- Overdue monitoring visit reports: monitoring_reports_overdue 2.0.0 (certified), SQL Server T-SQL.
 -- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
 WITH [measure] AS (
   SELECT
@@ -644,7 +644,42 @@ WITH [measure] AS (
   JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
   JOIN [gold].[dim_date] AS [dim_date] ON [dim_date].[date_key] = [f].[visit_date_key]
   WHERE [f].[report_final_date_key] IS NULL
-    AND DATEDIFF(DAY, CONVERT(DATE, CAST([f].[visit_date_key] AS CHAR(8)), 112), CAST(N'2026-09-30' AS DATE)) > 20
+    AND DATEDIFF(DAY, CONVERT(DATE, CAST([f].[report_due_date_key] AS CHAR(8)), 112), CAST(N'2026-09-30' AS DATE)) > 0
+    AND [dim_study].[study_status] NOT IN (N'closed')
+  GROUP BY [dim_study].[study_id], [dim_date].[year_month]
+)
+SELECT
+  [study],
+  [month],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Overdue interim monitoring visits: monitoring_visits_overdue 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[fct_planned_monitoring_visit] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  WHERE [f].[actual_date_key] IS NULL
+    AND DATEDIFF(DAY, CONVERT(DATE, CAST([f].[due_date_key] AS CHAR(8)), 112), CAST(N'2026-09-30' AS DATE)) > 0
+    AND [dim_study].[study_status] NOT IN (N'closed')
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Overdue interim monitoring visits: monitoring_visits_overdue 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH [measure] AS (
+  SELECT
+    [dim_study].[study_id] AS [study],
+    [dim_date].[year_month] AS [month],
+    COUNT(*) AS [value]
+  FROM [gold].[fct_planned_monitoring_visit] AS [f]
+  JOIN [gold].[dim_study] AS [dim_study] ON [dim_study].[study_key] = [f].[study_key]
+  JOIN [gold].[dim_date] AS [dim_date] ON [dim_date].[date_key] = [f].[due_date_key]
+  WHERE [f].[actual_date_key] IS NULL
+    AND DATEDIFF(DAY, CONVERT(DATE, CAST([f].[due_date_key] AS CHAR(8)), 112), CAST(N'2026-09-30' AS DATE)) > 0
     AND [dim_study].[study_status] NOT IN (N'closed')
   GROUP BY [dim_study].[study_id], [dim_date].[year_month]
 )

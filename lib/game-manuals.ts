@@ -1,3 +1,4 @@
+import { standardCitation } from "@/lib/study-data/standards";
 import { FieldManualData } from "@/types/game-manual";
 import { manualControlsFromActions } from "@/lib/arcade";
 import { DUCK_ACTIONS } from "@/lib/working-with-duck-actions";
@@ -960,7 +961,7 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     proTips: [
       "Keep an eye on Serious Adverse Events (⚡ SAE): they have shorter timers and grant +300 bonus points upon compliant signature. Sign an SAE Urgent Safety Expedited, and never use that reason for a routine CRF.",
       "Charge your 'FDA Coffee Break' lifeline by maintaining clean submission streaks; deploy it when auditor suspicion climbs above 70%.",
-      "Switch to the Live SDTM Studio tab during shifts to inspect generated observation rows and export authentic CDISC ODM 1.3 XML.",
+      `Switch to the Live SDTM Studio tab during shifts to inspect generated observation rows and export authentic CDISC ${standardCitation("ODM")} XML.`,
       "Notice how each CRF is signed and where it goes: the Phase 3 inspector asks about the records you locked, and three wrong answers add a Major finding for an incomplete audit trail.",
       "Toggle the procedural 8-bit synth BGM to hear dynamic tempo scaling as auditor scrutiny intensifies.",
     ],

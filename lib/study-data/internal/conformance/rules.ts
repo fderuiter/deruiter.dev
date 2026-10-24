@@ -1,15 +1,13 @@
 /** Versioned, data-defined subset of SDTMIG and ADaMIG conformance checks. */
 import { STANDARD_CODELISTS } from "@/lib/crf/cdisc-controlled-terminology";
+import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../../standards";
 import type { CellValue, Dataset, FindingSeverity } from "../../types";
 
 export const CONFORMANCE_RULES_VERSION = "1.0.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
-const SDTM_CITATION =
-  "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules v2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0";
-const ADAM_CITATION =
-  "ADaMIG 1.3: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3";
-const CT_CITATION =
-  "Local CT subset aligned to NCI EVS CDISC CT 2026-09-25, not verified against the package: https://evs.nci.nih.gov/ftp1/CDISC/";
+const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
+const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
+const CT_CITATION = `Local CT subset aligned to NCI EVS CDISC CT ${CLINICAL_STANDARDS_PROFILE.CT.packageDate}, not verified against the package: https://evs.nci.nih.gov/ftp1/CDISC/`;
 
 export interface RuleIssue {
   readonly row?: number;

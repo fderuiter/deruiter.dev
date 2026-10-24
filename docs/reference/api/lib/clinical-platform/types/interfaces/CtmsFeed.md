@@ -26,6 +26,14 @@ Study milestones.
 
 ***
 
+### monitoringPlans
+
+> `readonly` **monitoringPlans**: readonly [`CtmsMonitoringPlan`](CtmsMonitoringPlan.md)[]
+
+Monitoring plans, one per study.
+
+***
+
 ### monitoringVisits
 
 > `readonly` **monitoringVisits**: readonly [`CtmsMonitoringVisit`](CtmsMonitoringVisit.md)[]

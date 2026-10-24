@@ -89,6 +89,14 @@ describe("Coverage Policy Governance & Threshold Guardrails", () => {
     expect(trialAndError.lines).toBeGreaterThanOrEqual(95);
     expect(trialAndError.functions).toBeGreaterThanOrEqual(95);
     expect(trialAndError.branches).toBeGreaterThanOrEqual(95);
+
+    // #2607: the study data derivations ratchet up from 2026-10-24's level.
+    const studyData = thresholds["lib/study-data/**"];
+    expect(studyData).toBeDefined();
+    expect(studyData.statements).toBeGreaterThanOrEqual(96);
+    expect(studyData.lines).toBeGreaterThanOrEqual(96);
+    expect(studyData.functions).toBeGreaterThanOrEqual(99);
+    expect(studyData.branches).toBeGreaterThanOrEqual(86);
   });
 
   it("prevents silent degradation or un-scoped global threshold overrides in vitest.config.mts", () => {

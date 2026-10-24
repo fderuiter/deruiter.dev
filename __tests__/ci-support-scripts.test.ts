@@ -138,6 +138,16 @@ describe("CI support scripts (#1767)", () => {
         /Pick one mutation scope/
       );
     });
+
+    it("runs the weekly study data scope from its own config (#2607)", () => {
+      expect(buildStrykerArgs(["--study-data"])).toEqual([
+        "run",
+        "stryker.study-data.config.mjs",
+      ]);
+      expect(() => buildStrykerArgs(["--garmin", "--study-data"])).toThrow(
+        /Pick one mutation scope/
+      );
+    });
   });
 
   describe("per-file mutation breaks (#2529)", () => {
@@ -171,38 +181,41 @@ describe("CI support scripts (#1767)", () => {
       ]);
     });
 
-    it.each(["stryker.engines.config.mjs", "stryker.garmin.config.mjs"])(
-      "never lets a %s floor sit at zero once measured",
-      async (config) => {
-        const { fileBreaks } = (await import(
-          path.join(process.cwd(), config)
-        )) as { fileBreaks: Record<string, number> };
-        expect(Object.keys(fileBreaks).length).toBeGreaterThan(0);
-        for (const [file, floor] of Object.entries(fileBreaks)) {
-          expect(fs.existsSync(path.join(process.cwd(), file)), file).toBe(
-            true
-          );
-          expect(floor, file).toBeGreaterThan(0);
-        }
+    it.each([
+      "stryker.engines.config.mjs",
+      "stryker.garmin.config.mjs",
+      "stryker.study-data.config.mjs",
+    ])("never lets a %s floor sit at zero once measured", async (config) => {
+      const { fileBreaks } = (await import(
+        path.join(process.cwd(), config)
+      )) as { fileBreaks: Record<string, number> };
+      expect(Object.keys(fileBreaks).length).toBeGreaterThan(0);
+      for (const [file, floor] of Object.entries(fileBreaks)) {
+        expect(fs.existsSync(path.join(process.cwd(), file)), file).toBe(true);
+        expect(floor, file).toBeGreaterThan(0);
       }
-    );
+    });
 
-    it("keeps the two weekly scopes' files and reports apart (#2564)", async () => {
+    it("keeps the weekly scopes' files and reports apart (#2564, #2607)", async () => {
       const load = async (config: string) =>
         (await import(path.join(process.cwd(), config))) as {
           fileBreaks: Record<string, number>;
           ENGINES_JSON_REPORT: string;
           default: { incrementalFile: string };
         };
-      const engines = await load("stryker.engines.config.mjs");
-      const garmin = await load("stryker.garmin.config.mjs");
-      for (const file of Object.keys(garmin.fileBreaks)) {
-        expect(engines.fileBreaks, file).not.toHaveProperty(file);
-      }
-      expect(garmin.ENGINES_JSON_REPORT).not.toBe(engines.ENGINES_JSON_REPORT);
-      expect(garmin.default.incrementalFile).not.toBe(
-        engines.default.incrementalFile
+      const scopes = await Promise.all(
+        [
+          "stryker.engines.config.mjs",
+          "stryker.garmin.config.mjs",
+          "stryker.study-data.config.mjs",
+        ].map(load)
       );
+      const files = scopes.flatMap((scope) => Object.keys(scope.fileBreaks));
+      expect(new Set(files).size).toBe(files.length);
+      const reports = scopes.map((scope) => scope.ENGINES_JSON_REPORT);
+      expect(new Set(reports).size).toBe(scopes.length);
+      const incremental = scopes.map((scope) => scope.default.incrementalFile);
+      expect(new Set(incremental).size).toBe(scopes.length);
     });
   });
 

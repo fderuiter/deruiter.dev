@@ -183,6 +183,13 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     DAILY,
     OPERATIONAL
   ),
+  "silver.ctms_monitoring_plan": silver(
+    "Monitoring plans",
+    "CTMS",
+    MONITORING,
+    WEEKLY,
+    TRIAL
+  ),
   "silver.ctms_monitoring_visit": silver(
     "Monitoring visits",
     "CTMS",
@@ -254,6 +261,12 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     "Conformed dimensions",
     PORTFOLIO
   ),
+  "gold.dim_monitoring_plan": gold(
+    "Monitoring plan dimension",
+    "Conformed dimensions",
+    MONITORING,
+    WEEKLY
+  ),
   "gold.fct_enrollment": gold(
     "Enrollment facts",
     "Operations mart",
@@ -262,8 +275,13 @@ export const PRODUCT_REGISTRATIONS: Readonly<
   "gold.fct_visit": gold("Visit facts", "Operations mart", DATA_MANAGEMENT),
   "gold.fct_query": gold("Query facts", "Operations mart", DATA_MANAGEMENT),
   "gold.fct_deviation": gold("Deviation facts", "Operations mart", QUALITY),
-  "gold.fct_monitoring_visit": gold(
-    "Monitoring visit facts",
+  "gold.fct_monitoring_visit": {
+    ...gold("Monitoring visit facts", "Operations mart", MONITORING),
+    // 1.1.0 (#2736): the plan in force and the report due date.
+    version: "1.1.0",
+  },
+  "gold.fct_planned_monitoring_visit": gold(
+    "Planned monitoring visit facts",
     "Operations mart",
     MONITORING
   ),

@@ -8,6 +8,7 @@
  * 5. Diagnostic dplyr::glimpse() and summary() verification suites
  */
 
+import { standardCitation } from "@/lib/study-data/standards";
 import {
   StudyProtocol,
   CRFForm,
@@ -190,7 +191,7 @@ function generateRHeader(study: StudyProtocol, formScope?: string): string {
 # SPONSOR:      ${escapeRString(study.sponsor)}
 # PHASE:        ${escapeRString(study.phase)} | THERAPEUTIC AREA: ${escapeRString(study.therapeuticArea)}
 # GENERATED:    ${timestamp}
-# STANDARD:     CDISC CDASH v2.2 / SDTM-IG v3.4 / Pharmaverse R Standards
+# STANDARD:     CDISC ${standardCitation("CDASHIG")} / ${standardCitation("SDTMIG")} / Pharmaverse R Standards
 # DESCRIPTION:  Automated R tibble dataset scaffolding with explicit factor levels,
 #               CDASH variable label attributes, synthetic clinical test rows,
 #               and diagnostic glimpse inspection.

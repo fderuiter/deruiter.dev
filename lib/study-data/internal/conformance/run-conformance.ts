@@ -1,5 +1,6 @@
 /** Runs the local versioned rule subset and records pass/fail per domain. */
 import { STANDARD_VERSIONS } from "../../presets";
+import { standardCitation } from "../../standards";
 import type {
   ConformanceDomainSummary,
   ConformanceReport,
@@ -15,8 +16,7 @@ import {
   type RuleIssue,
 } from "./rules";
 
-const SCOPE_NOTICE =
-  "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.";
+const SCOPE_NOTICE = `Models a subset of published ${standardCitation("SDTMIG")} and ${standardCitation("ADaMIG")} rules. Run CDISC CORE for the complete published conformance catalog.`;
 export interface ConformanceOutcome {
   readonly report: ConformanceReport;
   readonly findings: readonly Finding[];

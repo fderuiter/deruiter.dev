@@ -110,6 +110,8 @@ export {
   sha256Hex,
   ADAM_DEFINE_PATH,
   ADAM_PACKAGE_DIR,
+  ADRG_PATH,
+  CSDRG_PATH,
   SDTM_DEFINE_PATH,
   SDTM_PACKAGE_DIR,
   PACKAGE_FIXED_TIMESTAMP,
@@ -124,6 +126,22 @@ export type {
   PackageOptions,
   StudyDataPackage,
 } from "./internal/export/package";
+export { buildReviewerGuides } from "./internal/guides/reviewer-guides";
+export type {
+  ReviewerGuide,
+  ReviewerGuideAnalysis,
+  ReviewerGuideDataset,
+  ReviewerGuideDerivation,
+  ReviewerGuideFlowStep,
+  ReviewerGuideIssue,
+  ReviewerGuideKind,
+  ReviewerGuideOutput,
+  ReviewerGuides,
+} from "./internal/guides/reviewer-guides";
+export {
+  renderReviewerGuideHtml,
+  writeReviewerGuideDocument,
+} from "./internal/guides/render-reviewer-guide";
 export {
   descriptiveStatistics,
   formatDecimal,

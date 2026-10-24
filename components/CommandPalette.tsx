@@ -11,6 +11,10 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { getNavGroupForHref } from "@/lib/navigation";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -653,8 +657,8 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
         highlights: [
           "Zero-dependency Excel AST formula transpiler",
-          "Automated CDISC CDASH 2.2 variable mapping linter",
-          "Deterministic ODM-XML v1.3.2 export generator",
+          `Automated CDISC ${standardCitation("CDASHIG")} variable mapping linter`,
+          `Deterministic ODM-XML v${CLINICAL_STANDARDS_PROFILE.ODM} export generator`,
         ],
       },
       {
@@ -1314,6 +1318,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Weighted scoring",
           "Five-year economics",
           "HTML and Markdown memos",
+        ],
+      },
+      {
+        id: "nav-platform-operations",
+        title: "Clinical Operations Dashboards",
+        subtitle: "Drill a synthetic portfolio from study to country to site.",
+        category: "navigation",
+        url: "/platform/operations",
+        icon: <IconCpu className="h-4 w-4 text-amber-400" />,
+        badge: "Dashboards",
+        status: "Interactive",
+        description:
+          "Enrollment, site activation, data management, deviations, monitoring and milestones, every number from the governed metric registry.",
+        techStack: ["Next.js 16", "TypeScript", "Web Worker", "Semantic Layer"],
+        highlights: [
+          "Portfolio, study, country and site drill-down",
+          "Every chart with its data table",
+          "Drug, device and CRO-run studies",
         ],
       },
       {

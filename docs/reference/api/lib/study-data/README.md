@@ -38,6 +38,18 @@ Re-exports [AdamMethodId](internal/adam/specs/type-aliases/AdamMethodId.md)
 
 ***
 
+### adamRowId
+
+Re-exports [adamRowId](internal/tlf/row-ids/functions/adamRowId.md)
+
+***
+
+### AdamRowLocation
+
+Re-exports [AdamRowLocation](types/interfaces/AdamRowLocation.md)
+
+***
+
 ### AnalysisPopulationDefinition
 
 Re-exports [AnalysisPopulationDefinition](types/interfaces/AnalysisPopulationDefinition.md)
@@ -50,6 +62,210 @@ Re-exports [ArmDefinition](types/interfaces/ArmDefinition.md)
 
 ***
 
+### ARS\_REPORTING\_EVENT\_PATH
+
+Re-exports [ARS_REPORTING_EVENT_PATH](internal/tlf/outputs/variables/ARS_REPORTING_EVENT_PATH.md)
+
+***
+
+### ArsAnalysis
+
+Re-exports [ArsAnalysis](types/interfaces/ArsAnalysis.md)
+
+***
+
+### ArsAnalysisMethod
+
+Re-exports [ArsAnalysisMethod](types/interfaces/ArsAnalysisMethod.md)
+
+***
+
+### ArsAnalysisSet
+
+Re-exports [ArsAnalysisSet](types/type-aliases/ArsAnalysisSet.md)
+
+***
+
+### ArsComparator
+
+Re-exports [ArsComparator](types/type-aliases/ArsComparator.md)
+
+***
+
+### ArsCompoundClause
+
+Re-exports [ArsCompoundClause](types/interfaces/ArsCompoundClause.md)
+
+***
+
+### ArsCompoundExpression
+
+Re-exports [ArsCompoundExpression](types/interfaces/ArsCompoundExpression.md)
+
+***
+
+### ArsCondition
+
+Re-exports [ArsCondition](types/interfaces/ArsCondition.md)
+
+***
+
+### ArsConditionClause
+
+Re-exports [ArsConditionClause](types/interfaces/ArsConditionClause.md)
+
+***
+
+### ArsDataSubset
+
+Re-exports [ArsDataSubset](types/type-aliases/ArsDataSubset.md)
+
+***
+
+### ArsDisplaySection
+
+Re-exports [ArsDisplaySection](types/interfaces/ArsDisplaySection.md)
+
+***
+
+### ArsDisplaySectionType
+
+Re-exports [ArsDisplaySectionType](types/type-aliases/ArsDisplaySectionType.md)
+
+***
+
+### ArsDisplaySubSection
+
+Re-exports [ArsDisplaySubSection](types/interfaces/ArsDisplaySubSection.md)
+
+***
+
+### ArsFileSpecification
+
+Re-exports [ArsFileSpecification](types/interfaces/ArsFileSpecification.md)
+
+***
+
+### ArsGroup
+
+Re-exports [ArsGroup](types/type-aliases/ArsGroup.md)
+
+***
+
+### ArsGroupingFactor
+
+Re-exports [ArsGroupingFactor](types/interfaces/ArsGroupingFactor.md)
+
+***
+
+### ArsListItem
+
+Re-exports [ArsListItem](types/interfaces/ArsListItem.md)
+
+***
+
+### ArsOperation
+
+Re-exports [ArsOperation](types/interfaces/ArsOperation.md)
+
+***
+
+### ArsOperationRelationship
+
+Re-exports [ArsOperationRelationship](types/interfaces/ArsOperationRelationship.md)
+
+***
+
+### ArsOperationResult
+
+Re-exports [ArsOperationResult](types/interfaces/ArsOperationResult.md)
+
+***
+
+### ArsOrderedDisplay
+
+Re-exports [ArsOrderedDisplay](types/interfaces/ArsOrderedDisplay.md)
+
+***
+
+### ArsOrderedDisplaySubSection
+
+Re-exports [ArsOrderedDisplaySubSection](types/interfaces/ArsOrderedDisplaySubSection.md)
+
+***
+
+### ArsOrderedEntity
+
+Re-exports [ArsOrderedEntity](types/interfaces/ArsOrderedEntity.md)
+
+***
+
+### ArsOrderedGrouping
+
+Re-exports [ArsOrderedGrouping](types/interfaces/ArsOrderedGrouping.md)
+
+***
+
+### ArsOutput
+
+Re-exports [ArsOutput](types/interfaces/ArsOutput.md)
+
+***
+
+### ArsOutputDisplay
+
+Re-exports [ArsOutputDisplay](types/interfaces/ArsOutputDisplay.md)
+
+***
+
+### ArsReferencedAnalysisOperation
+
+Re-exports [ArsReferencedAnalysisOperation](types/interfaces/ArsReferencedAnalysisOperation.md)
+
+***
+
+### ArsReportingEvent
+
+Re-exports [ArsReportingEvent](types/interfaces/ArsReportingEvent.md)
+
+***
+
+### ArsResultGroup
+
+Re-exports [ArsResultGroup](types/interfaces/ArsResultGroup.md)
+
+***
+
+### ArsRowReference
+
+Re-exports [ArsRowReference](types/interfaces/ArsRowReference.md)
+
+***
+
+### ArsRowRole
+
+Re-exports [ArsRowRole](types/type-aliases/ArsRowRole.md)
+
+***
+
+### ArsRowSet
+
+Re-exports [ArsRowSet](types/interfaces/ArsRowSet.md)
+
+***
+
+### ArsTerm
+
+Re-exports [ArsTerm](types/interfaces/ArsTerm.md)
+
+***
+
+### ArsWhereClause
+
+Re-exports [ArsWhereClause](types/type-aliases/ArsWhereClause.md)
+
+***
+
 ### AssessmentDefinition
 
 Re-exports [AssessmentDefinition](types/interfaces/AssessmentDefinition.md)
@@ -59,6 +275,12 @@ Re-exports [AssessmentDefinition](types/interfaces/AssessmentDefinition.md)
 ### buildStudyDataPackage
 
 Re-exports [buildStudyDataPackage](internal/export/package/functions/buildStudyDataPackage.md)
+
+***
+
+### buildTlfOutputs
+
+Re-exports [buildTlfOutputs](internal/tlf/outputs/functions/buildTlfOutputs.md)
 
 ***
 
@@ -194,6 +416,18 @@ Re-exports [deriveAdamDatasets](internal/adam/derive-adam/functions/deriveAdamDa
 
 ***
 
+### descriptiveStatistics
+
+Re-exports [descriptiveStatistics](internal/tlf/stats/functions/descriptiveStatistics.md)
+
+***
+
+### DescriptiveStatistics
+
+Re-exports [DescriptiveStatistics](types/interfaces/DescriptiveStatistics.md)
+
+***
+
 ### ElementDefinition
 
 Re-exports [ElementDefinition](types/interfaces/ElementDefinition.md)
@@ -221,6 +455,18 @@ Re-exports [EndpointDefinition](types/interfaces/EndpointDefinition.md)
 ### EpochDefinition
 
 Re-exports [EpochDefinition](types/interfaces/EpochDefinition.md)
+
+***
+
+### escapeHtml
+
+Re-exports [escapeHtml](internal/tlf/html/functions/escapeHtml.md)
+
+***
+
+### escapeRtf
+
+Re-exports [escapeRtf](internal/tlf/rtf/functions/escapeRtf.md)
 
 ***
 
@@ -260,6 +506,30 @@ Re-exports [FindingSeverity](types/type-aliases/FindingSeverity.md)
 
 ***
 
+### formatDecimal
+
+Re-exports [formatDecimal](internal/tlf/stats/functions/formatDecimal.md)
+
+***
+
+### formatPercent
+
+Re-exports [formatPercent](internal/tlf/stats/functions/formatPercent.md)
+
+***
+
+### indexAdamRows
+
+Re-exports [indexAdamRows](internal/tlf/row-ids/functions/indexAdamRows.md)
+
+***
+
+### inferDecimalPlaces
+
+Re-exports [inferDecimalPlaces](internal/tlf/stats/functions/inferDecimalPlaces.md)
+
+***
+
 ### IntercurrentEventDefinition
 
 Re-exports [IntercurrentEventDefinition](types/interfaces/IntercurrentEventDefinition.md)
@@ -281,6 +551,12 @@ Re-exports [itemOid](internal/export/oids/functions/itemOid.md)
 ### ManifestEntry
 
 Re-exports [ManifestEntry](types/interfaces/ManifestEntry.md)
+
+***
+
+### MAX\_RAW\_DECIMALS
+
+Re-exports [MAX_RAW_DECIMALS](internal/tlf/stats/variables/MAX_RAW_DECIMALS.md)
 
 ***
 
@@ -380,6 +656,18 @@ Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/r
 
 ***
 
+### resolveResultRows
+
+Re-exports [resolveResultRows](internal/tlf/row-ids/functions/resolveResultRows.md)
+
+***
+
+### ResultRow
+
+Re-exports [ResultRow](types/interfaces/ResultRow.md)
+
+***
+
 ### RuleIssue
 
 Re-exports [RuleIssue](internal/conformance/rules/interfaces/RuleIssue.md)
@@ -422,6 +710,12 @@ Re-exports [SDTM_PACKAGE_DIR](internal/export/package/variables/SDTM_PACKAGE_DIR
 
 ***
 
+### selectAdamRows
+
+Re-exports [selectAdamRows](internal/tlf/where/functions/selectAdamRows.md)
+
+***
+
 ### sha256Hex
 
 Re-exports [sha256Hex](internal/export/package/functions/sha256Hex.md)
@@ -443,6 +737,24 @@ Re-exports [StandardId](types/type-aliases/StandardId.md)
 ### StandardVersions
 
 Re-exports [StandardVersions](types/type-aliases/StandardVersions.md)
+
+***
+
+### STATISTIC\_PRECISION
+
+Re-exports [STATISTIC_PRECISION](internal/tlf/stats/variables/STATISTIC_PRECISION.md)
+
+***
+
+### statisticDecimals
+
+Re-exports [statisticDecimals](internal/tlf/stats/functions/statisticDecimals.md)
+
+***
+
+### StatisticKind
+
+Re-exports [StatisticKind](internal/tlf/stats/type-aliases/StatisticKind.md)
 
 ***
 
@@ -500,6 +812,48 @@ Re-exports [SYNTHETIC_DATA_NOTICE](presets/variables/SYNTHETIC_DATA_NOTICE.md)
 
 ***
 
+### TLF\_OUTPUT\_DIR
+
+Re-exports [TLF_OUTPUT_DIR](internal/tlf/outputs/variables/TLF_OUTPUT_DIR.md)
+
+***
+
+### TlfCell
+
+Re-exports [TlfCell](types/interfaces/TlfCell.md)
+
+***
+
+### TlfColumn
+
+Re-exports [TlfColumn](types/interfaces/TlfColumn.md)
+
+***
+
+### TlfOutputs
+
+Re-exports [TlfOutputs](types/interfaces/TlfOutputs.md)
+
+***
+
+### TlfRow
+
+Re-exports [TlfRow](types/interfaces/TlfRow.md)
+
+***
+
+### TlfSection
+
+Re-exports [TlfSection](types/interfaces/TlfSection.md)
+
+***
+
+### TlfTable
+
+Re-exports [TlfTable](types/interfaces/TlfTable.md)
+
+***
+
 ### toDatasetJson
 
 Re-exports [toDatasetJson](internal/export/dataset-json/functions/toDatasetJson.md)
@@ -536,6 +890,12 @@ Re-exports [VisitDefinition](types/interfaces/VisitDefinition.md)
 
 ***
 
+### writeArsJson
+
+Re-exports [writeArsJson](internal/tlf/outputs/functions/writeArsJson.md)
+
+***
+
 ### writeCsv
 
 Re-exports [writeCsv](internal/export/csv/functions/writeCsv.md)
@@ -545,6 +905,24 @@ Re-exports [writeCsv](internal/export/csv/functions/writeCsv.md)
 ### writeDatasetJson
 
 Re-exports [writeDatasetJson](internal/export/dataset-json/functions/writeDatasetJson.md)
+
+***
+
+### writeTableHtml
+
+Re-exports [writeTableHtml](internal/tlf/html/functions/writeTableHtml.md)
+
+***
+
+### writeTableRtf
+
+Re-exports [writeTableRtf](internal/tlf/rtf/functions/writeTableRtf.md)
+
+***
+
+### writeTlfFiles
+
+Re-exports [writeTlfFiles](internal/tlf/outputs/functions/writeTlfFiles.md)
 
 ***
 

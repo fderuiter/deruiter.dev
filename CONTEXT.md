@@ -273,6 +273,8 @@ Formal inference rules used to derive logical steps from valid premises:
 - **Treatment-Emergent Adverse Event**: An adverse event whose observed or explicitly imputed start falls from first dose through the study's post-treatment safety window, before last known contact.
 - **Censoring Record**: The subject contact or disposition record that supplies the end of observed time when the specified event has not occurred.
 - **LOCF Sensitivity Row**: A clearly flagged analysis row that carries an earlier postbaseline value into a missing planned visit for sensitivity analysis; it is not a primary observed assessment.
+- **Reporting Event**: Everything a run reports, in an ARS 1.0-shaped metadata model: analysis sets, groupings, data subsets, methods, analyses, outputs and their results. It is declared as data and holds no timestamps.
+- **Analysis Result**: The value of one operation of one analysis for one combination of groups, such as the mean age in the Placebo arm. It names the ADaM rows it was computed from: the ADSL rows of its population (the denominator) and the records it counted or summarised. A displayed table cell shows one or more analysis results.
 
 ## Synthetic Reliability, Telemetry & Watch Emulation
 

@@ -513,3 +513,100 @@ export function drawHalloweenPark(ctx: Ctx, ticks: number, calm: boolean) {
     drawJackOLantern(ctx, x, y, size, lanternGlow(ticks, i * 2.1, calm))
   );
 }
+
+/** A kid in a bedsheet ghost costume, feet at (x, y). */
+function drawGhostKid(ctx: Ctx, x: number, y: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ellipse(ctx, 0, 0, 13, 3);
+  ctx.fill();
+  // The sheet: a dome on top, a wavy hem at the floor
+  ctx.fillStyle = "#f8fafc";
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(-12, -2);
+  ctx.lineTo(-12, -26);
+  ctx.quadraticCurveTo(-12, -44, 0, -44);
+  ctx.quadraticCurveTo(12, -44, 12, -26);
+  ctx.lineTo(12, -2);
+  ctx.quadraticCurveTo(9, -6, 6, -2);
+  ctx.quadraticCurveTo(3, -6, 0, -2);
+  ctx.quadraticCurveTo(-3, -6, -6, -2);
+  ctx.quadraticCurveTo(-9, -6, -12, -2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#1c1917";
+  ellipse(ctx, -4, -32, 2.2, 3);
+  ctx.fill();
+  ellipse(ctx, 4, -32, 2.2, 3);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** A kid dressed as a witch, feet at (x, y). */
+function drawWitchKid(ctx: Ctx, x: number, y: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+  ellipse(ctx, 0, 0, 11, 3);
+  ctx.fill();
+  // Dress
+  ctx.fillStyle = "#7e22ce";
+  ctx.beginPath();
+  ctx.moveTo(-10, -2);
+  ctx.lineTo(-5, -24);
+  ctx.lineTo(5, -24);
+  ctx.lineTo(10, -2);
+  ctx.closePath();
+  ctx.fill();
+  // Face
+  ctx.fillStyle = "#fcd9b6";
+  ellipse(ctx, 0, -29, 5.5, 5.5);
+  ctx.fill();
+  // Hat: a wide brim and a bent cone
+  ctx.fillStyle = "#18181b";
+  ellipse(ctx, 0, -33, 10, 2.4);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(-6, -34);
+  ctx.lineTo(6, -34);
+  ctx.quadraticCurveTo(3, -44, 7, -50);
+  ctx.quadraticCurveTo(-2, -44, -6, -34);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+/**
+ * Trick-or-treaters at the office's back door (#2740): a ghost and a
+ * witch, with a jack-o'-lantern bucket held out between them. They bob on
+ * their toes with the game's tick, and stand still under reduced motion.
+ *
+ * @param ctx - The office canvas.
+ * @param doorX - The back door's left edge.
+ * @param floorY - The floor line the kids stand on.
+ * @param ticks - The game tick, for the bob.
+ * @param calm - True under reduced motion.
+ */
+export function drawTrickOrTreaters(
+  ctx: Ctx,
+  doorX: number,
+  floorY: number,
+  ticks: number,
+  calm: boolean
+) {
+  const bob = (seed: number) =>
+    calm ? 0 : Math.abs(Math.sin(ticks * 0.12 + seed)) * -2;
+  drawGhostKid(ctx, doorX + 22, floorY + bob(0));
+  drawWitchKid(ctx, doorX + 62, floorY + bob(1.4));
+  drawJackOLantern(
+    ctx,
+    doorX + 42,
+    floorY - 4 + bob(0.7),
+    14,
+    lanternGlow(ticks, 5.3, calm)
+  );
+}

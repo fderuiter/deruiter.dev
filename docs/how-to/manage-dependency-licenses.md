@@ -41,17 +41,25 @@ itself, run `npm run oss:credits -- --verify-registry`.
 
 Dependabot cannot run project scripts, so its npm PRs arrive with stale
 credits, and a `@playwright/test` bump arrives with CI still pinned to the old
-Playwright image. Check out the PR branch, merge `main` into it if it is
-behind, install, and run one command:
+Playwright image. The pre-push guard only accepts the branch prefixes in
+`validateBranchName()`, so carry the PR on a `chore/` branch instead of pushing
+to `dependabot/*`:
 
 ```bash
+git fetch origin dependabot/npm_and_yarn/<group-branch>
+git checkout -b chore/deps-<date> FETCH_HEAD
+git merge origin/main        # when the branch is behind
 npx npm@10.9.2 ci
 npm run deps:fix
 ```
 
-It moves every `mcr.microsoft.com/playwright` image in `.github/workflows/` to
-the locked `@playwright/test` version, pinned by the image index digest from
-MCR, and then runs `npm run oss:credits`. Commit what it changed and push.
+`deps:fix` moves every `mcr.microsoft.com/playwright` image in
+`.github/workflows/` to the locked `@playwright/test` version, pinned by the
+image index digest from MCR, and then runs `npm run oss:credits`. Commit what
+it changed, push, open a PR that says "Replaces #N", and close Dependabot's PR
+with a link to it. Closing a grouped PR is safe because the next weekly run
+proposes anything newer.
+
 `npm run deps:fix -- --check` reports the same drift offline without writing.
 
 Dependabot's npm also records the bundled dependencies of
@@ -59,9 +67,6 @@ Dependabot's npm also records the bundled dependencies of
 They are dev-only and travel inside their parent, so the credits skip them. A
 bundled entry on a shipped package is not skipped: it stops `oss:credits`, and
 needs a person to decide how it is credited.
-
-If someone comments `@dependabot recreate`, Dependabot rewrites the branch and
-drops pushed fixes. Run `npm run deps:fix` again afterwards.
 
 ## When `audit:licenses` fails
 

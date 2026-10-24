@@ -90,6 +90,7 @@ parallel; merge one at a time.
   locally.
 - **Dependabot npm PRs need `npm run deps:fix`.** It regenerates the OSS
   credits and moves the Playwright CI images to a bumped
-  `@playwright/test`. Merge `main` in first when the branch is behind, then
-  run `npx npm@10.9.2 ci` so the credits see `main`'s packages too (see
+  `@playwright/test`. Pushes to `dependabot/*` fail the branch guard, so
+  carry the PR on a `chore/` branch, merge `main` in when it is behind and
+  close Dependabot's PR with a link (recipe in
   `docs/how-to/manage-dependency-licenses.md`).

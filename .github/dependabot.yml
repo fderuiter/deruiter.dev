@@ -14,9 +14,9 @@ updates:
   # (#2511). Majors are ignored here and taken one per PR by hand, because
   # each needs its own migration (vitest, eslint, jsdom, framer-motion).
   # `next` and `eslint-config-next` are exact pins that must move together,
-  # so they get their own group. Every npm PR then needs `npm run deps:fix`
-  # pushed to it: it regenerates the OSS credits and moves the Playwright CI
-  # images to a new @playwright/test (#2730). See
+  # so they get their own group. Every npm PR then needs `npm run deps:fix`,
+  # which regenerates the OSS credits and moves the Playwright CI images to a
+  # new @playwright/test (#2730). The recipe is in
   # docs/how-to/manage-dependency-licenses.md.
   - package-ecosystem: "npm"
     directory: "/"

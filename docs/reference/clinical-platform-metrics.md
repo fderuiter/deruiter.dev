@@ -42,7 +42,8 @@ metrics.
 | Query aging | `query_aging_mean` | certified | 1.0.0 | portfolio | 2.9 days |
 | Query resolution time (median) | `query_resolution_time_median` | certified | 1.0.0 | portfolio | 5.0 days |
 | SDV completion | `sdv_completion` | certified | 1.0.0 | portfolio | 85.3% |
-| Overdue monitoring visit reports | `monitoring_reports_overdue` | draft | 1.0.0 | portfolio | 1 monitoring visits |
+| Overdue monitoring visit reports | `monitoring_reports_overdue` | certified | 2.0.0 | portfolio | 2 monitoring visits |
+| Overdue interim monitoring visits | `monitoring_visits_overdue` | certified | 1.0.0 | portfolio | 5 planned visits |
 | Monitoring report cycle time (median) | `monitoring_report_cycle_time_median` | certified | 1.0.0 | portfolio | 14.0 days |
 | Important deviations per 100 subjects | `important_deviation_rate` | certified | 1.0.0 | portfolio | 13.7 deviations per 100 enrolled subjects |
 | Non-important deviations per 100 subjects | `non_important_deviation_rate` | certified | 1.0.0 | portfolio | 13.1 deviations per 100 enrolled subjects |
@@ -256,11 +257,23 @@ CRF pages source-verified at monitoring visits as a share of the pages due for s
 
 ### Overdue monitoring visit reports
 
-Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline.
+Monitoring visits whose report was still not final after its due date, at the data cut. The due date is the visit date plus the report deadline in the study's monitoring plan.
 
-- Id: `monitoring_reports_overdue`, version 1.0.0, draft.
-- Formula: count of gold.fct_monitoring_visit rows where report_final_date_key is null and days from date(visit_date_key) to the data cut > 20.
+- Id: `monitoring_reports_overdue`, version 2.0.0, certified.
+- Formula: count of gold.fct_monitoring_visit rows where report_final_date_key is null and days from date(report_due_date_key) to the data cut > 0.
 - Unit: monitoring visits. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: `study_status` not in `closed`.
+- Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: none yet.
+
+### Overdue interim monitoring visits
+
+Interim monitoring visits the monitoring plan scheduled whose visit window closed before the data cut with no visit made. Each site's next visit is planned the plan's interval after its previous visit and is on time until the plan's window closes.
+
+- Id: `monitoring_visits_overdue`, version 1.0.0, certified.
+- Formula: count of gold.fct_planned_monitoring_visit rows where actual_date_key is null and days from date(due_date_key) to the data cut > 0.
+- Unit: planned visits. Grain: portfolio.
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward.
@@ -395,7 +408,6 @@ gold model cannot compute yet. They are left out rather than approximated.
 | Forecast at completion | gold.fct_spend holds budget only for months up to the data cut, so there is no budget at completion to forecast against. | The approved budget for future periods, or a budget at completion per study and vendor. | `budget_burn_vs_plan` |
 | Cost per randomised subject | Randomisations reach silver (silver.irt_randomization) but no gold fact. | A gold fact of randomisations with the study, site and date keys. | `cost_per_enrolled_subject` |
 | Query rate per 100 CRF pages | No gold table counts the CRF pages a visit produces; sdv_pages_due counts only the pages due for source data verification. | The number of CRF pages entered per visit in gold.fct_visit. | `query_rate_per_100_visits` |
-| Monitoring visits overdue against the monitoring plan | Gold holds the monitoring visits that happened, not the ones the monitoring plan scheduled. | Planned monitoring visit dates, or the planned interval, per site. | `monitoring_reports_overdue` |
 | Enrollment against a time-phased plan | Gold holds each site's total enrollment target but no planned enrollment by month. | Planned cumulative enrollment per study or site and month. | `enrollment_vs_plan` |
 | Adverse event reporting rate (key risk indicator) | The operational gold marts hold no adverse events; they exist only in the Study Data Pipeline's SDTM for DEMO-301. | A gold fact of reported adverse events with the study, site and onset date keys for every study. | none |
 | Primary endpoint missing data (quality tolerance limit) | Gold holds no endpoint assessments. | Planned and collected primary endpoint assessments per subject and visit. | none |

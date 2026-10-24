@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.0.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.1.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -391,6 +391,50 @@ const SILVER: readonly TableDraft[] = [
   },
   {
     layer: "silver",
+    name: "ctms_monitoring_plan",
+    kind: "conformed",
+    description:
+      "CTMS monitoring plans: the interim visit cadence and report deadline each study's plan sets.",
+    grain: "One row per monitoring plan version.",
+    primaryKey: ["monitoring_plan_id"],
+    classification: "internal",
+    source: "bronze.ctms.monitoringPlans",
+    synthetic: true,
+    columns: [
+      ["monitoring_plan_id", "string", "Monitoring plan id."],
+      ["study_id", "string", "Protocol id."],
+      [
+        "plan_version",
+        "string",
+        "Plan version.",
+        { length: 16, from: ["version"] },
+      ],
+      ["effective_on", "date", "Date the plan took effect."],
+      [
+        "interim_interval_days",
+        "integer",
+        "Planned days from one monitoring visit at a site to the next interim visit.",
+      ],
+      [
+        "visit_window_days",
+        "integer",
+        "Days an interim visit may fall after its planned date and still be on time.",
+      ],
+      [
+        "report_due_days",
+        "integer",
+        "Days from a visit by which its report must be final.",
+      ],
+      [
+        "source_system",
+        "string",
+        "Source system the record came from.",
+        { from: ["source"] },
+      ],
+    ],
+  },
+  {
+    layer: "silver",
     name: "ctms_monitoring_visit",
     kind: "conformed",
     description: "CTMS monitoring visits with source data verification counts.",
@@ -736,6 +780,10 @@ const key = {
     ref: "gold.dim_milestone.milestone_key",
     how: "surrogate-key-lookup",
   },
+  monitoringPlan: {
+    ref: "gold.dim_monitoring_plan.monitoring_plan_key",
+    how: "surrogate-key-lookup",
+  },
   date: { ref: "gold.dim_date.date_key", how: "date-key" },
   site: { ref: "gold.dim_site.site_key", how: "scd2-lookup" },
 } as const;
@@ -1003,6 +1051,46 @@ const DIMENSIONS: readonly TableDraft[] = [
         "integer",
         "Position in the study lifecycle, from 1.",
         { from: ["milestone_kind"], how: "reference-lookup" },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "dim_monitoring_plan",
+    kind: "dimension",
+    description:
+      "Monitoring plan dimension: the cadence and report deadline each study's plan sets, which monitoring is measured against.",
+    grain: "One row per monitoring plan version.",
+    primaryKey: ["monitoring_plan_key"],
+    uniqueKeys: [["monitoring_plan_id"]],
+    classification: "internal",
+    source: "silver.ctms_monitoring_plan",
+    synthetic: true,
+    columns: [
+      ["monitoring_plan_key", "integer", "Surrogate key.", { from: [] }],
+      ["monitoring_plan_id", "string", "Monitoring plan id."],
+      ["study_id", "string", "Protocol id."],
+      ["plan_version", "string", "Plan version.", { length: 16 }],
+      [
+        "effective_date_key",
+        "integer",
+        "Date the plan took effect.",
+        { ...key.date, from: ["effective_on"] },
+      ],
+      [
+        "interim_interval_days",
+        "integer",
+        "Planned days from one monitoring visit at a site to the next interim visit.",
+      ],
+      [
+        "visit_window_days",
+        "integer",
+        "Days an interim visit may fall after its planned date and still be on time.",
+      ],
+      [
+        "report_due_days",
+        "integer",
+        "Days from a visit by which its report must be final.",
       ],
     ],
   },
@@ -1401,6 +1489,25 @@ const FACTS: readonly TableDraft[] = [
         "Date the report was finalised.",
         { ...key.date, nullable: true, from: ["report_final_on"] },
       ],
+      [
+        "monitoring_plan_key",
+        "integer",
+        "Monitoring plan in force on the visit date.",
+        {
+          ...key.monitoringPlan,
+          from: ["study_id", "gold.dim_monitoring_plan.monitoring_plan_key"],
+        },
+      ],
+      [
+        "report_due_date_key",
+        "integer",
+        "Date the report is due: the visit date plus the plan's report deadline.",
+        {
+          ...key.date,
+          from: ["visit_date", "silver.ctms_monitoring_plan.report_due_days"],
+          how: "date-add",
+        },
+      ],
       ["visit_type", "string", "SIV, IMV or COV."],
       ["visit_mode", "string", "On-site or remote."],
       [
@@ -1417,6 +1524,113 @@ const FACTS: readonly TableDraft[] = [
         {
           nullable: true,
           from: ["visit_date", "report_final_on"],
+          how: "date-diff",
+        },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_planned_monitoring_visit",
+    kind: "fact",
+    description:
+      "Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it.",
+    grain:
+      "One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored.",
+    primaryKey: ["planned_visit_id"],
+    classification: "internal",
+    source: "silver.ctms_monitoring_visit",
+    synthetic: true,
+    columns: [
+      [
+        "planned_visit_id",
+        "string",
+        "Planned visit id (degenerate dimension): the site id and its sequence.",
+        { from: ["site_id"], how: "generated" },
+      ],
+      [
+        "monitoring_plan_key",
+        "integer",
+        "Monitoring plan the visit is scheduled under.",
+        {
+          ...key.monitoringPlan,
+          from: ["study_id", "gold.dim_monitoring_plan.monitoring_plan_key"],
+        },
+      ],
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        { ...key.study, from: ["study_id", "gold.dim_study.study_key"] },
+      ],
+      [
+        "site_key",
+        "integer",
+        "Site version in force on the planned date.",
+        {
+          ...key.site,
+          from: ["site_id", "visit_date", "gold.dim_site.site_key"],
+        },
+      ],
+      [
+        "country_key",
+        "integer",
+        "Country of the site.",
+        {
+          ...key.country,
+          from: ["silver.site.country_code", "gold.dim_country.country_key"],
+        },
+      ],
+      [
+        "planned_date_key",
+        "integer",
+        "Planned date: the previous monitoring visit at the site plus the plan's interval.",
+        {
+          ...key.date,
+          from: [
+            "visit_date",
+            "silver.ctms_monitoring_plan.interim_interval_days",
+          ],
+          how: "date-add",
+        },
+      ],
+      [
+        "due_date_key",
+        "integer",
+        "Last on-time date: the planned date plus the plan's visit window.",
+        {
+          ...key.date,
+          from: [
+            "visit_date",
+            "silver.ctms_monitoring_plan.interim_interval_days",
+            "silver.ctms_monitoring_plan.visit_window_days",
+          ],
+          how: "date-add",
+        },
+      ],
+      [
+        "monitoring_visit_id",
+        "string",
+        "Interim visit that met the planned visit, or null while it is outstanding.",
+        { nullable: true },
+      ],
+      [
+        "actual_date_key",
+        "integer",
+        "Date of the visit that met it, or null while it is outstanding.",
+        { ...key.date, nullable: true, from: ["visit_date"] },
+      ],
+      [
+        "days_late",
+        "integer",
+        "Days the visit fell after its due date, 0 when on time, or null while it is outstanding.",
+        {
+          nullable: true,
+          from: [
+            "visit_date",
+            "silver.ctms_monitoring_plan.interim_interval_days",
+            "silver.ctms_monitoring_plan.visit_window_days",
+          ],
           how: "date-diff",
         },
       ],

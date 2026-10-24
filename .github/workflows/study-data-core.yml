@@ -1,0 +1,133 @@
+name: Study Data CDISC CORE
+
+# #2603: stop grading our own homework. The open-source CDISC Rules Engine
+# (CORE) validates the Study Data Pipeline's seed-301 SDTM Dataset-JSON and
+# Define-XML against SDTMIG 3.4 and the DEMO-301 USDM fixture against USDM
+# 4.0. `scripts/study-data-core.ts reconcile` sets CORE's findings beside the
+# in-browser conformance gate's and fails on any finding
+# `scripts/study-data-core-allowlist.json` does not explain, or on an entry
+# CORE no longer reports. The Define-XML XSD check runs in the unit suite
+# (`__tests__/study-data-define.test.ts`).
+#
+# CORE v0.17.1 ships its rule and terminology cache in the repository, so no
+# CDISC Library API key is needed. It publishes no ADaMIG rules yet; the
+# ADaM layer is reported as not run until it does. This is a separate
+# workflow, not a gate in ci.yml: it reads only lib/study-data and its own
+# files.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "lib/study-data/**"
+      - "scripts/study-data-core*"
+      - ".github/workflows/study-data-core.yml"
+  pull_request:
+    paths:
+      - "lib/study-data/**"
+      - "scripts/study-data-core*"
+      - ".github/workflows/study-data-core.yml"
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: study-data-core-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Pinned engine: the tag and the commit it must resolve to.
+  CORE_TAG: v0.17.1
+  CORE_COMMIT: 2a90a3872a7e3b07c15abe84744026c94a7a04b0
+
+jobs:
+  core:
+    name: CDISC CORE (SDTMIG 3.4, USDM 4.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install CDISC CORE
+        run: |
+          git clone --quiet --depth 1 --branch "$CORE_TAG" \
+            https://github.com/cdisc-org/cdisc-rules-engine.git "$RUNNER_TEMP/core"
+          actual="$(git -C "$RUNNER_TEMP/core" rev-parse HEAD)"
+          if [ "$actual" != "$CORE_COMMIT" ]; then
+            echo "::error::CORE $CORE_TAG resolved to $actual, expected $CORE_COMMIT."
+            exit 1
+          fi
+          python3 --version
+          python3 -m venv "$RUNNER_TEMP/core-venv"
+          "$RUNNER_TEMP/core-venv/bin/pip" install --quiet \
+            -c scripts/study-data-core-constraints.txt "$RUNNER_TEMP/core"
+
+      - name: Export Pipeline Outputs
+        run: |
+          # CORE refuses a Define-XML that cites a CT release its cache lacks,
+          # so validate against the newest cached SDTM CT release.
+          ct="$(ls "$RUNNER_TEMP/core/resources/cache" | sed -n 's/^sdtmct-\(.*\)\.pkl$/\1/p' | sort | tail -n 1)"
+          echo "Newest cached SDTM CT release: $ct"
+          npx --no-install tsx scripts/study-data-core.ts export "$RUNNER_TEMP/core-in" --ct-version "$ct"
+
+      - name: Run CORE
+        working-directory: ${{ runner.temp }}/core
+        run: |
+          in="$RUNNER_TEMP/core-in"
+          out="$RUNNER_TEMP/core-reports"
+          mkdir -p "$out"
+          core() { "$RUNNER_TEMP/core-venv/bin/python" core.py "$@"; }
+          core validate -s sdtmig -v 3-4 -ft json \
+            -d "$in/m5/datasets/tabulations/sdtm" \
+            -dxp "$in/m5/datasets/tabulations/sdtm/define.xml" \
+            -o "$out/sdtm" -of json -p disabled
+          core validate -s usdm -v 4-0 -ft json -d "$in/usdm" \
+            -o "$out/usdm" -of json -p disabled
+          rules="$(core list-rules -s adamig -v 1-3 2>/dev/null | python3 -c 'import json, sys; print(len(json.load(sys.stdin)))')"
+          if [ "$rules" = "0" ]; then
+            echo "CDISC CORE $CORE_TAG publishes no ADaMIG 1.3 rules." > "$out/adam.skipped"
+          else
+            core validate -s adamig -v 1-3 -ft json \
+              -d "$in/m5/datasets/analysis/adam" \
+              -dxp "$in/m5/datasets/analysis/adam/define.xml" \
+              -o "$out/adam" -of json -p disabled
+          fi
+
+      - name: Reconcile with the In-Browser Gate
+        run: |
+          npx --no-install tsx scripts/study-data-core.ts reconcile \
+            "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" \
+            --engine "CDISC CORE $CORE_TAG"
+
+      - name: Publish Job Summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/core-reports/reconciliation.md" ]; then
+            cat "$RUNNER_TEMP/core-reports/reconciliation.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload CORE Reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: study-data-core-reports
+          path: |
+            ${{ runner.temp }}/core-reports/
+            ${{ runner.temp }}/core-in/export-notes.json
+            ${{ runner.temp }}/core-in/gate-findings.json
+          retention-days: 14
+          if-no-files-found: warn

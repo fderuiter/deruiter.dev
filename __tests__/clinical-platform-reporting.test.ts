@@ -76,15 +76,25 @@ describe("standard report pack", () => {
 });
 
 describe("checkReportSpec", () => {
+  // The registry certifies every metric it holds (#2736 certified the last
+  // draft), so the draft rules are checked against a registry with one.
+  const WITH_DRAFT = METRIC_REGISTRY.map((m) =>
+    m.id === "monitoring_reports_overdue"
+      ? { ...m, status: "draft" as const }
+      : m
+  );
+
   it("rejects a certified report that uses a draft (exploratory) metric", () => {
-    expect(metric("monitoring_reports_overdue").status).toBe("draft");
     expect(
       messages(
-        checkReportSpec({
-          ...CERTIFIED,
-          metrics: ["subjects_enrolled", "monitoring_reports_overdue"],
-          visual: "table",
-        })
+        checkReportSpec(
+          {
+            ...CERTIFIED,
+            metrics: ["subjects_enrolled", "monitoring_reports_overdue"],
+            visual: "table",
+          },
+          WITH_DRAFT
+        )
       )
     ).toEqual([
       "metric: certified report test-certified cannot use draft metric monitoring_reports_overdue",
@@ -112,12 +122,15 @@ describe("checkReportSpec", () => {
   it("lets managed and exploratory reports use draft metrics", () => {
     for (const tier of ["managed", "exploratory"] as const) {
       expect(
-        checkReportSpec({
-          ...CERTIFIED,
-          tier,
-          signOff: null,
-          metrics: ["monitoring_reports_overdue"],
-        })
+        checkReportSpec(
+          {
+            ...CERTIFIED,
+            tier,
+            signOff: null,
+            metrics: ["monitoring_reports_overdue"],
+          },
+          WITH_DRAFT
+        )
       ).toEqual([]);
     }
   });

@@ -295,6 +295,133 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.dim_monitoring_plan",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Surrogate key.",
+              "maxLength": null,
+              "name": "monitoring_plan_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Monitoring plan id.",
+              "maxLength": 64,
+              "name": "monitoring_plan_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Plan version.",
+              "maxLength": 16,
+              "name": "plan_version",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the plan took effect.",
+              "maxLength": null,
+              "name": "effective_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned days from one monitoring visit at a site to the next interim visit.",
+              "maxLength": null,
+              "name": "interim_interval_days",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days an interim visit may fall after its planned date and still be on time.",
+              "maxLength": null,
+              "name": "visit_window_days",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days from a visit by which its report must be final.",
+              "maxLength": null,
+              "name": "report_due_days",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Monitoring plan dimension: the cadence and report deadline each study's plan sets, which monitoring is measured against.",
+          "grain": "One row per monitoring plan version.",
+          "name": "dim_monitoring_plan",
+          "physicalName": "gold.dim_monitoring_plan",
+          "primaryKey": [
+            "monitoring_plan_key"
+          ]
+        }
+      ],
+      "productId": "gold.dim_monitoring_plan",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 168
+      },
+      "version": "1.0.0"
+    },
+    {
       "id": "clinical-platform/gold.dim_site",
       "objects": [
         {
@@ -1491,6 +1618,348 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.fct_monitoring_visit",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Monitoring visit id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "monitoring_visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force on the visit date.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Visit date.",
+              "maxLength": null,
+              "name": "visit_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the report was finalised.",
+              "maxLength": null,
+              "name": "report_final_date_key",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Monitoring plan in force on the visit date.",
+              "maxLength": null,
+              "name": "monitoring_plan_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the report is due: the visit date plus the plan's report deadline.",
+              "maxLength": null,
+              "name": "report_due_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "SIV, IMV or COV.",
+              "maxLength": 64,
+              "name": "visit_type",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "On-site or remote.",
+              "maxLength": 64,
+              "name": "visit_mode",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "CRF pages due for source data verification.",
+              "maxLength": null,
+              "name": "sdv_pages_due",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "CRF pages source-verified.",
+              "maxLength": null,
+              "name": "sdv_pages_verified",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Action items raised.",
+              "maxLength": null,
+              "name": "action_items",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days from the visit to the final report.",
+              "maxLength": null,
+              "name": "days_to_final_report",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Monitoring visits with source data verification and report timeliness.",
+          "grain": "One row per monitoring visit.",
+          "name": "fct_monitoring_visit",
+          "physicalName": "gold.fct_monitoring_visit",
+          "primaryKey": [
+            "monitoring_visit_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_monitoring_visit",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
+    },
+    {
+      "id": "clinical-platform/gold.fct_planned_monitoring_visit",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Planned visit id (degenerate dimension): the site id and its sequence.",
+              "maxLength": 64,
+              "name": "planned_visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Monitoring plan the visit is scheduled under.",
+              "maxLength": null,
+              "name": "monitoring_plan_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force on the planned date.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned date: the previous monitoring visit at the site plus the plan's interval.",
+              "maxLength": null,
+              "name": "planned_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Last on-time date: the planned date plus the plan's visit window.",
+              "maxLength": null,
+              "name": "due_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Interim visit that met the planned visit, or null while it is outstanding.",
+              "maxLength": 64,
+              "name": "monitoring_visit_id",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Date of the visit that met it, or null while it is outstanding.",
+              "maxLength": null,
+              "name": "actual_date_key",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days the visit fell after its due date, 0 when on time, or null while it is outstanding.",
+              "maxLength": null,
+              "name": "days_late",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it.",
+          "grain": "One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored.",
+          "name": "fct_planned_monitoring_visit",
+          "physicalName": "gold.fct_planned_monitoring_visit",
+          "primaryKey": [
+            "planned_visit_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_planned_monitoring_visit",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
       "id": "clinical-platform/gold.fct_query",
       "objects": [
         {
@@ -2373,6 +2842,133 @@
         "availability": 0.99,
         "completeness": 1,
         "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
+      "id": "clinical-platform/silver.ctms_monitoring_plan",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Monitoring plan id.",
+              "maxLength": 64,
+              "name": "monitoring_plan_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Plan version.",
+              "maxLength": 16,
+              "name": "plan_version",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the plan took effect.",
+              "maxLength": null,
+              "name": "effective_on",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned days from one monitoring visit at a site to the next interim visit.",
+              "maxLength": null,
+              "name": "interim_interval_days",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days an interim visit may fall after its planned date and still be on time.",
+              "maxLength": null,
+              "name": "visit_window_days",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days from a visit by which its report must be final.",
+              "maxLength": null,
+              "name": "report_due_days",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Source system the record came from.",
+              "maxLength": 64,
+              "name": "source_system",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "CTMS monitoring plans: the interim visit cadence and report deadline each study's plan sets.",
+          "grain": "One row per monitoring plan version.",
+          "name": "ctms_monitoring_plan",
+          "physicalName": "silver.ctms_monitoring_plan",
+          "primaryKey": [
+            "monitoring_plan_id"
+          ]
+        }
+      ],
+      "productId": "silver.ctms_monitoring_plan",
+      "retention": {
+        "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
+        "regulatory": true,
+        "years": 25
+      },
+      "sla": {
+        "availability": 0.99,
+        "completeness": 1,
+        "freshnessHours": 168
       },
       "version": "1.0.0"
     },

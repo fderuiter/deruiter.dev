@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.0.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.1.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -84,6 +84,17 @@ erDiagram
     varchar milestone_name
     int milestone_sequence
   }
+  dim_monitoring_plan {
+    int monitoring_plan_key PK
+    varchar monitoring_plan_id UK
+    varchar study_id
+    varchar plan_version
+    int effective_date_key FK
+    int interim_interval_days
+    int visit_window_days
+    int report_due_days
+    boolean is_synthetic
+  }
   fct_enrollment {
     varchar subject_id PK
     varchar event_type PK
@@ -148,12 +159,27 @@ erDiagram
     int country_key FK
     int visit_date_key FK
     int report_final_date_key FK
+    int monitoring_plan_key FK
+    int report_due_date_key FK
     varchar visit_type
     varchar visit_mode
     int sdv_pages_due
     int sdv_pages_verified
     int action_items
     int days_to_final_report
+    boolean is_synthetic
+  }
+  fct_planned_monitoring_visit {
+    varchar planned_visit_id PK
+    int monitoring_plan_key FK
+    int study_key FK
+    int site_key FK
+    int country_key FK
+    int planned_date_key FK
+    int due_date_key FK
+    varchar monitoring_visit_id
+    int actual_date_key FK
+    int days_late
     boolean is_synthetic
   }
   fct_milestone {
@@ -186,6 +212,7 @@ erDiagram
     decimal kri_value
     boolean is_synthetic
   }
+  dim_date ||--o{ dim_monitoring_plan : "effective_date_key"
   dim_study ||--o{ fct_enrollment : "study_key"
   dim_site ||--o{ fct_enrollment : "site_key"
   dim_country ||--o{ fct_enrollment : "country_key"
@@ -211,6 +238,15 @@ erDiagram
   dim_country ||--o{ fct_monitoring_visit : "country_key"
   dim_date ||--o{ fct_monitoring_visit : "visit_date_key"
   dim_date |o--o{ fct_monitoring_visit : "report_final_date_key"
+  dim_monitoring_plan ||--o{ fct_monitoring_visit : "monitoring_plan_key"
+  dim_date ||--o{ fct_monitoring_visit : "report_due_date_key"
+  dim_monitoring_plan ||--o{ fct_planned_monitoring_visit : "monitoring_plan_key"
+  dim_study ||--o{ fct_planned_monitoring_visit : "study_key"
+  dim_site ||--o{ fct_planned_monitoring_visit : "site_key"
+  dim_country ||--o{ fct_planned_monitoring_visit : "country_key"
+  dim_date ||--o{ fct_planned_monitoring_visit : "planned_date_key"
+  dim_date ||--o{ fct_planned_monitoring_visit : "due_date_key"
+  dim_date |o--o{ fct_planned_monitoring_visit : "actual_date_key"
   dim_study ||--o{ fct_milestone : "study_key"
   dim_milestone ||--o{ fct_milestone : "milestone_key"
   dim_date ||--o{ fct_milestone : "planned_date_key"
@@ -232,7 +268,8 @@ erDiagram
 | `fct_visit` | One row per subject visit record. | `visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_query` | One row per query. | `query_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_deviation` | One row per protocol deviation. | `deviation_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
-| `fct_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
+| `fct_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date`, `dim_monitoring_plan` |
+| `fct_planned_monitoring_visit` | One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored. | `planned_visit_id` | `dim_monitoring_plan`, `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_milestone` | One row per study and milestone kind. | `study_key`, `milestone_key` | `dim_study`, `dim_milestone`, `dim_date` |
 | `fct_spend` | One row per study, vendor and calendar month. | `study_key`, `vendor_key`, `month_date_key` | `dim_study`, `dim_vendor`, `dim_date` |
 | `fct_kri_snapshot` | One row per site, month-end snapshot date and key risk indicator. | `site_key`, `snapshot_date_key`, `kri_id` | `dim_site`, `dim_date`, `dim_study`, `dim_country` |
@@ -247,6 +284,7 @@ erDiagram
 | `dim_date` | One row per calendar day. | `date_key` | `calendar_date` | Type 1 |
 | `dim_vendor` | One row per vendor, plus the not-applicable member. | `vendor_key` | `vendor_id` | Type 1 |
 | `dim_milestone` | One row per milestone kind. | `milestone_key` | `milestone_kind` | Type 1 |
+| `dim_monitoring_plan` | One row per monitoring plan version. | `monitoring_plan_key` | `monitoring_plan_id` | Type 1 |
 
 A `dim_site` version is in force from `valid_from` up to, not including,
 `valid_to`; the current version ends on 9999-12-31. A fact joins the version
@@ -265,6 +303,7 @@ keeps the earlier investigator.
 | `edc_visit` | One row per subject visit record. | `visit_id` | `bronze.edc.visits` |
 | `edc_query` | One row per query. | `query_id` | `bronze.edc.queries` |
 | `ctms_milestone` | One row per study and milestone kind. | `study_id`, `milestone_kind` | `bronze.ctms.milestones` |
+| `ctms_monitoring_plan` | One row per monitoring plan version. | `monitoring_plan_id` | `bronze.ctms.monitoringPlans` |
 | `ctms_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `bronze.ctms.monitoringVisits` |
 | `ctms_deviation` | One row per deviation. | `deviation_id` | `bronze.ctms.deviations` |
 | `ctms_site_staff` | One row per site staff assignment. | `assignment_id` | `bronze.ctms.siteStaff` |
@@ -372,6 +411,22 @@ Conformed milestone dimension: the milestone kinds in lifecycle order.
 | `milestone_name` | string | no |  | public | Neutral display name. |
 | `milestone_sequence` | integer | no |  | public | Position in the study lifecycle, from 1. |
 
+## `gold.dim_monitoring_plan`
+
+Monitoring plan dimension: the cadence and report deadline each study's plan sets, which monitoring is measured against.
+
+| Column | Type | Null | Key | Classification | Description |
+| --- | --- | --- | --- | --- | --- |
+| `monitoring_plan_key` | integer | no | PK | internal | Surrogate key. |
+| `monitoring_plan_id` | string | no | UK | internal | Monitoring plan id. |
+| `study_id` | string | no |  | internal | Protocol id. |
+| `plan_version` | string | no |  | internal | Plan version. |
+| `effective_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the plan took effect. |
+| `interim_interval_days` | integer | no |  | internal | Planned days from one monitoring visit at a site to the next interim visit. |
+| `visit_window_days` | integer | no |  | internal | Days an interim visit may fall after its planned date and still be on time. |
+| `report_due_days` | integer | no |  | internal | Days from a visit by which its report must be final. |
+| `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
+
 ## `gold.fct_enrollment`
 
 Subject enrollment events: screened, enrolled, completed and discontinued.
@@ -461,12 +516,32 @@ Monitoring visits with source data verification and report timeliness.
 | `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
 | `visit_date_key` | integer | no | FK to `gold.dim_date` | internal | Visit date. |
 | `report_final_date_key` | integer | yes | FK to `gold.dim_date` | internal | Date the report was finalised. |
+| `monitoring_plan_key` | integer | no | FK to `gold.dim_monitoring_plan` | internal | Monitoring plan in force on the visit date. |
+| `report_due_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the report is due: the visit date plus the plan's report deadline. |
 | `visit_type` | string | no |  | internal | SIV, IMV or COV. |
 | `visit_mode` | string | no |  | internal | On-site or remote. |
 | `sdv_pages_due` | integer | no |  | internal | CRF pages due for source data verification. |
 | `sdv_pages_verified` | integer | no |  | internal | CRF pages source-verified. |
 | `action_items` | integer | no |  | internal | Action items raised. |
 | `days_to_final_report` | integer | yes |  | internal | Days from the visit to the final report. |
+| `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
+
+## `gold.fct_planned_monitoring_visit`
+
+Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it.
+
+| Column | Type | Null | Key | Classification | Description |
+| --- | --- | --- | --- | --- | --- |
+| `planned_visit_id` | string | no | PK | internal | Planned visit id (degenerate dimension): the site id and its sequence. |
+| `monitoring_plan_key` | integer | no | FK to `gold.dim_monitoring_plan` | internal | Monitoring plan the visit is scheduled under. |
+| `study_key` | integer | no | FK to `gold.dim_study` | internal | Study. |
+| `site_key` | integer | no | FK to `gold.dim_site` | internal | Site version in force on the planned date. |
+| `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
+| `planned_date_key` | integer | no | FK to `gold.dim_date` | internal | Planned date: the previous monitoring visit at the site plus the plan's interval. |
+| `due_date_key` | integer | no | FK to `gold.dim_date` | internal | Last on-time date: the planned date plus the plan's visit window. |
+| `monitoring_visit_id` | string | yes |  | internal | Interim visit that met the planned visit, or null while it is outstanding. |
+| `actual_date_key` | integer | yes | FK to `gold.dim_date` | internal | Date of the visit that met it, or null while it is outstanding. |
+| `days_late` | integer | yes |  | internal | Days the visit fell after its due date, 0 when on time, or null while it is outstanding. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 
 ## `gold.fct_milestone`

@@ -166,3 +166,4 @@ customProperties:
     value:
       - "product:gold.dim_site"
       - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_planned_monitoring_visit"

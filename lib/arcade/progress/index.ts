@@ -34,3 +34,10 @@ export {
 } from "./core";
 export type { ArcadeProgress } from "./core";
 export { arcadeDailySlice, mergeArcadeDailyProgress } from "./daily-slice";
+export {
+  ARCADE_COACH_MARKS_KEY,
+  arcadeCoachMarksSlice,
+  hasSeenCoachMarks,
+  setCoachMarksSeen,
+} from "./coach-marks-slice";
+export type { ArcadeCoachMarks } from "./coach-marks-slice";

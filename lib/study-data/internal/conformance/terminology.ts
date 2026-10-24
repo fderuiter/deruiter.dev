@@ -176,6 +176,7 @@ const CODELISTS = [
     term("mmol/L", "C64387"),
     term("g/L", "C42576"),
     term("10^9/L", "C67255"),
+    term("TABLET", "C48542"),
   ]),
   cdisc("NRIND", "Reference Range Indicator", "SDTM", "C78736", true, [
     term("NORMAL", "C78727"),

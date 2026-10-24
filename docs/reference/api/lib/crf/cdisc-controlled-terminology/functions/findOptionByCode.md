@@ -8,7 +8,7 @@
 
 > **findOptionByCode**(`codelist`, `code`, `codelists?`): [`CodelistOption`](../../types/interfaces/CodelistOption.md) \| `undefined`
 
-Finds an option within a codelist by its submission code (e.g. "Y", "M", "GRADE 1 - MILD").
+Finds an option within a codelist by its submission code (e.g. "Y", "M", "MILD").
 
 ## Parameters
 

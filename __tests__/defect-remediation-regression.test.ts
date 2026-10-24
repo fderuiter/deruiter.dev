@@ -1596,7 +1596,7 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       const sas = exportStudyToSas(ONCOLOGY_RECIST_PRESET);
 
       expect(sas).toContain(
-        "/* Codelist: No Yes Response (NY) | NCI Codelist: C66741 */\n  VALUE $NYF"
+        "/* Codelist: No Yes Response (NY) | NCI Codelist: C66742 */\n  VALUE $NYF"
       );
       expect(sas).not.toContain("*/ */");
     });

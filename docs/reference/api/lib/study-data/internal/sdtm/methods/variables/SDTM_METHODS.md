@@ -24,7 +24,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### CT\_UNIT\_MAPPING
 
-> `readonly` **CT\_UNIT\_MAPPING**: `"Collected dose unit mapped to the submission value: TABLET is written as TABLETS."` = `"Collected dose unit mapped to the submission value: TABLET is written as TABLETS."`
+> `readonly` **CT\_UNIT\_MAPPING**: `"Collected dose unit, which is already the UNIT submission value (TABLET, C48542)."` = `"Collected dose unit, which is already the UNIT submission value (TABLET, C48542)."`
 
 ### EXPOSURE\_ARM
 

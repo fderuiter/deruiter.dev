@@ -77,13 +77,11 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
       {
         code: "ABNORMAL_NCS",
         label: "Abnormal (Not Clinically Significant)",
-        nciCode: "C112042",
         order: 2,
       },
       {
         code: "ABNORMAL_CS",
         label: "Abnormal (Clinically Significant)",
-        nciCode: "C112043",
         order: 3,
       },
     ],
@@ -103,9 +101,9 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
     name: "Severity (Mild/Mod/Sev)",
     badge: "Safety",
     options: [
-      { code: "MILD", label: "Mild", nciCode: "C48275", order: 1 },
-      { code: "MODERATE", label: "Moderate", nciCode: "C48276", order: 2 },
-      { code: "SEVERE", label: "Severe", nciCode: "C48277", order: 3 },
+      { code: "MILD", label: "Mild", nciCode: "C41338", order: 1 },
+      { code: "MODERATE", label: "Moderate", nciCode: "C41339", order: 2 },
+      { code: "SEVERE", label: "Severe", nciCode: "C41340", order: 3 },
     ],
   },
   {
@@ -115,13 +113,11 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
       {
         code: "PASS",
         label: "Pass / Criteria Met",
-        nciCode: "C48288",
         order: 1,
       },
       {
         code: "FAIL",
         label: "Fail / Criteria Not Met",
-        nciCode: "C48289",
         order: 2,
       },
     ],
@@ -133,19 +129,16 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
       {
         code: "ACTIVE",
         label: "Implanted & Active In-Situ",
-        nciCode: "C112034",
         order: 1,
       },
       {
         code: "EXPLANTED",
         label: "Explanted / Removed",
-        nciCode: "C112029",
         order: 2,
       },
       {
         code: "DEPLOY_FAILED",
         label: "Deployment Failed / Discarded",
-        nciCode: "C112035",
         order: 3,
       },
     ],
@@ -154,29 +147,25 @@ const QUICK_TEMPLATES: QuickTemplate[] = [
     name: "CTCAE Grade 1-5",
     badge: "Oncology",
     options: [
-      { code: "GRADE 1", label: "Grade 1 - Mild", nciCode: "C48275", order: 1 },
+      { code: "GRADE 1", label: "Grade 1 - Mild", order: 1 },
       {
         code: "GRADE 2",
         label: "Grade 2 - Moderate",
-        nciCode: "C48276",
         order: 2,
       },
       {
         code: "GRADE 3",
         label: "Grade 3 - Severe",
-        nciCode: "C48277",
         order: 3,
       },
       {
         code: "GRADE 4",
         label: "Grade 4 - Life-Threatening",
-        nciCode: "C48278",
         order: 4,
       },
       {
         code: "GRADE 5",
         label: "Grade 5 - Death",
-        nciCode: "C48279",
         order: 5,
       },
     ],

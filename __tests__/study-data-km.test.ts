@@ -13,12 +13,14 @@ import {
   kaplanMeierEstimate,
   logRankTest,
   resolveResultRows,
+  rowSetRowIds,
   runPipeline,
   writeArsJson,
   writeKmFigureHtml,
   writeKmFigureSvg,
   writeTlfFiles,
   type ArsOperationResult,
+  type ArsRowSet,
   type CellValue,
   type Dataset,
   type PipelineRun,
@@ -725,6 +727,105 @@ describe("Figure 14.2.2 in the reporting event", () => {
     expect(writeArsJson(again.reportingEvent)).toBe(writeArsJson(event));
     expect(writeKmFigureSvg(again.figures[0])).toBe(writeKmFigureSvg(figure));
     expect(writeKmFigureHtml(again.figures[0])).toBe(writeKmFigureHtml(figure));
+  });
+});
+
+describe("compact risk sets in the reporting event (#2729)", () => {
+  const results = resultsOf(outputs);
+  const adtte = event.rowSets.filter((set) => set.dataset === "ADTTE");
+  const analysisSet = (result: ArsOperationResult) =>
+    result.rowReferences.find((reference) => reference.role === "analysis")
+      ?.rowSetId;
+
+  it("lists each ADTTE row once, however many risk sets hold it", () => {
+    const listed = adtte.flatMap((set) => set.rowIds);
+    expect(new Set(listed).size).toBe(listed.length);
+    expect(adtte.some((set) => (set.includes?.length ?? 0) > 0)).toBe(true);
+    for (const set of adtte) {
+      const ids = rowSetRowIds(event, set.id);
+      expect(new Set(ids).size, set.id).toBe(ids.length);
+      expect(ids.length, set.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("shares one row set between each number-at-risk cell and the Kaplan-Meier risk set on or after its day", () => {
+    let shared = 0;
+    figure.atRisk.forEach((row, rowIndex) => {
+      const points = figure.curves[rowIndex].points;
+      row.cells.forEach((cell, cellIndex) => {
+        const day = figure.atRiskTimes[cellIndex].time;
+        const point = points.find((item) => item.time >= day);
+        const cellSet = analysisSet(results.get(cell.resultIds[0])!);
+        if (!point) {
+          expect(cellSet).toBeUndefined();
+          return;
+        }
+        expect(cellSet).toBe(analysisSet(results.get(point.resultIds[0])!));
+        shared += 1;
+      });
+    });
+    expect(shared).toBeGreaterThan(figure.atRisk.length);
+  });
+
+  it("resolves composed sets to each row once, in dataset order", () => {
+    for (const analysis of event.analyses.filter((item) =>
+      item.id.startsWith("An_14_2_2_")
+    )) {
+      for (const result of analysis.results) {
+        for (const reference of result.rowReferences) {
+          const linked = resolveResultRows(event, rows, {
+            ...result,
+            rowReferences: [reference],
+          });
+          expect(linked).toHaveLength(
+            rowSetRowIds(event, reference.rowSetId).length
+          );
+          linked.slice(1).forEach((row, index) => {
+            expect(row.rowIndex, result.id).toBeGreaterThan(
+              linked[index].rowIndex
+            );
+          });
+        }
+      }
+    }
+  });
+
+  it("rejects an include that is missing, listed after its set, of another dataset, or the set itself", () => {
+    const [first, second] = adtte.filter((set) => set.rowIds.length > 0);
+    const adsl = event.rowSets.find((set) => set.dataset === "ADSL")!;
+    const nesting = (sets: readonly ArsRowSet[]) => ({
+      ...event,
+      rowSets: sets,
+    });
+    const result: ArsOperationResult = {
+      ...results.values().next().value!,
+      rowReferences: [{ role: "analysis", rowSetId: "Outer" }],
+    };
+    const outer = (includes: readonly string[]): ArsRowSet => ({
+      id: "Outer",
+      dataset: "ADTTE",
+      rowIds: [],
+      includes,
+    });
+    const cases: readonly [readonly ArsRowSet[], RegExp][] = [
+      [[first, outer(["Missing"])], /does not hold/],
+      [[outer([first.id]), first], /not listed before it/],
+      [[adsl, outer([adsl.id])], /holds ADSL rows, not ADTTE/],
+      [[first, outer(["Outer"])], /not listed before it/],
+    ];
+    for (const [sets, message] of cases) {
+      expect(() => rowSetRowIds(nesting(sets), "Outer")).toThrow(message);
+      expect(() => resolveResultRows(nesting(sets), rows, result)).toThrow(
+        RangeError
+      );
+    }
+    expect(() => rowSetRowIds(event, "Missing")).toThrow(RangeError);
+    expect(
+      rowSetRowIds(
+        nesting([first, second, outer([first.id, second.id])]),
+        "Outer"
+      )
+    ).toHaveLength(new Set([...first.rowIds, ...second.rowIds]).size);
   });
 });
 

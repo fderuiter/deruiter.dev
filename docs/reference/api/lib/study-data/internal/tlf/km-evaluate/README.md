@@ -12,6 +12,7 @@
 
 ## Functions
 
+- [atRiskReference](functions/atRiskReference.md)
 - [evaluateTimeToEvent](functions/evaluateTimeToEvent.md)
 - [formatPValue](functions/formatPValue.md)
 - [isTimeToEventMethod](functions/isTimeToEventMethod.md)

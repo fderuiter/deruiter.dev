@@ -19,7 +19,7 @@ export const SDTM_METHODS = {
   ACTUAL_ELEMENT_FROM_TA_TE:
     "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
   CT_UNIT_MAPPING:
-    "Collected dose unit mapped to the submission value: TABLET is written as TABLETS.",
+    "Collected dose unit, which is already the UNIT submission value (TABLET, C48542).",
   CT_RELATIONSHIP_MAPPING:
     "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
   USDM_ASSESSMENT:

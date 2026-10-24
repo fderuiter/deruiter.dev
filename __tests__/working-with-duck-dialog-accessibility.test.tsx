@@ -199,6 +199,26 @@ describe("Working With Duck - dialog semantics and Escape ownership (#601)", () 
     );
   });
 
+  it("names the close buttons of the wardrobe and scrapbook, and closes each with a tap (#2741)", async () => {
+    await mount();
+
+    await clickEl(firstByTitle(container, "Duck Wardrobe & Accessories"));
+    const wardrobeClose = container.querySelector<HTMLElement>(
+      '[role="dialog"] button[aria-label="Close wardrobe"]'
+    );
+    expect(wardrobeClose).not.toBeNull();
+    await clickEl(wardrobeClose!);
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+
+    await clickEl(firstByTitle(container, "Duck Scrapbook & Facts"));
+    const scrapbookClose = container.querySelector<HTMLElement>(
+      '[role="dialog"] button[aria-label="Close scrapbook"]'
+    );
+    expect(scrapbookClose).not.toBeNull();
+    await clickEl(scrapbookClose!);
+    expect(container.querySelector('[role="dialog"]')).toBeNull();
+  });
+
   it("keeps the cabinet fullscreen when Escape dismisses the scrapbook, and restores focus to its trigger", async () => {
     await mount();
 

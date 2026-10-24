@@ -17,8 +17,9 @@
 /.stryker-tmp
 # Stryker's incremental report lives in /reports (#1772)
 /reports
-# Vitest and Playwright shard blobs (#1770, #1775)
-/.vitest-reports
+# Vitest and Playwright shard blobs (#1770, #1775); Vitest 5 writes its
+# reports under /.vitest (#1571)
+/.vitest
 /blob-report
 # ESLint cache (CI restores it in the static gate, #1768)
 .eslintcache

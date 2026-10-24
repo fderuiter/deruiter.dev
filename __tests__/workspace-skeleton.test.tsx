@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-(globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -36,12 +38,15 @@ describe("Workspace Skeletons & Reserved Aspect Ratios Suite", () => {
       },
     });
 
-    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve([]),
-      });
-    }));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      })
+    );
   });
 
   afterEach(() => {
@@ -61,7 +66,9 @@ describe("Workspace Skeletons & Reserved Aspect Ratios Suite", () => {
         root.render(<SchemaFlowWorkspaceSkeleton />);
       });
 
-      const skeleton = container.querySelector('[data-testid="schemaflow-skeleton"]');
+      const skeleton = container.querySelector(
+        '[data-testid="schemaflow-skeleton"]'
+      );
       expect(skeleton).not.toBeNull();
       expect(skeleton?.classList.contains("min-h-[520px]")).toBe(true);
 
@@ -73,14 +80,19 @@ describe("Workspace Skeletons & Reserved Aspect Ratios Suite", () => {
 
     it("renders SchemaFlowWorkspaceWrapper with initial dynamic loading fallback", async () => {
       vi.resetModules();
-      const { default: DynamicSchemaFlowWorkspaceWrapper } = await import("@/components/SchemaFlowWorkspaceWrapper");
-      await act(async () => {
+      const { default: DynamicSchemaFlowWorkspaceWrapper } =
+        await import("@/components/SchemaFlowWorkspaceWrapper");
+      // Synchronous act() so the dynamic import cannot settle before the
+      // assertion (#1571: it could inside an async act() under load).
+      act(() => {
         root = createRoot(container);
         root.render(<DynamicSchemaFlowWorkspaceWrapper />);
       });
 
       // Wrapper renders skeleton during dynamic import fetch
-      const skeleton = container.querySelector('[data-testid="schemaflow-skeleton"]');
+      const skeleton = container.querySelector(
+        '[data-testid="schemaflow-skeleton"]'
+      );
       expect(skeleton).not.toBeNull();
     });
   });
@@ -92,7 +104,9 @@ describe("Workspace Skeletons & Reserved Aspect Ratios Suite", () => {
         root.render(<RetroLabyrinthSkeleton />);
       });
 
-      const skeleton = container.querySelector('[data-testid="retro-labyrinth-skeleton"]');
+      const skeleton = container.querySelector(
+        '[data-testid="retro-labyrinth-skeleton"]'
+      );
       expect(skeleton).not.toBeNull();
       expect(skeleton?.classList.contains("aspect-[15/9]")).toBe(true);
       expect(skeleton?.classList.contains("min-h-[240px]")).toBe(true);
@@ -105,7 +119,9 @@ describe("Workspace Skeletons & Reserved Aspect Ratios Suite", () => {
         root.render(<RetroLabyrinth isMounted={false} />);
       });
 
-      const skeleton = container.querySelector('[data-testid="retro-labyrinth-skeleton"]');
+      const skeleton = container.querySelector(
+        '[data-testid="retro-labyrinth-skeleton"]'
+      );
       expect(skeleton).not.toBeNull();
       expect(skeleton?.classList.contains("aspect-[15/9]")).toBe(true);
       expect(skeleton?.classList.contains("min-h-[240px]")).toBe(true);
@@ -119,7 +135,9 @@ describe("Workspace Skeletons & Reserved Aspect Ratios Suite", () => {
         root.render(<RetroLabyrinthSkeleton />);
       });
 
-      const skeleton = container.querySelector('[data-testid="retro-labyrinth-skeleton"]');
+      const skeleton = container.querySelector(
+        '[data-testid="retro-labyrinth-skeleton"]'
+      );
       expect(skeleton).not.toBeNull();
       expect(skeleton?.classList.contains("aspect-[15/9]")).toBe(true);
       expect(skeleton?.classList.contains("min-h-[240px]")).toBe(true);

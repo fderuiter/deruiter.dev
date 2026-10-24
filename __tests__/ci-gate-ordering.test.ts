@@ -394,6 +394,16 @@ describe("CI Gate Ordering", () => {
       expect(block).toMatch(/name: vitest-blob-\$\{\{ matrix\.shard \}\}/);
     });
 
+    // Vitest 5 moved the blob reporter's default output from .vitest-reports
+    // to .vitest/blob, which --merge-reports reads by default. An upload
+    // from the old path found no files and failed every shard (#1571).
+    it("uploads and downloads blobs at Vitest's default blob directory", () => {
+      expect(jobBlock("unit-gate")).toContain("path: .vitest/blob/");
+      expect(jobBlock("unit-coverage")).toContain("path: .vitest/blob\n");
+      expect(jobBlock("unit-gate")).not.toContain(".vitest-reports");
+      expect(jobBlock("unit-coverage")).not.toContain(".vitest-reports");
+    });
+
     // A blob report alone prints nothing on failure, so a red shard said
     // only "exit code 1". The shard also names its failing tests in the log
     // and as annotations.

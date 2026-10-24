@@ -9,6 +9,7 @@
  * describe a variable the data does not have, or miss one it does.
  */
 import { STANDARD_VERSIONS, SYNTHETIC_DATA_NOTICE } from "../../presets";
+import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../../standards";
 import type {
   CellValue,
   Dataset,
@@ -69,7 +70,7 @@ import { VALUE_LEVEL } from "./value-level";
  * The Define-XML version the documents declare (`def:DefineVersion`). It is
  * the version of the vendored schema the tests check the documents against.
  */
-export const DEFINE_XML_VERSION = "2.1.0";
+export const DEFINE_XML_VERSION = `${CLINICAL_STANDARDS_PROFILE["Define-XML"]}.0`;
 
 const ISO_TIMESTAMP =
   /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -228,7 +229,7 @@ function className(dataset: Dataset, layer: DefineLayer): string {
   const name = (layer === "sdtm" ? SDTM_CLASSES : ADAM_CLASSES)[dataset.class];
   if (!name) {
     throw new RangeError(
-      `${dataset.name} has class "${dataset.class}", which Define-XML 2.1 does not list.`
+      `${dataset.name} has class "${dataset.class}", which ${standardCitation("Define-XML")} does not list.`
     );
   }
   return name;
@@ -418,7 +419,7 @@ export function buildDefine(
     }
     if (dataset.subClass && !ADAM_SUBCLASSES.has(dataset.subClass)) {
       throw new RangeError(
-        `${dataset.name} has subclass "${dataset.subClass}", which Define-XML 2.1 does not list.`
+        `${dataset.name} has subclass "${dataset.subClass}", which ${standardCitation("Define-XML")} does not list.`
       );
     }
     const columns = exportColumns(dataset);

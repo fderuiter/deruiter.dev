@@ -1,3 +1,4 @@
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 /**
  * Registry of engineering bridges (ADR 0053 section 3): the technical
  * narrative shown beneath an interactive tool or game, and the case studies
@@ -65,8 +66,7 @@ export const ENGINEERING_BRIDGES: Readonly<
       },
       {
         label: "Standards output",
-        detail:
-          "Study definitions convert to CDISC ODM-XML 1.3.2 and other formats from the same schema.",
+        detail: `Study definitions convert to CDISC ODM-XML ${CLINICAL_STANDARDS_PROFILE.ODM} and other formats from the same schema.`,
       },
     ],
     caseStudies: [

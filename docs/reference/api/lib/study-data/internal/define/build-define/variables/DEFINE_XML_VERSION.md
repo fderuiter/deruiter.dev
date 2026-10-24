@@ -6,7 +6,7 @@
 
 # Variable: DEFINE\_XML\_VERSION
 
-> `const` **DEFINE\_XML\_VERSION**: `"2.1.0"` = `"2.1.0"`
+> `const` **DEFINE\_XML\_VERSION**: `string`
 
 The Define-XML version the documents declare (`def:DefineVersion`). It is
 the version of the vendored schema the tests check the documents against.

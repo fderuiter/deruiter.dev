@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React, { useState } from "react";
 import { IconDatabase, IconPlus, IconX, IconCheck } from "@tabler/icons-react";
 import { scaffoldCdashDomain } from "@/lib/crf/cdisc-cdash-library";
@@ -92,7 +93,7 @@ const AVAILABLE_DOMAINS: DomainItem[] = [
     categoryLabel: "Subject Baseline",
     description:
       "Baseline disease conditions, prior surgical history, and comorbidities organized by body system.",
-    badge: "CDASH 2.2 Core",
+    badge: `${standardCitation("CDASHIG")} Core`,
   },
   {
     code: "DS",
@@ -112,7 +113,7 @@ const AVAILABLE_DOMAINS: DomainItem[] = [
     categoryLabel: "Special Purpose / Subject Baseline",
     description:
       "Informed consent date tracking, year of birth, age, sex, race, ethnicity with standard NCI codelists.",
-    badge: "CDASH 2.2 Core",
+    badge: `${standardCitation("CDASHIG")} Core`,
   },
   {
     code: "VS",
@@ -139,7 +140,7 @@ const AVAILABLE_DOMAINS: DomainItem[] = [
     categoryLabel: "Interventions",
     description:
       "Medication name, indication, dose, units, route of administration, and start/stop/ongoing dates.",
-    badge: "CDASH 2.2",
+    badge: standardCitation("CDASHIG"),
   },
   {
     code: "LB",
@@ -195,7 +196,8 @@ export const CdashScaffolderModal: React.FC<CdashScaffolderModalProps> = ({
             </h3>
             <p className="text-xs text-zinc-400 font-sans">
               Instantly inject pre-configured standard forms modelled on CDISC
-              CDASHIG 2.2 for Medical Device, Pharma &amp; Oncology
+              {standardCitation("CDASHIG")} for Medical Device, Pharma &amp;
+              Oncology
             </p>
           </div>
         </div>

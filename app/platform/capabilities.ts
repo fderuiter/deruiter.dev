@@ -59,7 +59,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     evidence: [
       route("/crf", "CRF Studio"),
       route("/protocol-drift", "Protocol Drift"),
-      issue(2582, "/study-data pipeline plan"),
+      route("/study-data", "Study Data Pipeline"),
     ],
   },
   {

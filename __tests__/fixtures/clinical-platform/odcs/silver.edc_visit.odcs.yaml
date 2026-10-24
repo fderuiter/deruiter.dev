@@ -1,0 +1,165 @@
+# ODCS v3.2.0 data contract for silver.edc_visit. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.edc_visit"
+name: "EDC visits"
+version: "1.0.0"
+status: active
+domain: EDC
+tags:
+  - silver
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "EDC visit records with their data entry times."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: edc_visit
+    name: edc_visit
+    physicalName: silver.edc_visit
+    physicalType: table
+    logicalType: object
+    description: "EDC visit records with their data entry times."
+    dataGranularityDescription: "One row per subject visit record."
+    properties:
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id."
+        required: true
+        classification: confidential
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id."
+        required: true
+        classification: internal
+      - name: planned_visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Planned visit id from the schedule."
+        required: true
+        classification: internal
+      - name: visit_date
+        logicalType: date
+        physicalType: DATE
+        description: "Visit date, or null for a missed visit."
+        required: false
+        classification: confidential
+      - name: day_offset
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual minus planned day, or null for a missed visit."
+        required: false
+        classification: confidential
+      - name: data_entered_at
+        logicalType: timestamp
+        physicalType: TIMESTAMPTZ
+        description: "UTC time the site entered the visit's data."
+        required: false
+        classification: confidential
+      - name: visit_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Entry state: entered, pending-entry or missed."
+        required: true
+        classification: internal
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: edc_visit_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - visit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (visit_id) identifies one row."
+team:
+  name: EDC
+  members:
+    - username: clinical-data-management-lead
+      name: "Clinical Data Management Lead"
+      role: owner
+    - username: clinical-data-steward
+      name: "Clinical Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.edc.visits
+  - property: consumers
+    value:
+      - "product:gold.fct_visit"
+      - "product:gold.fct_kri_snapshot"

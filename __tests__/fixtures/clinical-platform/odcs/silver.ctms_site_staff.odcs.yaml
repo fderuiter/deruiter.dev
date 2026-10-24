@@ -1,0 +1,149 @@
+# ODCS v3.2.0 data contract for silver.ctms_site_staff. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.ctms_site_staff"
+name: "Site staff assignments"
+version: "1.0.0"
+status: active
+domain: CTMS
+tags:
+  - silver
+  - confidential
+  - synthetic
+description:
+  purpose: "Principal investigator assignments per site, from the CTMS site staff feed."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: ctms_site_staff
+    name: ctms_site_staff
+    physicalName: silver.ctms_site_staff
+    physicalType: table
+    logicalType: object
+    description: "Principal investigator assignments per site, from the CTMS site staff feed."
+    dataGranularityDescription: "One row per site staff assignment."
+    properties:
+      - name: assignment_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Assignment id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id."
+        required: true
+        classification: internal
+      - name: staff_role
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Staff role."
+        required: true
+        classification: internal
+      - name: investigator_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Fictional investigator id."
+        required: true
+        classification: confidential
+      - name: start_on
+        logicalType: date
+        physicalType: DATE
+        description: "First day in the role."
+        required: true
+        classification: confidential
+      - name: end_on
+        logicalType: date
+        physicalType: DATE
+        description: "Last day in the role, or null while still in it."
+        required: false
+        classification: confidential
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: ctms_site_staff_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - assignment_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (assignment_id) identifies one row."
+team:
+  name: CTMS
+  members:
+    - username: clinical-operations-lead
+      name: "Clinical Operations Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.ctms.siteStaff
+  - property: consumers
+    value:
+      - "product:gold.dim_site"

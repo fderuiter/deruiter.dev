@@ -1,0 +1,140 @@
+# ODCS v3.2.0 data contract for silver.planned_visit. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.planned_visit"
+name: "Planned visits"
+version: "1.0.0"
+status: active
+domain: Portfolio
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "Planned visit schedule of each study."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: planned_visit
+    name: planned_visit
+    physicalName: silver.planned_visit
+    physicalType: table
+    logicalType: object
+    description: "Planned visit schedule of each study."
+    dataGranularityDescription: "One row per study and planned visit."
+    properties:
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: planned_visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Planned visit id within the study."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: visit_sequence
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Position of the visit in the schedule, from 1."
+        required: true
+        classification: internal
+      - name: visit_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Display name of the visit."
+        required: true
+        classification: internal
+      - name: planned_day
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned day relative to enrollment, which is day 0."
+        required: true
+        classification: internal
+      - name: window_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Allowed deviation from the planned day, either side."
+        required: true
+        classification: internal
+      - name: dispenses_product
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether investigational product is dispensed."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: planned_visit_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - study_id
+            - planned_visit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (study_id, planned_visit_id) identifies one row."
+team:
+  name: Portfolio
+  members:
+    - username: portfolio-management-lead
+      name: "Portfolio Management Lead"
+      role: owner
+    - username: portfolio-data-steward
+      name: "Portfolio Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 168
+    unit: h
+    driver: operational
+    description: "The latest load is at most 168 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.portfolio.studies
+  - property: consumers
+    value:
+      - "product:gold.fct_visit"

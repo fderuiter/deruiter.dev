@@ -8,4 +8,7 @@
 
 > **DataClassification** = `"public"` \| `"internal"` \| `"confidential"` \| `"restricted"`
 
-Data classification of a data product.
+Data classification, from least to most protected. `restricted` is the
+class for values only named roles may read, such as a randomised arm that
+blinded staff must not see. Whether a product holds personal health data
+is recorded separately, on `DataProduct.personalHealthData`.

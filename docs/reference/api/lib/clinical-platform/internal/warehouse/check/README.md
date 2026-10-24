@@ -9,3 +9,4 @@
 ## Functions
 
 - [checkWarehouse](functions/checkWarehouse.md)
+- [validDate](functions/validDate.md)

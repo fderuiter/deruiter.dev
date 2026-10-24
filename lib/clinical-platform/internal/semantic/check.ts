@@ -42,7 +42,17 @@ export function semver(version: string): [number, number, number] | null {
   return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
 }
 
-function compareVersions(a: readonly number[], b: readonly number[]): number {
+/**
+ * Orders two semantic versions.
+ *
+ * @param a - Major, minor and patch of one version.
+ * @param b - Major, minor and patch of the other.
+ * @returns A negative number when `a` is lower, 0 when equal, positive when higher.
+ */
+export function compareVersions(
+  a: readonly number[],
+  b: readonly number[]
+): number {
   for (let i = 0; i < 3; i += 1) {
     if (a[i] !== b[i]) return a[i] - b[i];
   }

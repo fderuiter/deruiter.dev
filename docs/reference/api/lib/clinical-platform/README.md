@@ -50,6 +50,30 @@ Re-exports [CecAdjudication](types/interfaces/CecAdjudication.md)
 
 ***
 
+### checkContractChange
+
+Re-exports [checkContractChange](internal/governance/contracts/evolution/functions/checkContractChange.md)
+
+***
+
+### checkDataContract
+
+Re-exports [checkDataContract](internal/governance/contracts/check/functions/checkDataContract.md)
+
+***
+
+### checkDataContracts
+
+Re-exports [checkDataContracts](internal/governance/contracts/check/functions/checkDataContracts.md)
+
+***
+
+### checkDataProducts
+
+Re-exports [checkDataProducts](internal/governance/contracts/check/functions/checkDataProducts.md)
+
+***
+
 ### checkLayerFlow
 
 Re-exports [checkLayerFlow](internal/policy/functions/checkLayerFlow.md)
@@ -98,9 +122,63 @@ Re-exports [ColumnRef](types/interfaces/ColumnRef.md)
 
 ***
 
+### contractChangeLevel
+
+Re-exports [contractChangeLevel](internal/governance/contracts/evolution/functions/contractChangeLevel.md)
+
+***
+
+### ContractChangeLevel
+
+Re-exports [ContractChangeLevel](types/type-aliases/ContractChangeLevel.md)
+
+***
+
+### ContractCheckOptions
+
+Re-exports [ContractCheckOptions](types/interfaces/ContractCheckOptions.md)
+
+***
+
 ### ContractColumn
 
 Re-exports [ContractColumn](types/interfaces/ContractColumn.md)
+
+***
+
+### ContractColumnType
+
+Re-exports [ContractColumnType](types/type-aliases/ContractColumnType.md)
+
+***
+
+### contractData
+
+Re-exports [contractData](internal/governance/contracts/check/functions/contractData.md)
+
+***
+
+### ContractDifference
+
+Re-exports [ContractDifference](types/interfaces/ContractDifference.md)
+
+***
+
+### contractDifferences
+
+Re-exports [contractDifferences](internal/governance/contracts/evolution/functions/contractDifferences.md)
+
+***
+
+### ContractObject
+
+Re-exports [ContractObject](types/interfaces/ContractObject.md)
+
+***
+
+### ContractObjectRows
+
+Re-exports [ContractObjectRows](types/interfaces/ContractObjectRows.md)
 
 ***
 
@@ -134,9 +212,51 @@ Re-exports [DataContract](types/interfaces/DataContract.md)
 
 ***
 
+### DataContractFinding
+
+Re-exports [DataContractFinding](types/interfaces/DataContractFinding.md)
+
+***
+
+### DataContractResult
+
+Re-exports [DataContractResult](types/interfaces/DataContractResult.md)
+
+***
+
+### dataContracts
+
+Re-exports [dataContracts](internal/governance/contracts/derive/functions/dataContracts.md)
+
+***
+
+### DataContractSla
+
+Re-exports [DataContractSla](types/interfaces/DataContractSla.md)
+
+***
+
 ### DataProduct
 
 Re-exports [DataProduct](types/interfaces/DataProduct.md)
+
+***
+
+### DataProductConsumer
+
+Re-exports [DataProductConsumer](types/interfaces/DataProductConsumer.md)
+
+***
+
+### dataProducts
+
+Re-exports [dataProducts](internal/governance/contracts/derive/functions/dataProducts.md)
+
+***
+
+### DataRetention
+
+Re-exports [DataRetention](types/interfaces/DataRetention.md)
 
 ***
 
@@ -485,6 +605,12 @@ Re-exports [NO_METRIC_ROWS](internal/reporting/format/variables/NO_METRIC_ROWS.m
 ### NO\_METRIC\_VALUE
 
 Re-exports [NO_METRIC_VALUE](internal/reporting/format/variables/NO_METRIC_VALUE.md)
+
+***
+
+### ODCS\_API\_VERSION
+
+Re-exports [ODCS_API_VERSION](internal/governance/contracts/odcs/variables/ODCS_API_VERSION.md)
 
 ***
 
@@ -941,6 +1067,18 @@ Re-exports [SyntheticRecord](types/interfaces/SyntheticRecord.md)
 ### toMetricFlowYaml
 
 Re-exports [toMetricFlowYaml](internal/semantic/metricflow/functions/toMetricFlowYaml.md)
+
+***
+
+### toOdcs
+
+Re-exports [toOdcs](internal/governance/contracts/odcs/functions/toOdcs.md)
+
+***
+
+### toOdcsYaml
+
+Re-exports [toOdcsYaml](internal/governance/contracts/odcs/functions/toOdcsYaml.md)
 
 ***
 

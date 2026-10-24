@@ -64,6 +64,26 @@ export {
   type ReportCatalogOptions,
 } from "./internal/reporting/catalog";
 export {
+  dataContracts,
+  dataProducts,
+} from "./internal/governance/contracts/derive";
+export {
+  checkDataContract,
+  checkDataContracts,
+  checkDataProducts,
+  contractData,
+} from "./internal/governance/contracts/check";
+export {
+  checkContractChange,
+  contractChangeLevel,
+  contractDifferences,
+} from "./internal/governance/contracts/evolution";
+export {
+  ODCS_API_VERSION,
+  toOdcs,
+  toOdcsYaml,
+} from "./internal/governance/contracts/odcs";
+export {
   scoreVendors,
   sensitivity,
   cashFlow,

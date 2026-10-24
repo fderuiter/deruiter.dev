@@ -561,43 +561,132 @@ export interface Portfolio {
   readonly studyDataRuns: readonly StudyDataRunReference[];
 }
 
-/** Data classification of a data product. */
+/**
+ * Data classification, from least to most protected. `restricted` is the
+ * class for values only named roles may read, such as a randomised arm that
+ * blinded staff must not see. Whether a product holds personal health data
+ * is recorded separately, on `DataProduct.personalHealthData`.
+ */
 export type DataClassification =
   "public" | "internal" | "confidential" | "restricted";
 
+/** Something that reads a data product. */
+export interface DataProductConsumer {
+  /** A downstream data product, or a governed metric. */
+  readonly kind: "product" | "metric";
+  /** Product id or metric id. */
+  readonly id: string;
+}
+
 /** A governed data product: a dataset with an owner, a contract and consumers. */
 export interface DataProduct {
-  /** Stable product id. */
+  /**
+   * Stable product id: the qualified table name for a warehouse table, for
+   * example `silver.edc_subject`, or `STUDY_DATA_PRODUCT_ID`.
+   */
   readonly id: string;
   /** Display name. */
   readonly name: string;
   /** Medallion layer the product is published in. */
   readonly layer: MedallionLayer;
+  /** Business domain, for example `EDC` or `Operations mart`. */
+  readonly domain: string;
   /** One sentence on what the product holds. */
   readonly description: string;
   /** Accountable business owner (a role, not a person). */
   readonly owner: string;
   /** Data steward (a role, not a person). */
   readonly steward: string;
-  /** Data classification. */
+  /** Highest classification of any column the product holds. */
   readonly classification: DataClassification;
+  /**
+   * Whether rows describe study subjects, which makes the product personal
+   * health data however its columns are classified. The data here is
+   * synthetic; the label is the one the real data would carry.
+   */
+  readonly personalHealthData: boolean;
   /** Id of the contract currently in force. */
   readonly contractId: string;
-  /** Ids of the products this one is built from. */
+  /**
+   * What the product is built from: other product ids, bronze feeds such as
+   * `bronze.edc.subjects`, or the USDM study definition the Study Data
+   * Pipeline reads, as `usdm.<study id>`.
+   */
   readonly upstream: readonly string[];
+  /** Known consumers: downstream products and governed metrics. */
+  readonly consumers: readonly DataProductConsumer[];
 }
+
+/** Logical type of a contract column. */
+export type ContractColumnType = WarehouseColumnType | "time";
 
 /** One column a data contract guarantees. */
 export interface ContractColumn {
   /** Column name. */
   readonly name: string;
   /** Logical type. */
-  readonly type:
-    "string" | "integer" | "decimal" | "boolean" | "date" | "timestamp";
-  /** Whether the column may hold `null`. */
+  readonly type: ContractColumnType;
+  /** Whether the column may hold `null`. A required column counts towards completeness. */
   readonly nullable: boolean;
   /** Business description. */
   readonly description: string;
+  /** Data classification of the values. */
+  readonly classification: DataClassification;
+  /** Longest `string` value, in characters, or `null` for no limit. */
+  readonly maxLength: number | null;
+  /** Total digits of a `decimal` value, or `null` for no limit. */
+  readonly precision: number | null;
+  /** Digits after the decimal point of a `decimal` value, or `null` for no limit. */
+  readonly scale: number | null;
+  /**
+   * Regular expression every `string` value matches, or `null`. SDTM dates
+   * and times are ISO 8601 text that may be partial, so they are strings
+   * with a pattern rather than dates.
+   */
+  readonly pattern: string | null;
+}
+
+/** One table or dataset a data contract covers. */
+export interface ContractObject {
+  /** Object name, for example `edc_subject` or `ADSL`. */
+  readonly name: string;
+  /**
+   * Where the object is stored: a warehouse table such as
+   * `silver.edc_subject`, or a Dataset-JSON file of the study data package.
+   */
+  readonly physicalName: string;
+  /** One sentence on what the object holds. */
+  readonly description: string;
+  /** What one row stands for. */
+  readonly grain: string;
+  /** Columns that identify a row, in key order. */
+  readonly primaryKey: readonly string[];
+  /** Columns, in table order. */
+  readonly columns: readonly ContractColumn[];
+}
+
+/** Service levels a data product promises. */
+export interface DataContractSla {
+  /** Oldest the latest load may be when the product is read, in hours. */
+  readonly freshnessHours: number;
+  /** Minimum share of required values present, from 0 to 1. */
+  readonly completeness: number;
+  /**
+   * Share of time the product is available to read, from 0 to 1. A static
+   * build has no uptime to measure, so the contract check confirms only that
+   * the product was published.
+   */
+  readonly availability: number;
+}
+
+/** How long a data product is kept, and why. */
+export interface DataRetention {
+  /** Retention period, in years. */
+  readonly years: number;
+  /** What sets the period: a regulation, or a sponsor policy choice. */
+  readonly basis: string;
+  /** Whether a regulation sets the period, rather than a sponsor policy. */
+  readonly regulatory: boolean;
 }
 
 /** A versioned data contract for one data product. */
@@ -606,17 +695,83 @@ export interface DataContract {
   readonly id: string;
   /** Id of the product the contract governs. */
   readonly productId: string;
-  /** Semantic version. A breaking schema change needs a major version bump. */
+  /**
+   * Semantic version. A breaking change (a removed or retyped column, a
+   * weaker service level) needs a major version bump, an additive one at
+   * least a minor bump.
+   */
   readonly version: string;
-  /** Columns the product guarantees. */
-  readonly columns: readonly ContractColumn[];
+  /** Tables or datasets the contract covers. */
+  readonly objects: readonly ContractObject[];
   /** Service levels the product promises. */
-  readonly sla: {
-    /** Maximum age of the newest record, in hours. */
-    readonly freshnessHours: number;
-    /** Minimum share of required values present, from 0 to 1. */
-    readonly completeness: number;
-  };
+  readonly sla: DataContractSla;
+  /** Retention period. */
+  readonly retention: DataRetention;
+}
+
+/** How far a contract change reaches, from none to breaking. */
+export type ContractChangeLevel = "none" | "patch" | "minor" | "major";
+
+/** One difference between two versions of a data contract. */
+export interface ContractDifference {
+  /** The version bump the difference needs. */
+  readonly level: Exclude<ContractChangeLevel, "none">;
+  /** What changed, in one sentence. */
+  readonly message: string;
+}
+
+/** A broken data product or contract rule. */
+export interface DataContractFinding {
+  /** Rule that failed. */
+  readonly rule:
+    | "registry"
+    | "schema"
+    | "completeness"
+    | "freshness"
+    | "availability"
+    | "version";
+  /** Product id. */
+  readonly productId: string;
+  /** Object the finding is about, or `null` for the whole product. */
+  readonly object: string | null;
+  /** What is wrong, in one sentence. */
+  readonly message: string;
+}
+
+/** The rows of one contract object, as a contract check reads them. */
+export interface ContractObjectRows {
+  /** Column names present in the data, in order. */
+  readonly columns: readonly string[];
+  /** Rows, keyed by column name. */
+  readonly rows: readonly Readonly<Record<string, WarehouseValue>>[];
+}
+
+/** Options for checking a dataset against its contract. */
+export interface ContractCheckOptions {
+  /** ISO 8601 timestamp the product was last loaded at. */
+  readonly loadedAt: string;
+  /** ISO 8601 timestamp the check runs at; defaults to `loadedAt`. */
+  readonly evaluatedAt?: string;
+}
+
+/** The outcome of checking one data product against its contract. */
+export interface DataContractResult {
+  /** Product id. */
+  readonly productId: string;
+  /** Contract version checked against. */
+  readonly version: string;
+  /** Rows checked, across every object. */
+  readonly rowCount: number;
+  /** Hours from the latest load to the check. */
+  readonly ageHours: number;
+  /** Share of required values present, from 0 to 1; 1 when nothing is required. */
+  readonly completeness: number;
+  /** Whether every object was published. */
+  readonly available: boolean;
+  /** Every broken rule; empty when the product meets its contract. */
+  readonly findings: readonly DataContractFinding[];
+  /** Whether the product meets its contract. */
+  readonly passed: boolean;
 }
 
 /**

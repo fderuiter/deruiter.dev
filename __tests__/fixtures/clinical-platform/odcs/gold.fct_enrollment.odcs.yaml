@@ -1,0 +1,159 @@
+# ODCS v3.2.0 data contract for gold.fct_enrollment. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_enrollment"
+name: "Enrollment facts"
+version: "1.0.0"
+status: active
+domain: "Operations mart"
+tags:
+  - gold
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "Subject enrollment events: screened, enrolled, completed and discontinued."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_enrollment
+    name: fct_enrollment
+    physicalName: gold.fct_enrollment
+    physicalType: table
+    logicalType: object
+    description: "Subject enrollment events: screened, enrolled, completed and discontinued."
+    dataGranularityDescription: "One row per subject per enrollment event."
+    properties:
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id (degenerate dimension)."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: confidential
+      - name: event_type
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "screened, enrolled, completed or discontinued."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force on the event date."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: event_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date of the event."
+        required: true
+        classification: internal
+      - name: subject_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject status at the data cut."
+        required: true
+        classification: internal
+      - name: event_count
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Always 1: the additive measure."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_enrollment_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - subject_id
+            - event_type
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (subject_id, event_type) identifies one row."
+team:
+  name: "Operations mart"
+  members:
+    - username: clinical-operations-lead
+      name: "Clinical Operations Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.edc_subject
+      - silver.site
+  - property: consumers
+    value:
+      - "metric:subjects_screened"
+      - "metric:subjects_enrolled"
+      - "metric:enrollment_vs_plan"
+      - "metric:screen_failure_rate"
+      - "metric:early_termination_rate"
+      - "metric:important_deviation_rate"
+      - "metric:non_important_deviation_rate"
+      - "metric:subjects_with_important_deviation"
+      - "metric:cost_per_enrolled_subject"

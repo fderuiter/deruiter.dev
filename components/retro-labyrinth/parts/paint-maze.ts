@@ -45,7 +45,7 @@ import {
  * The fog texture and the maps it was painted from, rebuilt only when the
  * field of view changes. Each canvas keeps its own.
  */
-export interface FogCache {
+interface FogCache {
   canvas: HTMLCanvasElement | null;
   visible: boolean[][] | null;
   explored: boolean[][] | null;

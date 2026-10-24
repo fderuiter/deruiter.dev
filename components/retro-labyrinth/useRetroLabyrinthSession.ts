@@ -164,7 +164,7 @@ export type GameStatus =
 export type LabyrinthOverlay = "darknet_shop" | "class_select" | "firmware_bay";
 
 /** A step of the player, in the direction a key or the d-pad names. */
-export type LabyrinthDirection = "up" | "down" | "left" | "right";
+type LabyrinthDirection = "up" | "down" | "left" | "right";
 
 /**
  * One-shot feedback from the session (#2376). Each view renders it its own
@@ -200,7 +200,7 @@ export type LabyrinthEvent =
   | { readonly type: "runComplete" };
 
 /** What the loop and the painters read each frame. */
-export interface LabyrinthLoopState {
+interface LabyrinthLoopState {
   readonly wallTelegraph: ReturnType<typeof tspWallTelegraph> | null;
   readonly reducedMotion: boolean;
   readonly currentMaze: string[][];
@@ -251,7 +251,7 @@ export interface LabyrinthFrame {
 export type LabyrinthPainter = (frame: LabyrinthFrame) => void;
 
 /** One row of the Market, ready to show. */
-export interface LabyrinthMarketRow {
+interface LabyrinthMarketRow {
   readonly id: string;
   readonly name: string;
   readonly icon: string;
@@ -265,7 +265,7 @@ export interface LabyrinthMarketRow {
  * The game as a read-only snapshot (#2376). Views read this and never the
  * session's refs; every change goes through an intent.
  */
-export interface LabyrinthView {
+interface LabyrinthView {
   readonly gameStatus: GameStatus;
   readonly gameMode: "roguelike" | "classic";
   readonly stage: number;
@@ -332,7 +332,7 @@ export interface LabyrinthView {
 }
 
 /** Everything a view can ask the game to do. */
-export interface LabyrinthIntents {
+interface LabyrinthIntents {
   /** One step, through any scramble a side effect has applied. */
   readonly move: (direction: LabyrinthDirection) => void;
   /**
@@ -386,7 +386,7 @@ export interface LabyrinthIntents {
 }
 
 /** Options for {@link useRetroLabyrinthSession}. */
-export interface RetroLabyrinthSessionOptions {
+interface RetroLabyrinthSessionOptions {
   /** Whether the loop runs. A server render passes false. */
   readonly active: boolean;
   /** Tools hold still and the boss holds its angle under reduced motion. */

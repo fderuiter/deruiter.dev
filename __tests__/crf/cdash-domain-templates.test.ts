@@ -226,7 +226,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
       expect(sex.required).toBe(true);
       expect(sex.codelistId).toBe("CL_SEX");
       expect(sex.cdashMetadata?.core).toBe("R");
-      expect(sex.cdashMetadata?.nciConceptId).toBe("C66742");
+      expect(sex.cdashMetadata?.nciConceptId).toBe("C66731");
 
       expect(varMap.has("RACE")).toBe(true);
       const race = varMap.get("RACE")!;
@@ -234,7 +234,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
       expect(race.required).toBe(true);
       expect(race.codelistId).toBe("CL_RACE");
       expect(race.cdashMetadata?.core).toBe("HR");
-      expect(race.cdashMetadata?.nciConceptId).toBe("C74457");
+      expect(race.cdashMetadata?.nciConceptId).toBe("C128689");
 
       expect(varMap.has("ETHNIC")).toBe(true);
       const ethnic = varMap.get("ETHNIC")!;
@@ -242,7 +242,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
       expect(ethnic.required).toBe(true);
       expect(ethnic.codelistId).toBe("CL_ETHNIC");
       expect(ethnic.cdashMetadata?.core).toBe("HR");
-      expect(ethnic.cdashMetadata?.nciConceptId).toBe("C66790");
+      expect(ethnic.cdashMetadata?.nciConceptId).toBe("C128690");
     });
 
     it("verifies Vital Signs (VS) domain variables, units, and derivation rules", () => {
@@ -319,12 +319,12 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const aeser = varMap.get("AESER")!;
       expect(aeser.codelistId).toBe("CL_NY");
-      expect(aeser.cdashMetadata?.nciConceptId).toBe("C66741");
+      expect(aeser.cdashMetadata?.nciConceptId).toBe("C66742");
       expect(aeser.cdashMetadata?.core).toBe("R");
 
       const aerel = varMap.get("AEREL")!;
       expect(aerel.codelistId).toBe("CL_AEREL");
-      expect(aerel.cdashMetadata?.nciConceptId).toBe("C66768");
+      expect(aerel.cdashMetadata?.nciConceptId).toBeUndefined();
       expect(aerel.cdashMetadata?.core).toBe("R");
 
       const acn = varMap.get("AEACN")!;
@@ -332,7 +332,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const aeout = varMap.get("AEOUT")!;
       expect(aeout.codelistId).toBe("CL_AEOUT");
-      expect(aeout.cdashMetadata?.nciConceptId).toBe("C66767");
+      expect(aeout.cdashMetadata?.nciConceptId).toBe("C66768");
       expect(aeout.cdashMetadata?.core).toBe("R");
 
       // Edit check rule and predicate condition
@@ -428,7 +428,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const distat = varMap.get("DISTAT")!;
       expect(distat.codelistId).toBe("CL_DISTAT");
-      expect(distat.cdashMetadata?.nciConceptId).toBe("C112033");
+      expect(distat.cdashMetadata?.nciConceptId).toBeUndefined();
       expect(distat.cdashMetadata?.core).toBe("R");
     });
 
@@ -443,7 +443,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const duorres = varMap.get("DUORRES")!;
       expect(duorres.codelistId).toBe("CL_DUPROC");
-      expect(duorres.cdashMetadata?.nciConceptId).toBe("C112037");
+      expect(duorres.cdashMetadata?.nciConceptId).toBeUndefined();
       expect(duorres.cdashMetadata?.core).toBe("R");
     });
 
@@ -455,21 +455,21 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const dedefic = varMap.get("DEDEFIC")!;
       expect(dedefic.codelistId).toBe("CL_DEDEF");
-      expect(dedefic.cdashMetadata?.nciConceptId).toBe("C112023");
+      expect(dedefic.cdashMetadata?.nciConceptId).toBeUndefined();
 
       expect(varMap.get("DESEV")?.codelistId).toBe("CL_AESEV");
 
       const deser = varMap.get("DESER")!;
       expect(deser.codelistId).toBe("CL_NY");
-      expect(deser.cdashMetadata?.nciConceptId).toBe("C66741");
+      expect(deser.cdashMetadata?.nciConceptId).toBe("C66742");
 
       const derel = varMap.get("DEREL")!;
       expect(derel.codelistId).toBe("CL_DEREL");
-      expect(derel.cdashMetadata?.nciConceptId).toBe("C112024");
+      expect(derel.cdashMetadata?.nciConceptId).toBeUndefined();
 
       const deact = varMap.get("DEACT")!;
       expect(deact.codelistId).toBe("CL_DEACT");
-      expect(deact.cdashMetadata?.nciConceptId).toBe("C112028");
+      expect(deact.cdashMetadata?.nciConceptId).toBe("C111110");
 
       expect(varMap.get("DEOUT")?.codelistId).toBe("CL_AEOUT");
     });
@@ -494,7 +494,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const darecon = varMap.get("DARECON")!;
       expect(darecon.codelistId).toBe("CL_DARECON");
-      expect(darecon.cdashMetadata?.nciConceptId).toBe("C66736");
+      expect(darecon.cdashMetadata?.nciConceptId).toBeUndefined();
 
       expect(form.rules.length).toBe(1);
       const daRule = form.rules[0];
@@ -537,7 +537,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const mhcat = varMap.get("MHCAT")!;
       expect(mhcat.codelistId).toBe("CL_MHCAT");
-      expect(mhcat.cdashMetadata?.nciConceptId).toBe("C66737");
+      expect(mhcat.cdashMetadata?.nciConceptId).toBeUndefined();
 
       expect(varMap.get("MHSTDTC")?.dataType).toBe("partial_date");
       expect(varMap.get("MHONGO")?.codelistId).toBe("CL_NY");
@@ -551,7 +551,7 @@ describe("CDASH Domain Templates Unit Test Suite", () => {
 
       const dsdecod = varMap.get("DSDECOD")!;
       expect(dsdecod.codelistId).toBe("CL_DSCONT");
-      expect(dsdecod.cdashMetadata?.nciConceptId).toBe("C66735");
+      expect(dsdecod.cdashMetadata?.nciConceptId).toBe("C66727");
 
       expect(varMap.get("DSSTDTC")?.dataType).toBe("date");
       expect(varMap.get("DSTERM")?.dataType).toBe("textarea");

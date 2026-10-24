@@ -8,4 +8,4 @@
 
 > `const` **NCI\_CODE\_REGEX**: `RegExp`
 
-Regex format for NCI Thesaurus Concept Codes (e.g., C66741, C49487)
+Regex format for NCI Thesaurus Concept Codes (e.g., C66742, C49487)

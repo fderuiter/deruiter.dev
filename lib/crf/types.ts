@@ -42,7 +42,8 @@ export interface CdashVariableMetadata {
   domain: string; // e.g. DM, VS, AE, CM, LB
   sdtmVariable: string; // e.g. USUBJID, AESTDTC, VSTESTCD
   cdashLabel: string; // e.g. "Adverse Event Start Date"
-  nciConceptId?: string; // e.g. C49487
+  nciConceptId?: string; // NCI codelist code when CDISC publishes the codelist, e.g. C66731
+  codelistId?: string; // CRF Studio codelist the variable is collected with, e.g. CL_SEX
   core: "HR" | "O" | "R"; // Highly Recommended, Optional, Required
   acrfAnnotation: string; // e.g. "AE.AESTDTC"
   dataCategory?: string; // Identifier, Timing, Topic, Qualifier

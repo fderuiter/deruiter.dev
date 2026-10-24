@@ -8,6 +8,7 @@
 
 ## Variables
 
+- [CDISC\_CT\_PACKAGE\_VERSION](variables/CDISC_CT_PACKAGE_VERSION.md)
 - [NCI\_CODE\_REGEX](variables/NCI_CODE_REGEX.md)
 - [STANDARD\_CODELISTS](variables/STANDARD_CODELISTS.md)
 

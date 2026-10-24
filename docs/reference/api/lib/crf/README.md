@@ -380,6 +380,12 @@ Re-exports [CdashVariableMetadataSchema](universal-schema/variables/CdashVariabl
 
 ***
 
+### CDISC\_CT\_PACKAGE\_VERSION
+
+Re-exports [CDISC_CT_PACKAGE_VERSION](cdisc-controlled-terminology/variables/CDISC_CT_PACKAGE_VERSION.md)
+
+***
+
 ### CDISC\_NULL\_FLAVORS
 
 Re-exports [CDISC_NULL_FLAVORS](precision-date/variables/CDISC_NULL_FLAVORS.md)

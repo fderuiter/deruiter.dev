@@ -974,6 +974,12 @@ Re-exports [ResultRow](types/interfaces/ResultRow.md)
 
 ***
 
+### rowSetRowIds
+
+Re-exports [rowSetRowIds](internal/tlf/row-ids/functions/rowSetRowIds.md)
+
+***
+
 ### RuleIssue
 
 Re-exports [RuleIssue](internal/conformance/rules/interfaces/RuleIssue.md)

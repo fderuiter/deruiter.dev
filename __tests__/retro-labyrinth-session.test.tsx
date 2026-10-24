@@ -144,8 +144,23 @@ describe("Retro Labyrinth session (#2376)", () => {
     expect(view().gameStatus).toBe("playing");
   });
 
+  it("runs the loop only while a view paints the room", () => {
+    const { session } = renderSession();
+    expect(frames.pending()).toBe(0);
+    let stop: () => void = () => {};
+    act(() => {
+      stop = session().onFrame(() => {});
+    });
+    expect(frames.pending()).toBe(1);
+    act(() => stop());
+    expect(frames.pending()).toBe(0);
+  });
+
   it("stops the loop while the room is paused, and starts it again on resume", () => {
-    const { intents } = renderSession();
+    const { intents, session } = renderSession();
+    act(() => {
+      session().onFrame(() => {});
+    });
     frames.tick(0);
     expect(frames.pending()).toBe(1);
 

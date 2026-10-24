@@ -450,6 +450,9 @@ export function useRetroLabyrinthSession(
     [...eventListenersRef.current].forEach((listener) => listener(event));
   }, []);
   const paintersRef = useRef(new Set<LabyrinthPainter>());
+  // How many views paint the room. Game time passes only while one does, so
+  // the run does not start behind a view chunk that is still loading.
+  const [painterCount, setPainterCount] = useState(0);
 
   // Persistent Cyberdeck Profile & Meta-Progression
   const [profile, setProfile] = useState<CyberdeckProfile>(() =>
@@ -2028,8 +2031,9 @@ export function useRetroLabyrinthSession(
   });
 
   // A paused room stops the loop: the cabinet's pause, a lost canvas
-  // context and the room's own pause all hold it still (#2357).
-  const isLoopActive = active && gameStatus !== "paused";
+  // context and the room's own pause all hold it still (#2357). So does a
+  // room no view paints yet.
+  const isLoopActive = active && gameStatus !== "paused" && painterCount > 0;
 
   // Main Real-Time Game Loop
   //
@@ -2477,8 +2481,10 @@ export function useRetroLabyrinthSession(
   }, []);
   const onFrame = useCallback((paint: LabyrinthPainter) => {
     paintersRef.current.add(paint);
+    setPainterCount(paintersRef.current.size);
     return () => {
       paintersRef.current.delete(paint);
+      setPainterCount(paintersRef.current.size);
     };
   }, []);
 

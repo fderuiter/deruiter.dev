@@ -22,5 +22,6 @@
 
 - [getEnv](functions/getEnv.md)
 - [isBuildPhase](functions/isBuildPhase.md)
+- [isProductionBuild](functions/isProductionBuild.md)
 - [isProductionEnvironment](functions/isProductionEnvironment.md)
 - [validateEnv](functions/validateEnv.md)

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
-import type { SessionRng, StepClock } from "@/lib/arcade";
+import type { RunFairness, SessionRng, StepClock } from "@/lib/arcade";
 import { useArcadeSession } from "./ArcadeSessionProvider";
 
 /** Paints one frame. `alpha` is how far the loop is between fixed steps. */
@@ -51,6 +51,13 @@ export interface ArcadeSession<State, Intent> {
   readonly clock?: StepClock;
   /** The input tuning this run plays with, such as touch assist strengths. */
   readonly tuning?: Readonly<Record<string, number | boolean>>;
+  /**
+   * The run's fairness record (#2547), from `createRunFairness(policy)`.
+   * Its assists key on the input and ratchet within the run; the views note
+   * the view and input with `useRunFairness`, and the run snapshot saves and
+   * restores its tags.
+   */
+  readonly fairness?: RunFairness;
 }
 
 /**

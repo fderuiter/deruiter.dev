@@ -81,7 +81,7 @@ A game is one headless `use<Game>Session()` and three views: `DesktopView`,
   a phone download the desktop layout.
 - **One run snapshot.** A view swap, a save when the page hides and Resume all
   use one versioned snapshot per game (`arcade_run_<slug>_v1`: schema,
-  `savedAt`, view, tuning and a Zod-parsed state). It is written on pause, on
+  `savedAt`, view, tuning, the run's fairness tags and a Zod-parsed state). It is written on pause, on
   `visibilitychange` to hidden and on `pagehide`, never on `beforeunload`. A
   snapshot that fails to parse is discarded with one notice and never throws.
   iOS evicts script storage after seven days of Safari use without a visit, so
@@ -202,7 +202,15 @@ ADR 0061's phone bar, items 1 to 12, plus:
   so they stay inside the Upstash daily command allowance
   ([ADR 0036](0036-free-tier-offloading-and-provider-quota-governance.md)).
   Sentry gets the same facts as the tags `arcade.game`, `arcade.view` and
-  `arcade.input`, set at Launch.
+  `arcade.input`, set at Launch. The run-fairness contract
+  ([#2547](https://github.com/fderuiter/deruiter.dev/issues/2547),
+  `lib/arcade/run-tags.ts`) says how: tuning keys on the input modality and
+  never on the view, so narrowing a desktop window to the phone view grants
+  no touch assists. Assists ratchet within a run: touch to keys keeps them,
+  keys to touch adds them. The run's `RunTags` (every view and input in
+  first-seen order, and the assists it reached) ride in the run snapshot and
+  beside the game's best score, and trophies, par stars, the Arcade Daily
+  and share text read them through `isUnassisted` and `assistLabel`.
 - **20. Fun.** A fresh phone playtest on the
   [arcade playtest rubric](../docs/explanation/arcade-playtest-rubric.md) scores 9/10 or better
   at 320x568, 375x667, 393x852 and 430x932 plus one landscape size, with no

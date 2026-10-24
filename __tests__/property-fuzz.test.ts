@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, it, expect } from "vitest";
+import { z } from "zod";
 import { createCustomTheorem } from "@/lib/proof-custom";
 import * as fc from "fast-check";
 import {
@@ -55,8 +56,18 @@ import {
   createSeededRandom,
   lerp,
   scaleScoreWithMultiplier,
+  noteRunInput,
+  noteRunView,
+  readRunSnapshot,
+  writeRunSnapshot,
   type ArcadeProgress,
+  type FairnessPolicy,
+  type FormFactor,
+  type InputModality,
   type Rect,
+  type RunSnapshotStorage,
+  type RunTags,
+  EMPTY_RUN_TAGS,
 } from "@/lib/arcade";
 import { calculateFOV, hasLineOfSight } from "@/lib/dungeon";
 import {
@@ -2023,9 +2034,24 @@ describe("Arcade progress merge laws", () => {
     "meme_vault_echo_5",
     "arcade_triathlon"
   );
+  const runTagsArb: fc.Arbitrary<RunTags> = fc.record({
+    views: fc.uniqueArray(
+      fc.constantFrom<FormFactor>("phone", "tablet", "desktop")
+    ),
+    inputs: fc.uniqueArray(
+      fc.constantFrom<InputModality>("touch", "pen", "keyboard", "mouse")
+    ),
+    assists: fc.dictionary(
+      fc.constantFrom("aimAssist", "autoFire", "wideWindow"),
+      fc.oneof(fc.boolean(), fc.constantFrom("light", "strong"))
+    ),
+  });
   const coreArb: fc.Arbitrary<ArcadeProgress> = fc
     .record({
       highScores: fc.dictionary(gameIds, fc.integer({ min: 0, max: 1e6 })),
+      bestTags: fc.option(fc.dictionary(gameIds, runTagsArb), {
+        nil: undefined,
+      }),
       unlockedTrophies: fc.dictionary(
         trophyIds,
         fc.integer({ min: 1, max: 2e12 })
@@ -2035,15 +2061,20 @@ describe("Arcade progress merge laws", () => {
         nil: undefined,
       }),
     })
-    .map((p) =>
-      p.migratedAt === undefined
-        ? {
-            highScores: p.highScores,
-            unlockedTrophies: p.unlockedTrophies,
-            updatedAt: p.updatedAt,
-          }
-        : p
-    );
+    // As the slice stores it: a record only beside its best, and no empty
+    // or undefined fields.
+    .map(({ bestTags, migratedAt, ...p }) => {
+      const kept = Object.fromEntries(
+        Object.entries(bestTags ?? {}).filter(
+          ([game]) => p.highScores[game] !== undefined
+        )
+      );
+      return {
+        ...p,
+        ...(Object.keys(kept).length > 0 ? { bestTags: kept } : {}),
+        ...(migratedAt === undefined ? {} : { migratedAt }),
+      };
+    });
 
   const dates = fc
     .integer({ min: 0, max: 40 })
@@ -2106,6 +2137,13 @@ describe("Arcade progress merge laws", () => {
 
   const sortedCore = (p: ArcadeProgress) => ({
     ...p,
+    ...(p.bestTags
+      ? {
+          bestTags: Object.fromEntries(
+            Object.entries(p.bestTags).sort(([a], [b]) => a.localeCompare(b))
+          ),
+        }
+      : {}),
     highScores: Object.fromEntries(Object.entries(p.highScores).sort()),
     unlockedTrophies: Object.fromEntries(
       Object.entries(p.unlockedTrophies).sort()
@@ -2170,5 +2208,92 @@ describe("Arcade progress merge laws", () => {
   it("marks neither profile slice spendable", () => {
     expect(arcadeCoreSlice.spendable).toBe(false);
     expect(arcadeDailySlice.spendable).toBe(false);
+  });
+});
+
+// #2547: the run-fairness contract. A run's record survives the snapshot
+// envelope byte for byte, and its assists only ever ratchet up.
+describe("Arcade run tags", () => {
+  const view = fc.constantFrom<FormFactor>("phone", "tablet", "desktop");
+  const input = fc.constantFrom<InputModality>(
+    "touch",
+    "pen",
+    "keyboard",
+    "mouse"
+  );
+  const tagsArb: fc.Arbitrary<RunTags> = fc.record({
+    views: fc.uniqueArray(view),
+    inputs: fc.uniqueArray(input),
+    assists: fc.dictionary(
+      fc
+        .string({ minLength: 1, maxLength: 12 })
+        .filter((k) => k !== "__proto__"),
+      fc.oneof(fc.boolean(), fc.string({ maxLength: 8 }))
+    ),
+  });
+  const policy: FairnessPolicy = {
+    levels: { aimAssist: ["off", "light", "strong"], autoFire: [false, true] },
+    assistsFor: (modality): Record<string, string | boolean> =>
+      modality === "touch"
+        ? { aimAssist: "strong", autoFire: true }
+        : modality === "pen"
+          ? { aimAssist: "light" }
+          : {},
+  };
+  const level = (tags: RunTags, assist: string) =>
+    policy.levels[assist].indexOf(
+      tags.assists[assist] ?? policy.levels[assist][0]
+    );
+
+  it("round-trips through the run snapshot envelope", () => {
+    fc.assert(
+      fc.property(tagsArb, (tags) => {
+        const data = new Map<string, string>();
+        const storage: RunSnapshotStorage = {
+          getItem: (key) => data.get(key) ?? null,
+          setItem: (key, value) => void data.set(key, value),
+          removeItem: (key) => void data.delete(key),
+        };
+        const run = {
+          schema: 1,
+          savedAt: 1,
+          view: "phone" as const,
+          tuning: {},
+          state: null,
+          tags,
+        };
+        writeRunSnapshot(storage, "fuzz", run);
+        const read = readRunSnapshot(storage, "fuzz", {
+          schema: 1,
+          state: z.null(),
+        });
+        expect(read).toEqual({ status: "ok", snapshot: run });
+      })
+    );
+  });
+
+  it("never lowers an assist, and a view swap never changes one", () => {
+    const step = fc.oneof(
+      view.map((v) => ({ kind: "view" as const, v })),
+      input.map((v) => ({ kind: "input" as const, v }))
+    );
+    fc.assert(
+      fc.property(fc.array(step, { maxLength: 20 }), (steps) => {
+        let tags = EMPTY_RUN_TAGS;
+        for (const next of steps) {
+          const before = tags;
+          tags =
+            next.kind === "view"
+              ? noteRunView(tags, next.v)
+              : noteRunInput(tags, next.v, policy);
+          for (const assist of Object.keys(policy.levels)) {
+            expect(level(tags, assist)).toBeGreaterThanOrEqual(
+              level(before, assist)
+            );
+          }
+          if (next.kind === "view") expect(tags.assists).toBe(before.assists);
+        }
+      })
+    );
   });
 });

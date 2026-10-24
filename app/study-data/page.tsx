@@ -2,6 +2,10 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
+import {
+  toDefinitionCounts,
+  toScheduleDesign,
+} from "@/components/study-data/schedule-design";
 import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
@@ -34,34 +38,6 @@ const STANDARD_NAMES: Readonly<Record<StandardId, string>> = {
   "Dataset-JSON": "Dataset exchange format",
   ARS: "Analysis Results Standard",
   "NCI-EVS-CT": "NCI EVS controlled terminology, package date",
-};
-
-const { design } = DEMO_301_STUDY;
-
-const scheduleDesign = {
-  studyId: DEMO_301_STUDY.studyId,
-  title: DEMO_301_STUDY.title,
-  phase: design.phase,
-  blinding: design.blinding,
-  arms: design.arms.map((arm) => ({ id: arm.id, name: arm.name })),
-  visits: design.visits.map((visit) => ({
-    id: visit.id,
-    name: visit.name,
-    visitNum: visit.visitNum,
-    targetDay: visit.targetDay,
-    windowBefore: visit.windowBefore,
-    windowAfter: visit.windowAfter,
-  })),
-  activities: design.activities.map((activity) => ({
-    id: activity.id,
-    name: activity.name,
-    domain: activity.domain,
-    tests: activity.assessments.map((assessment) => assessment.testCode),
-  })),
-  schedule: design.schedule.map((cell) => ({
-    visitId: cell.visitId,
-    activityId: cell.activityId,
-  })),
 };
 
 export default function StudyDataPage() {
@@ -127,13 +103,8 @@ export default function StudyDataPage() {
       </header>
 
       <StudyDataWorkbench
-        design={scheduleDesign}
-        definitionCounts={{
-          arms: design.arms.length,
-          visits: design.visits.length,
-          activities: design.activities.length,
-          scheduled: design.schedule.length,
-        }}
+        design={toScheduleDesign(DEMO_301_STUDY)}
+        definitionCounts={toDefinitionCounts(DEMO_301_STUDY)}
         limits={{
           min: SUBJECT_COUNT_LIMITS.min,
           max: SUBJECT_COUNT_LIMITS.max,

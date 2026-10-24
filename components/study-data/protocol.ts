@@ -13,12 +13,15 @@ import type {
   DataLayer,
   DefineDocument,
   Finding,
+  HandoffReport,
   LineageOrigin,
   LineageTrace,
   TlfKmFigure,
   TlfTable,
   VariableMeta,
 } from "@/lib/study-data";
+import type { ScheduleDesign } from "./ScheduleViewer";
+import type { DefinitionCounts } from "./StageRail";
 
 /** A dataset of the run, without its values. */
 export interface DatasetSummary {
@@ -88,6 +91,27 @@ export interface RunSummary {
   readonly figures: readonly TlfKmFigure[];
 }
 
+/**
+ * A handed-off study checked and narrowed for a run, or why it cannot run.
+ * `schema` means the document failed the USDM v4.0.0 schema; `definition`
+ * means it passed but is not a study the pipeline can read.
+ */
+export type PreparedStudy =
+  | {
+      readonly ok: true;
+      readonly report: HandoffReport;
+      readonly design: ScheduleDesign;
+      readonly counts: DefinitionCounts;
+    }
+  | {
+      readonly ok: false;
+      readonly problem: "schema" | "definition";
+      /** The first few issues, as `path: message` or a reader error. */
+      readonly issues: readonly string[];
+      /** How many issues there are in all. */
+      readonly total: number;
+    };
+
 /** A window of a dataset's rows, one array of cells per row. */
 export interface RowWindow {
   readonly key: string;
@@ -110,9 +134,17 @@ export interface PackageFileResult {
 export type StudyDataRequest =
   | {
       readonly id: number;
+      readonly type: "prepare";
+      /** A parsed USDM v4 document handed over from CRF Studio. */
+      readonly study: unknown;
+    }
+  | {
+      readonly id: number;
       readonly type: "run";
       readonly seed: number;
       readonly nSubjects: number;
+      /** A handed-over USDM document to run; DEMO-301 when absent. */
+      readonly study?: unknown;
     }
   | {
       readonly id: number;
@@ -138,6 +170,7 @@ export type StudyDataRequest =
 
 /** What each request type resolves to. */
 export interface StudyDataResults {
+  readonly prepare: PreparedStudy;
   readonly run: RunSummary;
   readonly rows: RowWindow;
   readonly trace: LineageTrace;
@@ -154,6 +187,9 @@ export const ROW_PAGE_SIZE = 200;
 
 /** Lineage items listed per level. */
 export const TRACE_LIMIT = 40;
+
+/** Schema issues posted when a handed-off study is invalid. */
+export const SCHEMA_ISSUE_SAMPLE_SIZE = 8;
 
 /** Findings posted with a run summary; the rest are counted. */
 export const FINDING_SAMPLE_SIZE = 200;

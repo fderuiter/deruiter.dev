@@ -91,3 +91,15 @@ export {
   planRoadmap,
   decisionMemo,
 } from "./internal/strategy/engine";
+export {
+  fitRecruitmentPrior,
+  posteriorRate,
+  recruitmentLogLikelihood,
+  type SiteExposure,
+} from "./internal/forecast/fit";
+export { simulateEnrollmentCompletion } from "./internal/forecast/simulate";
+export {
+  FORECAST_DEFAULT_RUNS,
+  FORECAST_DEFAULT_SEED,
+  forecastEnrollment,
+} from "./internal/forecast/enrollment";

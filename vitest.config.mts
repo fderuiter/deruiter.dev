@@ -167,6 +167,16 @@ export default defineConfig({
               statements: 80,
               branches: 70,
             },
+            // #2607: set just below the study data suites' measured
+            // coverage (2026-10-24: 96.2/86.8/99.6/96.8). Fred chose a
+            // ratchet over the 95% branch target: raise it as tests for
+            // real derivation risks land; never lower it.
+            "lib/study-data/**": {
+              statements: 96,
+              branches: 86,
+              functions: 99,
+              lines: 96,
+            },
             "hooks/**": {
               lines: 80,
               functions: 80,

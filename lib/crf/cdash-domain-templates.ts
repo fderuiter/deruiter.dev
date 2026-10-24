@@ -37,7 +37,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DM.SEX",
         dataCategory: "Topic",
-        nciConceptId: "C66742",
+        nciConceptId: "C66731",
+        codelistId: "CL_SEX",
       },
       {
         domain: "DM",
@@ -46,7 +47,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "HR",
         acrfAnnotation: "DM.RACE",
         dataCategory: "Topic",
-        nciConceptId: "C74457",
+        nciConceptId: "C128689",
+        codelistId: "CL_RACE",
       },
       {
         domain: "DM",
@@ -55,7 +57,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "HR",
         acrfAnnotation: "DM.ETHNIC",
         dataCategory: "Topic",
-        nciConceptId: "C66790",
+        nciConceptId: "C128690",
+        codelistId: "CL_ETHNIC",
       },
       {
         domain: "DM",
@@ -181,6 +184,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         acrfAnnotation: "AE.AESEV",
         dataCategory: "Qualifier",
         nciConceptId: "C66769",
+        codelistId: "CL_AESEV",
       },
       {
         domain: "AE",
@@ -189,7 +193,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "AE.AESER",
         dataCategory: "Qualifier",
-        nciConceptId: "C66741",
+        nciConceptId: "C66742",
+        codelistId: "CL_NY",
       },
       {
         domain: "AE",
@@ -198,7 +203,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "AE.AEREL",
         dataCategory: "Qualifier",
-        nciConceptId: "C66768",
+        codelistId: "CL_AEREL",
       },
       {
         domain: "AE",
@@ -215,7 +220,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "AE.AEOUT",
         dataCategory: "Qualifier",
-        nciConceptId: "C66767",
+        nciConceptId: "C66768",
+        codelistId: "CL_AEOUT",
       },
     ],
     CM: [
@@ -259,6 +265,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         acrfAnnotation: "CM.CMROUTE",
         dataCategory: "Qualifier",
         nciConceptId: "C66729",
+        codelistId: "CL_ROUTE",
       },
       {
         domain: "CM",
@@ -407,7 +414,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DI.DISTAT",
         dataCategory: "Qualifier",
-        nciConceptId: "C112033",
+        codelistId: "CL_DISTAT",
       },
     ],
     DU: [
@@ -426,7 +433,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DU.DUORRES",
         dataCategory: "Result",
-        nciConceptId: "C112037",
+        codelistId: "CL_DUPROC",
       },
       {
         domain: "DU",
@@ -485,7 +492,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DE.DEDEFIC",
         dataCategory: "Qualifier",
-        nciConceptId: "C112023",
+        codelistId: "CL_DEDEF",
       },
       {
         domain: "DE",
@@ -502,7 +509,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DE.DESER",
         dataCategory: "Qualifier",
-        nciConceptId: "C66741",
+        nciConceptId: "C66742",
+        codelistId: "CL_NY",
       },
       {
         domain: "DE",
@@ -511,7 +519,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DE.DEREL",
         dataCategory: "Qualifier",
-        nciConceptId: "C112024",
+        codelistId: "CL_DEREL",
       },
       {
         domain: "DE",
@@ -520,7 +528,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DE.DEACT",
         dataCategory: "Qualifier",
-        nciConceptId: "C112028",
+        nciConceptId: "C111110",
+        codelistId: "CL_DEACT",
       },
       {
         domain: "DE",
@@ -595,7 +604,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DA.DARECON",
         dataCategory: "Qualifier",
-        nciConceptId: "C66736",
+        codelistId: "CL_DARECON",
       },
     ],
     EX: [
@@ -623,6 +632,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         acrfAnnotation: "EX.EXDOSU",
         dataCategory: "Qualifier",
         nciConceptId: "C71620",
+        codelistId: "CL_DOSU",
       },
       {
         domain: "EX",
@@ -640,6 +650,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         acrfAnnotation: "EX.EXROUTE",
         dataCategory: "Qualifier",
         nciConceptId: "C66729",
+        codelistId: "CL_ROUTE",
       },
       {
         domain: "EX",
@@ -682,7 +693,7 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "HR",
         acrfAnnotation: "MH.MHCAT",
         dataCategory: "Qualifier",
-        nciConceptId: "C66737",
+        codelistId: "CL_MHCAT",
       },
       {
         domain: "MH",
@@ -725,7 +736,8 @@ export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
         core: "R",
         acrfAnnotation: "DS.DSDECOD",
         dataCategory: "Qualifier",
-        nciConceptId: "C66735",
+        nciConceptId: "C66727",
+        codelistId: "CL_DSCONT",
       },
       {
         domain: "DS",

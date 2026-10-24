@@ -4395,6 +4395,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           >
             <button
               onClick={closeWardrobe}
+              aria-label="Close wardrobe"
               className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
             >
               <IconX className="w-4 h-4" />
@@ -4405,12 +4406,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                 <IconShirt className="w-5 h-5" />
               </div>
               <div>
-                <h3
+                <h2
                   id="duck-wardrobe-dialog-heading"
                   className="text-base sm:text-lg font-bold text-white"
                 >
                   Duck&apos;s Wardrobe
-                </h3>
+                </h2>
                 <p className="text-[11px] sm:text-xs text-zinc-400">
                   Equip unlocked accessories
                 </p>
@@ -4502,6 +4503,7 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
           >
             <button
               onClick={closeScrapbook}
+              aria-label="Close scrapbook"
               className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 rounded-xl border border-zinc-800 text-zinc-400 hover:text-white transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center touch-manipulation select-none active:scale-95"
             >
               <IconX className="w-4 h-4" />
@@ -4513,12 +4515,12 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   <IconBook className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3
+                  <h2
                     id="duck-scrapbook-dialog-heading"
                     className="text-base sm:text-lg font-bold text-white"
                   >
                     Duck&apos;s Polaroid Scrapbook
-                  </h3>
+                  </h2>
                   <p className="text-[11px] sm:text-xs text-zinc-400">
                     Real puppy milestones &amp; vector art
                   </p>
@@ -4592,13 +4594,13 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-bold text-xs sm:text-sm text-zinc-900">
+                    <h3 className="font-bold text-xs sm:text-sm text-zinc-900">
                       {isUnlocked
                         ? currentFact.title
                         : starsNeeded !== undefined
                           ? `${starsNeeded}-Star Secret`
                           : `Sprint ${currentFact.level} Secret`}
-                    </h4>
+                    </h3>
                     <span className="text-[10px] font-mono font-bold text-zinc-500">
                       Card {activeScrapbookIndex + 1} of {DUCK_FACTS.length}
                     </span>

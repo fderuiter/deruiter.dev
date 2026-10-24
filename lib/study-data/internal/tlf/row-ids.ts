@@ -8,6 +8,7 @@ import type {
   AdamRowLocation,
   ArsOperationResult,
   ArsReportingEvent,
+  ArsRowSet,
   Dataset,
   ResultRow,
 } from "../../types";
@@ -78,36 +79,112 @@ export function indexAdamRows(
   return index;
 }
 
+interface IndexedRowSet {
+  readonly set: ArsRowSet;
+  readonly position: number;
+}
+
+function indexRowSets(
+  event: ArsReportingEvent
+): ReadonlyMap<string, IndexedRowSet> {
+  return new Map(
+    event.rowSets.map((set, position) => [set.id, { set, position }])
+  );
+}
+
+function rowIdsOf(
+  sets: ReadonlyMap<string, IndexedRowSet>,
+  rowSetId: string
+): readonly string[] {
+  const root = sets.get(rowSetId);
+  if (!root) {
+    throw new RangeError(`Row set ${rowSetId} is not in the reporting event.`);
+  }
+  const rowIds = new Set<string>();
+  const visited = new Set([rowSetId]);
+  const pending = [root];
+  for (let entry = pending.pop(); entry; entry = pending.pop()) {
+    for (const rowId of entry.set.rowIds) rowIds.add(rowId);
+    for (const includedId of entry.set.includes ?? []) {
+      const included = sets.get(includedId);
+      if (!included) {
+        throw new RangeError(
+          `Row set ${entry.set.id} includes ${includedId}, which the reporting event does not hold.`
+        );
+      }
+      if (included.position >= entry.position) {
+        throw new RangeError(
+          `Row set ${entry.set.id} includes ${includedId}, which is not listed before it.`
+        );
+      }
+      if (included.set.dataset !== root.set.dataset) {
+        throw new RangeError(
+          `Row set ${entry.set.id} includes ${includedId}, which holds ${included.set.dataset} rows, not ${root.set.dataset}.`
+        );
+      }
+      if (!visited.has(includedId)) {
+        visited.add(includedId);
+        pending.push(included);
+      }
+    }
+  }
+  return [...rowIds];
+}
+
+/**
+ * Every row id of one row set: its own and those of the sets it includes,
+ * each once, the set's own ids first. Because a set only includes sets
+ * listed before it, nesting cannot loop. {@link resolveResultRows} gives
+ * the same rows in dataset order.
+ *
+ * @param event - The reporting event that holds the set.
+ * @param rowSetId - The set.
+ * @throws RangeError when the event does not hold the set, or the set
+ *   includes one that is missing, listed after it, or of another dataset.
+ */
+export function rowSetRowIds(
+  event: ArsReportingEvent,
+  rowSetId: string
+): readonly string[] {
+  return rowIdsOf(indexRowSets(event), rowSetId);
+}
+
 /**
  * The ADaM rows one result was computed from, with the role each plays.
+ * Each row set's rows come back once each, in dataset order.
  *
  * @param event - The reporting event the result belongs to.
  * @param rows - The run's ADaM rows, from {@link indexAdamRows}.
  * @param result - The result.
  * @throws RangeError when the result names a row set the event does not
- *   hold, or a row id the run does not have.
+ *   hold, a row set includes another wrongly (see {@link rowSetRowIds}), or
+ *   a row id is not a row of the set's dataset in this run.
  */
 export function resolveResultRows(
   event: ArsReportingEvent,
   rows: ReadonlyMap<string, AdamRowLocation>,
   result: ArsOperationResult
 ): readonly ResultRow[] {
-  const sets = new Map(event.rowSets.map((set) => [set.id, set]));
+  const sets = indexRowSets(event);
   return result.rowReferences.flatMap((reference) => {
-    const set = sets.get(reference.rowSetId);
-    if (!set) {
+    const entry = sets.get(reference.rowSetId);
+    if (!entry) {
       throw new RangeError(
         `Result ${result.id} names row set ${reference.rowSetId}, which the reporting event does not hold.`
       );
     }
-    return set.rowIds.map((rowId) => {
-      const location = rows.get(rowId);
-      if (!location || location.dataset !== set.dataset) {
-        throw new RangeError(
-          `Row set ${set.id} names ${rowId}, which is not a ${set.dataset} row of this run.`
-        );
-      }
-      return { ...location, role: reference.role };
-    });
+    const { set } = entry;
+    return rowIdsOf(sets, set.id)
+      .map((rowId) => {
+        const location = rows.get(rowId);
+        if (!location || location.dataset !== set.dataset) {
+          throw new RangeError(
+            `Row set ${set.id} names ${rowId}, which is not a ${set.dataset} row of this run.`
+          );
+        }
+        return location;
+      })
+      .sort((a, b) => a.rowIndex - b.rowIndex)
+      .map((location) => ({ ...location, role: reference.role }));
   });
 }

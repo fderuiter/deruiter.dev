@@ -1,5 +1,5 @@
 {
-  "manifestSha256": "9ed91271737a7c49078f86089d1172b1595fc98d2402e944a698e4fd6c268a71",
+  "manifestSha256": "7e717bf7392791a4a361c43e849db3c214595a3842209c31971fd77e6dd622d9",
   "files": {
     "README.txt": {
       "bytes": 1561,
@@ -66,8 +66,8 @@
       "sha256": "e67038301b690a1d09c06a69e64c6db408e333fc02c301801df7b7af2971588d"
     },
     "m5/datasets/analysis/adam/define.xml": {
-      "bytes": 92583,
-      "sha256": "1a13139136e67384f1d267962306e7b9a557d9eebfe041f9ef70dcbf8fdb0532"
+      "bytes": 92727,
+      "sha256": "ca1060512c4ddbb8ec5ee37ecafbe67935bccd7d496cc5d8899a2d2a5bb6f86c"
     },
     "m5/datasets/tabulations/sdtm/ae.csv": {
       "bytes": 6134,
@@ -82,8 +82,8 @@
       "sha256": "a363ff1bc85cf5adabed01367debc15069f969591c6e8c2a4b6956726c8c29fa"
     },
     "m5/datasets/tabulations/sdtm/define.xml": {
-      "bytes": 134895,
-      "sha256": "f803140fd6cc1c5bef9b5cb8eb3a6ea00ef4a454a502303f0be09a94b14402ab"
+      "bytes": 134952,
+      "sha256": "09c737b14f4c54bf441569c61b3513d0132753c617a03d7cddcb047dfa3078e9"
     },
     "m5/datasets/tabulations/sdtm/dm.csv": {
       "bytes": 11888,
@@ -110,16 +110,16 @@
       "sha256": "a9292bff43f448af32b032faf0c7b80294237b2725aa918093c8515cbdf71659"
     },
     "m5/datasets/tabulations/sdtm/ex.csv": {
-      "bytes": 7016,
-      "sha256": "48af4f706c8f503be8153ba6fe9921dc7d4df5a635d4a001c1f4cdf58e00f70e"
+      "bytes": 6935,
+      "sha256": "859475492e1504b971c0c71909be83870cbb50bbc931ed361765ee753f407887"
     },
     "m5/datasets/tabulations/sdtm/ex.json": {
-      "bytes": 9885,
-      "sha256": "9ba24fb6cd4f967de94ed027c5dd77c9b3e12b60c475fb5a2a0335b7628d5c19"
+      "bytes": 9804,
+      "sha256": "dc8579d694703b5c7a2bcb4fba3fca492a94ca06f3c850cb9cf3bf383f86589c"
     },
     "m5/datasets/tabulations/sdtm/ex.xpt": {
-      "bytes": 10320,
-      "sha256": "2d2644b1c58ba5b9e0d8ca2b7bc9fc24c0412e9f82822bb74a8da8698ac21b20"
+      "bytes": 10240,
+      "sha256": "9e9f8c4cfadb483ade04f419c69343e8cee523a6cff6a0a9db3d5a7d5d018d20"
     },
     "m5/datasets/tabulations/sdtm/lb.csv": {
       "bytes": 303405,

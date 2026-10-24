@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1202,
+    "total": 1193,
     "runtime": 570,
-    "tooling": 632,
+    "tooling": 623,
     "direct": 75
   },
   "packages": [
@@ -93,7 +93,7 @@
     },
     {
       "name": "@babel/core",
-      "version": "8.0.6",
+      "version": "8.0.9",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -138,7 +138,7 @@
     },
     {
       "name": "@babel/helper-compilation-targets",
-      "version": "8.0.6",
+      "version": "8.0.7",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -147,7 +147,7 @@
     },
     {
       "name": "@babel/helper-create-class-features-plugin",
-      "version": "8.0.6",
+      "version": "8.0.7",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -264,7 +264,7 @@
     },
     {
       "name": "@babel/helper-string-parser",
-      "version": "8.0.6",
+      "version": "8.0.8",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -318,7 +318,7 @@
     },
     {
       "name": "@babel/helpers",
-      "version": "8.0.5",
+      "version": "8.0.8",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -336,7 +336,7 @@
     },
     {
       "name": "@babel/parser",
-      "version": "8.0.6",
+      "version": "8.0.8",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -462,7 +462,7 @@
     },
     {
       "name": "@babel/preset-typescript",
-      "version": "8.0.1",
+      "version": "8.0.7",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -507,7 +507,7 @@
     },
     {
       "name": "@babel/traverse",
-      "version": "8.0.6",
+      "version": "8.0.7",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -525,7 +525,7 @@
     },
     {
       "name": "@babel/types",
-      "version": "8.0.6",
+      "version": "8.0.8",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -2974,7 +2974,7 @@
     },
     {
       "name": "@stryker-mutator/api",
-      "version": "10.0.0",
+      "version": "10.1.1",
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
@@ -2983,7 +2983,7 @@
     },
     {
       "name": "@stryker-mutator/core",
-      "version": "10.0.0",
+      "version": "10.1.1",
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": true,
@@ -2994,7 +2994,7 @@
     },
     {
       "name": "@stryker-mutator/instrumenter",
-      "version": "10.0.0",
+      "version": "10.1.1",
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
@@ -3003,7 +3003,7 @@
     },
     {
       "name": "@stryker-mutator/util",
-      "version": "10.0.0",
+      "version": "10.1.1",
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
@@ -3012,7 +3012,7 @@
     },
     {
       "name": "@stryker-mutator/vitest-runner",
-      "version": "10.0.0",
+      "version": "10.1.1",
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": true,
@@ -4270,7 +4270,7 @@
     },
     {
       "name": "@vitest/coverage-v8",
-      "version": "4.1.12",
+      "version": "5.0.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -4280,17 +4280,26 @@
       "reason": "Coverage reporting and thresholds."
     },
     {
-      "name": "@vitest/expect",
-      "version": "4.1.12",
+      "name": "@vitest/istanbul-lib-coverage",
+      "version": "1.0.2",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://vitest.dev/api/expect",
-      "repository": "https://github.com/vitest-dev/vitest"
+      "homepage": "https://vitest.dev",
+      "repository": "https://github.com/vitest-dev/istanbuljs"
+    },
+    {
+      "name": "@vitest/istanbul-lib-report",
+      "version": "1.0.2",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://vitest.dev",
+      "repository": "https://github.com/vitest-dev/istanbuljs"
     },
     {
       "name": "@vitest/mocker",
-      "version": "4.1.12",
+      "version": "5.0.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -4298,48 +4307,12 @@
       "repository": "https://github.com/vitest-dev/vitest"
     },
     {
-      "name": "@vitest/pretty-format",
-      "version": "4.1.12",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/vitest-dev/vitest/tree/main/packages/pretty-format",
-      "repository": "https://github.com/vitest-dev/vitest"
-    },
-    {
-      "name": "@vitest/runner",
-      "version": "4.1.12",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://vitest.dev/api/advanced/runner",
-      "repository": "https://github.com/vitest-dev/vitest"
-    },
-    {
-      "name": "@vitest/snapshot",
-      "version": "4.1.12",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://vitest.dev/guide/snapshot",
-      "repository": "https://github.com/vitest-dev/vitest"
-    },
-    {
       "name": "@vitest/spy",
-      "version": "4.1.12",
+      "version": "5.0.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
       "homepage": "https://vitest.dev/api/mock",
-      "repository": "https://github.com/vitest-dev/vitest"
-    },
-    {
-      "name": "@vitest/utils",
-      "version": "4.1.12",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/vitest-dev/vitest/tree/main/packages/utils",
       "repository": "https://github.com/vitest-dev/vitest"
     },
     {
@@ -4609,7 +4582,7 @@
     },
     {
       "name": "ast-v8-to-istanbul",
-      "version": "1.0.5",
+      "version": "1.0.7",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -5944,7 +5917,7 @@
     },
     {
       "name": "es-module-lexer",
-      "version": "2.1.0",
+      "version": "2.3.2",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -6819,15 +6792,6 @@
       "repository": "https://github.com/jsdom/html-encoding-sniffer"
     },
     {
-      "name": "html-escaper",
-      "version": "2.0.2",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/WebReflection/html-escaper",
-      "repository": "https://github.com/WebReflection/html-escaper"
-    },
-    {
       "name": "html2canvas",
       "version": "1.4.1",
       "license": "MIT",
@@ -7415,33 +7379,6 @@
       "repository": "https://github.com/kkomelin/isomorphic-dompurify",
       "group": "Documents and export",
       "reason": "Sanitizes rich text and uploaded SVG before it is rendered."
-    },
-    {
-      "name": "istanbul-lib-coverage",
-      "version": "3.2.2",
-      "license": "BSD-3-Clause",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://istanbul.js.org",
-      "repository": "https://github.com/istanbuljs/istanbuljs"
-    },
-    {
-      "name": "istanbul-lib-report",
-      "version": "3.0.1",
-      "license": "BSD-3-Clause",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://istanbul.js.org",
-      "repository": "https://github.com/istanbuljs/istanbuljs"
-    },
-    {
-      "name": "istanbul-reports",
-      "version": "3.2.0",
-      "license": "BSD-3-Clause",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://istanbul.js.org",
-      "repository": "https://github.com/istanbuljs/istanbuljs"
     },
     {
       "name": "iterator.prototype",
@@ -8147,22 +8084,22 @@
       "repository": "https://github.com/Rich-Harris/magic-string"
     },
     {
-      "name": "magicast",
-      "version": "0.5.4",
+      "name": "magic-string",
+      "version": "1.4.3",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/unjs/magicast",
-      "repository": "https://github.com/unjs/magicast"
+      "homepage": null,
+      "repository": "https://github.com/Rich-Harris/magic-string"
     },
     {
-      "name": "make-dir",
-      "version": "4.0.0",
+      "name": "magicast",
+      "version": "0.5.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/sindresorhus/make-dir",
-      "repository": "https://github.com/sindresorhus/make-dir"
+      "homepage": null,
+      "repository": "https://github.com/unjs/magicast"
     },
     {
       "name": "markdown-it",
@@ -8775,7 +8712,7 @@
     },
     {
       "name": "obug",
-      "version": "2.2.1",
+      "version": "3.0.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -9801,15 +9738,6 @@
       "repository": "https://github.com/ljharb/side-channel-weakmap"
     },
     {
-      "name": "siginfo",
-      "version": "2.0.0",
-      "license": "ISC",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": "https://github.com/emilbayes/siginfo",
-      "repository": "https://github.com/emilbayes/siginfo"
-    },
-    {
       "name": "signal-exit",
       "version": "3.0.7",
       "license": "ISC",
@@ -9891,15 +9819,6 @@
       "repository": "https://github.com/shuding/stable-hash"
     },
     {
-      "name": "stackback",
-      "version": "0.0.2",
-      "license": "MIT",
-      "scope": "tooling",
-      "direct": false,
-      "homepage": null,
-      "repository": "https://github.com/shtylman/node-stackback"
-    },
-    {
       "name": "stackblur-canvas",
       "version": "2.7.0",
       "license": "MIT",
@@ -9937,11 +9856,11 @@
     },
     {
       "name": "std-env",
-      "version": "4.2.0",
+      "version": "4.3.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
-      "homepage": "https://github.com/unjs/std-env",
+      "homepage": null,
       "repository": "https://github.com/unjs/std-env"
     },
     {
@@ -10231,7 +10150,7 @@
     },
     {
       "name": "tinybench",
-      "version": "2.9.0",
+      "version": "6.2.2",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -10258,7 +10177,7 @@
     },
     {
       "name": "tinyrainbow",
-      "version": "3.1.1",
+      "version": "3.2.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -10653,7 +10572,7 @@
     },
     {
       "name": "verkit",
-      "version": "0.3.2",
+      "version": "0.5.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,
@@ -10671,7 +10590,7 @@
     },
     {
       "name": "vitest",
-      "version": "4.1.12",
+      "version": "5.0.5",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -10700,7 +10619,7 @@
     },
     {
       "name": "weapon-regex",
-      "version": "2.0.5",
+      "version": "2.0.6",
       "license": "Apache-2.0",
       "scope": "tooling",
       "direct": false,
@@ -10799,7 +10718,7 @@
     },
     {
       "name": "why-is-node-running",
-      "version": "2.3.0",
+      "version": "3.2.1",
       "license": "MIT",
       "scope": "tooling",
       "direct": false,

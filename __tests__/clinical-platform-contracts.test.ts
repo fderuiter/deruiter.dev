@@ -301,6 +301,13 @@ describe("contract checks on generated data (#2626)", () => {
     expect(messages(check(retyped).findings)).toEqual([
       "edc_visit.visit_date: 1 value breaks the contract (first: row 5, 20260101, is not a YYYY-MM-DD date)",
     ]);
+    const wide = rowsWith(
+      { columns: visitRows.columns, rows: visitRows.rows },
+      (row) => ({ ...row, day_offset: 2 ** 31 })
+    );
+    expect(messages(check(wide).findings)).toEqual([
+      "edc_visit.day_offset: 1 value breaks the contract (first: row 1, 2147483648, is not a 32-bit whole number)",
+    ]);
     const long = rowsWith(visitRows, (row) => ({
       ...row,
       subject_id: "S".repeat(65),

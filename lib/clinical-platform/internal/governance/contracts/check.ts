@@ -27,6 +27,9 @@ const TIME = /^([01]\d|2[0-3])(?::[0-5]\d(?::[0-5]\d(?:\.\d+)?)?)?$/;
 
 const HOUR_MS = 3_600_000;
 
+/** Largest value of a SQL `INTEGER`, the 32-bit type the warehouse uses. */
+const INTEGER_MAX = 2_147_483_647;
+
 /** A share as a percentage, rounded down so a shortfall never shows as 100%. */
 function percentDown(share: number): string {
   return `${Math.floor(share * 10_000) / 100}%`;
@@ -35,7 +38,7 @@ function percentDown(share: number): string {
 /** What a value must be to fit a column, for the finding that says it does not. */
 const EXPECTED: Readonly<Record<ContractColumn["type"], string>> = {
   string: "text",
-  integer: "a whole number",
+  integer: "a 32-bit whole number",
   decimal: "a number",
   boolean: "true or false",
   date: "a YYYY-MM-DD date",
@@ -61,7 +64,9 @@ function misfit(
       }
       return null;
     case "integer":
-      return typeof value === "number" && Number.isSafeInteger(value)
+      return typeof value === "number" &&
+        Number.isInteger(value) &&
+        Math.abs(value) <= INTEGER_MAX
         ? null
         : wrong;
     case "decimal": {

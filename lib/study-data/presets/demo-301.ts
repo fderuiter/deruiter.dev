@@ -15,6 +15,7 @@
  * SDTM hints USDM v4 has no property for: an activity's domain, and a
  * biomedical concept's test code and standard unit.
  */
+import { CLINICAL_STANDARDS_PROFILE } from "../standards";
 import {
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_SDTM_STRESU_EXTENSION_URL,
@@ -32,7 +33,7 @@ import {
 } from "@/lib/crf/usdm-v4-types";
 
 const CT_SYSTEM = "http://www.cdisc.org";
-const CT_VERSION = "2026-09-25";
+const CT_VERSION = CLINICAL_STANDARDS_PROFILE.CT.packageDate;
 const SPONSOR_SYSTEM = "https://deruiter.dev/study-data";
 
 function ct(id: string, code: string, decode: string): UsdmV4Code {

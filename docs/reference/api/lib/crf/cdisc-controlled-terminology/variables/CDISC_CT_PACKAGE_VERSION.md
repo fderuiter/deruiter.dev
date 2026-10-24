@@ -6,7 +6,7 @@
 
 # Variable: CDISC\_CT\_PACKAGE\_VERSION
 
-> `const` **CDISC\_CT\_PACKAGE\_VERSION**: `"SDTM CT 2026-09-25"` = `"SDTM CT 2026-09-25"`
+> `const` **CDISC\_CT\_PACKAGE\_VERSION**: `string`
 
 The CDISC Controlled Terminology package that the codelist and term codes
 below were checked against: the NCI EVS SDTM Terminology release of

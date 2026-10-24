@@ -24,9 +24,13 @@ import {
  * A change to the generator, or to the Study Data Pipeline's DEMO-301 run,
  * that alters any record changes this hash. Update it deliberately, in the
  * same commit, together with `GOLDEN_SUMMARY`, and say why.
+ *
+ * #2706: the run's declared standards now come from the clinical standards
+ * profile (USDM 4.0.0, plus ADaM OCCDS and ADaM Conformance Rules). No
+ * record changed; the hash with the standards field left out is the same.
  */
 const GOLDEN_SHA256 =
-  "366bc6444886ee579c6926977a60f617d6b1796cbaaa83cd219b0d92b8c6b9ba";
+  "71ac4dfcefcf12c45bd40329d290519471db53bea92ceb8aa23c0b42708a3ee2";
 
 /** Record counts per study for the default seed: the readable half of the golden. */
 const GOLDEN_SUMMARY = {

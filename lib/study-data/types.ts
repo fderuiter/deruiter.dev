@@ -14,6 +14,8 @@ export type StandardId =
   | "SDTMIG"
   | "ADaM"
   | "ADaMIG"
+  | "OCCDS"
+  | "ADaM-CR"
   | "Define-XML"
   | "Dataset-JSON"
   | "ARS"

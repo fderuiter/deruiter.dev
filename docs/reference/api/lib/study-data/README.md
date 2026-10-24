@@ -314,6 +314,18 @@ Re-exports [chiSquareSurvival](internal/tlf/km/functions/chiSquareSurvival.md)
 
 ***
 
+### CLINICAL\_STANDARDS\_PROFILE
+
+Re-exports [CLINICAL_STANDARDS_PROFILE](standards/variables/CLINICAL_STANDARDS_PROFILE.md)
+
+***
+
+### ClinicalStandardsProfile
+
+Re-exports [ClinicalStandardsProfile](standards/interfaces/ClinicalStandardsProfile.md)
+
+***
+
 ### CodedValue
 
 Re-exports [CodedValue](types/interfaces/CodedValue.md)
@@ -383,6 +395,18 @@ Re-exports [ConformanceRuleResult](types/interfaces/ConformanceRuleResult.md)
 ### CONTROLLED\_TERMINOLOGY
 
 Re-exports [CONTROLLED_TERMINOLOGY](internal/conformance/terminology/variables/CONTROLLED_TERMINOLOGY.md)
+
+***
+
+### controlledTerminologyCitation
+
+Re-exports [controlledTerminologyCitation](standards/functions/controlledTerminologyCitation.md)
+
+***
+
+### ControlledTerminologyClaim
+
+Re-exports [ControlledTerminologyClaim](standards/interfaces/ControlledTerminologyClaim.md)
 
 ***
 
@@ -998,6 +1022,12 @@ Re-exports [prepareStudyHandoff](internal/usdm/handoff/functions/prepareStudyHan
 
 ***
 
+### ProfileStandard
+
+Re-exports [ProfileStandard](standards/type-aliases/ProfileStandard.md)
+
+***
+
 ### readStudyDefinition
 
 Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/readStudyDefinition.md)
@@ -1103,6 +1133,12 @@ Re-exports [sha256Hex](internal/export/package/functions/sha256Hex.md)
 ### STANDARD\_VERSIONS
 
 Re-exports [STANDARD_VERSIONS](presets/variables/STANDARD_VERSIONS.md)
+
+***
+
+### standardCitation
+
+Re-exports [standardCitation](standards/functions/standardCitation.md)
 
 ***
 

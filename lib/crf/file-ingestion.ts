@@ -3,6 +3,7 @@
  * Inspects file content signatures, validates file sizes, and delegates parsing to USDM, ODM-XML, or CSV spec parsers.
  */
 
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 import { StudyProtocol } from "./types";
 import { importStudyFromUsdm } from "./usdm-adapter";
 import { importStudyFromCdiscOdmXml } from "./odm-xml-parser";
@@ -53,7 +54,7 @@ export function detectAndParseStudyFile(
       return {
         study,
         format: "xml_odm",
-        formatLabel: "CDISC ODM-XML v1.3.2/v2.0",
+        formatLabel: `CDISC ODM-XML v${CLINICAL_STANDARDS_PROFILE.ODM}/v2.0`,
         fileSize: fileSize || fileContent.length,
         fileName,
       };

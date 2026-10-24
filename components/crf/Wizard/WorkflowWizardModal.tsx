@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React, { useState, useCallback, useEffect } from "react";
 import {
   IconX,
@@ -834,7 +835,8 @@ export const WorkflowWizardModal: React.FC<WorkflowWizardModalProps> = ({
                     All {draftStudy.forms.length} clinical domains,{" "}
                     {draftStudy.visits.length} Schedule of Activities visits,
                     and AST rule graphs pass the implemented design checks (a
-                    CDASHIG 2.2 subset). This is not a regulatory validation.
+                    {standardCitation("CDASHIG")} subset). This is not a
+                    regulatory validation.
                   </p>
                 ) : (
                   <div className="space-y-1.5 max-h-36 overflow-y-auto">

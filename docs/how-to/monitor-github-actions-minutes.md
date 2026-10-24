@@ -95,6 +95,12 @@ a gate or lowering a threshold:
   (#2529). The Garmin engine runs the same way in its own
   `mutation-garmin` job, bounded at 90 minutes, with its breaks in
   `stryker.garmin.config.mjs` (#2564).
+- `study-data-core.yml` is a separate workflow, not a gate in `ci.yml`. It
+  runs the CDISC Rules Engine (CORE) on the Study Data Pipeline's seed-301
+  SDTM and the USDM fixture, and fails on any finding that
+  `scripts/study-data-core-allowlist.json` does not explain (#2603). It
+  runs only on changes to `lib/study-data/**` or its own files, and weekly,
+  bounded at 30 minutes.
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

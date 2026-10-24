@@ -74,6 +74,23 @@ Number of records.
 
 ***
 
+### structure?
+
+> `readonly` `optional` **structure?**: `string`
+
+What one record represents, for example `One record per subject`. The
+pipeline sets it on every SDTM and ADaM dataset; Define-XML requires it.
+
+***
+
+### subClass?
+
+> `readonly` `optional` **subClass?**: `string`
+
+ADaM subclass, for example `TIME-TO-EVENT` for an ADTTE BDS dataset.
+
+***
+
 ### variables
 
 > `readonly` **variables**: readonly [`VariableMeta`](VariableMeta.md)[]

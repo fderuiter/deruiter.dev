@@ -1,4 +1,6 @@
 import type { CellValue, Dataset, VariableMeta } from "../../types";
+import type { CodelistId } from "../conformance/terminology";
+import type { AdamMethodId } from "./specs";
 
 export type AnalysisRow = Record<string, CellValue>;
 
@@ -51,7 +53,7 @@ export function column(
   label: string,
   type: VariableMeta["type"] = "text",
   origin: VariableMeta["origin"] = "Derived",
-  method?: string,
+  method?: AdamMethodId,
   source?: string
 ): VariableMeta {
   return {
@@ -65,10 +67,45 @@ export function column(
   };
 }
 
+/** Codelists of ADaM variables that every dataset shares. */
+const ADAM_CODELISTS: Readonly<Record<string, CodelistId>> = {
+  SAFFL: "NY",
+  ITTFL: "NY",
+  EFFFL: "NY",
+  ABLFL: "NY",
+  ANL01FL: "NY",
+  TRTEMFL: "NY",
+  AOCCFL: "NY",
+  AOCCSFL: "NY",
+  AOCCPFL: "NY",
+  AESER: "NY",
+  AEACN: "ACN",
+  SEX: "SEX",
+  AGEGR1: "AGEGR1",
+  EOSSTT: "SBJTSTAT",
+  DTYPE: "DTYPE",
+  ANRIND: "NRIND",
+  BNRIND: "NRIND",
+  ASTDTF: "DATEFL",
+  AENDTF: "DATEFL",
+};
+
+/** How an ADaM dataset is classified and what one record represents. */
+export interface AdamLayout {
+  /** ADaM class, for example `BDS`. */
+  readonly class: string;
+  /** ADaM subclass, for example `TIME-TO-EVENT`. */
+  readonly subClass?: string;
+  /** What one record represents. */
+  readonly structure: string;
+  /** Codelists of this dataset's own variables, over the shared ones. */
+  readonly codelists?: Readonly<Record<string, CodelistId>>;
+}
+
 export function table(
   name: string,
   label: string,
-  structure: string,
+  layout: AdamLayout,
   variables: readonly VariableMeta[],
   data: readonly AnalysisRow[],
   lineage: readonly (readonly string[])[],
@@ -78,13 +115,19 @@ export function table(
   for (const variable of variables) {
     columns[variable.name] = data.map((row) => row[variable.name] ?? null);
   }
+  const codelists = { ...ADAM_CODELISTS, ...layout.codelists };
   return {
     name,
     label,
     layer: "adam",
-    class: structure,
+    class: layout.class,
+    ...(layout.subClass ? { subClass: layout.subClass } : {}),
+    structure: layout.structure,
     keys,
-    variables,
+    variables: variables.map((variable) => {
+      const codelist = codelists[variable.name];
+      return codelist ? { ...variable, codelist } : variable;
+    }),
     columns,
     rowCount: data.length,
     lineage,

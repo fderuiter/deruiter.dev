@@ -432,7 +432,11 @@ export function deriveAdae(
     dataset: table(
       "ADAE",
       "Adverse Events Analysis",
-      "OCCDS",
+      {
+        class: "OCCDS",
+        subClass: "ADVERSE EVENT",
+        structure: "One record per adverse event per subject",
+      },
       ADAE_VARIABLES,
       output.map(({ row }) => row),
       output.map(({ lineage }) => lineage)
@@ -589,7 +593,12 @@ export function deriveAdtte(
     dataset: table(
       "ADTTE",
       "Time-to-Event Analysis",
-      "BDS",
+      {
+        class: "BDS",
+        subClass: "TIME-TO-EVENT",
+        structure: "One record per subject per parameter",
+        codelists: { PARAMCD: "ADTTE.PARAMCD" },
+      },
       ADTTE_VARIABLES,
       output,
       lineage

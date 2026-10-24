@@ -6,6 +6,7 @@ import type {
   VariableMeta,
   VariableRole,
 } from "../../types";
+import { sdtmCodelist } from "./codelists";
 
 type Row = Record<string, CellValue>;
 type DomainName = "TA" | "TE" | "TV" | "TI" | "TS";
@@ -18,6 +19,7 @@ interface ColumnSpec {
 }
 interface DomainSpec {
   readonly label: string;
+  readonly structure: string;
   readonly keys: readonly string[];
   readonly columns: readonly ColumnSpec[];
 }
@@ -47,6 +49,7 @@ const timing = (name: string, label: string): ColumnSpec => ({
 const SPECS: Record<DomainName, DomainSpec> = {
   TA: {
     label: "Trial Arms",
+    structure: "One record per planned element per arm",
     keys: ["STUDYID", "ARMCD", "TAETORD"],
     columns: [
       id("STUDYID", "Study Identifier"),
@@ -61,6 +64,7 @@ const SPECS: Record<DomainName, DomainSpec> = {
   },
   TE: {
     label: "Trial Elements",
+    structure: "One record per planned element",
     keys: ["STUDYID", "ETCD"],
     columns: [
       id("STUDYID", "Study Identifier"),
@@ -74,6 +78,7 @@ const SPECS: Record<DomainName, DomainSpec> = {
   },
   TV: {
     label: "Trial Visits",
+    structure: "One record per planned visit",
     keys: ["STUDYID", "VISITNUM"],
     columns: [
       id("STUDYID", "Study Identifier"),
@@ -87,6 +92,7 @@ const SPECS: Record<DomainName, DomainSpec> = {
   },
   TI: {
     label: "Trial Inclusion Exclusion Criteria",
+    structure: "One record per inclusion or exclusion criterion",
     keys: ["STUDYID", "IETESTCD"],
     columns: [
       id("STUDYID", "Study Identifier"),
@@ -98,6 +104,7 @@ const SPECS: Record<DomainName, DomainSpec> = {
   },
   TS: {
     label: "Trial Summary",
+    structure: "One record per trial summary parameter value",
     keys: ["STUDYID", "TSPARMCD", "TSSEQ"],
     columns: [
       id("STUDYID", "Study Identifier"),
@@ -120,6 +127,7 @@ function table(name: DomainName, rows: readonly Row[]): Dataset {
     label: spec.label,
     layer: "sdtm",
     class: "Trial Design",
+    structure: spec.structure,
     keys: spec.keys,
     variables: spec.columns.map((column) => ({
       name: column.name,
@@ -128,6 +136,7 @@ function table(name: DomainName, rows: readonly Row[]): Dataset {
       ...(column.type ? {} : { length: column.length ?? 200 }),
       role: column.role,
       origin: "Protocol" as const,
+      ...sdtmCodelist(column.name),
     })),
     columns: Object.fromEntries(
       spec.columns.map(({ name: variable }) => [

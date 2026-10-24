@@ -14,7 +14,10 @@ Metadata attached to one variable (one column) of a dataset.
 
 > `readonly` `optional` **codelist?**: `string`
 
-NCI code of the controlled terminology codelist, for example `C66731`.
+Id of the codelist in the pipeline's local terminology subset, for
+example `NY` (CDISC CT, NCI code C66742) or a sponsor-defined list such
+as `AEREL`. The codelist entry carries the NCI code; see
+`CONTROLLED_TERMINOLOGY`.
 
 ***
 

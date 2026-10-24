@@ -216,6 +216,11 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     reason:
       "Validates the study data package's Dataset-JSON files against the published CDISC JSON schema.",
   },
+  "xmllint-wasm": {
+    group: "Testing",
+    reason:
+      "Checks the study data pipeline's Define-XML files against the Define-XML 2.1.0 schema in a unit test, with libxml2 compiled to WebAssembly.",
+  },
   "@total-typescript/shoehorn": {
     group: "Testing",
     reason: "Type-safe partial mocks in tests.",

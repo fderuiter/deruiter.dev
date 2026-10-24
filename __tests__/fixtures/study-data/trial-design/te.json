@@ -3,6 +3,7 @@
   "label": "Trial Elements",
   "layer": "sdtm",
   "class": "Trial Design",
+  "structure": "One record per planned element",
   "keys": ["STUDYID", "ETCD"],
   "variables": [
     {
@@ -19,7 +20,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "DOMAIN"
     },
     {
       "name": "ETCD",

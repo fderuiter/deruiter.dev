@@ -3,6 +3,7 @@
   "label": "Trial Inclusion Exclusion Criteria",
   "layer": "sdtm",
   "class": "Trial Design",
+  "structure": "One record per inclusion or exclusion criterion",
   "keys": ["STUDYID", "IETESTCD"],
   "variables": [
     {
@@ -19,7 +20,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "DOMAIN"
     },
     {
       "name": "IETESTCD",
@@ -43,7 +45,8 @@
       "type": "text",
       "length": 200,
       "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "IECAT"
     }
   ],
   "columns": {

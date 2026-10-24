@@ -11,9 +11,10 @@
 Builds the study data package for a pipeline run.
 
 Every SDTM and ADaM dataset is written as Dataset-JSON, CSV and XPT under
-the eCTD module 5 folders; collected data is not exported. The returned
-run manifest has `outputs` filled with the path, media type and SHA-256 of
-every hashed file, and `export` added to its stages.
+the eCTD module 5 folders, and each folder gets a Define-XML document for
+its datasets; collected data is not exported. The returned run manifest has
+`outputs` filled with the path, media type and SHA-256 of every hashed
+file, and `define` and `export` added to its stages.
 
 ## Parameters
 
@@ -38,4 +39,5 @@ The files, the manifest and the findings the formats raised.
 ## Throws
 
 RangeError when `generatedAt` is not an ISO 8601 timestamp, two
-  exported datasets share a name, or a dataset cannot be written as XPT.
+  exported datasets share a name, a dataset cannot be written as XPT, or
+  the metadata cannot be written as Define-XML (see `buildDefine`).

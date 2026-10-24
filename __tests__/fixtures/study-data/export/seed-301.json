@@ -1,9 +1,9 @@
 {
-  "manifestSha256": "bc0f5993fdb8f37f28b7166e5a2f9105ef196ae77b3160d203aa92647a914ac6",
+  "manifestSha256": "9ed91271737a7c49078f86089d1172b1595fc98d2402e944a698e4fd6c268a71",
   "files": {
     "README.txt": {
-      "bytes": 1315,
-      "sha256": "cc80705417209ee2093e8e9cc3af5901dcc4a0fb19cc6c0932bc346e1473cdf6"
+      "bytes": 1561,
+      "sha256": "bc29f5a720d89d654cb205c6cdb1a42c2ac97d57c4bd52629d76a9f1e28a7c8c"
     },
     "m5/datasets/analysis/adam/adae.csv": {
       "bytes": 8741,
@@ -65,6 +65,10 @@
       "bytes": 468720,
       "sha256": "e67038301b690a1d09c06a69e64c6db408e333fc02c301801df7b7af2971588d"
     },
+    "m5/datasets/analysis/adam/define.xml": {
+      "bytes": 92583,
+      "sha256": "1a13139136e67384f1d267962306e7b9a557d9eebfe041f9ef70dcbf8fdb0532"
+    },
     "m5/datasets/tabulations/sdtm/ae.csv": {
       "bytes": 6134,
       "sha256": "5796b4313d9281d6722fc4e6849abb315ab028419014514226637a56ffbb59b1"
@@ -76,6 +80,10 @@
     "m5/datasets/tabulations/sdtm/ae.xpt": {
       "bytes": 9120,
       "sha256": "a363ff1bc85cf5adabed01367debc15069f969591c6e8c2a4b6956726c8c29fa"
+    },
+    "m5/datasets/tabulations/sdtm/define.xml": {
+      "bytes": 134895,
+      "sha256": "f803140fd6cc1c5bef9b5cb8eb3a6ea00ef4a454a502303f0be09a94b14402ab"
     },
     "m5/datasets/tabulations/sdtm/dm.csv": {
       "bytes": 11888,

@@ -5,6 +5,7 @@ import fc from "fast-check";
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import {
+  ADAM_DEFINE_PATH,
   ADAM_PACKAGE_DIR,
   DATASET_JSON_ORIGINATOR,
   DEMO_301_STUDY,
@@ -13,6 +14,7 @@ import {
   PACKAGE_README_PATH,
   PACKAGE_TIMESTAMP_PATH,
   SAS_MISSING_NUMERIC,
+  SDTM_DEFINE_PATH,
   SDTM_PACKAGE_DIR,
   STANDARD_VERSIONS,
   SYNTHETIC_DATA_NOTICE,
@@ -457,7 +459,11 @@ describe("study data package", () => {
     expect(paths).toContain(`${SDTM_PACKAGE_DIR}/dm.csv`);
     expect(paths).toContain(`${SDTM_PACKAGE_DIR}/dm.xpt`);
     expect(paths).toContain(`${ADAM_PACKAGE_DIR}/adsl.xpt`);
-    expect(paths).toHaveLength(exported.length * 3 + 3);
+    expect(paths).toContain(SDTM_DEFINE_PATH);
+    expect(paths).toContain(ADAM_DEFINE_PATH);
+    // Three files per dataset, a define.xml per layer, README, MANIFEST
+    // and RUN-TIMESTAMP.
+    expect(paths).toHaveLength(exported.length * 3 + 2 + 3);
     expect(paths.slice(-2)).toEqual([
       PACKAGE_MANIFEST_PATH,
       PACKAGE_TIMESTAMP_PATH,
@@ -473,6 +479,15 @@ describe("study data package", () => {
     ]);
     expect(manifest.seed).toBe(301);
     expect(manifest.standards).toEqual(STANDARD_VERSIONS);
+    expect(manifest.fileFormats.xml).toBe("Define-XML 2.1.0");
+    expect(
+      manifest.files
+        .filter((file) => file.path.endsWith("/define.xml"))
+        .map((file) => [file.path, file.mediaType])
+    ).toEqual([
+      [ADAM_DEFINE_PATH, "application/xml"],
+      [SDTM_DEFINE_PATH, "application/xml"],
+    ]);
     const hashed = pkg.files.filter(
       (file) => !manifest.notHashed.includes(file.path)
     );
@@ -511,7 +526,11 @@ describe("study data package", () => {
     const pkg = await buildStudyDataPackage(run, { generatedAt: GENERATED_AT });
     expect(JSON.stringify(run)).toBe(before);
     expect(run.manifest.outputs).toEqual([]);
-    expect(pkg.manifest.stages).toEqual([...run.manifest.stages, "export"]);
+    expect(pkg.manifest.stages).toEqual([
+      ...run.manifest.stages,
+      "define",
+      "export",
+    ]);
     expect(pkg.manifest.outputs).toEqual(
       pkg.packageManifest.files.map(({ path, mediaType, sha256: digest }) => ({
         path,

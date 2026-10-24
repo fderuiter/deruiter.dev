@@ -86,7 +86,12 @@ export interface VariableMeta {
   readonly role?: VariableRole;
   /** Where the value comes from. */
   readonly origin: VariableOrigin;
-  /** NCI code of the controlled terminology codelist, for example `C66731`. */
+  /**
+   * Id of the codelist in the pipeline's local terminology subset, for
+   * example `NY` (CDISC CT, NCI code C66742) or a sponsor-defined list such
+   * as `AEREL`. The codelist entry carries the NCI code; see
+   * `CONTROLLED_TERMINOLOGY`.
+   */
   readonly codelist?: string;
   /** Derivation method id, required when the origin is Derived. */
   readonly method?: string;
@@ -107,6 +112,13 @@ export interface Dataset {
   readonly layer: DataLayer;
   /** Observation class or ADaM class, for example `Events` or `BDS`. */
   readonly class: string;
+  /** ADaM subclass, for example `TIME-TO-EVENT` for an ADTTE BDS dataset. */
+  readonly subClass?: string;
+  /**
+   * What one record represents, for example `One record per subject`. The
+   * pipeline sets it on every SDTM and ADaM dataset; Define-XML requires it.
+   */
+  readonly structure?: string;
   /** Natural key variables, in sort order. */
   readonly keys: readonly string[];
   /** Variable metadata, in dataset column order. */

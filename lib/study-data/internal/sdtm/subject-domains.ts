@@ -7,6 +7,8 @@ import type {
   VariableOrigin,
   VariableRole,
 } from "../../types";
+import { sdtmCodelist } from "./codelists";
+import type { SdtmMethodId } from "./methods";
 
 type Row = Record<string, CellValue>;
 type SubjectDomain = "DM" | "SV" | "EX" | "AE" | "VS" | "LB" | "DS" | "SUPPDM";
@@ -16,12 +18,13 @@ interface ColumnSpec {
   readonly role: VariableRole;
   readonly type?: VariableMeta["type"];
   readonly origin: VariableOrigin;
-  readonly method?: string;
+  readonly method?: SdtmMethodId;
   readonly source?: string;
 }
 interface DomainSpec {
   readonly label: string;
   readonly class: string;
+  readonly structure: string;
   readonly keys: readonly string[];
   readonly columns: readonly ColumnSpec[];
 }
@@ -40,7 +43,7 @@ const collected = (
 const derived = (
   name: string,
   label: string,
-  method: string,
+  method: SdtmMethodId,
   role: VariableRole = "Timing",
   type?: VariableMeta["type"]
 ): ColumnSpec => ({ name, label, role, type, origin: "Derived", method });
@@ -70,6 +73,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   DM: {
     label: "Demographics",
     class: "Special Purpose",
+    structure: "One record per subject",
     keys: ["STUDYID", "USUBJID"],
     columns: [
       ...COMMON,
@@ -141,6 +145,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   SV: {
     label: "Subject Visits",
     class: "Special Purpose",
+    structure: "One record per actual visit per subject",
     keys: ["STUDYID", "USUBJID", "VISITNUM"],
     columns: [
       ...COMMON,
@@ -161,6 +166,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   EX: {
     label: "Exposure",
     class: "Interventions",
+    structure: "One record per constant-dosing interval per subject",
     keys: ["STUDYID", "USUBJID", "EXSEQ"],
     columns: [
       ...COMMON,
@@ -195,6 +201,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   AE: {
     label: "Adverse Events",
     class: "Events",
+    structure: "One record per adverse event per subject",
     keys: ["STUDYID", "USUBJID", "AESEQ"],
     columns: [
       ...COMMON,
@@ -252,6 +259,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   VS: {
     label: "Vital Signs",
     class: "Findings",
+    structure: "One record per vital sign measurement per visit per subject",
     keys: ["STUDYID", "USUBJID", "VSSEQ"],
     columns: [
       ...COMMON,
@@ -316,6 +324,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   LB: {
     label: "Laboratory Test Results",
     class: "Findings",
+    structure: "One record per lab test per visit per subject",
     keys: ["STUDYID", "USUBJID", "LBSEQ"],
     columns: [
       ...COMMON,
@@ -386,6 +395,8 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   DS: {
     label: "Disposition",
     class: "Events",
+    structure:
+      "One record per disposition status or protocol milestone per subject",
     keys: ["STUDYID", "USUBJID", "DSSEQ"],
     columns: [
       ...COMMON,
@@ -423,6 +434,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   SUPPDM: {
     label: "Supplemental Qualifiers for DM",
     class: "Relationships",
+    structure: "One record per supplemental qualifier per subject",
     keys: ["STUDYID", "RDOMAIN", "USUBJID", "QNAM"],
     columns: [
       assigned("STUDYID", "Study Identifier"),
@@ -483,6 +495,7 @@ function table(
     label: spec.label,
     layer: "sdtm",
     class: spec.class,
+    structure: spec.structure,
     keys: spec.keys,
     variables: spec.columns.map((column) => ({
       name: column.name,
@@ -491,6 +504,7 @@ function table(
       type: column.type ?? "text",
       ...(column.type ? {} : { length: 200 }),
       origin: column.origin,
+      ...sdtmCodelist(column.name),
       ...(column.method ? { method: column.method } : {}),
       ...(column.source ? { source: column.source } : {}),
     })),

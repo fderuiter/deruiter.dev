@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1205,
+    "total": 1206,
     "runtime": 574,
-    "tooling": 631,
-    "direct": 74
+    "tooling": 632,
+    "direct": 75
   },
   "packages": [
     {
@@ -10888,6 +10888,17 @@
       "direct": false,
       "homepage": "https://github.com/lddubeau/xmlchars",
       "repository": "https://github.com/lddubeau/xmlchars"
+    },
+    {
+      "name": "xmllint-wasm",
+      "version": "5.3.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": true,
+      "homepage": "https://github.com/noppa/xmllint-wasm",
+      "repository": "https://github.com/noppa/xmllint-wasm",
+      "group": "Testing",
+      "reason": "Checks the study data pipeline's Define-XML files against the Define-XML 2.1.0 schema in a unit test, with libxml2 compiled to WebAssembly."
     },
     {
       "name": "y18n",

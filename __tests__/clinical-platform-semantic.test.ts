@@ -195,9 +195,11 @@ describe("golden values on the default seed", () => {
     );
   });
 
-  it("keeps the activation cycle time anchored on the study start", () => {
+  it("keeps the activation cycle time anchored on protocol finalisation", () => {
     // site_activation_cycle_time counts from the first version's valid_from,
-    // which the gold build opens on the study's start date.
+    // which the gold build opens on dim_study.start_on, the date the
+    // protocol was finalised. If the two ever diverge, the metric must read
+    // start_on directly and take a major version.
     const start = new Map(
       warehouse.tables["gold.dim_study"].map((s) => [s.study_id, s.start_on])
     );

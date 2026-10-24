@@ -3,12 +3,15 @@
 import { useSyncExternalStore } from "react";
 import { TOUCH_DEVICE_QUERY } from "@/components/arcade/mobile/immersive";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
+import type { InputModality } from "@/lib/arcade";
 
 /**
  * The input the player used last. A touch screen, an Apple Pencil, a hardware
- * keyboard (a keyboard case, a desktop keyboard) or a mouse or trackpad.
+ * keyboard (a keyboard case, a desktop keyboard) or a mouse or trackpad. The
+ * type lives with the run-fairness contract in `lib/arcade` (#2547), which
+ * keys assists on it.
  */
-export type InputModality = "touch" | "pen" | "keyboard" | "mouse";
+export type { InputModality };
 
 /** Keys that change state on their own and say nothing about the input. */
 const MODIFIER_KEYS = new Set([

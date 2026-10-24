@@ -7,6 +7,7 @@
 
 import { z } from "zod";
 import { safeGetRawItem, safeSetRawItem } from "@/lib/safe-storage";
+import { compareRunTags, parseRunTags, type RunTags } from "../run-tags";
 import { ARCADE_PROGRESS_CATALOG } from "./catalog";
 import { defineSlice } from "./slice";
 
@@ -17,6 +18,12 @@ export const ARCADE_UNIFIED_PROGRESS_KEY = "arcade_unified_progress_v1";
 export interface ArcadeProgress {
   /** Map of gameId -> best numeric score recorded */
   highScores: Record<string, number>;
+  /**
+   * Map of gameId -> how the best score was played (#2547): its views,
+   * inputs and assists. Unset for a best recorded without them, and absent
+   * from storage until a game records one, so the bytes stay as they were.
+   */
+  bestTags?: Record<string, RunTags>;
   /** Map of trophyId -> timestamp unlocked */
   unlockedTrophies: Record<string, number>;
   /** Timestamp of last update */
@@ -84,21 +91,52 @@ const numberMap = z.record(z.string(), z.unknown()).transform((record) => {
   return kept;
 });
 
+/** Well-formed run records only; a damaged one is dropped, not trusted. */
+const tagsMap = z.record(z.string(), z.unknown()).transform((record) => {
+  const kept: Record<string, RunTags> = {};
+  for (const [id, value] of Object.entries(record)) {
+    const tags = parseRunTags(value);
+    if (tags && id !== "__proto__") kept[id] = tags;
+  }
+  return kept;
+});
+
 const arcadeProgressSchema = z.object({
   highScores: numberMap,
+  bestTags: tagsMap.optional().catch(undefined),
   unlockedTrophies: numberMap.catch({}),
   updatedAt: z.number().catch(0),
   migratedAt: z.number().optional().catch(undefined),
 });
 
-/** Keeps `migratedAt` out of a value that has none. */
+/**
+ * Keeps `migratedAt` out of a value that has none, and `bestTags` out of
+ * one with no record, so a value without them keeps its stored bytes.
+ */
 function withoutUndefined(progress: ArcadeProgress): ArcadeProgress {
-  if (progress.migratedAt !== undefined) return progress;
+  const { bestTags, migratedAt, ...rest } = progress;
   return {
-    highScores: progress.highScores,
-    unlockedTrophies: progress.unlockedTrophies,
-    updatedAt: progress.updatedAt,
+    ...rest,
+    ...(bestTags && Object.keys(bestTags).length > 0 ? { bestTags } : {}),
+    ...(migratedAt !== undefined ? { migratedAt } : {}),
   };
+}
+
+/** A best and the record of how it was played, if there is one. */
+interface ScoredTags {
+  readonly score: number;
+  readonly tags: RunTags | undefined;
+}
+
+/**
+ * The better of two bests: the higher score, then a best with a record over
+ * one without, then the less assisted record. A total order, so the merge
+ * keeps the same record whichever copy it starts from.
+ */
+function betterBest(a: ScoredTags, b: ScoredTags): ScoredTags {
+  if (a.score !== b.score) return a.score > b.score ? a : b;
+  if (!a.tags || !b.tags) return a.tags ? a : b;
+  return compareRunTags(a.tags, b.tags) <= 0 ? a : b;
 }
 
 /**
@@ -118,6 +156,18 @@ export function mergeArcadeProgress(
   for (const [game, score] of Object.entries(b.highScores)) {
     highScores[game] = Math.max(highScores[game] ?? score, score);
   }
+  // The record follows the best it belongs to; one without a best is dropped.
+  const bestTags: Record<string, RunTags> = {};
+  for (const [game, score] of Object.entries(highScores)) {
+    const sides = [a, b]
+      .filter((side) => side.highScores[game] !== undefined)
+      .map((side) => ({
+        score: side.highScores[game],
+        tags: side.bestTags?.[game],
+      }));
+    const best = sides.reduce(betterBest);
+    if (best.score === score && best.tags) bestTags[game] = best.tags;
+  }
   const unlockedTrophies: Record<string, number> = { ...a.unlockedTrophies };
   for (const [id, at] of Object.entries(b.unlockedTrophies)) {
     unlockedTrophies[id] = Math.min(unlockedTrophies[id] ?? at, at);
@@ -127,6 +177,7 @@ export function mergeArcadeProgress(
   );
   return withoutUndefined({
     highScores,
+    bestTags,
     unlockedTrophies,
     updatedAt: Math.max(a.updatedAt, b.updatedAt),
     migratedAt: migrated.length > 0 ? Math.max(...migrated) : undefined,

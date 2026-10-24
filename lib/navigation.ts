@@ -223,6 +223,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Toolkit",
   },
   {
+    id: "platform-operations",
+    title: "Operations Dashboards",
+    subtitle: "Portfolio to site drill-down from governed metrics",
+    href: "/platform/operations",
+    icon: "activity",
+    tone: "amber",
+    badge: "Dashboards",
+  },
+  {
     id: "incident-simulator",
     title: "Incident Simulator",
     subtitle: "Architecture bias and outage triage",

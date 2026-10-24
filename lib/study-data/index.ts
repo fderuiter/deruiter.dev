@@ -125,6 +125,7 @@ export {
   adamRowId,
   indexAdamRows,
   resolveResultRows,
+  rowSetRowIds,
 } from "./internal/tlf/row-ids";
 export { selectAdamRows } from "./internal/tlf/where";
 export { escapeHtml, writeTableHtml } from "./internal/tlf/html";
@@ -145,3 +146,21 @@ export {
 } from "./internal/tlf/km";
 export { formatPValue } from "./internal/tlf/km-evaluate";
 export { writeKmFigureHtml, writeKmFigureSvg } from "./internal/tlf/km-svg";
+export {
+  createLineageIndex,
+  DEFAULT_LINEAGE_LIMIT,
+} from "./internal/lineage/trace";
+export type { LineageIndex } from "./internal/lineage/trace";
+export type {
+  LineageDisplayCell,
+  LineageLevel,
+  LineageOrigin,
+  LineageRecord,
+  LineageRelation,
+  LineageResult,
+  LineageScheduleEntry,
+  LineageStep,
+  LineageTrace,
+  LineageTraceOptions,
+  LineageVisit,
+} from "./internal/lineage/model";

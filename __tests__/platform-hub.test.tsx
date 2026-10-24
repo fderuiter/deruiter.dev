@@ -67,7 +67,7 @@ describe("Clinical Data Platform hub", () => {
     expect(html).toContain("Synthetic data for demonstration");
     expect(html).toContain("Designed to these controls");
     expect(html).toContain('href="/crf"');
-    expect(html).not.toContain('href="/study-data"');
+    expect(html).toContain('href="/study-data"');
     expect(ROUTE_METADATA_CONFIGS.platform.path).toBe("/platform");
   });
 });

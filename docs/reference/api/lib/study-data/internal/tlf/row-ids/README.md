@@ -11,3 +11,4 @@
 - [adamRowId](functions/adamRowId.md)
 - [indexAdamRows](functions/indexAdamRows.md)
 - [resolveResultRows](functions/resolveResultRows.md)
+- [rowSetRowIds](functions/rowSetRowIds.md)

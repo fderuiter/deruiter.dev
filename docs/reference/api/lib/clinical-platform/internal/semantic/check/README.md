@@ -12,3 +12,4 @@
 - [checkMetricRegistry](functions/checkMetricRegistry.md)
 - [checkReportMetrics](functions/checkReportMetrics.md)
 - [metricRelease](functions/metricRelease.md)
+- [semver](functions/semver.md)

@@ -45,6 +45,20 @@ export {
   checkReportMetrics,
   metricRelease,
 } from "./internal/semantic/check";
+export { REPORT_PACK } from "./internal/reporting/pack";
+export { checkReportSpec } from "./internal/reporting/check";
+export { buildReport } from "./internal/reporting/build";
+export {
+  NO_METRIC_ROWS,
+  NO_METRIC_VALUE,
+  formatMetricValue,
+} from "./internal/reporting/format";
+export {
+  reportCatalog,
+  reportTelemetrySlug,
+  searchReportCatalog,
+  type ReportCatalogOptions,
+} from "./internal/reporting/catalog";
 export {
   scoreVendors,
   sensitivity,

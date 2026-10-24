@@ -14,6 +14,9 @@ lookup rather than sequential reading.
   mutation boundaries and recovery steps.
 - [Clinical Data Platform star schema](clinical-platform-star-schema.md), the
   generated silver and gold tables, fact grains, keys and ERD.
+- [Clinical Data Platform metric registry](clinical-platform-metrics.md), the
+  generated catalog of governed metrics, their definitions, values on the
+  default seed and the metrics the gold model cannot yet compute.
 
 ## Operations and Release Evidence
 

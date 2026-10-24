@@ -619,38 +619,358 @@ export interface DataContract {
   };
 }
 
-/** Grain a metric is computed at. */
-export type MetricGrain = "portfolio" | "study" | "site" | "country" | "month";
+/**
+ * Level a metric's value is defined at. A `portfolio` metric aggregates every
+ * row in scope, so it rolls up to one portfolio value and can be grouped by
+ * any of its allowed dimensions. A `study` metric is computed once per study
+ * and has no value above the study, so every query of it groups by `study`.
+ */
+export type MetricGrain = "portfolio" | "study";
 
 /**
- * One governed metric in the semantic layer. Defined once and compiled to
- * every consumer; no dashboard computes a metric itself.
+ * Lifecycle status of a governed metric. Only `certified` metrics may appear
+ * in a certified report; a `deprecated` metric is kept for old consumers and
+ * names no new use.
+ */
+export type MetricStatus = "draft" | "certified" | "deprecated";
+
+/** A dimension a metric can be grouped or filtered by. */
+export type MetricDimensionId =
+  | "study"
+  | "study_status"
+  | "therapeutic_area"
+  | "phase"
+  | "product_type"
+  | "operating_model"
+  | "site"
+  | "country"
+  | "region"
+  | "month"
+  | "vendor";
+
+/** One dimension of the semantic layer: an attribute of a gold dimension table. */
+export interface MetricDimension {
+  /** Stable dimension id. */
+  readonly id: MetricDimensionId;
+  /** Display label. */
+  readonly label: string;
+  /** What the dimension's values are, in one sentence. */
+  readonly description: string;
+  /** Qualified gold table that holds the attribute, for example `gold.dim_study`. */
+  readonly table: string;
+  /** Attribute column in that table. */
+  readonly column: string;
+}
+
+/** Aggregation a measure applies to its rows. `p90` is the 90th percentile. */
+export type MetricAggregation =
+  "count" | "count-distinct" | "sum" | "mean" | "median" | "p90";
+
+/** Comparison operator in a measure's row predicate. */
+export type MetricComparison = "=" | "<>" | ">" | ">=" | "<" | "<=";
+
+/**
+ * A value computed from one row of a measure's table. Dates are whole days;
+ * a gold date key (`YYYYMMDD`) is turned into a date with `date-of-key`.
+ */
+export type MetricExpression =
+  | {
+      /** A column of the measure's table. */
+      readonly kind: "column";
+      /** Column name. */
+      readonly column: string;
+    }
+  | {
+      /** A constant. */
+      readonly kind: "literal";
+      /** Text, number or boolean value. */
+      readonly value: string | number | boolean;
+    }
+  | {
+      /** The date a `YYYYMMDD` date key column stands for. */
+      readonly kind: "date-of-key";
+      /** Date key column name. */
+      readonly column: string;
+    }
+  | {
+      /** The data cut: the last day the warehouse describes. */
+      readonly kind: "data-cut";
+    }
+  | {
+      /** Whole days from one date to another: `to` minus `from`. */
+      readonly kind: "days-between";
+      /** Start date. */
+      readonly from: MetricExpression;
+      /** End date. */
+      readonly to: MetricExpression;
+    };
+
+/** A condition a row must meet to count towards a measure. */
+export type MetricPredicate =
+  | {
+      /** Compares two expressions. A `null` operand never matches. */
+      readonly kind: "compare";
+      /** Left operand. */
+      readonly left: MetricExpression;
+      /** Operator. */
+      readonly operator: MetricComparison;
+      /** Right operand. */
+      readonly right: MetricExpression;
+    }
+  | {
+      /** Text column holds one of the listed values. */
+      readonly kind: "in";
+      /** Text column name. */
+      readonly column: string;
+      /** Allowed values; never empty. */
+      readonly values: readonly string[];
+    }
+  | {
+      /** Column is, or is not, `null`. */
+      readonly kind: "null";
+      /** Column name. */
+      readonly column: string;
+      /** `true` keeps rows where the column is `null`, `false` rows where it is not. */
+      readonly isNull: boolean;
+    };
+
+/** One aggregation over the rows of one gold table. */
+export interface MetricMeasure {
+  /** Qualified gold table the rows come from, for example `gold.fct_query`. */
+  readonly table: string;
+  /** Aggregation. */
+  readonly aggregation: MetricAggregation;
+  /**
+   * Value aggregated per row; `null` for `count`, a column for
+   * `count-distinct`, a number for the other aggregations.
+   */
+  readonly expression: MetricExpression | null;
+  /** Conditions every counted row meets, all of them (a logical AND). */
+  readonly where: readonly MetricPredicate[];
+  /**
+   * Date key column that places a row in a calendar month for the `month`
+   * dimension, or `null` when the measure has no meaningful month.
+   */
+  readonly timeKey: string | null;
+}
+
+/** How a metric is computed from the gold model. */
+export type MetricFormula =
+  | {
+      /** One measure. */
+      readonly kind: "simple";
+      /** The measure. */
+      readonly measure: MetricMeasure;
+    }
+  | {
+      /**
+       * `scale` times the numerator over the denominator, computed per group.
+       * A zero denominator gives no value.
+       */
+      readonly kind: "ratio";
+      /** Numerator. */
+      readonly numerator: MetricMeasure;
+      /** Denominator. */
+      readonly denominator: MetricMeasure;
+      /** Multiplier: 1 for a fraction, 100 for a rate per 100. */
+      readonly scale: number;
+    }
+  | {
+      /**
+       * Whole days from one study milestone's actual date to another's, per
+       * study, read from `gold.fct_milestone`. A study that has not reached
+       * both milestones has no value.
+       */
+      readonly kind: "milestone-span";
+      /** Milestone the span starts at. */
+      readonly from: MilestoneKind;
+      /** Milestone the span ends at. */
+      readonly to: MilestoneKind;
+    };
+
+/** A dimension filter: keep rows whose dimension value is, or is not, listed. */
+export interface MetricFilter {
+  /** Dimension filtered on. */
+  readonly dimension: MetricDimensionId;
+  /** `in` keeps listed values, `not-in` drops them. */
+  readonly operator: "in" | "not-in";
+  /** Values; never empty. */
+  readonly values: readonly string[];
+}
+
+/** How a metric's value is displayed. */
+export interface MetricFormat {
+  /**
+   * `percent` values are fractions shown times 100 with a percent sign;
+   * `currency` values are US dollars; `number` values are shown as they are.
+   */
+  readonly style: "number" | "percent" | "currency";
+  /** Decimal places shown, from 0 to 4. */
+  readonly decimals: number;
+}
+
+/** One entry in a metric's change log. */
+export interface MetricChangeLogEntry {
+  /** Version the change produced. */
+  readonly version: string;
+  /** ISO 8601 date of the change. */
+  readonly date: string;
+  /** What changed, in one sentence. */
+  readonly summary: string;
+}
+
+/**
+ * One governed metric of the semantic layer (ADR 0066). Defined once over the
+ * gold star schema and compiled to every consumer: the TypeScript evaluator,
+ * SQL for three dialects, dbt MetricFlow and Power BI TMDL. No dashboard
+ * computes a metric itself.
  */
 export interface MetricDefinition {
-  /** Stable metric id, for example `screen_failure_rate`. */
+  /** Stable metric id in snake case, for example `screen_failure_rate`. */
   readonly id: string;
   /** Display name. */
   readonly name: string;
-  /** Business definition in one or two sentences. */
+  /** Business definition in one to three sentences. */
   readonly description: string;
-  /** Aggregation applied to the measure. */
-  readonly aggregation: "count" | "sum" | "avg" | "ratio" | "median";
-  /** Measure expression, in the registry's own expression syntax. */
-  readonly expression: string;
-  /** Denominator expression, for `ratio` metrics only. */
-  readonly denominator: string | null;
-  /** Finest grain the metric is valid at. */
+  /** How the value is computed from the gold model. */
+  readonly formula: MetricFormula;
+  /** Level the value is defined at. */
   readonly grain: MetricGrain;
-  /** Unit for display, for example `%` or `days`. */
+  /** Dimensions a query may group or filter by. */
+  readonly allowedDimensions: readonly MetricDimensionId[];
+  /**
+   * Filters applied unless a query filters the same dimension, in which case
+   * the query's filter replaces the default.
+   */
+  readonly defaultFilters: readonly MetricFilter[];
+  /** Unit of the value, for example `days` or `queries per 100 visits`. */
   readonly unit: string;
-  /** Id of the gold data product the metric reads. */
-  readonly sourceProductId: string;
-  /** Accountable owner (a role). */
+  /** Display format. */
+  readonly format: MetricFormat;
+  /** Accountable owner (a role, not a person). */
   readonly owner: string;
-  /** Semantic version of the definition. */
+  /** Data steward (a role, not a person). */
+  readonly steward: string;
+  /**
+   * Semantic version. Changing what a certified metric computes needs a
+   * major version bump; `checkMetricChange` enforces it.
+   */
   readonly version: string;
-  /** Whether the metric is certified for use in certified reports. */
+  /** Lifecycle status. */
+  readonly status: MetricStatus;
+  /** Key of the business glossary term (`CANONICAL_GLOSSARY` in `lib/term-glossary.ts`), or `null`. */
+  readonly glossaryTerm: string | null;
+  /** Folder the metric is listed under in BI tools, for example `Enrollment`. */
+  readonly displayFolder: string;
+  /** Changes to the definition, oldest first; the last entry is the current version. */
+  readonly changeLog: readonly MetricChangeLogEntry[];
+}
+
+/** A request for a metric's value, grouped and filtered. */
+export interface MetricQuery {
+  /** Dimensions to group by, in output order; empty or absent for one total. */
+  readonly dimensions?: readonly MetricDimensionId[];
+  /** Filters; each replaces the metric's default filter on the same dimension. */
+  readonly filters?: readonly MetricFilter[];
+}
+
+/** One row of a metric result. */
+export interface MetricResultRow {
+  /** Value of each grouped dimension, keyed by dimension id. */
+  readonly dimensions: Readonly<Partial<Record<MetricDimensionId, string>>>;
+  /** Metric value, or `null` when it is undefined (for example a zero denominator). */
+  readonly value: number | null;
+}
+
+/** A metric evaluated over one warehouse. */
+export interface MetricResult {
+  /** Metric id. */
+  readonly metricId: string;
+  /** Metric version. */
+  readonly version: string;
+  /** Grouped dimensions, in output order. */
+  readonly dimensions: readonly MetricDimensionId[];
+  /** Filters in force: the query's, then the defaults it did not replace. */
+  readonly filters: readonly MetricFilter[];
+  /** ISO 8601 data cut of the warehouse. */
+  readonly dataCut: string;
+  /** One row per group, sorted by dimension values. */
+  readonly rows: readonly MetricResultRow[];
+}
+
+/** Options for the metric compilers. */
+export interface MetricCompileOptions {
+  /**
+   * ISO 8601 data cut, written into metrics that measure age at the cut,
+   * such as query aging. Required when a compiled metric uses it.
+   */
+  readonly dataCut?: string;
+}
+
+/**
+ * The part of a metric definition that decides its values. Two releases of a
+ * certified metric with different contracts need different major versions.
+ */
+export interface MetricContract {
+  /** Formula. */
+  readonly formula: MetricFormula;
+  /** Grain. */
+  readonly grain: MetricGrain;
+  /** Unit. */
+  readonly unit: string;
+  /** Default filters. */
+  readonly defaultFilters: readonly MetricFilter[];
+  /** Allowed dimensions. Adding one is a minor change; removing one is breaking. */
+  readonly allowedDimensions: readonly MetricDimensionId[];
+}
+
+/** One released version of a metric, as recorded in the registry lock file. */
+export interface MetricRelease {
+  /** Metric id. */
+  readonly id: string;
+  /** Semantic version. */
+  readonly version: string;
+  /** Status at release. */
+  readonly status: MetricStatus;
+  /** Contract at release. */
+  readonly contract: MetricContract;
+}
+
+/** A report's use of governed metrics, as checked by `checkReportMetrics`. */
+export interface MetricReport {
+  /** Report id. */
+  readonly id: string;
+  /** Report title. */
+  readonly title: string;
+  /** Whether the report is certified. A certified report may only use certified metrics. */
   readonly certified: boolean;
+  /** Ids of the metrics the report shows. */
+  readonly metricIds: readonly string[];
+}
+
+/** A broken metric governance rule. */
+export interface MetricFinding {
+  /** Rule family: the definition itself, its versioning, or a report's use of it. */
+  readonly rule: "definition" | "version" | "report";
+  /** Metric the finding is about, or `null` for a registry-wide finding. */
+  readonly metricId: string | null;
+  /** What is wrong, in one sentence. */
+  readonly message: string;
+}
+
+/**
+ * A metric a clinical operations or portfolio lead would expect that the gold
+ * model cannot compute yet, and what it lacks. Listed rather than faked.
+ */
+export interface MetricGap {
+  /** Metric name. */
+  readonly name: string;
+  /** Why the registry leaves it out. */
+  readonly reason: string;
+  /** Gold data that would make it computable. */
+  readonly missing: string;
+  /** Registry metric that covers part of the need, or `null`. */
+  readonly nearestMetricId: string | null;
 }
 
 /** Data quality dimension, after DAMA-DMBOK. */

@@ -9,5 +9,5 @@
 > `const` **METRIC\_GAPS**: readonly [`MetricGap`](../../../../types/interfaces/MetricGap.md)[]
 
 Metrics a clinical operations or portfolio lead would expect that the gold
-model (warehouse schema 1.0.0) cannot compute. Each names the gold data it
+model (warehouse schema 1.1.0) cannot compute. Each names the gold data it
 lacks and, where one exists, the registry metric that covers part of it.

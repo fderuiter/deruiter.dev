@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React, {
   useState,
   useEffect,
@@ -2718,7 +2719,7 @@ export const ClinicalTrialChaos: React.FC = () => {
       mimeType: "application/xml",
     });
     addAuditLog(
-      "CDISC ODM 1.3 XML snapshot exported and downloaded.",
+      `CDISC ${standardCitation("ODM")} XML snapshot exported and downloaded.`,
       "COMPLIANT"
     );
   };

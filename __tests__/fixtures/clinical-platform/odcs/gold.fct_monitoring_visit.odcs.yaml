@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/gold.fct_monitoring_visit"
 name: "Monitoring visit facts"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "Operations mart"
 tags:
@@ -61,6 +61,18 @@ schema:
         physicalType: INTEGER
         description: "Date the report was finalised."
         required: false
+        classification: internal
+      - name: monitoring_plan_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Monitoring plan in force on the visit date."
+        required: true
+        classification: internal
+      - name: report_due_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the report is due: the visit date plus the plan's report deadline."
+        required: true
         classification: internal
       - name: visit_type
         logicalType: string
@@ -162,8 +174,10 @@ customProperties:
   - property: upstream
     value:
       - gold.dim_country
+      - gold.dim_monitoring_plan
       - gold.dim_site
       - gold.dim_study
+      - silver.ctms_monitoring_plan
       - silver.ctms_monitoring_visit
       - silver.site
   - property: consumers

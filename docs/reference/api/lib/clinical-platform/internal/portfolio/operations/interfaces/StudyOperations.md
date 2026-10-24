@@ -28,6 +28,12 @@ Study-level operational records and the derived status.
 
 ***
 
+### monitoringPlan
+
+> `readonly` **monitoringPlan**: [`CtmsMonitoringPlan`](../../../../types/interfaces/CtmsMonitoringPlan.md)
+
+***
+
 ### monitoringVisits
 
 > `readonly` **monitoringVisits**: [`CtmsMonitoringVisit`](../../../../types/interfaces/CtmsMonitoringVisit.md)[]

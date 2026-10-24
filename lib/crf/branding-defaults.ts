@@ -1,3 +1,4 @@
+import { standardCitation } from "@/lib/study-data/standards";
 import { StudyBranding, StudyProtocol } from "./types";
 
 export interface BrandingPalettePreset {
@@ -87,8 +88,7 @@ export const BRANDING_PRESETS: BrandingPalettePreset[] = [
       accentColor: "#059669",
       tableHeaderColor: "#064e3b",
       headerText: "CLINICAL STUDY SPECIFICATION & DATA DICTIONARY",
-      footerText:
-        "Modelled on CDISC CDASHIG 2.2. Synthetic demo, not a validated system.",
+      footerText: `Modelled on CDISC ${standardCitation("CDASHIG")}. Synthetic demo, not a validated system.`,
       confidentialityNotice:
         "Confidential clinical data acquisition instrument.",
       showPageNumbers: true,

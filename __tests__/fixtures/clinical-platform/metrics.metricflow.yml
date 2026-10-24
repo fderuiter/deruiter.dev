@@ -290,13 +290,43 @@ semantic_models:
       - name: monitoring_reports_overdue__value
         description: "Measure of monitoring_reports_overdue."
         agg: sum
-        expr: "CASE WHEN report_final_date_key IS NULL AND date_diff('day', CAST(strptime(CAST(visit_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') > 20 THEN 1 ELSE 0 END"
+        expr: "CASE WHEN report_final_date_key IS NULL AND date_diff('day', CAST(strptime(CAST(report_due_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') > 0 THEN 1 ELSE 0 END"
         agg_time_dimension: visit_date
       - name: monitoring_report_cycle_time_median__value
         description: "Measure of monitoring_report_cycle_time_median."
         agg: median
         expr: "CASE WHEN days_to_final_report IS NOT NULL THEN CAST(days_to_final_report AS DOUBLE) END"
         agg_time_dimension: visit_date
+  - name: fct_planned_monitoring_visit
+    description: "Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it. Grain: One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored."
+    model: "ref('fct_planned_monitoring_visit')"
+    defaults:
+      agg_time_dimension: due_date
+    entities:
+      - name: fct_planned_monitoring_visit
+        type: primary
+        expr: planned_visit_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: due_date
+        type: time
+        expr: "CAST(strptime(CAST(due_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: monitoring_visits_overdue__value
+        description: "Measure of monitoring_visits_overdue."
+        agg: sum
+        expr: "CASE WHEN actual_date_key IS NULL AND date_diff('day', CAST(strptime(CAST(due_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') > 0 THEN 1 ELSE 0 END"
+        agg_time_dimension: due_date
   - name: fct_query
     description: "Data queries with their resolution times. Grain: One row per query."
     model: "ref('fct_query')"
@@ -1013,7 +1043,7 @@ metrics:
           - month
   - name: monitoring_reports_overdue
     label: "Overdue monitoring visit reports"
-    description: "Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft, which certified reports cannot use, until a monitoring plan supplies the reporting deadline."
+    description: "Monitoring visits whose report was still not final after its due date, at the data cut. The due date is the visit date plus the report deadline in the study's monitoring plan."
     type: simple
     type_params:
       measure:
@@ -1022,12 +1052,42 @@ metrics:
     filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
     config:
       meta:
-        version: "1.0.0"
-        status: draft
+        version: "2.0.0"
+        status: certified
         owner: "Clinical Monitoring Lead"
         steward: "Clinical Operations Data Steward"
         grain: portfolio
         unit: "monitoring visits"
+        format: "number, 0 decimals"
+        display_folder: Monitoring
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: monitoring_visits_overdue
+    label: "Overdue interim monitoring visits"
+    description: "Interim monitoring visits the monitoring plan scheduled whose visit window closed before the data cut with no visit made. Each site's next visit is planned the plan's interval after its previous visit and is on time until the plan's window closes."
+    type: simple
+    type_params:
+      measure:
+        name: monitoring_visits_overdue__value
+        fill_nulls_with: 0
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Monitoring Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: "planned visits"
         format: "number, 0 decimals"
         display_folder: Monitoring
         allowed_dimensions:

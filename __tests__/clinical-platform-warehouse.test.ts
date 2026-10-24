@@ -40,7 +40,7 @@ import {
  * changes it. Update it deliberately, with `GOLDEN_ROW_COUNTS`, and say why.
  */
 const GOLDEN_SHA256 =
-  "a4492a0746645d29f0b69d8faa9a465be199f7d4cfd38fe73927d3114061777b";
+  "f6a713a6b6f8aa158b2eef4d76fc5afd4e6c26dc82399ceaf2b2d7fae6653b8d";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -52,6 +52,7 @@ const GOLDEN_ROW_COUNTS = {
   "silver.edc_visit": 7727,
   "silver.edc_query": 3559,
   "silver.ctms_milestone": 72,
+  "silver.ctms_monitoring_plan": 8,
   "silver.ctms_monitoring_visit": 1123,
   "silver.ctms_deviation": 329,
   "silver.ctms_site_staff": 129,
@@ -66,11 +67,13 @@ const GOLDEN_ROW_COUNTS = {
   "gold.dim_date": 1827,
   "gold.dim_vendor": 8,
   "gold.dim_milestone": 9,
+  "gold.dim_monitoring_plan": 8,
   "gold.fct_enrollment": 3727,
   "gold.fct_visit": 7727,
   "gold.fct_query": 3559,
   "gold.fct_deviation": 329,
   "gold.fct_monitoring_visit": 1123,
+  "gold.fct_planned_monitoring_visit": 1077,
   "gold.fct_milestone": 72,
   "gold.fct_spend": 1089,
   "gold.fct_kri_snapshot": 7944,
@@ -707,6 +710,7 @@ describe("lineage", () => {
     "bronze.edc.visits": portfolio.feeds.edc.visits[0],
     "bronze.edc.queries": portfolio.feeds.edc.queries[0],
     "bronze.ctms.milestones": portfolio.feeds.ctms.milestones[0],
+    "bronze.ctms.monitoringPlans": portfolio.feeds.ctms.monitoringPlans[0],
     "bronze.ctms.monitoringVisits": portfolio.feeds.ctms.monitoringVisits[0],
     "bronze.ctms.deviations": portfolio.feeds.ctms.deviations[0],
     "bronze.ctms.siteStaff": siteStaffFeed(portfolio)[0],

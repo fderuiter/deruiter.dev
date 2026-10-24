@@ -5,6 +5,7 @@
  */
 import type {
   CtmsMilestone,
+  CtmsMonitoringPlan,
   CtmsMonitoringVisit,
   EtmfDocument,
   FinanceLine,
@@ -49,6 +50,7 @@ const DEVICE_LABELS: Readonly<Record<MilestoneKind, string>> = {
 export interface StudyOperations {
   readonly status: StudyStatus;
   readonly milestones: CtmsMilestone[];
+  readonly monitoringPlan: CtmsMonitoringPlan;
   readonly monitoringVisits: CtmsMonitoringVisit[];
   readonly documents: EtmfDocument[];
   readonly finance: FinanceLine[];
@@ -175,7 +177,22 @@ export function studyOperations(
   else if (lsi !== null) status = "follow-up";
   else if (activations.length > 0) status = "enrolling";
 
+  // The monitoring plan takes effect with the protocol, before any site is
+  // initiated. It draws nothing from the stream, so adding it left every
+  // other generated value as it was.
+  const monitoringPlan: CtmsMonitoringPlan = {
+    synthetic: true,
+    source: "CTMS",
+    monitoringPlanId: `${study.id}-MP`,
+    studyId: study.id,
+    version: "1.0",
+    effectiveOn: study.startOn,
+    ...study.monitoring,
+  };
+
   // Monitoring: initiation, interim visits every six to ten weeks, close-out.
+  // The visits do not follow the plan exactly; measuring them against it is
+  // the point of the plan.
   const monitoringVisits: CtmsMonitoringVisit[] = [];
   for (const site of sites) {
     if (site.activationDay === null) continue;
@@ -290,5 +307,12 @@ export function studyOperations(
     }
   }
 
-  return { status, milestones, monitoringVisits, documents, finance };
+  return {
+    status,
+    milestones,
+    monitoringPlan,
+    monitoringVisits,
+    documents,
+    finance,
+  };
 }

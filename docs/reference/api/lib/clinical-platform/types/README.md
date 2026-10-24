@@ -19,6 +19,7 @@
 - [ContractObjectRows](interfaces/ContractObjectRows.md)
 - [CtmsFeed](interfaces/CtmsFeed.md)
 - [CtmsMilestone](interfaces/CtmsMilestone.md)
+- [CtmsMonitoringPlan](interfaces/CtmsMonitoringPlan.md)
 - [CtmsMonitoringVisit](interfaces/CtmsMonitoringVisit.md)
 - [DataContract](interfaces/DataContract.md)
 - [DataContractFinding](interfaces/DataContractFinding.md)

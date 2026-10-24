@@ -1,3 +1,4 @@
+import { standardCitation } from "@/lib/study-data/standards";
 import {
   Document,
   Paragraph,
@@ -1227,7 +1228,7 @@ export async function generateStudyDocx(
       new Paragraph({
         children: [
           new TextRun({
-            text: `${branding.footerText || "CRF Studio Export"} • CDISC CDASH v2.2 • Schedule Consultation: ${consultationUrl()}`,
+            text: `${branding.footerText || "CRF Studio Export"} • CDISC ${standardCitation("CDASHIG")} • Schedule Consultation: ${consultationUrl()}`,
             size: 16,
             color: "94A3B8",
           }),

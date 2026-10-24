@@ -72,6 +72,14 @@ Planned enrollment period, in days from first subject in.
 
 ***
 
+### monitoring
+
+> `readonly` **monitoring**: [`MonitoringPlanTerms`](MonitoringPlanTerms.md)
+
+The study's monitoring plan.
+
+***
+
 ### operatingModel
 
 > `readonly` **operatingModel**: [`OperatingModel`](../../../../types/type-aliases/OperatingModel.md)

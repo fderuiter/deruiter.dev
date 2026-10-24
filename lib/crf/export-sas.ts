@@ -8,6 +8,7 @@
  * 5. Diagnostic PROC CONTENTS, PROC FREQ, and PROC PRINT steps
  */
 
+import { standardCitation } from "@/lib/study-data/standards";
 import {
   StudyProtocol,
   CRFForm,
@@ -394,7 +395,7 @@ function generateSasHeader(study: StudyProtocol, formScope?: string): string {
   SPONSOR:      ${escapeSasString(study.sponsor)}
   PHASE:        ${escapeSasString(study.phase)} | THERAPEUTIC AREA: ${escapeSasString(study.therapeuticArea)}
   GENERATED:    ${timestamp}
-  STANDARD:     CDISC CDASH v2.2 / SDTM-IG v3.4 Conformance
+  STANDARD:     CDISC ${standardCitation("CDASHIG")} / ${standardCitation("SDTMIG")} Conformance
   DESCRIPTION:  Automated SAS dataset creation program with PROC FORMAT dictionaries,
                 explicit ATTRIB specifications, synthetic test records, and
                 PROC CONTENTS/FREQ data integrity validation.

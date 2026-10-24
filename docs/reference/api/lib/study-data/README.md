@@ -692,6 +692,48 @@ Re-exports [formatPValue](internal/tlf/km-evaluate/functions/formatPValue.md)
 
 ***
 
+### HANDOFF\_GENERATED\_DOMAINS
+
+Re-exports [HANDOFF_GENERATED_DOMAINS](internal/usdm/handoff/variables/HANDOFF_GENERATED_DOMAINS.md)
+
+***
+
+### HandoffActivity
+
+Re-exports [HandoffActivity](internal/usdm/handoff/interfaces/HandoffActivity.md)
+
+***
+
+### HandoffAssumption
+
+Re-exports [HandoffAssumption](internal/usdm/handoff/type-aliases/HandoffAssumption.md)
+
+***
+
+### HandoffReport
+
+Re-exports [HandoffReport](internal/usdm/handoff/interfaces/HandoffReport.md)
+
+***
+
+### HandoffSkippedConcept
+
+Re-exports [HandoffSkippedConcept](internal/usdm/handoff/interfaces/HandoffSkippedConcept.md)
+
+***
+
+### HandoffSkipReason
+
+Re-exports [HandoffSkipReason](internal/usdm/handoff/type-aliases/HandoffSkipReason.md)
+
+***
+
+### HandoffTest
+
+Re-exports [HandoffTest](internal/usdm/handoff/interfaces/HandoffTest.md)
+
+***
+
 ### indexAdamRows
 
 Re-exports [indexAdamRows](internal/tlf/row-ids/functions/indexAdamRows.md)
@@ -950,6 +992,12 @@ Re-exports [PipelineStageId](types/type-aliases/PipelineStageId.md)
 
 ***
 
+### prepareStudyHandoff
+
+Re-exports [prepareStudyHandoff](internal/usdm/handoff/functions/prepareStudyHandoff.md)
+
+***
+
 ### readStudyDefinition
 
 Re-exports [readStudyDefinition](internal/usdm/read-study-definition/functions/readStudyDefinition.md)
@@ -1127,6 +1175,12 @@ Re-exports [StudyDefinitionError](internal/usdm/read-study-definition/classes/St
 ### StudyDesignDefinition
 
 Re-exports [StudyDesignDefinition](types/interfaces/StudyDesignDefinition.md)
+
+***
+
+### StudyHandoff
+
+Re-exports [StudyHandoff](internal/usdm/handoff/interfaces/StudyHandoff.md)
 
 ***
 

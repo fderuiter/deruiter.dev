@@ -41,7 +41,7 @@ function storage(): Storage | null {
 }
 
 /** Why a study could not be stored for the handoff. */
-export type StoreHandoffFailure = "unavailable" | "too-large";
+type StoreHandoffFailure = "unavailable" | "too-large";
 
 /**
  * Stores a USDM document for /study-data to take.

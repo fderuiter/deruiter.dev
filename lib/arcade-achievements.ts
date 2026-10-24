@@ -16,6 +16,7 @@ import {
   write,
   type ArcadeProgress,
   type FormFactor,
+  type RunTags,
 } from "@/lib/arcade";
 
 export { ARCADE_UNIFIED_PROGRESS_KEY, parseScoreValue };
@@ -635,6 +636,7 @@ function copyProgress(progress: ArcadeProgress): ArcadeProgress {
     ...progress,
     highScores: { ...progress.highScores },
     unlockedTrophies: { ...progress.unlockedTrophies },
+    ...(progress.bestTags ? { bestTags: { ...progress.bestTags } } : {}),
   };
 }
 
@@ -772,11 +774,19 @@ export function recordArcadeMilestone(
 /**
  * Core function to record an arcade score, update storage, evaluate achievements,
  * and dispatch typed event-bus events.
+ *
+ * @param gameId - The game's id.
+ * @param score - The run's score.
+ * @param metadata - Extra detail for the `arcade_score_updated` event.
+ * @param tags - How the run was played (#2547), kept with a new best so
+ *   score lists and gates can tell an assisted best from an unassisted one.
+ * @returns The saved progress and the trophies this score unlocked.
  */
 export function recordArcadeScore(
   gameId: string,
   score: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  tags?: RunTags
 ): { progress: ArcadeProgress; newlyUnlocked: ArcadeTrophy[] } {
   const progress = getArcadeProgress();
   const currentBest = progress.highScores[gameId] || 0;
@@ -785,6 +795,12 @@ export function recordArcadeScore(
   // One home for a high score: no per-game mirror key is written (#2548).
   if (isNewBest) {
     progress.highScores[gameId] = score;
+    // The record belongs to the best; a best without one drops the old one.
+    const bestTags = { ...progress.bestTags };
+    if (tags) bestTags[gameId] = tags;
+    else delete bestTags[gameId];
+    progress.bestTags = bestTags;
+    if (Object.keys(bestTags).length === 0) delete progress.bestTags;
   }
 
   // Check trophy unlock conditions

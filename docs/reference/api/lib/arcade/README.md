@@ -344,6 +344,18 @@ Re-exports [ArcadeViewReadiness](registry/type-aliases/ArcadeViewReadiness.md)
 
 ***
 
+### assistLabel
+
+Re-exports [assistLabel](run-tags/functions/assistLabel.md)
+
+***
+
+### AssistValue
+
+Re-exports [AssistValue](run-tags/type-aliases/AssistValue.md)
+
+***
+
 ### AxisActionDefinition
 
 Re-exports [AxisActionDefinition](input/actions/interfaces/AxisActionDefinition.md)
@@ -464,6 +476,12 @@ Re-exports [codeForKeyEvent](input/actions/functions/codeForKeyEvent.md)
 
 ***
 
+### compareRunTags
+
+Re-exports [compareRunTags](run-tags/functions/compareRunTags.md)
+
+***
+
 ### computeCanvasResolution
 
 Re-exports [computeCanvasResolution](core/viewport/functions/computeCanvasResolution.md)
@@ -491,6 +509,12 @@ Re-exports [createArcadeStore](progress/store/functions/createArcadeStore.md)
 ### createRng
 
 Re-exports [createRng](rng/functions/createRng.md)
+
+***
+
+### createRunFairness
+
+Re-exports [createRunFairness](run-tags/functions/createRunFairness.md)
 
 ***
 
@@ -563,6 +587,18 @@ Re-exports [defineActions](input/actions/functions/defineActions.md)
 ### defineSlice
 
 Re-exports [defineSlice](progress/slice/functions/defineSlice.md)
+
+***
+
+### EMPTY\_RUN\_TAGS
+
+Re-exports [EMPTY_RUN_TAGS](run-tags/variables/EMPTY_RUN_TAGS.md)
+
+***
+
+### FairnessPolicy
+
+Re-exports [FairnessPolicy](run-tags/interfaces/FairnessPolicy.md)
 
 ***
 
@@ -680,6 +716,18 @@ Re-exports [HintModality](input/actions/type-aliases/HintModality.md)
 
 ***
 
+### INPUT\_MODALITIES
+
+Re-exports [INPUT_MODALITIES](run-tags/variables/INPUT_MODALITIES.md)
+
+***
+
+### InputModality
+
+Re-exports [InputModality](run-tags/type-aliases/InputModality.md)
+
+***
+
 ### InputSnapshot
 
 Re-exports [InputSnapshot](core/input/interfaces/InputSnapshot.md)
@@ -725,6 +773,12 @@ Re-exports [isStepCount](step-clock/functions/isStepCount.md)
 ### isTextEntryTarget
 
 Re-exports [isTextEntryTarget](input/controller/functions/isTextEntryTarget.md)
+
+***
+
+### isUnassisted
+
+Re-exports [isUnassisted](run-tags/functions/isUnassisted.md)
 
 ***
 
@@ -800,6 +854,18 @@ Re-exports [MultiplierOptions](utils/interfaces/MultiplierOptions.md)
 
 ***
 
+### noteRunInput
+
+Re-exports [noteRunInput](run-tags/functions/noteRunInput.md)
+
+***
+
+### noteRunView
+
+Re-exports [noteRunView](run-tags/functions/noteRunView.md)
+
+***
+
 ### ObjectPool
 
 Re-exports [ObjectPool](core/pool/classes/ObjectPool.md)
@@ -815,6 +881,12 @@ Re-exports [ObjectPoolConfig](core/pool/interfaces/ObjectPoolConfig.md)
 ### onArcadeProgressNotice
 
 Re-exports [onArcadeProgressNotice](progress/store/functions/onArcadeProgressNotice.md)
+
+***
+
+### parseRunTags
+
+Re-exports [parseRunTags](run-tags/functions/parseRunTags.md)
 
 ***
 
@@ -914,6 +986,18 @@ Re-exports [rngStateFromSeed](rng/functions/rngStateFromSeed.md)
 
 ***
 
+### runAssists
+
+Re-exports [runAssists](run-tags/functions/runAssists.md)
+
+***
+
+### RunFairness
+
+Re-exports [RunFairness](run-tags/interfaces/RunFairness.md)
+
+***
+
 ### RunSnapshot
 
 Re-exports [RunSnapshot](run-snapshot/interfaces/RunSnapshot.md)
@@ -947,6 +1031,12 @@ Re-exports [RunSnapshotRead](run-snapshot/type-aliases/RunSnapshotRead.md)
 ### RunSnapshotStorage
 
 Re-exports [RunSnapshotStorage](run-snapshot/type-aliases/RunSnapshotStorage.md)
+
+***
+
+### RunTags
+
+Re-exports [RunTags](run-tags/interfaces/RunTags.md)
 
 ***
 
@@ -1049,6 +1139,12 @@ Re-exports [stageSnapStep](core/stage-fit/functions/stageSnapStep.md)
 ### stageViewportMetrics
 
 Re-exports [stageViewportMetrics](core/stage-fit/functions/stageViewportMetrics.md)
+
+***
+
+### startRunTags
+
+Re-exports [startRunTags](run-tags/functions/startRunTags.md)
 
 ***
 

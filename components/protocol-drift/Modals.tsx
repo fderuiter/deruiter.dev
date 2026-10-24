@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useId, useRef, useState } from "react";
+import Link from "next/link";
 import { downloadFile } from "@/lib/download";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useCabinetTouch } from "@/components/arcade/mobile/CabinetTouchContext";
@@ -866,6 +867,22 @@ export function DebriefModal({
             Export save (pd-101-save-v1.json)
           </button>
         </div>
+      </section>
+      <section aria-label="Reference pipeline" className="mb-3">
+        <h3 className="mb-1 text-zinc-100">The reference pipeline</h3>
+        <p className="text-zinc-300">
+          Protocol Drift is a game: it simulates one study under time pressure
+          and scores your choices. The Study Data Pipeline is the deterministic
+          reference version of the same path, from a USDM study definition
+          through SDTM and ADaM to tables and figures, with every result traced
+          back to the records it came from.
+        </p>
+        <Link
+          href="/study-data"
+          className={`${SECONDARY} mt-2 inline-flex min-h-12 items-center`}
+        >
+          Open the Study Data Pipeline
+        </Link>
       </section>
       <div className="flex flex-wrap gap-2">
         <button

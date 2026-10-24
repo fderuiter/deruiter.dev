@@ -21,6 +21,12 @@ import { ConformancePanel } from "./ConformancePanel";
 import type { RailStageId } from "./copy";
 import { DatasetViewer, type RowReveal } from "./DatasetViewer";
 import { DefineViewer } from "./DefineViewer";
+import {
+  STUDY_DATA_HANDOFF_SOURCE,
+  takeStudyHandoff,
+  type TakenHandoff,
+} from "./handoff-storage";
+import { HandoffPanel } from "./HandoffPanel";
 import { LineageExplorer } from "./LineageExplorer";
 import {
   createPipelineClient,
@@ -31,6 +37,7 @@ import {
   ROW_PAGE_SIZE,
   TRACE_LIMIT,
   type PackageKind,
+  type PreparedStudy,
   type RunSummary,
 } from "./protocol";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
@@ -75,7 +82,30 @@ interface StudyDataWorkbenchProps {
   readonly defaults: { readonly seed: number; readonly nSubjects: number };
 }
 
-type RunStatus = "running" | "ready" | "error" | "restoring";
+type RunStatus = "running" | "ready" | "error" | "restoring" | "waiting";
+
+/** A study handed over from CRF Studio, once checked. */
+interface Handoff {
+  readonly study: unknown;
+  readonly prepared: Extract<PreparedStudy, { ok: true }>;
+}
+
+function handoffNotice(taken: TakenHandoff, prepared?: PreparedStudy): string {
+  if (taken.status === "missing") {
+    return "No study was handed over from CRF Studio in this tab, so the page runs DEMO-301. In CRF Studio, open the USDM export and choose Run the pipeline on this study.";
+  }
+  if (taken.status === "unreadable") {
+    return "The study handed over from CRF Studio could not be read from this tab's storage, so the page runs DEMO-301.";
+  }
+  if (prepared && !prepared.ok) {
+    const what =
+      prepared.problem === "schema"
+        ? `fails the USDM v4.0.0 schema (${prepared.total.toLocaleString("en-US")} ${prepared.total === 1 ? "issue" : "issues"}, first: ${prepared.issues[0]})`
+        : `cannot be read as a study: ${prepared.issues[0]}`;
+    return `The study handed over from CRF Studio ${what}, so the page runs DEMO-301.`;
+  }
+  return "";
+}
 
 const MAX_SEED = 4294967295;
 
@@ -83,12 +113,14 @@ function parseWhole(text: string): number | null {
   return /^\d+$/.test(text.trim()) ? Number(text.trim()) : null;
 }
 
-function saveFile(bytes: Uint8Array, fileName: string) {
+function saveFile(
+  bytes: Uint8Array,
+  fileName: string,
+  type = "application/zip"
+) {
   const copy = new Uint8Array(bytes.length);
   copy.set(bytes);
-  const url = URL.createObjectURL(
-    new Blob([copy.buffer], { type: "application/zip" })
-  );
+  const url = URL.createObjectURL(new Blob([copy.buffer], { type }));
   const link = document.createElement("a");
   link.href = url;
   link.download = fileName;
@@ -127,6 +159,9 @@ export function StudyDataWorkbench({
     subjects?: string;
   }>({});
   const [status, setStatus] = useState<RunStatus>("running");
+  const [handoff, setHandoff] = useState<Handoff | null>(null);
+  const [handoffMessage, setHandoffMessage] = useState("");
+  const handoffTaken = useRef<TakenHandoff | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [summary, setSummary] = useState<RunSummary | null>(null);
   const [mode, setMode] = useState<"worker" | "main-thread" | "idle">("idle");
@@ -148,11 +183,16 @@ export function StudyDataWorkbench({
   }, []);
 
   const startRun = useCallback(
-    (seed: number, nSubjects: number, restoring = false) => {
+    (seed: number, nSubjects: number, study: unknown, restoring = false) => {
       const token = ++runToken.current;
       const pipeline = client();
       pipeline
-        .request<"run">({ type: "run", seed, nSubjects })
+        .request<"run">({
+          type: "run",
+          seed,
+          nSubjects,
+          ...(study === undefined ? {} : { study }),
+        })
         .then((result) => {
           if (token !== runToken.current) return;
           setSummary(result);
@@ -178,9 +218,52 @@ export function StudyDataWorkbench({
   );
 
   useEffect(() => {
-    startRun(defaults.seed, defaults.nSubjects);
-    return () => clientRef.current?.dispose();
-  }, [defaults.seed, defaults.nSubjects, startRun]);
+    const source = new URLSearchParams(window.location.search).get("source");
+    if (source !== STUDY_DATA_HANDOFF_SOURCE) {
+      startRun(defaults.seed, defaults.nSubjects, undefined);
+      return () => clientRef.current?.dispose();
+    }
+    // Taking the study removes it, so keep what was taken across the
+    // development double mount.
+    const taken = (handoffTaken.current ??= takeStudyHandoff());
+    let live = true;
+    const fallBack = (message: string) => {
+      if (!live) return;
+      setHandoffMessage(message);
+      startRun(defaults.seed, defaults.nSubjects, undefined);
+    };
+    if (taken.status !== "found") {
+      fallBack(handoffNotice(taken));
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setStatus("waiting");
+      client()
+        .request<"prepare">({ type: "prepare", study: taken.usdm })
+        .then((prepared) => {
+          if (!live) return;
+          if (!prepared.ok) {
+            setStatus("running");
+            fallBack(handoffNotice(taken, prepared));
+            return;
+          }
+          setHandoff({ study: taken.usdm, prepared });
+          announce(
+            `Study ${prepared.report.studyId} handed over from CRF Studio. Review what the pipeline will tabulate, then run it.`
+          );
+        })
+        .catch((error: unknown) => {
+          if (error instanceof PipelineCancelledError) return;
+          setStatus("running");
+          fallBack(
+            `The study handed over from CRF Studio could not be checked (${error instanceof Error ? error.message : String(error)}), so the page runs DEMO-301.`
+          );
+        });
+    }
+    return () => {
+      live = false;
+      clientRef.current?.dispose();
+    };
+  }, [announce, client, defaults.seed, defaults.nSubjects, startRun]);
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -207,7 +290,29 @@ export function StudyDataWorkbench({
     announce(
       `Running the pipeline for ${nSubjects.toLocaleString("en-US")} subjects.`
     );
-    startRun(seed, nSubjects);
+    startRun(seed, nSubjects, handoff?.study);
+  };
+
+  const onUseDemo = () => {
+    if (status === "running" || status === "restoring") client().cancel();
+    setHandoff(null);
+    setHandoffMessage(
+      "Showing DEMO-301. To run the CRF Studio study again, hand it over from CRF Studio."
+    );
+    setSummary(null);
+    setTrace(null);
+    setStatus("running");
+    announce("Switched to the DEMO-301 study.");
+    startRun(defaults.seed, defaults.nSubjects, undefined);
+  };
+
+  const onDownloadHandoff = () => {
+    if (!handoff) return;
+    saveFile(
+      new TextEncoder().encode(`${JSON.stringify(handoff.study, null, 2)}\n`),
+      `${handoff.prepared.report.studyId.toLowerCase()}.usdm.json`,
+      "application/json"
+    );
   };
 
   const onCancel = () => {
@@ -216,7 +321,7 @@ export function StudyDataWorkbench({
     if (summary) {
       setStatus("restoring");
       announce("Run cancelled. Restoring the previous run.");
-      startRun(summary.seed, summary.nSubjects, true);
+      startRun(summary.seed, summary.nSubjects, handoff?.study, true);
     } else {
       setStatus("error");
       setRunError("The run was cancelled. Run the pipeline to start again.");
@@ -366,15 +471,19 @@ export function StudyDataWorkbench({
       : null;
   const running = status === "running" || status === "restoring";
   const statusText =
-    status === "restoring"
-      ? "Run cancelled. Restoring the previous run…"
-      : status === "running"
-        ? "Running the pipeline…"
-        : status === "error"
-          ? runError
-          : summary
-            ? `Run ${summary.runId}: ${summary.nSubjects.toLocaleString("en-US")} subjects, seed ${summary.seed}, ${(summary.elapsedMs / 1000).toFixed(1)} s ${mode === "worker" ? "in a Web Worker" : "on the main thread"}.`
-            : "";
+    status === "waiting"
+      ? handoff
+        ? `Study ${handoff.prepared.report.studyId} is ready. Run the pipeline to generate its data.`
+        : "Checking the study handed over from CRF Studio…"
+      : status === "restoring"
+        ? "Run cancelled. Restoring the previous run…"
+        : status === "running"
+          ? "Running the pipeline…"
+          : status === "error"
+            ? runError
+            : summary
+              ? `Run ${summary.runId}: ${summary.nSubjects.toLocaleString("en-US")} subjects, seed ${summary.seed}, ${(summary.elapsedMs / 1000).toFixed(1)} s ${mode === "worker" ? "in a Web Worker" : "on the main thread"}.`
+              : "";
 
   return (
     <>
@@ -391,6 +500,18 @@ export function StudyDataWorkbench({
           to a server. The same seed and subject count always give the same
           datasets, tables and figures.
         </p>
+        {handoffMessage ? (
+          <p className="mt-4 max-w-3xl break-words border-l-2 border-amber-500 pl-4 text-xs leading-relaxed text-amber-100">
+            {handoffMessage}
+          </p>
+        ) : null}
+        {handoff ? (
+          <HandoffPanel
+            report={handoff.prepared.report}
+            onUseDemo={onUseDemo}
+            onDownload={onDownloadHandoff}
+          />
+        ) : null}
         <form
           onSubmit={onSubmit}
           noValidate
@@ -512,7 +633,7 @@ export function StudyDataWorkbench({
         </p>
         <div className="mt-8">
           <StageRail
-            definition={definitionCounts}
+            definition={handoff?.prepared.counts ?? definitionCounts}
             counts={summary?.counts ?? null}
             onOpen={openStage}
           />
@@ -559,7 +680,7 @@ export function StudyDataWorkbench({
         >
           {tab === "schedule" ? (
             <ScheduleViewer
-              design={design}
+              design={handoff?.prepared.design ?? design}
               selected={tracedActivity}
               onTrace={(activityId, visitId) =>
                 traceFrom({
@@ -575,7 +696,9 @@ export function StudyDataWorkbench({
             >
               {status === "error"
                 ? runError
-                : "Generating synthetic subjects and building the datasets…"}
+                : status === "waiting"
+                  ? "Run the pipeline to see the outputs for the handed-over study."
+                  : "Generating synthetic subjects and building the datasets…"}
             </div>
           ) : tab === "datasets" ? (
             <DatasetViewer

@@ -49,6 +49,10 @@ export { REPORT_PACK } from "./internal/reporting/pack";
 export { checkReportSpec } from "./internal/reporting/check";
 export { buildReport } from "./internal/reporting/build";
 export {
+  operationsDashboard,
+  operationsReportSpecs,
+} from "./internal/reporting/operations";
+export {
   NO_METRIC_ROWS,
   NO_METRIC_VALUE,
   formatMetricValue,

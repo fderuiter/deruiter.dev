@@ -32,6 +32,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  platformOperations: {
+    title: "Clinical Operations Dashboards",
+    description:
+      "Drill a synthetic sponsor portfolio from study to country to site: enrollment, site activation, queries, deviations and milestones from governed metrics.",
+    path: "/platform/operations",
+    keywords: [
+      "Clinical Operations",
+      "Clinical Data Platform",
+      "Enrollment Dashboard",
+      "Data Management Metrics",
+      "Semantic Layer",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   studyData: {
     title: "Study Data Pipeline: USDM to TLFs",
     description:

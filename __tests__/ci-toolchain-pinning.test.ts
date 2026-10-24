@@ -108,7 +108,7 @@ describe("CI Workflow Toolchain Pinning", () => {
     // `next typegen` first, so the check covers the generated route types that
     // Next's own in-build checker used to (#2100).
     expect(pkg.scripts.typecheck).toBe(
-      "next typegen && node --max-old-space-size=3072 node_modules/typescript/bin/tsc --noEmit"
+      "next typegen && node --max-old-space-size=3584 node_modules/typescript/bin/tsc --noEmit"
     );
   });
 
@@ -117,6 +117,7 @@ describe("CI Workflow Toolchain Pinning", () => {
    * the default limit in the Vercel Deployment Checks sandbox, so the gate
    * crashed with exit 134 there while passing on larger runners. The ceiling
    * is set in the script so every caller (CI, Husky, Vercel) gets the same one.
+   * #2743 raised it to 3.5 GB once the program's live heap reached 2.54 GB.
    */
   it("gives the typecheck an explicit heap ceiling above 2 GB", () => {
     const pkg = JSON.parse(

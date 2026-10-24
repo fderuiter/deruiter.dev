@@ -178,6 +178,38 @@ describe("buildCreditsDataset", () => {
     expect(diffFactsAgainstLockfile(facts(), aliased).missing).toEqual([]);
   });
 
+  // #2730: Dependabot's npm records a wasm package's bundled dependencies
+  // with no resolved URL or integrity; npm 10 leaves them out.
+  it("skips dev-only bundled entries but keeps shipped ones", () => {
+    const bundled: LockfileShape = {
+      packages: {
+        ...lockfile.packages,
+        "node_modules/dev-tool/node_modules/bundled-dev": {
+          version: "1.0.0",
+          license: "MIT",
+          dev: true,
+          inBundle: true,
+        },
+        "node_modules/app-lib/node_modules/bundled-shipped": {
+          version: "1.0.0",
+          license: "MIT",
+          inBundle: true,
+        },
+      },
+    };
+    const names = buildCreditsDataset({
+      lockfile: bundled,
+      root,
+      annotations,
+      facts: facts(),
+    }).packages.map((p) => p.name);
+    expect(names).not.toContain("bundled-dev");
+    expect(names).toContain("bundled-shipped");
+    expect(diffFactsAgainstLockfile(facts(), bundled).missing).toEqual([
+      "bundled-shipped@1.0.0",
+    ]);
+  });
+
   it("marks scope and direct correctly", () => {
     const byName = Object.fromEntries(build().packages.map((p) => [p.name, p]));
     expect(byName["dev-tool"].scope).toBe("tooling");

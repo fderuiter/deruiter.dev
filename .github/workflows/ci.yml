@@ -233,7 +233,7 @@ jobs:
     # `__tests__/mermaid-corpus.test.ts` renders the Mermaid corpus in this
     # real Chromium, in whichever shard runs it.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --user 1001 --ipc=host
       # The image ships no unzip, which
       # `__tests__/extract-zip-remediation.test.ts` runs against a symlink
@@ -306,7 +306,7 @@ jobs:
     # thresholds matched nothing. Merging in the same image keeps the paths
     # identical.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --user 1001
 
     steps:
@@ -520,7 +520,7 @@ jobs:
     # neither downloads a browser nor runs apt. uid 1001 is the
     # hosted runner's user, which owns the workspace and HOME mounts.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --user 1001 --ipc=host
     strategy:
       fail-fast: false
@@ -592,7 +592,7 @@ jobs:
     # neither downloads a browser nor runs apt. uid 1001 is the
     # hosted runner's user, which owns the workspace and HOME mounts.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --user 1001 --ipc=host
 
     steps:
@@ -779,7 +779,7 @@ jobs:
     # neither downloads a browser nor runs apt. uid 1001 is the
     # hosted runner's user, which owns the workspace and HOME mounts.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --user 1001 --ipc=host
 
     strategy:
@@ -984,7 +984,7 @@ jobs:
     # neither downloads a browser nor runs apt. uid 1001 is the
     # hosted runner's user, which owns the workspace and HOME mounts.
     container:
-      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
       options: --user 1001 --ipc=host
 
     steps:

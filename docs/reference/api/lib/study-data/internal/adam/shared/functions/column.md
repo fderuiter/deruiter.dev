@@ -28,7 +28,7 @@
 
 ### method?
 
-`string`
+`"ADSL_POP"` \| `"ADSL_TRT"` \| `"ADSL_DISP"` \| `"BDS_WINDOW"` \| `"BDS_BASE"` \| `"BDS_CHANGE"` \| `"BDS_ANALYSIS"` \| `"BDS_LOCF"` \| `"ADAE_IMPUTE"` \| `"ADAE_TEAE"` \| `"ADAE_OCC"` \| `"ADTTE_EVENT"` \| `"ADTTE_CENSOR"`
 
 ### source?
 

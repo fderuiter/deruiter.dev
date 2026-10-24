@@ -5,3 +5,4 @@
 # Vendored third-party files keep their upstream bytes, CRLF included, so
 # the SHA-256 recorded in each SOURCE.md matches the checkout.
 __tests__/fixtures/schemas/dataset-json-1.1/dataset.schema.json -text
+__tests__/fixtures/schemas/define-xml-2.1/** -text

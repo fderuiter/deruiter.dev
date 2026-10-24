@@ -6,6 +6,10 @@
 
 # lib/study-data/internal/adam/shared
 
+## Interfaces
+
+- [AdamLayout](interfaces/AdamLayout.md)
+
 ## Type Aliases
 
 - [AnalysisRow](type-aliases/AnalysisRow.md)

@@ -1,7 +1,8 @@
 /**
  * The study data package: every SDTM and ADaM dataset as Dataset-JSON, CSV
- * and XPT, laid out like eCTD module 5, with a README, a manifest of SHA-256
- * hashes and one declared timestamp file.
+ * and XPT, and a Define-XML document per layer, laid out like eCTD module 5,
+ * with a README, a manifest of SHA-256 hashes and one declared timestamp
+ * file.
  *
  * Only `RUN-TIMESTAMP.json` depends on when the package was built. Every
  * other file, the manifest and the zip archive depend only on the run, so the
@@ -24,6 +25,8 @@ import type {
   RunManifest,
   StandardVersions,
 } from "../../types";
+import { buildDefine, DEFINE_XML_VERSION } from "../define/build-define";
+import { writeDefineXml } from "../define/write-define-xml";
 import { utf8 } from "./columns";
 import { writeCsv } from "./csv";
 import { writeDatasetJson } from "./dataset-json";
@@ -33,6 +36,10 @@ import { writeXpt } from "./xpt";
 export const SDTM_PACKAGE_DIR = "m5/datasets/tabulations/sdtm";
 /** Folder of the ADaM analysis datasets. */
 export const ADAM_PACKAGE_DIR = "m5/datasets/analysis/adam";
+/** The SDTM Define-XML document, beside the datasets it describes. */
+export const SDTM_DEFINE_PATH = `${SDTM_PACKAGE_DIR}/define.xml`;
+/** The ADaM Define-XML document, beside the datasets it describes. */
+export const ADAM_DEFINE_PATH = `${ADAM_PACKAGE_DIR}/define.xml`;
 /** The manifest file at the package root. */
 export const PACKAGE_MANIFEST_PATH = "MANIFEST.json";
 /** The README at the package root. */
@@ -54,6 +61,7 @@ const MEDIA_TYPES = {
   csv: "text/csv",
   xpt: "application/x-sas-xport",
   txt: "text/plain",
+  xml: "application/xml",
 } as const;
 
 const ISO_TIMESTAMP =
@@ -77,7 +85,9 @@ export interface PackageManifest {
   readonly seed: number;
   readonly nSubjects: number;
   readonly standards: StandardVersions;
-  readonly fileFormats: Readonly<Record<"json" | "csv" | "xpt", string>>;
+  readonly fileFormats: Readonly<
+    Record<"json" | "csv" | "xpt" | "xml", string>
+  >;
   readonly stages: readonly PipelineStageId[];
   readonly fixedTimestamp: string;
   readonly timestampFile: string;
@@ -162,11 +172,13 @@ function readme(run: PipelineRun, generatedFiles: readonly string[]): string {
     "  .csv   RFC 4180, header row of variable names, CRLF line endings",
     '  .xpt   structured like SAS XPORT v5; the dataset label starts with "Synthetic: "',
     "",
+    `Each folder also holds define.xml, Define-XML ${DEFINE_XML_VERSION} metadata for its datasets, generated from the same specifications as the data. Its def:leaf entries point to the .xpt files. The notice is in its study description.`,
+    "",
     CSV_NOTICE.replace("this manifest", PACKAGE_MANIFEST_PATH),
     "",
     `${PACKAGE_MANIFEST_PATH} lists the SHA-256 of every file except itself and ${PACKAGE_TIMESTAMP_PATH}.`,
     `${PACKAGE_TIMESTAMP_PATH} holds when the package was built. It is the only file that changes between builds of the same run.`,
-    `Timestamps required inside the formats (Dataset-JSON creation time, XPT headers, zip entry dates) are fixed at ${PACKAGE_FIXED_TIMESTAMP}.`,
+    `Timestamps required inside the formats (Dataset-JSON creation time, XPT headers, Define-XML creation time, zip entry dates) are fixed at ${PACKAGE_FIXED_TIMESTAMP}.`,
     "",
     "Standards applied:",
     ...Object.entries(manifest.standards).map(
@@ -183,15 +195,17 @@ function readme(run: PipelineRun, generatedFiles: readonly string[]): string {
  * Builds the study data package for a pipeline run.
  *
  * Every SDTM and ADaM dataset is written as Dataset-JSON, CSV and XPT under
- * the eCTD module 5 folders; collected data is not exported. The returned
- * run manifest has `outputs` filled with the path, media type and SHA-256 of
- * every hashed file, and `export` added to its stages.
+ * the eCTD module 5 folders, and each folder gets a Define-XML document for
+ * its datasets; collected data is not exported. The returned run manifest has
+ * `outputs` filled with the path, media type and SHA-256 of every hashed
+ * file, and `define` and `export` added to its stages.
  *
  * @param run - A pipeline run from `runPipeline`.
  * @param options - When the package was built.
  * @returns The files, the manifest and the findings the formats raised.
  * @throws RangeError when `generatedAt` is not an ISO 8601 timestamp, two
- *   exported datasets share a name, or a dataset cannot be written as XPT.
+ *   exported datasets share a name, a dataset cannot be written as XPT, or
+ *   the metadata cannot be written as Define-XML (see `buildDefine`).
  */
 export async function buildStudyDataPackage(
   run: PipelineRun,
@@ -246,7 +260,21 @@ export async function buildStudyDataPackage(
       }
     );
   }
-  datasetFiles.sort((a, b) => compareCodePoints(a.path, b.path));
+  const defineFiles: PackageFile[] = (["sdtm", "adam"] as const)
+    .filter((layer) => exported.some((dataset) => dataset.layer === layer))
+    .map((layer) => ({
+      path: layer === "sdtm" ? SDTM_DEFINE_PATH : ADAM_DEFINE_PATH,
+      mediaType: MEDIA_TYPES.xml,
+      bytes: utf8(
+        writeDefineXml(
+          buildDefine(run, { layer, createdAt: PACKAGE_FIXED_TIMESTAMP })
+        )
+      ),
+    }));
+  const contentFiles: (PackageFile & { readonly dataset?: string })[] = [
+    ...datasetFiles,
+    ...defineFiles,
+  ].sort((a, b) => compareCodePoints(a.path, b.path));
 
   const readmeFile: PackageFile = {
     path: PACKAGE_README_PATH,
@@ -260,7 +288,7 @@ export async function buildStudyDataPackage(
   };
   const hashed: (PackageFile & { readonly dataset?: string })[] = [
     readmeFile,
-    ...datasetFiles,
+    ...contentFiles,
   ];
   const digests = await Promise.all(
     hashed.map((file) => sha256Hex(file.bytes))
@@ -272,7 +300,7 @@ export async function buildStudyDataPackage(
   }));
   const exportOrder = PIPELINE_STAGES.map((stage) => stage.id);
   const stages = [
-    ...new Set<PipelineStageId>([...manifest.stages, "export"]),
+    ...new Set<PipelineStageId>([...manifest.stages, "define", "export"]),
   ].sort((a, b) => exportOrder.indexOf(a) - exportOrder.indexOf(b));
   const runManifest: RunManifest = { ...manifest, stages, outputs };
 
@@ -287,6 +315,7 @@ export async function buildStudyDataPackage(
       json: `Dataset-JSON ${STANDARD_VERSIONS["Dataset-JSON"]}`,
       csv: "RFC 4180",
       xpt: "SAS XPORT v5",
+      xml: `Define-XML ${DEFINE_XML_VERSION}`,
     },
     stages,
     fixedTimestamp: PACKAGE_FIXED_TIMESTAMP,

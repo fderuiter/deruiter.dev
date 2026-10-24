@@ -3,6 +3,7 @@
   "label": "Trial Summary",
   "layer": "sdtm",
   "class": "Trial Design",
+  "structure": "One record per trial summary parameter value",
   "keys": ["STUDYID", "TSPARMCD", "TSSEQ"],
   "variables": [
     {
@@ -19,7 +20,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "DOMAIN"
     },
     {
       "name": "TSSEQ",

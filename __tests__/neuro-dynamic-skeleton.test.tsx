@@ -46,8 +46,12 @@ describe("NeuroRecon Dynamic Import & Skeleton Placeholder Suite", () => {
     vi.restoreAllMocks();
   });
 
-  it("initially renders the pulsing skeleton loading placeholder with exactly 460px height", async () => {
-    await act(async () => {
+  it("initially renders the pulsing skeleton loading placeholder with exactly 460px height", () => {
+    // A synchronous act() commits the first render without draining the
+    // microtask queue, so the dynamic viewer import cannot settle and replace
+    // the skeleton before the assertions run (#1571: under load it could
+    // inside an async act()).
+    act(() => {
       root = createRoot(container);
       root.render(<NeuroReconClient />);
     });

@@ -16,6 +16,10 @@ Ids the table builders look results up by.
 
 > `readonly` **agegr1**: `"AnlsGrouping_AGEGR1"` = `"AnlsGrouping_AGEGR1"`
 
+### atRiskDay
+
+> `readonly` **atRiskDay**: `"AnlsGrouping_ADTTE_ATRISK"` = `"AnlsGrouping_ADTTE_ATRISK"`
+
 ### cfbAval
 
 > `readonly` **cfbAval**: `"An_14_2_1_AVAL"` = `"An_14_2_1_AVAL"`
@@ -83,6 +87,70 @@ Ids the table builders look results up by.
 ### fas
 
 > `readonly` **fas**: `"AnalysisSet_FAS"` = `"AnalysisSet_FAS"`
+
+### km
+
+> `readonly` **km**: `"Mth_KM"` = `"Mth_KM"`
+
+### kmAtRisk
+
+> `readonly` **kmAtRisk**: `"An_14_2_2_ATRISK"` = `"An_14_2_2_ATRISK"`
+
+### kmCurve
+
+> `readonly` **kmCurve**: `"An_14_2_2_KM"` = `"An_14_2_2_KM"`
+
+### kmLcl
+
+> `readonly` **kmLcl**: `"Mth_KM_LCL"` = `"Mth_KM_LCL"`
+
+### kmLogRank
+
+> `readonly` **kmLogRank**: `"An_14_2_2_LOGRANK"` = `"An_14_2_2_LOGRANK"`
+
+### kmN
+
+> `readonly` **kmN**: `"An_14_2_2_N"` = `"An_14_2_2_N"`
+
+### kmNCens
+
+> `readonly` **kmNCens**: `"Mth_KM_NCENS"` = `"Mth_KM_NCENS"`
+
+### kmNEvent
+
+> `readonly` **kmNEvent**: `"Mth_KM_NEVENT"` = `"Mth_KM_NEVENT"`
+
+### kmNRisk
+
+> `readonly` **kmNRisk**: `"Mth_KM_NRISK"` = `"Mth_KM_NRISK"`
+
+### kmSe
+
+> `readonly` **kmSe**: `"Mth_KM_SE"` = `"Mth_KM_SE"`
+
+### kmSurv
+
+> `readonly` **kmSurv**: `"Mth_KM_SURV"` = `"Mth_KM_SURV"`
+
+### kmUcl
+
+> `readonly` **kmUcl**: `"Mth_KM_UCL"` = `"Mth_KM_UCL"`
+
+### logRank
+
+> `readonly` **logRank**: `"Mth_LogRank"` = `"Mth_LogRank"`
+
+### logRankChiSq
+
+> `readonly` **logRankChiSq**: `"Mth_LogRank_CHISQ"` = `"Mth_LogRank_CHISQ"`
+
+### logRankDf
+
+> `readonly` **logRankDf**: `"Mth_LogRank_DF"` = `"Mth_LogRank_DF"`
+
+### logRankP
+
+> `readonly` **logRankP**: `"Mth_LogRank_PVAL"` = `"Mth_LogRank_PVAL"`
 
 ### pt
 
@@ -163,6 +231,14 @@ Ids the table builders look results up by.
 ### trt01p
 
 > `readonly` **trt01p**: `"AnlsGrouping_TRT01P"` = `"AnlsGrouping_TRT01P"`
+
+### ttadisc
+
+> `readonly` **ttadisc**: `"Dss_TTADISC"` = `"Dss_TTADISC"`
+
+### tteTime
+
+> `readonly` **tteTime**: `"AnlsGrouping_ADTTE_AVAL"` = `"AnlsGrouping_ADTTE_AVAL"`
 
 ### visitAll
 

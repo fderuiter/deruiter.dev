@@ -6,9 +6,17 @@
 
 # Interface: TlfOutputs
 
-The analysis results of a run: the reporting event and its tables.
+The analysis results of a run: the reporting event, its tables and its figures.
 
 ## Properties
+
+### figures
+
+> `readonly` **figures**: readonly [`TlfKmFigure`](TlfKmFigure.md)[]
+
+The figures, in output order.
+
+***
 
 ### reportingEvent
 

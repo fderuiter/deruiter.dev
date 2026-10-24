@@ -9,7 +9,8 @@
 > **writeTlfFiles**(`outputs`): readonly [`PackageFile`](../../../export/package/interfaces/PackageFile.md)[]
 
 Every output of [buildTlfOutputs](buildTlfOutputs.md) as a file: each table as HTML and
-RTF, and the reporting event as JSON, all under [TLF\_OUTPUT\_DIR](../variables/TLF_OUTPUT_DIR.md).
+RTF, each figure as HTML (with its data tables) and SVG, and the reporting
+event as JSON, all under [TLF\_OUTPUT\_DIR](../variables/TLF_OUTPUT_DIR.md).
 Files are in path order and hold no timestamps.
 
 ## Parameters

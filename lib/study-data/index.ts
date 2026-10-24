@@ -136,3 +136,12 @@ export {
   ARS_REPORTING_EVENT_PATH,
   TLF_OUTPUT_DIR,
 } from "./internal/tlf/outputs";
+export {
+  chiSquareSurvival,
+  kaplanMeierEstimate,
+  logRankTest,
+  KM_CONFIDENCE_LEVEL,
+  NORMAL_QUANTILE_975,
+} from "./internal/tlf/km";
+export { formatPValue } from "./internal/tlf/km-evaluate";
+export { writeKmFigureHtml, writeKmFigureSvg } from "./internal/tlf/km-svg";

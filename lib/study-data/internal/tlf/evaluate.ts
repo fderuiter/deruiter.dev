@@ -1,7 +1,8 @@
 /**
  * The analysis engine: runs every analysis of a reporting plan against the
  * ADaM datasets of a run and records, for every result, the ADaM rows it was
- * computed from.
+ * computed from. Time-to-event methods are handed to `km-evaluate.ts` with
+ * the same populations, records and row sets.
  *
  * Populations come from ADSL through the analysis set and the subject-level
  * groupings, so every result links to the ADSL rows of its denominator
@@ -16,14 +17,14 @@ import type {
   ArsGroupingFactor,
   ArsOperationResult,
   ArsResultGroup,
-  ArsRowReference,
   ArsRowSet,
   CellValue,
   Dataset,
 } from "../../types";
+import { evaluateTimeToEvent, isTimeToEventMethod } from "./km-evaluate";
 import type { AnalysisSpec, ReportingPlan } from "./plan";
 import { IDS, SUMMARY_OPERATIONS } from "./plan";
-import { adamRowId } from "./row-ids";
+import { RowSetRegistry } from "./row-sets";
 import {
   descriptiveStatistics,
   formatDecimal,
@@ -68,34 +69,6 @@ function byId<T extends { readonly id: string }>(
     if (!item) throw new RangeError(`The plan has no ${kind} ${id}.`);
     return item;
   };
-}
-
-class RowSetRegistry {
-  private readonly sets: ArsRowSet[] = [];
-  private readonly byContent = new Map<string, string>();
-
-  reference(
-    dataset: Dataset,
-    rowIndexes: readonly number[],
-    role: ArsRowReference["role"]
-  ): ArsRowReference | null {
-    if (rowIndexes.length === 0) return null;
-    const rowIds = [...new Set(rowIndexes)]
-      .sort((a, b) => a - b)
-      .map((rowIndex) => adamRowId(dataset, rowIndex));
-    const key = `${dataset.name}\n${rowIds.join("\n")}`;
-    let id = this.byContent.get(key);
-    if (!id) {
-      id = `RowSet_${String(this.sets.length + 1).padStart(4, "0")}`;
-      this.byContent.set(key, id);
-      this.sets.push({ id, dataset: dataset.name, rowIds });
-    }
-    return { role, rowSetId: id };
-  }
-
-  all(): readonly ArsRowSet[] {
-    return this.sets;
-  }
 }
 
 function text(value: CellValue): string | null {
@@ -275,6 +248,24 @@ export function evaluateAnalyses(
       .filter((ordered) => ordered.resultsByGroup)
       .sort((a, b) => a.order - b.order)
       .map((ordered) => grouping(ordered.groupingId));
+    if (isTimeToEventMethod(spec.methodId)) {
+      const { precisionVariable: _unused, ...timeToEvent } = spec;
+      done.set(spec.id, {
+        ...timeToEvent,
+        results: evaluateTimeToEvent({
+          spec,
+          factors: [...spec.orderedGroupings]
+            .sort((a, b) => a.order - b.order)
+            .map((ordered) => grouping(ordered.groupingId)),
+          population,
+          records,
+          adsl,
+          data,
+          registry,
+        }),
+      });
+      continue;
+    }
     const rawDecimals =
       spec.methodId === IDS.summ
         ? inferDecimalPlaces(

@@ -685,8 +685,8 @@
       ],
       "notices": []
     },
-    "@clerk/backend@3.25.0": {
-      "integrity": "sha512-hmJS0a61FO08PDaV2MtZ/hj6pE+cQBRmpxR8oUFGQTXewOQLLOAbcgob0rmFAnMNuHgXfsYf3NVxcQCUOWE+QA==",
+    "@clerk/backend@3.26.2": {
+      "integrity": "sha512-IQAeEPmAy1QXzQULVYPf4yato8isGoI5XpoaJoCkV9GC+22w+GgSWP3gCJ3wcaPcSxeEHPkQck9sLwRsW7ZYTw==",
       "homepage": "https://clerk.com/",
       "repository": "git+https://github.com/clerk/javascript.git",
       "author": null,
@@ -699,8 +699,8 @@
       ],
       "notices": []
     },
-    "@clerk/nextjs@7.9.17": {
-      "integrity": "sha512-QA1CO6YZedpX0s04jx/rOg8AbptmPKxAhwd3xjYqufA3HF1IyR0DyBj+t53Btubpm5oCd1MhsFxOOwFlQmvahQ==",
+    "@clerk/nextjs@7.9.18": {
+      "integrity": "sha512-/H8TTCryF72gu+kyuQfMiyPXalSU07gJMBVdy2JsT8nn1JS+Dyh6+c7K/zz+e77lgXPOlSaT9gbfSfcbC7z3Dw==",
       "homepage": "https://clerk.com/",
       "repository": "git+https://github.com/clerk/javascript.git",
       "author": "Clerk",
@@ -713,8 +713,8 @@
       ],
       "notices": []
     },
-    "@clerk/react@6.17.8": {
-      "integrity": "sha512-sNeMe+5ArLshOJgNtqUGHb7cLHjDjRhumBHBN2ovg4uHpL49kQ2UfDUTtxpRUdMNikUg0Oc1CwzLFBlUv1umXA==",
+    "@clerk/react@6.18.1": {
+      "integrity": "sha512-vCd3qctGaBJ7p7bnf2SLI4ynweaDHqiEgXbFaPVHjY3kduG5uPzHAFE42VwJazXbV81P56rhus3BYna0D1l62g==",
       "homepage": "https://clerk.com/",
       "repository": "git+https://github.com/clerk/javascript.git",
       "author": "Clerk",
@@ -741,8 +741,8 @@
       ],
       "notices": []
     },
-    "@clerk/shared@4.40.0": {
-      "integrity": "sha512-80KM/uw5ZseYTKwJjIhJj7jsHqX6rFem6cwcFJVCUriE3R4tpzkhXsfbhtdho6cG2pQD3NVqKspxTVbSjATzPg==",
+    "@clerk/shared@4.41.1": {
+      "integrity": "sha512-qxy8bzGMV6EGuKqnfEVm/+f9yGncUyOJhxdbM10X52PoMiALJ5VOH+c3C427ETkupYalF81eBlg7aBH50AtbNA==",
       "homepage": "https://github.com/clerk/javascript#readme",
       "repository": "git+https://github.com/clerk/javascript.git",
       "author": "Clerk",
@@ -2481,8 +2481,8 @@
       ],
       "notices": []
     },
-    "@playwright/test@1.63.0": {
-      "integrity": "sha512-oxMK4vllB9RK5NQ2l1pq1IfOf2AvnEuj/vYGDj0H2nMtmtZpKtCwt/l00GEO6xjGfpBNAvjovvYdCm50dRQkpQ==",
+    "@playwright/test@1.64.1": {
+      "integrity": "sha512-IaYGml/nSOiZWROfPtuIL7neuu9qDOZ3TNvNljUIrhDMxiGTgPjzj/g9p9RxpS2tSepPDRY+UwAaEeiKtUvIAg==",
       "homepage": "https://playwright.dev",
       "repository": "git+https://github.com/microsoft/playwright.git",
       "author": "Microsoft Corporation",
@@ -5133,8 +5133,8 @@
       ],
       "notices": []
     },
-    "@upstash/qstash@2.12.0": {
-      "integrity": "sha512-LRFuMAqdDlVtCnDRLS00DM4lsE6JeP1A696lUcuUdWEXM9Sb1lhKYSuK2gHkG5VBxreR4QJNs909AGabAfSRdg==",
+    "@upstash/qstash@2.12.1": {
+      "integrity": "sha512-1Sq4k+PN0CsU0loQ/CbIlJfqCnbcyna8OJ0daVVVPzplSHEWS5VK1uTIl2HKZd7ViH3i/nCkhOg95wK2lJ8wdQ==",
       "homepage": "https://github.com/upstash/qstash-js#readme",
       "repository": "git+https://github.com/upstash/qstash-js.git",
       "author": "Andreas Thomas",
@@ -7069,8 +7069,8 @@
       ],
       "notices": []
     },
-    "dependency-cruiser@18.6.0": {
-      "integrity": "sha512-It7NW5AmCDBCLMq7I91Nfu8VRKzrIE6S+M/FMQzALDceJ0B1PWRHo77q9YJg/HwyBBEWHVtOuTptIQki+xecOw==",
+    "dependency-cruiser@18.7.0": {
+      "integrity": "sha512-WexT4OswA6Gy86ms2J7SJ4FJscN43dyS+i5skpbtXlPTFQW4yWbontjFip1TOBAVnc+U+9zdH0a56YTRZX/IGw==",
       "homepage": "https://github.com/sverweij/dependency-cruiser",
       "repository": "git+https://github.com/sverweij/dependency-cruiser.git",
       "author": "Sander Verweij",
@@ -7151,8 +7151,8 @@
       "licenses": [],
       "notices": []
     },
-    "docx@9.12.0": {
-      "integrity": "sha512-pRxdJP7cJpqhSxzfhlB01RToOFMAY7+QJ59zT2LowpXjS2q5fAnrvAuQIyGgkuBxTcXii0LFqM96GFjhQcTicQ==",
+    "docx@9.13.0": {
+      "integrity": "sha512-MofrvX7rzwCe1xUFXnwneQHzv2p1lIUIDPD01DueOnKGw+TSKxAAcK5Beo69bTyqKUYsX8d49Co03Bcntc60WQ==",
       "homepage": "https://docx.js.org",
       "repository": "git+https://github.com/dolanmiu/docx.git",
       "author": "Dolan Miu",
@@ -10784,8 +10784,8 @@
       ],
       "notices": []
     },
-    "playwright-core@1.63.0": {
-      "integrity": "sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==",
+    "playwright-core@1.64.1": {
+      "integrity": "sha512-BC4s8y6SEVA6Q1rSxZTto8hI1KUI3xXlHGZgvGqP4IqPdI/a6FX9H29IDNz7vKo9l21b6LfYosScPL6M3xxyDQ==",
       "homepage": "https://playwright.dev",
       "repository": "git+https://github.com/microsoft/playwright.git",
       "author": "Microsoft Corporation",
@@ -10800,8 +10800,8 @@
         "6d602191187b35b9b01d2cffa01c8469c2c8d9de8a96f1bf868e0f264f51c81d"
       ]
     },
-    "playwright@1.63.0": {
-      "integrity": "sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==",
+    "playwright@1.64.1": {
+      "integrity": "sha512-HCrVhHr5QQuwYoswEUGTb7gGp522yflbv/ST8nF4sFWGuLjQCt17Q/EubpGGSNKYn1tsTCPZxqHhHCfVURu7UA==",
       "homepage": "https://playwright.dev",
       "repository": "git+https://github.com/microsoft/playwright.git",
       "author": "Microsoft Corporation",
@@ -11114,10 +11114,10 @@
       ],
       "notices": []
     },
-    "react-dom@19.2.4": {
-      "integrity": "sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ==",
+    "react-dom@19.3.1": {
+      "integrity": "sha512-Y0bARz53lhEC1NMCASs0/j+faB/zqt3R8hpvg1e8+61ZVJ4UL0UdC4cBbXfZMcIuhrfgeILTLe+ZeBCavQPtKQ==",
       "homepage": "https://react.dev/",
-      "repository": "git+https://github.com/facebook/react.git",
+      "repository": "git+https://github.com/react/react.git",
       "author": null,
       "licenses": [
         {
@@ -11158,10 +11158,10 @@
       ],
       "notices": []
     },
-    "react@19.2.4": {
-      "integrity": "sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ==",
+    "react@19.3.1": {
+      "integrity": "sha512-QNhWdt7nrgVWWQG58QuGsAR3jv3Hbe4mb4vz7w2csnHavciZJgda1CPNaldF6eVxv90ud3jUXpKlHL69gO38yw==",
       "homepage": "https://react.dev/",
-      "repository": "git+https://github.com/facebook/react.git",
+      "repository": "git+https://github.com/react/react.git",
       "author": null,
       "licenses": [
         {
@@ -11537,20 +11537,6 @@
       ],
       "notices": []
     },
-    "sax@1.6.1": {
-      "integrity": "sha512-42tBVwLWnaQvW5zc4HbZrTuWccECCZfBi92FDuwtqxasH+JbPB3/FOKb1m222K42R4WxuxzzMsTswfzgtSu64Q==",
-      "homepage": "https://github.com/isaacs/sax-js#readme",
-      "repository": "git+ssh://git@github.com/isaacs/sax-js.git",
-      "author": "Isaac Z. Schlueter",
-      "licenses": [
-        {
-          "kind": "file",
-          "name": "LICENSE.md",
-          "sha": "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004"
-        }
-      ],
-      "notices": []
-    },
     "saxes@6.0.0": {
       "integrity": "sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==",
       "homepage": "https://github.com/lddubeau/saxes#readme",
@@ -11562,20 +11548,6 @@
           "name": "ISC",
           "sha": "10b3c732f4cb6977bd237d4168c30ffc6f10a029d0fb1883b979b66a0950f951",
           "holder": "Louis-Dominique Dubeau"
-        }
-      ],
-      "notices": []
-    },
-    "scheduler@0.27.0": {
-      "integrity": "sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==",
-      "homepage": "https://react.dev/",
-      "repository": "git+https://github.com/facebook/react.git",
-      "author": null,
-      "licenses": [
-        {
-          "kind": "file",
-          "name": "LICENSE",
-          "sha": "da6d3703ed11cbe42bd212c725957c98da23cbff1998c05fa4b3d976d1a58e93"
         }
       ],
       "notices": []
@@ -12282,8 +12254,8 @@
       ],
       "notices": []
     },
-    "three@0.185.1": {
-      "integrity": "sha512-5aojFCXKwnjBRZvUnt3WFfEcvUJgkN5LlijRFN95hMy8WVkG4I0QNcJE+OuWvuJ0bOdStrbfXn0pkd6/QyiAlg==",
+    "three@0.186.1": {
+      "integrity": "sha512-blFeqb49wRCSGUGj7gtpfnSGHy2lwDk94RhUmS1c/hTby70kvChbWpkJ4Pm1390LqzzvTmzgXKHPEafJwCb8jA==",
       "homepage": "https://threejs.org/",
       "repository": "git+https://github.com/mrdoob/three.js.git",
       "author": "mrdoob",
@@ -13003,20 +12975,6 @@
       ],
       "notices": []
     },
-    "xml-js@1.6.11": {
-      "integrity": "sha512-7rVi2KMfwfWFl+GpPg6m80IVMWXLRjO+PxTq7V2CDhoGak0wzYzFgUY2m4XJ47OGdXd8eLE8EmwfAmdjw7lC1g==",
-      "homepage": "https://github.com/nashwaan/xml-js#readme",
-      "repository": "git+https://github.com/nashwaan/xml-js.git",
-      "author": "Yousuf Almarzooqi",
-      "licenses": [
-        {
-          "kind": "file",
-          "name": "LICENSE",
-          "sha": "8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088"
-        }
-      ],
-      "notices": []
-    },
     "xml-name-validator@5.0.0": {
       "integrity": "sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==",
       "homepage": "https://github.com/jsdom/xml-name-validator#readme",
@@ -13027,20 +12985,6 @@
           "kind": "file",
           "name": "LICENSE.txt",
           "sha": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9"
-        }
-      ],
-      "notices": []
-    },
-    "xml@1.0.1": {
-      "integrity": "sha512-huCv9IH9Tcf95zuYCsQraZtWnJvBtLVE0QHMOs8bWyZAFZNDcYjsPq1nEx8jKA9y+Beo9v+7OBPRisQTjinQMw==",
-      "homepage": "http://github.com/dylang/node-xml",
-      "repository": "git+ssh://git@github.com/dylang/node-xml.git",
-      "author": "Dylan Greene",
-      "licenses": [
-        {
-          "kind": "file",
-          "name": "LICENSE",
-          "sha": "d2b3e2f62078f282f21a8c5119a44cc7313fe6aa4a22094c8ad93f4b577b7901"
         }
       ],
       "notices": []
@@ -13354,7 +13298,6 @@
     "89591d4578fb1ebd91501312a3d25f021bd865a2e436641c1cf7b1bc7e3c1617": "# Eclipse Public License - v 2.0\n\nTHE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE\nPUBLIC LICENSE (“AGREEMENT”). ANY USE, REPRODUCTION OR DISTRIBUTION OF\nTHE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.\n\n## 1. DEFINITIONS\n\n“Contribution” means:\n\n-   a\\) in the case of the initial Contributor, the initial content\n    Distributed under this Agreement, and\n-   b\\) in the case of each subsequent Contributor:\n    -   i\\) changes to the Program, and\n    -   ii\\) additions to the Program;\n\n    where such changes and/or additions to the Program originate from\n    and are Distributed by that particular Contributor. A Contribution\n    “originates” from a Contributor if it was added to the Program by\n    such Contributor itself or anyone acting on such Contributor's\n    behalf. Contributions do not include changes or additions to the\n    Program that are not Modified Works.\n\n“Contributor” means any person or entity that Distributes the Program.\n\n“Licensed Patents” mean patent claims licensable by a Contributor which\nare necessarily infringed by the use or sale of its Contribution alone\nor when combined with the Program.\n\n“Program” means the Contributions Distributed in accordance with this\nAgreement.\n\n“Recipient” means anyone who receives the Program under this Agreement\nor any Secondary License (as applicable), including Contributors.\n\n“Derivative Works” shall mean any work, whether in Source Code or other\nform, that is based on (or derived from) the Program and for which the\neditorial revisions, annotations, elaborations, or other modifications\nrepresent, as a whole, an original work of authorship.\n\n“Modified Works” shall mean any work in Source Code or other form that\nresults from an addition to, deletion from, or modification of the\ncontents of the Program, including, for purposes of clarity any new file\nin Source Code form that contains any contents of the Program. Modified\nWorks shall not include works that contain only declarations,\ninterfaces, types, classes, structures, or files of the Program solely\nin each case in order to link to, bind by name, or subclass the Program\nor Modified Works thereof.\n\n“Distribute” means the acts of a) distributing or b) making available in\nany manner that enables the transfer of a copy.\n\n“Source Code” means the form of a Program preferred for making\nmodifications, including but not limited to software source code,\ndocumentation source, and configuration files.\n\n“Secondary License” means either the GNU General Public License, Version\n2.0, or any later versions of that license, including any exceptions or\nadditional permissions as identified by the initial Contributor.\n\n## 2. GRANT OF RIGHTS\n\n-   a\\) Subject to the terms of this Agreement, each Contributor hereby\n    grants Recipient a non-exclusive, worldwide, royalty-free copyright\n    license to reproduce, prepare Derivative Works of, publicly display,\n    publicly perform, Distribute and sublicense the Contribution of such\n    Contributor, if any, and such Derivative Works.\n-   b\\) Subject to the terms of this Agreement, each Contributor hereby\n    grants Recipient a non-exclusive, worldwide, royalty-free patent license\n    under Licensed Patents to make, use, sell, offer to sell, import and\n    otherwise transfer the Contribution of such Contributor, if any, in\n    Source Code or other form. This patent license shall apply to the\n    combination of the Contribution and the Program if, at the time the\n    Contribution is added by the Contributor, such addition of the\n    Contribution causes such combination to be covered by the\n    Licensed Patents. The patent license shall not apply to any other\n    combinations which include the Contribution. No hardware per se is\n    licensed hereunder.\n-   c\\) Recipient understands that although each Contributor grants the\n    licenses to its Contributions set forth herein, no assurances are\n    provided by any Contributor that the Program does not infringe the\n    patent or other intellectual property rights of any other entity. Each\n    Contributor disclaims any liability to Recipient for claims brought by\n    any other entity based on infringement of intellectual property rights\n    or otherwise. As a condition to exercising the rights and licenses\n    granted hereunder, each Recipient hereby assumes sole responsibility to\n    secure any other intellectual property rights needed, if any. For\n    example, if a third party patent license is required to allow Recipient\n    to Distribute the Program, it is Recipient's responsibility to acquire\n    that license before distributing the Program.\n-   d\\) Each Contributor represents that to its knowledge it has sufficient\n    copyright rights in its Contribution, if any, to grant the copyright\n    license set forth in this Agreement.\n-   e\\) Notwithstanding the terms of any Secondary License, no Contributor\n    makes additional grants to any Recipient (other than those set forth in\n    this Agreement) as a result of such Recipient's receipt of the Program\n    under the terms of a Secondary License (if permitted under the terms of\n    Section 3).\n\n## 3. REQUIREMENTS\n\n3.1 If a Contributor Distributes the Program in any form, then:\n\n-   a\\) the Program must also be made available as Source Code, in accordance\n    with section 3.2, and the Contributor must accompany the Program with a\n    statement that the Source Code for the Program is available under this\n    Agreement, and informs Recipients how to obtain it in a reasonable\n    manner on or through a medium customarily used for software exchange;\n    and\n-   b\\) the Contributor may Distribute the Program under a license different\n    than this Agreement, provided that such license:\n    -   i\\) effectively disclaims on behalf of all other Contributors all\n        warranties and conditions, express and implied, including warranties or\n        conditions of title and non-infringement, and implied warranties or\n        conditions of merchantability and fitness for a particular purpose;\n    -   ii\\) effectively excludes on behalf of all other Contributors all\n        liability for damages, including direct, indirect, special, incidental\n        and consequential damages, such as lost profits;\n    -   iii\\) does not attempt to limit or alter the recipients' rights in the\n        Source Code under section 3.2; and\n    -   iv\\) requires any subsequent distribution of the Program by any party to\n        be under a license that satisfies the requirements of this section 3.\n\n3.2 When the Program is Distributed as Source Code:\n\n-   a\\) it must be made available under this Agreement, or if the Program (i)\n    is combined with other material in a separate file or files made\n    available under a Secondary License, and (ii) the initial Contributor\n    attached to the Source Code the notice described in Exhibit A of this\n    Agreement, then the Program may be made available under the terms of\n    such Secondary Licenses, and\n-   b\\) a copy of this Agreement must be included with each copy of\n    the Program.\n\n3.3 Contributors may not remove or alter any copyright, patent,\ntrademark, attribution notices, disclaimers of warranty, or limitations\nof liability (‘notices’) contained within the Program from any copy of\nthe Program which they Distribute, provided that Contributors may add\ntheir own appropriate notices.\n\n## 4. COMMERCIAL DISTRIBUTION\n\nCommercial distributors of software may accept certain responsibilities\nwith respect to end users, business partners and the like. While this\nlicense is intended to facilitate the commercial use of the Program, the\nContributor who includes the Program in a commercial product offering\nshould do so in a manner which does not create potential liability for\nother Contributors. Therefore, if a Contributor includes the Program in\na commercial product offering, such Contributor (“Commercial\nContributor”) hereby agrees to defend and indemnify every other\nContributor (“Indemnified Contributor”) against any losses, damages and\ncosts (collectively “Losses”) arising from claims, lawsuits and other\nlegal actions brought by a third party against the Indemnified\nContributor to the extent caused by the acts or omissions of such\nCommercial Contributor in connection with its distribution of the\nProgram in a commercial product offering. The obligations in this\nsection do not apply to any claims or Losses relating to any actual or\nalleged intellectual property infringement. In order to qualify, an\nIndemnified Contributor must: a) promptly notify the Commercial\nContributor in writing of such claim, and b) allow the Commercial\nContributor to control, and cooperate with the Commercial Contributor\nin, the defense and any related settlement negotiations. The Indemnified\nContributor may participate in any such claim at its own expense.\n\nFor example, a Contributor might include the Program in a commercial\nproduct offering, Product X. That Contributor is then a Commercial\nContributor. If that Commercial Contributor then makes performance\nclaims, or offers warranties related to Product X, those performance\nclaims and warranties are such Commercial Contributor's responsibility\nalone. Under this section, the Commercial Contributor would have to\ndefend claims against the other Contributors related to those\nperformance claims and warranties, and if a court requires any other\nContributor to pay any damages as a result, the Commercial Contributor\nmust pay those damages.\n\n## 5. NO WARRANTY {#warranty}\n\nEXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, AND TO THE EXTENT\nPERMITTED BY APPLICABLE LAW, THE PROGRAM IS PROVIDED ON AN “AS IS”\nBASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, EITHER EXPRESS OR\nIMPLIED INCLUDING, WITHOUT LIMITATION, ANY WARRANTIES OR CONDITIONS OF\nTITLE, NON-INFRINGEMENT, MERCHANTABILITY OR FITNESS FOR A PARTICULAR\nPURPOSE. Each Recipient is solely responsible for determining the\nappropriateness of using and distributing the Program and assumes all\nrisks associated with its exercise of rights under this Agreement,\nincluding but not limited to the risks and costs of program errors,\ncompliance with applicable laws, damage to or loss of data, programs or\nequipment, and unavailability or interruption of operations.\n\n## 6. DISCLAIMER OF LIABILITY {#disclaimer}\n\nEXCEPT AS EXPRESSLY SET FORTH IN THIS AGREEMENT, AND TO THE EXTENT\nPERMITTED BY APPLICABLE LAW, NEITHER RECIPIENT NOR ANY CONTRIBUTORS\nSHALL HAVE ANY LIABILITY FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,\nEXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING WITHOUT LIMITATION LOST\nPROFITS), HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN\nCONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)\nARISING IN ANY WAY OUT OF THE USE OR DISTRIBUTION OF THE PROGRAM OR THE\nEXERCISE OF ANY RIGHTS GRANTED HEREUNDER, EVEN IF ADVISED OF THE\nPOSSIBILITY OF SUCH DAMAGES.\n\n## 7. GENERAL\n\nIf any provision of this Agreement is invalid or unenforceable under\napplicable law, it shall not affect the validity or enforceability of\nthe remainder of the terms of this Agreement, and without further action\nby the parties hereto, such provision shall be reformed to the minimum\nextent necessary to make such provision valid and enforceable.\n\nIf Recipient institutes patent litigation against any entity (including\na cross-claim or counterclaim in a lawsuit) alleging that the Program\nitself (excluding combinations of the Program with other software or\nhardware) infringes such Recipient's patent(s), then such Recipient's\nrights granted under Section 2(b) shall terminate as of the date such\nlitigation is filed.\n\nAll Recipient's rights under this Agreement shall terminate if it fails\nto comply with any of the material terms or conditions of this Agreement\nand does not cure such failure in a reasonable period of time after\nbecoming aware of such noncompliance. If all Recipient's rights under\nthis Agreement terminate, Recipient agrees to cease use and distribution\nof the Program as soon as reasonably practicable. However, Recipient's\nobligations under this Agreement and any licenses granted by Recipient\nrelating to the Program shall continue and survive.\n\nEveryone is permitted to copy and distribute copies of this Agreement,\nbut in order to avoid inconsistency the Agreement is copyrighted and may\nonly be modified in the following manner. The Agreement Steward reserves\nthe right to publish new versions (including revisions) of this\nAgreement from time to time. No one other than the Agreement Steward has\nthe right to modify this Agreement. The Eclipse Foundation is the\ninitial Agreement Steward. The Eclipse Foundation may assign the\nresponsibility to serve as the Agreement Steward to a suitable separate\nentity. Each new version of the Agreement will be given a distinguishing\nversion number. The Program (including Contributions) may always be\nDistributed subject to the version of the Agreement under which it was\nreceived. In addition, after a new version of the Agreement is\npublished, Contributor may elect to Distribute the Program (including\nits Contributions) under the new version.\n\nExcept as expressly stated in Sections 2(a) and 2(b) above, Recipient\nreceives no rights or licenses to the intellectual property of any\nContributor under this Agreement, whether expressly, by implication,\nestoppel or otherwise. All rights in the Program not expressly granted\nunder this Agreement are reserved. Nothing in this Agreement is intended\nto be enforceable by any entity that is not a Contributor or Recipient.\nNo third-party beneficiary rights are created under this Agreement.\n\n## Exhibit A – Form of Secondary Licenses Notice {#exhibit-a}\n\n“This Source Code may also be made available under the following\nSecondary Licenses when the conditions for such availability set forth\nin the Eclipse Public License, v. 2.0 are satisfied: {name license(s),\nversion(s), and exceptions or additional permissions here}.”\n\n> Simply including a copy of this Agreement, including this Exhibit A is\n> not sufficient to license the Source Code under Secondary Licenses.\n>\n> If it is not possible or desirable to put the notice in a particular\n> file, then You may include the notice in a location (such as a LICENSE\n> file in a relevant directory) where a recipient would be likely to\n> look for such a notice.\n>\n> You may add additional accurate notices of copyright ownership.\n",
     "8a1af140fdfbf5afd3df27f7e662f989c5b963a300020dfafce42033cae9e004": "# Blue Oak Model License\n\nVersion 1.0.0\n\n## Purpose\n\nThis license gives everyone as much permission to work with\nthis software as possible, while protecting contributors\nfrom liability.\n\n## Acceptance\n\nIn order to receive this license, you must agree to its\nrules.  The rules of this license are both obligations\nunder that agreement and conditions to your license.\nYou must not do anything with this software that triggers\na rule that you cannot or will not follow.\n\n## Copyright\n\nEach contributor licenses you to do everything with this\nsoftware that would otherwise infringe that contributor's\ncopyright in it.\n\n## Notices\n\nYou must ensure that everyone who gets a copy of\nany part of this software from you, with or without\nchanges, also gets the text of this license or a link to\n<https://blueoakcouncil.org/license/1.0.0>.\n\n## Excuse\n\nIf anyone notifies you in writing that you have not\ncomplied with [Notices](#notices), you can keep your\nlicense by taking all practical steps to comply within 30\ndays after the notice.  If you do not do so, your license\nends immediately.\n\n## Patent\n\nEach contributor licenses you to do everything with this\nsoftware that would otherwise infringe any patent claims\nthey can license or become able to license.\n\n## Reliability\n\nNo contributor can revoke this license.\n\n## No Liability\n\n***As far as the law allows, this software comes as is,\nwithout any warranty or condition, and no contributor\nwill be liable to anyone for any damages related to this\nsoftware or this license, under any kind of legal claim.***\n",
     "8a6dcbabe7179f9c8489c08a7d874d0f1e093ae7449e03756ccf87cb9d0e296e": "Copyright (c) 2015-20 [these people](https://github.com/Rich-Harris/estree-walker/graphs/contributors)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
-    "8ada61091ef0ef154a69321483e5ffadf5c50693ca945047ffb90a6b4b12b088": "The MIT License (MIT)\r\n\r\nCopyright (c) 2016-2017 Yousuf Almarzooqi\r\n\r\nPermission is hereby granted, free of charge, to any person obtaining a copy\r\nof this software and associated documentation files (the \"Software\"), to deal\r\nin the Software without restriction, including without limitation the rights\r\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\r\ncopies of the Software, and to permit persons to whom the Software is\r\nfurnished to do so, subject to the following conditions:\r\n\r\nThe above copyright notice and this permission notice shall be included in all\r\ncopies or substantial portions of the Software.\r\n\r\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\r\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\r\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\r\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\r\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\r\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\r\nSOFTWARE.",
     "8b00952cd8d0f5cbbefb13576778e1185dc963943151353d90c4e14a5a4caf40": "Copyright (c) 2021 Niklas von Hertzen\n\nPermission is hereby granted, free of charge, to any person\nobtaining a copy of this software and associated documentation\nfiles (the \"Software\"), to deal in the Software without\nrestriction, including without limitation the rights to use,\ncopy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the\nSoftware is furnished to do so, subject to the following\nconditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES\nOF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\nNONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT\nHOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,\nWHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\nFROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR\nOTHER DEALINGS IN THE SOFTWARE.",
     "8b378ebe60e2fe500158cb0ac71cb5e8b7d92953c2abcc63a0eb90499653b5bc": "The MIT License\n\nCopyright © 2010-2026 three.js authors\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n",
     "8bb16db1b047019e4395965f2cf3611b06c34bf86dc2d0210b3c3f91b53c21fe": "The MIT License\n\nCopyright (c) 2013 James Halliday (mail@substack.net)\n\nPermission is hereby granted, free of charge, \nto any person obtaining a copy of this software and \nassociated documentation files (the \"Software\"), to \ndeal in the Software without restriction, including \nwithout limitation the rights to use, copy, modify, \nmerge, publish, distribute, sublicense, and/or sell \ncopies of the Software, and to permit persons to whom \nthe Software is furnished to do so, \nsubject to the following conditions:\n\nThe above copyright notice and this permission notice \nshall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, \nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES \nOF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. \nIN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR \nANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, \nTORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE \nSOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.",
@@ -13433,7 +13376,6 @@
     "d00d032f517721b45c56c70c46bf904ebb71ad313df4d4db7722266b38069665": "The MIT License (MIT)\n\nCopyright 2022 Romain Menke, Antonio Laguna <antonio@laguna.es>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of\nthis software and associated documentation files (the \"Software\"), to deal in\nthe Software without restriction, including without limitation the rights to\nuse, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of\nthe Software, and to permit persons to whom the Software is furnished to do so,\nsubject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS\nFOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR\nCOPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER\nIN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN\nCONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n",
     "d01eb84ccce437dbf5fd40853bceea0f287930920acea066597a4a25ead63858": "Original dagre-d3 copyright: Copyright (c) 2013 Chris Pettitt\nOriginal dagre copyright: Copyright (c) 2012-2014 Chris Pettitt\nOriginal graphlib copyright: Copyright (c) 2012-2014 Chris Pettitt\n\nCopyright (c) 2022-2024 Thibaut Lassalle, David Newell, Alois Klink, Sidharth Vinod and dagre-es contributors\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n",
     "d0cd141b0c322fded5dfad1d4645bb2fedfc05b7321fe1009469638190d59ef9": "The MIT License (MIT)\n\nCopyright (c) 2017-present, Jon Schlinkert.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\nTHE SOFTWARE.\n",
-    "d2b3e2f62078f282f21a8c5119a44cc7313fe6aa4a22094c8ad93f4b577b7901": "(The MIT License)\n\nCopyright (c) 2011-2016 Dylan Greene <dylang@gmail.com>\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n'Software'), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\nIN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\nCLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\nTORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\nSOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n",
     "d2d9ce3d07931cf6c105b8c70638b768b07d3c21bb682c7ef89ac43caba13043": "The MIT License (MIT)\n\nCopyright (c) 2014 Andrey Sidorov\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
     "d374061c40bfb6f99c5033290caefda97a9b3e7e477e5ee02f487143ef2177e8": "The MIT License (MIT)\n\nCopyright (c) 2023 Yokozuna59\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n",
     "d37af134e0d0b998393188394202052e2ff6cd5d18efb2fcc81ba7b00ad77b75": "MIT License\n\nCopyright (c) Pooya Parsa <pooya@pi0.io>\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to deal\nin the Software without restriction, including without limitation the rights\nto use, copy, modify, merge, publish, distribute, sublicense, and/or sell\ncopies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all\ncopies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\nOUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\nSOFTWARE.\n\n---\n\nThis is a derivative work based on:\n<https://github.com/unjs/mlly>.\n\n---\n\nThis is a derivative work based on:\n<https://github.com/wooorm/import-meta-resolve>.\n\nWhich is licensed:\n\n\"\"\"\n(The MIT License)\n\nCopyright (c) 2021 Titus Wormer <mailto:tituswormer@gmail.com>\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n'Software'), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\nIN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY\nCLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,\nTORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE\nSOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\"\"\"\n\n---\n\nThis is a derivative work based on:\n<https://github.com/nodejs/node>.\n\nWhich is licensed:\n\n\"\"\"\nCopyright Node.js contributors. All rights reserved.\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to\ndeal in the Software without restriction, including without limitation the\nrights to use, copy, modify, merge, publish, distribute, sublicense, and/or\nsell copies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\nFROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n\"\"\"\n\nThis license applies to parts of Node.js originating from the\nhttps://github.com/joyent/node repository:\n\n\"\"\"\nCopyright Joyent, Inc. and other Node contributors. All rights reserved.\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software and associated documentation files (the \"Software\"), to\ndeal in the Software without restriction, including without limitation the\nrights to use, copy, modify, merge, publish, distribute, sublicense, and/or\nsell copies of the Software, and to permit persons to whom the Software is\nfurnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in\nall copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\nIMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\nFITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\nAUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\nLIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING\nFROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS\nIN THE SOFTWARE.\n\"\"\"\n",

@@ -42,7 +42,44 @@ export type DuckAccessory =
   | "bowtie"
   | "bandana"
   | "rain-boots"
-  | "graduation-hat";
+  | "graduation-hat"
+  | "duck-costume"
+  | "witch-hat"
+  | "vampire-cape";
+
+/**
+ * Halloween costumes (#2737). They are free to wear while Halloween mode is
+ * on, need no unlock and carry no perk, so a costumed sprint plays exactly
+ * like a bare-coated one. Whether Halloween mode is on is a presentation
+ * preference the caller owns; the engine only knows which wearables are
+ * costumes.
+ */
+export const DUCK_HALLOWEEN_COSTUMES = [
+  "duck-costume",
+  "witch-hat",
+  "vampire-cape",
+] as const satisfies readonly DuckAccessory[];
+
+/** A Halloween costume, as opposed to an earned accessory. */
+export type DuckHalloweenCostume = (typeof DUCK_HALLOWEEN_COSTUMES)[number];
+
+/** True when `accessory` is one of the Halloween costumes. */
+export function isHalloweenCostume(
+  accessory: DuckAccessory
+): accessory is DuckHalloweenCostume {
+  return (DUCK_HALLOWEEN_COSTUMES as readonly DuckAccessory[]).includes(
+    accessory
+  );
+}
+
+/**
+ * Whether `date` falls in Halloween season, the whole of October in the
+ * player's local calendar. Halloween mode follows this until the player
+ * picks a side.
+ */
+export function isHalloweenSeason(date: Date): boolean {
+  return date.getMonth() === 9;
+}
 
 export type DuckMood =
   | "happy"
@@ -2798,7 +2835,13 @@ export function equipAccessory(
   state: WorkingWithDuckState,
   accessory: DuckAccessory
 ): WorkingWithDuckState {
-  if (!state.unlockedAccessories.includes(accessory)) return state;
+  // Costumes need no unlock (#2737); everything else must be earned.
+  if (
+    !isHalloweenCostume(accessory) &&
+    !state.unlockedAccessories.includes(accessory)
+  ) {
+    return state;
+  }
 
   return {
     ...state,
@@ -3696,15 +3739,15 @@ export function advanceToNextLevel(
   // Progression must resume simulation immediately: callers advance from a
   // terminal "won" state and rely on this returning a "running" state so the
   // next tick actually progresses instead of sitting idle. Duck keeps what
-  // he is wearing into the next sprint.
+  // he is wearing into the next sprint, costumes included (#2737).
   return {
     ...nextState,
     status: "running",
-    activeAccessory: nextState.unlockedAccessories.includes(
-      state.activeAccessory
-    )
-      ? state.activeAccessory
-      : "none",
+    activeAccessory:
+      isHalloweenCostume(state.activeAccessory) ||
+      nextState.unlockedAccessories.includes(state.activeAccessory)
+        ? state.activeAccessory
+        : "none",
   };
 }
 

@@ -87,6 +87,7 @@ import {
   endlessQuarterLabel,
   endlessQuartersSurvived,
   isDuckHiccuping,
+  isHalloweenCostume,
   createInitialDuckGameState,
   stepDuckGame,
   startDraggingDuck,
@@ -125,8 +126,16 @@ import {
 import {
   drawDuck,
   drawOfficeScene,
+  prefersReducedMotion,
 } from "@/components/working-with-duck/office-art";
 import { drawBathtubScene } from "@/components/working-with-duck/bath-art";
+import { drawHalloweenPark } from "@/components/working-with-duck/halloween-art";
+import {
+  getHalloweenServerSnapshot,
+  getHalloweenSnapshot,
+  setHalloweenMode,
+  subscribeHalloween,
+} from "@/components/working-with-duck/halloween";
 
 /** Stage height the guided tip needs above the room in the touch cabinet, two or three lines. */
 const TOUCH_TIP_BAND_PX = 80;
@@ -278,15 +287,47 @@ const WARDROBE: ReadonlyArray<{
   },
 ];
 
+/**
+ * Halloween costumes (#2737), shown in the wardrobe while Halloween mode is
+ * on. They need no unlock and carry no perk.
+ */
+const COSTUMES: ReadonlyArray<{
+  id: DuckAccessory;
+  name: string;
+  desc: string;
+  icon: string;
+}> = [
+  {
+    id: "duck-costume",
+    name: "Duck Costume",
+    desc: "A Duck dressed as a duck · Bill, wings and webbed booties",
+    icon: "🦆",
+  },
+  {
+    id: "witch-hat",
+    name: "Witch Hat",
+    desc: "Crooked, pointy and full of treat spells",
+    icon: "🧙",
+  },
+  {
+    id: "vampire-cape",
+    name: "Vampire Cape",
+    desc: "Vants to chew your squeaky toy",
+    icon: "🧛",
+  },
+];
+
 const ACCESSORIES_KEY = "working_with_duck_accessories";
 const BEST_STARS_KEY = "working_with_duck_best_stars";
 
 const isAccessory = (value: unknown): value is DuckAccessory =>
-  WARDROBE.some((item) => item.id === value);
+  WARDROBE.some((item) => item.id === value) ||
+  COSTUMES.some((item) => item.id === value);
 
 // Unlocked and equipped accessories carry across sessions (#2050). A
 // missing, malformed or inaccessible entry falls back to the defaults, and
 // unknown ids are dropped; createInitialDuckGameState adds the sprint's own.
+// A costume needs no unlock, so it stays on while Halloween mode is on.
 const getStoredAccessories = (): {
   unlocked: DuckAccessory[] | undefined;
   equipped: DuckAccessory;
@@ -302,7 +343,11 @@ const getStoredAccessories = (): {
     return {
       unlocked: valid,
       equipped:
-        isAccessory(equipped) && valid.includes(equipped) ? equipped : "none",
+        isAccessory(equipped) &&
+        (valid.includes(equipped) ||
+          (isHalloweenCostume(equipped) && getHalloweenSnapshot()))
+          ? equipped
+          : "none",
     };
   } catch {
     return fallback;
@@ -336,7 +381,8 @@ function drawDogParkScene(
   ctx: CanvasRenderingContext2D,
   state: WorkingWithDuckState,
   aimParkStart: { x: number; y: number } | null = null,
-  touchHints = false
+  touchHints = false,
+  halloween = false
 ) {
   const park = state.parkState;
 
@@ -356,6 +402,11 @@ function drawDogParkScene(
       ctx.lineTo(gx + 4, gy - 10);
       ctx.stroke();
     }
+  }
+
+  // Halloween pumpkin patch along the bottom edge (#2737)
+  if (halloween) {
+    drawHalloweenPark(ctx, state.ticks, prefersReducedMotion());
   }
 
   // 2. Mud Puddles
@@ -607,21 +658,23 @@ function drawCanvas(
   state: WorkingWithDuckState,
   aimParkStart: { x: number; y: number } | null = null,
   scale = 1,
-  touchHints = false
+  touchHints = false,
+  halloween = false
 ) {
   ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
   if (state.inDogPark) {
-    drawDogParkScene(ctx, state, aimParkStart, touchHints);
+    drawDogParkScene(ctx, state, aimParkStart, touchHints, halloween);
     return;
   }
 
+  // Costumes come off for the bath, so the tub stays as it is.
   if (state.inBathtub) {
     drawBathtubScene(ctx, state);
     return;
   }
 
-  drawOfficeScene(ctx, state, scale, touchHints);
+  drawOfficeScene(ctx, state, scale, touchHints, halloween);
 }
 
 // --- Main React Component ---
@@ -1151,6 +1204,18 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
   const { playNote, muted, setMuted } = useAudio();
   const { recordEvent } = useTelemetry();
 
+  // Halloween mode (#2737): the canvas reads it through a ref, the
+  // wardrobe through the snapshot.
+  const halloween = useSyncExternalStore(
+    subscribeHalloween,
+    getHalloweenSnapshot,
+    getHalloweenServerSnapshot
+  );
+  const halloweenRef = useRef(halloween);
+  useEffect(() => {
+    halloweenRef.current = halloween;
+  }, [halloween]);
+
   const createDefaultState = () => {
     const accessories = getStoredAccessories();
     const state = createInitialDuckGameState(
@@ -1257,6 +1322,57 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
     },
     [applyTransition, dispatchCommand]
   );
+
+  // Turning Halloween mode off takes a costume off with it (#2737).
+  const handleToggleHalloween = useCallback(() => {
+    const next = !halloween;
+    setHalloweenMode(next);
+    if (!next && isHalloweenCostume(uiState.activeAccessory)) {
+      handleEquipAccessory("none");
+    }
+  }, [halloween, uiState.activeAccessory, handleEquipAccessory]);
+
+  /** One wardrobe row: an accessory or a costume, as a radio. */
+  const renderWardrobeItem = (
+    acc: { id: DuckAccessory; name: string; desc: string; icon: string },
+    isUnlocked: boolean
+  ) => {
+    const isSelected = uiState.activeAccessory === acc.id;
+    return (
+      <button
+        key={acc.id}
+        disabled={!isUnlocked}
+        onClick={() => handleEquipAccessory(acc.id)}
+        aria-checked={isSelected}
+        role="radio"
+        className={`w-full p-2.5 sm:p-3 rounded-2xl border text-left flex items-center justify-between transition-all min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
+          isSelected
+            ? "border-brand-cyan bg-brand-cyan/15 text-white shadow-md"
+            : isUnlocked
+              ? "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-600"
+              : "border-zinc-800/50 bg-zinc-900/30 text-zinc-600 cursor-not-allowed opacity-50"
+        }`}
+      >
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <span className="text-xl sm:text-2xl shrink-0">{acc.icon}</span>
+          <div>
+            <div className="text-xs font-bold flex items-center gap-2">
+              <span>{acc.name}</span>
+              {!isUnlocked && (
+                <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-[9px] text-zinc-400">
+                  Locked
+                </span>
+              )}
+            </div>
+            <div className="text-[10px] text-zinc-400">{acc.desc}</div>
+          </div>
+        </div>
+        {isSelected && (
+          <IconCheck className="w-4 h-4 text-brand-cyan shrink-0" />
+        )}
+      </button>
+    );
+  };
 
   // The briefing's Start button, whether it takes focus when it next opens,
   // and when it opened (#2160).
@@ -1544,7 +1660,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
         gameStateRef.current,
         aimParkStartRef.current,
         scale,
-        canvasTouchRef.current
+        canvasTouchRef.current,
+        halloweenRef.current
       );
     },
   });
@@ -1965,7 +2082,8 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
             gameStateRef.current,
             aimParkStartRef.current,
             scale,
-            canvasTouchRef.current
+            canvasTouchRef.current,
+            halloweenRef.current
           );
         }
       }
@@ -4299,50 +4417,74 @@ export const WorkingWithDuck: React.FC<WorkingWithDuckProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 sm:gap-2.5">
-              {WARDROBE.map((acc) => {
-                const isUnlocked = uiState.unlockedAccessories.includes(acc.id);
-                const isSelected = uiState.activeAccessory === acc.id;
+            <div
+              role="radiogroup"
+              aria-label="Accessories"
+              className="grid grid-cols-1 gap-2 sm:gap-2.5"
+            >
+              {WARDROBE.map((acc) =>
+                renderWardrobeItem(
+                  acc,
+                  uiState.unlockedAccessories.includes(acc.id)
+                )
+              )}
+            </div>
 
-                return (
-                  <button
-                    key={acc.id}
-                    disabled={!isUnlocked}
-                    onClick={() => handleEquipAccessory(acc.id)}
-                    aria-checked={isSelected}
-                    role="radio"
-                    className={`w-full p-2.5 sm:p-3 rounded-2xl border text-left flex items-center justify-between transition-all min-h-[48px] min-w-[44px] cursor-pointer touch-manipulation select-none active:scale-95 ${
-                      isSelected
-                        ? "border-brand-cyan bg-brand-cyan/15 text-white shadow-md"
-                        : isUnlocked
-                          ? "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-600"
-                          : "border-zinc-800/50 bg-zinc-900/30 text-zinc-600 cursor-not-allowed opacity-50"
-                    }`}
+            {/* Halloween mode and its costumes (#2737) */}
+            <div className="mt-4 sm:mt-5 border-t border-zinc-800 pt-4">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={halloween}
+                onClick={handleToggleHalloween}
+                className={`w-full min-h-12 p-2.5 sm:p-3 rounded-2xl border text-left flex items-center justify-between gap-3 cursor-pointer touch-manipulation select-none active:scale-[0.98] transition-colors ${
+                  halloween
+                    ? "border-orange-500/60 bg-orange-500/10 text-white"
+                    : "border-zinc-800 bg-zinc-900 text-zinc-300 hover:border-zinc-600"
+                }`}
+              >
+                <span className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                  <span
+                    aria-hidden="true"
+                    className="text-xl sm:text-2xl shrink-0"
                   >
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                      <span className="text-xl sm:text-2xl shrink-0">
-                        {acc.icon}
-                      </span>
-                      <div>
-                        <div className="text-xs font-bold flex items-center gap-2">
-                          <span>{acc.name}</span>
-                          {!isUnlocked && (
-                            <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-[9px] text-zinc-400">
-                              Locked
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-zinc-400">
-                          {acc.desc}
-                        </div>
-                      </div>
-                    </div>
-                    {isSelected && (
-                      <IconCheck className="w-4 h-4 text-brand-cyan shrink-0" />
-                    )}
-                  </button>
-                );
-              })}
+                    🎃
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs font-bold">
+                      Halloween mode
+                    </span>
+                    <span className="block text-[10px] text-zinc-400">
+                      Costumes (just for fun, no perks), cobwebs and
+                      jack-o&apos;-lanterns. On through October.
+                    </span>
+                  </span>
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={`relative h-6 w-11 shrink-0 rounded-full border transition-colors ${
+                    halloween
+                      ? "border-orange-400 bg-orange-500"
+                      : "border-zinc-700 bg-zinc-800"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
+                      halloween ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </span>
+              </button>
+
+              {halloween && (
+                <div
+                  role="radiogroup"
+                  aria-label="Halloween costumes"
+                  className="mt-2 sm:mt-2.5 grid grid-cols-1 gap-2 sm:gap-2.5"
+                >
+                  {COSTUMES.map((costume) => renderWardrobeItem(costume, true))}
+                </div>
+              )}
             </div>
           </div>
         </div>

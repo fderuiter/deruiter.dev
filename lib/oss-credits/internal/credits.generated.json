@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1206,
-    "runtime": 574,
+    "total": 1202,
+    "runtime": 570,
     "tooling": 632,
     "direct": 75
   },
@@ -608,7 +608,7 @@
     },
     {
       "name": "@clerk/backend",
-      "version": "3.25.0",
+      "version": "3.26.2",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -617,7 +617,7 @@
     },
     {
       "name": "@clerk/nextjs",
-      "version": "7.9.17",
+      "version": "7.9.18",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -628,7 +628,7 @@
     },
     {
       "name": "@clerk/react",
-      "version": "6.17.8",
+      "version": "6.18.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -646,7 +646,7 @@
     },
     {
       "name": "@clerk/shared",
-      "version": "4.40.0",
+      "version": "4.41.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
@@ -2040,7 +2040,7 @@
     },
     {
       "name": "@playwright/test",
-      "version": "1.63.0",
+      "version": "1.64.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": true,
@@ -4134,7 +4134,7 @@
     },
     {
       "name": "@upstash/qstash",
-      "version": "2.12.0",
+      "version": "2.12.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -5659,7 +5659,7 @@
     },
     {
       "name": "dependency-cruiser",
-      "version": "18.6.0",
+      "version": "18.7.0",
       "license": "MIT",
       "scope": "tooling",
       "direct": true,
@@ -5733,7 +5733,7 @@
     },
     {
       "name": "docx",
-      "version": "9.12.0",
+      "version": "9.13.0",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -9027,7 +9027,7 @@
     },
     {
       "name": "playwright",
-      "version": "1.63.0",
+      "version": "1.64.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -9036,7 +9036,7 @@
     },
     {
       "name": "playwright-core",
-      "version": "1.63.0",
+      "version": "1.64.1",
       "license": "Apache-2.0",
       "scope": "runtime",
       "direct": false,
@@ -9283,23 +9283,23 @@
     },
     {
       "name": "react",
-      "version": "19.2.4",
+      "version": "19.3.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
       "homepage": "https://react.dev",
-      "repository": "https://github.com/facebook/react",
+      "repository": "https://github.com/react/react",
       "group": "Framework and runtime",
       "reason": "The UI library every page and game is written in."
     },
     {
       "name": "react-dom",
-      "version": "19.2.4",
+      "version": "19.3.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
       "homepage": "https://react.dev",
-      "repository": "https://github.com/facebook/react",
+      "repository": "https://github.com/react/react",
       "group": "Framework and runtime",
       "reason": "Renders React in the browser and on the server."
     },
@@ -9621,15 +9621,6 @@
       "repository": "https://github.com/ChALkeR/safer-buffer"
     },
     {
-      "name": "sax",
-      "version": "1.6.1",
-      "license": "BlueOak-1.0.0",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://github.com/isaacs/sax-js",
-      "repository": "https://github.com/isaacs/sax-js"
-    },
-    {
       "name": "saxes",
       "version": "6.0.0",
       "license": "ISC",
@@ -9637,15 +9628,6 @@
       "direct": false,
       "homepage": "https://github.com/lddubeau/saxes",
       "repository": "https://github.com/lddubeau/saxes"
-    },
-    {
-      "name": "scheduler",
-      "version": "0.27.0",
-      "license": "MIT",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://react.dev",
-      "repository": "https://github.com/facebook/react"
     },
     {
       "name": "scheduler",
@@ -10238,7 +10220,7 @@
     },
     {
       "name": "three",
-      "version": "0.185.1",
+      "version": "0.186.1",
       "license": "MIT",
       "scope": "runtime",
       "direct": true,
@@ -10852,24 +10834,6 @@
       "repository": "https://github.com/websockets/ws",
       "group": "Framework and runtime",
       "reason": "WebSocket transport the Neon serverless driver uses outside edge runtimes."
-    },
-    {
-      "name": "xml",
-      "version": "1.0.1",
-      "license": "MIT",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://github.com/dylang/node-xml",
-      "repository": "https://github.com/dylang/node-xml"
-    },
-    {
-      "name": "xml-js",
-      "version": "1.6.11",
-      "license": "MIT",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://github.com/nashwaan/xml-js",
-      "repository": "https://github.com/nashwaan/xml-js"
     },
     {
       "name": "xml-name-validator",

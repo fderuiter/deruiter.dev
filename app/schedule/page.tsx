@@ -259,10 +259,6 @@ export default function SchedulePage() {
       variant="standard"
       className="bg-zinc-950 text-foreground relative overflow-hidden"
     >
-      {/* Ambient Atmospheric Glows */}
-      <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[650px] h-[320px] bg-accent/5 blur-[140px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-      <div className="absolute top-96 right-1/4 w-[450px] h-[280px] bg-accent/5 blur-[120px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-
       <div className="max-w-5xl mx-auto flex flex-col items-center relative z-10 w-full">
         {/* Navigation Breadcrumb */}
         <div className="w-full flex items-center justify-between mb-8 gap-4 flex-wrap">
@@ -396,7 +392,7 @@ export default function SchedulePage() {
                 key={category.id}
                 className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${
                   isCategorySelected
-                    ? "bg-zinc-900/60 border-accent/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]"
+                    ? "bg-zinc-900/60 border-accent/50"
                     : "bg-zinc-900/30 border-zinc-800/80 hover:border-zinc-700"
                 }`}
               >
@@ -502,10 +498,7 @@ export default function SchedulePage() {
 
         {/* Interactive Booking Action Card */}
         <div className="w-full p-8 md:p-12 rounded-3xl bg-zinc-900/30 border border-zinc-800/80 hover:border-accent/40 transition-all shadow-2xl relative overflow-hidden flex flex-col items-center text-center mb-12">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-accent/5 rounded-full blur-[100px] pointer-events-none hidden sm:block" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-accent/5 rounded-full blur-[100px] pointer-events-none hidden sm:block" />
-
-          <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center mb-6 text-accent shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+          <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center mb-6 text-accent">
             <IconCalendar className="w-8 h-8" />
           </div>
 
@@ -523,7 +516,7 @@ export default function SchedulePage() {
               href={bookingUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-accent text-zinc-950 font-mono font-bold text-sm hover:bg-white transition-all duration-300 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:scale-105 cursor-pointer"
+              className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-accent text-zinc-950 font-mono font-bold text-sm hover:bg-white transition-all duration-300 hover:scale-105 cursor-pointer"
             >
               <span>Choose a Time</span>
               <IconExternalLink className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />

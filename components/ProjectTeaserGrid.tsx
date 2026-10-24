@@ -296,9 +296,6 @@ export const ProjectTeaserGrid: React.FC<ProjectTeaserGridProps> = ({
                   </span>
                 </div>
               </div>
-
-              {/* Subtle ambient hover highlight */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full blur-[40px] pointer-events-none group-hover:bg-amber-500/10 transition-colors" />
             </article>
           );
         })}

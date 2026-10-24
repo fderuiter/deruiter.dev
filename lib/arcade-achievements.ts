@@ -78,6 +78,18 @@ export const ARCADE_TROPHIES: ArcadeTrophy[] = [
     milestone: "campaign_cleared",
     conditionDescription: "Clear sprint 5 in Working With Duck",
   },
+  {
+    id: "duck_trick_or_treat",
+    gameId: "working-with-duck",
+    title: "Trick or Treat",
+    subtitle: "Working With Duck",
+    description: "Ship a sprint with Duck dressed as a duck.",
+    icon: "Pumpkin",
+    category: "gameplay",
+    milestone: "duck_costume_sprint",
+    conditionDescription:
+      "Ship a sprint in Working With Duck wearing the Halloween duck costume",
+  },
 
   // Laser Loon
   {

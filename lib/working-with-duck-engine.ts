@@ -632,6 +632,12 @@ export const SQUIRREL_IGNORED_EXCITEMENT = 25;
 export const SQUIRREL_IGNORED_GOOD_BOY = 15;
 /** Points for calling Sit while a squirrel is at the window. */
 export const SQUIRREL_SIT_POINTS = 400;
+/**
+ * Points for calling Sit while trick-or-treaters are at the door (#2740).
+ * They take the package's place in Halloween mode, so they pay what signing
+ * for the package pays and a sprint is worth the same in or out of costume.
+ */
+export const TRICK_OR_TREAT_SIT_POINTS = 150;
 /** Tick of the first mud storm in the Mud Storm sprint, then its period. */
 export const MUD_STORM_FIRST_TICK = 360;
 export const MUD_STORM_INTERVAL_TICKS = 1200;
@@ -800,7 +806,11 @@ export interface WorkingWithDuckState {
   comboStreak: number;
   comboTimer: number;
   activeSurpriseEvent: {
-    type: "amazon-delivery" | "squirrel-window" | "puppy-hiccups";
+    type:
+      | "amazon-delivery"
+      | "trick-or-treat"
+      | "squirrel-window"
+      | "puppy-hiccups";
     timer: number;
     maxTimer: number;
     resolved: boolean;
@@ -811,6 +821,12 @@ export interface WorkingWithDuckState {
    * skipped (#2328). The campaign keeps its exact-tick rolls.
    */
   surpriseDue?: boolean;
+  /**
+   * Halloween mode is on (#2740). The caller owns the preference and copies
+   * it here; while it is on, trick-or-treaters ring at the back door in the
+   * package's place, and a Sit sends them off happy. Absent reads as off.
+   */
+  halloween?: boolean;
 
   duck: {
     x: number;
@@ -1470,8 +1486,11 @@ export function stepDuckGame(
     const deliveryCut = windowWatch ? 0 : withHiccups ? 1 / 3 : 0.5;
     const squirrelCut = windowWatch ? 1 : withHiccups ? 2 / 3 : 1;
     if (roll < deliveryCut) {
+      // Halloween mode sends trick-or-treaters in the package's place, on
+      // the same roll and for as long, so the odds do not change (#2740).
+      const trickOrTreat = state.halloween === true;
       activeSurprise = {
-        type: "amazon-delivery",
+        type: trickOrTreat ? "trick-or-treat" : "amazon-delivery",
         timer: 300,
         maxTimer: 300,
         resolved: false,
@@ -1481,7 +1500,9 @@ export function stepDuckGame(
         id: state.nextAlertId + 99,
         x: BACK_DOOR_BOUNDS.x,
         y: BACK_DOOR_BOUNDS.y + 20,
-        text: "📦 Amazon Delivery Knock!",
+        text: trickOrTreat
+          ? "🎃 Trick-or-treaters at the door! Sit, Duck!"
+          : "📦 Amazon Delivery Knock!",
         color: "#f59e0b",
         alpha: 1,
         vy: -1.2,
@@ -2362,8 +2383,11 @@ export function performTrick(
   // distraction, so it pays in full and sends the squirrel off.
   const sitsThroughSquirrel =
     trick === "SIT" && state.activeSurpriseEvent?.type === "squirrel-window";
+  // So does a Sit while trick-or-treaters are at the door (#2740).
+  const sitsForTrickOrTreaters =
+    trick === "SIT" && state.activeSurpriseEvent?.type === "trick-or-treat";
   const need =
-    trick === "DROP_IT" || sitsThroughSquirrel
+    trick === "DROP_IT" || sitsThroughSquirrel || sitsForTrickOrTreaters
       ? 1
       : clamp(state.excitement / 60, 0.1, 1);
   // Only a trick Duck needed extends the combo. The streak's score bonus is
@@ -2445,6 +2469,19 @@ export function performTrick(
         vy: -1.2,
       });
     }
+    if (sitsForTrickOrTreaters) {
+      soundCues.push("combo-fanfare");
+      nextScore += TRICK_OR_TREAT_SIT_POINTS;
+      alerts.push({
+        id: state.nextAlertId + 50,
+        x: BACK_DOOR_BOUNDS.x,
+        y: BACK_DOOR_BOUNDS.y + 30,
+        text: `🍬 Duck sat for the trick-or-treaters! (+${TRICK_OR_TREAT_SIT_POINTS} pts)`,
+        color: "#f59e0b",
+        alpha: 1,
+        vy: -1.2,
+      });
+    }
   } else if (trick === "SPIN") {
     soundCues.push("spin-whoosh");
     nextNaughty = Math.min(100, nextNaughty + scaled(22));
@@ -2482,7 +2519,10 @@ export function performTrick(
     excitement: nextExcitement,
     comboStreak,
     comboTimer: extendsCombo ? 180 : state.comboTimer,
-    activeSurpriseEvent: sitsThroughSquirrel ? null : state.activeSurpriseEvent,
+    activeSurpriseEvent:
+      sitsThroughSquirrel || sitsForTrickOrTreaters
+        ? null
+        : state.activeSurpriseEvent,
     activeTrick: {
       trick,
       timer: 60,

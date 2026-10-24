@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, devices, type Page } from "@playwright/test";
 
 test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
   test("Probe 1: Landing Page Pretext Layout & Dynamic Filter Flow", async ({
@@ -363,4 +363,82 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
     const start = (await clock.textContent()) ?? "";
     await expect(clock).not.toHaveText(start, { timeout: 10000 });
   });
+
+  // #2709: the Study Data Pipeline journey, run to lineage to download, at a
+  // desktop and a phone viewport. Both run on the chromium project.
+  const { defaultBrowserType: _browser, ...pixel5 } = devices["Pixel 5"];
+  for (const [viewport, use] of [
+    ["desktop", { viewport: { width: 1440, height: 900 } }],
+    ["phone", pixel5],
+  ] as const) {
+    test.describe(`Probe 11 (${viewport})`, () => {
+      test.use(use);
+      test(`Probe 11: Study Data Pipeline run, lineage to the USDM activity, package download (${viewport})`, async ({
+        page,
+      }) => {
+        await studyDataJourney(page);
+      });
+    });
+  }
 });
+
+async function studyDataJourney(page: Page) {
+  const response = await page.goto("/study-data", {
+    waitUntil: "domcontentloaded",
+  });
+  // /study-data ships with Clinical v1, which is under release:hold (#2691).
+  // Until production has it, the daily probe of the deployed origin skips
+  // here; every local and CI run, which serve the branch, runs the journey.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/study-data is not deployed to the probed origin yet (#2691)"
+  );
+  expect(response?.status()).toBe(200);
+
+  // The page runs the default study once on load.
+  await expect(page.getByText(/^Run 1: 90 subjects, seed 301/)).toBeVisible({
+    timeout: 60_000,
+  });
+
+  // 1. Run the pipeline again with another seed and subject count.
+  await expect(async () => {
+    await page.getByLabel("Seed").fill("2709");
+    await page.getByLabel("Subjects").fill("40");
+    await page.getByRole("button", { name: "Run pipeline" }).click();
+    await expect(page.getByText(/^Run 2: 40 subjects, seed 2709/)).toBeVisible({
+      timeout: 5_000,
+    });
+  }).toPass({ timeout: 60_000 });
+
+  // 2. Trace a table cell, then walk back to the protocol activity that
+  // scheduled its source records.
+  const lineage = page.locator('section[aria-labelledby="lineage-title"]');
+  const status = lineage.getByRole("status");
+  const cell = page.getByRole("grid").first().locator("td[data-ars-results]");
+  await expect(async () => {
+    await cell.first().click();
+    await expect(status).toContainText("Tracing Table", { timeout: 5_000 });
+  }).toPass({ timeout: 15_000 });
+  const activity = lineage
+    .getByRole("button", { name: /^Trace forward: / })
+    .first();
+  await expect(activity).toBeVisible();
+  await expect(async () => {
+    await activity.click();
+    await expect(status).toContainText(
+      /Tracing .+ · (every planned visit|[A-Z0-9 ]+)/,
+      { timeout: 5_000 }
+    );
+    await expect(status).not.toContainText("Tracing Table");
+  }).toPass({ timeout: 15_000 });
+
+  // 3. Download the submission package.
+  const datasets = page.getByRole("button", { name: "Datasets (.zip)" });
+  await expect(datasets).toBeEnabled();
+  const [download] = await Promise.all([
+    page.waitForEvent("download", { timeout: 60_000 }),
+    datasets.click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.zip$/);
+  expect(await download.failure()).toBeNull();
+}

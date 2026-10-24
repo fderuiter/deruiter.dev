@@ -1335,6 +1335,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Synthetic data and regulatory scope made explicit",
         ],
       },
+      {
+        id: "nav-study-data",
+        title: "Study Data Pipeline",
+        subtitle: "One synthetic study from USDM to tables, traced end to end.",
+        category: "navigation",
+        url: "/study-data",
+        icon: <IconFileSpreadsheet className="h-4 w-4 text-amber-400" />,
+        badge: "Lineage",
+        status: "Interactive",
+        description:
+          "Run a seeded synthetic study through SDTM, conformance checks, ADaM, Define-XML and TLFs, then trace any result back to its source.",
+        techStack: ["Web Worker", "TypeScript", "USDM", "SDTM", "ADaM"],
+        highlights: [
+          "Seven-stage pipeline with live counts",
+          "Result-to-source lineage explorer",
+          "Datasets and outputs as downloadable packages",
+        ],
+      },
     ];
 
     const safeStudies = Array.isArray(studies) ? studies : [];

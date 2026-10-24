@@ -205,6 +205,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Platform",
   },
   {
+    id: "study-data",
+    title: "Study Data Pipeline",
+    subtitle: "One synthetic study from USDM to tables, traced end to end",
+    href: "/study-data",
+    icon: "spreadsheet",
+    tone: "amber",
+    badge: "Lineage",
+  },
+  {
     id: "platform-strategy",
     title: "Platform Strategy",
     subtitle: "Fictional vendor scoring and investment decisions",
@@ -380,7 +389,14 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
       { id: "studios", label: "Studios", items: STUDIO_ITEMS },
     ],
     activeWhen: {
-      exact: ["/protocol-drift", "/simulator", "/crf", "/proof", "/neuro"],
+      exact: [
+        "/protocol-drift",
+        "/study-data",
+        "/simulator",
+        "/crf",
+        "/proof",
+        "/neuro",
+      ],
       prefixes: [
         "/platform",
         "/patrol",

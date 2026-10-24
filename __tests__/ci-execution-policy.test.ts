@@ -304,7 +304,9 @@ describe("CI Execution Policy", () => {
         "utf8"
       );
       expect(weekly).toContain("npm run test:mutation -- --engines");
+      expect(weekly).toContain("npm run test:mutation -- --garmin");
       expect(block).not.toContain("--engines");
+      expect(block).not.toContain("--garmin");
     });
   });
 

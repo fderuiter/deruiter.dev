@@ -20,6 +20,12 @@
 
 ***
 
+### codelistId?
+
+> `optional` **codelistId?**: `string`
+
+***
+
 ### core
 
 > **core**: `"HR"` \| `"O"` \| `"R"`

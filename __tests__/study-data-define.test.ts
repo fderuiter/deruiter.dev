@@ -475,17 +475,28 @@ describe("codelists", () => {
           .filter((term) => term.extended)
           .map((term) => `${list.id} ${term.codedValue}`)
       );
-    expect(extended("sdtm")).toEqual(["UNIT TABLETS"]);
     expect(extended("adam")).toEqual(["SBJTSTAT SCREEN FAILURE"]);
-    expect(terms("sdtm", "CL.UNIT").at(-1)).toMatchObject({
-      codedValue: "TABLETS",
-      extended: true,
-    });
-    const node = all(docs.sdtm, ODM_NS, "EnumeratedItem").find(
-      (item) => attr(item, "CodedValue") === "TABLETS"
+    const node = all(docs.adam, ODM_NS, "EnumeratedItem").find(
+      (item) => attr(item, "CodedValue") === "SCREEN FAILURE"
     )!;
     expect(defAttr(node, "ExtendedValue")).toBe("Yes");
     expect(children(node, ODM_NS, "Alias")).toHaveLength(0);
+  });
+
+  // #2727: the dose unit is the UNIT term TABLET (C48542), not an extension
+  // TABLETS borrowed from the CRF Studio codelist.
+  it("writes the tablet dose unit as the CDISC UNIT term", () => {
+    expect(
+      defines.sdtm.codeLists.flatMap((list) =>
+        list.terms.filter((term) => term.extended)
+      )
+    ).toEqual([]);
+    expect(
+      terms("sdtm", "CL.UNIT").find((term) => term.codedValue === "TABLET")
+    ).toMatchObject({ codedValue: "TABLET", extended: false });
+    expect(
+      terms("sdtm", "CL.UNIT").some((term) => term.codedValue === "TABLETS")
+    ).toBe(false);
   });
 
   it("carries NCI codes on CDISC codelists and their terms, and none on sponsor lists", () => {

@@ -142,7 +142,7 @@ export function validateStudyCompliance(
           message: `Choice field '${field.variableName}' has no standard NCI codelist or custom options configured.`,
           autoFixAvailable: true,
           autoFixType: "assign_nci_codelist",
-          suggestedFix: "Assign standard No/Yes (NY) codelist (C66741)",
+          suggestedFix: "Assign standard No/Yes (NY) codelist (C66742)",
         });
       }
 
@@ -300,16 +300,18 @@ export function autoFixViolation(
           dataType:
             stdVar.dataCategory === "Timing"
               ? "date"
-              : stdVar.nciConceptId
+              : stdVar.codelistId || stdVar.nciConceptId
                 ? "single_select"
                 : "text",
           columnSpan: 6,
           required: stdVar.core === "R",
-          codelistId: stdVar.nciConceptId
-            ? STANDARD_CODELISTS.find(
-                (c) => c.nciCodelistCode === stdVar.nciConceptId
-              )?.id
-            : undefined,
+          codelistId:
+            stdVar.codelistId ??
+            (stdVar.nciConceptId
+              ? STANDARD_CODELISTS.find(
+                  (c) => c.nciCodelistCode === stdVar.nciConceptId
+                )?.id
+              : undefined),
           cdashMetadata: stdVar,
         };
 

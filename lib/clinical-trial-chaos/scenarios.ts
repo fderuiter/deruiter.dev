@@ -169,7 +169,7 @@ export const MOCK_OBSERVATION_TEMPLATES: MockObservationTemplate[] = [
         errorType: "casing-mismatch",
         hint: "CDISC Controlled Terminology requires single-letter 'M' or 'F'",
         explanation:
-          "CDISC SDTM SEX variable codelist (C66731) specifies 1-character codes 'M', 'F', 'U', or 'UNDIFFERENTIATED'.",
+          "CDISC SDTM SEX variable codelist (C66731) specifies the submission values 'M', 'F', 'U' and 'INTERSEX'.",
         ctCode: "C66731",
         options: ["M", "Male", "MALE", "1"],
       },

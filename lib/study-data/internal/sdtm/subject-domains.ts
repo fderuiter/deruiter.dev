@@ -646,7 +646,7 @@ export function deriveSubjectDomains(
         ...common(record.USUBJID, "EX"),
         EXTRT: record.EXTRT,
         EXDOSE: record.EXDOSE,
-        EXDOSU: record.EXDOSU === "TABLET" ? "TABLETS" : record.EXDOSU,
+        EXDOSU: record.EXDOSU,
         EXSTDTC: record.EXSTDTC,
         EXENDTC: record.EXENDTC,
         EXSTDY: 1,

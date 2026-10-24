@@ -366,6 +366,48 @@ test.describe("Working With Duck on a tablet (iPad projects)", () => {
       );
     expect(blocking).toEqual([]);
   });
+
+  // #2741: the dock under the room is the TouchControlsGate's. A hardware key
+  // (Escape on a keyboard case) hides it until the next touch, as ADR 0061
+  // asks; closing the wardrobe by touch never does.
+  test("the wardrobe closes by touch with the dock still shown; Escape hides the dock until the next tap", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const gate = page.locator(`[data-touch-controls]:has(${DUCK_DOCK})`);
+    const dialog = page.locator(
+      '[role="dialog"][aria-labelledby="duck-wardrobe-dialog-heading"]'
+    );
+    const openWardrobe = page.getByRole("button", { name: /Wardrobe/ }).first();
+
+    await openWardrobe.tap();
+    await expect(dialog).toBeVisible();
+    const results = await new AxeBuilder({ page })
+      .include('[aria-labelledby="duck-wardrobe-dialog-heading"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"])
+      .analyze();
+    expect(
+      results.violations
+        .filter((v) => BLOCKING.has(v.impact ?? ""))
+        .map((v) => v.id)
+    ).toEqual([]);
+    await dialog.getByRole("button", { name: "Close wardrobe" }).tap();
+    await expect(dialog).toBeHidden();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+    await expect(page.locator(DUCK_DOCK)).toBeVisible();
+
+    await openWardrobe.tap();
+    // The focus trap owns Escape once it has moved focus into the dialog.
+    await expect(
+      dialog.getByRole("button", { name: "Close wardrobe" })
+    ).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    await expect(gate).toHaveAttribute("data-touch-controls", "hidden");
+    // The hidden gate is aria-hidden, so the key is found by CSS, not role.
+    await page.locator(`${DUCK_DOCK} button`).first().tap();
+    await expect(gate).toHaveAttribute("data-touch-controls", "shown");
+  });
 });
 
 const QUASI_ROUTE = "/arcade/quasi-puzzler";

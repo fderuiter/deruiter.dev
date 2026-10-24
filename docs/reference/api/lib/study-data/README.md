@@ -386,6 +386,12 @@ Re-exports [CONTROLLED_TERMINOLOGY](internal/conformance/terminology/variables/C
 
 ***
 
+### createLineageIndex
+
+Re-exports [createLineageIndex](internal/lineage/trace/functions/createLineageIndex.md)
+
+***
+
 ### DataLayer
 
 Re-exports [DataLayer](types/type-aliases/DataLayer.md)
@@ -431,6 +437,12 @@ Re-exports [DatasetJsonOptions](internal/export/dataset-json/interfaces/DatasetJ
 ### DECODE\_VARIABLES
 
 Re-exports [DECODE_VARIABLES](internal/conformance/terminology/variables/DECODE_VARIABLES.md)
+
+***
+
+### DEFAULT\_LINEAGE\_LIMIT
+
+Re-exports [DEFAULT_LINEAGE_LIMIT](internal/lineage/trace/variables/DEFAULT_LINEAGE_LIMIT.md)
 
 ***
 
@@ -740,6 +752,78 @@ Re-exports [leafId](internal/export/oids/functions/leafId.md)
 
 ***
 
+### LineageDisplayCell
+
+Re-exports [LineageDisplayCell](internal/lineage/model/interfaces/LineageDisplayCell.md)
+
+***
+
+### LineageIndex
+
+Re-exports [LineageIndex](internal/lineage/trace/interfaces/LineageIndex.md)
+
+***
+
+### LineageLevel
+
+Re-exports [LineageLevel](internal/lineage/model/type-aliases/LineageLevel.md)
+
+***
+
+### LineageOrigin
+
+Re-exports [LineageOrigin](internal/lineage/model/type-aliases/LineageOrigin.md)
+
+***
+
+### LineageRecord
+
+Re-exports [LineageRecord](internal/lineage/model/interfaces/LineageRecord.md)
+
+***
+
+### LineageRelation
+
+Re-exports [LineageRelation](internal/lineage/model/type-aliases/LineageRelation.md)
+
+***
+
+### LineageResult
+
+Re-exports [LineageResult](internal/lineage/model/interfaces/LineageResult.md)
+
+***
+
+### LineageScheduleEntry
+
+Re-exports [LineageScheduleEntry](internal/lineage/model/interfaces/LineageScheduleEntry.md)
+
+***
+
+### LineageStep
+
+Re-exports [LineageStep](internal/lineage/model/interfaces/LineageStep.md)
+
+***
+
+### LineageTrace
+
+Re-exports [LineageTrace](internal/lineage/model/interfaces/LineageTrace.md)
+
+***
+
+### LineageTraceOptions
+
+Re-exports [LineageTraceOptions](internal/lineage/model/interfaces/LineageTraceOptions.md)
+
+***
+
+### LineageVisit
+
+Re-exports [LineageVisit](internal/lineage/model/interfaces/LineageVisit.md)
+
+***
+
 ### logRankTest
 
 Re-exports [logRankTest](internal/tlf/km/functions/logRankTest.md)
@@ -887,6 +971,12 @@ Re-exports [resolveResultRows](internal/tlf/row-ids/functions/resolveResultRows.
 ### ResultRow
 
 Re-exports [ResultRow](types/interfaces/ResultRow.md)
+
+***
+
+### rowSetRowIds
+
+Re-exports [rowSetRowIds](internal/tlf/row-ids/functions/rowSetRowIds.md)
 
 ***
 

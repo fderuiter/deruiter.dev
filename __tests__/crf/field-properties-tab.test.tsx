@@ -826,13 +826,11 @@ describe("FieldPropertiesTab custom options builder", () => {
         {
           code: "PASS",
           label: "Pass / Criteria Met",
-          nciCode: "C48288",
           order: 1,
         },
         {
           code: "FAIL",
           label: "Fail / Criteria Not Met",
-          nciCode: "C48289",
           order: 2,
         },
       ],

@@ -9,17 +9,28 @@ import {
   findOptionByNciCode,
   matchTermByLabel,
   validateCodelists,
+  CDISC_CT_PACKAGE_VERSION,
 } from "../../lib/crf/cdisc-controlled-terminology";
+import { CDASH_STANDARD_VARIABLES } from "../../lib/crf/cdash-domain-templates";
 import { CodelistDefinition } from "../../lib/crf/types";
+import ctPackage from "../fixtures/cdisc-ct/sdtm-ct-2026-09-25-subset.json";
+
+interface CtCodelist {
+  submissionValue: string;
+  name: string;
+  extensible: boolean;
+  terms: Record<string, string>;
+}
+const CT_CODELISTS: Record<string, CtCodelist> = ctPackage.codelists;
 
 describe("CDISC Controlled Terminology Codelists & Helpers", () => {
-  describe("Requirement 1: 18 NCI Codelists Integrity & NCI C-codes", () => {
-    it("should contain exactly 18 standard NCI codelists", () => {
+  describe("Requirement 1: 19 Codelists Integrity & NCI C-codes", () => {
+    it("should contain exactly 19 standard codelists", () => {
       expect(STANDARD_CODELISTS).toBeDefined();
-      expect(STANDARD_CODELISTS.length).toBe(18);
+      expect(STANDARD_CODELISTS.length).toBe(19);
     });
 
-    it("should pass full validation assertions for all 18 codelists with zero errors", () => {
+    it("should pass full validation assertions for all 19 codelists with zero errors", () => {
       const validation = validateCodelists(STANDARD_CODELISTS);
       expect(validation.errors).toEqual([]);
       expect(validation.valid).toBe(true);
@@ -32,6 +43,7 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
         "CL_RACE",
         "CL_ETHNIC",
         "CL_AESEV",
+        "CL_AETOXGR",
         "CL_AEREL",
         "CL_AEOUT",
         "CL_RECIST_RESP",
@@ -52,18 +64,21 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
 
       // Verify strict uniqueness
       const uniqueIds = new Set(actualIds);
-      expect(uniqueIds.size).toBe(18);
+      expect(uniqueIds.size).toBe(19);
     });
 
-    it("should ensure every codelist has a valid NCI C-code format (e.g. C66741)", () => {
+    it("should give every CDISC codelist a valid NCI C-code and mark sponsor-defined ones by name", () => {
       STANDARD_CODELISTS.forEach((cl) => {
-        expect(cl.nciCodelistCode).toBeDefined();
-        expect(cl.nciCodelistCode).toMatch(NCI_CODE_REGEX);
         expect(cl.isStandard).toBe(true);
+        if (cl.nciCodelistCode) {
+          expect(cl.nciCodelistCode).toMatch(NCI_CODE_REGEX);
+        } else {
+          expect(cl.name).toMatch(/sponsor-defined/);
+        }
       });
     });
 
-    it("should ensure all options within every codelist have non-empty submission codes, labels, and valid NCI C-codes", () => {
+    it("should ensure all options have non-empty submission codes and labels, and NCI C-codes only in CDISC codelists", () => {
       STANDARD_CODELISTS.forEach((cl) => {
         expect(cl.options.length).toBeGreaterThan(0);
 
@@ -75,8 +90,10 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
           expect(opt.label).toBeTruthy();
           expect(typeof opt.label).toBe("string");
 
-          expect(opt.nciCode).toBeDefined();
-          expect(opt.nciCode).toMatch(NCI_CODE_REGEX);
+          if (opt.nciCode) {
+            expect(cl.nciCodelistCode).toBeDefined();
+            expect(opt.nciCode).toMatch(NCI_CODE_REGEX);
+          }
 
           expect(typeof opt.order).toBe("number");
           expect(opt.order).toBeGreaterThan(0);
@@ -184,11 +201,11 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
         const sexCl = findCodelistById("CL_SEX");
         expect(sexCl).toBeDefined();
         expect(sexCl?.name).toBe("Sex (SEX)");
-        expect(sexCl?.nciCodelistCode).toBe("C66742");
+        expect(sexCl?.nciCodelistCode).toBe("C66731");
 
         const nyCl = findCodelistById("CL_NY");
         expect(nyCl).toBeDefined();
-        expect(nyCl?.nciCodelistCode).toBe("C66741");
+        expect(nyCl?.nciCodelistCode).toBe("C66742");
       });
 
       it("should return undefined for non-existent or empty IDs", () => {
@@ -199,17 +216,17 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
 
     describe("findCodelistByNciCode", () => {
       it("should look up a codelist by its NCI C-code", () => {
-        const nyCl = findCodelistByNciCode("C66741");
+        const nyCl = findCodelistByNciCode("C66742");
         expect(nyCl).toBeDefined();
         expect(nyCl?.id).toBe("CL_NY");
 
-        const raceCl = findCodelistByNciCode("C74457");
+        const raceCl = findCodelistByNciCode("C128689");
         expect(raceCl).toBeDefined();
         expect(raceCl?.id).toBe("CL_RACE");
       });
 
       it("should support case-insensitive NCI code lookup", () => {
-        const nyCl = findCodelistByNciCode("c66741");
+        const nyCl = findCodelistByNciCode("c66742");
         expect(nyCl).toBeDefined();
         expect(nyCl?.id).toBe("CL_NY");
       });
@@ -243,7 +260,7 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
         expect(crOpt).toEqual({
           code: "CR",
           label: "Complete Response (CR)",
-          nciCode: "C48270",
+          nciCode: "C4870",
           order: 1,
         });
       });
@@ -322,6 +339,81 @@ describe("CDISC Controlled Terminology Codelists & Helpers", () => {
         expect(matchTermByLabel("CL_SEX", "NonExistentTerm")).toBeUndefined();
         expect(matchTermByLabel("CL_SEX", "")).toBeUndefined();
       });
+    });
+  });
+
+  // Regression for #2727: codes were borrowed from neighbouring codelists
+  // (NY filed under VSTESTCD, SEX under NY, AEOUT under ACN, ...). Every code
+  // is now pinned to the published package in the fixture.
+  describe("Requirement 3: codes match the CDISC CT package (#2727)", () => {
+    it("names the package the codes were checked against", () => {
+      expect(CDISC_CT_PACKAGE_VERSION).toBe(ctPackage.package);
+    });
+
+    it.each(STANDARD_CODELISTS.filter((cl) => cl.nciCodelistCode))(
+      "$id cites a codelist that is in the package",
+      (cl) => {
+        const ct = CT_CODELISTS[cl.nciCodelistCode!];
+        expect(ct, `${cl.nciCodelistCode} is not in the package`).toBeDefined();
+        expect(cl.name).toContain(`(${ct.submissionValue})`);
+      }
+    );
+
+    it.each(STANDARD_CODELISTS.filter((cl) => cl.nciCodelistCode))(
+      "$id uses CDISC submission values and term codes",
+      (cl) => {
+        const ct = CT_CODELISTS[cl.nciCodelistCode!];
+        for (const opt of cl.options) {
+          if (opt.nciCode === undefined) {
+            // A sponsor extension is only allowed in an extensible codelist
+            // and must not reuse a CDISC submission value.
+            expect(ct.extensible).toBe(true);
+            expect(ct.terms[opt.code]).toBeUndefined();
+          } else {
+            expect(ct.terms[opt.code], `${cl.id} ${opt.code}`).toBe(
+              opt.nciCode
+            );
+          }
+        }
+      }
+    );
+
+    it("keeps NCI codes off every sponsor-defined codelist", () => {
+      for (const cl of STANDARD_CODELISTS.filter((c) => !c.nciCodelistCode)) {
+        expect(cl.options.every((opt) => opt.nciCode === undefined)).toBe(
+          true
+        );
+      }
+    });
+
+    it("rejects a sponsor-defined codelist that borrows an NCI term code", () => {
+      const result = validateCodelists([
+        {
+          id: "CL_SPONSOR",
+          name: "Sponsor list",
+          options: [{ code: "A", label: "Alpha", nciCode: "C66742", order: 1 }],
+        },
+      ]);
+      expect(result.valid).toBe(false);
+      expect(result.errors[0]).toContain("sponsor-defined");
+    });
+
+    it("never cites a retired codelist", () => {
+      const retired = Object.keys(ctPackage.retired);
+      for (const cl of STANDARD_CODELISTS) {
+        expect(retired).not.toContain(cl.nciCodelistCode);
+      }
+    });
+
+    it("gives every CDASH variable a codelist code that matches its CRF codelist", () => {
+      const vars = Object.values(CDASH_STANDARD_VARIABLES).flat();
+      const coded = vars.filter((v) => v.nciConceptId || v.codelistId);
+      expect(coded.length).toBeGreaterThan(0);
+      for (const v of coded) {
+        const cl = findCodelistById(v.codelistId ?? "");
+        expect(cl, `${v.sdtmVariable} codelist`).toBeDefined();
+        expect(v.nciConceptId, v.sdtmVariable).toBe(cl!.nciCodelistCode);
+      }
     });
   });
 });

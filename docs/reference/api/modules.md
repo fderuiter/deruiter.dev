@@ -115,6 +115,7 @@
 - [lib/clinical-platform/internal/reporting/catalog](lib/clinical-platform/internal/reporting/catalog/README.md)
 - [lib/clinical-platform/internal/reporting/check](lib/clinical-platform/internal/reporting/check/README.md)
 - [lib/clinical-platform/internal/reporting/format](lib/clinical-platform/internal/reporting/format/README.md)
+- [lib/clinical-platform/internal/reporting/operations](lib/clinical-platform/internal/reporting/operations/README.md)
 - [lib/clinical-platform/internal/reporting/pack](lib/clinical-platform/internal/reporting/pack/README.md)
 - [lib/clinical-platform/internal/semantic/check](lib/clinical-platform/internal/semantic/check/README.md)
 - [lib/clinical-platform/internal/semantic/describe](lib/clinical-platform/internal/semantic/describe/README.md)

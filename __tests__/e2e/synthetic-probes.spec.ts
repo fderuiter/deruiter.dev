@@ -380,6 +380,22 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
       });
     });
   }
+
+  // #2630: the operations dashboard drilled from the portfolio to a site,
+  // at a desktop and a phone viewport. Both run on the chromium project.
+  for (const [viewport, use] of [
+    ["desktop", { viewport: { width: 1440, height: 900 } }],
+    ["phone", pixel5],
+  ] as const) {
+    test.describe(`Probe 12 (${viewport})`, () => {
+      test.use(use);
+      test(`Probe 12: Operations dashboard drill-down from portfolio to site (${viewport})`, async ({
+        page,
+      }) => {
+        await operationsJourney(page);
+      });
+    });
+  }
 });
 
 async function studyDataJourney(page: Page) {
@@ -441,4 +457,60 @@ async function studyDataJourney(page: Page) {
   ]);
   expect(download.suggestedFilename()).toMatch(/\.zip$/);
   expect(await download.failure()).toBeNull();
+}
+
+async function operationsJourney(page: Page) {
+  const response = await page.goto("/platform/operations", {
+    waitUntil: "domcontentloaded",
+  });
+  // /platform/operations ships after the Clinical v1 hold (#2691); until
+  // production has it, the daily probe of the deployed origin skips here.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/platform/operations is not deployed to the probed origin yet (#2691)"
+  );
+  expect(response?.status()).toBe(200);
+
+  // The worker computes the portfolio: the registry's golden enrollment.
+  const glance = page.locator('section[aria-labelledby="operations-glance"]');
+  await expect(glance).toContainText("1,228", { timeout: 60_000 });
+
+  // 1. Drill into a CRO-run study, keeping the section chosen.
+  await expect(async () => {
+    await page.getByRole("tab", { name: "Quality and monitoring" }).click();
+    await expect(page).toHaveURL(/#view=quality$/, { timeout: 5_000 });
+  }).toPass({ timeout: 15_000 });
+  await page
+    .getByRole("navigation", { name: "Studies" })
+    .getByRole("link", { name: /DEMO-302/ })
+    .click();
+  await expect(page).toHaveURL(/#study=DEMO-302&view=quality$/);
+  await expect(
+    page.getByText("Quillfeather Clinical Research (CRO)")
+  ).toBeVisible({
+    timeout: 30_000,
+  });
+
+  // 2. Then into a country and a site.
+  await page
+    .getByRole("navigation", { name: "Countries in DEMO-302" })
+    .getByRole("link", { name: /Germany/ })
+    .click();
+  const sites = page.getByRole("navigation", {
+    name: "Sites in DEMO-302, Germany",
+  });
+  await expect(sites).toBeVisible({ timeout: 30_000 });
+  await sites.getByRole("link").first().click();
+  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+  await expect(trail.locator('[aria-current="page"]')).toHaveText(
+    /^DEMO-302-DE-\d+$/,
+    { timeout: 30_000 }
+  );
+  await expect(page.getByRole("tab", { selected: true })).toHaveText(
+    "Quality and monitoring"
+  );
+
+  // 3. Back walks the drill-down.
+  await page.goBack();
+  await expect(sites).toBeVisible({ timeout: 30_000 });
 }

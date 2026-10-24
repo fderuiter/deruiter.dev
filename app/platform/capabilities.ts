@@ -96,7 +96,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "Study and portfolio measures with drill-down and accessible table equivalents.",
     evidence: [
-      issue(2630, "Operations dashboard plan"),
+      route("/platform/operations", "Operations dashboards"),
       issue(2632, "Portfolio dashboard plan"),
     ],
   },
@@ -157,7 +157,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "One synthetic portfolio spanning pharmaceutical, device and outsourced studies.",
     evidence: [
-      issue(2622, "Portfolio generator plan"),
+      route("/platform/operations", "Drug, device and CRO studies"),
       issue(2646, "CRO oversight plan"),
     ],
   },

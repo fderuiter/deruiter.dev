@@ -1317,6 +1317,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-platform-operations",
+        title: "Clinical Operations Dashboards",
+        subtitle: "Drill a synthetic portfolio from study to country to site.",
+        category: "navigation",
+        url: "/platform/operations",
+        icon: <IconCpu className="h-4 w-4 text-amber-400" />,
+        badge: "Dashboards",
+        status: "Interactive",
+        description:
+          "Enrollment, site activation, data management, deviations, monitoring and milestones, every number from the governed metric registry.",
+        techStack: ["Next.js 16", "TypeScript", "Web Worker", "Semantic Layer"],
+        highlights: [
+          "Portfolio, study, country and site drill-down",
+          "Every chart with its data table",
+          "Drug, device and CRO-run studies",
+        ],
+      },
+      {
         id: "nav-platform",
         title: "Clinical Data Platform",
         subtitle:

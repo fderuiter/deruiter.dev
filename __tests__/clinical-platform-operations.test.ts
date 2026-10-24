@@ -420,6 +420,31 @@ describe("operations sections (#2630)", () => {
     );
   });
 
+  it("shows overdue reports and interim visits against each study's monitoring plan (#2736)", () => {
+    const monitoring = operationsDashboard(warehouse)
+      .sections.find((s) => s.id === "quality")!
+      .reports.find((r) => r.spec.id === "monitoring-and-sdv-by-study")!;
+    expect(monitoring.spec.tier).toBe("managed");
+    const column = (id: string) =>
+      monitoring.columns.findIndex((c) => c.metricId === id);
+    const overdue = (id: string) =>
+      Object.fromEntries(
+        monitoring.rows
+          .map((row) => [row.labels[0], row.cells[column(id)].value] as const)
+          .filter(([, value]) => value !== null)
+      );
+    // The golden values __tests__/clinical-platform-monitoring-plan.test.ts
+    // pins per study; closed studies have no rows.
+    expect(overdue("monitoring_reports_overdue")).toEqual({
+      "DEMO-302": 1,
+      "DEV-402": 1,
+    });
+    expect(overdue("monitoring_visits_overdue")).toEqual({
+      "DEMO-302": 1,
+      "DEV-402": 4,
+    });
+  });
+
   it("lists what the registry cannot compute yet, with the registry's own reasons", () => {
     const portfolio = operationsDashboard(warehouse);
     const gaps = portfolio.sections.flatMap((s) => s.gaps);
@@ -435,7 +460,6 @@ describe("operations sections (#2630)", () => {
       "Query aging buckets and open queries by form #2759",
       "Deviations by category and importance #2759",
       "eTMF completeness #none",
-      "Monitoring visits overdue against the monitoring plan #2736",
     ]);
     const cec = (study: string) =>
       operationsDashboard(warehouse, { study })
@@ -510,6 +534,7 @@ describe("operations data freshness (#2630, #2626)", () => {
       "gold.fct_enrollment",
       "gold.fct_milestone",
       "gold.fct_monitoring_visit",
+      "gold.fct_planned_monitoring_visit",
       "gold.fct_query",
       "gold.fct_visit",
     ]);

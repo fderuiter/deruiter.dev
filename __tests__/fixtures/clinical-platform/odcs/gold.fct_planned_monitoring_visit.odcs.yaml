@@ -1,0 +1,159 @@
+# ODCS v3.2.0 data contract for gold.fct_planned_monitoring_visit. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_planned_monitoring_visit"
+name: "Planned monitoring visit facts"
+version: "1.0.0"
+status: active
+domain: "Operations mart"
+tags:
+  - gold
+  - internal
+  - synthetic
+description:
+  purpose: "Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_planned_monitoring_visit
+    name: fct_planned_monitoring_visit
+    physicalName: gold.fct_planned_monitoring_visit
+    physicalType: table
+    logicalType: object
+    description: "Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it."
+    dataGranularityDescription: "One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored."
+    properties:
+      - name: planned_visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Planned visit id (degenerate dimension): the site id and its sequence."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: monitoring_plan_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Monitoring plan the visit is scheduled under."
+        required: true
+        classification: internal
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force on the planned date."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: planned_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned date: the previous monitoring visit at the site plus the plan's interval."
+        required: true
+        classification: internal
+      - name: due_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Last on-time date: the planned date plus the plan's visit window."
+        required: true
+        classification: internal
+      - name: monitoring_visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Interim visit that met the planned visit, or null while it is outstanding."
+        required: false
+        classification: internal
+      - name: actual_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date of the visit that met it, or null while it is outstanding."
+        required: false
+        classification: internal
+      - name: days_late
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days the visit fell after its due date, 0 when on time, or null while it is outstanding."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_planned_monitoring_visit_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - planned_visit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (planned_visit_id) identifies one row."
+team:
+  name: "Operations mart"
+  members:
+    - username: clinical-monitoring-lead
+      name: "Clinical Monitoring Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_monitoring_plan
+      - gold.dim_site
+      - gold.dim_study
+      - silver.ctms_monitoring_plan
+      - silver.ctms_monitoring_visit
+      - silver.site
+  - property: consumers
+    value:
+      - "metric:monitoring_visits_overdue"

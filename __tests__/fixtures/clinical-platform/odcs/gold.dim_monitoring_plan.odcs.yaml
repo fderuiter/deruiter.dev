@@ -1,0 +1,144 @@
+# ODCS v3.2.0 data contract for gold.dim_monitoring_plan. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_monitoring_plan"
+name: "Monitoring plan dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - internal
+  - synthetic
+description:
+  purpose: "Monitoring plan dimension: the cadence and report deadline each study's plan sets, which monitoring is measured against."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_monitoring_plan
+    name: dim_monitoring_plan
+    physicalName: gold.dim_monitoring_plan
+    physicalType: table
+    logicalType: object
+    description: "Monitoring plan dimension: the cadence and report deadline each study's plan sets, which monitoring is measured against."
+    dataGranularityDescription: "One row per monitoring plan version."
+    properties:
+      - name: monitoring_plan_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Surrogate key."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: monitoring_plan_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Monitoring plan id."
+        required: true
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: plan_version
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 16
+        physicalType: "VARCHAR(16)"
+        description: "Plan version."
+        required: true
+        classification: internal
+      - name: effective_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the plan took effect."
+        required: true
+        classification: internal
+      - name: interim_interval_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned days from one monitoring visit at a site to the next interim visit."
+        required: true
+        classification: internal
+      - name: visit_window_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days an interim visit may fall after its planned date and still be on time."
+        required: true
+        classification: internal
+      - name: report_due_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days from a visit by which its report must be final."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: dim_monitoring_plan_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - monitoring_plan_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (monitoring_plan_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: clinical-monitoring-lead
+      name: "Clinical Monitoring Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 168
+    unit: h
+    driver: operational
+    description: "The latest load is at most 168 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - silver.ctms_monitoring_plan
+  - property: consumers
+    value:
+      - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_planned_monitoring_visit"

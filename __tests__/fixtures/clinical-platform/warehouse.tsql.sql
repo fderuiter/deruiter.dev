@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.0.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.1.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -543,6 +543,69 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'silver',
   @level1type = N'TABLE', @level1name = N'ctms_milestone',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [silver].[ctms_monitoring_plan] (
+  [monitoring_plan_id]    NVARCHAR(64) NOT NULL,
+  [study_id]              NVARCHAR(64) NOT NULL,
+  [plan_version]          NVARCHAR(16) NOT NULL,
+  [effective_on]          DATE NOT NULL,
+  [interim_interval_days] INT NOT NULL,
+  [visit_window_days]     INT NOT NULL,
+  [report_due_days]       INT NOT NULL,
+  [source_system]         NVARCHAR(64) NOT NULL,
+  [is_synthetic]          BIT NOT NULL,
+  CONSTRAINT [pk_ctms_monitoring_plan] PRIMARY KEY ([monitoring_plan_id])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'CTMS monitoring plans: the interim visit cadence and report deadline each study''s plan sets. Grain: One row per monitoring plan version.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Monitoring plan id.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'monitoring_plan_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Protocol id.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'study_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Plan version.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'plan_version';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the plan took effect.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'effective_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Planned days from one monitoring visit at a site to the next interim visit.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'interim_interval_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Days an interim visit may fall after its planned date and still be on time.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'visit_window_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Days from a visit by which its report must be final.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'report_due_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Source system the record came from.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'source_system';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'ctms_monitoring_plan',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 
@@ -1503,6 +1566,71 @@ EXEC sys.sp_addextendedproperty
   @level2type = N'COLUMN', @level2name = N'milestone_sequence';
 GO
 
+CREATE TABLE [gold].[dim_monitoring_plan] (
+  [monitoring_plan_key]   INT NOT NULL,
+  [monitoring_plan_id]    NVARCHAR(64) NOT NULL,
+  [study_id]              NVARCHAR(64) NOT NULL,
+  [plan_version]          NVARCHAR(16) NOT NULL,
+  [effective_date_key]    INT NOT NULL,
+  [interim_interval_days] INT NOT NULL,
+  [visit_window_days]     INT NOT NULL,
+  [report_due_days]       INT NOT NULL,
+  [is_synthetic]          BIT NOT NULL,
+  CONSTRAINT [pk_dim_monitoring_plan] PRIMARY KEY ([monitoring_plan_key]),
+  CONSTRAINT [uq_dim_monitoring_plan_1] UNIQUE ([monitoring_plan_id]),
+  CONSTRAINT [fk_dim_monitoring_plan_effective_date_key] FOREIGN KEY ([effective_date_key]) REFERENCES [gold].[dim_date] ([date_key])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Monitoring plan dimension: the cadence and report deadline each study''s plan sets, which monitoring is measured against. Grain: One row per monitoring plan version.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Surrogate key.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'monitoring_plan_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Monitoring plan id.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'monitoring_plan_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Protocol id.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'study_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Plan version.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'plan_version';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the plan took effect.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'effective_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Planned days from one monitoring visit at a site to the next interim visit.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'interim_interval_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Days an interim visit may fall after its planned date and still be on time.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'visit_window_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Days from a visit by which its report must be final.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'report_due_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_monitoring_plan',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
 CREATE TABLE [gold].[fct_enrollment] (
   [subject_id]     NVARCHAR(64) NOT NULL,
   [event_type]     NVARCHAR(64) NOT NULL,
@@ -1860,6 +1988,8 @@ CREATE TABLE [gold].[fct_monitoring_visit] (
   [country_key]           INT NOT NULL,
   [visit_date_key]        INT NOT NULL,
   [report_final_date_key] INT,
+  [monitoring_plan_key]   INT NOT NULL,
+  [report_due_date_key]   INT NOT NULL,
   [visit_type]            NVARCHAR(64) NOT NULL,
   [visit_mode]            NVARCHAR(64) NOT NULL,
   [sdv_pages_due]         INT NOT NULL,
@@ -1872,7 +2002,9 @@ CREATE TABLE [gold].[fct_monitoring_visit] (
   CONSTRAINT [fk_fct_monitoring_visit_site_key] FOREIGN KEY ([site_key]) REFERENCES [gold].[dim_site] ([site_key]),
   CONSTRAINT [fk_fct_monitoring_visit_country_key] FOREIGN KEY ([country_key]) REFERENCES [gold].[dim_country] ([country_key]),
   CONSTRAINT [fk_fct_monitoring_visit_visit_date_key] FOREIGN KEY ([visit_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
-  CONSTRAINT [fk_fct_monitoring_visit_report_final_date_key] FOREIGN KEY ([report_final_date_key]) REFERENCES [gold].[dim_date] ([date_key])
+  CONSTRAINT [fk_fct_monitoring_visit_report_final_date_key] FOREIGN KEY ([report_final_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
+  CONSTRAINT [fk_fct_monitoring_visit_monitoring_plan_key] FOREIGN KEY ([monitoring_plan_key]) REFERENCES [gold].[dim_monitoring_plan] ([monitoring_plan_key]),
+  CONSTRAINT [fk_fct_monitoring_visit_report_due_date_key] FOREIGN KEY ([report_due_date_key]) REFERENCES [gold].[dim_date] ([date_key])
 );
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Monitoring visits with source data verification and report timeliness. Grain: One row per monitoring visit.',
@@ -1909,6 +2041,16 @@ EXEC sys.sp_addextendedproperty
   @level1type = N'TABLE', @level1name = N'fct_monitoring_visit',
   @level2type = N'COLUMN', @level2name = N'report_final_date_key';
 EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Monitoring plan in force on the visit date.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'monitoring_plan_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the report is due: the visit date plus the plan''s report deadline.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'report_due_date_key';
+EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'SIV, IMV or COV.',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_monitoring_visit',
@@ -1942,6 +2084,88 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [gold].[fct_planned_monitoring_visit] (
+  [planned_visit_id]    NVARCHAR(64) NOT NULL,
+  [monitoring_plan_key] INT NOT NULL,
+  [study_key]           INT NOT NULL,
+  [site_key]            INT NOT NULL,
+  [country_key]         INT NOT NULL,
+  [planned_date_key]    INT NOT NULL,
+  [due_date_key]        INT NOT NULL,
+  [monitoring_visit_id] NVARCHAR(64),
+  [actual_date_key]     INT,
+  [days_late]           INT,
+  [is_synthetic]        BIT NOT NULL,
+  CONSTRAINT [pk_fct_planned_monitoring_visit] PRIMARY KEY ([planned_visit_id]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_monitoring_plan_key] FOREIGN KEY ([monitoring_plan_key]) REFERENCES [gold].[dim_monitoring_plan] ([monitoring_plan_key]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_study_key] FOREIGN KEY ([study_key]) REFERENCES [gold].[dim_study] ([study_key]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_site_key] FOREIGN KEY ([site_key]) REFERENCES [gold].[dim_site] ([site_key]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_country_key] FOREIGN KEY ([country_key]) REFERENCES [gold].[dim_country] ([country_key]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_planned_date_key] FOREIGN KEY ([planned_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_due_date_key] FOREIGN KEY ([due_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
+  CONSTRAINT [fk_fct_planned_monitoring_visit_actual_date_key] FOREIGN KEY ([actual_date_key]) REFERENCES [gold].[dim_date] ([date_key])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Interim monitoring visits the monitoring plan schedules at each active site, each against the visit that met it. Grain: One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Planned visit id (degenerate dimension): the site id and its sequence.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'planned_visit_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Monitoring plan the visit is scheduled under.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'monitoring_plan_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Study.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'study_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Site version in force on the planned date.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'site_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Country of the site.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'country_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Planned date: the previous monitoring visit at the site plus the plan''s interval.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'planned_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Last on-time date: the planned date plus the plan''s visit window.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'due_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Interim visit that met the planned visit, or null while it is outstanding.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'monitoring_visit_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date of the visit that met it, or null while it is outstanding.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'actual_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Days the visit fell after its due date, 0 when on time, or null while it is outstanding.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
+  @level2type = N'COLUMN', @level2name = N'days_late';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_planned_monitoring_visit',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 

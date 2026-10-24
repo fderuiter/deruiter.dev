@@ -271,6 +271,29 @@ export interface CtmsMilestone extends BronzeRecord {
   readonly actualOn: string | null;
 }
 
+/**
+ * A study's monitoring plan as CTMS holds it: how often each active site
+ * gets an interim monitoring visit, how far a visit may slip, and how soon
+ * its report must be final. The values are the plan's own decisions, not a
+ * regulatory standard.
+ */
+export interface CtmsMonitoringPlan extends BronzeRecord {
+  /** Monitoring plan id. */
+  readonly monitoringPlanId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Plan version. */
+  readonly version: string;
+  /** ISO 8601 date the plan took effect. */
+  readonly effectiveOn: string;
+  /** Planned days from one monitoring visit at a site to the next interim visit. */
+  readonly interimIntervalDays: number;
+  /** Days an interim visit may fall after its planned date and still be on time. */
+  readonly visitWindowDays: number;
+  /** Days from a visit by which its report must be final. */
+  readonly reportDueDays: number;
+}
+
 /** CTMS monitoring visit, with source data verification counts. */
 export interface CtmsMonitoringVisit extends BronzeRecord {
   /** Monitoring visit id. */
@@ -451,6 +474,8 @@ export interface EdcFeed {
 export interface CtmsFeed {
   /** Study milestones. */
   readonly milestones: readonly CtmsMilestone[];
+  /** Monitoring plans, one per study. */
+  readonly monitoringPlans: readonly CtmsMonitoringPlan[];
   /** Monitoring visits. */
   readonly monitoringVisits: readonly CtmsMonitoringVisit[];
   /** Protocol deviations. */

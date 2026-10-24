@@ -56,6 +56,12 @@ Re-exports [AdamRowLocation](types/interfaces/AdamRowLocation.md)
 
 ***
 
+### ADRG\_PATH
+
+Re-exports [ADRG_PATH](internal/export/package/variables/ADRG_PATH.md)
+
+***
+
 ### AnalysisPopulationDefinition
 
 Re-exports [AnalysisPopulationDefinition](types/interfaces/AnalysisPopulationDefinition.md)
@@ -284,6 +290,12 @@ Re-exports [buildDefine](internal/define/build-define/functions/buildDefine.md)
 
 ***
 
+### buildReviewerGuides
+
+Re-exports [buildReviewerGuides](internal/guides/reviewer-guides/functions/buildReviewerGuides.md)
+
+***
+
 ### buildStudyDataPackage
 
 Re-exports [buildStudyDataPackage](internal/export/package/functions/buildStudyDataPackage.md)
@@ -389,6 +401,12 @@ Re-exports [CONTROLLED_TERMINOLOGY](internal/conformance/terminology/variables/C
 ### createLineageIndex
 
 Re-exports [createLineageIndex](internal/lineage/trace/functions/createLineageIndex.md)
+
+***
+
+### CSDRG\_PATH
+
+Re-exports [CSDRG_PATH](internal/export/package/variables/CSDRG_PATH.md)
 
 ***
 
@@ -1010,6 +1028,12 @@ Re-exports [renderDefineHtml](internal/define/render-define-html/functions/rende
 
 ***
 
+### renderReviewerGuideHtml
+
+Re-exports [renderReviewerGuideHtml](internal/guides/render-reviewer-guide/functions/renderReviewerGuideHtml.md)
+
+***
+
 ### resolveResultRows
 
 Re-exports [resolveResultRows](internal/tlf/row-ids/functions/resolveResultRows.md)
@@ -1019,6 +1043,60 @@ Re-exports [resolveResultRows](internal/tlf/row-ids/functions/resolveResultRows.
 ### ResultRow
 
 Re-exports [ResultRow](types/interfaces/ResultRow.md)
+
+***
+
+### ReviewerGuide
+
+Re-exports [ReviewerGuide](internal/guides/reviewer-guides/interfaces/ReviewerGuide.md)
+
+***
+
+### ReviewerGuideAnalysis
+
+Re-exports [ReviewerGuideAnalysis](internal/guides/reviewer-guides/interfaces/ReviewerGuideAnalysis.md)
+
+***
+
+### ReviewerGuideDataset
+
+Re-exports [ReviewerGuideDataset](internal/guides/reviewer-guides/interfaces/ReviewerGuideDataset.md)
+
+***
+
+### ReviewerGuideDerivation
+
+Re-exports [ReviewerGuideDerivation](internal/guides/reviewer-guides/interfaces/ReviewerGuideDerivation.md)
+
+***
+
+### ReviewerGuideFlowStep
+
+Re-exports [ReviewerGuideFlowStep](internal/guides/reviewer-guides/interfaces/ReviewerGuideFlowStep.md)
+
+***
+
+### ReviewerGuideIssue
+
+Re-exports [ReviewerGuideIssue](internal/guides/reviewer-guides/interfaces/ReviewerGuideIssue.md)
+
+***
+
+### ReviewerGuideKind
+
+Re-exports [ReviewerGuideKind](internal/guides/reviewer-guides/type-aliases/ReviewerGuideKind.md)
+
+***
+
+### ReviewerGuideOutput
+
+Re-exports [ReviewerGuideOutput](internal/guides/reviewer-guides/interfaces/ReviewerGuideOutput.md)
+
+***
+
+### ReviewerGuides
+
+Re-exports [ReviewerGuides](internal/guides/reviewer-guides/interfaces/ReviewerGuides.md)
 
 ***
 
@@ -1391,6 +1469,12 @@ Re-exports [writeKmFigureHtml](internal/tlf/km-svg/functions/writeKmFigureHtml.m
 ### writeKmFigureSvg
 
 Re-exports [writeKmFigureSvg](internal/tlf/km-svg/functions/writeKmFigureSvg.md)
+
+***
+
+### writeReviewerGuideDocument
+
+Re-exports [writeReviewerGuideDocument](internal/guides/render-reviewer-guide/functions/writeReviewerGuideDocument.md)
 
 ***
 

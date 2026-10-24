@@ -18,7 +18,7 @@
 
 ### fileFormats
 
-> `readonly` **fileFormats**: `Readonly`\<`Record`\<`"json"` \| `"csv"` \| `"xpt"` \| `"xml"`, `string`\>\>
+> `readonly` **fileFormats**: `Readonly`\<`Record`\<`"json"` \| `"csv"` \| `"xpt"` \| `"xml"` \| `"html"`, `string`\>\>
 
 ***
 

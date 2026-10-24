@@ -461,9 +461,9 @@ describe("study data package", () => {
     expect(paths).toContain(`${ADAM_PACKAGE_DIR}/adsl.xpt`);
     expect(paths).toContain(SDTM_DEFINE_PATH);
     expect(paths).toContain(ADAM_DEFINE_PATH);
-    // Three files per dataset, a define.xml per layer, README, MANIFEST
-    // and RUN-TIMESTAMP.
-    expect(paths).toHaveLength(exported.length * 3 + 2 + 3);
+    // Three files per dataset, a define.xml and a reviewer guide per layer,
+    // README, MANIFEST and RUN-TIMESTAMP.
+    expect(paths).toHaveLength(exported.length * 3 + 2 + 2 + 3);
     expect(paths.slice(-2)).toEqual([
       PACKAGE_MANIFEST_PATH,
       PACKAGE_TIMESTAMP_PATH,

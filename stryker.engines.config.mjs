@@ -14,7 +14,8 @@ import baseConfig from "./stryker.config.mjs";
  * `fileBreaks` holds each file's floor: its measured score, floored.
  * `scripts/run-mutation-tests.ts` fails the run when any file drops below
  * its floor. Raise a floor as survivors get killed; never lower one.
- * The Garmin engine runs in its own scope, `stryker.garmin.config.mjs` (#2564).
+ * The Garmin engine runs in its own scope, `stryker.garmin.config.mjs` (#2564),
+ * and so do the study data derivations, `stryker.study-data.config.mjs` (#2607).
  *
  * Measured 2026-10-19 on 4 cores: first run rounding 95.18, scoring 89.52,
  * validator 91.41, Duck 51.35; after the cheapest survivors got tests,

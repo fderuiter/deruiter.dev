@@ -115,3 +115,32 @@ jobs:
 
       - name: Run Every Garmin Engine Mutant
         run: npm run test:mutation -- --garmin
+
+  # #2607: about 1,900 mutants took 119 minutes on a loaded 4-core
+  # container (the Garmin scope's 79 minutes there took 65 on a hosted
+  # runner), so this job gets the longest bound.
+  mutation-study-data:
+    name: Mutation Gate (Study Data Derivations)
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Run Every Study Data Mutant
+        run: npm run test:mutation -- --study-data

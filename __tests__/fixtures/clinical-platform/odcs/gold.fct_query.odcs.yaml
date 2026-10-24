@@ -1,0 +1,193 @@
+# ODCS v3.2.0 data contract for gold.fct_query. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_query"
+name: "Query facts"
+version: "1.0.0"
+status: active
+domain: "Operations mart"
+tags:
+  - gold
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "Data queries with their resolution times."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_query
+    name: fct_query
+    physicalName: gold.fct_query
+    physicalType: table
+    logicalType: object
+    description: "Data queries with their resolution times."
+    dataGranularityDescription: "One row per query."
+    properties:
+      - name: query_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Query id (degenerate dimension)."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force when the query opened."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: opened_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "UTC date the query opened."
+        required: true
+        classification: internal
+      - name: answered_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "UTC date the site answered."
+        required: false
+        classification: internal
+      - name: closed_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "UTC date the query closed."
+        required: false
+        classification: internal
+      - name: queried_field
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Queried field, as DOMAIN.VARIABLE."
+        required: true
+        classification: internal
+      - name: query_origin
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "edit-check or manual."
+        required: true
+        classification: internal
+      - name: query_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "State at the data cut."
+        required: true
+        classification: internal
+      - name: minutes_to_answer
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Minutes from opening to the site's answer."
+        required: false
+        classification: internal
+      - name: minutes_to_close
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Minutes from opening to closing."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_query_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - query_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (query_id) identifies one row."
+team:
+  name: "Operations mart"
+  members:
+    - username: clinical-data-management-lead
+      name: "Clinical Data Management Lead"
+      role: owner
+    - username: clinical-data-steward
+      name: "Clinical Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.edc_query
+      - silver.site
+  - property: consumers
+    value:
+      - "metric:query_rate_per_100_visits"
+      - "metric:open_query_count"
+      - "metric:query_aging_mean"
+      - "metric:query_resolution_time_median"

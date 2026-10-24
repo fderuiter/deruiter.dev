@@ -1,0 +1,181 @@
+# ODCS v3.2.0 data contract for gold.fct_visit. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_visit"
+name: "Visit facts"
+version: "1.0.0"
+status: active
+domain: "Operations mart"
+tags:
+  - gold
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "Subject visits against the schedule, with entry timeliness."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_visit
+    name: fct_visit
+    physicalName: gold.fct_visit
+    physicalType: table
+    logicalType: object
+    description: "Subject visits against the schedule, with entry timeliness."
+    dataGranularityDescription: "One row per subject visit record."
+    properties:
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id (degenerate dimension)."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: planned_visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Planned visit id."
+        required: true
+        classification: internal
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force on the visit date, or the planned date of a missed visit."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: visit_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Visit date, or null for a missed visit."
+        required: false
+        classification: internal
+      - name: planned_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned date: enrollment plus the planned day."
+        required: true
+        classification: internal
+      - name: visit_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "entered, pending-entry or missed."
+        required: true
+        classification: internal
+      - name: day_offset
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual minus planned day."
+        required: false
+        classification: internal
+      - name: is_out_of_window
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the visit fell outside its window."
+        required: true
+        classification: internal
+      - name: entry_lag_days
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days from the visit to data entry."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_visit_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - visit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (visit_id) identifies one row."
+team:
+  name: "Operations mart"
+  members:
+    - username: clinical-data-management-lead
+      name: "Clinical Data Management Lead"
+      role: owner
+    - username: clinical-data-steward
+      name: "Clinical Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.edc_subject
+      - silver.edc_visit
+      - silver.planned_visit
+      - silver.site
+  - property: consumers
+    value:
+      - "metric:data_entry_lag_median"
+      - "metric:data_entry_lag_p90"
+      - "metric:data_entry_lag_mean"
+      - "metric:missed_visit_rate"
+      - "metric:out_of_window_visit_rate"
+      - "metric:query_rate_per_100_visits"

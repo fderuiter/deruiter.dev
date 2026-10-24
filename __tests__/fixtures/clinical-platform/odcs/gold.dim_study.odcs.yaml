@@ -1,0 +1,212 @@
+# ODCS v3.2.0 data contract for gold.dim_study. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_study"
+name: "Study dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - internal
+  - synthetic
+description:
+  purpose: "Conformed study dimension."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_study
+    name: dim_study
+    physicalName: gold.dim_study
+    physicalType: table
+    logicalType: object
+    description: "Conformed study dimension."
+    dataGranularityDescription: "One row per study."
+    properties:
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Surrogate key."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id, the natural key."
+        required: true
+        classification: internal
+      - name: study_title
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Short title."
+        required: true
+        classification: internal
+      - name: therapeutic_area
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Therapeutic area."
+        required: true
+        classification: internal
+      - name: product_type
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Investigational product type."
+        required: true
+        classification: internal
+      - name: phase
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Development phase or device study stage."
+        required: true
+        classification: internal
+      - name: regulatory_path
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "IND or IDE."
+        required: true
+        classification: internal
+      - name: operating_model
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Sponsor or CRO."
+        required: true
+        classification: internal
+      - name: cro_vendor_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Vendor id of the CRO."
+        required: false
+        classification: internal
+      - name: study_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Lifecycle status at the data cut."
+        required: true
+        classification: internal
+      - name: start_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the protocol was finalised."
+        required: true
+        classification: internal
+      - name: planned_enrollment
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Enrollment target."
+        required: true
+        classification: internal
+      - name: is_randomized
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether subjects are randomised."
+        required: true
+        classification: internal
+      - name: arm_count
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Number of treatment arms."
+        required: true
+        classification: internal
+      - name: has_cec_adjudication
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether a clinical events committee adjudicates events."
+        required: true
+        classification: internal
+      - name: study_data_product_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Study Data Pipeline product id."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: dim_study_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - study_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (study_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: portfolio-management-lead
+      name: "Portfolio Management Lead"
+      role: owner
+    - username: portfolio-data-steward
+      name: "Portfolio Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - silver.study
+  - property: consumers
+    value:
+      - "product:gold.fct_enrollment"
+      - "product:gold.fct_visit"
+      - "product:gold.fct_query"
+      - "product:gold.fct_deviation"
+      - "product:gold.fct_monitoring_visit"
+      - "product:gold.fct_milestone"
+      - "product:gold.fct_spend"
+      - "product:gold.fct_kri_snapshot"

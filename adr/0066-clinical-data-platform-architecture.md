@@ -74,7 +74,8 @@ of them) is modelled in three layers. Data flows towards gold and never back.
 
 Each fact table declares its grain. Each data product carries a semantic
 version, and a breaking contract change needs a major version bump that CI
-checks. `checkLayerFlow` in the module rejects a lineage edge that flows
+checks. The products and their contracts are listed in the
+[data contract catalog](../docs/reference/clinical-platform-data-contracts.md). `checkLayerFlow` in the module rejects a lineage edge that flows
 from a higher layer into a lower one.
 
 ### A deep module

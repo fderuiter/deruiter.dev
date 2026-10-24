@@ -197,10 +197,12 @@ jobs:
           restore-keys: |
             static-incremental-${{ hashFiles('package-lock.json') }}-
 
-      # #2014: the typecheck runs from scratch under a heap smaller than the
-      # 3 GB ceiling `npm run typecheck` gives Vercel's Deployment Checks, so
-      # a program that outgrows its memory fails here on the pull request,
-      # with headroom to spare, instead of crashing the production deploy.
+      # #2014: the typecheck runs from scratch under a heap 512 MB smaller
+      # than the 3.5 GB ceiling `npm run typecheck` gets in the production
+      # build (scripts/build.js Phase 1.4), so a program that outgrows its
+      # memory fails here on the pull request, with headroom to spare,
+      # instead of crashing the production deploy. Both limits rose by
+      # 512 MB in #2743 when the program's live heap reached 2.54 GB.
       # An incremental run would check only changed files and could pass on
       # less memory than a cold run needs.
       - name: Type Check (Memory Budget) & Lint

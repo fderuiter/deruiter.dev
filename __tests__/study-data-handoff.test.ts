@@ -45,12 +45,20 @@ function editedDemo(edit: (doc: UsdmV4Document) => void): UsdmV4Document {
   return doc;
 }
 
+function version(doc: UsdmV4Document) {
+  const found = doc.study.versions?.[0];
+  if (!found) throw new Error("no study version");
+  return found;
+}
+
 function design(doc: UsdmV4Document) {
-  return doc.study.versions[0].studyDesigns[0];
+  const found = version(doc).studyDesigns?.[0];
+  if (!found) throw new Error("no study design");
+  return found;
 }
 
 function concept(doc: UsdmV4Document, id: string) {
-  const found = doc.study.versions[0].biomedicalConcepts?.find(
+  const found = version(doc).biomedicalConcepts?.find(
     (bc) => bc.id === id
   );
   if (!found) throw new Error(`no concept ${id}`);

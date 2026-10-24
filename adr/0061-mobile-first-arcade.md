@@ -161,7 +161,10 @@ cabinet's existing `useFullscreen` and `CabinetFullscreen` are reused.
   and resume rule.
 - The Playwright suite gains two phone projects, "Small Phone" (320x568) and
   "Phone Landscape" (iPhone 12 landscape). They run only `mobile-kit.spec.ts`, so
-  the rest of the suite does not multiply.
+  the rest of the suite does not multiply. #2365 replaced them with seven
+  `Phone*` projects that run `phone-kit.spec.ts` (the renamed kit) and each
+  game's `*-phone.spec.ts`; see
+  `docs/how-to/run-the-arcade-phone-device-matrix.md`.
 
 ## Amendment (2026-10-12): Retro Labyrinth leaves the gate
 
@@ -290,7 +293,7 @@ direction was to make every game perfect on an iPad first.
   to phones only, since `mobileOrientation` is a phone concern. On 2026-10-13
   the prompt, the lock and the rotation auto-pause share one short-side query,
   `PHONE_ORIENTATION_QUERY` (`(pointer: coarse) and ((max-width: 500px) or
-  (max-height: 500px))`), and tablets do not pause on rotation.
+(max-height: 500px))`), and tablets do not pause on rotation.
   Desktop with a fine pointer is unchanged.
 - **Apple Pencil.** Pointer events with `pointerType` `"pen"` are treated as
   touch by the kit. `TouchButton` captures, counts and releases a Pencil and a

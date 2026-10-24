@@ -71,6 +71,7 @@
     "test:watch": "vitest",
     "test:fuzz": "vitest run __tests__/property-fuzz.test.ts",
     "test:mutation": "tsx scripts/run-mutation-tests.ts",
+    "test:e2e:phone": "playwright test --project=\"Phone*\"",
     "audit:a11y": "playwright test __tests__/e2e/accessibility.spec.ts --project=chromium",
     "audit:licenses": "tsx scripts/license-audit.ts",
     "oss:credits": "tsx scripts/oss-credits.ts",

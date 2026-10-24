@@ -1838,6 +1838,12 @@ Re-exports [LoadStudyDraftResult](study-draft-storage/type-aliases/LoadStudyDraf
 
 ***
 
+### loadUsdmV4WrapperSchema
+
+Re-exports [loadUsdmV4WrapperSchema](usdm-v4-schema/functions/loadUsdmV4WrapperSchema.md)
+
+***
+
 ### mapOdmDataTypeToClinical
 
 Re-exports [mapOdmDataTypeToClinical](odm-xml-parser/functions/mapOdmDataTypeToClinical.md)
@@ -3569,6 +3575,12 @@ Re-exports [validateStudyCompliance](cdisc-conformance-linter/functions/validate
 ### validateUniversalCrf
 
 Re-exports [validateUniversalCrf](universal-schema/functions/validateUniversalCrf.md)
+
+***
+
+### validateUsdmV4Document
+
+Re-exports [validateUsdmV4Document](usdm-v4-schema/functions/validateUsdmV4Document.md)
 
 ***
 

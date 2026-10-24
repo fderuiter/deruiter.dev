@@ -160,10 +160,18 @@ export function HandoffPanel({
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-2">
-        <button type="button" onClick={onDownload} className={BUTTON_SECONDARY}>
+        <button
+          type="button"
+          onClick={onDownload}
+          className={`${BUTTON_SECONDARY} min-h-12`}
+        >
           Download this USDM (.json)
         </button>
-        <button type="button" onClick={onUseDemo} className={BUTTON_SECONDARY}>
+        <button
+          type="button"
+          onClick={onUseDemo}
+          className={`${BUTTON_SECONDARY} min-h-12`}
+        >
           Use the DEMO-301 study instead
         </button>
       </div>

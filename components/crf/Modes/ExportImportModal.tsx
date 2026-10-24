@@ -26,9 +26,14 @@ import {
   IconAlertCircle,
   IconWand,
   IconArchive,
+  IconPlayerPlay,
 } from "@tabler/icons-react";
 
 import { exportUniversalCrfJson } from "@/lib/crf/universal-schema";
+import {
+  STUDY_DATA_HANDOFF_PATH,
+  storeStudyHandoff,
+} from "@/components/study-data/handoff-storage";
 import { ImportDropzone } from "../ImportDropzone";
 import type { ParsedStudyFileResult } from "@/lib/crf/file-ingestion";
 
@@ -104,6 +109,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
   const [importError, setImportError] = useState<string | null>(null);
   const [activeContent, setActiveContent] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState<boolean>(true);
+  const [handoffError, setHandoffError] = useState<string | null>(null);
   const [preflightViolations, setPreflightViolations] = useState<
     ComplianceViolation[]
   >([]);
@@ -233,6 +239,28 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
       isMounted = false;
     };
   }, [activeTab, study, selectedForm, specFields]);
+
+  // The USDM tab's content is the export itself, so the handoff stores it
+  // synchronously and lets the link navigate in the same tab, where
+  // sessionStorage carries it to /study-data.
+  const handleRunPipeline = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    recordEvent("crf", "project_click");
+    let failure: ReturnType<typeof storeStudyHandoff> = "unavailable";
+    if (!isGenerating) {
+      try {
+        failure = storeStudyHandoff(JSON.parse(activeContent));
+      } catch {
+        failure = "unavailable";
+      }
+    }
+    if (!failure) return;
+    event.preventDefault();
+    setHandoffError(
+      failure === "too-large"
+        ? "This study is too large to hand over in this browser tab. Download the USDM file instead."
+        : "The study could not be handed over in this browser tab. Download the USDM file instead."
+    );
+  };
 
   const handleDownload = () => {
     recordEvent("crf", "project_click");
@@ -711,6 +739,30 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           <span>JSON Study Bundle</span>
         </button>
       </div>
+
+      {activeTab === "usdm" && (
+        <div className="shrink-0 min-w-0 flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800">
+          <p className="min-w-0 flex-1 text-xs font-sans text-zinc-300 break-words">
+            Run the study data pipeline on {study.protocolNumber}: this USDM
+            export opens in the Study Data Pipeline, which lists the domains it
+            tabulates and the ones it leaves out before anything runs.
+          </p>
+          <a
+            href={STUDY_DATA_HANDOFF_PATH}
+            onClick={handleRunPipeline}
+            aria-disabled={isGenerating || undefined}
+            className="inline-flex shrink-0 items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/60 text-amber-200 font-mono text-xs font-bold transition-all active:scale-[0.98] aria-disabled:opacity-60"
+          >
+            <IconPlayerPlay className="w-4 h-4" />
+            <span>Run the pipeline on this study</span>
+          </a>
+          {handoffError && (
+            <p role="alert" className="basis-full text-xs text-rose-300">
+              {handoffError}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Main Tab Content */}
       {EXPORT_TABS.map((tabId) => {

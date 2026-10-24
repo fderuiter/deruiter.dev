@@ -19,7 +19,6 @@ interface StackLayer {
   icon: React.ReactNode;
   accentColor: string;
   borderColor: string;
-  glowColor: string;
   technologies: {
     name: string;
     version?: string;
@@ -37,7 +36,6 @@ const STACK_LAYERS: StackLayer[] = [
     icon: <IconCpu className="w-5 h-5 text-brand-cyan" />,
     accentColor: "text-brand-cyan",
     borderColor: "hover:border-brand-cyan/40",
-    glowColor: "bg-brand-cyan/5",
     technologies: [
       {
         name: "Next.js",
@@ -77,7 +75,6 @@ const STACK_LAYERS: StackLayer[] = [
     icon: <IconPalette className="w-5 h-5 text-purple-400" />,
     accentColor: "text-purple-400",
     borderColor: "hover:border-purple-400/40",
-    glowColor: "bg-purple-500/5",
     technologies: [
       {
         name: "Tailwind CSS",
@@ -104,7 +101,7 @@ const STACK_LAYERS: StackLayer[] = [
     ],
     keyHighlights: [
       "Zero-config JS file: 100% CSS-native @theme inline token declarations",
-      "Dynamic dark-mode aesthetic with HSL-tuned cyan/emerald glowing accents",
+      "Dynamic dark-mode aesthetic with HSL-tuned cyan/emerald accents",
       "Optimized zero-runtime CSS footprint with sub-50KB stylesheet delivery",
     ],
     architecturalRationale:
@@ -116,7 +113,6 @@ const STACK_LAYERS: StackLayer[] = [
     icon: <IconLayoutGrid className="w-5 h-5 text-emerald-400" />,
     accentColor: "text-emerald-400",
     borderColor: "hover:border-emerald-400/40",
-    glowColor: "bg-emerald-500/5",
     technologies: [
       {
         name: "@chenglou/pretext",
@@ -149,7 +145,6 @@ const STACK_LAYERS: StackLayer[] = [
     icon: <IconDatabase className="w-5 h-5 text-amber-400" />,
     accentColor: "text-amber-400",
     borderColor: "hover:border-amber-400/40",
-    glowColor: "bg-amber-500/5",
     technologies: [
       {
         name: "Prisma ORM",
@@ -189,7 +184,6 @@ const STACK_LAYERS: StackLayer[] = [
     icon: <IconDeviceGamepad2 className="w-5 h-5 text-rose-400" />,
     accentColor: "text-rose-400",
     borderColor: "hover:border-rose-400/40",
-    glowColor: "bg-rose-500/5",
     technologies: [
       {
         name: "Web Audio API",
@@ -227,7 +221,6 @@ const STACK_LAYERS: StackLayer[] = [
     icon: <IconCertificate className="w-5 h-5 text-indigo-400" />,
     accentColor: "text-indigo-400",
     borderColor: "hover:border-indigo-400/40",
-    glowColor: "bg-indigo-500/5",
     technologies: [
       {
         name: "Vitest",
@@ -287,11 +280,6 @@ export const StackLayerCards: React.FC = () => {
             onMouseEnter={() => playHover()}
             className={`p-5 rounded-2xl bg-surface-1 border border-zinc-800/80 ${layer.borderColor} transition-all duration-200 flex flex-col justify-between group relative overflow-hidden`}
           >
-            {/* Ambient Corner Glow */}
-            <div
-              className={`absolute -top-10 -right-10 w-28 h-28 rounded-full ${layer.glowColor} blur-2xl pointer-events-none group-hover:scale-150 transition-transform duration-500`}
-            />
-
             <div>
               {/* Category Header */}
               <div className="flex items-center gap-3 mb-4">

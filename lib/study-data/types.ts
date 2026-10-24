@@ -86,7 +86,12 @@ export interface VariableMeta {
   readonly role?: VariableRole;
   /** Where the value comes from. */
   readonly origin: VariableOrigin;
-  /** NCI code of the controlled terminology codelist, for example `C66731`. */
+  /**
+   * Id of the codelist in the pipeline's local terminology subset, for
+   * example `NY` (CDISC CT, NCI code C66742) or a sponsor-defined list such
+   * as `AEREL`. The codelist entry carries the NCI code; see
+   * `CONTROLLED_TERMINOLOGY`.
+   */
   readonly codelist?: string;
   /** Derivation method id, required when the origin is Derived. */
   readonly method?: string;
@@ -107,6 +112,13 @@ export interface Dataset {
   readonly layer: DataLayer;
   /** Observation class or ADaM class, for example `Events` or `BDS`. */
   readonly class: string;
+  /** ADaM subclass, for example `TIME-TO-EVENT` for an ADTTE BDS dataset. */
+  readonly subClass?: string;
+  /**
+   * What one record represents, for example `One record per subject`. The
+   * pipeline sets it on every SDTM and ADaM dataset; Define-XML requires it.
+   */
+  readonly structure?: string;
   /** Natural key variables, in sort order. */
   readonly keys: readonly string[];
   /** Variable metadata, in dataset column order. */
@@ -456,4 +468,521 @@ export interface PipelineRun {
   readonly conformance: ConformanceReport;
   /** Reproducibility manifest. */
   readonly manifest: RunManifest;
+}
+
+// ---------------------------------------------------------------------------
+// Analysis results: an ARS 1.0-shaped metadata model (#2593)
+// ---------------------------------------------------------------------------
+
+/** Summary statistics of one set of values, from `descriptiveStatistics`. */
+export interface DescriptiveStatistics {
+  /** Number of values. */
+  readonly n: number;
+  /** Decimals the values were recorded with. */
+  readonly rawDecimals: number;
+  /** Arithmetic mean, `null` when there are no values. */
+  readonly mean: number | null;
+  /** Sample SD with the n - 1 denominator, `null` for fewer than two values. */
+  readonly sd: number | null;
+  /** Median; the mean of the two middle values for an even count. */
+  readonly median: number | null;
+  /** Smallest value. */
+  readonly min: number | null;
+  /** Largest value. */
+  readonly max: number | null;
+}
+
+/** A comparator, as ARS 1.0 names them. */
+export type ArsComparator =
+  "EQ" | "NE" | "GT" | "GE" | "LT" | "LE" | "IN" | "NOTIN";
+
+/**
+ * One condition, `dataset.variable comparator value`. Dataset and variable
+ * names are the ones the Dataset-JSON files and `itemOid` use.
+ */
+export interface ArsCondition {
+  /** Dataset name, for example `ADSL`. */
+  readonly dataset: string;
+  /** Variable name, for example `SAFFL`. */
+  readonly variable: string;
+  /** How the variable is compared. */
+  readonly comparator: ArsComparator;
+  /**
+   * Values to compare against, as text. A numeric variable compares
+   * numerically. A missing value matches only `NE` and `NOTIN`.
+   */
+  readonly value: readonly string[];
+}
+
+/** A where clause that holds one condition. */
+export interface ArsConditionClause {
+  /** The condition. */
+  readonly condition: ArsCondition;
+}
+
+/** A where clause that combines other where clauses. */
+export interface ArsCompoundClause {
+  /** The combination. */
+  readonly compoundExpression: ArsCompoundExpression;
+}
+
+/** A where clause: one condition, or a compound expression. */
+export type ArsWhereClause = ArsConditionClause | ArsCompoundClause;
+
+/** Where clauses joined by AND or OR, or one negated by NOT. */
+export interface ArsCompoundExpression {
+  /** The logical operator. NOT takes exactly one clause. */
+  readonly logicalOperator: "AND" | "OR" | "NOT";
+  /** The clauses it joins. */
+  readonly whereClauses: readonly ArsWhereClause[];
+}
+
+/** Identity and position shared by analysis sets, groups and data subsets. */
+export interface ArsOrderedEntity {
+  /** Stable id, for example `AnalysisSet_SAF`. */
+  readonly id: string;
+  /** Short name. */
+  readonly name: string;
+  /** Label for displays. */
+  readonly label: string;
+  /** Nesting level, 1 for top level. */
+  readonly level: number;
+  /** Position among its siblings, from 1. */
+  readonly order: number;
+}
+
+/** A population of subjects, defined on ADSL. */
+export type ArsAnalysisSet = ArsOrderedEntity & ArsWhereClause;
+
+/** One pre-specified group of a grouping factor. */
+export type ArsGroup = ArsOrderedEntity & ArsWhereClause;
+
+/** A subset of an analysis dataset's records. */
+export type ArsDataSubset = ArsOrderedEntity & ArsWhereClause;
+
+/**
+ * A factor results are grouped by, such as treatment or system organ class.
+ * A data-driven factor has no pre-specified groups: results carry the
+ * observed value as `groupValue` instead of a `groupId`.
+ */
+export interface ArsGroupingFactor {
+  /** Stable id, for example `AnlsGrouping_TRT01A`. */
+  readonly id: string;
+  /** Short name. */
+  readonly name: string;
+  /** Label for displays. */
+  readonly label: string;
+  /** Dataset the grouping variable is read from. */
+  readonly groupingDataset: string;
+  /** The grouping variable. */
+  readonly groupingVariable: string;
+  /** Whether groups come from the observed values. */
+  readonly dataDriven: boolean;
+  /** Pre-specified groups, in display order; empty when data-driven. */
+  readonly groups: readonly ArsGroup[];
+}
+
+/** A term from ARS controlled terminology, such as a role or a reason. */
+export interface ArsTerm {
+  /** The term, for example `DENOMINATOR`. */
+  readonly controlledTerm: string;
+}
+
+/** A link from one operation to another whose result it uses. */
+export interface ArsOperationRelationship {
+  /** Stable id, referenced by an analysis. */
+  readonly id: string;
+  /** `NUMERATOR` or `DENOMINATOR`. */
+  readonly referencedOperationRole: ArsTerm;
+  /** The operation whose result is used. */
+  readonly operationId: string;
+  /** What the relationship means. */
+  readonly description: string;
+}
+
+/** One operation of a method, which produces one result per group. */
+export interface ArsOperation {
+  /** Stable id, for example `Mth_Summ_Mean`. */
+  readonly id: string;
+  /** Short name, for example `Mean`. */
+  readonly name: string;
+  /** Label, including the display precision rule. */
+  readonly label: string;
+  /** Position within the method, from 1. */
+  readonly order: number;
+  /** Display pattern, for example `XX` or `(XX.X)`, when it does not depend on the data. */
+  readonly resultPattern?: string;
+  /** Operations of other analyses whose results this one uses. */
+  readonly referencedOperationRelationships?: readonly ArsOperationRelationship[];
+}
+
+/** A statistical method: a named, ordered list of operations. */
+export interface ArsAnalysisMethod {
+  /** Stable id, for example `Mth_Summ`. */
+  readonly id: string;
+  /** Short name. */
+  readonly name: string;
+  /** Label for displays. */
+  readonly label: string;
+  /** What the method computes, in words. */
+  readonly description: string;
+  /** Operations, in order. */
+  readonly operations: readonly ArsOperation[];
+}
+
+/** One grouping factor applied by an analysis, in order. */
+export interface ArsOrderedGrouping {
+  /** Position, from 1. */
+  readonly order: number;
+  /** The grouping factor. */
+  readonly groupingId: string;
+  /** Whether a result is produced for each group. */
+  readonly resultsByGroup: boolean;
+}
+
+/** Which analysis supplies the operation a relationship refers to. */
+export interface ArsReferencedAnalysisOperation {
+  /** The operation relationship. */
+  readonly referencedOperationRelationshipId: string;
+  /** The analysis whose result is used. */
+  readonly analysisId: string;
+}
+
+/** The group a result belongs to, for one grouping factor. */
+export interface ArsResultGroup {
+  /** The grouping factor. */
+  readonly groupingId: string;
+  /** The pre-specified group, when the factor is not data-driven. */
+  readonly groupId?: string;
+  /** The observed value, when the factor is data-driven. */
+  readonly groupValue?: string;
+}
+
+/**
+ * Why a set of ADaM rows is linked to a result: `population` rows are the
+ * ADSL records of the subjects in the analysis set and group (the
+ * denominator), `analysis` rows the records counted or summarised.
+ */
+export type ArsRowRole = "population" | "analysis";
+
+/**
+ * A deduplicated set of ADaM rows that results refer to. Row ids are built
+ * by `adamRowId`: the dataset name and the values of its key variables
+ * other than `STUDYID`, for example `ADVS:DEMO-301-0001:5`.
+ */
+export interface ArsRowSet {
+  /** Stable id, for example `RowSet_0001`. */
+  readonly id: string;
+  /** Dataset the rows belong to. */
+  readonly dataset: string;
+  /** Row ids, in dataset order. */
+  readonly rowIds: readonly string[];
+}
+
+/** A link from a result to a set of ADaM rows. */
+export interface ArsRowReference {
+  /** Why the rows are linked. */
+  readonly role: ArsRowRole;
+  /** The row set. */
+  readonly rowSetId: string;
+}
+
+/**
+ * One result: the value of one operation for one combination of groups.
+ * `id` and `rowReferences` extend the ARS 1.0 shape, so a displayed cell
+ * can name its results and each result the rows that produced it.
+ */
+export interface ArsOperationResult {
+  /** Stable id, for example `An_14_1_1_AGE.004`. */
+  readonly id: string;
+  /** The operation that produced it. */
+  readonly operationId: string;
+  /** The groups it belongs to, one per grouping with results by group. */
+  readonly resultGroups: readonly ArsResultGroup[];
+  /** The unrounded value as text; absent when not estimable. */
+  readonly rawValue?: string;
+  /** The value as displayed, `NE` when not estimable. */
+  readonly formattedValue: string;
+  /** The ADaM rows the value was computed from. */
+  readonly rowReferences: readonly ArsRowReference[];
+}
+
+/** One analysis: a method applied to a variable for an analysis set. */
+export interface ArsAnalysis {
+  /** Stable id, for example `An_14_1_1_AGE`. */
+  readonly id: string;
+  /** Short description. */
+  readonly name: string;
+  /** Version, from 1. */
+  readonly version: number;
+  /** Why the analysis is performed, for example `SPECIFIED IN SAP`. */
+  readonly reason: ArsTerm;
+  /** What the analysis is for, when it measures a study endpoint. */
+  readonly purpose?: ArsTerm;
+  /** The analysis dataset. */
+  readonly dataset: string;
+  /** The analysis variable. */
+  readonly variable: string;
+  /** The population. */
+  readonly analysisSetId: string;
+  /** The record subset, when there is one. */
+  readonly dataSubsetId?: string;
+  /** The method. */
+  readonly methodId: string;
+  /** Grouping factors, in order. */
+  readonly orderedGroupings: readonly ArsOrderedGrouping[];
+  /** Where the results of related operations come from. */
+  readonly referencedAnalysisOperations?: readonly ArsReferencedAnalysisOperation[];
+  /**
+   * Decimals the summarised data is recorded with, which set the display
+   * precision. Present for descriptive summaries only.
+   */
+  readonly rawDecimals?: number;
+  /** The results, one per operation and group combination. */
+  readonly results: readonly ArsOperationResult[];
+}
+
+/** An ARS display section type. */
+export type ArsDisplaySectionType =
+  | "Title"
+  | "Footnote"
+  | "Rowlabel Header"
+  | "Header"
+  | "Abbreviation"
+  | "Legend"
+  | "Body";
+
+/** One piece of text in a display section. */
+export interface ArsDisplaySubSection {
+  /** Stable id. */
+  readonly id: string;
+  /** The text. */
+  readonly text: string;
+}
+
+/** A display sub-section in order. */
+export interface ArsOrderedDisplaySubSection {
+  /** Position, from 1. */
+  readonly order: number;
+  /** The sub-section. */
+  readonly subSection: ArsDisplaySubSection;
+}
+
+/** A section of a display, such as its titles or footnotes. */
+export interface ArsDisplaySection {
+  /** The section type. */
+  readonly sectionType: ArsDisplaySectionType;
+  /** Its text, in order. */
+  readonly orderedSubSections: readonly ArsOrderedDisplaySubSection[];
+}
+
+/** One display (one table) of an output. */
+export interface ArsOutputDisplay {
+  /** Stable id, for example `Disp_14_1_1`. */
+  readonly id: string;
+  /** Short name. */
+  readonly name: string;
+  /** Version, from 1. */
+  readonly version: number;
+  /** The title as displayed. */
+  readonly displayTitle: string;
+  /** Titles, headers and footnotes. */
+  readonly displaySections: readonly ArsDisplaySection[];
+}
+
+/** A display in order. */
+export interface ArsOrderedDisplay {
+  /** Position, from 1. */
+  readonly order: number;
+  /** The display. */
+  readonly display: ArsOutputDisplay;
+}
+
+/** A file an output is rendered to. */
+export interface ArsFileSpecification {
+  /** File name. */
+  readonly name: string;
+  /** File type, for example `html` or `rtf`. */
+  readonly fileType: ArsTerm;
+  /** Path relative to the output folder. */
+  readonly location: string;
+}
+
+/** One output: a numbered table, its displays and its files. */
+export interface ArsOutput {
+  /** Stable id, for example `Out_14_1_1`. */
+  readonly id: string;
+  /** Short name, for example `Table 14.1.1`. */
+  readonly name: string;
+  /** Version, from 1. */
+  readonly version: number;
+  /** Files the output is rendered to. */
+  readonly fileSpecifications: readonly ArsFileSpecification[];
+  /** Displays, in order. */
+  readonly displays: readonly ArsOrderedDisplay[];
+}
+
+/** One entry of the list of contents: an output with its analyses. */
+export interface ArsListItem {
+  /** Name shown in the list. */
+  readonly name: string;
+  /** Nesting level, from 1. */
+  readonly level: number;
+  /** Position among its siblings, from 1. */
+  readonly order: number;
+  /** The output, for a level 1 entry. */
+  readonly outputId?: string;
+  /** The analysis, for a level 2 entry. */
+  readonly analysisId?: string;
+  /** Nested entries. */
+  readonly sublist?: { readonly listItems: readonly ArsListItem[] };
+}
+
+/**
+ * The reporting event: every analysis set, grouping, data subset, method,
+ * analysis and output of a run, with the results. It holds no timestamps,
+ * so the same study, seed and subject count give the same JSON. `notice`,
+ * `studyId`, `seed`, `nSubjects`, `standards` and `rowSets` extend the
+ * ARS 1.0 shape.
+ */
+export interface ArsReportingEvent {
+  /** Stable id, for example `RE_DEMO-301`. */
+  readonly id: string;
+  /** Short name. */
+  readonly name: string;
+  /** What the reporting event holds. */
+  readonly description: string;
+  /** Version, from 1. */
+  readonly version: number;
+  /** The synthetic-data notice. */
+  readonly notice: string;
+  /** Study identifier. */
+  readonly studyId: string;
+  /** PRNG seed of the run. */
+  readonly seed: number;
+  /** Number of screened subjects in the run. */
+  readonly nSubjects: number;
+  /** Pinned versions of the standards the model and data follow. */
+  readonly standards: Readonly<Record<"ARS" | "ADaMIG", string>>;
+  /** Outputs and the analyses each one displays. */
+  readonly mainListOfContents: {
+    readonly name: string;
+    readonly contentsList: { readonly listItems: readonly ArsListItem[] };
+  };
+  /** Populations. */
+  readonly analysisSets: readonly ArsAnalysisSet[];
+  /** Grouping factors. */
+  readonly analysisGroupings: readonly ArsGroupingFactor[];
+  /** Record subsets. */
+  readonly dataSubsets: readonly ArsDataSubset[];
+  /** Methods. */
+  readonly methods: readonly ArsAnalysisMethod[];
+  /** Analyses, with their results. */
+  readonly analyses: readonly ArsAnalysis[];
+  /** Outputs. */
+  readonly outputs: readonly ArsOutput[];
+  /** The ADaM row sets that results refer to. */
+  readonly rowSets: readonly ArsRowSet[];
+}
+
+/** Where an ADaM row id points: the dataset and the zero-based row. */
+export interface AdamRowLocation {
+  /** The row id. */
+  readonly rowId: string;
+  /** The dataset name. */
+  readonly dataset: string;
+  /** Zero-based row index in that dataset. */
+  readonly rowIndex: number;
+}
+
+/** A result's ADaM row, with the role it plays in the result. */
+export interface ResultRow extends AdamRowLocation {
+  /** Why the row is linked to the result. */
+  readonly role: ArsRowRole;
+}
+
+/** One displayed cell and the results it shows. */
+export interface TlfCell {
+  /** The text, for example `12 (35.3)`. */
+  readonly text: string;
+  /** Ids of the results the text is made from. */
+  readonly resultIds: readonly string[];
+}
+
+/** One treatment column with its population count. */
+export interface TlfColumn {
+  /** Stable id, for example `col1`. */
+  readonly id: string;
+  /** The treatment, for example `Placebo`. */
+  readonly label: string;
+  /** The grouping factor of the column. */
+  readonly groupingId: string;
+  /** The group of the column. */
+  readonly groupId: string;
+  /** Subjects in the analysis set and group (N). */
+  readonly bigN: number;
+  /** The result that N comes from. */
+  readonly bigNResultId: string;
+}
+
+/** One data row of a table. */
+export interface TlfRow {
+  /** Stable id within the table. */
+  readonly id: string;
+  /** Row label, for example `Mean` or a preferred term. */
+  readonly label: string;
+  /** One cell per column. */
+  readonly cells: readonly TlfCell[];
+}
+
+/**
+ * A block of rows under one heading. When the heading itself carries
+ * results, as a system organ class does, `cells` holds them.
+ */
+export interface TlfSection {
+  /** Stable id within the table. */
+  readonly id: string;
+  /** The heading, for example `Age (years)`. */
+  readonly label: string;
+  /** One cell per column when the heading has results, otherwise absent. */
+  readonly cells?: readonly TlfCell[];
+  /** The rows under the heading. */
+  readonly rows: readonly TlfRow[];
+}
+
+/**
+ * A table as a render model, which the HTML and RTF writers read and a page
+ * can render directly.
+ */
+export interface TlfTable {
+  /** The ARS output. */
+  readonly outputId: string;
+  /** The ARS display. */
+  readonly displayId: string;
+  /** Table number, for example `14.1.1`. */
+  readonly number: string;
+  /** Title. */
+  readonly title: string;
+  /** Population line, for example `Safety Set`. */
+  readonly population: string;
+  /** Header of the row-label column. */
+  readonly stubHeader: string;
+  /** Treatment columns, in protocol order. */
+  readonly columns: readonly TlfColumn[];
+  /** Row blocks, in display order. */
+  readonly sections: readonly TlfSection[];
+  /** Footnotes, in order. */
+  readonly footnotes: readonly string[];
+  /** The synthetic-data notice. */
+  readonly notice: string;
+  /** File name without extension, for example `t-14-1-1`. */
+  readonly fileBase: string;
+}
+
+/** The analysis results of a run: the reporting event and its tables. */
+export interface TlfOutputs {
+  /** The ARS reporting event, with results and row sets. */
+  readonly reportingEvent: ArsReportingEvent;
+  /** The tables, in output order. */
+  readonly tables: readonly TlfTable[];
 }

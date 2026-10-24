@@ -6,7 +6,7 @@
 
 # Function: table()
 
-> **table**(`name`, `label`, `structure`, `variables`, `data`, `lineage`, `keys?`): [`Dataset`](../../../../types/interfaces/Dataset.md)
+> **table**(`name`, `label`, `layout`, `variables`, `data`, `lineage`, `keys?`): [`Dataset`](../../../../types/interfaces/Dataset.md)
 
 ## Parameters
 
@@ -18,9 +18,9 @@
 
 `string`
 
-### structure
+### layout
 
-`string`
+[`AdamLayout`](../interfaces/AdamLayout.md)
 
 ### variables
 

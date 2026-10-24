@@ -13059,6 +13059,14 @@
       ],
       "notices": []
     },
+    "xmllint-wasm@5.3.0": {
+      "integrity": "sha512-sEgRXdf2t13eYCFCURmCE6h2hwleEOIS9VL/jOh9JJJnez2YXIooi2Ghm05/JZEPXyPawN8sMASPVZlmh8Sd6A==",
+      "homepage": "https://github.com/noppa/xmllint-wasm#readme",
+      "repository": "git+https://github.com/noppa/xmllint-wasm.git",
+      "author": "noppa",
+      "licenses": [],
+      "notices": []
+    },
     "y18n@5.0.8": {
       "integrity": "sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==",
       "homepage": "https://github.com/yargs/y18n",

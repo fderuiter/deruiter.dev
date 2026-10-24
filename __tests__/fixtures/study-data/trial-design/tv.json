@@ -3,6 +3,7 @@
   "label": "Trial Visits",
   "layer": "sdtm",
   "class": "Trial Design",
+  "structure": "One record per planned visit",
   "keys": ["STUDYID", "VISITNUM"],
   "variables": [
     {
@@ -19,7 +20,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "DOMAIN"
     },
     {
       "name": "VISITNUM",

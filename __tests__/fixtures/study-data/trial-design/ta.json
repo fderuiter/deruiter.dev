@@ -3,6 +3,7 @@
   "label": "Trial Arms",
   "layer": "sdtm",
   "class": "Trial Design",
+  "structure": "One record per planned element per arm",
   "keys": ["STUDYID", "ARMCD", "TAETORD"],
   "variables": [
     {
@@ -19,7 +20,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "DOMAIN"
     },
     {
       "name": "ARMCD",
@@ -27,7 +29,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "ARMCD"
     },
     {
       "name": "ARM",
@@ -66,7 +69,8 @@
       "type": "text",
       "length": 200,
       "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "codelist": "EPOCH"
     }
   ],
   "columns": {

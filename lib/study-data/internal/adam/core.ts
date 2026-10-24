@@ -320,7 +320,7 @@ export function deriveAdsl(
   return table(
     "ADSL",
     "Subject-Level Analysis Dataset",
-    "ADSL",
+    { class: "ADSL", structure: "One record per subject" },
     ADSL_VARIABLES,
     data,
     lineage,
@@ -524,7 +524,15 @@ function deriveBdsDomain(
   return table(
     domain === "VS" ? "ADVS" : "ADLB",
     domain === "VS" ? "Vital Signs Analysis" : "Laboratory Analysis",
-    "BDS",
+    {
+      class: "BDS",
+      structure:
+        "One or more records per subject per parameter per analysis visit",
+      codelists: {
+        PARAMCD: domain === "VS" ? "ADVS.PARAMCD" : "ADLB.PARAMCD",
+        AVALU: domain === "VS" ? "VSRESU" : "UNIT",
+      },
+    },
     BDS_VARIABLES.map((variable) => {
       if (variable.name === "PARAMCD" || variable.name === "PARAM")
         return {
@@ -537,8 +545,11 @@ function deriveBdsDomain(
         return { ...variable, source: `${domain}.${domain}STRESU` };
       if (variable.name === "ADT")
         return { ...variable, source: `${domain}.${domain}DTC` };
-      if (variable.name === "ANRIND" && domain === "LB")
-        return { ...variable, source: "LB.LBNRIND" };
+      if (variable.name === "ANRIND")
+        return domain === "LB"
+          ? { ...variable, source: "LB.LBNRIND" }
+          : // VS has no reference ranges, so ADVS has no source for ANRIND.
+            { ...variable, origin: "Not Available" as const };
       return variable;
     }),
     output.map(({ row }) => row),

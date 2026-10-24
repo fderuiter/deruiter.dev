@@ -1,0 +1,30 @@
+{
+  "tlf/ars-reporting-event.json": {
+    "bytes": 304328,
+    "sha256": "4d0e3f12ce3b63ba29931065434955ff52f646f90ffa904f5d950bbab2587787"
+  },
+  "tlf/t-14-1-1.html": {
+    "bytes": 7990,
+    "sha256": "a4a66efac78835de665b31d7fdaa5e0de5c7ae2e05242b22bb87cfaf9cd8c90f"
+  },
+  "tlf/t-14-1-1.rtf": {
+    "bytes": 6383,
+    "sha256": "40081d479b5d90fbdba0ffb9fe9d5c35a70e86e3195eb52158b2c8108db9b4c3"
+  },
+  "tlf/t-14-2-1.html": {
+    "bytes": 17103,
+    "sha256": "9c44aa3b5383bf571f14d74e9eab50a0906137fb2a3fc4e5cb4c739e8b251aa6"
+  },
+  "tlf/t-14-2-1.rtf": {
+    "bytes": 15130,
+    "sha256": "4660a551da8fce5c950eeb909165366b735faba205d906d0ba067fc9328daa27"
+  },
+  "tlf/t-14-3-1.html": {
+    "bytes": 5088,
+    "sha256": "ba68633ed78ad5edd56d89981eff7d4aed18ed502f204b1256cd26aee8ecd81d"
+  },
+  "tlf/t-14-3-1.rtf": {
+    "bytes": 3270,
+    "sha256": "7c9bc10208f107ba14d2e62a5dc939f9de1b9136d6de3274e45998d12a8d9e10"
+  }
+}

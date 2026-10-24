@@ -9,6 +9,19 @@ import { DEMO_301_USDM } from "./presets/demo-301";
 import type { PipelineStage, StandardVersions, StudyDefinition } from "./types";
 export { ADAM_METHODS } from "./internal/adam/specs";
 export type { AdamMethodId } from "./internal/adam/specs";
+export { SDTM_METHODS } from "./internal/sdtm/methods";
+export type { SdtmMethodId } from "./internal/sdtm/methods";
+export {
+  CONTROLLED_TERMINOLOGY,
+  DECODE_VARIABLES,
+} from "./internal/conformance/terminology";
+export type {
+  CodelistId,
+  TerminologyCodelist,
+  TerminologyTerm,
+} from "./internal/conformance/terminology";
+export { VALUE_LEVEL } from "./internal/define/value-level";
+export type { ValueLevelSpec } from "./internal/define/value-level";
 
 /**
  * The standard versions every run applies and declares in TS, Define-XML and

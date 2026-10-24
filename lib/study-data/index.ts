@@ -25,11 +25,44 @@ export {
   StudyDefinitionError,
 } from "./internal/usdm/read-study-definition";
 export {
+  codeListOid,
+  commentOid,
+  defineFileOid,
   itemGroupOid,
   itemOid,
+  leafId,
   metaDataVersionOid,
+  methodOid,
+  standardOid,
   studyOid,
+  valueItemOid,
+  valueListOid,
+  whereClauseOid,
 } from "./internal/export/oids";
+export {
+  buildDefine,
+  DEFINE_XML_VERSION,
+} from "./internal/define/build-define";
+export { writeDefineXml } from "./internal/define/write-define-xml";
+export { renderDefineHtml } from "./internal/define/render-define-html";
+export type {
+  DefineCodeList,
+  DefineCodeListTerm,
+  DefineComment,
+  DefineDataType,
+  DefineDocument,
+  DefineItem,
+  DefineItemGroup,
+  DefineItemRef,
+  DefineLayer,
+  DefineLeaf,
+  DefineMethod,
+  DefineOptions,
+  DefineOrigin,
+  DefineStandard,
+  DefineValueList,
+  DefineWhereClause,
+} from "./internal/define/model";
 export { exportColumns } from "./internal/export/columns";
 export type { ExportColumn, StorageKind } from "./internal/export/columns";
 export {
@@ -62,7 +95,9 @@ export {
   buildStudyDataPackage,
   zipStudyDataPackage,
   sha256Hex,
+  ADAM_DEFINE_PATH,
   ADAM_PACKAGE_DIR,
+  SDTM_DEFINE_PATH,
   SDTM_PACKAGE_DIR,
   PACKAGE_FIXED_TIMESTAMP,
   PACKAGE_FORMAT_VERSION,
@@ -76,3 +111,28 @@ export type {
   PackageOptions,
   StudyDataPackage,
 } from "./internal/export/package";
+export {
+  descriptiveStatistics,
+  formatDecimal,
+  formatPercent,
+  inferDecimalPlaces,
+  statisticDecimals,
+  MAX_RAW_DECIMALS,
+  STATISTIC_PRECISION,
+} from "./internal/tlf/stats";
+export type { StatisticKind } from "./internal/tlf/stats";
+export {
+  adamRowId,
+  indexAdamRows,
+  resolveResultRows,
+} from "./internal/tlf/row-ids";
+export { selectAdamRows } from "./internal/tlf/where";
+export { escapeHtml, writeTableHtml } from "./internal/tlf/html";
+export { escapeRtf, writeTableRtf } from "./internal/tlf/rtf";
+export {
+  buildTlfOutputs,
+  writeArsJson,
+  writeTlfFiles,
+  ARS_REPORTING_EVENT_PATH,
+  TLF_OUTPUT_DIR,
+} from "./internal/tlf/outputs";

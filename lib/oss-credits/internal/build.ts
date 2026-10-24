@@ -35,6 +35,10 @@ export function buildCreditsDataset(input: {
 
   for (const [lockPath, entry] of Object.entries(input.lockfile.packages)) {
     if (lockPath === "" || entry.link) continue;
+    // A dev-only bundled dependency ships inside its parent's tarball, has no
+    // registry tarball of its own and never reaches visitors. A shipped one
+    // still needs its own notice, so it falls through and fails loudly.
+    if (entry.inBundle && entry.dev) continue;
     const installedName = packageNameFromPath(lockPath);
     if (!installedName || !entry.version) continue;
     // An npm alias installs under another name; credit what was published.

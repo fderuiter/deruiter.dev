@@ -16,6 +16,16 @@ Subset of a lockfile entry the builder reads.
 
 ***
 
+### inBundle?
+
+> `optional` **inBundle?**: `boolean`
+
+Set when the package ships inside its parent's tarball and has no
+registry tarball of its own. Newer npm releases (the one Dependabot runs)
+record these entries; npm 10 omits them.
+
+***
+
 ### integrity?
 
 > `optional` **integrity?**: `string`

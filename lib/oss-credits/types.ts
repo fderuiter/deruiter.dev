@@ -39,6 +39,12 @@ export interface LockfileEntry {
   license?: string;
   dev?: boolean;
   link?: boolean;
+  /**
+   * Set when the package ships inside its parent's tarball and has no
+   * registry tarball of its own. Newer npm releases (the one Dependabot runs)
+   * record these entries; npm 10 omits them.
+   */
+  inBundle?: boolean;
   /** Registry tarball URL; locates the package in the registry. */
   resolved?: string;
   /** Subresource integrity hash of that tarball. */

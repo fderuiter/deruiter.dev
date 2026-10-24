@@ -19,6 +19,7 @@ import {
   saveSetupConfig,
 } from "@/components/arcade/PreGameSetupWizard";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
+import { hasSeenCoachMarks, setCoachMarksSeen } from "@/lib/arcade";
 
 // Mock A11yProvider & AudioProvider hooks
 const mockAnnounce = vi.fn();
@@ -100,6 +101,30 @@ describe("Standardized Pre-Game Setup Wizard", () => {
         screen.getByText(/Step 3: Setup Summary & Confirmation/i)
       ).toBeTruthy();
       expect(screen.getByRole("button", { name: /Start Game/i })).toBeTruthy();
+    });
+
+    it("offers Show tips again on Step 2 once this device has seen the game's tips (#2361)", () => {
+      const open = () =>
+        render(
+          <PreGameSetupWizard
+            gameId="working-with-duck"
+            gameTitle="Working With Duck"
+            isOpen={true}
+            onComplete={vi.fn()}
+          />
+        );
+      const { unmount } = open();
+      fireEvent.click(screen.getByText(/Next Step/i));
+      expect(
+        screen.queryByRole("button", { name: "Show tips again" })
+      ).toBeNull();
+      unmount();
+
+      setCoachMarksSeen("working-with-duck");
+      open();
+      fireEvent.click(screen.getByText(/Next Step/i));
+      fireEvent.click(screen.getByRole("button", { name: "Show tips again" }));
+      expect(hasSeenCoachMarks("working-with-duck")).toBe(false);
     });
 
     it("persists selections to localStorage and triggers completion callback on Start Game", () => {

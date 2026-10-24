@@ -8,6 +8,12 @@
 
 ## References
 
+### ARCADE\_COACH\_MARKS\_KEY
+
+Re-exports [ARCADE_COACH_MARKS_KEY](coach-marks-slice/variables/ARCADE_COACH_MARKS_KEY.md)
+
+***
+
 ### ARCADE\_CORRUPT\_SUFFIX
 
 Re-exports [ARCADE_CORRUPT_SUFFIX](store/variables/ARCADE_CORRUPT_SUFFIX.md)
@@ -35,6 +41,18 @@ Re-exports [ARCADE_UNIFIED_PROGRESS_KEY](core/variables/ARCADE_UNIFIED_PROGRESS_
 ### ArcadeCatalogEntry
 
 Re-exports [ArcadeCatalogEntry](catalog/interfaces/ArcadeCatalogEntry.md)
+
+***
+
+### ArcadeCoachMarks
+
+Re-exports [ArcadeCoachMarks](coach-marks-slice/interfaces/ArcadeCoachMarks.md)
+
+***
+
+### arcadeCoachMarksSlice
+
+Re-exports [arcadeCoachMarksSlice](coach-marks-slice/variables/arcadeCoachMarksSlice.md)
 
 ***
 
@@ -128,6 +146,12 @@ Re-exports [getArcadeCatalogEntry](catalog/functions/getArcadeCatalogEntry.md)
 
 ***
 
+### hasSeenCoachMarks
+
+Re-exports [hasSeenCoachMarks](coach-marks-slice/functions/hasSeenCoachMarks.md)
+
+***
+
 ### mergeArcadeDailyProgress
 
 Re-exports [mergeArcadeDailyProgress](daily-slice/functions/mergeArcadeDailyProgress.md)
@@ -155,6 +179,12 @@ Re-exports [parseScoreValue](core/functions/parseScoreValue.md)
 ### read
 
 Re-exports [read](slice/functions/read.md)
+
+***
+
+### setCoachMarksSeen
+
+Re-exports [setCoachMarksSeen](coach-marks-slice/functions/setCoachMarksSeen.md)
 
 ***
 

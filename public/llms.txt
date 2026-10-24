@@ -50,6 +50,7 @@ Canonical origin: https://deruiter.dev. The full architectural dossier, with cas
 - [Logical Proof Workspace: Step by Step](https://deruiter.dev/proof): Build a proof one step at a time. Connect premises, try inference rules, and inspect where an argument goes wrong. Export finished proofs to Lean 4 or LaTeX.
 - [Protocol Drift: Data Pipeline Sim](https://deruiter.dev/protocol-drift): A browser-first systems-engineering puzzle simulation exploring the friction between ideal regulatory specifications and messy human clinical data collection.
 - [Architectural Archetype Simulator](https://deruiter.dev/simulator): Pick an architecture bias, triage a production latency spike and review an async pipeline, then see which architectural archetype your trade-offs map to.
+- [Study Data Pipeline: USDM to TLFs](https://deruiter.dev/study-data): Run a synthetic study from a USDM definition through SDTM, conformance checks, ADaM, Define-XML and tables, then trace any result back to its source.
 
 ## About
 

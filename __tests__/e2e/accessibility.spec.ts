@@ -653,6 +653,44 @@ test.describe("Continuous Accessibility (a11y) & WCAG 2.1 AA Audit Suite", () =>
     await auditAndAssert(page, testInfo, "Schedule Page Default State");
   });
 
+  test("Audit: Study Data Pipeline run, viewers and lineage", async ({
+    page,
+  }, testInfo) => {
+    // Six full-page scans of a page with several large tables.
+    test.setTimeout(120_000);
+    await page.goto("/study-data");
+    await expect(page.getByText(/^Run 1: /)).toBeVisible({ timeout: 60_000 });
+    await waitForVisualSettle(page);
+    await auditAndAssert(page, testInfo, "Study Data Pipeline Default State");
+
+    const lineage = page.locator('section[aria-labelledby="lineage-title"]');
+    await expect(async () => {
+      await page
+        .getByRole("button", {
+          name: "Trace an example: the Week 12 mean, Placebo",
+        })
+        .click();
+      await expect(lineage.getByRole("status")).toContainText("Tracing", {
+        timeout: 5_000,
+      });
+    }).toPass({ timeout: 15_000 });
+    await auditAndAssert(page, testInfo, "Study Data Pipeline Lineage State");
+
+    for (const tab of [
+      "Datasets",
+      "Conformance",
+      "Define-XML",
+      "Study definition",
+    ]) {
+      await page.getByRole("tab", { name: tab }).click();
+      await expect(page.getByRole("tab", { name: tab })).toHaveAttribute(
+        "aria-selected",
+        "true"
+      );
+      await auditAndAssert(page, testInfo, `Study Data Pipeline ${tab} Tab`);
+    }
+  });
+
   test("Audit: Wedding Archive", async ({ page }, testInfo) => {
     await page.goto("/wedding");
     await page.waitForLoadState("networkidle");

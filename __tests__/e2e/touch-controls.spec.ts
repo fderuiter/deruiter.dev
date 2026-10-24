@@ -45,6 +45,7 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
     "/proof",
     "/neuro",
     "/simulator",
+    "/study-data",
     "/arcade",
     "/arcade/laser-loon",
     "/arcade/retro-labyrinth",

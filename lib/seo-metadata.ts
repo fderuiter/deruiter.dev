@@ -32,6 +32,24 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  studyData: {
+    title: "Study Data Pipeline: USDM to TLFs",
+    description:
+      "Run a synthetic study from a USDM definition through SDTM, conformance checks, ADaM, Define-XML and tables, then trace any result back to its source.",
+    path: "/study-data",
+    keywords: [
+      "Study Data Pipeline",
+      "CDISC SDTM",
+      "CDISC ADaM",
+      "USDM",
+      "Define-XML",
+      "Analysis Results Standard",
+      "Data Lineage",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platform: {
     title: "Clinical Data Platform Architecture",
     description:

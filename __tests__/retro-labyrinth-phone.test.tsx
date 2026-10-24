@@ -12,6 +12,10 @@ import {
 } from "@testing-library/react";
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
+import {
+  CabinetPauseProvider,
+  createPauseController,
+} from "@/components/arcade/pause";
 
 vi.mock("@/components/providers/AudioProvider", async (importOriginal) => {
   const actual =
@@ -72,16 +76,20 @@ function stubPointer(coarse: boolean) {
   })) as unknown as typeof window.matchMedia;
 }
 
-function renderGame(options: { touch: boolean; autoPauseCount?: number }) {
-  const element = (count: number) => (
+function renderGame(options: { touch: boolean }) {
+  // The cabinet's pause service (#2357): an auto-pause is a pause with an
+  // automatic reason, such as a hidden tab.
+  const controller = createPauseController();
+  const view = render(
     <CabinetTouchContext.Provider value={options.touch}>
-      <RetroLabyrinth isMounted autoPauseCount={count} />
+      <CabinetPauseProvider controller={controller}>
+        <RetroLabyrinth isMounted />
+      </CabinetPauseProvider>
     </CabinetTouchContext.Provider>
   );
-  const view = render(element(options.autoPauseCount ?? 0));
   return {
     ...view,
-    rerenderWithPause: (count: number) => view.rerender(element(count)),
+    autoPause: () => controller.pause("hidden"),
   };
 }
 
@@ -171,14 +179,11 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
   });
 
   it("pauses a running room when the cabinet reports an auto-pause, and says to tap to resume", () => {
-    const { rerenderWithPause } = renderGame({
-      touch: true,
-      autoPauseCount: 0,
-    });
+    const { autoPause } = renderGame({ touch: true });
     expect(screen.queryByText("PAUSED")).toBeNull();
 
     act(() => {
-      rerenderWithPause(1);
+      autoPause();
     });
 
     expect(screen.getByText("PAUSED")).toBeTruthy();
@@ -188,16 +193,13 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
   });
 
   it("keeps Escape from the touch cabinet while a room runs or is paused (#2569)", () => {
-    const { container, rerenderWithPause } = renderGame({
-      touch: true,
-      autoPauseCount: 0,
-    });
+    const { container, autoPause } = renderGame({ touch: true });
     const boundary = () =>
       container.querySelector('[data-keyboard-boundary="true"]');
     expect(boundary()?.getAttribute("data-escape-docks")).toBe("true");
 
     act(() => {
-      rerenderWithPause(1);
+      autoPause();
     });
     expect(screen.getByText("PAUSED")).toBeTruthy();
     // Paused, Escape resumes the room instead of leaving the cabinet.
@@ -214,13 +216,10 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     ).toBe(false);
   });
 
-  it("the same pause count does not pause again after the player resumes", () => {
-    const { rerenderWithPause } = renderGame({
-      touch: true,
-      autoPauseCount: 0,
-    });
+  it("an auto-pause after the player resumes pauses the room again", () => {
+    const { autoPause } = renderGame({ touch: true });
     act(() => {
-      rerenderWithPause(1);
+      autoPause();
     });
     act(() => {
       screen.getByRole("button", { name: "Resume" }).click();
@@ -228,9 +227,9 @@ describe("RetroLabyrinth on a phone cabinet (ADR 0061)", () => {
     expect(screen.queryByText("PAUSED")).toBeNull();
 
     act(() => {
-      rerenderWithPause(1);
+      autoPause();
     });
-    expect(screen.queryByText("PAUSED")).toBeNull();
+    expect(screen.getByText("PAUSED")).toBeTruthy();
   });
 });
 

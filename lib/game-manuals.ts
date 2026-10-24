@@ -1,6 +1,7 @@
 import { FieldManualData } from "@/types/game-manual";
 import { manualControlsFromActions } from "@/lib/arcade";
 import { DUCK_ACTIONS } from "@/lib/working-with-duck-actions";
+import { LABYRINTH_ACTIONS } from "@/lib/retro-labyrinth/actions";
 
 export const GAME_MANUALS: Record<string, FieldManualData> = {
   proof: {
@@ -1867,41 +1868,52 @@ export const GAME_MANUALS: Record<string, FieldManualData> = {
     quickSummary:
       "Clear six hand-built rooms with WASD/Arrows, reaching each room's EXIT once its objective is done, then choose the next room on the route map and pick a weapon, a heal or a passive. Keys 1 to 3 fire your Cyberdeck class's tools, keys 4 and 5 the weapons you pick up on the route (the default Script Kiddie carries npm install, Nmap Port Recon and EMP), and Space fires an EMP, to exploit daemon CVEs and extract encrypted payloads.",
     controls: [
-      {
-        action: "Move Netrunner Avatar",
-        description:
-          "Walk the room's corridors, collect pickups and step onto airgap route nodes.",
-        key: "WASD / Arrow Keys",
-      },
-      {
-        action: "Deploy Cyber Exploits",
-        description:
-          "Keys 1 to 3 fire the three tools your Cyberdeck class starts with, in hotbar order. Script Kiddie: npm install (AoE), Nmap Port Recon (expose CVEs), EMP. Other classes carry Buffer Overflow (burst crit), Airgap 0-Day (piercer), MitM Spoof (confuse) or Ransomware (freeze and bounty). Keys 4 and 5 fire weapons picked as route rewards.",
-        key: "1 to 5 Keys",
-      },
-      {
-        action: "EMP Kernel Surge",
-        description:
-          "Discharge an electromagnetic surge to stun every security drone in the sector.",
-        key: "Spacebar / Touch Action A",
-      },
-      {
-        action: "Pause",
-        description: "Pause and resume the run. Enter also resumes.",
-        key: "P / Esc",
-      },
-      {
-        action: "Continue or Retry",
-        description:
-          "On the room-cleared screen, tap or Tab to a next room and a reward, then Enter (or Next Room) moves on; the first room is chosen unless you pick the other, and the reward can be left. R retries this room. After a trace, Enter or R retries the room.",
-        key: "Enter / R",
-      },
-      {
-        action: "Toggle CRT Phosphor Scanlines",
-        description:
-          "Toggle retro CRT phosphor curvature, bloom, and scanline shader post-processing filters.",
-        key: "C Key",
-      },
+      // The key column comes from the game's action map (#2376), so the
+      // manual names the keys the game binds.
+      ...manualControlsFromActions(LABYRINTH_ACTIONS, [
+        {
+          group: "move",
+          action: "Move Netrunner Avatar",
+          description:
+            "Walk the room's corridors, collect pickups and step onto airgap route nodes.",
+        },
+        {
+          group: "tools",
+          action: "Deploy Cyber Exploits",
+          description:
+            "Keys 1 to 3 fire the three tools your Cyberdeck class starts with, in hotbar order. Script Kiddie: npm install (AoE), Nmap Port Recon (expose CVEs), EMP. Other classes carry Buffer Overflow (burst crit), Airgap 0-Day (piercer), MitM Spoof (confuse) or Ransomware (freeze and bounty). Keys 4 and 5 fire weapons picked as route rewards.",
+        },
+        {
+          group: "emp",
+          action: "EMP Kernel Surge",
+          description:
+            "Discharge an electromagnetic surge to stun every security drone in the sector.",
+          alsoKey: "Touch Action A",
+        },
+        {
+          group: "market",
+          action: "Darknet Market",
+          description:
+            "At the Darknet Vault rest stop, open the Market to spend crypto on a hotfix patch, RAM, bypass chips, a 0-Day injector or the CVE Threat Feed.",
+        },
+        {
+          group: "pause",
+          action: "Pause",
+          description: "Pause and resume the run. Enter also resumes.",
+        },
+        {
+          group: "cards",
+          action: "Continue or Retry",
+          description:
+            "On the room-cleared screen, tap or Tab to a next room and a reward, then Enter (or Next Room) moves on; the first room is chosen unless you pick the other, and the reward can be left. R retries this room. After a trace, Enter or R retries the room.",
+        },
+        {
+          group: "crt",
+          action: "Toggle CRT Phosphor Scanlines",
+          description:
+            "Toggle retro CRT phosphor curvature, bloom, and scanline shader post-processing filters.",
+        },
+      ]),
     ],
     rules: [
       {

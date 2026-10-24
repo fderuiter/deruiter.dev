@@ -1,8 +1,10 @@
 import JSZip from "jszip";
 import { describe, expect, it } from "vitest";
 import { createStudyDataSession } from "@/components/study-data/pipeline-session";
+import { CNS_NEURO_PRESET, exportStudyToUsdmObject } from "@/lib/crf";
 import type {
   PackageFileResult,
+  PreparedStudy,
   RowWindow,
   RunSummary,
   StudyDataRequest,
@@ -168,5 +170,76 @@ describe("study data pipeline session", () => {
     expect(result.fileCount).toBeGreaterThan(0);
     const zip = await JSZip.loadAsync(result.bytes);
     expect(Object.keys(zip.files).length).toBeGreaterThan(0);
+  });
+});
+
+describe("study data pipeline session with a CRF Studio study", () => {
+  const usdm = exportStudyToUsdmObject(CNS_NEURO_PRESET);
+
+  it("checks and narrows a handed-over study before any run", async () => {
+    const session = createStudyDataSession();
+    const prepared = (await ask(session, {
+      type: "prepare",
+      study: usdm,
+    })) as PreparedStudy;
+    if (!prepared.ok) throw new Error(prepared.issues.join("; "));
+    expect(prepared.report.studyId).toBe("NEURO-2026-401");
+    expect(prepared.report.notTabulatedDomains).toEqual(["CM", "QS"]);
+    expect(prepared.design.studyId).toBe("NEURO-2026-401");
+    expect(prepared.design.arms.map((arm) => arm.name)).toEqual([
+      "Study treatment",
+    ]);
+    expect(prepared.counts).toEqual({
+      arms: 1,
+      visits: prepared.design.visits.length,
+      activities: prepared.design.activities.length,
+      scheduled: prepared.design.schedule.length,
+    });
+  });
+
+  it("reports schema issues for a document that is not USDM v4", async () => {
+    const session = createStudyDataSession();
+    const prepared = (await ask(session, {
+      type: "prepare",
+      study: { usdmVersion: "4.0.0" },
+    })) as PreparedStudy;
+    expect(prepared.ok).toBe(false);
+    if (prepared.ok) return;
+    expect(prepared.problem).toBe("schema");
+    expect(prepared.issues.length).toBeGreaterThan(0);
+    expect(prepared.issues.length).toBeLessThanOrEqual(prepared.total);
+  });
+
+  it("runs, traces and packages the handed-over study", async () => {
+    const session = createStudyDataSession();
+    const summary = (await ask(session, {
+      type: "run",
+      seed: 2595,
+      nSubjects: 12,
+      study: usdm,
+    })) as RunSummary;
+    const dm = summary.datasets.find((dataset) => dataset.key === "sdtm:DM");
+    expect(dm?.rowCount).toBe(12);
+    const window = (await ask(session, {
+      type: "rows",
+      runId: summary.runId,
+      key: "sdtm:DM",
+      offset: 0,
+      limit: 1,
+    })) as RowWindow;
+    expect(String(window.rows[0][0])).toBe("NEURO-2026-401");
+    const trace = (await ask(session, {
+      type: "trace",
+      runId: summary.runId,
+      origin: { kind: "record", layer: "sdtm", dataset: "DM", row: 0 },
+      limit: 5,
+    })) as LineageTrace;
+    expect(trace.title).toBeTruthy();
+    const file = (await ask(session, {
+      type: "package",
+      runId: summary.runId,
+      kind: "submission",
+    })) as PackageFileResult;
+    expect(file.fileName).toBe("neuro-2026-401-seed-2595-n-12-datasets.zip");
   });
 });

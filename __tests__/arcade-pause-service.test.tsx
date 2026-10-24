@@ -32,7 +32,13 @@ import {
   useScreenWakeLock,
 } from "@/components/arcade/pause";
 import { useCabinetAutoPause } from "@/components/arcade/mobile";
-import { createRng, createStepClock, runSnapshotKey } from "@/lib/arcade";
+import {
+  createRng,
+  createRunFairness,
+  createStepClock,
+  runSnapshotKey,
+  type FairnessPolicy,
+} from "@/lib/arcade";
 import type { CounterState } from "./fixtures/three-view-game/session";
 
 const announce = vi.hoisted(() => vi.fn());
@@ -587,6 +593,55 @@ describe("cabinet pause service (#2357)", () => {
       act(() => second.result.current.resumeSaved());
       expect(next.clock.getStep()).toBe(30);
       expect([next.rng.next(), next.rng.next()]).toEqual(expected);
+    });
+
+    it("useRunSnapshot saves the run's fairness tags, and Resume keeps the ratchet (#2547)", () => {
+      vi.useRealTimers();
+      const controller = createPauseController({
+        gameId: "fixture",
+        view: "phone",
+      });
+      const wrapper = ({ children }: { children: ReactNode }) => (
+        <CabinetPauseProvider controller={controller}>
+          {children}
+        </CabinetPauseProvider>
+      );
+      const format = { schema: 1, state: counterState };
+      const policy: FairnessPolicy = {
+        levels: { aimAssist: ["off", "strong"] },
+        assistsFor: (input): Record<string, string | boolean> =>
+          input === "touch" ? { aimAssist: "strong" } : {},
+      };
+
+      const playing = { ...makeSession(), fairness: createRunFairness(policy) };
+      playing.fairness.noteView("phone");
+      playing.fairness.noteInput("touch");
+      const first = renderHook(() => useRunSnapshot(playing, format), {
+        wrapper,
+      });
+      act(() => first.result.current.save());
+      expect(savedRun()).toMatchObject({
+        tags: {
+          views: ["phone"],
+          inputs: ["touch"],
+          assists: { aimAssist: "strong" },
+        },
+      });
+      first.unmount();
+
+      // The next visit is on a keyboard: Resume keeps the touch assists.
+      const next = { ...makeSession(), fairness: createRunFairness(policy) };
+      next.fairness.noteView("desktop");
+      next.fairness.noteInput("keyboard");
+      const second = renderHook(() => useRunSnapshot(next, format), {
+        wrapper,
+      });
+      act(() => second.result.current.resumeSaved());
+      expect(next.fairness.getTags()).toEqual({
+        views: ["phone", "desktop"],
+        inputs: ["touch", "keyboard"],
+        assists: { aimAssist: "strong" },
+      });
     });
 
     it("useCabinetAutoPause names the reason and suspends after a hide", () => {

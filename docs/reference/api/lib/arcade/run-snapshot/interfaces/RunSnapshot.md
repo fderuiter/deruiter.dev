@@ -62,6 +62,16 @@ The fixed-step count at the save, from the session's `clock.getStep()`
 
 ***
 
+### tags?
+
+> `readonly` `optional` **tags?**: [`RunTags`](../../run-tags/interfaces/RunTags.md)
+
+Every view and input the run has used and the assists it reached
+(#2547), so a resumed run keeps its ratchet and its score is labelled
+honestly. Absent in saves written before it existed, which still read.
+
+***
+
 ### tuning
 
 > `readonly` **tuning**: `Readonly`\<`Record`\<`string`, `number` \| `boolean`\>\>

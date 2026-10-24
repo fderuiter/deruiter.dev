@@ -10,6 +10,16 @@ Persistent Arcade Progress Schema.
 
 ## Properties
 
+### bestTags?
+
+> `optional` **bestTags?**: `Record`\<`string`, [`RunTags`](../../../run-tags/interfaces/RunTags.md)\>
+
+Map of gameId -> how the best score was played (#2547): its views,
+inputs and assists. Unset for a best recorded without them, and absent
+from storage until a game records one, so the bytes stay as they were.
+
+***
+
 ### highScores
 
 > **highScores**: `Record`\<`string`, `number`\>

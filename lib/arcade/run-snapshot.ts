@@ -2,6 +2,7 @@ import type { z } from "zod";
 import { safeRawStorage } from "@/lib/safe-storage";
 import { FORM_FACTORS, type FormFactor } from "./form-factor";
 import { isRngState } from "./rng";
+import { parseRunTags, type RunTags } from "./run-tags";
 import { isStepCount } from "./step-clock";
 
 /**
@@ -32,6 +33,12 @@ export interface RunSnapshot<State> {
    * (#2544). Absent when the session has no step clock.
    */
   readonly step?: number;
+  /**
+   * Every view and input the run has used and the assists it reached
+   * (#2547), so a resumed run keeps its ratchet and its score is labelled
+   * honestly. Absent in saves written before it existed, which still read.
+   */
+  readonly tags?: RunTags;
 }
 
 /** The part of `Storage` a run snapshot needs. */
@@ -60,8 +67,9 @@ export interface RunSnapshotFormat<State> {
 /**
  * The storage key for a game's run snapshot, `arcade_run_<slug>_v1`. The
  * `_v1` names the envelope's own shape; a change to a game's state bumps its
- * `schema` instead. The optional `rngState` and `step` fields (#2544) were
- * added without a bump, because a v1 save without them still reads.
+ * `schema` instead. The optional `rngState` and `step` fields (#2544) and
+ * `tags` (#2547) were added without a bump, because a v1 save without them
+ * still reads.
  *
  * @param slug - The game's id, such as `laser-loon`.
  * @returns The key.
@@ -129,6 +137,7 @@ interface Envelope {
   readonly state: unknown;
   readonly rngState?: number;
   readonly step?: number;
+  readonly tags?: RunTags;
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -139,7 +148,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 // not carry Zod; a game's own state schema brings it into the game's chunk.
 function parseEnvelope(json: unknown): Envelope | null {
   if (!isPlainObject(json) || !("state" in json)) return null;
-  const { schema, savedAt, view, tuning, state, rngState, step } = json;
+  const { schema, savedAt, view, tuning, state, rngState, step, tags } = json;
   if (typeof schema !== "number" || !Number.isInteger(schema)) return null;
   if (typeof savedAt !== "number" || !Number.isFinite(savedAt)) return null;
   const knownView = FORM_FACTORS.find((factor) => factor === view);
@@ -153,6 +162,8 @@ function parseEnvelope(json: unknown): Envelope | null {
   // present value that is not a stream state or step count is corrupt.
   if (rngState !== undefined && !isRngState(rngState)) return null;
   if (step !== undefined && !isStepCount(step)) return null;
+  const runTags = tags === undefined ? undefined : parseRunTags(tags);
+  if (runTags === null) return null;
   return {
     schema,
     savedAt,
@@ -161,6 +172,7 @@ function parseEnvelope(json: unknown): Envelope | null {
     state,
     ...(rngState === undefined ? {} : { rngState }),
     ...(step === undefined ? {} : { step }),
+    ...(runTags === undefined ? {} : { tags: runTags }),
   };
 }
 

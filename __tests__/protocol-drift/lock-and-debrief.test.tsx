@@ -98,6 +98,15 @@ describe("Database lock and debrief", () => {
     expect(
       within(debrief).getByText(/2025-10 was retained at collected precision/)
     ).toBeTruthy();
+    const reference = within(debrief).getByRole("region", {
+      name: "Reference pipeline",
+    });
+    expect(reference.textContent).toMatch(/Protocol Drift is a game/);
+    expect(
+      within(reference)
+        .getByRole("link", { name: "Open the Study Data Pipeline" })
+        .getAttribute("href")
+    ).toBe("/study-data");
     const card = within(debrief).getByRole("region", {
       name: "Systems Efficiency Scorecard",
     });

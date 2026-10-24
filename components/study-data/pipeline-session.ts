@@ -8,14 +8,17 @@
  * loads this same module on demand and runs it on the main thread.
  */
 import { clamp } from "@/lib/game-utils";
+import { validateUsdmV4Document } from "@/lib/crf/usdm-v4-schema";
 import {
   DEMO_301_STUDY,
   PACKAGE_FIXED_TIMESTAMP,
   SYNTHETIC_DATA_NOTICE,
+  StudyDefinitionError,
   buildDefine,
   buildStudyDataPackage,
   buildTlfOutputs,
   createLineageIndex,
+  prepareStudyHandoff,
   runPipeline,
   sha256Hex,
   writeTlfFiles,
@@ -24,18 +27,22 @@ import {
   type DefineDocument,
   type LineageIndex,
   type PipelineRun,
+  type StudyDefinition,
   type TlfOutputs,
 } from "@/lib/study-data";
 import {
   FINDING_SAMPLE_SIZE,
   ROW_PAGE_SIZE,
+  SCHEMA_ISSUE_SAMPLE_SIZE,
   type DatasetSummary,
   type PackageFileResult,
+  type PreparedStudy,
   type RowWindow,
   type RunSummary,
   type StageCounts,
   type StudyDataRequest,
 } from "./protocol";
+import { toDefinitionCounts, toScheduleDesign } from "./schedule-design";
 
 interface ActiveRun {
   readonly runId: number;
@@ -159,6 +166,39 @@ async function zipOutputs(
   });
 }
 
+/**
+ * Checks a handed-off USDM document against the USDM v4.0.0 schema, then
+ * narrows it to what the pipeline can run.
+ */
+async function prepare(study: unknown): Promise<PreparedStudy> {
+  const issues = await validateUsdmV4Document(study);
+  if (issues.length > 0) {
+    return {
+      ok: false,
+      problem: "schema",
+      issues: issues.slice(0, SCHEMA_ISSUE_SAMPLE_SIZE),
+      total: issues.length,
+    };
+  }
+  try {
+    const { definition, report } = prepareStudyHandoff(study);
+    return {
+      ok: true,
+      report,
+      design: toScheduleDesign(definition),
+      counts: toDefinitionCounts(definition),
+    };
+  } catch (error) {
+    if (!(error instanceof StudyDefinitionError)) throw error;
+    return {
+      ok: false,
+      problem: "definition",
+      issues: [error.message],
+      total: 1,
+    };
+  }
+}
+
 /** Creates a session that holds at most one run. */
 export function createStudyDataSession() {
   let active: ActiveRun | null = null;
@@ -173,10 +213,14 @@ export function createStudyDataSession() {
     return active;
   };
 
-  const run = (seed: number, nSubjects: number): RunSummary => {
+  const run = (seed: number, nSubjects: number, study: unknown): RunSummary => {
     const started = performance.now();
-    const result = runPipeline(DEMO_301_STUDY, { seed, nSubjects });
-    const outputs = buildTlfOutputs(DEMO_301_STUDY, result);
+    const definition: StudyDefinition =
+      study === undefined
+        ? DEMO_301_STUDY
+        : prepareStudyHandoff(study).definition;
+    const result = runPipeline(definition, { seed, nSubjects });
+    const outputs = buildTlfOutputs(definition, result);
     const define = {
       sdtm: buildDefine(result, {
         layer: "sdtm",
@@ -192,7 +236,7 @@ export function createStudyDataSession() {
       runId: lastRunId,
       run: result,
       outputs,
-      lineage: createLineageIndex(DEMO_301_STUDY, result, outputs),
+      lineage: createLineageIndex(definition, result, outputs),
       byKey: new Map(
         result.datasets.map((dataset) => [datasetKey(dataset), dataset])
       ),
@@ -279,8 +323,10 @@ export function createStudyDataSession() {
   /** Answers one request; throws on a bad or stale request. */
   const handle = async (request: StudyDataRequest): Promise<unknown> => {
     switch (request.type) {
+      case "prepare":
+        return prepare(request.study);
       case "run":
-        return run(request.seed, request.nSubjects);
+        return run(request.seed, request.nSubjects, request.study);
       case "rows":
         return rows(request.runId, request.key, request.offset, request.limit);
       case "trace":

@@ -25,6 +25,19 @@ export {
   StudyDefinitionError,
 } from "./internal/usdm/read-study-definition";
 export {
+  prepareStudyHandoff,
+  HANDOFF_GENERATED_DOMAINS,
+} from "./internal/usdm/handoff";
+export type {
+  HandoffActivity,
+  HandoffAssumption,
+  HandoffReport,
+  HandoffSkipReason,
+  HandoffSkippedConcept,
+  HandoffTest,
+  StudyHandoff,
+} from "./internal/usdm/handoff";
+export {
   codeListOid,
   commentOid,
   defineFileOid,

@@ -1,0 +1,557 @@
+{
+  "oncology_recist": {
+    "studyId": "ONC-2026-003",
+    "title": "A Randomized, Double-Blind Phase III Study of Dual Immune Checkpoint Inhibition in Advanced Solid Tumors",
+    "activities": [
+      {
+        "id": "form_dm_onc",
+        "name": "Demographics & Informed Consent",
+        "domain": "DM",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_vs_onc",
+        "name": "Vital Signs & Physical Metrics",
+        "domain": "VS",
+        "tabulated": true,
+        "tests": [
+          {
+            "conceptId": "bc_vs_weight",
+            "testCode": "WEIGHT",
+            "unit": "kg"
+          },
+          {
+            "conceptId": "bc_vs_pulse",
+            "testCode": "PULSE",
+            "unit": "beats/min"
+          }
+        ],
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_vs_vsdat",
+            "name": "Assessment Date & Time",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_vs_height",
+            "name": "Height",
+            "reason": "test-not-modelled",
+            "testCode": "HEIGHT"
+          },
+          {
+            "conceptId": "bc_vs_bmi",
+            "name": "Calculated Body Mass Index (BMI)",
+            "reason": "test-not-modelled",
+            "testCode": "BMI"
+          },
+          {
+            "conceptId": "bc_sysbp",
+            "name": "Systolic Blood Pressure",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_diabp",
+            "name": "Diastolic Blood Pressure",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_vs_temp",
+            "name": "Body Temperature",
+            "reason": "test-not-modelled",
+            "testCode": "TEMP"
+          },
+          {
+            "conceptId": "bc_vs_resp",
+            "name": "Respiratory Rate",
+            "reason": "test-not-modelled",
+            "testCode": "RESP"
+          }
+        ]
+      },
+      {
+        "id": "form_recist_onc",
+        "name": "Oncology RECIST 1.1 Tumor Assessment",
+        "domain": "TR",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_ae_onc",
+        "name": "Adverse Events Log",
+        "domain": "AE",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_cm_onc",
+        "name": "Prior & Concomitant Medications",
+        "domain": "CM",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_lb_onc",
+        "name": "Central & Local Laboratory Panel",
+        "domain": "LB",
+        "tabulated": false,
+        "reason": "no-modelled-tests",
+        "tests": [],
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_lb_lbdat",
+            "name": "Collection Date & Time",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_lbfast",
+            "name": "Was subject fasting >= 8 hours?",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_alt",
+            "name": "Alanine Aminotransferase (ALT/SGPT)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_ast",
+            "name": "Aspartate Aminotransferase (AST/SGOT)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_bili",
+            "name": "Total Bilirubin",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_creat",
+            "name": "Serum Creatinine",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_anc",
+            "name": "Absolute Neutrophil Count (ANC)",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_lb_plat",
+            "name": "Platelet Count",
+            "reason": "no-test-code"
+          }
+        ]
+      }
+    ],
+    "tabulatedDomains": ["DM", "VS", "AE"],
+    "notTabulatedDomains": ["CM", "LB", "TR"],
+    "assumptions": [],
+    "unplannedEncounters": [
+      {
+        "id": "v_unsched",
+        "name": "Unscheduled Visit"
+      }
+    ]
+  },
+  "device_cardiovascular_implant": {
+    "studyId": "DEV-2026-VALVE",
+    "title": "Pivotal IDE Clinical Investigation of the Transcatheter Aortic Valve Replacement (TAVR) System in Symptomatic Severe Aortic Stenosis (ISO 14155 / FDA 21 CFR 812)",
+    "activities": [
+      {
+        "id": "form_dm_dev",
+        "name": "Subject Demographics & IDE Consent",
+        "domain": "DM",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_di_dev",
+        "name": "Medical Device Identification & UDI Traceability",
+        "domain": "DI",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_du_dev",
+        "name": "Procedural Implantation & Device In-Use",
+        "domain": "DU",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_de_dev",
+        "name": "Device Deficiencies & Adverse Incidents Log",
+        "domain": "DE",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_vs_dev",
+        "name": "Hemodynamics & Vital Signs Assessment",
+        "domain": "VS",
+        "tabulated": true,
+        "tests": [
+          {
+            "conceptId": "bc_vs_weight",
+            "testCode": "WEIGHT",
+            "unit": "kg"
+          },
+          {
+            "conceptId": "bc_vs_sysbp",
+            "testCode": "SYSBP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_vs_diabp",
+            "testCode": "DIABP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_vs_pulse",
+            "testCode": "PULSE",
+            "unit": "beats/min"
+          }
+        ],
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_vs_vsdat",
+            "name": "Assessment Date & Time",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_vs_height",
+            "name": "Height",
+            "reason": "test-not-modelled",
+            "testCode": "HEIGHT"
+          },
+          {
+            "conceptId": "bc_vs_bmi",
+            "name": "Calculated Body Mass Index (BMI)",
+            "reason": "test-not-modelled",
+            "testCode": "BMI"
+          },
+          {
+            "conceptId": "bc_vs_temp",
+            "name": "Body Temperature",
+            "reason": "test-not-modelled",
+            "testCode": "TEMP"
+          },
+          {
+            "conceptId": "bc_vs_resp",
+            "name": "Respiratory Rate",
+            "reason": "test-not-modelled",
+            "testCode": "RESP"
+          }
+        ]
+      },
+      {
+        "id": "form_cm_dev",
+        "name": "Concomitant Antiplatelet / Anticoagulant Therapy",
+        "domain": "CM",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_ae_dev",
+        "name": "Adverse Events & Serious Complications Log",
+        "domain": "AE",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      }
+    ],
+    "tabulatedDomains": ["DM", "VS", "AE"],
+    "notTabulatedDomains": ["CM", "DE", "DI", "DU"],
+    "assumptions": [
+      "epochs-from-study-day",
+      "single-arm",
+      "elements-per-epoch"
+    ],
+    "unplannedEncounters": [
+      {
+        "id": "v_dev_unsched",
+        "name": "Unscheduled Event / Repeat Visit"
+      }
+    ]
+  },
+  "clinical_instruments": {
+    "studyId": "INST-VAL-007",
+    "title": "Multicenter Validation of Digital Patient-Reported Outcomes & Cardiac Safety",
+    "activities": [
+      {
+        "id": "form_phq9",
+        "name": "PHQ-9 Depression Inventory",
+        "domain": "QS",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_ecg_cardio",
+        "name": "12-Lead Electrocardiogram & QTc",
+        "domain": "EG",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_sae_expedited",
+        "name": "Serious Adverse Event (SAE) Expedited Form",
+        "domain": "AE",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      }
+    ],
+    "tabulatedDomains": ["AE"],
+    "notTabulatedDomains": ["EG", "QS"],
+    "assumptions": [
+      "epochs-from-study-day",
+      "single-arm",
+      "elements-per-epoch"
+    ],
+    "unplannedEncounters": []
+  },
+  "cns_neuro": {
+    "studyId": "NEURO-2026-401",
+    "title": "Phase II Placebo-Controlled Study of Anti-Amyloid Monoclonal Antibody in Early Alzheimer's Disease",
+    "activities": [
+      {
+        "id": "form_dm_cns",
+        "name": "Demographics & Informed Consent",
+        "domain": "DM",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_vs_cns",
+        "name": "Vital Signs & Physical Metrics",
+        "domain": "VS",
+        "tabulated": true,
+        "tests": [
+          {
+            "conceptId": "bc_vs_weight",
+            "testCode": "WEIGHT",
+            "unit": "kg"
+          },
+          {
+            "conceptId": "bc_vs_sysbp",
+            "testCode": "SYSBP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_vs_diabp",
+            "testCode": "DIABP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_vs_pulse",
+            "testCode": "PULSE",
+            "unit": "beats/min"
+          }
+        ],
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_vs_vsdat",
+            "name": "Assessment Date & Time",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_vs_height",
+            "name": "Height",
+            "reason": "test-not-modelled",
+            "testCode": "HEIGHT"
+          },
+          {
+            "conceptId": "bc_vs_bmi",
+            "name": "Calculated Body Mass Index (BMI)",
+            "reason": "test-not-modelled",
+            "testCode": "BMI"
+          },
+          {
+            "conceptId": "bc_vs_temp",
+            "name": "Body Temperature",
+            "reason": "test-not-modelled",
+            "testCode": "TEMP"
+          },
+          {
+            "conceptId": "bc_vs_resp",
+            "name": "Respiratory Rate",
+            "reason": "test-not-modelled",
+            "testCode": "RESP"
+          }
+        ]
+      },
+      {
+        "id": "form_mmse_cns",
+        "name": "Mini-Mental State Examination (MMSE)",
+        "domain": "QS",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_ae_cns",
+        "name": "Adverse Events Log",
+        "domain": "AE",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_cm_cns",
+        "name": "Prior & Concomitant Medications",
+        "domain": "CM",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      }
+    ],
+    "tabulatedDomains": ["DM", "VS", "AE"],
+    "notTabulatedDomains": ["CM", "QS"],
+    "assumptions": [
+      "epochs-from-study-day",
+      "single-arm",
+      "elements-per-epoch"
+    ],
+    "unplannedEncounters": []
+  },
+  "pk_escalation": {
+    "studyId": "PK-2026-101",
+    "title": "Phase I First-in-Human Single Ascending Dose & Multiple Ascending Dose Study with Intensive PK/PD",
+    "activities": [
+      {
+        "id": "form_dm_pk",
+        "name": "Demographics & Informed Consent",
+        "domain": "DM",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_vs_pk",
+        "name": "Vital Signs & Physical Metrics",
+        "domain": "VS",
+        "tabulated": true,
+        "tests": [
+          {
+            "conceptId": "bc_vs_weight",
+            "testCode": "WEIGHT",
+            "unit": "kg"
+          },
+          {
+            "conceptId": "bc_vs_sysbp",
+            "testCode": "SYSBP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_vs_diabp",
+            "testCode": "DIABP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_vs_pulse",
+            "testCode": "PULSE",
+            "unit": "beats/min"
+          }
+        ],
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_vs_vsdat",
+            "name": "Assessment Date & Time",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_vs_height",
+            "name": "Height",
+            "reason": "test-not-modelled",
+            "testCode": "HEIGHT"
+          },
+          {
+            "conceptId": "bc_vs_bmi",
+            "name": "Calculated Body Mass Index (BMI)",
+            "reason": "test-not-modelled",
+            "testCode": "BMI"
+          },
+          {
+            "conceptId": "bc_vs_temp",
+            "name": "Body Temperature",
+            "reason": "test-not-modelled",
+            "testCode": "TEMP"
+          },
+          {
+            "conceptId": "bc_vs_resp",
+            "name": "Respiratory Rate",
+            "reason": "test-not-modelled",
+            "testCode": "RESP"
+          }
+        ]
+      },
+      {
+        "id": "form_pk_esc",
+        "name": "Pharmacokinetic (PK) Blood Sampling Log",
+        "domain": "PC",
+        "tabulated": false,
+        "reason": "domain-not-generated",
+        "tests": [],
+        "skippedConcepts": []
+      },
+      {
+        "id": "form_ae_pk",
+        "name": "Adverse Events Log",
+        "domain": "AE",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      }
+    ],
+    "tabulatedDomains": ["DM", "VS", "AE"],
+    "notTabulatedDomains": ["PC"],
+    "assumptions": [
+      "epochs-from-study-day",
+      "single-arm",
+      "elements-per-epoch"
+    ],
+    "unplannedEncounters": []
+  },
+  "custom_blank": {
+    "studyId": "CUSTOM-2026-001",
+    "title": "Custom Protocol Canvas",
+    "activities": [
+      {
+        "id": "form_dm_blank",
+        "name": "Demographics Baseline",
+        "domain": "DM",
+        "tabulated": true,
+        "tests": [],
+        "skippedConcepts": []
+      }
+    ],
+    "tabulatedDomains": ["DM"],
+    "notTabulatedDomains": [],
+    "assumptions": [
+      "epochs-from-study-day",
+      "single-arm",
+      "elements-per-epoch"
+    ],
+    "unplannedEncounters": []
+  }
+}

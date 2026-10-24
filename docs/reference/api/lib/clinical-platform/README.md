@@ -494,6 +494,84 @@ Re-exports [OperatingModel](types/type-aliases/OperatingModel.md)
 
 ***
 
+### OperationsCrumb
+
+Re-exports [OperationsCrumb](types/interfaces/OperationsCrumb.md)
+
+***
+
+### operationsDashboard
+
+Re-exports [operationsDashboard](internal/reporting/operations/functions/operationsDashboard.md)
+
+***
+
+### OperationsDashboard
+
+Re-exports [OperationsDashboard](types/interfaces/OperationsDashboard.md)
+
+***
+
+### OperationsGap
+
+Re-exports [OperationsGap](types/interfaces/OperationsGap.md)
+
+***
+
+### OperationsLevel
+
+Re-exports [OperationsLevel](types/type-aliases/OperationsLevel.md)
+
+***
+
+### OperationsMember
+
+Re-exports [OperationsMember](types/interfaces/OperationsMember.md)
+
+***
+
+### OperationsMilestone
+
+Re-exports [OperationsMilestone](types/interfaces/OperationsMilestone.md)
+
+***
+
+### operationsReportSpecs
+
+Re-exports [operationsReportSpecs](internal/reporting/operations/functions/operationsReportSpecs.md)
+
+***
+
+### OperationsRunByOption
+
+Re-exports [OperationsRunByOption](types/interfaces/OperationsRunByOption.md)
+
+***
+
+### OperationsScope
+
+Re-exports [OperationsScope](types/interfaces/OperationsScope.md)
+
+***
+
+### OperationsSection
+
+Re-exports [OperationsSection](types/interfaces/OperationsSection.md)
+
+***
+
+### OperationsSectionId
+
+Re-exports [OperationsSectionId](types/type-aliases/OperationsSectionId.md)
+
+***
+
+### OperationsStudyProfile
+
+Re-exports [OperationsStudyProfile](types/interfaces/OperationsStudyProfile.md)
+
+***
+
 ### ParquetColumnType
 
 Re-exports [ParquetColumnType](types/interfaces/ParquetColumnType.md)

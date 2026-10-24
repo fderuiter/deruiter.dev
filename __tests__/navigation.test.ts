@@ -60,6 +60,7 @@ describe("navigation structure (#1842, #1843)", () => {
     expect(sections[0].items.map((i) => i.href)).toEqual([
       "/protocol-drift",
       "/platform",
+      "/study-data",
       "/platform/strategy",
       "/simulator",
       "/patrol",
@@ -112,6 +113,7 @@ describe("navigation structure (#1842, #1843)", () => {
     ).toEqual([
       "/protocol-drift",
       "/platform",
+      "/study-data",
       "/platform/strategy",
       "/patrol",
     ]);

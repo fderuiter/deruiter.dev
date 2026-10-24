@@ -1,0 +1,643 @@
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
+import type {
+  DataLayer,
+  LineageOrigin,
+  LineageRecord,
+  LineageResult,
+  LineageTrace,
+} from "@/lib/study-data";
+import { useAnnouncer } from "@/components/providers/A11yProvider";
+import { ConformancePanel } from "./ConformancePanel";
+import type { RailStageId } from "./copy";
+import { DatasetViewer, type RowReveal } from "./DatasetViewer";
+import { DefineViewer } from "./DefineViewer";
+import { LineageExplorer } from "./LineageExplorer";
+import {
+  createPipelineClient,
+  PipelineCancelledError,
+  type PipelineClient,
+} from "./pipeline-client";
+import {
+  ROW_PAGE_SIZE,
+  TRACE_LIMIT,
+  type PackageKind,
+  type RunSummary,
+} from "./protocol";
+import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
+import { StageRail, type DefinitionCounts } from "./StageRail";
+import { TlfPanel } from "./TlfPanel";
+import {
+  BUTTON_PRIMARY,
+  BUTTON_SECONDARY,
+  EYEBROW,
+  FIELD,
+  HEADING,
+  PANEL,
+} from "./ui";
+
+type TabId = "datasets" | "conformance" | "define" | "tlf" | "schedule";
+
+const TABS: readonly { id: TabId; label: string }[] = [
+  { id: "tlf", label: "Tables and figures" },
+  { id: "datasets", label: "Datasets" },
+  { id: "conformance", label: "Conformance" },
+  { id: "define", label: "Define-XML" },
+  { id: "schedule", label: "Study definition" },
+];
+
+const STAGE_TARGETS: Readonly<
+  Record<RailStageId, { tab: TabId; dataset?: string }>
+> = {
+  usdm: { tab: "schedule" },
+  collected: { tab: "datasets", dataset: "collected:DM" },
+  sdtm: { tab: "datasets", dataset: "sdtm:DM" },
+  conformance: { tab: "conformance" },
+  adam: { tab: "datasets", dataset: "adam:ADSL" },
+  define: { tab: "define" },
+  tlf: { tab: "tlf" },
+};
+
+/** Inputs shown before any run, from the server page. */
+interface StudyDataWorkbenchProps {
+  readonly design: ScheduleDesign;
+  readonly definitionCounts: DefinitionCounts;
+  readonly limits: { readonly min: number; readonly max: number };
+  readonly defaults: { readonly seed: number; readonly nSubjects: number };
+}
+
+type RunStatus = "running" | "ready" | "error" | "restoring";
+
+const MAX_SEED = 4294967295;
+
+function parseWhole(text: string): number | null {
+  return /^\d+$/.test(text.trim()) ? Number(text.trim()) : null;
+}
+
+function saveFile(bytes: Uint8Array, fileName: string) {
+  const copy = new Uint8Array(bytes.length);
+  copy.set(bytes);
+  const url = URL.createObjectURL(
+    new Blob([copy.buffer], { type: "application/zip" })
+  );
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/**
+ * The interactive part of /study-data: run controls, the stage rail, the
+ * viewers and the lineage explorer. The pipeline itself runs in a Web
+ * Worker that loads on the first run (see `pipeline-client.ts`).
+ */
+export function StudyDataWorkbench({
+  design,
+  definitionCounts,
+  limits,
+  defaults,
+}: StudyDataWorkbenchProps) {
+  const { announce } = useAnnouncer();
+  const clientRef = useRef<PipelineClient | null>(null);
+  const runToken = useRef(0);
+  const lineageHeading = useRef<HTMLHeadingElement>(null);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+  const pendingCellFocus = useRef<string | null>(null);
+  const seedId = useId();
+  const subjectsId = useId();
+  const seedHelpId = useId();
+  const subjectsHelpId = useId();
+
+  const [seedText, setSeedText] = useState(String(defaults.seed));
+  const [subjectsText, setSubjectsText] = useState(String(defaults.nSubjects));
+  const [inputError, setInputError] = useState<{
+    seed?: string;
+    subjects?: string;
+  }>({});
+  const [status, setStatus] = useState<RunStatus>("running");
+  const [runError, setRunError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<RunSummary | null>(null);
+  const [mode, setMode] = useState<"worker" | "main-thread" | "idle">("idle");
+  const [tab, setTab] = useState<TabId>("tlf");
+  const [datasetKey, setDatasetKey] = useState("adam:ADSL");
+  const [reveal, setReveal] = useState<RowReveal | null>(null);
+  const [tlfOutput, setTlfOutput] = useState<string | null>(null);
+  const [trace, setTrace] = useState<LineageTrace | null>(null);
+  const [traceBusy, setTraceBusy] = useState(false);
+  const [traceError, setTraceError] = useState<string | null>(null);
+  const [download, setDownload] = useState<{
+    busy: PackageKind | null;
+    message: string;
+  }>({ busy: null, message: "" });
+
+  const client = useCallback((): PipelineClient => {
+    clientRef.current ??= createPipelineClient();
+    return clientRef.current;
+  }, []);
+
+  const startRun = useCallback(
+    (seed: number, nSubjects: number, restoring = false) => {
+      const token = ++runToken.current;
+      const pipeline = client();
+      pipeline
+        .request<"run">({ type: "run", seed, nSubjects })
+        .then((result) => {
+          if (token !== runToken.current) return;
+          setSummary(result);
+          setMode(pipeline.mode());
+          setStatus("ready");
+          setRunError(null);
+          setTrace(null);
+          setTraceError(null);
+          if (!restoring) {
+            announce(
+              `Pipeline run complete: ${nSubjects.toLocaleString("en-US")} subjects, seed ${seed}.`
+            );
+          }
+        })
+        .catch((error: unknown) => {
+          if (token !== runToken.current) return;
+          if (error instanceof PipelineCancelledError) return;
+          setStatus("error");
+          setRunError(error instanceof Error ? error.message : String(error));
+        });
+    },
+    [announce, client]
+  );
+
+  useEffect(() => {
+    startRun(defaults.seed, defaults.nSubjects);
+    return () => clientRef.current?.dispose();
+  }, [defaults.seed, defaults.nSubjects, startRun]);
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const seed = parseWhole(seedText);
+    const nSubjects = parseWhole(subjectsText);
+    const errors: { seed?: string; subjects?: string } = {};
+    if (seed === null || seed > MAX_SEED) {
+      errors.seed = `Enter a whole number from 0 to ${MAX_SEED.toLocaleString("en-US")}.`;
+    }
+    if (
+      nSubjects === null ||
+      nSubjects < limits.min ||
+      nSubjects > limits.max
+    ) {
+      errors.subjects = `Enter a whole number from ${limits.min} to ${limits.max.toLocaleString("en-US")}.`;
+    }
+    setInputError(errors);
+    if (seed === null || nSubjects === null || errors.seed || errors.subjects) {
+      return;
+    }
+    if (status === "running" || status === "restoring") client().cancel();
+    setStatus("running");
+    setRunError(null);
+    announce(
+      `Running the pipeline for ${nSubjects.toLocaleString("en-US")} subjects.`
+    );
+    startRun(seed, nSubjects);
+  };
+
+  const onCancel = () => {
+    client().cancel();
+    runToken.current += 1;
+    if (summary) {
+      setStatus("restoring");
+      announce("Run cancelled. Restoring the previous run.");
+      startRun(summary.seed, summary.nSubjects, true);
+    } else {
+      setStatus("error");
+      setRunError("The run was cancelled. Run the pipeline to start again.");
+    }
+  };
+
+  const traceFrom = useCallback(
+    (origin: LineageOrigin) => {
+      if (!summary) return;
+      setTraceBusy(true);
+      setTraceError(null);
+      client()
+        .request<"trace">({
+          type: "trace",
+          runId: summary.runId,
+          origin,
+          limit: TRACE_LIMIT,
+        })
+        .then((result) => {
+          setTrace(result);
+          setTraceBusy(false);
+          announce(
+            `Traced ${result.title}: ${result.adam.total} ADaM rows, ${result.sdtm.total} SDTM records, ${result.collected.total} collected records, ${result.results.total} results.`
+          );
+          const heading = lineageHeading.current;
+          if (heading) {
+            heading.focus({ preventScroll: true });
+            const reduced = window.matchMedia?.(
+              "(prefers-reduced-motion: reduce)"
+            ).matches;
+            heading.scrollIntoView?.({
+              behavior: reduced ? "auto" : "smooth",
+              block: "start",
+            });
+          }
+        })
+        .catch((error: unknown) => {
+          setTraceBusy(false);
+          if (error instanceof PipelineCancelledError) return;
+          setTraceError(error instanceof Error ? error.message : String(error));
+        });
+    },
+    [announce, client, summary]
+  );
+
+  const loadRows = useCallback(
+    (key: string, offset: number, limit: number) => {
+      if (!summary) return Promise.reject(new Error("No run yet."));
+      return client().request<"rows">({
+        type: "rows",
+        runId: summary.runId,
+        key,
+        offset,
+        limit: Math.min(limit, ROW_PAGE_SIZE),
+      });
+    },
+    [client, summary]
+  );
+
+  const onDownload = (kind: PackageKind) => {
+    if (!summary) return;
+    setDownload({ busy: kind, message: "Building the archive…" });
+    client()
+      .request<"package">({ type: "package", runId: summary.runId, kind })
+      .then((file) => {
+        saveFile(file.bytes, file.fileName);
+        setDownload({
+          busy: null,
+          message: `Saved ${file.fileName}: ${file.fileCount} files, ${(file.bytes.length / 1024).toFixed(0)} KB.`,
+        });
+      })
+      .catch((error: unknown) => {
+        setDownload({
+          busy: null,
+          message:
+            error instanceof Error
+              ? `The download failed: ${error.message}`
+              : "The download failed.",
+        });
+      });
+  };
+
+  const openStage = (stage: RailStageId) => {
+    const target = STAGE_TARGETS[stage];
+    setTab(target.tab);
+    if (target.dataset) setDatasetKey(target.dataset);
+    workspaceRef.current?.scrollIntoView({ block: "start" });
+    document.getElementById(`study-data-tab-${target.tab}`)?.focus();
+  };
+
+  const onTabKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    const index = TABS.findIndex((item) => item.id === tab);
+    let next = index;
+    if (event.key === "ArrowRight") next = (index + 1) % TABS.length;
+    else if (event.key === "ArrowLeft")
+      next = (index - 1 + TABS.length) % TABS.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = TABS.length - 1;
+    else return;
+    event.preventDefault();
+    setTab(TABS[next].id);
+    document.getElementById(`study-data-tab-${TABS[next].id}`)?.focus();
+  };
+
+  const viewRecord = (record: LineageRecord) => {
+    const key = `${record.layer}:${record.dataset}`;
+    setTab("datasets");
+    setDatasetKey(key);
+    setReveal({ key, row: record.row, nonce: Date.now() });
+  };
+
+  const showResult = (result: LineageResult) => {
+    if (!result.display) return;
+    setTab("tlf");
+    setTlfOutput(result.display.outputId);
+    pendingCellFocus.current = result.display.resultIds.join(" ");
+  };
+
+  useEffect(() => {
+    const ids = pendingCellFocus.current;
+    if (!ids || tab !== "tlf") return;
+    pendingCellFocus.current = null;
+    workspaceRef.current
+      ?.querySelector<HTMLElement>(`[data-ars-results="${CSS.escape(ids)}"]`)
+      ?.focus();
+  }, [tab, tlfOutput, trace]);
+
+  const traceExample = () => {
+    const table = summary?.tables.find((item) => item.number === "14.2.1");
+    const section = table?.sections.find((item) =>
+      item.label.startsWith("Week 12, observed")
+    );
+    const cell = section?.rows.find((row) => row.label === "Mean")?.cells[0];
+    if (cell) traceFrom({ kind: "result", resultIds: cell.resultIds });
+  };
+
+  const origin = trace?.origin;
+  const tracedResults = origin?.kind === "result" ? origin.resultIds : null;
+  const tracedRow =
+    origin?.kind === "record" &&
+    `${origin.layer}:${origin.dataset}` === datasetKey
+      ? origin.row
+      : null;
+  const tracedActivity =
+    origin?.kind === "activity"
+      ? { activityId: origin.activityId, visitId: origin.visitId }
+      : null;
+  const running = status === "running" || status === "restoring";
+  const statusText =
+    status === "restoring"
+      ? "Run cancelled. Restoring the previous run…"
+      : status === "running"
+        ? "Running the pipeline…"
+        : status === "error"
+          ? runError
+          : summary
+            ? `Run ${summary.runId}: ${summary.nSubjects.toLocaleString("en-US")} subjects, seed ${summary.seed}, ${(summary.elapsedMs / 1000).toFixed(1)} s ${mode === "worker" ? "in a Web Worker" : "on the main thread"}.`
+            : "";
+
+  return (
+    <>
+      <section
+        aria-labelledby="run-title"
+        className="border-b border-white/[0.08] py-12 sm:py-16"
+      >
+        <p className={EYEBROW}>Run / 01</p>
+        <h2 id="run-title" className={`mt-2 ${HEADING}`}>
+          Run the pipeline
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
+          The engine runs in your browser, in a Web Worker, so nothing is sent
+          to a server. The same seed and subject count always give the same
+          datasets, tables and figures.
+        </p>
+        <form
+          onSubmit={onSubmit}
+          noValidate
+          className="mt-6 grid min-w-0 gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,12rem)_auto] sm:items-start"
+        >
+          <div className="min-w-0">
+            <label
+              htmlFor={seedId}
+              className="mb-1 block font-mono text-xs uppercase tracking-[0.14em] text-slate-300"
+            >
+              Seed
+            </label>
+            <input
+              id={seedId}
+              inputMode="numeric"
+              autoComplete="off"
+              value={seedText}
+              onChange={(event) => setSeedText(event.target.value)}
+              aria-invalid={inputError.seed ? true : undefined}
+              aria-describedby={seedHelpId}
+              className={FIELD}
+            />
+            <p
+              id={seedHelpId}
+              className={`mt-1 text-xs ${inputError.seed ? "text-rose-300" : "text-slate-400"}`}
+            >
+              {inputError.seed ?? "Any whole number."}
+            </p>
+          </div>
+          <div className="min-w-0">
+            <label
+              htmlFor={subjectsId}
+              className="mb-1 block font-mono text-xs uppercase tracking-[0.14em] text-slate-300"
+            >
+              Subjects
+            </label>
+            <input
+              id={subjectsId}
+              inputMode="numeric"
+              autoComplete="off"
+              value={subjectsText}
+              onChange={(event) => setSubjectsText(event.target.value)}
+              aria-invalid={inputError.subjects ? true : undefined}
+              aria-describedby={subjectsHelpId}
+              className={FIELD}
+            />
+            <p
+              id={subjectsHelpId}
+              className={`mt-1 text-xs ${inputError.subjects ? "text-rose-300" : "text-slate-400"}`}
+            >
+              {inputError.subjects ??
+                `${limits.min} to ${limits.max.toLocaleString("en-US")} screened subjects.`}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:pt-5">
+            <button type="submit" className={`${BUTTON_PRIMARY} min-h-12`}>
+              Run pipeline
+            </button>
+            {running ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                className={`${BUTTON_SECONDARY} min-h-12`}
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
+        </form>
+        <p
+          role="status"
+          className={`mt-4 min-h-6 font-mono text-xs ${status === "error" ? "text-rose-300" : "text-slate-300"}`}
+        >
+          {statusText}
+        </p>
+        <div className={`${PANEL} mt-6 p-4 sm:p-5`}>
+          <h3 className="text-sm font-semibold text-white">Download the run</h3>
+          <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-300">
+            The datasets archive holds every SDTM and ADaM dataset as
+            Dataset-JSON, CSV and XPT, a define.xml per layer, a README and a
+            manifest of SHA-256 hashes. The outputs archive holds the tables as
+            HTML and RTF, the figure as SVG and HTML, and the ARS reporting
+            event as JSON.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={!summary || running || download.busy !== null}
+              onClick={() => onDownload("submission")}
+              className={`${BUTTON_SECONDARY} min-h-12`}
+            >
+              {download.busy === "submission" ? "Building…" : "Datasets (.zip)"}
+            </button>
+            <button
+              type="button"
+              disabled={!summary || running || download.busy !== null}
+              onClick={() => onDownload("outputs")}
+              className={`${BUTTON_SECONDARY} min-h-12`}
+            >
+              {download.busy === "outputs"
+                ? "Building…"
+                : "Tables and figures (.zip)"}
+            </button>
+          </div>
+          <p role="status" className="mt-3 min-h-5 text-xs text-slate-300">
+            {download.message}
+          </p>
+        </div>
+      </section>
+
+      <section aria-labelledby="stages-title" className="py-12 sm:py-16">
+        <p className={EYEBROW}>Stages / 02</p>
+        <h2 id="stages-title" className={`mt-2 ${HEADING}`}>
+          From protocol to tables
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-300">
+          One study definition flows through seven stages. Counts are for the
+          current run.
+        </p>
+        <div className="mt-8">
+          <StageRail
+            definition={definitionCounts}
+            counts={summary?.counts ?? null}
+            onOpen={openStage}
+          />
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="workspace-title"
+        className="border-t border-white/[0.08] py-12 sm:py-16"
+      >
+        <div ref={workspaceRef} className="scroll-mt-28">
+          <p className={EYEBROW}>Outputs / 03</p>
+          <h2 id="workspace-title" className={`mt-2 ${HEADING}`}>
+            Inspect the run
+          </h2>
+        </div>
+        <div
+          role="tablist"
+          aria-label="Run viewers"
+          onKeyDown={onTabKey}
+          className="mt-6 flex min-w-0 flex-wrap gap-1 border-b border-white/[0.08]"
+        >
+          {TABS.map((item) => (
+            <button
+              key={item.id}
+              id={`study-data-tab-${item.id}`}
+              type="button"
+              role="tab"
+              aria-selected={tab === item.id}
+              aria-controls="study-data-panel"
+              tabIndex={tab === item.id ? 0 : -1}
+              onClick={() => setTab(item.id)}
+              className={`-mb-px min-h-12 border-b-2 px-3 text-sm transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-amber-400 ${tab === item.id ? "border-amber-400 text-white" : "border-transparent text-slate-300 hover:text-white"}`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        <div
+          id="study-data-panel"
+          role="tabpanel"
+          aria-labelledby={`study-data-tab-${tab}`}
+          className="mt-6 min-h-[36rem] min-w-0"
+        >
+          {tab === "schedule" ? (
+            <ScheduleViewer
+              design={design}
+              selected={tracedActivity}
+              onTrace={(activityId, visitId) =>
+                traceFrom({
+                  kind: "activity",
+                  activityId,
+                  ...(visitId ? { visitId } : {}),
+                })
+              }
+            />
+          ) : !summary ? (
+            <div
+              className={`${PANEL} flex min-h-[20rem] items-center justify-center p-6 text-sm text-slate-300`}
+            >
+              {status === "error"
+                ? runError
+                : "Generating synthetic subjects and building the datasets…"}
+            </div>
+          ) : tab === "datasets" ? (
+            <DatasetViewer
+              runId={summary.runId}
+              datasets={summary.datasets}
+              selectedKey={datasetKey}
+              onSelectKey={setDatasetKey}
+              loadRows={loadRows}
+              onTrace={(layer: DataLayer, dataset: string, row: number) =>
+                traceFrom({ kind: "record", layer, dataset, row })
+              }
+              tracedRow={tracedRow}
+              reveal={reveal}
+            />
+          ) : tab === "conformance" ? (
+            <ConformancePanel
+              report={summary.conformance}
+              findings={summary.findings}
+              onTrace={(layer, dataset, row) =>
+                traceFrom({ kind: "record", layer, dataset, row })
+              }
+            />
+          ) : tab === "define" ? (
+            <DefineViewer define={summary.define} />
+          ) : (
+            <TlfPanel
+              tables={summary.tables}
+              figures={summary.figures}
+              current={tlfOutput ?? summary.tables[0]?.outputId ?? ""}
+              onCurrent={setTlfOutput}
+              selected={tracedResults}
+              onTrace={(resultIds) => traceFrom({ kind: "result", resultIds })}
+            />
+          )}
+        </div>
+      </section>
+
+      <LineageExplorer
+        trace={trace}
+        busy={traceBusy}
+        error={traceError}
+        headingRef={lineageHeading}
+        onTraceRecord={(record) =>
+          traceFrom({
+            kind: "record",
+            layer: record.layer,
+            dataset: record.dataset,
+            row: record.row,
+          })
+        }
+        onViewRecord={viewRecord}
+        onTraceResult={(resultIds) => traceFrom({ kind: "result", resultIds })}
+        onShowResult={showResult}
+        onTraceActivity={(activityId, visitId) =>
+          traceFrom({
+            kind: "activity",
+            activityId,
+            ...(visitId ? { visitId } : {}),
+          })
+        }
+        onExample={summary ? traceExample : null}
+      />
+    </>
+  );
+}

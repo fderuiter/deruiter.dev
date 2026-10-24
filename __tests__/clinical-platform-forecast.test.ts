@@ -100,7 +100,7 @@ describe("enrollment simulation against analytic cases (#2632)", () => {
       laterSites: [{ ...fixed(0.6), startDay: 30 }],
       streamKey: "test:later",
     });
-    for (const t of [40, 50, 60]) {
+    for (const t of [50, 60, 70]) {
       const expected = poissonTail(0.2 * t + 0.6 * Math.max(0, t - 30), 30);
       expect(Math.abs(shareBy(times, t) - expected), `t = ${t}`).toBeLessThan(
         tolerance(expected, base.runs)

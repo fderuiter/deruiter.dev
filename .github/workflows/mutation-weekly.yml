@@ -59,7 +59,7 @@ jobs:
   # its scope and runtime. Its own config holds a break per file. A full
   # local run on 4 cores took about 23 minutes (Duck's 2,980 mutants are
   # most of it), so the bound leaves room for a slower runner. The Garmin
-  # engine joins after #2512.
+  # engine runs in mutation-garmin below (#2564).
   mutation-engines:
     name: Mutation Gate (Game Engines)
     runs-on: ubuntu-latest
@@ -85,3 +85,33 @@ jobs:
 
       - name: Run Every Engine Mutant
         run: npm run test:mutation -- --engines
+
+  # #2564: the Garmin engine (lib/garmin/engine.ts and its rule modules)
+  # has its own scope and job, because its ~4,500 covered mutants alone run
+  # longer than mutation-engines' whole bound. Its config holds a break per
+  # file, as stryker.engines.config.mjs does.
+  mutation-garmin:
+    name: Mutation Gate (Garmin Engine)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Run Every Garmin Engine Mutant
+        run: npm run test:mutation -- --garmin

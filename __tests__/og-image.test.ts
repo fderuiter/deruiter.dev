@@ -18,6 +18,9 @@ import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
 import {
   ARCADE_SHOWCASE_GAMES,
   GAME_CARD_COPY,
+  GAME_CARD_HALLOWEEN_COPY,
+  isHalloweenCardSeason,
+  SEASONAL_CARD_MAX_AGE_SECONDS,
 } from "@/lib/og-arcade-showcase";
 
 const PRESETS = Object.keys(PRESET_CONFIGS) as SocialPreset[];
@@ -169,6 +172,7 @@ describe("screenshot link previews (#1903)", () => {
     bytes: number;
     width: number;
     height: number;
+    cacheControl: string | null;
   }
 
   /** Renders every screenshot card in a plain Node child process (see renderCardMeasurements). */
@@ -179,6 +183,7 @@ describe("screenshot link previews (#1903)", () => {
         createArcadeShowcaseImageResponse,
         createGameImageResponse,
         GAME_CARD_COPY,
+        GAME_CARD_HALLOWEEN_COPY,
       } from "@/lib/og-arcade-showcase";
       async function measure(response) {
         const body = Buffer.from(await response.arrayBuffer());
@@ -189,12 +194,18 @@ describe("screenshot link previews (#1903)", () => {
           bytes: body.byteLength,
           width: meta.width,
           height: meta.height,
+          cacheControl: response.headers.get("cache-control"),
         };
       }
       (async () => {
         const out = { showcase: await measure(await createArcadeShowcaseImageResponse()) };
         for (const slug of Object.keys(GAME_CARD_COPY)) {
           out[slug] = await measure(await createGameImageResponse(slug));
+        }
+        for (const slug of Object.keys(GAME_CARD_HALLOWEEN_COPY)) {
+          out[slug + "-halloween"] = await measure(
+            await createGameImageResponse(slug, { halloween: true })
+          );
         }
         process.stdout.write("RESULT" + JSON.stringify(out));
       })();
@@ -209,7 +220,11 @@ describe("screenshot link previews (#1903)", () => {
 
   const cards = renderScreenshotCards();
 
-  it.each(["showcase", ...Object.keys(GAME_CARD_COPY)])(
+  const halloweenKeys = Object.keys(GAME_CARD_HALLOWEEN_COPY).map(
+    (slug) => `${slug}-halloween`
+  );
+
+  it.each(["showcase", ...Object.keys(GAME_CARD_COPY), ...halloweenKeys])(
     "%s renders a 1200x630 JPEG within the budget",
     (key) => {
       const card = cards[key]!;
@@ -223,10 +238,24 @@ describe("screenshot link previews (#1903)", () => {
     120_000
   );
 
+  it("caches a seasonal game's cards for an hour and every other card for a year (#2740)", () => {
+    const hour = `max-age=${SEASONAL_CARD_MAX_AGE_SECONDS},`;
+    for (const slug of Object.keys(GAME_CARD_HALLOWEEN_COPY)) {
+      expect(cards[slug]!.cacheControl).toContain(hour);
+      expect(cards[`${slug}-halloween`]!.cacheControl).toContain(hour);
+    }
+    expect(cards["laser-loon"]!.cacheControl).toContain("max-age=31536000");
+    // The October card is its own image, not the everyday one.
+    expect(cards["working-with-duck-halloween"]!.bytes).not.toBe(
+      cards["working-with-duck"]!.bytes
+    );
+  });
+
   it("only uses games that have a shipped arcade screenshot", () => {
     const slugs = [
       ...ARCADE_SHOWCASE_GAMES.map((game) => game.slug),
       ...Object.keys(GAME_CARD_COPY),
+      ...halloweenKeys,
     ];
     for (const slug of slugs) {
       const file = path.join(
@@ -254,5 +283,32 @@ describe("screenshot link previews (#1903)", () => {
     expect(Object.keys(GAME_CARD_COPY).sort()).toEqual(
       ARCADE_GAMES_METADATA.map((game) => game.slug).sort()
     );
+  });
+});
+
+describe("October link previews (#2740)", () => {
+  it.each([
+    ["2026-10-01T04:59:00Z", false], // 23:59 on Sep 30 in Minnesota
+    ["2026-10-01T05:00:00Z", true], // midnight, Oct 1
+    ["2026-11-01T00:30:00Z", true], // 19:30 on Halloween night, Nov 1 in UTC
+    ["2026-11-01T04:59:00Z", true], // 23:59 on Halloween
+    ["2026-11-01T05:00:00Z", false], // midnight, Nov 1
+    ["2026-07-04T17:00:00Z", false],
+  ])("%s is in season: %s", (iso, expected) => {
+    expect(isHalloweenCardSeason(new Date(iso))).toBe(expected);
+  });
+
+  it("rebuilds Duck's card hourly and picks it by the date", () => {
+    const source = fs.readFileSync(
+      path.join(
+        process.cwd(),
+        "app/arcade/working-with-duck/opengraph-image.tsx"
+      ),
+      "utf8"
+    );
+    expect(source).toContain(
+      `export const revalidate = ${SEASONAL_CARD_MAX_AGE_SECONDS};`
+    );
+    expect(source).toContain("isHalloweenCardSeason(new Date())");
   });
 });

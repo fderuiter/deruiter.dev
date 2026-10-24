@@ -92,7 +92,9 @@ a gate or lowering a threshold:
   mutates the game engines (Trial & Error scoring and validation, the Duck
   engine) in a separate `mutation-engines` job, bounded at 45 minutes, with
   a break per file in `stryker.engines.config.mjs`; PRs never run it
-  (#2529).
+  (#2529). The Garmin engine runs the same way in its own
+  `mutation-garmin` job, bounded at 90 minutes, with its breaks in
+  `stryker.garmin.config.mjs` (#2564).
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

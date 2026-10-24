@@ -34,7 +34,7 @@
 
 ### activeSurpriseEvent
 
-> **activeSurpriseEvent**: \{ `maxTimer`: `number`; `resolved`: `boolean`; `timer`: `number`; `type`: `"amazon-delivery"` \| `"squirrel-window"` \| `"puppy-hiccups"`; \} \| `null`
+> **activeSurpriseEvent**: \{ `maxTimer`: `number`; `resolved`: `boolean`; `timer`: `number`; `type`: `"amazon-delivery"` \| `"trick-or-treat"` \| `"squirrel-window"` \| `"puppy-hiccups"`; \} \| `null`
 
 ***
 
@@ -190,6 +190,16 @@ The endless quarter being played, from 1. A new quarter starts every
 ### floatingAlerts
 
 > **floatingAlerts**: [`FloatingAlert`](FloatingAlert.md)[]
+
+***
+
+### halloween?
+
+> `optional` **halloween?**: `boolean`
+
+Halloween mode is on (#2740). The caller owns the preference and copies
+it here; while it is on, trick-or-treaters ring at the back door in the
+package's place, and a Sit sends them off happy. Absent reads as off.
 
 ***
 

@@ -2,6 +2,7 @@ import {
   ARCADE_SHOWCASE_CONTENT_TYPE,
   createGameImageResponse,
   gameCardAlt,
+  isHalloweenCardSeason,
 } from "@/lib/og-arcade-showcase";
 import { OG_IMAGE_SIZE } from "@/lib/og-image";
 
@@ -9,7 +10,13 @@ export const runtime = "nodejs";
 export const alt = gameCardAlt("working-with-duck");
 export const size = OG_IMAGE_SIZE;
 export const contentType = ARCADE_SHOWCASE_CONTENT_TYPE;
+// The card follows the month (#2740), so it is rebuilt hourly rather than
+// fixed at build time: Duck's Halloween card through October, his everyday
+// card the rest of the year.
+export const revalidate = 3600;
 
 export default function Image() {
-  return createGameImageResponse("working-with-duck");
+  return createGameImageResponse("working-with-duck", {
+    halloween: isHalloweenCardSeason(new Date()),
+  });
 }

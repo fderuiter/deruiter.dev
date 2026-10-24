@@ -2027,6 +2027,10 @@ export function useRetroLabyrinthSession(
     loopStateRef.current = loopState;
   });
 
+  // A paused room stops the loop: the cabinet's pause, a lost canvas
+  // context and the room's own pause all hold it still (#2357).
+  const isLoopActive = active && gameStatus !== "paused";
+
   // Main Real-Time Game Loop
   //
   // The loop runs while the session is active. The hook's delta is unclamped
@@ -2201,9 +2205,7 @@ export function useRetroLabyrinthSession(
       };
       paintersRef.current.forEach((paint) => paint(frame));
     },
-    // A paused room stops the loop: the cabinet's pause, a lost canvas
-    // context and the room's own pause all hold it still (#2357).
-    { isActive: active && gameStatus !== "paused", maxDeltaMs: Infinity }
+    { isActive: isLoopActive, maxDeltaMs: Infinity }
   );
 
   // The status-driven events, each sent once on its transition.

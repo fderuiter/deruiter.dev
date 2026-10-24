@@ -17,6 +17,7 @@ const ALL_FIRST_CLASS_ROUTES = [
   "/neuro",
   "/stack",
   "/simulator",
+  "/study-data",
   "/schedule",
   "/case-studies/clinical-data-mapper",
 ];

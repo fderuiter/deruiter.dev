@@ -96,8 +96,14 @@ export default function PlatformPage() {
         </ol>
         <p className="mt-4 border-l-2 border-emerald-500 pl-4 text-sm leading-relaxed text-slate-300">
           Governance, quality, lineage and validation evidence span every layer.
-          The Study Data Pipeline will enter the gold layer as one data product
-          when its route is ready.
+          The gold layer&apos;s SDTM and ADaM come from the{" "}
+          <Link
+            href="/study-data"
+            className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          >
+            Study Data Pipeline
+          </Link>
+          , which you can run and trace end to end.
         </p>
       </section>
 

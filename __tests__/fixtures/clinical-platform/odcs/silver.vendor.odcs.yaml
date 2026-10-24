@@ -1,0 +1,113 @@
+# ODCS v3.2.0 data contract for silver.vendor. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.vendor"
+name: Vendors
+version: "1.0.0"
+status: active
+domain: "Vendor management"
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "Fictional vendors the studies use."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: vendor
+    name: vendor
+    physicalName: silver.vendor
+    physicalType: table
+    logicalType: object
+    description: "Fictional vendors the studies use."
+    dataGranularityDescription: "One row per vendor."
+    properties:
+      - name: vendor_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Vendor id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: vendor_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: "VARCHAR(120)"
+        description: "Fictional vendor name."
+        required: true
+        classification: internal
+      - name: service
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Service the vendor provides."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: vendor_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - vendor_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (vendor_id) identifies one row."
+team:
+  name: "Vendor management"
+  members:
+    - username: clinical-outsourcing-lead
+      name: "Clinical Outsourcing Lead"
+      role: owner
+    - username: vendor-data-steward
+      name: "Vendor Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 168
+    unit: h
+    driver: operational
+    description: "The latest load is at most 168 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.portfolio.vendors
+  - property: consumers
+    value:
+      - "product:gold.dim_vendor"

@@ -26,10 +26,6 @@ export default function ContactPage() {
       variant="standard"
       className="bg-zinc-950 text-foreground relative overflow-hidden pt-28 pb-20"
     >
-      {/* Ambient Atmospheric Glows */}
-      <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[650px] h-[320px] bg-brand-cyan/5 blur-[140px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-      <div className="absolute top-96 right-1/4 w-[450px] h-[280px] bg-amber-500/5 blur-[120px] pointer-events-none -z-10 rounded-full hidden sm:block" />
-
       <div className="max-w-5xl mx-auto flex flex-col items-center relative z-10 w-full px-4 sm:px-6">
         {/* Navigation Breadcrumb */}
         <div className="w-full flex items-center justify-between mb-8 gap-4 flex-wrap">

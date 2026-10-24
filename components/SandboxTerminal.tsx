@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { hexToRgba } from "@/lib/utils";
-import { designManifest } from "@/lib/design-manifest";
 import {
   IconTerminal,
   IconCornerDownLeft,
@@ -1324,7 +1322,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
             key={cmd}
             onClick={() => executeCommand(cmd)}
             disabled={isExecuting || isTyping}
-            className="px-3 py-1.5 text-[10px] font-mono font-bold bg-zinc-900/40 border border-zinc-900 hover:border-brand-cyan/40 text-brand-cyan/90 hover:text-brand-cyan rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-95 hover:bg-brand-cyan/5 hover:shadow-[0_0_12px_rgba(6,182,212,0.15)] cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-cyan/50 focus:ring-offset-1 focus:ring-offset-zinc-950"
+            className="px-3 py-1.5 text-[10px] font-mono font-bold bg-zinc-900/40 border border-zinc-900 hover:border-brand-cyan/40 text-brand-cyan/90 hover:text-brand-cyan rounded-xl transition-all duration-200 hover:scale-[1.02] active:scale-95 hover:bg-brand-cyan/5 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-cyan/50 focus:ring-offset-1 focus:ring-offset-zinc-950"
           >
             {cmd}
           </button>
@@ -1337,12 +1335,7 @@ export const SandboxTerminal: React.FC<SandboxTerminalProps> = ({
         aria-label="Interactive Terminal Sandbox"
         aria-busy={isExecuting || isTyping}
         onClick={handleTerminalClick}
-        style={
-          {
-            "--term-glow": `0 0 35px ${hexToRgba(designManifest.colors["brand-cyan"], 0.02)}`,
-          } as React.CSSProperties
-        }
-        className="w-full border border-zinc-900 focus-within:border-brand-cyan/40 bg-zinc-950 rounded-2xl overflow-hidden shadow-[var(--term-glow)] focus-within:shadow-[0_0_40px_rgba(6,182,212,0.08),0_0_80px_rgba(6,182,212,0.02)] relative cursor-text transition-all duration-300"
+        className="w-full border border-zinc-900 focus-within:border-brand-cyan/40 bg-zinc-950 rounded-2xl overflow-hidden relative cursor-text transition-all duration-300"
       >
         {/* Terminal Header */}
         <div className="border-b border-zinc-900/60 bg-zinc-950/90 px-4 py-3.5 flex justify-between items-center select-none min-w-0 gap-2">

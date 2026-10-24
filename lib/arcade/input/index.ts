@@ -11,6 +11,7 @@ export {
   manualControlsFromActions,
   resolveActionHint,
   touchActionInput,
+  touchAxisInput,
   type ActionConflict,
   type ActionConflictReason,
   type ActionDefinition,

@@ -38,8 +38,6 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
         onMouseEnter={playSkillHover}
         className="md:col-span-2 p-5 sm:p-6 md:p-8 bg-surface-1 border border-white/10 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[250px] hover:border-amber-500/30 transition-all duration-300 shadow-xl"
       >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-[60px] pointer-events-none" />
-
         <div>
           <div className="flex items-center gap-3.5 sm:gap-4 mb-4 sm:mb-5">
             {/* FDR Initials Badge */}
@@ -71,8 +69,6 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
         onMouseEnter={playSkillHover}
         className="p-5 sm:p-6 bg-surface-1 border border-white/10 rounded-2xl relative overflow-hidden flex flex-col justify-between min-h-[220px] sm:min-h-[250px] hover:border-amber-500/30 transition-all duration-300 shadow-xl"
       >
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/5 rounded-full blur-[50px] pointer-events-none" />
-
         <div>
           <h3 className="text-xs font-mono font-bold tracking-widest text-zinc-300 uppercase mb-3 sm:mb-4">
             Codebase Composition

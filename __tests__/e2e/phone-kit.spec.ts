@@ -1,7 +1,18 @@
 import { test, expect, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import path from "node:path";
-import { assertNoHorizontalOverflow, captureMatrix } from "./mobile-harness";
+import {
+  assertNoHorizontalOverflow,
+  assertStageCoverage,
+  assertTextFloor,
+  assertThumbZone,
+  assertTouchTargets,
+  axeCabinet,
+  captureMatrix,
+  expectTapsOnlyFirstScore,
+  interruptAndResume,
+  launchCabinet as launchGame,
+} from "./mobile-harness";
 import {
   EDGE_KEEP_OUT_PX,
   inEdgeKeepOut,
@@ -365,5 +376,101 @@ test.describe("Mobile arcade kit: phone and browser Back", () => {
     await expect(page.locator(CABINET)).toBeVisible();
     expect(await onCabinetEntry(page)).toBe(true);
     expect(new URL(page.url()).pathname).toBe(CABINET_ROUTE);
+  });
+});
+
+// The shared view assertions (#2365) on the phone projects. Trial & Error
+// stands in for the fixture game until a game ships its phone view (ADR
+// 0062); a seed fixes its first deal, so the taps-only script is the same on
+// every run. The view swap check waits for a game with views: Trial & Error
+// mounts no `data-view`, and the harness self-tests cover the helper.
+test.describe("Mobile arcade kit: shared view assertions", () => {
+  test.setTimeout(150000);
+
+  const SLUG = "trial-and-error";
+  const SEED = "e2e-4";
+  // A TLF Pair this seed deals into the Small Blind (#2055). Neither card
+  // needs inspecting, so the pair scores without the zero-score rule.
+  const DISPOSITION = "C-T14.1.2";
+  const DISCONTINUED = "C-L16.1.1";
+  const PLAY_HAND = /^Play Hand/;
+
+  const card = (page: Page, id: string) =>
+    page.locator(`[data-card-id="${id}"]`);
+  /** The round score, without the figure spaces that pad it. */
+  const roundScore = async (page: Page) =>
+    Number(
+      ((await page.getByTestId("round-score").textContent()) ?? "").replace(
+        /\D/g,
+        ""
+      ) || 0
+    );
+  /** The run a reload must keep: the score and the cards in hand. */
+  const readRun = async (page: Page) => ({
+    score: await roundScore(page),
+    hand: await page
+      .locator("[data-card-id]")
+      .evaluateAll((els) => els.map((el) => el.getAttribute("data-card-id"))),
+  });
+
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(!testInfo.project.use.hasTouch, "touch projects only");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await launchGame(page, SLUG, { query: `seed=${SEED}` });
+    await expect(page.getByTestId("hand")).toBeVisible({ timeout: 60000 });
+  });
+
+  test("the stage covers the screen, and its controls and text meet the floors", async ({
+    page,
+  }) => {
+    await assertStageCoverage(page, 0.75);
+    await assertTouchTargets(page, 44);
+    await assertTextFloor(page, 12);
+    await assertNoHorizontalOverflow(page);
+  });
+
+  test("Play Hand sits where a thumb reaches it", async ({ page }) => {
+    const viewport = page.viewportSize()!;
+    test.skip(
+      viewport.width > viewport.height,
+      "Trial & Error centres Play Hand in landscape until its phone pass (#2763)"
+    );
+    const play = page.getByRole("button", { name: PLAY_HAND });
+    await play.scrollIntoViewIfNeeded();
+    await assertThumbZone(page, `[data-coach="play"]`);
+  });
+
+  test("the cabinet has no blocking axe violations", async ({ page }) => {
+    await axeCabinet(page);
+  });
+
+  test("taps alone reach the first score, and a reload resumes it", async ({
+    page,
+  }) => {
+    await expectTapsOnlyFirstScore(page, {
+      taps: [
+        (p) => card(p, DISPOSITION),
+        (p) => card(p, DISCONTINUED),
+        (p) => p.getByRole("button", { name: PLAY_HAND }),
+      ],
+      score: roundScore,
+    });
+    // Played cards stay in the DOM while their exit animation runs.
+    for (const id of [DISPOSITION, DISCONTINUED]) {
+      await expect(card(page, id)).toHaveCount(0);
+    }
+    await interruptAndResume(page, {
+      readRun,
+      relaunch: async (p) => {
+        const launch = p.getByRole("button", { name: /Launch Cabinet/i });
+        await expect(async () => {
+          if (await launch.isVisible()) await launch.tap({ timeout: 2000 });
+          await expect(p.getByTestId("resume-run")).toBeVisible({
+            timeout: 3000,
+          });
+        }).toPass({ timeout: 90000 });
+      },
+      resume: (p) => p.getByRole("button", { name: "Resume run" }),
+    });
   });
 });

@@ -3,7 +3,6 @@
 import React, { useMemo, useEffect } from "react";
 import { CaseStudyBentoCard } from "@/components/ui/CaseStudyBentoCard";
 import { BaseCaseStudy } from "@/types/domain";
-import { hexToRgba } from "@/lib/utils";
 import { GitHubStats } from "@/lib/github";
 import { motion, AnimatePresence } from "framer-motion";
 import { designManifest } from "@/lib/design-manifest";
@@ -157,12 +156,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                 {isActive && (
                   <motion.div
                     layoutId="activePersonaTab"
-                    style={
-                      {
-                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["accent"], 0.12)}`,
-                      } as React.CSSProperties
-                    }
-                    className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"
+                    className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10"
                     transition={designManifest.motion.springs.snappy}
                   />
                 )}
@@ -195,12 +189,7 @@ const CaseStudyShowcaseInner: React.FC<CaseStudyShowcaseProps> = ({
                 {isActive && (
                   <motion.div
                     layoutId="activeLangTab"
-                    style={
-                      {
-                        "--tab-glow": `0 0 15px ${hexToRgba(designManifest.colors["accent"], 0.12)}`,
-                      } as React.CSSProperties
-                    }
-                    className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10 shadow-[var(--tab-glow)]"
+                    className="absolute inset-0 bg-zinc-950 border border-zinc-800/80 rounded-xl -z-10"
                     transition={designManifest.motion.springs.snappy}
                   />
                 )}

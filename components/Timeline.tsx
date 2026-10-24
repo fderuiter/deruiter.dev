@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { hexToRgba } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   IconBriefcase,
@@ -176,15 +175,6 @@ export const Timeline: React.FC = () => {
                 className={`w-full md:w-[46%] pl-7 sm:pl-10 md:pl-0 ${isLeft ? "md:pr-10 md:text-right" : "md:pl-10"}`}
               >
                 <div
-                  style={
-                    {
-                      "--timeline-glow": `0 0 25px ${
-                        isReality
-                          ? hexToRgba(designManifest.colors.warning, 0.05)
-                          : hexToRgba(designManifest.colors["accent"], 0.05)
-                      }`,
-                    } as React.CSSProperties
-                  }
                   className={`p-4 sm:p-6 bg-surface-1 border rounded-2xl transition-all duration-300 group shadow-lg ${
                     isReality
                       ? "border-amber-500/25 hover:border-amber-500/45"

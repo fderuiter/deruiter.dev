@@ -266,6 +266,12 @@ Re-exports [touchActionInput](actions/functions/touchActionInput.md)
 
 ***
 
+### touchAxisInput
+
+Re-exports [touchAxisInput](actions/functions/touchAxisInput.md)
+
+***
+
 ### useActionInput
 
 Re-exports [useActionInput](react/functions/useActionInput.md)

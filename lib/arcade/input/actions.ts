@@ -541,3 +541,26 @@ export function touchActionInput<A extends string>(
     preventDefault: () => {},
   };
 }
+
+/**
+ * Builds the input a touch stick or drag pad sends for an `axis2d` action:
+ * phase `change` with the vector, as a keyboard or gamepad stick sends it.
+ * A released stick sends `{ x: 0, y: 0 }`.
+ *
+ * @param action - The `axis2d` action name.
+ * @param value - The direction, each axis from -1 to 1, screen y down.
+ * @returns An action input from the touch source.
+ */
+export function touchAxisInput<A extends string>(
+  action: A,
+  value: ActionVector
+): ActionInput<A> {
+  return {
+    action,
+    phase: "change",
+    source: "touch",
+    repeat: false,
+    value,
+    preventDefault: () => {},
+  };
+}

@@ -1,0 +1,208 @@
+# ODCS v3.2.0 data contract for silver.study. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.study"
+name: Studies
+version: "1.0.0"
+status: active
+domain: Portfolio
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "Studies in the portfolio, one row per protocol."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: study
+    name: study
+    physicalName: silver.study
+    physicalType: table
+    logicalType: object
+    description: "Studies in the portfolio, one row per protocol."
+    dataGranularityDescription: "One row per study."
+    properties:
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id, for example DEMO-301."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_title
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Short title."
+        required: true
+        classification: internal
+      - name: therapeutic_area
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Therapeutic area."
+        required: true
+        classification: internal
+      - name: product_type
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Investigational product type: drug, biologic or device."
+        required: true
+        classification: internal
+      - name: phase
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Development phase or device study stage."
+        required: true
+        classification: internal
+      - name: regulatory_path
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "US regulatory pathway, IND or IDE."
+        required: true
+        classification: internal
+      - name: operating_model
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Who runs the study: sponsor or CRO."
+        required: true
+        classification: internal
+      - name: cro_vendor_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Vendor id of the CRO, for CRO-run studies."
+        required: false
+        classification: internal
+      - name: study_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Lifecycle status at the data cut."
+        required: true
+        classification: internal
+      - name: start_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the protocol was finalised."
+        required: true
+        classification: internal
+      - name: planned_enrollment
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Enrollment target across all sites."
+        required: true
+        classification: internal
+      - name: is_randomized
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether subjects are randomised through IRT."
+        required: true
+        classification: internal
+      - name: arm_count
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Number of treatment arms."
+        required: true
+        classification: internal
+      - name: schedule_source
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Where the visit schedule comes from: usdm or blueprint."
+        required: true
+        classification: internal
+      - name: has_cec_adjudication
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether a clinical events committee adjudicates events."
+        required: true
+        classification: internal
+      - name: study_data_product_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Study Data Pipeline product that supplies the study's SDTM and ADaM."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: study_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - study_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (study_id) identifies one row."
+team:
+  name: Portfolio
+  members:
+    - username: portfolio-management-lead
+      name: "Portfolio Management Lead"
+      role: owner
+    - username: portfolio-data-steward
+      name: "Portfolio Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 168
+    unit: h
+    driver: operational
+    description: "The latest load is at most 168 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.portfolio.studies
+  - property: consumers
+    value:
+      - "product:gold.dim_study"
+      - "product:gold.dim_site"

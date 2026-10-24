@@ -1,0 +1,2513 @@
+# ODCS v3.2.0 data contract for study-data-pipeline. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/study-data-pipeline"
+name: "Study data: SDTM and ADaM"
+version: "1.0.0"
+status: active
+domain: "Study data"
+tags:
+  - gold
+  - restricted
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "The Study Data Pipeline's SDTM and ADaM datasets for DEMO-301, published into the gold layer."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: TA
+    name: TA
+    physicalName: "m5/datasets/tabulations/sdtm/ta.json"
+    physicalType: file
+    logicalType: object
+    description: "Trial Arms"
+    dataGranularityDescription: "One record per planned element per arm"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: ARMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Planned Arm Code"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: ARM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Planned Arm"
+        required: false
+        classification: internal
+      - name: TAETORD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Element Order"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: internal
+      - name: ETCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Element Code"
+        required: true
+        classification: internal
+      - name: ELEMENT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Element"
+        required: false
+        classification: internal
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: internal
+    quality:
+      - id: TA_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - ARMCD
+            - TAETORD
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, ARMCD, TAETORD) identifies one row."
+  - id: TE
+    name: TE
+    physicalName: "m5/datasets/tabulations/sdtm/te.json"
+    physicalType: file
+    logicalType: object
+    description: "Trial Elements"
+    dataGranularityDescription: "One record per planned element"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: ETCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Element Code"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: ELEMENT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Element"
+        required: false
+        classification: internal
+      - name: TESTRL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Rule for Start of Element"
+        required: false
+        classification: internal
+      - name: TEENRL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Rule for End of Element"
+        required: false
+        classification: internal
+      - name: TEDUR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Planned Duration of Element"
+        required: false
+        classification: internal
+    quality:
+      - id: TE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - ETCD
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, ETCD) identifies one row."
+  - id: TV
+    name: TV
+    physicalName: "m5/datasets/tabulations/sdtm/tv.json"
+    physicalType: file
+    logicalType: object
+    description: "Trial Visits"
+    dataGranularityDescription: "One record per planned visit"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: VISITNUM
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Visit Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: VISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Visit Name"
+        required: true
+        classification: internal
+      - name: VISITDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned Study Day"
+        required: false
+        classification: internal
+      - name: TVSTRL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Rule for Start of Visit"
+        required: false
+        classification: internal
+      - name: TVENRL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Rule for End of Visit"
+        required: false
+        classification: internal
+    quality:
+      - id: TV_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - VISITNUM
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, VISITNUM) identifies one row."
+  - id: TI
+    name: TI
+    physicalName: "m5/datasets/tabulations/sdtm/ti.json"
+    physicalType: file
+    logicalType: object
+    description: "Trial Inclusion Exclusion Criteria"
+    dataGranularityDescription: "One record per inclusion or exclusion criterion"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: IETESTCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Criterion Short Name"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: IETEST
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Criterion Text"
+        required: false
+        classification: internal
+      - name: IECAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Criterion Category"
+        required: false
+        classification: internal
+    quality:
+      - id: TI_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - IETESTCD
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, IETESTCD) identifies one row."
+  - id: TS
+    name: TS
+    physicalName: "m5/datasets/tabulations/sdtm/ts.json"
+    physicalType: file
+    logicalType: object
+    description: "Trial Summary"
+    dataGranularityDescription: "One record per trial summary parameter value"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: TSSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: internal
+      - name: TSPARMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Trial Summary Parameter Short Name"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: TSPARM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Trial Summary Parameter"
+        required: false
+        classification: internal
+      - name: TSVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Parameter Value"
+        required: false
+        classification: internal
+      - name: TSVALCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Parameter Value Code"
+        required: false
+        classification: internal
+      - name: TSVCDREF
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Value Code Reference"
+        required: false
+        classification: internal
+      - name: TSVCDVER
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Value Code Version"
+        required: false
+        classification: internal
+    quality:
+      - id: TS_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - TSPARMCD
+            - TSSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, TSPARMCD, TSSEQ) identifies one row."
+  - id: DM
+    name: DM
+    physicalName: "m5/datasets/tabulations/sdtm/dm.json"
+    physicalType: file
+    logicalType: object
+    description: Demographics
+    dataGranularityDescription: "One record per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: SUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Subject Identifier"
+        required: false
+        classification: confidential
+      - name: RFICDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Informed Consent Date"
+        required: false
+        classification: confidential
+      - name: RFSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Subject Reference Start Date"
+        required: false
+        classification: confidential
+      - name: RFENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Subject Reference End Date"
+        required: false
+        classification: confidential
+      - name: RFXSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date of First Study Treatment"
+        required: false
+        classification: confidential
+      - name: RFXENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date of Last Study Treatment"
+        required: false
+        classification: confidential
+      - name: AGE
+        logicalType: integer
+        physicalType: INTEGER
+        description: Age
+        required: false
+        classification: confidential
+      - name: AGEU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Age Units"
+        required: false
+        classification: confidential
+      - name: SEX
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Sex
+        required: false
+        classification: confidential
+      - name: ARMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Planned Arm Code"
+        required: false
+        classification: restricted
+      - name: ARM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Planned Arm"
+        required: false
+        classification: restricted
+      - name: ACTARMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Actual Arm Code"
+        required: false
+        classification: restricted
+      - name: ACTARM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Actual Arm"
+        required: false
+        classification: restricted
+    quality:
+      - id: DM_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID) identifies one row."
+  - id: SV
+    name: SV
+    physicalName: "m5/datasets/tabulations/sdtm/sv.json"
+    physicalType: file
+    logicalType: object
+    description: "Subject Visits"
+    dataGranularityDescription: "One record per actual visit per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: VISITNUM
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Visit Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: VISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Visit Name"
+        required: false
+        classification: confidential
+      - name: SVSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date of Visit"
+        required: false
+        classification: confidential
+      - name: SVENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "End Date of Visit"
+        required: false
+        classification: confidential
+      - name: SVSTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Start of Visit"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+    quality:
+      - id: SV_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - VISITNUM
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, VISITNUM) identifies one row."
+  - id: EX
+    name: EX
+    physicalName: "m5/datasets/tabulations/sdtm/ex.json"
+    physicalType: file
+    logicalType: object
+    description: Exposure
+    dataGranularityDescription: "One record per constant-dosing interval per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: EXSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: EXTRT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Name of Treatment"
+        required: true
+        classification: restricted
+      - name: EXDOSE
+        logicalType: number
+        physicalType: DOUBLE
+        description: Dose
+        required: false
+        classification: restricted
+      - name: EXDOSU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Dose Units"
+        required: false
+        classification: confidential
+      - name: EXSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date of Treatment"
+        required: false
+        classification: confidential
+      - name: EXENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "End Date of Treatment"
+        required: false
+        classification: confidential
+      - name: EXSTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Start of Treatment"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+    quality:
+      - id: EX_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - EXSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, EXSEQ) identifies one row."
+  - id: AE
+    name: AE
+    physicalName: "m5/datasets/tabulations/sdtm/ae.json"
+    physicalType: file
+    logicalType: object
+    description: "Adverse Events"
+    dataGranularityDescription: "One record per adverse event per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: AESEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: AETERM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reported Term for the Adverse Event"
+        required: true
+        classification: confidential
+      - name: AEDECOD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Dictionary Derived Term"
+        required: false
+        classification: confidential
+      - name: AEBODSYS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Body System or Organ Class"
+        required: false
+        classification: confidential
+      - name: AESER
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Serious Event"
+        required: false
+        classification: confidential
+      - name: AEREL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Causality
+        required: false
+        classification: confidential
+      - name: AEACN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Action Taken with Study Treatment"
+        required: false
+        classification: confidential
+      - name: AESTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date of Adverse Event"
+        required: false
+        classification: confidential
+      - name: AEENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "End Date of Adverse Event"
+        required: false
+        classification: confidential
+      - name: AESTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Start of Adverse Event"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+    quality:
+      - id: AE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - AESEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, AESEQ) identifies one row."
+  - id: VS
+    name: VS
+    physicalName: "m5/datasets/tabulations/sdtm/vs.json"
+    physicalType: file
+    logicalType: object
+    description: "Vital Signs"
+    dataGranularityDescription: "One record per vital sign measurement per visit per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: VSSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: VSTESTCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Vital Signs Test Short Name"
+        required: true
+        classification: confidential
+      - name: VSTEST
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Vital Signs Test Name"
+        required: false
+        classification: confidential
+      - name: VSORRES
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Result or Finding in Original Units"
+        required: false
+        classification: confidential
+      - name: VSORRESU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Original Units"
+        required: false
+        classification: confidential
+      - name: VSSTRESC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Character Result in Standard Units"
+        required: false
+        classification: confidential
+      - name: VSSTRESN
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Numeric Result in Standard Units"
+        required: false
+        classification: confidential
+      - name: VSSTRESU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Standard Units"
+        required: false
+        classification: confidential
+      - name: VISITNUM
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Visit Number"
+        required: false
+        classification: confidential
+      - name: VISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Visit Name"
+        required: false
+        classification: confidential
+      - name: VSDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date of Vital Signs"
+        required: false
+        classification: confidential
+      - name: VSDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Vital Signs"
+        required: false
+        classification: confidential
+      - name: VSLOBXFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Last Observation Before Exposure Flag"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+    quality:
+      - id: VS_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - VSSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, VSSEQ) identifies one row."
+  - id: LB
+    name: LB
+    physicalName: "m5/datasets/tabulations/sdtm/lb.json"
+    physicalType: file
+    logicalType: object
+    description: "Laboratory Test Results"
+    dataGranularityDescription: "One record per lab test per visit per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: LBSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: LBTESTCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Lab Test Short Name"
+        required: true
+        classification: confidential
+      - name: LBTEST
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Lab Test Name"
+        required: false
+        classification: confidential
+      - name: LBORRES
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Result or Finding in Original Units"
+        required: false
+        classification: confidential
+      - name: LBORRESU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Original Units"
+        required: false
+        classification: confidential
+      - name: LBSTRESC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Character Result in Standard Units"
+        required: false
+        classification: confidential
+      - name: LBSTRESN
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Numeric Result in Standard Units"
+        required: false
+        classification: confidential
+      - name: LBSTRESU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Standard Units"
+        required: false
+        classification: confidential
+      - name: LBNRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reference Range Indicator"
+        required: false
+        classification: confidential
+      - name: VISITNUM
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Visit Number"
+        required: false
+        classification: confidential
+      - name: VISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Visit Name"
+        required: false
+        classification: confidential
+      - name: LBDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date of Lab Test"
+        required: false
+        classification: confidential
+      - name: LBDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Lab Test"
+        required: false
+        classification: confidential
+      - name: LBLOBXFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Last Observation Before Exposure Flag"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+    quality:
+      - id: LB_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - LBSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, LBSEQ) identifies one row."
+  - id: DS
+    name: DS
+    physicalName: "m5/datasets/tabulations/sdtm/ds.json"
+    physicalType: file
+    logicalType: object
+    description: Disposition
+    dataGranularityDescription: "One record per disposition status or protocol milestone per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: DSSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: DSTERM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reported Term for Disposition"
+        required: true
+        classification: confidential
+      - name: DSDECOD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Standardized Disposition Term"
+        required: false
+        classification: confidential
+      - name: DSCAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Category for Disposition"
+        required: false
+        classification: confidential
+      - name: DSSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date of Disposition Event"
+        required: false
+        classification: confidential
+      - name: DSSTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Disposition Event"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+    quality:
+      - id: DS_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - DSSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, DSSEQ) identifies one row."
+  - id: SUPPDM
+    name: SUPPDM
+    physicalName: "m5/datasets/tabulations/sdtm/suppdm.json"
+    physicalType: file
+    logicalType: object
+    description: "Supplemental Qualifiers for DM"
+    dataGranularityDescription: "One record per supplemental qualifier per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: RDOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Related Domain Abbreviation"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: IDVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable"
+        required: false
+        classification: confidential
+      - name: IDVARVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Identifying Variable Value"
+        required: false
+        classification: confidential
+      - name: QNAM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Qualifier Variable Name"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 4
+        classification: confidential
+      - name: QLABEL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Qualifier Variable Label"
+        required: false
+        classification: confidential
+      - name: QVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Data Value"
+        required: false
+        classification: confidential
+      - name: QORIG
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Origin
+        required: false
+        classification: confidential
+      - name: QEVAL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Evaluator
+        required: false
+        classification: confidential
+    quality:
+      - id: SUPPDM_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - RDOMAIN
+            - USUBJID
+            - QNAM
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, RDOMAIN, USUBJID, QNAM) identifies one row."
+  - id: ADSL
+    name: ADSL
+    physicalName: "m5/datasets/analysis/adam/adsl.json"
+    physicalType: file
+    logicalType: object
+    description: "Subject-Level Analysis Dataset"
+    dataGranularityDescription: "One record per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01PN
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned Treatment Number"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01AN
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Actual Treatment Number"
+        required: false
+        classification: restricted
+      - name: TRTSDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment Start Date"
+        required: false
+        classification: confidential
+      - name: TRTEDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment End Date"
+        required: false
+        classification: confidential
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: EFFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Efficacy Population Flag"
+        required: false
+        classification: confidential
+      - name: AGE
+        logicalType: integer
+        physicalType: INTEGER
+        description: Age
+        required: false
+        classification: confidential
+      - name: AGEGR1
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Age Group"
+        required: false
+        classification: confidential
+      - name: AGEGR1N
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Age Group Number"
+        required: false
+        classification: confidential
+      - name: SEX
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Sex
+        required: false
+        classification: confidential
+      - name: BSYSBP
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Baseline Systolic Blood Pressure"
+        required: false
+        classification: confidential
+      - name: BDIABP
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Baseline Diastolic Blood Pressure"
+        required: false
+        classification: confidential
+      - name: EOSSTT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "End of Study Status"
+        required: false
+        classification: confidential
+      - name: DCSREAS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Discontinuation Reason"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADSL_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID) identifies one row."
+  - id: ADVS
+    name: ADVS
+    physicalName: "m5/datasets/analysis/adam/advs.json"
+    physicalType: file
+    logicalType: object
+    description: "Vital Signs Analysis"
+    dataGranularityDescription: "One or more records per subject per parameter per analysis visit"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: ASEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: PARAMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Parameter Code"
+        required: false
+        classification: confidential
+      - name: PARAM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Parameter
+        required: false
+        classification: confidential
+      - name: AVAL
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Analysis Value"
+        required: false
+        classification: confidential
+      - name: AVALU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Value Unit"
+        required: false
+        classification: confidential
+      - name: ADT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis Date"
+        required: false
+        classification: confidential
+      - name: ADY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Day"
+        required: false
+        classification: confidential
+      - name: AVISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Visit"
+        required: false
+        classification: confidential
+      - name: AVISITN
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Visit Number"
+        required: false
+        classification: confidential
+      - name: ABLFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Baseline Record Flag"
+        required: false
+        classification: confidential
+      - name: BASE
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Baseline Value"
+        required: false
+        classification: confidential
+      - name: CHG
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Change from Baseline"
+        required: false
+        classification: confidential
+      - name: PCHG
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Percent Change from Baseline"
+        required: false
+        classification: confidential
+      - name: ANL01FL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Primary Analysis Flag"
+        required: false
+        classification: confidential
+      - name: DTYPE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Derivation Type"
+        required: false
+        classification: confidential
+      - name: ANRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Normal Range Indicator"
+        required: false
+        classification: confidential
+      - name: BNRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Baseline Normal Range Indicator"
+        required: false
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: EFFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Efficacy Population Flag"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADVS_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ASEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ASEQ) identifies one row."
+  - id: ADLB
+    name: ADLB
+    physicalName: "m5/datasets/analysis/adam/adlb.json"
+    physicalType: file
+    logicalType: object
+    description: "Laboratory Analysis"
+    dataGranularityDescription: "One or more records per subject per parameter per analysis visit"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: ASEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: PARAMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Parameter Code"
+        required: false
+        classification: confidential
+      - name: PARAM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Parameter
+        required: false
+        classification: confidential
+      - name: AVAL
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Analysis Value"
+        required: false
+        classification: confidential
+      - name: AVALU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Value Unit"
+        required: false
+        classification: confidential
+      - name: ADT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis Date"
+        required: false
+        classification: confidential
+      - name: ADY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Day"
+        required: false
+        classification: confidential
+      - name: AVISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Visit"
+        required: false
+        classification: confidential
+      - name: AVISITN
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Visit Number"
+        required: false
+        classification: confidential
+      - name: ABLFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Baseline Record Flag"
+        required: false
+        classification: confidential
+      - name: BASE
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Baseline Value"
+        required: false
+        classification: confidential
+      - name: CHG
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Change from Baseline"
+        required: false
+        classification: confidential
+      - name: PCHG
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Percent Change from Baseline"
+        required: false
+        classification: confidential
+      - name: ANL01FL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Primary Analysis Flag"
+        required: false
+        classification: confidential
+      - name: DTYPE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Derivation Type"
+        required: false
+        classification: confidential
+      - name: ANRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Normal Range Indicator"
+        required: false
+        classification: confidential
+      - name: BNRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Baseline Normal Range Indicator"
+        required: false
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: EFFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Efficacy Population Flag"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADLB_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ASEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ASEQ) identifies one row."
+  - id: ADAE
+    name: ADAE
+    physicalName: "m5/datasets/analysis/adam/adae.json"
+    physicalType: file
+    logicalType: object
+    description: "Adverse Events Analysis"
+    dataGranularityDescription: "One record per adverse event per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: ASEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: AETERM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Reported Event Term"
+        required: false
+        classification: confidential
+      - name: AEDECOD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Preferred Term"
+        required: false
+        classification: confidential
+      - name: AEBODSYS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Body System"
+        required: false
+        classification: confidential
+      - name: AESER
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Serious Event"
+        required: false
+        classification: confidential
+      - name: AEACN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Action with Treatment"
+        required: false
+        classification: confidential
+      - name: ASTDT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis Start Date"
+        required: false
+        classification: confidential
+      - name: ASTDTF
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Start Date Imputation Flag"
+        required: false
+        classification: confidential
+      - name: AENDT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis End Date"
+        required: false
+        classification: confidential
+      - name: AENDTF
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "End Date Imputation Flag"
+        required: false
+        classification: confidential
+      - name: TRTEMFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Treatment-Emergent Flag"
+        required: false
+        classification: confidential
+      - name: LSTALVDT
+        logicalType: date
+        physicalType: DATE
+        description: "Last Known Contact Date"
+        required: false
+        classification: confidential
+      - name: AOCCFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "First Event Flag"
+        required: false
+        classification: confidential
+      - name: AOCCSFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "First Body System Event Flag"
+        required: false
+        classification: confidential
+      - name: AOCCPFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "First Preferred Term Event Flag"
+        required: false
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: TRTSDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment Start Date"
+        required: false
+        classification: confidential
+      - name: TRTEDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment End Date"
+        required: false
+        classification: confidential
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence Number"
+        required: false
+        classification: confidential
+      - name: SRCVAL
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Key Value"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADAE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ASEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ASEQ) identifies one row."
+  - id: ADTTE
+    name: ADTTE
+    physicalName: "m5/datasets/analysis/adam/adtte.json"
+    physicalType: file
+    logicalType: object
+    description: "Time-to-Event Analysis"
+    dataGranularityDescription: "One record per subject per parameter"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: ASEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: PARAMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Parameter Code"
+        required: false
+        classification: confidential
+      - name: PARAM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Parameter
+        required: false
+        classification: confidential
+      - name: STARTDT
+        logicalType: date
+        physicalType: DATE
+        description: "Risk Start Date"
+        required: false
+        classification: confidential
+      - name: ADT
+        logicalType: date
+        physicalType: DATE
+        description: "Event or Censor Date"
+        required: false
+        classification: confidential
+      - name: AVAL
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Time to Event in Days"
+        required: false
+        classification: confidential
+      - name: CNSR
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Censor Flag"
+        required: false
+        classification: confidential
+      - name: EVNTDESC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Event Description"
+        required: false
+        classification: confidential
+      - name: CNSDTDSC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Censor Date Description"
+        required: false
+        classification: confidential
+      - name: DSSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Corroborating DS Sequence"
+        required: false
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: TRTSDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment Start Date"
+        required: false
+        classification: confidential
+      - name: TRTEDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment End Date"
+        required: false
+        classification: confidential
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence Number"
+        required: false
+        classification: confidential
+      - name: SRCVAL
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Key Value"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADTTE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ASEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ASEQ) identifies one row."
+team:
+  name: "Study data"
+  members:
+    - username: biostatistics-lead
+      name: "Biostatistics Lead"
+      role: owner
+    - username: clinical-data-standards-steward
+      name: "Clinical Data Standards Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 720
+    unit: h
+    driver: operational
+    description: "The latest load is at most 720 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: restricted
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - usdm.DEMO-301
+  - property: consumers
+    value: []

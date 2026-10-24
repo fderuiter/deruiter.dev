@@ -1,0 +1,155 @@
+# ODCS v3.2.0 data contract for silver.irt_kit. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.irt_kit"
+name: "Drug kits"
+version: "1.0.0"
+status: active
+domain: IRT
+tags:
+  - silver
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "IRT investigational product kits."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: irt_kit
+    name: irt_kit
+    physicalName: silver.irt_kit
+    physicalType: table
+    logicalType: object
+    description: "IRT investigational product kits."
+    dataGranularityDescription: "One row per kit."
+    properties:
+      - name: kit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Kit number."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site holding the kit."
+        required: true
+        classification: internal
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject the kit was dispensed to."
+        required: false
+        classification: confidential
+      - name: received_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the site received the kit."
+        required: true
+        classification: internal
+      - name: dispensed_on
+        logicalType: date
+        physicalType: DATE
+        description: "Dispensing date."
+        required: false
+        classification: internal
+      - name: expires_on
+        logicalType: date
+        physicalType: DATE
+        description: "Expiry date."
+        required: true
+        classification: internal
+      - name: kit_status
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "State at the data cut."
+        required: true
+        classification: internal
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: irt_kit_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - kit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (kit_id) identifies one row."
+team:
+  name: IRT
+  members:
+    - username: clinical-supply-lead
+      name: "Clinical Supply Lead"
+      role: owner
+    - username: irt-data-steward
+      name: "IRT Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.irt.kits
+  - property: consumers
+    value: []

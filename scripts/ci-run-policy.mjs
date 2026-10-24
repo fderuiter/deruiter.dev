@@ -175,7 +175,7 @@ const ARCADE_KIT_TITLES = Object.freeze([
  * step it feeds at least once before it merges.
  */
 const ARCADE_SHARED_PATHS =
-  /^(components\/arcade\/|lib\/arcade\/|lib\/haptics\.ts$|app\/arcade\/(layout\.tsx|arcade\.css)$|playwright\.config\.ts$|scripts\/ci-run-policy\.mjs$|__tests__\/e2e\/(mobile-harness\.ts|tablet-kit\.spec\.ts|mobile-kit\.spec\.ts)$)/;
+  /^(components\/arcade\/|lib\/arcade\/|lib\/haptics\.ts$|app\/arcade\/(layout\.tsx|arcade\.css)$|playwright\.config\.ts$|scripts\/ci-run-policy\.mjs$|__tests__\/e2e\/(mobile-harness\.ts|tablet-kit\.spec\.ts|phone-kit\.spec\.ts)$)/;
 
 const escapeRegExp = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

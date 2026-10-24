@@ -684,6 +684,25 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-study-data-pipeline-case-study",
+        title: "Study Data Pipeline: USDM to SDTM, ADaM and TLFs",
+        subtitle:
+          "How one synthetic study travels from a USDM definition through SDTM, ADaM and Define-XML to tables and figures, with lineage from every result back to its records.",
+        category: "navigation",
+        url: "/case-studies/study-data-pipeline",
+        icon: <IconDirections className="w-4 h-4 text-accent" />,
+        badge: "Case Study",
+        status: "Clinical Data",
+        description:
+          "How one synthetic study travels from a USDM definition through SDTM, ADaM and Define-XML to tables and figures, with lineage from every result back to its records.",
+        techStack: ["TypeScript", "USDM", "SDTM", "ADaM", "Define-XML", "ARS"],
+        highlights: [
+          "Seeded synthetic data, byte-identical packages per seed",
+          "Independent QC of the key derivations across 200 seeds",
+          "Reviewer guides written from each run",
+        ],
+      },
+      {
         id: "nav-laser-loon",
         title: "Laser Loon: Quest for the State Flag",
         subtitle:

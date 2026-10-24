@@ -15,10 +15,12 @@ import {
   SYNTHETIC_DATA_NOTICE,
   StudyDefinitionError,
   buildDefine,
+  buildReviewerGuides,
   buildStudyDataPackage,
   buildTlfOutputs,
   createLineageIndex,
   prepareStudyHandoff,
+  renderReviewerGuideHtml,
   runPipeline,
   sha256Hex,
   writeTlfFiles,
@@ -231,6 +233,7 @@ export function createStudyDataSession() {
         createdAt: PACKAGE_FIXED_TIMESTAMP,
       }),
     };
+    const guides = buildReviewerGuides(result, outputs.reportingEvent);
     lastRunId += 1;
     active = {
       runId: lastRunId,
@@ -256,6 +259,10 @@ export function createStudyDataSession() {
       define,
       tables: outputs.tables,
       figures: outputs.figures,
+      guides: {
+        csdrg: renderReviewerGuideHtml(guides.csdrg),
+        adrg: renderReviewerGuideHtml(guides.adrg),
+      },
     };
   };
 

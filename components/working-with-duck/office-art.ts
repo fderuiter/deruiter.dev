@@ -22,6 +22,7 @@ import {
   RUG_BOUNDS,
   WATER_BOWL_BOUNDS,
   isDuckHiccuping,
+  isHalloweenCostume,
   type DuckAccessory,
   type DuckBehaviorState,
   type DuckTrick,
@@ -36,6 +37,11 @@ import {
   type DuckCoat,
   type MudBlob,
 } from "./duck-art";
+import {
+  drawCostumeBody,
+  drawCostumeHead,
+  drawHalloweenOffice,
+} from "./halloween-art";
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -1206,11 +1212,21 @@ function accessory(
   kind: DuckAccessory,
   anchors: {
     head: [number, number];
+    /** The head's rotation, for pieces that hug the skull. */
+    headTilt?: number;
     neck: [number, number];
     feet: Array<[number, number]>;
   }
 ) {
   if (kind === "none") return;
+  if (isHalloweenCostume(kind)) {
+    drawCostumeHead(ctx, kind, {
+      head: anchors.head,
+      headTilt: anchors.headTilt ?? 0,
+      feet: anchors.feet,
+    });
+    return;
+  }
   if (kind === "bucket-hat") {
     const [hx, hy] = anchors.head;
     ctx.save();
@@ -1404,6 +1420,18 @@ function drawStanding(
   leg(ctx, farFur, -14, 4 + bob, 22, run ? -8 : 0);
   leg(ctx, farFur, 20, 4 + bob, 22, run ? 8 : 0);
   body(ctx, fur, 0, bob, run ? 31 : 28, run ? 14 : 16, run ? -0.06 : 0);
+  drawCostumeBody(
+    ctx,
+    opts.accessory,
+    {
+      x: 0,
+      y: bob,
+      rx: run ? 31 : 28,
+      ry: run ? 14 : 16,
+      tilt: run ? -0.06 : 0,
+    },
+    [21, -4 + bob]
+  );
   leg(ctx, fur, -20, 6 + bob, 23, run ? 9 : 0);
   leg(ctx, fur, 14, 6 + bob, 23, run ? -9 : 0);
   // Chest ruff
@@ -1412,15 +1440,17 @@ function drawStanding(
   ctx.fill();
   const hx = sniff ? 32 : 28;
   const hy = sniff ? 2 + bob : -16 + bob;
+  const headTilt = sniff ? 0.55 : run ? 0.12 : 0;
   collar(ctx, 21, -4 + bob + (sniff ? 6 : 0), sniff ? 0.6 : -0.2);
   head(ctx, fur, hx, hy, {
-    tilt: sniff ? 0.55 : run ? 0.12 : 0,
+    tilt: headTilt,
     tongue: opts.tongue,
     ball: opts.ball,
     earFlap: opts.earFlap,
   });
   accessory(ctx, opts.accessory, {
     head: [hx, hy],
+    headTilt,
     neck: [21, -4 + bob],
     feet: [
       [-20 + (run ? 9 : 0), 23],
@@ -1473,6 +1503,12 @@ function drawSitting(
   ctx.fill();
   // Upright chest
   body(ctx, fur, 6, -4, 13, 19, -0.15);
+  drawCostumeBody(
+    ctx,
+    opts.accessory,
+    { x: 6, y: -4, rx: 13, ry: 19, tilt: -0.15 },
+    [11, -16]
+  );
   const farFur = { ...fur, base: fur.shade };
   leg(ctx, farFur, 12, 4, 23);
   if (beg) {
@@ -1506,6 +1542,7 @@ function drawSitting(
   });
   accessory(ctx, opts.accessory, {
     head: [16, -28],
+    headTilt: beg ? -0.12 : 0,
     neck: [11, -16],
     feet: [
       [6, 24],
@@ -1536,6 +1573,12 @@ function drawNap(
   ctx.fill();
   ctx.stroke();
   body(ctx, fur, -2, 0, 30, 17);
+  drawCostumeBody(
+    ctx,
+    accessoryKind,
+    { x: -2, y: 0, rx: 30, ry: 17, tilt: 0 },
+    [14, 4]
+  );
   ctx.restore();
   // Head resting on paws
   ctx.fillStyle = fur.light;
@@ -1544,6 +1587,7 @@ function drawNap(
   head(ctx, fur, 20, 2, { tilt: 0.35, eyes: "closed" });
   accessory(ctx, accessoryKind, {
     head: [20, 2],
+    headTilt: 0.35,
     neck: [14, 4],
     feet: [
       [26, 16],
@@ -1881,7 +1925,8 @@ export function drawOfficeScene(
   ctx: Ctx,
   state: WorkingWithDuckState,
   scale = 1,
-  touchHints = false
+  touchHints = false,
+  halloween = false
 ) {
   const calm = prefersReducedMotion();
   const room = typeof ctx.drawImage === "function" ? getRoom(scale) : null;
@@ -1892,6 +1937,7 @@ export function drawOfficeScene(
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   }
   drawDaylight(ctx, state.workProgress / (state.targetWorkProgress || 1));
+  if (halloween) drawHalloweenOffice(ctx, state.ticks, calm);
 
   // Squirrel at the window
   if (state.activeSurpriseEvent?.type === "squirrel-window") {

@@ -105,7 +105,7 @@ function instant(text: string, name: string): number {
 }
 
 /** Rows of a table keyed by column name, with the columns seen, in order. */
-export function rowsOf(
+function rowsOf(
   rows: readonly Readonly<Record<string, WarehouseValue>>[]
 ): ContractObjectRows {
   const columns = new Set<string>();

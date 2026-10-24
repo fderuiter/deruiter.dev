@@ -12,6 +12,5 @@
 
 ## Functions
 
-- [contractId](functions/contractId.md)
 - [dataContracts](functions/dataContracts.md)
 - [dataProducts](functions/dataProducts.md)

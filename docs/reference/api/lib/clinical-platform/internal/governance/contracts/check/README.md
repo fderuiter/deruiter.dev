@@ -12,4 +12,3 @@
 - [checkDataContracts](functions/checkDataContracts.md)
 - [checkDataProducts](functions/checkDataProducts.md)
 - [contractData](functions/contractData.md)
-- [rowsOf](functions/rowsOf.md)

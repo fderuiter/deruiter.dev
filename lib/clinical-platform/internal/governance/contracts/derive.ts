@@ -51,7 +51,7 @@ function highest(classes: readonly DataClassification[]): DataClassification {
 }
 
 /** Id of the contract that governs a product. */
-export function contractId(productId: string): string {
+function contractId(productId: string): string {
   return `clinical-platform/${productId}`;
 }
 

@@ -16,11 +16,13 @@ const definition: StudyDefinition = DEMO_301_STUDY;
 describe("study-data presets", () => {
   it("pins the standard versions ADR 0065 records", () => {
     expect(STANDARD_VERSIONS).toEqual({
-      USDM: "4.0",
+      USDM: "4.0.0",
       SDTM: "2.0",
       SDTMIG: "3.4",
       ADaM: "2.1",
       ADaMIG: "1.3",
+      OCCDS: "1.0",
+      "ADaM-CR": "5.0",
       "Define-XML": "2.1",
       "Dataset-JSON": "1.1",
       ARS: "1.0",

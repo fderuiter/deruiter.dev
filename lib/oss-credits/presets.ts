@@ -1,3 +1,4 @@
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 import type { DirectAnnotation } from "./types";
 
 /**
@@ -218,8 +219,7 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
   },
   "xmllint-wasm": {
     group: "Testing",
-    reason:
-      "Checks the study data pipeline's Define-XML files against the Define-XML 2.1.0 schema in a unit test, with libxml2 compiled to WebAssembly.",
+    reason: `Checks the study data pipeline's Define-XML files against the Define-XML ${CLINICAL_STANDARDS_PROFILE["Define-XML"]}.0 schema in a unit test, with libxml2 compiled to WebAssembly.`,
   },
   "@total-typescript/shoehorn": {
     group: "Testing",

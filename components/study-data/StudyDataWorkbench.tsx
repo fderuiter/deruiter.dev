@@ -1,5 +1,6 @@
 "use client";
 
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 import {
   useCallback,
   useEffect,
@@ -100,7 +101,7 @@ function handoffNotice(taken: TakenHandoff, prepared?: PreparedStudy): string {
   if (prepared && !prepared.ok) {
     const what =
       prepared.problem === "schema"
-        ? `fails the USDM v4.0.0 schema (${prepared.total.toLocaleString("en-US")} ${prepared.total === 1 ? "issue" : "issues"}, first: ${prepared.issues[0]})`
+        ? `fails the USDM v${CLINICAL_STANDARDS_PROFILE.USDM} schema (${prepared.total.toLocaleString("en-US")} ${prepared.total === 1 ? "issue" : "issues"}, first: ${prepared.issues[0]})`
         : `cannot be read as a study: ${prepared.issues[0]}`;
     return `The study handed over from CRF Studio ${what}, so the page runs DEMO-301.`;
   }

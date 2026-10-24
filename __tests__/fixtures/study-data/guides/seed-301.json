@@ -42,7 +42,7 @@
     "standards": [
       {
         "standard": "USDM",
-        "version": "4.0"
+        "version": "4.0.0"
       },
       {
         "standard": "SDTM",
@@ -198,7 +198,7 @@
           "severity": "warning",
           "count": 23,
           "message": "Actual visit falls outside the TV planned window.",
-          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules v2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
+          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules 2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
           "expected": true,
           "explanation": "The generator moves about 7% of scheduled post-baseline visits two days past the end of their planned window, as happens in real studies. SVSTDY is correct: the visit happened late. ADaM assigns these records to analysis visits by the window rule (BDS_WINDOW)."
         },
@@ -208,7 +208,7 @@
           "severity": "warning",
           "count": 6,
           "message": "Partial adverse-event onset date needs review for temporal analyses.",
-          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules v2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
+          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules 2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
           "expected": true,
           "explanation": "About 12% of post-dose adverse events are given a month-only onset date, as a site might record when the day is unknown. AESTDY is left missing in SDTM; ADAE imputes the day and flags it (ADAE_IMPUTE)."
         },
@@ -218,7 +218,7 @@
           "severity": "warning",
           "count": 5,
           "message": "Adverse event began before first exposure.",
-          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules v2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
+          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules 2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
           "expected": true,
           "explanation": "About 7% of randomized subjects have an adverse event two days before first dose. These records stay in AE and are not treatment-emergent in ADAE (ADAE_TEAE)."
         },
@@ -228,7 +228,7 @@
           "severity": "warning",
           "count": 64,
           "message": "Synthetic laboratory result is outside the reference range.",
-          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules v2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
+          "citation": "SDTMIG 3.4 / SDTM and SDTMIG Conformance Rules 2.0: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0",
           "expected": true,
           "explanation": "About 2.5% of laboratory results are generated at 1.8 times the expected value and flagged LBNRIND = HIGH, so that shift and abnormality summaries have something to count. The values are deliberate, not entry errors."
         }

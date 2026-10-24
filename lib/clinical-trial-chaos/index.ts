@@ -15,3 +15,4 @@ export * from "./escalation";
 export * from "./amendments";
 export * from "./observation-generators";
 export * from "./inspection";
+export * from "./terminology";

@@ -1,4 +1,8 @@
 import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
+import {
   createSocialImageResponse,
   OG_IMAGE_SIZE,
   OG_IMAGE_CONTENT_TYPE,
@@ -18,10 +22,10 @@ export default function Image() {
     category: "CLINICAL DATA SYSTEMS // EDC STUDIO",
     title: config.title,
     description: config.description,
-    badge: "CDISC CDASH 2.2 // ODM-XML",
+    badge: `CDISC ${standardCitation("CDASHIG")} // ODM-XML`,
     tags: [
-      "CDASH 2.2",
-      "ODM-XML 1.3.2",
+      standardCitation("CDASHIG"),
+      `ODM-XML ${CLINICAL_STANDARDS_PROFILE.ODM}`,
       "AST Edit Checks",
       "aCRF",
       "21 CFR Part 11",

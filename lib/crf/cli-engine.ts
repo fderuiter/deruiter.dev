@@ -5,6 +5,10 @@
  */
 
 import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
+import {
   StudyProtocol,
   CRFField,
   ClinicalDataType,
@@ -154,7 +158,7 @@ export function executeInfoCommand(
   );
   if (valResult.totalIssues === 0) {
     lines.push(
-      `  ${ansi.green}✔ All ${study.forms.length} forms pass the implemented CDASHIG 2.2 subset and AST logic checks.${ansi.reset}`
+      `  ${ansi.green}✔ All ${study.forms.length} forms pass the implemented ${standardCitation("CDASHIG")} subset and AST logic checks.${ansi.reset}`
     );
   } else if (valResult.isCompliant) {
     lines.push(
@@ -178,7 +182,7 @@ export function executeInfoCommand(
     `  ${ansi.green}crf list domains${ansi.reset}                   Browse standard CDASH & medical device domains`
   );
   lines.push(
-    `  ${ansi.green}crf export --format odm${ansi.reset}            Compile to CDISC ODM-XML 1.3.2 metadata`
+    `  ${ansi.green}crf export --format odm${ansi.reset}            Compile to CDISC ODM-XML ${CLINICAL_STANDARDS_PROFILE.ODM} metadata`
   );
   lines.push("");
 
@@ -212,7 +216,7 @@ export function executeValidateCommand(
     `${ansi.bold}${ansi.underline}# VALIDATION REPORT — ${study.protocolNumber}${ansi.reset}`
   );
   lines.push(
-    `*CDISC CDASH 2.2 · AST Logic Integrity · Schedule of Activities (SoA)*\n`
+    `*CDISC ${standardCitation("CDASHIG")} · AST Logic Integrity · Schedule of Activities (SoA)*\n`
   );
 
   if (result.issues.length === 0) {
@@ -889,7 +893,7 @@ export function executeCliString(
       `${ansi.bold}${ansi.underline}# CRF STUDIO CLI COMMANDS${ansi.reset}`,
       "",
       `  ${ansi.cyan}crf info${ansi.reset}                             Display study metadata, form summary & SoA matrix`,
-      `  ${ansi.cyan}crf validate${ansi.reset}                         Audit CDISC CDASH 2.2 conformance and AST rule graphs`,
+      `  ${ansi.cyan}crf validate${ansi.reset}                         Audit CDISC ${standardCitation("CDASHIG")} conformance and AST rule graphs`,
       `  ${ansi.cyan}crf wizard${ansi.reset}                           Launch interactive 5-stage guided authoring session`,
       `  ${ansi.cyan}crf list <domains|presets|forms|visits>${ansi.reset}   Inspect domain catalog, presets, or schedule`,
       `  ${ansi.cyan}crf preset <list|load <id>>${ansi.reset}            Browse or load clinical study presets`,

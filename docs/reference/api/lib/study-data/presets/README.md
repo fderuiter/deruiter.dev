@@ -30,6 +30,18 @@ Re-exports [AdamMethodId](../internal/adam/specs/type-aliases/AdamMethodId.md)
 
 ***
 
+### CLINICAL\_STANDARDS\_PROFILE
+
+Re-exports [CLINICAL_STANDARDS_PROFILE](../standards/variables/CLINICAL_STANDARDS_PROFILE.md)
+
+***
+
+### ClinicalStandardsProfile
+
+Re-exports [ClinicalStandardsProfile](../standards/interfaces/ClinicalStandardsProfile.md)
+
+***
+
 ### CodelistId
 
 Re-exports [CodelistId](../internal/conformance/terminology/type-aliases/CodelistId.md)
@@ -39,6 +51,18 @@ Re-exports [CodelistId](../internal/conformance/terminology/type-aliases/Codelis
 ### CONTROLLED\_TERMINOLOGY
 
 Re-exports [CONTROLLED_TERMINOLOGY](../internal/conformance/terminology/variables/CONTROLLED_TERMINOLOGY.md)
+
+***
+
+### controlledTerminologyCitation
+
+Re-exports [controlledTerminologyCitation](../standards/functions/controlledTerminologyCitation.md)
+
+***
+
+### ControlledTerminologyClaim
+
+Re-exports [ControlledTerminologyClaim](../standards/interfaces/ControlledTerminologyClaim.md)
 
 ***
 
@@ -54,6 +78,12 @@ Re-exports [DEMO_301_USDM](demo-301/variables/DEMO_301_USDM.md)
 
 ***
 
+### ProfileStandard
+
+Re-exports [ProfileStandard](../standards/type-aliases/ProfileStandard.md)
+
+***
+
 ### SDTM\_METHODS
 
 Re-exports [SDTM_METHODS](../internal/sdtm/methods/variables/SDTM_METHODS.md)
@@ -63,6 +93,12 @@ Re-exports [SDTM_METHODS](../internal/sdtm/methods/variables/SDTM_METHODS.md)
 ### SdtmMethodId
 
 Re-exports [SdtmMethodId](../internal/sdtm/methods/type-aliases/SdtmMethodId.md)
+
+***
+
+### standardCitation
+
+Re-exports [standardCitation](../standards/functions/standardCitation.md)
 
 ***
 

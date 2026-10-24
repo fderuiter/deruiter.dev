@@ -32,6 +32,19 @@ export {
   renderWarehouseReference,
 } from "./internal/warehouse/erd";
 export { warehouseLineage } from "./internal/warehouse/lineage";
+export { METRIC_GAPS, METRIC_REGISTRY } from "./internal/semantic/registry";
+export { METRIC_DIMENSIONS } from "./internal/semantic/dimensions";
+export { evaluateMetric } from "./internal/semantic/evaluate";
+export { toSql } from "./internal/semantic/sql";
+export { toMetricFlowYaml } from "./internal/semantic/metricflow";
+export { toTmdl } from "./internal/semantic/tmdl";
+export { describeMetricFormula } from "./internal/semantic/describe";
+export {
+  checkMetricChange,
+  checkMetricRegistry,
+  checkReportMetrics,
+  metricRelease,
+} from "./internal/semantic/check";
 export {
   scoreVendors,
   sensitivity,

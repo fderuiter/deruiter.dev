@@ -1,0 +1,1312 @@
+{
+  "notice": "Released metric contracts, appended by scripts/generate-metric-artifacts.ts; never edit or remove a release. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.",
+  "releases": [
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "vendor",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "budget_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend",
+            "timeKey": "month_date_key",
+            "where": []
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "actual_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend",
+            "timeKey": "month_date_key",
+            "where": []
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of budget"
+      },
+      "id": "budget_burn_vs_plan",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "actual_usd",
+              "kind": "column"
+            },
+            "table": "gold.fct_spend",
+            "timeKey": "month_date_key",
+            "where": []
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "USD per enrolled subject"
+      },
+      "id": "cost_per_enrolled_subject",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "mean",
+            "expression": {
+              "column": "entry_lag_days",
+              "kind": "column"
+            },
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "entry_lag_days",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "data_entry_lag_mean",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "column": "entry_lag_days",
+              "kind": "column"
+            },
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "entry_lag_days",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "data_entry_lag_median",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "p90",
+            "expression": {
+              "column": "entry_lag_days",
+              "kind": "column"
+            },
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "entry_lag_days",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "data_entry_lag_p90",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "discontinued"
+                }
+              }
+            ]
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of enrolled subjects"
+      },
+      "id": "early_termination_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "planned_enrollment",
+              "kind": "column"
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "is_current",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": true
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of target"
+      },
+      "id": "enrollment_vs_plan",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "from": "first-subject-in",
+          "kind": "milestone-span",
+          "to": "last-subject-in"
+        },
+        "grain": "study",
+        "unit": "days"
+      },
+      "id": "fpi_to_lpi_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_deviation",
+            "timeKey": "occurred_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "is_important",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": true
+                }
+              }
+            ]
+          },
+          "scale": 100
+        },
+        "grain": "portfolio",
+        "unit": "deviations per 100 enrolled subjects"
+      },
+      "id": "important_deviation_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "from": "last-subject-last-visit",
+          "kind": "milestone-span",
+          "to": "database-lock"
+        },
+        "grain": "study",
+        "unit": "days"
+      },
+      "id": "lplv_to_dbl_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_visit",
+            "timeKey": "planned_date_key",
+            "where": []
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_visit",
+            "timeKey": "planned_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "visit_status",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "missed"
+                }
+              }
+            ]
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of visits due"
+      },
+      "id": "missed_visit_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "column": "days_to_final_report",
+              "kind": "column"
+            },
+            "table": "gold.fct_monitoring_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "days_to_final_report",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "monitoring_report_cycle_time_median",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_monitoring_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "report_final_date_key",
+                "isNull": true,
+                "kind": "null"
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "visit_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">",
+                "right": {
+                  "kind": "literal",
+                  "value": 20
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "monitoring visits"
+      },
+      "id": "monitoring_reports_overdue",
+      "status": "draft",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_deviation",
+            "timeKey": "occurred_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "is_important",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": false
+                }
+              }
+            ]
+          },
+          "scale": 100
+        },
+        "grain": "portfolio",
+        "unit": "deviations per 100 enrolled subjects"
+      },
+      "id": "non_important_deviation_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "queries"
+      },
+      "id": "open_query_count",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "is_out_of_window",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": true
+                }
+              }
+            ]
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of visits performed"
+      },
+      "id": "out_of_window_visit_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "mean",
+            "expression": {
+              "from": {
+                "column": "opened_date_key",
+                "kind": "date-of-key"
+              },
+              "kind": "days-between",
+              "to": {
+                "kind": "data-cut"
+              }
+            },
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "query_aging_mean",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_visit",
+            "timeKey": "visit_date_key",
+            "where": [
+              {
+                "column": "visit_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": []
+          },
+          "scale": 100
+        },
+        "grain": "portfolio",
+        "unit": "queries per 100 visits"
+      },
+      "id": "query_rate_per_100_visits",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "opened_date_key",
+                "kind": "date-of-key"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "closed_date_key",
+                "kind": "date-of-key"
+              }
+            },
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "closed_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "query_resolution_time_median",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "screened"
+                }
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "subject_status",
+                  "kind": "column"
+                },
+                "operator": "<>",
+                "right": {
+                  "kind": "literal",
+                  "value": "screening"
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "screened"
+                }
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "subject_status",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "screen-failed"
+                }
+              }
+            ]
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of screened subjects"
+      },
+      "id": "screen_failure_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "sdv_pages_due",
+              "kind": "column"
+            },
+            "table": "gold.fct_monitoring_visit",
+            "timeKey": "visit_date_key",
+            "where": []
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "sum",
+            "expression": {
+              "column": "sdv_pages_verified",
+              "kind": "column"
+            },
+            "table": "gold.fct_monitoring_visit",
+            "timeKey": "visit_date_key",
+            "where": []
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of pages due"
+      },
+      "id": "sdv_completion",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "valid_from",
+                "kind": "column"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "activated_on",
+                "kind": "column"
+              }
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "activated_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "site_activation_cycle_time",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "subjects"
+      },
+      "id": "subjects_enrolled",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "screened"
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "subjects"
+      },
+      "id": "subjects_screened",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "denominator": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "enrolled"
+                }
+              }
+            ]
+          },
+          "kind": "ratio",
+          "numerator": {
+            "aggregation": "count-distinct",
+            "expression": {
+              "column": "subject_id",
+              "kind": "column"
+            },
+            "table": "gold.fct_deviation",
+            "timeKey": "occurred_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "is_important",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": true
+                }
+              }
+            ]
+          },
+          "scale": 1
+        },
+        "grain": "portfolio",
+        "unit": "share of enrolled subjects"
+      },
+      "id": "subjects_with_important_deviation",
+      "status": "certified",
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,1013 @@
+-- Clinical Data Platform governed metrics, PostgreSQL dialect.
+-- Generated from METRIC_REGISTRY in lib/clinical-platform by scripts/generate-metric-artifacts.ts; do not edit by hand.
+-- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+-- Each metric appears twice: at its minimal grouping, then grouped by study and one more dimension.
+
+-- Subjects screened: subjects_screened 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'screened'
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Subjects screened: subjects_screened 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."event_date_key"
+  WHERE "f"."event_type" = 'screened'
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Subjects enrolled: subjects_enrolled 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Subjects enrolled: subjects_enrolled 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."event_date_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Enrollment vs plan: enrollment_vs_plan 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+),
+"denominator" AS (
+  SELECT
+    SUM(CAST("f"."planned_enrollment" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."dim_site" AS "f"
+  WHERE "f"."is_current" = TRUE
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Enrollment vs plan: enrollment_vs_plan 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, site. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+),
+"denominator" AS (
+  SELECT
+    "f"."study_id" AS "study",
+    "f"."site_id" AS "site",
+    SUM(CAST("f"."planned_enrollment" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."dim_site" AS "f"
+  WHERE "f"."is_current" = TRUE
+  GROUP BY "f"."study_id", "f"."site_id"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."site", "d"."site") AS "site",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."site" = "n"."site"
+ORDER BY 1, 2;
+
+-- Screen failure rate: screen_failure_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'screened'
+    AND "f"."subject_status" = 'screen-failed'
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'screened'
+    AND "f"."subject_status" <> 'screening'
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Screen failure rate: screen_failure_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."event_date_key"
+  WHERE "f"."event_type" = 'screened'
+    AND "f"."subject_status" = 'screen-failed'
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."event_date_key"
+  WHERE "f"."event_type" = 'screened'
+    AND "f"."subject_status" <> 'screening'
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Early termination rate: early_termination_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'discontinued'
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Early termination rate: early_termination_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, site. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."event_type" = 'discontinued'
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."site", "d"."site") AS "site",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."site" = "n"."site"
+ORDER BY 1, 2;
+
+-- Site activation cycle time: site_activation_cycle_time 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(("f"."activated_on" - "f"."valid_from") AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."dim_site" AS "f"
+  WHERE "f"."version_number" = 1
+    AND "f"."activated_on" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Site activation cycle time: site_activation_cycle_time 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, site. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "f"."study_id" AS "study",
+    "f"."site_id" AS "site",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(("f"."activated_on" - "f"."valid_from") AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."dim_site" AS "f"
+  WHERE "f"."version_number" = 1
+    AND "f"."activated_on" IS NOT NULL
+  GROUP BY "f"."study_id", "f"."site_id"
+)
+SELECT
+  "study",
+  "site",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Data entry lag (median): data_entry_lag_median 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."entry_lag_days" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Data entry lag (median): data_entry_lag_median 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."entry_lag_days" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Data entry lag (90th percentile): data_entry_lag_p90 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY CAST("f"."entry_lag_days" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Data entry lag (90th percentile): data_entry_lag_p90 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY CAST("f"."entry_lag_days" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Data entry lag (mean): data_entry_lag_mean 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    AVG(CAST("f"."entry_lag_days" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Data entry lag (mean): data_entry_lag_mean 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    AVG(CAST("f"."entry_lag_days" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."entry_lag_days" IS NOT NULL
+    AND "f"."visit_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Missed visit rate: missed_visit_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."visit_status" = 'missed'
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Missed visit rate: missed_visit_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."planned_date_key"
+  WHERE "f"."visit_status" = 'missed'
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."planned_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Out-of-window visit rate: out_of_window_visit_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."visit_date_key" IS NOT NULL
+    AND "f"."is_out_of_window" = TRUE
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."visit_date_key" IS NOT NULL
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Out-of-window visit rate: out_of_window_visit_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."visit_date_key" IS NOT NULL
+    AND "f"."is_out_of_window" = TRUE
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."visit_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Query rate per 100 visits: query_rate_per_100_visits 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  WHERE "f"."visit_date_key" IS NOT NULL
+)
+SELECT 100 * CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Query rate per 100 visits: query_rate_per_100_visits 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."visit_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  100 * CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Open queries: open_query_count 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed).
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Open queries: open_query_count 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed).
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND "dim_study"."study_status" NOT IN ('closed')
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Query aging: query_aging_mean 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    AVG(CAST((DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Query aging: query_aging_mean 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    AVG(CAST((DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND "dim_study"."study_status" NOT IN ('closed')
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Query resolution time (median): query_resolution_time_median 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST((TO_DATE(CAST("f"."closed_date_key" AS TEXT), 'YYYYMMDD') - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  WHERE "f"."closed_date_key" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Query resolution time (median): query_resolution_time_median 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST((TO_DATE(CAST("f"."closed_date_key" AS TEXT), 'YYYYMMDD') - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."closed_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- SDV completion: sdv_completion 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    SUM(CAST("f"."sdv_pages_verified" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+),
+"denominator" AS (
+  SELECT
+    SUM(CAST("f"."sdv_pages_due" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- SDV completion: sdv_completion 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    SUM(CAST("f"."sdv_pages_verified" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    SUM(CAST("f"."sdv_pages_due" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Overdue monitoring visit reports: monitoring_reports_overdue 1.0.0 (draft), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."report_final_date_key" IS NULL
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."visit_date_key" AS TEXT), 'YYYYMMDD')) > 20
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Overdue monitoring visit reports: monitoring_reports_overdue 1.0.0 (draft), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."report_final_date_key" IS NULL
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."visit_date_key" AS TEXT), 'YYYYMMDD')) > 20
+    AND "dim_study"."study_status" NOT IN ('closed')
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Monitoring report cycle time (median): monitoring_report_cycle_time_median 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."days_to_final_report" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+  WHERE "f"."days_to_final_report" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Monitoring report cycle time (median): monitoring_report_cycle_time_median 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST("f"."days_to_final_report" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_monitoring_visit" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."visit_date_key"
+  WHERE "f"."days_to_final_report" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Important deviations per 100 subjects: important_deviation_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  WHERE "f"."is_important" = TRUE
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+)
+SELECT 100 * CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Important deviations per 100 subjects: important_deviation_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, site. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."is_important" = TRUE
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."site", "d"."site") AS "site",
+  100 * CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."site" = "n"."site"
+ORDER BY 1, 2;
+
+-- Non-important deviations per 100 subjects: non_important_deviation_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  WHERE "f"."is_important" = FALSE
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+)
+SELECT 100 * CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Non-important deviations per 100 subjects: non_important_deviation_rate 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, site. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."is_important" = FALSE
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."site", "d"."site") AS "site",
+  100 * CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."site" = "n"."site"
+ORDER BY 1, 2;
+
+-- Subjects with an important deviation: subjects_with_important_deviation 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    COUNT(DISTINCT "f"."subject_id") AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  WHERE "f"."is_important" = TRUE
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Subjects with an important deviation: subjects_with_important_deviation 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, site. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(DISTINCT "f"."subject_id") AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."is_important" = TRUE
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_site"."site_id" AS "site",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_site" AS "dim_site" ON "dim_site"."site_key" = "f"."site_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_site"."site_id"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."site", "d"."site") AS "site",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."site" = "n"."site"
+ORDER BY 1, 2;
+
+-- First subject in to last subject in: fpi_to_lpi_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study. Filters: none.
+WITH "span" AS (
+  SELECT
+    "f"."study_key",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'first-subject-in' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "from_date",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'last-subject-in' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "to_date"
+  FROM "gold"."fct_milestone" AS "f"
+  JOIN "gold"."dim_milestone" AS "dim_milestone" ON "dim_milestone"."milestone_key" = "f"."milestone_key"
+  WHERE "f"."actual_date_key" IS NOT NULL
+  GROUP BY "f"."study_key"
+)
+SELECT
+  "dim_study"."study_id" AS "study",
+  CAST(("s"."to_date" - "s"."from_date") AS DOUBLE PRECISION) AS "value"
+FROM "span" AS "s"
+JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "s"."study_key"
+WHERE "s"."from_date" IS NOT NULL
+  AND "s"."to_date" IS NOT NULL
+ORDER BY 1;
+
+-- First subject in to last subject in: fpi_to_lpi_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, phase. Filters: none.
+WITH "span" AS (
+  SELECT
+    "f"."study_key",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'first-subject-in' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "from_date",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'last-subject-in' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "to_date"
+  FROM "gold"."fct_milestone" AS "f"
+  JOIN "gold"."dim_milestone" AS "dim_milestone" ON "dim_milestone"."milestone_key" = "f"."milestone_key"
+  WHERE "f"."actual_date_key" IS NOT NULL
+  GROUP BY "f"."study_key"
+)
+SELECT
+  "dim_study"."study_id" AS "study",
+  "dim_study"."phase" AS "phase",
+  CAST(("s"."to_date" - "s"."from_date") AS DOUBLE PRECISION) AS "value"
+FROM "span" AS "s"
+JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "s"."study_key"
+WHERE "s"."from_date" IS NOT NULL
+  AND "s"."to_date" IS NOT NULL
+ORDER BY 1, 2;
+
+-- Last subject last visit to database lock: lplv_to_dbl_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study. Filters: none.
+WITH "span" AS (
+  SELECT
+    "f"."study_key",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'last-subject-last-visit' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "from_date",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'database-lock' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "to_date"
+  FROM "gold"."fct_milestone" AS "f"
+  JOIN "gold"."dim_milestone" AS "dim_milestone" ON "dim_milestone"."milestone_key" = "f"."milestone_key"
+  WHERE "f"."actual_date_key" IS NOT NULL
+  GROUP BY "f"."study_key"
+)
+SELECT
+  "dim_study"."study_id" AS "study",
+  CAST(("s"."to_date" - "s"."from_date") AS DOUBLE PRECISION) AS "value"
+FROM "span" AS "s"
+JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "s"."study_key"
+WHERE "s"."from_date" IS NOT NULL
+  AND "s"."to_date" IS NOT NULL
+ORDER BY 1;
+
+-- Last subject last visit to database lock: lplv_to_dbl_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, phase. Filters: none.
+WITH "span" AS (
+  SELECT
+    "f"."study_key",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'last-subject-last-visit' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "from_date",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'database-lock' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "to_date"
+  FROM "gold"."fct_milestone" AS "f"
+  JOIN "gold"."dim_milestone" AS "dim_milestone" ON "dim_milestone"."milestone_key" = "f"."milestone_key"
+  WHERE "f"."actual_date_key" IS NOT NULL
+  GROUP BY "f"."study_key"
+)
+SELECT
+  "dim_study"."study_id" AS "study",
+  "dim_study"."phase" AS "phase",
+  CAST(("s"."to_date" - "s"."from_date") AS DOUBLE PRECISION) AS "value"
+FROM "span" AS "s"
+JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "s"."study_key"
+WHERE "s"."from_date" IS NOT NULL
+  AND "s"."to_date" IS NOT NULL
+ORDER BY 1, 2;
+
+-- Budget burn vs plan: budget_burn_vs_plan 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    SUM(CAST("f"."actual_usd" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_spend" AS "f"
+),
+"denominator" AS (
+  SELECT
+    SUM(CAST("f"."budget_usd" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_spend" AS "f"
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Budget burn vs plan: budget_burn_vs_plan 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    SUM(CAST("f"."actual_usd" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_spend" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."month_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    SUM(CAST("f"."budget_usd" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_spend" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."month_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."month", "d"."month") AS "month",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
+ORDER BY 1, 2;
+
+-- Cost per enrolled subject: cost_per_enrolled_subject 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    SUM(CAST("f"."actual_usd" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_spend" AS "f"
+),
+"denominator" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'enrolled'
+)
+SELECT CAST(COALESCE((SELECT "value" FROM "numerator"), 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE((SELECT "value" FROM "denominator"), 0) AS DOUBLE PRECISION), 0) AS "value";
+
+-- Cost per enrolled subject: cost_per_enrolled_subject 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, phase. Filters: none.
+WITH "numerator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_study"."phase" AS "phase",
+    SUM(CAST("f"."actual_usd" AS DOUBLE PRECISION)) AS "value"
+  FROM "gold"."fct_spend" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  GROUP BY "dim_study"."study_id", "dim_study"."phase"
+),
+"denominator" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_study"."phase" AS "phase",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."event_type" = 'enrolled'
+  GROUP BY "dim_study"."study_id", "dim_study"."phase"
+)
+SELECT
+  COALESCE("n"."study", "d"."study") AS "study",
+  COALESCE("n"."phase", "d"."phase") AS "phase",
+  CAST(COALESCE("n"."value", 0) AS DOUBLE PRECISION) / NULLIF(CAST(COALESCE("d"."value", 0) AS DOUBLE PRECISION), 0) AS "value"
+FROM "numerator" AS "n"
+FULL OUTER JOIN "denominator" AS "d"
+  ON "d"."study" = "n"."study" AND "d"."phase" = "n"."phase"
+ORDER BY 1, 2;

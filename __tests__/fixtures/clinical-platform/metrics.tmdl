@@ -1,0 +1,337 @@
+/// Governed metrics of the Clinical Data Platform, generated from METRIC_REGISTRY in lib/clinical-platform. Do not edit by hand.
+/// Synthetic data for demonstration. Every study, site, subject and vendor is fictional. Data cut: 2026-09-30.
+table 'Governed Metrics'
+
+	/// Subjects who entered screening, counted on their screening date. Each counts once, whatever the screening outcome. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: subjects.
+	measure 'Subjects screened' =
+			COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "screened")) + 0
+		formatString: #,0
+		displayFolder: Enrollment
+
+		annotation MetricId = subjects_screened
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Subjects enrolled into a study, counted on their enrollment date. Subjects who later completed or discontinued still count. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: subjects.
+	measure 'Subjects enrolled' =
+			COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+		formatString: #,0
+		displayFolder: Enrollment
+
+		annotation MetricId = subjects_enrolled
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Enrolled subjects as a share of the planned enrollment, the sum of the current site targets. The plan is the whole-study target, not a time-phased curve, so an enrolling study is expected to sit below 100%. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: share of target.
+	measure 'Enrollment vs plan' =
+			VAR Numerator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+			VAR Denominator = SUMX(FILTER('dim_site', 'dim_site'[is_current] = TRUE()), 'dim_site'[planned_enrollment]) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Enrollment
+
+		annotation MetricId = enrollment_vs_plan
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Share of screened subjects whose screening ended in a screen failure, by screening date. Subjects still in screening at the data cut have no outcome yet and are left out of both counts. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: share of screened subjects.
+	measure 'Screen failure rate' =
+			VAR Numerator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "screened" && 'fct_enrollment'[subject_status] = "screen-failed")) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "screened" && 'fct_enrollment'[subject_status] <> "screening")) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Enrollment
+
+		annotation MetricId = screen_failure_rate
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Subjects who discontinued before completing the study, as a share of subjects enrolled. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: share of enrolled subjects.
+	measure 'Early termination rate' =
+			VAR Numerator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "discontinued")) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Enrollment
+
+		annotation MetricId = early_termination_rate
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from the study's protocol finalisation to a site's activation, over activated sites. The protocol date is the first day of the site's first version in gold.dim_site, which the warehouse opens on the study start. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'Site activation cycle time' =
+			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[activated_on])), DATEDIFF('dim_site'[valid_from], 'dim_site'[activated_on], DAY))
+		formatString: #,0.0
+		displayFolder: Site start-up
+
+		annotation MetricId = site_activation_cycle_time
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from a visit to the entry of its data in the EDC, over visits with data entered. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	measure 'Data entry lag (median)' =
+			MEDIANX(FILTER('fct_visit', NOT ISBLANK('fct_visit'[entry_lag_days]) && NOT ISBLANK('fct_visit'[visit_date_key])), 'fct_visit'[entry_lag_days])
+		formatString: #,0.0
+		displayFolder: Visits and data entry
+
+		annotation MetricId = data_entry_lag_median
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// 90th percentile of days from a visit to the entry of its data in the EDC, interpolated linearly between ranked values. It shows the slow tail the median hides. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	measure 'Data entry lag (90th percentile)' =
+			PERCENTILEX.INC(FILTER('fct_visit', NOT ISBLANK('fct_visit'[entry_lag_days]) && NOT ISBLANK('fct_visit'[visit_date_key])), 'fct_visit'[entry_lag_days], 0.9)
+		formatString: #,0.0
+		displayFolder: Visits and data entry
+
+		annotation MetricId = data_entry_lag_p90
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Mean days from a visit to the entry of its data in the EDC, over visits with data entered. The key risk indicator for entry timeliness. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	measure 'Data entry lag (mean)' =
+			AVERAGEX(FILTER('fct_visit', NOT ISBLANK('fct_visit'[entry_lag_days]) && NOT ISBLANK('fct_visit'[visit_date_key])), 'fct_visit'[entry_lag_days])
+		formatString: #,0.0
+		displayFolder: Visits and data entry
+
+		annotation MetricId = data_entry_lag_mean
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Missed visits as a share of all visits due by the data cut, dated by the planned visit date. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: share of visits due.
+	measure 'Missed visit rate' =
+			VAR Numerator = COUNTROWS(FILTER('fct_visit', 'fct_visit'[visit_status] = "missed")) + 0
+			VAR Denominator = COUNTROWS('fct_visit') + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Visits and data entry
+
+		annotation MetricId = missed_visit_rate
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Visits performed outside their protocol window, as a share of visits performed. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: share of visits performed.
+	measure 'Out-of-window visit rate' =
+			VAR Numerator = COUNTROWS(FILTER('fct_visit', NOT ISBLANK('fct_visit'[visit_date_key]) && 'fct_visit'[is_out_of_window] = TRUE())) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_visit', NOT ISBLANK('fct_visit'[visit_date_key]))) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Visits and data entry
+
+		annotation MetricId = out_of_window_visit_rate
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Data queries opened per 100 visits performed. The gold model holds no CRF page counts, so the rate is per visit rather than per 100 CRF pages. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries per 100 visits.
+	measure 'Query rate per 100 visits' =
+			VAR Numerator = COUNTROWS('fct_query') + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_visit', NOT ISBLANK('fct_visit'[visit_date_key]))) + 0
+			RETURN DIVIDE(100 * Numerator, Denominator)
+		formatString: #,0.0
+		displayFolder: Queries
+
+		annotation MetricId = query_rate_per_100_visits
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
+	measure 'Open queries' =
+			COUNTROWS(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
+		formatString: #,0
+		displayFolder: Queries
+
+		annotation MetricId = open_query_count
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	measure 'Query aging' =
+			AVERAGEX(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && NOT (RELATED('dim_study'[study_status]) IN {"closed"})), DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY))
+		formatString: #,0.0
+		displayFolder: Queries
+
+		annotation MetricId = query_aging_mean
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	measure 'Query resolution time (median)' =
+			MEDIANX(FILTER('fct_query', NOT ISBLANK('fct_query'[closed_date_key])), DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(QUOTIENT('fct_query'[closed_date_key], 10000), MOD(QUOTIENT('fct_query'[closed_date_key], 100), 100), MOD('fct_query'[closed_date_key], 100)), DAY))
+		formatString: #,0.0
+		displayFolder: Queries
+
+		annotation MetricId = query_resolution_time_median
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// CRF pages source-verified at monitoring visits as a share of the pages due for source data verification at those visits. Version 1.0.0, certified. Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward. Unit: share of pages due.
+	measure 'SDV completion' =
+			VAR Numerator = SUMX('fct_monitoring_visit', 'fct_monitoring_visit'[sdv_pages_verified]) + 0
+			VAR Denominator = SUMX('fct_monitoring_visit', 'fct_monitoring_visit'[sdv_pages_due]) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Monitoring
+
+		annotation MetricId = sdv_completion
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Monitoring visits whose report was still not final more than 20 days after the visit, at the data cut. The 20-day target is an assumption of this registry rather than a sourced standard, so the metric stays a draft until an owner confirms it. Version 1.0.0, draft. Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward. Unit: monitoring visits.
+	measure 'Overdue monitoring visit reports' =
+			COUNTROWS(FILTER('fct_monitoring_visit', ISBLANK('fct_monitoring_visit'[report_final_date_key]) && DATEDIFF(DATE(QUOTIENT('fct_monitoring_visit'[visit_date_key], 10000), MOD(QUOTIENT('fct_monitoring_visit'[visit_date_key], 100), 100), MOD('fct_monitoring_visit'[visit_date_key], 100)), DATE(2026, 9, 30), DAY) > 20 && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
+		formatString: #,0
+		displayFolder: Monitoring
+
+		annotation MetricId = monitoring_reports_overdue
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = draft
+
+	/// Median days from a monitoring visit to its final report, over visits whose report is final. Version 1.0.0, certified. Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'Monitoring report cycle time (median)' =
+			MEDIANX(FILTER('fct_monitoring_visit', NOT ISBLANK('fct_monitoring_visit'[days_to_final_report])), 'fct_monitoring_visit'[days_to_final_report])
+		formatString: #,0.0
+		displayFolder: Monitoring
+
+		annotation MetricId = monitoring_report_cycle_time_median
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Protocol deviations classed as important (after ICH E3) per 100 enrolled subjects. Version 1.0.0, certified. Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward. Unit: deviations per 100 enrolled subjects.
+	measure 'Important deviations per 100 subjects' =
+			VAR Numerator = COUNTROWS(FILTER('fct_deviation', 'fct_deviation'[is_important] = TRUE())) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+			RETURN DIVIDE(100 * Numerator, Denominator)
+		formatString: #,0.0
+		displayFolder: Protocol deviations
+
+		annotation MetricId = important_deviation_rate
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Protocol deviations not classed as important per 100 enrolled subjects. Version 1.0.0, certified. Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward. Unit: deviations per 100 enrolled subjects.
+	measure 'Non-important deviations per 100 subjects' =
+			VAR Numerator = COUNTROWS(FILTER('fct_deviation', 'fct_deviation'[is_important] = FALSE())) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+			RETURN DIVIDE(100 * Numerator, Denominator)
+		formatString: #,0.0
+		displayFolder: Protocol deviations
+
+		annotation MetricId = non_important_deviation_rate
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Share of enrolled subjects with at least one important protocol deviation, a common study-level quality tolerance limit parameter. Version 1.0.0, certified. Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward. Unit: share of enrolled subjects.
+	measure 'Subjects with an important deviation' =
+			VAR Numerator = COUNTROWS(DISTINCT(SELECTCOLUMNS(FILTER('fct_deviation', 'fct_deviation'[is_important] = TRUE()), "value", 'fct_deviation'[subject_id]))) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Protocol deviations
+
+		annotation MetricId = subjects_with_important_deviation
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Days from the first subject's enrollment to the last subject's in one study: the enrollment period. A study that has not reached both milestones has no value. Defined per study: slice by one study. Version 1.0.0, certified. Owner: Portfolio Management Lead. Steward: Portfolio Data Steward. Unit: days.
+	measure 'First subject in to last subject in' =
+			IF(
+				HASONEVALUE('dim_study'[study_id]),
+				VAR FromDate = CALCULATE(MAXX(FILTER('fct_milestone', NOT ISBLANK('fct_milestone'[actual_date_key])), DATE(QUOTIENT('fct_milestone'[actual_date_key], 10000), MOD(QUOTIENT('fct_milestone'[actual_date_key], 100), 100), MOD('fct_milestone'[actual_date_key], 100))), 'dim_milestone'[milestone_kind] = "first-subject-in")
+				VAR ToDate = CALCULATE(MAXX(FILTER('fct_milestone', NOT ISBLANK('fct_milestone'[actual_date_key])), DATE(QUOTIENT('fct_milestone'[actual_date_key], 10000), MOD(QUOTIENT('fct_milestone'[actual_date_key], 100), 100), MOD('fct_milestone'[actual_date_key], 100))), 'dim_milestone'[milestone_kind] = "last-subject-in")
+				RETURN IF(NOT ISBLANK(FromDate) && NOT ISBLANK(ToDate), DATEDIFF(FromDate, ToDate, DAY))
+			)
+		formatString: #,0
+		displayFolder: Milestones
+
+		annotation MetricId = fpi_to_lpi_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Days from the last subject's last visit to database lock in one study. A study that has not reached both milestones has no value. Defined per study: slice by one study. Version 1.0.0, certified. Owner: Portfolio Management Lead. Steward: Portfolio Data Steward. Unit: days.
+	measure 'Last subject last visit to database lock' =
+			IF(
+				HASONEVALUE('dim_study'[study_id]),
+				VAR FromDate = CALCULATE(MAXX(FILTER('fct_milestone', NOT ISBLANK('fct_milestone'[actual_date_key])), DATE(QUOTIENT('fct_milestone'[actual_date_key], 10000), MOD(QUOTIENT('fct_milestone'[actual_date_key], 100), 100), MOD('fct_milestone'[actual_date_key], 100))), 'dim_milestone'[milestone_kind] = "last-subject-last-visit")
+				VAR ToDate = CALCULATE(MAXX(FILTER('fct_milestone', NOT ISBLANK('fct_milestone'[actual_date_key])), DATE(QUOTIENT('fct_milestone'[actual_date_key], 10000), MOD(QUOTIENT('fct_milestone'[actual_date_key], 100), 100), MOD('fct_milestone'[actual_date_key], 100))), 'dim_milestone'[milestone_kind] = "database-lock")
+				RETURN IF(NOT ISBLANK(FromDate) && NOT ISBLANK(ToDate), DATEDIFF(FromDate, ToDate, DAY))
+			)
+		formatString: #,0
+		displayFolder: Milestones
+
+		annotation MetricId = lplv_to_dbl_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Actual spend as a share of the budget for the same months, up to the data cut. Above 100% means spend runs ahead of budget. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: share of budget.
+	measure 'Budget burn vs plan' =
+			VAR Numerator = SUMX('fct_spend', 'fct_spend'[actual_usd]) + 0
+			VAR Denominator = SUMX('fct_spend', 'fct_spend'[budget_usd]) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Finance
+
+		annotation MetricId = budget_burn_vs_plan
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Actual spend up to the data cut divided by the number of subjects enrolled. The gold model holds no randomisation fact, so the denominator is enrolled rather than randomised subjects. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: USD per enrolled subject.
+	measure 'Cost per enrolled subject' =
+			VAR Numerator = SUMX('fct_spend', 'fct_spend'[actual_usd]) + 0
+			VAR Denominator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "enrolled")) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: \$#,0
+		displayFolder: Finance
+
+		annotation MetricId = cost_per_enrolled_subject
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified

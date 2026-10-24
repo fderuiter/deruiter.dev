@@ -111,7 +111,7 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
     );
     // Full chip names, not the one-letter initials of a collapsed toolbox.
     expect(
-      screen.getByRole("button", { name: "Add SourceIngest chip" }).textContent
+      screen.getByRole("button", { name: /add SourceIngest /i }).textContent
     ).toContain("SourceIngest");
   });
 
@@ -296,7 +296,9 @@ describe("Protocol Drift on the touch cabinet (#2045)", () => {
 
   it("the toolbox names its chip count and fades the side it scrolls on", async () => {
     await startTracer(true);
-    const adds = screen.getAllByRole("button", { name: /^Add .+ chip$/ });
+    const adds = screen.getAllByRole("button", {
+      name: /^Add \S+ (SDTM|ADaM|WALL): /,
+    });
     expect(screen.getByText(`Chips (${adds.length})`)).toBeTruthy();
     const nav = screen.getByRole("navigation", { name: "Chip toolbox" });
     Object.defineProperty(nav, "scrollWidth", {

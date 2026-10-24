@@ -55,7 +55,9 @@ describe("Sandbox target scope (#1234)", () => {
     );
     expect(screen.queryByText("Q.E.D. (Proof Complete)")).toBeNull();
     expect(screen.getByText(/'ring' requires the root goal/)).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: /^Equality node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
+    );
     fireEvent.click(screen.getByRole("button", { name: /^Tactic ring\./ }));
     expect(screen.getByText("Q.E.D. (Proof Complete)")).toBeDefined();
   });
@@ -72,7 +74,7 @@ describe("Sandbox target scope (#1234)", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Tactic norm_num\./ }));
     expect(
       screen.getByRole("button", {
-        name: "Equality node with value =. Expression: 10 = 10",
+        name: "Goal. Equality node with value =. Expression: 10 = 10",
       })
     ).toBeDefined();
     expect(
@@ -85,7 +87,9 @@ describe("Sandbox target scope (#1234)", () => {
   it("preserves hypotheses when their button is selected as an unsupported target", () => {
     render(<SandboxMode />);
     fireEvent.click(screen.getByRole("button", { name: "Tautology P → P" }));
-    fireEvent.click(screen.getByRole("button", { name: /^Implication node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Implication node/ })
+    );
     fireEvent.click(screen.getByRole("button", { name: /^Tactic intro\./ }));
     fireEvent.click(screen.getByRole("button", { name: "h: P" }));
     fireEvent.click(screen.getByRole("button", { name: /^Tactic exact\./ }));
@@ -96,7 +100,7 @@ describe("Sandbox target scope (#1234)", () => {
     expect(screen.queryByText("Q.E.D. (Proof Complete)")).toBeNull();
     fireEvent.click(
       screen.getByRole("button", {
-        name: "Variable node with value P. Expression: P",
+        name: "Goal P. Variable node with value P. Expression: P",
       })
     );
     fireEvent.click(screen.getByRole("button", { name: /^Tactic exact\./ }));
@@ -165,13 +169,15 @@ describe("Sandbox target scope (#1234)", () => {
 
   it("reports unsupported multi-goal tactics without modifying the goal", () => {
     render(<SandboxMode />);
-    fireEvent.click(screen.getByRole("button", { name: /^Equality node/ }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
+    );
     fireEvent.click(screen.getByRole("button", { name: /^Tactic split\./ }));
     expect(
       screen.getByText(/'split' requires multiple proof goals/)
     ).toBeDefined();
     expect(
-      screen.getByRole("button", { name: /^Equality node/ })
+      screen.getByRole("button", { name: /^Goal\. Equality node/ })
     ).toBeDefined();
     expect(screen.queryByText("Q.E.D. (Proof Complete)")).toBeNull();
   });

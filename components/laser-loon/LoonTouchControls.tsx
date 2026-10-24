@@ -75,7 +75,7 @@ export const LoonTouchControls: React.FC<LoonTouchControlsProps> = ({
           >
             <span aria-hidden="true" className="ll-optic-key">
               {optic.key}
-            </span>
+            </span>{" "}
             <span aria-hidden="true">{optic.label}</span>
           </TouchButton>
         ))}
@@ -102,7 +102,7 @@ export const LoonTouchControls: React.FC<LoonTouchControlsProps> = ({
           />
           <IconSparkles className="ll-key-icon" aria-hidden="true" />
           <span aria-hidden="true" className="ll-tremolo-text">
-            <span>Tremolo</span>
+            <span>Tremolo</span>{" "}
             <span>
               {tremoloReady ? "Ready" : `${Math.round(energyPercent)}%`}
             </span>

@@ -455,7 +455,9 @@ describe("Patrol Shift — MountainMap Interactive Viewport Integration (Issue #
         />
       );
 
-      const codeBtn = screen.getByLabelText("View Your Responsibility Code");
+      const codeBtn = screen.getByLabelText(
+        "Safety Code: view Your Responsibility Code"
+      );
       fireEvent.click(codeBtn);
 
       const modal = screen.getByRole("dialog");

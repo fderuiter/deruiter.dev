@@ -31,6 +31,11 @@ function initials(kind: ChipKind): string {
   return kind.replace(/[^A-Z]/g, "").slice(0, 3);
 }
 
+/** The lane tag under a chip's name. */
+function laneLabel(lane: (typeof CHIP_SPECS)[ChipKind]["lane"]): string {
+  return lane === "WALL" ? "WALL" : lane === "ANALYSIS" ? "ADaM" : "SDTM";
+}
+
 /** Left toolbox: click, press Enter, or drag a chip onto the canvas. */
 export function Toolbox({
   compact,
@@ -187,7 +192,11 @@ function ToolboxChip({
         event.dataTransfer.effectAllowed = "copy";
       }}
       onClick={onClick}
-      aria-label={`Add ${kind} chip`}
+      // The name holds what the chip shows, in order: its initials when
+      // collapsed, its name, lane and summary when open (axe 4.14, #2571).
+      aria-label={`${compact ? `${initials(kind)}: add` : "Add"} ${kind} ${laneLabel(
+        spec.lane
+      )}: ${spec.summary}`}
       aria-pressed={pick ? picked : undefined}
       data-picked={picked ? "true" : undefined}
       title={`${kind}: ${spec.summary}`}
@@ -205,14 +214,10 @@ function ToolboxChip({
         <>
           <span className="block break-words font-semibold text-zinc-100">
             {kind}
-          </span>
+          </span>{" "}
           <span className={`block text-[10px] ${LANE_TEXT[spec.lane]}`}>
-            {spec.lane === "WALL"
-              ? "WALL"
-              : spec.lane === "ANALYSIS"
-                ? "ADaM"
-                : "SDTM"}
-          </span>
+            {laneLabel(spec.lane)}
+          </span>{" "}
           <span className="pd-chip-summary mt-0.5 block break-words text-[10px] leading-snug text-zinc-300">
             {spec.summary}
           </span>

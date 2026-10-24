@@ -46,12 +46,12 @@ export function SiteRail({
               key={id}
               type="button"
               onClick={() => setOpenSite(id)}
-              aria-label={`${profile.name} (${id}), goodwill ${goodwill}. Open details`}
+              aria-label={`${profile.name} (${id}), G ${goodwill} (goodwill). Open details`}
               className="flex min-h-11 min-w-0 flex-1 flex-col justify-center gap-1 border border-zinc-800 bg-[#0d0e11] px-2 py-1 text-left text-xs text-zinc-100 active:scale-[0.98]"
             >
               <span className="font-semibold">
                 {id.replace("SITE-", "Site ")}
-              </span>
+              </span>{" "}
               <span className="tabular-nums text-zinc-300">G {goodwill}</span>
               <span
                 aria-hidden="true"

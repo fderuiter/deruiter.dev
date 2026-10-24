@@ -81,7 +81,7 @@ const isActiveTab = (label: "Ledger" | "Systems" | "Fallacy") =>
 function snappingEnabled(): boolean {
   return (
     screen
-      .getByRole("button", { name: /^Magnetic Snapping:/ })
+      .getByRole("button", { name: /Magnetic Snapping:/ })
       .getAttribute("aria-pressed") === "true"
   );
 }
@@ -156,13 +156,17 @@ describe("Proof hash-derived startup state", () => {
       fireEvent.submit(input.closest("form") as HTMLFormElement);
     }
     expect(
-      screen.getByRole("button", { name: /^Node E, R, conclusion, proven/ })
+      screen.getByRole("button", {
+        name: /^Node E, PROVEN, R, .*, conclusion,/,
+      })
     ).toBeTruthy();
 
     navigateHistory("theorem=modus-tollens");
     navigateHistory("");
     expect(
-      screen.queryByRole("button", { name: /^Node E, R, conclusion, proven/ })
+      screen.queryByRole("button", {
+        name: /^Node E, PROVEN, R, .*, conclusion,/,
+      })
     ).toBeNull();
   });
 

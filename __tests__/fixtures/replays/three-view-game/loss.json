@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "name": "three-view-game/loss",
+  "seed": 2708,
+  "steps": 600,
+  "actions": [],
+  "state": {
+    "blips": [
+      { "id": 2, "ttl": 0.11600480061024365 },
+      { "id": 5, "ttl": 0.6492744538933034 },
+      { "id": 6, "ttl": 0.8306424186254538 }
+    ],
+    "count": 0,
+    "lives": 0,
+    "nextBlipId": 7,
+    "status": "lost",
+    "step": 122
+  }
+}

@@ -192,9 +192,9 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
               }`}
               title="Toggle magnetic snapping & alignment guides [Shortcut: G]"
               aria-pressed={isSnappingEnabled}
-              aria-label={`Magnetic Snapping: ${isSnappingEnabled ? "Enabled" : "Disabled"}. Press G to toggle.`}
+              aria-label={`SNAP G, Magnetic Snapping: ${isSnappingEnabled ? "Enabled" : "Disabled"}. Press G to toggle.`}
             >
-              <span className="text-[11px] font-bold">SNAP</span>
+              <span className="text-[11px] font-bold">SNAP</span>{" "}
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
                   isSnappingEnabled
@@ -570,7 +570,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                   <button
                     type="button"
                     tabIndex={0}
-                    aria-label={`Node ${node.id}, ${node.label}, ${node.type}, ${isGivenPremise ? "given premise" : isNodeProven ? "proven" : "pending"}, ${isSelected ? "selected" : "not selected"}`}
+                    aria-label={`Node ${node.id}, ${isGivenPremise ? "GIVEN" : isNodeProven ? "PROVEN" : "PENDING"}, ${node.label}, ${node.meaning}, ${node.type}, ${isSelected ? "selected" : "not selected"}`}
                     aria-pressed={isSelected}
                     aria-describedby="proof-node-keyboard-help"
                     onClick={(event) =>
@@ -591,7 +591,7 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-950 text-slate-300">
                         Node {node.id}
-                      </span>
+                      </span>{" "}
                       <span
                         className={`text-[9px] font-mono px-1 py-0.5 rounded ${
                           isGivenPremise
@@ -607,10 +607,10 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                             ? "PROVEN"
                             : "PENDING"}
                       </span>
-                    </div>
+                    </div>{" "}
                     <div className="min-w-0 break-words font-mono text-sm font-bold text-white mb-0.5">
                       {node.label}
-                    </div>
+                    </div>{" "}
                     <div className="text-[10px] text-slate-400 line-clamp-2 leading-tight">
                       {node.meaning}
                     </div>
@@ -785,25 +785,29 @@ export const ProofCanvas: React.FC<ProofCanvasProps> = ({
                       : "border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 opacity-80 hover:opacity-100"
                   }`}
                   title={`${rule.name}: ${match?.explanation || rule.template}`}
-                  aria-label={`${rule.name}: ${isApplicable ? `Applicable deriving ${match?.resultFormula}` : match?.explanation || rule.template}`}
+                  aria-label={`${rule.name} ${rule.symbol}${isApplicable && match?.resultFormula ? ` ${match.resultFormula}` : ""}: ${isApplicable ? `Applicable deriving ${match?.resultFormula}` : match?.explanation || rule.template}`}
                 >
+                  {/* The name comes first in the DOM and the symbol is moved
+                      in front with CSS order, so the accessible name starts
+                      with the visible text at every width (axe
+                      label-content-name-mismatch). */}
+                  <span className="order-2 text-[11px] text-slate-300 hidden sm:inline font-medium">
+                    {rule.name}
+                  </span>{" "}
                   <span
-                    className={
+                    className={`order-1 ${
                       isApplicable
                         ? isRecommended
                           ? "text-emerald-300 font-extrabold"
                           : "text-brand-cyan font-extrabold"
                         : "text-brand-cyan font-bold"
-                    }
+                    }`}
                   >
                     {rule.symbol}
-                  </span>
-                  <span className="text-[11px] text-slate-300 hidden sm:inline font-medium">
-                    {rule.name}
-                  </span>
+                  </span>{" "}
                   {isApplicable && match?.resultFormula && (
                     <span
-                      className={`px-1.5 py-0.5 text-[10px] font-bold rounded font-mono ${
+                      className={`order-3 px-1.5 py-0.5 text-[10px] font-bold rounded font-mono ${
                         isRecommended
                           ? "bg-emerald-400 text-slate-950"
                           : "bg-brand-cyan text-slate-950"

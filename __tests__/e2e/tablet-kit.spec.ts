@@ -626,7 +626,9 @@ test.describe("Protocol Drift first lane by touch (iPad projects, #2045)", () =>
       "PivotToObservation",
       "CDISCSink",
     ]) {
-      await page.getByRole("button", { name: `Add ${kind} chip` }).tap();
+      await page
+        .getByRole("button", { name: new RegExp(`add ${kind} `, "i") })
+        .tap();
       await expect(page.locator(PD_CHIP(kind))).toBeVisible();
     }
     // Wiring goes through the lists, so it does not depend on which chips are
@@ -879,7 +881,11 @@ const MEME_PAD = `${MEME_ROOT} .meme-pad`;
 const MEME_ECHO = '[data-testid="meme-echo"]';
 const MEME_STATUS = '[data-testid="meme-echo-status"]';
 
-/** Records, in order, every pad the page lights, by its accessible name. */
+/**
+ * Records, in order, every pad the page lights, by its place in the grid. A
+ * pad is named by the words it shows (#2571), so its position is the stable
+ * handle.
+ */
 async function watchLitPads(page: Page) {
   await page.evaluate((padSelector) => {
     const w = window as unknown as { __memeLit?: string[] };
@@ -891,7 +897,8 @@ async function watchLitPads(page: Page) {
           record.attributeName === "data-lit" &&
           el.getAttribute("data-lit") === "true"
         ) {
-          w.__memeLit?.push(el.getAttribute("aria-label") ?? "");
+          const pads = Array.from(document.querySelectorAll(padSelector));
+          w.__memeLit?.push(String(pads.indexOf(el)));
         }
       }
     });
@@ -1105,8 +1112,8 @@ test.describe("Meme Vault on a tablet (iPad projects, #2071)", () => {
       await expect(page.locator(MEME_STATUS)).toHaveText(/^Your turn/);
       const sequence = (await litLog(page)).slice(-length);
       expect(sequence).toHaveLength(length);
-      for (const name of sequence) {
-        await page.getByRole("button", { name, exact: true }).tap();
+      for (const index of sequence) {
+        await page.locator(MEME_PAD).nth(Number(index)).tap();
       }
       await expect(page.getByTestId("meme-echo-streak")).toHaveText(
         String(length)
@@ -1456,7 +1463,7 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
       .getByRole("button", { name: /^Office directory/ })
       .tap({ timeout: 15000 });
     await page.getByRole("button", { name: /^Walk to Maya/ }).tap();
-    const use = page.getByRole("button", { name: /^Use or talk/ });
+    const use = page.getByRole("button", { name: /^E, / });
     await expect(page.getByTestId("world-use-label")).toHaveText(/Talk to/, {
       timeout: 30000,
     });
@@ -1482,7 +1489,7 @@ test.describe("Study Director on a tablet (iPad projects, #2076)", () => {
     await launchStudyDirector(page);
     await closeWorldIntro(page);
     await page
-      .getByRole("button", { name: /^How are you\? \(F\)/ })
+      .getByRole("button", { name: /^F, How are you\?/ })
       .tap({ timeout: 15000 });
     const card = page.getByTestId("world-outcome");
     await expect(card).toBeVisible();
@@ -2257,7 +2264,7 @@ test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
     await sdTouchSizes(page, CC_ROOT);
     await page.keyboard.press("Escape");
 
-    await page.getByRole("button", { name: /Stress Control Panel/i }).tap();
+    await page.getByRole("button", { name: /^Stress & BIMO Stream/ }).tap();
     await expect(page.getByTestId("cc-stress-sheet")).toBeVisible();
     await sdTouchSizes(page, CC_ROOT);
     await page.keyboard.press("Escape");
@@ -2294,7 +2301,7 @@ test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
     const second = page.getByRole("button", { name: /^SUBJ-\d+/ }).nth(1);
     await second.tap();
     await expect(second).toHaveAttribute("aria-pressed", "true");
-    const coffee = page.getByRole("button", { name: /^Lifeline Q:/ });
+    const coffee = page.getByRole("button", { name: /^Lifeline Q / });
     await expect(coffee).toBeVisible();
     const box = (await coffee.boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(44);
@@ -2306,7 +2313,7 @@ test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
   }) => {
     await launchChaos(page);
     await startChaos(page, true);
-    await page.getByRole("button", { name: /Stress Control Panel/i }).tap();
+    await page.getByRole("button", { name: /^Stress & BIMO Stream/ }).tap();
     const sheet = page.getByTestId("cc-stress-sheet");
     await expect(sheet).toBeVisible();
     await expectBoxInViewport(page, sheet, "stress sheet");
@@ -2483,7 +2490,7 @@ test.describe("Clinical Trial Chaos on a tablet (iPad projects, #2105)", () => {
     await sdAxe(page);
     await startChaos(page);
     await sdAxe(page);
-    await page.getByRole("button", { name: /Stress Control Panel/i }).tap();
+    await page.getByRole("button", { name: /^Stress & BIMO Stream/ }).tap();
     await expect(page.getByTestId("cc-stress-sheet")).toBeVisible();
     await sdAxe(page);
   });
@@ -2928,9 +2935,9 @@ test.describe("Patty's Drive-Thru on a tablet (iPad projects, #2116)", () => {
     const bump = sheet.getByRole("button", { name: /Bump order/ });
     await expect(bump).toBeEnabled({ timeout: 20000 });
     await bump.tap();
-    await expect(
-      orders.getByRole("button", { name: /^Order 1[:,]/ })
-    ).toHaveCount(0);
+    await expect(orders.getByRole("button", { name: /#1, order/ })).toHaveCount(
+      0
+    );
   });
 
   test("the register sheet traps focus, and Escape pressed at once after Enter closes it", async ({

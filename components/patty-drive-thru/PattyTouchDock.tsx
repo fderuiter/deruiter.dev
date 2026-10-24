@@ -94,7 +94,9 @@ export function PattyTouchDock({
         {booth ? (
           <button
             type="button"
-            aria-label={registerOpen ? "Close register" : "Use the register"}
+            aria-label={
+              registerOpen ? "Back: close the register" : "Use the register"
+            }
             aria-keyshortcuts="Enter Tab"
             aria-pressed={registerOpen}
             onMouseDown={(event) => event.preventDefault()}

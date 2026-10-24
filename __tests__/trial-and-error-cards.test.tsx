@@ -537,7 +537,9 @@ describe("hand physicality on the Card Table", () => {
       "redline stamp"
     );
     expect(
-      card("C-T14.1.1-A").querySelector('[data-stamp="REDLINE"]')
+      card("C-T14.1.1-A")
+        .closest("[data-hand-card]")!
+        .querySelector('[data-stamp="REDLINE"]')
     ).toBeTruthy();
   });
 

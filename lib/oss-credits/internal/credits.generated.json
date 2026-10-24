@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1196,
-    "runtime": 575,
+    "total": 1195,
+    "runtime": 574,
     "tooling": 621,
     "direct": 72
   },
@@ -37,7 +37,7 @@
     },
     {
       "name": "@axe-core/playwright",
-      "version": "4.13.0",
+      "version": "4.14.0",
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": true,
@@ -4551,7 +4551,7 @@
     },
     {
       "name": "axe-core",
-      "version": "4.13.0",
+      "version": "4.14.0",
       "license": "MPL-2.0",
       "scope": "tooling",
       "direct": true,
@@ -6247,7 +6247,7 @@
     },
     {
       "name": "fast-uri",
-      "version": "3.1.8",
+      "version": "3.1.9",
       "license": "BSD-3-Clause",
       "scope": "runtime",
       "direct": false,
@@ -10866,15 +10866,6 @@
       "direct": false,
       "homepage": "https://github.com/fabiospampinato/zeptomatch",
       "repository": "https://github.com/fabiospampinato/zeptomatch"
-    },
-    {
-      "name": "zod",
-      "version": "4.6.5",
-      "license": "MIT",
-      "scope": "runtime",
-      "direct": false,
-      "homepage": "https://zod.dev",
-      "repository": "https://github.com/colinhacks/zod"
     },
     {
       "name": "zod",

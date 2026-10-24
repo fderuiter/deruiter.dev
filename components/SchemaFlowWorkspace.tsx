@@ -221,7 +221,7 @@ export default function SchemaFlowWorkspace() {
                     className="cursor-pointer svg-node focus:outline-none"
                     tabIndex={0}
                     role="button"
-                    aria-label={`Node ${node.id} containing formula ${node.formula}. Type is ${node.type}. Status: ${isProven ? "Proven" : "Unproven"}`}
+                    aria-label={`${node.label}, ${node.formula}, ${node.type}, ${isProven ? "proven" : "unproven"}`}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
                         e.preventDefault();
@@ -247,7 +247,6 @@ export default function SchemaFlowWorkspace() {
                         strokeDasharray: isSelected ? "4" : "none",
                       }}
                     />
-
                     {/* Node Header Code label */}
                     <text
                       x="14"
@@ -258,8 +257,7 @@ export default function SchemaFlowWorkspace() {
                       fontWeight="bold"
                     >
                       {node.label}
-                    </text>
-
+                    </text>{" "}
                     {/* Formula Text */}
                     <text
                       x="14"
@@ -270,8 +268,7 @@ export default function SchemaFlowWorkspace() {
                       fontWeight="900"
                     >
                       {node.formula}
-                    </text>
-
+                    </text>{" "}
                     {/* Type/Status label */}
                     <text
                       x="14"
@@ -283,7 +280,6 @@ export default function SchemaFlowWorkspace() {
                     >
                       {node.type.toUpperCase()}
                     </text>
-
                     {/* Proven Status Bullet */}
                     <circle
                       cx={cardWidth - 16}

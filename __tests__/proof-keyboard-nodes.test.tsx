@@ -24,25 +24,25 @@ describe("Proof graph keyboard controls (#1228)", () => {
   it("names and focuses node controls, connects them, and reports actual completion", () => {
     render(<ProofWorkspaceClient />);
     const intermediate = screen.getByRole("button", {
-      name: /^Node C, Q, intermediate, proven/,
+      name: /^Node C, PROVEN, Q, .*, intermediate,/,
     });
     const goal = screen.getByRole("button", {
-      name: /^Node E, R, conclusion, pending/,
+      name: /^Node E, PENDING, R, .*, conclusion,/,
     });
     intermediate.focus();
     fireEvent.click(intermediate);
     expect(intermediate.getAttribute("aria-pressed")).toBe("true");
     goal.focus();
     fireEvent.click(goal);
-    expect(goal.getAttribute("aria-label")).toMatch(/conclusion, pending/);
+    expect(goal.getAttribute("aria-label")).toMatch(/^Node E, PENDING, /);
     const premise = screen.getByRole("button", {
-      name: /^Node D, Q → R, premise, given premise/,
+      name: /^Node D, GIVEN, Q → R, .*, premise,/,
     });
     premise.focus();
     fireEvent.click(premise);
     goal.focus();
     fireEvent.click(goal);
-    expect(goal.getAttribute("aria-label")).toMatch(/conclusion, proven/);
+    expect(goal.getAttribute("aria-label")).toMatch(/^Node E, PROVEN, /);
     expect(document.activeElement).toBe(goal);
   });
 });

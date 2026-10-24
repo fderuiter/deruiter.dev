@@ -2403,6 +2403,9 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
     containerRef.current?.focus({ preventScroll: true });
   };
 
+  // A pusher's name starts with its caption and key hint, the words it shows,
+  // so speech input users can say what they see (axe
+  // label-content-name-mismatch, #2571).
   const pushers: Array<{
     id: PusherId;
     label: string;
@@ -2442,7 +2445,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
       label: startAction.toUpperCase(),
       hint: "[ENTER]",
       title: `${startAction} (Enter / P)`,
-      ariaLabel: `${startAction} (Enter / P)`,
+      ariaLabel: `${startAction}, Enter or P`,
     },
     gameState.power === "heatmap"
       ? {
@@ -2452,7 +2455,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
           title: fitnessView
             ? "Throw Heat Bolt (X / BACK)"
             : "Throw Heat Bolt (X / BACK); G still collects garbage",
-          ariaLabel: "Throw Heat Bolt (X / BACK)",
+          ariaLabel: "Throw (heat bolt), X or BACK",
         }
       : gameState.power === "cape"
         ? {
@@ -2462,7 +2465,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
             title: fitnessView
               ? "Cape Spin (X / BACK)"
               : "Cape Spin (X / BACK); G still collects garbage",
-            ariaLabel: "Cape Spin (X / BACK)",
+            ariaLabel: "Spin (cape spin), X or BACK",
           }
         : fitnessView
           ? {
@@ -2471,7 +2474,7 @@ export const GarminWatchSimulator: React.FC<GarminWatchSimulatorProps> = ({
               hint: "[X]",
               title:
                 "Action (X / BACK): throws a heat bolt with a Heat Map, spins with the Compression Cape, Spin Jump in mid-air; stand beside a medicine ball to pick it up, then press again to throw it",
-              ariaLabel: "Action (X / BACK)",
+              ariaLabel: "Action, X or BACK",
             }
           : {
               id: "back",

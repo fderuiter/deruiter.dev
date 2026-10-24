@@ -230,7 +230,6 @@ export default async function PortfolioHomePage() {
             {/* Say Hello & Contact Form */}
             <Link
               href="/contact"
-              aria-label="Send a direct inquiry to Frederick de Ruiter via the secure contact form"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-[#13151a]/80 border border-white/10 rounded-2xl transition-all duration-200 hover:border-amber-500/40 hover:bg-[#181b22] active:scale-[0.98] text-center cursor-pointer min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
               <span className="w-10 h-10 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors mb-3 shrink-0">
@@ -247,7 +246,6 @@ export default async function PortfolioHomePage() {
             {/* Schedule 1:1 */}
             <Link
               href="/schedule"
-              aria-label="Book a 30-minute coffee chat or tech talk with Frederick de Ruiter about clinical software or side projects on Google Calendar"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-amber-500/5 border border-amber-500/30 rounded-2xl transition-all duration-200 hover:border-amber-400 hover:bg-amber-500/10 active:scale-[0.98] text-center cursor-pointer relative overflow-hidden min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
               <div className="absolute top-2.5 right-2.5 px-1.5 py-0.5 bg-amber-500/20 border border-amber-500/40 rounded text-[9px] font-mono text-amber-300 uppercase tracking-wider">
@@ -269,7 +267,6 @@ export default async function PortfolioHomePage() {
               href="https://github.com/fderuiter"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="View Frederick de Ruiter's GitHub profile externally"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-[#13151a]/80 border border-white/10 rounded-2xl transition-all duration-200 hover:border-amber-500/40 hover:bg-[#181b22] active:scale-[0.98] text-center cursor-pointer min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
               <span className="w-10 h-10 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors mb-3 shrink-0">
@@ -288,7 +285,6 @@ export default async function PortfolioHomePage() {
               href="https://www.linkedin.com/in/frederick-de-ruiter-88012467/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="View Frederick de Ruiter's LinkedIn profile externally"
               className="group min-w-0 break-words flex flex-col items-center justify-center p-5 sm:p-6 bg-[#13151a]/80 border border-white/10 rounded-2xl transition-all duration-200 hover:border-amber-500/40 hover:bg-[#181b22] active:scale-[0.98] text-center cursor-pointer min-h-[110px] shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0d0e11]"
             >
               <span className="w-10 h-10 rounded-xl bg-black/50 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-amber-400 group-hover:border-amber-500/30 transition-colors mb-3 shrink-0">

@@ -167,6 +167,15 @@ describe("CI Execution Policy", () => {
       const timeout = Number(field(block, "timeout-minutes"));
       expect(timeout).toBeGreaterThan(0);
     });
+
+    // #2722: a PR touching the shared tablet kit selects every game's arcade
+    // device specs, which outran the timeout as a single job.
+    it("shards both Playwright steps across the same four-way matrix", () => {
+      expect(block).toMatch(/fail-fast: false/);
+      expect(block).toMatch(/shard: \[1, 2, 3, 4\]/);
+      const shardFlags = block.match(/--shard=\$\{\{ matrix\.shard \}\}\/4/g);
+      expect(shardFlags).toHaveLength(2);
+    });
   });
 
   describe("heavy-gate keeps full chromium PR coverage", () => {

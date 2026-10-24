@@ -67,9 +67,7 @@ describe("pipeline canvas", () => {
   it("places toolbox chips by click inside the Tabulation Lane", async () => {
     await startDraft();
     await act(async () => {
-      fireEvent.click(
-        screen.getByRole("button", { name: "Add CDISCSink chip" })
-      );
+      fireEvent.click(screen.getByRole("button", { name: /add CDISCSink /i }));
     });
     const nodes = useProtocolDriftStore.getState().nodes;
     expect(nodes).toHaveLength(1);

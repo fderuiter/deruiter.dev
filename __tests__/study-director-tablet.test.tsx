@@ -89,8 +89,8 @@ describe("Study Director office on the touch cabinet (#2076)", () => {
       "Walk up",
       "Walk down",
       "Walk right",
-      "Use or talk (E)",
-      "How are you? (F)",
+      "E, Use / talk",
+      "F, How are you?",
     ])
       expect(within(controls).getByRole("button", { name })).toBeTruthy();
     expect(document.querySelector(".sd-touch.sd-world-touch")).not.toBeNull();
@@ -113,13 +113,13 @@ describe("Study Director office on the touch cabinet (#2076)", () => {
 
   it("F asks how you are, as the key does", () => {
     renderTouchWorld();
-    press("How are you? (F)");
+    press("F, How are you?");
     expect(screen.getByTestId("world-outcome")).toBeTruthy();
   });
 
   it("E uses what you face, and says so when nothing is in front", () => {
     renderTouchWorld();
-    press("Use or talk (E)");
+    press("E, Use / talk");
     expect(said()).toMatch(/Nothing in front of you|\./);
     expect(screen.getByTestId("world-use-label").textContent).toBeTruthy();
   });
@@ -248,7 +248,7 @@ describe("Study Director office on the touch cabinet (#2076)", () => {
   it("an open result takes the first Escape from the game, not the cabinet", () => {
     const { playfield } = renderTouchWorld();
     expect(playfield.dataset.escapeDocks).toBeUndefined();
-    press("How are you? (F)");
+    press("F, How are you?");
     expect(playfield.dataset.escapeDocks).toBe("true");
     fireEvent.keyDown(playfield, { key: "Escape" });
     expect(screen.queryByTestId("world-outcome")).toBeNull();

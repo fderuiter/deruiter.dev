@@ -60,6 +60,8 @@ const DM_LISTING = "C-L16.2.4";
 
 const card = (id: string) =>
   document.querySelector<HTMLButtonElement>(`[data-card-id="${id}"]`)!;
+/** The printed face a hand card's button lies over (#2571). */
+const face = (id: string) => card(id).closest<HTMLElement>("[data-hand-card]")!;
 const cards = () =>
   Array.from(document.querySelectorAll<HTMLButtonElement>("[data-card-id]"));
 const lastAnnouncement = () => announce.mock.calls.at(-1)?.[0];
@@ -191,8 +193,8 @@ describe("CardTable", () => {
 
   it("marks a Table and its supporting Listing as a pair on both faces", () => {
     render(<CardTable act={AUTHORED_CAMPAIGN} />);
-    expect(within(card(DRAFT_A)).getByTestId("pair-link")).toBeTruthy();
-    expect(within(card(DM_LISTING)).getByTestId("pair-link")).toBeTruthy();
+    expect(within(face(DRAFT_A)).getByTestId("pair-link")).toBeTruthy();
+    expect(within(face(DM_LISTING)).getByTestId("pair-link")).toBeTruthy();
     expect(card(DRAFT_A).getAttribute("aria-label")).toContain(
       "TLF Pair with Listing 16.2.4"
     );
@@ -397,11 +399,11 @@ describe("CardTable", () => {
     expect(disabled.getAttribute("aria-label")).toContain(
       "disabled by the boss, scores 0 Chips"
     );
-    expect(within(disabled).getByTestId("debuff-badge").textContent).toBe(
-      "25 → 0 Chips"
-    );
     expect(
-      within(card("C-T14.3.2.1-B")).queryByTestId("debuff-badge")
+      within(face("C-T14.1.2")).getByTestId("debuff-badge").textContent
+    ).toBe("25 → 0 Chips");
+    expect(
+      within(face("C-T14.3.2.1-B")).queryByTestId("debuff-badge")
     ).toBeNull();
 
     // Discard one card at a time until no hand can be played.
@@ -488,12 +490,12 @@ describe("CardTable", () => {
     );
     reachBigBlind();
     const target = "C-T14.3.1-A";
-    expect(card(target).textContent).not.toContain(FIREWALL_CELL);
+    expect(face(target).textContent).not.toContain(FIREWALL_CELL);
     fireEvent.click(screen.getByRole("button", { name: /Wait outside/ }));
     expect(screen.getByTestId("blind-modifier").textContent).toContain(
       "Crisis: DMC Firewall"
     );
-    expect(card(target).textContent).toContain(FIREWALL_CELL);
+    expect(face(target).textContent).toContain(FIREWALL_CELL);
     act(() => card(target).focus());
     expect(
       screen.getByRole("button", { name: /^Inspect .*\[I\]$/ })
@@ -575,10 +577,12 @@ describe("CardTable population snapshots (T&E-03)", () => {
     );
     expect(stale.getAttribute("aria-label")).toContain("stale stamp");
     expect(stale.dataset.stale).toBe("true");
-    expect(within(stale).getByTestId("stale-badge").textContent).toBe(
+    expect(within(face(NERVOUS_A)).getByTestId("stale-badge").textContent).toBe(
       "25 → 0 Chips"
     );
-    expect(stale.querySelector('[data-stamp="STALE"]')).not.toBeNull();
+    expect(
+      face(NERVOUS_A).querySelector('[data-stamp="STALE"]')
+    ).not.toBeNull();
     // ITT outputs are unrelated to the change.
     const itt = card("C-L16.1.1");
     expect(itt.dataset.stale).toBeUndefined();
@@ -609,7 +613,7 @@ describe("CardTable population snapshots (T&E-03)", () => {
     fireEvent.keyDown(card(NERVOUS_A), { key: "r" });
     expect(screen.getByTestId("cpu-counter").textContent).toBe("6/10");
     expect(lastAnnouncement()).toContain("against SNAP-P1-v2 for 2 CPU");
-    expect(within(card(NERVOUS_A)).queryByTestId("stale-badge")).toBeNull();
+    expect(within(face(NERVOUS_A)).queryByTestId("stale-badge")).toBeNull();
     expect(screen.queryByTestId("stale-alert")).toBeNull();
     expect(screen.queryByRole("button", { name: /Recompile/ })).toBeNull();
     expect(document.activeElement).toBe(card(NERVOUS_A));
@@ -681,7 +685,9 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
     renderWithBlank();
     const blank = card(BLANK);
     expect(blank.dataset.blank).toBe("true");
-    expect(within(blank).getByTestId("shell-badge").textContent).toBe("Shell");
+    expect(within(face(BLANK)).getByTestId("shell-badge").textContent).toBe(
+      "Shell"
+    );
     expect(blank.getAttribute("aria-label")).toContain(
       "empty shell, accepts ITT or Safety data, press A to allocate"
     );
@@ -758,7 +764,7 @@ describe("CardTable shells, seals and CPU (T&E-04)", () => {
     expect(lastAnnouncement()).toContain(
       "Sealed Table 14.1.3 with Adjudicated Endpoint: +3 Mult."
     );
-    expect(within(card(BLANK)).getAllByTestId("seal-badge")).toHaveLength(1);
+    expect(within(face(BLANK)).getAllByTestId("seal-badge")).toHaveLength(1);
     expect(card(BLANK).getAttribute("aria-label")).toContain(
       "footnote seal: Adjudicated Endpoint"
     );
@@ -883,7 +889,7 @@ describe("CardTable Kaplan–Meier figures (T&E-07)", () => {
 
   it("shows the dependency, then reconciles every KM finding to turn ×2 on", async () => {
     render(<CardTable scenario={authored(SMALL_BLIND_WITH_KM)} />);
-    const badge = within(card(FIG)).getByTestId("figure-xmult");
+    const badge = within(face(FIG)).getByTestId("figure-xmult");
     expect(badge.hasAttribute("data-active")).toBe(false);
     expect(badge.getAttribute("title")).toBe(
       "Inspect the figure to reconcile its Number-at-Risk."
@@ -922,7 +928,7 @@ describe("CardTable Kaplan–Meier figures (T&E-07)", () => {
     expect(strip.querySelectorAll('[data-mark="reconciled"]')).toHaveLength(1);
     expect(lastAnnouncement()).toContain("×2 Mult is live.");
     expect(
-      within(card(FIG)).getByTestId("figure-xmult").hasAttribute("data-active")
+      within(face(FIG)).getByTestId("figure-xmult").hasAttribute("data-active")
     ).toBe(true);
   });
 });
@@ -978,7 +984,7 @@ describe("CardTable DMC blinding firewall (T&E-08)", () => {
     );
 
     for (const id of [A, B, C]) press(id, "s");
-    expect(within(card(B)).getByTestId("blinded-marker").textContent).toMatch(
+    expect(within(face(B)).getByTestId("blinded-marker").textContent).toMatch(
       /^BLINDED · STRUCT \d\/3$/
     );
     expect(toggle().disabled).toBe(false);

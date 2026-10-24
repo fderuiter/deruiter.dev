@@ -118,7 +118,7 @@ describe("Patty's Drive-Thru game, flat view (#1813, #1814)", () => {
     advance(2.5);
 
     const strip = screen.getByRole("toolbar", { name: "Open orders" });
-    const tab = within(strip).getByRole("button", { name: /^Order 1/ });
+    const tab = within(strip).getByRole("button", { name: /#1, order/ });
     expect(tab.getAttribute("aria-pressed")).toBe("false");
     press("1");
     expect(tab.getAttribute("aria-pressed")).toBe("true");
@@ -133,7 +133,7 @@ describe("Patty's Drive-Thru game, flat view (#1813, #1814)", () => {
 
     press("b");
     expect(
-      within(strip).queryByRole("button", { name: /^Order 1/ })
+      within(strip).queryByRole("button", { name: /#1, order/ })
     ).toBeNull();
     expect(screen.getByTestId("pdt-caption").textContent).toContain(
       EVENT_CAPTIONS.bumped

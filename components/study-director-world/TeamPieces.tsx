@@ -248,12 +248,14 @@ export const Overlay: React.FC<{
                   {back.label}
                 </OverlayButton>
               ) : null}
+              {/* The name starts with the visible "Esc" so speech input
+                  users can say what they see (axe label-content-name-mismatch). */}
               <OverlayButton
                 className="min-h-8"
-                aria-label="Close window"
+                aria-label="Esc, close window"
                 onClick={onClose}
               >
-                <span aria-hidden="true">Esc</span>
+                Esc
               </OverlayButton>
             </span>
           </div>

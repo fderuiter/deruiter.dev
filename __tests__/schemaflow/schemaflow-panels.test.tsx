@@ -33,9 +33,9 @@ describe("SchemaFlow proof canvas", () => {
     expect(edge.getAttribute("d")).toBe("M 190 120 L 450 220");
     expect(edge.getAttribute("stroke")).toBe("#0891b2");
     expect(node("A").getAttribute("aria-label")).toBe(
-      "Node A containing formula P. Type is premise. Status: Proven"
+      "NODE A, P, premise, proven"
     );
-    expect(node("C").getAttribute("aria-label")).toMatch(/Status: Unproven$/);
+    expect(node("C").getAttribute("aria-label")).toMatch(/, unproven$/);
   });
 
   it("connects two nodes clicked in turn and shows the selection meanwhile", () => {
@@ -53,7 +53,7 @@ describe("SchemaFlow proof canvas", () => {
 
     fireEvent.click(node("C"));
     expect(edgePaths(container)).toHaveLength(2);
-    expect(node("C").getAttribute("aria-label")).toMatch(/Status: Proven$/);
+    expect(node("C").getAttribute("aria-label")).toMatch(/, proven$/);
     expect(
       within(log()).getByText("✔ Established directed path: Node B → Node C")
     ).toBeTruthy();

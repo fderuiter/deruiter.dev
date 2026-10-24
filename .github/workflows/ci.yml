@@ -767,6 +767,8 @@ jobs:
   # #2517: it also runs the arcade tablet and phone specs for the games the PR
   # touches, on the iPad and phone projects, selected by the run policy's
   # `arcade_device_grep`. The full arcade device matrix stays on demand.
+  # #2365: the phone projects are the seven `Phone*` sizes in
+  # playwright.config.ts; they run only the phone kit and `*-phone.spec.ts`.
   # #2722: both Playwright steps are split into four shards. A PR that touches
   # the shared tablet kit selects every game (about 1,300 arcade device tests),
   # which took longer than the timeout as one job with the config's two
@@ -823,11 +825,11 @@ jobs:
           DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
           CRON_SECRET: "ci_placeholder_cron_secret"
 
-      - name: Run Arcade Device Specs for Touched Games (iPad, Small Phone, Phone Landscape)
+      - name: Run Arcade Device Specs for Touched Games (iPad, Phone)
         if: needs.changes.outputs.arcade_device_grep != ''
         run: |
           npx --no-install playwright test \
-            --project="iPad*" --project="Small Phone" --project="Phone Landscape" \
+            --project="iPad*" --project="Phone*" \
             --grep "$ARCADE_DEVICE_GREP" --shard=${{ matrix.shard }}/4 --pass-with-no-tests
         env:
           ARCADE_DEVICE_GREP: ${{ needs.changes.outputs.arcade_device_grep }}

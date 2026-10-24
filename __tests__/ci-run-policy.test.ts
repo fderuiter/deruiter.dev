@@ -281,6 +281,27 @@ describe("CI run policy (#1773)", () => {
       expect(pattern.test("Laser Loon on a tablet")).toBe(false);
     });
 
+    it("runs the kit blocks when the phone kit or its harness changes (#2365)", () => {
+      for (const file of [
+        "__tests__/e2e/phone-kit.spec.ts",
+        "__tests__/e2e/mobile-harness.ts",
+        "playwright.config.ts",
+      ]) {
+        expect(arcadeDeviceGrep([file])).toBe(
+          "Tablet arcade kit|Mobile arcade kit"
+        );
+      }
+    });
+
+    it("selects Retro Labyrinth for its phone spec and the specs it shares with the tablet", () => {
+      for (const file of [
+        "__tests__/e2e/retro-labyrinth-phone.spec.ts",
+        "__tests__/e2e/helpers/retro-labyrinth-device.ts",
+      ]) {
+        expect(arcadeDeviceGrep([file])).toBe("Retro Labyrinth");
+      }
+    });
+
     it("runs the kit blocks when this selection logic itself changes", () => {
       expect(arcadeDeviceGrep(["scripts/ci-run-policy.mjs"])).toBe(
         "Tablet arcade kit|Mobile arcade kit"

@@ -10,7 +10,7 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axe from "axe-core";
 import { ReportCatalog } from "@/components/platform/ReportCatalog";
 import { ReportView } from "@/components/platform/ReportView";
@@ -43,7 +43,20 @@ async function violations(container: HTMLElement) {
   return result.violations.map((violation) => violation.id);
 }
 
-afterEach(cleanup);
+// jsdom cannot compute pseudo-element styles and reports every attempt as
+// "Not implemented". axe asks for them while it checks these reports, so
+// answer with the element's own style, which is all jsdom can give anyway.
+beforeEach(() => {
+  const computed = window.getComputedStyle.bind(window);
+  vi.spyOn(window, "getComputedStyle").mockImplementation((element) =>
+    computed(element)
+  );
+});
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+});
 
 describe("ReportView (#2625)", () => {
   it.each(REPORT_PACK.map((spec) => spec.id))(

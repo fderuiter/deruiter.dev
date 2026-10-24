@@ -142,7 +142,7 @@ export function validateStudyCompliance(
           message: `Choice field '${field.variableName}' has no standard NCI codelist or custom options configured.`,
           autoFixAvailable: true,
           autoFixType: "assign_nci_codelist",
-          suggestedFix: "Assign standard No/Yes (NY) codelist (C66741)",
+          suggestedFix: "Assign standard No/Yes (NY) codelist (C66742)",
         });
       }
 

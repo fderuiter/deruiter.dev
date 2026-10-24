@@ -88,6 +88,7 @@ everything under `internal/` is private. Each stage gets its own folder:
 | `internal/portfolio`  | Seeded synthetic portfolio and its bronze feeds                      |
 | `internal/warehouse`  | Silver and gold star schemas, DDL for DuckDB, PostgreSQL and T-SQL   |
 | `internal/semantic`   | The metric registry and its compilers                                |
+| `internal/reporting`  | Report specs, certification tiers, the report catalog and its pack   |
 | `internal/quality`    | Data quality rules by DAMA dimension, results and scorecards         |
 | `internal/governance` | Catalog, glossary, stewardship and data contracts                    |
 | `internal/lineage`    | Column-level lineage as OpenLineage, with impact analysis            |

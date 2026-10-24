@@ -1311,3 +1311,208 @@ export interface WarehouseExport {
   /** Column and type manifest. */
   readonly manifest: WarehouseExportManifest;
 }
+
+/**
+ * Certification tier of a report (#2625). `certified` reports use only
+ * certified metrics and carry an owner's sign-off on their version;
+ * `managed` reports are owned and maintained by a team; `exploratory`
+ * reports are self-service and may use draft metrics. A tier is a
+ * governance label inside this demonstration, not a regulatory
+ * certification.
+ */
+export type ReportTier = "certified" | "managed" | "exploratory";
+
+/**
+ * How a report shows its numbers. Every visual also renders its data as a
+ * table.
+ *
+ * - `bar`: one bar per value of the one grouped dimension, a bar per metric;
+ * - `line`: one line per metric over `month`;
+ * - `stat`: one number per metric, ungrouped;
+ * - `table`: a table only, grouped by up to two dimensions.
+ */
+export type ReportVisual = "bar" | "line" | "stat" | "table";
+
+/** An owner's sign-off on one version of a certified report. */
+export interface ReportSignOff {
+  /** Role that signed off (a role, not a person). */
+  readonly role: string;
+  /** ISO 8601 date of the sign-off. */
+  readonly date: string;
+  /** Report version signed off; must equal the report's version. */
+  readonly version: string;
+}
+
+/**
+ * A declarative report: what it shows and who it is for, as data. One
+ * shared renderer draws every report, so no report computes a metric
+ * itself; each value comes from the metric registry.
+ */
+export interface ReportSpec {
+  /** Stable report id in kebab case, for example `study-status`. */
+  readonly id: string;
+  /** Display title. */
+  readonly title: string;
+  /** Who reads the report, for example `Study leadership`. */
+  readonly audience: string;
+  /** What decision the report supports, in one or two sentences. */
+  readonly purpose: string;
+  /** Certification tier. */
+  readonly tier: ReportTier;
+  /** Accountable owner (a role, not a person). */
+  readonly owner: string;
+  /** Semantic version of the spec. */
+  readonly version: string;
+  /** Ids of the registry metrics shown, in column order. */
+  readonly metrics: readonly string[];
+  /** Dimensions the metrics are grouped by, in row order. */
+  readonly dimensions: readonly MetricDimensionId[];
+  /** Filters applied to every metric, replacing each metric's default on the same dimension. */
+  readonly filters: readonly MetricFilter[];
+  /** How the numbers are shown. */
+  readonly visual: ReportVisual;
+  /** Maximum age of the data, in hours, before the report is stale. */
+  readonly refreshSlaHours: number;
+  /** Owner's sign-off; required for a certified report, otherwise `null`. */
+  readonly signOff: ReportSignOff | null;
+}
+
+/** A broken report rule, as found by `checkReportSpec`. */
+export interface ReportFinding {
+  /** Report the finding is about. */
+  readonly reportId: string;
+  /**
+   * Rule family: the spec's own fields, its use of metrics, its visual, or
+   * its tier's sign-off.
+   */
+  readonly rule: "spec" | "metric" | "visual" | "tier";
+  /** What is wrong, in one sentence. */
+  readonly message: string;
+}
+
+/** One metric column of a built report. */
+export interface ReportColumn {
+  /** Metric id. */
+  readonly metricId: string;
+  /** Metric name. */
+  readonly name: string;
+  /** Unit of the values. */
+  readonly unit: string;
+  /** Metric version the values were computed with. */
+  readonly version: string;
+  /** Metric status. */
+  readonly status: MetricStatus;
+}
+
+/** One value of a built report. */
+export interface ReportCell {
+  /** Metric value; `null` when the metric has no value or no rows for the row. */
+  readonly value: number | null;
+  /** Value as displayed, with the metric's format. */
+  readonly text: string;
+}
+
+/** One row of a built report: a group and one cell per metric. */
+export interface ReportRow {
+  /** Stable row key: the dimension values joined. */
+  readonly key: string;
+  /** Value of each grouped dimension, in the spec's dimension order. */
+  readonly labels: readonly string[];
+  /** One cell per metric, in the spec's metric order. */
+  readonly cells: readonly ReportCell[];
+}
+
+/** How one metric in a report is calculated, for the "how this number is calculated" panel. */
+export interface ReportCalculation {
+  /** Metric id. */
+  readonly metricId: string;
+  /** Metric name. */
+  readonly name: string;
+  /** Metric version. */
+  readonly version: string;
+  /** Metric status. */
+  readonly status: MetricStatus;
+  /** Business definition. */
+  readonly description: string;
+  /** The formula in words. */
+  readonly formula: string;
+  /** DuckDB SQL that computes the metric with the report's grouping and filters. */
+  readonly sql: string;
+}
+
+/** One gridline of a report's value axis. */
+export interface ReportTick {
+  /** Value the gridline marks. */
+  readonly value: number;
+  /** Label, with the metrics' format. */
+  readonly text: string;
+}
+
+/**
+ * The value axis of a bar or line report. Its metrics share one unit and
+ * format, so one set of labels serves every series.
+ */
+export interface ReportScale {
+  /** Bottom of the axis: 0, or the lowest tick below a negative value. */
+  readonly min: number;
+  /** Top of the axis: the highest tick. */
+  readonly max: number;
+  /** Gridlines from `min` to `max`, evenly spaced, with their labels. */
+  readonly ticks: readonly ReportTick[];
+}
+
+/** A report evaluated over one warehouse, ready to render. */
+export interface ReportData {
+  /** The spec. */
+  readonly spec: ReportSpec;
+  /** ISO 8601 data cut of the warehouse. */
+  readonly dataCut: string;
+  /** Label of each grouped dimension, in order. */
+  readonly dimensionLabels: readonly string[];
+  /** One column per metric, in order. */
+  readonly columns: readonly ReportColumn[];
+  /** One row per group, sorted by dimension values. */
+  readonly rows: readonly ReportRow[];
+  /** How each metric is calculated, in column order. */
+  readonly calculations: readonly ReportCalculation[];
+  /** Value axis of a bar or line report; `null` for a stat or table report. */
+  readonly scale: ReportScale | null;
+}
+
+/** One entry of the report catalog. */
+export interface ReportCatalogEntry {
+  /** Report id. */
+  readonly id: string;
+  /** Title. */
+  readonly title: string;
+  /** Audience. */
+  readonly audience: string;
+  /** Purpose. */
+  readonly purpose: string;
+  /** Tier. */
+  readonly tier: ReportTier;
+  /** Owner. */
+  readonly owner: string;
+  /** Spec version. */
+  readonly version: string;
+  /** Visual. */
+  readonly visual: ReportVisual;
+  /** Names of the metrics shown. */
+  readonly metricNames: readonly string[];
+  /** ISO 8601 data cut of the last refresh, or `null` when not known. */
+  readonly lastRefresh: string | null;
+  /** Refresh SLA in hours. */
+  readonly refreshSlaHours: number;
+  /** Recorded views, or `null` when no usage count was supplied. */
+  readonly views: number | null;
+}
+
+/** A search of the report catalog. Every given criterion must match. */
+export interface ReportCatalogQuery {
+  /** Words matched, case-insensitively, against title, purpose, audience, owner and metric names. */
+  readonly text?: string;
+  /** Tiers kept; empty or absent keeps every tier. */
+  readonly tiers?: readonly ReportTier[];
+  /** Audience kept, exactly; absent keeps every audience. */
+  readonly audience?: string;
+}

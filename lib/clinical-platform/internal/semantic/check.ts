@@ -31,8 +31,13 @@ const GLOSSARY_KEYS = new Set(CANONICAL_GLOSSARY.map((t) => t.key));
 const DIMENSION_IDS = new Set(METRIC_DIMENSIONS.map((d) => d.id));
 const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
-/** Major, minor and patch of a semantic version, or `null` when it is not one. */
-function semver(version: string): [number, number, number] | null {
+/**
+ * Major, minor and patch of a semantic version, or `null` when it is not one.
+ *
+ * @param version - Version text, for example `1.2.0`.
+ * @returns The three numbers, or `null`.
+ */
+export function semver(version: string): [number, number, number] | null {
   const match = SEMVER.exec(version);
   return match ? [Number(match[1]), Number(match[2]), Number(match[3])] : null;
 }

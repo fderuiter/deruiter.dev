@@ -6,15 +6,20 @@
 
 # Function: createGameImageResponse()
 
-> **createGameImageResponse**(`slug`): `Promise`\<`Response`\>
+> **createGameImageResponse**(`slug`, `options?`): `Promise`\<`Response`\>
 
-Renders one game's link preview: its arcade screenshot beside its title and a one-line pitch.
+Renders one game's link preview: its arcade screenshot beside its title and
+a one-line pitch. A game with a Halloween mode can ask for its October card.
 
 ## Parameters
 
 ### slug
 
-`"laser-loon"` \| `"working-with-duck"` \| `"quasi-puzzler"` \| `"garmin-watch"` \| `"clinical-chaos"` \| `"trial-and-error"` \| `"study-director"` \| `"patty-drive-thru"` \| `"for-better-or-bulk"` \| `"protocol-drift"` \| `"retro-labyrinth"` \| `"meme-vault"`
+`"trial-and-error"` \| `"for-better-or-bulk"` \| `"study-director"` \| `"patty-drive-thru"` \| `"protocol-drift"` \| `"working-with-duck"` \| `"laser-loon"` \| `"quasi-puzzler"` \| `"garmin-watch"` \| `"clinical-chaos"` \| `"retro-labyrinth"` \| `"meme-vault"`
+
+### options?
+
+[`GameCardOptions`](../interfaces/GameCardOptions.md) = `{}`
 
 ## Returns
 

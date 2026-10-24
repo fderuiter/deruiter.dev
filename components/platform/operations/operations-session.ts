@@ -19,7 +19,7 @@ import {
 import type { OperationsRequest } from "./protocol";
 
 /** Answers dashboard requests over one warehouse. */
-export interface OperationsSession {
+interface OperationsSession {
   handle(request: OperationsRequest): Promise<OperationsDashboard>;
 }
 

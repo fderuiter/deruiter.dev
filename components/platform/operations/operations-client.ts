@@ -12,7 +12,7 @@ import type {
 import type { OperationsRequest, OperationsResponse } from "./protocol";
 
 /** Asynchronous handle to the dashboard engine. */
-export interface OperationsClient {
+interface OperationsClient {
   /** The dashboard at a scope. */
   dashboard(scope: OperationsScope): Promise<OperationsDashboard>;
   /** Releases the worker and rejects every pending request. */

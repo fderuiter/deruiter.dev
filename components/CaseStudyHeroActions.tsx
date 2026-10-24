@@ -129,7 +129,7 @@ export function CaseStudyHeroActions({
         <Link
           href={interactiveUrl}
           aria-label={interactiveLabel || "Launch Interactive Studio"}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/40 hover:border-accent text-accent text-sm font-semibold transition-all shadow-[0_0_15px_rgba(245,158,11,0.15)] focus:outline-none focus:ring-2 focus:ring-accent/60 active:scale-[0.98]"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent/10 hover:bg-accent/20 border border-accent/40 hover:border-accent text-accent text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-accent/60 active:scale-[0.98]"
         >
           <IconPlayerPlay className="w-4 h-4 text-accent fill-accent/20" />
           <span className="text-xs md:text-sm">

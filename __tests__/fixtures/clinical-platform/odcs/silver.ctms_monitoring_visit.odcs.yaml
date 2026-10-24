@@ -1,0 +1,168 @@
+# ODCS v3.2.0 data contract for silver.ctms_monitoring_visit. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.ctms_monitoring_visit"
+name: "Monitoring visits"
+version: "1.0.0"
+status: active
+domain: CTMS
+tags:
+  - silver
+  - internal
+  - synthetic
+description:
+  purpose: "CTMS monitoring visits with source data verification counts."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: ctms_monitoring_visit
+    name: ctms_monitoring_visit
+    physicalName: silver.ctms_monitoring_visit
+    physicalType: table
+    logicalType: object
+    description: "CTMS monitoring visits with source data verification counts."
+    dataGranularityDescription: "One row per monitoring visit."
+    properties:
+      - name: monitoring_visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Monitoring visit id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id."
+        required: true
+        classification: internal
+      - name: visit_type
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "SIV, IMV or COV."
+        required: true
+        classification: internal
+      - name: visit_mode
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "On-site or remote."
+        required: true
+        classification: internal
+      - name: visit_date
+        logicalType: date
+        physicalType: DATE
+        description: "Visit date."
+        required: true
+        classification: internal
+      - name: report_final_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the visit report was finalised."
+        required: false
+        classification: internal
+      - name: sdv_pages_due
+        logicalType: integer
+        physicalType: INTEGER
+        description: "CRF pages due for source data verification."
+        required: true
+        classification: internal
+      - name: sdv_pages_verified
+        logicalType: integer
+        physicalType: INTEGER
+        description: "CRF pages source-verified."
+        required: true
+        classification: internal
+      - name: action_items
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Action items raised."
+        required: true
+        classification: internal
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: ctms_monitoring_visit_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - monitoring_visit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (monitoring_visit_id) identifies one row."
+team:
+  name: CTMS
+  members:
+    - username: clinical-monitoring-lead
+      name: "Clinical Monitoring Lead"
+      role: owner
+    - username: clinical-operations-data-steward
+      name: "Clinical Operations Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.ctms.monitoringVisits
+  - property: consumers
+    value:
+      - "product:gold.dim_site"
+      - "product:gold.fct_monitoring_visit"

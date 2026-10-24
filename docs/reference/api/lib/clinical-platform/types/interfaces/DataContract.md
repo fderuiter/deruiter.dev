@@ -10,19 +10,19 @@ A versioned data contract for one data product.
 
 ## Properties
 
-### columns
-
-> `readonly` **columns**: readonly [`ContractColumn`](ContractColumn.md)[]
-
-Columns the product guarantees.
-
-***
-
 ### id
 
 > `readonly` **id**: `string`
 
 Stable contract id.
+
+***
+
+### objects
+
+> `readonly` **objects**: readonly [`ContractObject`](ContractObject.md)[]
+
+Tables or datasets the contract covers.
 
 ***
 
@@ -34,23 +34,19 @@ Id of the product the contract governs.
 
 ***
 
+### retention
+
+> `readonly` **retention**: [`DataRetention`](DataRetention.md)
+
+Retention period.
+
+***
+
 ### sla
 
-> `readonly` **sla**: `object`
+> `readonly` **sla**: [`DataContractSla`](DataContractSla.md)
 
 Service levels the product promises.
-
-#### completeness
-
-> `readonly` **completeness**: `number`
-
-Minimum share of required values present, from 0 to 1.
-
-#### freshnessHours
-
-> `readonly` **freshnessHours**: `number`
-
-Maximum age of the newest record, in hours.
 
 ***
 
@@ -58,4 +54,6 @@ Maximum age of the newest record, in hours.
 
 > `readonly` **version**: `string`
 
-Semantic version. A breaking schema change needs a major version bump.
+Semantic version. A breaking change (a removed or retyped column, a
+weaker service level) needs a major version bump, an additive one at
+least a minor bump.

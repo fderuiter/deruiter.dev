@@ -71,6 +71,7 @@
     "test:watch": "vitest",
     "test:fuzz": "vitest run __tests__/property-fuzz.test.ts",
     "test:mutation": "tsx scripts/run-mutation-tests.ts",
+    "test:e2e:phone": "playwright test --project=\"Phone*\"",
     "audit:a11y": "playwright test __tests__/e2e/accessibility.spec.ts --project=chromium",
     "audit:licenses": "tsx scripts/license-audit.ts",
     "oss:credits": "tsx scripts/oss-credits.ts",
@@ -145,7 +146,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@duckdb/node-api": "1.5.6-r.1",
+    "@duckdb/node-api": "1.5.6-r.2",
     "@playwright/test": "^1.64.1",
     "@react-three/test-renderer": "^9.1.1",
     "@stryker-mutator/core": "^10.1.1",

@@ -1,0 +1,151 @@
+# ODCS v3.2.0 data contract for gold.fct_kri_snapshot. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_kri_snapshot"
+name: "KRI snapshots"
+version: "1.0.0"
+status: active
+domain: "RBQM mart"
+tags:
+  - gold
+  - internal
+  - synthetic
+description:
+  purpose: "Month-end key risk indicator snapshots per site, cumulative from activation to the snapshot date."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_kri_snapshot
+    name: fct_kri_snapshot
+    physicalName: gold.fct_kri_snapshot
+    physicalType: table
+    logicalType: object
+    description: "Month-end key risk indicator snapshots per site, cumulative from activation to the snapshot date."
+    dataGranularityDescription: "One row per site, month-end snapshot date and key risk indicator."
+    properties:
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force on the snapshot date."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: snapshot_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Month-end snapshot date."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: kri_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 32
+        physicalType: "VARCHAR(32)"
+        description: "Key risk indicator: query-rate, missed-visit-rate, important-deviation-rate or entry-lag-days."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: internal
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: numerator
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Numerator, cumulative to the snapshot date."
+        required: true
+        classification: internal
+      - name: denominator
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Denominator, cumulative to the snapshot date."
+        required: true
+        classification: internal
+      - name: kri_value
+        logicalType: number
+        physicalType: "DECIMAL(12, 4)"
+        description: "Numerator over denominator, to 4 places; null when the denominator is 0."
+        required: false
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_kri_snapshot_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - site_key
+            - snapshot_date_key
+            - kri_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (site_key, snapshot_date_key, kri_id) identifies one row."
+team:
+  name: "RBQM mart"
+  members:
+    - username: clinical-quality-lead
+      name: "Clinical Quality Lead"
+      role: owner
+    - username: clinical-quality-data-steward
+      name: "Clinical Quality Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.ctms_deviation
+      - silver.edc_query
+      - silver.edc_subject
+      - silver.edc_visit
+      - silver.site
+  - property: consumers
+    value: []

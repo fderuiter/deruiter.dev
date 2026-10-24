@@ -556,47 +556,6 @@ export function createSocialImageResponse(
         overflow: "hidden",
       }}
     >
-      {/* Ambient background glow orbs */}
-      <div
-        style={{
-          position: "absolute",
-          top: "-120px",
-          right: "-120px",
-          width: "520px",
-          height: "520px",
-          borderRadius: "50%",
-          background: "rgba(6, 182, 212, 0.12)",
-          filter: "blur(100px)",
-          display: "flex",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "-100px",
-          left: "-100px",
-          width: "480px",
-          height: "480px",
-          borderRadius: "50%",
-          background: "rgba(16, 185, 129, 0.10)",
-          filter: "blur(100px)",
-          display: "flex",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: "40%",
-          left: "45%",
-          width: "350px",
-          height: "350px",
-          borderRadius: "50%",
-          background: "rgba(59, 130, 246, 0.06)",
-          filter: "blur(90px)",
-          display: "flex",
-        }}
-      />
-
       {/* Top Header Bar */}
       <div
         style={{

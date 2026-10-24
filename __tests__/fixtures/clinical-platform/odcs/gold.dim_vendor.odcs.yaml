@@ -1,0 +1,119 @@
+# ODCS v3.2.0 data contract for gold.dim_vendor. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.dim_vendor"
+name: "Vendor dimension"
+version: "1.0.0"
+status: active
+domain: "Conformed dimensions"
+tags:
+  - gold
+  - internal
+  - synthetic
+description:
+  purpose: "Conformed vendor dimension, with key 0 for spend that has no vendor (investigator grants)."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: dim_vendor
+    name: dim_vendor
+    physicalName: gold.dim_vendor
+    physicalType: table
+    logicalType: object
+    description: "Conformed vendor dimension, with key 0 for spend that has no vendor (investigator grants)."
+    dataGranularityDescription: "One row per vendor, plus the not-applicable member."
+    properties:
+      - name: vendor_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Surrogate key; 0 is the not-applicable member."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: vendor_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Vendor id, or N/A."
+        required: true
+        classification: internal
+      - name: vendor_name
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 120
+        physicalType: "VARCHAR(120)"
+        description: "Fictional vendor name."
+        required: true
+        classification: internal
+      - name: vendor_service
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Service the vendor provides."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: dim_vendor_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - vendor_key
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (vendor_key) identifies one row."
+team:
+  name: "Conformed dimensions"
+  members:
+    - username: clinical-outsourcing-lead
+      name: "Clinical Outsourcing Lead"
+      role: owner
+    - username: vendor-data-steward
+      name: "Vendor Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: internal
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - silver.vendor
+  - property: consumers
+    value:
+      - "product:gold.fct_spend"

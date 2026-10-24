@@ -144,7 +144,7 @@ export const PretextBenchmarkLab: React.FC = () => {
           disabled={isRunning}
           onClick={runBenchmark}
           onMouseEnter={() => playHover()}
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan text-zinc-950 font-mono text-xs font-bold hover:bg-cyan-400 active:scale-95 transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-brand-cyan text-zinc-950 font-mono text-xs font-bold hover:bg-cyan-400 active:scale-95 transition-all disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
         >
           {isRunning ? (
             <>
@@ -239,7 +239,7 @@ export const PretextBenchmarkLab: React.FC = () => {
         </div>
 
         {/* Pretext Metric Card */}
-        <div className="p-4 rounded-xl bg-zinc-950/80 border border-brand-cyan/40 shadow-[0_0_20px_rgba(6,182,212,0.08)] flex flex-col justify-between">
+        <div className="p-4 rounded-xl bg-zinc-950/80 border border-brand-cyan/40 flex flex-col justify-between">
           <div className="flex items-center justify-between text-xs font-mono text-brand-cyan mb-2">
             <span className="flex items-center gap-1.5 font-bold">
               <IconDeviceFloppy className="w-3.5 h-3.5 text-brand-cyan" />

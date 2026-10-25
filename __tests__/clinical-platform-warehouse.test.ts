@@ -38,9 +38,13 @@ import {
  * SHA-256 of `JSON.stringify(buildWarehouse(generatePortfolio({ seed: 301 })))`.
  * A change to the portfolio, the schema or the build that alters any row
  * changes it. Update it deliberately, with `GOLDEN_ROW_COUNTS`, and say why.
+ *
+ * #2879: `silver.edc_subject` and `gold.fct_enrollment` gained
+ * `screen_failure_reason`. With that column left out the hash is the
+ * previous golden, ee7c3ef4, so no other value moved.
  */
 const GOLDEN_SHA256 =
-  "ee7c3ef48506017f9533bea828ff229ea2c80c1f9bfb2224af8f3523bb90c860";
+  "e4bd17a746b2da215bf1f786fd4da4bb3cbf1cd47895972810bc2d07fd90a5be";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -168,6 +172,24 @@ describe("buildWarehouse: determinism and budget", () => {
 describe("buildWarehouse: integrity", () => {
   it("passes every schema check for the default seed", () => {
     expect(checkWarehouse(WAREHOUSE_SCHEMA, warehouse)).toEqual([]);
+  });
+
+  it("carries each subject's screen failure reason into every enrollment fact (#2879)", () => {
+    const reasons = new Map(
+      rows("silver.edc_subject").map((s) => [
+        s.subject_id,
+        s.screen_failure_reason,
+      ])
+    );
+    for (const subject of rows("silver.edc_subject")) {
+      expect(
+        subject.screen_failure_reason === null,
+        String(subject.subject_id)
+      ).toBe(subject.subject_status !== "screen-failed");
+    }
+    for (const fact of rows("gold.fct_enrollment")) {
+      expect(fact.screen_failure_reason).toBe(reasons.get(fact.subject_id));
+    }
   });
 
   it("names each query's form by the CDASH domain of its field (#2759)", () => {

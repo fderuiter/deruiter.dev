@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/gold.fct_enrollment"
 name: "Enrollment facts"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "Operations mart"
 tags:
@@ -74,6 +74,14 @@ schema:
         physicalType: "VARCHAR(64)"
         description: "Subject status at the data cut."
         required: true
+        classification: internal
+      - name: screen_failure_reason
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 40
+        physicalType: "VARCHAR(40)"
+        description: "Why screening failed; null unless the subject failed screening (degenerate dimension)."
+        required: false
         classification: internal
       - name: event_count
         logicalType: integer
@@ -152,6 +160,7 @@ customProperties:
       - "metric:subjects_enrolled"
       - "metric:enrollment_vs_plan"
       - "metric:screen_failure_rate"
+      - "metric:screen_failures"
       - "metric:early_termination_rate"
       - "metric:important_deviation_rate"
       - "metric:non_important_deviation_rate"

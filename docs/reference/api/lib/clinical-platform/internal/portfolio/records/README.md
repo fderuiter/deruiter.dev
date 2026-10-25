@@ -20,3 +20,7 @@
 - [MISSED\_ASSESSMENT\_DEVIATION](variables/MISSED_ASSESSMENT_DEVIATION.md)
 - [OUT\_OF\_WINDOW\_DEVIATION](variables/OUT_OF_WINDOW_DEVIATION.md)
 - [SUBJECT\_DEVIATION\_TYPES](variables/SUBJECT_DEVIATION_TYPES.md)
+
+## Functions
+
+- [screenFailureReasons](functions/screenFailureReasons.md)

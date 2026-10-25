@@ -436,12 +436,37 @@ describe("SDTM subject tabulation", () => {
         .filter((record) => record.VISITNUM !== 99)
         .every((record) => record.VISIT === planned.get(record.VISITNUM))
     ).toBe(true);
+    // SDTMIG 3.4 defines no EPOCH for SV (#2869).
+    expect(get("SV").variables.map(({ name }) => name)).not.toContain("EPOCH");
     const epochs = new Set(
       run.datasets.find((dataset) => dataset.name === "TA")!.columns.EPOCH
     );
     expect(
-      sv.every((record) => record.EPOCH === null || epochs.has(record.EPOCH))
+      records(get("VS")).every(
+        (record) => record.EPOCH === null || epochs.has(record.EPOCH)
+      )
     ).toBe(true);
+  });
+
+  it("codes every adverse event to the fictional dictionary's five levels", () => {
+    const ae = records(get("AE"));
+    expect(ae.length).toBeGreaterThan(0);
+    for (const record of ae) {
+      expect(record.AESOC).toBe(record.AEBODSYS);
+      expect(record.AELLT).toBe(record.AEDECOD);
+      expect(record.AELLTCD).toBe(record.AEPTCD);
+      expect(record.AEBDSYCD).toBe(record.AESOCCD);
+      expect(record.AEHLT).toMatch(/^Fictional /);
+      expect(record.AEHLGT).toMatch(/^Fictional /);
+      for (const code of [
+        "AELLTCD",
+        "AEPTCD",
+        "AEHLTCD",
+        "AEHLGTCD",
+        "AESOCCD",
+      ])
+        expect(record[code], code).toBeGreaterThanOrEqual(99000000);
+    }
   });
 
   it("flags the last pre-dose observation per subject and test", () => {

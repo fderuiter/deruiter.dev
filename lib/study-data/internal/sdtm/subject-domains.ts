@@ -7,6 +7,7 @@ import type {
   VariableOrigin,
   VariableRole,
 } from "../../types";
+import { codeAeTerm } from "./ae-dictionary";
 import { sdtmCodelist } from "./codelists";
 import { sdtmRequired } from "./required";
 import type { SdtmMethodId } from "./methods";
@@ -62,6 +63,9 @@ const SEQ = (domain: string) =>
     "Identifier",
     "integer"
   );
+/** A variable looked up from the AE preferred term in the study dictionary. */
+const coded = (name: string, label: string, type?: VariableMeta["type"]) =>
+  derived(name, label, "AE_DICTIONARY_CODING", "Variable Qualifier", type);
 const EPOCH = derived("EPOCH", "Epoch", "ACTUAL_ELEMENT_FROM_TA_TE", "Timing");
 const VISITNUM = collected(
   "VISITNUM",
@@ -211,7 +215,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      EPOCH,
     ],
   },
   EX: {
@@ -265,18 +268,28 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       ...COMMON,
       SEQ("AE"),
       collected("AETERM", "Reported Term for the Adverse Event", "AE.AEDECOD"),
+      coded("AELLT", "Lowest Level Term"),
+      coded("AELLTCD", "Lowest Level Term Code", "integer"),
       collected(
         "AEDECOD",
         "Dictionary Derived Term",
         "AE.AEDECOD",
         "Synonym Qualifier"
       ),
+      coded("AEPTCD", "Preferred Term Code", "integer"),
+      coded("AEHLT", "High Level Term"),
+      coded("AEHLTCD", "High Level Term Code", "integer"),
+      coded("AEHLGT", "High Level Group Term"),
+      coded("AEHLGTCD", "High Level Group Term Code", "integer"),
       collected(
         "AEBODSYS",
         "Body System or Organ Class",
         "AE.AEBODSYS",
         "Record Qualifier"
       ),
+      coded("AEBDSYCD", "Body System or Organ Class Code", "integer"),
+      coded("AESOC", "Primary System Organ Class"),
+      coded("AESOCCD", "Primary System Organ Class Code", "integer"),
       collected("AESER", "Serious Event", "AE.AESER", "Record Qualifier"),
       derived(
         "AEREL",
@@ -752,7 +765,6 @@ export function deriveSubjectDomains(
         SVENDTC: record.SVDTC,
         SVSTDY: day(record.SVDTC, ex?.EXSTDTC ?? null),
         SVENDY: day(record.SVDTC, ex?.EXSTDTC ?? null),
-        EPOCH: epochAt(record.SVDTC, ex),
       },
       record,
       ex
@@ -777,12 +789,23 @@ export function deriveSubjectDomains(
   });
   const ae = get("AE").map((record) => {
     const exposure = exBySubject.get(text(record.USUBJID));
+    const coding = codeAeTerm(record.AEDECOD);
     return item(
       {
         ...common(record.USUBJID, "AE"),
         AETERM: record.AEDECOD,
+        AELLT: coding?.llt ?? null,
+        AELLTCD: coding?.lltcd ?? null,
         AEDECOD: record.AEDECOD,
+        AEPTCD: coding?.ptcd ?? null,
+        AEHLT: coding?.hlt ?? null,
+        AEHLTCD: coding?.hltcd ?? null,
+        AEHLGT: coding?.hlgt ?? null,
+        AEHLGTCD: coding?.hlgtcd ?? null,
         AEBODSYS: record.AEBODSYS,
+        AEBDSYCD: coding?.soccd ?? null,
+        AESOC: coding?.soc ?? null,
+        AESOCCD: coding?.soccd ?? null,
         AESER: record.AESER,
         AEREL: record.AEREL === "RELATED" ? "POSSIBLY RELATED" : record.AEREL,
         AEACN: record.AEACN,

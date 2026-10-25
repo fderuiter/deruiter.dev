@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.2.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.3.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -238,6 +238,17 @@ const SILVER: readonly TableDraft[] = [
         "string",
         "Status at the data cut.",
         { classification: "internal", from: ["status"] },
+      ],
+      [
+        "screen_failure_reason",
+        "string",
+        "Why screening failed, from a short fictional controlled list; null unless the subject failed screening.",
+        {
+          classification: "internal",
+          nullable: true,
+          length: 40,
+          from: ["screenFailureReason"],
+        },
       ],
       [
         "source_system",
@@ -1175,6 +1186,12 @@ const FACTS: readonly TableDraft[] = [
         },
       ],
       ["subject_status", "string", "Subject status at the data cut."],
+      [
+        "screen_failure_reason",
+        "string",
+        "Why screening failed; null unless the subject failed screening (degenerate dimension).",
+        { nullable: true, length: 40 },
+      ],
       [
         "event_count",
         "integer",

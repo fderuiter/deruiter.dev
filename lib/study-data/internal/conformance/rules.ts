@@ -273,7 +273,7 @@ function epochRule(): ConformanceRule {
   return {
     id: "SD-029",
     severity: "error",
-    scope: { layer: "sdtm", domain: "SV" },
+    scope: { layer: "sdtm", domain: "VS" },
     citation: SDTM_CITATION,
     kind: "epoch",
     variable: "EPOCH",

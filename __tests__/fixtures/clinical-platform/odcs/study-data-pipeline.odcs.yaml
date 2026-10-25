@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.6.0"
+version: "2.1.0"
 status: active
 domain: "Study data"
 tags:
@@ -709,14 +709,6 @@ schema:
         description: "Study Day of End of Visit"
         required: false
         classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
-        required: false
-        classification: confidential
     quality:
       - id: SV_primary_key
         type: library
@@ -895,6 +887,20 @@ schema:
         description: "Reported Term for the Adverse Event"
         required: true
         classification: confidential
+      - name: AELLT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Lowest Level Term"
+        required: false
+        classification: confidential
+      - name: AELLTCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Lowest Level Term Code"
+        required: false
+        classification: confidential
       - name: AEDECOD
         logicalType: string
         logicalTypeOptions:
@@ -903,12 +909,66 @@ schema:
         description: "Dictionary Derived Term"
         required: true
         classification: confidential
+      - name: AEPTCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Preferred Term Code"
+        required: false
+        classification: confidential
+      - name: AEHLT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "High Level Term"
+        required: false
+        classification: confidential
+      - name: AEHLTCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "High Level Term Code"
+        required: false
+        classification: confidential
+      - name: AEHLGT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "High Level Group Term"
+        required: false
+        classification: confidential
+      - name: AEHLGTCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "High Level Group Term Code"
+        required: false
+        classification: confidential
       - name: AEBODSYS
         logicalType: string
         logicalTypeOptions:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Body System or Organ Class"
+        required: false
+        classification: confidential
+      - name: AEBDSYCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Body System or Organ Class Code"
+        required: false
+        classification: confidential
+      - name: AESOC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Primary System Organ Class"
+        required: false
+        classification: confidential
+      - name: AESOCCD
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Primary System Organ Class Code"
         required: false
         classification: confidential
       - name: AESER

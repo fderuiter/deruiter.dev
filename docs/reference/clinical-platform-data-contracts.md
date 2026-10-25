@@ -41,7 +41,7 @@ would carry.
 | Planned visits | `silver.planned_visit` | Portfolio | Portfolio Management Lead | Portfolio Data Steward | internal | No | 7 days | 99% | 10 years | 1.0.0 |
 | Sites | `silver.site` | Site management | Clinical Operations Lead | Clinical Operations Data Steward | internal | No | 1 day | 99% | 10 years | 1.0.0 |
 | Vendors | `silver.vendor` | Vendor management | Clinical Outsourcing Lead | Vendor Data Steward | internal | No | 7 days | 99% | 10 years | 1.0.0 |
-| EDC subjects | `silver.edc_subject` | EDC | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
+| EDC subjects | `silver.edc_subject` | EDC | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.1.0 |
 | EDC visits | `silver.edc_visit` | EDC | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
 | EDC queries | `silver.edc_query` | EDC | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
 | Study milestones | `silver.ctms_milestone` | CTMS | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99% | 10 years | 1.0.0 |
@@ -61,7 +61,7 @@ would carry.
 | Vendor dimension | `gold.dim_vendor` | Conformed dimensions | Clinical Outsourcing Lead | Vendor Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Milestone dimension | `gold.dim_milestone` | Conformed dimensions | Portfolio Management Lead | Portfolio Data Steward | public | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Monitoring plan dimension | `gold.dim_monitoring_plan` | Conformed dimensions | Clinical Monitoring Lead | Clinical Operations Data Steward | internal | No | 7 days | 99.5% | 10 years | 1.0.0 |
-| Enrollment facts | `gold.fct_enrollment` | Operations mart | Clinical Operations Lead | Clinical Operations Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
+| Enrollment facts | `gold.fct_enrollment` | Operations mart | Clinical Operations Lead | Clinical Operations Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.1.0 |
 | Visit facts | `gold.fct_visit` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
 | Query facts | `gold.fct_query` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.1.0 |
 | Deviation facts | `gold.fct_deviation` | Operations mart | Clinical Quality Lead | Clinical Quality Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
@@ -70,7 +70,7 @@ would carry.
 | Milestone facts | `gold.fct_milestone` | Portfolio mart | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 1.6.0 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.1.0 |
 
 ## Retention
 
@@ -107,7 +107,7 @@ would carry.
 | `gold.dim_vendor` | `silver.vendor` | `gold.fct_spend` |
 | `gold.dim_milestone` | `silver.ctms_milestone` | `gold.fct_milestone` |
 | `gold.dim_monitoring_plan` | `silver.ctms_monitoring_plan` | `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit` |
-| `gold.fct_enrollment` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_subject`, `silver.site` | `subjects_screened`, `subjects_enrolled`, `enrollment_vs_plan`, `screen_failure_rate`, `early_termination_rate`, `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `cost_per_enrolled_subject` |
+| `gold.fct_enrollment` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_subject`, `silver.site` | `subjects_screened`, `subjects_enrolled`, `enrollment_vs_plan`, `screen_failure_rate`, `screen_failures`, `early_termination_rate`, `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `cost_per_enrolled_subject` |
 | `gold.fct_visit` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_subject`, `silver.edc_visit`, `silver.planned_visit`, `silver.site` | `data_entry_lag_median`, `data_entry_lag_p90`, `data_entry_lag_mean`, `missed_visit_rate`, `out_of_window_visit_rate`, `query_rate_per_100_visits` |
 | `gold.fct_query` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_query`, `silver.site` | `query_rate_per_100_visits`, `open_query_count`, `query_aging_mean`, `query_resolution_time_median`, `open_queries_aged_0_7_days`, `open_queries_aged_8_30_days`, `open_queries_aged_31_60_days`, `open_queries_aged_over_60_days` |
 | `gold.fct_deviation` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_deviation`, `silver.site` | `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `protocol_deviation_count` |
@@ -128,9 +128,9 @@ would carry.
 | TI | Trial Inclusion Exclusion Criteria | One record per inclusion or exclusion criterion | STUDYID, IETESTCD | 5 |
 | TS | Trial Summary | One record per trial summary parameter value | STUDYID, TSPARMCD, TSSEQ | 9 |
 | DM | Demographics | One record per subject | STUDYID, USUBJID | 24 |
-| SV | Subject Visits | One record per actual visit per subject | STUDYID, USUBJID, VISITNUM | 10 |
+| SV | Subject Visits | One record per actual visit per subject | STUDYID, USUBJID, VISITNUM | 9 |
 | EX | Exposure | One record per constant-dosing interval per subject | STUDYID, USUBJID, EXSEQ | 12 |
-| AE | Adverse Events | One record per adverse event per subject | STUDYID, USUBJID, AESEQ | 21 |
+| AE | Adverse Events | One record per adverse event per subject | STUDYID, USUBJID, AESEQ | 31 |
 | VS | Vital Signs | One record per vital sign measurement per visit per subject | STUDYID, USUBJID, VSSEQ | 17 |
 | LB | Laboratory Test Results | One record per lab test per visit per subject | STUDYID, USUBJID, LBSEQ | 18 |
 | DS | Disposition | One record per disposition status or protocol milestone per subject | STUDYID, USUBJID, DSSEQ | 10 |

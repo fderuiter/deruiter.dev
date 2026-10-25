@@ -4,14 +4,6 @@
     {
       "target": "sdtm",
       "coreId": "CORE-000334",
-      "dataset": "AE",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "The MedDRA hierarchy variables are not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000334",
       "dataset": "EX",
       "category": "defect",
       "issue": 2769,
@@ -48,14 +40,6 @@
       "category": "defect",
       "issue": 2769,
       "reason": "ARMCD is not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000264",
-      "dataset": "AE",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "AESOC is not derived, so it cannot equal AEBODSYS."
     },
     {
       "target": "sdtm",
@@ -100,42 +84,10 @@
     {
       "target": "sdtm",
       "coreId": "CORE-000852",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
       "dataset": "VS",
       "category": "defect",
       "issue": 2769,
       "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000550",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "EPOCH is not in the model's allowed variables for SV."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001082",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "EPOCH is not in the model's allowed variables for SV, so it has no model data type."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2869,
-      "reason": "Define-XML lists EPOCH for SV, which SDTMIG 3.4 does not define for the domain, so CORE finds no IG role for it."
     },
     {
       "target": "sdtm",

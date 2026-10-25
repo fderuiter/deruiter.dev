@@ -6,7 +6,7 @@
 
 # Function: scoreVendors()
 
-> **scoreVendors**(`scenario`): [`StrategyScore`](../../../../types/interfaces/StrategyScore.md)[]
+> **scoreVendors**(`scenario`): [`StrategyScore`](../../../../types/strategy/interfaces/StrategyScore.md)[]
 
 Normalize nonnegative weights; an all-zero matrix has no ranking.
 
@@ -14,8 +14,8 @@ Normalize nonnegative weights; an all-zero matrix has no ranking.
 
 ### scenario
 
-[`StrategyScenario`](../../../../types/interfaces/StrategyScenario.md)
+[`StrategyScenario`](../../../../types/strategy/interfaces/StrategyScenario.md)
 
 ## Returns
 
-[`StrategyScore`](../../../../types/interfaces/StrategyScore.md)[]
+[`StrategyScore`](../../../../types/strategy/interfaces/StrategyScore.md)[]

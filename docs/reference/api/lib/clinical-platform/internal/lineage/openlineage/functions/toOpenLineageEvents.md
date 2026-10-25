@@ -6,7 +6,7 @@
 
 # Function: toOpenLineageEvents()
 
-> **toOpenLineageEvents**(`graph`, `eventTime`): [`OpenLineageRunEvent`](../../../../types/interfaces/OpenLineageRunEvent.md)[]
+> **toOpenLineageEvents**(`graph`, `eventTime`): [`OpenLineageRunEvent`](../../../../types/lineage/interfaces/OpenLineageRunEvent.md)[]
 
 The lineage graph as OpenLineage run events, one per dataset the graph
 computes, in stage order and then by dataset.
@@ -15,7 +15,7 @@ computes, in stage order and then by dataset.
 
 ### graph
 
-[`PlatformLineage`](../../../../types/interfaces/PlatformLineage.md)
+[`PlatformLineage`](../../../../types/platform/interfaces/PlatformLineage.md)
 
 A graph from `platformLineage`.
 
@@ -28,7 +28,7 @@ ISO 8601 date and time the runs completed, usually
 
 ## Returns
 
-[`OpenLineageRunEvent`](../../../../types/interfaces/OpenLineageRunEvent.md)[]
+[`OpenLineageRunEvent`](../../../../types/lineage/interfaces/OpenLineageRunEvent.md)[]
 
 The events, each a valid OpenLineage 2-0-2 `RunEvent`.
 

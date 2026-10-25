@@ -12,28 +12,28 @@ What `checkStewardship` checks; every field defaults to the platform's own.
 
 ### decisions?
 
-> `readonly` `optional` **decisions?**: readonly [`GovernanceDecision`](../../../../types/interfaces/GovernanceDecision.md)[]
+> `readonly` `optional` **decisions?**: readonly [`GovernanceDecision`](../../../../types/governance/interfaces/GovernanceDecision.md)[]
 
 ***
 
 ### domains?
 
-> `readonly` `optional` **domains?**: readonly [`GovernanceDomain`](../../../../types/interfaces/GovernanceDomain.md)[]
+> `readonly` `optional` **domains?**: readonly [`GovernanceDomain`](../../../../types/governance/interfaces/GovernanceDomain.md)[]
 
 ***
 
 ### metrics?
 
-> `readonly` `optional` **metrics?**: readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[]
+> `readonly` `optional` **metrics?**: readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[]
 
 ***
 
 ### policies?
 
-> `readonly` `optional` **policies?**: readonly [`GovernancePolicy`](../../../../types/interfaces/GovernancePolicy.md)[]
+> `readonly` `optional` **policies?**: readonly [`GovernancePolicy`](../../../../types/governance/interfaces/GovernancePolicy.md)[]
 
 ***
 
 ### products
 
-> `readonly` **products**: readonly [`DataProduct`](../../../../types/interfaces/DataProduct.md)[]
+> `readonly` **products**: readonly [`DataProduct`](../../../../types/platform/interfaces/DataProduct.md)[]

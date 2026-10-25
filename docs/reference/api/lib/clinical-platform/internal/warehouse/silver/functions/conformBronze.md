@@ -16,13 +16,13 @@ are not yet de-duplicated: the caller keeps one row per primary key with
 
 ### portfolio
 
-[`Portfolio`](../../../../types/interfaces/Portfolio.md)
+[`Portfolio`](../../../../types/platform/interfaces/Portfolio.md)
 
 The portfolio, from `generatePortfolio`.
 
 ### staff?
 
-readonly [`SiteStaffAssignment`](../../../../types/interfaces/SiteStaffAssignment.md)[] = `...`
+readonly [`SiteStaffAssignment`](../../../../types/platform/interfaces/SiteStaffAssignment.md)[] = `...`
 
 Site staff assignments; defaults to `siteStaffFeed(portfolio)`.
 

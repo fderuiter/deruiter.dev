@@ -6,7 +6,7 @@
 
 # Function: warehouseTable()
 
-> **warehouseTable**(`name`): [`WarehouseTable`](../../../../types/interfaces/WarehouseTable.md) \| `undefined`
+> **warehouseTable**(`name`): [`WarehouseTable`](../../../../types/platform/interfaces/WarehouseTable.md) \| `undefined`
 
 The warehouse table with a qualified name, or `undefined`.
 
@@ -18,4 +18,4 @@ The warehouse table with a qualified name, or `undefined`.
 
 ## Returns
 
-[`WarehouseTable`](../../../../types/interfaces/WarehouseTable.md) \| `undefined`
+[`WarehouseTable`](../../../../types/platform/interfaces/WarehouseTable.md) \| `undefined`

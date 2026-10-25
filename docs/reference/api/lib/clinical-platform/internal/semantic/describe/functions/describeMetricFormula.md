@@ -16,7 +16,7 @@ where visit_date_key is not null), times 100`.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 Metric definition.
 

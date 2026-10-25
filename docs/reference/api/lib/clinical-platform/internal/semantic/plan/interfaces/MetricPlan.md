@@ -20,19 +20,19 @@ ISO 8601 data cut, or `null` when the metric does not use it.
 
 ### dimensions
 
-> `readonly` **dimensions**: readonly [`MetricDimensionId`](../../../../types/type-aliases/MetricDimensionId.md)[]
+> `readonly` **dimensions**: readonly [`MetricDimensionId`](../../../../types/platform/type-aliases/MetricDimensionId.md)[]
 
 ***
 
 ### filters
 
-> `readonly` **filters**: readonly [`MetricFilter`](../../../../types/interfaces/MetricFilter.md)[]
+> `readonly` **filters**: readonly [`MetricFilter`](../../../../types/platform/interfaces/MetricFilter.md)[]
 
 ***
 
 ### metric
 
-> `readonly` **metric**: [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+> `readonly` **metric**: [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 ***
 

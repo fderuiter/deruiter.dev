@@ -6,6 +6,6 @@
 
 # Variable: CSM\_TESTS
 
-> `const` **CSM\_TESTS**: readonly [`CsmTestDefinition`](../../../../types/interfaces/CsmTestDefinition.md)[]
+> `const` **CSM\_TESTS**: readonly [`CsmTestDefinition`](../../../../types/rbqm/interfaces/CsmTestDefinition.md)[]
 
 Central statistical monitoring tests, in display order.

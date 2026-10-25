@@ -6,7 +6,7 @@
 
 # Function: contractChangeImpact()
 
-> **contractChangeImpact**(`graph`, `previous`, `next`): [`ContractChangeImpact`](../../../../types/interfaces/ContractChangeImpact.md)
+> **contractChangeImpact**(`graph`, `previous`, `next`): [`ContractChangeImpact`](../../../../types/lineage/interfaces/ContractChangeImpact.md)
 
 What a contract change reaches: every column it changes or removes, the
 nodes downstream of them, and the roles to notify before the release. A
@@ -18,25 +18,25 @@ yet, because nothing reads it.
 
 ### graph
 
-[`PlatformLineage`](../../../../types/interfaces/PlatformLineage.md)
+[`PlatformLineage`](../../../../types/platform/interfaces/PlatformLineage.md)
 
 A graph from `platformLineage`.
 
 ### previous
 
-[`DataContract`](../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../types/platform/interfaces/DataContract.md)
 
 The release in force.
 
 ### next
 
-[`DataContract`](../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../types/platform/interfaces/DataContract.md)
 
 The proposed release.
 
 ## Returns
 
-[`ContractChangeImpact`](../../../../types/interfaces/ContractChangeImpact.md)
+[`ContractChangeImpact`](../../../../types/lineage/interfaces/ContractChangeImpact.md)
 
 The impact; empty when nothing a consumer reads changed.
 

@@ -12,7 +12,7 @@
 
 ### input
 
-[`StrategyCashFlow`](../../../../types/interfaces/StrategyCashFlow.md)
+[`StrategyCashFlow`](../../../../types/strategy/interfaces/StrategyCashFlow.md)
 
 ## Returns
 

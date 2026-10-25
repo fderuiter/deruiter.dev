@@ -58,13 +58,13 @@ Re-exports [breakDataQualityRule](internal/quality/assess/functions/breakDataQua
 
 ### BronzeFeeds
 
-Re-exports [BronzeFeeds](types/interfaces/BronzeFeeds.md)
+Re-exports [BronzeFeeds](types/platform/interfaces/BronzeFeeds.md)
 
 ***
 
 ### BronzeRecord
 
-Re-exports [BronzeRecord](types/interfaces/BronzeRecord.md)
+Re-exports [BronzeRecord](types/platform/interfaces/BronzeRecord.md)
 
 ***
 
@@ -100,7 +100,7 @@ Re-exports [businessGlossary](internal/governance/glossary/functions/businessGlo
 
 ### BusinessGlossaryEntry
 
-Re-exports [BusinessGlossaryEntry](types/interfaces/BusinessGlossaryEntry.md)
+Re-exports [BusinessGlossaryEntry](types/governance/interfaces/BusinessGlossaryEntry.md)
 
 ***
 
@@ -118,19 +118,19 @@ Re-exports [cashFlow](internal/strategy/engine/functions/cashFlow.md)
 
 ### CatalogFacetCount
 
-Re-exports [CatalogFacetCount](types/interfaces/CatalogFacetCount.md)
+Re-exports [CatalogFacetCount](types/governance/interfaces/CatalogFacetCount.md)
 
 ***
 
 ### CatalogSlaStatus
 
-Re-exports [CatalogSlaStatus](types/type-aliases/CatalogSlaStatus.md)
+Re-exports [CatalogSlaStatus](types/governance/type-aliases/CatalogSlaStatus.md)
 
 ***
 
 ### CecAdjudication
 
-Re-exports [CecAdjudication](types/interfaces/CecAdjudication.md)
+Re-exports [CecAdjudication](types/platform/interfaces/CecAdjudication.md)
 
 ***
 
@@ -238,7 +238,7 @@ Re-exports [checkWorkbenchSql](internal/workbench/guard/functions/checkWorkbench
 
 ### ColumnRef
 
-Re-exports [ColumnRef](types/interfaces/ColumnRef.md)
+Re-exports [ColumnRef](types/platform/interfaces/ColumnRef.md)
 
 ***
 
@@ -250,7 +250,7 @@ Re-exports [contractChangeImpact](internal/lineage/impact/functions/contractChan
 
 ### ContractChangeImpact
 
-Re-exports [ContractChangeImpact](types/interfaces/ContractChangeImpact.md)
+Re-exports [ContractChangeImpact](types/lineage/interfaces/ContractChangeImpact.md)
 
 ***
 
@@ -262,25 +262,25 @@ Re-exports [contractChangeLevel](internal/governance/contracts/evolution/functio
 
 ### ContractChangeLevel
 
-Re-exports [ContractChangeLevel](types/type-aliases/ContractChangeLevel.md)
+Re-exports [ContractChangeLevel](types/governance/type-aliases/ContractChangeLevel.md)
 
 ***
 
 ### ContractCheckOptions
 
-Re-exports [ContractCheckOptions](types/interfaces/ContractCheckOptions.md)
+Re-exports [ContractCheckOptions](types/governance/interfaces/ContractCheckOptions.md)
 
 ***
 
 ### ContractColumn
 
-Re-exports [ContractColumn](types/interfaces/ContractColumn.md)
+Re-exports [ContractColumn](types/platform/interfaces/ContractColumn.md)
 
 ***
 
 ### ContractColumnType
 
-Re-exports [ContractColumnType](types/type-aliases/ContractColumnType.md)
+Re-exports [ContractColumnType](types/platform/type-aliases/ContractColumnType.md)
 
 ***
 
@@ -292,7 +292,7 @@ Re-exports [contractData](internal/governance/contracts/check/functions/contract
 
 ### ContractDifference
 
-Re-exports [ContractDifference](types/interfaces/ContractDifference.md)
+Re-exports [ContractDifference](types/governance/interfaces/ContractDifference.md)
 
 ***
 
@@ -304,19 +304,19 @@ Re-exports [contractDifferences](internal/governance/contracts/evolution/functio
 
 ### ContractObject
 
-Re-exports [ContractObject](types/interfaces/ContractObject.md)
+Re-exports [ContractObject](types/platform/interfaces/ContractObject.md)
 
 ***
 
 ### ContractObjectRows
 
-Re-exports [ContractObjectRows](types/interfaces/ContractObjectRows.md)
+Re-exports [ContractObjectRows](types/governance/interfaces/ContractObjectRows.md)
 
 ***
 
 ### CriticalToQualityFactor
 
-Re-exports [CriticalToQualityFactor](types/interfaces/CriticalToQualityFactor.md)
+Re-exports [CriticalToQualityFactor](types/rbqm/interfaces/CriticalToQualityFactor.md)
 
 ***
 
@@ -346,49 +346,49 @@ Re-exports [CSM_TESTS](internal/rbqm/library/variables/CSM_TESTS.md)
 
 ### CsmExclusion
 
-Re-exports [CsmExclusion](types/interfaces/CsmExclusion.md)
+Re-exports [CsmExclusion](types/rbqm/interfaces/CsmExclusion.md)
 
 ***
 
 ### CsmResult
 
-Re-exports [CsmResult](types/interfaces/CsmResult.md)
+Re-exports [CsmResult](types/rbqm/interfaces/CsmResult.md)
 
 ***
 
 ### CsmRun
 
-Re-exports [CsmRun](types/interfaces/CsmRun.md)
+Re-exports [CsmRun](types/rbqm/interfaces/CsmRun.md)
 
 ***
 
 ### CsmTestDefinition
 
-Re-exports [CsmTestDefinition](types/interfaces/CsmTestDefinition.md)
+Re-exports [CsmTestDefinition](types/rbqm/interfaces/CsmTestDefinition.md)
 
 ***
 
 ### CtmsFeed
 
-Re-exports [CtmsFeed](types/interfaces/CtmsFeed.md)
+Re-exports [CtmsFeed](types/platform/interfaces/CtmsFeed.md)
 
 ***
 
 ### CtmsMilestone
 
-Re-exports [CtmsMilestone](types/interfaces/CtmsMilestone.md)
+Re-exports [CtmsMilestone](types/platform/interfaces/CtmsMilestone.md)
 
 ***
 
 ### CtmsMonitoringPlan
 
-Re-exports [CtmsMonitoringPlan](types/interfaces/CtmsMonitoringPlan.md)
+Re-exports [CtmsMonitoringPlan](types/platform/interfaces/CtmsMonitoringPlan.md)
 
 ***
 
 ### CtmsMonitoringVisit
 
-Re-exports [CtmsMonitoringVisit](types/interfaces/CtmsMonitoringVisit.md)
+Re-exports [CtmsMonitoringVisit](types/platform/interfaces/CtmsMonitoringVisit.md)
 
 ***
 
@@ -406,7 +406,7 @@ Re-exports [dataCatalog](internal/governance/catalog/functions/dataCatalog.md)
 
 ### DataCatalogEntry
 
-Re-exports [DataCatalogEntry](types/type-aliases/DataCatalogEntry.md)
+Re-exports [DataCatalogEntry](types/governance/type-aliases/DataCatalogEntry.md)
 
 ***
 
@@ -418,7 +418,7 @@ Re-exports [dataCatalogFacets](internal/governance/catalog/functions/dataCatalog
 
 ### DataCatalogFacets
 
-Re-exports [DataCatalogFacets](types/interfaces/DataCatalogFacets.md)
+Re-exports [DataCatalogFacets](types/governance/interfaces/DataCatalogFacets.md)
 
 ***
 
@@ -430,43 +430,43 @@ Re-exports [DataCatalogInput](internal/governance/catalog/interfaces/DataCatalog
 
 ### DataCatalogMetric
 
-Re-exports [DataCatalogMetric](types/interfaces/DataCatalogMetric.md)
+Re-exports [DataCatalogMetric](types/governance/interfaces/DataCatalogMetric.md)
 
 ***
 
 ### DataCatalogProduct
 
-Re-exports [DataCatalogProduct](types/interfaces/DataCatalogProduct.md)
+Re-exports [DataCatalogProduct](types/governance/interfaces/DataCatalogProduct.md)
 
 ***
 
 ### DataCatalogQuery
 
-Re-exports [DataCatalogQuery](types/interfaces/DataCatalogQuery.md)
+Re-exports [DataCatalogQuery](types/governance/interfaces/DataCatalogQuery.md)
 
 ***
 
 ### DataClassification
 
-Re-exports [DataClassification](types/type-aliases/DataClassification.md)
+Re-exports [DataClassification](types/platform/type-aliases/DataClassification.md)
 
 ***
 
 ### DataContract
 
-Re-exports [DataContract](types/interfaces/DataContract.md)
+Re-exports [DataContract](types/platform/interfaces/DataContract.md)
 
 ***
 
 ### DataContractFinding
 
-Re-exports [DataContractFinding](types/interfaces/DataContractFinding.md)
+Re-exports [DataContractFinding](types/governance/interfaces/DataContractFinding.md)
 
 ***
 
 ### DataContractResult
 
-Re-exports [DataContractResult](types/interfaces/DataContractResult.md)
+Re-exports [DataContractResult](types/governance/interfaces/DataContractResult.md)
 
 ***
 
@@ -478,19 +478,19 @@ Re-exports [dataContracts](internal/governance/contracts/derive/functions/dataCo
 
 ### DataContractSla
 
-Re-exports [DataContractSla](types/interfaces/DataContractSla.md)
+Re-exports [DataContractSla](types/platform/interfaces/DataContractSla.md)
 
 ***
 
 ### DataProduct
 
-Re-exports [DataProduct](types/interfaces/DataProduct.md)
+Re-exports [DataProduct](types/platform/interfaces/DataProduct.md)
 
 ***
 
 ### DataProductConsumer
 
-Re-exports [DataProductConsumer](types/interfaces/DataProductConsumer.md)
+Re-exports [DataProductConsumer](types/platform/interfaces/DataProductConsumer.md)
 
 ***
 
@@ -508,7 +508,7 @@ Re-exports [dataQualityTrend](internal/quality/issues/functions/dataQualityTrend
 
 ### DataRetention
 
-Re-exports [DataRetention](types/interfaces/DataRetention.md)
+Re-exports [DataRetention](types/platform/interfaces/DataRetention.md)
 
 ***
 
@@ -538,7 +538,7 @@ Re-exports [describeMetricFormula](internal/semantic/describe/functions/describe
 
 ### DeviationImportance
 
-Re-exports [DeviationImportance](types/type-aliases/DeviationImportance.md)
+Re-exports [DeviationImportance](types/platform/type-aliases/DeviationImportance.md)
 
 ***
 
@@ -562,25 +562,25 @@ Re-exports [DQ_SCENARIOS](internal/quality/faults/variables/DQ_SCENARIOS.md)
 
 ### DqAssessment
 
-Re-exports [DqAssessment](types/interfaces/DqAssessment.md)
+Re-exports [DqAssessment](types/platform/interfaces/DqAssessment.md)
 
 ***
 
 ### DqDimension
 
-Re-exports [DqDimension](types/type-aliases/DqDimension.md)
+Re-exports [DqDimension](types/platform/type-aliases/DqDimension.md)
 
 ***
 
 ### DqIssue
 
-Re-exports [DqIssue](types/interfaces/DqIssue.md)
+Re-exports [DqIssue](types/quality/interfaces/DqIssue.md)
 
 ***
 
 ### DqIssueEvent
 
-Re-exports [DqIssueEvent](types/interfaces/DqIssueEvent.md)
+Re-exports [DqIssueEvent](types/quality/interfaces/DqIssueEvent.md)
 
 ***
 
@@ -592,73 +592,73 @@ Re-exports [dqIssues](internal/quality/issues/functions/dqIssues.md)
 
 ### DqIssueStatus
 
-Re-exports [DqIssueStatus](types/type-aliases/DqIssueStatus.md)
+Re-exports [DqIssueStatus](types/quality/type-aliases/DqIssueStatus.md)
 
 ***
 
 ### DqRule
 
-Re-exports [DqRule](types/interfaces/DqRule.md)
+Re-exports [DqRule](types/quality/interfaces/DqRule.md)
 
 ***
 
 ### DqRuleResult
 
-Re-exports [DqRuleResult](types/interfaces/DqRuleResult.md)
+Re-exports [DqRuleResult](types/platform/interfaces/DqRuleResult.md)
 
 ***
 
 ### DqScenario
 
-Re-exports [DqScenario](types/interfaces/DqScenario.md)
+Re-exports [DqScenario](types/quality/interfaces/DqScenario.md)
 
 ***
 
 ### DqScore
 
-Re-exports [DqScore](types/interfaces/DqScore.md)
+Re-exports [DqScore](types/platform/interfaces/DqScore.md)
 
 ***
 
 ### DqSeverity
 
-Re-exports [DqSeverity](types/type-aliases/DqSeverity.md)
+Re-exports [DqSeverity](types/quality/type-aliases/DqSeverity.md)
 
 ***
 
 ### DqStatus
 
-Re-exports [DqStatus](types/type-aliases/DqStatus.md)
+Re-exports [DqStatus](types/platform/type-aliases/DqStatus.md)
 
 ***
 
 ### DqTrendPoint
 
-Re-exports [DqTrendPoint](types/interfaces/DqTrendPoint.md)
+Re-exports [DqTrendPoint](types/quality/interfaces/DqTrendPoint.md)
 
 ***
 
 ### EdcFeed
 
-Re-exports [EdcFeed](types/interfaces/EdcFeed.md)
+Re-exports [EdcFeed](types/platform/interfaces/EdcFeed.md)
 
 ***
 
 ### EdcQuery
 
-Re-exports [EdcQuery](types/interfaces/EdcQuery.md)
+Re-exports [EdcQuery](types/platform/interfaces/EdcQuery.md)
 
 ***
 
 ### EdcSubject
 
-Re-exports [EdcSubject](types/interfaces/EdcSubject.md)
+Re-exports [EdcSubject](types/platform/interfaces/EdcSubject.md)
 
 ***
 
 ### EdcVisit
 
-Re-exports [EdcVisit](types/interfaces/EdcVisit.md)
+Re-exports [EdcVisit](types/platform/interfaces/EdcVisit.md)
 
 ***
 
@@ -676,31 +676,31 @@ Re-exports [encodeExploration](internal/explore/hash/functions/encodeExploration
 
 ### EnrollmentForecast
 
-Re-exports [EnrollmentForecast](types/interfaces/EnrollmentForecast.md)
+Re-exports [EnrollmentForecast](types/forecast/interfaces/EnrollmentForecast.md)
 
 ***
 
 ### EnrollmentForecastPoint
 
-Re-exports [EnrollmentForecastPoint](types/interfaces/EnrollmentForecastPoint.md)
+Re-exports [EnrollmentForecastPoint](types/forecast/interfaces/EnrollmentForecastPoint.md)
 
 ***
 
 ### EnrollmentSimulationInput
 
-Re-exports [EnrollmentSimulationInput](types/interfaces/EnrollmentSimulationInput.md)
+Re-exports [EnrollmentSimulationInput](types/forecast/interfaces/EnrollmentSimulationInput.md)
 
 ***
 
 ### EnrollmentWhatIf
 
-Re-exports [EnrollmentWhatIf](types/interfaces/EnrollmentWhatIf.md)
+Re-exports [EnrollmentWhatIf](types/forecast/interfaces/EnrollmentWhatIf.md)
 
 ***
 
 ### EtmfDocument
 
-Re-exports [EtmfDocument](types/interfaces/EtmfDocument.md)
+Re-exports [EtmfDocument](types/platform/interfaces/EtmfDocument.md)
 
 ***
 
@@ -712,7 +712,7 @@ Re-exports [evaluateMetric](internal/semantic/evaluate/functions/evaluateMetric.
 
 ### Exploration
 
-Re-exports [Exploration](types/interfaces/Exploration.md)
+Re-exports [Exploration](types/explore/interfaces/Exploration.md)
 
 ***
 
@@ -760,7 +760,7 @@ Re-exports [explorationChoices](internal/explore/model/functions/explorationChoi
 
 ### ExplorationChoices
 
-Re-exports [ExplorationChoices](types/interfaces/ExplorationChoices.md)
+Re-exports [ExplorationChoices](types/explore/interfaces/ExplorationChoices.md)
 
 ***
 
@@ -772,19 +772,19 @@ Re-exports [explorationCsv](internal/explore/output/functions/explorationCsv.md)
 
 ### ExplorationDecoding
 
-Re-exports [ExplorationDecoding](types/type-aliases/ExplorationDecoding.md)
+Re-exports [ExplorationDecoding](types/explore/type-aliases/ExplorationDecoding.md)
 
 ***
 
 ### ExplorationFinding
 
-Re-exports [ExplorationFinding](types/interfaces/ExplorationFinding.md)
+Re-exports [ExplorationFinding](types/explore/interfaces/ExplorationFinding.md)
 
 ***
 
 ### ExplorationResult
 
-Re-exports [ExplorationResult](types/interfaces/ExplorationResult.md)
+Re-exports [ExplorationResult](types/explore/interfaces/ExplorationResult.md)
 
 ***
 
@@ -832,7 +832,7 @@ Re-exports [fCdf](internal/rbqm/stats/functions/fCdf.md)
 
 ### FinanceLine
 
-Re-exports [FinanceLine](types/interfaces/FinanceLine.md)
+Re-exports [FinanceLine](types/platform/interfaces/FinanceLine.md)
 
 ***
 
@@ -898,49 +898,49 @@ Re-exports [GOVERNANCE_POLICIES](internal/governance/policies/variables/GOVERNAN
 
 ### GovernanceDecision
 
-Re-exports [GovernanceDecision](types/interfaces/GovernanceDecision.md)
+Re-exports [GovernanceDecision](types/governance/interfaces/GovernanceDecision.md)
 
 ***
 
 ### GovernanceDecisionId
 
-Re-exports [GovernanceDecisionId](types/type-aliases/GovernanceDecisionId.md)
+Re-exports [GovernanceDecisionId](types/governance/type-aliases/GovernanceDecisionId.md)
 
 ***
 
 ### GovernanceDomain
 
-Re-exports [GovernanceDomain](types/interfaces/GovernanceDomain.md)
+Re-exports [GovernanceDomain](types/governance/interfaces/GovernanceDomain.md)
 
 ***
 
 ### GovernanceDomainId
 
-Re-exports [GovernanceDomainId](types/type-aliases/GovernanceDomainId.md)
+Re-exports [GovernanceDomainId](types/governance/type-aliases/GovernanceDomainId.md)
 
 ***
 
 ### GovernanceFinding
 
-Re-exports [GovernanceFinding](types/interfaces/GovernanceFinding.md)
+Re-exports [GovernanceFinding](types/governance/interfaces/GovernanceFinding.md)
 
 ***
 
 ### GovernancePolicy
 
-Re-exports [GovernancePolicy](types/interfaces/GovernancePolicy.md)
+Re-exports [GovernancePolicy](types/governance/interfaces/GovernancePolicy.md)
 
 ***
 
 ### GovernancePolicyId
 
-Re-exports [GovernancePolicyId](types/type-aliases/GovernancePolicyId.md)
+Re-exports [GovernancePolicyId](types/governance/type-aliases/GovernancePolicyId.md)
 
 ***
 
 ### GovernancePolicyRule
 
-Re-exports [GovernancePolicyRule](types/interfaces/GovernancePolicyRule.md)
+Re-exports [GovernancePolicyRule](types/governance/interfaces/GovernancePolicyRule.md)
 
 ***
 
@@ -952,19 +952,19 @@ Re-exports [invertMatrix](internal/rbqm/stats/functions/invertMatrix.md)
 
 ### IrtFeed
 
-Re-exports [IrtFeed](types/interfaces/IrtFeed.md)
+Re-exports [IrtFeed](types/platform/interfaces/IrtFeed.md)
 
 ***
 
 ### IrtKit
 
-Re-exports [IrtKit](types/interfaces/IrtKit.md)
+Re-exports [IrtKit](types/platform/interfaces/IrtKit.md)
 
 ***
 
 ### IrtRandomization
 
-Re-exports [IrtRandomization](types/interfaces/IrtRandomization.md)
+Re-exports [IrtRandomization](types/platform/interfaces/IrtRandomization.md)
 
 ***
 
@@ -976,19 +976,19 @@ Re-exports [KRI_LIBRARY](internal/rbqm/library/variables/KRI_LIBRARY.md)
 
 ### KriAssessment
 
-Re-exports [KriAssessment](types/interfaces/KriAssessment.md)
+Re-exports [KriAssessment](types/rbqm/interfaces/KriAssessment.md)
 
 ***
 
 ### KriDefinition
 
-Re-exports [KriDefinition](types/interfaces/KriDefinition.md)
+Re-exports [KriDefinition](types/rbqm/interfaces/KriDefinition.md)
 
 ***
 
 ### KriStatus
 
-Re-exports [KriStatus](types/type-aliases/KriStatus.md)
+Re-exports [KriStatus](types/rbqm/type-aliases/KriStatus.md)
 
 ***
 
@@ -1000,7 +1000,7 @@ Re-exports [LAYER_RANK](presets/variables/LAYER_RANK.md)
 
 ### LayerDefinition
 
-Re-exports [LayerDefinition](types/interfaces/LayerDefinition.md)
+Re-exports [LayerDefinition](types/platform/interfaces/LayerDefinition.md)
 
 ***
 
@@ -1012,19 +1012,19 @@ Re-exports [LINEAGE_STAGES](internal/lineage/graph/variables/LINEAGE_STAGES.md)
 
 ### LineageEdge
 
-Re-exports [LineageEdge](types/interfaces/LineageEdge.md)
+Re-exports [LineageEdge](types/platform/interfaces/LineageEdge.md)
 
 ***
 
 ### LineageFinding
 
-Re-exports [LineageFinding](types/interfaces/LineageFinding.md)
+Re-exports [LineageFinding](types/lineage/interfaces/LineageFinding.md)
 
 ***
 
 ### LineageGraphEdge
 
-Re-exports [LineageGraphEdge](types/interfaces/LineageGraphEdge.md)
+Re-exports [LineageGraphEdge](types/platform/interfaces/LineageGraphEdge.md)
 
 ***
 
@@ -1036,25 +1036,25 @@ Re-exports [lineageImpact](internal/lineage/impact/functions/lineageImpact.md)
 
 ### LineageImpact
 
-Re-exports [LineageImpact](types/interfaces/LineageImpact.md)
+Re-exports [LineageImpact](types/lineage/interfaces/LineageImpact.md)
 
 ***
 
 ### LineageNode
 
-Re-exports [LineageNode](types/interfaces/LineageNode.md)
+Re-exports [LineageNode](types/platform/interfaces/LineageNode.md)
 
 ***
 
 ### LineageReach
 
-Re-exports [LineageReach](types/interfaces/LineageReach.md)
+Re-exports [LineageReach](types/lineage/interfaces/LineageReach.md)
 
 ***
 
 ### LineageStage
 
-Re-exports [LineageStage](types/type-aliases/LineageStage.md)
+Re-exports [LineageStage](types/platform/type-aliases/LineageStage.md)
 
 ***
 
@@ -1084,7 +1084,7 @@ Re-exports [MEDALLION_LAYERS](presets/variables/MEDALLION_LAYERS.md)
 
 ### MedallionLayer
 
-Re-exports [MedallionLayer](types/type-aliases/MedallionLayer.md)
+Re-exports [MedallionLayer](types/platform/type-aliases/MedallionLayer.md)
 
 ***
 
@@ -1108,109 +1108,109 @@ Re-exports [METRIC_REGISTRY](internal/semantic/registry/variables/METRIC_REGISTR
 
 ### MetricAggregation
 
-Re-exports [MetricAggregation](types/type-aliases/MetricAggregation.md)
+Re-exports [MetricAggregation](types/platform/type-aliases/MetricAggregation.md)
 
 ***
 
 ### MetricChangeLogEntry
 
-Re-exports [MetricChangeLogEntry](types/interfaces/MetricChangeLogEntry.md)
+Re-exports [MetricChangeLogEntry](types/platform/interfaces/MetricChangeLogEntry.md)
 
 ***
 
 ### MetricComparison
 
-Re-exports [MetricComparison](types/type-aliases/MetricComparison.md)
+Re-exports [MetricComparison](types/platform/type-aliases/MetricComparison.md)
 
 ***
 
 ### MetricCompileOptions
 
-Re-exports [MetricCompileOptions](types/interfaces/MetricCompileOptions.md)
+Re-exports [MetricCompileOptions](types/semantic/interfaces/MetricCompileOptions.md)
 
 ***
 
 ### MetricContract
 
-Re-exports [MetricContract](types/interfaces/MetricContract.md)
+Re-exports [MetricContract](types/semantic/interfaces/MetricContract.md)
 
 ***
 
 ### MetricDefinition
 
-Re-exports [MetricDefinition](types/interfaces/MetricDefinition.md)
+Re-exports [MetricDefinition](types/platform/interfaces/MetricDefinition.md)
 
 ***
 
 ### MetricDimension
 
-Re-exports [MetricDimension](types/interfaces/MetricDimension.md)
+Re-exports [MetricDimension](types/semantic/interfaces/MetricDimension.md)
 
 ***
 
 ### MetricDimensionId
 
-Re-exports [MetricDimensionId](types/type-aliases/MetricDimensionId.md)
+Re-exports [MetricDimensionId](types/platform/type-aliases/MetricDimensionId.md)
 
 ***
 
 ### MetricExpression
 
-Re-exports [MetricExpression](types/type-aliases/MetricExpression.md)
+Re-exports [MetricExpression](types/platform/type-aliases/MetricExpression.md)
 
 ***
 
 ### MetricFilter
 
-Re-exports [MetricFilter](types/interfaces/MetricFilter.md)
+Re-exports [MetricFilter](types/platform/interfaces/MetricFilter.md)
 
 ***
 
 ### MetricFinding
 
-Re-exports [MetricFinding](types/interfaces/MetricFinding.md)
+Re-exports [MetricFinding](types/semantic/interfaces/MetricFinding.md)
 
 ***
 
 ### MetricFormat
 
-Re-exports [MetricFormat](types/interfaces/MetricFormat.md)
+Re-exports [MetricFormat](types/platform/interfaces/MetricFormat.md)
 
 ***
 
 ### MetricFormula
 
-Re-exports [MetricFormula](types/type-aliases/MetricFormula.md)
+Re-exports [MetricFormula](types/platform/type-aliases/MetricFormula.md)
 
 ***
 
 ### MetricGap
 
-Re-exports [MetricGap](types/interfaces/MetricGap.md)
+Re-exports [MetricGap](types/semantic/interfaces/MetricGap.md)
 
 ***
 
 ### MetricGrain
 
-Re-exports [MetricGrain](types/type-aliases/MetricGrain.md)
+Re-exports [MetricGrain](types/platform/type-aliases/MetricGrain.md)
 
 ***
 
 ### MetricMeasure
 
-Re-exports [MetricMeasure](types/interfaces/MetricMeasure.md)
+Re-exports [MetricMeasure](types/platform/interfaces/MetricMeasure.md)
 
 ***
 
 ### MetricPredicate
 
-Re-exports [MetricPredicate](types/type-aliases/MetricPredicate.md)
+Re-exports [MetricPredicate](types/platform/type-aliases/MetricPredicate.md)
 
 ***
 
 ### MetricQuery
 
-Re-exports [MetricQuery](types/interfaces/MetricQuery.md)
+Re-exports [MetricQuery](types/semantic/interfaces/MetricQuery.md)
 
 ***
 
@@ -1222,25 +1222,25 @@ Re-exports [metricRelease](internal/semantic/check/functions/metricRelease.md)
 
 ### MetricRelease
 
-Re-exports [MetricRelease](types/interfaces/MetricRelease.md)
+Re-exports [MetricRelease](types/semantic/interfaces/MetricRelease.md)
 
 ***
 
 ### MetricReport
 
-Re-exports [MetricReport](types/interfaces/MetricReport.md)
+Re-exports [MetricReport](types/semantic/interfaces/MetricReport.md)
 
 ***
 
 ### MetricResult
 
-Re-exports [MetricResult](types/interfaces/MetricResult.md)
+Re-exports [MetricResult](types/semantic/interfaces/MetricResult.md)
 
 ***
 
 ### MetricResultRow
 
-Re-exports [MetricResultRow](types/interfaces/MetricResultRow.md)
+Re-exports [MetricResultRow](types/semantic/interfaces/MetricResultRow.md)
 
 ***
 
@@ -1252,13 +1252,13 @@ Re-exports [METRICS_DATASET](internal/lineage/graph/variables/METRICS_DATASET.md
 
 ### MetricStatus
 
-Re-exports [MetricStatus](types/type-aliases/MetricStatus.md)
+Re-exports [MetricStatus](types/platform/type-aliases/MetricStatus.md)
 
 ***
 
 ### MilestoneKind
 
-Re-exports [MilestoneKind](types/type-aliases/MilestoneKind.md)
+Re-exports [MilestoneKind](types/platform/type-aliases/MilestoneKind.md)
 
 ***
 
@@ -1294,31 +1294,31 @@ Re-exports [OPENLINEAGE_PRODUCER](internal/lineage/openlineage/variables/OPENLIN
 
 ### OpenLineageDataset
 
-Re-exports [OpenLineageDataset](types/interfaces/OpenLineageDataset.md)
+Re-exports [OpenLineageDataset](types/lineage/interfaces/OpenLineageDataset.md)
 
 ***
 
 ### OpenLineageInputField
 
-Re-exports [OpenLineageInputField](types/interfaces/OpenLineageInputField.md)
+Re-exports [OpenLineageInputField](types/lineage/interfaces/OpenLineageInputField.md)
 
 ***
 
 ### OpenLineageRunEvent
 
-Re-exports [OpenLineageRunEvent](types/interfaces/OpenLineageRunEvent.md)
+Re-exports [OpenLineageRunEvent](types/lineage/interfaces/OpenLineageRunEvent.md)
 
 ***
 
 ### OperatingModel
 
-Re-exports [OperatingModel](types/type-aliases/OperatingModel.md)
+Re-exports [OperatingModel](types/platform/type-aliases/OperatingModel.md)
 
 ***
 
 ### OperationsCrumb
 
-Re-exports [OperationsCrumb](types/interfaces/OperationsCrumb.md)
+Re-exports [OperationsCrumb](types/reporting/interfaces/OperationsCrumb.md)
 
 ***
 
@@ -1330,31 +1330,31 @@ Re-exports [operationsDashboard](internal/reporting/operations/functions/operati
 
 ### OperationsDashboard
 
-Re-exports [OperationsDashboard](types/interfaces/OperationsDashboard.md)
+Re-exports [OperationsDashboard](types/reporting/interfaces/OperationsDashboard.md)
 
 ***
 
 ### OperationsGap
 
-Re-exports [OperationsGap](types/interfaces/OperationsGap.md)
+Re-exports [OperationsGap](types/reporting/interfaces/OperationsGap.md)
 
 ***
 
 ### OperationsLevel
 
-Re-exports [OperationsLevel](types/type-aliases/OperationsLevel.md)
+Re-exports [OperationsLevel](types/reporting/type-aliases/OperationsLevel.md)
 
 ***
 
 ### OperationsMember
 
-Re-exports [OperationsMember](types/interfaces/OperationsMember.md)
+Re-exports [OperationsMember](types/reporting/interfaces/OperationsMember.md)
 
 ***
 
 ### OperationsMilestone
 
-Re-exports [OperationsMilestone](types/interfaces/OperationsMilestone.md)
+Re-exports [OperationsMilestone](types/reporting/interfaces/OperationsMilestone.md)
 
 ***
 
@@ -1366,49 +1366,49 @@ Re-exports [operationsReportSpecs](internal/reporting/operations/functions/opera
 
 ### OperationsRunByOption
 
-Re-exports [OperationsRunByOption](types/interfaces/OperationsRunByOption.md)
+Re-exports [OperationsRunByOption](types/reporting/interfaces/OperationsRunByOption.md)
 
 ***
 
 ### OperationsScope
 
-Re-exports [OperationsScope](types/interfaces/OperationsScope.md)
+Re-exports [OperationsScope](types/reporting/interfaces/OperationsScope.md)
 
 ***
 
 ### OperationsSection
 
-Re-exports [OperationsSection](types/interfaces/OperationsSection.md)
+Re-exports [OperationsSection](types/reporting/interfaces/OperationsSection.md)
 
 ***
 
 ### OperationsSectionId
 
-Re-exports [OperationsSectionId](types/type-aliases/OperationsSectionId.md)
+Re-exports [OperationsSectionId](types/reporting/type-aliases/OperationsSectionId.md)
 
 ***
 
 ### OperationsSource
 
-Re-exports [OperationsSource](types/interfaces/OperationsSource.md)
+Re-exports [OperationsSource](types/reporting/interfaces/OperationsSource.md)
 
 ***
 
 ### OperationsStudyProfile
 
-Re-exports [OperationsStudyProfile](types/interfaces/OperationsStudyProfile.md)
+Re-exports [OperationsStudyProfile](types/reporting/interfaces/OperationsStudyProfile.md)
 
 ***
 
 ### ParquetColumnType
 
-Re-exports [ParquetColumnType](types/interfaces/ParquetColumnType.md)
+Re-exports [ParquetColumnType](types/warehouse/interfaces/ParquetColumnType.md)
 
 ***
 
 ### PlannedVisit
 
-Re-exports [PlannedVisit](types/interfaces/PlannedVisit.md)
+Re-exports [PlannedVisit](types/platform/interfaces/PlannedVisit.md)
 
 ***
 
@@ -1432,19 +1432,19 @@ Re-exports [platformLineage](internal/lineage/graph/functions/platformLineage.md
 
 ### PlatformLineage
 
-Re-exports [PlatformLineage](types/interfaces/PlatformLineage.md)
+Re-exports [PlatformLineage](types/platform/interfaces/PlatformLineage.md)
 
 ***
 
 ### PlatformStage
 
-Re-exports [PlatformStage](types/interfaces/PlatformStage.md)
+Re-exports [PlatformStage](types/platform/interfaces/PlatformStage.md)
 
 ***
 
 ### PlatformStageId
 
-Re-exports [PlatformStageId](types/type-aliases/PlatformStageId.md)
+Re-exports [PlatformStageId](types/platform/type-aliases/PlatformStageId.md)
 
 ***
 
@@ -1456,31 +1456,31 @@ Re-exports [poissonCdf](internal/rbqm/stats/functions/poissonCdf.md)
 
 ### PolicyFinding
 
-Re-exports [PolicyFinding](types/interfaces/PolicyFinding.md)
+Re-exports [PolicyFinding](types/platform/interfaces/PolicyFinding.md)
 
 ***
 
 ### Portfolio
 
-Re-exports [Portfolio](types/interfaces/Portfolio.md)
+Re-exports [Portfolio](types/platform/interfaces/Portfolio.md)
 
 ***
 
 ### PortfolioOptions
 
-Re-exports [PortfolioOptions](types/interfaces/PortfolioOptions.md)
+Re-exports [PortfolioOptions](types/portfolio/interfaces/PortfolioOptions.md)
 
 ***
 
 ### PortfolioSignal
 
-Re-exports [PortfolioSignal](types/interfaces/PortfolioSignal.md)
+Re-exports [PortfolioSignal](types/platform/interfaces/PortfolioSignal.md)
 
 ***
 
 ### PortfolioSignalKind
 
-Re-exports [PortfolioSignalKind](types/type-aliases/PortfolioSignalKind.md)
+Re-exports [PortfolioSignalKind](types/platform/type-aliases/PortfolioSignalKind.md)
 
 ***
 
@@ -1492,13 +1492,13 @@ Re-exports [posteriorRate](internal/forecast/fit/functions/posteriorRate.md)
 
 ### ProductType
 
-Re-exports [ProductType](types/type-aliases/ProductType.md)
+Re-exports [ProductType](types/platform/type-aliases/ProductType.md)
 
 ***
 
 ### PromotionStep
 
-Re-exports [PromotionStep](types/interfaces/PromotionStep.md)
+Re-exports [PromotionStep](types/explore/interfaces/PromotionStep.md)
 
 ***
 
@@ -1510,7 +1510,7 @@ Re-exports [promotionSteps](internal/explore/output/functions/promotionSteps.md)
 
 ### ProtocolDeviation
 
-Re-exports [ProtocolDeviation](types/interfaces/ProtocolDeviation.md)
+Re-exports [ProtocolDeviation](types/platform/interfaces/ProtocolDeviation.md)
 
 ***
 
@@ -1522,19 +1522,19 @@ Re-exports [QTL_LIBRARY](internal/rbqm/library/variables/QTL_LIBRARY.md)
 
 ### QtlAssessment
 
-Re-exports [QtlAssessment](types/interfaces/QtlAssessment.md)
+Re-exports [QtlAssessment](types/rbqm/interfaces/QtlAssessment.md)
 
 ***
 
 ### QtlDefinition
 
-Re-exports [QtlDefinition](types/interfaces/QtlDefinition.md)
+Re-exports [QtlDefinition](types/rbqm/interfaces/QtlDefinition.md)
 
 ***
 
 ### QtlStatus
 
-Re-exports [QtlStatus](types/type-aliases/QtlStatus.md)
+Re-exports [QtlStatus](types/rbqm/type-aliases/QtlStatus.md)
 
 ***
 
@@ -1546,19 +1546,19 @@ Re-exports [qualityPlan](internal/rbqm/library/functions/qualityPlan.md)
 
 ### QualityPlan
 
-Re-exports [QualityPlan](types/interfaces/QualityPlan.md)
+Re-exports [QualityPlan](types/rbqm/interfaces/QualityPlan.md)
 
 ***
 
 ### QualityPlanQtl
 
-Re-exports [QualityPlanQtl](types/interfaces/QualityPlanQtl.md)
+Re-exports [QualityPlanQtl](types/rbqm/interfaces/QualityPlanQtl.md)
 
 ***
 
 ### RaciCode
 
-Re-exports [RaciCode](types/type-aliases/RaciCode.md)
+Re-exports [RaciCode](types/governance/type-aliases/RaciCode.md)
 
 ***
 
@@ -1582,7 +1582,7 @@ Re-exports [recruitmentLogLikelihood](internal/forecast/fit/functions/recruitmen
 
 ### RecruitmentRate
 
-Re-exports [RecruitmentRate](types/interfaces/RecruitmentRate.md)
+Re-exports [RecruitmentRate](types/forecast/interfaces/RecruitmentRate.md)
 
 ***
 
@@ -1624,7 +1624,7 @@ Re-exports [REPORT_PACK](internal/reporting/pack/variables/REPORT_PACK.md)
 
 ### ReportCalculation
 
-Re-exports [ReportCalculation](types/interfaces/ReportCalculation.md)
+Re-exports [ReportCalculation](types/platform/interfaces/ReportCalculation.md)
 
 ***
 
@@ -1636,7 +1636,7 @@ Re-exports [reportCatalog](internal/reporting/catalog/functions/reportCatalog.md
 
 ### ReportCatalogEntry
 
-Re-exports [ReportCatalogEntry](types/interfaces/ReportCatalogEntry.md)
+Re-exports [ReportCatalogEntry](types/reporting/interfaces/ReportCatalogEntry.md)
 
 ***
 
@@ -1648,37 +1648,37 @@ Re-exports [ReportCatalogOptions](internal/reporting/catalog/interfaces/ReportCa
 
 ### ReportCatalogQuery
 
-Re-exports [ReportCatalogQuery](types/interfaces/ReportCatalogQuery.md)
+Re-exports [ReportCatalogQuery](types/reporting/interfaces/ReportCatalogQuery.md)
 
 ***
 
 ### ReportCell
 
-Re-exports [ReportCell](types/interfaces/ReportCell.md)
+Re-exports [ReportCell](types/platform/interfaces/ReportCell.md)
 
 ***
 
 ### ReportColumn
 
-Re-exports [ReportColumn](types/interfaces/ReportColumn.md)
+Re-exports [ReportColumn](types/platform/interfaces/ReportColumn.md)
 
 ***
 
 ### ReportData
 
-Re-exports [ReportData](types/interfaces/ReportData.md)
+Re-exports [ReportData](types/platform/interfaces/ReportData.md)
 
 ***
 
 ### ReportFinding
 
-Re-exports [ReportFinding](types/interfaces/ReportFinding.md)
+Re-exports [ReportFinding](types/reporting/interfaces/ReportFinding.md)
 
 ***
 
 ### ReportRow
 
-Re-exports [ReportRow](types/interfaces/ReportRow.md)
+Re-exports [ReportRow](types/platform/interfaces/ReportRow.md)
 
 ***
 
@@ -1690,19 +1690,19 @@ Re-exports [REPORTS_DATASET](internal/lineage/graph/variables/REPORTS_DATASET.md
 
 ### ReportScale
 
-Re-exports [ReportScale](types/interfaces/ReportScale.md)
+Re-exports [ReportScale](types/platform/interfaces/ReportScale.md)
 
 ***
 
 ### ReportSignOff
 
-Re-exports [ReportSignOff](types/interfaces/ReportSignOff.md)
+Re-exports [ReportSignOff](types/platform/interfaces/ReportSignOff.md)
 
 ***
 
 ### ReportSpec
 
-Re-exports [ReportSpec](types/interfaces/ReportSpec.md)
+Re-exports [ReportSpec](types/platform/interfaces/ReportSpec.md)
 
 ***
 
@@ -1714,19 +1714,19 @@ Re-exports [reportTelemetrySlug](internal/reporting/catalog/functions/reportTele
 
 ### ReportTick
 
-Re-exports [ReportTick](types/interfaces/ReportTick.md)
+Re-exports [ReportTick](types/platform/interfaces/ReportTick.md)
 
 ***
 
 ### ReportTier
 
-Re-exports [ReportTier](types/type-aliases/ReportTier.md)
+Re-exports [ReportTier](types/platform/type-aliases/ReportTier.md)
 
 ***
 
 ### ReportVisual
 
-Re-exports [ReportVisual](types/type-aliases/ReportVisual.md)
+Re-exports [ReportVisual](types/platform/type-aliases/ReportVisual.md)
 
 ***
 
@@ -1738,25 +1738,25 @@ Re-exports [RISK_SIGNAL_ACTIONS](internal/rbqm/library/variables/RISK_SIGNAL_ACT
 
 ### RiskSignalAction
 
-Re-exports [RiskSignalAction](types/type-aliases/RiskSignalAction.md)
+Re-exports [RiskSignalAction](types/rbqm/type-aliases/RiskSignalAction.md)
 
 ***
 
 ### RiskSignalEvent
 
-Re-exports [RiskSignalEvent](types/type-aliases/RiskSignalEvent.md)
+Re-exports [RiskSignalEvent](types/rbqm/type-aliases/RiskSignalEvent.md)
 
 ***
 
 ### RiskSignalLogEntry
 
-Re-exports [RiskSignalLogEntry](types/interfaces/RiskSignalLogEntry.md)
+Re-exports [RiskSignalLogEntry](types/rbqm/interfaces/RiskSignalLogEntry.md)
 
 ***
 
 ### RiskSignalLogFinding
 
-Re-exports [RiskSignalLogFinding](types/interfaces/RiskSignalLogFinding.md)
+Re-exports [RiskSignalLogFinding](types/rbqm/interfaces/RiskSignalLogFinding.md)
 
 ***
 
@@ -1768,7 +1768,7 @@ Re-exports [RiskSignalLogInput](internal/rbqm/signals/type-aliases/RiskSignalLog
 
 ### RiskSignalSource
 
-Re-exports [RiskSignalSource](types/type-aliases/RiskSignalSource.md)
+Re-exports [RiskSignalSource](types/rbqm/type-aliases/RiskSignalSource.md)
 
 ***
 
@@ -1780,7 +1780,7 @@ Re-exports [riskSignalStates](internal/rbqm/signals/functions/riskSignalStates.m
 
 ### RoadmapItem
 
-Re-exports [RoadmapItem](types/interfaces/RoadmapItem.md)
+Re-exports [RoadmapItem](types/strategy/interfaces/RoadmapItem.md)
 
 ***
 
@@ -1798,19 +1798,19 @@ Re-exports [SCD2_OPEN_END](presets/variables/SCD2_OPEN_END.md)
 
 ### Scd2Change
 
-Re-exports [Scd2Change](types/interfaces/Scd2Change.md)
+Re-exports [Scd2Change](types/warehouse/interfaces/Scd2Change.md)
 
 ***
 
 ### Scd2Definition
 
-Re-exports [Scd2Definition](types/interfaces/Scd2Definition.md)
+Re-exports [Scd2Definition](types/platform/interfaces/Scd2Definition.md)
 
 ***
 
 ### Scd2Version
 
-Re-exports [Scd2Version](types/interfaces/Scd2Version.md)
+Re-exports [Scd2Version](types/warehouse/interfaces/Scd2Version.md)
 
 ***
 
@@ -1852,7 +1852,7 @@ Re-exports [simulateEnrollmentCompletion](internal/forecast/simulate/functions/s
 
 ### Site
 
-Re-exports [Site](types/interfaces/Site.md)
+Re-exports [Site](types/platform/interfaces/Site.md)
 
 ***
 
@@ -1864,13 +1864,13 @@ Re-exports [SiteExposure](internal/forecast/fit/interfaces/SiteExposure.md)
 
 ### SiteRecruitment
 
-Re-exports [SiteRecruitment](types/interfaces/SiteRecruitment.md)
+Re-exports [SiteRecruitment](types/forecast/interfaces/SiteRecruitment.md)
 
 ***
 
 ### SiteStaffAssignment
 
-Re-exports [SiteStaffAssignment](types/interfaces/SiteStaffAssignment.md)
+Re-exports [SiteStaffAssignment](types/platform/interfaces/SiteStaffAssignment.md)
 
 ***
 
@@ -1882,13 +1882,13 @@ Re-exports [siteStaffFeed](internal/portfolio/staff/functions/siteStaffFeed.md)
 
 ### SourceSystem
 
-Re-exports [SourceSystem](types/type-aliases/SourceSystem.md)
+Re-exports [SourceSystem](types/platform/type-aliases/SourceSystem.md)
 
 ***
 
 ### SqlDialect
 
-Re-exports [SqlDialect](types/type-aliases/SqlDialect.md)
+Re-exports [SqlDialect](types/platform/type-aliases/SqlDialect.md)
 
 ***
 
@@ -1918,55 +1918,55 @@ Re-exports [StewardshipModel](internal/governance/stewardship/interfaces/Steward
 
 ### StewardshipRole
 
-Re-exports [StewardshipRole](types/interfaces/StewardshipRole.md)
+Re-exports [StewardshipRole](types/governance/interfaces/StewardshipRole.md)
 
 ***
 
 ### StewardshipRoleId
 
-Re-exports [StewardshipRoleId](types/type-aliases/StewardshipRoleId.md)
+Re-exports [StewardshipRoleId](types/governance/type-aliases/StewardshipRoleId.md)
 
 ***
 
 ### StrategyCashFlow
 
-Re-exports [StrategyCashFlow](types/interfaces/StrategyCashFlow.md)
+Re-exports [StrategyCashFlow](types/strategy/interfaces/StrategyCashFlow.md)
 
 ***
 
 ### StrategyCriterion
 
-Re-exports [StrategyCriterion](types/interfaces/StrategyCriterion.md)
+Re-exports [StrategyCriterion](types/strategy/interfaces/StrategyCriterion.md)
 
 ***
 
 ### StrategyMemo
 
-Re-exports [StrategyMemo](types/interfaces/StrategyMemo.md)
+Re-exports [StrategyMemo](types/strategy/interfaces/StrategyMemo.md)
 
 ***
 
 ### StrategyScenario
 
-Re-exports [StrategyScenario](types/interfaces/StrategyScenario.md)
+Re-exports [StrategyScenario](types/strategy/interfaces/StrategyScenario.md)
 
 ***
 
 ### StrategyScore
 
-Re-exports [StrategyScore](types/interfaces/StrategyScore.md)
+Re-exports [StrategyScore](types/strategy/interfaces/StrategyScore.md)
 
 ***
 
 ### StrategyVendor
 
-Re-exports [StrategyVendor](types/interfaces/StrategyVendor.md)
+Re-exports [StrategyVendor](types/strategy/interfaces/StrategyVendor.md)
 
 ***
 
 ### Study
 
-Re-exports [Study](types/interfaces/Study.md)
+Re-exports [Study](types/platform/interfaces/Study.md)
 
 ***
 
@@ -1978,31 +1978,31 @@ Re-exports [STUDY_DATA_PRODUCT_ID](presets/variables/STUDY_DATA_PRODUCT_ID.md)
 
 ### StudyDataRunReference
 
-Re-exports [StudyDataRunReference](types/interfaces/StudyDataRunReference.md)
+Re-exports [StudyDataRunReference](types/platform/interfaces/StudyDataRunReference.md)
 
 ***
 
 ### StudyPhase
 
-Re-exports [StudyPhase](types/type-aliases/StudyPhase.md)
+Re-exports [StudyPhase](types/platform/type-aliases/StudyPhase.md)
 
 ***
 
 ### StudyRiskAssessment
 
-Re-exports [StudyRiskAssessment](types/interfaces/StudyRiskAssessment.md)
+Re-exports [StudyRiskAssessment](types/rbqm/interfaces/StudyRiskAssessment.md)
 
 ***
 
 ### StudyStatus
 
-Re-exports [StudyStatus](types/type-aliases/StudyStatus.md)
+Re-exports [StudyStatus](types/platform/type-aliases/StudyStatus.md)
 
 ***
 
 ### SubjectStatus
 
-Re-exports [SubjectStatus](types/type-aliases/SubjectStatus.md)
+Re-exports [SubjectStatus](types/platform/type-aliases/SubjectStatus.md)
 
 ***
 
@@ -2020,7 +2020,7 @@ Re-exports [SYNTHETIC_DATA_NOTICE](presets/variables/SYNTHETIC_DATA_NOTICE.md)
 
 ### SyntheticRecord
 
-Re-exports [SyntheticRecord](types/interfaces/SyntheticRecord.md)
+Re-exports [SyntheticRecord](types/platform/interfaces/SyntheticRecord.md)
 
 ***
 
@@ -2068,13 +2068,13 @@ Re-exports [toTmdl](internal/semantic/tmdl/functions/toTmdl.md)
 
 ### Vendor
 
-Re-exports [Vendor](types/interfaces/Vendor.md)
+Re-exports [Vendor](types/platform/interfaces/Vendor.md)
 
 ***
 
 ### Warehouse
 
-Re-exports [Warehouse](types/interfaces/Warehouse.md)
+Re-exports [Warehouse](types/platform/interfaces/Warehouse.md)
 
 ***
 
@@ -2092,43 +2092,43 @@ Re-exports [WAREHOUSE_SCHEMA_VERSION](internal/warehouse/schema/variables/WAREHO
 
 ### WarehouseColumn
 
-Re-exports [WarehouseColumn](types/interfaces/WarehouseColumn.md)
+Re-exports [WarehouseColumn](types/platform/interfaces/WarehouseColumn.md)
 
 ***
 
 ### WarehouseColumnType
 
-Re-exports [WarehouseColumnType](types/type-aliases/WarehouseColumnType.md)
+Re-exports [WarehouseColumnType](types/platform/type-aliases/WarehouseColumnType.md)
 
 ***
 
 ### WarehouseCsvFile
 
-Re-exports [WarehouseCsvFile](types/interfaces/WarehouseCsvFile.md)
+Re-exports [WarehouseCsvFile](types/warehouse/interfaces/WarehouseCsvFile.md)
 
 ***
 
 ### WarehouseExport
 
-Re-exports [WarehouseExport](types/interfaces/WarehouseExport.md)
+Re-exports [WarehouseExport](types/warehouse/interfaces/WarehouseExport.md)
 
 ***
 
 ### WarehouseExportManifest
 
-Re-exports [WarehouseExportManifest](types/interfaces/WarehouseExportManifest.md)
+Re-exports [WarehouseExportManifest](types/warehouse/interfaces/WarehouseExportManifest.md)
 
 ***
 
 ### WarehouseFinding
 
-Re-exports [WarehouseFinding](types/interfaces/WarehouseFinding.md)
+Re-exports [WarehouseFinding](types/warehouse/interfaces/WarehouseFinding.md)
 
 ***
 
 ### WarehouseLayer
 
-Re-exports [WarehouseLayer](types/type-aliases/WarehouseLayer.md)
+Re-exports [WarehouseLayer](types/platform/type-aliases/WarehouseLayer.md)
 
 ***
 
@@ -2140,13 +2140,13 @@ Re-exports [warehouseLineage](internal/warehouse/lineage/functions/warehouseLine
 
 ### WarehouseManifestColumn
 
-Re-exports [WarehouseManifestColumn](types/interfaces/WarehouseManifestColumn.md)
+Re-exports [WarehouseManifestColumn](types/warehouse/interfaces/WarehouseManifestColumn.md)
 
 ***
 
 ### WarehouseManifestTable
 
-Re-exports [WarehouseManifestTable](types/interfaces/WarehouseManifestTable.md)
+Re-exports [WarehouseManifestTable](types/warehouse/interfaces/WarehouseManifestTable.md)
 
 ***
 
@@ -2158,37 +2158,37 @@ Re-exports [WarehouseOptions](internal/warehouse/build/interfaces/WarehouseOptio
 
 ### WarehouseReference
 
-Re-exports [WarehouseReference](types/interfaces/WarehouseReference.md)
+Re-exports [WarehouseReference](types/platform/interfaces/WarehouseReference.md)
 
 ***
 
 ### WarehouseRow
 
-Re-exports [WarehouseRow](types/type-aliases/WarehouseRow.md)
+Re-exports [WarehouseRow](types/platform/type-aliases/WarehouseRow.md)
 
 ***
 
 ### WarehouseSchema
 
-Re-exports [WarehouseSchema](types/interfaces/WarehouseSchema.md)
+Re-exports [WarehouseSchema](types/warehouse/interfaces/WarehouseSchema.md)
 
 ***
 
 ### WarehouseTable
 
-Re-exports [WarehouseTable](types/interfaces/WarehouseTable.md)
+Re-exports [WarehouseTable](types/platform/interfaces/WarehouseTable.md)
 
 ***
 
 ### WarehouseTableKind
 
-Re-exports [WarehouseTableKind](types/type-aliases/WarehouseTableKind.md)
+Re-exports [WarehouseTableKind](types/platform/type-aliases/WarehouseTableKind.md)
 
 ***
 
 ### WarehouseValue
 
-Re-exports [WarehouseValue](types/type-aliases/WarehouseValue.md)
+Re-exports [WarehouseValue](types/platform/type-aliases/WarehouseValue.md)
 
 ***
 
@@ -2212,7 +2212,7 @@ Re-exports [WORKBENCH_ENGINE_SETTINGS](internal/workbench/guard/variables/WORKBE
 
 ### WorkbenchColumn
 
-Re-exports [WorkbenchColumn](types/interfaces/WorkbenchColumn.md)
+Re-exports [WorkbenchColumn](types/workbench/interfaces/WorkbenchColumn.md)
 
 ***
 
@@ -2224,7 +2224,7 @@ Re-exports [workbenchQueries](internal/workbench/queries/functions/workbenchQuer
 
 ### WorkbenchQuery
 
-Re-exports [WorkbenchQuery](types/interfaces/WorkbenchQuery.md)
+Re-exports [WorkbenchQuery](types/workbench/interfaces/WorkbenchQuery.md)
 
 ***
 
@@ -2236,10 +2236,10 @@ Re-exports [workbenchSchema](internal/workbench/schema/functions/workbenchSchema
 
 ### WorkbenchSqlFinding
 
-Re-exports [WorkbenchSqlFinding](types/interfaces/WorkbenchSqlFinding.md)
+Re-exports [WorkbenchSqlFinding](types/workbench/interfaces/WorkbenchSqlFinding.md)
 
 ***
 
 ### WorkbenchTable
 
-Re-exports [WorkbenchTable](types/interfaces/WorkbenchTable.md)
+Re-exports [WorkbenchTable](types/workbench/interfaces/WorkbenchTable.md)

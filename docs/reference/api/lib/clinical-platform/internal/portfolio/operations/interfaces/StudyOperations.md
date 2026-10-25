@@ -12,34 +12,34 @@ Study-level operational records and the derived status.
 
 ### documents
 
-> `readonly` **documents**: [`EtmfDocument`](../../../../types/interfaces/EtmfDocument.md)[]
+> `readonly` **documents**: [`EtmfDocument`](../../../../types/platform/interfaces/EtmfDocument.md)[]
 
 ***
 
 ### finance
 
-> `readonly` **finance**: [`FinanceLine`](../../../../types/interfaces/FinanceLine.md)[]
+> `readonly` **finance**: [`FinanceLine`](../../../../types/platform/interfaces/FinanceLine.md)[]
 
 ***
 
 ### milestones
 
-> `readonly` **milestones**: [`CtmsMilestone`](../../../../types/interfaces/CtmsMilestone.md)[]
+> `readonly` **milestones**: [`CtmsMilestone`](../../../../types/platform/interfaces/CtmsMilestone.md)[]
 
 ***
 
 ### monitoringPlan
 
-> `readonly` **monitoringPlan**: [`CtmsMonitoringPlan`](../../../../types/interfaces/CtmsMonitoringPlan.md)
+> `readonly` **monitoringPlan**: [`CtmsMonitoringPlan`](../../../../types/platform/interfaces/CtmsMonitoringPlan.md)
 
 ***
 
 ### monitoringVisits
 
-> `readonly` **monitoringVisits**: [`CtmsMonitoringVisit`](../../../../types/interfaces/CtmsMonitoringVisit.md)[]
+> `readonly` **monitoringVisits**: [`CtmsMonitoringVisit`](../../../../types/platform/interfaces/CtmsMonitoringVisit.md)[]
 
 ***
 
 ### status
 
-> `readonly` **status**: [`StudyStatus`](../../../../types/type-aliases/StudyStatus.md)
+> `readonly` **status**: [`StudyStatus`](../../../../types/platform/type-aliases/StudyStatus.md)

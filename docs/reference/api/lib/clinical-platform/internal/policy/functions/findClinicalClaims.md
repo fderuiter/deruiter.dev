@@ -6,7 +6,7 @@
 
 # Function: findClinicalClaims()
 
-> **findClinicalClaims**(`text`): [`PolicyFinding`](../../../types/interfaces/PolicyFinding.md)[]
+> **findClinicalClaims**(`text`): [`PolicyFinding`](../../../types/platform/interfaces/PolicyFinding.md)[]
 
 Finds clinical compliance claims that no synthetic demo can make, such as
 "CDASH 2.2 compliant", "100% Compliant" or "immutable audit trail". The
@@ -22,6 +22,6 @@ Copy or source text to check.
 
 ## Returns
 
-[`PolicyFinding`](../../../types/interfaces/PolicyFinding.md)[]
+[`PolicyFinding`](../../../types/platform/interfaces/PolicyFinding.md)[]
 
 One finding per matched phrase, grouped by phrase rule.

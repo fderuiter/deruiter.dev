@@ -6,7 +6,7 @@
 
 # Function: lineageUpstream()
 
-> **lineageUpstream**(`graph`, `id`): [`LineageReach`](../../../../types/interfaces/LineageReach.md)[]
+> **lineageUpstream**(`graph`, `id`): [`LineageReach`](../../../../types/lineage/interfaces/LineageReach.md)[]
 
 Everything a node is computed from, nearest first.
 
@@ -14,7 +14,7 @@ Everything a node is computed from, nearest first.
 
 ### graph
 
-[`PlatformLineage`](../../../../types/interfaces/PlatformLineage.md)
+[`PlatformLineage`](../../../../types/platform/interfaces/PlatformLineage.md)
 
 ### id
 
@@ -22,7 +22,7 @@ Everything a node is computed from, nearest first.
 
 ## Returns
 
-[`LineageReach`](../../../../types/interfaces/LineageReach.md)[]
+[`LineageReach`](../../../../types/lineage/interfaces/LineageReach.md)[]
 
 ## Throws
 

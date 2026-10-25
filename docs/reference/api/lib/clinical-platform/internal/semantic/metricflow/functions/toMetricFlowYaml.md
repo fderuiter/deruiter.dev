@@ -18,13 +18,13 @@ status, owner, steward, unit and allowed dimensions go in its `meta`.
 
 ### metrics
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[]
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[]
 
 Metrics to compile, usually `METRIC_REGISTRY`.
 
 ### options?
 
-[`MetricCompileOptions`](../../../../types/interfaces/MetricCompileOptions.md) = `{}`
+[`MetricCompileOptions`](../../../../types/semantic/interfaces/MetricCompileOptions.md) = `{}`
 
 The data cut, for metrics that measure age at the cut.
 

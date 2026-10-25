@@ -14,7 +14,7 @@ Rank NPV impact of a 20% change to each financial assumption.
 
 ### input
 
-[`StrategyCashFlow`](../../../../types/interfaces/StrategyCashFlow.md)
+[`StrategyCashFlow`](../../../../types/strategy/interfaces/StrategyCashFlow.md)
 
 ## Returns
 

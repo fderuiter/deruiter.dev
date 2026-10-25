@@ -18,7 +18,7 @@ A warehouse as rules read it.
 
 ### groups()
 
-> **groups**(`table`, `column`): `ReadonlyMap`\<[`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md), readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>\>[]\>
+> **groups**(`table`, `column`): `ReadonlyMap`\<[`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md), readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>\>[]\>
 
 Rows of a table grouped by the value of one column.
 
@@ -34,13 +34,13 @@ Rows of a table grouped by the value of one column.
 
 #### Returns
 
-`ReadonlyMap`\<[`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md), readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>\>[]\>
+`ReadonlyMap`\<[`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md), readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>\>[]\>
 
 ***
 
 ### index()
 
-> **index**(`table`, `column`): `ReadonlyMap`\<[`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md), `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>\>\>
+> **index**(`table`, `column`): `ReadonlyMap`\<[`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md), `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>\>\>
 
 Rows of a table by the value of one column; the last row wins on a tie.
 
@@ -56,13 +56,13 @@ Rows of a table by the value of one column; the last row wins on a tie.
 
 #### Returns
 
-`ReadonlyMap`\<[`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md), `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>\>\>
+`ReadonlyMap`\<[`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md), `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>\>\>
 
 ***
 
 ### rows()
 
-> **rows**(`table`): readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>\>[]
+> **rows**(`table`): readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>\>[]
 
 #### Parameters
 
@@ -72,4 +72,4 @@ Rows of a table by the value of one column; the last row wins on a tie.
 
 #### Returns
 
-readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>\>[]
+readonly `Readonly`\<`Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>\>[]

@@ -14,7 +14,7 @@ The date part of an ISO 8601 date or timestamp.
 
 ### value
 
-[`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)
+[`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)
 
 ## Returns
 

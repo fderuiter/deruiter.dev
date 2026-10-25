@@ -6,7 +6,7 @@
 
 # Function: withOpenDqIssues()
 
-> **withOpenDqIssues**(`warehouse`, `log`, `on`): [`Warehouse`](../../../../types/interfaces/Warehouse.md)
+> **withOpenDqIssues**(`warehouse`, `log`, `on`): [`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A warehouse with the defects of the issues open on a date put back, in
 issue order.
@@ -15,11 +15,11 @@ issue order.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ### log
 
-readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
+readonly [`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)[]
 
 ### on
 
@@ -27,4 +27,4 @@ readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
 
 ## Returns
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)

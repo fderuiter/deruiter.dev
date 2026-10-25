@@ -12,7 +12,7 @@ Options for `buildWarehouse`.
 
 ### siteStaff?
 
-> `readonly` `optional` **siteStaff?**: readonly [`SiteStaffAssignment`](../../../../types/interfaces/SiteStaffAssignment.md)[]
+> `readonly` `optional` **siteStaff?**: readonly [`SiteStaffAssignment`](../../../../types/platform/interfaces/SiteStaffAssignment.md)[]
 
 Site staff assignments to use in place of `siteStaffFeed(portfolio)`,
 for example a fixture with a known principal investigator change.

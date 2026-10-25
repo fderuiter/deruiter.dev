@@ -6,7 +6,7 @@
 
 # Function: lineageImpact()
 
-> **lineageImpact**(`graph`, `origin`): [`LineageImpact`](../../../../types/interfaces/LineageImpact.md)
+> **lineageImpact**(`graph`, `origin`): [`LineageImpact`](../../../../types/lineage/interfaces/LineageImpact.md)
 
 Everything a change to one node reaches, and the roles accountable for
 it, so a contract or metric change names who to notify.
@@ -15,7 +15,7 @@ it, so a contract or metric change names who to notify.
 
 ### graph
 
-[`PlatformLineage`](../../../../types/interfaces/PlatformLineage.md)
+[`PlatformLineage`](../../../../types/platform/interfaces/PlatformLineage.md)
 
 ### origin
 
@@ -23,7 +23,7 @@ it, so a contract or metric change names who to notify.
 
 ## Returns
 
-[`LineageImpact`](../../../../types/interfaces/LineageImpact.md)
+[`LineageImpact`](../../../../types/lineage/interfaces/LineageImpact.md)
 
 ## Throws
 

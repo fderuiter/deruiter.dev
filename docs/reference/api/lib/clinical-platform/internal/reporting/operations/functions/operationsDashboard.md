@@ -6,7 +6,7 @@
 
 # Function: operationsDashboard()
 
-> **operationsDashboard**(`warehouse`, `scope?`): [`OperationsDashboard`](../../../../types/interfaces/OperationsDashboard.md)
+> **operationsDashboard**(`warehouse`, `scope?`): [`OperationsDashboard`](../../../../types/reporting/interfaces/OperationsDashboard.md)
 
 The operations dashboard at a scope: the glance, one section per tab
 with its reports and gaps, the breadcrumb trail, and the studies,
@@ -16,19 +16,19 @@ countries or sites to drill into next.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 The warehouse to report on.
 
 ### scope?
 
-[`OperationsScope`](../../../../types/interfaces/OperationsScope.md) = `{}`
+[`OperationsScope`](../../../../types/reporting/interfaces/OperationsScope.md) = `{}`
 
 Where the dashboard is drilled to. An unknown study,
   country or site is dropped, with a notice saying so.
 
 ## Returns
 
-[`OperationsDashboard`](../../../../types/interfaces/OperationsDashboard.md)
+[`OperationsDashboard`](../../../../types/reporting/interfaces/OperationsDashboard.md)
 
 The dashboard.

@@ -82,19 +82,19 @@ The study's monitoring plan.
 
 ### operatingModel
 
-> `readonly` **operatingModel**: [`OperatingModel`](../../../../types/type-aliases/OperatingModel.md)
+> `readonly` **operatingModel**: [`OperatingModel`](../../../../types/platform/type-aliases/OperatingModel.md)
 
 ***
 
 ### phase
 
-> `readonly` **phase**: [`StudyPhase`](../../../../types/type-aliases/StudyPhase.md)
+> `readonly` **phase**: [`StudyPhase`](../../../../types/platform/type-aliases/StudyPhase.md)
 
 ***
 
 ### productType
 
-> `readonly` **productType**: [`ProductType`](../../../../types/type-aliases/ProductType.md)
+> `readonly` **productType**: [`ProductType`](../../../../types/platform/type-aliases/ProductType.md)
 
 ***
 

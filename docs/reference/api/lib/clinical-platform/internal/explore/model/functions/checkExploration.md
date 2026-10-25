@@ -6,7 +6,7 @@
 
 # Function: checkExploration()
 
-> **checkExploration**(`exploration`, `metrics?`): [`ExplorationFinding`](../../../../types/interfaces/ExplorationFinding.md)[]
+> **checkExploration**(`exploration`, `metrics?`): [`ExplorationFinding`](../../../../types/explore/interfaces/ExplorationFinding.md)[]
 
 Checks an exploration: the metric is offered, the grouping and filters
 are ones the semantic layer allows, and the chosen visual fits the
@@ -16,18 +16,18 @@ grouping.
 
 ### exploration
 
-[`Exploration`](../../../../types/interfaces/Exploration.md)
+[`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`ExplorationFinding`](../../../../types/interfaces/ExplorationFinding.md)[]
+[`ExplorationFinding`](../../../../types/explore/interfaces/ExplorationFinding.md)[]
 
 One finding per problem; empty when the exploration can run.

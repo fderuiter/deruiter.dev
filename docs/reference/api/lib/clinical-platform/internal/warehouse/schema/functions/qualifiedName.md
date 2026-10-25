@@ -14,7 +14,7 @@ Qualified name of a table, for example `gold.dim_site`.
 
 ### table
 
-[`WarehouseTable`](../../../../types/interfaces/WarehouseTable.md)
+[`WarehouseTable`](../../../../types/platform/interfaces/WarehouseTable.md)
 
 ## Returns
 

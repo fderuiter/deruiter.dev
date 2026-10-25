@@ -30,7 +30,7 @@ The measure's date key column, or `null`.
 
 ### id
 
-[`MetricDimensionId`](../../../../types/type-aliases/MetricDimensionId.md)
+[`MetricDimensionId`](../../../../types/platform/type-aliases/MetricDimensionId.md)
 
 Dimension to reach.
 

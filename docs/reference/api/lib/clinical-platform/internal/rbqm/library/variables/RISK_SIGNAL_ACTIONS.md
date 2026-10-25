@@ -6,6 +6,6 @@
 
 # Variable: RISK\_SIGNAL\_ACTIONS
 
-> `const` **RISK\_SIGNAL\_ACTIONS**: `Readonly`\<`Record`\<[`RiskSignalAction`](../../../../types/type-aliases/RiskSignalAction.md), `string`\>\>
+> `const` **RISK\_SIGNAL\_ACTIONS**: `Readonly`\<`Record`\<[`RiskSignalAction`](../../../../types/rbqm/type-aliases/RiskSignalAction.md), `string`\>\>
 
 Actions a signal can lead to, with their labels.

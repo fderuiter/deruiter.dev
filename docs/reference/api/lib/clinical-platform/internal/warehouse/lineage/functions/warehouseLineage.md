@@ -6,7 +6,7 @@
 
 # Function: warehouseLineage()
 
-> **warehouseLineage**(`schema`): [`LineageEdge`](../../../../types/interfaces/LineageEdge.md)[]
+> **warehouseLineage**(`schema`): [`LineageEdge`](../../../../types/platform/interfaces/LineageEdge.md)[]
 
 Lists the warehouse's column-level lineage edges: one per source column
 of every silver and gold column, in schema order. Every edge must pass
@@ -16,12 +16,12 @@ of every silver and gold column, in schema order. Every edge must pass
 
 ### schema
 
-[`WarehouseSchema`](../../../../types/interfaces/WarehouseSchema.md)
+[`WarehouseSchema`](../../../../types/warehouse/interfaces/WarehouseSchema.md)
 
 The schema, normally `WAREHOUSE_SCHEMA`.
 
 ## Returns
 
-[`LineageEdge`](../../../../types/interfaces/LineageEdge.md)[]
+[`LineageEdge`](../../../../types/platform/interfaces/LineageEdge.md)[]
 
 The edges.

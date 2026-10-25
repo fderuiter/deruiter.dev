@@ -16,7 +16,7 @@ to the definition's decimal places with US digit grouping.
 
 ### metric
 
-`Pick`\<[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md), `"format"`\>
+`Pick`\<[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md), `"format"`\>
 
 The metric the value belongs to.
 

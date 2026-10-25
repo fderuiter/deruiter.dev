@@ -6,7 +6,7 @@
 
 # Function: reportCatalog()
 
-> **reportCatalog**(`specs`, `options?`): [`ReportCatalogEntry`](../../../../types/interfaces/ReportCatalogEntry.md)[]
+> **reportCatalog**(`specs`, `options?`): [`ReportCatalogEntry`](../../../../types/reporting/interfaces/ReportCatalogEntry.md)[]
 
 The catalog entries for some report specs, in the order given.
 
@@ -14,7 +14,7 @@ The catalog entries for some report specs, in the order given.
 
 ### specs
 
-readonly [`ReportSpec`](../../../../types/interfaces/ReportSpec.md)[]
+readonly [`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)[]
 
 The reports.
 
@@ -26,7 +26,7 @@ Last refresh, usage counters and the registry.
 
 ## Returns
 
-[`ReportCatalogEntry`](../../../../types/interfaces/ReportCatalogEntry.md)[]
+[`ReportCatalogEntry`](../../../../types/reporting/interfaces/ReportCatalogEntry.md)[]
 
 One entry per report. A report with no counter has `null`
   views when no usage was supplied at all, and 0 when usage was supplied

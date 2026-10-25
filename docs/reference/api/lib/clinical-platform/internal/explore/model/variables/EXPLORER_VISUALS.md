@@ -6,6 +6,6 @@
 
 # Variable: EXPLORER\_VISUALS
 
-> `const` **EXPLORER\_VISUALS**: readonly [`ReportVisual`](../../../../types/type-aliases/ReportVisual.md)[]
+> `const` **EXPLORER\_VISUALS**: readonly [`ReportVisual`](../../../../types/platform/type-aliases/ReportVisual.md)[]
 
 The visuals the explorer offers, in the order it lists them.

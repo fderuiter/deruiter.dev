@@ -6,7 +6,7 @@
 
 # Function: checkLineage()
 
-> **checkLineage**(`graph`): [`LineageFinding`](../../../../types/interfaces/LineageFinding.md)[]
+> **checkLineage**(`graph`): [`LineageFinding`](../../../../types/lineage/interfaces/LineageFinding.md)[]
 
 Checks the rules a lineage graph keeps: no duplicate nodes, no edge to or
 from a missing node, no cycle, every metric reaching a source
@@ -17,10 +17,10 @@ showing at least one metric.
 
 ### graph
 
-[`PlatformLineage`](../../../../types/interfaces/PlatformLineage.md)
+[`PlatformLineage`](../../../../types/platform/interfaces/PlatformLineage.md)
 
 ## Returns
 
-[`LineageFinding`](../../../../types/interfaces/LineageFinding.md)[]
+[`LineageFinding`](../../../../types/lineage/interfaces/LineageFinding.md)[]
 
 The broken rules; empty when the graph is sound.

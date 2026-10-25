@@ -6,7 +6,7 @@
 
 # Function: siteStaffFeed()
 
-> **siteStaffFeed**(`portfolio`): [`SiteStaffAssignment`](../../../../types/interfaces/SiteStaffAssignment.md)[]
+> **siteStaffFeed**(`portfolio`): [`SiteStaffAssignment`](../../../../types/platform/interfaces/SiteStaffAssignment.md)[]
 
 Derives the principal investigator assignments of every site. Each site
 starts with one investigator from its study's start; about one long-running
@@ -18,12 +18,12 @@ close-out or the data cut.
 
 ### portfolio
 
-[`Portfolio`](../../../../types/interfaces/Portfolio.md)
+[`Portfolio`](../../../../types/platform/interfaces/Portfolio.md)
 
 The portfolio, from `generatePortfolio`.
 
 ## Returns
 
-[`SiteStaffAssignment`](../../../../types/interfaces/SiteStaffAssignment.md)[]
+[`SiteStaffAssignment`](../../../../types/platform/interfaces/SiteStaffAssignment.md)[]
 
 Assignments in site order, each site's in date order.

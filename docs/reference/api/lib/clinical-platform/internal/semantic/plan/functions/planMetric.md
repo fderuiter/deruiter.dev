@@ -15,13 +15,13 @@ dimension on every table the formula reads.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 Metric definition.
 
 ### query
 
-[`MetricQuery`](../../../../types/interfaces/MetricQuery.md)
+[`MetricQuery`](../../../../types/semantic/interfaces/MetricQuery.md)
 
 Dimensions and filters requested.
 

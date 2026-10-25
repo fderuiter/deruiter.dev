@@ -34,7 +34,6 @@ import {
 
 const CT_SYSTEM = "http://www.cdisc.org";
 const CT_VERSION = CLINICAL_STANDARDS_PROFILE.CT.packageDate;
-const SPONSOR_SYSTEM = "https://deruiter.dev/study-data";
 
 function ct(id: string, code: string, decode: string): UsdmV4Code {
   return {
@@ -42,17 +41,6 @@ function ct(id: string, code: string, decode: string): UsdmV4Code {
     code,
     codeSystem: CT_SYSTEM,
     codeSystemVersion: CT_VERSION,
-    decode,
-    instanceType: "Code",
-  };
-}
-
-function sponsorCode(id: string, code: string, decode: string): UsdmV4Code {
-  return {
-    id,
-    code,
-    codeSystem: SPONSOR_SYSTEM,
-    codeSystemVersion: "1.0",
     decode,
     instanceType: "Code",
   };

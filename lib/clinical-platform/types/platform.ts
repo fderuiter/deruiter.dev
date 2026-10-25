@@ -192,6 +192,12 @@ export interface EdcSubject extends BronzeRecord {
   readonly discontinuedOn: string | null;
   /** Status at the data cut. */
   readonly status: SubjectStatus;
+  /**
+   * Why screening failed, from a short fictional controlled list such as
+   * `Inclusion criterion not met`, or `null` unless the status is
+   * `screen-failed` (#2879).
+   */
+  readonly screenFailureReason: string | null;
 }
 
 /** EDC visit record, with its data entry time. */
@@ -755,7 +761,8 @@ export type MetricDimensionId =
   | "vendor"
   | "deviation_category"
   | "deviation_importance"
-  | "queried_form";
+  | "queried_form"
+  | "screen_failure_reason";
 
 /** Aggregation a measure applies to its rows. `p90` is the 90th percentile. */
 export type MetricAggregation =

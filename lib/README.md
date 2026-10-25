@@ -53,7 +53,7 @@ Do not funnel everything into a monolithic 5,000-line `index.ts`. A module may e
 
 Subfolder internals remain private regardless of how many root entry points exist.
 
-`lib/clinical-platform/` ([ADR 0066](../adr/0066-clinical-data-platform-architecture.md)) follows the same shape with one private folder per stage: `internal/portfolio`, `internal/warehouse`, `internal/semantic`, `internal/quality`, `internal/governance`, `internal/lineage`, `internal/rbqm`, `internal/migration`, `internal/interop` and `internal/strategy`, reached only through `index.ts`, `types.ts` and `presets.ts`. It consumes `lib/study-data/` through that module's public entry point, never its internals.
+`lib/clinical-platform/` ([ADR 0066](../adr/0066-clinical-data-platform-architecture.md)) follows the same shape with one private folder per stage under `internal/` (the ADR lists them), reached only through `index.ts`, `types.ts` and `presets.ts`. It consumes `lib/study-data/` through that module's public entry point, never its internals.
 
 An arcade game's engine is a deep module too. `lib/<game>/index.ts` holds the pure rules and `lib/<game>/actions.ts` (or the game's `components/<game>/actions.ts`) its action map, with no React and no device reads. The game's session, views and shared parts live under `components/<game>/` ([ADR 0062](../adr/0062-three-views-per-arcade-game.md)). Shared arcade services, such as input, run snapshots, fairness tags and form factor, come only through `@/lib/arcade`. [Build an arcade game for three views](../docs/how-to/build-an-arcade-game-for-three-views.md) walks through the layout.
 

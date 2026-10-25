@@ -66,6 +66,20 @@ function panel(dashboard: OperationsDashboard, id: string): ReportData {
   return found;
 }
 
+/**
+ * Dashboards by scope. Several tests visit every scope, and each dashboard
+ * takes a while to build, so each is built once for the whole file.
+ */
+const dashboards = new Map<string, OperationsDashboard>();
+function dashboardAt(scope: OperationsScope): OperationsDashboard {
+  const key = JSON.stringify(scope);
+  const cached = dashboards.get(key);
+  if (cached !== undefined) return cached;
+  const built = operationsDashboard(warehouse, scope);
+  dashboards.set(key, built);
+  return built;
+}
+
 /** The glance's values by metric id. */
 function glanceValues(dashboard: OperationsDashboard) {
   return Object.fromEntries(
@@ -90,6 +104,7 @@ function rowValues(data: ReportData, label: string) {
 
 /** The reports that group by their own dimensions at every level (#2759). */
 const BREAKDOWNS: Readonly<Record<string, readonly MetricDimensionId[]>> = {
+  "screen-failure-reasons": ["screen_failure_reason"],
   "queries-by-form": ["queried_form"],
   "deviations-by-category": ["deviation_category", "deviation_importance"],
 };
@@ -162,9 +177,44 @@ describe("operations report specs (#2630)", () => {
     }
   });
 
+  it("splits the screen failures by reason, adding up at every scope (#2879)", () => {
+    const metric = METRIC_REGISTRY.find((m) => m.id === "screen_failures")!;
+    // Only subjects who failed screening have a reason, so no group is empty.
+    const reasons = new Set(
+      warehouse.tables["silver.edc_subject"]
+        .map((s) => s.screen_failure_reason)
+        .filter((reason) => reason !== null)
+    );
+    expect(reasons.size).toBe(5);
+    for (const scope of EVERY_SCOPE) {
+      const spec = operationsReportSpecs(warehouse, scope).find(
+        (s) => s.id === "screen-failure-reasons"
+      )!;
+      const label = JSON.stringify(scope);
+      const byReason = evaluateMetric(warehouse, metric, {
+        dimensions: spec.dimensions,
+        filters: spec.filters,
+      }).rows;
+      const total = evaluateMetric(warehouse, metric, {
+        dimensions: [],
+        filters: spec.filters,
+      }).rows[0]?.value;
+      for (const row of byReason) {
+        expect(
+          reasons.has(row.dimensions.screen_failure_reason ?? ""),
+          label
+        ).toBe(true);
+      }
+      expect(
+        byReason.reduce((n, row) => n + (row.value ?? 0), 0),
+        label
+      ).toBe(total ?? 0);
+    }
+  });
+
   it("splits the open queries into age bands that add up (#2759)", () => {
     for (const scope of EVERY_SCOPE) {
-      const dashboard = operationsDashboard(warehouse, scope);
+      const dashboard = dashboardAt(scope);
       const bands = panel(dashboard, "query-age-bands");
       const queries = panel(dashboard, "data-entry-and-queries");
       const open = queries.columns.findIndex(
@@ -172,7 +222,10 @@ describe("operations report specs (#2630)", () => {
       );
       const label = JSON.stringify(scope);
       // A group with no open query has no row in either report.
-      expect(bands.rows.map((r) => r.labels), label).toEqual(
+      expect(
+        bands.rows.map((r) => r.labels),
+        label
+      ).toEqual(
         queries.rows
           .filter((r) => r.cells[open].value !== null)
           .map((r) => r.labels)
@@ -528,7 +581,6 @@ describe("operations sections (#2630)", () => {
     }
     expect(gaps.map((g) => `${g.name} #${g.issue ?? "none"}`)).toEqual([
       "Enrollment against a time-phased plan #none",
-      "Screen failure reasons #2760",
       "Site activation funnel #2760",
       "Query rate per 100 CRF pages #none",
       "eTMF completeness #none",
@@ -565,7 +617,7 @@ describe("operations data freshness (#2630, #2626)", () => {
 
   it("lists every data product the numbers read, with its contract's freshness", () => {
     for (const scope of EVERY_SCOPE) {
-      const dashboard = operationsDashboard(warehouse, scope);
+      const dashboard = dashboardAt(scope);
       const metricIds = reports(dashboard).flatMap((r) => r.spec.metrics);
       const expected = new Set(readBy(metricIds));
       if (dashboard.milestones !== null) {
@@ -596,7 +648,7 @@ describe("operations data freshness (#2630, #2626)", () => {
 
   it("promises no report fresher than the products it reads", () => {
     for (const scope of EVERY_SCOPE) {
-      for (const report of reports(operationsDashboard(warehouse, scope))) {
+      for (const report of reports(dashboardAt(scope))) {
         const slowest = Math.max(
           ...readBy(report.spec.metrics).map(
             (id) => contracts.get(id)!.sla.freshnessHours
@@ -629,8 +681,7 @@ describe("operations data freshness (#2630, #2626)", () => {
 });
 
 describe("operations risk tab (#2631)", () => {
-  const risk = (scope: OperationsScope) =>
-    operationsDashboard(warehouse, scope).risk;
+  const risk = (scope: OperationsScope) => dashboardAt(scope).risk;
   const metric = (id: string) => METRIC_REGISTRY.find((m) => m.id === id)!;
   const activated = (study: string) =>
     sites

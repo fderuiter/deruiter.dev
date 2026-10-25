@@ -31,6 +31,7 @@ import {
   OUT_OF_WINDOW_DEVIATION,
   StudyRecorder,
   SUBJECT_DEVIATION_TYPES,
+  screenFailureReasons,
   type StudySimulation,
 } from "./records";
 import type { SitePlan } from "./sites";
@@ -294,6 +295,9 @@ export function studyFromPipeline(
   const run = runPipeline(definition, { seed, nSubjects });
   const rng = new Stream(seed, `${study.id}/pipeline`);
   const out = new StudyRecorder(study, rng, asOfDay);
+  // The pipeline records that screening failed, not why, so the reason is
+  // drawn here the same way as for a simulated study.
+  const reason = screenFailureReasons(seed, study.id);
   const { subjects, consentDays } = readSubjects(run);
   const activations = sites
     .map((site) => site.activationDay)
@@ -416,6 +420,7 @@ export function studyFromPipeline(
       completedOn,
       discontinuedOn,
       status,
+      screenFailureReason: status === "screen-failed" ? reason() : null,
     });
   });
 

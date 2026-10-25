@@ -115,6 +115,14 @@ export const METRIC_DIMENSIONS: readonly MetricDimension[] = Object.freeze([
     table: "gold.fct_query",
     column: "queried_form",
   },
+  {
+    id: "screen_failure_reason",
+    label: "Screen failure reason",
+    description:
+      "Why screening failed, for example Inclusion criterion not met; empty for any subject who did not fail screening.",
+    table: "gold.fct_enrollment",
+    column: "screen_failure_reason",
+  },
 ] as const satisfies readonly MetricDimension[]);
 
 const BY_ID = new Map(METRIC_DIMENSIONS.map((d) => [d.id, d]));

@@ -30,6 +30,7 @@ metrics.
 | Subjects enrolled | `subjects_enrolled` | certified | 1.0.0 | portfolio | 1,228 subjects |
 | Enrollment vs plan | `enrollment_vs_plan` | certified | 1.0.0 | portfolio | 78.8% |
 | Screen failure rate | `screen_failure_rate` | certified | 1.0.0 | portfolio | 31.4% |
+| Screen failures | `screen_failures` | certified | 1.0.0 | portfolio | 562 subjects |
 | Early termination rate | `early_termination_rate` | certified | 1.0.0 | portfolio | 8.3% |
 | Site activation cycle time | `site_activation_cycle_time` | certified | 1.0.0 | portfolio | 154.0 days |
 | Data entry lag (median) | `data_entry_lag_median` | certified | 1.0.0 | portfolio | 2.0 days |
@@ -104,6 +105,18 @@ Share of screened subjects whose screening ended in a screen failure, by screeni
 - Formula: (count of gold.fct_enrollment rows where event_type = 'screened' and subject_status = 'screen-failed') / (count of gold.fct_enrollment rows where event_type = 'screened' and subject_status <> 'screening').
 - Unit: share of screened subjects. Grain: portfolio.
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Screen failure (`screen-failure-term`).
+
+### Screen failures
+
+Subjects whose screening ended in a screen failure, by screening date. It can be broken down by the reason screening failed; the screen failure rate cannot, because its denominator holds the subjects who passed, and they have no reason.
+
+- Id: `screen_failures`, version 1.0.0, certified.
+- Formula: count of gold.fct_enrollment rows where event_type = 'screened' and subject_status = 'screen-failed'.
+- Unit: subjects. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `screen_failure_reason`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
 - Glossary term: Screen failure (`screen-failure-term`).
@@ -464,6 +477,7 @@ Actual spend up to the data cut divided by the number of subjects enrolled. The 
 | Deviation category | `deviation_category` | `gold.fct_deviation.deviation_category` | What a protocol deviation concerns, for example Informed consent process. |
 | Deviation importance | `deviation_importance` | `gold.fct_deviation.importance` | Whether a protocol deviation is important (after ICH E3) or not. |
 | Queried form | `queried_form` | `gold.fct_query.queried_form` | CRF form of the queried field, named by its CDASH domain, for example VS. |
+| Screen failure reason | `screen_failure_reason` | `gold.fct_enrollment.screen_failure_reason` | Why screening failed, for example Inclusion criterion not met; empty for any subject who did not fail screening. |
 
 ## Not in the registry
 

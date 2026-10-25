@@ -430,11 +430,6 @@ test.describe("Mobile arcade kit: shared view assertions", () => {
   });
 
   test("Play Hand sits where a thumb reaches it", async ({ page }) => {
-    const viewport = page.viewportSize()!;
-    test.skip(
-      viewport.width > viewport.height,
-      "Trial & Error centres Play Hand in landscape until its phone pass (#2763)"
-    );
     const play = page.getByRole("button", { name: PLAY_HAND });
     await play.scrollIntoViewIfNeeded();
     await assertThumbZone(page, `[data-coach="play"]`);

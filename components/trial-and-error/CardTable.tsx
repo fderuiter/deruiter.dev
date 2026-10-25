@@ -2292,26 +2292,30 @@ export function CardTable({
                 <div
                   className={`mt-3 grid grid-cols-1 gap-2 ${focusedCard?.stale || focusedCard?.faceDown ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}
                 >
-                  <button
-                    type="button"
-                    onClick={play}
-                    data-coach="play"
-                    disabled={!view.canPlay}
-                    aria-describedby={playDescribedBy}
-                    className={`${BUTTON_BASE} border-emerald-500 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20`}
-                  >
-                    Play Hand · {CPU_COSTS.PLAY_HAND} CPU{hoursFor("PLAY_HAND")}{" "}
-                    [Enter]
-                  </button>
-                  <button
-                    type="button"
-                    onClick={discard}
-                    disabled={!view.canDiscard}
-                    aria-describedby={costDescribedBy}
-                    className={`${BUTTON_BASE} border-slate-400 text-slate-300 hover:bg-slate-400/10`}
-                  >
-                    Discard · {view.discardCost} CPU{hoursFor("DISCARD")} [D]
-                  </button>
+                  {/* Its own box only on a sideways phone, where te-touch.css
+                      docks it in the right thumb column (#2763). */}
+                  <div className="te-hand-primary contents">
+                    <button
+                      type="button"
+                      onClick={play}
+                      data-coach="play"
+                      disabled={!view.canPlay}
+                      aria-describedby={playDescribedBy}
+                      className={`${BUTTON_BASE} border-emerald-500 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20`}
+                    >
+                      Play Hand · {CPU_COSTS.PLAY_HAND} CPU
+                      {hoursFor("PLAY_HAND")} [Enter]
+                    </button>
+                    <button
+                      type="button"
+                      onClick={discard}
+                      disabled={!view.canDiscard}
+                      aria-describedby={costDescribedBy}
+                      className={`${BUTTON_BASE} border-slate-400 text-slate-300 hover:bg-slate-400/10`}
+                    >
+                      Discard · {view.discardCost} CPU{hoursFor("DISCARD")} [D]
+                    </button>
+                  </div>
                   <button
                     type="button"
                     onClick={() => inspect(focusedCard?.card.id)}

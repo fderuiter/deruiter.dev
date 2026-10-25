@@ -210,6 +210,18 @@ describe("Retro Labyrinth session (#2376)", () => {
     expect(controller.getState().paused).toBe(false);
   });
 
+  it("holds a sheet's pause as the sheet's, without the player's pause", () => {
+    const { view, controller } = renderSession();
+    act(() => controller.pause("sheet"));
+    expect(view().gameStatus).toBe("paused");
+    // The room's pause is not added as the player's own, so the cabinet
+    // shows no pause overlay over the sheet.
+    expect([...controller.getState().reasons]).toEqual(["sheet"]);
+    act(() => controller.resume("sheet"));
+    expect(view().gameStatus).toBe("playing");
+    expect(controller.getState().paused).toBe(false);
+  });
+
   it("releases an automatic pause at once when no room is running", () => {
     const { view, intents, controller } = renderSession();
     act(() => intents().openOverlay("class_select"));

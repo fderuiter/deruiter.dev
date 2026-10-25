@@ -25,6 +25,7 @@ import { generateRoguelikeCampaign } from "../../../lib/dungeon/generator";
 const ROUTE = "/arcade/retro-labyrinth";
 const IMMERSIVE = '[data-arcade-cabinet][data-immersive="true"]';
 const PLAYFIELD = ".arcade-labyrinth-playfield";
+const PAUSE_OVERLAY = "pause-overlay";
 const STAGE = `${IMMERSIVE} .arcade-cabinet-stage`;
 const BLOCKING = new Set(["critical", "serious", "moderate"]);
 // The touch target floor (ADR 0061, rule 4).
@@ -423,24 +424,41 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       });
     });
 
-    test("Escape resumes a paused room from the keyboard, and the walker moves", async ({
+    test("P and Escape pause from the keyboard, the touch cabinet stays open, and the walker moves", async ({
       page,
     }) => {
       await launchCabinet(page);
-      const paused = page.getByText("PAUSED", { exact: true });
+      const paused = page.getByTestId(PAUSE_OVERLAY);
       await expect(paused).toHaveCount(0);
       // The cabinet hands focus to the playfield after the game mounts; a key
       // pressed before that lands nowhere.
       await expect(page.locator(PLAYFIELD)).toBeFocused();
 
+      // The cabinet owns P and Escape (#2357, ADR 0062): P toggles pause.
       await page.keyboard.press("p");
       await expect(paused).toBeVisible();
-
-      // The paused room takes Escape for itself: it resumes, and the touch
-      // cabinet stays open around it (#2569).
-      await page.keyboard.press("Escape");
+      await page.keyboard.press("p");
       await expect(paused).toHaveCount(0);
+      // Closing the overlay hands focus back to the cabinet, which takes the
+      // next key.
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document.activeElement?.closest("[data-arcade-cabinet]") != null
+          )
+        )
+        .toBe(true);
+
+      // Escape pauses, then offers exit, and never closes the touch cabinet
+      // out from under the room (#2569).
+      await page.keyboard.press("Escape");
+      await expect(paused).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(paused.getByText(/Leave the game\?/)).toBeVisible();
       await expect(page.locator(IMMERSIVE)).toBeVisible();
+      await paused.getByRole("button", { name: "Resume", exact: true }).click();
+      await expect(paused).toHaveCount(0);
 
       const start = await readPlayerGrid(page);
       const keys = ["ArrowRight", "ArrowDown", "ArrowLeft", "ArrowUp"];
@@ -595,29 +613,41 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
         });
         document.dispatchEvent(new Event("visibilitychange"));
       });
-      await expect(page.getByText("PAUSED", { exact: true })).toBeVisible();
-      await expect(page.getByText("Tap Resume")).toBeVisible();
+      const paused = page.getByTestId(PAUSE_OVERLAY);
+      await expect(paused).toBeVisible();
+      await expect(
+        paused.getByText("Paused while you were away.")
+      ).toBeVisible();
 
       await page.evaluate(() => {
         // @ts-expect-error restoring the browser's own property
         delete document.visibilityState;
       });
-      await page.getByRole("button", { name: "Resume", exact: true }).tap();
-      await expect(page.getByText("PAUSED", { exact: true })).toHaveCount(0);
+      await paused.getByRole("button", { name: "Resume", exact: true }).tap();
+      await expect(paused).toHaveCount(0);
     });
 
     test("the options sheet opens over the maze, pauses the room, and closes", async ({
       page,
     }) => {
       await launchCabinet(page);
+      const cabinet = page.locator(IMMERSIVE);
 
       await page.getByRole("button", { name: "Options", exact: true }).tap();
       const sheet = page.getByTestId("labyrinth-options-sheet");
       await expect(sheet).toBeVisible();
-      await expect(page.getByText("PAUSED", { exact: true })).toBeVisible();
+      // The sheet holds the cabinet's sheet pause: the room stops, and no
+      // pause overlay covers the sheet (ADR 0062).
+      await expect(cabinet).toHaveAttribute("data-paused", "true");
+      await expect(page.getByTestId(PAUSE_OVERLAY)).toHaveCount(0);
 
+      // The room comes back paused, and Resume continues it.
       await sheet.getByRole("button", { name: "Close options" }).tap();
       await expect(sheet).toHaveCount(0);
+      const paused = page.getByTestId(PAUSE_OVERLAY);
+      await expect(paused).toBeVisible();
+      await paused.getByRole("button", { name: "Resume", exact: true }).tap();
+      await expect(cabinet).toHaveAttribute("data-paused", "false");
     });
 
     test("launch keeps the preview still, and leaving restores the same offset", async ({
@@ -668,7 +698,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
       page,
     }) => {
       await launchCabinet(page);
-      const paused = page.getByText("PAUSED", { exact: true });
+      const paused = page.getByTestId(PAUSE_OVERLAY);
       await expect(paused).toHaveCount(0);
 
       // Phones match PHONE_ORIENTATION_QUERY (short side at most 500px). Tablets
@@ -681,7 +711,7 @@ export function describeRetroLabyrinthOnDevice(title: string): void {
         await expect(paused).toBeVisible();
         await page.setViewportSize(size);
         await expect(paused).toBeVisible();
-        await page.getByRole("button", { name: "Resume", exact: true }).tap();
+        await paused.getByRole("button", { name: "Resume", exact: true }).tap();
       }
       await page.setViewportSize(size);
       await expect(paused).toHaveCount(0);

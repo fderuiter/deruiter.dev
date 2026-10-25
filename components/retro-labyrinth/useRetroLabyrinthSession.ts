@@ -2269,8 +2269,11 @@ export function useRetroLabyrinthSession(
     [pauseService]
   );
   useEffect(() => {
-    if (gameStatus === "paused") pauseService.pause("user");
-    else if (gameStatus === "playing") pauseService.resume();
+    // A pause the cabinet already holds (a sheet, a hidden tab) is not
+    // turned into the player's own, so a sheet shows no pause overlay.
+    if (gameStatus === "paused") {
+      if (!pauseService.getState().paused) pauseService.pause("user");
+    } else if (gameStatus === "playing") pauseService.resume();
   }, [gameStatus, pauseService]);
   // The screen stays awake while a room runs.
   useCabinetRunActive(active && gameStatus === "playing");

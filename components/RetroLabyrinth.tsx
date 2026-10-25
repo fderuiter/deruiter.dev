@@ -44,6 +44,7 @@ import {
   formatRunTime,
 } from "@/components/retro-labyrinth/run-rules";
 import { useGameFullscreen as useFullscreen } from "@/components/arcade/CabinetFullscreen";
+import { useCabinetPauseController } from "@/components/arcade/pause";
 import {
   PHONE_TOOL_LABELS,
   WEAPON_SHORT_LABELS,
@@ -234,6 +235,13 @@ function RetroLabyrinthView({ isMounted }: { readonly isMounted: boolean }) {
       returnFocusTo: optionsButtonRef,
     }
   );
+  const pauseController = useCabinetPauseController();
+  const sheetHoldsPause = phoneCabinet && optionsOpen;
+  useEffect(() => {
+    if (!sheetHoldsPause) return;
+    pauseController.pause("sheet");
+    return () => pauseController.resume("sheet");
+  }, [sheetHoldsPause, pauseController]);
   const [handedness, setHandedness] = useState<Handedness>("right");
   const swipeStartRef = useRef<{ id: number; x: number; y: number } | null>(
     null
@@ -500,12 +508,15 @@ function RetroLabyrinthView({ isMounted }: { readonly isMounted: boolean }) {
   };
 
   // Options open over the maze and pause a running room, so the sheet never
-  // hides a live fight.
-  const openOptionsSheet = () => {
-    setOptionsOpen(true);
-    intents.pause();
+  // hides a live fight. The sheet holds the cabinet's `sheet` pause, which
+  // shows no pause overlay over it (ADR 0062). A room the sheet paused comes
+  // back paused when it closes, so play never restarts under the player's
+  // thumb: the pause becomes the player's own, and Resume continues.
+  const openOptionsSheet = () => setOptionsOpen(true);
+  const closeOptionsSheet = () => {
+    if (statusRef.current === "paused") pauseController.pause("user");
+    setOptionsOpen(false);
   };
-  const closeOptionsSheet = () => setOptionsOpen(false);
 
   const roomBadge =
     gameMode === "roguelike"

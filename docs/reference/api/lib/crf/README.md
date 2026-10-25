@@ -3362,6 +3362,12 @@ Re-exports [UsdmV4Document](usdm-v4-types/interfaces/UsdmV4Document.md)
 
 ***
 
+### UsdmV4Duration
+
+Re-exports [UsdmV4Duration](usdm-v4-types/interfaces/UsdmV4Duration.md)
+
+***
+
 ### UsdmV4EligibilityCriterion
 
 Re-exports [UsdmV4EligibilityCriterion](usdm-v4-types/interfaces/UsdmV4EligibilityCriterion.md)

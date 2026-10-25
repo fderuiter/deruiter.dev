@@ -14,6 +14,7 @@ Fields every identifiable USDM v4 class carries.
 - [`UsdmV4AliasCode`](UsdmV4AliasCode.md)
 - [`UsdmV4Quantity`](UsdmV4Quantity.md)
 - [`UsdmV4Range`](UsdmV4Range.md)
+- [`UsdmV4Duration`](UsdmV4Duration.md)
 - [`UsdmV4Named`](UsdmV4Named.md)
 - [`UsdmV4StudyCell`](UsdmV4StudyCell.md)
 - [`UsdmV4ScheduleTimelineExit`](UsdmV4ScheduleTimelineExit.md)

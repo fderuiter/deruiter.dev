@@ -114,6 +114,15 @@ export interface UsdmV4Range extends UsdmV4Base {
   instanceType: "Range";
 }
 
+/** A planned length of time, which may vary from subject to subject. */
+export interface UsdmV4Duration extends UsdmV4Base {
+  text?: string | null;
+  quantity?: UsdmV4Quantity | UsdmV4Range | null;
+  durationWillVary: boolean;
+  reasonDurationWillVary?: string | null;
+  instanceType: "Duration";
+}
+
 /** Common descriptive fields on named USDM v4 classes. */
 export interface UsdmV4Named extends UsdmV4Base {
   name: string;
@@ -225,6 +234,7 @@ export interface UsdmV4ScheduleTimeline extends UsdmV4Named {
   exits?: UsdmV4ScheduleTimelineExit[];
   timings?: UsdmV4Timing[];
   instances?: UsdmV4ScheduledActivityInstance[];
+  plannedDuration?: UsdmV4Duration | null;
   instanceType: "ScheduleTimeline";
 }
 

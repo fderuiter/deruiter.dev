@@ -39,6 +39,76 @@ describe("DEMO-301 USDM v4.0 document", () => {
     expect(DEMO_301_USDM.study.description).toMatch(/fictional/i);
     expect(DEMO_301_USDM.study.description).toMatch(/synthetic/i);
   });
+
+  // CDISC CORE USDM 4.0 rules CORE-000827, -000961, -001048 and -001016.
+  describe("schedule structure", () => {
+    const studyDesign = DEMO_301_USDM.study.versions![0].studyDesigns![0];
+    const timeline = studyDesign.scheduleTimelines!.find(
+      (t) => t.mainTimeline
+    )!;
+
+    type Linked = {
+      id: string;
+      previousId?: string | null;
+      nextId?: string | null;
+    };
+    function chain(items: Linked[]): string[] {
+      const order: string[] = [];
+      let item = items.find((i) => !i.previousId);
+      while (item) {
+        order.push(item.id);
+        const nextId = item.nextId;
+        item = items.find((i) => i.id === nextId);
+      }
+      return order;
+    }
+
+    function walkTimeline() {
+      const instances = timeline.instances!;
+      const walked: typeof instances = [];
+      let instance = instances.find((i) => i.id === timeline.entryId);
+      while (instance) {
+        walked.push(instance);
+        const nextId = instance.defaultConditionId;
+        instance = instances.find((i) => i.id === nextId);
+      }
+      return walked;
+    }
+
+    it("schedules every encounter at a timing on the main timeline", () => {
+      const timingIds = new Set(timeline.timings!.map((t) => t.id));
+      for (const encounter of studyDesign.encounters!) {
+        expect(timingIds).toContain(encounter.scheduledAtId);
+      }
+    });
+
+    it("walks every instance by default condition, ending at the exit", () => {
+      const walked = walkTimeline();
+      expect(walked).toHaveLength(timeline.instances!.length);
+      expect(walked.at(-1)!.timelineExitId).toBe(timeline.exits![0].id);
+    });
+
+    it("walks the encounters and epochs in their previous/next order", () => {
+      const walked = walkTimeline();
+      const epochIds = walked
+        .map((i) => i.epochId)
+        .filter((id, idx, all) => idx === 0 || id !== all[idx - 1]);
+      expect(walked.map((i) => i.encounterId)).toEqual(
+        chain(studyDesign.encounters!)
+      );
+      expect(epochIds).toEqual(chain(studyDesign.epochs!));
+    });
+
+    it("plans the main timeline at 16 weeks, Screening to End of Study", () => {
+      expect(timeline.plannedDuration).toMatchObject({
+        quantity: {
+          value: 16,
+          unit: { standardCode: { code: "C29844", decode: "Week" } },
+        },
+        durationWillVary: false,
+      });
+    });
+  });
 });
 
 describe("readStudyDefinition(DEMO-301)", () => {

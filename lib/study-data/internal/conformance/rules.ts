@@ -3,7 +3,7 @@ import { STANDARD_CODELISTS } from "@/lib/crf/cdisc-controlled-terminology";
 import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../../standards";
 import type { CellValue, Dataset, FindingSeverity } from "../../types";
 
-export const CONFORMANCE_RULES_VERSION = "1.0.0";
+export const CONFORMANCE_RULES_VERSION = "1.1.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -33,7 +33,9 @@ export interface ConformanceRule {
     | "epoch"
     | "baseline"
     | "adam"
-    | "exception";
+    | "exception"
+    | "duplicate"
+    | "unit";
   readonly variable?: string;
   readonly check: (
     dataset: Dataset,
@@ -414,6 +416,76 @@ function exceptionRule(
   };
 }
 
+/**
+ * A findings record that repeats an earlier one for the same subject, test,
+ * date, result and unit: the same measurement entered twice.
+ */
+function duplicateRule(id: string, domain: "VS" | "LB"): ConformanceRule {
+  const fields = ["USUBJID", "TESTCD", "DTC", "ORRES", "ORRESU"].map((field) =>
+    field === "USUBJID" ? field : `${domain}${field}`
+  );
+  return {
+    id,
+    severity: "warning",
+    scope: { layer: "sdtm", domain },
+    citation: SDTM_CITATION,
+    kind: "duplicate",
+    variable: `${domain}ORRES`,
+    check(dataset) {
+      const seen = new Set<string>();
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const key = fields.map((field) => at(dataset, field, row));
+        if (key.slice(0, 4).some((value) => value === null)) continue;
+        const text = JSON.stringify(key);
+        if (seen.has(text))
+          issues.push({
+            row,
+            variable: `${domain}ORRES`,
+            message:
+              "Repeats an earlier record for the same subject, test, date and result; query the site before analysis.",
+          });
+        seen.add(text);
+      }
+      return issues;
+    },
+  };
+}
+
+/**
+ * A findings record collected in a unit other than the test's standard unit.
+ * SDTM converts it where a conversion is defined; either way the change of
+ * unit is reported so it can be confirmed with the site.
+ */
+function unitRule(id: string, domain: "VS" | "LB"): ConformanceRule {
+  return {
+    id,
+    severity: "warning",
+    scope: { layer: "sdtm", domain },
+    citation: SDTM_CITATION,
+    kind: "unit",
+    variable: `${domain}ORRESU`,
+    check(dataset) {
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const original = string(at(dataset, `${domain}ORRESU`, row));
+        const standard = string(at(dataset, `${domain}STRESU`, row));
+        if (original === null || standard === null || original === standard)
+          continue;
+        issues.push({
+          row,
+          variable: `${domain}ORRESU`,
+          message:
+            number(at(dataset, `${domain}STRESN`, row)) === null
+              ? `Collected in ${original} with no conversion to ${standard}; the standard result is missing.`
+              : `Converted from ${original} to the standard unit ${standard}; confirm the change of unit with the site.`,
+        });
+      }
+      return issues;
+    },
+  };
+}
+
 /** Local rule ids model a documented subset; they are not official CORE ids. */
 export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   required("SD-001", "DM", ["STUDYID", "USUBJID", "RFSTDTC", "ARMCD"]),
@@ -519,6 +591,10 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
     "Adverse event began before first exposure.",
     (dataset, row) => (number(at(dataset, "AESTDY", row)) ?? Infinity) < 1
   ),
+  duplicateRule("SD-036", "VS"),
+  duplicateRule("SD-037", "LB"),
+  unitRule("SD-038", "VS"),
+  unitRule("SD-039", "LB"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

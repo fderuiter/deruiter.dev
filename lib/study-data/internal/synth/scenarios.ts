@@ -66,6 +66,105 @@ function isPostDose(view: SubjectView, row: Row, field: string): boolean {
   return view.firstDose !== null && isFullDate(value) && value > view.firstDose;
 }
 
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+function daysFrom(start: string, end: string): number {
+  return Math.round(
+    (Date.parse(`${end}T00:00:00.000Z`) -
+      Date.parse(`${start}T00:00:00.000Z`)) /
+      86_400_000
+  );
+}
+
+/** The subject's rows with `copy` inserted directly after `target`. */
+function insertAfter(rows: readonly Row[], target: Row, copy: Row): Row[] {
+  return rows.flatMap((row) => (row === target ? [row, copy] : [row]));
+}
+
+/** The scheduled visit a scenario can add an unscheduled visit beside. */
+function onTargetVisit(view: SubjectView): Row | undefined {
+  if (view.rows("SV").some((row) => row.VISITNUM === 99)) return undefined;
+  return view
+    .rows("SV")
+    .find(
+      (row) =>
+        row.STATUS === "COMPLETED" &&
+        typeof row.PLANDY === "number" &&
+        row.PLANDY > 1 &&
+        row.ACTDY === row.PLANDY &&
+        isFullDate(row.SVDTC) &&
+        view.rows("VS").some((vs) => vs.VISITNUM === row.VISITNUM)
+    );
+}
+
+/**
+ * When a completer's participation can be ended early: two days after their
+ * second attended post-dose visit, provided at least two planned visits
+ * would then be lost and every adverse event has ended by that date.
+ */
+function earlyStop(view: SubjectView): string | null {
+  if (!completed(view) || view.firstDose === null) return null;
+  const attended = view
+    .rows("SV")
+    .filter(
+      (row) =>
+        typeof row.ACTDY === "number" && row.ACTDY > 1 && isFullDate(row.SVDTC)
+    )
+    .map((row) => String(row.SVDTC))
+    .sort();
+  if (attended.length < 2) return null;
+  const stop = shiftDays(attended[1]!, 2);
+  const stopDay = daysFrom(view.firstDose, stop) + 1;
+  const lost = view
+    .rows("SV")
+    .filter((row) => typeof row.PLANDY === "number" && row.PLANDY > stopDay);
+  const aesEnded = view
+    .rows("AE")
+    .every(
+      (row) =>
+        isFullDate(row.AESTDTC) &&
+        isFullDate(row.AEENDTC) &&
+        row.AEENDTC <= stop
+    );
+  return lost.length >= 2 && aesEnded ? stop : null;
+}
+
+/**
+ * Ends the subject's participation on `stop` for `reason`: exposure stops,
+ * the final disposition event changes, and visits and measurements that
+ * would have followed are not collected.
+ */
+function endParticipation(
+  view: SubjectView,
+  stop: string,
+  reason: string
+): Record<string, Row[]> {
+  const stopDay = daysFrom(view.firstDose!, stop) + 1;
+  const kept = (field: string) => (row: Row) =>
+    isFullDate(row[field]) ? row[field] <= stop : false;
+  return {
+    EX: view.rows("EX").map((row) => ({ ...row, EXENDTC: stop })),
+    DS: view
+      .rows("DS")
+      .map((row) =>
+        row.DSSCAT === "DISPOSITION EVENT"
+          ? { ...row, DSDECOD: reason, DSSTDTC: stop }
+          : row
+      ),
+    SV: view
+      .rows("SV")
+      .filter((row) =>
+        isFullDate(row.SVDTC)
+          ? row.SVDTC <= stop
+          : typeof row.PLANDY === "number" && row.PLANDY <= stopDay
+      ),
+    VS: view.rows("VS").filter(kept("VSDTC")),
+    LB: view.rows("LB").filter(kept("LBDTC")),
+  };
+}
+
 const RULES: readonly ScenarioRule[] = [
   {
     id: "impossible-date",
@@ -205,6 +304,217 @@ const RULES: readonly ScenarioRule[] = [
         .rows("DM")
         .map((row) => (row.SEX === "F" ? { ...row, SEX: "FEMALE" } : row)),
     }),
+  },
+  {
+    id: "duplicate-record",
+    title: "Duplicate record",
+    description:
+      "A post-dose vital signs measurement is entered twice, with the same date, test and result.",
+    expected: {
+      findings: ["SD-036"],
+      derivation:
+        "Both records are kept in VS and ADVS, but only one carries ANL01FL at that analysis visit, so the measurement is never summarized twice.",
+    },
+    eligible: (view) =>
+      view.rows("VS").some((row) => isPostDose(view, row, "VSDTC")),
+    apply(view) {
+      const target = view
+        .rows("VS")
+        .find((row) => isPostDose(view, row, "VSDTC"))!;
+      return {
+        VS: insertAfter(view.rows("VS"), target, {
+          ...target,
+          SRCID: `${String(target.SRCID)}:dup`,
+        }),
+      };
+    },
+  },
+  {
+    id: "unit-change",
+    title: "Unit change mid-study",
+    description:
+      "After the first dose the laboratory reports glucose in mg/dL instead of mmol/L, with values converted at the site.",
+    expected: {
+      findings: ["SD-039"],
+      derivation:
+        "SDTM converts LBSTRESN back to mmol/L, so ADLB AVAL, BASE and CHG are the same as if the unit had never changed.",
+    },
+    eligible: (view) =>
+      view
+        .rows("LB")
+        .some(
+          (row) =>
+            row.LBTESTCD === "GLUC" &&
+            row.LBORRESU === "mmol/L" &&
+            isPostDose(view, row, "LBDTC")
+        ) &&
+      view
+        .rows("LB")
+        .some(
+          (row) =>
+            row.LBTESTCD === "GLUC" &&
+            isFullDate(row.LBDTC) &&
+            !isPostDose(view, row, "LBDTC")
+        ),
+    apply: (view) => ({
+      LB: view.rows("LB").map((row) =>
+        row.LBTESTCD === "GLUC" &&
+        row.LBORRESU === "mmol/L" &&
+        typeof row.LBORRES === "number" &&
+        isPostDose(view, row, "LBDTC")
+          ? {
+              ...row,
+              LBORRES: round1(row.LBORRES * 18.016),
+              LBORRESU: "mg/dL",
+            }
+          : row
+      ),
+    }),
+  },
+  {
+    id: "lab-retest-same-day",
+    title: "Same-day laboratory retest",
+    description:
+      "A post-dose laboratory test is repeated later the same day and gives a slightly different result.",
+    expected: {
+      findings: [],
+      derivation:
+        "Both results are kept in LB and ADLB at the same analysis visit; ANL01FL goes to the first result of the day (the lower LBSEQ) and the retest stays unflagged.",
+    },
+    eligible: (view) =>
+      view
+        .rows("LB")
+        .some(
+          (row) =>
+            typeof row.LBORRES === "number" && isPostDose(view, row, "LBDTC")
+        ),
+    apply(view) {
+      const target = view
+        .rows("LB")
+        .find(
+          (row) =>
+            typeof row.LBORRES === "number" && isPostDose(view, row, "LBDTC")
+        )!;
+      const original = target.LBORRES as number;
+      const retest = round1(original * 1.05);
+      return {
+        LB: insertAfter(view.rows("LB"), target, {
+          ...target,
+          SRCID: `${String(target.SRCID)}:retest`,
+          LBORRES: retest === original ? round1(original + 0.1) : retest,
+        }),
+      };
+    },
+  },
+  {
+    id: "unscheduled-visit-in-window",
+    title: "Unscheduled visit inside a window",
+    description:
+      "The day after a scheduled visit held on its target day, the subject returns for an unscheduled visit and vital signs are measured again.",
+    expected: {
+      findings: [],
+      derivation:
+        "SDTM keeps the visit as VISITNUM 99 UNSCHEDULED. ADVS assigns its records to the analysis visit whose window contains them, and ANL01FL stays on the scheduled record, which is closer to the target day.",
+    },
+    eligible: (view) => onTargetVisit(view) !== undefined,
+    apply(view) {
+      const visit = onTargetVisit(view)!;
+      const date = shiftDays(String(visit.SVDTC), 1);
+      const unscheduled: Row = {
+        ...visit,
+        SRCID: `${String(visit.SRCID)}:unscheduled`,
+        VISITNUM: 99,
+        VISIT: "UNSCHEDULED",
+        PLANDY: null,
+        ACTDY: (visit.ACTDY as number) + 1,
+        SVDTC: date,
+        STATUS: "UNSCHEDULED",
+      };
+      const measured = view
+        .rows("VS")
+        .filter((row) => row.VISITNUM === visit.VISITNUM);
+      const last = measured.at(-1)!;
+      const repeats = measured.map((row) => ({
+        ...row,
+        SRCID: `${String(row.SRCID)}:unscheduled`,
+        VISITNUM: 99,
+        VISIT: "UNSCHEDULED",
+        VSDTC: date,
+        VSORRES:
+          typeof row.VSORRES === "number"
+            ? round1(row.VSORRES + 1)
+            : row.VSORRES,
+      }));
+      return {
+        SV: insertAfter(view.rows("SV"), visit, unscheduled),
+        VS: view
+          .rows("VS")
+          .flatMap((row) => (row === last ? [row, ...repeats] : [row])),
+      };
+    },
+  },
+  {
+    id: "rescreened-subject",
+    title: "Rescreened subject",
+    description:
+      "A screen failure is screened again four weeks later and the site records the second screening under the same subject number.",
+    expected: {
+      findings: ["SD-035", "AD-002"],
+      derivation:
+        "DM and ADSL each hold two records for the subject. The pipeline keeps both rather than merging them silently, and the run fails conformance until the rescreen is given its own subject number.",
+    },
+    eligible: (view) =>
+      view.rows("DM").some((row) => row.SCREENFL === "FAIL") &&
+      view.rows("DS").some((row) => row.DSDECOD === "SCREEN FAILURE"),
+    apply(view) {
+      const later = (value: CellValue) =>
+        isFullDate(value) ? shiftDays(value, 28) : value;
+      const again = (row: Row): Row => ({
+        ...row,
+        SRCID: `${String(row.SRCID)}:rescreen`,
+      });
+      const dm = view.rows("DM")[0]!;
+      const ds = view.rows("DS");
+      return {
+        DM: [
+          ...view.rows("DM"),
+          { ...again(dm), CONSENTDTC: later(dm.CONSENTDTC) },
+        ],
+        DS: [
+          ...ds,
+          ...ds.map((row) => ({ ...again(row), DSSTDTC: later(row.DSSTDTC) })),
+        ],
+      };
+    },
+  },
+  // DM carries no DTHFL or DTHDTC yet, so the death is visible in DS and
+  // ADaM only (#2787).
+  {
+    id: "death-during-treatment",
+    title: "Death during treatment",
+    description:
+      "A subject dies two days after their second post-dose visit, while still on treatment; no later visits take place.",
+    expected: {
+      findings: [],
+      derivation:
+        "ADSL ends treatment on the date of death (TRTEDT) with EOSSTT = DISCONTINUED and DCSREAS = DEATH. ADTTE censors time to discontinuation for an adverse event at the death, as discontinuation for another reason.",
+    },
+    eligible: (view) => earlyStop(view) !== null,
+    apply: (view) => endParticipation(view, earlyStop(view)!, "DEATH"),
+  },
+  {
+    id: "withdrawal-before-week-12",
+    title: "Withdrawal before Week 12",
+    description:
+      "A subject withdraws consent two days after their second post-dose visit, before the Week 12 primary visit.",
+    expected: {
+      findings: [],
+      derivation:
+        "ADSL records EOSSTT = DISCONTINUED and DCSREAS = WITHDRAWAL BY SUBJECT. ADVS carries the last on-treatment value forward to the missed visits as DTYPE = LOCF records, none of them flagged ANL01FL.",
+    },
+    eligible: (view) => earlyStop(view) !== null,
+    apply: (view) =>
+      endParticipation(view, earlyStop(view)!, "WITHDRAWAL BY SUBJECT"),
   },
 ];
 

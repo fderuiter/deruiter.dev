@@ -381,7 +381,14 @@ export type ScenarioId =
   | "missing-baseline"
   | "no-post-baseline"
   | "off-codelist-extensible"
-  | "off-codelist-non-extensible";
+  | "off-codelist-non-extensible"
+  | "duplicate-record"
+  | "unit-change"
+  | "lab-retest-same-day"
+  | "unscheduled-visit-in-window"
+  | "rescreened-subject"
+  | "death-during-treatment"
+  | "withdrawal-before-week-12";
 
 /** What a scenario expects of the pipeline, declared as data. */
 export interface ScenarioExpectation {

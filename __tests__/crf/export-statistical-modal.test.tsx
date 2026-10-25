@@ -11,6 +11,23 @@ import { createRoot, type Root } from "react-dom/client";
 import { ExportImportModal } from "@/components/crf/Modes/ExportImportModal";
 import { ONCOLOGY_RECIST_PRESET } from "@/lib/crf/presets";
 
+// The preview is generated after a dynamic import, which can take longer
+// than any fixed sleep under load (#2831), so wait for the loading state to
+// clear instead.
+async function waitForExport(container: HTMLElement) {
+  await vi.waitFor(
+    async () => {
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 0));
+      });
+      expect(container.textContent).not.toContain(
+        "Generating export representation"
+      );
+    },
+    { timeout: 10_000 }
+  );
+}
+
 describe("ExportImportModal Statistical Tabs & Domain Filtering", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -89,10 +106,7 @@ describe("ExportImportModal Statistical Tabs & Domain Filtering", () => {
     await act(async () => {
       sasTabBtn?.click();
     });
-    await act(async () => {
-      await Promise.resolve();
-      await new Promise((r) => setTimeout(r, 50));
-    });
+    await waitForExport(container);
 
     const pre = container.querySelector("pre");
     expect(pre?.textContent).toContain("PROC FORMAT;");
@@ -123,10 +137,7 @@ describe("ExportImportModal Statistical Tabs & Domain Filtering", () => {
     await act(async () => {
       rTabBtn?.click();
     });
-    await act(async () => {
-      await Promise.resolve();
-      await new Promise((r) => setTimeout(r, 50));
-    });
+    await waitForExport(container);
 
     const pre = container.querySelector("pre");
     expect(pre?.textContent).toContain("library(tibble)");
@@ -166,6 +177,7 @@ describe("ExportImportModal Statistical Tabs & Domain Filtering", () => {
         select.dispatchEvent(new Event("change", { bubbles: true }));
       }
     });
+    await waitForExport(container);
 
     const pre = container.querySelector("pre");
     expect(pre?.textContent).toContain("DATA raw_ae");
@@ -192,6 +204,7 @@ describe("ExportImportModal Statistical Tabs & Domain Filtering", () => {
     await act(async () => {
       sasTabBtn?.click();
     });
+    await waitForExport(container);
 
     // Click Download
     const downloadBtn = Array.from(container.querySelectorAll("button")).find(

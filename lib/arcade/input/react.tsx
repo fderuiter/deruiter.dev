@@ -110,13 +110,16 @@ export function useActionInput<A extends string>(
 
   const deliver = useEffectEvent((input: ActionInput<A>) => onAction(input));
   const readContext = useEffectEvent(() => getContext?.());
-  const accepts = useEffectEvent((): boolean => {
+  const accepts = useEffectEvent((event?: KeyboardEvent): boolean => {
     if (!scopeRef) return true;
     const scope = scopeRef.current;
+    if (!scope) return false;
+    // A key goes to the focused element, so its target is inside the scope
+    // exactly when focus is. Either one will do.
+    const target = event?.target;
+    if (target instanceof Node && scope.contains(target)) return true;
     return (
-      !!scope &&
-      typeof document !== "undefined" &&
-      scope.contains(document.activeElement)
+      typeof document !== "undefined" && scope.contains(document.activeElement)
     );
   });
   const report = useEffectEvent((conflicts: readonly ActionConflict[]) => {
@@ -151,7 +154,7 @@ export function useActionInput<A extends string>(
         getContext: () => readContext(),
         modifiers,
         ignoreControls,
-        accepts: () => accepts(),
+        accepts: (event) => accepts(event),
       }
     );
     const onKeyDown = (event: KeyboardEvent) => controller.handleKeyDown(event);

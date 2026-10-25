@@ -1148,9 +1148,10 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
 
   describe("RetroLabyrinth Canvas Loop Pathfinding Memoization", () => {
     it("ensures Traveling Salesman pathfinding tour calculation is memoized at component level", () => {
+      // The game's code lives in its session since #2376.
       const retroLabyrinthPath = path.resolve(
         __dirname,
-        "../components/RetroLabyrinth.tsx"
+        "../components/retro-labyrinth/useRetroLabyrinthSession.ts"
       );
       const code = fs.readFileSync(retroLabyrinthPath, "utf-8");
 
@@ -1170,7 +1171,16 @@ describe("Defect Remediation & Regression Verification Suite (Invariant #11)", (
       const loopBody = code.slice(loopStart, loopEnd);
 
       expect(loopBody).not.toContain("computeShortestTour(");
-      expect(loopBody).toContain("tspTour");
+      // The loop hands the memoized tour to the painter, which draws it as is.
+      const painter = fs.readFileSync(
+        path.resolve(
+          __dirname,
+          "../components/retro-labyrinth/parts/paint-maze.ts"
+        ),
+        "utf-8"
+      );
+      expect(painter).toContain("const tour = tspTour;");
+      expect(painter).not.toContain("computeShortestTour(");
     });
   });
 
@@ -2170,6 +2180,15 @@ describe("Arcade loops read current state (#1628)", () => {
       path.resolve(__dirname, `../components/${name}.tsx`),
       "utf-8"
     );
+  // Retro Labyrinth's loop lives in its session since #2376.
+  const readLabyrinthSession = () =>
+    fs.readFileSync(
+      path.resolve(
+        __dirname,
+        "../components/retro-labyrinth/useRetroLabyrinthSession.ts"
+      ),
+      "utf-8"
+    );
   const loopBody = (code: string, marker: string, end: string) => {
     const start = code.indexOf("useAnimationFrame(", code.indexOf(marker));
     const stop = code.indexOf(end, start);
@@ -2196,7 +2215,7 @@ describe("Arcade loops read current state (#1628)", () => {
     expect(res.activeSideEffect?.expiresAt).toBe(nowMs + 4000);
 
     const body = loopBody(
-      readComponent("RetroLabyrinth"),
+      readLabyrinthSession(),
       "// Main Real-Time Game Loop",
       "isActive: isLoopActive"
     );
@@ -2205,7 +2224,7 @@ describe("Arcade loops read current state (#1628)", () => {
   });
 
   it("reads the current Retro Labyrinth rooms and Clinical Chaos subjects", () => {
-    const labyrinth = readComponent("RetroLabyrinth");
+    const labyrinth = readLabyrinthSession();
     expect(labyrinth).not.toContain("loopCampaignRoomsRef");
     expect(labyrinth).toContain("campaignRoomsRef.current = campaignRooms;");
 
@@ -2256,11 +2275,14 @@ describe("Working With Duck - a paused sprint ignores player actions (#1645)", (
 });
 
 describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
+  // The view and, since #2376, the session that holds the game's rules.
   const labyrinth = () =>
-    fs.readFileSync(
-      path.resolve(__dirname, "../components/RetroLabyrinth.tsx"),
-      "utf-8"
-    );
+    [
+      "../components/RetroLabyrinth.tsx",
+      "../components/retro-labyrinth/useRetroLabyrinthSession.ts",
+    ]
+      .map((file) => fs.readFileSync(path.resolve(__dirname, file), "utf-8"))
+      .join("\n");
 
   it("charges HP for enemy contact without ending the run (#1665)", async () => {
     const { updateEnemyAI } = await import("@/lib/dungeon");
@@ -2383,7 +2405,7 @@ describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
     const code = labyrinth();
     expect(code).toContain('data-field-manual="retro-labyrinth"');
     expect(code).toContain("onOpenChange={handleManualOpenChange}");
-    expect(code).toContain("OVERLAY_CONSUMED_KEYS.has(e.key)");
+    expect(code).toContain("OVERLAY_CONSUMED_KEYS.has(event.key)");
   });
 });
 

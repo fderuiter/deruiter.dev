@@ -254,6 +254,20 @@ describe("view contract (#2355)", () => {
     expect(cabinetRoot().getAttribute("data-view")).toBe("tablet");
   });
 
+  // The picker read `env.NODE_ENV` from lib/env, which in the browser parses
+  // an empty process.env and falls back to "development", so a production
+  // build showed it (#2376). The inlined process.env.NODE_ENV is reliable.
+  it("hides the dev view picker in a production build", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    try {
+      renderCabinet();
+      await launch();
+      expect(screen.queryByRole("combobox")).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("loads no view before Launch", () => {
     renderCabinet();
     expect(document.querySelector("[data-view]")).toBeNull();

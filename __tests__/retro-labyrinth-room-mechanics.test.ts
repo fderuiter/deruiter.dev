@@ -47,13 +47,27 @@ describe("Retro Labyrinth room mechanics (#1309)", () => {
   });
 
   it("gates the TSP mechanics on the room id, not a campaign position", () => {
-    const source = fs.readFileSync(
-      path.resolve(process.cwd(), "components/RetroLabyrinth.tsx"),
+    // The rules live in the session and the painter since #2376.
+    for (const file of [
+      "components/RetroLabyrinth.tsx",
+      "components/retro-labyrinth/useRetroLabyrinthSession.ts",
+      "components/retro-labyrinth/parts/paint-maze.ts",
+    ]) {
+      const source = fs.readFileSync(
+        path.resolve(process.cwd(), file),
+        "utf-8"
+      );
+      expect(source).not.toMatch(/roomIndex === 2/);
+      expect(source).not.toMatch(/roomIndex === 3/);
+    }
+    const session = fs.readFileSync(
+      path.resolve(
+        process.cwd(),
+        "components/retro-labyrinth/useRetroLabyrinthSession.ts"
+      ),
       "utf-8"
     );
-    expect(source).not.toMatch(/roomIndex === 2/);
-    expect(source).not.toMatch(/roomIndex === 3/);
-    expect(source).toContain('campaignRooms[roomIndex]?.id === "tsp"');
+    expect(session).toContain('campaignRooms[roomIndex]?.id === "tsp"');
     // The TSP room is where the component's TSP logic expects it.
     expect(
       campaign.some((room) => room.id === "tsp" && room.tspNodes?.length)

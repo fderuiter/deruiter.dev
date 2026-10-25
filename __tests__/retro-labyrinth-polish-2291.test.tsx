@@ -64,7 +64,7 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
 let contactSkew = 0;
 
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
-import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
+import { RoomClearedCard } from "@/components/retro-labyrinth/parts/RoomClearedCard";
 import {
   RETRO_LABYRINTH_HIGH_SCORE_KEY,
   drawRunRewards,

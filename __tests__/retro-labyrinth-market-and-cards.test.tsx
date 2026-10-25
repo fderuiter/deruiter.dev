@@ -10,8 +10,8 @@ import {
 import {
   DarknetMarket,
   type MarketRow,
-} from "@/components/retro-labyrinth/DarknetMarket";
-import { RoomClearedCard } from "@/components/retro-labyrinth/RoomClearedCard";
+} from "@/components/retro-labyrinth/parts/DarknetMarket";
+import { RoomClearedCard } from "@/components/retro-labyrinth/parts/RoomClearedCard";
 import { ROOM_CLEAR_HINT } from "@/components/retro-labyrinth/control-hints";
 import { resolveControlHint } from "@/components/arcade/mobile";
 

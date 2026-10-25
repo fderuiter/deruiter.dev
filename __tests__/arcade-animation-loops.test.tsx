@@ -615,8 +615,9 @@ describe("RetroLabyrinth loop on useAnimationFrame (#1624)", () => {
     expect(at144).toBe(at60);
   });
 
-  // As with Garmin, the first delta after a restore is now zero rather than
-  // the performance.now()-relative gap the old loop measured.
+  // A lost context pauses the room through the pause service (#2357), and
+  // the room waits for the player's Resume rather than restarting when the
+  // context comes back (#2376). The first delta after it is zero.
   it("stops while the canvas context is lost and restarts with a zero delta", () => {
     const canvas = renderLabyrinth();
     scheduler.tick(0);
@@ -626,6 +627,10 @@ describe("RetroLabyrinth loop on useAnimationFrame (#1624)", () => {
     expect(scheduler.pendingCount()).toBe(0);
 
     restoreContext(canvas);
+    expect(scheduler.pendingCount()).toBe(0);
+    act(() => {
+      fireEvent.keyDown(canvas, { key: "p" });
+    });
     scheduler.tick(9000);
     for (let i = 1; i <= 8; i++) scheduler.tick(9000 + i * 40);
     // 16 ms before the loss, nothing for the restore frame, then 8 x 40 ms.

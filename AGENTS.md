@@ -56,7 +56,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ### 6. Developer Suite (DX) & Quality Invariants
 
 - Run `npm run quality` (or `npm run verify`) to ensure type safety, zero ESLint warnings, docs synchronization, and every architectural invariant reported by DX Doctor passes.
-- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices (the `arcade` and `case-study` types also auto-register in `CommandPalette.tsx`).
+- When adding new games, APIs, ADRs, case studies, or components, utilize `npm run scaffold <type> <name>` to guarantee standard vertical slices (`arcade` writes a three-view game with its session and views and registers it across the discovery matrix and `ARCADE_REGISTRY`; `case-study` registers in `CommandPalette.tsx`).
 - Whenever public library or hook signatures change, regenerate TypeDoc markdown with `npm run compile-docs` and verify with `npm run check-docs-drift`.
 
 ### 7. Headless Canvas 2D & DOM Observer Testing Lifecycle

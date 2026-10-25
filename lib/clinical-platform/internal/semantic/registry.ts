@@ -212,7 +212,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: WHOLE,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "screening-term",
     displayFolder: "Enrollment",
   }),
   define({
@@ -226,7 +226,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: WHOLE,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "enrollment-term",
     displayFolder: "Enrollment",
   }),
   define({
@@ -251,7 +251,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "enrollment-term",
     displayFolder: "Enrollment",
   }),
   define({
@@ -280,7 +280,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "screen-failure-term",
     displayFolder: "Enrollment",
   }),
   define({
@@ -303,7 +303,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "early-termination-term",
     displayFolder: "Enrollment",
   }),
   define({
@@ -327,7 +327,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "site-activation-term",
     displayFolder: "Site start-up",
   }),
   define({
@@ -388,7 +388,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "missed-visit-term",
     displayFolder: "Visits and data entry",
   }),
   define({
@@ -412,7 +412,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: OPS_OWNER,
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "visit-window-term",
     displayFolder: "Visits and data entry",
   }),
   define({
@@ -431,7 +431,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: DM_OWNER,
     steward: DM_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "data-query-term",
     displayFolder: "Queries",
   }),
   define({
@@ -449,7 +449,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: WHOLE,
     owner: DM_OWNER,
     steward: DM_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "data-query-term",
     displayFolder: "Queries",
   }),
   define({
@@ -473,7 +473,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: DM_OWNER,
     steward: DM_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "data-query-term",
     displayFolder: "Queries",
   }),
   define({
@@ -496,7 +496,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: DM_OWNER,
     steward: DM_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "data-query-term",
     displayFolder: "Queries",
   }),
   define({
@@ -553,7 +553,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
       format: WHOLE,
       owner: "Clinical Monitoring Lead",
       steward: OPS_STEWARD,
-      glossaryTerm: null,
+      glossaryTerm: "monitoring-visit-term",
       displayFolder: "Monitoring",
     }),
     "2.0.0",
@@ -581,7 +581,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
       format: WHOLE,
       owner: "Clinical Monitoring Lead",
       steward: OPS_STEWARD,
-      glossaryTerm: null,
+      glossaryTerm: "monitoring-visit-term",
       displayFolder: "Monitoring",
     },
     2736
@@ -606,7 +606,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: "Clinical Monitoring Lead",
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "monitoring-visit-term",
     displayFolder: "Monitoring",
   }),
   define({
@@ -629,7 +629,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: "Clinical Quality Lead",
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "important-deviation-term",
     displayFolder: "Protocol deviations",
   }),
   define({
@@ -652,7 +652,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: ONE_DECIMAL,
     owner: "Clinical Quality Lead",
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "protocol-deviation-term",
     displayFolder: "Protocol deviations",
   }),
   define({
@@ -677,7 +677,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: "Clinical Quality Lead",
     steward: OPS_STEWARD,
-    glossaryTerm: null,
+    glossaryTerm: "important-deviation-term",
     displayFolder: "Protocol deviations",
   }),
   define({
@@ -696,7 +696,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: WHOLE,
     owner: "Portfolio Management Lead",
     steward: "Portfolio Data Steward",
-    glossaryTerm: null,
+    glossaryTerm: "enrollment-period-term",
     displayFolder: "Milestones",
   }),
   define({
@@ -715,7 +715,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: WHOLE,
     owner: "Portfolio Management Lead",
     steward: "Portfolio Data Steward",
-    glossaryTerm: null,
+    glossaryTerm: "database-lock-term",
     displayFolder: "Milestones",
   }),
   define({
@@ -734,7 +734,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: PERCENT,
     owner: "Clinical Finance Lead",
     steward: "Finance Data Steward",
-    glossaryTerm: null,
+    glossaryTerm: "budget-burn-term",
     displayFolder: "Finance",
   }),
   define({
@@ -753,7 +753,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     format: { style: "currency", decimals: 0 },
     owner: "Clinical Finance Lead",
     steward: "Finance Data Steward",
-    glossaryTerm: null,
+    glossaryTerm: "enrollment-term",
     displayFolder: "Finance",
   }),
 ]);

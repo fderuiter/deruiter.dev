@@ -590,8 +590,8 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     published: true,
     reading_time_minutes: 8,
     hero_image_url: null,
-    created_at: new Date("2026-10-25T00:00:00.000Z"),
-    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    created_at: new Date("2026-10-25T03:00:00.000Z"),
+    updated_at: new Date("2026-10-25T03:00:00.000Z"),
     body: `
 <h2>A badge I should not have shipped</h2>
 <p>This week I had my own site reviewed the way a clinical data manager would read it, and I did not like what came back. CRF Studio carried a badge announcing one hundred percent conformance with CDISC and SDTM. Its audit log was described as an unalterable Part 11 trail. A status line declared the whole thing ready for regulated work.</p>
@@ -646,8 +646,8 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     published: true,
     reading_time_minutes: 7,
     hero_image_url: null,
-    created_at: new Date("2026-10-25T00:00:00.000Z"),
-    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    created_at: new Date("2026-10-25T02:00:00.000Z"),
+    updated_at: new Date("2026-10-25T02:00:00.000Z"),
     body: `
 <h2>The day in numbers</h2>
 <p>On 24 October, main took 38 squash merges. They came from four lanes running in parallel: clinical release blockers, the clinical data platform, the arcade's phone work, and CI and test debt. Each lane is a coding agent working through its own queue of issues. I set the queues, make the product calls, and press the buttons only a person should press.</p>
@@ -698,8 +698,8 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     published: true,
     reading_time_minutes: 7,
     hero_image_url: null,
-    created_at: new Date("2026-10-25T00:00:00.000Z"),
-    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    created_at: new Date("2026-10-25T01:00:00.000Z"),
+    updated_at: new Date("2026-10-25T01:00:00.000Z"),
     body: `
 <h2>Where touch support had got to</h2>
 <p>Every game in the arcade has had an iPad pass, and every pass made "tablet" a branch rather than a view. A game's single component, between three and six thousand lines, gained touch conditionals and a scoped touch stylesheet. Phones are still behind a desktop-only notice. Adding a phone layout the same way would put a third branch into every one of those conditionals, and every desktop change would then risk two touch layouts.</p>

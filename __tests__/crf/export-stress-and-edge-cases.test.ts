@@ -5,6 +5,7 @@ import { generateStudyPdf } from "@/lib/crf/export-pdf";
 import { STUDY_PRESETS } from "@/lib/crf/presets";
 import { StudyProtocol, CRFForm, StudyBranding } from "@/lib/crf/types";
 import { scaffoldCdashDomain } from "@/lib/crf/cdisc-cdash-library";
+import { expectWithinTimingBudget } from "../helpers/timing-budget";
 
 describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () => {
   // Test all catalog presets in both Word and PDF
@@ -180,7 +181,7 @@ describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () =>
 
       expect(largeDocx).toBeInstanceOf(Blob);
       expect(largeDocx.size).toBeGreaterThan(5000);
-      expect(docxDuration).toBeLessThan(3000); // Must complete in under 3 seconds
+      expectWithinTimingBudget("annotated DOCX export", docxDuration, 3000);
 
       const pdfStartTime = performance.now();
       const largePdf = await generateStudyPdf(largeStudy, {
@@ -193,7 +194,7 @@ describe("CRF Studio - Exhaustive Clinical Stress & Edge-Case Test Suite", () =>
 
       expect(largePdf).toBeInstanceOf(Blob);
       expect(largePdf.size).toBeGreaterThan(5000);
-      expect(pdfDuration).toBeLessThan(3000); // Must complete in under 3 seconds
+      expectWithinTimingBudget("annotated PDF export", pdfDuration, 3000);
     });
   });
 });

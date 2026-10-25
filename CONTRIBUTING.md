@@ -218,6 +218,21 @@ npm run verify
 npm test
 ```
 
+#### Timing budgets
+
+Unit tests never assert on wall-clock time directly. A budget that holds on
+an idle runner fails under a parallel build or a mutation run. Pass the
+measured time to `expectWithinTimingBudget(label, elapsedMs, budgetMs)` from
+`__tests__/helpers/timing-budget.ts` instead. The unit gate records the budget
+without enforcing it. To check every budget, run this on an idle machine:
+
+```bash
+TIMING_BUDGETS=1 npx vitest run
+```
+
+Fake-timer and simulated-clock tests are deterministic. They assert on time
+directly.
+
 ---
 
 ## 7. API Documentation & Drift Verification Workflow

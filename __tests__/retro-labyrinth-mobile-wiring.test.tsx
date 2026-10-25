@@ -29,8 +29,8 @@ describe("RetroLabyrinthClient phone wiring (ADR 0061)", () => {
     expect(cabinetProps.current?.mobileOrientation).toBe("landscape");
     expect(cabinetProps.current?.mobileLayout).toBe("fit");
     // The cabinet's pause service replaces the old auto-pause count (#2376):
-    // the session slot mirrors it, and the tablet and phone borrow the
-    // desktop view until their own passes.
+    // the session slot mirrors it. The tablet has its own view (#2859); the
+    // phone borrows the desktop view until its own pass (#2379).
     const views = cabinetProps.current?.views as {
       session?: unknown;
       resolved: Record<string, string>;
@@ -38,7 +38,7 @@ describe("RetroLabyrinthClient phone wiring (ADR 0061)", () => {
     expect(views.session).toBeTruthy();
     expect(views.resolved).toEqual({
       desktop: "desktop",
-      tablet: "desktop",
+      tablet: "tablet",
       phone: "desktop",
     });
     expect(cabinetProps.current?.onAutoPause).toBeUndefined();

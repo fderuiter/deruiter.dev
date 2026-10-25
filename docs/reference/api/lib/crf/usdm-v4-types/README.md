@@ -9,6 +9,7 @@
 ## Interfaces
 
 - [UsdmV4Activity](interfaces/UsdmV4Activity.md)
+- [UsdmV4AdministrableProduct](interfaces/UsdmV4AdministrableProduct.md)
 - [UsdmV4AliasCode](interfaces/UsdmV4AliasCode.md)
 - [UsdmV4AnalysisPopulation](interfaces/UsdmV4AnalysisPopulation.md)
 - [UsdmV4Base](interfaces/UsdmV4Base.md)

@@ -14,6 +14,12 @@ One version of the study definition.
 
 ## Properties
 
+### administrableProducts?
+
+> `optional` **administrableProducts?**: [`UsdmV4AdministrableProduct`](UsdmV4AdministrableProduct.md)[]
+
+***
+
 ### bcSurrogates?
 
 > `optional` **bcSurrogates?**: [`UsdmV4BiomedicalConceptSurrogate`](UsdmV4BiomedicalConceptSurrogate.md)[]

@@ -11,7 +11,7 @@ function source(file: string): string {
 // Since #2376 the room is a view over a session: the view renders, the
 // session holds the rules, the maze canvas maps the pointer and the painter
 // draws, and the action map owns the keys.
-const VIEW = "components/retro-labyrinth/views/DesktopView.tsx";
+const VIEW = "components/retro-labyrinth/parts/LabyrinthLayout.tsx";
 const SESSION = "components/retro-labyrinth/useRetroLabyrinthSession.ts";
 const CANVAS = "components/retro-labyrinth/parts/MazeCanvas.tsx";
 const PAINTER = "components/retro-labyrinth/parts/paint-maze.ts";

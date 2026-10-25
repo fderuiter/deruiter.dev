@@ -35,6 +35,7 @@ Common descriptive fields on named USDM v4 classes.
 - [`UsdmV4EligibilityCriterionItem`](UsdmV4EligibilityCriterionItem.md)
 - [`UsdmV4InterventionalStudyDesign`](UsdmV4InterventionalStudyDesign.md)
 - [`UsdmV4StudyIntervention`](UsdmV4StudyIntervention.md)
+- [`UsdmV4AdministrableProduct`](UsdmV4AdministrableProduct.md)
 - [`UsdmV4StudyRole`](UsdmV4StudyRole.md)
 
 ## Properties

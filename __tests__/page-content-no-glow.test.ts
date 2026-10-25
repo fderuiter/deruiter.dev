@@ -26,8 +26,10 @@ const GAME_SURFACES = [
   "components/LaserLoon.tsx",
   "components/RetroChaosOverlay.tsx",
   "components/RetroLabyrinth.tsx",
-  // The Labyrinth's views (ADR 0062) draw inside its cabinet (#2839).
+  // The Labyrinth's views (ADR 0062) and the layout they share draw inside
+  // its cabinet (#2839, #2859).
   "components/retro-labyrinth/views/",
+  "components/retro-labyrinth/parts/LabyrinthLayout.tsx",
   "components/WorkingWithDuck.tsx",
 ];
 

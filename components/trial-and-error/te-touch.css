@@ -208,6 +208,26 @@
     grid-area: hand;
   }
 }
+
+/* A phone held sideways (the scroll layout; tablets fit): the action grid's
+   first cell sits mid-screen, out of thumb reach, so Play Hand and Discard
+   take a row of their own with Play Hand at its trailing edge, under the
+   right thumb (#2763). */
+@media (orientation: landscape) {
+  .arcade-cabinet[data-mobile-layout="scroll"] .te-touch .te-hand-primary {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: row-reverse;
+    gap: 0.5rem;
+  }
+  .arcade-cabinet[data-mobile-layout="scroll"]
+    .te-touch
+    .te-hand-primary
+    > button {
+    flex: 0 1 12rem;
+    min-width: 0;
+  }
+}
 .te-sheet-host [role="dialog"].h-dvh {
   height: 100%;
 }

@@ -2,8 +2,8 @@
 
 import React from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { EngineeringBridge } from "@/components/EngineeringBridge";
@@ -47,12 +47,7 @@ export default function CRFStudioPage() {
         <FieldManualButton manualId="crf" label="Studio Guide" />
       </div>
       <div className="mx-auto mb-4 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <Link
-          href="/platform"
-          className="text-xs text-slate-300 underline decoration-zinc-600 underline-offset-4 hover:text-white"
-        >
-          See how CRF Studio connects to the Clinical Data Platform
-        </Link>
+        <ClinicalJourneyNav path="/crf" />
       </div>
 
       {/* The studio has three panes, so it takes the full width up to a

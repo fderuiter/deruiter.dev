@@ -32,6 +32,11 @@ const OG_TRACING_INCLUDES: Record<string, string[]> = Object.fromEntries(
 );
 
 const nextConfig: NextConfig = {
+  // Inlined at build time and read by buildTimestamp() in lib/env.ts, so
+  // GET /api/version can say when the serving deployment was built (#2534).
+  env: {
+    BUILD_TIMESTAMP: new Date().toISOString(),
+  },
   compiler: {
     removeConsole: {
       exclude: ["error", "warn"],

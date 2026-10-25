@@ -19,6 +19,7 @@
 - [ResendEventType](type-aliases/ResendEventType.md)
 - [ResendWebhookEvent](type-aliases/ResendWebhookEvent.md)
 - [ResendWebhookResponse](type-aliases/ResendWebhookResponse.md)
+- [VersionResponse](type-aliases/VersionResponse.md)
 
 ## Variables
 
@@ -73,6 +74,7 @@
 - [TelemetrySyncResponseSchema](variables/TelemetrySyncResponseSchema.md)
 - [ValidationErrorItemSchema](variables/ValidationErrorItemSchema.md)
 - [ValidationErrorSchema](variables/ValidationErrorSchema.md)
+- [VersionResponseSchema](variables/VersionResponseSchema.md)
 
 ## Functions
 

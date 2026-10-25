@@ -45,6 +45,8 @@ export const ENV_KEY_CLASSIFICATION: Readonly<
   NEXT_PHASE: { kind: "runtime-managed", secret: false },
   NEXT_RUNTIME: { kind: "runtime-managed", secret: false },
   GITHUB_ACTIONS: { kind: "runtime-managed", secret: false },
+  VERCEL_GIT_COMMIT_SHA: { kind: "runtime-managed", secret: false },
+  VERCEL_GIT_COMMIT_REF: { kind: "runtime-managed", secret: false },
   VITEST: { kind: "runtime-managed", secret: false },
   CRON_SECRET: { kind: "generated", secret: true },
   GITHUB_TOKEN: { kind: "secret", secret: true },

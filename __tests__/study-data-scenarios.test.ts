@@ -5,6 +5,7 @@
  * as generated, and drive the derivation it describes. Any composition of
  * scenarios must run, build outputs and keep every row traceable.
  */
+import { fromAny } from "@total-typescript/shoehorn";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -124,7 +125,7 @@ describe("messy-data scenarios: the library", () => {
 
   it("rejects an unknown scenario", () => {
     expect(() =>
-      withScenarios(["no-such-scenario" as unknown as ScenarioId])
+      withScenarios([fromAny<ScenarioId, string>("no-such-scenario")])
     ).toThrow(RangeError);
   });
 

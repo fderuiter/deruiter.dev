@@ -163,6 +163,38 @@ FULL OUTER JOIN "denominator" AS "d"
   ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
 ORDER BY 1, 2;
 
+-- Screen failures: screen_failures 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  WHERE "f"."event_type" = 'screened'
+    AND "f"."subject_status" = 'screen-failed'
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Screen failures: screen_failures 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_enrollment" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."event_date_key"
+  WHERE "f"."event_type" = 'screened'
+    AND "f"."subject_status" = 'screen-failed'
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
 -- Early termination rate: early_termination_rate 1.0.0 (certified), PostgreSQL.
 -- Grouped by: none. Filters: none.
 WITH "numerator" AS (

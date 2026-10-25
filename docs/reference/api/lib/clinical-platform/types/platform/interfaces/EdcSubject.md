@@ -46,6 +46,16 @@ ISO 8601 date of the screening visit.
 
 ***
 
+### screenFailureReason
+
+> `readonly` **screenFailureReason**: `string` \| `null`
+
+Why screening failed, from a short fictional controlled list such as
+`Inclusion criterion not met`, or `null` unless the status is
+`screen-failed` (#2879).
+
+***
+
 ### siteId
 
 > `readonly` **siteId**: `string`

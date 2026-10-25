@@ -155,13 +155,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     WEEKLY,
     OPERATIONAL
   ),
-  "silver.edc_subject": silver(
-    "EDC subjects",
-    "EDC",
-    DATA_MANAGEMENT,
-    DAILY,
-    TRIAL
-  ),
+  "silver.edc_subject": {
+    ...silver("EDC subjects", "EDC", DATA_MANAGEMENT, DAILY, TRIAL),
+    // 1.1.0 (#2879): the screen failure reason.
+    version: "1.1.0",
+  },
   "silver.edc_visit": silver(
     "EDC visits",
     "EDC",
@@ -267,11 +265,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     MONITORING,
     WEEKLY
   ),
-  "gold.fct_enrollment": gold(
-    "Enrollment facts",
-    "Operations mart",
-    OPERATIONS
-  ),
+  "gold.fct_enrollment": {
+    ...gold("Enrollment facts", "Operations mart", OPERATIONS),
+    // 1.1.0 (#2879): the screen failure reason.
+    version: "1.1.0",
+  },
   "gold.fct_visit": gold("Visit facts", "Operations mart", DATA_MANAGEMENT),
   "gold.fct_query": {
     ...gold("Query facts", "Operations mart", DATA_MANAGEMENT),

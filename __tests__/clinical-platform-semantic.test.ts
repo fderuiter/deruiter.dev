@@ -74,6 +74,7 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     subjects_enrolled: 1228,
     enrollment_vs_plan: 0.788189987163,
     screen_failure_rate: 0.313966480447,
+    screen_failures: 562,
     early_termination_rate: 0.0830618892508,
     site_activation_cycle_time: 154,
     data_entry_lag_median: 2,
@@ -115,8 +116,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 31 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(31);
+  it("defines 32 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(32);
     expect(checkMetricRegistry()).toEqual([]);
   });
 

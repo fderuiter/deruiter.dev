@@ -187,6 +187,7 @@ export function LabyrinthLayout({
     runComplete,
     boss,
     tspNodes,
+    exitLock,
     exitLocked,
     wallShiftLabel,
     hexPuzzle,
@@ -207,6 +208,9 @@ export function LabyrinthLayout({
   const phoneDevice = phone;
   // A portrait tablet has the room for larger keys under the maze.
   const portraitView = useMediaQuery("(orientation: portrait)");
+  // A landscape tablet frames the maze with a column each side: the route
+  // and the d-pad on the left, the objective and the tools on the right.
+  const tabletLandscape = phoneCabinet && !phoneDevice && !portraitView;
   // Key numbers are keyboard hints, so they show only while a keyboard is in use.
   const showKeyHints = useInputModality() === "keyboard";
   const resumeHint = useControlHint(RESUME_HINT);
@@ -1310,6 +1314,196 @@ export function LabyrinthLayout({
     </>
   );
 
+  // The landscape tablet's columns (#2860). Each is a card on top and its
+  // keys in the bottom corner, under a thumb. Keys are 48px.
+  const tabletRouteCard = (
+    <section
+      aria-label="Route"
+      data-testid="labyrinth-tablet-route"
+      className="flex min-h-0 flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/80 p-2 font-mono text-xs"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span className="font-bold uppercase tracking-wider text-zinc-400">
+          {roomBadge}
+        </span>
+        {roomNodes.length > 0 && (
+          <span className="font-bold text-zinc-300">
+            {routeVisited}/{roomNodes.length}
+          </span>
+        )}
+      </div>
+      {roomNodes.length > 0 && (
+        <ul aria-label="Route nodes" className="grid grid-cols-4 gap-1">
+          {roomNodes.map((node, index) => (
+            <li
+              key={`${node.x},${node.y}`}
+              aria-label={`Node ${index + 1} ${node.visited ? "visited" : "not visited"}`}
+              className={`flex h-7 items-center justify-center rounded border text-xs font-bold ${
+                node.visited
+                  ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
+                  : "border-zinc-700 text-zinc-400"
+              }`}
+            >
+              {index + 1}
+            </li>
+          ))}
+        </ul>
+      )}
+      <span
+        className={`font-bold uppercase tracking-wider ${
+          exitLocked ? "text-rose-400" : "text-emerald-400"
+        }`}
+      >
+        {exitLocked ? "Exit locked" : "Exit open"}
+      </span>
+      {wallShiftLabel && (
+        <span className="font-bold text-amber-300">{wallShiftLabel}</span>
+      )}
+    </section>
+  );
+
+  const tabletObjectiveCard = (
+    <section
+      aria-label="Objective"
+      data-testid="labyrinth-tablet-objective"
+      className="flex min-h-0 flex-col gap-2 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/80 p-2 font-mono text-xs"
+    >
+      {!runComplete && (
+        <p className="line-clamp-3 font-bold text-zinc-300">
+          <span className="text-amber-400">OBJECTIVE</span>{" "}
+          {exitLock.locked ? exitLock.objective : "Reach the exit"}
+        </p>
+      )}
+      {gameMode === "roguelike" && boss && (
+        <div
+          className="flex flex-col gap-1"
+          data-testid="labyrinth-tablet-boss"
+        >
+          <div className="flex items-center justify-between gap-2 font-bold">
+            <span className="text-rose-400">BOSS</span>
+            <span className="text-zinc-200">
+              {boss.defeated ? "DOWN" : `${boss.hp}/${boss.maxHp}`}
+            </span>
+          </div>
+          <span className="block h-2 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900">
+            <span
+              className="block h-full bg-rose-500 motion-safe:transition-[width] motion-safe:duration-200"
+              style={{ width: `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%` }}
+            />
+          </span>
+          {!boss.defeated && boss.phaseTitle && (
+            <span className="truncate text-zinc-400">{boss.phaseTitle}</span>
+          )}
+        </div>
+      )}
+      <span className={`${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}>
+        {empWeapon && empWeapon.maxAmmo >= 999
+          ? `EMP ∞ · ${empWeapon.ramCost ?? 0} RAM`
+          : `EMP ${empWeapon?.ammo ?? 0}/${empWeapon?.maxAmmo ?? 0}`}
+        {dronesStunned ? " · stunned" : ""}
+      </span>
+      {phoneToast && (
+        <p className="line-clamp-2 text-amber-200" aria-hidden="true">
+          {phoneToast.text}
+        </p>
+      )}
+    </section>
+  );
+
+  const tabletKeyClass =
+    "relative flex h-12 w-full flex-col items-center justify-center rounded-lg border px-1 text-xs font-bold disabled:opacity-40";
+  const tabletToolGrid = (
+    <div
+      role="group"
+      aria-label="Tools and actions"
+      className="grid grid-cols-[repeat(4,minmax(3rem,auto))] gap-1"
+    >
+      {[0, 1, 2, 3, 4].map((slotIdx) => {
+        const weaponId = loadout[slotIdx];
+        const weapon = weaponId ? weapons[weaponId] : null;
+        const hasAmmo = !!weapon && weapon.ammo > 0;
+        const shortLabel = weaponId
+          ? PHONE_TOOL_LABELS[weaponId] ||
+            WEAPON_SHORT_LABELS[weaponId] ||
+            weapon?.name ||
+            weaponId
+          : "---";
+        // The name starts with the key's visible text, so speech input can say
+        // what it reads.
+        let label = `T${slotIdx + 1}: tool ${slotIdx + 1} is empty`;
+        if (weaponId) {
+          label = hasAmmo
+            ? `T${slotIdx + 1} ${shortLabel}: fire tool ${slotIdx + 1}`
+            : `T${slotIdx + 1} ${shortLabel}: tool ${slotIdx + 1} is out of ammo`;
+        }
+        return (
+          <TouchButton
+            key={`tablet-tool-${slotIdx}`}
+            label={label}
+            disabled={!hasAmmo}
+            onPress={() => intents.fireTool(slotIdx)}
+            className={`${tabletKeyClass} border-zinc-700 bg-zinc-900 text-amber-300`}
+          >
+            <span className="leading-none text-amber-200/80">
+              T{slotIdx + 1}
+            </span>{" "}
+            <span className="max-w-full truncate leading-tight">
+              {weaponId ? shortLabel : "---"}
+            </span>
+          </TouchButton>
+        );
+      })}
+      <TouchButton
+        label="EMP: fire an EMP burst"
+        onPress={intents.emp}
+        className={`${tabletKeyClass} border-slate-700 bg-slate-900 text-slate-200`}
+      >
+        EMP
+      </TouchButton>
+      <TouchButton
+        label="Exploit: cycle to the next tool and fire it"
+        onPress={intents.exploit}
+        className={`${tabletKeyClass} border-cyan-700/60 bg-cyan-950/50 text-cyan-200`}
+      >
+        EXPLOIT
+      </TouchButton>
+      <TouchButton
+        label={
+          marketOpen
+            ? "Market: open the darknet market"
+            : `Market: ${MARKET_CLOSED_REASON}`
+        }
+        disabled={!marketOpen}
+        onPress={() => openOverlay("darknet_shop")}
+        className={`${tabletKeyClass} border-amber-700/50 bg-amber-950/40 text-amber-300`}
+      >
+        MARKET
+      </TouchButton>
+    </div>
+  );
+
+  const tabletMoveColumn = (
+    <div className="flex min-h-0 w-[13.25rem] flex-1 flex-col justify-between gap-2 pb-3">
+      {tabletRouteCard}
+      <div className="flex justify-start">
+        <TouchControlsGate>
+          <HoldDpad
+            onMove={intents.move}
+            paused={gameStatus !== "playing" || optionsOpen}
+          />
+        </TouchControlsGate>
+      </div>
+    </div>
+  );
+  const tabletActionColumn = (
+    <div className="flex min-h-0 w-[14.5rem] flex-1 flex-col justify-between gap-2 pb-3">
+      {tabletObjectiveCard}
+      <div className="flex justify-end">
+        <TouchControlsGate>{tabletToolGrid}</TouchControlsGate>
+      </div>
+    </div>
+  );
+
   // The touch layout is a stage (#2358): PhoneStage on a phone, TabletStage
   // on a tablet. Landscape: movement, maze, tools in one row. Portrait (the
   // tablet held upright): the maze takes the first full-width row at its own
@@ -1338,17 +1532,27 @@ export function LabyrinthLayout({
       // The controls sit in a gate: a keyboard hides them, a touch brings
       // them back (ADR 0061).
       moveDock={
-        <TouchControlsGate>
-          <HoldDpad
-            onMove={intents.move}
-            compact={!portraitView}
-            large={portraitView}
-            paused={gameStatus !== "playing" || optionsOpen}
-          />
-        </TouchControlsGate>
+        tabletLandscape ? (
+          tabletMoveColumn
+        ) : (
+          <TouchControlsGate>
+            <HoldDpad
+              onMove={intents.move}
+              compact={!portraitView}
+              large={portraitView}
+              paused={gameStatus !== "playing" || optionsOpen}
+            />
+          </TouchControlsGate>
+        )
       }
       status={phoneRoomPanel}
-      actionDock={<TouchControlsGate>{phoneActionGrid}</TouchControlsGate>}
+      actionDock={
+        tabletLandscape ? (
+          tabletActionColumn
+        ) : (
+          <TouchControlsGate>{phoneActionGrid}</TouchControlsGate>
+        )
+      }
     >
       {canvasFrameNode}
     </TouchStage>

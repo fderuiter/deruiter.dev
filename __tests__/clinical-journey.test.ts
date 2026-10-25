@@ -11,9 +11,12 @@ import {
   CLINICAL_JOURNEY,
   PLANNED_JOURNEY_ITEMS,
   RELATED_CASE_STUDIES,
+  RELATED_GAMES,
+  RELATED_GAME_LABEL,
   journeyIssueUrl,
   journeyPlacement,
 } from "@/lib/clinical-journey";
+import { ARCADE_REGISTRY } from "@/lib/arcade";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 
 function published(slug: string): boolean {
@@ -66,6 +69,21 @@ describe("clinical data journey map", () => {
       expect(published(study.slug), study.slug).toBe(true);
       expect(CLINICAL_JOURNEY.some((step) => step.id === study.step)).toBe(
         true
+      );
+    }
+  });
+
+  it("places Clinical Trial Chaos beside Protocol Drift, as a game", () => {
+    expect(RELATED_GAMES.map((game) => [game.title, game.step])).toEqual([
+      ["Clinical Trial Chaos", "consequences"],
+    ]);
+    expect(RELATED_GAME_LABEL).toBe("Arcade game");
+    for (const game of RELATED_GAMES) {
+      const entry = ARCADE_REGISTRY.find((item) => item.route === game.href);
+      expect(entry?.name, game.href).toBe(game.title);
+      expect(exists(game.href), game.href).toBe(true);
+      expect(CLINICAL_JOURNEY.map((step) => step.href)).not.toContain(
+        game.href
       );
     }
   });

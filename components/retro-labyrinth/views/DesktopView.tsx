@@ -101,6 +101,15 @@ const PHOSPHOR_THEME_OPTIONS: { id: CRTThemeId; label: string }[] = [
   { id: "matrix", label: "Matrix" },
 ];
 
+/**
+ * A hotbar slot's tool name. Below a 896px cabinet (a 1024x768 window) the
+ * slot shows only its key and charges so a boss-room loadout stays on one
+ * row (#2840); the name stays in the button's accessible name, and shows
+ * while the slot has keyboard focus.
+ */
+const HOTBAR_NAME_CLASS =
+  "sr-only @4xl:not-sr-only group-focus-visible:not-sr-only";
+
 /** How long a phone tool toast stays up before it clears (ADR 0061). */
 const PHONE_TOAST_MS = 2200;
 
@@ -1176,7 +1185,7 @@ export function DesktopView({
   const footerNode = (
     <>
       {/* Weapons Hotbar & Controls Footer */}
-      <div className="arcade-labyrinth-controls w-full flex flex-col gap-1 px-2 pt-1 border-t border-neutral-900/60">
+      <div className="arcade-labyrinth-controls @container w-full flex flex-col gap-1 px-2 pt-1 border-t border-neutral-900/60">
         <div className="flex flex-wrap items-center justify-between gap-1 text-xs">
           {/* Weapon Hotkeys */}
           <div className="flex items-center gap-1 flex-wrap">
@@ -1199,7 +1208,8 @@ export function DesktopView({
                     className="px-1.5 py-0.5 rounded border flex items-center gap-1 bg-neutral-950 text-neutral-600 border-neutral-900 opacity-50 cursor-not-allowed"
                   >
                     <span className="font-bold">
-                      [{keyNum}] {shortLabel}
+                      [{keyNum}]{" "}
+                      <span className={HOTBAR_NAME_CLASS}>{shortLabel}</span>
                     </span>
                   </button>
                 );
@@ -1212,7 +1222,7 @@ export function DesktopView({
                     if (weaponId && hasAmmo) intents.fireTool(slotIdx);
                   }}
                   disabled={isDisabled}
-                  className={`px-1.5 py-0.5 rounded border flex items-center gap-1 transition-all ${
+                  className={`group px-1.5 py-0.5 rounded border flex items-center gap-1 transition-all ${
                     isDisabled
                       ? "bg-neutral-900/50 text-neutral-600 border-neutral-800/50 cursor-not-allowed opacity-60"
                       : isActive
@@ -1222,7 +1232,7 @@ export function DesktopView({
                 >
                   <span className="font-bold">
                     [{weaponId === "emp_blast" ? `${keyNum}/SPACE` : keyNum}]{" "}
-                    {shortLabel}
+                    <span className={HOTBAR_NAME_CLASS}>{shortLabel}</span>
                   </span>
                   <span
                     className={hasAmmo ? "text-amber-400" : "text-rose-500"}

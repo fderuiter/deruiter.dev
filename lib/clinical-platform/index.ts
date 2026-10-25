@@ -110,6 +110,27 @@ export {
   toOdcsYaml,
 } from "./internal/governance/contracts/odcs";
 export {
+  dataCatalog,
+  dataCatalogFacets,
+  searchDataCatalog,
+  type DataCatalogInput,
+} from "./internal/governance/catalog";
+export {
+  BUSINESS_GLOSSARY_EXTRA_TERMS,
+  businessGlossary,
+  searchBusinessGlossary,
+  type BusinessGlossaryOptions,
+} from "./internal/governance/glossary";
+export {
+  GOVERNANCE_DECISIONS,
+  GOVERNANCE_DOMAINS,
+  STEWARDSHIP_ROLES,
+  checkStewardship,
+  stewardshipDomainOf,
+  type StewardshipModel,
+} from "./internal/governance/stewardship";
+export { GOVERNANCE_POLICIES } from "./internal/governance/policies";
+export {
   DATA_QUALITY_RULES,
   assessDataQuality,
   breakDataQualityRule,

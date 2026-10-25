@@ -24,6 +24,7 @@ import {
   type SqlDialect,
   type Warehouse,
 } from "../lib/clinical-platform";
+import { getGlossaryKeyMap } from "../lib/term-glossary";
 
 /**
  * Writes the files generated from the Clinical Data Platform's metric
@@ -115,6 +116,15 @@ function formatValue(
 
 const cell = (text: string) => text.replaceAll("|", "\\|");
 
+const GLOSSARY = getGlossaryKeyMap();
+
+/** A metric's glossary term as the reference page names it. */
+function glossaryTerm(key: string | null): string {
+  if (key === null) return "none yet";
+  const term = GLOSSARY.get(key);
+  return term === undefined ? `\`${key}\`` : `${term.canonical} (\`${key}\`)`;
+}
+
 /** The value of a metric on the default seed, as the catalog shows it. */
 function shownValue(warehouse: Warehouse, metric: MetricDefinition): string {
   if (metric.grain === "portfolio") {
@@ -195,7 +205,7 @@ function referencePage(warehouse: Warehouse): string {
         `- Dimensions: ${m.allowedDimensions.map((d) => `\`${d}\``).join(", ")}.`,
         `- Default filters: ${filters}.`,
         `- Owner: ${m.owner}. Steward: ${m.steward}.`,
-        `- Glossary term: ${m.glossaryTerm === null ? "none yet" : `\`${m.glossaryTerm}\``}.`
+        `- Glossary term: ${glossaryTerm(m.glossaryTerm)}.`
       );
     }
   }

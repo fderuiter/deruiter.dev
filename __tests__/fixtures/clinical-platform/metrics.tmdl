@@ -158,7 +158,7 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
-	/// Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
+	/// Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history. Version 1.1.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
 	measure 'Open queries' =
 			COUNTROWS(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
 		formatString: #,0
@@ -166,11 +166,11 @@ table 'Governed Metrics'
 
 		annotation MetricId = open_query_count
 
-		annotation MetricVersion = 1.0.0
+		annotation MetricVersion = 1.1.0
 
 		annotation MetricStatus = certified
 
-	/// Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	/// Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history. Version 1.1.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
 	measure 'Query aging' =
 			AVERAGEX(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && NOT (RELATED('dim_study'[study_status]) IN {"closed"})), DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY))
 		formatString: #,0.0
@@ -178,17 +178,65 @@ table 'Governed Metrics'
 
 		annotation MetricId = query_aging_mean
 
-		annotation MetricVersion = 1.0.0
+		annotation MetricVersion = 1.1.0
 
 		annotation MetricStatus = certified
 
-	/// Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
+	/// Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates. Version 1.1.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
 	measure 'Query resolution time (median)' =
 			MEDIANX(FILTER('fct_query', NOT ISBLANK('fct_query'[closed_date_key])), DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(QUOTIENT('fct_query'[closed_date_key], 10000), MOD(QUOTIENT('fct_query'[closed_date_key], 100), 100), MOD('fct_query'[closed_date_key], 100)), DAY))
 		formatString: #,0.0
 		displayFolder: Queries
 
 		annotation MetricId = query_resolution_time_median
+
+		annotation MetricVersion = 1.1.0
+
+		annotation MetricStatus = certified
+
+	/// Queries not closed at the data cut that opened 0 to 7 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
+	measure 'Open queries aged 0 to 7 days' =
+			COUNTROWS(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) >= 0 && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) <= 7 && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
+		formatString: #,0
+		displayFolder: Queries
+
+		annotation MetricId = open_queries_aged_0_7_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Queries not closed at the data cut that opened 8 to 30 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
+	measure 'Open queries aged 8 to 30 days' =
+			COUNTROWS(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) >= 8 && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) <= 30 && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
+		formatString: #,0
+		displayFolder: Queries
+
+		annotation MetricId = open_queries_aged_8_30_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Queries not closed at the data cut that opened 31 to 60 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
+	measure 'Open queries aged 31 to 60 days' =
+			COUNTROWS(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) >= 31 && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) <= 60 && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
+		formatString: #,0
+		displayFolder: Queries
+
+		annotation MetricId = open_queries_aged_31_60_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Queries not closed at the data cut that opened more than 60 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: queries.
+	measure 'Open queries aged over 60 days' =
+			COUNTROWS(FILTER('fct_query', 'fct_query'[query_status] IN {"open", "answered"} && DATEDIFF(DATE(QUOTIENT('fct_query'[opened_date_key], 10000), MOD(QUOTIENT('fct_query'[opened_date_key], 100), 100), MOD('fct_query'[opened_date_key], 100)), DATE(2026, 9, 30), DAY) >= 61 && NOT (RELATED('dim_study'[study_status]) IN {"closed"}))) + 0
+		formatString: #,0
+		displayFolder: Queries
+
+		annotation MetricId = open_queries_aged_over_60_days
 
 		annotation MetricVersion = 1.0.0
 
@@ -281,6 +329,18 @@ table 'Governed Metrics'
 		displayFolder: Protocol deviations
 
 		annotation MetricId = subjects_with_important_deviation
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Protocol deviations that occurred, important or not, counted on the date each occurred. It can be broken down by category and importance; the rates per 100 enrolled subjects cannot, because enrollment has neither. Version 1.0.0, certified. Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward. Unit: deviations.
+	measure 'Protocol deviations' =
+			COUNTROWS('fct_deviation') + 0
+		formatString: #,0
+		displayFolder: Protocol deviations
+
+		annotation MetricId = protocol_deviation_count
 
 		annotation MetricVersion = 1.0.0
 

@@ -38,9 +38,13 @@ metrics.
 | Missed visit rate | `missed_visit_rate` | certified | 1.0.0 | portfolio | 1.9% |
 | Out-of-window visit rate | `out_of_window_visit_rate` | certified | 1.0.0 | portfolio | 3.1% |
 | Query rate per 100 visits | `query_rate_per_100_visits` | certified | 1.0.0 | portfolio | 47.0 queries per 100 visits |
-| Open queries | `open_query_count` | certified | 1.0.0 | portfolio | 36 queries |
-| Query aging | `query_aging_mean` | certified | 1.0.0 | portfolio | 2.9 days |
-| Query resolution time (median) | `query_resolution_time_median` | certified | 1.0.0 | portfolio | 5.0 days |
+| Open queries | `open_query_count` | certified | 1.1.0 | portfolio | 36 queries |
+| Query aging | `query_aging_mean` | certified | 1.1.0 | portfolio | 2.9 days |
+| Query resolution time (median) | `query_resolution_time_median` | certified | 1.1.0 | portfolio | 5.0 days |
+| Open queries aged 0 to 7 days | `open_queries_aged_0_7_days` | certified | 1.0.0 | portfolio | 33 queries |
+| Open queries aged 8 to 30 days | `open_queries_aged_8_30_days` | certified | 1.0.0 | portfolio | 3 queries |
+| Open queries aged 31 to 60 days | `open_queries_aged_31_60_days` | certified | 1.0.0 | portfolio | 0 queries |
+| Open queries aged over 60 days | `open_queries_aged_over_60_days` | certified | 1.0.0 | portfolio | 0 queries |
 | SDV completion | `sdv_completion` | certified | 1.0.0 | portfolio | 85.3% |
 | Overdue monitoring visit reports | `monitoring_reports_overdue` | certified | 2.0.0 | portfolio | 2 monitoring visits |
 | Overdue interim monitoring visits | `monitoring_visits_overdue` | certified | 1.0.0 | portfolio | 5 planned visits |
@@ -48,6 +52,7 @@ metrics.
 | Important deviations per 100 subjects | `important_deviation_rate` | certified | 1.0.0 | portfolio | 13.7 deviations per 100 enrolled subjects |
 | Non-important deviations per 100 subjects | `non_important_deviation_rate` | certified | 1.0.0 | portfolio | 13.1 deviations per 100 enrolled subjects |
 | Subjects with an important deviation | `subjects_with_important_deviation` | certified | 1.0.0 | portfolio | 12.9% |
+| Protocol deviations | `protocol_deviation_count` | certified | 1.0.0 | portfolio | 329 deviations |
 | First subject in to last subject in | `fpi_to_lpi_days` | certified | 1.0.0 | study | DEMO-101: 128 days; DEMO-201: 457 days; DEMO-202: 527 days; DEMO-203: 442 days; DEMO-301: 176 days; DEV-401: 201 days |
 | Last subject last visit to database lock | `lplv_to_dbl_days` | certified | 1.0.0 | study | DEMO-101: 75 days; DEMO-301: 46 days; DEV-401: 43 days |
 | Budget burn vs plan | `budget_burn_vs_plan` | certified | 1.0.0 | portfolio | 103.6% |
@@ -209,10 +214,10 @@ Data queries opened per 100 visits performed. The gold model holds no CRF page c
 
 Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history.
 
-- Id: `open_query_count`, version 1.0.0, certified.
+- Id: `open_query_count`, version 1.1.0, certified.
 - Formula: count of gold.fct_query rows where query_status in ('open', 'answered').
 - Unit: queries. Grain: portfolio.
-- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
 - Glossary term: Data query (`data-query-term`).
@@ -221,10 +226,10 @@ Queries not closed at the data cut: still open, or answered by the site and awai
 
 Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history.
 
-- Id: `query_aging_mean`, version 1.0.0, certified.
+- Id: `query_aging_mean`, version 1.1.0, certified.
 - Formula: mean of days from date(opened_date_key) to the data cut over gold.fct_query rows where query_status in ('open', 'answered').
 - Unit: days. Grain: portfolio.
-- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
 - Glossary term: Data query (`data-query-term`).
@@ -233,11 +238,59 @@ Mean days from opening to the data cut of the queries not closed at the cut. Clo
 
 Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates.
 
-- Id: `query_resolution_time_median`, version 1.0.0, certified.
+- Id: `query_resolution_time_median`, version 1.1.0, certified.
 - Formula: median of days from date(opened_date_key) to date(closed_date_key) over gold.fct_query rows where closed_date_key is not null.
 - Unit: days. Grain: portfolio.
-- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
 - Default filters: none.
+- Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
+- Glossary term: Data query (`data-query-term`).
+
+### Open queries aged 0 to 7 days
+
+Queries not closed at the data cut that opened 0 to 7 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history.
+
+- Id: `open_queries_aged_0_7_days`, version 1.0.0, certified.
+- Formula: count of gold.fct_query rows where query_status in ('open', 'answered') and days from date(opened_date_key) to the data cut >= 0 and days from date(opened_date_key) to the data cut <= 7.
+- Unit: queries. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
+- Default filters: `study_status` not in `closed`.
+- Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
+- Glossary term: Data query (`data-query-term`).
+
+### Open queries aged 8 to 30 days
+
+Queries not closed at the data cut that opened 8 to 30 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history.
+
+- Id: `open_queries_aged_8_30_days`, version 1.0.0, certified.
+- Formula: count of gold.fct_query rows where query_status in ('open', 'answered') and days from date(opened_date_key) to the data cut >= 8 and days from date(opened_date_key) to the data cut <= 30.
+- Unit: queries. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
+- Default filters: `study_status` not in `closed`.
+- Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
+- Glossary term: Data query (`data-query-term`).
+
+### Open queries aged 31 to 60 days
+
+Queries not closed at the data cut that opened 31 to 60 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history.
+
+- Id: `open_queries_aged_31_60_days`, version 1.0.0, certified.
+- Formula: count of gold.fct_query rows where query_status in ('open', 'answered') and days from date(opened_date_key) to the data cut >= 31 and days from date(opened_date_key) to the data cut <= 60.
+- Unit: queries. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
+- Default filters: `study_status` not in `closed`.
+- Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
+- Glossary term: Data query (`data-query-term`).
+
+### Open queries aged over 60 days
+
+Queries not closed at the data cut that opened more than 60 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history.
+
+- Id: `open_queries_aged_over_60_days`, version 1.0.0, certified.
+- Formula: count of gold.fct_query rows where query_status in ('open', 'answered') and days from date(opened_date_key) to the data cut >= 61.
+- Unit: queries. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `queried_form`.
+- Default filters: `study_status` not in `closed`.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
 - Glossary term: Data query (`data-query-term`).
 
@@ -329,6 +382,18 @@ Share of enrolled subjects with at least one important protocol deviation, a com
 - Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward.
 - Glossary term: Important protocol deviation (`important-deviation-term`).
 
+### Protocol deviations
+
+Protocol deviations that occurred, important or not, counted on the date each occurred. It can be broken down by category and importance; the rates per 100 enrolled subjects cannot, because enrollment has neither.
+
+- Id: `protocol_deviation_count`, version 1.0.0, certified.
+- Formula: count of gold.fct_deviation rows.
+- Unit: deviations. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`, `deviation_category`, `deviation_importance`.
+- Default filters: none.
+- Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Protocol deviation (`protocol-deviation-term`).
+
 ## Milestones
 
 ### First subject in to last subject in
@@ -396,6 +461,9 @@ Actual spend up to the data cut divided by the number of subjects enrolled. The 
 | Region | `region` | `gold.dim_country.region` | Operational region of the site's country. |
 | Month | `month` | `gold.dim_date.year_month` | Calendar month, as YYYY-MM, of the date each measure is dated by. |
 | Vendor | `vendor` | `gold.dim_vendor.vendor_name` | Fictional vendor name; investigator grants have none. |
+| Deviation category | `deviation_category` | `gold.fct_deviation.deviation_category` | What a protocol deviation concerns, for example Informed consent process. |
+| Deviation importance | `deviation_importance` | `gold.fct_deviation.importance` | Whether a protocol deviation is important (after ICH E3) or not. |
+| Queried form | `queried_form` | `gold.fct_query.queried_form` | CRF form of the queried field, named by its CDASH domain, for example VS. |
 
 ## Not in the registry
 

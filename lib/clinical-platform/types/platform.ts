@@ -752,7 +752,10 @@ export type MetricDimensionId =
   | "country"
   | "region"
   | "month"
-  | "vendor";
+  | "vendor"
+  | "deviation_category"
+  | "deviation_importance"
+  | "queried_form";
 
 /** Aggregation a measure applies to its rows. `p90` is the 90th percentile. */
 export type MetricAggregation =

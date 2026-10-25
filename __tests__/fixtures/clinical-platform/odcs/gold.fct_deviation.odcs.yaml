@@ -168,3 +168,4 @@ customProperties:
       - "metric:important_deviation_rate"
       - "metric:non_important_deviation_rate"
       - "metric:subjects_with_important_deviation"
+      - "metric:protocol_deviation_count"

@@ -8,6 +8,7 @@
  * that will add it.
  */
 import type {
+  MetricDefinition,
   MetricDimensionId,
   MetricFilter,
   OperationsCrumb,
@@ -22,6 +23,7 @@ import type {
   OperationsSectionId,
   OperationsSource,
   OperationsStudyProfile,
+  ReportData,
   ReportSpec,
   ReportTier,
   ReportVisual,
@@ -32,6 +34,7 @@ import { PRODUCT_REGISTRATIONS } from "../governance/contracts/registry";
 import { formulaSources } from "../semantic/plan";
 import { METRIC_GAPS, METRIC_REGISTRY } from "../semantic/registry";
 import { buildReport } from "./build";
+import { formatMetricValue } from "./format";
 import { operationsRisk, operationsRiskTables } from "./operations-risk";
 
 /** Run-by choice that keeps the studies the sponsor runs itself. */
@@ -65,13 +68,20 @@ const BY_WORDS: Readonly<Record<MetricDimensionId, string>> = {
   region: "by region",
   month: "by month",
   vendor: "by vendor",
+  deviation_category: "by deviation category",
+  deviation_importance: "by deviation importance",
+  queried_form: "by queried form",
 };
 
 /**
  * A report on the dashboard, before the level fixes its grouping. `visual`
  * is used where the report groups by the level below; `siteVisual` at a
  * single site, where there is nothing below to group by (`line` groups by
- * month instead). `levels` limits where the report appears.
+ * month instead). A `breakdown` report groups by its own dimensions at every
+ * level instead, still filtered to the scope. A `bands` report's metrics
+ * split one count into bands, so a group one band counts reads zero in the
+ * others rather than having no rows. `levels` limits where the report
+ * appears.
  */
 interface Panel {
   readonly id: string;
@@ -84,6 +94,8 @@ interface Panel {
   readonly visual: ReportVisual;
   readonly siteVisual: ReportVisual;
   readonly refreshSlaHours: number;
+  readonly breakdown?: readonly MetricDimensionId[];
+  readonly bands?: true;
   readonly levels?: readonly OperationsLevel[];
 }
 
@@ -132,8 +144,6 @@ function registryGap(name: string, issue: number | null): OperationsGap {
 
 /** The issue that adds adverse event and vital sign feeds and a weekday calendar to the generator. */
 const GENERATOR_FEEDS_ISSUE = 2776;
-/** The issue that adds deviation, form and query age breakdowns. */
-const BREAKDOWNS_ISSUE = 2759;
 /** The issue that adds activation stages, screen failure reasons and CEC adjudication to gold. */
 const GOLD_FACTS_ISSUE = 2760;
 
@@ -249,16 +259,45 @@ const SECTIONS: readonly SectionPlan[] = [
         siteVisual: "table",
         refreshSlaHours: 24,
       },
-    ],
-    gaps: () => [
-      registryGap("Query rate per 100 CRF pages", null),
       {
-        name: "Query aging buckets and open queries by form",
-        reason:
-          "Gold holds each query's form field and open date, but the registry has no form or age band to group by.",
-        issue: BREAKDOWNS_ISSUE,
+        id: "query-age-bands",
+        title: "Open query age at the data cut",
+        purpose:
+          "Queries not closed at the data cut, by how many days before it they opened, so the oldest stand out.",
+        audience: "Data management",
+        owner: DM,
+        tier: "managed",
+        metrics: [
+          "open_queries_aged_0_7_days",
+          "open_queries_aged_8_30_days",
+          "open_queries_aged_31_60_days",
+          "open_queries_aged_over_60_days",
+        ],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
+        bands: true,
+      },
+      {
+        id: "queries-by-form",
+        title: "Queries by form",
+        purpose:
+          "Open queries, their age and how long closed queries took to resolve, by the CRF form queried, to find the forms that need clearer completion guidelines or edit checks.",
+        audience: "Data management",
+        owner: DM,
+        tier: "managed",
+        metrics: [
+          "open_query_count",
+          "query_aging_mean",
+          "query_resolution_time_median",
+        ],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
+        breakdown: ["queried_form"],
       },
     ],
+    gaps: () => [registryGap("Query rate per 100 CRF pages", null)],
   },
   {
     id: "quality",
@@ -284,6 +323,20 @@ const SECTIONS: readonly SectionPlan[] = [
         refreshSlaHours: 24,
       },
       {
+        id: "deviations-by-category",
+        title: "Protocol deviations by category and importance",
+        purpose:
+          "How many deviations of each kind occurred, and whether each kind is important, to aim retraining and protocol clarifications.",
+        audience: "Clinical operations",
+        owner: MONITORING,
+        tier: "managed",
+        metrics: ["protocol_deviation_count"],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
+        breakdown: ["deviation_category", "deviation_importance"],
+      },
+      {
         id: "monitoring-and-sdv",
         title: "Monitoring and source data verification",
         purpose:
@@ -302,15 +355,7 @@ const SECTIONS: readonly SectionPlan[] = [
         refreshSlaHours: 168,
       },
     ],
-    gaps: () => [
-      {
-        name: "Deviations by category and importance",
-        reason:
-          "Gold holds each deviation's category and importance, but the registry has no dimension to group by them.",
-        issue: BREAKDOWNS_ISSUE,
-      },
-      registryGap("eTMF completeness", null),
-    ],
+    gaps: () => [registryGap("eTMF completeness", null)],
   },
   {
     id: "risk",
@@ -598,8 +643,48 @@ function scopeFilters(
 }
 
 /**
+ * A bands report with its empty cells read as zero. Each band counts the
+ * rows of one table under one set of default filters, differing only in
+ * the band's own condition, so a group any band counts is a group every
+ * band looked at: a band with no row for it counted none.
+ *
+ * @param data - The built report.
+ * @returns The report, every missing cell a zero.
+ * @throws Error when the metrics are not counts of one table under the
+ *   same default filters, where a missing row could mean a group outside a
+ *   band's filters rather than a zero.
+ */
+function zeroFilled(data: ReportData): ReportData {
+  const metrics = data.columns.map(
+    (c) => METRIC_REGISTRY.find((m) => m.id === c.metricId)!
+  );
+  const shape = (m: MetricDefinition) =>
+    m.formula.kind === "simple" && m.formula.measure.aggregation === "count"
+      ? JSON.stringify([m.formula.measure.table, m.defaultFilters])
+      : null;
+  const shapes = new Set(metrics.map(shape));
+  if (shapes.size !== 1 || shapes.has(null)) {
+    throw new Error(
+      `report ${data.spec.id}: bands must count one table under the same default filters`
+    );
+  }
+  return {
+    ...data,
+    rows: data.rows.map((row) => ({
+      ...row,
+      cells: row.cells.map((cell, index) =>
+        cell.value === null
+          ? { value: 0, text: formatMetricValue(metrics[index], 0) }
+          : cell
+      ),
+    })),
+  };
+}
+
+/**
  * The report spec a panel becomes at a level. Its id and title name the
- * grouping, so the same panel at two levels is two reports.
+ * grouping, so the same panel at two levels is two reports. A breakdown
+ * groups the same way at every level, so it keeps its own id and title.
  *
  * @param panel - The panel.
  * @param level - The level.
@@ -611,6 +696,23 @@ function panelSpec(
   level: OperationsLevel,
   filters: readonly MetricFilter[]
 ): ReportSpec {
+  if (panel.breakdown !== undefined) {
+    return {
+      id: panel.id,
+      title: panel.title,
+      audience: panel.audience,
+      purpose: panel.purpose,
+      tier: panel.tier,
+      owner: panel.owner,
+      version: "1.0.0",
+      metrics: panel.metrics,
+      dimensions: panel.breakdown,
+      filters,
+      visual: panel.visual,
+      refreshSlaHours: panel.refreshSlaHours,
+      signOff: null,
+    };
+  }
   const group = GROUP_BY[level];
   const visual = group === null ? panel.siteVisual : panel.visual;
   const dimensions: MetricDimensionId[] =
@@ -898,9 +1000,13 @@ export function operationsDashboard(
     summary: section.summary,
     reports: section.panels
       .filter((panel) => shownAt(panel.levels, resolved.level))
-      .map((panel) =>
-        buildReport(warehouse, panelSpec(panel, resolved.level, filters))
-      ),
+      .map((panel) => {
+        const data = buildReport(
+          warehouse,
+          panelSpec(panel, resolved.level, filters)
+        );
+        return panel.bands ? zeroFilled(data) : data;
+      }),
     gaps: section.gaps(study),
   }));
   const glance = buildReport(warehouse, glanceSpec(resolved.level, filters));

@@ -239,7 +239,15 @@ describe("the monitoring metrics (#2736)", () => {
       }
     };
     const isSpan = (e: MetricExpression) => e.kind === "days-between";
-    for (const m of METRIC_REGISTRY) {
+    // The query age bands (#2759) bound an age with literals because they
+    // are reporting buckets, not deadlines: no query is late for being in one.
+    const bands = new Set([
+      "open_queries_aged_0_7_days",
+      "open_queries_aged_8_30_days",
+      "open_queries_aged_31_60_days",
+      "open_queries_aged_over_60_days",
+    ]);
+    for (const m of METRIC_REGISTRY.filter((x) => !bands.has(x.id))) {
       for (const p of literals(m.formula)) {
         if (p.kind !== "compare") continue;
         for (const [span, other] of [

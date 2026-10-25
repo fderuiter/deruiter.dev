@@ -6,6 +6,6 @@
 
 # Type Alias: MetricDimensionId
 
-> **MetricDimensionId** = `"study"` \| `"study_status"` \| `"therapeutic_area"` \| `"phase"` \| `"product_type"` \| `"operating_model"` \| `"site"` \| `"country"` \| `"region"` \| `"month"` \| `"vendor"`
+> **MetricDimensionId** = `"study"` \| `"study_status"` \| `"therapeutic_area"` \| `"phase"` \| `"product_type"` \| `"operating_model"` \| `"site"` \| `"country"` \| `"region"` \| `"month"` \| `"vendor"` \| `"deviation_category"` \| `"deviation_importance"` \| `"queried_form"`
 
 A dimension a metric can be grouped or filtered by.

@@ -40,7 +40,7 @@ import {
  * changes it. Update it deliberately, with `GOLDEN_ROW_COUNTS`, and say why.
  */
 const GOLDEN_SHA256 =
-  "f6a713a6b6f8aa158b2eef4d76fc5afd4e6c26dc82399ceaf2b2d7fae6653b8d";
+  "ee7c3ef48506017f9533bea828ff229ea2c80c1f9bfb2224af8f3523bb90c860";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -168,6 +168,25 @@ describe("buildWarehouse: determinism and budget", () => {
 describe("buildWarehouse: integrity", () => {
   it("passes every schema check for the default seed", () => {
     expect(checkWarehouse(WAREHOUSE_SCHEMA, warehouse)).toEqual([]);
+  });
+
+  it("names each query's form by the CDASH domain of its field (#2759)", () => {
+    const forms = new Set<string>();
+    for (const query of rows("gold.fct_query")) {
+      const [domain, variable] = String(query.queried_field).split(".");
+      expect(variable, String(query.queried_field)).toBeTruthy();
+      expect(query.queried_form).toBe(domain);
+      forms.add(String(query.queried_form));
+    }
+    expect([...forms].sort()).toEqual([
+      "AE",
+      "CM",
+      "DM",
+      "EX",
+      "LB",
+      "MH",
+      "VS",
+    ]);
   });
 
   it("passes every schema check for other seeds", () => {

@@ -46,10 +46,11 @@ Used by `/wayfinder`. The **map** is a single issue with **child** issues as tic
 
 ## Tracker drift report
 
-`npm run dx trackers` (add `-- --json` for the envelope) reads open `type:epic` issues and open `status:in-progress` claims, and reports three things:
+`npm run dx trackers` (add `-- --json` for the envelope) reads open `type:epic` issues and open `status:in-progress` claims, and reports four things:
 
 - unticked `- [ ] #N` checklist lines whose issue is closed;
 - ticked `- [x] #N` lines whose issue is still open (fine when the line covers only part of the issue);
-- the number of claims per assignee and per `lane:` label, so a WIP limit reads at a glance.
+- the number of claims per assignee and per `lane:` label, so a WIP limit reads at a glance;
+- stale claims: no open PR linked to the issue, and no push to a branch whose name contains its number and no comment on it in the last 24 hours. Each row gives the holder and the last activity time.
 
-A line's subject is the `#N` that opens it. It never edits an issue. Reading issue states needs `GITHUB_TOKEN` (or `GH_TOKEN`); without one, only the claim counts are reported. Stale-claim detection is tracked in #2830.
+A line's subject is the `#N` that opens it. A branch's push time is the commit time of its head, the closest the API offers. It never edits an issue. Issue states and claim activity come from GraphQL, which needs `GITHUB_TOKEN` (or `GH_TOKEN`); without one, only the claim counts are reported.

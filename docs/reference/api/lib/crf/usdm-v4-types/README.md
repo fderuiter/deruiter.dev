@@ -16,6 +16,7 @@
 - [UsdmV4BiomedicalConceptProperty](interfaces/UsdmV4BiomedicalConceptProperty.md)
 - [UsdmV4Code](interfaces/UsdmV4Code.md)
 - [UsdmV4Document](interfaces/UsdmV4Document.md)
+- [UsdmV4Duration](interfaces/UsdmV4Duration.md)
 - [UsdmV4EligibilityCriterion](interfaces/UsdmV4EligibilityCriterion.md)
 - [UsdmV4EligibilityCriterionItem](interfaces/UsdmV4EligibilityCriterionItem.md)
 - [UsdmV4Encounter](interfaces/UsdmV4Encounter.md)

@@ -33,6 +33,10 @@ export const SDTM_METHODS = {
     "The collected result in the test's standard unit, as text in --STRESC and as a number in --STRESN: as collected when the collected unit is the standard unit, otherwise converted by a fixed factor and rounded to two decimals. The one conversion defined is glucose from mg/dL to mmol/L (divide by 18.016); with any other unit the standard result is missing.",
   LAST_PRE_DOSE:
     "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
+  DEATH_DATE:
+    "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
+  DEATH_FLAG:
+    "Y when the subject has a DEATH disposition event; missing otherwise.",
 } as const;
 
 /** The id of an SDTM derivation method. */

@@ -7,6 +7,8 @@
     "TAETORD": "Timing",
     "ETCD": "Record Qualifier",
     "ELEMENT": "Synonym Qualifier",
+    "TABRANCH": "Rule",
+    "TATRANS": "Rule",
     "EPOCH": "Timing"
   },
   "TE": {
@@ -24,6 +26,7 @@
     "VISITNUM": "Topic",
     "VISIT": "Synonym Qualifier",
     "VISITDY": "Timing",
+    "ARMCD": "Record Qualifier",
     "TVSTRL": "Rule",
     "TVENRL": "Rule"
   },
@@ -77,6 +80,8 @@
     "USUBJID": "Identifier",
     "VISITNUM": "Topic",
     "VISIT": "Synonym Qualifier",
+    "SVPRESP": "Variable Qualifier",
+    "SVOCCUR": "Record Qualifier",
     "SVSTDTC": "Timing",
     "SVENDTC": "Timing",
     "SVSTDY": "Timing",

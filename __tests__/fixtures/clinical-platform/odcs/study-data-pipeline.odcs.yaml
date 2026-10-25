@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.1.0"
+version: "2.2.0"
 status: active
 domain: "Study data"
 tags:
@@ -81,6 +81,22 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Description of Element"
+        required: false
+        classification: internal
+      - name: TABRANCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Branch
+        required: false
+        classification: internal
+      - name: TATRANS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Transition Rule"
         required: false
         classification: internal
       - name: EPOCH
@@ -228,6 +244,14 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Planned Study Day"
+        required: false
+        classification: internal
+      - name: ARMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Planned Arm Code"
         required: false
         classification: internal
       - name: TVSTRL
@@ -635,7 +659,7 @@ schema:
     physicalType: file
     logicalType: object
     description: "Subject Visits"
-    dataGranularityDescription: "One record per actual visit per subject"
+    dataGranularityDescription: "One record per actual or planned visit per subject"
     properties:
       - name: STUDYID
         logicalType: string
@@ -679,6 +703,22 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Visit Name"
+        required: false
+        classification: confidential
+      - name: SVPRESP
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Pre-specified
+        required: false
+        classification: confidential
+      - name: SVOCCUR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Occurrence
         required: false
         classification: confidential
       - name: SVSTDTC

@@ -38,6 +38,8 @@ export const SDTM_CODELISTS: Readonly<Record<string, CodelistId>> =
     LBLOBXFL: "NY",
     DSCAT: "DSCAT",
     DTHFL: "NY",
+    SVPRESP: "NY",
+    SVOCCUR: "NY",
   });
 
 /** The codelist property of an SDTM variable, empty when it has none. */

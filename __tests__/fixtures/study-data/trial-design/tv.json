@@ -50,6 +50,15 @@
       "origin": "Protocol"
     },
     {
+      "name": "ARMCD",
+      "label": "Planned Arm Code",
+      "type": "text",
+      "length": 200,
+      "role": "Record Qualifier",
+      "origin": "Protocol",
+      "codelist": "ARMCD"
+    },
+    {
       "name": "TVSTRL",
       "label": "Rule for Start of Visit",
       "type": "text",
@@ -89,6 +98,7 @@
       "END OF STUDY"
     ],
     "VISITDY": [-14, 1, 15, 29, 57, 85, 99],
+    "ARMCD": [null, null, null, null, null, null, null],
     "TVSTRL": [
       "-28 study days after reference start",
       "1 study days after reference start",

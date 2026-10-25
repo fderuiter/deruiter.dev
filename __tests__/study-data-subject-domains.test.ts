@@ -448,6 +448,27 @@ describe("SDTM subject tabulation", () => {
     ).toBe(true);
   });
 
+  it("says whether each visit was planned and whether it happened (#2886)", () => {
+    const sv = records(get("SV"));
+    const unscheduled = sv.filter((record) => record.VISITNUM === 99);
+    const planned = sv.filter((record) => record.VISITNUM !== 99);
+    expect(unscheduled.length).toBeGreaterThan(0);
+    expect(
+      unscheduled.every(
+        (record) => record.SVPRESP === null && record.SVOCCUR === null
+      )
+    ).toBe(true);
+    expect(planned.every((record) => record.SVPRESP === "Y")).toBe(true);
+    const missed = planned.filter((record) => record.SVOCCUR === "N");
+    expect(missed.length).toBeGreaterThan(0);
+    expect(missed.every((record) => record.SVSTDTC === null)).toBe(true);
+    expect(
+      planned
+        .filter((record) => record.SVOCCUR === "Y")
+        .every((record) => record.SVSTDTC !== null)
+    ).toBe(true);
+  });
+
   it("codes every adverse event to the fictional dictionary's five levels", () => {
     const ae = records(get("AE"));
     expect(ae.length).toBeGreaterThan(0);

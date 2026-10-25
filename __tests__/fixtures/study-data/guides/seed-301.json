@@ -124,7 +124,7 @@
         "name": "SV",
         "label": "Subject Visits",
         "class": "Special Purpose",
-        "structure": "One record per actual visit per subject",
+        "structure": "One record per actual or planned visit per subject",
         "keys": ["STUDYID", "USUBJID", "VISITNUM"],
         "records": 582,
         "file": "sv.xpt"
@@ -279,6 +279,16 @@
         "id": "UNPLANNED_ARM",
         "text": "Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned.",
         "variables": ["DM.ACTARMUD"]
+      },
+      {
+        "id": "PLANNED_VISIT",
+        "text": "Y when the visit is one of the planned visits in TV; missing for an unscheduled visit.",
+        "variables": ["SV.SVPRESP"]
+      },
+      {
+        "id": "VISIT_OCCURRED",
+        "text": "For a planned visit, Y when the visit has a date and N when it was missed; missing for an unscheduled visit.",
+        "variables": ["SV.SVOCCUR"]
       },
       {
         "id": "STUDY_DAY",

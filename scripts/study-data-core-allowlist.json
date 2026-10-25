@@ -19,30 +19,6 @@
     },
     {
       "target": "sdtm",
-      "coreId": "CORE-000334",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "SVPRESP and SVOCCUR are not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000334",
-      "dataset": "TA",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "TABRANCH and TATRANS are not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000334",
-      "dataset": "TV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "ARMCD is not derived."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-000852",
       "dataset": "AE",
       "category": "defect",

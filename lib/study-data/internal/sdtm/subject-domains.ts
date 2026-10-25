@@ -8,6 +8,7 @@ import type {
   VariableRole,
 } from "../../types";
 import { sdtmCodelist } from "./codelists";
+import { sdtmRequired } from "./required";
 import type { SdtmMethodId } from "./methods";
 import { toStandardUnit } from "./units";
 
@@ -70,6 +71,9 @@ const VISITNUM = collected(
   "float"
 );
 const VISIT = collected("VISIT", "Visit Name", "SV.VISIT", "Timing");
+// SV is one record per visit, so the visit is its topic (SDTMIG 3.4 roles).
+const SV_VISITNUM: ColumnSpec = { ...VISITNUM, role: "Topic" };
+const SV_VISIT: ColumnSpec = { ...VISIT, role: "Synonym Qualifier" };
 /** The seriousness criteria AE carries, in SDTMIG 3.4 order and labels. */
 const AE_SERIOUSNESS_CRITERIA = [
   ["AESCONG", "Congenital Anomaly or Birth Defect"],
@@ -87,40 +91,40 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     keys: ["STUDYID", "USUBJID"],
     columns: [
       ...COMMON,
-      collected("SUBJID", "Subject Identifier", "DM.USUBJID", "Identifier"),
+      collected("SUBJID", "Subject Identifier", "DM.USUBJID", "Topic"),
       collected(
         "RFICDTC",
         "Informed Consent Date",
         "DM.CONSENTDTC",
-        "Timing",
+        "Record Qualifier",
         "date"
       ),
       derived(
         "RFSTDTC",
         "Subject Reference Start Date",
         "FIRST_EXPOSURE",
-        "Timing",
+        "Record Qualifier",
         "date"
       ),
       derived(
         "RFENDTC",
         "Subject Reference End Date",
         "LAST_EXPOSURE",
-        "Timing",
+        "Record Qualifier",
         "date"
       ),
       derived(
         "RFXSTDTC",
         "Date of First Study Treatment",
         "FIRST_EXPOSURE",
-        "Timing",
+        "Record Qualifier",
         "date"
       ),
       derived(
         "RFXENDTC",
         "Date of Last Study Treatment",
         "LAST_EXPOSURE",
-        "Timing",
+        "Record Qualifier",
         "date"
       ),
       derived(
@@ -145,32 +149,27 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Record Qualifier"
       ),
       collected("AGE", "Age", "DM.AGE", "Record Qualifier", "integer"),
-      assigned("AGEU", "Age Units", "Record Qualifier"),
+      assigned("AGEU", "Age Units", "Variable Qualifier"),
       collected("SEX", "Sex", "DM.SEX", "Record Qualifier"),
       collected("RACE", "Race", "DM.RACE", "Record Qualifier"),
-      derived(
-        "ARMCD",
-        "Planned Arm Code",
-        "RANDOMIZATION",
-        "Grouping Qualifier"
-      ),
+      derived("ARMCD", "Planned Arm Code", "RANDOMIZATION", "Record Qualifier"),
       derived(
         "ARM",
         "Description of Planned Arm",
         "RANDOMIZATION",
-        "Grouping Qualifier"
+        "Synonym Qualifier"
       ),
       derived(
         "ACTARMCD",
         "Actual Arm Code",
         "EXPOSURE_ARM",
-        "Grouping Qualifier"
+        "Record Qualifier"
       ),
       derived(
         "ACTARM",
         "Description of Actual Arm",
         "EXPOSURE_ARM",
-        "Grouping Qualifier"
+        "Synonym Qualifier"
       ),
       derived(
         "ARMNRS",
@@ -194,8 +193,8 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     keys: ["STUDYID", "USUBJID", "VISITNUM"],
     columns: [
       ...COMMON,
-      VISITNUM,
-      VISIT,
+      SV_VISITNUM,
+      SV_VISIT,
       collected("SVSTDTC", "Start Date of Visit", "SV.SVDTC", "Timing", "date"),
       collected("SVENDTC", "End Date of Visit", "SV.SVDTC", "Timing", "date"),
       derived(
@@ -440,7 +439,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "LBNRIND",
         "Reference Range Indicator",
         "LB.LBNRIND",
-        "Record Qualifier"
+        "Variable Qualifier"
       ),
       VISITNUM,
       VISIT,
@@ -481,7 +480,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "DSCAT",
         "Category for Disposition",
         "DS.DSSCAT",
-        "Record Qualifier"
+        "Grouping Qualifier"
       ),
       collected(
         "DSSTDTC",
@@ -584,6 +583,7 @@ function table(
       ...(column.type ? {} : { length: 200 }),
       origin: column.origin,
       ...sdtmCodelist(column.name),
+      ...sdtmRequired(name, column.name),
       ...(column.method ? { method: column.method } : {}),
       ...(column.source ? { source: column.source } : {}),
     })),

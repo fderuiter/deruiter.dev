@@ -483,7 +483,7 @@ FULL OUTER JOIN "denominator" AS "d"
   ON "d"."study" = "n"."study" AND "d"."month" = "n"."month"
 ORDER BY 1, 2;
 
--- Open queries: open_query_count 1.0.0 (certified), PostgreSQL.
+-- Open queries: open_query_count 1.1.0 (certified), PostgreSQL.
 -- Grouped by: none. Filters: study_status not in (closed).
 WITH "measure" AS (
   SELECT
@@ -495,7 +495,7 @@ WITH "measure" AS (
 )
 SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
 
--- Open queries: open_query_count 1.0.0 (certified), PostgreSQL.
+-- Open queries: open_query_count 1.1.0 (certified), PostgreSQL.
 -- Grouped by: study, month. Filters: study_status not in (closed).
 WITH "measure" AS (
   SELECT
@@ -516,7 +516,7 @@ SELECT
 FROM "measure"
 ORDER BY 1, 2;
 
--- Query aging: query_aging_mean 1.0.0 (certified), PostgreSQL.
+-- Query aging: query_aging_mean 1.1.0 (certified), PostgreSQL.
 -- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
 WITH "measure" AS (
   SELECT
@@ -528,7 +528,7 @@ WITH "measure" AS (
 )
 SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
 
--- Query aging: query_aging_mean 1.0.0 (certified), PostgreSQL.
+-- Query aging: query_aging_mean 1.1.0 (certified), PostgreSQL.
 -- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
 WITH "measure" AS (
   SELECT
@@ -549,7 +549,7 @@ SELECT
 FROM "measure"
 ORDER BY 1, 2;
 
--- Query resolution time (median): query_resolution_time_median 1.0.0 (certified), PostgreSQL.
+-- Query resolution time (median): query_resolution_time_median 1.1.0 (certified), PostgreSQL.
 -- Grouped by: none. Filters: none.
 WITH "measure" AS (
   SELECT
@@ -559,7 +559,7 @@ WITH "measure" AS (
 )
 SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
 
--- Query resolution time (median): query_resolution_time_median 1.0.0 (certified), PostgreSQL.
+-- Query resolution time (median): query_resolution_time_median 1.1.0 (certified), PostgreSQL.
 -- Grouped by: study, month. Filters: none.
 WITH "measure" AS (
   SELECT
@@ -570,6 +570,152 @@ WITH "measure" AS (
   JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
   JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
   WHERE "f"."closed_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Open queries aged 0 to 7 days: open_queries_aged_0_7_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 0
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) <= 7
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Open queries aged 0 to 7 days: open_queries_aged_0_7_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 0
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) <= 7
+    AND "dim_study"."study_status" NOT IN ('closed')
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Open queries aged 8 to 30 days: open_queries_aged_8_30_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 8
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) <= 30
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Open queries aged 8 to 30 days: open_queries_aged_8_30_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 8
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) <= 30
+    AND "dim_study"."study_status" NOT IN ('closed')
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Open queries aged 31 to 60 days: open_queries_aged_31_60_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 31
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) <= 60
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Open queries aged 31 to 60 days: open_queries_aged_31_60_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 31
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) <= 60
+    AND "dim_study"."study_status" NOT IN ('closed')
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Open queries aged over 60 days: open_queries_aged_over_60_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 61
+    AND "dim_study"."study_status" NOT IN ('closed')
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Open queries aged over 60 days: open_queries_aged_over_60_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: study_status not in (closed). Data cut: 2026-09-30.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_query" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."opened_date_key"
+  WHERE "f"."query_status" IN ('open', 'answered')
+    AND (DATE '2026-09-30' - TO_DATE(CAST("f"."opened_date_key" AS TEXT), 'YYYYMMDD')) >= 61
+    AND "dim_study"."study_status" NOT IN ('closed')
   GROUP BY "dim_study"."study_id", "dim_date"."year_month"
 )
 SELECT
@@ -869,6 +1015,34 @@ SELECT
 FROM "numerator" AS "n"
 FULL OUTER JOIN "denominator" AS "d"
   ON "d"."study" = "n"."study" AND "d"."site" = "n"."site"
+ORDER BY 1, 2;
+
+-- Protocol deviations: protocol_deviation_count 1.0.0 (certified), PostgreSQL.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE PRECISION) AS "value";
+
+-- Protocol deviations: protocol_deviation_count 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_deviation" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."occurred_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE PRECISION) AS "value"
+FROM "measure"
 ORDER BY 1, 2;
 
 -- First subject in to last subject in: fpi_to_lpi_days 1.0.0 (certified), PostgreSQL.

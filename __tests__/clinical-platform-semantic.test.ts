@@ -85,6 +85,12 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     open_query_count: 36,
     query_aging_mean: 2.91666666667,
     query_resolution_time_median: 5,
+    // The age bands (#2759) add up to the open queries: no unresolved query
+    // on the seed is older than 30 days at the data cut.
+    open_queries_aged_0_7_days: 33,
+    open_queries_aged_8_30_days: 3,
+    open_queries_aged_31_60_days: 0,
+    open_queries_aged_over_60_days: 0,
     sdv_completion: 0.853482293855,
     monitoring_reports_overdue: 2,
     monitoring_visits_overdue: 5,
@@ -92,6 +98,9 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     important_deviation_rate: 13.680781759,
     non_important_deviation_rate: 13.1107491857,
     subjects_with_important_deviation: 0.128664495114,
+    // Every deviation (#2759): the 168 important and 161 not important that
+    // the two deviation rates count per 100 enrolled subjects.
+    protocol_deviation_count: 329,
     fpi_to_lpi_days: {
       "DEMO-101": 128,
       "DEMO-201": 457,
@@ -106,8 +115,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 26 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(26);
+  it("defines 31 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(31);
     expect(checkMetricRegistry()).toEqual([]);
   });
 

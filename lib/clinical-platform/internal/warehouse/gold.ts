@@ -537,6 +537,8 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
       answered_date_key: optDk(answered),
       closed_date_key: optDk(closed),
       queried_field: q.queried_field,
+      // The CDASH domain names the form: VS.WEIGHT is on the VS form.
+      queried_form: str(q, "queried_field").split(".")[0],
       query_origin: q.query_origin,
       query_status: q.query_status,
       minutes_to_answer: minutesBetween(opened, answered),

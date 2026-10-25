@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.1.0, DuckDB dialect.
+-- Clinical Data Platform warehouse, schema 1.2.0, DuckDB dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -676,6 +676,7 @@ CREATE TABLE "gold"."fct_query" (
   "answered_date_key" INTEGER,
   "closed_date_key"   INTEGER,
   "queried_field"     VARCHAR NOT NULL,
+  "queried_form"      VARCHAR NOT NULL,
   "query_origin"      VARCHAR NOT NULL,
   "query_status"      VARCHAR NOT NULL,
   "minutes_to_answer" INTEGER,
@@ -700,6 +701,7 @@ COMMENT ON COLUMN "gold"."fct_query"."opened_date_key" IS 'UTC date the query op
 COMMENT ON COLUMN "gold"."fct_query"."answered_date_key" IS 'UTC date the site answered.';
 COMMENT ON COLUMN "gold"."fct_query"."closed_date_key" IS 'UTC date the query closed.';
 COMMENT ON COLUMN "gold"."fct_query"."queried_field" IS 'Queried field, as DOMAIN.VARIABLE.';
+COMMENT ON COLUMN "gold"."fct_query"."queried_form" IS 'CRF form of the queried field: its CDASH domain, the part of queried_field before the dot.';
 COMMENT ON COLUMN "gold"."fct_query"."query_origin" IS 'edit-check or manual.';
 COMMENT ON COLUMN "gold"."fct_query"."query_status" IS 'State at the data cut.';
 COMMENT ON COLUMN "gold"."fct_query"."minutes_to_answer" IS 'Minutes from opening to the site''s answer.';

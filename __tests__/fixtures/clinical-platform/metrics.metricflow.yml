@@ -119,6 +119,12 @@ semantic_models:
         type: foreign
         expr: country_key
     dimensions:
+      - name: deviation_category
+        type: categorical
+        description: "Deviation category."
+      - name: importance
+        type: categorical
+        description: "important or not-important."
       - name: occurred_date
         type: time
         expr: "CAST(strptime(CAST(occurred_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
@@ -139,6 +145,11 @@ semantic_models:
         description: "The numerator of subjects_with_important_deviation."
         agg: count_distinct
         expr: "CASE WHEN is_important = TRUE THEN subject_id END"
+        agg_time_dimension: occurred_date
+      - name: protocol_deviation_count__value
+        description: "Measure of protocol_deviation_count."
+        agg: sum
+        expr: "1"
         agg_time_dimension: occurred_date
   - name: fct_enrollment
     description: "Subject enrollment events: screened, enrolled, completed and discontinued. Grain: One row per subject per enrollment event."
@@ -346,6 +357,9 @@ semantic_models:
         type: foreign
         expr: country_key
     dimensions:
+      - name: queried_form
+        type: categorical
+        description: "CRF form of the queried field: its CDASH domain, the part of queried_field before the dot."
       - name: opened_date
         type: time
         expr: "CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
@@ -371,6 +385,26 @@ semantic_models:
         description: "Measure of query_resolution_time_median."
         agg: median
         expr: "CASE WHEN closed_date_key IS NOT NULL THEN CAST(date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), CAST(strptime(CAST(closed_date_key AS VARCHAR), '%Y%m%d') AS DATE)) AS DOUBLE) END"
+        agg_time_dimension: opened_date
+      - name: open_queries_aged_0_7_days__value
+        description: "Measure of open_queries_aged_0_7_days."
+        agg: sum
+        expr: "CASE WHEN query_status IN ('open', 'answered') AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') >= 0 AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') <= 7 THEN 1 ELSE 0 END"
+        agg_time_dimension: opened_date
+      - name: open_queries_aged_8_30_days__value
+        description: "Measure of open_queries_aged_8_30_days."
+        agg: sum
+        expr: "CASE WHEN query_status IN ('open', 'answered') AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') >= 8 AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') <= 30 THEN 1 ELSE 0 END"
+        agg_time_dimension: opened_date
+      - name: open_queries_aged_31_60_days__value
+        description: "Measure of open_queries_aged_31_60_days."
+        agg: sum
+        expr: "CASE WHEN query_status IN ('open', 'answered') AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') >= 31 AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') <= 60 THEN 1 ELSE 0 END"
+        agg_time_dimension: opened_date
+      - name: open_queries_aged_over_60_days__value
+        description: "Measure of open_queries_aged_over_60_days."
+        agg: sum
+        expr: "CASE WHEN query_status IN ('open', 'answered') AND date_diff('day', CAST(strptime(CAST(opened_date_key AS VARCHAR), '%Y%m%d') AS DATE), DATE '2026-09-30') >= 61 THEN 1 ELSE 0 END"
         agg_time_dimension: opened_date
   - name: fct_spend
     description: "Budget against actual spend, with each quarter spread evenly over its three months. Grain: One row per study, vendor and calendar month."
@@ -929,6 +963,99 @@ metrics:
     filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
     config:
       meta:
+        version: "1.1.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: queries
+        format: "number, 0 decimals"
+        display_folder: Queries
+        glossary_term: data-query-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+          - queried_form
+  - name: query_aging_mean
+    label: "Query aging"
+    description: "Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history."
+    type: simple
+    type_params:
+      measure:
+        name: query_aging_mean__value
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
+        version: "1.1.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: Queries
+        glossary_term: data-query-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+          - queried_form
+  - name: query_resolution_time_median
+    label: "Query resolution time (median)"
+    description: "Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates."
+    type: simple
+    type_params:
+      measure:
+        name: query_resolution_time_median__value
+    config:
+      meta:
+        version: "1.1.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: Queries
+        glossary_term: data-query-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+          - queried_form
+  - name: open_queries_aged_0_7_days
+    label: "Open queries aged 0 to 7 days"
+    description: "Queries not closed at the data cut that opened 0 to 7 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history."
+    type: simple
+    type_params:
+      measure:
+        name: open_queries_aged_0_7_days__value
+        fill_nulls_with: 0
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
         version: "1.0.0"
         status: certified
         owner: "Clinical Data Management Lead"
@@ -949,13 +1076,15 @@ metrics:
           - country
           - region
           - month
-  - name: query_aging_mean
-    label: "Query aging"
-    description: "Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history."
+          - queried_form
+  - name: open_queries_aged_8_30_days
+    label: "Open queries aged 8 to 30 days"
+    description: "Queries not closed at the data cut that opened 8 to 30 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history."
     type: simple
     type_params:
       measure:
-        name: query_aging_mean__value
+        name: open_queries_aged_8_30_days__value
+        fill_nulls_with: 0
     filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
     config:
       meta:
@@ -964,8 +1093,8 @@ metrics:
         owner: "Clinical Data Management Lead"
         steward: "Clinical Data Steward"
         grain: portfolio
-        unit: days
-        format: "number, 1 decimals"
+        unit: queries
+        format: "number, 0 decimals"
         display_folder: Queries
         glossary_term: data-query-term
         allowed_dimensions:
@@ -979,13 +1108,16 @@ metrics:
           - country
           - region
           - month
-  - name: query_resolution_time_median
-    label: "Query resolution time (median)"
-    description: "Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates."
+          - queried_form
+  - name: open_queries_aged_31_60_days
+    label: "Open queries aged 31 to 60 days"
+    description: "Queries not closed at the data cut that opened 31 to 60 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history."
     type: simple
     type_params:
       measure:
-        name: query_resolution_time_median__value
+        name: open_queries_aged_31_60_days__value
+        fill_nulls_with: 0
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
     config:
       meta:
         version: "1.0.0"
@@ -993,8 +1125,8 @@ metrics:
         owner: "Clinical Data Management Lead"
         steward: "Clinical Data Steward"
         grain: portfolio
-        unit: days
-        format: "number, 1 decimals"
+        unit: queries
+        format: "number, 0 decimals"
         display_folder: Queries
         glossary_term: data-query-term
         allowed_dimensions:
@@ -1008,6 +1140,39 @@ metrics:
           - country
           - region
           - month
+          - queried_form
+  - name: open_queries_aged_over_60_days
+    label: "Open queries aged over 60 days"
+    description: "Queries not closed at the data cut that opened more than 60 days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history."
+    type: simple
+    type_params:
+      measure:
+        name: open_queries_aged_over_60_days__value
+        fill_nulls_with: 0
+    filter: "{{ Dimension('study__study_status') }} NOT IN ('closed')"
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Data Management Lead"
+        steward: "Clinical Data Steward"
+        grain: portfolio
+        unit: queries
+        format: "number, 0 decimals"
+        display_folder: Queries
+        glossary_term: data-query-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+          - queried_form
   - name: sdv_completion__numerator
     label: "SDV completion (numerator)"
     description: "SDV completion (numerator): an input of a governed metric, not reported on its own."
@@ -1284,6 +1449,38 @@ metrics:
           - site
           - country
           - region
+  - name: protocol_deviation_count
+    label: "Protocol deviations"
+    description: "Protocol deviations that occurred, important or not, counted on the date each occurred. It can be broken down by category and importance; the rates per 100 enrolled subjects cannot, because enrollment has neither."
+    type: simple
+    type_params:
+      measure:
+        name: protocol_deviation_count__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Quality Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: deviations
+        format: "number, 0 decimals"
+        display_folder: "Protocol deviations"
+        glossary_term: protocol-deviation-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+          - deviation_category
+          - deviation_importance
   - name: fpi_to_lpi_days__from_date
     label: "First subject in to last subject in (start date)"
     description: "First subject in to last subject in (start date): an input of a governed metric, not reported on its own."

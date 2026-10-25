@@ -21,8 +21,8 @@ const LaserLoonLoader = () =>
 const DynamicLaserLoon = dynamic(LaserLoonLoader, {
   ssr: false,
   loading: () => (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-500 animate-pulse">
-      <div className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin mb-4" />
+    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-400">
+      <div className="w-8 h-8 border-2 border-red-500/30 border-t-red-500 rounded-full animate-spin motion-reduce:animate-none mb-4" />
       <span>Warming up the lasers...</span>
     </div>
   ),

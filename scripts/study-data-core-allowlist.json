@@ -67,14 +67,6 @@
     },
     {
       "target": "sdtm",
-      "coreId": "CORE-000266",
-      "dataset": "AE",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "The seriousness criteria are not derived for serious AEs."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-000776",
       "dataset": "AE",
       "category": "defect",

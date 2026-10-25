@@ -70,6 +70,15 @@ const VISITNUM = collected(
   "float"
 );
 const VISIT = collected("VISIT", "Visit Name", "SV.VISIT", "Timing");
+/** The seriousness criteria AE carries, in SDTMIG 3.4 order and labels. */
+const AE_SERIOUSNESS_CRITERIA = [
+  ["AESCONG", "Congenital Anomaly or Birth Defect"],
+  ["AESDISAB", "Persist or Signif Disability/Incapacity"],
+  ["AESDTH", "Results in Death"],
+  ["AESHOSP", "Requires or Prolongs Hospitalization"],
+  ["AESLIFE", "Is Life Threatening"],
+  ["AESMIE", "Other Medically Important Serious Event"],
+] as const;
 const SPECS: Record<SubjectDomain, DomainSpec> = {
   DM: {
     label: "Demographics",
@@ -259,6 +268,9 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Action Taken with Study Treatment",
         "AE.AEACN",
         "Record Qualifier"
+      ),
+      ...AE_SERIOUSNESS_CRITERIA.map(([name, label]) =>
+        collected(name, label, `AE.${name}`, "Record Qualifier")
       ),
       collected(
         "AESTDTC",
@@ -718,6 +730,9 @@ export function deriveSubjectDomains(
         AESER: record.AESER,
         AEREL: record.AEREL === "RELATED" ? "POSSIBLY RELATED" : record.AEREL,
         AEACN: record.AEACN,
+        ...Object.fromEntries(
+          AE_SERIOUSNESS_CRITERIA.map(([name]) => [name, record[name] ?? null])
+        ),
         AESTDTC: record.AESTDTC,
         AEENDTC: record.AEENDTC,
         AESTDY: day(record.AESTDTC, exposure?.EXSTDTC ?? null),

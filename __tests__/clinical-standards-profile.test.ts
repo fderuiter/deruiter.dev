@@ -157,6 +157,16 @@ describe("DEMO-301 collection against CRF Studio's CDASH catalog", () => {
     "test row": ["VSTESTCD", "VSORRES", "VSORRESU", "LBTESTCD"],
     // Dates the catalog collects as --DAT fields (VSDAT, LBDAT, ICDAT).
     "collection date": ["VSDTC", "LBDTC", "CONSENTDTC"],
+    // CDASHIG AE seriousness criteria that CRF Studio's catalog does not
+    // list yet (#2826).
+    "seriousness criteria": [
+      "AESCONG",
+      "AESDISAB",
+      "AESDTH",
+      "AESHOSP",
+      "AESLIFE",
+      "AESMIE",
+    ],
     // Coded from the verbatim term with MedDRA, not entered.
     "dictionary coded": ["AEBODSYS", "AEDECOD"],
     // From randomization (IxRS) and screening outcome, not a CRF page.

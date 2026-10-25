@@ -10,6 +10,7 @@ import {
   type LicenseException,
 } from "../scripts/license-audit";
 import { checkLicenseCompliance } from "../lib/dx/doctor";
+import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
 describe("Lockfile License Audit Engine", () => {
   const mockNow = new Date("2026-10-01T12:00:00Z");
@@ -195,7 +196,7 @@ describe("Lockfile License Audit Engine", () => {
   });
 
   describe("runLicenseAudit", () => {
-    it("audits real repository package-lock.json under 200ms and passes", () => {
+    it("audits the real package-lock.json and passes, within a 200 ms budget", () => {
       const startTime = Date.now();
       const report = runLicenseAudit({ now: mockNow });
       const elapsed = Date.now() - startTime;
@@ -204,8 +205,9 @@ describe("Lockfile License Audit Engine", () => {
       expect(report.totalPackagesScanned).toBeGreaterThan(1000);
       expect(report.totalViolations).toBe(0);
       expect(report.invalidExceptions).toHaveLength(0);
-      expect(elapsed).toBeLessThan(200);
-      expect(report.durationMs).toBeLessThan(200);
+      expect(report.durationMs).toBeGreaterThanOrEqual(0);
+      expect(report.durationMs).toBeLessThanOrEqual(elapsed);
+      expectWithinTimingBudget("runLicenseAudit", elapsed, 200);
     });
 
     it("fails closed on mock fixture with unapproved license and no exception", () => {

@@ -287,6 +287,8 @@ them.
 | `NODE_ENV` | Platform | None | Set by Next.js. |
 | `VERCEL` | Platform | None | Set by Vercel on its builds. |
 | `VERCEL_ENV` | Platform | None | Set by Vercel. Gates migrations and production-only behaviour. |
+| `VERCEL_GIT_COMMIT_SHA` | Platform | None | Set by Vercel. `GET /api/version` reports it. |
+| `VERCEL_GIT_COMMIT_REF` | Platform | None | Set by Vercel. `GET /api/version` reports it. |
 | `NEXT_PHASE` | Platform | None | Set by Next.js while prerendering. |
 | `NEXT_RUNTIME` | Platform | None | Set by Next.js. |
 | `SKIP_DB_HEALTH_CHECK` | Platform | None | Set by `scripts/build.js`. |

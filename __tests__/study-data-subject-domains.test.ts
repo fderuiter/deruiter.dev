@@ -205,6 +205,54 @@ describe("SDTM subject tabulation", () => {
     });
   });
 
+  it("records why each serious AE is serious, and nothing for the rest (#2803)", () => {
+    const criteria = [
+      "AESCONG",
+      "AESDISAB",
+      "AESDTH",
+      "AESHOSP",
+      "AESLIFE",
+      "AESMIE",
+    ];
+    const ae = records(get("AE"));
+    const serious = ae.filter((record) => record.AESER === "Y");
+    expect(serious.length).toBeGreaterThan(0);
+    for (const record of serious) {
+      const answers = criteria.map((name) => record[name]);
+      expect(answers.every((answer) => answer === "Y" || answer === "N")).toBe(
+        true
+      );
+      expect(answers).toContain("Y");
+    }
+    // The criteria follow a "Yes" to serious, so a non-serious AE has none.
+    for (const record of ae.filter((record) => record.AESER === "N"))
+      for (const name of criteria) expect(record[name]).toBeNull();
+    // An AE results in death only for a subject whose disposition is death.
+    const died = new Set(
+      records(get("DS"))
+        .filter((record) => record.DSDECOD === "DEATH")
+        .map((record) => record.USUBJID)
+    );
+    expect(
+      ae.filter((record) => record.AESDTH === "Y" && !died.has(record.USUBJID))
+    ).toEqual([]);
+
+    const variables = get("AE").variables;
+    const names = variables.map((variable) => variable.name);
+    expect(
+      names.slice(names.indexOf("AEACN") + 1, names.indexOf("AEACN") + 7)
+    ).toEqual(criteria);
+    for (const name of criteria)
+      expect(
+        variables.find((variable) => variable.name === name)
+      ).toMatchObject({
+        role: "Record Qualifier",
+        origin: "Collected",
+        source: `AE.${name}`,
+        codelist: "NY",
+      });
+  });
+
   it("has ISO partial AE dates, no study day zero, and sequential per-subject records", () => {
     const ae = records(get("AE"));
     expect(

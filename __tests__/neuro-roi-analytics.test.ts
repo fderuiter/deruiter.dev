@@ -17,6 +17,7 @@ import {
   type ROIWorkerRequest,
   type VoxelCoord,
 } from "@/lib/neuro";
+import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
 describe("Worker-Based Mesh and Contour Analytics Pipeline Suite", () => {
   it("computes 2D Marching Squares vector contours with smooth line segments and SVG path geometry", () => {
@@ -94,7 +95,7 @@ describe("Worker-Based Mesh and Contour Analytics Pipeline Suite", () => {
       scenarioId: volume.scenarioId,
     });
 
-    expect(scanResult.scanDurationMs).toBeLessThan(50);
+    expectWithinTimingBudget("96-slice QA scan", scanResult.scanDurationMs, 50);
     expect(scanResult.alerts.length).toBeGreaterThan(0);
 
     const firstAlert = scanResult.alerts[0];
@@ -170,7 +171,11 @@ describe("Worker-Based Mesh and Contour Analytics Pipeline Suite", () => {
 
     const qaRes = await requestVolumeQAScanAsync(volume);
     expect(qaRes.alerts).toBeDefined();
-    expect(qaRes.scanDurationMs).toBeLessThan(50);
+    expectWithinTimingBudget(
+      "96-slice QA scan via the worker seam",
+      qaRes.scanDurationMs,
+      50
+    );
 
     const seg = await requestROISegmentationAsync(
       volume.rawT1,

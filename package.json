@@ -43,6 +43,7 @@
     "generate:llms": "tsx scripts/generate-llms-txt.ts",
     "check-docs-drift": "tsx scripts/check-drift.ts",
     "check:migrations": "node scripts/check-migrations.js",
+    "check:migration-safety": "tsx scripts/check-migration-safety.ts",
     "check:migrations:drift": "prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "migration:replay": "tsx scripts/migration-replay.ts",
     "verify:upstash": "tsx scripts/verify-upstash.ts",

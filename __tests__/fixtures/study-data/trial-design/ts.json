@@ -96,6 +96,7 @@
       "DEMO-301",
       "DEMO-301",
       "DEMO-301",
+      "DEMO-301",
       "DEMO-301"
     ],
     "DOMAIN": [
@@ -109,20 +110,22 @@
       "TS",
       "TS",
       "TS",
+      "TS",
       "TS"
     ],
-    "TSSEQ": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    "TSSEQ": [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     "TSPARMCD": [
       "TITLE",
       "TPHASE",
       "STYPE",
       "INTMODEL",
+      "INTTYPE",
+      "PCLAS",
       "TBLIND",
       "PLANSUB",
       "NARMS",
       "RANDOM",
-      "SDTMIGVER",
-      "ADAMIGVER",
+      "SDTIGVER",
       "CTVERS"
     ],
     "TSPARM": [
@@ -130,12 +133,13 @@
       "Trial Phase Classification",
       "Study Type",
       "Intervention Model",
+      "Intervention Type",
+      "Pharmacologic Class",
       "Trial Blinding Schema",
       "Planned Number of Subjects",
       "Number of Arms",
       "Randomized Trial",
-      "SDTM Implementation Guide Version",
-      "ADaM Implementation Guide Version",
+      "SDTM IG Version",
       "Controlled Terminology Version"
     ],
     "TSVAL": [
@@ -143,12 +147,13 @@
       "Phase III Trial",
       "INTERVENTIONAL",
       "PARALLEL",
+      "DRUG",
+      "Angiotensin 2 Receptor Blocker [EPC]",
       "DOUBLE BLIND",
       "90",
       "3",
       "Y",
       "3.4",
-      "1.3",
       "2026-09-25"
     ],
     "TSVALCD": [
@@ -156,11 +161,12 @@
       "C15602",
       "C98388",
       "C82639",
+      "C1909",
+      "N0000175561",
       "C15228",
       null,
       null,
       "C49488",
-      null,
       null,
       null
     ],
@@ -170,10 +176,11 @@
       "CDISC",
       "CDISC",
       "CDISC",
+      "MED-RT",
+      "CDISC",
       null,
       null,
       "CDISC",
-      null,
       null,
       null
     ],
@@ -183,13 +190,14 @@
       "2026-09-25",
       "2026-09-25",
       "2026-09-25",
+      "2026.10.05",
+      "2026-09-25",
       null,
       null,
       "2026-09-25",
       null,
-      null,
       null
     ]
   },
-  "rowCount": 11
+  "rowCount": 12
 }

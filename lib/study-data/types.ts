@@ -336,6 +336,18 @@ export interface StudyDesignDefinition {
   readonly blinding: string;
   /** Blinding NCI EVS code. */
   readonly blindingCode: string;
+  /**
+   * Type of the experimental intervention, coded in Intervention Type
+   * Response (C99078), for example `C1909`. Empty when the study names none.
+   */
+  readonly interventionType: CodedValue;
+  /**
+   * MED-RT Established Pharmacologic Class of the investigational product,
+   * with the MED-RT release it was taken from. Null when the study names no
+   * investigational product with a class.
+   */
+  readonly pharmacologicClass:
+    (CodedValue & { readonly version: string }) | null;
   /** Planned number of subjects. */
   readonly plannedEnrollment: number;
   /** Arms, in protocol order. */

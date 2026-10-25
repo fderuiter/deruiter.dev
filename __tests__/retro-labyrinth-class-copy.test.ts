@@ -118,7 +118,7 @@ describe("Retro Labyrinth class cards (#2338)", () => {
     const session = read(
       "components/retro-labyrinth/useRetroLabyrinthSession.ts"
     );
-    const view = read("components/retro-labyrinth/views/DesktopView.tsx");
+    const view = read("components/retro-labyrinth/parts/LabyrinthLayout.tsx");
     for (const source of [session, view]) {
       expect(source).not.toMatch(
         /activeSideEffect\?\.type === "scrambled_keys"/

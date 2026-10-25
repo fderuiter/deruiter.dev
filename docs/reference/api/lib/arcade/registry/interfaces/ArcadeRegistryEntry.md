@@ -18,6 +18,16 @@ Takes part in the Arcade Daily (`lib/arcade/daily.ts`).
 
 ***
 
+### epic?
+
+> `readonly` `optional` **epic?**: `number`
+
+The game's three-view epic under #2350. A gated view must name it, so
+every gate points at the work that lifts it (DX Doctor's three-view
+guardrails, #2845).
+
+***
+
 ### listing
 
 > `readonly` **listing**: [`ArcadeListing`](../type-aliases/ArcadeListing.md)

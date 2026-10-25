@@ -200,11 +200,15 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
     interventions.find(
       (item) => item.role?.code === EXPERIMENTAL_INTERVENTION
     ) ?? interventions[0];
-  const productClass = list(version.administrableProducts).find(
-    (product) =>
-      product.productDesignation?.code === INVESTIGATIONAL_PRODUCT &&
-      product.pharmacologicClass?.code
+  const products = list(version.administrableProducts).filter(
+    (product) => product.productDesignation?.code === INVESTIGATIONAL_PRODUCT
+  );
+  const productClass = products.find(
+    (product) => product.pharmacologicClass?.code
   )?.pharmacologicClass;
+  const doseForm = products.find(
+    (product) => product.administrableDoseForm?.standardCode?.code
+  )?.administrableDoseForm.standardCode;
 
   const planned = design.population?.plannedEnrollmentNumber;
   const plannedEnrollment = planned && "value" in planned ? planned.value : 0;
@@ -224,6 +228,7 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
       pharmacologicClass: productClass
         ? { ...coded(productClass), version: productClass.codeSystemVersion }
         : null,
+      doseForm: doseForm ? coded(doseForm) : null,
       plannedEnrollment,
       arms,
       epochs,

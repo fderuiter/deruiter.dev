@@ -6,6 +6,6 @@
 
 # Type Alias: CodelistId
 
-> **CodelistId** = `"NY"` \| `"SEX"` \| `"RACEC"` \| `"AGEU"` \| `"DOMAIN"` \| `"EPOCH"` \| `"VSTESTCD"` \| `"LBTESTCD"` \| `"VSRESU"` \| `"UNIT"` \| `"NRIND"` \| `"ACN"` \| `"DSCAT"` \| `"IECAT"` \| `"DTYPE"` \| `"DATEFL"` \| `"SBJTSTAT"` \| `"AEREL"` \| `"ARMCD"` \| `"ARMNULRS"` \| `"AGEGR1"` \| `"ADVS.PARAMCD"` \| `"ADLB.PARAMCD"` \| `"ADTTE.PARAMCD"`
+> **CodelistId** = `"NY"` \| `"SEX"` \| `"RACEC"` \| `"AGEU"` \| `"DOMAIN"` \| `"EPOCH"` \| `"VSTESTCD"` \| `"LBTESTCD"` \| `"VSRESU"` \| `"UNIT"` \| `"FRM"` \| `"NRIND"` \| `"ACN"` \| `"DSCAT"` \| `"IECAT"` \| `"DTYPE"` \| `"DATEFL"` \| `"SBJTSTAT"` \| `"AEREL"` \| `"ARMCD"` \| `"ARMNULRS"` \| `"AGEGR1"` \| `"ADVS.PARAMCD"` \| `"ADLB.PARAMCD"` \| `"ADTTE.PARAMCD"`
 
 A codelist id of the local terminology subset.

@@ -562,6 +562,7 @@
 - [lib/study-data/internal/lineage/model](lib/study-data/internal/lineage/model/README.md)
 - [lib/study-data/internal/lineage/trace](lib/study-data/internal/lineage/trace/README.md)
 - [lib/study-data/internal/sdtm/codelists](lib/study-data/internal/sdtm/codelists/README.md)
+- [lib/study-data/internal/sdtm/lab-ranges](lib/study-data/internal/sdtm/lab-ranges/README.md)
 - [lib/study-data/internal/sdtm/methods](lib/study-data/internal/sdtm/methods/README.md)
 - [lib/study-data/internal/sdtm/required](lib/study-data/internal/sdtm/required/README.md)
 - [lib/study-data/internal/sdtm/subject-domains](lib/study-data/internal/sdtm/subject-domains/README.md)

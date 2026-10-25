@@ -12,22 +12,6 @@
     {
       "target": "sdtm",
       "coreId": "CORE-000334",
-      "dataset": "EX",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "EXDOSFRM is not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000334",
-      "dataset": "LB",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "LBCAT and the reference range variables are not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000334",
       "dataset": "SV",
       "category": "defect",
       "issue": 2769,

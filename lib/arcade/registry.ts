@@ -44,6 +44,12 @@ export interface ArcadeRegistryEntry {
     readonly tablet: ArcadeViewReadiness;
     readonly phone: ArcadeViewReadiness;
   };
+  /**
+   * The game's three-view epic under #2350. A gated view must name it, so
+   * every gate points at the work that lifts it (DX Doctor's three-view
+   * guardrails, #2845).
+   */
+  readonly epic?: number;
   /** Set once the game has a dedicated phone view. */
   readonly phoneOrientation?: ArcadePhoneOrientation;
   /** Takes part in the Arcade Daily (`lib/arcade/daily.ts`). */
@@ -70,6 +76,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/working-with-duck",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2420,
     daily: false,
   },
   {
@@ -78,6 +85,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/laser-loon",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2441,
     daily: false,
   },
   {
@@ -86,6 +94,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/quasi-puzzler",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2396,
     daily: false,
   },
   {
@@ -94,6 +103,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/garmin-watch",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2431,
     daily: false,
   },
   {
@@ -102,6 +112,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/clinical-chaos",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2453,
     daily: false,
   },
   {
@@ -110,6 +121,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/trial-and-error",
     listing: "hub",
     views: READY_EVERYWHERE,
+    epic: 2407,
     daily: true,
   },
   {
@@ -118,6 +130,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/study-director",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2452,
     daily: true,
   },
   {
@@ -126,6 +139,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/patty-drive-thru",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2454,
     daily: true,
   },
   {
@@ -134,6 +148,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/for-better-or-bulk",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2457,
     daily: true,
   },
   {
@@ -142,6 +157,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/retro-labyrinth",
     listing: "hub",
     views: GATED_ON_PHONE,
+    epic: 2375,
     daily: false,
   },
   {
@@ -150,6 +166,7 @@ export const ARCADE_REGISTRY = [
     route: "/arcade/meme-vault",
     listing: "room",
     views: READY_EVERYWHERE,
+    epic: 2387,
     daily: false,
   },
   {
@@ -158,6 +175,7 @@ export const ARCADE_REGISTRY = [
     route: "/protocol-drift",
     listing: "simulators",
     views: GATED_ON_PHONE,
+    epic: 2462,
     daily: true,
   },
 ] as const satisfies readonly ArcadeRegistryEntry[];

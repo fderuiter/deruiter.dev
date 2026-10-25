@@ -486,6 +486,7 @@
 - [lib/quasi-perfect/types](lib/quasi-perfect/types/README.md)
 - [lib/quasi-perfect/variants](lib/quasi-perfect/variants/README.md)
 - [lib/redis](lib/redis/README.md)
+- [lib/redis-timeout](lib/redis-timeout/README.md)
 - [lib/retro-labyrinth](lib/retro-labyrinth/README.md)
 - [lib/retro-labyrinth/actions](lib/retro-labyrinth/actions/README.md)
 - [lib/retro-labyrinth/engine](lib/retro-labyrinth/engine/README.md)

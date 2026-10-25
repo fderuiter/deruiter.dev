@@ -2,11 +2,14 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { ClinicalJourneyHighlight } from "@/components/clinical-journey/ClinicalJourneyHighlight";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
-import { CLINICAL_JOURNEY } from "@/lib/clinical-journey";
+import { CLINICAL_JOURNEY, RELATED_GAMES } from "@/lib/clinical-journey";
 
 afterEach(cleanup);
 
-const LIVE = new Set(CLINICAL_JOURNEY.map((step) => step.href));
+const LIVE = new Set([
+  ...CLINICAL_JOURNEY.map((step) => step.href),
+  ...RELATED_GAMES.map((game) => game.href),
+]);
 
 function internalLinks(container: HTMLElement): string[] {
   return [...container.querySelectorAll("a")]
@@ -86,6 +89,33 @@ describe("clinical journey navigation", () => {
         .getAttribute("href")
     ).toBe("/case-studies/crf-xl");
     expect(screen.getAllByText(/Fred's own project/).length).toBe(2);
+  });
+
+  it("lists Clinical Trial Chaos on Protocol Drift, labelled a game", () => {
+    render(<ClinicalJourneyNav path="/protocol-drift" />);
+    expect(
+      screen
+        .getByRole("link", { name: "Clinical Trial Chaos" })
+        .getAttribute("href")
+    ).toBe("/arcade/clinical-chaos");
+    expect(
+      screen.getByText(/^\(Arcade game\): Sort clinical data/)
+    ).toBeTruthy();
+  });
+
+  it("shows the game on its step only, not on other steps or case studies", () => {
+    for (const path of [
+      "/crf",
+      "/study-data",
+      "/case-studies/cadence-clinical",
+    ]) {
+      const { unmount } = render(<ClinicalJourneyNav path={path} />);
+      expect(
+        screen.queryByRole("link", { name: "Clinical Trial Chaos" }),
+        path
+      ).toBeNull();
+      unmount();
+    }
   });
 
   it("on a related case study, points to the demo for its step", () => {

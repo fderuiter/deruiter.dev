@@ -233,7 +233,11 @@ function checkDefinition(metric: MetricDefinition): MetricFinding[] {
       report(finding.message);
     }
   }
-  if (metric.glossaryTerm !== null && !GLOSSARY_KEYS.has(metric.glossaryTerm)) {
+  if (metric.glossaryTerm === null) {
+    if (metric.status === "certified") {
+      report("a certified metric links no glossary term");
+    }
+  } else if (!GLOSSARY_KEYS.has(metric.glossaryTerm)) {
     report(`glossary term ${metric.glossaryTerm} is not in CANONICAL_GLOSSARY`);
   }
   if (
@@ -327,8 +331,9 @@ function checkDefinition(metric: MetricDefinition): MetricFinding[] {
  * aggregation accepts; guard every nullable column it reads with a not-null
  * condition (a `null` operand differs between SQL and DAX); reach every
  * allowed dimension from every table it reads; keep a semantic version that
- * its change log ends at; link an existing glossary term; and make no
- * compliance or validation claim. Ids and names must be unique.
+ * its change log ends at; link an existing glossary term, which a certified
+ * metric may not leave out; and make no compliance or validation claim. Ids
+ * and names must be unique.
  *
  * @param metrics - Definitions to check; defaults to `METRIC_REGISTRY`.
  * @returns Every broken rule; empty when the registry is sound.

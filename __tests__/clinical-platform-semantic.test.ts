@@ -154,13 +154,12 @@ describe("the metric registry", () => {
     }
   });
 
-  it("links only glossary terms that exist", () => {
+  it("links every metric to a glossary term that exists", () => {
     const keys = new Set(CANONICAL_GLOSSARY.map((t) => t.key));
-    const linked = METRIC_REGISTRY.flatMap((m) =>
-      m.glossaryTerm === null ? [] : [m.glossaryTerm]
-    );
-    expect(linked.length).toBeGreaterThan(0);
-    for (const key of linked) expect(keys.has(key), key).toBe(true);
+    for (const m of METRIC_REGISTRY) {
+      expect(m.glossaryTerm, m.id).not.toBeNull();
+      expect(keys.has(m.glossaryTerm ?? ""), m.id).toBe(true);
+    }
   });
 
   it("describes every formula in words", () => {
@@ -554,11 +553,15 @@ describe("registry governance checks", () => {
     expect(messages({ ...base, version: "1.1.0" })).toContain(
       "the change log does not end at version 1.1.0"
     );
-    expect(
-      messages({ ...base, glossaryTerm: "screen-failure-term" })
-    ).toContain(
-      "glossary term screen-failure-term is not in CANONICAL_GLOSSARY"
+    expect(messages({ ...base, glossaryTerm: "no-such-term" })).toContain(
+      "glossary term no-such-term is not in CANONICAL_GLOSSARY"
     );
+    expect(messages({ ...base, glossaryTerm: null })).toContain(
+      "a certified metric links no glossary term"
+    );
+    expect(
+      messages({ ...base, status: "draft", glossaryTerm: null })
+    ).not.toContain("a certified metric links no glossary term");
     expect(
       messages({
         ...base,

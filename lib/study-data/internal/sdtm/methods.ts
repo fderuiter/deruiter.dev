@@ -26,7 +26,7 @@ export const SDTM_METHODS = {
     "Test name and standard unit of the USDM biomedical concept for the test code.",
   TEXT_RESULT: "The collected numeric result written as text.",
   STANDARD_RESULT:
-    "The collected result, since results are collected in the standard unit: as text in --STRESC and as a number in --STRESN.",
+    "The collected result in the test's standard unit, as text in --STRESC and as a number in --STRESN: as collected when the collected unit is the standard unit, otherwise converted by a fixed factor and rounded to two decimals. The one conversion defined is glucose from mg/dL to mmol/L (divide by 18.016); with any other unit the standard result is missing.",
   LAST_PRE_DOSE:
     "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
 } as const;

@@ -9,6 +9,7 @@ import type {
 } from "../../types";
 import { sdtmCodelist } from "./codelists";
 import type { SdtmMethodId } from "./methods";
+import { toStandardUnit } from "./units";
 
 type Row = Record<string, CellValue>;
 type SubjectDomain = "DM" | "SV" | "EX" | "AE" | "VS" | "LB" | "DS" | "SUPPDM";
@@ -723,6 +724,16 @@ export function deriveSubjectDomains(
       const exposure = exBySubject.get(text(record.USUBJID));
       const assessment = assessmentByCode.get(text(record[dates.code]) ?? "");
       const result = num(record[dates.result]);
+      const standardUnit = assessment?.unit ?? text(record[dates.unit]);
+      const standard =
+        result === null
+          ? null
+          : toStandardUnit(
+              text(record[dates.code]) ?? "",
+              result,
+              text(record[dates.unit]),
+              standardUnit
+            );
       const source = text(record.SRCID);
       const key = `${record.USUBJID}|${record[dates.code]}`;
       const baselineFlag = baseline.get(key)?.source === source ? "Y" : null;
@@ -732,9 +743,9 @@ export function deriveSubjectDomains(
         [`${name}TEST`]: assessment?.testName ?? null,
         [`${name}ORRES`]: result === null ? null : String(result),
         [`${name}ORRESU`]: record[dates.unit],
-        [`${name}STRESC`]: result === null ? null : String(result),
-        [`${name}STRESN`]: result,
-        [`${name}STRESU`]: assessment?.unit ?? record[dates.unit],
+        [`${name}STRESC`]: standard === null ? null : String(standard),
+        [`${name}STRESN`]: standard,
+        [`${name}STRESU`]: standardUnit,
         ...visit(record),
         [dates.date]: record[dates.date],
         [`${name}DY`]: day(record[dates.date], exposure?.EXSTDTC ?? null),

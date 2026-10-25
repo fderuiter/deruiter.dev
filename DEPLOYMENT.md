@@ -13,14 +13,14 @@ tooling, and the triage runbooks for the scheduled synthetic probes.
 
 ## 1. The Controls That Actually Guard Production
 
-| Stage                     | Control                                                                                                                | Where it lives                           |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| Before merge              | **Merge Gate (Required Checks Summary)** must be green on the PR                                                       | `.github/workflows/ci.yml`               |
-| After green merge         | An operator uses Dashboard → Deployments → Create Deployment with the current `main` SHA; GitHub Actions never deploys | Vercel project, `vercel.json`, ADR 0051  |
-| During the build          | Pending migrations are applied through the unpooled Neon endpoint on Vercel production builds only, before compilation | `scripts/build.js`                       |
-| Before promotion          | A Vercel **Deployment Check** holds the domains until Merge Gate passes on that commit                                 | Vercel project settings                  |
-| After promotion           | The daily synthetic probes exercise the critical journeys against production (section 3)                               | `.github/workflows/synthetic-probes.yml` |
-| When production is broken | A person uses Vercel's **Instant Rollback** to the previous production deployment, then fixes forward with a PR        | Vercel dashboard                         |
+| Stage                     | Control                                                                                                                                          | Where it lives                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| Before merge              | **Merge Gate (Required Checks Summary)** must be green on the PR                                                                                 | `.github/workflows/ci.yml`               |
+| After green merge         | An operator uses Dashboard → Deployments → Create Deployment with the current `main` SHA; GitHub Actions never deploys                           | Vercel project, `vercel.json`, ADR 0051  |
+| During the build          | The type check runs, then pending migrations are applied through the unpooled Neon endpoint on Vercel production builds only, before compilation | `scripts/build.js`                       |
+| Before promotion          | None: the project keeps no Vercel Deployment Checks, so a READY build takes the domains (#2899)                                                  | Vercel project settings                  |
+| After promotion           | The daily synthetic probes exercise the critical journeys against production (section 3)                                                         | `.github/workflows/synthetic-probes.yml` |
+| When production is broken | A person uses Vercel's **Instant Rollback** to the previous production deployment, then fixes forward with a PR                                  | Vercel dashboard                         |
 
 Nothing in this repository promotes or rolls back a deployment automatically.
 

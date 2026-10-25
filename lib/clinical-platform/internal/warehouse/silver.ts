@@ -115,6 +115,7 @@ export function conformBronze(
       completed_on: s.completedOn,
       discontinued_on: s.discontinuedOn,
       subject_status: s.status,
+      screen_failure_reason: s.screenFailureReason,
       source_system: s.source,
       is_synthetic: s.synthetic,
     })),

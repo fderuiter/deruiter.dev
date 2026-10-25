@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.2.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.3.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -103,6 +103,7 @@ erDiagram
     int country_key FK
     int event_date_key FK
     varchar subject_status
+    varchar screen_failure_reason
     int event_count
     boolean is_synthetic
   }
@@ -441,6 +442,7 @@ Subject enrollment events: screened, enrolled, completed and discontinued.
 | `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
 | `event_date_key` | integer | no | FK to `gold.dim_date` | internal | Date of the event. |
 | `subject_status` | string | no |  | internal | Subject status at the data cut. |
+| `screen_failure_reason` | string | yes |  | internal | Why screening failed; null unless the subject failed screening (degenerate dimension). |
 | `event_count` | integer | no |  | internal | Always 1: the additive measure. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 

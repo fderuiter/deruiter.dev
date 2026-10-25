@@ -71,6 +71,7 @@ const BY_WORDS: Readonly<Record<MetricDimensionId, string>> = {
   deviation_category: "by deviation category",
   deviation_importance: "by deviation importance",
   queried_form: "by queried form",
+  screen_failure_reason: "by screen failure reason",
 };
 
 /**
@@ -193,16 +194,22 @@ const SECTIONS: readonly SectionPlan[] = [
         siteVisual: "table",
         refreshSlaHours: 24,
       },
-    ],
-    gaps: () => [
-      registryGap("Enrollment against a time-phased plan", null),
       {
-        name: "Screen failure reasons",
-        reason:
-          "The synthetic EDC feed records when a subject was screened, not why a screen failure failed.",
-        issue: GOLD_FACTS_ISSUE,
+        id: "screen-failure-reasons",
+        title: "Screen failures by reason",
+        purpose:
+          "How many screened subjects failed screening for each reason, to find the eligibility criteria and consent steps that turn subjects away.",
+        audience: "Clinical operations",
+        owner: OPS,
+        tier: "managed",
+        metrics: ["screen_failures"],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
+        breakdown: ["screen_failure_reason"],
       },
     ],
+    gaps: () => [registryGap("Enrollment against a time-phased plan", null)],
   },
   {
     id: "activation",
@@ -655,8 +662,8 @@ function scopeFilters(
  *   band's filters rather than a zero.
  */
 function zeroFilled(data: ReportData): ReportData {
-  const metrics = data.columns.map(
-    (c) => METRIC_REGISTRY.find((m) => m.id === c.metricId)!
+  const metrics = data.columns.map((c) =>
+    METRIC_REGISTRY.find((m) => m.id === c.metricId)!
   );
   const shape = (m: MetricDefinition) =>
     m.formula.kind === "simple" && m.formula.measure.aggregation === "count"

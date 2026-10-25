@@ -170,6 +170,9 @@ semantic_models:
         type: foreign
         expr: country_key
     dimensions:
+      - name: screen_failure_reason
+        type: categorical
+        description: "Why screening failed; null unless the subject failed screening (degenerate dimension)."
       - name: event_date
         type: time
         expr: "CAST(strptime(CAST(event_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
@@ -200,6 +203,11 @@ semantic_models:
         description: "The denominator of screen_failure_rate."
         agg: sum
         expr: "CASE WHEN event_type = 'screened' AND subject_status <> 'screening' THEN 1 ELSE 0 END"
+        agg_time_dimension: event_date
+      - name: screen_failures__value
+        description: "Measure of screen_failures."
+        agg: sum
+        expr: "CASE WHEN event_type = 'screened' AND subject_status = 'screen-failed' THEN 1 ELSE 0 END"
         agg_time_dimension: event_date
       - name: early_termination_rate__numerator
         description: "The numerator of early_termination_rate."
@@ -660,6 +668,37 @@ metrics:
           - country
           - region
           - month
+  - name: screen_failures
+    label: "Screen failures"
+    description: "Subjects whose screening ended in a screen failure, by screening date. It can be broken down by the reason screening failed; the screen failure rate cannot, because its denominator holds the subjects who passed, and they have no reason."
+    type: simple
+    type_params:
+      measure:
+        name: screen_failures__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: subjects
+        format: "number, 0 decimals"
+        display_folder: Enrollment
+        glossary_term: screen-failure-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+          - screen_failure_reason
   - name: early_termination_rate__numerator
     label: "Early termination rate (numerator)"
     description: "Early termination rate (numerator): an input of a governed metric, not reported on its own."

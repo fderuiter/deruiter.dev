@@ -24,6 +24,8 @@ export const SDTM_METHODS = {
     "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
   CT_UNIT_MAPPING:
     "Collected dose unit, which is already the UNIT submission value (TABLET, C48542).",
+  AE_DICTIONARY_CODING:
+    "Looked up from the preferred term (AEDECOD) in the study's fictional adverse event dictionary, which has MedDRA's five levels but is not MedDRA: its lower and group level names are invented and its codes are synthetic, from 99000000. Each lowest level term is its preferred term. Missing when the preferred term is not in the dictionary.",
   CT_RELATIONSHIP_MAPPING:
     "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
   USDM_ASSESSMENT:

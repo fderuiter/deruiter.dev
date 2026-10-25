@@ -110,6 +110,10 @@ const DEVIATION_DIMENSIONS: readonly MetricDimensionId[] = [
   "deviation_category",
   "deviation_importance",
 ];
+const SCREEN_FAILURE_DIMENSIONS: readonly MetricDimensionId[] = [
+  ...MONTHLY_DIMENSIONS,
+  "screen_failure_reason",
+];
 const SITE_TARGET_DIMENSIONS: readonly MetricDimensionId[] = [
   "study",
   "site",
@@ -338,6 +342,31 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     glossaryTerm: "screen-failure-term",
     displayFolder: "Enrollment",
   }),
+  define(
+    {
+      id: "screen_failures",
+      name: "Screen failures",
+      description:
+        "Subjects whose screening ended in a screen failure, by screening date. It can be broken down by the reason screening failed; the screen failure rate cannot, because its denominator holds the subjects who passed, and they have no reason.",
+      formula: {
+        kind: "simple",
+        measure: count(
+          ENROLLMENT,
+          "event_date_key",
+          is("event_type", "screened"),
+          is("subject_status", "screen-failed")
+        ),
+      },
+      allowedDimensions: SCREEN_FAILURE_DIMENSIONS,
+      unit: "subjects",
+      format: WHOLE,
+      owner: OPS_OWNER,
+      steward: OPS_STEWARD,
+      glossaryTerm: "screen-failure-term",
+      displayFolder: "Enrollment",
+    },
+    2879
+  ),
   define({
     id: "early_termination_rate",
     name: "Early termination rate",

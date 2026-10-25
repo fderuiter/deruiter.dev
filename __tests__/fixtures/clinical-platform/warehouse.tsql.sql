@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.2.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.3.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -265,16 +265,17 @@ EXEC sys.sp_addextendedproperty
 GO
 
 CREATE TABLE [silver].[edc_subject] (
-  [subject_id]      NVARCHAR(64) NOT NULL,
-  [study_id]        NVARCHAR(64) NOT NULL,
-  [site_id]         NVARCHAR(64) NOT NULL,
-  [screened_on]     DATE NOT NULL,
-  [enrolled_on]     DATE,
-  [completed_on]    DATE,
-  [discontinued_on] DATE,
-  [subject_status]  NVARCHAR(64) NOT NULL,
-  [source_system]   NVARCHAR(64) NOT NULL,
-  [is_synthetic]    BIT NOT NULL,
+  [subject_id]            NVARCHAR(64) NOT NULL,
+  [study_id]              NVARCHAR(64) NOT NULL,
+  [site_id]               NVARCHAR(64) NOT NULL,
+  [screened_on]           DATE NOT NULL,
+  [enrolled_on]           DATE,
+  [completed_on]          DATE,
+  [discontinued_on]       DATE,
+  [subject_status]        NVARCHAR(64) NOT NULL,
+  [screen_failure_reason] NVARCHAR(40),
+  [source_system]         NVARCHAR(64) NOT NULL,
+  [is_synthetic]          BIT NOT NULL,
   CONSTRAINT [pk_edc_subject] PRIMARY KEY ([subject_id])
 );
 EXEC sys.sp_addextendedproperty
@@ -321,6 +322,11 @@ EXEC sys.sp_addextendedproperty
   @level0type = N'SCHEMA', @level0name = N'silver',
   @level1type = N'TABLE', @level1name = N'edc_subject',
   @level2type = N'COLUMN', @level2name = N'subject_status';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Why screening failed, from a short fictional controlled list; null unless the subject failed screening.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_subject',
+  @level2type = N'COLUMN', @level2name = N'screen_failure_reason';
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Source system the record came from.',
   @level0type = N'SCHEMA', @level0name = N'silver',
@@ -1632,15 +1638,16 @@ EXEC sys.sp_addextendedproperty
 GO
 
 CREATE TABLE [gold].[fct_enrollment] (
-  [subject_id]     NVARCHAR(64) NOT NULL,
-  [event_type]     NVARCHAR(64) NOT NULL,
-  [study_key]      INT NOT NULL,
-  [site_key]       INT NOT NULL,
-  [country_key]    INT NOT NULL,
-  [event_date_key] INT NOT NULL,
-  [subject_status] NVARCHAR(64) NOT NULL,
-  [event_count]    INT NOT NULL,
-  [is_synthetic]   BIT NOT NULL,
+  [subject_id]            NVARCHAR(64) NOT NULL,
+  [event_type]            NVARCHAR(64) NOT NULL,
+  [study_key]             INT NOT NULL,
+  [site_key]              INT NOT NULL,
+  [country_key]           INT NOT NULL,
+  [event_date_key]        INT NOT NULL,
+  [subject_status]        NVARCHAR(64) NOT NULL,
+  [screen_failure_reason] NVARCHAR(40),
+  [event_count]           INT NOT NULL,
+  [is_synthetic]          BIT NOT NULL,
   CONSTRAINT [pk_fct_enrollment] PRIMARY KEY ([subject_id], [event_type]),
   CONSTRAINT [fk_fct_enrollment_study_key] FOREIGN KEY ([study_key]) REFERENCES [gold].[dim_study] ([study_key]),
   CONSTRAINT [fk_fct_enrollment_site_key] FOREIGN KEY ([site_key]) REFERENCES [gold].[dim_site] ([site_key]),
@@ -1686,6 +1693,11 @@ EXEC sys.sp_addextendedproperty
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_enrollment',
   @level2type = N'COLUMN', @level2name = N'subject_status';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Why screening failed; null unless the subject failed screening (degenerate dimension).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_enrollment',
+  @level2type = N'COLUMN', @level2name = N'screen_failure_reason';
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always 1: the additive measure.',
   @level0type = N'SCHEMA', @level0name = N'gold',

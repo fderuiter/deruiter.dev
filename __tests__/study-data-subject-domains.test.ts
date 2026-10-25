@@ -75,6 +75,47 @@ describe("SDTM subject tabulation", () => {
     expect(failures.every((record) => !exposed.has(record.USUBJID))).toBe(true);
   });
 
+  it("gives every subject the site and site country the EDC recorded (#2801)", () => {
+    const dm = records(get("DM"));
+    const collectedDm = source.find((dataset) => dataset.name === "DM")!;
+    const recorded = new Map(
+      records(collectedDm).map((record) => [record.USUBJID, record])
+    );
+    const countryBySite = new Map<unknown, unknown>();
+    for (const record of dm) {
+      expect(record.SITEID).toMatch(/^\d{3}$/);
+      expect(record.COUNTRY).toMatch(/^[A-Z]{3}$/);
+      expect(record.SITEID).toBe(recorded.get(record.USUBJID)!.SITEID);
+      expect(record.COUNTRY).toBe(recorded.get(record.USUBJID)!.COUNTRY);
+      // A country belongs to the site, so one site never has two.
+      expect(countryBySite.get(record.SITEID) ?? record.COUNTRY).toBe(
+        record.COUNTRY
+      );
+      countryBySite.set(record.SITEID, record.COUNTRY);
+    }
+    expect(countryBySite.size).toBeGreaterThan(1);
+    expect(
+      [...countryBySite.values()].every((country) =>
+        ["USA", "CAN"].includes(String(country))
+      )
+    ).toBe(true);
+
+    const names = get("DM").variables.map((variable) => variable.name);
+    const at = (name: string) => names.indexOf(name);
+    expect(at("SITEID")).toBe(at("RFXENDTC") + 1);
+    expect(at("SITEID")).toBeLessThan(at("AGE"));
+    expect(at("COUNTRY")).toBe(at("ACTARM") + 1);
+    for (const name of ["SITEID", "COUNTRY"]) {
+      expect(
+        get("DM").variables.find((variable) => variable.name === name)
+      ).toMatchObject({
+        role: "Record Qualifier",
+        origin: "Collected",
+        source: `DM.${name}`,
+      });
+    }
+  });
+
   it("has ISO partial AE dates, no study day zero, and sequential per-subject records", () => {
     const ae = records(get("AE"));
     expect(

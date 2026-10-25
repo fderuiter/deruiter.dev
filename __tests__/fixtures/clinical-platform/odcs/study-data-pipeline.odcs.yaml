@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.5.0"
+version: "1.6.0"
 status: active
 domain: "Study data"
 tags:
@@ -57,7 +57,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Description of Planned Arm"
-        required: false
+        required: true
         classification: internal
       - name: TAETORD
         logicalType: integer
@@ -89,7 +89,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: Epoch
-        required: false
+        required: true
         classification: internal
     quality:
       - id: TA_primary_key
@@ -145,7 +145,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Description of Element"
-        required: false
+        required: true
         classification: internal
       - name: TESTRL
         logicalType: string
@@ -153,7 +153,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Rule for Start of Element"
-        required: false
+        required: true
         classification: internal
       - name: TEENRL
         logicalType: string
@@ -236,7 +236,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Rule for Start of Visit"
-        required: false
+        required: true
         classification: internal
       - name: TVENRL
         logicalType: string
@@ -299,7 +299,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Criterion Text"
-        required: false
+        required: true
         classification: internal
       - name: IECAT
         logicalType: string
@@ -307,7 +307,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Criterion Category"
-        required: false
+        required: true
         classification: internal
     quality:
       - id: TI_primary_key
@@ -370,7 +370,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Trial Summary Parameter"
-        required: false
+        required: true
         classification: internal
       - name: TSVAL
         logicalType: string
@@ -458,7 +458,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Subject Identifier"
-        required: false
+        required: true
         classification: confidential
       - name: RFICDTC
         logicalType: string
@@ -530,7 +530,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Study Site Identifier"
-        required: false
+        required: true
         classification: confidential
       - name: AGE
         logicalType: integer
@@ -552,7 +552,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: Sex
-        required: false
+        required: true
         classification: confidential
       - name: RACE
         logicalType: string
@@ -616,7 +616,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: Country
-        required: false
+        required: true
         classification: confidential
     quality:
       - id: DM_primary_key
@@ -901,7 +901,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Dictionary Derived Term"
-        required: false
+        required: true
         classification: confidential
       - name: AEBODSYS
         logicalType: string
@@ -1089,7 +1089,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Vital Signs Test Name"
-        required: false
+        required: true
         classification: confidential
       - name: VSORRES
         logicalType: string
@@ -1243,7 +1243,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Lab Test Name"
-        required: false
+        required: true
         classification: confidential
       - name: LBORRES
         logicalType: string
@@ -1405,7 +1405,7 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Standardized Disposition Term"
-        required: false
+        required: true
         classification: confidential
       - name: DSCAT
         logicalType: string

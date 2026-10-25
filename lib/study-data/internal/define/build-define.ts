@@ -341,10 +341,11 @@ function isMandatory(dataset: Dataset, variable: VariableMeta): boolean {
   const mandatory =
     ALWAYS_MANDATORY.has(variable.name) ||
     dataset.keys.includes(variable.name) ||
-    variable.role === "Topic";
+    variable.role === "Topic" ||
+    variable.required === true;
   if (mandatory && (dataset.columns[variable.name] ?? []).includes(null)) {
     throw new RangeError(
-      `${dataset.name}.${variable.name} is a key, topic or identifier but has missing values.`
+      `${dataset.name}.${variable.name} is a key, topic, identifier or required variable but has missing values.`
     );
   }
   return mandatory;

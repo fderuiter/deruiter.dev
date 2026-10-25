@@ -12,7 +12,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "DOMAIN",
@@ -21,7 +22,8 @@
       "length": 200,
       "role": "Identifier",
       "origin": "Protocol",
-      "codelist": "DOMAIN"
+      "codelist": "DOMAIN",
+      "required": true
     },
     {
       "name": "ETCD",
@@ -29,30 +31,33 @@
       "type": "text",
       "length": 200,
       "role": "Topic",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "ELEMENT",
       "label": "Description of Element",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "role": "Synonym Qualifier",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "TESTRL",
       "label": "Rule for Start of Element",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "role": "Rule",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "TEENRL",
       "label": "Rule for End of Element",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
+      "role": "Rule",
       "origin": "Protocol"
     },
     {
@@ -60,7 +65,7 @@
       "label": "Planned Duration of Element",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
+      "role": "Timing",
       "origin": "Protocol"
     }
   ],

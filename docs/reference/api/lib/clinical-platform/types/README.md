@@ -142,6 +142,10 @@
 - [WarehouseReference](interfaces/WarehouseReference.md)
 - [WarehouseSchema](interfaces/WarehouseSchema.md)
 - [WarehouseTable](interfaces/WarehouseTable.md)
+- [WorkbenchColumn](interfaces/WorkbenchColumn.md)
+- [WorkbenchQuery](interfaces/WorkbenchQuery.md)
+- [WorkbenchSqlFinding](interfaces/WorkbenchSqlFinding.md)
+- [WorkbenchTable](interfaces/WorkbenchTable.md)
 
 ## Type Aliases
 

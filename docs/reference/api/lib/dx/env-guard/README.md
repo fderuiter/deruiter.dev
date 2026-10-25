@@ -8,6 +8,8 @@
 
 ## Functions
 
+- [checkClientEnvironmentReads](functions/checkClientEnvironmentReads.md)
+- [checkClientEnvReads](functions/checkClientEnvReads.md)
 - [checkEnvironmentVariables](functions/checkEnvironmentVariables.md)
 - [checkRawEnvironmentAccess](functions/checkRawEnvironmentAccess.md)
 - [generateEnvExampleContent](functions/generateEnvExampleContent.md)

@@ -1,6 +1,6 @@
 # Release and Deployment Workflow
 
-Last reconciled: 2026-09-28. Manual Production releases remain required under
+Last reconciled: 2026-10-25. Manual Production releases remain required under
 [ADR 0051](../../adr/0051-manual-production-releases.md) until a replacement
 release policy is approved and verified. The nightly-train proposal in
 [issue #1168](https://github.com/fderuiter/deruiter.dev/issues/1168) is scheduled
@@ -23,11 +23,13 @@ it, then have an operator create a Production deployment from the current
 4. In the Vercel Dashboard, open the `portfolio` project and choose
    **Deployments → Create Deployment**. Select the current `main` commit SHA,
    confirm the target is **Production**, and press **Create Deployment**.
-5. The Vercel build authenticates Upstash, applies pending migrations through
-   the unpooled Neon endpoint, then compiles the site. A failed check or build
-   leaves the current deployment serving traffic.
-6. Confirm the new deployment's commit SHA, successful build and Deployment
-   Check before verifying that `deruiter.dev` points to it.
+5. The Vercel build authenticates Upstash, type-checks, applies pending
+   migrations through the unpooled Neon endpoint, then compiles the site. A
+   failed build leaves the current deployment serving traffic. A READY build
+   takes the production domains straight away, because the project has no
+   Deployment Checks (see [One-Time Setup](#one-time-setup)).
+6. Confirm the new deployment's commit SHA and successful build before
+   verifying that `deruiter.dev` points to it.
 
 Everything about production lives in Vercel. GitHub holds no deploy secrets.
 Keep Git deployment triggers disabled until the approved replacement is
@@ -41,7 +43,7 @@ automatic trigger.
 | --- | --- |
 | Production is broken after a deploy | Vercel dashboard, Deployments, **Instant Rollback** to the previous production deployment. Then open a `fix/` PR. |
 | A Production build failed for a transient reason | Fix the cause, then use **Create Deployment** with the current green `main` SHA. |
-| A deployment is built but not live | Its Deployment Check is waiting on CI, or CI failed. Fix forward with a new PR. |
+| A deployment is READY but not live | A Deployment Check was added back in Vercel and is holding the domains. Remove it (see [One-Time Setup](#one-time-setup)); use **Force Promote** only for this one deployment. |
 
 **Redeploy** rebuilds the commit it is pressed on. During this hold, use
 **Create Deployment** and select the current `main` SHA to release a merge.
@@ -55,8 +57,17 @@ In the Vercel dashboard for the `portfolio` project:
 1. **Settings, Git:** confirm automatic Git deployments are disabled during
    this hold. `vercel.json` sets `git.deploymentEnabled` to `false` for all
    branches.
-2. **Settings, Deployment Checks:** add the GitHub check
-   **Merge Gate (Required Checks Summary)** so production waits for CI.
+2. **Settings, Build and Deployment, Deployment Checks:** keep this list
+   empty. CI already gates `main`: the ruleset requires
+   **Merge Gate (Required Checks Summary)**, and `static-gate` runs lint and
+   the type check on every PR and every `main` push. The production build
+   type-checks again before it migrates. Vercel's native **Lint** and
+   **Typecheck** checks only repeated that work. Typecheck was SIGKILLed for
+   memory (exit 137) on every production deploy, because its sandbox runs
+   `tsc` and ESLint side by side and they don't fit. Each release then needed
+   **Force Promote** (#2899). A GitHub **Merge Gate** check is not a fix
+   either: a newer merge cancels the older commit's `main` run, so a deploy of
+   that commit would wait on a check that never passes.
 3. **Settings, Environment Variables:** set what
    [Environment Variables](#environment-variables) marks Required for
    Production. The build itself needs only the two Neon URLs, to migrate and
@@ -170,7 +181,7 @@ A fresh Production deployment of `main` is correct when:
   commit SHA in the Dashboard, not by Redeploying an older deployment;
 - its build log shows "Production configuration preflight passed." and the
   "Upstash REST authentication passed." check before the migration step;
-- its Deployment Check passed on **Merge Gate** before the domains moved.
+- it took the domains when it became READY, without **Force Promote**.
 
 End the hold only after a replacement ADR is approved, its implementation
 passes required CI, and an operator verifies its release trigger. Update the

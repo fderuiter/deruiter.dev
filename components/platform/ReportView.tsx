@@ -72,29 +72,29 @@ export function ReportView({
         </p>
         <dl className="mt-4 grid gap-x-6 gap-y-2 font-mono text-xs text-slate-400 @md:grid-cols-2 @3xl:grid-cols-3">
           <div className="min-w-0">
-            <dt className="inline text-slate-500">Audience: </dt>
+            <dt className="inline text-slate-400">Audience: </dt>
             <dd className="inline text-slate-200">{spec.audience}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="inline text-slate-500">Owner: </dt>
+            <dt className="inline text-slate-400">Owner: </dt>
             <dd className="inline text-slate-200">{spec.owner}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="inline text-slate-500">Version: </dt>
+            <dt className="inline text-slate-400">Version: </dt>
             <dd className="inline text-slate-200">{spec.version}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="inline text-slate-500">Data as of: </dt>
+            <dt className="inline text-slate-400">Data as of: </dt>
             <dd className="inline text-slate-200">{report.dataCut}</dd>
           </div>
           <div className="min-w-0">
-            <dt className="inline text-slate-500">Refresh: </dt>
+            <dt className="inline text-slate-400">Refresh: </dt>
             <dd className="inline text-slate-200">
               {refreshText(spec.refreshSlaHours)}
             </dd>
           </div>
           <div className="min-w-0">
-            <dt className="inline text-slate-500">Tier: </dt>
+            <dt className="inline text-slate-400">Tier: </dt>
             <dd className="inline text-slate-200">
               {tier.label}.{" "}
               {spec.signOff
@@ -144,7 +144,7 @@ export function ReportView({
                     className="px-3 py-2 text-right font-medium text-slate-300"
                   >
                     {column.name}
-                    <span className="block font-normal text-slate-500">
+                    <span className="block font-normal text-slate-400">
                       {column.unit}
                     </span>
                   </th>
@@ -177,7 +177,7 @@ export function ReportView({
                       key={report.columns[index].metricId}
                       className={`px-3 py-1.5 text-right font-mono tabular-nums ${
                         cell.value === null
-                          ? "text-slate-500"
+                          ? "text-slate-400"
                           : "text-slate-100"
                       }`}
                     >
@@ -206,7 +206,7 @@ export function ReportView({
             <div className="space-y-3 border-t border-white/[0.08] px-3 py-3 text-xs leading-relaxed text-slate-300">
               <p>{calc.description}</p>
               <p>
-                <span className="text-slate-500">Formula: </span>
+                <span className="text-slate-400">Formula: </span>
                 {calc.formula}
               </p>
               <p className="font-mono text-slate-400">

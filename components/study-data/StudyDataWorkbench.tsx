@@ -41,6 +41,7 @@ import {
   type PreparedStudy,
   type RunSummary,
 } from "./protocol";
+import { ReviewerGuidePanel } from "./ReviewerGuidePanel";
 import { ScheduleViewer, type ScheduleDesign } from "./ScheduleViewer";
 import { StageRail, type DefinitionCounts } from "./StageRail";
 import { TlfPanel } from "./TlfPanel";
@@ -53,13 +54,15 @@ import {
   PANEL,
 } from "./ui";
 
-type TabId = "datasets" | "conformance" | "define" | "tlf" | "schedule";
+type TabId =
+  "datasets" | "conformance" | "define" | "guides" | "tlf" | "schedule";
 
 const TABS: readonly { id: TabId; label: string }[] = [
   { id: "tlf", label: "Tables and figures" },
   { id: "datasets", label: "Datasets" },
   { id: "conformance", label: "Conformance" },
   { id: "define", label: "Define-XML" },
+  { id: "guides", label: "Reviewer guides" },
   { id: "schedule", label: "Study definition" },
 ];
 
@@ -724,6 +727,8 @@ export function StudyDataWorkbench({
             />
           ) : tab === "define" ? (
             <DefineViewer define={summary.define} />
+          ) : tab === "guides" ? (
+            <ReviewerGuidePanel guides={summary.guides} />
           ) : (
             <TlfPanel
               tables={summary.tables}

@@ -6,8 +6,6 @@
 
 # Interface: PipelineOptions
 
-Inputs that, with the study definition, fully determine a run.
-
 ## Properties
 
 ### nSubjects
@@ -15,6 +13,15 @@ Inputs that, with the study definition, fully determine a run.
 > `readonly` **nSubjects**: `number`
 
 Number of synthetic subjects to generate.
+
+***
+
+### scenarios?
+
+> `readonly` `optional` **scenarios?**: readonly [`ScenarioId`](../type-aliases/ScenarioId.md)[]
+
+Messy-data scenarios to layer onto the collected data (#2605). Omitted
+or empty, the run is exactly the generated study.
 
 ***
 

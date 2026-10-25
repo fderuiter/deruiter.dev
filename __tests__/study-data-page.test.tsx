@@ -221,6 +221,34 @@ describe("/study-data workbench", () => {
     );
   });
 
+  it("shows the run's reviewer guides, as the package ships them", async () => {
+    const { container } = await renderFinishedRun();
+    fireEvent.click(screen.getByRole("tab", { name: "Reviewer guides" }));
+    const region = screen.getByRole("region", {
+      name: "cSDRG (SDTM) reviewer guide",
+    });
+    expect(
+      within(region).getByRole("heading", { level: 2 }).textContent
+    ).toMatch(/Clinical Study Data Reviewer's Guide/);
+    expect(within(region).getByText(/5\. Conformance/)).toBeTruthy();
+    expect(
+      screen.getByText("m5/datasets/tabulations/sdtm/csdrg.html")
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "ADRG (ADaM)" }));
+    const adrg = screen.getByRole("region", {
+      name: "ADRG (ADaM) reviewer guide",
+    });
+    expect(within(adrg).getByText(/7\. Analysis outputs/)).toBeTruthy();
+    expect(
+      within(adrg).getByRole("table", { name: "ARS output index" })
+    ).toBeTruthy();
+
+    const text = container.textContent ?? "";
+    expect(findClinicalClaims(text)).toEqual([]);
+    expect(text).not.toMatch(FORBIDDEN_CLAIMS);
+  });
+
   it("explains invalid run settings next to the field", async () => {
     await renderFinishedRun();
     const seed = screen.getByLabelText("Seed");

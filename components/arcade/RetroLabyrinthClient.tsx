@@ -28,8 +28,8 @@ const RetroLabyrinthLoader = () =>
 const RETRO_LABYRINTH_VIEWS = defineGameViews({
   session: RetroLabyrinthCabinetSession,
   desktop: () =>
-    import("@/components/RetroLabyrinth").then((mod) => ({
-      default: mod.RetroLabyrinthCabinetView,
+    import("@/components/retro-labyrinth/views/DesktopView").then((mod) => ({
+      default: mod.DesktopView,
     })),
   tablet: "desktop",
   phone: "desktop",

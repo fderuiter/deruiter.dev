@@ -24,6 +24,10 @@ Versioned analysis method text shared by derivations and future Define-XML.
 
 > `readonly` **ADAE\_TEAE**: `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."` = `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."`
 
+### ADSL\_DEATH
+
+> `readonly` **ADSL\_DEATH**: `"Date of death is DM.DTHDTC when that is a full date; missing for subjects with no recorded death. No death date is imputed."` = `"Date of death is DM.DTHDTC when that is a full date; missing for subjects with no recorded death. No death date is imputed."`
+
 ### ADSL\_DISP
 
 > `readonly` **ADSL\_DISP**: `"End-of-study status and discontinuation reason come from the final DS disposition event."` = `"End-of-study status and discontinuation reason come from the final DS disposition event."`

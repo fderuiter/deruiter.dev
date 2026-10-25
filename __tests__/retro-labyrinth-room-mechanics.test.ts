@@ -49,7 +49,7 @@ describe("Retro Labyrinth room mechanics (#1309)", () => {
   it("gates the TSP mechanics on the room id, not a campaign position", () => {
     // The rules live in the session and the painter since #2376.
     for (const file of [
-      "components/RetroLabyrinth.tsx",
+      "components/retro-labyrinth/views/DesktopView.tsx",
       "components/retro-labyrinth/useRetroLabyrinthSession.ts",
       "components/retro-labyrinth/parts/paint-maze.ts",
     ]) {

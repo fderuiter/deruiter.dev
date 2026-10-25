@@ -72,6 +72,14 @@ Why the scope asked for was cut back, or `null` when it was valid.
 
 ***
 
+### risk
+
+> `readonly` **risk**: [`OperationsRisk`](OperationsRisk.md) \| `null`
+
+Risk-based quality management at the study level and below; `null` at the portfolio level.
+
+***
+
 ### runByOptions
 
 > `readonly` **runByOptions**: readonly [`OperationsRunByOption`](OperationsRunByOption.md)[]

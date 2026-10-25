@@ -1322,6 +1322,12 @@ Re-exports [OperationsCrumb](types/reporting/interfaces/OperationsCrumb.md)
 
 ***
 
+### OperationsCsm
+
+Re-exports [OperationsCsm](types/reporting/interfaces/OperationsCsm.md)
+
+***
+
 ### operationsDashboard
 
 Re-exports [operationsDashboard](internal/reporting/operations/functions/operationsDashboard.md)
@@ -1337,6 +1343,18 @@ Re-exports [OperationsDashboard](types/reporting/interfaces/OperationsDashboard.
 ### OperationsGap
 
 Re-exports [OperationsGap](types/reporting/interfaces/OperationsGap.md)
+
+***
+
+### OperationsKri
+
+Re-exports [OperationsKri](types/reporting/interfaces/OperationsKri.md)
+
+***
+
+### OperationsKriCell
+
+Re-exports [OperationsKriCell](types/reporting/interfaces/OperationsKriCell.md)
 
 ***
 
@@ -1358,9 +1376,33 @@ Re-exports [OperationsMilestone](types/reporting/interfaces/OperationsMilestone.
 
 ***
 
+### OperationsQtl
+
+Re-exports [OperationsQtl](types/reporting/interfaces/OperationsQtl.md)
+
+***
+
 ### operationsReportSpecs
 
 Re-exports [operationsReportSpecs](internal/reporting/operations/functions/operationsReportSpecs.md)
+
+***
+
+### OperationsRisk
+
+Re-exports [OperationsRisk](types/reporting/interfaces/OperationsRisk.md)
+
+***
+
+### OperationsRiskFactor
+
+Re-exports [OperationsRiskFactor](types/reporting/interfaces/OperationsRiskFactor.md)
+
+***
+
+### OperationsRiskSite
+
+Re-exports [OperationsRiskSite](types/reporting/interfaces/OperationsRiskSite.md)
 
 ***
 

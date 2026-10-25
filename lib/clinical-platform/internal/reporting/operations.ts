@@ -32,6 +32,7 @@ import { PRODUCT_REGISTRATIONS } from "../governance/contracts/registry";
 import { formulaSources } from "../semantic/plan";
 import { METRIC_GAPS, METRIC_REGISTRY } from "../semantic/registry";
 import { buildReport } from "./build";
+import { operationsRisk, operationsRiskTables } from "./operations-risk";
 
 /** Run-by choice that keeps the studies the sponsor runs itself. */
 const SPONSOR_RUN = "sponsor";
@@ -129,6 +130,8 @@ function registryGap(name: string, issue: number | null): OperationsGap {
   return { name: gap.name, reason: gap.reason, issue };
 }
 
+/** The issue that adds adverse event and vital sign feeds and a weekday calendar to the generator. */
+const GENERATOR_FEEDS_ISSUE = 2776;
 /** The issue that adds deviation, form and query age breakdowns. */
 const BREAKDOWNS_ISSUE = 2759;
 /** The issue that adds activation stages, screen failure reasons and CEC adjudication to gold. */
@@ -307,6 +310,39 @@ const SECTIONS: readonly SectionPlan[] = [
         issue: BREAKDOWNS_ISSUE,
       },
       registryGap("eTMF completeness", null),
+    ],
+  },
+  {
+    id: "risk",
+    title: "Risk",
+    summary:
+      "Key risk indicators at each site, the study's quality tolerance limits, central statistical monitoring of its sites against their peers, and the signals they raise, under ICH E6(R3) risk-based quality management.",
+    levels: ["study", "country", "site"],
+    panels: [],
+    gaps: () => [
+      {
+        name: "Adverse event under-reporting",
+        reason:
+          "The operational portfolio has no adverse event feed, so a site's AE rate cannot be tested against its peers.",
+        issue: GENERATOR_FEEDS_ISSUE,
+      },
+      {
+        name: "Digit preference in vital signs",
+        reason:
+          "The operational portfolio has no vital signs feed to test for rounded or repeated readings.",
+        issue: GENERATOR_FEEDS_ISSUE,
+      },
+      {
+        name: "Weekend and holiday visit dates",
+        reason:
+          "The generator has no weekday calendar, so every site sees weekend visits at the same base rate and the test would find nothing.",
+        issue: GENERATOR_FEEDS_ISSUE,
+      },
+      {
+        name: "Time of day of data entry",
+        reason: "Gold keeps entry lag in days, not the time data was entered.",
+        issue: GENERATOR_FEEDS_ISSUE,
+      },
     ],
   },
   {
@@ -777,19 +813,43 @@ function milestones(
     }));
 }
 
+/** The current sites of the study in scope, narrowed to its country or site, with their country codes. */
+function scopeSites(
+  warehouse: Warehouse,
+  resolved: Resolved
+): Map<string, string> {
+  const { scope } = resolved;
+  return new Map(
+    rows(warehouse, "gold.dim_site")
+      .filter(
+        (s) =>
+          s.is_current &&
+          s.study_id === scope.study &&
+          (scope.country === undefined || s.country_code === scope.country) &&
+          (scope.site === undefined || s.site_id === scope.site)
+      )
+      .map((s) => [text(s, "site_id"), text(s, "country_code")])
+  );
+}
+
 /** Tables the milestone table reads, outside any metric. */
 const MILESTONE_TABLES = ["gold.dim_milestone", "gold.fct_milestone"];
 
 /**
  * The data products behind the numbers shown: every gold table a shown
- * metric's formula reads, and the milestone tables when the milestone
- * table is shown, each with the freshness its data contract promises.
+ * metric's formula reads, the milestone tables when the milestone table is
+ * shown, and the Risk tab's tables when it is, each with the freshness its
+ * data contract promises.
  */
 function sources(
   specs: readonly ReportSpec[],
-  readsMilestones: boolean
+  readsMilestones: boolean,
+  readsRisk: boolean
 ): OperationsSource[] {
-  const tables = new Set(readsMilestones ? MILESTONE_TABLES : []);
+  const tables = new Set([
+    ...(readsMilestones ? MILESTONE_TABLES : []),
+    ...(readsRisk ? operationsRiskTables() : []),
+  ]);
   const shown = new Set(specs.flatMap((spec) => spec.metrics));
   for (const metric of METRIC_REGISTRY) {
     if (!shown.has(metric.id)) continue;
@@ -813,8 +873,9 @@ function sources(
 
 /**
  * The operations dashboard at a scope: the glance, one section per tab
- * with its reports and gaps, the breadcrumb trail, and the studies,
- * countries or sites to drill into next.
+ * with its reports and gaps, the breadcrumb trail, the studies, countries
+ * or sites to drill into next, and below the portfolio level the study's
+ * risk-based quality management narrowed to the scope.
  *
  * @param warehouse - The warehouse to report on.
  * @param scope - Where the dashboard is drilled to. An unknown study,
@@ -847,6 +908,14 @@ export function operationsDashboard(
     resolved.level === "study" && resolved.study !== null
       ? milestones(warehouse, resolved.study)
       : null;
+  const risk =
+    resolved.study === null
+      ? null
+      : operationsRisk(
+          warehouse,
+          text(resolved.study, "study_id"),
+          scopeSites(warehouse, resolved)
+        );
   return {
     scope: resolved.scope,
     level: resolved.level,
@@ -860,11 +929,13 @@ export function operationsDashboard(
     glance,
     sections,
     milestones: studyMilestones,
+    risk,
     sources: sources(
       [glance, ...sections.flatMap((section) => section.reports)].map(
         (r) => r.spec
       ),
-      studyMilestones !== null
+      studyMilestones !== null,
+      risk !== null
     ),
   };
 }

@@ -372,59 +372,11 @@
     },
     {
       "target": "usdm",
-      "coreId": "CORE-001076",
-      "dataset": "Activity",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "Activities refer to no procedure, biomedical concept or timeline."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000973",
-      "dataset": "StudyVersion",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "No sponsor organization role."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001054",
-      "dataset": "StudyVersion",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "No sponsor study identifier."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001065",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "No study intervention is referenced from a procedure."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001071",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "A double-blind design with no masked roles."
-    },
-    {
-      "target": "usdm",
       "coreId": "CORE-001016",
       "dataset": "ScheduleTimeline",
       "category": "defect",
       "issue": 2770,
       "reason": "The main timeline has no planned duration."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000875",
-      "dataset": "StudyDesignPopulation",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "The population has no planned sex."
     },
     {
       "target": "usdm",

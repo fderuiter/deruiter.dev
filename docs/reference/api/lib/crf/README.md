@@ -3350,6 +3350,12 @@ Re-exports [UsdmV4BiomedicalConceptProperty](usdm-v4-types/interfaces/UsdmV4Biom
 
 ***
 
+### UsdmV4BiomedicalConceptSurrogate
+
+Re-exports [UsdmV4BiomedicalConceptSurrogate](usdm-v4-types/interfaces/UsdmV4BiomedicalConceptSurrogate.md)
+
+***
+
 ### UsdmV4Code
 
 Re-exports [UsdmV4Code](usdm-v4-types/interfaces/UsdmV4Code.md)
@@ -3413,6 +3419,12 @@ Re-exports [UsdmV4IntercurrentEvent](usdm-v4-types/interfaces/UsdmV4Intercurrent
 ### UsdmV4InterventionalStudyDesign
 
 Re-exports [UsdmV4InterventionalStudyDesign](usdm-v4-types/interfaces/UsdmV4InterventionalStudyDesign.md)
+
+***
+
+### UsdmV4Masking
+
+Re-exports [UsdmV4Masking](usdm-v4-types/interfaces/UsdmV4Masking.md)
 
 ***
 
@@ -3527,6 +3539,12 @@ Re-exports [UsdmV4StudyIdentifier](usdm-v4-types/interfaces/UsdmV4StudyIdentifie
 ### UsdmV4StudyIntervention
 
 Re-exports [UsdmV4StudyIntervention](usdm-v4-types/interfaces/UsdmV4StudyIntervention.md)
+
+***
+
+### UsdmV4StudyRole
+
+Re-exports [UsdmV4StudyRole](usdm-v4-types/interfaces/UsdmV4StudyRole.md)
 
 ***
 

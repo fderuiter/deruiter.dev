@@ -163,6 +163,15 @@ export interface UsdmV4Encounter extends UsdmV4Named {
   instanceType: "Encounter";
 }
 
+/**
+ * A stand-in for a biomedical concept that the CDISC library does not
+ * define, so an activity can still say what it collects.
+ */
+export interface UsdmV4BiomedicalConceptSurrogate extends UsdmV4Named {
+  reference?: string | null;
+  instanceType: "BiomedicalConceptSurrogate";
+}
+
 /** A procedure that an activity performs. */
 export interface UsdmV4Procedure extends UsdmV4Named {
   procedureType: string;
@@ -411,10 +420,29 @@ export interface UsdmV4StudyVersion extends UsdmV4Base {
   studyDesigns?: UsdmV4InterventionalStudyDesign[];
   titles: UsdmV4StudyTitle[];
   eligibilityCriterionItems?: UsdmV4EligibilityCriterionItem[];
+  roles?: UsdmV4StudyRole[];
   organizations?: UsdmV4Organization[];
   studyInterventions?: UsdmV4StudyIntervention[];
   biomedicalConcepts?: UsdmV4BiomedicalConcept[];
+  bcSurrogates?: UsdmV4BiomedicalConceptSurrogate[];
   instanceType: "StudyVersion";
+}
+
+/** Whether a study role is masked, and how. */
+export interface UsdmV4Masking extends UsdmV4Base {
+  text: string;
+  isMasked: boolean;
+  instanceType: "Masking";
+}
+
+/** A role in the study, such as the sponsor or the investigator. */
+export interface UsdmV4StudyRole extends UsdmV4Named {
+  code: UsdmV4Code;
+  /** The study version or study designs the role applies to. */
+  appliesToIds?: string[];
+  organizationIds?: string[];
+  masking?: UsdmV4Masking | null;
+  instanceType: "StudyRole";
 }
 
 /** The study, holding one or more versions. */

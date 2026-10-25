@@ -39,6 +39,71 @@ describe("DEMO-301 USDM v4.0 document", () => {
     expect(DEMO_301_USDM.study.description).toMatch(/fictional/i);
     expect(DEMO_301_USDM.study.description).toMatch(/synthetic/i);
   });
+
+  // CDISC CORE USDM 4.0 rules CORE-000973, -001054, -001065, -001071,
+  // -000875 and -001076.
+  describe("design and governance content", () => {
+    const version = DEMO_301_USDM.study.versions![0];
+    const studyDesign = version.studyDesigns![0];
+    const roles = version.roles ?? [];
+
+    it("has one sponsor role, for the fictional sponsor and its study id", () => {
+      const sponsors = roles.filter((r) => r.code.code === "C70793");
+      expect(sponsors).toHaveLength(1);
+      expect(sponsors[0].appliesToIds).toEqual([version.id]);
+      const [orgId] = sponsors[0].organizationIds!;
+      expect(version.organizations!.find((o) => o.id === orgId)?.name).toMatch(
+        /fictional/
+      );
+      expect(
+        version.studyIdentifiers.filter((i) => i.scopeId === orgId)
+      ).toHaveLength(1);
+    });
+
+    it("masks at least two roles on the double-blind design", () => {
+      expect(studyDesign.blindingSchema?.standardCode.code).toBe("C15228");
+      const masked = roles.filter(
+        (r) => r.appliesToIds?.includes(studyDesign.id) && r.masking?.isMasked
+      );
+      expect(masked.map((r) => r.name)).toEqual([
+        "Investigator",
+        "Study Subject",
+      ]);
+    });
+
+    it("plans both sexes for the population", () => {
+      expect(
+        studyDesign.population.plannedSex?.map((c) => [c.code, c.decode])
+      ).toEqual([
+        ["C16576", "Female"],
+        ["C20197", "Male"],
+      ]);
+    });
+
+    it("administers each study intervention through a procedure", () => {
+      const procedures = studyDesign.activities!.flatMap(
+        (a) => a.definedProcedures ?? []
+      );
+      expect(procedures.map((p) => p.studyInterventionId)).toEqual(
+        studyDesign.studyInterventionIds
+      );
+    });
+
+    it("gives every activity a procedure, concept or concept surrogate", () => {
+      const surrogateIds = new Set(version.bcSurrogates!.map((s) => s.id));
+      for (const activity of studyDesign.activities!) {
+        const references = [
+          ...(activity.definedProcedures ?? []),
+          ...(activity.biomedicalConceptIds ?? []),
+          ...(activity.bcSurrogateIds ?? []),
+        ];
+        expect(references, activity.name).not.toHaveLength(0);
+        for (const id of activity.bcSurrogateIds ?? []) {
+          expect(surrogateIds).toContain(id);
+        }
+      }
+    });
+  });
 });
 
 describe("readStudyDefinition(DEMO-301)", () => {

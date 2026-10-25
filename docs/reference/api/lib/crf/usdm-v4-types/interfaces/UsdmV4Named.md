@@ -18,6 +18,7 @@ Common descriptive fields on named USDM v4 classes.
 - [`UsdmV4StudyEpoch`](UsdmV4StudyEpoch.md)
 - [`UsdmV4StudyElement`](UsdmV4StudyElement.md)
 - [`UsdmV4Encounter`](UsdmV4Encounter.md)
+- [`UsdmV4BiomedicalConceptSurrogate`](UsdmV4BiomedicalConceptSurrogate.md)
 - [`UsdmV4Procedure`](UsdmV4Procedure.md)
 - [`UsdmV4Activity`](UsdmV4Activity.md)
 - [`UsdmV4ScheduledActivityInstance`](UsdmV4ScheduledActivityInstance.md)
@@ -34,6 +35,7 @@ Common descriptive fields on named USDM v4 classes.
 - [`UsdmV4EligibilityCriterionItem`](UsdmV4EligibilityCriterionItem.md)
 - [`UsdmV4InterventionalStudyDesign`](UsdmV4InterventionalStudyDesign.md)
 - [`UsdmV4StudyIntervention`](UsdmV4StudyIntervention.md)
+- [`UsdmV4StudyRole`](UsdmV4StudyRole.md)
 
 ## Properties
 

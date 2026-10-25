@@ -307,6 +307,30 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
     ],
   },
   {
+    name: "trackers",
+    aliases: ["tracker-drift"],
+    summary: "Report epic checklist drift and in-progress claims",
+    description:
+      "Reads open type:epic issues and status:in-progress claims from GitHub and reports checklist lines whose tick disagrees with the issue's state, plus claims per assignee or lane label. Read-only; issue states need GITHUB_TOKEN.",
+    category: "diagnostics",
+    isMutating: false,
+    options: [
+      {
+        name: "repo",
+        type: "string",
+        description: "owner/name; defaults to the origin remote",
+      },
+      {
+        name: "json",
+        alias: "j",
+        type: "boolean",
+        description: "Emit structured JSON envelope",
+        default: false,
+      },
+    ],
+    examples: ["npm run dx trackers", "npm run dx trackers -- --json"],
+  },
+  {
     name: "analyze",
     aliases: ["bundle"],
     summary: "Inspect production bundle chunk sizes and performance budgets",

@@ -212,7 +212,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      EPOCH,
     ],
   },
   EX: {
@@ -752,7 +751,6 @@ export function deriveSubjectDomains(
         SVENDTC: record.SVDTC,
         SVSTDY: day(record.SVDTC, ex?.EXSTDTC ?? null),
         SVENDY: day(record.SVDTC, ex?.EXSTDTC ?? null),
-        EPOCH: epochAt(record.SVDTC, ex),
       },
       record,
       ex

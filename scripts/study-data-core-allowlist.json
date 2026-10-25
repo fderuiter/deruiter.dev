@@ -100,34 +100,10 @@
     {
       "target": "sdtm",
       "coreId": "CORE-000852",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000852",
       "dataset": "VS",
       "category": "defect",
       "issue": 2769,
       "reason": "Variables do not follow the SDTM class order."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000550",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "EPOCH is not in the model's allowed variables for SV."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001082",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "EPOCH is not in the model's allowed variables for SV, so it has no model data type."
     },
     {
       "target": "sdtm",

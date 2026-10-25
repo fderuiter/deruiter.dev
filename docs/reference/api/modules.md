@@ -123,6 +123,7 @@
 - [lib/clinical-platform/internal/portfolio/records](lib/clinical-platform/internal/portfolio/records/README.md)
 - [lib/clinical-platform/internal/portfolio/sites](lib/clinical-platform/internal/portfolio/sites/README.md)
 - [lib/clinical-platform/internal/portfolio/staff](lib/clinical-platform/internal/portfolio/staff/README.md)
+- [lib/clinical-platform/internal/portfolio/start-up](lib/clinical-platform/internal/portfolio/start-up/README.md)
 - [lib/clinical-platform/internal/portfolio/stream](lib/clinical-platform/internal/portfolio/stream/README.md)
 - [lib/clinical-platform/internal/portfolio/subjects](lib/clinical-platform/internal/portfolio/subjects/README.md)
 - [lib/clinical-platform/internal/quality/assess](lib/clinical-platform/internal/quality/assess/README.md)

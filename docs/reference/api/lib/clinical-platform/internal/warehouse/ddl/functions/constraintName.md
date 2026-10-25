@@ -14,7 +14,7 @@ Name of a constraint, unique across the warehouse and at most 63 characters.
 
 ### kind
 
-`"pk"` \| `"uq"` \| `"fk"`
+`"pk"` \| `"uq"` \| `"fk"` \| `"ck"`
 
 ### table
 

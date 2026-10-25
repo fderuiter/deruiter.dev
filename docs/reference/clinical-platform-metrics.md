@@ -33,6 +33,17 @@ metrics.
 | Screen failures | `screen_failures` | certified | 1.0.0 | portfolio | 562 subjects |
 | Early termination rate | `early_termination_rate` | certified | 1.0.0 | portfolio | 8.3% |
 | Site activation cycle time | `site_activation_cycle_time` | certified | 1.0.0 | portfolio | 154.0 days |
+| Sites selected | `sites_selected` | certified | 1.0.0 | portfolio | 120 sites |
+| Sites contracted | `sites_contracted` | certified | 1.0.0 | portfolio | 120 sites |
+| Sites IRB approved | `sites_irb_approved` | certified | 1.0.0 | portfolio | 120 sites |
+| Sites initiated | `sites_initiated` | certified | 1.0.0 | portfolio | 120 sites |
+| Sites activated | `sites_activated` | certified | 1.0.0 | portfolio | 120 sites |
+| Sites with a first subject in | `sites_with_first_subject_in` | certified | 1.0.0 | portfolio | 118 sites |
+| Selection to executed agreement | `selection_to_contract_days` | certified | 1.0.0 | portfolio | 38.0 days |
+| Executed agreement to IRB approval | `contract_to_irb_approval_days` | certified | 1.0.0 | portfolio | 26.0 days |
+| IRB approval to initiation visit | `irb_approval_to_initiation_days` | certified | 1.0.0 | portfolio | 20.0 days |
+| Initiation visit to activation | `initiation_to_activation_days` | certified | 1.0.0 | portfolio | 3.0 days |
+| Activation to first subject in | `activation_to_first_subject_in_days` | certified | 1.0.0 | portfolio | 50.0 days |
 | Data entry lag (median) | `data_entry_lag_median` | certified | 1.0.0 | portfolio | 2.0 days |
 | Data entry lag (90th percentile) | `data_entry_lag_p90` | certified | 1.0.0 | portfolio | 9.0 days |
 | Data entry lag (mean) | `data_entry_lag_mean` | certified | 1.0.0 | portfolio | 3.5 days |
@@ -141,6 +152,138 @@ Median days from the study's protocol finalisation to a site's activation, over 
 
 - Id: `site_activation_cycle_time`, version 1.0.0, certified.
 - Formula: median of days from valid_from to activated_on over gold.dim_site rows where version_number = 1 and activated_on is not null.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Sites selected
+
+Sites selected by the sponsor by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.
+
+- Id: `sites_selected`, version 1.0.0, certified.
+- Formula: count of gold.dim_site rows where version_number = 1 and selected_on is not null.
+- Unit: sites. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Sites contracted
+
+Sites with an executed clinical trial agreement by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.
+
+- Id: `sites_contracted`, version 1.0.0, certified.
+- Formula: count of gold.dim_site rows where version_number = 1 and contracted_on is not null.
+- Unit: sites. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Sites IRB approved
+
+Sites with the study approved by their IRB or ethics committee by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.
+
+- Id: `sites_irb_approved`, version 1.0.0, certified.
+- Formula: count of gold.dim_site rows where version_number = 1 and irb_approved_on is not null.
+- Unit: sites. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Sites initiated
+
+Sites with a site initiation visit by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.
+
+- Id: `sites_initiated`, version 1.0.0, certified.
+- Formula: count of gold.dim_site rows where version_number = 1 and initiated_on is not null.
+- Unit: sites. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Sites activated
+
+Sites activated by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.
+
+- Id: `sites_activated`, version 1.0.0, certified.
+- Formula: count of gold.dim_site rows where version_number = 1 and activated_on is not null.
+- Unit: sites. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Sites with a first subject in
+
+Sites that have enrolled a subject by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.
+
+- Id: `sites_with_first_subject_in`, version 1.0.0, certified.
+- Formula: count of gold.dim_site rows where version_number = 1 and first_subject_in_on is not null.
+- Unit: sites. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Selection to executed agreement
+
+Median days from a site's selection to its executed clinical trial agreement, over sites that reached both stages by the data cut.
+
+- Id: `selection_to_contract_days`, version 1.0.0, certified.
+- Formula: median of days from selected_on to contracted_on over gold.dim_site rows where version_number = 1 and selected_on is not null and contracted_on is not null.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Executed agreement to IRB approval
+
+Median days from the executed agreement to the IRB or ethics committee's approval, over sites that reached both stages by the data cut.
+
+- Id: `contract_to_irb_approval_days`, version 1.0.0, certified.
+- Formula: median of days from contracted_on to irb_approved_on over gold.dim_site rows where version_number = 1 and contracted_on is not null and irb_approved_on is not null.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### IRB approval to initiation visit
+
+Median days from IRB or ethics approval to the site initiation visit, over sites that reached both stages by the data cut.
+
+- Id: `irb_approval_to_initiation_days`, version 1.0.0, certified.
+- Formula: median of days from irb_approved_on to initiated_on over gold.dim_site rows where version_number = 1 and irb_approved_on is not null and initiated_on is not null.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Initiation visit to activation
+
+Median days from the site initiation visit to activation, over sites that reached both stages by the data cut.
+
+- Id: `initiation_to_activation_days`, version 1.0.0, certified.
+- Formula: median of days from initiated_on to activated_on over gold.dim_site rows where version_number = 1 and initiated_on is not null and activated_on is not null.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `site`, `country`.
+- Default filters: none.
+- Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
+- Glossary term: Site activation (`site-activation-term`).
+
+### Activation to first subject in
+
+Median days from activation to the first subject the site enrolled, over sites that reached both stages by the data cut.
+
+- Id: `activation_to_first_subject_in_days`, version 1.0.0, certified.
+- Formula: median of days from activated_on to first_subject_in_on over gold.dim_site rows where version_number = 1 and activated_on is not null and first_subject_in_on is not null.
 - Unit: days. Grain: portfolio.
 - Dimensions: `study`, `site`, `country`.
 - Default filters: none.

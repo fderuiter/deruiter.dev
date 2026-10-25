@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/silver.site"
 name: Sites
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "Site management"
 tags:
@@ -69,6 +69,24 @@ schema:
         physicalType: INTEGER
         description: "Enrollment target for the site."
         required: true
+        classification: internal
+      - name: selected_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the sponsor selected the site, or null before then."
+        required: false
+        classification: internal
+      - name: contracted_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the clinical trial agreement was executed, or null before then."
+        required: false
+        classification: internal
+      - name: irb_approved_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the IRB or ethics committee approved the study at the site, or null before then."
+        required: false
         classification: internal
       - name: activated_on
         logicalType: date

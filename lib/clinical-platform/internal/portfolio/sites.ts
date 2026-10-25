@@ -23,6 +23,8 @@ export interface SitePlan {
   readonly plannedEnrollment: number;
   /** Activation day number, or `null` when not activated by the data cut. */
   readonly activationDay: number | null;
+  /** Day the site is planned to activate, even after the data cut. */
+  readonly plannedActivationDay: number;
   /** Multiplier on the planned screening rate. */
   readonly speed: number;
   /** Mean days from visit to data entry. */
@@ -105,6 +107,7 @@ export function planSites(
       name: inventName(rng, takenNames),
       plannedEnrollment,
       activationDay: activation <= asOfDay ? activation : null,
+      plannedActivationDay: activation,
       speed: rng.real(0.7, 1.4),
       entryLagDays: rng.real(1.5, 6),
       slow: false,

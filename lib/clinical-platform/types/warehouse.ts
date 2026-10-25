@@ -28,7 +28,8 @@ export interface WarehouseFinding {
     | "grain"
     | "unique"
     | "foreign-key"
-    | "scd2";
+    | "scd2"
+    | "sequence";
   /** Qualified table name. */
   readonly table: string;
   /** What is wrong, in one sentence. */

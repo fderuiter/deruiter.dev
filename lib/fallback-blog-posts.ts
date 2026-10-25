@@ -595,7 +595,7 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
     body: `
 <h2>A badge I should not have shipped</h2>
 <p>This week I had my own site reviewed the way a clinical data manager would read it, and I did not like what came back. CRF Studio carried a badge announcing one hundred percent conformance with CDISC and SDTM. Its audit log was described as an unalterable Part 11 trail. A status line declared the whole thing ready for regulated work.</p>
-<p>None of that was implemented. What existed was a useful subset of CDASHIG 2.2 and SDTMIG 3.4 design checks, an audit trail that lives in browser state, and a local slice of controlled terminology. That is a reasonable thing for a portfolio to demonstrate. It is not what the copy said, and the people the clinical work is written for are exactly the readers who notice the difference and stop trusting the rest of the page.</p>
+<p>None of that was implemented. What existed was a useful subset of design checks from the CDASH and SDTM implementation guides, an audit trail that lives in browser state, and a local slice of controlled terminology. That is a reasonable thing for a portfolio to demonstrate. It is not what the copy said, and the people the clinical work is written for are exactly the readers who notice the difference and stop trusting the rest of the page.</p>
 <p>I cannot quote the old wording here. This file is one of more than 130 that a test now scans for it, and the build would fail.</p>
 
 <h2>Describe what is implemented</h2>
@@ -603,7 +603,7 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>A rule like that decays the moment nobody is watching, so it is a function rather than a guideline. <code>findClinicalClaims()</code> matches the shapes that kept appearing: a standard or regulation followed by "compliant", a percentage score in front of a standard, a promise to comply with a regulation, an audit trail that cannot be changed. A test runs it across the clinical routes, components and libraries, the social card presets and this blog, and names the phrase and the file when it fails. It also has to let honest sentences through, so the test keeps a list of those as well. "Three non-compliant records." must pass.</p>
 
 <h2>Then I checked the codes</h2>
-<p>"Aligned to the package" was itself a claim, so the next job was to check it. Every codelist and term in CRF Studio went up against the NCI EVS SDTM terminology file of 2026-09-25.</p>
+<p>"Aligned to the package" was itself a claim, so the next job was to check it. Every codelist and term in CRF Studio went up against the NCI EVS SDTM terminology file for the package date the site declares.</p>
 <p>It was worse than the issue I had filed. Most term codes were wrong or missing from the package, and several codelists sat under codes that belong to <em>other</em> codelists:</p>
 <ul>
   <li>The yes/no codelist used C66741, which is the vital signs test code list. Sex used C66742, which is the yes/no list.</li>

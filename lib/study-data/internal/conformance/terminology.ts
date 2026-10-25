@@ -92,6 +92,7 @@ const term = (
 export type CodelistId =
   | "NY"
   | "SEX"
+  | "RACEC"
   | "AGEU"
   | "DOMAIN"
   | "EPOCH"
@@ -123,6 +124,15 @@ const CODELISTS = [
     term("F", "C16576", "Female"),
     term("M", "C20197", "Male"),
     term("U", "C17998", "Unknown"),
+  ]),
+  // DM.RACE takes Race As Collected: the SDTM RACE codelist (C74457) was
+  // last published in SDTM CT 2025-09-26, as CRF Studio's CL_RACE notes.
+  cdisc("RACEC", "Race As Collected", "SDTM", "C128689", true, [
+    term("AMERICAN INDIAN OR ALASKA NATIVE", "C41259"),
+    term("ASIAN", "C41260"),
+    term("BLACK OR AFRICAN AMERICAN", "C16352"),
+    term("NATIVE HAWAIIAN OR PACIFIC ISLANDER", "C41219"),
+    term("WHITE", "C41261"),
   ]),
   cdisc("AGEU", "Age Unit", "SDTM", "C66781", false, [term("YEARS", "C29848")]),
   cdisc("DOMAIN", "SDTM Domain Abbreviation", "SDTM", "C66734", true, [

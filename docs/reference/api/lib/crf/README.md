@@ -3320,6 +3320,12 @@ Re-exports [UsdmV4Activity](usdm-v4-types/interfaces/UsdmV4Activity.md)
 
 ***
 
+### UsdmV4AdministrableProduct
+
+Re-exports [UsdmV4AdministrableProduct](usdm-v4-types/interfaces/UsdmV4AdministrableProduct.md)
+
+***
+
 ### UsdmV4AliasCode
 
 Re-exports [UsdmV4AliasCode](usdm-v4-types/interfaces/UsdmV4AliasCode.md)

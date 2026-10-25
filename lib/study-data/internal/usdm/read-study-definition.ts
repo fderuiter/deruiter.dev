@@ -46,6 +46,10 @@ function coded(code: UsdmV4Code | null | undefined): CodedValue {
   return { code: code?.code ?? "", decode: code?.decode ?? "" };
 }
 
+/** NCI codes for an experimental intervention and an investigational product. */
+const EXPERIMENTAL_INTERVENTION = "C41161";
+const INVESTIGATIONAL_PRODUCT = "C202579";
+
 function list<T>(value: readonly T[] | undefined | null): readonly T[] {
   return Array.isArray(value) ? value : [];
 }
@@ -191,6 +195,17 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
     }
   }
 
+  const interventions = list(version.studyInterventions);
+  const experimental =
+    interventions.find(
+      (item) => item.role?.code === EXPERIMENTAL_INTERVENTION
+    ) ?? interventions[0];
+  const productClass = list(version.administrableProducts).find(
+    (product) =>
+      product.productDesignation?.code === INVESTIGATIONAL_PRODUCT &&
+      product.pharmacologicClass?.code
+  )?.pharmacologicClass;
+
   const planned = design.population?.plannedEnrollmentNumber;
   const plannedEnrollment = planned && "value" in planned ? planned.value : 0;
 
@@ -205,6 +220,10 @@ export function readStudyDefinition(usdm: unknown): StudyDefinition {
       modelCode: design.model?.code ?? "",
       blinding: design.blindingSchema?.standardCode?.decode ?? "",
       blindingCode: design.blindingSchema?.standardCode?.code ?? "",
+      interventionType: coded(experimental?.type),
+      pharmacologicClass: productClass
+        ? { ...coded(productClass), version: productClass.codeSystemVersion }
+        : null,
       plannedEnrollment,
       arms,
       epochs,

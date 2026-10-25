@@ -38,6 +38,10 @@ import {
 
 const CT_SYSTEM = "http://www.cdisc.org";
 const CT_VERSION = CLINICAL_STANDARDS_PROFILE.CT.packageDate;
+// MED-RT, the terminology FDA names for a product's pharmacologic class.
+// The release is the one RxNav served when the class was looked up.
+const MEDRT_SYSTEM = "http://va.gov/terminology/medrt";
+const MEDRT_VERSION = "2026.10.05";
 
 function ct(id: string, code: string, decode: string): UsdmV4Code {
   return {
@@ -645,7 +649,7 @@ export const DEMO_301_USDM: UsdmV4Document = {
             name: "Demoxacin",
             label: "Demoxacin",
             description:
-              "Fictional oral antihypertensive, 10 mg or 20 mg once daily.",
+              "Fictional oral angiotensin II receptor blocker, 10 mg or 20 mg once daily.",
             role: ct(
               "int_demoxacin_role",
               "C41161",
@@ -667,6 +671,32 @@ export const DEMO_301_USDM: UsdmV4Document = {
             type: ct("int_placebo_type", "C1909", "Pharmacologic Substance"),
             codes: [],
             instanceType: "StudyIntervention",
+          },
+        ],
+        administrableProducts: [
+          {
+            id: "ap_demoxacin",
+            name: "Demoxacin tablet",
+            label: "Demoxacin tablet",
+            description: "Demoxacin 10 mg and 20 mg film-coated tablets.",
+            administrableDoseForm: alias(
+              "ap_demoxacin_form",
+              ct("ap_demoxacin_form_code", "C42998", "Tablet Dosage Form")
+            ),
+            productDesignation: ct(
+              "ap_demoxacin_designation",
+              "C202579",
+              "IMP"
+            ),
+            pharmacologicClass: {
+              id: "ap_demoxacin_class",
+              code: "N0000175561",
+              codeSystem: MEDRT_SYSTEM,
+              codeSystemVersion: MEDRT_VERSION,
+              decode: "Angiotensin 2 Receptor Blocker [EPC]",
+              instanceType: "Code",
+            },
+            instanceType: "AdministrableProduct",
           },
         ],
         eligibilityCriterionItems: [

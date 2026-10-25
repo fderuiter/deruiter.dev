@@ -154,7 +154,8 @@ function summary(
   label: string,
   value: string | number,
   code: string | null = null,
-  ctVersion = ""
+  ctVersion = "",
+  reference = "CDISC"
 ): Row {
   return {
     STUDYID: studyId,
@@ -164,10 +165,30 @@ function summary(
     TSPARM: label,
     TSVAL: String(value),
     TSVALCD: code,
-    TSVCDREF: code ? "CDISC" : null,
+    TSVCDREF: code ? reference : null,
     TSVCDVER: code ? ctVersion : null,
   };
 }
+
+/**
+ * Submission values of Intervention Type Response (C99078), by NCI code, for
+ * TS INTTYPE. USDM codes a study intervention's type with the same codes.
+ */
+const INTERVENTION_TYPES: Readonly<Record<string, string>> = {
+  C15184: "BEHAVIORAL THERAPY",
+  C307: "BIOLOGIC",
+  C54696: "COMBINATION PRODUCT",
+  C16830: "DEVICE",
+  C18020: "DIAGNOSTIC TEST",
+  C1505: "DIETARY SUPPLEMENT",
+  C1909: "DRUG",
+  C15238: "GENETIC",
+  C218507: "NON-SURGICAL PROCEDURE",
+  C98769: "PROCEDURE",
+  C15313: "RADIATION",
+  C15329: "SURGERY",
+  C923: "VACCINE",
+};
 
 /** Build the five trial-design domains solely from the parsed USDM study definition. */
 export function deriveTrialDesign(
@@ -278,6 +299,31 @@ export function deriveTrialDesign(
       design.modelCode,
       versions["NCI-EVS-CT"]
     ),
+    ...(INTERVENTION_TYPES[design.interventionType.code]
+      ? [
+          summary(
+            studyId,
+            "INTTYPE",
+            "Intervention Type",
+            INTERVENTION_TYPES[design.interventionType.code],
+            design.interventionType.code,
+            versions["NCI-EVS-CT"]
+          ),
+        ]
+      : []),
+    ...(design.pharmacologicClass
+      ? [
+          summary(
+            studyId,
+            "PCLAS",
+            "Pharmacologic Class",
+            design.pharmacologicClass.decode,
+            design.pharmacologicClass.code,
+            design.pharmacologicClass.version,
+            "MED-RT"
+          ),
+        ]
+      : []),
     summary(
       studyId,
       "TBLIND",
@@ -301,18 +347,9 @@ export function deriveTrialDesign(
       design.arms.length > 1 ? "C49488" : "C49487",
       versions["NCI-EVS-CT"]
     ),
-    summary(
-      studyId,
-      "SDTMIGVER",
-      "SDTM Implementation Guide Version",
-      versions.SDTMIG ?? ""
-    ),
-    summary(
-      studyId,
-      "ADAMIGVER",
-      "ADaM Implementation Guide Version",
-      versions.ADaMIG ?? ""
-    ),
+    // TS CT has an SDTM IG version parameter (SDTIGVER, C156604) but none
+    // for the ADaM IG, whose version define.xml and the ADRG carry.
+    summary(studyId, "SDTIGVER", "SDTM IG Version", versions.SDTMIG ?? ""),
     summary(
       studyId,
       "CTVERS",

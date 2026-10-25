@@ -203,22 +203,6 @@
     },
     {
       "target": "sdtm",
-      "coreId": "CORE-000147",
-      "dataset": "TS",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "TSPARMCD SDTMIGVER and ADAMIGVER are 9 characters, over the limit of 8."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000741",
-      "dataset": "TS",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "INTMODEL, INTTYPE and PCLASS are missing for an interventional study."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-000701",
       "dataset": "AE",
       "category": "by-design",
@@ -265,6 +249,13 @@
       "dataset": "TS",
       "category": "core-limitation",
       "reason": "Engine execution error (unknown exception) on TS."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000741",
+      "dataset": "TS",
+      "category": "core-limitation",
+      "reason": "The rule looks for TSPARMCD PCLASS, but the CDISC CT code for Pharmacologic Class is PCLAS (C98768), which TS carries with INTMODEL and INTTYPE."
     },
     {
       "target": "usdm",

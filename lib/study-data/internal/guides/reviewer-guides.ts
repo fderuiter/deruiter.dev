@@ -189,8 +189,8 @@ const TITLES: Readonly<Record<ReviewerGuideKind, string>> = {
 
 const SCOPE: Readonly<Record<ReviewerGuideKind, string>> = {
   csdrg:
-    "Generated from one pipeline run. It follows the section order of the PHUSE cSDRG template for the parts a run can state as facts: data flow, standards, datasets, conformance and derivations. Protocol and data collection narratives, and sponsor decisions on unresolved issues, are not generated. This is a demonstration of a deterministic pipeline on synthetic data, not a validated production workflow.",
-  adrg: "Generated from one pipeline run. It follows the section order of the PHUSE ADRG template for the parts a run can state as facts: data flow, standards, analysis datasets, conformance, derivations and the analysis output index. Statistical analysis plan narratives and program listings are not generated. This is a demonstration of a deterministic pipeline on synthetic data, not a validated production workflow.",
+    "Generated from one pipeline run. It follows the section order of the PHUSE cSDRG template for the parts a run can state as facts: data flow, standards, datasets, conformance and derivations. Protocol and data collection narratives, and sponsor decisions on unresolved issues, are not generated. This is a demonstration of a deterministic pipeline on synthetic data, not a production submission workflow.",
+  adrg: "Generated from one pipeline run. It follows the section order of the PHUSE ADRG template for the parts a run can state as facts: data flow, standards, analysis datasets, conformance, derivations and the analysis output index. Statistical analysis plan narratives and program listings are not generated. This is a demonstration of a deterministic pipeline on synthetic data, not a production submission workflow.",
 };
 
 function layerOf(kind: ReviewerGuideKind): Exclude<DataLayer, "collected"> {

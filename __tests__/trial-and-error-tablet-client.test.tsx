@@ -60,16 +60,13 @@ describe("TrialAndErrorClient cabinet wiring (#2120)", () => {
     expect(cabinetProps.current?.mobileLayout).toBe("fit");
   });
 
-  it("keeps F for fullscreen because no table key is F, and stays ungated", () => {
-    const { container } = render(<TrialAndErrorClient />);
+  it("keeps F for fullscreen because no table key is F", () => {
+    render(<TrialAndErrorClient />);
     expect(cabinetProps.current?.fullscreenKey).not.toBe(false);
     const controls = cabinetProps.current?.controls as Array<{ key: string }>;
     const keys = controls
       .flatMap((control) => control.key.split(/[\s/,–-]+/))
       .map((key) => key.toLowerCase());
     expect(keys).not.toContain("f");
-    expect(
-      container.querySelector('[data-testid="desktop-only-notice"]')
-    ).toBeNull();
   });
 });

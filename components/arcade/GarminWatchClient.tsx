@@ -6,7 +6,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { requestGarminAutoPause } from "@/components/garmin-watch/auto-pause";
 import Link from "next/link";
 import Image from "next/image";
@@ -87,42 +86,40 @@ export const GarminWatchClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 flex flex-col items-center">
-          <DesktopOnlyGate gameId="garmin-watch" gameTitle="Monkey C Mayhem">
-            {/* The watch waits on its own START button like a real app, so
+          {/* The watch waits on its own START button like a real app, so
                 a runner never starts before the player is ready. */}
-            <PlayCabinet
-              gameId="garmin-watch"
-              singleTitleScreen={false}
-              title="Monkey C Mayhem: A Garmin 5K Platformer"
-              subtitle="Five Stages, Three Lives, One Body Battery"
-              icon={<IconDeviceWatch className="w-8 h-8" />}
-              instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Down in mid-air is a Burpee Slam and X in mid-air a Spin Jump; press Jump in mid-air against a station or plyo box to Wall Jump, and stand beside a medicine ball and press X to pick it up, then X again to throw it. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
-              controls={[
-                { key: "Enter", action: "Start / Pause" },
-                { key: "UP / Space", action: "Jump (hold = higher)" },
-                { key: "→ / ←", action: "Sprint / Jog" },
-                { key: "X / Backspace", action: "Heat Bolt / Cape Spin" },
-                { key: "↓", action: "Enter a Water Station / Slam" },
-                { key: "P / Esc", action: "Pause" },
-                { key: "Backspace (race paused)", action: "Restart the race" },
-                { key: "L", action: "Backlight" },
-                { key: "W (Dev Mode)", action: "Wipe Fog" },
-              ]}
-              importComponent={GarminWatchSimulatorLoader}
-              // No game key is F (arrows, Space, Enter, P, Escape, X, G, L,
-              // W, Backspace), so the cabinet's F-for-fullscreen stays on
-              // (#2122). The watch, its dock and the companion are built to
-              // fit the touch cabinet's viewport, so the stage clips rather
-              // than scrolls (ADR 0061).
-              mobileLayout="fit"
-              // A hidden tab or a backgrounded app pauses a run in progress.
-              onAutoPause={requestGarminAutoPause}
-            >
-              <div className="garmin-stage flex flex-col items-center w-full">
-                <DynamicGarminWatchSimulator />
-              </div>
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="garmin-watch"
+            singleTitleScreen={false}
+            title="Monkey C Mayhem: A Garmin 5K Platformer"
+            subtitle="Five Stages, Three Lives, One Body Battery"
+            icon={<IconDeviceWatch className="w-8 h-8" />}
+            instructions="Run a 5K in five 1 km stages on three lives. Waiting for GPS, then GO. Hold jump for height, stomp Couch Potatoes and Snooze Buttons, jump the Hurdles, and dodge the course foes: Kettlebells, Move Alerts, Box Jumpers, Auto Laps and the Rep Max on stages 3 and 5. Bump Sync Blocks for Protein Shakes, Heat Maps, Compression Capes and a Runner's High. Down in mid-air is a Burpee Slam and X in mid-air a Spin Jump; press Jump in mid-air against a station or plyo box to Wall Jump, and stand beside a medicine ball and press X to pick it up, then X again to throw it. Keep your Body Battery above zero, earn a Training Effect on each stage, and grab the finish pole. Dev Mode, off by default in the simulator controls, adds the original RAM heap and firmware crash challenge."
+            controls={[
+              { key: "Enter", action: "Start / Pause" },
+              { key: "UP / Space", action: "Jump (hold = higher)" },
+              { key: "→ / ←", action: "Sprint / Jog" },
+              { key: "X / Backspace", action: "Heat Bolt / Cape Spin" },
+              { key: "↓", action: "Enter a Water Station / Slam" },
+              { key: "P / Esc", action: "Pause" },
+              { key: "Backspace (race paused)", action: "Restart the race" },
+              { key: "L", action: "Backlight" },
+              { key: "W (Dev Mode)", action: "Wipe Fog" },
+            ]}
+            importComponent={GarminWatchSimulatorLoader}
+            // No game key is F (arrows, Space, Enter, P, Escape, X, G, L,
+            // W, Backspace), so the cabinet's F-for-fullscreen stays on
+            // (#2122). The watch, its dock and the companion are built to
+            // fit the touch cabinet's viewport, so the stage clips rather
+            // than scrolls (ADR 0061).
+            mobileLayout="fit"
+            // A hidden tab or a backgrounded app pauses a run in progress.
+            onAutoPause={requestGarminAutoPause}
+          >
+            <div className="garmin-stage flex flex-col items-center w-full">
+              <DynamicGarminWatchSimulator />
+            </div>
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

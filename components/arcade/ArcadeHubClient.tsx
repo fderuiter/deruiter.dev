@@ -26,11 +26,17 @@ import {
   arcadeCoreSlice,
   isPhoneGated,
   onArcadeProgressNotice,
+  phoneReadyGames,
   useProgress,
 } from "@/lib/arcade";
 import { ArcadeTrophyCabinet } from "@/components/arcade/ArcadeTrophyCabinet";
 import { ArcadeTrailer } from "@/components/arcade/ArcadeTrailer";
 import { ArcadeDailyPanel } from "@/components/arcade/ArcadeDailyPanel";
+import {
+  FIRST_ON_PHONE,
+  PHONE_ONLY_BLOCK,
+  PhoneReadinessBadge,
+} from "@/components/arcade/phone-readiness";
 import { echoBestStore } from "@/lib/meme-data";
 import { useToast } from "@/hooks/useToast";
 
@@ -68,13 +74,6 @@ function MemeVaultEchoBest() {
     </p>
   );
 }
-
-// Same query as DesktopOnlyGate (PHONE_QUERY, ADR 0061): phones only. Tablets
-// are not marked desktop only.
-const SHOW_ON_TOUCH_COMPACT_INLINE =
-  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:inline-block";
-const SHOW_ON_TOUCH_COMPACT_BLOCK =
-  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:block";
 
 const ARCADE_GAMES: ArcadeGameCard[] = [
   {
@@ -335,6 +334,34 @@ const ARCADE_GAMES: ArcadeGameCard[] = [
   },
 ];
 
+/**
+ * The hub's note on phones, from the registry (#2368): which games play
+ * here, with a link to each.
+ */
+function PhoneNote() {
+  const ready = phoneReadyGames();
+  return (
+    <p
+      className={`${PHONE_ONLY_BLOCK} mt-6 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300`}
+    >
+      On a phone? Most of these games want a bigger screen. These play fine
+      here:{" "}
+      {ready.map((game, index) => (
+        <React.Fragment key={game.slug}>
+          {index > 0 && (index === ready.length - 1 ? " and " : ", ")}
+          <Link
+            href={game.route}
+            className="text-emerald-300 underline underline-offset-4"
+          >
+            {game.name}
+          </Link>
+        </React.Fragment>
+      ))}
+      .
+    </p>
+  );
+}
+
 function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
   const shouldReduceMotion = useReducedMotion();
   // The best lives in one place, the arcade.core slice (#2548).
@@ -358,7 +385,9 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
           ? { duration: 0 }
           : { delay: index * 0.08, duration: 0.4 }
       }
-      className={`group relative flex flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/40 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 ${game.borderHover} hover:shadow-[0_0_30px_rgba(0,0,0,0.8)]`}
+      data-phone-view={isPhoneGated(game.slug) ? "gated" : "ready"}
+      // Games that play on a phone come first there (#2368).
+      className={`group relative flex min-h-[88px] flex-col justify-between rounded-3xl border border-zinc-800/80 bg-zinc-900/40 p-6 md:p-8 backdrop-blur-xl transition-all duration-300 ${game.borderHover} hover:shadow-[0_0_30px_rgba(0,0,0,0.8)] ${isPhoneGated(game.slug) ? "" : FIRST_ON_PHONE}`}
     >
       {/* Ambient background glow on card */}
       <div className="absolute inset-0 rounded-3xl bg-gradient-to-b from-cyan-500/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
@@ -396,13 +425,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
               >
                 {game.genre}
               </span>
-              {isPhoneGated(game.slug) && (
-                <span
-                  className={`${SHOW_ON_TOUCH_COMPACT_INLINE} px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold tracking-wider uppercase border border-zinc-700 text-zinc-300`}
-                >
-                  Desktop only
-                </span>
-              )}
+              <PhoneReadinessBadge slug={game.slug} />
             </div>
           </div>
 
@@ -467,7 +490,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
         <Link
           href={game.route}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-400 text-zinc-950 font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
+          className="inline-flex min-h-[44px] items-center justify-center gap-2 px-4 py-2 rounded-xl bg-cyan-400 max-sm:w-full text-zinc-950 font-mono text-xs font-bold transition-all duration-200 hover:bg-white hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(6,182,212,0.3)] cursor-pointer"
         >
           <IconPlayerPlay className="w-3.5 h-3.5 fill-current" />
           <span>Play Game</span>
@@ -530,18 +553,7 @@ export const ArcadeHubClient: React.FC = () => {
             attention.
           </p>
 
-          <p
-            className={`${SHOW_ON_TOUCH_COMPACT_BLOCK} mt-6 rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-300`}
-          >
-            On a phone? These games need a desktop, but the{" "}
-            <Link
-              href="/arcade/meme-vault"
-              className="text-emerald-300 underline underline-offset-4"
-            >
-              Meme Vault
-            </Link>{" "}
-            works fine here.
-          </p>
+          <PhoneNote />
 
           {/* Quick Metrics Bar */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-xs font-mono">

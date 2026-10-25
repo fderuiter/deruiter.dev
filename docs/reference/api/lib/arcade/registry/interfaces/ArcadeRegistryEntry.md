@@ -24,6 +24,15 @@ Takes part in the Arcade Daily (`lib/arcade/daily.ts`).
 
 ***
 
+### name
+
+> `readonly` **name**: `string`
+
+The game's short name in running text, such as the phone notice and the
+phone picks. The full title stays in `ARCADE_GAMES_METADATA`.
+
+***
+
 ### phoneOrientation?
 
 > `readonly` `optional` **phoneOrientation?**: [`ArcadePhoneOrientation`](../type-aliases/ArcadePhoneOrientation.md)

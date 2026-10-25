@@ -6,7 +6,6 @@ import Link from "next/link";
 import { IconArrowLeft, IconRings } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { requestFbbAutoPause } from "@/components/for-better-or-bulk/auto-pause";
@@ -73,41 +72,33 @@ export const ForBetterOrBulkClient: React.FC = () => (
       </div>
 
       <div className="border border-zinc-800 bg-[#13151a] p-1.5 sm:p-4">
-        <DesktopOnlyGate
+        <PlayCabinet
           gameId="for-better-or-bulk"
-          gameTitle="For Better or Bulk"
+          title="For Better or Bulk"
+          subtitle="Friday setup · Plummer House · 10/10/25"
+          icon={
+            <IconRings className="h-8 w-8 text-amber-400" aria-hidden="true" />
+          }
+          instructions="Pick two website features and fill the cart within budget, then set up the venue before the 4:00 ceremony. Arrange roses at the rose table, grill the hot dogs and wings before they burn, carry chairs to the lawn and hang the lanterns. Fred's brothers will text."
+          controls={[
+            { key: "WASD / arrows", action: "Move Fred / Abbi" },
+            { key: "E or Space / Enter", action: "Pick up or put down" },
+            { key: "F / Shift (hold)", action: "Arrange, pluck or simplify" },
+            { key: "Tab", action: "Swap people (one player)" },
+            { key: "Esc", action: "Pause" },
+          ]}
+          importComponent={ForBetterOrBulkLoader}
+          fullscreenKey={false}
+          singleTitleScreen={false}
+          // The day, its dock and its panel are built to fit the touch
+          // cabinet's viewport, so the stage clips rather than scrolls
+          // (ADR 0061, #2123). The plan and the receipt scroll in the game.
+          mobileLayout="fit"
+          // A hidden tab or a backgrounded app pauses a day in progress.
+          onAutoPause={requestFbbAutoPause}
         >
-          <PlayCabinet
-            gameId="for-better-or-bulk"
-            title="For Better or Bulk"
-            subtitle="Friday setup · Plummer House · 10/10/25"
-            icon={
-              <IconRings
-                className="h-8 w-8 text-amber-400"
-                aria-hidden="true"
-              />
-            }
-            instructions="Pick two website features and fill the cart within budget, then set up the venue before the 4:00 ceremony. Arrange roses at the rose table, grill the hot dogs and wings before they burn, carry chairs to the lawn and hang the lanterns. Fred's brothers will text."
-            controls={[
-              { key: "WASD / arrows", action: "Move Fred / Abbi" },
-              { key: "E or Space / Enter", action: "Pick up or put down" },
-              { key: "F / Shift (hold)", action: "Arrange, pluck or simplify" },
-              { key: "Tab", action: "Swap people (one player)" },
-              { key: "Esc", action: "Pause" },
-            ]}
-            importComponent={ForBetterOrBulkLoader}
-            fullscreenKey={false}
-            singleTitleScreen={false}
-            // The day, its dock and its panel are built to fit the touch
-            // cabinet's viewport, so the stage clips rather than scrolls
-            // (ADR 0061, #2123). The plan and the receipt scroll in the game.
-            mobileLayout="fit"
-            // A hidden tab or a backgrounded app pauses a day in progress.
-            onAutoPause={requestFbbAutoPause}
-          >
-            <DynamicForBetterOrBulk initialSetup={PAGE_SETUP} />
-          </PlayCabinet>
-        </DesktopOnlyGate>
+          <DynamicForBetterOrBulk initialSetup={PAGE_SETUP} />
+        </PlayCabinet>
       </div>
       <NextPrevNav
         {...getArcadeNeighbors("/arcade/for-better-or-bulk")}

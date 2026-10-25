@@ -6,7 +6,6 @@ import Link from "next/link";
 import { IconArrowLeft, IconClipboardCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { requestStudyDirectorAutoPause } from "@/components/study-director-world/auto-pause";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
@@ -65,39 +64,37 @@ export const StudyDirectorClient: React.FC = () => {
         </div>
 
         <div className="border border-zinc-800 bg-[#13151a] p-1.5 sm:p-4">
-          <DesktopOnlyGate gameId="study-director" gameTitle="Study Director">
-            <PlayCabinet
-              gameId="study-director"
-              title="Study Director: Everything Is Fine"
-              subtitle="Study 24-081 · Clinical Study Management"
-              icon={
-                <IconClipboardCheck
-                  className="h-8 w-8 text-amber-400"
-                  aria-hidden="true"
-                />
-              }
-              instructions="Walk the office, talk to your team, work the query queue at the EDC, and drive out to the sites behind the green dashboard. Every action costs minutes and energy, and skipped documentation comes back at inspection. Prefer the dashboard? The classic desk is one button away."
-              controls={[
-                { key: "W A S D or ↑ ← ↓ →", action: "Walk" },
-                { key: "E", action: "Use what you face, or talk" },
-                { key: "E at the EDC", action: "Work the query queue" },
-                { key: "F", action: "Ask yourself how you are" },
-                { key: "Classic desk: 1 - 5", action: "Choose an option" },
-                { key: "Classic desk: E", action: "End the day" },
-              ]}
-              importComponent={StudyDirectorLoader}
-              // F is the game's own key ("Ask yourself how you are"), so the
-              // cabinet must not also toggle fullscreen on it.
-              fullscreenKey={false}
-              // The office and the desk are built to fit the touch cabinet's
-              // viewport, with their own scrolling columns (ADR 0061, #2076).
-              mobileLayout="fit"
-              // A hidden tab, a blur or a turned device stops a walk in progress.
-              onAutoPause={requestStudyDirectorAutoPause}
-            >
-              <DynamicStudyDirector />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="study-director"
+            title="Study Director: Everything Is Fine"
+            subtitle="Study 24-081 · Clinical Study Management"
+            icon={
+              <IconClipboardCheck
+                className="h-8 w-8 text-amber-400"
+                aria-hidden="true"
+              />
+            }
+            instructions="Walk the office, talk to your team, work the query queue at the EDC, and drive out to the sites behind the green dashboard. Every action costs minutes and energy, and skipped documentation comes back at inspection. Prefer the dashboard? The classic desk is one button away."
+            controls={[
+              { key: "W A S D or ↑ ← ↓ →", action: "Walk" },
+              { key: "E", action: "Use what you face, or talk" },
+              { key: "E at the EDC", action: "Work the query queue" },
+              { key: "F", action: "Ask yourself how you are" },
+              { key: "Classic desk: 1 - 5", action: "Choose an option" },
+              { key: "Classic desk: E", action: "End the day" },
+            ]}
+            importComponent={StudyDirectorLoader}
+            // F is the game's own key ("Ask yourself how you are"), so the
+            // cabinet must not also toggle fullscreen on it.
+            fullscreenKey={false}
+            // The office and the desk are built to fit the touch cabinet's
+            // viewport, with their own scrolling columns (ADR 0061, #2076).
+            mobileLayout="fit"
+            // A hidden tab, a blur or a turned device stops a walk in progress.
+            onAutoPause={requestStudyDirectorAutoPause}
+          >
+            <DynamicStudyDirector />
+          </PlayCabinet>
         </div>
         <NextPrevNav
           {...getArcadeNeighbors("/arcade/study-director")}

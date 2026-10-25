@@ -5,7 +5,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { defineGameViews } from "@/components/arcade/views";
 import { RetroLabyrinthCabinetSession } from "@/components/retro-labyrinth/RetroLabyrinthSession";
 import { LABYRINTH_CONTROLS } from "@/lib/retro-labyrinth/actions";
@@ -87,20 +86,18 @@ export const RetroLabyrinthClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(244,63,94,0.1)] flex flex-col items-center">
-          <DesktopOnlyGate gameId="retro-labyrinth" gameTitle="Retro Labyrinth">
-            <PlayCabinet
-              gameId="retro-labyrinth"
-              title="Retro Labyrinth: Graveyard Roguelike"
-              subtitle="There Are Bugs in the Dungeon"
-              icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
-              instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
-              controls={[...LABYRINTH_CONTROLS]}
-              importComponent={RetroLabyrinthLoader}
-              mobileOrientation="landscape"
-              mobileLayout="fit"
-              views={RETRO_LABYRINTH_VIEWS}
-            />
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="retro-labyrinth"
+            title="Retro Labyrinth: Graveyard Roguelike"
+            subtitle="There Are Bugs in the Dungeon"
+            icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
+            instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
+            controls={[...LABYRINTH_CONTROLS]}
+            importComponent={RetroLabyrinthLoader}
+            mobileOrientation="landscape"
+            mobileLayout="fit"
+            views={RETRO_LABYRINTH_VIEWS}
+          />
         </div>
 
         {/* Instructions & Controls Reference */}

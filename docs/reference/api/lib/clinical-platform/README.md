@@ -8,9 +8,27 @@
 
 ## References
 
+### appendDqIssueEvent
+
+Re-exports [appendDqIssueEvent](internal/quality/issues/functions/appendDqIssueEvent.md)
+
+***
+
 ### appendRiskSignal
 
 Re-exports [appendRiskSignal](internal/rbqm/signals/functions/appendRiskSignal.md)
+
+***
+
+### applyDqScenario
+
+Re-exports [applyDqScenario](internal/quality/faults/functions/applyDqScenario.md)
+
+***
+
+### assessDataQuality
+
+Re-exports [assessDataQuality](internal/quality/assess/functions/assessDataQuality.md)
 
 ***
 
@@ -29,6 +47,12 @@ Re-exports [AUTOMATED_MONITORING](internal/rbqm/signals/variables/AUTOMATED_MONI
 ### benjaminiHochberg
 
 Re-exports [benjaminiHochberg](internal/rbqm/stats/functions/benjaminiHochberg.md)
+
+***
+
+### breakDataQualityRule
+
+Re-exports [breakDataQualityRule](internal/quality/assess/functions/breakDataQualityRule.md)
 
 ***
 
@@ -110,6 +134,12 @@ Re-exports [checkLayerFlow](internal/policy/functions/checkLayerFlow.md)
 
 ***
 
+### checkLineage
+
+Re-exports [checkLineage](internal/lineage/impact/functions/checkLineage.md)
+
+***
+
 ### checkMetricChange
 
 Re-exports [checkMetricChange](internal/semantic/check/functions/checkMetricChange.md)
@@ -152,9 +182,27 @@ Re-exports [checkWarehouse](internal/warehouse/check/functions/checkWarehouse.md
 
 ***
 
+### checkWorkbenchSql
+
+Re-exports [checkWorkbenchSql](internal/workbench/guard/functions/checkWorkbenchSql.md)
+
+***
+
 ### ColumnRef
 
 Re-exports [ColumnRef](types/interfaces/ColumnRef.md)
+
+***
+
+### contractChangeImpact
+
+Re-exports [contractChangeImpact](internal/lineage/impact/functions/contractChangeImpact.md)
+
+***
+
+### ContractChangeImpact
+
+Re-exports [ContractChangeImpact](types/interfaces/ContractChangeImpact.md)
 
 ***
 
@@ -296,6 +344,12 @@ Re-exports [CtmsMonitoringVisit](types/interfaces/CtmsMonitoringVisit.md)
 
 ***
 
+### DATA\_QUALITY\_RULES
+
+Re-exports [DATA_QUALITY_RULES](internal/quality/assess/variables/DATA_QUALITY_RULES.md)
+
+***
+
 ### DataClassification
 
 Re-exports [DataClassification](types/type-aliases/DataClassification.md)
@@ -350,6 +404,12 @@ Re-exports [dataProducts](internal/governance/contracts/derive/functions/dataPro
 
 ***
 
+### dataQualityTrend
+
+Re-exports [dataQualityTrend](internal/quality/issues/functions/dataQualityTrend.md)
+
+***
+
 ### DataRetention
 
 Re-exports [DataRetention](types/interfaces/DataRetention.md)
@@ -386,9 +446,51 @@ Re-exports [DQ_DIMENSIONS](presets/variables/DQ_DIMENSIONS.md)
 
 ***
 
+### DQ\_ISSUE\_LOG
+
+Re-exports [DQ_ISSUE_LOG](internal/quality/issues/variables/DQ_ISSUE_LOG.md)
+
+***
+
+### DQ\_SCENARIOS
+
+Re-exports [DQ_SCENARIOS](internal/quality/faults/variables/DQ_SCENARIOS.md)
+
+***
+
+### DqAssessment
+
+Re-exports [DqAssessment](types/interfaces/DqAssessment.md)
+
+***
+
 ### DqDimension
 
 Re-exports [DqDimension](types/type-aliases/DqDimension.md)
+
+***
+
+### DqIssue
+
+Re-exports [DqIssue](types/interfaces/DqIssue.md)
+
+***
+
+### DqIssueEvent
+
+Re-exports [DqIssueEvent](types/interfaces/DqIssueEvent.md)
+
+***
+
+### dqIssues
+
+Re-exports [dqIssues](internal/quality/issues/functions/dqIssues.md)
+
+***
+
+### DqIssueStatus
+
+Re-exports [DqIssueStatus](types/type-aliases/DqIssueStatus.md)
 
 ***
 
@@ -398,9 +500,39 @@ Re-exports [DqRule](types/interfaces/DqRule.md)
 
 ***
 
+### DqRuleResult
+
+Re-exports [DqRuleResult](types/interfaces/DqRuleResult.md)
+
+***
+
+### DqScenario
+
+Re-exports [DqScenario](types/interfaces/DqScenario.md)
+
+***
+
+### DqScore
+
+Re-exports [DqScore](types/interfaces/DqScore.md)
+
+***
+
 ### DqSeverity
 
 Re-exports [DqSeverity](types/type-aliases/DqSeverity.md)
+
+***
+
+### DqStatus
+
+Re-exports [DqStatus](types/type-aliases/DqStatus.md)
+
+***
+
+### DqTrendPoint
+
+Re-exports [DqTrendPoint](types/interfaces/DqTrendPoint.md)
 
 ***
 
@@ -431,6 +563,30 @@ Re-exports [EdcVisit](types/interfaces/EdcVisit.md)
 ### emitDdl
 
 Re-exports [emitDdl](internal/warehouse/ddl/functions/emitDdl.md)
+
+***
+
+### EnrollmentForecast
+
+Re-exports [EnrollmentForecast](types/interfaces/EnrollmentForecast.md)
+
+***
+
+### EnrollmentForecastPoint
+
+Re-exports [EnrollmentForecastPoint](types/interfaces/EnrollmentForecastPoint.md)
+
+***
+
+### EnrollmentSimulationInput
+
+Re-exports [EnrollmentSimulationInput](types/interfaces/EnrollmentSimulationInput.md)
+
+***
+
+### EnrollmentWhatIf
+
+Re-exports [EnrollmentWhatIf](types/interfaces/EnrollmentWhatIf.md)
 
 ***
 
@@ -467,6 +623,30 @@ Re-exports [FinanceLine](types/interfaces/FinanceLine.md)
 ### findClinicalClaims
 
 Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)
+
+***
+
+### fitRecruitmentPrior
+
+Re-exports [fitRecruitmentPrior](internal/forecast/fit/functions/fitRecruitmentPrior.md)
+
+***
+
+### FORECAST\_DEFAULT\_RUNS
+
+Re-exports [FORECAST_DEFAULT_RUNS](internal/forecast/enrollment/variables/FORECAST_DEFAULT_RUNS.md)
+
+***
+
+### FORECAST\_DEFAULT\_SEED
+
+Re-exports [FORECAST_DEFAULT_SEED](internal/forecast/enrollment/variables/FORECAST_DEFAULT_SEED.md)
+
+***
+
+### forecastEnrollment
+
+Re-exports [forecastEnrollment](internal/forecast/enrollment/functions/forecastEnrollment.md)
 
 ***
 
@@ -542,15 +722,75 @@ Re-exports [LayerDefinition](types/interfaces/LayerDefinition.md)
 
 ***
 
+### LINEAGE\_STAGES
+
+Re-exports [LINEAGE_STAGES](internal/lineage/graph/variables/LINEAGE_STAGES.md)
+
+***
+
 ### LineageEdge
 
 Re-exports [LineageEdge](types/interfaces/LineageEdge.md)
 
 ***
 
+### LineageFinding
+
+Re-exports [LineageFinding](types/interfaces/LineageFinding.md)
+
+***
+
+### LineageGraphEdge
+
+Re-exports [LineageGraphEdge](types/interfaces/LineageGraphEdge.md)
+
+***
+
+### lineageImpact
+
+Re-exports [lineageImpact](internal/lineage/impact/functions/lineageImpact.md)
+
+***
+
+### LineageImpact
+
+Re-exports [LineageImpact](types/interfaces/LineageImpact.md)
+
+***
+
+### LineageNode
+
+Re-exports [LineageNode](types/interfaces/LineageNode.md)
+
+***
+
+### LineageReach
+
+Re-exports [LineageReach](types/interfaces/LineageReach.md)
+
+***
+
+### LineageStage
+
+Re-exports [LineageStage](types/type-aliases/LineageStage.md)
+
+***
+
+### lineageUpstream
+
+Re-exports [lineageUpstream](internal/lineage/impact/functions/lineageUpstream.md)
+
+***
+
 ### logGamma
 
 Re-exports [logGamma](internal/rbqm/stats/functions/logGamma.md)
+
+***
+
+### MEASURES\_DATASET
+
+Re-exports [MEASURES_DATASET](internal/lineage/graph/variables/MEASURES_DATASET.md)
 
 ***
 
@@ -722,6 +962,12 @@ Re-exports [MetricResultRow](types/interfaces/MetricResultRow.md)
 
 ***
 
+### METRICS\_DATASET
+
+Re-exports [METRICS_DATASET](internal/lineage/graph/variables/METRICS_DATASET.md)
+
+***
+
 ### MetricStatus
 
 Re-exports [MetricStatus](types/type-aliases/MetricStatus.md)
@@ -749,6 +995,30 @@ Re-exports [NO_METRIC_VALUE](internal/reporting/format/variables/NO_METRIC_VALUE
 ### ODCS\_API\_VERSION
 
 Re-exports [ODCS_API_VERSION](internal/governance/contracts/odcs/variables/ODCS_API_VERSION.md)
+
+***
+
+### OPENLINEAGE\_PRODUCER
+
+Re-exports [OPENLINEAGE_PRODUCER](internal/lineage/openlineage/variables/OPENLINEAGE_PRODUCER.md)
+
+***
+
+### OpenLineageDataset
+
+Re-exports [OpenLineageDataset](types/interfaces/OpenLineageDataset.md)
+
+***
+
+### OpenLineageInputField
+
+Re-exports [OpenLineageInputField](types/interfaces/OpenLineageInputField.md)
+
+***
+
+### OpenLineageRunEvent
+
+Re-exports [OpenLineageRunEvent](types/interfaces/OpenLineageRunEvent.md)
 
 ***
 
@@ -866,6 +1136,18 @@ Re-exports [PLATFORM_STAGES](presets/variables/PLATFORM_STAGES.md)
 
 ***
 
+### platformLineage
+
+Re-exports [platformLineage](internal/lineage/graph/functions/platformLineage.md)
+
+***
+
+### PlatformLineage
+
+Re-exports [PlatformLineage](types/interfaces/PlatformLineage.md)
+
+***
+
 ### PlatformStage
 
 Re-exports [PlatformStage](types/interfaces/PlatformStage.md)
@@ -911,6 +1193,12 @@ Re-exports [PortfolioSignal](types/interfaces/PortfolioSignal.md)
 ### PortfolioSignalKind
 
 Re-exports [PortfolioSignalKind](types/type-aliases/PortfolioSignalKind.md)
+
+***
+
+### posteriorRate
+
+Re-exports [posteriorRate](internal/forecast/fit/functions/posteriorRate.md)
 
 ***
 
@@ -977,6 +1265,18 @@ Re-exports [RaisedSignal](internal/rbqm/signals/interfaces/RaisedSignal.md)
 ### raiseRiskSignals
 
 Re-exports [raiseRiskSignals](internal/rbqm/signals/functions/raiseRiskSignals.md)
+
+***
+
+### recruitmentLogLikelihood
+
+Re-exports [recruitmentLogLikelihood](internal/forecast/fit/functions/recruitmentLogLikelihood.md)
+
+***
+
+### RecruitmentRate
+
+Re-exports [RecruitmentRate](types/interfaces/RecruitmentRate.md)
 
 ***
 
@@ -1073,6 +1373,12 @@ Re-exports [ReportFinding](types/interfaces/ReportFinding.md)
 ### ReportRow
 
 Re-exports [ReportRow](types/interfaces/ReportRow.md)
+
+***
+
+### REPORTS\_DATASET
+
+Re-exports [REPORTS_DATASET](internal/lineage/graph/variables/REPORTS_DATASET.md)
 
 ***
 
@@ -1214,9 +1520,27 @@ Re-exports [sensitivity](internal/strategy/engine/functions/sensitivity.md)
 
 ***
 
+### simulateEnrollmentCompletion
+
+Re-exports [simulateEnrollmentCompletion](internal/forecast/simulate/functions/simulateEnrollmentCompletion.md)
+
+***
+
 ### Site
 
 Re-exports [Site](types/interfaces/Site.md)
+
+***
+
+### SiteExposure
+
+Re-exports [SiteExposure](internal/forecast/fit/interfaces/SiteExposure.md)
+
+***
+
+### SiteRecruitment
+
+Re-exports [SiteRecruitment](types/interfaces/SiteRecruitment.md)
 
 ***
 
@@ -1349,6 +1673,12 @@ Re-exports [toOdcs](internal/governance/contracts/odcs/functions/toOdcs.md)
 ### toOdcsYaml
 
 Re-exports [toOdcsYaml](internal/governance/contracts/odcs/functions/toOdcsYaml.md)
+
+***
+
+### toOpenLineageEvents
+
+Re-exports [toOpenLineageEvents](internal/lineage/openlineage/functions/toOpenLineageEvents.md)
 
 ***
 
@@ -1493,3 +1823,57 @@ Re-exports [WarehouseTableKind](types/type-aliases/WarehouseTableKind.md)
 ### WarehouseValue
 
 Re-exports [WarehouseValue](types/type-aliases/WarehouseValue.md)
+
+***
+
+### withOpenDqIssues
+
+Re-exports [withOpenDqIssues](internal/quality/issues/functions/withOpenDqIssues.md)
+
+***
+
+### WORKBENCH\_DIALECTS
+
+Re-exports [WORKBENCH_DIALECTS](internal/workbench/queries/variables/WORKBENCH_DIALECTS.md)
+
+***
+
+### WORKBENCH\_ENGINE\_SETTINGS
+
+Re-exports [WORKBENCH_ENGINE_SETTINGS](internal/workbench/guard/variables/WORKBENCH_ENGINE_SETTINGS.md)
+
+***
+
+### WorkbenchColumn
+
+Re-exports [WorkbenchColumn](types/interfaces/WorkbenchColumn.md)
+
+***
+
+### workbenchQueries
+
+Re-exports [workbenchQueries](internal/workbench/queries/functions/workbenchQueries.md)
+
+***
+
+### WorkbenchQuery
+
+Re-exports [WorkbenchQuery](types/interfaces/WorkbenchQuery.md)
+
+***
+
+### workbenchSchema
+
+Re-exports [workbenchSchema](internal/workbench/schema/functions/workbenchSchema.md)
+
+***
+
+### WorkbenchSqlFinding
+
+Re-exports [WorkbenchSqlFinding](types/interfaces/WorkbenchSqlFinding.md)
+
+***
+
+### WorkbenchTable
+
+Re-exports [WorkbenchTable](types/interfaces/WorkbenchTable.md)

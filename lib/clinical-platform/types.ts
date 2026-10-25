@@ -1153,38 +1153,6 @@ export interface MetricGap {
   readonly nearestMetricId: string | null;
 }
 
-/** Data quality dimension, after DAMA-DMBOK. */
-export type DqDimension =
-  | "completeness"
-  | "validity"
-  | "uniqueness"
-  | "consistency"
-  | "timeliness"
-  | "accuracy";
-
-/** Severity of a data quality rule breach. */
-export type DqSeverity = "info" | "warning" | "error" | "critical";
-
-/** One data quality rule. */
-export interface DqRule {
-  /** Stable rule id, for example `DQ-SITE-001`. */
-  readonly id: string;
-  /** Id of the product the rule checks. */
-  readonly productId: string;
-  /** Column the rule checks, or `null` for a table-level rule. */
-  readonly column: string | null;
-  /** Quality dimension. */
-  readonly dimension: DqDimension;
-  /** Severity of a breach. */
-  readonly severity: DqSeverity;
-  /** Minimum pass rate, from 0 to 1. */
-  readonly threshold: number;
-  /** What the rule checks, in one sentence. */
-  readonly description: string;
-  /** Accountable owner (a role). */
-  readonly owner: string;
-}
-
 /** A column in a data product, located in its layer. */
 export interface ColumnRef {
   /** Id of the data product. */
@@ -1845,6 +1813,455 @@ export interface OperationsDashboard {
   readonly milestones: readonly OperationsMilestone[] | null;
   /** Data products the numbers shown read, in id order. */
   readonly sources: readonly OperationsSource[];
+}
+
+/** Data quality dimension, after DAMA-DMBOK (#2636). */
+export type DqDimension =
+  | "completeness"
+  | "validity"
+  | "uniqueness"
+  | "consistency"
+  | "timeliness"
+  | "accuracy";
+
+/** How much a failing data quality rule matters (#2636). */
+export type DqSeverity = "critical" | "major" | "minor";
+
+/** One data quality rule over a data product (#2636). */
+export interface DqRule {
+  /** Stable id: `DQ-` and a dimension letter for platform rules, the conformance rule id for ingested ones. */
+  readonly id: string;
+  /** Data product the rule checks: a warehouse table, or the Study Data Pipeline. */
+  readonly productId: string;
+  /** Dataset within the product, for an ingested conformance rule; `null` otherwise. */
+  readonly dataset: string | null;
+  readonly dimension: DqDimension;
+  /** What the rule asks, in a sentence. */
+  readonly name: string;
+  /** The check as a SQL-style predicate over the product's rows. */
+  readonly expression: string;
+  readonly severity: DqSeverity;
+  /** Least share of checked rows that must pass, from 0 to 1. */
+  readonly threshold: number;
+  /** Data steward of the product, from its contract registration. */
+  readonly owner: string;
+  /** Why the rule exists. */
+  readonly rationale: string;
+  /** `platform` for rules written here, `conformance` for Study Data Pipeline rules ingested as they are. */
+  readonly source: "platform" | "conformance";
+  /** Published rule or guide the rule models, for ingested rules; `null` otherwise. */
+  readonly citation: string | null;
+}
+
+/** Whether a rule met its threshold (#2636). */
+export type DqStatus = "pass" | "warn" | "fail" | "not-applicable";
+
+/** One rule's result over one warehouse and pipeline run (#2636). */
+export interface DqRuleResult {
+  readonly ruleId: string;
+  /** Rows, or groups of rows for a reconciliation, the rule checked. */
+  readonly checked: number;
+  readonly failed: number;
+  /** Share of checked rows that pass, or `null` when nothing was checked. */
+  readonly passRate: number | null;
+  /**
+   * `pass` at or above the threshold, `fail` below it, `not-applicable` when
+   * nothing was checked. An ingested rule takes the pipeline gate's status,
+   * where `warn` is a finding to review rather than a defect.
+   */
+  readonly status: DqStatus;
+  /** Keys of up to five failing rows, in key order. */
+  readonly sample: readonly string[];
+}
+
+/** A score over a set of rules: a product, a dimension or the whole run (#2636). */
+export interface DqScore {
+  /** Product id, dimension, or `overall`. */
+  readonly key: string;
+  readonly label: string;
+  /** Rules that checked something. */
+  readonly rules: number;
+  /** Of those, the rules that passed or warned. */
+  readonly passing: number;
+  /** Mean pass rate of those rules, from 0 to 1, or `null` when there are none. */
+  readonly score: number | null;
+}
+
+/** Data quality results and scorecards at one data cut (#2636). */
+export interface DqAssessment {
+  /** ISO 8601 data cut. */
+  readonly dataCut: string;
+  /** One result per rule, in rule order. */
+  readonly results: readonly DqRuleResult[];
+  readonly overall: DqScore;
+  /** Scores by data product, in product id order. */
+  readonly byProduct: readonly DqScore[];
+  /** Scores by dimension, in DAMA order. */
+  readonly byDimension: readonly DqScore[];
+}
+
+/**
+ * A named defect of the kind real source feeds deliver, applied to a
+ * warehouse to show which rules catch it (#2636).
+ */
+export interface DqScenario {
+  /** Stable id, for example `finance-double-load`. */
+  readonly id: string;
+  readonly name: string;
+  /** What went wrong at the source, in a sentence or two. */
+  readonly story: string;
+  /** Source system the defect arrives from. */
+  readonly sourceSystem: string;
+  /** Rules whose failing count the defect raises, in rule order. */
+  readonly ruleIds: readonly string[];
+}
+
+/** Where a data quality issue is in its lifecycle (#2636). */
+export type DqIssueStatus =
+  "detected" | "assigned" | "root-cause" | "fixed" | "verified";
+
+/** One entry in the append-only data quality issue log (#2636). */
+export interface DqIssueEvent {
+  /** Issue id, for example `DQI-001`. */
+  readonly issueId: string;
+  readonly status: DqIssueStatus;
+  /** ISO 8601 date. */
+  readonly on: string;
+  /** Role that made the entry. */
+  readonly actor: string;
+  readonly note: string;
+  /** Defect the issue records; set on the `detected` entry and `null` after it. */
+  readonly scenarioId: string | null;
+  /** Rules that raised the issue; set on the `detected` entry and empty after it. */
+  readonly ruleIds: readonly string[];
+}
+
+/** A data quality issue as its log entries leave it (#2636). */
+export interface DqIssue {
+  readonly issueId: string;
+  readonly scenarioId: string;
+  readonly ruleIds: readonly string[];
+  /** Status of the latest entry. */
+  readonly status: DqIssueStatus;
+  /** ISO 8601 date the issue was detected. */
+  readonly detectedOn: string;
+  /** ISO 8601 date the fix landed, or `null` while the defect is in the data. */
+  readonly fixedOn: string | null;
+  /** The issue's log entries, oldest first. */
+  readonly history: readonly DqIssueEvent[];
+}
+
+/** The data quality scorecard as it read at the end of one week (#2636). */
+export interface DqTrendPoint {
+  /** ISO 8601 date the week ends. */
+  readonly weekEnding: string;
+  readonly overall: DqScore;
+  /** Scores by dimension, in DAMA order. */
+  readonly byDimension: readonly DqScore[];
+  /** Rules that failed that week, in rule order. */
+  readonly failingRuleIds: readonly string[];
+  /** Issues whose defect was in the data that week, in id order. */
+  readonly openIssueIds: readonly string[];
+}
+
+/** One column in the SQL workbench's schema browser (#2633). */
+export interface WorkbenchColumn {
+  readonly name: string;
+  readonly type: ContractColumnType;
+  readonly nullable: boolean;
+  /** Business description, from the column's data contract. */
+  readonly description: string;
+  /** Classification from the column's data contract. */
+  readonly classification: DataClassification;
+}
+
+/** One table the SQL workbench loads, with the governance its contract records (#2633). */
+export interface WorkbenchTable {
+  /** Qualified name, as a query writes it, for example `gold.fct_query`. */
+  readonly name: string;
+  readonly kind: WarehouseTableKind;
+  readonly description: string;
+  /** What one row stands for. */
+  readonly grain: string;
+  readonly primaryKey: readonly string[];
+  /** Accountable owner and data steward (roles, not people). */
+  readonly owner: string;
+  readonly steward: string;
+  /** Highest classification of any column. */
+  readonly classification: DataClassification;
+  /** Whether rows describe study subjects. The data is synthetic. */
+  readonly personalHealthData: boolean;
+  /** Version of the data contract in force. */
+  readonly contractVersion: string;
+  /** Rows in the seeded warehouse. */
+  readonly rowCount: number;
+  readonly columns: readonly WorkbenchColumn[];
+}
+
+/** A saved query in the SQL workbench's library (#2633). */
+export interface WorkbenchQuery {
+  /** Stable id, in kebab case. */
+  readonly id: string;
+  readonly title: string;
+  /** A worked example, or the generated SQL behind a governed metric. */
+  readonly kind: "example" | "metric";
+  /** What the query answers and how. */
+  readonly description: string;
+  /** SQL techniques the query shows, for example `window functions`. */
+  readonly techniques: readonly string[];
+  /** Qualified names of the tables the query reads. */
+  readonly tables: readonly string[];
+  /** The query in DuckDB SQL, which the workbench runs. */
+  readonly sql: string;
+  /** Id of the governed metric, for a metric query; otherwise `null`. */
+  readonly metricId: string | null;
+  /** Dimensions a metric query groups by; empty for an example. */
+  readonly dimensions: readonly MetricDimensionId[];
+  /** A metric query in every dialect the compiler writes; otherwise `null`. */
+  readonly dialects: Readonly<Record<SqlDialect, string>> | null;
+}
+
+/** Why SQL typed into the workbench will not run (#2633). */
+export interface WorkbenchSqlFinding {
+  readonly rule:
+    | "empty"
+    | "unterminated"
+    | "multiple-statements"
+    | "not-a-query"
+    | "forbidden-keyword"
+    | "external-read";
+  /** What is wrong, in a sentence a visitor can act on. */
+  readonly message: string;
+}
+
+/**
+ * Where a node of the platform lineage graph sits (#2637): a warehouse
+ * layer, a Study Data Pipeline layer, or a consumer of the semantic layer.
+ */
+export type LineageStage =
+  | "collected"
+  | "sdtm"
+  | "adam"
+  | "bronze"
+  | "silver"
+  | "gold"
+  | "metric"
+  | "measure"
+  | "report";
+
+/** One node of the platform lineage graph (#2637). */
+export interface LineageNode {
+  /** Stable id: the dataset and the field, joined by a dot. */
+  readonly id: string;
+  readonly stage: LineageStage;
+  /**
+   * Table, dataset or product: for example `silver.edc_visit`, `sdtm.DM`,
+   * `bronze.edc.subjects`, `semantic.metrics`, `powerbi.governed_metrics`
+   * or `reporting.reports`.
+   */
+  readonly dataset: string;
+  /** Column, variable, metric id or report id within the dataset. */
+  readonly field: string;
+  /** Name a person reads: the column, the metric's name, the report's title. */
+  readonly label: string;
+  /** Data type of a column or variable, or `null` for a metric, measure or report. */
+  readonly type: string | null;
+  /** Derivation method of a study variable whose inputs the pipeline does not declare, or `null`. */
+  readonly method: string | null;
+  /** Roles accountable for the node, owner first, to notify of a change upstream. */
+  readonly owners: readonly string[];
+}
+
+/** One edge of the platform lineage graph: `to` is computed from `from` (#2637). */
+export interface LineageGraphEdge {
+  readonly from: string;
+  readonly to: string;
+  /** How, for example `identity`, `date-shift`, `measure`, `filter` or `group-by`. */
+  readonly transformation: string;
+}
+
+/** Column-level lineage from collected values to reports, as one graph (#2637). */
+export interface PlatformLineage {
+  /** Nodes in stage order, then by id. */
+  readonly nodes: readonly LineageNode[];
+  /** Edges sorted by target, then source. */
+  readonly edges: readonly LineageGraphEdge[];
+}
+
+/** A node reached from another, and how many edges away (#2637). */
+export interface LineageReach {
+  readonly id: string;
+  readonly stage: LineageStage;
+  readonly distance: number;
+}
+
+/** What a change to one node reaches, and who to tell (#2637). */
+export interface LineageImpact {
+  readonly origin: string;
+  /** Every downstream node, nearest first, then by id. */
+  readonly downstream: readonly LineageReach[];
+  /** Roles accountable for a downstream node, each with the nodes they own, by role. */
+  readonly notify: readonly {
+    readonly owner: string;
+    readonly nodeIds: readonly string[];
+  }[];
+}
+
+/**
+ * What a change between two releases of a data contract reaches through the
+ * lineage graph, and who to tell (#2637). Used to review a contract change
+ * (#2626) before it is released.
+ */
+export interface ContractChangeImpact {
+  readonly productId: string;
+  /** Version of the earlier release. */
+  readonly from: string;
+  /** Version of the later release. */
+  readonly to: string;
+  /** Lineage node ids of the columns that changed or were removed, by id. */
+  readonly changed: readonly string[];
+  /** Every node downstream of a changed column, nearest first, then by id. */
+  readonly downstream: readonly LineageReach[];
+  /** Roles accountable for a downstream node, each with the nodes they own, by role. */
+  readonly notify: LineageImpact["notify"];
+}
+
+/** A broken rule of the lineage graph (#2637). */
+export interface LineageFinding {
+  readonly rule:
+    | "dangling-edge"
+    | "duplicate-node"
+    | "cycle"
+    | "metric-without-source"
+    | "report-without-metric";
+  readonly message: string;
+}
+
+/** One input field of an OpenLineage column-lineage facet (#2637). */
+export interface OpenLineageInputField {
+  readonly namespace: string;
+  readonly name: string;
+  readonly field: string;
+  readonly transformations: readonly {
+    readonly type: "DIRECT" | "INDIRECT";
+    readonly subtype: string;
+    readonly description: string;
+  }[];
+}
+
+/** An OpenLineage 2-0-2 dataset reference, with facets on outputs (#2637). */
+export interface OpenLineageDataset {
+  readonly namespace: string;
+  readonly name: string;
+  readonly facets?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * An OpenLineage 2-0-2 `RunEvent` for one platform step: the job that
+ * builds one dataset, its inputs, and the output with its schema, owners
+ * and column lineage (#2637).
+ */
+export interface OpenLineageRunEvent {
+  readonly eventType: "COMPLETE";
+  readonly eventTime: string;
+  readonly producer: string;
+  readonly schemaURL: string;
+  readonly run: { readonly runId: string };
+  readonly job: {
+    readonly namespace: string;
+    readonly name: string;
+    readonly facets: Readonly<Record<string, unknown>>;
+  };
+  readonly inputs: readonly OpenLineageDataset[];
+  readonly outputs: readonly OpenLineageDataset[];
+}
+
+/**
+ * A gamma distribution of recruitment rates, in subjects per site-day:
+ * shape α and rate β, with mean α / β (#2632).
+ */
+export interface RecruitmentRate {
+  readonly shape: number;
+  readonly rate: number;
+}
+
+/** One recruiting site at the data cut, with its posterior rate (#2632). */
+export interface SiteRecruitment {
+  readonly siteId: string;
+  readonly countryCode: string;
+  /** Subjects enrolled at the site up to the data cut. */
+  readonly enrolled: number;
+  /** Days from the site's activation to the data cut. */
+  readonly exposureDays: number;
+  /** The site's rate given the study's prior and its own enrollment. */
+  readonly posterior: RecruitmentRate;
+}
+
+/** Sites to add in a what-if, all activating on the same day (#2632). */
+export interface EnrollmentWhatIf {
+  /** ISO 3166-1 alpha-2 country the sites open in. */
+  readonly countryCode: string;
+  /** How many sites to add, from 1 to 50. */
+  readonly sites: number;
+  /** Days from the data cut until the new sites start recruiting, from 0 to 365. */
+  readonly activationDelayDays: number;
+}
+
+/** A recruitment process to simulate: the input of `simulateEnrollmentCompletion` (#2632). */
+export interface EnrollmentSimulationInput {
+  /** Subjects still to enroll, 1 or more. */
+  readonly remaining: number;
+  /** Rates of the sites recruiting from day 0. */
+  readonly sites: readonly RecruitmentRate[];
+  /** Rates of sites that start recruiting later, with their first day. */
+  readonly laterSites: readonly (RecruitmentRate & {
+    readonly startDay: number;
+  })[];
+  /** Number of simulated runs, from 100 to 20,000. */
+  readonly runs: number;
+  /** Key of the random stream; the same key gives the same runs. */
+  readonly streamKey: string;
+}
+
+/** Share of runs that have enrolled the last subject by a date (#2632). */
+export interface EnrollmentForecastPoint {
+  /** ISO 8601 date. */
+  readonly on: string;
+  /** Share of runs complete by that date, from 0 to 1. */
+  readonly completed: number;
+}
+
+/** A Monte Carlo enrollment forecast for one study at a data cut (#2632). */
+export interface EnrollmentForecast {
+  readonly studyId: string;
+  /** ISO 8601 data cut of the warehouse. */
+  readonly dataCut: string;
+  /** Enrollment target of the study. */
+  readonly target: number;
+  /** Subjects enrolled up to the data cut. */
+  readonly enrolled: number;
+  /** ISO 8601 planned last-subject-in date, from the study's milestones. */
+  readonly plannedLastSubjectIn: string;
+  /** The study's prior, fitted to its sites by maximum likelihood. */
+  readonly prior: RecruitmentRate;
+  /** Recruiting sites at the data cut, in id order. */
+  readonly sites: readonly SiteRecruitment[];
+  /** The what-if applied, or `null` for the baseline. */
+  readonly whatIf: EnrollmentWhatIf | null;
+  /** Rate a new site in the what-if's country recruits at, or `null` without a what-if. */
+  readonly whatIfSiteRate: RecruitmentRate | null;
+  readonly runs: number;
+  readonly seed: number;
+  /** Share of runs that enroll the last subject on or before the planned date. */
+  readonly probabilityByPlan: number;
+  /** ISO 8601 dates by which 10%, 50% and 90% of runs are complete. */
+  readonly quantiles: {
+    readonly p10: string;
+    readonly p50: string;
+    readonly p90: string;
+  };
+  /** Share of runs complete by each week from the data cut until 99% are. */
+  readonly curve: readonly EnrollmentForecastPoint[];
 }
 
 /** Status of a key risk indicator at a site. */

@@ -6,7 +6,6 @@ import Link from "next/link";
 import { IconArrowLeft, IconHeadset } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { requestPattyAutoPause } from "@/components/patty-drive-thru/auto-pause";
@@ -66,46 +65,41 @@ export const PattyDriveThruClient: React.FC = () => (
       </div>
 
       <div className="border border-zinc-800 bg-[#13151a] p-1.5 sm:p-4">
-        <DesktopOnlyGate
+        <PlayCabinet
           gameId="patty-drive-thru"
-          gameTitle="Patty's Drive-Thru"
+          title="Patty's Drive-Thru"
+          subtitle="A diary entry · First job · 2014 to 2017"
+          icon={
+            <IconHeadset
+              className="h-8 w-8 text-amber-400"
+              aria-hidden="true"
+            />
+          }
+          instructions="Stand in the booth for one compressed shift. Ring orders up on a register that hides the easy things, re-enter the drinks the dispenser loses, flag an adult for the coffee you are too young to brew, and bump tickets before they turn red. Standing still is not an option."
+          controls={[
+            { key: "A D or ← →", action: "Turn" },
+            { key: "Enter or Tab", action: "Use the register" },
+            { key: "W", action: "Wipe the counter" },
+            { key: "1 - 6", action: "Pick an order" },
+            { key: "B", action: "Bump the order" },
+            { key: "R", action: "Re-enter a dropped drink" },
+            { key: "C", action: "Flag a coworker for coffee" },
+            { key: "Q / E", action: "Answer a dilemma" },
+            { key: "P", action: "Pause" },
+            { key: "Esc", action: "Step back from the register" },
+          ]}
+          importComponent={PattyDriveThruLoader}
+          // No game key is F (A D, arrows, Enter, Tab, W, B, R, C, 1 to 9,
+          // Q, E, P, Backspace, Home, Escape), so the cabinet's
+          // F-for-fullscreen stays on (#2116). The booth, its dock and its
+          // register sheet are built to fit the touch cabinet's viewport,
+          // so the stage clips rather than scrolls (ADR 0061).
+          mobileLayout="fit"
+          // A hidden tab or a backgrounded app pauses a shift in progress.
+          onAutoPause={requestPattyAutoPause}
         >
-          <PlayCabinet
-            gameId="patty-drive-thru"
-            title="Patty's Drive-Thru"
-            subtitle="A diary entry · First job · 2014 to 2017"
-            icon={
-              <IconHeadset
-                className="h-8 w-8 text-amber-400"
-                aria-hidden="true"
-              />
-            }
-            instructions="Stand in the booth for one compressed shift. Ring orders up on a register that hides the easy things, re-enter the drinks the dispenser loses, flag an adult for the coffee you are too young to brew, and bump tickets before they turn red. Standing still is not an option."
-            controls={[
-              { key: "A D or ← →", action: "Turn" },
-              { key: "Enter or Tab", action: "Use the register" },
-              { key: "W", action: "Wipe the counter" },
-              { key: "1 - 6", action: "Pick an order" },
-              { key: "B", action: "Bump the order" },
-              { key: "R", action: "Re-enter a dropped drink" },
-              { key: "C", action: "Flag a coworker for coffee" },
-              { key: "Q / E", action: "Answer a dilemma" },
-              { key: "P", action: "Pause" },
-              { key: "Esc", action: "Step back from the register" },
-            ]}
-            importComponent={PattyDriveThruLoader}
-            // No game key is F (A D, arrows, Enter, Tab, W, B, R, C, 1 to 9,
-            // Q, E, P, Backspace, Home, Escape), so the cabinet's
-            // F-for-fullscreen stays on (#2116). The booth, its dock and its
-            // register sheet are built to fit the touch cabinet's viewport,
-            // so the stage clips rather than scrolls (ADR 0061).
-            mobileLayout="fit"
-            // A hidden tab or a backgrounded app pauses a shift in progress.
-            onAutoPause={requestPattyAutoPause}
-          >
-            <DynamicPattyDriveThru />
-          </PlayCabinet>
-        </DesktopOnlyGate>
+          <DynamicPattyDriveThru />
+        </PlayCabinet>
       </div>
       <NextPrevNav
         {...getArcadeNeighbors("/arcade/patty-drive-thru")}

@@ -49,6 +49,30 @@ export { REPORT_PACK } from "./internal/reporting/pack";
 export { checkReportSpec } from "./internal/reporting/check";
 export { buildReport } from "./internal/reporting/build";
 export {
+  EXPLORATION_AUDIENCE,
+  EXPLORATION_OWNER,
+  EXPLORATION_PURPOSE,
+  EXPLORATION_REFRESH_SLA_HOURS,
+  EXPLORATION_VERSION,
+  EXPLORER_MAX_BARS,
+  EXPLORER_MAX_DIMENSIONS,
+  EXPLORER_VISUALS,
+  checkExploration,
+  explorationChoices,
+  explorationSpec,
+  explorerMetrics,
+  normalizeExploration,
+  runExploration,
+  startExploration,
+  suggestVisual,
+} from "./internal/explore/model";
+export {
+  EXPLORATION_HASH_MAX_LENGTH,
+  decodeExploration,
+  encodeExploration,
+} from "./internal/explore/hash";
+export { explorationCsv, promotionSteps } from "./internal/explore/output";
+export {
   operationsDashboard,
   operationsReportSpecs,
 } from "./internal/reporting/operations";

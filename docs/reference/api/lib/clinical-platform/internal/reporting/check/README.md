@@ -9,3 +9,4 @@
 ## Functions
 
 - [checkReportSpec](functions/checkReportSpec.md)
+- [visualFitsGrouping](functions/visualFitsGrouping.md)

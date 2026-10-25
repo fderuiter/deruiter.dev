@@ -35,6 +35,7 @@ import {
   NewsletterResponseSchema,
   ResendWebhookEventSchema,
   ResendWebhookResponseSchema,
+  VersionResponseSchema,
   QStashRetryPayloadSchema,
   QStashRetryResponseSchema,
   QuasiPerfectLeanVerifySchema,
@@ -1514,6 +1515,23 @@ export const openApiSpec = {
         },
       },
     },
+    "/api/version": {
+      get: {
+        summary: "Report the deployed commit",
+        description:
+          "Returns the commit SHA, branch, Vercel environment and build time of the serving deployment, so the release train can tell what is live without a Vercel token. Public build metadata only; never cached.",
+        responses: {
+          200: {
+            description: "Build metadata of the serving deployment",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/VersionResponse" },
+              },
+            },
+          },
+        },
+      },
+    },
     "/api/media/{key}": {
       get: {
         summary: "Retrieve media asset by key",
@@ -1639,6 +1657,7 @@ export const openApiSpec = {
       NewsletterResponse: zodToOpenApi(NewsletterResponseSchema),
       ResendWebhookEvent: zodToOpenApi(ResendWebhookEventSchema),
       ResendWebhookResponse: zodToOpenApi(ResendWebhookResponseSchema),
+      VersionResponse: zodToOpenApi(VersionResponseSchema),
       QStashRetryPayload: zodToOpenApi(QStashRetryPayloadSchema),
       QStashRetryResponse: zodToOpenApi(QStashRetryResponseSchema),
       QuasiPerfectLeanVerify: zodToOpenApi(QuasiPerfectLeanVerifySchema),

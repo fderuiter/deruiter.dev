@@ -222,15 +222,15 @@ export const CRFStudioSkeleton: React.FC = () => {
       data-testid="crf-studio-skeleton"
     >
       {/* Studio Header Skeleton */}
-      <div className="flex items-center justify-between pb-4 border-b border-zinc-800/80">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-zinc-800" />
-          <div className="h-5 w-48 bg-zinc-800 rounded-md" />
-          <div className="h-4 w-24 bg-zinc-800/60 rounded-full" />
+      <div className="flex items-center justify-between gap-3 pb-4 border-b border-zinc-800/80">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="w-8 h-8 shrink-0 rounded-lg bg-zinc-800" />
+          <div className="h-5 w-48 min-w-0 bg-zinc-800 rounded-md" />
+          <div className="hidden sm:block h-4 w-24 bg-zinc-800/60 rounded-full" />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-20 h-8 bg-zinc-800 rounded-xl" />
-          <div className="w-24 h-8 bg-zinc-800 rounded-xl" />
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="hidden sm:block w-20 h-8 bg-zinc-800 rounded-xl" />
+          <div className="hidden sm:block w-24 h-8 bg-zinc-800 rounded-xl" />
           <div className="w-8 h-8 bg-zinc-800 rounded-xl" />
         </div>
       </div>

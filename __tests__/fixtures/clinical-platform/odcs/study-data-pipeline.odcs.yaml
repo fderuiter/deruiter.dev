@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.0.0"
+version: "1.2.0"
 status: active
 domain: "Study data"
 tags:
@@ -500,6 +500,14 @@ schema:
         description: "Date of Last Study Treatment"
         required: false
         classification: confidential
+      - name: SITEID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Site Identifier"
+        required: false
+        classification: confidential
       - name: AGE
         logicalType: integer
         physicalType: INTEGER
@@ -554,6 +562,30 @@ schema:
         description: "Description of Actual Arm"
         required: false
         classification: restricted
+      - name: ARMNRS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reason Arm and/or Actual Arm is Null"
+        required: false
+        classification: confidential
+      - name: ACTARMUD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Description of Unplanned Actual Arm"
+        required: false
+        classification: confidential
+      - name: COUNTRY
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Country
+        required: false
+        classification: confidential
     quality:
       - id: DM_primary_key
         type: library

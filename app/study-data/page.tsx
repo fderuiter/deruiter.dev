@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
+import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
 import {
   toDefinitionCounts,
@@ -69,12 +69,7 @@ export default function StudyDataPage() {
         }}
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
-        <Link
-          href="/platform"
-          className="text-sm text-amber-300 underline underline-offset-4 hover:text-amber-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
-        >
-          ← Clinical Data Platform
-        </Link>
+        <ClinicalJourneyNav path="/study-data" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical systems / Study data
         </p>

@@ -375,6 +375,24 @@ describe("generatePortfolio: DEMO-301 from the Study Data Pipeline", () => {
     ).toBe(true);
   });
 
+  it("plans the sites and countries the pipeline's EDC records (#2801)", () => {
+    const dm = collected(run.datasets, "DM");
+    const planned = new Map(
+      portfolio.sites
+        .filter((s) => s.studyId === "DEMO-301")
+        .map((s) => [s.siteNumber, s.country])
+    );
+    const alpha3: Record<string, string> = { US: "USA", CA: "CAN" };
+    const recorded = new Map(
+      dm.columns.SITEID.map((site, row) => [site, dm.columns.COUNTRY[row]])
+    );
+    expect(recorded.size).toBe(planned.size);
+    for (const [site, country] of recorded) {
+      expect(planned.has(String(site))).toBe(true);
+      expect(country).toBe(alpha3[planned.get(String(site))!]);
+    }
+  });
+
   it("has exactly the pipeline's subjects, randomised to the pipeline's arms", () => {
     const dm = collected(run.datasets, "DM");
     const rand = collected(run.datasets, "RAND");

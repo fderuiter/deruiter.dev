@@ -1709,6 +1709,64 @@
           "site",
           "country",
           "region",
+          "month",
+          "screen_failure_reason"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_enrollment",
+            "timeKey": "event_date_key",
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "event_type",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "screened"
+                }
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "subject_status",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": "screen-failed"
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "subjects"
+      },
+      "id": "screen_failures",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
           "month"
         ],
         "defaultFilters": [],

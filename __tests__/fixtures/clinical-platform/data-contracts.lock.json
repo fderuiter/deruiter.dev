@@ -1201,6 +1201,145 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.fct_enrollment",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "confidential",
+              "description": "Subject id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "screened, enrolled, completed or discontinued.",
+              "maxLength": 64,
+              "name": "event_type",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force on the event date.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date of the event.",
+              "maxLength": null,
+              "name": "event_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Subject status at the data cut.",
+              "maxLength": 64,
+              "name": "subject_status",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Why screening failed; null unless the subject failed screening (degenerate dimension).",
+              "maxLength": 40,
+              "name": "screen_failure_reason",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Always 1: the additive measure.",
+              "maxLength": null,
+              "name": "event_count",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Subject enrollment events: screened, enrolled, completed and discontinued.",
+          "grain": "One row per subject per enrollment event.",
+          "name": "fct_enrollment",
+          "physicalName": "gold.fct_enrollment",
+          "primaryKey": [
+            "subject_id",
+            "event_type"
+          ]
+        }
+      ],
+      "productId": "gold.fct_enrollment",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
+    },
+    {
       "id": "clinical-platform/gold.fct_kri_snapshot",
       "objects": [
         {
@@ -3771,6 +3910,155 @@
         "freshnessHours": 24
       },
       "version": "1.0.0"
+    },
+    {
+      "id": "clinical-platform/silver.edc_subject",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "confidential",
+              "description": "Subject id, unique within the portfolio.",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Site id.",
+              "maxLength": 64,
+              "name": "site_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of the screening visit.",
+              "maxLength": null,
+              "name": "screened_on",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Enrollment date, or null when not enrolled.",
+              "maxLength": null,
+              "name": "enrolled_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date the subject completed the study.",
+              "maxLength": null,
+              "name": "completed_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date the subject discontinued.",
+              "maxLength": null,
+              "name": "discontinued_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Status at the data cut.",
+              "maxLength": 64,
+              "name": "subject_status",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Why screening failed, from a short fictional controlled list; null unless the subject failed screening.",
+              "maxLength": 40,
+              "name": "screen_failure_reason",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Source system the record came from.",
+              "maxLength": 64,
+              "name": "source_system",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "EDC subjects with their screening, enrollment and disposition dates.",
+          "grain": "One row per subject.",
+          "name": "edc_subject",
+          "physicalName": "silver.edc_subject",
+          "primaryKey": [
+            "subject_id"
+          ]
+        }
+      ],
+      "productId": "silver.edc_subject",
+      "retention": {
+        "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
+        "regulatory": true,
+        "years": 25
+      },
+      "sla": {
+        "availability": 0.99,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
     },
     {
       "id": "clinical-platform/silver.edc_visit",

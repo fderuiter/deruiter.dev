@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.2.0, PostgreSQL dialect.
+-- Clinical Data Platform warehouse, schema 1.3.0, PostgreSQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -100,16 +100,17 @@ COMMENT ON COLUMN "silver"."vendor"."service" IS 'Service the vendor provides.';
 COMMENT ON COLUMN "silver"."vendor"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "silver"."edc_subject" (
-  "subject_id"      VARCHAR(64) NOT NULL,
-  "study_id"        VARCHAR(64) NOT NULL,
-  "site_id"         VARCHAR(64) NOT NULL,
-  "screened_on"     DATE NOT NULL,
-  "enrolled_on"     DATE,
-  "completed_on"    DATE,
-  "discontinued_on" DATE,
-  "subject_status"  VARCHAR(64) NOT NULL,
-  "source_system"   VARCHAR(64) NOT NULL,
-  "is_synthetic"    BOOLEAN NOT NULL,
+  "subject_id"            VARCHAR(64) NOT NULL,
+  "study_id"              VARCHAR(64) NOT NULL,
+  "site_id"               VARCHAR(64) NOT NULL,
+  "screened_on"           DATE NOT NULL,
+  "enrolled_on"           DATE,
+  "completed_on"          DATE,
+  "discontinued_on"       DATE,
+  "subject_status"        VARCHAR(64) NOT NULL,
+  "screen_failure_reason" VARCHAR(40),
+  "source_system"         VARCHAR(64) NOT NULL,
+  "is_synthetic"          BOOLEAN NOT NULL,
   CONSTRAINT "pk_edc_subject" PRIMARY KEY ("subject_id")
 );
 COMMENT ON TABLE "silver"."edc_subject" IS 'EDC subjects with their screening, enrollment and disposition dates. Grain: One row per subject.';
@@ -121,6 +122,7 @@ COMMENT ON COLUMN "silver"."edc_subject"."enrolled_on" IS 'Enrollment date, or n
 COMMENT ON COLUMN "silver"."edc_subject"."completed_on" IS 'Date the subject completed the study.';
 COMMENT ON COLUMN "silver"."edc_subject"."discontinued_on" IS 'Date the subject discontinued.';
 COMMENT ON COLUMN "silver"."edc_subject"."subject_status" IS 'Status at the data cut.';
+COMMENT ON COLUMN "silver"."edc_subject"."screen_failure_reason" IS 'Why screening failed, from a short fictional controlled list; null unless the subject failed screening.';
 COMMENT ON COLUMN "silver"."edc_subject"."source_system" IS 'Source system the record came from.';
 COMMENT ON COLUMN "silver"."edc_subject"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
@@ -603,15 +605,16 @@ COMMENT ON COLUMN "gold"."dim_monitoring_plan"."report_due_days" IS 'Days from a
 COMMENT ON COLUMN "gold"."dim_monitoring_plan"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_enrollment" (
-  "subject_id"     VARCHAR(64) NOT NULL,
-  "event_type"     VARCHAR(64) NOT NULL,
-  "study_key"      INTEGER NOT NULL,
-  "site_key"       INTEGER NOT NULL,
-  "country_key"    INTEGER NOT NULL,
-  "event_date_key" INTEGER NOT NULL,
-  "subject_status" VARCHAR(64) NOT NULL,
-  "event_count"    INTEGER NOT NULL,
-  "is_synthetic"   BOOLEAN NOT NULL,
+  "subject_id"            VARCHAR(64) NOT NULL,
+  "event_type"            VARCHAR(64) NOT NULL,
+  "study_key"             INTEGER NOT NULL,
+  "site_key"              INTEGER NOT NULL,
+  "country_key"           INTEGER NOT NULL,
+  "event_date_key"        INTEGER NOT NULL,
+  "subject_status"        VARCHAR(64) NOT NULL,
+  "screen_failure_reason" VARCHAR(40),
+  "event_count"           INTEGER NOT NULL,
+  "is_synthetic"          BOOLEAN NOT NULL,
   CONSTRAINT "pk_fct_enrollment" PRIMARY KEY ("subject_id", "event_type"),
   CONSTRAINT "fk_fct_enrollment_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
   CONSTRAINT "fk_fct_enrollment_site_key" FOREIGN KEY ("site_key") REFERENCES "gold"."dim_site" ("site_key"),
@@ -626,6 +629,7 @@ COMMENT ON COLUMN "gold"."fct_enrollment"."site_key" IS 'Site version in force o
 COMMENT ON COLUMN "gold"."fct_enrollment"."country_key" IS 'Country of the site.';
 COMMENT ON COLUMN "gold"."fct_enrollment"."event_date_key" IS 'Date of the event.';
 COMMENT ON COLUMN "gold"."fct_enrollment"."subject_status" IS 'Subject status at the data cut.';
+COMMENT ON COLUMN "gold"."fct_enrollment"."screen_failure_reason" IS 'Why screening failed; null unless the subject failed screening (degenerate dimension).';
 COMMENT ON COLUMN "gold"."fct_enrollment"."event_count" IS 'Always 1: the additive measure.';
 COMMENT ON COLUMN "gold"."fct_enrollment"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 

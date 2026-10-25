@@ -675,9 +675,13 @@ describe("operations risk tab (#2631)", () => {
   });
 
   it("narrows sites, KRIs, central monitoring and signals to the scope, but never the QTLs", () => {
+    // Each study's whole tab, built once rather than once per country and site.
+    const wholes = new Map<string, NonNullable<ReturnType<typeof risk>>>();
     for (const scope of EVERY_SCOPE.filter((s) => s.country !== undefined)) {
       const tab = risk(scope)!;
-      const whole = risk({ study: scope.study })!;
+      const study = scope.study!;
+      if (!wholes.has(study)) wholes.set(study, risk({ study })!);
+      const whole = wholes.get(study)!;
       const inScope = new Set(
         sites
           .filter(

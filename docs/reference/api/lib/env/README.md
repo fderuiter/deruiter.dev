@@ -20,6 +20,7 @@
 
 ## Functions
 
+- [buildTimestamp](functions/buildTimestamp.md)
 - [getEnv](functions/getEnv.md)
 - [isBuildPhase](functions/isBuildPhase.md)
 - [isProductionBuild](functions/isProductionBuild.md)

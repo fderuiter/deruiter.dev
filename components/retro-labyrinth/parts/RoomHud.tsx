@@ -25,6 +25,7 @@ export function RoomHud() {
     score,
     highScore: effectiveHighScore,
     exitLock: roomExitLock,
+    runComplete,
   } = session.view;
   return (
     <>
@@ -151,30 +152,36 @@ export function RoomHud() {
 
       {/* Objective: always say what winning looks like. Short landscape
       screens need every row for the maze, and the in-maze
-      "REACH THE EXIT" prompt already carries the goal there. */}
-      <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 line-clamp-2 [@media(max-height:500px)]:hidden">
-        <span className="text-amber-400">OBJECTIVE</span> ·{" "}
-        {roomExitLock.locked ? (
-          <>
-            <span className="text-rose-400" data-testid="labyrinth-objective">
-              {roomExitLock.objective}
-            </span>{" "}
-            to unlock the <span className="text-amber-400">EXIT</span> (bottom
-            right), then guide your{" "}
-            <span className="text-zinc-100">netrunner</span> there. Bugs and
-            drones cost HP.
-          </>
-        ) : (
-          <>
-            <span className="text-amber-400" data-testid="labyrinth-objective">
-              REACH THE EXIT
-            </span>
-            : guide your <span className="text-zinc-100">netrunner</span> to the{" "}
-            <span className="text-amber-400">EXIT</span> (bottom right). Bugs
-            and drones cost HP.
-          </>
-        )}
-      </p>
+      "REACH THE EXIT" prompt already carries the goal there. Once the run
+      is over there is nothing left to reach (#2841). */}
+      {!runComplete && (
+        <p className="w-full px-2 py-0.5 text-xs font-bold text-neutral-400 line-clamp-2 [@media(max-height:500px)]:hidden">
+          <span className="text-amber-400">OBJECTIVE</span> ·{" "}
+          {roomExitLock.locked ? (
+            <>
+              <span className="text-rose-400" data-testid="labyrinth-objective">
+                {roomExitLock.objective}
+              </span>{" "}
+              to unlock the <span className="text-amber-400">EXIT</span> (bottom
+              right), then guide your{" "}
+              <span className="text-zinc-100">netrunner</span> there. Bugs and
+              drones cost HP.
+            </>
+          ) : (
+            <>
+              <span
+                className="text-amber-400"
+                data-testid="labyrinth-objective"
+              >
+                REACH THE EXIT
+              </span>
+              : guide your <span className="text-zinc-100">netrunner</span> to
+              the <span className="text-amber-400">EXIT</span> (bottom right).
+              Bugs and drones cost HP.
+            </>
+          )}
+        </p>
+      )}
     </>
   );
 }

@@ -150,7 +150,8 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
         columns,
       };
     }
-    case "unique": {
+    case "unique":
+    case "duplicate": {
       const columns = Object.fromEntries(
         Object.entries(good.columns).map(([name, values]) => [
           name,
@@ -189,6 +190,8 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
       if (rule.id === "SD-033") return set(good, "AESTDTC", 0, "2030-01");
       return set(good, "AESTDY", 0, -1);
     }
+    case "unit":
+      return set(good, rule.variable!, 0, "mg/dL");
     case "adam": {
       if (rule.id === "AD-003") return set(good, "BASE", 0, 9);
       if (rule.id === "AD-004") return set(good, "CHG", 0, 3);

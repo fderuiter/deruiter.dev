@@ -22,6 +22,7 @@ import type {
 } from "../../types";
 import { ADAM_METHODS } from "../adam/specs";
 import { SDTM_METHODS } from "../sdtm/methods";
+import { MESSY_DATA_SCENARIOS } from "../synth/scenarios";
 
 /** Which guide: the tabulation guide or the analysis guide. */
 export type ReviewerGuideKind = "csdrg" | "adrg";
@@ -142,6 +143,23 @@ const EXPECTED_FINDINGS: Readonly<Record<string, string>> = {
 const UNEXPECTED =
   "The synthetic generator does not produce this on purpose. Treat it as a defect in the run and investigate before using the data.";
 
+/** Rule ids the run's messy-data scenarios set out to trigger, and by what. */
+function injectedFindings(run: PipelineRun): Map<string, string[]> {
+  const injected = new Map<string, string[]>();
+  for (const applied of run.manifest.scenarios ?? []) {
+    const scenario = MESSY_DATA_SCENARIOS.find(
+      (item) => item.id === applied.id
+    );
+    if (!scenario || applied.subject === null) continue;
+    for (const rule of scenario.expected.findings)
+      injected.set(rule, [
+        ...(injected.get(rule) ?? []),
+        `${scenario.title} (${applied.subject})`,
+      ]);
+  }
+  return injected;
+}
+
 const LAYER_STAGES: Readonly<
   Record<ReviewerGuideKind, readonly PipelineStageId[]>
 > = {
@@ -216,13 +234,25 @@ function issuesFor(
   const datasets = new Set(
     run.datasets.filter((d) => d.layer === layer).map((d) => d.name)
   );
+  const injected = injectedFindings(run);
   return run.conformance.ruleResults
     .filter(
       (result) => result.status !== "pass" && datasets.has(result.dataset)
     )
     .map((result) => {
       const found = byRule.get(`${result.ruleId}\u0000${result.dataset}`);
-      const explanation = EXPECTED_FINDINGS[result.ruleId];
+      const generated =
+        result.status === "warning"
+          ? EXPECTED_FINDINGS[result.ruleId]
+          : undefined;
+      const scenarios = injected.get(result.ruleId);
+      const explanation = [
+        generated,
+        scenarios &&
+          `Injected on purpose by the messy-data scenario${scenarios.length > 1 ? "s" : ""} ${scenarios.join(", ")}; the finding is the check catching it.`,
+      ]
+        .filter(Boolean)
+        .join(" ");
       return {
         ruleId: result.ruleId,
         dataset: result.dataset,
@@ -231,11 +261,8 @@ function issuesFor(
         count: result.findingCount,
         message: found?.message ?? "",
         citation: result.citation,
-        expected: explanation !== undefined && result.status === "warning",
-        explanation:
-          explanation !== undefined && result.status === "warning"
-            ? explanation
-            : UNEXPECTED,
+        expected: explanation !== "",
+        explanation: explanation || UNEXPECTED,
       } satisfies ReviewerGuideIssue;
     });
 }

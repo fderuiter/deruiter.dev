@@ -4,6 +4,18 @@ export interface TermDefinition {
   simplified: string;
   definition: string;
   aliases?: string[];
+  /**
+   * Whether `compileTerms` wraps the term where it appears in prose. Defaults
+   * to `true`. Business glossary terms such as "Enrollment" or "Query" are
+   * ordinary words elsewhere on the site, so they set it to `false` and are
+   * shown only where a page lists them.
+   */
+  autoLink?: boolean;
+  /**
+   * The guideline or standard the definition follows, cited by reference
+   * rather than quoted, or absent for an operational term no standard defines.
+   */
+  source?: string;
 }
 
 export const CANONICAL_GLOSSARY: TermDefinition[] = [
@@ -110,7 +122,8 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
     canonical: "SAE",
     simplified: "serious adverse event",
     definition:
-      "Serious Adverse Event. An untoward medical occurrence in a clinical study subject resulting in death, hospitalization, or disability.",
+      "Serious Adverse Event. An adverse event that results in death, is life-threatening, requires inpatient hospitalization or prolongs an existing one, results in persistent or significant disability or incapacity, or is a congenital anomaly or birth defect. An important medical event that may need intervention to prevent one of these outcomes can also be serious.",
+    source: "ICH E2A",
   },
   {
     key: "dmp-term",
@@ -151,11 +164,14 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
   },
   {
     key: "phi-term",
-    canonical: "Patient Health Information (PHI)",
+    canonical: "Protected Health Information (PHI)",
     simplified: "protected health records",
     definition:
-      "Patient Health Information. Sensitive health data protected under federal privacy standards.",
-    aliases: ["Patient Health Information", "PHI"],
+      "Protected Health Information. Individually identifiable health information that a HIPAA covered entity or its business associate holds or transmits, in any form, which the HIPAA Privacy Rule protects.",
+    // "Patient Health Information" is a common misreading; it stays an alias
+    // so stored copy that uses it still gets the correct tooltip.
+    aliases: ["Protected Health Information", "Patient Health Information", "PHI"],
+    source: "HIPAA Privacy Rule, 45 CFR 160.103",
   },
   {
     key: "tls-term",
@@ -308,6 +324,164 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
       "A formal software versioning convention using MAJOR.MINOR.PATCH to signal breaking changes, features, and fixes.",
     aliases: ["Semantic Versioning", "SemVer"],
   },
+  // Business glossary of the Clinical Data Platform (#2638). Every governed
+  // metric links one of these terms or an earlier one. They are everyday
+  // words outside a trial, so none is wrapped automatically in prose.
+  {
+    key: "screening-term",
+    canonical: "Screening",
+    simplified: "eligibility check",
+    definition:
+      "The period after a person consents to take part in a study and before enrollment, in which the site checks them against the protocol's eligibility criteria.",
+    aliases: ["Screened", "Subjects screened"],
+    autoLink: false,
+    source: "CDISC Glossary",
+  },
+  {
+    key: "screen-failure-term",
+    canonical: "Screen failure",
+    simplified: "did not qualify",
+    definition:
+      "A subject who consented and entered screening but was not enrolled, usually because they did not meet the eligibility criteria.",
+    aliases: ["Screen failures", "Screen-failed"],
+    autoLink: false,
+    source: "CDISC Glossary",
+  },
+  {
+    key: "enrollment-term",
+    canonical: "Enrollment",
+    simplified: "joining a study",
+    definition:
+      "The point at which an eligible subject is entered into a study after screening. A subject counts as enrolled from that date, whether they later complete the study or leave it early.",
+    aliases: ["Enrolment", "Enrolled", "Subjects enrolled"],
+    autoLink: false,
+    source: "CDISC Glossary",
+  },
+  {
+    key: "enrollment-period-term",
+    canonical: "Enrollment period",
+    simplified: "time to recruit",
+    definition:
+      "The time from the first subject's enrollment in a study to the last subject's: first subject in (FSI) to last subject in (LSI).",
+    aliases: ["Recruitment period", "FSI to LSI", "FPI to LPI"],
+    autoLink: false,
+  },
+  {
+    key: "randomisation-term",
+    canonical: "Randomisation",
+    simplified: "random treatment assignment",
+    definition:
+      "Assigning subjects to treatment groups by chance, so that the groups differ at the start only by chance. In a randomised study, randomised subjects are the enrolled subjects who were assigned a treatment.",
+    aliases: ["Randomization", "Randomised", "Randomized"],
+    autoLink: false,
+    source: "ICH E9",
+  },
+  {
+    key: "early-termination-term",
+    canonical: "Early termination",
+    simplified: "left the study early",
+    definition:
+      "A subject's departure from a study before completing it, for example by withdrawing consent or being lost to follow-up. Each one is reported with its reason in the account of subject disposition.",
+    aliases: ["Discontinuation", "Discontinued", "Early withdrawal"],
+    autoLink: false,
+    source: "ICH E3",
+  },
+  {
+    key: "site-activation-term",
+    canonical: "Site activation",
+    simplified: "site ready to enroll",
+    definition:
+      "The point at which a study site is cleared to start enrolling, once its approvals, contract, training and supplies are in place.",
+    aliases: ["Activated site", "Site green light"],
+    autoLink: false,
+  },
+  {
+    key: "visit-window-term",
+    canonical: "Visit window",
+    simplified: "allowed visit dates",
+    definition:
+      "The range of days around a scheduled visit date in which the protocol allows the visit to take place. A visit performed outside it is out of window.",
+    aliases: ["Out-of-window visit", "Protocol window"],
+    autoLink: false,
+  },
+  {
+    key: "missed-visit-term",
+    canonical: "Missed visit",
+    simplified: "visit not done",
+    definition:
+      "A scheduled visit that did not take place before its visit window closed.",
+    aliases: ["Missed visits"],
+    autoLink: false,
+  },
+  {
+    key: "data-query-term",
+    canonical: "Data query",
+    simplified: "data question to a site",
+    definition:
+      "A question raised on a data value, by an edit check or a reviewer, asking the site to confirm or correct it. A query stays open until the site answers and is closed once the answer is reviewed and accepted.",
+    aliases: ["Query", "Queries", "Data clarification"],
+    autoLink: false,
+    source: "CDISC Glossary",
+  },
+  {
+    key: "monitoring-visit-term",
+    canonical: "Monitoring visit",
+    simplified: "sponsor site check",
+    definition:
+      "A visit by the sponsor's monitor to a study site to oversee how the trial is run and check its data against the source records. Each visit ends in a monitoring visit report.",
+    aliases: ["Interim monitoring visit", "IMV", "Monitoring visit report"],
+    autoLink: false,
+    source: "ICH E6(R3)",
+  },
+  {
+    key: "protocol-deviation-term",
+    canonical: "Protocol deviation",
+    simplified: "departure from the protocol",
+    definition:
+      "Any departure from the study design or procedures that the protocol sets out.",
+    aliases: ["Deviation", "Deviations", "Non-important deviation"],
+    autoLink: false,
+    source: "ICH E3 Questions and Answers (R1)",
+  },
+  {
+    key: "important-deviation-term",
+    canonical: "Important protocol deviation",
+    simplified: "serious departure from the protocol",
+    definition:
+      "A protocol deviation that might significantly affect the completeness, accuracy or reliability of key study data, or a subject's rights, safety or well-being.",
+    aliases: ["Important deviation", "IPD"],
+    autoLink: false,
+    source: "ICH E3 Questions and Answers (R1)",
+  },
+  {
+    key: "database-lock-term",
+    canonical: "Database lock (DBL)",
+    simplified: "data frozen for analysis",
+    definition:
+      "The point at which a study's database is closed to changes, so that the final analysis runs on fixed data. The time from the last subject's last visit (LSLV) to database lock is a standard data management cycle time.",
+    aliases: ["Database lock", "DBL", "LSLV to DBL"],
+    autoLink: false,
+    source: "CDISC Glossary",
+  },
+  {
+    key: "teae-term",
+    canonical: "Treatment-emergent adverse event (TEAE)",
+    simplified: "side effect during treatment",
+    definition:
+      "An adverse event that starts during treatment, or that was present before treatment and worsens during it.",
+    aliases: ["Treatment-emergent adverse event", "TEAE"],
+    autoLink: false,
+    source: "ICH E9",
+  },
+  {
+    key: "budget-burn-term",
+    canonical: "Budget burn",
+    simplified: "spend against budget",
+    definition:
+      "Actual spend to date as a share of the budget for the same period. Above 100% means spend is running ahead of budget.",
+    aliases: ["Burn rate", "Budget burn vs plan"],
+    autoLink: false,
+  },
 ];
 
 export function getGlossaryKeyMap(
@@ -320,12 +494,17 @@ export function getGlossaryKeyMap(
   return map;
 }
 
+/**
+ * The phrases `compileTerms` wraps, longest first: every term's canonical
+ * name and aliases, except terms with `autoLink` set to `false`.
+ */
 export function getSortedTermEntries(
   glossary: TermDefinition[] = CANONICAL_GLOSSARY
 ): Array<{ phrase: string; entry: TermDefinition }> {
   const list: Array<{ phrase: string; entry: TermDefinition }> = [];
 
   for (const entry of glossary) {
+    if (entry.autoLink === false) continue;
     list.push({ phrase: entry.canonical, entry });
     if (entry.aliases) {
       for (const alias of entry.aliases) {

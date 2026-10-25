@@ -52,10 +52,13 @@ import {
 
 describe("Lazy Sentry Loading in Error Boundaries & Conditional Initialization", () => {
   const originalEnvDsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  const originalVercelEnv = process.env.VERCEL_ENV;
 
   beforeEach(() => {
     vi.clearAllMocks();
     resetSentryInitializationForTesting();
+    // Only a production deployment loads the SDK (#2780).
+    process.env.VERCEL_ENV = "production";
     // Stub console.error to avoid test noise from error boundary renders
     vi.spyOn(console, "error").mockImplementation(() => {});
   });
@@ -63,6 +66,11 @@ describe("Lazy Sentry Loading in Error Boundaries & Conditional Initialization",
   afterEach(() => {
     cleanup();
     process.env.NEXT_PUBLIC_SENTRY_DSN = originalEnvDsn;
+    if (originalVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = originalVercelEnv;
+    }
     vi.restoreAllMocks();
   });
 
@@ -93,6 +101,22 @@ describe("Lazy Sentry Loading in Error Boundaries & Conditional Initialization",
       const res2 = await initClientSentry();
       expect(res2).toBeNull();
       expect(mockInit).not.toHaveBeenCalled();
+    });
+
+    it("does not load the SDK outside a production deployment, as in every browser (#2780)", async () => {
+      process.env.NEXT_PUBLIC_SENTRY_DSN =
+        "https://validkey@o0.ingest.sentry.io/999999";
+      for (const vercelEnv of [undefined, "preview", "development"]) {
+        if (vercelEnv === undefined) {
+          delete process.env.VERCEL_ENV;
+        } else {
+          process.env.VERCEL_ENV = vercelEnv;
+        }
+        expect(await initClientSentry()).toBeNull();
+        await reportClientError(new Error("not reported"));
+      }
+      expect(mockInit).not.toHaveBeenCalled();
+      expect(mockCaptureException).not.toHaveBeenCalled();
     });
 
     it("bypasses reportClientError when DSN is missing or dummy without invoking Sentry SDK", async () => {

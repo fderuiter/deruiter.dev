@@ -1145,8 +1145,6 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               data-testid="cabinet-header-controls"
               className="flex flex-wrap items-center justify-end gap-1.5 shrink-0 min-w-0 max-w-full ml-auto"
             >
-              {/* env.NODE_ENV reads "development" in the browser, so a
-                  production build showed this dev picker (#2376). */}
               {views && !isProductionBuild() && (
                 <label className="flex min-h-12 items-center gap-1.5 text-xs text-zinc-300">
                   <span>View</span>

@@ -52,7 +52,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### STANDARD\_RESULT
 
-> `readonly` **STANDARD\_RESULT**: `"The collected result, since results are collected in the standard unit: as text in --STRESC and as a number in --STRESN."` = `"The collected result, since results are collected in the standard unit: as text in --STRESC and as a number in --STRESN."`
+> `readonly` **STANDARD\_RESULT**: `"The collected result in the test's standard unit, as text in --STRESC and as a number in --STRESN: as collected when the collected unit is the standard unit, otherwise converted by a fixed factor and rounded to two decimals. The one conversion defined is glucose from mg/dL to mmol/L (divide by 18.016); with any other unit the standard result is missing."` = `"The collected result in the test's standard unit, as text in --STRESC and as a number in --STRESN: as collected when the collected unit is the standard unit, otherwise converted by a fixed factor and rounded to two decimals. The one conversion defined is glucose from mg/dL to mmol/L (divide by 18.016); with any other unit the standard result is missing."`
 
 ### STUDY\_DAY
 

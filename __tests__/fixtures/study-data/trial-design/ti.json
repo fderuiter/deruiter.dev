@@ -12,7 +12,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "DOMAIN",
@@ -21,7 +22,8 @@
       "length": 200,
       "role": "Identifier",
       "origin": "Protocol",
-      "codelist": "DOMAIN"
+      "codelist": "DOMAIN",
+      "required": true
     },
     {
       "name": "IETESTCD",
@@ -29,24 +31,27 @@
       "type": "text",
       "length": 200,
       "role": "Topic",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "IETEST",
       "label": "Criterion Text",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "role": "Synonym Qualifier",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "IECAT",
       "label": "Criterion Category",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
+      "role": "Grouping Qualifier",
       "origin": "Protocol",
-      "codelist": "IECAT"
+      "codelist": "IECAT",
+      "required": true
     }
   ],
   "columns": {

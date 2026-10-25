@@ -86,6 +86,11 @@ export interface VariableMeta {
   readonly length?: number;
   /** SDTM role. Omitted for ADaM and collected data. */
   readonly role?: VariableRole;
+  /**
+   * Set when SDTMIG marks the variable Core "Req" in its domain: it is
+   * never null, and Define-XML writes it as mandatory.
+   */
+  readonly required?: true;
   /** Where the value comes from. */
   readonly origin: VariableOrigin;
   /**

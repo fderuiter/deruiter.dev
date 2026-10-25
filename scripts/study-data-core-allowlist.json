@@ -132,74 +132,10 @@
     {
       "target": "sdtm",
       "coreId": "CORE-001081",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "DS",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "LB",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
       "dataset": "SV",
       "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "TA",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "TE",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "TI",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "TS",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-001081",
-      "dataset": "TV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Define-XML variable roles differ from the IG."
+      "issue": 2869,
+      "reason": "Define-XML lists EPOCH for SV, which SDTMIG 3.4 does not define for the domain, so CORE finds no IG role for it."
     },
     {
       "target": "sdtm",

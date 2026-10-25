@@ -12,7 +12,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "DOMAIN",
@@ -21,22 +22,25 @@
       "length": 200,
       "role": "Identifier",
       "origin": "Protocol",
-      "codelist": "DOMAIN"
+      "codelist": "DOMAIN",
+      "required": true
     },
     {
       "name": "VISITNUM",
       "label": "Visit Number",
       "type": "integer",
-      "role": "Timing",
-      "origin": "Protocol"
+      "role": "Topic",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "VISIT",
       "label": "Visit Name",
       "type": "text",
       "length": 200,
-      "role": "Topic",
-      "origin": "Protocol"
+      "role": "Synonym Qualifier",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "VISITDY",
@@ -50,15 +54,16 @@
       "label": "Rule for Start of Visit",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "role": "Rule",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "TVENRL",
       "label": "Rule for End of Visit",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
+      "role": "Rule",
       "origin": "Protocol"
     }
   ],

@@ -7,6 +7,7 @@ import type {
   VariableRole,
 } from "../../types";
 import { sdtmCodelist } from "./codelists";
+import { sdtmRequired } from "./required";
 
 type Row = Record<string, CellValue>;
 type DomainName = "TA" | "TE" | "TV" | "TI" | "TS";
@@ -33,17 +34,19 @@ const topic = (name: string, label: string): ColumnSpec => ({
   label,
   role: "Topic",
 });
-const qualifier = (name: string, label: string): ColumnSpec => ({
-  name,
-  label,
-  role: "Variable Qualifier",
-});
 const timing = (name: string, label: string): ColumnSpec => ({
   name,
   label,
   role: "Timing",
   type: "integer",
 });
+/** A column whose SDTMIG 3.4 role the helpers above do not name. */
+const column = (
+  name: string,
+  label: string,
+  role: VariableRole,
+  type?: VariableMeta["type"]
+): ColumnSpec => (type ? { name, label, role, type } : { name, label, role });
 
 /** Typed column mapping specifications shared by tabulation and metadata. */
 const SPECS: Record<DomainName, DomainSpec> = {
@@ -54,12 +57,12 @@ const SPECS: Record<DomainName, DomainSpec> = {
     columns: [
       id("STUDYID", "Study Identifier"),
       id("DOMAIN", "Domain Abbreviation"),
-      id("ARMCD", "Planned Arm Code"),
-      qualifier("ARM", "Description of Planned Arm"),
+      topic("ARMCD", "Planned Arm Code"),
+      column("ARM", "Description of Planned Arm", "Synonym Qualifier"),
       timing("TAETORD", "Element Order"),
-      topic("ETCD", "Element Code"),
-      qualifier("ELEMENT", "Description of Element"),
-      qualifier("EPOCH", "Epoch"),
+      column("ETCD", "Element Code", "Record Qualifier"),
+      column("ELEMENT", "Description of Element", "Synonym Qualifier"),
+      column("EPOCH", "Epoch", "Timing"),
     ],
   },
   TE: {
@@ -70,10 +73,10 @@ const SPECS: Record<DomainName, DomainSpec> = {
       id("STUDYID", "Study Identifier"),
       id("DOMAIN", "Domain Abbreviation"),
       topic("ETCD", "Element Code"),
-      qualifier("ELEMENT", "Description of Element"),
-      qualifier("TESTRL", "Rule for Start of Element"),
-      qualifier("TEENRL", "Rule for End of Element"),
-      qualifier("TEDUR", "Planned Duration of Element"),
+      column("ELEMENT", "Description of Element", "Synonym Qualifier"),
+      column("TESTRL", "Rule for Start of Element", "Rule"),
+      column("TEENRL", "Rule for End of Element", "Rule"),
+      column("TEDUR", "Planned Duration of Element", "Timing"),
     ],
   },
   TV: {
@@ -83,11 +86,11 @@ const SPECS: Record<DomainName, DomainSpec> = {
     columns: [
       id("STUDYID", "Study Identifier"),
       id("DOMAIN", "Domain Abbreviation"),
-      timing("VISITNUM", "Visit Number"),
-      topic("VISIT", "Visit Name"),
+      column("VISITNUM", "Visit Number", "Topic", "integer"),
+      column("VISIT", "Visit Name", "Synonym Qualifier"),
       timing("VISITDY", "Planned Study Day"),
-      qualifier("TVSTRL", "Rule for Start of Visit"),
-      qualifier("TVENRL", "Rule for End of Visit"),
+      column("TVSTRL", "Rule for Start of Visit", "Rule"),
+      column("TVENRL", "Rule for End of Visit", "Rule"),
     ],
   },
   TI: {
@@ -98,8 +101,8 @@ const SPECS: Record<DomainName, DomainSpec> = {
       id("STUDYID", "Study Identifier"),
       id("DOMAIN", "Domain Abbreviation"),
       topic("IETESTCD", "Criterion Short Name"),
-      qualifier("IETEST", "Criterion Text"),
-      qualifier("IECAT", "Criterion Category"),
+      column("IETEST", "Criterion Text", "Synonym Qualifier"),
+      column("IECAT", "Criterion Category", "Grouping Qualifier"),
     ],
   },
   TS: {
@@ -109,13 +112,13 @@ const SPECS: Record<DomainName, DomainSpec> = {
     columns: [
       id("STUDYID", "Study Identifier"),
       id("DOMAIN", "Domain Abbreviation"),
-      timing("TSSEQ", "Sequence Number"),
+      column("TSSEQ", "Sequence Number", "Identifier", "integer"),
       topic("TSPARMCD", "Trial Summary Parameter Short Name"),
-      qualifier("TSPARM", "Trial Summary Parameter"),
-      qualifier("TSVAL", "Parameter Value"),
-      qualifier("TSVALCD", "Parameter Value Code"),
-      qualifier("TSVCDREF", "Value Code Reference"),
-      qualifier("TSVCDVER", "Value Code Version"),
+      column("TSPARM", "Trial Summary Parameter", "Synonym Qualifier"),
+      column("TSVAL", "Parameter Value", "Result Qualifier"),
+      column("TSVALCD", "Parameter Value Code", "Result Qualifier"),
+      column("TSVCDREF", "Value Code Reference", "Result Qualifier"),
+      column("TSVCDVER", "Value Code Version", "Result Qualifier"),
     ],
   },
 };
@@ -137,6 +140,7 @@ function table(name: DomainName, rows: readonly Row[]): Dataset {
       role: column.role,
       origin: "Protocol" as const,
       ...sdtmCodelist(column.name),
+      ...sdtmRequired(name, column.name),
     })),
     columns: Object.fromEntries(
       spec.columns.map(({ name: variable }) => [

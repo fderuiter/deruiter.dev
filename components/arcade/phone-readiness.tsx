@@ -8,7 +8,7 @@ import { isPhoneGated } from "@/lib/arcade";
 // Tailwind reads class names from source, so each stays a literal.
 
 /** Shown on phones only, inline. */
-export const PHONE_ONLY_INLINE =
+const PHONE_ONLY_INLINE =
   "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:inline-flex";
 /** Shown on phones only, as a block. */
 export const PHONE_ONLY_BLOCK =

@@ -23,6 +23,32 @@ const AE_TERMS = [
   { soc: "General disorders", pt: "Fatigue" },
   { soc: "Nervous system disorders", pt: "Dizziness" },
 ] as const;
+
+/**
+ * The seriousness criteria the EDC asks for once an event is reported
+ * serious, in SDTMIG 3.4 order, with their CRF labels.
+ */
+const SERIOUSNESS_CRITERIA = [
+  ["AESCONG", "Congenital anomaly or birth defect"],
+  ["AESDISAB", "Persistent or significant disability"],
+  ["AESDTH", "Results in death"],
+  ["AESHOSP", "Requires or prolongs hospitalization"],
+  ["AESLIFE", "Life threatening"],
+  ["AESMIE", "Other medically important event"],
+] as const;
+
+/**
+ * The criterion a serious event meets, by cumulative probability:
+ * hospitalization is the commonest. Nobody in the generated study dies or
+ * is pregnant, so no event is fatal or a birth defect.
+ */
+const SERIOUSNESS_REASONS = [
+  { name: "AESHOSP", upTo: 0.6 },
+  { name: "AESMIE", upTo: 0.85 },
+  { name: "AESLIFE", upTo: 0.95 },
+  { name: "AESDISAB", upTo: 1 },
+] as const;
+
 /**
  * The fictional sites every synthetic study enrolls at, as the EDC's site
  * list holds them: a site number and the site's country (ISO 3166-1
@@ -157,6 +183,7 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("AESER", "Serious event flag"),
     TEXT("AEREL", "Treatment relationship"),
     TEXT("AEACN", "Action taken with treatment"),
+    ...SERIOUSNESS_CRITERIA.map(([name, label]) => TEXT(name, label)),
   ],
   DS: [
     SRC,
@@ -468,6 +495,9 @@ export function generateCollectedData(
           : 2 + Math.floor(pick("AE", "onset-day") * Math.max(1, stopDay - 2));
         const fullStart = addDays(baselineDate, offset(day));
         const partial = !predose && pick("AE", "partial-date") < 0.12;
+        const serious = pick("AE", "serious") < 0.08;
+        const reason = pick("AE", "seriousness");
+        const met = SERIOUSNESS_REASONS.find(({ upTo }) => reason < upTo)!;
         rows.AE.push({
           SRCID: sourceId(studyId, "AE", number, "1"),
           USUBJID: subject,
@@ -475,9 +505,16 @@ export function generateCollectedData(
           AEDECOD: term.pt,
           AESTDTC: partial ? fullStart.slice(0, 7) : fullStart,
           AEENDTC: discontinued ? stopDate : addDays(fullStart, 3),
-          AESER: pick("AE", "serious") < 0.08 ? "Y" : "N",
+          AESER: serious ? "Y" : "N",
           AEREL: predose ? "NOT RELATED" : "RELATED",
           AEACN: discontinued ? "DRUG WITHDRAWN" : "DOSE NOT CHANGED",
+          // Asked only after a "Yes" to serious, so left blank otherwise.
+          ...Object.fromEntries(
+            SERIOUSNESS_CRITERIA.map(([name]) => [
+              name,
+              serious ? (name === met.name ? "Y" : "N") : null,
+            ])
+          ),
         });
       }
     }

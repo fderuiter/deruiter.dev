@@ -118,6 +118,8 @@ describe("CI Workflow Toolchain Pinning", () => {
    * crashed with exit 134 there while passing on larger runners. The ceiling
    * is set in the script so every caller (CI, Husky, Vercel) gets the same one.
    * #2743 raised it to 3.5 GB once the program's live heap reached 2.54 GB.
+   * That sandbox then ran out of machine memory instead (exit 137), so the
+   * Vercel checks were removed (#2899); CI and the production build remain.
    */
   it("gives the typecheck an explicit heap ceiling above 2 GB", () => {
     const pkg = JSON.parse(

@@ -1367,8 +1367,16 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   return (
     <div data-game={gameId} className="w-full">
       {/* Static Retro Cabinet Preview Screen with scanlines */}
+      {/* The card never clips its content (#2890). A 16:10 box with a fixed
+          min-height or clipped overflow gets no content-based minimum, so on
+          a phone it cut off its own Launch button. A narrow screen sizes the
+          card to its content; from sm the card is 16:10 with min-height auto
+          and grows past the ratio when its content needs it. Only the still
+          behind it is clipped to the rounded corners. On a short landscape
+          screen the card fits under the navbar and the instructions scroll,
+          so Launch always shows. */}
       <div
-        className="w-full aspect-[16/10] min-h-[min(380px,65dvh)] rounded-2xl border border-zinc-800 bg-zinc-950 flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden select-none"
+        className="w-full min-h-[min(380px,65dvh)] sm:aspect-[16/10] sm:min-h-auto rounded-2xl border border-zinc-800 bg-zinc-950 flex flex-col justify-between p-6 sm:p-8 [@media(max-height:500px)]:max-h-[calc(100dvh-5rem)] [@media(max-height:500px)]:p-4 relative select-none"
         style={{
           backgroundImage:
             "radial-gradient(circle at center, #09090b 40%, #020202 100%)",
@@ -1377,7 +1385,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
         {/* The game's own preview still, dimmed behind the title so the
             attract screen shows what the game looks like. */}
         {!isWarmingUp && (
-          <>
+          <div className="absolute inset-0 overflow-hidden rounded-2xl pointer-events-none">
             <Image
               src={`/images/arcade/previews/${gameId}.webp`}
               alt=""
@@ -1387,8 +1395,8 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               unoptimized
               className="object-cover object-top opacity-80"
             />
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(9,9,11,0.82)_0%,rgba(9,9,11,0.55)_55%,rgba(9,9,11,0.35)_100%)] pointer-events-none" />
-          </>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(9,9,11,0.82)_0%,rgba(9,9,11,0.55)_55%,rgba(9,9,11,0.35)_100%)]" />
+          </div>
         )}
 
         {/* The same CRT layer the launched cabinet draws, so the attract
@@ -1397,7 +1405,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
           <div
             aria-hidden="true"
             data-testid="attract-crt-layer"
-            className="absolute inset-0 pointer-events-none z-10"
+            className="absolute inset-0 rounded-2xl pointer-events-none z-10"
             style={{ backgroundImage: crtBackground }}
           />
         )}
@@ -1484,11 +1492,11 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
             </div>
 
             {/* Cabinet Game Display Details */}
-            <div className="flex-1 flex flex-col items-center justify-center text-center my-6 max-w-xl mx-auto z-10">
-              <div className="arcade-accent-text p-3 rounded-full bg-zinc-950/80 border border-zinc-700/80 mb-4">
+            <div className="flex-1 flex flex-col items-center justify-center text-center my-6 [@media(max-height:500px)]:my-2 [@media(max-height:500px)]:min-h-0 [@media(max-height:500px)]:justify-start [@media(max-height:500px)]:overflow-y-auto max-w-xl mx-auto z-10">
+              <div className="arcade-accent-text p-3 rounded-full bg-zinc-950/80 border border-zinc-700/80 mb-4 [@media(max-height:500px)]:hidden">
                 {icon}
               </div>
-              <h2 className="text-2xl sm:text-4xl font-extrabold font-mono text-white tracking-[-0.035em] text-balance [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
+              <h2 className="text-2xl sm:text-4xl [@media(max-height:500px)]:text-xl font-extrabold font-mono text-white tracking-[-0.035em] text-balance [text-shadow:0_2px_12px_rgba(0,0,0,0.8)]">
                 {title}
               </h2>
               {subtitle && (

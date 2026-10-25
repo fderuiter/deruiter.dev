@@ -6,6 +6,8 @@ export const ADAM_METHODS = {
     "Planned treatment comes from DM. Actual treatment and dates come from first and last EX records.",
   ADSL_DISP:
     "End-of-study status and discontinuation reason come from the final DS disposition event.",
+  ADSL_DEATH:
+    "Date of death is DM.DTHDTC when that is a full date; missing for subjects with no recorded death. No death date is imputed.",
   BDS_WINDOW:
     "Assign observed assessments to USDM visit windows; closest target day wins, then earlier date, then lower source sequence.",
   BDS_BASE:

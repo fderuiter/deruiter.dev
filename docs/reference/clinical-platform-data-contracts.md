@@ -70,7 +70,7 @@ would carry.
 | Milestone facts | `gold.fct_milestone` | Portfolio mart | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 1.1.0 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 1.2.0 |
 
 ## Retention
 
@@ -127,7 +127,7 @@ would carry.
 | TV | Trial Visits | One record per planned visit | STUDYID, VISITNUM | 7 |
 | TI | Trial Inclusion Exclusion Criteria | One record per inclusion or exclusion criterion | STUDYID, IETESTCD | 5 |
 | TS | Trial Summary | One record per trial summary parameter value | STUDYID, TSPARMCD, TSSEQ | 9 |
-| DM | Demographics | One record per subject | STUDYID, USUBJID | 18 |
+| DM | Demographics | One record per subject | STUDYID, USUBJID | 20 |
 | SV | Subject Visits | One record per actual visit per subject | STUDYID, USUBJID, VISITNUM | 9 |
 | EX | Exposure | One record per constant-dosing interval per subject | STUDYID, USUBJID, EXSEQ | 11 |
 | AE | Adverse Events | One record per adverse event per subject | STUDYID, USUBJID, AESEQ | 14 |
@@ -135,7 +135,7 @@ would carry.
 | LB | Laboratory Test Results | One record per lab test per visit per subject | STUDYID, USUBJID, LBSEQ | 18 |
 | DS | Disposition | One record per disposition status or protocol milestone per subject | STUDYID, USUBJID, DSSEQ | 10 |
 | SUPPDM | Supplemental Qualifiers for DM | One record per supplemental qualifier per subject | STUDYID, RDOMAIN, USUBJID, QNAM | 10 |
-| ADSL | Subject-Level Analysis Dataset | One record per subject | STUDYID, USUBJID | 22 |
+| ADSL | Subject-Level Analysis Dataset | One record per subject | STUDYID, USUBJID | 23 |
 | ADVS | Vital Signs Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
 | ADLB | Laboratory Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
 | ADAE | Adverse Events Analysis | One record per adverse event per subject | STUDYID, USUBJID, ASEQ | 27 |

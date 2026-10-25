@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.1.0"
+version: "1.2.0"
 status: active
 domain: "Study data"
 tags:
@@ -498,6 +498,22 @@ schema:
           pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
         physicalType: VARCHAR
         description: "Date of Last Study Treatment"
+        required: false
+        classification: confidential
+      - name: DTHDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date/Time of Death"
+        required: false
+        classification: confidential
+      - name: DTHFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Subject Death Flag"
         required: false
         classification: confidential
       - name: SITEID
@@ -1590,6 +1606,12 @@ schema:
           maxLength: 80
         physicalType: "VARCHAR(80)"
         description: "Discontinuation Reason"
+        required: false
+        classification: confidential
+      - name: DTHDT
+        logicalType: date
+        physicalType: DATE
+        description: "Date of Death"
         required: false
         classification: confidential
       - name: SRCDOM

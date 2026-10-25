@@ -55,7 +55,7 @@
       "dataset": "DM",
       "category": "defect",
       "issue": 2769,
-      "reason": "RACE, ARMNRS, ACTARMUD, DTHDTC, DTHFL and RFPENDTC are not derived."
+      "reason": "RACE, ARMNRS, ACTARMUD and RFPENDTC are not derived."
     },
     {
       "target": "sdtm",

@@ -26,6 +26,14 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 > `readonly` **CT\_UNIT\_MAPPING**: `"Collected dose unit, which is already the UNIT submission value (TABLET, C48542)."` = `"Collected dose unit, which is already the UNIT submission value (TABLET, C48542)."`
 
+### DEATH\_DATE
+
+> `readonly` **DEATH\_DATE**: `"Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death."` = `"Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death."`
+
+### DEATH\_FLAG
+
+> `readonly` **DEATH\_FLAG**: `"Y when the subject has a DEATH disposition event; missing otherwise."` = `"Y when the subject has a DEATH disposition event; missing otherwise."`
+
 ### EXPOSURE\_ARM
 
 > `readonly` **EXPOSURE\_ARM**: `"The randomized arm code and arm, for every randomized subject; SCRNFAIL and Screen Failure for subjects never randomized."` = `"The randomized arm code and arm, for every randomized subject; SCRNFAIL and Screen Failure for subjects never randomized."`

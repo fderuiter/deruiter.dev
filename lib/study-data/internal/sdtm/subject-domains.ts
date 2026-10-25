@@ -114,6 +114,14 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "date"
       ),
+      derived(
+        "DTHDTC",
+        "Date/Time of Death",
+        "DEATH_DATE",
+        "Record Qualifier",
+        "date"
+      ),
+      derived("DTHFL", "Subject Death Flag", "DEATH_FLAG", "Record Qualifier"),
       collected(
         "SITEID",
         "Study Site Identifier",
@@ -566,6 +574,11 @@ export function deriveSubjectDomains(
     new Map(get(name).map((row) => [text(row.USUBJID), row]));
   const randBySubject = bySubject("RAND");
   const exBySubject = bySubject("EX");
+  const deathBySubject = new Map(
+    get("DS")
+      .filter((row) => row.DSDECOD === "DEATH")
+      .map((row) => [text(row.USUBJID), row])
+  );
   const tv = trialDesign.find((dataset) => dataset.name === "TV");
   const plannedVisits = new Map(
     (tv ? rows(tv) : []).map((row) => [num(row.VISITNUM), row])
@@ -620,6 +633,7 @@ export function deriveSubjectDomains(
     const subject = text(record.USUBJID);
     const rand = randBySubject.get(subject);
     const ex = exBySubject.get(subject);
+    const death = deathBySubject.get(subject);
     const screen = !rand;
     return item(
       {
@@ -630,6 +644,8 @@ export function deriveSubjectDomains(
         RFENDTC: ex?.EXENDTC ?? null,
         RFXSTDTC: ex?.EXSTDTC ?? null,
         RFXENDTC: ex?.EXENDTC ?? null,
+        DTHDTC: death?.DSSTDTC ?? null,
+        DTHFL: death ? "Y" : null,
         SITEID: record.SITEID,
         AGE: record.AGE,
         AGEU: "YEARS",
@@ -642,7 +658,8 @@ export function deriveSubjectDomains(
       },
       record,
       rand,
-      ex
+      ex,
+      death
     );
   });
   const sv = get("SV").map((record) => {

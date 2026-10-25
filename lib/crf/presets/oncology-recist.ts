@@ -1,10 +1,27 @@
 import { StudyProtocol } from "../types";
-import { STANDARD_CODELISTS, scaffoldCdashDomain } from "../cdisc-cdash-library";
+import {
+  CDASH_STANDARD_VARIABLES,
+  STANDARD_CODELISTS,
+  scaffoldCdashDomain,
+} from "../cdisc-cdash-library";
+
+/**
+ * The CDASH metadata of a vital sign, so a preset concept that stands in for
+ * the scaffolded field keeps its aCRF annotation and SDTM test code (#2757).
+ */
+function vitalSignMetadata(variable: "SYSBP" | "DIABP") {
+  return {
+    cdashMetadata: CDASH_STANDARD_VARIABLES.VS?.find(
+      (meta) => meta.sdtmVariable === variable
+    ),
+  };
+}
 
 export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
   id: "study_onc_003",
   protocolNumber: "ONC-2026-003",
-  studyName: "A Randomized, Double-Blind Phase III Study of Dual Immune Checkpoint Inhibition in Advanced Solid Tumors",
+  studyName:
+    "A Randomized, Double-Blind Phase III Study of Dual Immune Checkpoint Inhibition in Advanced Solid Tumors",
   phase: "Phase III",
   sponsor: "Aura Oncology Therapeutics",
   therapeuticArea: "Oncology",
@@ -91,6 +108,7 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
       domain: "VS",
       variableName: "SYSBP",
       dataType: "integer",
+      properties: vitalSignMetadata("SYSBP"),
       label: "Systolic Blood Pressure",
       unit: "mmHg",
     },
@@ -102,6 +120,7 @@ export const ONCOLOGY_RECIST_PRESET: StudyProtocol = {
       domain: "VS",
       variableName: "DIABP",
       dataType: "integer",
+      properties: vitalSignMetadata("DIABP"),
       label: "Diastolic Blood Pressure",
       unit: "mmHg",
     },

@@ -23,6 +23,16 @@
             "unit": "kg"
           },
           {
+            "conceptId": "bc_sysbp",
+            "testCode": "SYSBP",
+            "unit": "mmHg"
+          },
+          {
+            "conceptId": "bc_diabp",
+            "testCode": "DIABP",
+            "unit": "mmHg"
+          },
+          {
             "conceptId": "bc_vs_pulse",
             "testCode": "PULSE",
             "unit": "beats/min"
@@ -45,16 +55,6 @@
             "name": "Calculated Body Mass Index (BMI)",
             "reason": "test-not-modelled",
             "testCode": "BMI"
-          },
-          {
-            "conceptId": "bc_sysbp",
-            "name": "Systolic Blood Pressure",
-            "reason": "no-test-code"
-          },
-          {
-            "conceptId": "bc_diabp",
-            "name": "Diastolic Blood Pressure",
-            "reason": "no-test-code"
           },
           {
             "conceptId": "bc_vs_temp",
@@ -100,9 +100,36 @@
         "id": "form_lb_onc",
         "name": "Central & Local Laboratory Panel",
         "domain": "LB",
-        "tabulated": false,
-        "reason": "no-modelled-tests",
-        "tests": [],
+        "tabulated": true,
+        "tests": [
+          {
+            "conceptId": "bc_lb_alt",
+            "testCode": "ALT",
+            "unit": "U/L"
+          },
+          {
+            "conceptId": "bc_lb_ast",
+            "testCode": "AST",
+            "unit": "U/L"
+          },
+          {
+            "conceptId": "bc_lb_bili",
+            "testCode": "BILI",
+            "unit": "umol/L",
+            "sourceUnit": "mg/dL"
+          },
+          {
+            "conceptId": "bc_lb_creat",
+            "testCode": "CREAT",
+            "unit": "umol/L",
+            "sourceUnit": "mg/dL"
+          },
+          {
+            "conceptId": "bc_lb_plat",
+            "testCode": "PLAT",
+            "unit": "10^9/L"
+          }
+        ],
         "skippedConcepts": [
           {
             "conceptId": "bc_lb_lbdat",
@@ -115,40 +142,16 @@
             "reason": "no-test-code"
           },
           {
-            "conceptId": "bc_lb_alt",
-            "name": "Alanine Aminotransferase (ALT/SGPT)",
-            "reason": "no-test-code"
-          },
-          {
-            "conceptId": "bc_lb_ast",
-            "name": "Aspartate Aminotransferase (AST/SGOT)",
-            "reason": "no-test-code"
-          },
-          {
-            "conceptId": "bc_lb_bili",
-            "name": "Total Bilirubin",
-            "reason": "no-test-code"
-          },
-          {
-            "conceptId": "bc_lb_creat",
-            "name": "Serum Creatinine",
-            "reason": "no-test-code"
-          },
-          {
             "conceptId": "bc_lb_anc",
             "name": "Absolute Neutrophil Count (ANC)",
-            "reason": "no-test-code"
-          },
-          {
-            "conceptId": "bc_lb_plat",
-            "name": "Platelet Count",
-            "reason": "no-test-code"
+            "reason": "test-not-modelled",
+            "testCode": "NEUT"
           }
         ]
       }
     ],
-    "tabulatedDomains": ["DM", "VS", "AE"],
-    "notTabulatedDomains": ["CM", "LB", "TR"],
+    "tabulatedDomains": ["DM", "VS", "LB", "AE"],
+    "notTabulatedDomains": ["CM", "TR"],
     "assumptions": [],
     "unplannedEncounters": [
       {

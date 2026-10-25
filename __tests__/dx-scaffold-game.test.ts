@@ -99,6 +99,12 @@ describe("scaffold game (#2846)", () => {
     expect(read("components/demo-check/views/PhoneView.tsx")).toContain(
       "<PhoneStage"
     );
+    expect(read("__tests__/e2e/demo-check-tablet.spec.ts")).toContain(
+      "!/^iPad/.test(testInfo.project.name)"
+    );
+    expect(read("__tests__/e2e/demo-check-phone.spec.ts")).toContain(
+      "!/^Phone /.test(testInfo.project.name)"
+    );
     expect(read("lib/arcade/registry.ts")).toMatch(
       /slug: "demo-check",[\s\S]*?views: READY_EVERYWHERE,/
     );

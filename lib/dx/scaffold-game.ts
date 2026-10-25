@@ -407,13 +407,17 @@ describe("use${pascal}Session", () => {
 
   const deviceSpec = (
     view: "phone" | "tablet",
-    projects: string
+    projects: string,
+    projectPattern: string
   ) => `import { test, expect } from "@playwright/test";
 import { expectView, launchCabinet } from "./mobile-harness";
 
 // The ${projects} projects run this file (ADR 0061, ADR 0062).
 test("${title} mounts its ${view} view", async ({ page }, testInfo) => {
-  test.skip(!testInfo.project.use.hasTouch, "touch projects only");
+  test.skip(
+    !/${projectPattern}/.test(testInfo.project.name),
+    "${projects} projects only"
+  );
   await launchCabinet(page, "${kebab}");
   await expectView(page, "${view}");
   await expect(page.getByTestId("${kebab}-board")).toBeVisible();
@@ -443,11 +447,11 @@ test("${title} mounts its ${view} view", async ({ page }, testInfo) => {
     { file: `__tests__/${kebab}-session.test.ts`, content: sessionTest },
     {
       file: `__tests__/e2e/${kebab}-phone.spec.ts`,
-      content: deviceSpec("phone", "phone"),
+      content: deviceSpec("phone", "phone", "^Phone "),
     },
     {
       file: `__tests__/e2e/${kebab}-tablet.spec.ts`,
-      content: deviceSpec("tablet", "iPad"),
+      content: deviceSpec("tablet", "iPad", "^iPad"),
     },
   ];
 }
@@ -515,7 +519,7 @@ function registryInserts(names: GameScaffoldNames): readonly RegistryInsert[] {
     description:
       "${SEO_DESCRIPTION}",
     path: "${route}",
-    keywords: ["Arcade", "${title}"],
+    keywords: ["Browser Arcade Game", "${title}", "Three-View Cabinet"],
     inLanguage: "en-US",
     locale: "en-US",
     isAccessibleForFree: true,

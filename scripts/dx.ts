@@ -1230,8 +1230,13 @@ function printScaffoldResult(
   if (type === "game" || type === "arcade") {
     console.log(`Next steps for a three-view game (ADR 0062):
   1. npm run doctor:fix   regenerates public/llms.txt and the TypeDoc reference
-  2. Update the hub's game count in __tests__/arcade-registry.test.ts
-  3. npm run quality && npm test
+  2. Update the lists that name every game: the hub count in
+     __tests__/arcade-registry.test.ts and the phone picks in
+     __tests__/desktop-only-gate.test.tsx
+  3. Capture public/images/arcade/previews/${name}.webp, add the game to
+     GAME_CARD_COPY (lib/og-arcade-showcase.tsx) and switch its
+     opengraph-image to createGameImageResponse
+  4. npm run quality && npm test
 `);
   }
 }

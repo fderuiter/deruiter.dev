@@ -9,7 +9,8 @@ describeRetroLabyrinthOnDevice("Retro Labyrinth on a tablet (#2032)");
 // tablet view (ADR 0062, #2859); Split View panes are phones.
 test("Retro Labyrinth mounts its tablet view on an iPad (#2859)", async ({
   page,
-}) => {
+}, testInfo) => {
+  test.skip(!testInfo.project.use.hasTouch, "touch projects only");
   await page.goto("/arcade/retro-labyrinth");
   const launch = page.getByRole("button", { name: /Launch Cabinet/i });
   await expect(async () => {

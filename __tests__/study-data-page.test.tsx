@@ -249,6 +249,46 @@ describe("/study-data workbench", () => {
     expect(text).not.toMatch(FORBIDDEN_CLAIMS);
   });
 
+  it("injects an issue and shows where the gate caught it", async () => {
+    await renderFinishedRun();
+    expect(screen.queryByRole("region", { name: /^Injected:/ })).toBeNull();
+    fireEvent.change(screen.getByLabelText("Inject an issue"), {
+      target: { value: "impossible-date" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Run pipeline" }));
+    const panel = await screen.findByRole(
+      "region",
+      { name: "Injected: Impossible date" },
+      RUN_TIMEOUT
+    );
+    expect(within(panel).getByText(/^Changed subject /)).toBeTruthy();
+    expect(within(panel).getByText(/^The gate caught it: /)).toBeTruthy();
+    fireEvent.click(
+      within(panel).getAllByRole("button", { name: "Show row" })[0]
+    );
+    expect(
+      screen
+        .getByRole("tab", { name: "Datasets" })
+        .getAttribute("aria-selected")
+    ).toBe("true");
+  });
+
+  it("explains an injected issue that the derivation, not the gate, handles", async () => {
+    await renderFinishedRun();
+    fireEvent.change(screen.getByLabelText("Inject an issue"), {
+      target: { value: "missing-baseline" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Run pipeline" }));
+    const panel = await screen.findByRole(
+      "region",
+      { name: "Injected: Missing baseline" },
+      RUN_TIMEOUT
+    );
+    expect(
+      within(panel).getByText(/^The gate raises no finding for this one/)
+    ).toBeTruthy();
+  });
+
   it("explains invalid run settings next to the field", async () => {
     await renderFinishedRun();
     const seed = screen.getByLabelText("Seed");

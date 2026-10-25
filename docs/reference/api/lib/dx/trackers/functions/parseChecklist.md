@@ -10,9 +10,10 @@
 
 Finds the checklist lines whose subject is an issue.
 
-A line's subject is the `#N` that opens it, so "- [x] #2583 to #2590
-merged" is about #2583, and "- [ ] One journey, coordinated through
-#2689" has no subject and is skipped. Fenced code is ignored.
+A line's subject is the issue reference that opens it, so a ticked
+`#2583 to #2590 merged` is about issue 2583, while a line that only
+mentions an issue later in its text has no subject and is skipped.
+Fenced code is ignored.
 
 ## Parameters
 

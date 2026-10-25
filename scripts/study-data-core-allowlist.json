@@ -3,59 +3,11 @@
   "entries": [
     {
       "target": "sdtm",
-      "coreId": "CORE-000047",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Screen failures carry ARMCD/ARM SCRNFAIL/Screen Failure; SDTMIG 3.4 leaves them null and uses ARMNRS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000115",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Screen failures carry ARMCD/ARM SCRNFAIL/Screen Failure; SDTMIG 3.4 leaves them null and uses ARMNRS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000208",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Screen failures carry ARMCD/ARM SCRNFAIL/Screen Failure; SDTMIG 3.4 leaves them null and uses ARMNRS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000209",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Screen failures carry ARMCD/ARM SCRNFAIL/Screen Failure; SDTMIG 3.4 leaves them null and uses ARMNRS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000210",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "Screen failures carry ARMCD/ARM SCRNFAIL/Screen Failure; SDTMIG 3.4 leaves them null and uses ARMNRS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000191",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "RFENDTC is null for screen failures, which wrongly carry an ARM."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-000334",
       "dataset": "DM",
       "category": "defect",
       "issue": 2769,
-      "reason": "RACE, ARMNRS, ACTARMUD, DTHDTC, DTHFL and RFPENDTC are not derived."
+      "reason": "RACE, DTHDTC, DTHFL and RFPENDTC are not derived."
     },
     {
       "target": "sdtm",

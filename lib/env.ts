@@ -56,6 +56,8 @@ export const serverEnvSchema = z.object({
   SKIP_DB_HEALTH_CHECK: z.string().optional(),
   ALLOW_FALLBACK_PRODUCTION_BUILD: z.string().optional(),
   ALLOW_DESTRUCTIVE_MIGRATIONS: z.string().optional(),
+  VERCEL_GIT_COMMIT_SHA: z.string().optional(),
+  VERCEL_GIT_COMMIT_REF: z.string().optional(),
   NEXT_PHASE: z.string().optional(),
   NEXT_RUNTIME: z.string().optional(),
   GITHUB_ACTIONS: z.string().optional(),
@@ -240,4 +242,15 @@ export const env = getEnv();
  */
 export function isProductionBuild(): boolean {
   return process.env.NODE_ENV === "production";
+}
+
+/**
+ * When this build ran, as an ISO 8601 timestamp, or null outside a build.
+ *
+ * `next.config.ts` sets `BUILD_TIMESTAMP` in its `env` block, so Next inlines
+ * the value into the bundle at build time. It is not a deployment variable and
+ * is not in the schema. Tests and `next dev` see null.
+ */
+export function buildTimestamp(): string | null {
+  return process.env.BUILD_TIMESTAMP ?? null;
 }

@@ -10,12 +10,14 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
-import type {
-  DataLayer,
-  LineageOrigin,
-  LineageRecord,
-  LineageResult,
-  LineageTrace,
+import {
+  MESSY_DATA_SCENARIOS,
+  type DataLayer,
+  type LineageOrigin,
+  type LineageRecord,
+  type LineageResult,
+  type LineageTrace,
+  type ScenarioId,
 } from "@/lib/study-data";
 import { useAnnouncer } from "@/components/providers/A11yProvider";
 import { ConformancePanel } from "./ConformancePanel";
@@ -28,6 +30,7 @@ import {
   type TakenHandoff,
 } from "./handoff-storage";
 import { HandoffPanel } from "./HandoffPanel";
+import { InjectedIssuePanel } from "./InjectedIssuePanel";
 import { LineageExplorer } from "./LineageExplorer";
 import {
   createPipelineClient,
@@ -37,6 +40,7 @@ import {
 import {
   ROW_PAGE_SIZE,
   TRACE_LIMIT,
+  type InjectedIssue,
   type PackageKind,
   type PreparedStudy,
   type RunSummary,
@@ -113,6 +117,20 @@ function handoffNotice(taken: TakenHandoff, prepared?: PreparedStudy): string {
 
 const MAX_SEED = 4294967295;
 
+/** One sentence on where the gate caught an injected scenario. */
+function injectedAnnouncement(injected: InjectedIssue): string {
+  const { scenario, subject, caught } = injected;
+  if (subject === null) {
+    return `${scenario.title}: no subject was eligible, so nothing was changed.`;
+  }
+  if (scenario.expected.findings.length === 0) {
+    return `${scenario.title} injected into ${subject}; the gate raises no finding for it by design.`;
+  }
+  return caught.length > 0
+    ? `${scenario.title} injected into ${subject}; the gate caught it with ${caught.length} ${caught.length === 1 ? "finding" : "findings"}.`
+    : `${scenario.title} injected into ${subject}; the gate did not catch it.`;
+}
+
 function parseWhole(text: string): number | null {
   return /^\d+$/.test(text.trim()) ? Number(text.trim()) : null;
 }
@@ -155,9 +173,12 @@ export function StudyDataWorkbench({
   const subjectsId = useId();
   const seedHelpId = useId();
   const subjectsHelpId = useId();
+  const scenarioId = useId();
+  const scenarioHelpId = useId();
 
   const [seedText, setSeedText] = useState(String(defaults.seed));
   const [subjectsText, setSubjectsText] = useState(String(defaults.nSubjects));
+  const [scenario, setScenario] = useState<ScenarioId | "">("");
   const [inputError, setInputError] = useState<{
     seed?: string;
     subjects?: string;
@@ -187,7 +208,13 @@ export function StudyDataWorkbench({
   }, []);
 
   const startRun = useCallback(
-    (seed: number, nSubjects: number, study: unknown, restoring = false) => {
+    (
+      seed: number,
+      nSubjects: number,
+      study: unknown,
+      restoring = false,
+      injected?: ScenarioId
+    ) => {
       const token = ++runToken.current;
       const pipeline = client();
       pipeline
@@ -196,6 +223,7 @@ export function StudyDataWorkbench({
           seed,
           nSubjects,
           ...(study === undefined ? {} : { study }),
+          ...(injected === undefined ? {} : { scenario: injected }),
         })
         .then((result) => {
           if (token !== runToken.current) return;
@@ -207,7 +235,7 @@ export function StudyDataWorkbench({
           setTraceError(null);
           if (!restoring) {
             announce(
-              `Pipeline run complete: ${nSubjects.toLocaleString("en-US")} subjects, seed ${seed}.`
+              `Pipeline run complete: ${nSubjects.toLocaleString("en-US")} subjects, seed ${seed}.${result.injected ? ` ${injectedAnnouncement(result.injected)}` : ""}`
             );
           }
         })
@@ -294,7 +322,7 @@ export function StudyDataWorkbench({
     announce(
       `Running the pipeline for ${nSubjects.toLocaleString("en-US")} subjects.`
     );
-    startRun(seed, nSubjects, handoff?.study);
+    startRun(seed, nSubjects, handoff?.study, false, scenario || undefined);
   };
 
   const onUseDemo = () => {
@@ -325,7 +353,13 @@ export function StudyDataWorkbench({
     if (summary) {
       setStatus("restoring");
       announce("Run cancelled. Restoring the previous run.");
-      startRun(summary.seed, summary.nSubjects, handoff?.study, true);
+      startRun(
+        summary.seed,
+        summary.nSubjects,
+        handoff?.study,
+        true,
+        summary.injected?.scenario.id
+      );
     } else {
       setStatus("error");
       setRunError("The run was cancelled. Run the pipeline to start again.");
@@ -430,11 +464,20 @@ export function StudyDataWorkbench({
     document.getElementById(`study-data-tab-${TABS[next].id}`)?.focus();
   };
 
-  const viewRecord = (record: LineageRecord) => {
-    const key = `${record.layer}:${record.dataset}`;
+  const revealRow = (layer: DataLayer, dataset: string, row: number) => {
+    const key = `${layer}:${dataset}`;
     setTab("datasets");
     setDatasetKey(key);
-    setReveal({ key, row: record.row, nonce: Date.now() });
+    setReveal({ key, row, nonce: Date.now() });
+  };
+
+  const viewRecord = (record: LineageRecord) =>
+    revealRow(record.layer, record.dataset, record.row);
+
+  const showFindingRow = (layer: DataLayer, dataset: string, row: number) => {
+    revealRow(layer, dataset, row);
+    workspaceRef.current?.scrollIntoView({ block: "start" });
+    document.getElementById("study-data-tab-datasets")?.focus();
   };
 
   const showResult = (result: LineageResult) => {
@@ -519,7 +562,7 @@ export function StudyDataWorkbench({
         <form
           onSubmit={onSubmit}
           noValidate
-          className="mt-6 grid min-w-0 gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,12rem)_auto] sm:items-start"
+          className="mt-6 grid min-w-0 gap-4 sm:grid-cols-[minmax(0,12rem)_minmax(0,12rem)_minmax(0,26rem)] sm:items-start"
         >
           <div className="min-w-0">
             <label
@@ -570,7 +613,40 @@ export function StudyDataWorkbench({
                 `${limits.min} to ${limits.max.toLocaleString("en-US")} screened subjects.`}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2 sm:pt-5">
+          <div className="min-w-0">
+            <label
+              htmlFor={scenarioId}
+              className="mb-1 block font-mono text-xs uppercase tracking-[0.14em] text-slate-300"
+            >
+              Inject an issue
+            </label>
+            <select
+              id={scenarioId}
+              value={scenario}
+              onChange={(event) =>
+                setScenario(event.target.value as ScenarioId | "")
+              }
+              aria-describedby={scenarioHelpId}
+              className={`${FIELD} font-sans`}
+            >
+              <option value="">None: the study as generated</option>
+              {MESSY_DATA_SCENARIOS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.title}
+                </option>
+              ))}
+            </select>
+            <p
+              id={scenarioHelpId}
+              className="mt-1 break-words text-xs text-slate-400"
+            >
+              {scenario
+                ? MESSY_DATA_SCENARIOS.find((item) => item.id === scenario)
+                    ?.description
+                : "Change one subject's records, then see whether the gate catches it."}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:col-span-3">
             <button type="submit" className={`${BUTTON_PRIMARY} min-h-12`}>
               Run pipeline
             </button>
@@ -591,6 +667,12 @@ export function StudyDataWorkbench({
         >
           {statusText}
         </p>
+        {summary?.injected && !running ? (
+          <InjectedIssuePanel
+            injected={summary.injected}
+            onShowRow={showFindingRow}
+          />
+        ) : null}
         <div className={`${PANEL} mt-6 p-4 sm:p-5`}>
           <h3 className="text-sm font-semibold text-white">Download the run</h3>
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-300">

@@ -12,6 +12,7 @@ import { clamp } from "@/lib/game-utils";
 import { validateUsdmV4Document } from "@/lib/crf/usdm-v4-schema";
 import {
   DEMO_301_STUDY,
+  MESSY_DATA_SCENARIOS,
   PACKAGE_FIXED_TIMESTAMP,
   SYNTHETIC_DATA_NOTICE,
   StudyDefinitionError,
@@ -30,6 +31,7 @@ import {
   type DefineDocument,
   type LineageIndex,
   type PipelineRun,
+  type ScenarioId,
   type StudyDefinition,
   type TlfOutputs,
 } from "@/lib/study-data";
@@ -38,6 +40,7 @@ import {
   ROW_PAGE_SIZE,
   SCHEMA_ISSUE_SAMPLE_SIZE,
   type DatasetSummary,
+  type InjectedIssue,
   type PackageFileResult,
   type PreparedStudy,
   type RowWindow,
@@ -202,6 +205,39 @@ async function prepare(study: unknown): Promise<PreparedStudy> {
   }
 }
 
+/**
+ * Where the gate caught an injected scenario: the findings on the changed
+ * subject from the rules the scenario declares, and the declared rules that
+ * raised nothing there.
+ */
+function injectedIssue(result: PipelineRun, id: ScenarioId): InjectedIssue {
+  const scenario = MESSY_DATA_SCENARIOS.find((item) => item.id === id);
+  if (!scenario) throw new RangeError(`There is no scenario ${id}.`);
+  const subject =
+    result.manifest.scenarios?.find((item) => item.id === id)?.subject ?? null;
+  const declared = new Set(scenario.expected.findings);
+  const caught =
+    subject === null
+      ? []
+      : result.findings.filter((finding) => {
+          if (!declared.has(finding.ruleId) || finding.row === undefined) {
+            return false;
+          }
+          const data = result.datasets.find(
+            (item) =>
+              item.layer === finding.layer && item.name === finding.dataset
+          );
+          return data?.columns.USUBJID?.[finding.row] === subject;
+        });
+  const raised = new Set(caught.map((finding) => finding.ruleId));
+  return {
+    scenario,
+    subject,
+    caught,
+    missed: scenario.expected.findings.filter((rule) => !raised.has(rule)),
+  };
+}
+
 /** Creates a session that holds at most one run. */
 export function createStudyDataSession() {
   let active: ActiveRun | null = null;
@@ -216,13 +252,28 @@ export function createStudyDataSession() {
     return active;
   };
 
-  const run = (seed: number, nSubjects: number, study: unknown): RunSummary => {
+  const run = (
+    seed: number,
+    nSubjects: number,
+    study: unknown,
+    scenario: ScenarioId | undefined
+  ): RunSummary => {
     const started = performance.now();
     const definition: StudyDefinition =
       study === undefined
         ? DEMO_301_STUDY
         : prepareStudyHandoff(study).definition;
-    const result = runPipeline(definition, { seed, nSubjects });
+    if (
+      scenario !== undefined &&
+      !MESSY_DATA_SCENARIOS.some((item) => item.id === scenario)
+    ) {
+      throw new RangeError(`There is no scenario ${scenario}.`);
+    }
+    const result = runPipeline(definition, {
+      seed,
+      nSubjects,
+      ...(scenario === undefined ? {} : { scenarios: [scenario] }),
+    });
     const outputs = buildTlfOutputs(definition, result);
     const define = {
       sdtm: buildDefine(result, {
@@ -257,6 +308,9 @@ export function createStudyDataSession() {
         total: result.findings.length,
         items: result.findings.slice(0, FINDING_SAMPLE_SIZE),
       },
+      ...(scenario === undefined
+        ? {}
+        : { injected: injectedIssue(result, scenario) }),
       define,
       tables: outputs.tables,
       figures: outputs.figures,
@@ -334,7 +388,12 @@ export function createStudyDataSession() {
       case "prepare":
         return prepare(request.study);
       case "run":
-        return run(request.seed, request.nSubjects, request.study);
+        return run(
+          request.seed,
+          request.nSubjects,
+          request.study,
+          request.scenario
+        );
       case "rows":
         return rows(request.runId, request.key, request.offset, request.limit);
       case "trace":

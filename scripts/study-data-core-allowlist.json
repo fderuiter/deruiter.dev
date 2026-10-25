@@ -3,14 +3,6 @@
   "entries": [
     {
       "target": "sdtm",
-      "coreId": "CORE-000355",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "SITEID and COUNTRY are not derived."
-    },
-    {
-      "target": "sdtm",
       "coreId": "CORE-000334",
       "dataset": "DM",
       "category": "defect",

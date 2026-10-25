@@ -114,6 +114,12 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "date"
       ),
+      collected(
+        "SITEID",
+        "Study Site Identifier",
+        "DM.SITEID",
+        "Record Qualifier"
+      ),
       collected("AGE", "Age", "DM.AGE", "Record Qualifier", "integer"),
       assigned("AGEU", "Age Units", "Record Qualifier"),
       collected("SEX", "Sex", "DM.SEX", "Record Qualifier"),
@@ -153,6 +159,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "UNPLANNED_ARM",
         "Record Qualifier"
       ),
+      collected("COUNTRY", "Country", "DM.COUNTRY", "Record Qualifier"),
     ],
   },
   SV: {
@@ -634,6 +641,7 @@ export function deriveSubjectDomains(
         RFENDTC: ex?.EXENDTC ?? null,
         RFXSTDTC: ex?.EXSTDTC ?? null,
         RFXENDTC: ex?.EXENDTC ?? null,
+        SITEID: record.SITEID,
         AGE: record.AGE,
         AGEU: "YEARS",
         SEX: record.SEX,
@@ -645,6 +653,7 @@ export function deriveSubjectDomains(
         ACTARM: rand?.ARM ?? null,
         ARMNRS: rand ? null : "SCREEN FAILURE",
         ACTARMUD: null,
+        COUNTRY: record.COUNTRY,
       },
       record,
       rand,

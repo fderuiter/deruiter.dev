@@ -147,6 +147,9 @@ describe("DEMO-301 collection against CRF Studio's CDASH catalog", () => {
   const NOT_CDASH_FIELDS: Readonly<Record<string, readonly string[]>> = {
     // System and subject identifiers, assigned rather than entered.
     identifier: ["SRCID", "USUBJID"],
+    // The subject's site and its country, which the EDC takes from the
+    // site the subject is enrolled at rather than from a CRF page (#2801).
+    site: ["SITEID", "COUNTRY"],
     // Visit tracking the EDC records against the schedule.
     visit: ["VISITNUM", "VISIT", "PLANDY", "ACTDY", "SVDTC", "STATUS"],
     // Long-format test rows: the test code and result of a catalog field

@@ -261,3 +261,43 @@ describe("Centralized Term Template Compiler", () => {
     });
   });
 });
+
+describe("Regulated term definitions (#2789)", () => {
+  const term = (key: string) => {
+    const found = CANONICAL_GLOSSARY.find((t) => t.key === key);
+    expect(found, key).toBeDefined();
+    return found!;
+  };
+
+  it("expands PHI as Protected Health Information, under the HIPAA Privacy Rule", () => {
+    const phi = term("phi-term");
+    expect(phi.canonical).toBe("Protected Health Information (PHI)");
+    expect(phi.definition).toMatch(/^Protected Health Information\./);
+    expect(phi.definition).toContain("HIPAA Privacy Rule");
+    expect(phi.source).toBe("HIPAA Privacy Rule, 45 CFR 160.103");
+  });
+
+  it("lists every ICH E2A seriousness criterion for SAE", () => {
+    const sae = term("sae-term");
+    for (const criterion of [
+      "death",
+      "life-threatening",
+      "inpatient hospitalization",
+      "prolongs an existing one",
+      "disability or incapacity",
+      "congenital anomaly or birth defect",
+      "important medical event",
+    ]) {
+      expect(sae.definition).toContain(criterion);
+    }
+    expect(sae.source).toBe("ICH E2A");
+  });
+
+  it("puts the corrected PHI definition on copy that still says Patient Health Information", () => {
+    const html = compileTerms("Patient Health Information (PHI) stays local.");
+    expect(html).toContain("phi-term");
+    expect(compileTerms("Protected Health Information is isolated.")).toContain(
+      "phi-term"
+    );
+  });
+});

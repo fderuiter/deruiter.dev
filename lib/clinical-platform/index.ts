@@ -63,6 +63,15 @@ export {
   searchReportCatalog,
   type ReportCatalogOptions,
 } from "./internal/reporting/catalog";
+export { workbenchSchema } from "./internal/workbench/schema";
+export {
+  WORKBENCH_DIALECTS,
+  workbenchQueries,
+} from "./internal/workbench/queries";
+export {
+  WORKBENCH_ENGINE_SETTINGS,
+  checkWorkbenchSql,
+} from "./internal/workbench/guard";
 export {
   dataContracts,
   dataProducts,

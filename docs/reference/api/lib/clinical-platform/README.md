@@ -116,6 +116,12 @@ Re-exports [checkWarehouse](internal/warehouse/check/functions/checkWarehouse.md
 
 ***
 
+### checkWorkbenchSql
+
+Re-exports [checkWorkbenchSql](internal/workbench/guard/functions/checkWorkbenchSql.md)
+
+***
+
 ### ColumnRef
 
 Re-exports [ColumnRef](types/interfaces/ColumnRef.md)
@@ -1235,3 +1241,51 @@ Re-exports [WarehouseTableKind](types/type-aliases/WarehouseTableKind.md)
 ### WarehouseValue
 
 Re-exports [WarehouseValue](types/type-aliases/WarehouseValue.md)
+
+***
+
+### WORKBENCH\_DIALECTS
+
+Re-exports [WORKBENCH_DIALECTS](internal/workbench/queries/variables/WORKBENCH_DIALECTS.md)
+
+***
+
+### WORKBENCH\_ENGINE\_SETTINGS
+
+Re-exports [WORKBENCH_ENGINE_SETTINGS](internal/workbench/guard/variables/WORKBENCH_ENGINE_SETTINGS.md)
+
+***
+
+### WorkbenchColumn
+
+Re-exports [WorkbenchColumn](types/interfaces/WorkbenchColumn.md)
+
+***
+
+### workbenchQueries
+
+Re-exports [workbenchQueries](internal/workbench/queries/functions/workbenchQueries.md)
+
+***
+
+### WorkbenchQuery
+
+Re-exports [WorkbenchQuery](types/interfaces/WorkbenchQuery.md)
+
+***
+
+### workbenchSchema
+
+Re-exports [workbenchSchema](internal/workbench/schema/functions/workbenchSchema.md)
+
+***
+
+### WorkbenchSqlFinding
+
+Re-exports [WorkbenchSqlFinding](types/interfaces/WorkbenchSqlFinding.md)
+
+***
+
+### WorkbenchTable
+
+Re-exports [WorkbenchTable](types/interfaces/WorkbenchTable.md)

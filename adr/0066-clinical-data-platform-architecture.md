@@ -94,6 +94,7 @@ everything under `internal/` is private. Each stage gets its own folder:
 | `internal/governance` | Catalog, glossary, stewardship and data contracts                    |
 | `internal/lineage`    | Column-level lineage as OpenLineage, with impact analysis            |
 | `internal/rbqm`       | Key risk indicators, quality tolerance limits and central monitoring |
+| `internal/workbench`  | SQL workbench schema browser, saved queries and read-only guard      |
 | `internal/migration`  | Legacy extract mapping, reconciliation and cutover planning          |
 | `internal/interop`    | FHIR R4, HL7 v2, ODM and Dataset-JSON adapters                       |
 | `internal/strategy`   | Vendor scoring, build or buy, total cost of ownership                |

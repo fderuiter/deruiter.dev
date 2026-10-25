@@ -90,6 +90,15 @@ Estimands.
 
 ***
 
+### interventionType
+
+> `readonly` **interventionType**: [`CodedValue`](CodedValue.md)
+
+Type of the experimental intervention, coded in Intervention Type
+Response (C99078), for example `C1909`. Empty when the study names none.
+
+***
+
 ### model
 
 > `readonly` **model**: `string`
@@ -111,6 +120,16 @@ Intervention model NCI EVS code.
 > `readonly` **objectives**: readonly [`ObjectiveDefinition`](ObjectiveDefinition.md)[]
 
 Objectives and their endpoints.
+
+***
+
+### pharmacologicClass
+
+> `readonly` **pharmacologicClass**: [`CodedValue`](CodedValue.md) & `object` \| `null`
+
+MED-RT Established Pharmacologic Class of the investigational product,
+with the MED-RT release it was taken from. Null when the study names no
+investigational product with a class.
 
 ***
 

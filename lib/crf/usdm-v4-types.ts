@@ -422,6 +422,17 @@ export interface UsdmV4StudyIntervention extends UsdmV4Named {
   instanceType: "StudyIntervention";
 }
 
+/**
+ * A product administered in the study: its dose form, whether it is an
+ * investigational product, and its pharmacologic class (MED-RT).
+ */
+export interface UsdmV4AdministrableProduct extends UsdmV4Named {
+  administrableDoseForm: UsdmV4AliasCode;
+  productDesignation: UsdmV4Code;
+  pharmacologicClass?: UsdmV4Code | null;
+  instanceType: "AdministrableProduct";
+}
+
 /** One version of the study definition. */
 export interface UsdmV4StudyVersion extends UsdmV4Base {
   versionIdentifier: string;
@@ -433,6 +444,7 @@ export interface UsdmV4StudyVersion extends UsdmV4Base {
   roles?: UsdmV4StudyRole[];
   organizations?: UsdmV4Organization[];
   studyInterventions?: UsdmV4StudyIntervention[];
+  administrableProducts?: UsdmV4AdministrableProduct[];
   biomedicalConcepts?: UsdmV4BiomedicalConcept[];
   bcSurrogates?: UsdmV4BiomedicalConceptSurrogate[];
   instanceType: "StudyVersion";

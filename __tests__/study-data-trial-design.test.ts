@@ -7,6 +7,7 @@ import {
   readStudyDefinition,
   runPipeline,
 } from "@/lib/study-data";
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 
 const options = { seed: 301, nSubjects: 90 };
 const trial = (definition = DEMO_301_STUDY) =>
@@ -40,8 +41,48 @@ describe("USDM-derived trial design", () => {
       ["TE", 5],
       ["TV", 7],
       ["TI", 3],
-      ["TS", 11],
+      ["TS", 12],
     ]);
+  });
+
+  it("codes TS parameters within 8 characters and names the intervention type and class", () => {
+    const ts = trial().find((dataset) => dataset.name === "TS")!;
+    const codes = ts.columns.TSPARMCD as string[];
+    expect(codes.every((code) => code.length <= 8)).toBe(true);
+    const row = (code: string) => {
+      const index = codes.indexOf(code);
+      expect(index, code).toBeGreaterThanOrEqual(0);
+      return Object.fromEntries(
+        ["TSVAL", "TSVALCD", "TSVCDREF", "TSVCDVER"].map((name) => [
+          name,
+          ts.columns[name][index],
+        ])
+      );
+    };
+    expect(row("INTTYPE")).toEqual({
+      TSVAL: "DRUG",
+      TSVALCD: "C1909",
+      TSVCDREF: "CDISC",
+      TSVCDVER: CLINICAL_STANDARDS_PROFILE.CT.packageDate,
+    });
+    expect(row("PCLAS")).toEqual({
+      TSVAL: "Angiotensin 2 Receptor Blocker [EPC]",
+      TSVALCD: "N0000175561",
+      TSVCDREF: "MED-RT",
+      TSVCDVER: "2026.10.05",
+    });
+    expect(row("SDTIGVER").TSVAL).toBe("3.4");
+    expect(codes).not.toContain("ADAMIGVER");
+  });
+
+  it("leaves out PCLAS when the study names no investigational product", () => {
+    const modified = structuredClone(DEMO_301_USDM);
+    modified.study.versions![0].administrableProducts = [];
+    const ts = trial(readStudyDefinition(modified)).find(
+      (dataset) => dataset.name === "TS"
+    )!;
+    expect(ts.columns.TSPARMCD).not.toContain("PCLAS");
+    expect(ts.columns.TSPARMCD).toContain("INTTYPE");
   });
 
   it("changes TA when the USDM arm changes", () => {

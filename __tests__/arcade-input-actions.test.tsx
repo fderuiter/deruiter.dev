@@ -496,10 +496,23 @@ describe("generated copy", () => {
     ).toEqual([
       {
         key: "D / Door Click",
+        touch: "Tap Get the package",
         action: "Answer the Door",
         description: "Press D.",
       },
     ]);
+  });
+
+  it("writes the manual's touch column from the map's touch hints, once per phrase (#2796)", () => {
+    const [row] = manualControlsFromActions(DUCK_ACTIONS, [
+      { group: "tricks", action: "Training Tricks", description: "Q-W-E-R." },
+    ]);
+    const tricks = DUCK_ACTIONS.names
+      .map((name) => DUCK_ACTIONS.actions[name])
+      .filter((definition) => definition.group === "tricks")
+      .map((definition) => definition.touchLabel ?? `Tap ${definition.label}`);
+    expect(row.touch).toBe(Array.from(new Set(tricks)).join(" / "));
+    expect(row.touch).not.toMatch(/Press|Key[A-Z]/);
   });
 });
 

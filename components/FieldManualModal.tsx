@@ -14,11 +14,13 @@ import {
   IconCheck,
   IconArrowRight,
   IconBook2,
+  IconChevronDown,
 } from "@tabler/icons-react";
 import { FieldManualData } from "@/types/game-manual";
 import { useAudio } from "@/components/providers/AudioProvider";
 import { ModalContainer } from "@/components/ui/ModalContainer";
-import { useCabinetTouch } from "@/components/arcade/mobile";
+import { useCabinetTouch, useFormFactor } from "@/components/arcade/mobile";
+import { BottomSheet } from "@/components/arcade/mobile/ui";
 
 /** A game action the manual offers, such as replaying a tutorial. */
 export interface FieldManualAction {
@@ -53,6 +55,323 @@ function useIsClient(): boolean {
   );
 }
 
+// The manual's sections, shared by the desktop tabs and the phone accordion.
+
+function ObjectiveBanner({ manual }: { manual: FieldManualData }) {
+  return (
+    <div className="bg-gradient-to-r from-cyan-950/40 via-zinc-900/50 to-zinc-950 border border-cyan-500/20 rounded-2xl p-5 relative overflow-hidden">
+      <div className="flex items-start gap-3.5">
+        <div className="p-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 shrink-0 mt-0.5">
+          <IconTarget className="w-5 h-5" />
+        </div>
+        <div className="space-y-1.5">
+          <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-cyan-300">
+            Primary Mission Objective
+          </h3>
+          <p className="text-sm sm:text-base text-zinc-100 font-medium leading-relaxed">
+            {manual.objective}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ManualActionCard({
+  action,
+  onClose,
+}: {
+  action: FieldManualAction;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-zinc-900/40 p-4">
+      {action.description && (
+        <p className="min-w-0 text-sm text-zinc-300 break-words">
+          {action.description}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={() => {
+          onClose();
+          action.onSelect();
+        }}
+        className="min-h-[44px] rounded-lg border border-amber-500 bg-amber-500/10 px-4 font-mono text-xs font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+      >
+        {action.label}
+      </button>
+    </div>
+  );
+}
+
+function QuickSummary({ manual }: { manual: FieldManualData }) {
+  return (
+    <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 space-y-2.5">
+      <div className="flex items-center gap-2 text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
+        <IconSparkles className="w-4 h-4 text-amber-400" />
+        <span>Executive Overview</span>
+      </div>
+      <p className="text-sm text-zinc-300 leading-relaxed font-sans">
+        {manual.quickSummary}
+      </p>
+    </div>
+  );
+}
+
+// The phone manual passes `phone` so its small labels read at 12px (#2796).
+function RulesList({
+  manual,
+  phone = false,
+}: {
+  manual: FieldManualData;
+  phone?: boolean;
+}) {
+  return (
+    <>
+      {/* Detailed Rules */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
+          <IconShieldCheck className="w-4 h-4 text-emerald-400" />
+          <span>Core Engine Mechanics & Constraints</span>
+        </h3>
+        <div className="grid grid-cols-1 gap-3">
+          {manual.rules.map((rule, idx) => (
+            <div
+              key={idx}
+              className="bg-zinc-900/30 border border-zinc-800/60 rounded-2xl p-4 space-y-1.5"
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h4 className="text-sm font-bold text-white font-sans">
+                  {rule.title}
+                </h4>
+                {rule.badge && (
+                  <span
+                    className={`${phone ? "text-xs" : "text-[10px]"} font-mono font-bold px-2 py-0.5 bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-md`}
+                  >
+                    {rule.badge}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400 leading-relaxed font-sans">
+                {rule.detail}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pro Tips */}
+      {manual.proTips.length > 0 && (
+        <div className="bg-amber-950/20 border border-amber-500/20 rounded-2xl p-4 space-y-2.5">
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
+            <IconBulb className="w-4 h-4" />
+            <span>Tactical Pro Tips</span>
+          </div>
+          <ul className="space-y-1.5">
+            {manual.proTips.map((tip, idx) => (
+              <li
+                key={idx}
+                className="flex items-start gap-2 text-xs text-zinc-300 font-sans"
+              >
+                <span className="text-amber-400 font-mono mt-0.5">•</span>
+                <span className="leading-relaxed">{tip}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </>
+  );
+}
+
+function LoreStory({
+  manual,
+  phone = false,
+}: {
+  manual: FieldManualData;
+  phone?: boolean;
+}) {
+  return (
+    <>
+      <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 space-y-3">
+        <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
+          <IconCpu className="w-4 h-4" />
+          <span>{manual.lore.title}</span>
+        </div>
+        <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
+          {manual.lore.story}
+        </p>
+      </div>
+
+      {/* Real World Tech Stack */}
+      <div className="space-y-2">
+        <div
+          className={`${phone ? "text-xs" : "text-[11px]"} font-mono font-bold text-zinc-400 uppercase tracking-wider`}
+        >
+          Real-World Technologies & Theoretical Foundations:
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {manual.lore.realWorldTech.map((tech, idx) => (
+            <span
+              key={idx}
+              className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono font-medium text-cyan-300 flex items-center gap-1.5"
+            >
+              <IconCheck className="w-3 h-3 text-cyan-400" />
+              <span>{tech}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** One accordion section of the phone manual. */
+function PhoneSection({
+  title,
+  icon,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <details
+      open={defaultOpen}
+      className="group rounded-2xl border border-zinc-800 bg-zinc-950/40"
+    >
+      <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-2xl px-4 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 [&::-webkit-details-marker]:hidden">
+        <span aria-hidden="true" className="text-cyan-400">
+          {icon}
+        </span>
+        <span className="flex-1">{title}</span>
+        <IconChevronDown
+          aria-hidden="true"
+          className="h-4 w-4 transition-transform group-open:rotate-180 motion-reduce:transition-none"
+        />
+      </summary>
+      <div className="space-y-4 px-4 pb-4 pt-1 font-sans">{children}</div>
+    </details>
+  );
+}
+
+/**
+ * The control table on a phone. A row built from the game's action map
+ * names its touch control; any other row keeps its key.
+ */
+function PhoneControlTable({ manual }: { manual: FieldManualData }) {
+  return (
+    <table className="w-full border-separate border-spacing-y-2 text-left">
+      <caption className="sr-only">Controls for {manual.title}</caption>
+      <thead className="sr-only">
+        <tr>
+          <th scope="col">Action</th>
+          <th scope="col">Control</th>
+        </tr>
+      </thead>
+      <tbody>
+        {manual.controls.map((ctrl, idx) => (
+          <tr key={idx} className="align-top">
+            <th
+              scope="row"
+              className="rounded-l-xl border border-r-0 border-zinc-800 bg-zinc-900/40 p-3 font-normal"
+            >
+              <span className="block text-sm font-bold text-white">
+                {ctrl.action}
+              </span>
+              <span className="mt-1 block text-xs leading-relaxed text-zinc-400">
+                {ctrl.description}
+              </span>
+            </th>
+            <td className="rounded-r-xl border border-l-0 border-zinc-800 bg-zinc-900/40 p-3 text-right">
+              {(ctrl.touch ?? ctrl.key) && (
+                <kbd
+                  data-control={ctrl.touch ? "touch" : "key"}
+                  className="inline-block rounded-lg border border-zinc-700/80 bg-zinc-950 px-2 py-1 font-mono text-xs font-bold text-cyan-300"
+                >
+                  {ctrl.touch ?? ctrl.key}
+                </kbd>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+/**
+ * The manual on a phone (#2796): a full-height bottom sheet with the sections
+ * as an accordion, Objective open first, and no text below 12px.
+ */
+function PhoneManual({
+  isOpen,
+  onClose,
+  manual,
+  action,
+}: FieldManualModalProps) {
+  return (
+    <BottomSheet
+      open={isOpen}
+      onClose={onClose}
+      title={manual.title}
+      initialSnap="full"
+      testId="field-manual-sheet"
+      portaled
+    >
+      <div className="field-manual-phone space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`rounded-full border px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-wider ${manual.badgeBg}`}
+          >
+            {manual.badge}
+          </span>
+          <span className="font-mono text-xs text-zinc-400">Field manual</span>
+        </div>
+        <p className="font-sans text-sm text-zinc-400">{manual.subtitle}</p>
+        {action && <ManualActionCard action={action} onClose={onClose} />}
+        <PhoneSection
+          title="Objective"
+          icon={<IconTarget className="h-4 w-4" />}
+          defaultOpen
+        >
+          <ObjectiveBanner manual={manual} />
+          <QuickSummary manual={manual} />
+        </PhoneSection>
+        <PhoneSection
+          title="Controls"
+          icon={<IconKeyboard className="h-4 w-4" />}
+        >
+          <PhoneControlTable manual={manual} />
+        </PhoneSection>
+        <PhoneSection
+          title="Rules and pro tips"
+          icon={<IconShieldCheck className="h-4 w-4" />}
+        >
+          <RulesList manual={manual} phone />
+        </PhoneSection>
+        <PhoneSection
+          title="Engineering lore"
+          icon={<IconCpu className="h-4 w-4" />}
+        >
+          <LoreStory manual={manual} phone />
+        </PhoneSection>
+        <button
+          type="button"
+          onClick={onClose}
+          className="min-h-11 w-full rounded-xl bg-cyan-400 font-mono text-xs font-bold uppercase tracking-wider text-black hover:bg-cyan-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
+        >
+          Ready to Play!
+        </button>
+      </div>
+    </BottomSheet>
+  );
+}
+
 export function FieldManualModal({
   isOpen,
   onClose,
@@ -66,6 +385,8 @@ export function FieldManualModal({
   // 44px controls and no text under 12px (#2042). It renders in a portal, so
   // it carries its own class rather than inheriting the cabinet's rules.
   const inCabinet = useCabinetTouch();
+  // On a phone the manual is a bottom sheet instead of the tabbed card.
+  const phone = useFormFactor({ enabled: isOpen }) === "phone";
 
   // Reset tab to objective on open
   useEffect(() => {
@@ -87,6 +408,18 @@ export function FieldManualModal({
   };
 
   if (!isClient) return null;
+
+  if (phone) {
+    return createPortal(
+      <PhoneManual
+        isOpen={isOpen}
+        onClose={onClose}
+        manual={manual}
+        action={action}
+      />,
+      document.body
+    );
+  }
 
   return createPortal(
     <AnimatePresence>
@@ -204,53 +537,13 @@ export function FieldManualModal({
                 transition={{ duration: 0.2 }}
                 className="space-y-5"
               >
-                {/* Primary Objective Banner */}
-                <div className="bg-gradient-to-r from-cyan-950/40 via-zinc-900/50 to-zinc-950 border border-cyan-500/20 rounded-2xl p-5 relative overflow-hidden">
-                  <div className="flex items-start gap-3.5">
-                    <div className="p-2.5 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-400 shrink-0 mt-0.5">
-                      <IconTarget className="w-5 h-5" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-cyan-300">
-                        Primary Mission Objective
-                      </h3>
-                      <p className="text-sm sm:text-base text-zinc-100 font-medium leading-relaxed">
-                        {manual.objective}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <ObjectiveBanner manual={manual} />
 
                 {action && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-500/30 bg-zinc-900/40 p-4">
-                    {action.description && (
-                      <p className="min-w-0 text-sm text-zinc-300 break-words">
-                        {action.description}
-                      </p>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        action.onSelect();
-                      }}
-                      className="min-h-[44px] rounded-lg border border-amber-500 bg-amber-500/10 px-4 font-mono text-xs font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 active:scale-[0.98]"
-                    >
-                      {action.label}
-                    </button>
-                  </div>
+                  <ManualActionCard action={action} onClose={onClose} />
                 )}
 
-                {/* Quick Summary Card */}
-                <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 space-y-2.5">
-                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                    <IconSparkles className="w-4 h-4 text-amber-400" />
-                    <span>Executive Overview</span>
-                  </div>
-                  <p className="text-sm text-zinc-300 leading-relaxed font-sans">
-                    {manual.quickSummary}
-                  </p>
-                </div>
+                <QuickSummary manual={manual} />
 
                 {/* Next Step CTA */}
                 <div className="flex justify-end pt-2">
@@ -327,58 +620,7 @@ export function FieldManualModal({
                 transition={{ duration: 0.2 }}
                 className="space-y-5"
               >
-                {/* Detailed Rules */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-mono font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-2">
-                    <IconShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Core Engine Mechanics & Constraints</span>
-                  </h3>
-                  <div className="grid grid-cols-1 gap-3">
-                    {manual.rules.map((rule, idx) => (
-                      <div
-                        key={idx}
-                        className="bg-zinc-900/30 border border-zinc-800/60 rounded-2xl p-4 space-y-1.5"
-                      >
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <h4 className="text-sm font-bold text-white font-sans">
-                            {rule.title}
-                          </h4>
-                          {rule.badge && (
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-zinc-800 text-zinc-300 border border-zinc-700 rounded-md">
-                              {rule.badge}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-xs text-zinc-400 leading-relaxed font-sans">
-                          {rule.detail}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Pro Tips */}
-                {manual.proTips.length > 0 && (
-                  <div className="bg-amber-950/20 border border-amber-500/20 rounded-2xl p-4 space-y-2.5">
-                    <div className="flex items-center gap-2 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                      <IconBulb className="w-4 h-4" />
-                      <span>Tactical Pro Tips</span>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {manual.proTips.map((tip, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-2 text-xs text-zinc-300 font-sans"
-                        >
-                          <span className="text-amber-400 font-mono mt-0.5">
-                            •
-                          </span>
-                          <span className="leading-relaxed">{tip}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <RulesList manual={manual} />
 
                 <div className="flex justify-between items-center pt-2">
                   <button
@@ -407,33 +649,7 @@ export function FieldManualModal({
                 transition={{ duration: 0.2 }}
                 className="space-y-5"
               >
-                <div className="bg-zinc-900/40 border border-zinc-800/80 rounded-2xl p-5 space-y-3">
-                  <div className="flex items-center gap-2 text-xs font-mono font-bold text-cyan-400 uppercase tracking-wider">
-                    <IconCpu className="w-4 h-4" />
-                    <span>{manual.lore.title}</span>
-                  </div>
-                  <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
-                    {manual.lore.story}
-                  </p>
-                </div>
-
-                {/* Real World Tech Stack */}
-                <div className="space-y-2">
-                  <div className="text-[11px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                    Real-World Technologies & Theoretical Foundations:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {manual.lore.realWorldTech.map((tech, idx) => (
-                      <span
-                        key={idx}
-                        className="px-3 py-1 bg-zinc-900 border border-zinc-800 rounded-xl text-xs font-mono font-medium text-cyan-300 flex items-center gap-1.5"
-                      >
-                        <IconCheck className="w-3 h-3 text-cyan-400" />
-                        <span>{tech}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                <LoreStory manual={manual} />
 
                 <div className="flex justify-between items-center pt-2">
                   <button

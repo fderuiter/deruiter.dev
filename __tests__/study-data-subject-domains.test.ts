@@ -183,10 +183,10 @@ describe("SDTM subject tabulation", () => {
     expect(dm.columns.DTHFL.every((value) => value === null)).toBe(true);
 
     // SDTMIG 3.4 order: RFXENDTC, RFICDTC, RFPENDTC, DTHDTC, DTHFL, SITEID.
-    // RFICDTC is out of place and RFPENDTC missing (#2804), so the death
-    // variables sit between the reference dates and SITEID.
+    // RFICDTC is out of place (CORE-000852), so the death variables follow
+    // RFPENDTC (#2804).
     const names = dm.variables.map((variable) => variable.name);
-    expect(names.indexOf("DTHDTC")).toBe(names.indexOf("RFXENDTC") + 1);
+    expect(names.indexOf("DTHDTC")).toBe(names.indexOf("RFPENDTC") + 1);
     expect(names.indexOf("DTHFL")).toBe(names.indexOf("DTHDTC") + 1);
     const meta = (name: string) =>
       dm.variables.find((variable) => variable.name === name);
@@ -202,6 +202,135 @@ describe("SDTM subject tabulation", () => {
       origin: "Derived",
       method: "DEATH_FLAG",
       codelist: "NY",
+    });
+  });
+
+  it("gives every complete end date its study day (#2804)", () => {
+    const fullDate = (value: unknown) =>
+      typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+        ? value
+        : null;
+    const reference = new Map(
+      records(get("DM")).map((record) => [
+        record.USUBJID,
+        fullDate(record.RFSTDTC),
+      ])
+    );
+    const studyDay = (date: string, start: string) => {
+      const days = (Date.parse(date) - Date.parse(start)) / 86400000;
+      return days >= 0 ? days + 1 : days;
+    };
+    let derived = 0;
+    for (const [domain, start] of [
+      ["AE", "AESTDY"],
+      ["EX", "EXSTDY"],
+      ["SV", "SVSTDY"],
+    ] as const) {
+      const dataset = get(domain);
+      const names = dataset.variables.map((variable) => variable.name);
+      expect(names.indexOf(`${domain}ENDY`)).toBe(names.indexOf(start) + 1);
+      expect(
+        dataset.variables.find(({ name }) => name === `${domain}ENDY`)
+      ).toMatchObject({
+        role: "Timing",
+        type: "integer",
+        origin: "Derived",
+        method: "STUDY_DAY",
+      });
+      for (const record of records(dataset)) {
+        const end = fullDate(record[`${domain}ENDTC`]);
+        const rfstdtc = reference.get(record.USUBJID) ?? null;
+        expect(record[`${domain}ENDY`]).toBe(
+          end && rfstdtc ? studyDay(end, rfstdtc) : null
+        );
+        if (end && rfstdtc) derived += 1;
+      }
+    }
+    // Every dosed subject has an exposure end and visits, so the check is
+    // not vacuous.
+    expect(derived).toBeGreaterThan(get("EX").rowCount);
+  });
+
+  it("collects RACE as Race As Collected and carries it to ADSL (#2804)", () => {
+    const races = new Set([
+      "AMERICAN INDIAN OR ALASKA NATIVE",
+      "ASIAN",
+      "BLACK OR AFRICAN AMERICAN",
+      "NATIVE HAWAIIAN OR PACIFIC ISLANDER",
+      "WHITE",
+    ]);
+    const collected = new Map(
+      records(source.find((dataset) => dataset.name === "DM")!).map(
+        (record) => [record.USUBJID, record.RACE]
+      )
+    );
+    const dm = get("DM");
+    for (const record of records(dm)) {
+      expect(races.has(record.RACE as string)).toBe(true);
+      expect(record.RACE).toBe(collected.get(record.USUBJID));
+    }
+    const names = dm.variables.map((variable) => variable.name);
+    expect(names.indexOf("RACE")).toBe(names.indexOf("SEX") + 1);
+    expect(dm.variables.find(({ name }) => name === "RACE")).toMatchObject({
+      label: "Race",
+      role: "Record Qualifier",
+      origin: "Collected",
+      source: "DM.RACE",
+      codelist: "RACEC",
+    });
+
+    const adsl = run.datasets.find((dataset) => dataset.name === "ADSL")!;
+    const dmRace = new Map(
+      records(dm).map((record) => [record.USUBJID, record.RACE])
+    );
+    for (const record of records(adsl))
+      expect(record.RACE).toBe(dmRace.get(record.USUBJID));
+  });
+
+  it("ends each subject's participation on their last complete date (#2804)", () => {
+    const fullDate = (value: unknown) =>
+      typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)
+        ? value
+        : null;
+    const last = new Map<unknown, { date: string; sources: Set<unknown> }>();
+    for (const dataset of source) {
+      const dates = dataset.variables
+        .filter((variable) => variable.type === "date")
+        .map((variable) => variable.name);
+      for (const record of records(dataset)) {
+        for (const name of dates) {
+          const date = fullDate(record[name]);
+          if (!date) continue;
+          const latest = last.get(record.USUBJID);
+          if (!latest || date > latest.date)
+            last.set(record.USUBJID, {
+              date,
+              sources: new Set([record.SRCID]),
+            });
+          else if (date === latest.date) latest.sources.add(record.SRCID);
+        }
+      }
+    }
+    const dm = get("DM");
+    records(dm).forEach((record, index) => {
+      const expected = last.get(record.USUBJID)!;
+      expect(record.RFPENDTC).toBe(expected.date);
+      expect(record.RFPENDTC! >= (record.RFICDTC as string)).toBe(true);
+      if (record.RFENDTC)
+        expect(record.RFPENDTC! >= (record.RFENDTC as string)).toBe(true);
+      // The lineage names a record dated on the last day of participation.
+      expect(dm.lineage![index].some((id) => expected.sources.has(id))).toBe(
+        true
+      );
+    });
+    const names = dm.variables.map((variable) => variable.name);
+    expect(names.indexOf("RFPENDTC")).toBe(names.indexOf("RFXENDTC") + 1);
+    expect(dm.variables.find(({ name }) => name === "RFPENDTC")).toMatchObject({
+      label: "Date/Time of End of Participation",
+      role: "Record Qualifier",
+      type: "date",
+      origin: "Derived",
+      method: "LAST_PARTICIPATION",
     });
   });
 

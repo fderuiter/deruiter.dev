@@ -50,6 +50,20 @@ const SERIOUSNESS_REASONS = [
 ] as const;
 
 /**
+ * The race a subject reports, by cumulative probability, as the EDC
+ * collects it with Race As Collected (C128689) submission values. The shares
+ * are round, illustrative figures for a North American enrollment, not
+ * census or trial statistics.
+ */
+const RACES = [
+  { value: "WHITE", upTo: 0.7 },
+  { value: "BLACK OR AFRICAN AMERICAN", upTo: 0.84 },
+  { value: "ASIAN", upTo: 0.95 },
+  { value: "AMERICAN INDIAN OR ALASKA NATIVE", upTo: 0.98 },
+  { value: "NATIVE HAWAIIAN OR PACIFIC ISLANDER", upTo: 1 },
+] as const;
+
+/**
  * The fictional sites every synthetic study enrolls at, as the EDC's site
  * list holds them: a site number and the site's country (ISO 3166-1
  * alpha-3). No site names, investigators or addresses are invented. The
@@ -123,6 +137,7 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     DATE("CONSENTDTC", "Informed consent date"),
     NUM("AGE", "Age at consent"),
     TEXT("SEX", "Sex"),
+    TEXT("RACE", "Race"),
     TEXT("SCREENFL", "Screening outcome"),
     TEXT("RANDFL", "Randomized flag"),
   ],
@@ -321,6 +336,8 @@ export function generateCollectedData(
     const age = 25 + Math.floor(pick("DM", "age") * 51);
     const sex = pick("DM", "sex") < 0.5 ? "F" : "M";
     const site = SITES[Math.floor(pick("DM", "site") * SITES.length)];
+    const raceDraw = pick("DM", "race");
+    const race = RACES.find(({ upTo }) => raceDraw < upTo)!.value;
     rows.DM.push({
       SRCID: sourceId(studyId, "DM", number, "1"),
       USUBJID: subject,
@@ -329,6 +346,7 @@ export function generateCollectedData(
       CONSENTDTC: consentDate,
       AGE: age,
       SEX: sex,
+      RACE: race,
       SCREENFL: screenFailure ? "FAIL" : "PASS",
       RANDFL: randomized ? "Y" : "N",
     });

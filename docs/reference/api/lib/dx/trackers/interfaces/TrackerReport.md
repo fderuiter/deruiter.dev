@@ -32,6 +32,14 @@
 
 ***
 
+### staleClaims
+
+> **staleClaims**: [`StaleClaim`](StaleClaim.md)[] \| `null`
+
+Stale claims, or null when claim activity could not be read.
+
+***
+
 ### unresolved
 
 > **unresolved**: `number`[]

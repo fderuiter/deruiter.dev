@@ -81,6 +81,7 @@ const ADAM_CODELISTS: Readonly<Record<string, CodelistId>> = {
   AESER: "NY",
   AEACN: "ACN",
   SEX: "SEX",
+  RACE: "RACEC",
   AGEGR1: "AGEGR1",
   EOSSTT: "SBJTSTAT",
   DTYPE: "DTYPE",

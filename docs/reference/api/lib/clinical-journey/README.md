@@ -11,6 +11,7 @@
 - [ClinicalJourneyStep](interfaces/ClinicalJourneyStep.md)
 - [PlannedJourneyItem](interfaces/PlannedJourneyItem.md)
 - [RelatedCaseStudy](interfaces/RelatedCaseStudy.md)
+- [RelatedGame](interfaces/RelatedGame.md)
 
 ## Type Aliases
 
@@ -23,6 +24,8 @@
 - [JOURNEY\_EVIDENCE\_LABELS](variables/JOURNEY_EVIDENCE_LABELS.md)
 - [PLANNED\_JOURNEY\_ITEMS](variables/PLANNED_JOURNEY_ITEMS.md)
 - [RELATED\_CASE\_STUDIES](variables/RELATED_CASE_STUDIES.md)
+- [RELATED\_GAME\_LABEL](variables/RELATED_GAME_LABEL.md)
+- [RELATED\_GAMES](variables/RELATED_GAMES.md)
 
 ## Functions
 

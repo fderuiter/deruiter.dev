@@ -9,6 +9,7 @@ import {
   getSimulatedStats,
 } from "@/lib/github";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { ClinicalJourneyHighlight } from "@/components/clinical-journey/ClinicalJourneyHighlight";
 import { PageLayout } from "@/components/PageLayout";
 import { resolveBaseUrl } from "@/lib/domain";
 import { getBreadcrumbSchema } from "@/lib/seo";
@@ -110,6 +111,10 @@ export default async function CaseStudiesPage() {
           <p className="text-xs sm:text-sm font-mono text-zinc-400 tracking-wider uppercase">
             What I built, why I built it, and how the pieces fit together.
           </p>
+        </div>
+
+        <div className="w-full max-w-6xl">
+          <ClinicalJourneyHighlight headingLevel={2} />
         </div>
 
         {/* Dynamic Bento Showcase */}

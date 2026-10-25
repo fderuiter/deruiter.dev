@@ -179,7 +179,7 @@ export function NewsletterForm({
               type="submit"
               disabled={status === "submitting"}
               onMouseEnter={() => playHover()}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-accent/10 hover:bg-accent/20 border border-accent/30 hover:border-accent/60 rounded-xl text-xs font-mono font-bold text-accent transition-all duration-200 active:scale-[0.98] disabled:opacity-50 cursor-pointer shrink-0"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 pointer-coarse:min-h-11 bg-accent/10 hover:bg-accent/20 border border-accent/30 hover:border-accent/60 rounded-xl text-xs font-mono font-bold text-accent transition-all duration-200 active:scale-[0.98] disabled:opacity-50 cursor-pointer shrink-0"
             >
               {status === "submitting" ? (
                 <>

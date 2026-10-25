@@ -91,7 +91,7 @@ export function MerchView() {
       </h2>
       <MerchGrid products={MERCH_PRODUCTS} status={MERCH_STORE_STATUS} />
 
-      <p className="mt-8 break-words text-xs text-zinc-500">
+      <p className="mt-8 break-words text-xs text-zinc-400">
         Product pictures are flat mockups of the planned items, not photos of
         printed goods.
       </p>

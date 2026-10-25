@@ -14,6 +14,12 @@ One version of the study definition.
 
 ## Properties
 
+### bcSurrogates?
+
+> `optional` **bcSurrogates?**: [`UsdmV4BiomedicalConceptSurrogate`](UsdmV4BiomedicalConceptSurrogate.md)[]
+
+***
+
 ### biomedicalConcepts?
 
 > `optional` **biomedicalConcepts?**: [`UsdmV4BiomedicalConcept`](UsdmV4BiomedicalConcept.md)[]
@@ -61,6 +67,12 @@ One version of the study definition.
 ### rationale
 
 > **rationale**: `string`
+
+***
+
+### roles?
+
+> `optional` **roles?**: [`UsdmV4StudyRole`](UsdmV4StudyRole.md)[]
 
 ***
 

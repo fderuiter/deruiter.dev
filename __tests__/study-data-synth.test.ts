@@ -35,7 +35,7 @@ describe("seeded synthetic collection", () => {
       .update(JSON.stringify(datasets))
       .digest("hex");
     expect(digest).toBe(
-      "dd19889ab6e33e1f927c372f6e85e466777cbed2add2af571b5ecbf1874f2d52"
+      "d0ad7aae03f8c7e6e59bc0c2d7ad24f934a6d1e5d05d6fab11939b0c0757baa0"
     );
   });
 

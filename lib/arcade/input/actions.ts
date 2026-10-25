@@ -493,14 +493,16 @@ export interface ManualControlSpec {
 /** One row of a field manual's control table, the shape `ManualControl` takes. */
 export interface ManualControlRow {
   readonly key: string;
+  /** The same controls on a touch screen, such as "Tap Jump", for phones. */
+  readonly touch: string;
   readonly action: string;
   readonly description: string;
 }
 
 /**
- * Rows for a field manual's control table. The keys come from the map, so
- * the manual names the keys the game binds; the title and prose come from
- * the spec.
+ * Rows for a field manual's control table. The keys and the touch hints
+ * come from the map, so the manual names the keys the game binds and, on a
+ * phone, the touch control for each; the title and prose come from the spec.
  *
  * @param map - The action map.
  * @param specs - One entry per row.
@@ -512,8 +514,16 @@ export function manualControlsFromActions(
 ): ManualControlRow[] {
   return specs.map((spec) => {
     const keys = groupRow(map, spec.group).key;
+    const touch = Array.from(
+      new Set(
+        groupActions(map, spec.group).map(
+          (definition) => actionHintText(definition).touch
+        )
+      )
+    ).join(" / ");
     return Object.freeze({
       key: spec.alsoKey ? `${keys} / ${spec.alsoKey}` : keys,
+      touch,
       action: spec.action,
       description: spec.description,
     });

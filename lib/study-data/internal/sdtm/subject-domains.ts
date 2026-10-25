@@ -472,9 +472,19 @@ function text(value: CellValue): string | null {
 function num(value: CellValue): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
+/**
+ * A complete calendar date, or null. The round trip rejects dates that do
+ * not exist, such as 30 February, which `Date` would otherwise roll over
+ * into March and turn into a wrong study day (#2605).
+ */
 function isoDate(value: CellValue): string | null {
   const valueText = text(value);
-  return valueText && /^\d{4}-\d{2}-\d{2}$/.test(valueText) ? valueText : null;
+  if (!valueText || !/^\d{4}-\d{2}-\d{2}$/.test(valueText)) return null;
+  const parsed = new Date(`${valueText}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) &&
+    parsed.toISOString().slice(0, 10) === valueText
+    ? valueText
+    : null;
 }
 function day(date: CellValue, reference: CellValue): number | null {
   const d = isoDate(date);

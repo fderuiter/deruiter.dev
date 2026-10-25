@@ -520,6 +520,7 @@
 - [lib/study-data/internal/sdtm/subject-domains](lib/study-data/internal/sdtm/subject-domains/README.md)
 - [lib/study-data/internal/sdtm/trial-design](lib/study-data/internal/sdtm/trial-design/README.md)
 - [lib/study-data/internal/synth/generate-collected-data](lib/study-data/internal/synth/generate-collected-data/README.md)
+- [lib/study-data/internal/synth/scenarios](lib/study-data/internal/synth/scenarios/README.md)
 - [lib/study-data/internal/tlf/evaluate](lib/study-data/internal/tlf/evaluate/README.md)
 - [lib/study-data/internal/tlf/html](lib/study-data/internal/tlf/html/README.md)
 - [lib/study-data/internal/tlf/km](lib/study-data/internal/tlf/km/README.md)

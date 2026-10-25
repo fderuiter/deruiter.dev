@@ -27,6 +27,14 @@ Hashed output files.
 
 ***
 
+### scenarios?
+
+> `readonly` `optional` **scenarios?**: readonly [`AppliedScenario`](AppliedScenario.md)[]
+
+The scenarios applied, present only when the run asked for some.
+
+***
+
 ### seed
 
 > `readonly` **seed**: `number`

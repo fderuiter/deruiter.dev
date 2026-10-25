@@ -27,6 +27,8 @@ const DIMENSIONS: Readonly<Record<Kind, DqDimension>> = {
   baseline: "consistency",
   adam: "consistency",
   exception: "accuracy",
+  duplicate: "uniqueness",
+  unit: "consistency",
 };
 
 /** What each kind of rule asks of a dataset, and why. */
@@ -75,6 +77,16 @@ const TEXT: Readonly<
     name: (d, v) => `${d}.${v} values are plausible`,
     rationale:
       "Values that pass every format check can still be unlikely; a reviewer confirms each one.",
+  },
+  duplicate: {
+    name: (d) => `${d} holds no measurement entered twice`,
+    rationale:
+      "A measurement entered twice is counted twice unless one copy is queried and removed.",
+  },
+  unit: {
+    name: (d, v) => `${d}.${v} is the test's standard unit`,
+    rationale:
+      "A result collected in another unit compares with the rest only after conversion, which the site should confirm.",
   },
 };
 

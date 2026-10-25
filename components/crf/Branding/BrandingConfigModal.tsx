@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React, { useState, useRef } from "react";
 import { StudyBranding } from "@/lib/crf/types";
 import {
@@ -363,7 +364,7 @@ export const BrandingConfigModal: React.FC<BrandingConfigModalProps> = ({
                       footerText: e.target.value,
                     }))
                   }
-                  placeholder="e.g. Modelled on CDASHIG 2.2 (synthetic demo)"
+                  placeholder={`e.g. Modelled on ${standardCitation("CDASHIG")} (synthetic demo)`}
                   className="w-full px-3 py-2 bg-zinc-950 border border-zinc-800 rounded-xl text-xs font-mono text-zinc-200 focus:border-brand-cyan focus:outline-none"
                 />
               </div>

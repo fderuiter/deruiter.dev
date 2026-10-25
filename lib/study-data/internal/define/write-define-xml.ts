@@ -4,6 +4,7 @@
  * two-space indentation, LF line endings and a trailing newline. The same
  * model always gives the same bytes.
  */
+import { CLINICAL_STANDARDS_PROFILE } from "../../standards";
 import type {
   DefineCodeList,
   DefineDocument,
@@ -252,7 +253,7 @@ export function writeDefineXml(define: DefineDocument): string {
       ["xmlns", ODM_NS],
       ["xmlns:def", DEF_NS],
       ["xmlns:xlink", XLINK_NS],
-      ["ODMVersion", "1.3.2"],
+      ["ODMVersion", CLINICAL_STANDARDS_PROFILE.ODM],
       ["FileType", "Snapshot"],
       ["FileOID", define.fileOid],
       ["CreationDateTime", define.createdAt],

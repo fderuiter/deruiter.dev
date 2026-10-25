@@ -766,7 +766,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         "export const r = () => Math.random();\n"
       );
       write(
-        "components/RetroLabyrinth.tsx",
+        "components/retro-labyrinth/useRetroLabyrinthSession.ts",
         "export const r = () => Math.random();\n"
       );
       expect(checkSessionDeterminism(tempDir).status).toBe("pass");
@@ -788,7 +788,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           "lib/laser-loon/engine.ts",
           "lib/clinical-trial-chaos/engine.ts",
           "lib/clinical-trial-chaos/scenarios.ts",
-          "components/RetroLabyrinth.tsx",
+          // The Labyrinth's game code moved here from its component (#2376).
+          "components/retro-labyrinth/useRetroLabyrinthSession.ts",
         ])
       );
     });

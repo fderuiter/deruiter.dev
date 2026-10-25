@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React, { useState, useMemo, startTransition } from "react";
 import {
   StudyProtocol,
@@ -156,7 +157,7 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
                   CDISC Conformance &amp; Regulatory Validation Studio
                 </span>
                 <span className="text-[9px] sm:text-[10px] bg-brand-cyan/15 text-brand-cyan px-1.5 sm:px-2 py-0.5 rounded border border-brand-cyan/30">
-                  CDASH 2.2 / SDTMIG v3.4
+                  {standardCitation("CDASHIG")} / {standardCitation("SDTMIG")}
                 </span>
               </h3>
               <p className="text-[11px] sm:text-xs text-zinc-400 font-sans truncate sm:whitespace-normal">
@@ -247,7 +248,8 @@ export const DiagnosticsDrawer: React.FC<DiagnosticsDrawerProps> = ({
               <p className="text-xs text-zinc-400">
                 Forms, variable identifiers, formulas, codelists and Schedule of
                 Activities visits pass the design checks this studio implements,
-                a subset of CDASHIG 2.2 and SDTMIG 3.4 rules. This is not a full
+                a subset of {standardCitation("CDASHIG")} and{" "}
+                {standardCitation("SDTMIG")} rules. This is not a full
                 conformance validation.
               </p>
             </div>

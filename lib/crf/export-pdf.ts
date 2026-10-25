@@ -1,3 +1,4 @@
+import { standardCitation } from "@/lib/study-data/standards";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { CRFForm, StudyProtocol, CRFField, ExportPdfOptions } from "./types";
@@ -464,7 +465,7 @@ export async function generateStudyPdf(
         ? ""
         : ` • Schedule Consultation: ${consultationUrl()}`;
     doc.text(
-      `${branding.footerText || "CRF Studio"} • CDISC CDASH 2.2${consultationSuffix}`,
+      `${branding.footerText || "CRF Studio"} • CDISC ${standardCitation("CDASHIG")}${consultationSuffix}`,
       margin,
       pageHeight - 7
     );

@@ -1,3 +1,7 @@
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
 import { clamp } from "../game-utils";
 import { escapeXml } from "../utils";
 import {
@@ -946,7 +950,7 @@ ${itemDataNodes}
   return `<?xml version="1.0" encoding="UTF-8"?>
 <ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"
      xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
-     ODMVersion="1.3.2"
+     ODMVersion="${CLINICAL_STANDARDS_PROFILE.ODM}"
      FileType="Snapshot"
      FileOID="ODM.CTC.SNAPSHOT.${Date.now()}"
      CreationDateTime="${timestamp}">
@@ -1125,8 +1129,7 @@ export function generateBIMOReport(
         category: "Protocol Compliance",
         severity: "Major",
         description: `Authored Protocol Error in Form [${err.form}]: ${err.message}`,
-        regulation:
-          "CDISC CDASH 2.2 / SDTM v3.3 Protocol Specification Standard",
+        regulation: `CDISC ${standardCitation("CDASHIG")} / ${standardCitation("SDTMIG")} Protocol Specification Standard`,
       });
     });
   }

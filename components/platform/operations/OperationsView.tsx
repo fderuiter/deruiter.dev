@@ -90,7 +90,7 @@ function Freshness({ dashboard }: { dashboard: OperationsDashboard }) {
               Data products behind these numbers, with their contract freshness
               targets
             </caption>
-            <thead className="text-slate-500">
+            <thead className="text-slate-400">
               <tr>
                 <th scope="col" className="py-1 pr-3 font-normal">
                   Data product
@@ -111,7 +111,7 @@ function Freshness({ dashboard }: { dashboard: OperationsDashboard }) {
                 >
                   <th scope="row" className="py-1 pr-3 font-normal">
                     {source.name}{" "}
-                    <span className="font-mono break-all text-slate-500">
+                    <span className="font-mono break-all text-slate-400">
                       {source.productId}
                     </span>
                   </th>
@@ -191,7 +191,7 @@ function StudyProfile({ dashboard }: { dashboard: OperationsDashboard }) {
       <dl className="mt-3 grid gap-x-6 gap-y-2 font-mono text-xs @md:grid-cols-2 @3xl:grid-cols-5">
         {facts.map(([term, value]) => (
           <div key={term} className="min-w-0">
-            <dt className="text-slate-500">{term}</dt>
+            <dt className="text-slate-400">{term}</dt>
             <dd className="break-words text-slate-200">{value}</dd>
           </div>
         ))}
@@ -220,7 +220,7 @@ function Glance({ report }: { report: ReportData }) {
                 <span className="font-mono text-2xl font-semibold tabular-nums tracking-[-0.02em] text-[#f4f4f6]">
                   {cell?.text ?? NO_METRIC_ROWS}
                 </span>
-                <span className="block text-[11px] text-slate-500">
+                <span className="block text-[11px] text-slate-400">
                   {column.unit}
                 </span>
               </dd>
@@ -237,7 +237,7 @@ function Glance({ report }: { report: ReportData }) {
             <li key={calc.metricId}>
               <span className="text-slate-100">{calc.name}: </span>
               {calc.formula}{" "}
-              <span className="font-mono text-slate-500">
+              <span className="font-mono text-slate-400">
                 ({calc.metricId} {calc.version})
               </span>
             </li>

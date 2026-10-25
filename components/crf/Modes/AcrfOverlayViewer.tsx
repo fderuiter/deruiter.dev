@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
 import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { StudyProtocol } from "@/lib/crf/types";
@@ -111,8 +115,9 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
             </h2>
           </div>
           <p className="text-xs text-zinc-400 font-sans mt-1">
-            Publication-ready blank case report form with SDTMIG v3.4 / CDASH
-            variable annotation overlays for FDA, EMA, and PMDA filings.
+            Publication-ready blank case report form with{" "}
+            {standardCitation("SDTMIG")} / CDASH variable annotation overlays
+            for FDA, EMA, and PMDA filings.
           </p>
         </div>
 
@@ -370,7 +375,8 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
         <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-white font-mono">
-              CDISC SDTMIG v3.4 Target Variable Mapping Matrix
+              CDISC SDTMIG v{CLINICAL_STANDARDS_PROFILE.SDTMIG} Target Variable
+              Mapping Matrix
             </h2>
             <div className="flex items-center gap-2 text-[10px] font-mono">
               <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
@@ -388,7 +394,8 @@ export const AcrfOverlayViewer: React.FC<AcrfOverlayViewerProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-left font-mono text-xs border-collapse">
               <caption className="sr-only">
-                CDISC SDTMIG v3.4 Target Variable Mapping Matrix
+                CDISC SDTMIG v{CLINICAL_STANDARDS_PROFILE.SDTMIG} Target
+                Variable Mapping Matrix
               </caption>
               <thead>
                 <tr className="border-b border-zinc-800 bg-zinc-950/60 text-zinc-400">

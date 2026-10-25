@@ -1,3 +1,4 @@
+import { controlledTerminologyCitation } from "@/lib/study-data/standards";
 import { CodelistDefinition } from "./types";
 
 /**
@@ -5,7 +6,7 @@ import { CodelistDefinition } from "./types";
  * below were checked against: the NCI EVS SDTM Terminology release of
  * 2026-09-25.
  */
-export const CDISC_CT_PACKAGE_VERSION = "SDTM CT 2026-09-25";
+export const CDISC_CT_PACKAGE_VERSION = controlledTerminologyCitation();
 
 /**
  * Standard codelists offered by CRF Studio.

@@ -34,6 +34,8 @@ const STANDARD_NAMES: Readonly<Record<StandardId, string>> = {
   SDTMIG: "SDTM Implementation Guide",
   ADaM: "Analysis Data Model",
   ADaMIG: "ADaM Implementation Guide",
+  OCCDS: "ADaM Occurrence Data Structure",
+  "ADaM-CR": "ADaM Conformance Rules",
   "Define-XML": "Dataset metadata",
   "Dataset-JSON": "Dataset exchange format",
   ARS: "Analysis Results Standard",

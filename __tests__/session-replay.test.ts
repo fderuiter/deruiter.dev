@@ -181,6 +181,29 @@ describe("recordReplay", () => {
     expect(updates(paused.state)).toBeLessThan(updates(first.state) - 25);
   });
 
+  it("wraps every intent and every step in the session's act", () => {
+    const log: string[] = [];
+    let depth = 0;
+    const session = () => {
+      const tick = () => {
+        log.push(`frame@${depth}`);
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      return {
+        getState: () => log.length,
+        dispatch: (intent: string) => log.push(`${intent}@${depth}`),
+        act: (work: () => void) => {
+          depth += 1;
+          work();
+          depth -= 1;
+        },
+      };
+    };
+    recordReplay(session, [{ at: 1, intent: "go" }], { seed: 1, steps: 2 });
+    expect(log).toEqual(["frame@1", "go@1", "frame@1"]);
+  });
+
   it("runs only frames queued before each step and honours cancelAnimationFrame", () => {
     const calls: number[] = [];
     const session = () => {

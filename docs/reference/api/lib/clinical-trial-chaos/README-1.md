@@ -856,6 +856,12 @@ Re-exports [hasProceduralGenerator](observation-generators/functions/hasProcedur
 
 ***
 
+### ILLUSTRATIVE\_CT\_CODES
+
+Re-exports [ILLUSTRATIVE_CT_CODES](terminology/variables/ILLUSTRATIVE_CT_CODES.md)
+
+***
+
 ### INITIAL\_STATIONS
 
 Re-exports [INITIAL_STATIONS](scenarios/variables/INITIAL_STATIONS.md)

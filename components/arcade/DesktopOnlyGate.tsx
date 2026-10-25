@@ -10,6 +10,9 @@ import {
   IconShare2,
 } from "@tabler/icons-react";
 import { copyToClipboard } from "@/lib/clipboard";
+import { getArcadeRegistryEntry, phoneReadyGames } from "@/lib/arcade";
+import { ARCADE_GAMES_METADATA } from "@/lib/arcade-data";
+import { HIDDEN_ON_PHONE, PHONE_ONLY_BLOCK } from "./phone-readiness";
 
 // The gate matches PHONE_QUERY (ADR 0061, narrowing ADR 0048): phones in
 // either orientation and touch devices in a Split View pane narrower than
@@ -17,47 +20,42 @@ import { copyToClipboard } from "@/lib/clipboard";
 // pointer and still gets the game. It is decided in CSS rather than with
 // matchMedia so the server-rendered HTML is already correct: no hydration
 // flash of the cabinet on phones, or of the notice on desktops and tablets.
-const SHOW_ON_DESKTOP =
-  "[@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:hidden";
-const SHOW_ON_TOUCH_COMPACT =
-  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:block";
 
-/** Places that pass the phone vibe test (ADR 0048). */
-const PHONE_FRIENDLY = [
-  {
-    title: "Meme Vault",
-    blurb: "Soundboard and hidden trophies.",
-    href: "/arcade/meme-vault",
-  },
-  {
-    title: "The blog",
-    blurb: "Writing that reads fine on a phone.",
-    href: "/blog",
-  },
-];
+/** The games that play on a phone, from the registry (#2368). */
+function phonePicks(gameId: string) {
+  return phoneReadyGames()
+    .filter((game) => game.slug !== gameId)
+    .map((game) => ({
+      title: game.name,
+      blurb:
+        ARCADE_GAMES_METADATA.find((meta) => meta.slug === game.slug)
+          ?.subtitle ?? "",
+      href: game.route,
+    }));
+}
 
 type ShareState = "idle" | "copied" | "failed";
 
 interface DesktopOnlyGateProps {
-  /** Arcade slug, e.g. "laser-loon"; selects the gameplay preview image. */
+  /**
+   * Arcade slug, e.g. "laser-loon": selects the gameplay preview image, and
+   * the registry gives the name used in the notice.
+   */
   gameId: string;
-  /** Game name used in the notice, e.g. "Laser Loon". */
-  gameTitle: string;
   children: React.ReactNode;
 }
 
 /**
- * Replaces a game's play area with a desktop-only notice on phones (PHONE_QUERY). The notice shows desktop gameplay, offers to save the
- * link for later, and points at parts of the site that work on a phone. The route's
+ * Replaces a game's play area with a desktop-only notice on phones
+ * (PHONE_QUERY). PlayCabinet adds it for every game the registry gates on
+ * phones (#2368). The notice shows desktop gameplay, offers to save the link
+ * for later, and points at the games that play on a phone. The route's
  * heading, description and metadata render unchanged, so shared links and
  * search previews still describe the game. "Try it anyway" reveals the
  * cabinet on this page.
  */
-export function DesktopOnlyGate({
-  gameId,
-  gameTitle,
-  children,
-}: DesktopOnlyGateProps) {
+export function DesktopOnlyGate({ gameId, children }: DesktopOnlyGateProps) {
+  const gameTitle = getArcadeRegistryEntry(gameId).name;
   const [override, setOverride] = useState(false);
   const [shareState, setShareState] = useState<ShareState>("idle");
 
@@ -90,9 +88,9 @@ export function DesktopOnlyGate({
 
   return (
     <div data-desktop-only-gate="" className="w-full min-w-0">
-      <div className={SHOW_ON_DESKTOP}>{children}</div>
+      <div className={HIDDEN_ON_PHONE}>{children}</div>
       <section
-        className={SHOW_ON_TOUCH_COMPACT}
+        className={PHONE_ONLY_BLOCK}
         aria-labelledby={`${gameId}-desktop-only-title`}
         data-testid="desktop-only-notice"
       >
@@ -160,7 +158,7 @@ export function DesktopOnlyGate({
                 Meanwhile, on your phone
               </p>
               <ul className="mt-2 flex flex-col gap-2">
-                {PHONE_FRIENDLY.map((game) => (
+                {phonePicks(gameId).map((game) => (
                   <li key={game.href}>
                     <Link
                       href={game.href}

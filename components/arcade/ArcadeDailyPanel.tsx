@@ -15,10 +15,10 @@ import {
   arcadeDailyStreak,
 } from "@/lib/arcade/daily";
 import { arcadeDailySlice, useProgress } from "@/lib/arcade";
-
-// Same query as DesktopOnlyGate (PHONE_QUERY, ADR 0061): phones only.
-const SHOW_ON_TOUCH_COMPACT_INLINE =
-  "hidden [@media(pointer:coarse)_and_((max-width:743px)_or_(max-height:500px))]:inline-block";
+import {
+  FIRST_ON_PHONE,
+  PhoneReadinessBadge,
+} from "@/components/arcade/phone-readiness";
 
 // The date only changes at midnight UTC; a minute's resolution is plenty.
 function subscribeClock(onChange: () => void): () => void {
@@ -106,20 +106,15 @@ export function ArcadeDailyPanel() {
               <li
                 key={game.id}
                 data-testid={`arcade-daily-${game.id}`}
-                className="flex min-w-0 flex-col justify-between gap-3 border border-zinc-800 bg-[#0d0e11] p-4"
+                // Games that play on a phone come first there (#2368).
+                className={`flex min-w-0 flex-col justify-between gap-3 border border-zinc-800 bg-[#0d0e11] p-4 ${game.desktopOnly ? "" : FIRST_ON_PHONE}`}
               >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-mono text-sm font-bold break-words text-zinc-100">
                       {game.title}
                     </h3>
-                    {game.desktopOnly ? (
-                      <span
-                        className={`${SHOW_ON_TOUCH_COMPACT_INLINE} border border-zinc-700 px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-zinc-300 uppercase`}
-                      >
-                        Desktop only
-                      </span>
-                    ) : null}
+                    <PhoneReadinessBadge slug={game.id} />
                   </div>
                   <p className="mt-1 font-mono text-xs text-zinc-300">
                     {best ? (

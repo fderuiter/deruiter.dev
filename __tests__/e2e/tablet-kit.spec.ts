@@ -117,7 +117,7 @@ test.describe("Tablet arcade kit (iPad projects)", () => {
     ).toBeVisible();
 
     await page.goto("/arcade");
-    await expect(page.getByText("Desktop only").first()).toBeHidden();
+    await expect(page.locator("[data-phone-readiness]").first()).toBeHidden();
   });
 
   for (const route of [UNGATED_ROUTE, GATED_ROUTE]) {

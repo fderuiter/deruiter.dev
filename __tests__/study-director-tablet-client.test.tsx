@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { PHONE_QUERY } from "@/components/arcade/mobile";
 import {
   STUDY_DIRECTOR_AUTO_PAUSE_EVENT,
   requestStudyDirectorAutoPause,
@@ -57,15 +56,5 @@ describe("StudyDirectorClient cabinet wiring (#2076)", () => {
     touchDevice.value = true;
     render(<StudyDirectorClient />);
     expect(cabinetProps.current?.fullscreenKey).toBe(false);
-  });
-
-  it("keeps the desktop-only notice behind the phone query, so tablets get the game", () => {
-    const { container } = render(<StudyDirectorClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    expect(PHONE_QUERY.match(/max-width:\s*(\d+)px/)?.[1]).toBe("743");
-    expect(notice?.className).toContain("(max-width:743px)");
   });
 });

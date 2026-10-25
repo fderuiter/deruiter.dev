@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { PHONE_QUERY } from "@/components/arcade/mobile";
 
 const cabinetProps = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
@@ -40,15 +39,5 @@ describe("LaserLoonClient cabinet wiring (#2081)", () => {
       .flatMap((control) => control.key.split(/[\s/,-]+/))
       .map((key) => key.toLowerCase());
     expect(keys).not.toContain("f");
-  });
-
-  it("gates phones only: the notice sits behind the phone query, so tablets get the game", () => {
-    const { container } = render(<LaserLoonClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    expect(PHONE_QUERY.match(/max-width:\s*(\d+)px/)?.[1]).toBe("743");
-    expect(notice?.className).toContain("(max-width:743px)");
   });
 });

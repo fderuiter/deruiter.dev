@@ -32,6 +32,7 @@ import {
 } from "@/components/arcade/PreGameSetupWizard";
 import { logger } from "@/lib/logger";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { DesktopOnlyGate } from "./DesktopOnlyGate";
 import {
   CabinetTouchContext,
   lockScreenOrientation,
@@ -67,6 +68,7 @@ import {
   buildCrtOverlayBackground,
   crtCalibrationForFilter,
   FORM_FACTORS,
+  isPhoneGated,
   shouldCabinetDrawCrt,
   type FormFactor,
 } from "@/lib/arcade";
@@ -197,7 +199,21 @@ function cabinetToolbarWidth(count: number): number {
   return count * 48 + Math.max(0, count - 1) * 4 + 6;
 }
 
-export const PlayCabinet: React.FC<PlayCabinetProps> = ({
+/**
+ * The arcade cabinet. A game the registry gates on phones (`views.phone` is
+ * "gated") gets the desktop-only notice around it there, so flipping the
+ * flag gates or un-gates a game with no other change (#2368).
+ */
+export const PlayCabinet: React.FC<PlayCabinetProps> = (props) =>
+  props.gameId && isPhoneGated(props.gameId) ? (
+    <DesktopOnlyGate gameId={props.gameId}>
+      <Cabinet {...props} />
+    </DesktopOnlyGate>
+  ) : (
+    <Cabinet {...props} />
+  );
+
+const Cabinet: React.FC<PlayCabinetProps> = ({
   gameId: rawGameId,
   title,
   subtitle,

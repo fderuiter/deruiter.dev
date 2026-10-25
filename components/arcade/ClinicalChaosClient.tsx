@@ -6,7 +6,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { requestClinicalChaosAutoPause } from "@/components/clinical-trial-chaos/auto-pause";
 import Link from "next/link";
 import {
@@ -82,39 +81,34 @@ export const ClinicalChaosClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-1.5 sm:p-6">
-          <DesktopOnlyGate
-            gameId="clinical-chaos"
-            gameTitle="Clinical Trial Chaos"
-          >
-            {/* The shift briefing offers the Campaign or Endless choice, so
+          {/* The shift briefing offers the Campaign or Endless choice, so
                 it stays as the game's one start step after Launch. */}
-            <PlayCabinet
-              gameId="clinical-chaos"
-              singleTitleScreen={false}
-              title="Clinical Trial Chaos: CDISC Compliance"
-              subtitle="Clinical Data, Against the Clock"
-              icon={<IconShieldCheck className="w-8 h-8 text-emerald-400" />}
-              instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
-              controls={[
-                { key: "Enter", action: "Next step (fix / route / sign)" },
-                { key: "1–8", action: "Pick answer / route to station" },
-                { key: "Q W E R", action: "Lifelines" },
-                { key: "← →", action: "Change subject" },
-                { key: "P", action: "Pause" },
-              ]}
-              importComponent={ClinicalTrialChaosLoader}
-              // No game key is F (1 to 8, Q W E R, arrows, Enter, Space, P,
-              // Escape), so the cabinet's F-for-fullscreen stays on (#2105).
-              // The floor, its dock and its sheets are built to fit the touch
-              // cabinet's viewport, so the stage clips rather than scrolls
-              // (ADR 0061).
-              mobileLayout="fit"
-              // A hidden tab or a backgrounded app pauses a shift in progress.
-              onAutoPause={requestClinicalChaosAutoPause}
-            >
-              <DynamicClinicalTrialChaos />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="clinical-chaos"
+            singleTitleScreen={false}
+            title="Clinical Trial Chaos: CDISC Compliance"
+            subtitle="Clinical Data, Against the Clock"
+            icon={<IconShieldCheck className="w-8 h-8 text-emerald-400" />}
+            instructions="Sort clinical observations, fix data problems, and sign submissions before time runs out. A game inspired by clinical data work, with a considerably less patient auditor."
+            controls={[
+              { key: "Enter", action: "Next step (fix / route / sign)" },
+              { key: "1–8", action: "Pick answer / route to station" },
+              { key: "Q W E R", action: "Lifelines" },
+              { key: "← →", action: "Change subject" },
+              { key: "P", action: "Pause" },
+            ]}
+            importComponent={ClinicalTrialChaosLoader}
+            // No game key is F (1 to 8, Q W E R, arrows, Enter, Space, P,
+            // Escape), so the cabinet's F-for-fullscreen stays on (#2105).
+            // The floor, its dock and its sheets are built to fit the touch
+            // cabinet's viewport, so the stage clips rather than scrolls
+            // (ADR 0061).
+            mobileLayout="fit"
+            // A hidden tab or a backgrounded app pauses a shift in progress.
+            onAutoPause={requestClinicalChaosAutoPause}
+          >
+            <DynamicClinicalTrialChaos />
+          </PlayCabinet>
         </div>
 
         {/* Context that complements the in-game Fix → Route → Sign briefing. */}

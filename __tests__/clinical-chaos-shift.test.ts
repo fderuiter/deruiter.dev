@@ -576,6 +576,38 @@ describe("tickShiftClocks", () => {
     expect(tick.suspicionMaxed).toBe(true);
   });
 
+  // #2832: the patrol step's passive decay ran after the expiry raised
+  // suspicion to 100, so with a short backlog the frame reported 99.95,
+  // the shift went on under "Writing a 483", and the sponsor ended it.
+  it("issues the 483 when an expiry maxes suspicion despite passive decay (#2832)", () => {
+    const tick = tickShiftClocks(
+      {
+        ...clocks,
+        subjects: [subject({ timeRemaining: 0.05 })],
+        auditor: { ...createInitialAuditorState(), suspicion: 90 },
+      },
+      0.1
+    );
+    expect(tick.expired).toHaveLength(1);
+    expect(tick.suspicionMaxed).toBe(true);
+    expect(tick.auditor).toMatchObject({
+      suspicion: 100,
+      behavior: "issuing_483",
+    });
+  });
+
+  it("issues the 483 when a mistake between frames maxed suspicion (#2832)", () => {
+    const tick = tickShiftClocks(
+      {
+        ...clocks,
+        auditor: raiseAuditorSuspicion(createInitialAuditorState(), 100),
+      },
+      0.1
+    );
+    expect(tick.suspicionMaxed).toBe(true);
+    expect(tick.auditor.suspicion).toBe(100);
+  });
+
   it("ends the coffee break when its duration runs out", () => {
     const powerUps = spendPowerUp(
       createInitialPowerUpInventory(),

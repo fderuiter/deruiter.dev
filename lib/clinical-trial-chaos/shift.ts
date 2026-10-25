@@ -898,7 +898,7 @@ export function formatExpiryLog(subject: ClinicalSubject): string {
 /**
  * Advances the deterministic per-frame clocks by one step, in order: subject
  * deadlines (expiries raise suspicion and break the combo), the auditor
- * patrol, lifeline durations (the coffee break ending), and the running
+ * patrol (skipped once suspicion is maxed), lifeline durations (the coffee break ending), and the running
  * protocol amendment. Spawning, random amendments and the sponsor inbox draw
  * on randomness and stay with the caller.
  *
@@ -925,12 +925,17 @@ export function tickShiftClocks(
     scoreState = recordExpiredSubjects(scoreState, expired.length);
   }
 
-  auditor = tickAuditor(
-    auditor,
-    deltaSeconds,
-    subjects.length,
-    auditorPacingMultiplier
-  );
+  // A maxed auditor has already decided on the 483: patrolling now would let
+  // passive decay pull suspicion back under 100 in the frame that maxed it,
+  // and the shift would play on under "Writing a 483" (#2832).
+  if (auditor.suspicion < 100) {
+    auditor = tickAuditor(
+      auditor,
+      deltaSeconds,
+      subjects.length,
+      auditorPacingMultiplier
+    );
+  }
   const suspicionMaxed = auditor.suspicion >= 100;
 
   const powerUps = tickPowerUps(clocks.powerUps, deltaSeconds);

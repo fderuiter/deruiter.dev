@@ -6,6 +6,7 @@ import { useAudio } from "@/components/providers/AudioProvider";
 import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { safeGetItem, safeSetRawItem } from "@/lib/safe-storage";
 import { ShowTipsAgain } from "@/components/arcade/mobile/ui";
+import { useFormFactor } from "@/components/arcade/mobile";
 import {
   getDefaultCrtFilter,
   isCabinetCrtFilter,
@@ -331,6 +332,29 @@ const BEZEL_STYLE_OPTIONS: {
   },
 ];
 
+/**
+ * On a phone the wizard asks one question per screen (#2795). Each question
+ * belongs to one of the three desktop steps, so both layouts share the same
+ * sections and the same saved config.
+ */
+type Question =
+  "difficulty" | "loadout" | "shake" | "crt" | "bezel" | "summary";
+
+const PHONE_QUESTIONS: readonly {
+  id: Question;
+  step: 1 | 2 | 3;
+  label: string;
+}[] = [
+  { id: "difficulty", step: 1, label: "Difficulty" },
+  { id: "loadout", step: 1, label: "Starting loadout" },
+  { id: "shake", step: 2, label: "Screen shake" },
+  { id: "crt", step: 2, label: "CRT filter" },
+  { id: "bezel", step: 2, label: "Cabinet bezel" },
+  { id: "summary", step: 3, label: "Summary" },
+];
+
+const LAST_QUESTION = PHONE_QUESTIONS.length - 1;
+
 export function getSavedSetupConfig(gameId: string): GameSetupConfig {
   const loadouts = GAME_LOADOUTS[gameId] || GAME_LOADOUTS["default"];
   const defaultConfig: GameSetupConfig = {
@@ -408,13 +432,16 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
   const [config, setConfig] = useState<GameSetupConfig>(() =>
     getSavedSetupConfig(gameId)
   );
+  const [question, setQuestion] = useState(0);
   const [wasOpen, setWasOpen] = useState(isOpen);
+  const phone = useFormFactor({ enabled: isOpen }) === "phone";
 
   if (isOpen !== wasOpen) {
     setWasOpen(isOpen);
     if (isOpen) {
       setConfig(getSavedSetupConfig(gameId));
       setCurrentStep(1);
+      setQuestion(0);
     }
   }
 
@@ -435,6 +462,14 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
       }
     },
     onKeyDown: (e: KeyboardEvent) => {
+      if (phone) {
+        if (e.key === "ArrowRight" && question < LAST_QUESTION) {
+          goToQuestion(question + 1);
+        } else if (e.key === "ArrowLeft" && question > 0) {
+          goToQuestion(question - 1);
+        }
+        return;
+      }
       if (e.key === "ArrowRight" && currentStep < 3) {
         goToStep((currentStep + 1) as 1 | 2 | 3);
       } else if (e.key === "ArrowLeft" && currentStep > 1) {
@@ -457,6 +492,38 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
     };
     announce(stepNames[nextStep], "polite");
   };
+
+  const goToQuestion = (next: number) => {
+    setQuestion(next);
+    playNote(400 + next * 60, 0.1);
+    announce(
+      `Question ${next + 1} of ${PHONE_QUESTIONS.length}: ${PHONE_QUESTIONS[next].label}`,
+      "polite"
+    );
+  };
+
+  // The step on screen, and whether a section shows: every section of the
+  // step on desktop and tablet, one question at a time on a phone.
+  const step = phone ? PHONE_QUESTIONS[question].step : currentStep;
+  const shows = (id: Question) => !phone || PHONE_QUESTIONS[question].id === id;
+  const canGoBack = phone ? question > 0 : currentStep > 1;
+  const canGoForward = phone ? question < LAST_QUESTION : currentStep < 3;
+  const goBack = () =>
+    phone
+      ? goToQuestion(question - 1)
+      : goToStep((currentStep - 1) as 1 | 2 | 3);
+  const goForward = () =>
+    phone
+      ? goToQuestion(question + 1)
+      : goToStep((currentStep + 1) as 1 | 2 | 3);
+  // Phones get no text below 12px, big single-column choice cards and the
+  // descriptions the desktop grid hides at small widths.
+  const small = (desktop: string) => (phone ? "text-xs" : desktop);
+  const choiceGrid = (desktop: string) => (phone ? "grid-cols-1" : desktop);
+  const choiceDesc = phone
+    ? "text-xs text-zinc-400 leading-snug block"
+    : "text-[9px] text-zinc-400 leading-tight hidden sm:block";
+  const choiceSize = phone ? "min-h-[64px] p-4" : "";
 
   const handleDifficultyChange = (d: DifficultyMode) => {
     setConfig((prev) => ({ ...prev, difficulty: d }));
@@ -525,14 +592,21 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
       aria-labelledby="wizard-title"
       aria-describedby="wizard-desc"
       data-testid="pregame-setup-wizard-overlay"
-      className="arcade-setup-wizard absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 select-none overflow-hidden animate-in fade-in duration-200"
+      data-layout={phone ? "phone" : "card"}
+      className={`arcade-setup-wizard absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center select-none overflow-hidden animate-in fade-in duration-200 ${
+        phone ? "p-0" : "p-2 sm:p-4"
+      }`}
     >
       <div
         ref={modalRef}
         tabIndex={-1}
         // Always a rectangle, even over the round Garmin face: a circular
         // panel clipped the title, step dots and Next Step button.
-        className="w-full max-w-xl max-h-[92%] bg-zinc-950 border-2 border-amber-500/40 rounded-2xl p-4 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col justify-between overflow-y-auto text-white font-mono"
+        className={`w-full bg-zinc-950 flex flex-col justify-between overflow-y-auto text-white font-mono ${
+          phone
+            ? "h-full max-h-full p-4 pb-[max(1rem,env(safe-area-inset-bottom))]"
+            : "max-w-xl max-h-[92%] border-2 border-amber-500/40 rounded-2xl p-4 sm:p-6 shadow-[0_0_50px_rgba(245,158,11,0.2)]"
+        }`}
       >
         {/* Header with Step Progress Indicator */}
         <div>
@@ -548,39 +622,65 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                 >
                   Pre-Game Setup Wizard
                 </h2>
-                <p id="wizard-desc" className="text-[10px] text-zinc-400">
-                  {gameTitle} • Step {currentStep} of 3
+                <p
+                  id="wizard-desc"
+                  className={`${small("text-[10px]")} text-zinc-400`}
+                >
+                  {phone
+                    ? `${gameTitle} • Question ${question + 1} of ${PHONE_QUESTIONS.length}`
+                    : `${gameTitle} • Step ${currentStep} of 3`}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              {[1, 2, 3].map((step) => (
-                <button
-                  key={step}
-                  onClick={() => goToStep(step as 1 | 2 | 3)}
-                  onMouseEnter={() => playHover()}
-                  aria-label={`Go to wizard step ${step}`}
-                  className={`min-h-[44px] min-w-[44px] w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${
-                    currentStep === step
-                      ? "bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)] scale-110"
-                      : currentStep > step
-                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
-                        : "bg-zinc-900 text-zinc-600 border border-zinc-800"
-                  }`}
-                >
-                  {currentStep > step ? (
-                    <IconCheck className="w-3.5 h-3.5" />
-                  ) : (
-                    step
-                  )}
-                </button>
-              ))}
-            </div>
+            {phone ? (
+              <div
+                aria-hidden="true"
+                data-testid="wizard-progress-dots"
+                className="flex items-center gap-1.5"
+              >
+                {PHONE_QUESTIONS.map((q, index) => (
+                  <span
+                    key={q.id}
+                    className={`h-2 rounded-full transition-all ${
+                      index === question
+                        ? "w-5 bg-amber-400"
+                        : index < question
+                          ? "w-2 bg-amber-500/60"
+                          : "w-2 bg-zinc-700"
+                    }`}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                {[1, 2, 3].map((step) => (
+                  <button
+                    key={step}
+                    onClick={() => goToStep(step as 1 | 2 | 3)}
+                    onMouseEnter={() => playHover()}
+                    aria-label={`Go to wizard step ${step}`}
+                    className={`min-h-[44px] min-w-[44px] w-8 h-8 rounded-full text-xs font-bold flex items-center justify-center transition-all cursor-pointer touch-manipulation select-none active:scale-95 ${
+                      currentStep === step
+                        ? "bg-amber-500 text-black shadow-[0_0_10px_rgba(245,158,11,0.5)] scale-110"
+                        : currentStep > step
+                          ? "bg-amber-500/20 text-amber-400 border border-amber-500/40"
+                          : "bg-zinc-900 text-zinc-600 border border-zinc-800"
+                    }`}
+                  >
+                    {currentStep > step ? (
+                      <IconCheck className="w-3.5 h-3.5" />
+                    ) : (
+                      step
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* STEP 1: Gameplay Configuration */}
-          {currentStep === 1 && (
+          {step === 1 && (
             <div
               className="space-y-4 animate-in fade-in duration-150"
               data-testid="wizard-step-1"
@@ -591,82 +691,94 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
               </div>
 
               {/* Difficulty Mode Selection */}
-              <div>
-                <label className="block text-[11px] text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">
-                  Difficulty Mode
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {DIFFICULTY_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleDifficultyChange(opt.id)}
-                      onMouseEnter={() => playHover()}
-                      className={`min-h-[44px] min-w-[44px] p-2.5 rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex flex-col justify-center ${
-                        config.difficulty === opt.id
-                          ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
-                          : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1 w-full">
-                        <span className="font-bold text-xs">{opt.label}</span>
-                        {config.difficulty === opt.id && (
-                          <IconCheck className="w-3.5 h-3.5 text-amber-400" />
-                        )}
-                      </div>
-                      <p className="text-[9px] text-zinc-400 leading-tight hidden sm:block">
-                        {difficultyDescriptions?.[opt.id] ?? opt.desc}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Initial Loadout Options */}
-              <div>
-                <label className="block text-[11px] text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">
-                  Initial Starting Loadout
-                </label>
-                <div className="space-y-2">
-                  {loadoutOptions.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleLoadoutChange(opt.id)}
-                      onMouseEnter={() => playHover()}
-                      className={`min-h-[44px] min-w-[44px] w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-between gap-3 ${
-                        config.loadout === opt.id
-                          ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
-                          : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                      }`}
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-bold text-xs text-white">
-                            {opt.name}
-                          </span>
-                          {opt.badge && (
-                            <span className="px-1.5 py-0.5 rounded text-[8px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              {opt.badge}
-                            </span>
+              {shows("difficulty") && (
+                <div>
+                  <label
+                    className={`block ${small("text-[11px]")} text-zinc-400 uppercase tracking-widest mb-1.5 font-bold`}
+                  >
+                    Difficulty Mode
+                  </label>
+                  <div className={`grid ${choiceGrid("grid-cols-3")} gap-2`}>
+                    {DIFFICULTY_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleDifficultyChange(opt.id)}
+                        onMouseEnter={() => playHover()}
+                        className={`min-h-[44px] min-w-[44px] p-2.5 ${choiceSize} rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex flex-col justify-center ${
+                          config.difficulty === opt.id
+                            ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
+                            : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1 w-full">
+                          <span className="font-bold text-xs">{opt.label}</span>
+                          {config.difficulty === opt.id && (
+                            <IconCheck className="w-3.5 h-3.5 text-amber-400" />
                           )}
                         </div>
-                        <p className="text-[10px] text-zinc-400 leading-tight">
-                          {opt.description}
+                        <p className={choiceDesc}>
+                          {difficultyDescriptions?.[opt.id] ?? opt.desc}
                         </p>
-                      </div>
-                      {config.loadout === opt.id && (
-                        <IconCheck className="w-4 h-4 text-amber-400 shrink-0" />
-                      )}
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Initial Loadout Options */}
+              {shows("loadout") && (
+                <div>
+                  <label
+                    className={`block ${small("text-[11px]")} text-zinc-400 uppercase tracking-widest mb-1.5 font-bold`}
+                  >
+                    Initial Starting Loadout
+                  </label>
+                  <div className="space-y-2">
+                    {loadoutOptions.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleLoadoutChange(opt.id)}
+                        onMouseEnter={() => playHover()}
+                        className={`min-h-[44px] min-w-[44px] w-full p-2.5 ${choiceSize} rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-between gap-3 ${
+                          config.loadout === opt.id
+                            ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
+                            : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                        }`}
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="font-bold text-xs text-white">
+                              {opt.name}
+                            </span>
+                            {opt.badge && (
+                              <span
+                                className={`px-1.5 py-0.5 rounded ${small("text-[8px]")} font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30`}
+                              >
+                                {opt.badge}
+                              </span>
+                            )}
+                          </div>
+                          <p
+                            className={`${small("text-[10px]")} text-zinc-400 leading-tight`}
+                          >
+                            {opt.description}
+                          </p>
+                        </div>
+                        {config.loadout === opt.id && (
+                          <IconCheck className="w-4 h-4 text-amber-400 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* STEP 2: Visual Configuration */}
-          {currentStep === 2 && (
+          {step === 2 && (
             <div
               className="space-y-4 animate-in fade-in duration-150"
               data-testid="wizard-step-2"
@@ -677,98 +789,106 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
               </div>
 
               {/* Screen Shake Intensity */}
-              <div>
-                <label className="block text-[11px] text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">
-                  Screen Shake Intensity
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {SCREEN_SHAKE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleScreenShakeChange(opt.id)}
-                      onMouseEnter={() => playHover()}
-                      className={`min-h-[44px] min-w-[44px] p-2 rounded-xl border text-center transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center ${
-                        config.screenShake === opt.id
-                          ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
-                          : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                      }`}
-                    >
-                      <span className="font-bold text-xs block">
-                        {opt.label}
-                      </span>
-                    </button>
-                  ))}
+              {shows("shake") && (
+                <div>
+                  <label
+                    className={`block ${small("text-[11px]")} text-zinc-400 uppercase tracking-widest mb-1.5 font-bold`}
+                  >
+                    Screen Shake Intensity
+                  </label>
+                  <div className={`grid ${choiceGrid("grid-cols-3")} gap-2`}>
+                    {SCREEN_SHAKE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleScreenShakeChange(opt.id)}
+                        onMouseEnter={() => playHover()}
+                        className={`min-h-[44px] min-w-[44px] p-2 ${choiceSize} rounded-xl border text-center transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex items-center justify-center ${
+                          config.screenShake === opt.id
+                            ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
+                            : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                        }`}
+                      >
+                        <span className="font-bold text-xs block">
+                          {opt.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* CRT Filter Preset */}
-              <div>
-                <label className="block text-[11px] text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">
-                  CRT Filter Effect
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {CRT_FILTER_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleCRTFilterChange(opt.id)}
-                      onMouseEnter={() => playHover()}
-                      className={`min-h-[44px] min-w-[44px] p-2.5 rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex flex-col justify-center ${
-                        config.crtFilter === opt.id
-                          ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
-                          : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5 w-full">
-                        <span className="font-bold text-xs text-white">
-                          {opt.label}
-                        </span>
-                        {config.crtFilter === opt.id && (
-                          <IconCheck className="w-3.5 h-3.5 text-amber-400" />
-                        )}
-                      </div>
-                      <p className="text-[9px] text-zinc-400 leading-tight hidden sm:block">
-                        {opt.desc}
-                      </p>
-                    </button>
-                  ))}
+              {shows("crt") && (
+                <div>
+                  <label
+                    className={`block ${small("text-[11px]")} text-zinc-400 uppercase tracking-widest mb-1.5 font-bold`}
+                  >
+                    CRT Filter Effect
+                  </label>
+                  <div className={`grid ${choiceGrid("grid-cols-2")} gap-2`}>
+                    {CRT_FILTER_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleCRTFilterChange(opt.id)}
+                        onMouseEnter={() => playHover()}
+                        className={`min-h-[44px] min-w-[44px] p-2.5 ${choiceSize} rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex flex-col justify-center ${
+                          config.crtFilter === opt.id
+                            ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
+                            : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-0.5 w-full">
+                          <span className="font-bold text-xs text-white">
+                            {opt.label}
+                          </span>
+                          {config.crtFilter === opt.id && (
+                            <IconCheck className="w-3.5 h-3.5 text-amber-400" />
+                          )}
+                        </div>
+                        <p className={choiceDesc}>{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Cabinet Bezel Style */}
-              <div>
-                <label className="block text-[11px] text-zinc-400 uppercase tracking-widest mb-1.5 font-bold">
-                  Cabinet Bezel Theme
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {BEZEL_STYLE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleBezelStyleChange(opt.id)}
-                      onMouseEnter={() => playHover()}
-                      className={`min-h-[44px] min-w-[44px] p-2.5 rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex flex-col justify-center ${
-                        config.bezelStyle === opt.id
-                          ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
-                          : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-0.5 w-full">
-                        <span className="font-bold text-xs text-white">
-                          {opt.label}
-                        </span>
-                        {config.bezelStyle === opt.id && (
-                          <IconCheck className="w-3.5 h-3.5 text-amber-400" />
-                        )}
-                      </div>
-                      <p className="text-[9px] text-zinc-400 leading-tight hidden sm:block">
-                        {opt.desc}
-                      </p>
-                    </button>
-                  ))}
+              {shows("bezel") && (
+                <div>
+                  <label
+                    className={`block ${small("text-[11px]")} text-zinc-400 uppercase tracking-widest mb-1.5 font-bold`}
+                  >
+                    Cabinet Bezel Theme
+                  </label>
+                  <div className={`grid ${choiceGrid("grid-cols-2")} gap-2`}>
+                    {BEZEL_STYLE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => handleBezelStyleChange(opt.id)}
+                        onMouseEnter={() => playHover()}
+                        className={`min-h-[44px] min-w-[44px] p-2.5 ${choiceSize} rounded-xl border text-left transition-all cursor-pointer touch-manipulation select-none active:scale-95 flex flex-col justify-center ${
+                          config.bezelStyle === opt.id
+                            ? "border-amber-400 bg-amber-500/20 text-white shadow-[0_0_15px_rgba(245,158,11,0.2)] ring-1 ring-amber-400"
+                            : "border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-0.5 w-full">
+                          <span className="font-bold text-xs text-white">
+                            {opt.label}
+                          </span>
+                          {config.bezelStyle === opt.id && (
+                            <IconCheck className="w-3.5 h-3.5 text-amber-400" />
+                          )}
+                        </div>
+                        <p className={choiceDesc}>{opt.desc}</p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* First-run coach marks, once this device has seen them (#2361) */}
               <ShowTipsAgain gameId={gameId} />
@@ -776,7 +896,7 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
           )}
 
           {/* STEP 3: Confirmation Summary & Launch */}
-          {currentStep === 3 && (
+          {step === 3 && (
             <div
               className="space-y-4 animate-in fade-in duration-150"
               data-testid="wizard-step-3"
@@ -788,13 +908,17 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
 
               <div className="bg-zinc-900/90 border border-zinc-800 rounded-xl p-3.5 sm:p-4 space-y-2.5 text-xs">
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="text-zinc-400 uppercase text-[10px]">
+                  <span
+                    className={`text-zinc-400 uppercase ${small("text-[10px]")}`}
+                  >
                     Title:
                   </span>
                   <span className="font-bold text-amber-400">{gameTitle}</span>
                 </div>
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="text-zinc-400 uppercase text-[10px]">
+                  <span
+                    className={`text-zinc-400 uppercase ${small("text-[10px]")}`}
+                  >
                     Difficulty:
                   </span>
                   <span className="font-bold text-white capitalize">
@@ -804,13 +928,15 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                 {difficultyDescriptions?.[config.difficulty] && (
                   <p
                     data-testid="wizard-summary-difficulty-effect"
-                    className="text-[10px] text-zinc-400 leading-tight break-words"
+                    className={`${small("text-[10px]")} text-zinc-400 leading-tight break-words`}
                   >
                     {difficultyDescriptions[config.difficulty]}
                   </p>
                 )}
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="text-zinc-400 uppercase text-[10px]">
+                  <span
+                    className={`text-zinc-400 uppercase ${small("text-[10px]")}`}
+                  >
                     Loadout:
                   </span>
                   <span className="font-bold text-white text-right">
@@ -820,13 +946,15 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                 {applyNote && (
                   <p
                     data-testid="wizard-summary-loadout-effect"
-                    className="text-[10px] text-zinc-400 leading-tight break-words"
+                    className={`${small("text-[10px]")} text-zinc-400 leading-tight break-words`}
                   >
                     {currentLoadoutObj.description}
                   </p>
                 )}
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="text-zinc-400 uppercase text-[10px]">
+                  <span
+                    className={`text-zinc-400 uppercase ${small("text-[10px]")}`}
+                  >
                     Screen Shake:
                   </span>
                   <span className="font-bold text-white">
@@ -834,7 +962,9 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-zinc-800/80 pb-2">
-                  <span className="text-zinc-400 uppercase text-[10px]">
+                  <span
+                    className={`text-zinc-400 uppercase ${small("text-[10px]")}`}
+                  >
                     CRT Filter:
                   </span>
                   <span className="font-bold text-white">
@@ -842,7 +972,9 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-400 uppercase text-[10px]">
+                  <span
+                    className={`text-zinc-400 uppercase ${small("text-[10px]")}`}
+                  >
                     Cabinet Bezel:
                   </span>
                   <span className="font-bold text-white">
@@ -853,7 +985,7 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
               {applyNote && (
                 <p
                   data-testid="wizard-apply-note"
-                  className="text-[10px] text-amber-300/90 leading-snug break-words"
+                  className={`${small("text-[10px]")} text-amber-300/90 leading-snug break-words`}
                 >
                   {applyNote}
                 </p>
@@ -863,11 +995,15 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
         </div>
 
         {/* Footer Navigation Buttons */}
-        <div className="mt-5 pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-3">
-          {currentStep > 1 ? (
+        <div
+          className={`mt-5 pt-3 border-t border-zinc-800/80 flex items-center justify-between gap-3 ${
+            phone ? "[&>button]:flex-1" : ""
+          }`}
+        >
+          {canGoBack ? (
             <button
               type="button"
-              onClick={() => goToStep((currentStep - 1) as 1 | 2 | 3)}
+              onClick={goBack}
               onMouseEnter={() => playHover()}
               className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 font-bold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer touch-manipulation select-none active:scale-95"
             >
@@ -887,10 +1023,10 @@ export const PreGameSetupWizard: React.FC<PreGameSetupWizardProps> = ({
             <div />
           )}
 
-          {currentStep < 3 ? (
+          {canGoForward ? (
             <button
               type="button"
-              onClick={() => goToStep((currentStep + 1) as 1 | 2 | 3)}
+              onClick={goForward}
               onMouseEnter={() => playHover()}
               className="min-h-[44px] min-w-[44px] px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs flex items-center justify-center gap-1 transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer touch-manipulation select-none active:scale-95 uppercase"
             >

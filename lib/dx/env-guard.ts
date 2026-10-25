@@ -324,3 +324,104 @@ export function checkEnvironmentVariables(
     details: details.length > 0 ? details : undefined,
   };
 }
+
+/**
+ * Variables a client module may read through `env` even though they are not
+ * `NEXT_PUBLIC_*`. `NODE_ENV` is inlined by `getEnv`. `VITEST` only detects the
+ * unit-test harness and is undefined in every browser, which is the right
+ * answer there.
+ */
+const CLIENT_READABLE_SERVER_KEYS = new Set(["NODE_ENV", "VITEST"]);
+
+/** Matches a `"use client"` directive on its own line. */
+const USE_CLIENT_DIRECTIVE = /^\s*["']use client["'];?\s*$/m;
+
+/**
+ * Static check that client modules read only browser-visible variables
+ * through `env` (#2780).
+ *
+ * A browser bundle sees only the variables `getEnv` inlines: `NODE_ENV` and
+ * the keys of `clientEnvSchema`. Any other read in a `"use client"` module
+ * gets the schema default or undefined in the browser, whatever the
+ * deployment sets, so a check like `env.VERCEL_ENV === "production"` would
+ * silently never pass there. Modules without the directive that client code
+ * imports are not covered; keep their reads to the same set.
+ *
+ * @param root - Repository root.
+ * @returns One entry per offending read, as `file:line: env.KEY`.
+ */
+export function checkClientEnvReads(root: string): { violations: string[] } {
+  const { clientKeys } = getDeclaredEnvKeys();
+  const allowed = new Set([...CLIENT_READABLE_SERVER_KEYS, ...clientKeys]);
+  const violations: string[] = [];
+
+  function scanDir(dir: string) {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (["node_modules", ".next", "generated"].includes(entry.name))
+          continue;
+        scanDir(fullPath);
+        continue;
+      }
+      if (!entry.isFile() || !/\.(ts|tsx|js|jsx)$/.test(entry.name)) continue;
+      const content = fs.readFileSync(fullPath, "utf-8");
+      if (!USE_CLIENT_DIRECTIVE.test(content)) continue;
+      const relPath = path.relative(root, fullPath).replace(/\\/g, "/");
+      const lines = content.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const trimmed = lines[i].trim();
+        if (
+          trimmed.startsWith("//") ||
+          trimmed.startsWith("/*") ||
+          trimmed.startsWith("*") ||
+          trimmed.startsWith("{/*")
+        )
+          continue;
+        for (const match of lines[i].matchAll(
+          /(?<![\w.])(?:env|getEnv\(\))\.([A-Za-z_]\w*)/g
+        )) {
+          if (!allowed.has(match[1])) {
+            violations.push(`${relPath}:${i + 1}: env.${match[1]}`);
+          }
+        }
+      }
+    }
+  }
+
+  for (const d of ["app", "components", "hooks", "lib"]) {
+    scanDir(path.join(root, d));
+  }
+  return { violations };
+}
+
+/**
+ * Diagnostic check wrapping {@link checkClientEnvReads}.
+ *
+ * @param root - Repository root.
+ * @returns A failing result listing each read a browser cannot see.
+ */
+export function checkClientEnvironmentReads(
+  root: string
+): DiagnosticCheckResult {
+  const { violations } = checkClientEnvReads(root);
+  if (violations.length === 0) {
+    return {
+      id: "env-client-reads",
+      name: "Client Modules Read Only Browser-Visible Variables",
+      category: "security",
+      status: "pass",
+      message:
+        'Every env read in a "use client" module is NODE_ENV or a NEXT_PUBLIC_* key that getEnv inlines.',
+    };
+  }
+  return {
+    id: "env-client-reads",
+    name: "Client Modules Read Only Browser-Visible Variables",
+    category: "security",
+    status: "fail",
+    message: `${violations.length} env read(s) in "use client" modules name a variable the browser bundle never sees, so they read the schema default or undefined in production. Move the check to the server, or expose the value as a NEXT_PUBLIC_* key in clientEnvSchema and inline it in getEnv.`,
+    details: violations,
+  };
+}

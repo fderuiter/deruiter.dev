@@ -114,6 +114,12 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "date"
       ),
+      collected(
+        "SITEID",
+        "Study Site Identifier",
+        "DM.SITEID",
+        "Record Qualifier"
+      ),
       collected("AGE", "Age", "DM.AGE", "Record Qualifier", "integer"),
       assigned("AGEU", "Age Units", "Record Qualifier"),
       collected("SEX", "Sex", "DM.SEX", "Record Qualifier"),
@@ -141,6 +147,19 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "EXPOSURE_ARM",
         "Grouping Qualifier"
       ),
+      derived(
+        "ARMNRS",
+        "Reason Arm and/or Actual Arm is Null",
+        "ARM_NULL_REASON",
+        "Record Qualifier"
+      ),
+      derived(
+        "ACTARMUD",
+        "Description of Unplanned Actual Arm",
+        "UNPLANNED_ARM",
+        "Record Qualifier"
+      ),
+      collected("COUNTRY", "Country", "DM.COUNTRY", "Record Qualifier"),
     ],
   },
   SV: {
@@ -613,7 +632,6 @@ export function deriveSubjectDomains(
     const subject = text(record.USUBJID);
     const rand = randBySubject.get(subject);
     const ex = exBySubject.get(subject);
-    const screen = !rand;
     return item(
       {
         ...common(record.USUBJID, "DM"),
@@ -623,13 +641,19 @@ export function deriveSubjectDomains(
         RFENDTC: ex?.EXENDTC ?? null,
         RFXSTDTC: ex?.EXSTDTC ?? null,
         RFXENDTC: ex?.EXENDTC ?? null,
+        SITEID: record.SITEID,
         AGE: record.AGE,
         AGEU: "YEARS",
         SEX: record.SEX,
-        ARMCD: screen ? "SCRNFAIL" : rand.ARMCD,
-        ARM: screen ? "Screen Failure" : rand.ARM,
-        ACTARMCD: screen ? "SCRNFAIL" : rand.ARMCD,
-        ACTARM: screen ? "Screen Failure" : rand.ARM,
+        // A subject is left unrandomized only when screening fails, so an
+        // arm is missing only for a screen failure (#2802).
+        ARMCD: rand?.ARMCD ?? null,
+        ARM: rand?.ARM ?? null,
+        ACTARMCD: rand?.ARMCD ?? null,
+        ACTARM: rand?.ARM ?? null,
+        ARMNRS: rand ? null : "SCREEN FAILURE",
+        ACTARMUD: null,
+        COUNTRY: record.COUNTRY,
       },
       record,
       rand,

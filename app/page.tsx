@@ -28,6 +28,7 @@ const DynamicTimeline = dynamic(
   { ssr: true }
 );
 import { InteractiveHighlights } from "@/components/InteractiveHighlights";
+import { ClinicalJourneyHighlight } from "@/components/clinical-journey/ClinicalJourneyHighlight";
 import { PageLayout } from "@/components/PageLayout";
 import {
   IconMessageCode,
@@ -135,6 +136,7 @@ export default async function PortfolioHomePage() {
           </p>
 
           {/* Interactive Systems Highlights Section */}
+          <ClinicalJourneyHighlight headingLevel={3} />
           <InteractiveHighlights />
 
           {/* Streamlined Lightweight Project Teaser */}

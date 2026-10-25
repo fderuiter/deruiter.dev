@@ -164,6 +164,12 @@ Re-exports [checkDataProducts](internal/governance/contracts/check/functions/che
 
 ***
 
+### checkExploration
+
+Re-exports [checkExploration](internal/explore/model/functions/checkExploration.md)
+
+***
+
 ### checkLayerFlow
 
 Re-exports [checkLayerFlow](internal/policy/functions/checkLayerFlow.md)
@@ -512,6 +518,12 @@ Re-exports [decisionMemo](internal/strategy/engine/functions/decisionMemo.md)
 
 ***
 
+### decodeExploration
+
+Re-exports [decodeExploration](internal/explore/hash/functions/decodeExploration.md)
+
+***
+
 ### DEFAULT\_PORTFOLIO\_SEED
 
 Re-exports [DEFAULT_PORTFOLIO_SEED](presets/variables/DEFAULT_PORTFOLIO_SEED.md)
@@ -656,6 +668,12 @@ Re-exports [emitDdl](internal/warehouse/ddl/functions/emitDdl.md)
 
 ***
 
+### encodeExploration
+
+Re-exports [encodeExploration](internal/explore/hash/functions/encodeExploration.md)
+
+***
+
 ### EnrollmentForecast
 
 Re-exports [EnrollmentForecast](types/interfaces/EnrollmentForecast.md)
@@ -689,6 +707,114 @@ Re-exports [EtmfDocument](types/interfaces/EtmfDocument.md)
 ### evaluateMetric
 
 Re-exports [evaluateMetric](internal/semantic/evaluate/functions/evaluateMetric.md)
+
+***
+
+### Exploration
+
+Re-exports [Exploration](types/interfaces/Exploration.md)
+
+***
+
+### EXPLORATION\_AUDIENCE
+
+Re-exports [EXPLORATION_AUDIENCE](internal/explore/model/variables/EXPLORATION_AUDIENCE.md)
+
+***
+
+### EXPLORATION\_HASH\_MAX\_LENGTH
+
+Re-exports [EXPLORATION_HASH_MAX_LENGTH](internal/explore/hash/variables/EXPLORATION_HASH_MAX_LENGTH.md)
+
+***
+
+### EXPLORATION\_OWNER
+
+Re-exports [EXPLORATION_OWNER](internal/explore/model/variables/EXPLORATION_OWNER.md)
+
+***
+
+### EXPLORATION\_PURPOSE
+
+Re-exports [EXPLORATION_PURPOSE](internal/explore/model/variables/EXPLORATION_PURPOSE.md)
+
+***
+
+### EXPLORATION\_REFRESH\_SLA\_HOURS
+
+Re-exports [EXPLORATION_REFRESH_SLA_HOURS](internal/explore/model/variables/EXPLORATION_REFRESH_SLA_HOURS.md)
+
+***
+
+### EXPLORATION\_VERSION
+
+Re-exports [EXPLORATION_VERSION](internal/explore/model/variables/EXPLORATION_VERSION.md)
+
+***
+
+### explorationChoices
+
+Re-exports [explorationChoices](internal/explore/model/functions/explorationChoices.md)
+
+***
+
+### ExplorationChoices
+
+Re-exports [ExplorationChoices](types/interfaces/ExplorationChoices.md)
+
+***
+
+### explorationCsv
+
+Re-exports [explorationCsv](internal/explore/output/functions/explorationCsv.md)
+
+***
+
+### ExplorationDecoding
+
+Re-exports [ExplorationDecoding](types/type-aliases/ExplorationDecoding.md)
+
+***
+
+### ExplorationFinding
+
+Re-exports [ExplorationFinding](types/interfaces/ExplorationFinding.md)
+
+***
+
+### ExplorationResult
+
+Re-exports [ExplorationResult](types/interfaces/ExplorationResult.md)
+
+***
+
+### explorationSpec
+
+Re-exports [explorationSpec](internal/explore/model/functions/explorationSpec.md)
+
+***
+
+### EXPLORER\_MAX\_BARS
+
+Re-exports [EXPLORER_MAX_BARS](internal/explore/model/variables/EXPLORER_MAX_BARS.md)
+
+***
+
+### EXPLORER\_MAX\_DIMENSIONS
+
+Re-exports [EXPLORER_MAX_DIMENSIONS](internal/explore/model/variables/EXPLORER_MAX_DIMENSIONS.md)
+
+***
+
+### EXPLORER\_VISUALS
+
+Re-exports [EXPLORER_VISUALS](internal/explore/model/variables/EXPLORER_VISUALS.md)
+
+***
+
+### explorerMetrics
+
+Re-exports [explorerMetrics](internal/explore/model/functions/explorerMetrics.md)
 
 ***
 
@@ -1148,6 +1274,12 @@ Re-exports [NO_METRIC_VALUE](internal/reporting/format/variables/NO_METRIC_VALUE
 
 ***
 
+### normalizeExploration
+
+Re-exports [normalizeExploration](internal/explore/model/functions/normalizeExploration.md)
+
+***
+
 ### ODCS\_API\_VERSION
 
 Re-exports [ODCS_API_VERSION](internal/governance/contracts/odcs/variables/ODCS_API_VERSION.md)
@@ -1361,6 +1493,18 @@ Re-exports [posteriorRate](internal/forecast/fit/functions/posteriorRate.md)
 ### ProductType
 
 Re-exports [ProductType](types/type-aliases/ProductType.md)
+
+***
+
+### PromotionStep
+
+Re-exports [PromotionStep](types/interfaces/PromotionStep.md)
+
+***
+
+### promotionSteps
+
+Re-exports [promotionSteps](internal/explore/output/functions/promotionSteps.md)
 
 ***
 
@@ -1640,6 +1784,12 @@ Re-exports [RoadmapItem](types/interfaces/RoadmapItem.md)
 
 ***
 
+### runExploration
+
+Re-exports [runExploration](internal/explore/model/functions/runExploration.md)
+
+***
+
 ### SCD2\_OPEN\_END
 
 Re-exports [SCD2_OPEN_END](presets/variables/SCD2_OPEN_END.md)
@@ -1739,6 +1889,12 @@ Re-exports [SourceSystem](types/type-aliases/SourceSystem.md)
 ### SqlDialect
 
 Re-exports [SqlDialect](types/type-aliases/SqlDialect.md)
+
+***
+
+### startExploration
+
+Re-exports [startExploration](internal/explore/model/functions/startExploration.md)
 
 ***
 
@@ -1847,6 +2003,12 @@ Re-exports [StudyStatus](types/type-aliases/StudyStatus.md)
 ### SubjectStatus
 
 Re-exports [SubjectStatus](types/type-aliases/SubjectStatus.md)
+
+***
+
+### suggestVisual
+
+Re-exports [suggestVisual](internal/explore/model/functions/suggestVisual.md)
 
 ***
 

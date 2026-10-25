@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.7.0"
+version: "2.1.0"
 status: active
 domain: "Study data"
 tags:
@@ -707,14 +707,6 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of End of Visit"
-        required: false
-        classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
         required: false
         classification: confidential
     quality:

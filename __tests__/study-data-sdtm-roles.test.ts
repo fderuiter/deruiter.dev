@@ -18,9 +18,6 @@ const IG_ROLES: Record<string, Record<string, string>> = JSON.parse(
   )
 );
 
-/** Variables the IG does not define for their dataset, with the issue that removes them. */
-const NOT_IN_IG = new Set(["SV.EPOCH"]); // #2869
-
 const sdtm = runPipeline(DEMO_301_STUDY, {
   seed: 301,
   nSubjects: 90,
@@ -34,7 +31,6 @@ describe("SDTM variable roles", () => {
     (name, dataset) => {
       for (const variable of dataset.variables) {
         const key = `${name}.${variable.name}`;
-        if (NOT_IN_IG.has(key)) continue;
         expect(
           IG_ROLES[name][variable.name],
           `${key} is not in the IG`

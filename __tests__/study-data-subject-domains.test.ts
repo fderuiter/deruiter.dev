@@ -436,11 +436,15 @@ describe("SDTM subject tabulation", () => {
         .filter((record) => record.VISITNUM !== 99)
         .every((record) => record.VISIT === planned.get(record.VISITNUM))
     ).toBe(true);
+    // SDTMIG 3.4 defines no EPOCH for SV (#2869).
+    expect(get("SV").variables.map(({ name }) => name)).not.toContain("EPOCH");
     const epochs = new Set(
       run.datasets.find((dataset) => dataset.name === "TA")!.columns.EPOCH
     );
     expect(
-      sv.every((record) => record.EPOCH === null || epochs.has(record.EPOCH))
+      records(get("VS")).every(
+        (record) => record.EPOCH === null || epochs.has(record.EPOCH)
+      )
     ).toBe(true);
   });
 

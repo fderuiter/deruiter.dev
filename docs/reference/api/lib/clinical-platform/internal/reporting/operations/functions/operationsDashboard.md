@@ -9,8 +9,9 @@
 > **operationsDashboard**(`warehouse`, `scope?`): [`OperationsDashboard`](../../../../types/reporting/interfaces/OperationsDashboard.md)
 
 The operations dashboard at a scope: the glance, one section per tab
-with its reports and gaps, the breadcrumb trail, and the studies,
-countries or sites to drill into next.
+with its reports and gaps, the breadcrumb trail, the studies, countries
+or sites to drill into next, and below the portfolio level the study's
+risk-based quality management narrowed to the scope.
 
 ## Parameters
 

@@ -170,7 +170,7 @@ function underReporting(
   peers: readonly SiteData[],
   count: (s: SiteData) => number,
   exposure: (s: SiteData) => number,
-  noun: string,
+  [one, many]: readonly [string, string],
   per: string
 ): Draft | CsmExclusion {
   const peerCount = sum(peers.map(count));
@@ -179,7 +179,7 @@ function underReporting(
     return {
       siteId: site.siteId,
       testId,
-      reason: `The site's peers report no ${noun}, so there is no rate to compare against.`,
+      reason: `The site's peers report no ${many}, so there is no rate to compare against.`,
     };
   }
   const rate = peerCount / peerExposure;
@@ -191,7 +191,7 @@ function underReporting(
     n: exposure(site),
     statistic: observed,
     pValue: clamp01(poissonCdf(observed, expected)),
-    detail: `${observed} ${noun} over ${exposure(site)} ${per}; the peer rate of ${fixed(rate * 100)} per 100 predicts ${fixed(expected)}.`,
+    detail: `${observed} ${observed === 1 ? one : many} over ${exposure(site)} ${per}; the peer rate of ${fixed(rate * 100)} per 100 predicts ${fixed(expected)}.`,
   };
 }
 
@@ -360,7 +360,7 @@ export function centralMonitoring(
         peers,
         (s) => s.queries,
         (s) => s.entered,
-        "queries",
+        ["query", "queries"],
         "entered visits"
       ),
       underReporting(
@@ -369,7 +369,7 @@ export function centralMonitoring(
         peers,
         (s) => s.deviations,
         (s) => s.visits,
-        "deviations",
+        ["deviation", "deviations"],
         "visits"
       ),
       exactDayVisits("csm-exact-day-visits", site, peers),

@@ -9,10 +9,17 @@
 ## Interfaces
 
 - [OperationsCrumb](interfaces/OperationsCrumb.md)
+- [OperationsCsm](interfaces/OperationsCsm.md)
 - [OperationsDashboard](interfaces/OperationsDashboard.md)
 - [OperationsGap](interfaces/OperationsGap.md)
+- [OperationsKri](interfaces/OperationsKri.md)
+- [OperationsKriCell](interfaces/OperationsKriCell.md)
 - [OperationsMember](interfaces/OperationsMember.md)
 - [OperationsMilestone](interfaces/OperationsMilestone.md)
+- [OperationsQtl](interfaces/OperationsQtl.md)
+- [OperationsRisk](interfaces/OperationsRisk.md)
+- [OperationsRiskFactor](interfaces/OperationsRiskFactor.md)
+- [OperationsRiskSite](interfaces/OperationsRiskSite.md)
 - [OperationsRunByOption](interfaces/OperationsRunByOption.md)
 - [OperationsScope](interfaces/OperationsScope.md)
 - [OperationsSection](interfaces/OperationsSection.md)

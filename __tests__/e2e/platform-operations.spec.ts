@@ -184,3 +184,43 @@ test("the drill-down works with the keyboard alone", async ({ page }) => {
   await expect(page).toHaveURL(/#view=quality$/);
   await expect(selected).toHaveText("Quality and monitoring");
 });
+
+test("the risk tab flags the planted site and drills into it (#2631)", async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto("/platform/operations#study=DEMO-302&view=risk");
+  await settled(page, "DEMO-302");
+  await expect(page.getByRole("tab", { selected: true })).toHaveText("Risk");
+
+  const kris = page.getByRole("table", {
+    name: /^Key risk indicators for 36 sites/,
+  });
+  await expect(kris.getByRole("row")).toHaveCount(37);
+  const csm = page.locator('section[aria-labelledby="risk-csm"]');
+  await expect(
+    csm.getByRole("listitem").filter({ hasText: "DEMO-302-BR-118 · " })
+  ).toHaveCount(3);
+  await expect(
+    page.getByRole("table", { name: /risk signal log/ }).getByRole("row")
+  ).toHaveCount(3);
+
+  // A site row drills into that site and stays on the Risk tab.
+  await expect(async () => {
+    await kris.getByRole("link", { name: "DEMO-302-BR-118" }).click();
+    await expect(page).toHaveURL(
+      /#study=DEMO-302&country=BR&site=DEMO-302-BR-118&view=risk$/,
+      { timeout: 5_000 }
+    );
+  }).toPass({ timeout: 15_000 });
+  await settled(page, "DEMO-302-BR-118");
+  await expect(page.getByRole("tab", { selected: true })).toHaveText("Risk");
+  await expect(
+    page
+      .getByRole("table", { name: /^Key risk indicators for 1 site/ })
+      .getByRole("row")
+  ).toHaveCount(2);
+  await expect(
+    page.getByText(/A limit applies to the whole study/)
+  ).toBeVisible();
+});

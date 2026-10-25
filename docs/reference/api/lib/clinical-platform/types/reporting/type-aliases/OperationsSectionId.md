@@ -6,6 +6,6 @@
 
 # Type Alias: OperationsSectionId
 
-> **OperationsSectionId** = `"enrollment"` \| `"activation"` \| `"data-management"` \| `"quality"` \| `"milestones"`
+> **OperationsSectionId** = `"enrollment"` \| `"activation"` \| `"data-management"` \| `"quality"` \| `"risk"` \| `"milestones"`
 
 Section of the operations dashboard.

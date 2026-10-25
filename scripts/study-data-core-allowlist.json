@@ -300,50 +300,17 @@
     },
     {
       "target": "usdm",
-      "coreId": "CORE-000855",
-      "dataset": "StudyIntervention",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "Intervention type C753 is not in C99078."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000907",
-      "dataset": "StudyIntervention",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "Intervention roles are the strings IP and PLACEBO, not C207417 codes."
-    },
-    {
-      "target": "usdm",
       "coreId": "CORE-000939",
       "dataset": "Objective",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "Objective levels C85826 and C85827 are not in C188725."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000904",
-      "dataset": "Timing",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "Timing type codes and decodes are swapped."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000417",
-      "dataset": "Timing",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "The Fixed Reference baseline timing carries a window."
+      "category": "ct-cache",
+      "reason": "The fixture uses the 2026-09-25 Objective Level decodes (Primary Objective, Secondary Objective). CORE validates against its newest cached CT, 2026-03-27, whose submission values were Study Primary Objective and Study Secondary Objective."
     },
     {
       "target": "usdm",
       "coreId": "CORE-000827",
       "dataset": "Encounter",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2823,
       "reason": "scheduledAtId points at scheduled activity instances, not timings."
     },
     {
@@ -351,7 +318,7 @@
       "coreId": "CORE-000961",
       "dataset": "InterventionalStudyDesign",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2823,
       "reason": "Encounter order by next/previous differs from the main timeline."
     },
     {
@@ -359,7 +326,7 @@
       "coreId": "CORE-001048",
       "dataset": "InterventionalStudyDesign",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2823,
       "reason": "The main timeline reaches only the screening epoch."
     },
     {
@@ -367,7 +334,7 @@
       "coreId": "CORE-001076",
       "dataset": "Activity",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2824,
       "reason": "Activities refer to no procedure, biomedical concept or timeline."
     },
     {
@@ -375,7 +342,7 @@
       "coreId": "CORE-000973",
       "dataset": "StudyVersion",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2824,
       "reason": "No sponsor organization role."
     },
     {
@@ -383,7 +350,7 @@
       "coreId": "CORE-001054",
       "dataset": "StudyVersion",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2824,
       "reason": "No sponsor study identifier."
     },
     {
@@ -391,7 +358,7 @@
       "coreId": "CORE-001065",
       "dataset": "InterventionalStudyDesign",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2824,
       "reason": "No study intervention is referenced from a procedure."
     },
     {
@@ -399,7 +366,7 @@
       "coreId": "CORE-001071",
       "dataset": "InterventionalStudyDesign",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2824,
       "reason": "A double-blind design with no masked roles."
     },
     {
@@ -407,7 +374,7 @@
       "coreId": "CORE-001016",
       "dataset": "ScheduleTimeline",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2823,
       "reason": "The main timeline has no planned duration."
     },
     {
@@ -415,16 +382,8 @@
       "coreId": "CORE-000875",
       "dataset": "StudyDesignPopulation",
       "category": "defect",
-      "issue": 2770,
+      "issue": 2824,
       "reason": "The population has no planned sex."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001006",
-      "dataset": "BiomedicalConcept",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "The Weight concept's synonym equals its label."
     },
     {
       "target": "usdm",

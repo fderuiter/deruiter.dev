@@ -6,6 +6,6 @@
 
 # Variable: USDM\_TIMING\_BEFORE
 
-> `const` **USDM\_TIMING\_BEFORE**: `"C201356"` = `"C201356"`
+> `const` **USDM\_TIMING\_BEFORE**: `"C201357"` = `"C201357"`
 
-NCI code of the USDM Timing type "Before".
+NCI code of the USDM Timing type "Before" (Timing Type, C201264).

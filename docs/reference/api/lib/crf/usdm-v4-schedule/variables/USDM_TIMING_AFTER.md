@@ -6,6 +6,6 @@
 
 # Variable: USDM\_TIMING\_AFTER
 
-> `const` **USDM\_TIMING\_AFTER**: `"C201357"` = `"C201357"`
+> `const` **USDM\_TIMING\_AFTER**: `"C201356"` = `"C201356"`
 
-NCI code of the USDM Timing type "After".
+NCI code of the USDM Timing type "After" (Timing Type, C201264).

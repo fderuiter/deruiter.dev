@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 import {
   STUDY_PRESETS,
@@ -13,7 +14,10 @@ import {
   parseIsoDurationDays,
   studyDayDistance,
   addCalendarDaysToStudyDay,
+  USDM_TIMING_AFTER,
+  USDM_TIMING_BEFORE,
   USDM_V4_VERSION,
+  type UsdmV4InterventionalStudyDesign,
 } from "@/lib/crf";
 import { loadUsdmV4Schema, validateUsdmV4 } from "../helpers/usdm-v4-schema";
 
@@ -174,6 +178,76 @@ describe("USDM v4 timing helpers", () => {
     expect(parseIsoDurationDays("P")).toBeNull();
     expect(parseIsoDurationDays("14 days")).toBeNull();
     expect(parseIsoDurationDays(undefined)).toBeNull();
+  });
+
+  it("codes Before as C201357 and After as C201356 (Timing Type, C201264)", () => {
+    expect(USDM_TIMING_BEFORE).toBe("C201357");
+    expect(USDM_TIMING_AFTER).toBe("C201356");
+    const doc = exportStudyToUsdmObject(ONCOLOGY_RECIST_PRESET);
+    const timings =
+      doc.study.versions?.[0]?.studyDesigns?.[0]?.scheduleTimelines?.[0]
+        ?.timings ?? [];
+    const byDecode = new Map(
+      timings.map((timing) => [timing.type?.decode, timing.type?.code])
+    );
+    expect(byDecode.get("Before")).toBe("C201357");
+    expect(byDecode.get("After")).toBe("C201356");
+  });
+
+  it("reads a timing's direction from its decode first, then its code", () => {
+    const design = (
+      before: { code: string; decode: string },
+      after: { code: string; decode: string }
+    ) =>
+      fromPartial<Pick<UsdmV4InterventionalStudyDesign, "scheduleTimelines">>({
+        scheduleTimelines: [
+          {
+            mainTimeline: true,
+            instances: ["scr", "base", "wk2"].map((id) => ({
+              id,
+              encounterId: `enc_${id}`,
+              instanceType: "ScheduledActivityInstance",
+            })),
+            timings: [
+              {
+                type: { code: "C201358", decode: "Fixed Reference" },
+                value: "P0D",
+                relativeFromScheduledInstanceId: "base",
+                relativeToScheduledInstanceId: null,
+              },
+              {
+                type: before,
+                value: "P14D",
+                relativeFromScheduledInstanceId: "scr",
+                relativeToScheduledInstanceId: "base",
+              },
+              {
+                type: after,
+                value: "P14D",
+                relativeFromScheduledInstanceId: "wk2",
+                relativeToScheduledInstanceId: "base",
+              },
+            ],
+          },
+        ],
+      });
+    const days = (d: ReturnType<typeof design>) =>
+      getUsdmV4EncounterSchedule(d).map((visit) => visit.targetDay);
+    // Codes alone, as another USDM producer may send them.
+    expect(
+      days(
+        design({ code: "C201357", decode: "" }, { code: "C201356", decode: "" })
+      )
+    ).toEqual([-14, 1, 15]);
+    // CRF Studio's earlier exports: codes swapped, decodes right.
+    expect(
+      days(
+        design(
+          { code: "C201356", decode: "Before" },
+          { code: "C201357", decode: "After" }
+        )
+      )
+    ).toEqual([-14, 1, 15]);
   });
 
   it("has no study day zero", () => {

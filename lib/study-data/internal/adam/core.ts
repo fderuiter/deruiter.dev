@@ -66,6 +66,7 @@ const ADSL_VARIABLES: readonly VariableMeta[] = [
   column("AGEGR1", "Age Group", "text", "Derived", "ADSL_POP"),
   column("AGEGR1N", "Age Group Number", "integer", "Derived", "ADSL_POP"),
   column("SEX", "Sex", "text", "Predecessor", undefined, "DM.SEX"),
+  column("RACE", "Race", "text", "Predecessor", undefined, "DM.RACE"),
   column(
     "BSYSBP",
     "Baseline Systolic Blood Pressure",
@@ -290,6 +291,7 @@ export function deriveAdsl(
       AGEGR1: ageGroup,
       AGEGR1N: ageGroupNumber,
       SEX: source.SEX,
+      RACE: source.RACE,
       BSYSBP: number(systolicBaseline?.row.VSSTRESN),
       BDIABP: number(diastolicBaseline?.row.VSSTRESN),
       EOSSTT:

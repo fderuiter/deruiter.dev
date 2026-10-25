@@ -15,7 +15,7 @@
  * SDTM hints USDM v4 has no property for: an activity's domain, and a
  * biomedical concept's test code and standard unit.
  */
-import { CLINICAL_STANDARDS_PROFILE } from "../standards";
+import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../standards";
 import {
   USDM_SDTM_DOMAIN_EXTENSION_URL,
   USDM_SDTM_STRESU_EXTENSION_URL,
@@ -24,12 +24,15 @@ import {
   type UsdmV4Activity,
   type UsdmV4AliasCode,
   type UsdmV4BiomedicalConcept,
+  type UsdmV4BiomedicalConceptSurrogate,
   type UsdmV4Code,
   type UsdmV4Document,
   type UsdmV4Duration,
   type UsdmV4Encounter,
   type UsdmV4ExtensionAttribute,
+  type UsdmV4Procedure,
   type UsdmV4ScheduledActivityInstance,
+  type UsdmV4StudyRole,
   type UsdmV4Timing,
 } from "@/lib/crf/usdm-v4-types";
 
@@ -151,12 +154,52 @@ function concept(spec: ConceptSpec): UsdmV4BiomedicalConcept {
 // Activities
 // ---------------------------------------------------------------------------
 
+// Demographics, adverse events and disposition have no CDISC biomedical
+// concept here, so a surrogate per activity says what it collects (CORE-001076).
+const BC_SURROGATES: UsdmV4BiomedicalConceptSurrogate[] = [
+  ["DM", "Demographics", "Age, sex, race and ethnicity."],
+  [
+    "AE",
+    "Adverse event",
+    "An untoward medical occurrence, its seriousness, severity and outcome.",
+  ],
+  [
+    "DS",
+    "Disposition",
+    "Completion of the study or the reason for discontinuation.",
+  ],
+].map(([domain, name, description]) => ({
+  id: `bcs_${domain.toLowerCase()}`,
+  name,
+  label: name,
+  description,
+  reference: `${standardCitation("SDTMIG")} ${domain}`,
+  instanceType: "BiomedicalConceptSurrogate",
+}));
+
+// One administration procedure per study intervention, so the drug
+// administration activity names what it gives (CORE-001065, CORE-001076).
+function administration(interventionId: string, name: string): UsdmV4Procedure {
+  const id = `proc_admin_${interventionId.replace(/^int_/, "")}`;
+  return {
+    id,
+    name: `Administer ${name}`,
+    label: null,
+    description: `Once-daily oral ${name}.`,
+    procedureType: "Medication Administration",
+    code: ct(`${id}_code`, "C128534", "Medication Administration"),
+    studyInterventionId: interventionId,
+    instanceType: "Procedure",
+  };
+}
+
 function activity(
   id: string,
   name: string,
   domain: string,
   description: string,
-  concepts: ConceptSpec[] = []
+  concepts: ConceptSpec[] = [],
+  references: Pick<UsdmV4Activity, "definedProcedures" | "bcSurrogateIds"> = {}
 ): UsdmV4Activity {
   return {
     id,
@@ -164,10 +207,10 @@ function activity(
     label: name,
     description,
     childIds: [],
-    definedProcedures: [],
+    definedProcedures: references.definedProcedures ?? [],
     biomedicalConceptIds: concepts.map(conceptId),
     bcCategoryIds: [],
-    bcSurrogateIds: [],
+    bcSurrogateIds: references.bcSurrogateIds ?? [],
     timelineId: null,
     extensionAttributes: [
       ext(`${id}_domain`, USDM_SDTM_DOMAIN_EXTENSION_URL, domain),
@@ -181,7 +224,9 @@ const ACTIVITIES: UsdmV4Activity[] = [
     "act_dm",
     "Demographics",
     "DM",
-    "Collect age, sex, race and ethnicity."
+    "Collect age, sex, race and ethnicity.",
+    [],
+    { bcSurrogateIds: ["bcs_dm"] }
   ),
   activity(
     "act_vs",
@@ -208,19 +253,30 @@ const ACTIVITIES: UsdmV4Activity[] = [
     "act_ex",
     "Study drug administration",
     "EX",
-    "Dispense and reconcile once-daily oral study drug."
+    "Dispense and reconcile once-daily oral study drug.",
+    [],
+    {
+      definedProcedures: [
+        administration("int_demoxacin", "Demoxacin"),
+        administration("int_placebo", "placebo"),
+      ],
+    }
   ),
   activity(
     "act_ae",
     "Adverse events",
     "AE",
-    "Record adverse events from first dose to the end of study."
+    "Record adverse events from first dose to the end of study.",
+    [],
+    { bcSurrogateIds: ["bcs_ae"] }
   ),
   activity(
     "act_ds",
     "Disposition",
     "DS",
-    "Record completion or the reason for discontinuation."
+    "Record completion or the reason for discontinuation.",
+    [],
+    { bcSurrogateIds: ["bcs_ds"] }
   ),
 ].map((act, idx, all) => ({
   ...act,
@@ -496,6 +552,25 @@ const ELEMENTS = [
 // Objectives, endpoints, populations and estimands
 // ---------------------------------------------------------------------------
 
+// A role the double-blind design masks: tablets of Demoxacin and placebo
+// look identical.
+function maskedRole(id: string, name: string, code: string): UsdmV4StudyRole {
+  return {
+    id,
+    name,
+    code: ct(`${id}_code`, code, name),
+    appliesToIds: ["design_main"],
+    organizationIds: [],
+    masking: {
+      id: `${id}_masking`,
+      text: "Demoxacin and placebo tablets look identical.",
+      isMasked: true,
+      instanceType: "Masking",
+    },
+    instanceType: "StudyRole",
+  };
+}
+
 const PRIMARY_ENDPOINT = "endpoint_sysbp_cfb_w12";
 const SECONDARY_ENDPOINT = "endpoint_tte_ae_disc";
 const SAFETY_ENDPOINT = "endpoint_teae_incidence";
@@ -537,6 +612,21 @@ export const DEMO_301_USDM: UsdmV4Document = {
             type: ct("title_brief_type", "C207615", "Brief Study Title"),
             instanceType: "StudyTitle",
           },
+        ],
+        // The fictional sponsor, and the roles the double-blind design masks
+        // (CORE-000973, CORE-001054, CORE-001071).
+        roles: [
+          {
+            id: "role_sponsor",
+            name: "Sponsor",
+            code: ct("role_sponsor_code", "C70793", "Clinical Study Sponsor"),
+            appliesToIds: ["sv_1"],
+            organizationIds: ["org_sponsor"],
+            masking: null,
+            instanceType: "StudyRole",
+          },
+          maskedRole("role_investigator", "Investigator", "C25936"),
+          maskedRole("role_subject", "Study Subject", "C41189"),
         ],
         organizations: [
           {
@@ -602,6 +692,7 @@ export const DEMO_301_USDM: UsdmV4Document = {
         biomedicalConcepts: [...VITAL_SIGNS, ...CHEMISTRY, ...HAEMATOLOGY].map(
           concept
         ),
+        bcSurrogates: BC_SURROGATES,
         studyDesigns: [
           {
             id: "design_main",
@@ -817,6 +908,10 @@ export const DEMO_301_USDM: UsdmV4Document = {
               description:
                 "Adults aged 18 to 75 with untreated or washed-out mild essential hypertension.",
               includesHealthySubjects: false,
+              plannedSex: [
+                ct("population_main_sex_f", "C16576", "Female"),
+                ct("population_main_sex_m", "C20197", "Male"),
+              ],
               plannedEnrollmentNumber: {
                 id: "population_main_n",
                 value: 90,

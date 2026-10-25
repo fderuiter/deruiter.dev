@@ -161,6 +161,7 @@ export function DesktopView({
     activeWeaponId,
     dronesStunned,
     activeSideEffect,
+    runComplete,
     boss,
     tspNodes,
     exitLocked,
@@ -952,8 +953,9 @@ export function DesktopView({
         {(canvasSize) => (
           <>
             {/* Active side-effect strip: it overlays the top of the board, so
-            the maze does not move while it shows (#2291). */}
-            {activeSideEffect && (
+            the maze does not move while it shows (#2291). It clears with
+            the run, so nothing sits behind the run-complete card (#2841). */}
+            {activeSideEffect && !runComplete && (
               <div
                 data-testid="labyrinth-side-effect"
                 className="pointer-events-none absolute inset-x-1 top-1 z-20 mx-auto flex items-center justify-between gap-2 rounded border border-rose-800/60 bg-rose-950/85 px-2 py-0.5 text-xs text-rose-300"

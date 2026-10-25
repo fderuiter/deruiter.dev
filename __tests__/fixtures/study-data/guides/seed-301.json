@@ -246,6 +246,11 @@
         "variables": ["DM.RFENDTC", "DM.RFXENDTC"]
       },
       {
+        "id": "LAST_PARTICIPATION",
+        "text": "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, adverse events, vital signs, laboratory tests and disposition events. Partial dates are ignored.",
+        "variables": ["DM.RFPENDTC"]
+      },
+      {
         "id": "DEATH_DATE",
         "text": "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
         "variables": ["DM.DTHDTC"]
@@ -280,8 +285,11 @@
         "text": "Days from RFSTDTC (first exposure) to the record date, plus one when the date is on or after RFSTDTC; there is no Day 0. Missing when either date is missing or partial.",
         "variables": [
           "SV.SVSTDY",
+          "SV.SVENDY",
           "EX.EXSTDY",
+          "EX.EXENDY",
           "AE.AESTDY",
+          "AE.AEENDY",
           "VS.VSDY",
           "LB.LBDY",
           "DS.DSSTDY"

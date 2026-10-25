@@ -124,6 +124,13 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "date"
       ),
       derived(
+        "RFPENDTC",
+        "Date/Time of End of Participation",
+        "LAST_PARTICIPATION",
+        "Record Qualifier",
+        "date"
+      ),
+      derived(
         "DTHDTC",
         "Date/Time of Death",
         "DEATH_DATE",
@@ -140,6 +147,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       collected("AGE", "Age", "DM.AGE", "Record Qualifier", "integer"),
       assigned("AGEU", "Age Units", "Record Qualifier"),
       collected("SEX", "Sex", "DM.SEX", "Record Qualifier"),
+      collected("RACE", "Race", "DM.RACE", "Record Qualifier"),
       derived(
         "ARMCD",
         "Planned Arm Code",
@@ -197,6 +205,13 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
+      derived(
+        "SVENDY",
+        "Study Day of End of Visit",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
       EPOCH,
     ],
   },
@@ -228,6 +243,13 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       derived(
         "EXSTDY",
         "Study Day of Start of Treatment",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "EXENDY",
+        "Study Day of End of Treatment",
         "STUDY_DAY",
         "Timing",
         "integer"
@@ -289,6 +311,13 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       derived(
         "AESTDY",
         "Study Day of Start of Adverse Event",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "AEENDY",
+        "Study Day of End of Adverse Event",
         "STUDY_DAY",
         "Timing",
         "integer"
@@ -603,6 +632,26 @@ export function deriveSubjectDomains(
       .filter((row) => row.DSDECOD === "DEATH")
       .map((row) => [text(row.USUBJID), row])
   );
+  // The subject's last contact: the latest complete date on any of their
+  // collected records, kept with the record it came from for the lineage.
+  const lastContactBySubject = new Map<
+    string | null,
+    { date: string; record: Row }
+  >();
+  for (const dataset of collectedDatasets) {
+    const dateNames = dataset.variables
+      .filter((variable) => variable.type === "date")
+      .map((variable) => variable.name);
+    for (const record of rows(dataset)) {
+      const subject = text(record.USUBJID);
+      for (const name of dateNames) {
+        const date = isoDate(record[name] ?? null);
+        const latest = lastContactBySubject.get(subject);
+        if (date && (!latest || date > latest.date))
+          lastContactBySubject.set(subject, { date, record });
+      }
+    }
+  }
   const tv = trialDesign.find((dataset) => dataset.name === "TV");
   const plannedVisits = new Map(
     (tv ? rows(tv) : []).map((row) => [num(row.VISITNUM), row])
@@ -658,6 +707,7 @@ export function deriveSubjectDomains(
     const rand = randBySubject.get(subject);
     const ex = exBySubject.get(subject);
     const death = deathBySubject.get(subject);
+    const lastContact = lastContactBySubject.get(subject);
     return item(
       {
         ...common(record.USUBJID, "DM"),
@@ -667,12 +717,14 @@ export function deriveSubjectDomains(
         RFENDTC: ex?.EXENDTC ?? null,
         RFXSTDTC: ex?.EXSTDTC ?? null,
         RFXENDTC: ex?.EXENDTC ?? null,
+        RFPENDTC: lastContact?.date ?? null,
         DTHDTC: death?.DSSTDTC ?? null,
         DTHFL: death ? "Y" : null,
         SITEID: record.SITEID,
         AGE: record.AGE,
         AGEU: "YEARS",
         SEX: record.SEX,
+        RACE: record.RACE,
         // A subject is left unrandomized only when screening fails, so an
         // arm is missing only for a screen failure (#2802).
         ARMCD: rand?.ARMCD ?? null,
@@ -686,7 +738,8 @@ export function deriveSubjectDomains(
       record,
       rand,
       ex,
-      death
+      death,
+      lastContact?.record
     );
   });
   const sv = get("SV").map((record) => {
@@ -698,14 +751,16 @@ export function deriveSubjectDomains(
         SVSTDTC: record.SVDTC,
         SVENDTC: record.SVDTC,
         SVSTDY: day(record.SVDTC, ex?.EXSTDTC ?? null),
+        SVENDY: day(record.SVDTC, ex?.EXSTDTC ?? null),
         EPOCH: epochAt(record.SVDTC, ex),
       },
       record,
       ex
     );
   });
-  const ex = get("EX").map((record) =>
-    item(
+  const ex = get("EX").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    return item(
       {
         ...common(record.USUBJID, "EX"),
         EXTRT: record.EXTRT,
@@ -714,11 +769,12 @@ export function deriveSubjectDomains(
         EXSTDTC: record.EXSTDTC,
         EXENDTC: record.EXENDTC,
         EXSTDY: 1,
+        EXENDY: day(record.EXENDTC, exposure?.EXSTDTC ?? null),
         EPOCH: epochAt(record.EXSTDTC, record),
       },
       record
-    )
-  );
+    );
+  });
   const ae = get("AE").map((record) => {
     const exposure = exBySubject.get(text(record.USUBJID));
     return item(
@@ -736,6 +792,7 @@ export function deriveSubjectDomains(
         AESTDTC: record.AESTDTC,
         AEENDTC: record.AEENDTC,
         AESTDY: day(record.AESTDTC, exposure?.EXSTDTC ?? null),
+        AEENDY: day(record.AEENDTC, exposure?.EXSTDTC ?? null),
         EPOCH: epochAt(record.AESTDTC, exposure),
       },
       record,

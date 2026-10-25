@@ -272,6 +272,11 @@ interface LabyrinthView {
   readonly roomIndex: number;
   readonly runLength: number;
   readonly isFinalRoom: boolean;
+  /**
+   * The run is over: the last room is cleared, or a classic stage is. The
+   * room's objective and its side effect no longer apply (#2841).
+   */
+  readonly runComplete: boolean;
   readonly currentRoom: DungeonRoom;
   readonly campaignRooms: readonly DungeonRoom[];
   readonly currentMaze: string[][];
@@ -2327,6 +2332,9 @@ export function useRetroLabyrinthSession(
   );
 
   const isFinalRoom = gameMode === "roguelike" && roomIndex >= runLength - 1;
+  const runComplete =
+    gameStatus === "victory" &&
+    (gameMode === "classic" || roomIndex >= runLength - 1);
   const runMoves = [...clearedRooms.map((r) => r.moves), movesCount];
   const routeMap =
     gameStatus === "victory" && gameMode === "roguelike"
@@ -2348,6 +2356,7 @@ export function useRetroLabyrinthSession(
     roomIndex,
     runLength,
     isFinalRoom,
+    runComplete,
     currentRoom,
     campaignRooms,
     currentMaze,

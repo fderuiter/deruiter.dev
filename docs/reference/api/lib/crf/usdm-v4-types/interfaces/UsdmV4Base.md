@@ -25,6 +25,7 @@ Fields every identifiable USDM v4 class carries.
 - [`UsdmV4StudyTitle`](UsdmV4StudyTitle.md)
 - [`UsdmV4Organization`](UsdmV4Organization.md)
 - [`UsdmV4StudyVersion`](UsdmV4StudyVersion.md)
+- [`UsdmV4Masking`](UsdmV4Masking.md)
 
 ## Properties
 

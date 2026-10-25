@@ -1964,6 +1964,218 @@ export interface DqTrendPoint {
   readonly openIssueIds: readonly string[];
 }
 
+/** One column in the SQL workbench's schema browser (#2633). */
+export interface WorkbenchColumn {
+  readonly name: string;
+  readonly type: ContractColumnType;
+  readonly nullable: boolean;
+  /** Business description, from the column's data contract. */
+  readonly description: string;
+  /** Classification from the column's data contract. */
+  readonly classification: DataClassification;
+}
+
+/** One table the SQL workbench loads, with the governance its contract records (#2633). */
+export interface WorkbenchTable {
+  /** Qualified name, as a query writes it, for example `gold.fct_query`. */
+  readonly name: string;
+  readonly kind: WarehouseTableKind;
+  readonly description: string;
+  /** What one row stands for. */
+  readonly grain: string;
+  readonly primaryKey: readonly string[];
+  /** Accountable owner and data steward (roles, not people). */
+  readonly owner: string;
+  readonly steward: string;
+  /** Highest classification of any column. */
+  readonly classification: DataClassification;
+  /** Whether rows describe study subjects. The data is synthetic. */
+  readonly personalHealthData: boolean;
+  /** Version of the data contract in force. */
+  readonly contractVersion: string;
+  /** Rows in the seeded warehouse. */
+  readonly rowCount: number;
+  readonly columns: readonly WorkbenchColumn[];
+}
+
+/** A saved query in the SQL workbench's library (#2633). */
+export interface WorkbenchQuery {
+  /** Stable id, in kebab case. */
+  readonly id: string;
+  readonly title: string;
+  /** A worked example, or the generated SQL behind a governed metric. */
+  readonly kind: "example" | "metric";
+  /** What the query answers and how. */
+  readonly description: string;
+  /** SQL techniques the query shows, for example `window functions`. */
+  readonly techniques: readonly string[];
+  /** Qualified names of the tables the query reads. */
+  readonly tables: readonly string[];
+  /** The query in DuckDB SQL, which the workbench runs. */
+  readonly sql: string;
+  /** Id of the governed metric, for a metric query; otherwise `null`. */
+  readonly metricId: string | null;
+  /** Dimensions a metric query groups by; empty for an example. */
+  readonly dimensions: readonly MetricDimensionId[];
+  /** A metric query in every dialect the compiler writes; otherwise `null`. */
+  readonly dialects: Readonly<Record<SqlDialect, string>> | null;
+}
+
+/** Why SQL typed into the workbench will not run (#2633). */
+export interface WorkbenchSqlFinding {
+  readonly rule:
+    | "empty"
+    | "unterminated"
+    | "multiple-statements"
+    | "not-a-query"
+    | "forbidden-keyword"
+    | "external-read";
+  /** What is wrong, in a sentence a visitor can act on. */
+  readonly message: string;
+}
+
+/**
+ * Where a node of the platform lineage graph sits (#2637): a warehouse
+ * layer, a Study Data Pipeline layer, or a consumer of the semantic layer.
+ */
+export type LineageStage =
+  | "collected"
+  | "sdtm"
+  | "adam"
+  | "bronze"
+  | "silver"
+  | "gold"
+  | "metric"
+  | "measure"
+  | "report";
+
+/** One node of the platform lineage graph (#2637). */
+export interface LineageNode {
+  /** Stable id: the dataset and the field, joined by a dot. */
+  readonly id: string;
+  readonly stage: LineageStage;
+  /**
+   * Table, dataset or product: for example `silver.edc_visit`, `sdtm.DM`,
+   * `bronze.edc.subjects`, `semantic.metrics`, `powerbi.governed_metrics`
+   * or `reporting.reports`.
+   */
+  readonly dataset: string;
+  /** Column, variable, metric id or report id within the dataset. */
+  readonly field: string;
+  /** Name a person reads: the column, the metric's name, the report's title. */
+  readonly label: string;
+  /** Data type of a column or variable, or `null` for a metric, measure or report. */
+  readonly type: string | null;
+  /** Derivation method of a study variable whose inputs the pipeline does not declare, or `null`. */
+  readonly method: string | null;
+  /** Roles accountable for the node, owner first, to notify of a change upstream. */
+  readonly owners: readonly string[];
+}
+
+/** One edge of the platform lineage graph: `to` is computed from `from` (#2637). */
+export interface LineageGraphEdge {
+  readonly from: string;
+  readonly to: string;
+  /** How, for example `identity`, `date-shift`, `measure`, `filter` or `group-by`. */
+  readonly transformation: string;
+}
+
+/** Column-level lineage from collected values to reports, as one graph (#2637). */
+export interface PlatformLineage {
+  /** Nodes in stage order, then by id. */
+  readonly nodes: readonly LineageNode[];
+  /** Edges sorted by target, then source. */
+  readonly edges: readonly LineageGraphEdge[];
+}
+
+/** A node reached from another, and how many edges away (#2637). */
+export interface LineageReach {
+  readonly id: string;
+  readonly stage: LineageStage;
+  readonly distance: number;
+}
+
+/** What a change to one node reaches, and who to tell (#2637). */
+export interface LineageImpact {
+  readonly origin: string;
+  /** Every downstream node, nearest first, then by id. */
+  readonly downstream: readonly LineageReach[];
+  /** Roles accountable for a downstream node, each with the nodes they own, by role. */
+  readonly notify: readonly {
+    readonly owner: string;
+    readonly nodeIds: readonly string[];
+  }[];
+}
+
+/**
+ * What a change between two releases of a data contract reaches through the
+ * lineage graph, and who to tell (#2637). Used to review a contract change
+ * (#2626) before it is released.
+ */
+export interface ContractChangeImpact {
+  readonly productId: string;
+  /** Version of the earlier release. */
+  readonly from: string;
+  /** Version of the later release. */
+  readonly to: string;
+  /** Lineage node ids of the columns that changed or were removed, by id. */
+  readonly changed: readonly string[];
+  /** Every node downstream of a changed column, nearest first, then by id. */
+  readonly downstream: readonly LineageReach[];
+  /** Roles accountable for a downstream node, each with the nodes they own, by role. */
+  readonly notify: LineageImpact["notify"];
+}
+
+/** A broken rule of the lineage graph (#2637). */
+export interface LineageFinding {
+  readonly rule:
+    | "dangling-edge"
+    | "duplicate-node"
+    | "cycle"
+    | "metric-without-source"
+    | "report-without-metric";
+  readonly message: string;
+}
+
+/** One input field of an OpenLineage column-lineage facet (#2637). */
+export interface OpenLineageInputField {
+  readonly namespace: string;
+  readonly name: string;
+  readonly field: string;
+  readonly transformations: readonly {
+    readonly type: "DIRECT" | "INDIRECT";
+    readonly subtype: string;
+    readonly description: string;
+  }[];
+}
+
+/** An OpenLineage 2-0-2 dataset reference, with facets on outputs (#2637). */
+export interface OpenLineageDataset {
+  readonly namespace: string;
+  readonly name: string;
+  readonly facets?: Readonly<Record<string, unknown>>;
+}
+
+/**
+ * An OpenLineage 2-0-2 `RunEvent` for one platform step: the job that
+ * builds one dataset, its inputs, and the output with its schema, owners
+ * and column lineage (#2637).
+ */
+export interface OpenLineageRunEvent {
+  readonly eventType: "COMPLETE";
+  readonly eventTime: string;
+  readonly producer: string;
+  readonly schemaURL: string;
+  readonly run: { readonly runId: string };
+  readonly job: {
+    readonly namespace: string;
+    readonly name: string;
+    readonly facets: Readonly<Record<string, unknown>>;
+  };
+  readonly inputs: readonly OpenLineageDataset[];
+  readonly outputs: readonly OpenLineageDataset[];
+}
+
 /**
  * A gamma distribution of recruitment rates, in subjects per site-day:
  * shape α and rate β, with mean α / β (#2632).

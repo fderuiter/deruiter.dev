@@ -16,12 +16,16 @@ vi.mock("framer-motion", async (importOriginal) => {
   const actual = await importOriginal<typeof import("framer-motion")>();
   return {
     ...actual,
-    useReducedMotion: () => true,
     AnimatePresence: ({ children }: { children?: React.ReactNode }) => (
       <>{children}</>
     ),
   };
 });
+
+vi.mock("@/hooks/useMediaQuery", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/hooks/useMediaQuery")>()),
+  usePrefersReducedMotion: () => true,
+}));
 
 vi.mock("@/lib/meme-audio", () => ({ playMemeSound: vi.fn() }));
 

@@ -7,7 +7,8 @@ import React, {
   useSyncExternalStore,
 } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import {
   STATUS_TICKER_ITEMS,
   unlockAchievement,
@@ -55,7 +56,9 @@ interface TreatParticle {
 }
 
 export const FooterStatusTicker: React.FC = () => {
-  const shouldReduceMotion = useReducedMotion();
+  // Hydration-safe: the first ticker line renders without an entry animation
+  // on the server and on the client, so its style attributes match (#2893).
+  const shouldReduceMotion = usePrefersReducedMotion();
   const [tickerIndex, setTickerIndex] = useState(0);
   const [duckBubble, setDuckBubble] = useState<string | null>(null);
   const [duckBarks, setDuckBarks] = useState(0);

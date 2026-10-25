@@ -8,14 +8,9 @@ import {
   type FC,
   type ReactNode,
 } from "react";
-import {
-  motion,
-  MotionValue,
-  useScroll,
-  useTransform,
-  useReducedMotion,
-} from "framer-motion";
+import { motion, MotionValue, useScroll, useTransform } from "framer-motion";
 
+import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 
 interface TextRevealProps extends ComponentPropsWithoutRef<"div"> {
@@ -24,7 +19,9 @@ interface TextRevealProps extends ComponentPropsWithoutRef<"div"> {
 
 export const TextReveal: FC<TextRevealProps> = ({ children, className }) => {
   const sectionRef = useRef<HTMLDivElement | null>(null);
-  const shouldReduceMotion = useReducedMotion();
+  // Hydration-safe: the server and the first client render both take the
+  // static branch, so the per-word markup only mounts after hydration (#2893).
+  const shouldReduceMotion = usePrefersReducedMotion();
   const { scrollYProgress } = useScroll({
     target: sectionRef,
     offset: ["start 85%", "start 25%"],

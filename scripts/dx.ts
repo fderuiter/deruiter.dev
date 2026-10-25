@@ -41,6 +41,7 @@ import {
   type SetupProfileId,
 } from "../lib/dx/setup";
 import { scanDeadCode, printDeadCodeDocument } from "../lib/dx/dead-code";
+import { fetchTrackerData, formatTrackerReport } from "../lib/dx/trackers";
 import { inspectBundleChunks, printBundleReport } from "../lib/dx/bundle-guard";
 import { runLicenseAudit } from "./license-audit";
 import {
@@ -80,6 +81,9 @@ function printUsage(): void {
   );
   console.log(
     `  ${colors.cyan}analyze [--strict] [--json]${colors.reset}    Inspect production bundle chunk sizes and budgets`
+  );
+  console.log(
+    `  ${colors.cyan}trackers [--repo o/n] [--json]${colors.reset} Report epic checklist drift and in-progress claims (read-only)`
   );
   console.log(
     `  ${colors.cyan}scaffold [type] [name]${colors.reset}        Scaffold code templates (arcade, api, adr, component, hook)`
@@ -624,6 +628,67 @@ export function handleDeadCodeCommand(parsed: ParsedCliArgs): void {
   } else {
     printDeadCodeDocument(report, workspaceRoot, { limit, filter });
   }
+}
+
+/**
+ * The `owner/name` of the origin remote, for commands that read GitHub.
+ */
+function originRepo(): string | undefined {
+  try {
+    const url = execFileSync("git", ["remote", "get-url", "origin"], {
+      cwd: workspaceRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return /github\.com[/:]([^/]+\/[^/.]+?)(?:\.git)?$/.exec(url)?.[1];
+  } catch {
+    return undefined;
+  }
+}
+
+export async function handleTrackersCommand(
+  parsed: ParsedCliArgs
+): Promise<void> {
+  const isJson = Boolean(parsed.flags.json || parsed.flags.j);
+  const repo =
+    typeof parsed.flags.repo === "string" ? parsed.flags.repo : originRepo();
+  if (!repo) {
+    console.error("Could not tell the repository; pass --repo owner/name.");
+    process.exit(2);
+  }
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || undefined;
+  const startTime = Date.now();
+  let report: Awaited<ReturnType<typeof fetchTrackerData>>;
+  try {
+    report = await fetchTrackerData(repo, token);
+  } catch (error) {
+    console.error(
+      `${colors.red}Could not read ${repo} from GitHub: ${(error as Error).message}.${colors.reset}` +
+        (token ? "" : " Set GITHUB_TOKEN and try again.")
+    );
+    process.exit(1);
+  }
+  const durationMs = Date.now() - startTime;
+
+  if (isJson) {
+    printJsonEnvelope(
+      createDxEnvelope({
+        command: "trackers",
+        success: report.drift.length === 0,
+        durationMs,
+        data: report,
+        remediations: [],
+      })
+    );
+    return;
+  }
+  console.log(formatHeader("DX Tracker Drift", "epic checklists • claims"));
+  if (!token) {
+    console.log(
+      `${colors.yellow}No GITHUB_TOKEN: issue states are not read, so checklist drift is not checked.${colors.reset}\n`
+    );
+  }
+  console.log(formatTrackerReport(report));
 }
 
 export function handleAnalyzeCommand(
@@ -1532,6 +1597,10 @@ export async function main(): Promise<void> {
     case "dead-code":
     case "unused":
       handleDeadCodeCommand(parsed);
+      break;
+    case "trackers":
+    case "tracker-drift":
+      await handleTrackersCommand(parsed);
       break;
     case "analyze":
     case "bundle":

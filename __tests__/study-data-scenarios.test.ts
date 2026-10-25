@@ -458,14 +458,28 @@ describe("messy-data scenarios: derivations, early end of participation", () => 
     )!.targetDay;
   }
 
-  it("death-during-treatment: treatment ends at death, censored in ADTTE", () => {
+  it("death-during-treatment: DM and ADSL record the death, treatment ends at it, censored in ADTTE", () => {
     const run = withScenarios(["death-during-treatment"]);
     const subject = targetOf(run, "death-during-treatment");
     const death = subjectRows(run, "sdtm", "DS", subject).find(
       (row) => row.DSDECOD === "DEATH"
     )!;
     expect(death.DSSTDY as number).toBeLessThan(week12Day());
+    const dm = subjectRows(run, "sdtm", "DM", subject)[0]!;
+    expect(dm.DTHFL).toBe("Y");
+    expect(dm.DTHDTC).toBe(death.DSSTDTC);
+    // Only the subject who died is flagged, and DM traces the death back
+    // to the collected disposition record.
+    const sdtmDm = dataset(run, "sdtm", "DM");
+    expect(sdtmDm.columns.DTHFL.filter((flag) => flag !== null)).toEqual(["Y"]);
+    const collectedDeath = subjectRows(run, "collected", "DS", subject).find(
+      (row) => row.DSDECOD === "DEATH"
+    )!;
+    expect(sdtmDm.lineage![sdtmDm.columns.USUBJID.indexOf(subject)]).toContain(
+      collectedDeath.SRCID
+    );
     const adsl = subjectRows(run, "adam", "ADSL", subject)[0]!;
+    expect(adsl.DTHDT).toBe(death.DSSTDTC);
     expect(adsl.TRTEDT).toBe(death.DSSTDTC);
     expect(adsl.EOSSTT).toBe("DISCONTINUED");
     expect(adsl.DCSREAS).toBe("DEATH");

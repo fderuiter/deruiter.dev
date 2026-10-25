@@ -17,6 +17,7 @@
 - [UsdmV4BiomedicalConceptSurrogate](interfaces/UsdmV4BiomedicalConceptSurrogate.md)
 - [UsdmV4Code](interfaces/UsdmV4Code.md)
 - [UsdmV4Document](interfaces/UsdmV4Document.md)
+- [UsdmV4Duration](interfaces/UsdmV4Duration.md)
 - [UsdmV4EligibilityCriterion](interfaces/UsdmV4EligibilityCriterion.md)
 - [UsdmV4EligibilityCriterionItem](interfaces/UsdmV4EligibilityCriterionItem.md)
 - [UsdmV4Encounter](interfaces/UsdmV4Encounter.md)

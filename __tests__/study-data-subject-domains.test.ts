@@ -158,7 +158,7 @@ describe("SDTM subject tabulation", () => {
 
     const names = get("DM").variables.map((variable) => variable.name);
     const at = (name: string) => names.indexOf(name);
-    expect(at("SITEID")).toBe(at("RFXENDTC") + 1);
+    expect(at("SITEID")).toBe(at("DTHFL") + 1);
     expect(at("SITEID")).toBeLessThan(at("AGE"));
     // SDTMIG 3.4 puts the arm null reasons between ACTARM and COUNTRY.
     expect(at("COUNTRY")).toBe(at("ACTARMUD") + 1);
@@ -171,6 +171,38 @@ describe("SDTM subject tabulation", () => {
         source: `DM.${name}`,
       });
     }
+  });
+
+  it("records no death for a study in which nobody died (#2787)", () => {
+    const deaths = records(get("DS")).filter(
+      (record) => record.DSDECOD === "DEATH"
+    );
+    expect(deaths).toEqual([]);
+    const dm = get("DM");
+    expect(dm.columns.DTHDTC.every((value) => value === null)).toBe(true);
+    expect(dm.columns.DTHFL.every((value) => value === null)).toBe(true);
+
+    // SDTMIG 3.4 order: RFXENDTC, RFICDTC, RFPENDTC, DTHDTC, DTHFL, SITEID.
+    // RFICDTC is out of place and RFPENDTC missing (#2804), so the death
+    // variables sit between the reference dates and SITEID.
+    const names = dm.variables.map((variable) => variable.name);
+    expect(names.indexOf("DTHDTC")).toBe(names.indexOf("RFXENDTC") + 1);
+    expect(names.indexOf("DTHFL")).toBe(names.indexOf("DTHDTC") + 1);
+    const meta = (name: string) =>
+      dm.variables.find((variable) => variable.name === name);
+    expect(meta("DTHDTC")).toMatchObject({
+      label: "Date/Time of Death",
+      role: "Record Qualifier",
+      origin: "Derived",
+      method: "DEATH_DATE",
+    });
+    expect(meta("DTHFL")).toMatchObject({
+      label: "Subject Death Flag",
+      role: "Record Qualifier",
+      origin: "Derived",
+      method: "DEATH_FLAG",
+      codelist: "NY",
+    });
   });
 
   it("records why each serious AE is serious, and nothing for the rest (#2803)", () => {

@@ -7,7 +7,7 @@
       "dataset": "DM",
       "category": "defect",
       "issue": 2769,
-      "reason": "RACE, DTHDTC, DTHFL and RFPENDTC are not derived."
+      "reason": "RACE and RFPENDTC are not derived."
     },
     {
       "target": "sdtm",
@@ -304,38 +304,6 @@
       "dataset": "Objective",
       "category": "ct-cache",
       "reason": "The fixture uses the 2026-09-25 Objective Level decodes (Primary Objective, Secondary Objective). CORE validates against its newest cached CT, 2026-03-27, whose submission values were Study Primary Objective and Study Secondary Objective."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000827",
-      "dataset": "Encounter",
-      "category": "defect",
-      "issue": 2823,
-      "reason": "scheduledAtId points at scheduled activity instances, not timings."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000961",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 2823,
-      "reason": "Encounter order by next/previous differs from the main timeline."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001048",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 2823,
-      "reason": "The main timeline reaches only the screening epoch."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001016",
-      "dataset": "ScheduleTimeline",
-      "category": "defect",
-      "issue": 2823,
-      "reason": "The main timeline has no planned duration."
     },
     {
       "target": "usdm",

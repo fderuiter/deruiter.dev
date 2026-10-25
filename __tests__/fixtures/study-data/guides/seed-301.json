@@ -246,6 +246,16 @@
         "variables": ["DM.RFENDTC", "DM.RFXENDTC"]
       },
       {
+        "id": "DEATH_DATE",
+        "text": "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
+        "variables": ["DM.DTHDTC"]
+      },
+      {
+        "id": "DEATH_FLAG",
+        "text": "Y when the subject has a DEATH disposition event; missing otherwise.",
+        "variables": ["DM.DTHFL"]
+      },
+      {
         "id": "RANDOMIZATION",
         "text": "Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS.",
         "variables": ["DM.ARMCD", "DM.ARM"]
@@ -511,6 +521,11 @@
         "id": "ADSL_DISP",
         "text": "End-of-study status and discontinuation reason come from the final DS disposition event.",
         "variables": ["ADSL.EOSSTT", "ADSL.DCSREAS"]
+      },
+      {
+        "id": "ADSL_DEATH",
+        "text": "Date of death is DM.DTHDTC when that is a full date; missing for subjects with no recorded death. No death date is imputed.",
+        "variables": ["ADSL.DTHDT"]
       },
       {
         "id": "BDS_WINDOW",

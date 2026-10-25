@@ -487,8 +487,6 @@ const RULES: readonly ScenarioRule[] = [
       };
     },
   },
-  // DM carries no DTHFL or DTHDTC yet, so the death is visible in DS and
-  // ADaM only (#2787).
   {
     id: "death-during-treatment",
     title: "Death during treatment",
@@ -497,7 +495,7 @@ const RULES: readonly ScenarioRule[] = [
     expected: {
       findings: [],
       derivation:
-        "ADSL ends treatment on the date of death (TRTEDT) with EOSSTT = DISCONTINUED and DCSREAS = DEATH. ADTTE censors time to discontinuation for an adverse event at the death, as discontinuation for another reason.",
+        "DM records the death with DTHFL = Y and DTHDTC, the date of the DEATH disposition event. ADSL ends treatment on the date of death (TRTEDT), sets DTHDT to it, and records EOSSTT = DISCONTINUED and DCSREAS = DEATH. ADTTE censors time to discontinuation for an adverse event at the death, as discontinuation for another reason.",
     },
     eligible: (view) => earlyStop(view) !== null,
     apply: (view) => endParticipation(view, earlyStop(view)!, "DEATH"),

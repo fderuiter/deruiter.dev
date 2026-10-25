@@ -82,6 +82,7 @@ const ADSL_VARIABLES: readonly VariableMeta[] = [
   ),
   column("EOSSTT", "End of Study Status", "text", "Derived", "ADSL_DISP"),
   column("DCSREAS", "Discontinuation Reason", "text", "Derived", "ADSL_DISP"),
+  column("DTHDT", "Date of Death", "date", "Derived", "ADSL_DEATH"),
   ...SOURCE,
 ];
 
@@ -303,6 +304,7 @@ export function deriveAdsl(
         reason && reason !== "COMPLETED" && reason !== "SCREEN FAILURE"
           ? reason
           : null,
+      DTHDT: date(source.DTHDTC),
       SRCDOM: "DM",
       SRCVAR: "USUBJID",
       SRCSEQ: null,

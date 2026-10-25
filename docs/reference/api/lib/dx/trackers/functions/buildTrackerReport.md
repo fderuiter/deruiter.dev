@@ -6,7 +6,7 @@
 
 # Function: buildTrackerReport()
 
-> **buildTrackerReport**(`repo`, `epics`, `states`, `claims`): [`TrackerReport`](../interfaces/TrackerReport.md)
+> **buildTrackerReport**(`repo`, `epics`, `states`, `claims`, `activity?`): [`TrackerReport`](../interfaces/TrackerReport.md)
 
 Builds the report from data already read.
 
@@ -32,9 +32,22 @@ Issue states by number.
 
 ### claims
 
-readonly `Pick`\<[`TrackerIssue`](../interfaces/TrackerIssue.md), `"number"` \| `"labels"` \| `"assignees"`\>[]
+readonly `Pick`\<[`TrackerIssue`](../interfaces/TrackerIssue.md), `"number"` \| `"title"` \| `"labels"` \| `"assignees"`\>[]
 
 Open issues carrying the in-progress label.
+
+### activity?
+
+Claim activity and the time to judge it at; leave it
+  out when the activity could not be read.
+
+#### byIssue
+
+`ReadonlyMap`\<`number`, [`ClaimActivity`](../interfaces/ClaimActivity.md)\>
+
+#### now
+
+`Date`
 
 ## Returns
 

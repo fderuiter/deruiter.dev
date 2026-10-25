@@ -33,6 +33,16 @@ describe("Acknowledgments page", () => {
     expect(screen.getByText(/libvips binaries/)).toBeTruthy();
   });
 
+  it("credits the clinical schemas and NCI EVS terminology (ADR 0065)", () => {
+    render(<AcknowledgmentsView />);
+    expect(screen.getByText(/CDISC USDM .* API schema/)).toBeTruthy();
+    expect(
+      screen.getByText("NCI EVS CDISC Controlled Terminology")
+    ).toBeTruthy();
+    expect(screen.getByText("CC BY 4.0")).toBeTruthy();
+    expect(screen.getAllByText(/Never ships to visitors/)).toHaveLength(3);
+  });
+
   it("opens every outbound link in a new tab safely", () => {
     const { container } = render(<AcknowledgmentsView />);
     const external = container.querySelectorAll('a[href^="http"]');

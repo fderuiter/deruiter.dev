@@ -366,6 +366,24 @@ A folder full of documents is easy to accumulate and tedious to organize. Sortif
 
 The approach: ONNX embeddings and TF-IDF provide complementary similarity signals. SQLCipher stores metadata, and two-phase file operations support recovery.
 
+### Study Data Pipeline: USDM to SDTM, ADaM and TLFs
+
+URL: https://deruiter.dev/case-studies/study-data-pipeline
+Primary language: TypeScript
+Source: https://github.com/fderuiter/deruiter.dev
+
+Abstract:
+
+One fictional study, DEMO-301, defined once in **USDM** and carried in the browser through synthetic collection, **SDTM**, conformance checks, **ADaM**, **Define-XML**, and the tables and figures a clinical study report needs. Every result traces back to the records behind it, and the same seed gives the same bytes. All data are synthetic.
+
+Architecture and trade-offs:
+
+The problem
+
+Clinical data standards are usually shown one at a time: a CRF here, an SDTM mapping there, a table shell somewhere else. The hard part of the work sits between them. A variable defined in the protocol has to arrive in the analysis with its meaning, its codelist and its derivation intact, and a reviewer has to be able to follow it back.
+
+This project takes one study the whole way, end to end, in the visitor's browser. The study, DEMO-301, is fictional and every subject is synthetic. It is a demonstration of the practices, not a production submission workflow, and the page says so wherever data appear. Run the pipeline to see every stage, change the seed or the number of subjects, and download the package.
+
 ### UALBF: Searching for Quasiperfect Numbers
 
 URL: https://deruiter.dev/case-studies/ualbf
@@ -418,6 +436,7 @@ The approach: A Next.js site with a home page (our story, the schedule, the venu
 - [OxidizeMath: Rust Scientific Computing](https://deruiter.dev/case-studies/oxidizemath): Explore scientific computing in Rust with numerical solvers, compile-time checks, and interactive simulations. Read the OxidizeMath writeup.
 - [PromptOps: Test Prompts Like Code](https://deruiter.dev/case-studies/promptops): Version prompts, validate response shapes, and run regression evaluations in CI. Read how PromptOps makes changes easier to inspect and compare.
 - [Sonos Network Controller in Python](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
+- [Study Data Pipeline: USDM to TLFs](https://deruiter.dev/case-studies/study-data-pipeline): One synthetic study carried from a USDM definition through SDTM, ADaM and Define-XML to traceable tables and figures, reproducibly, in the browser.
 - [Laser Loon: Artwork & Downloads](https://deruiter.dev/work/laser-loon): Meet Laser Loon, my Minnesota flag submission, and download the artwork in print and web formats. The eye lasers are included in the download.
 
 ## Blog

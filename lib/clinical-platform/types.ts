@@ -1846,3 +1846,295 @@ export interface OperationsDashboard {
   /** Data products the numbers shown read, in id order. */
   readonly sources: readonly OperationsSource[];
 }
+
+/**
+ * A gamma distribution of recruitment rates, in subjects per site-day:
+ * shape α and rate β, with mean α / β (#2632).
+ */
+export interface RecruitmentRate {
+  readonly shape: number;
+  readonly rate: number;
+}
+
+/** One recruiting site at the data cut, with its posterior rate (#2632). */
+export interface SiteRecruitment {
+  readonly siteId: string;
+  readonly countryCode: string;
+  /** Subjects enrolled at the site up to the data cut. */
+  readonly enrolled: number;
+  /** Days from the site's activation to the data cut. */
+  readonly exposureDays: number;
+  /** The site's rate given the study's prior and its own enrollment. */
+  readonly posterior: RecruitmentRate;
+}
+
+/** Sites to add in a what-if, all activating on the same day (#2632). */
+export interface EnrollmentWhatIf {
+  /** ISO 3166-1 alpha-2 country the sites open in. */
+  readonly countryCode: string;
+  /** How many sites to add, from 1 to 50. */
+  readonly sites: number;
+  /** Days from the data cut until the new sites start recruiting, from 0 to 365. */
+  readonly activationDelayDays: number;
+}
+
+/** A recruitment process to simulate: the input of `simulateEnrollmentCompletion` (#2632). */
+export interface EnrollmentSimulationInput {
+  /** Subjects still to enroll, 1 or more. */
+  readonly remaining: number;
+  /** Rates of the sites recruiting from day 0. */
+  readonly sites: readonly RecruitmentRate[];
+  /** Rates of sites that start recruiting later, with their first day. */
+  readonly laterSites: readonly (RecruitmentRate & {
+    readonly startDay: number;
+  })[];
+  /** Number of simulated runs, from 100 to 20,000. */
+  readonly runs: number;
+  /** Key of the random stream; the same key gives the same runs. */
+  readonly streamKey: string;
+}
+
+/** Share of runs that have enrolled the last subject by a date (#2632). */
+export interface EnrollmentForecastPoint {
+  /** ISO 8601 date. */
+  readonly on: string;
+  /** Share of runs complete by that date, from 0 to 1. */
+  readonly completed: number;
+}
+
+/** A Monte Carlo enrollment forecast for one study at a data cut (#2632). */
+export interface EnrollmentForecast {
+  readonly studyId: string;
+  /** ISO 8601 data cut of the warehouse. */
+  readonly dataCut: string;
+  /** Enrollment target of the study. */
+  readonly target: number;
+  /** Subjects enrolled up to the data cut. */
+  readonly enrolled: number;
+  /** ISO 8601 planned last-subject-in date, from the study's milestones. */
+  readonly plannedLastSubjectIn: string;
+  /** The study's prior, fitted to its sites by maximum likelihood. */
+  readonly prior: RecruitmentRate;
+  /** Recruiting sites at the data cut, in id order. */
+  readonly sites: readonly SiteRecruitment[];
+  /** The what-if applied, or `null` for the baseline. */
+  readonly whatIf: EnrollmentWhatIf | null;
+  /** Rate a new site in the what-if's country recruits at, or `null` without a what-if. */
+  readonly whatIfSiteRate: RecruitmentRate | null;
+  readonly runs: number;
+  readonly seed: number;
+  /** Share of runs that enroll the last subject on or before the planned date. */
+  readonly probabilityByPlan: number;
+  /** ISO 8601 dates by which 10%, 50% and 90% of runs are complete. */
+  readonly quantiles: {
+    readonly p10: string;
+    readonly p50: string;
+    readonly p90: string;
+  };
+  /** Share of runs complete by each week from the data cut until 99% are. */
+  readonly curve: readonly EnrollmentForecastPoint[];
+}
+
+/** Status of a key risk indicator at a site. */
+export type KriStatus = "green" | "amber" | "red" | "insufficient-data";
+
+/**
+ * A key risk indicator (#2631): a governed registry metric evaluated per
+ * site, with the thresholds at which it turns amber and red and why.
+ */
+export interface KriDefinition {
+  /** KRI id, for example `kri-entry-lag`. */
+  readonly id: string;
+  readonly name: string;
+  /** The registry metric the KRI evaluates per site. */
+  readonly metricId: string;
+  /** `high` when a high value is the risk, `low` when a low value is. */
+  readonly direction: "high" | "low";
+  /** Value at which the KRI turns amber, in the metric's unit. */
+  readonly amber: number;
+  /** Value at which the KRI turns red, in the metric's unit. */
+  readonly red: number;
+  /** Why these thresholds. */
+  readonly reason: string;
+  /**
+   * The count metric and value below which the site has too little data to
+   * assess, for example 3 enrolled subjects.
+   */
+  readonly minimum: { readonly metricId: string; readonly value: number };
+}
+
+/**
+ * A quality tolerance limit (ICH E6(R3)): a study-level limit on a
+ * registry metric whose breach calls for the response planned in advance.
+ */
+export interface QtlDefinition {
+  /** QTL id, for example `qtl-early-termination`. */
+  readonly id: string;
+  readonly name: string;
+  /** The registry metric the QTL evaluates per study. */
+  readonly metricId: string;
+  /** What the parameter stands for, and why it matters to the study's results. */
+  readonly rationale: string;
+  /** The response planned before any breach. */
+  readonly response: string;
+}
+
+/** A QTL as a study's quality plan sets it. */
+export interface QualityPlanQtl {
+  readonly qtlId: string;
+  /** Breached above this value, in the metric's unit. */
+  readonly limit: number;
+  /** Warning above this value: the secondary limit that triggers review before a breach. */
+  readonly secondaryLimit: number;
+}
+
+/** A critical-to-quality factor (ICH E8(R1)) and how the plan watches it. */
+export interface CriticalToQualityFactor {
+  readonly id: string;
+  readonly name: string;
+  /** What could go wrong and what it would do to subjects or results. */
+  readonly risk: string;
+  /** KRIs that watch the factor. */
+  readonly kriIds: readonly string[];
+  /** QTLs that bound the factor. */
+  readonly qtlIds: readonly string[];
+  /** What the platform cannot watch yet, with the issue that adds it; `null` when nothing is missing. */
+  readonly gap: { readonly reason: string; readonly issue: number } | null;
+}
+
+/** A study's quality plan: its critical-to-quality factors and QTL limits. */
+export interface QualityPlan {
+  readonly studyId: string;
+  readonly version: string;
+  /** ISO 8601 date the plan took effect. */
+  readonly effectiveOn: string;
+  readonly factors: readonly CriticalToQualityFactor[];
+  readonly qtls: readonly QualityPlanQtl[];
+  /** Synthetic plan for a fictional study. */
+  readonly synthetic: true;
+}
+
+/** One KRI at one site. */
+export interface KriAssessment {
+  readonly kriId: string;
+  readonly siteId: string;
+  /** Metric value; `null` when the metric has no value for the site. */
+  readonly value: number | null;
+  readonly status: KriStatus;
+}
+
+/** Status of a QTL for a study. */
+export type QtlStatus = "within" | "warning" | "breached" | "no-data";
+
+/** One QTL for one study. */
+export interface QtlAssessment {
+  readonly qtlId: string;
+  readonly value: number | null;
+  readonly limit: number;
+  readonly secondaryLimit: number;
+  readonly status: QtlStatus;
+}
+
+/** A central statistical monitoring test (#2631). */
+export interface CsmTestDefinition {
+  /** Test id, for example `csm-query-under-reporting`. */
+  readonly id: string;
+  readonly name: string;
+  /** What the test asks of the site against its peers, in one sentence. */
+  readonly question: string;
+  /** The statistic and its reference distribution. */
+  readonly method: string;
+  /** Gold tables and columns it reads. */
+  readonly reads: readonly string[];
+}
+
+/** One test at one site. */
+export interface CsmResult {
+  readonly testId: string;
+  readonly siteId: string;
+  /** Observations at the site the test used. */
+  readonly n: number;
+  /** Test statistic. */
+  readonly statistic: number;
+  /** One-sided p-value. */
+  readonly pValue: number;
+  /** Benjamini-Hochberg adjusted p-value across the study's tests. */
+  readonly qValue: number;
+  /** Whether the q-value is at most the configured false discovery rate. */
+  readonly flagged: boolean;
+  /** The site's value and its peers', in plain words. */
+  readonly detail: string;
+}
+
+/** A site or test the study's central monitoring could not assess, and why. */
+export interface CsmExclusion {
+  readonly siteId: string | null;
+  readonly testId: string | null;
+  readonly reason: string;
+}
+
+/** Central statistical monitoring of one study's sites. */
+export interface CsmRun {
+  /** False discovery rate the tests are controlled at. */
+  readonly fdr: number;
+  /** Sites with enough data, in id order. */
+  readonly sites: readonly string[];
+  readonly results: readonly CsmResult[];
+  readonly excluded: readonly CsmExclusion[];
+}
+
+/** Where a risk signal came from. */
+export type RiskSignalSource =
+  | { readonly kind: "kri"; readonly kriId: string; readonly siteId: string }
+  | { readonly kind: "qtl"; readonly qtlId: string }
+  | {
+      readonly kind: "csm";
+      readonly siteId: string;
+      readonly testIds: readonly string[];
+    };
+
+/** An action a signal can lead to. */
+export type RiskSignalAction =
+  "targeted-sdv" | "site-retraining" | "site-audit" | "for-cause-visit";
+
+/** A step in a risk signal's workflow. */
+export type RiskSignalEvent = "raised" | "assessed" | "actioned" | "closed";
+
+/** One entry of a study's append-only risk signal log. */
+export interface RiskSignalLogEntry {
+  /** Position in the log, from 1, with no gaps. */
+  readonly sequence: number;
+  /** Signal id, for example `DEMO-302-SIG-001`. */
+  readonly signalId: string;
+  readonly event: RiskSignalEvent;
+  /** ISO 8601 date of the event. */
+  readonly on: string;
+  /** Who recorded it: a role, or the automated central monitoring. */
+  readonly by: string;
+  /** What was found, decided or done. */
+  readonly note: string;
+  /** Where the signal came from; on `raised` entries only, otherwise `null`. */
+  readonly source: RiskSignalSource | null;
+  /** The action taken; on `actioned` entries only, otherwise `null`. */
+  readonly action: RiskSignalAction | null;
+}
+
+/** A finding about a risk signal log that breaks its rules. */
+export interface RiskSignalLogFinding {
+  readonly sequence: number;
+  readonly message: string;
+}
+
+/** Risk-based quality management for one study at one data cut. */
+export interface StudyRiskAssessment {
+  readonly studyId: string;
+  /** ISO 8601 data cut of the warehouse. */
+  readonly dataCut: string;
+  readonly plan: QualityPlan;
+  /** Every KRI at every activated site, by site id then KRI order. */
+  readonly kris: readonly KriAssessment[];
+  readonly qtls: readonly QtlAssessment[];
+  readonly csm: CsmRun;
+  /** Signals raised at the data cut: red KRIs, QTL warnings and breaches, flagged sites. */
+  readonly log: readonly RiskSignalLogEntry[];
+}

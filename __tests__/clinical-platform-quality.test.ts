@@ -139,13 +139,42 @@ describe("platform rules on the default portfolio", () => {
     }
   });
 
+  /** A copy of the warehouse with every row of one table changed. */
+  const mapRows = (
+    w: Warehouse,
+    table: string,
+    change: (row: Warehouse["tables"][string][number]) => object
+  ): Warehouse => ({
+    ...w,
+    tables: {
+      ...w.tables,
+      [table]: w.tables[table].map((row) => ({ ...row, ...change(row) })),
+    },
+  });
+  /**
+   * Passing fixtures for the two rules the default data fails: the same
+   * data with the target met, so each still has a pass and a fail case.
+   */
+  const PASSING: Readonly<Record<string, (w: Warehouse) => Warehouse>> = {
+    "DQ-T03": (w) =>
+      mapRows(w, "silver.ctms_monitoring_visit", (r) => ({
+        report_final_on: r.visit_date,
+      })),
+    "DQ-T04": (w) =>
+      mapRows(w, "silver.etmf_document", (r) =>
+        String(r.due_on) <= w.asOf ? { filed_on: r.due_on } : {}
+      ),
+  };
+
   it.each(platformRules.map((r) => [r.id, r] as const))(
-    "%s catches its fault, which changes one table",
+    "%s passes its passing fixture and catches its fault, which changes one table",
     (id, rule) => {
-      const broken = breakDataQualityRule(warehouse, id);
-      expect(changedTables(warehouse, broken)).toHaveLength(1);
+      const passing = PASSING[id]?.(warehouse) ?? warehouse;
+      const before = resultOf(assessDataQuality(passing, run), id);
+      expect(before.status).toBe("pass");
+      const broken = breakDataQualityRule(passing, id);
+      expect(changedTables(passing, broken)).toHaveLength(1);
       const after = resultOf(assessDataQuality(broken, run), id);
-      const before = resultOf(baseline, id);
       expect(after.failed).toBeGreaterThan(before.failed);
       if (rule.threshold === 1) expect(after.status).toBe("fail");
       expect(after.sample.length).toBeGreaterThan(0);

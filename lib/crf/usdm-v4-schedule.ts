@@ -20,10 +20,10 @@ import type {
 
 /** NCI code of the USDM Timing type "Fixed Reference" (the anchor). */
 export const USDM_TIMING_FIXED_REFERENCE = "C201358";
-/** NCI code of the USDM Timing type "Before". */
-export const USDM_TIMING_BEFORE = "C201356";
-/** NCI code of the USDM Timing type "After". */
-export const USDM_TIMING_AFTER = "C201357";
+/** NCI code of the USDM Timing type "Before" (Timing Type, C201264). */
+export const USDM_TIMING_BEFORE = "C201357";
+/** NCI code of the USDM Timing type "After" (Timing Type, C201264). */
+export const USDM_TIMING_AFTER = "C201356";
 
 const ISO_DURATION =
   /^(-)?P(?:(\d+(?:\.\d+)?)Y)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)W)?(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/;
@@ -104,9 +104,12 @@ function isAnchorTiming(timing: UsdmV4Timing): boolean {
 }
 
 function timingDirection(timing: UsdmV4Timing): 1 | -1 {
-  const code = timing.type?.code;
+  // The decode decides when it names a direction: CRF Studio exported the
+  // Before and After codes swapped until #2822, with correct decodes.
   const decode = timing.type?.decode?.toLowerCase() ?? "";
-  return code === USDM_TIMING_BEFORE || decode === "before" ? -1 : 1;
+  if (decode === "before") return -1;
+  if (decode === "after") return 1;
+  return timing.type?.code === USDM_TIMING_BEFORE ? -1 : 1;
 }
 
 /** The main timeline of a design, or its first timeline when none is flagged main. */

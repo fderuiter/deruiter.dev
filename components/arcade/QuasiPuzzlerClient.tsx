@@ -24,7 +24,7 @@ const DynamicQuasiPerfectPuzzler = dynamic(QuasiPerfectPuzzlerLoader, {
   ssr: false,
   loading: () => (
     <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-400">
-      <div className="w-8 h-8 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin mb-4" />
+      <div className="w-8 h-8 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin motion-reduce:animate-none mb-4" />
       <span>Loading the puzzles...</span>
     </div>
   ),

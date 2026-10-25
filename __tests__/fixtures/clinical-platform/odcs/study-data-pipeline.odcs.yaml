@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.2.0"
+version: "1.3.0"
 status: active
 domain: "Study data"
 tags:
@@ -889,6 +889,54 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Action Taken with Study Treatment"
+        required: false
+        classification: confidential
+      - name: AESCONG
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Congenital Anomaly or Birth Defect"
+        required: false
+        classification: confidential
+      - name: AESDISAB
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Persist or Signif Disability/Incapacity"
+        required: false
+        classification: confidential
+      - name: AESDTH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Results in Death"
+        required: false
+        classification: confidential
+      - name: AESHOSP
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Requires or Prolongs Hospitalization"
+        required: false
+        classification: confidential
+      - name: AESLIFE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Is Life Threatening"
+        required: false
+        classification: confidential
+      - name: AESMIE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Other Medically Important Serious Event"
         required: false
         classification: confidential
       - name: AESTDTC

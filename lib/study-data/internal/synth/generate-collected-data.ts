@@ -23,6 +23,18 @@ const AE_TERMS = [
   { soc: "General disorders", pt: "Fatigue" },
   { soc: "Nervous system disorders", pt: "Dizziness" },
 ] as const;
+/**
+ * The fictional sites every synthetic study enrolls at, as the EDC's site
+ * list holds them: a site number and the site's country (ISO 3166-1
+ * alpha-3). No site names, investigators or addresses are invented. The
+ * list matches the eight sites the Clinical Data Platform plans for
+ * DEMO-301, numbered from 101 and alternating between the United States and
+ * Canada.
+ */
+const SITES = Array.from({ length: 8 }, (_, index) => ({
+  siteId: String(101 + index),
+  country: index % 2 === 0 ? "USA" : "CAN",
+}));
 
 function draw(
   seed: number,
@@ -80,6 +92,8 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
   DM: [
     SRC,
     SUBJ,
+    TEXT("SITEID", "Site number"),
+    TEXT("COUNTRY", "Site country"),
     DATE("CONSENTDTC", "Informed consent date"),
     NUM("AGE", "Age at consent"),
     TEXT("SEX", "Sex"),
@@ -279,9 +293,12 @@ export function generateCollectedData(
     const stopDate = addDays(baselineDate, offset(stopDay));
     const age = 25 + Math.floor(pick("DM", "age") * 51);
     const sex = pick("DM", "sex") < 0.5 ? "F" : "M";
+    const site = SITES[Math.floor(pick("DM", "site") * SITES.length)];
     rows.DM.push({
       SRCID: sourceId(studyId, "DM", number, "1"),
       USUBJID: subject,
+      SITEID: site.siteId,
+      COUNTRY: site.country,
       CONSENTDTC: consentDate,
       AGE: age,
       SEX: sex,

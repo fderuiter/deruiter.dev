@@ -50,6 +50,10 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 > `readonly` **LAST\_EXPOSURE**: `"End date of the subject's exposure record (EXENDTC); missing for subjects never dosed or with no exposure end date."` = `"End date of the subject's exposure record (EXENDTC); missing for subjects never dosed or with no exposure end date."`
 
+### LAST\_PARTICIPATION
+
+> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, adverse events, vital signs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, adverse events, vital signs, laboratory tests and disposition events. Partial dates are ignored."`
+
 ### LAST\_PRE\_DOSE
 
 > `readonly` **LAST\_PRE\_DOSE**: `"Y on the subject's latest record for the test dated on or before first exposure; missing otherwise."` = `"Y on the subject's latest record for the test dated on or before first exposure; missing otherwise."`

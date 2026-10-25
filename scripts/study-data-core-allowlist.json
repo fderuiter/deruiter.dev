@@ -4,14 +4,6 @@
     {
       "target": "sdtm",
       "coreId": "CORE-000334",
-      "dataset": "DM",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "RACE and RFPENDTC are not derived."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000334",
       "dataset": "AE",
       "category": "defect",
       "issue": 2769,
@@ -64,30 +56,6 @@
       "category": "defect",
       "issue": 2769,
       "reason": "AESOC is not derived, so it cannot equal AEBODSYS."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000776",
-      "dataset": "AE",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "AEENDY is not derived although AEENDTC is."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000776",
-      "dataset": "EX",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "EXENDY is not derived although EXENDTC is."
-    },
-    {
-      "target": "sdtm",
-      "coreId": "CORE-000776",
-      "dataset": "SV",
-      "category": "defect",
-      "issue": 2769,
-      "reason": "SVENDY is not derived although SVENDTC is."
     },
     {
       "target": "sdtm",

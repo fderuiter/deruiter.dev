@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "1.4.0"
+version: "1.5.0"
 status: active
 domain: "Study data"
 tags:
@@ -500,6 +500,14 @@ schema:
         description: "Date of Last Study Treatment"
         required: false
         classification: confidential
+      - name: RFPENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date/Time of End of Participation"
+        required: false
+        classification: confidential
       - name: DTHDTC
         logicalType: string
         logicalTypeOptions:
@@ -544,6 +552,14 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: Sex
+        required: false
+        classification: confidential
+      - name: RACE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Race
         required: false
         classification: confidential
       - name: ARMCD
@@ -687,6 +703,12 @@ schema:
         description: "Study Day of Start of Visit"
         required: false
         classification: confidential
+      - name: SVENDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of End of Visit"
+        required: false
+        classification: confidential
       - name: EPOCH
         logicalType: string
         logicalTypeOptions:
@@ -793,6 +815,12 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of Start of Treatment"
+        required: false
+        classification: confidential
+      - name: EXENDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of End of Treatment"
         required: false
         classification: confidential
       - name: EPOCH
@@ -975,6 +1003,12 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of Start of Adverse Event"
+        required: false
+        classification: confidential
+      - name: AEENDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of End of Adverse Event"
         required: false
         classification: confidential
       - name: EPOCH
@@ -1642,6 +1676,14 @@ schema:
           maxLength: 80
         physicalType: "VARCHAR(80)"
         description: Sex
+        required: false
+        classification: confidential
+      - name: RACE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Race
         required: false
         classification: confidential
       - name: BSYSBP

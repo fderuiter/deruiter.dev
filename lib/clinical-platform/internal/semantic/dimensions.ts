@@ -91,6 +91,30 @@ export const METRIC_DIMENSIONS: readonly MetricDimension[] = Object.freeze([
     table: "gold.dim_vendor",
     column: "vendor_name",
   },
+  {
+    id: "deviation_category",
+    label: "Deviation category",
+    description:
+      "What a protocol deviation concerns, for example Informed consent process.",
+    table: "gold.fct_deviation",
+    column: "deviation_category",
+  },
+  {
+    id: "deviation_importance",
+    label: "Deviation importance",
+    description:
+      "Whether a protocol deviation is important (after ICH E3) or not.",
+    table: "gold.fct_deviation",
+    column: "importance",
+  },
+  {
+    id: "queried_form",
+    label: "Queried form",
+    description:
+      "CRF form of the queried field, named by its CDASH domain, for example VS.",
+    table: "gold.fct_query",
+    column: "queried_form",
+  },
 ] as const satisfies readonly MetricDimension[]);
 
 const BY_ID = new Map(METRIC_DIMENSIONS.map((d) => [d.id, d]));

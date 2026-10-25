@@ -63,7 +63,7 @@ would carry.
 | Monitoring plan dimension | `gold.dim_monitoring_plan` | Conformed dimensions | Clinical Monitoring Lead | Clinical Operations Data Steward | internal | No | 7 days | 99.5% | 10 years | 1.0.0 |
 | Enrollment facts | `gold.fct_enrollment` | Operations mart | Clinical Operations Lead | Clinical Operations Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
 | Visit facts | `gold.fct_visit` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
-| Query facts | `gold.fct_query` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
+| Query facts | `gold.fct_query` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.1.0 |
 | Deviation facts | `gold.fct_deviation` | Operations mart | Clinical Quality Lead | Clinical Quality Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
 | Monitoring visit facts | `gold.fct_monitoring_visit` | Operations mart | Clinical Monitoring Lead | Clinical Operations Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.1.0 |
 | Planned monitoring visit facts | `gold.fct_planned_monitoring_visit` | Operations mart | Clinical Monitoring Lead | Clinical Operations Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
@@ -109,8 +109,8 @@ would carry.
 | `gold.dim_monitoring_plan` | `silver.ctms_monitoring_plan` | `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit` |
 | `gold.fct_enrollment` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_subject`, `silver.site` | `subjects_screened`, `subjects_enrolled`, `enrollment_vs_plan`, `screen_failure_rate`, `early_termination_rate`, `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `cost_per_enrolled_subject` |
 | `gold.fct_visit` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_subject`, `silver.edc_visit`, `silver.planned_visit`, `silver.site` | `data_entry_lag_median`, `data_entry_lag_p90`, `data_entry_lag_mean`, `missed_visit_rate`, `out_of_window_visit_rate`, `query_rate_per_100_visits` |
-| `gold.fct_query` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_query`, `silver.site` | `query_rate_per_100_visits`, `open_query_count`, `query_aging_mean`, `query_resolution_time_median` |
-| `gold.fct_deviation` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_deviation`, `silver.site` | `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation` |
+| `gold.fct_query` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_query`, `silver.site` | `query_rate_per_100_visits`, `open_query_count`, `query_aging_mean`, `query_resolution_time_median`, `open_queries_aged_0_7_days`, `open_queries_aged_8_30_days`, `open_queries_aged_31_60_days`, `open_queries_aged_over_60_days` |
+| `gold.fct_deviation` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_deviation`, `silver.site` | `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `protocol_deviation_count` |
 | `gold.fct_monitoring_visit` | `gold.dim_country`, `gold.dim_monitoring_plan`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_monitoring_plan`, `silver.ctms_monitoring_visit`, `silver.site` | `sdv_completion`, `monitoring_reports_overdue`, `monitoring_report_cycle_time_median` |
 | `gold.fct_planned_monitoring_visit` | `gold.dim_country`, `gold.dim_monitoring_plan`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_monitoring_plan`, `silver.ctms_monitoring_visit`, `silver.site` | `monitoring_visits_overdue` |
 | `gold.fct_milestone` | `gold.dim_milestone`, `gold.dim_study`, `silver.ctms_milestone` | `fpi_to_lpi_days`, `lplv_to_dbl_days` |

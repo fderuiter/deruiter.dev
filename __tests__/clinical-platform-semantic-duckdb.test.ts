@@ -121,14 +121,37 @@ async function expectAgreement(
 const base = (metric: MetricDefinition): MetricDimensionId[] =>
   metric.grain === "study" ? ["study"] : [];
 
+/**
+ * Metrics that count nothing on the default seed: no unresolved query is
+ * older than 30 days at the data cut, so the two oldest age bands (#2759)
+ * are empty. Their SQL must still run and agree that there is nothing.
+ */
+const EMPTY_ON_SEED = new Set([
+  "open_queries_aged_31_60_days",
+  "open_queries_aged_over_60_days",
+]);
+
 describe("DuckDB SQL agrees with the TypeScript evaluator", () => {
+  it("counts nothing only for the metrics expected to be empty", () => {
+    const empty = METRIC_REGISTRY.filter(
+      (m) =>
+        evaluateMetric(warehouse, m, { dimensions: base(m) }).rows.every(
+          (row) => row.value === null || row.value === 0
+        )
+    ).map((m) => m.id);
+    expect(empty).toEqual([...EMPTY_ON_SEED]);
+  });
+
   it.each(METRIC_REGISTRY.map((m) => [m.id, m] as const))(
     "%s at its minimal grouping and by every allowed dimension",
     async (_id, metric) => {
+      const empty = EMPTY_ON_SEED.has(metric.id);
       expect(await expectAgreement(metric, base(metric))).toBeGreaterThan(0);
       for (const dimension of metric.allowedDimensions) {
         const dims = [...new Set([...base(metric), dimension])];
-        expect(await expectAgreement(metric, dims)).toBeGreaterThan(0);
+        const groups = await expectAgreement(metric, dims);
+        if (empty) expect(groups).toBe(0);
+        else expect(groups).toBeGreaterThan(0);
       }
     },
     60_000
@@ -143,7 +166,12 @@ describe("DuckDB SQL agrees with the TypeScript evaluator", () => {
       const dims: MetricDimensionId[] = ["study", ...(second ? [second] : [])];
       await expectAgreement(metric, dims);
       const filterOn = first ?? "study";
-      const values = evaluateMetric(warehouse, metric, {
+      // An empty metric has no values to filter on, so take them from the
+      // open query count, which reads the same rows without the age bound.
+      const source = EMPTY_ON_SEED.has(metric.id)
+        ? METRIC_REGISTRY.find((m) => m.id === "open_query_count")!
+        : metric;
+      const values = evaluateMetric(warehouse, source, {
         dimensions: [
           ...new Set<MetricDimensionId>([...base(metric), filterOn]),
         ],

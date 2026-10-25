@@ -92,13 +92,24 @@ afterAll(() => {
   if (dir) rmSync(dir, { recursive: true, force: true });
 });
 
+/**
+ * Saved queries with nothing to return on the default seed: no unresolved
+ * query is older than 30 days at the data cut, so the two oldest age bands
+ * (#2759) count nothing. They must still pass the check and run.
+ */
+const EMPTY_ON_SEED = new Set([
+  "metric-open-queries-aged-31-60-days",
+  "metric-open-queries-aged-over-60-days",
+]);
+
 describe("every saved query", () => {
   it.each(queries.map((q) => [q.id, q] as const))(
     "%s passes the statement check, runs and returns rows",
     async (_id, query) => {
       expect(checkWorkbenchSql(query.sql)).toEqual([]);
       const result = await rows(query.sql);
-      expect(result.length).toBeGreaterThan(0);
+      if (EMPTY_ON_SEED.has(query.id)) expect(result).toEqual([]);
+      else expect(result.length).toBeGreaterThan(0);
     }
   );
 

@@ -5,6 +5,7 @@ import {
   KRI_LIBRARY,
   METRIC_GAPS,
   METRIC_REGISTRY,
+  NO_METRIC_ROWS,
   QTL_LIBRARY,
   assessStudyRisk,
   buildWarehouse,
@@ -16,6 +17,7 @@ import {
   generatePortfolio,
   operationsDashboard,
   operationsReportSpecs,
+  type MetricDimensionId,
   type OperationsDashboard,
   type OperationsScope,
   type ReportData,
@@ -55,6 +57,15 @@ function report(dashboard: OperationsDashboard, id: string): ReportData {
   return found;
 }
 
+/** A panel's report at whatever level the dashboard is, whatever it groups by. */
+function panel(dashboard: OperationsDashboard, id: string): ReportData {
+  const found = dashboard.sections
+    .flatMap((s) => s.reports)
+    .find((r) => r.spec.id === id || r.spec.id.startsWith(`${id}-by-`));
+  if (found === undefined) throw new Error(`no panel ${id}`);
+  return found;
+}
+
 /** The glance's values by metric id. */
 function glanceValues(dashboard: OperationsDashboard) {
   return Object.fromEntries(
@@ -77,6 +88,12 @@ function rowValues(data: ReportData, label: string) {
   );
 }
 
+/** The reports that group by their own dimensions at every level (#2759). */
+const BREAKDOWNS: Readonly<Record<string, readonly MetricDimensionId[]>> = {
+  "queries-by-form": ["queried_form"],
+  "deviations-by-category": ["deviation_category", "deviation_importance"],
+};
+
 describe("operations report specs (#2630)", () => {
   it("passes every reporting rule at every study, country and site", () => {
     const findings = EVERY_SCOPE.flatMap((scope) =>
@@ -90,7 +107,8 @@ describe("operations report specs (#2630)", () => {
   it("groups each level by the level below and filters to the scope", () => {
     const specs = (scope: OperationsScope) =>
       operationsReportSpecs(warehouse, scope).filter(
-        (spec) => spec.id !== "operations-at-a-glance"
+        (spec) =>
+          spec.id !== "operations-at-a-glance" && !(spec.id in BREAKDOWNS)
       );
     expect(new Set(specs({}).map((s) => s.dimensions.join()))).toEqual(
       new Set(["study"])
@@ -119,6 +137,7 @@ describe("operations report specs (#2630)", () => {
       "screening-outcomes": "",
       "site-activation": "",
       "data-entry-and-queries": "",
+      "query-age-bands": "",
       "protocol-deviations": "",
       "monitoring-and-sdv": "",
     });
@@ -126,6 +145,49 @@ describe("operations report specs (#2630)", () => {
       expect(spec.filters).toEqual([
         { dimension: "site", operator: "in", values: ["DEMO-302-DE-103"] },
       ]);
+    }
+  });
+
+  it("groups a breakdown by its own dimensions at every level (#2759)", () => {
+    for (const scope of EVERY_SCOPE) {
+      const specs = operationsReportSpecs(warehouse, scope);
+      const glance = specs.find((s) => s.id === "operations-at-a-glance");
+      for (const [id, dimensions] of Object.entries(BREAKDOWNS)) {
+        const spec = specs.find((s) => s.id === id);
+        expect(spec?.dimensions, `${id} at ${JSON.stringify(scope)}`).toEqual(
+          dimensions
+        );
+        expect(spec?.filters).toEqual(glance?.filters);
+      }
+    }
+  });
+
+  it("splits the open queries into age bands that add up (#2759)", () => {
+    for (const scope of EVERY_SCOPE) {
+      const dashboard = operationsDashboard(warehouse, scope);
+      const bands = panel(dashboard, "query-age-bands");
+      const queries = panel(dashboard, "data-entry-and-queries");
+      const open = queries.columns.findIndex(
+        (c) => c.metricId === "open_query_count"
+      );
+      const label = JSON.stringify(scope);
+      // A group with no open query has no row in either report.
+      expect(bands.rows.map((r) => r.labels), label).toEqual(
+        queries.rows
+          .filter((r) => r.cells[open].value !== null)
+          .map((r) => r.labels)
+      );
+      for (const row of bands.rows) {
+        // An empty band reads zero, never "No rows".
+        expect(row.cells.map((c) => c.text)).not.toContain(NO_METRIC_ROWS);
+        const sum = row.cells.reduce((n, cell) => n + (cell.value ?? 0), 0);
+        const match = queries.rows.find(
+          (r) => r.labels.join() === row.labels.join()
+        );
+        expect(sum, `${label} ${row.labels.join()}`).toBe(
+          match?.cells[open].value
+        );
+      }
     }
   });
 
@@ -192,10 +254,15 @@ describe("operations dashboard numbers (#2630)", () => {
                 (d, i) => e.dimensions[d] === row.labels[i]
               )
             );
+            // A query age band with no row for a group counted none of
+            // its open queries (#2759); any other missing row has no value.
+            const missing = data.spec.id.startsWith("query-age-bands")
+              ? 0
+              : null;
             expect(
               row.cells[index].value,
               `${data.spec.id} ${column.metricId}`
-            ).toBe(match === undefined ? null : match.value);
+            ).toBe(match === undefined ? missing : match.value);
           }
         });
       }
@@ -464,8 +531,6 @@ describe("operations sections (#2630)", () => {
       "Screen failure reasons #2760",
       "Site activation funnel #2760",
       "Query rate per 100 CRF pages #none",
-      "Query aging buckets and open queries by form #2759",
-      "Deviations by category and importance #2759",
       "eTMF completeness #none",
     ]);
     const cec = (study: string) =>

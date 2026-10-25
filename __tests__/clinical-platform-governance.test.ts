@@ -655,7 +655,9 @@ describe("data catalog search and facets", () => {
     ).toMatchObject({
       kinds: [
         { value: "product", count: 2 },
-        { value: "metric", count: 4 },
+        // The query rate, count, aging and resolution time, and the four
+        // query age bands (#2759).
+        { value: "metric", count: 8 },
       ],
     });
   });

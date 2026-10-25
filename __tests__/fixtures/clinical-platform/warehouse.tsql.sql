@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.1.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.2.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -1801,6 +1801,7 @@ CREATE TABLE [gold].[fct_query] (
   [answered_date_key] INT,
   [closed_date_key]   INT,
   [queried_field]     NVARCHAR(64) NOT NULL,
+  [queried_form]      NVARCHAR(8) NOT NULL,
   [query_origin]      NVARCHAR(64) NOT NULL,
   [query_status]      NVARCHAR(64) NOT NULL,
   [minutes_to_answer] INT,
@@ -1868,6 +1869,11 @@ EXEC sys.sp_addextendedproperty
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_query',
   @level2type = N'COLUMN', @level2name = N'queried_field';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'CRF form of the queried field: its CDASH domain, the part of queried_field before the dot.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_query',
+  @level2type = N'COLUMN', @level2name = N'queried_form';
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'edit-check or manual.',
   @level0type = N'SCHEMA', @level0name = N'gold',

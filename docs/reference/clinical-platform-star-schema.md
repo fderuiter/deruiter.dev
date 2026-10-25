@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.1.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.2.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -132,6 +132,7 @@ erDiagram
     int answered_date_key FK
     int closed_date_key FK
     varchar queried_field
+    varchar queried_form
     varchar query_origin
     varchar query_status
     int minutes_to_answer
@@ -479,6 +480,7 @@ Data queries with their resolution times.
 | `answered_date_key` | integer | yes | FK to `gold.dim_date` | internal | UTC date the site answered. |
 | `closed_date_key` | integer | yes | FK to `gold.dim_date` | internal | UTC date the query closed. |
 | `queried_field` | string | no |  | internal | Queried field, as DOMAIN.VARIABLE. |
+| `queried_form` | string | no |  | internal | CRF form of the queried field: its CDASH domain, the part of queried_field before the dot. |
 | `query_origin` | string | no |  | internal | edit-check or manual. |
 | `query_status` | string | no |  | internal | State at the data cut. |
 | `minutes_to_answer` | integer | yes |  | internal | Minutes from opening to the site's answer. |

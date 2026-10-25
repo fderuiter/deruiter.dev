@@ -273,7 +273,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     OPERATIONS
   ),
   "gold.fct_visit": gold("Visit facts", "Operations mart", DATA_MANAGEMENT),
-  "gold.fct_query": gold("Query facts", "Operations mart", DATA_MANAGEMENT),
+  "gold.fct_query": {
+    ...gold("Query facts", "Operations mart", DATA_MANAGEMENT),
+    // 1.1.0 (#2759): the queried form.
+    version: "1.1.0",
+  },
   "gold.fct_deviation": gold("Deviation facts", "Operations mart", QUALITY),
   "gold.fct_monitoring_visit": {
     ...gold("Monitoring visit facts", "Operations mart", MONITORING),

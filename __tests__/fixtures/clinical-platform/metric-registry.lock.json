@@ -836,6 +836,332 @@
           "site",
           "country",
           "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">=",
+                "right": {
+                  "kind": "literal",
+                  "value": 0
+                }
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": "<=",
+                "right": {
+                  "kind": "literal",
+                  "value": 7
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "queries"
+      },
+      "id": "open_queries_aged_0_7_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">=",
+                "right": {
+                  "kind": "literal",
+                  "value": 31
+                }
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": "<=",
+                "right": {
+                  "kind": "literal",
+                  "value": 60
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "queries"
+      },
+      "id": "open_queries_aged_31_60_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">=",
+                "right": {
+                  "kind": "literal",
+                  "value": 8
+                }
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": "<=",
+                "right": {
+                  "kind": "literal",
+                  "value": 30
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "queries"
+      },
+      "id": "open_queries_aged_8_30_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              },
+              {
+                "kind": "compare",
+                "left": {
+                  "from": {
+                    "column": "opened_date_key",
+                    "kind": "date-of-key"
+                  },
+                  "kind": "days-between",
+                  "to": {
+                    "kind": "data-cut"
+                  }
+                },
+                "operator": ">=",
+                "right": {
+                  "kind": "literal",
+                  "value": 61
+                }
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "queries"
+      },
+      "id": "open_queries_aged_over_60_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
           "month"
         ],
         "defaultFilters": [
@@ -872,6 +1198,56 @@
       "id": "open_query_count",
       "status": "certified",
       "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "queries"
+      },
+      "id": "open_query_count",
+      "status": "certified",
+      "version": "1.1.0"
     },
     {
       "contract": {
@@ -949,6 +1325,40 @@
           "site",
           "country",
           "region",
+          "month",
+          "deviation_category",
+          "deviation_importance"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_deviation",
+            "timeKey": "occurred_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "deviations"
+      },
+      "id": "protocol_deviation_count",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
           "month"
         ],
         "defaultFilters": [
@@ -994,6 +1404,65 @@
       "id": "query_aging_mean",
       "status": "certified",
       "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [
+          {
+            "dimension": "study_status",
+            "operator": "not-in",
+            "values": [
+              "closed"
+            ]
+          }
+        ],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "mean",
+            "expression": {
+              "from": {
+                "column": "opened_date_key",
+                "kind": "date-of-key"
+              },
+              "kind": "days-between",
+              "to": {
+                "kind": "data-cut"
+              }
+            },
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "query_status",
+                "kind": "in",
+                "values": [
+                  "open",
+                  "answered"
+                ]
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "query_aging_mean",
+      "status": "certified",
+      "version": "1.1.0"
     },
     {
       "contract": {
@@ -1088,6 +1557,55 @@
       "id": "query_resolution_time_median",
       "status": "certified",
       "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month",
+          "queried_form"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "opened_date_key",
+                "kind": "date-of-key"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "closed_date_key",
+                "kind": "date-of-key"
+              }
+            },
+            "table": "gold.fct_query",
+            "timeKey": "opened_date_key",
+            "where": [
+              {
+                "column": "closed_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "query_resolution_time_median",
+      "status": "certified",
+      "version": "1.1.0"
     },
     {
       "contract": {

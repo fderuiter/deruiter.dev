@@ -15,6 +15,7 @@ import {
 } from "../lib/dx/doctor";
 import {
   scaffold,
+  type GeneratedFile,
   type ScaffoldType,
   validateScaffoldType,
   validateScaffoldName,
@@ -1099,10 +1100,10 @@ export async function runInteractiveScaffoldWizard(): Promise<void> {
     `  ${colors.cyan}5)${colors.reset} case-study  - Interactive Case Study page (app/case-studies/ & test)`
   );
   console.log(
-    `  ${colors.cyan}6)${colors.reset} arcade      - Arcade simulator & engine (lib/, components/, app/ & tests)`
+    `  ${colors.cyan}6)${colors.reset} arcade      - Three-view arcade game: session, views, route, tests & registries`
   );
   console.log(
-    `  ${colors.cyan}7)${colors.reset} game        - Interactive game module (arcade alias)\n`
+    `  ${colors.cyan}7)${colors.reset} game        - Three-view arcade game (arcade alias)\n`
   );
 
   const typeMenuMap: Record<string, ScaffoldType> = {
@@ -1172,22 +1173,41 @@ export async function runInteractiveScaffoldWizard(): Promise<void> {
       dryRun,
       workspaceRoot,
     });
-    for (const f of generated) {
-      const actionBadge =
-        f.action === "updated"
-          ? badge("UPDATED", "info")
-          : badge("CREATED", "pass");
-      console.log(`${actionBadge} ${f.relativePath}`);
-    }
-    console.log(
-      `\n${colors.brightGreen}✔ Successfully scaffolded ${generated.length} item(s) for ${selectedName}.${colors.reset}\n`
-    );
+    printScaffoldResult(generated, selectedType, selectedName);
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
     console.error(
       `\n${colors.brightRed}✖ Scaffolding failed: ${errorMsg}${colors.reset}\n`
     );
     process.exit(1);
+  }
+}
+
+function printScaffoldResult(
+  generated: GeneratedFile[],
+  type: ScaffoldType,
+  name: string
+): void {
+  for (const f of generated) {
+    let actionBadge = badge("CREATED", "pass");
+    if (f.action === "updated") actionBadge = badge("UPDATED", "info");
+    if (f.action === "skipped") actionBadge = badge("SKIPPED", "warn");
+    console.log(`${actionBadge} ${f.relativePath}`);
+  }
+  console.log(
+    `\n${colors.brightGreen}✔ Successfully scaffolded ${generated.length} item(s) for ${name}.${colors.reset}\n`
+  );
+  if (generated.some((f) => f.action === "skipped")) {
+    console.log(
+      `${colors.yellow}A SKIPPED file's list was not found; add the game's entry by hand.${colors.reset}`
+    );
+  }
+  if (type === "game" || type === "arcade") {
+    console.log(`Next steps for a three-view game (ADR 0062):
+  1. npm run doctor:fix   regenerates public/llms.txt and the TypeDoc reference
+  2. Update the hub's game count in __tests__/arcade-registry.test.ts
+  3. npm run quality && npm test
+`);
   }
 }
 
@@ -1298,16 +1318,7 @@ async function handleScaffoldCommand(parsed: ParsedCliArgs): Promise<void> {
         })
       );
     } else {
-      for (const f of generated) {
-        const actionBadge =
-          f.action === "updated"
-            ? badge("UPDATED", "info")
-            : badge("CREATED", "pass");
-        console.log(`${actionBadge} ${f.relativePath}`);
-      }
-      console.log(
-        `\n${colors.brightGreen}✔ Successfully scaffolded ${generated.length} item(s) for ${name}.${colors.reset}\n`
-      );
+      printScaffoldResult(generated, type, name);
     }
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);

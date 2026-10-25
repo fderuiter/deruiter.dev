@@ -89,8 +89,8 @@ The interactive terminal wizard guides you through three steps:
    - `3) api` - Zod-validated API route (`app/api/<name>/route.ts` + companion test)
    - `4) adr` - Architectural Decision Record (`adr/00XX-<name>.md`)
    - `5) case-study` - Showcase Case Study page (`app/case-studies/<name>/page.tsx` + Command Palette registration + companion test)
-   - `6) arcade` - Arcade simulator & engine (`lib/<name>-engine.ts`, `components/<Name>.tsx`, `app/arcade/<name>/page.tsx` + unit tests + Command Palette registration)
-   - `7) game` - Interactive game module (arcade alias)
+   - `6) arcade` - Three-view arcade game ([ADR 0062](./adr/0062-three-views-per-arcade-game.md)): an engine at `lib/<name>/index.ts`; under `components/<name>/` an action map, a session (`use<Name>Session.ts`), a board in `parts/` and `views/{DesktopView,TabletView,PhoneView}.tsx`; a cabinet client using `defineGameViews`; the route and its OpenGraph card; a session unit test and phone and tablet e2e specs. It also adds the game to `ARCADE_REGISTRY`, the arcade metadata, the progress catalog and every discovery registry below. Then run `npm run doctor:fix` and update the hub's game count in `__tests__/arcade-registry.test.ts`.
+   - `7) game` - Three-view arcade game (arcade alias)
 
 2. **Enter Feature / Asset Name**:
    - Input a descriptive name (e.g. `matrix-defender`, `analytics-card`).
@@ -127,7 +127,7 @@ Whenever a new first-class route, interactive mini-game, or case study page is i
 
 1. **Command Palette (`components/CommandPalette.tsx`)**:
    - Registered under `staticNavs` with Tabler icon, title, subtitle, category, and target URL.
-   - _Note:_ The CLI scaffolder automatically registers `arcade` games and `case-study` pages into `CommandPalette.tsx` upon scaffolding!
+   - _Note:_ The CLI scaffolder registers `case-study` pages in `CommandPalette.tsx`, and `arcade` games in every point of this matrix.
 2. **Site Navigation (`lib/navigation.ts`)**:
    - One entry under the right group (Work, Blog, Arcade, Simulators, About, Contact). The top bar, desktop menus, mobile drawer and footer columns all render from this data ([ADR 0058](./adr/0058-site-navigation-information-architecture.md)).
 3. **Sitemap & SEO Metadata (`app/sitemap.ts` & `lib/seo-metadata.ts`)**:

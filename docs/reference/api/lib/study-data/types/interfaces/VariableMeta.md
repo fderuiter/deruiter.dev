@@ -61,6 +61,15 @@ Where the value comes from.
 
 ***
 
+### required?
+
+> `readonly` `optional` **required?**: `true`
+
+Set when SDTMIG marks the variable Core "Req" in its domain: it is
+never null, and Define-XML writes it as mandatory.
+
+***
+
 ### role?
 
 > `readonly` `optional` **role?**: [`VariableRole`](../type-aliases/VariableRole.md)

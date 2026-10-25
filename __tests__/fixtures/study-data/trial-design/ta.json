@@ -12,7 +12,8 @@
       "type": "text",
       "length": 200,
       "role": "Identifier",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "DOMAIN",
@@ -21,46 +22,51 @@
       "length": 200,
       "role": "Identifier",
       "origin": "Protocol",
-      "codelist": "DOMAIN"
+      "codelist": "DOMAIN",
+      "required": true
     },
     {
       "name": "ARMCD",
       "label": "Planned Arm Code",
       "type": "text",
       "length": 200,
-      "role": "Identifier",
+      "role": "Topic",
       "origin": "Protocol",
-      "codelist": "ARMCD"
+      "codelist": "ARMCD",
+      "required": true
     },
     {
       "name": "ARM",
       "label": "Description of Planned Arm",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
-      "origin": "Protocol"
+      "role": "Synonym Qualifier",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "TAETORD",
       "label": "Element Order",
       "type": "integer",
       "role": "Timing",
-      "origin": "Protocol"
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "ETCD",
       "label": "Element Code",
       "type": "text",
       "length": 200,
-      "role": "Topic",
-      "origin": "Protocol"
+      "role": "Record Qualifier",
+      "origin": "Protocol",
+      "required": true
     },
     {
       "name": "ELEMENT",
       "label": "Description of Element",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
+      "role": "Synonym Qualifier",
       "origin": "Protocol"
     },
     {
@@ -68,9 +74,10 @@
       "label": "Epoch",
       "type": "text",
       "length": 200,
-      "role": "Variable Qualifier",
+      "role": "Timing",
       "origin": "Protocol",
-      "codelist": "EPOCH"
+      "codelist": "EPOCH",
+      "required": true
     }
   ],
   "columns": {

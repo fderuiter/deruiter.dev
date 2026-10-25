@@ -110,6 +110,12 @@ Re-exports [checkLayerFlow](internal/policy/functions/checkLayerFlow.md)
 
 ***
 
+### checkLineage
+
+Re-exports [checkLineage](internal/lineage/impact/functions/checkLineage.md)
+
+***
+
 ### checkMetricChange
 
 Re-exports [checkMetricChange](internal/semantic/check/functions/checkMetricChange.md)
@@ -155,6 +161,18 @@ Re-exports [checkWarehouse](internal/warehouse/check/functions/checkWarehouse.md
 ### ColumnRef
 
 Re-exports [ColumnRef](types/interfaces/ColumnRef.md)
+
+***
+
+### contractChangeImpact
+
+Re-exports [contractChangeImpact](internal/lineage/impact/functions/contractChangeImpact.md)
+
+***
+
+### ContractChangeImpact
+
+Re-exports [ContractChangeImpact](types/interfaces/ContractChangeImpact.md)
 
 ***
 
@@ -590,15 +608,75 @@ Re-exports [LayerDefinition](types/interfaces/LayerDefinition.md)
 
 ***
 
+### LINEAGE\_STAGES
+
+Re-exports [LINEAGE_STAGES](internal/lineage/graph/variables/LINEAGE_STAGES.md)
+
+***
+
 ### LineageEdge
 
 Re-exports [LineageEdge](types/interfaces/LineageEdge.md)
 
 ***
 
+### LineageFinding
+
+Re-exports [LineageFinding](types/interfaces/LineageFinding.md)
+
+***
+
+### LineageGraphEdge
+
+Re-exports [LineageGraphEdge](types/interfaces/LineageGraphEdge.md)
+
+***
+
+### lineageImpact
+
+Re-exports [lineageImpact](internal/lineage/impact/functions/lineageImpact.md)
+
+***
+
+### LineageImpact
+
+Re-exports [LineageImpact](types/interfaces/LineageImpact.md)
+
+***
+
+### LineageNode
+
+Re-exports [LineageNode](types/interfaces/LineageNode.md)
+
+***
+
+### LineageReach
+
+Re-exports [LineageReach](types/interfaces/LineageReach.md)
+
+***
+
+### LineageStage
+
+Re-exports [LineageStage](types/type-aliases/LineageStage.md)
+
+***
+
+### lineageUpstream
+
+Re-exports [lineageUpstream](internal/lineage/impact/functions/lineageUpstream.md)
+
+***
+
 ### logGamma
 
 Re-exports [logGamma](internal/rbqm/stats/functions/logGamma.md)
+
+***
+
+### MEASURES\_DATASET
+
+Re-exports [MEASURES_DATASET](internal/lineage/graph/variables/MEASURES_DATASET.md)
 
 ***
 
@@ -770,6 +848,12 @@ Re-exports [MetricResultRow](types/interfaces/MetricResultRow.md)
 
 ***
 
+### METRICS\_DATASET
+
+Re-exports [METRICS_DATASET](internal/lineage/graph/variables/METRICS_DATASET.md)
+
+***
+
 ### MetricStatus
 
 Re-exports [MetricStatus](types/type-aliases/MetricStatus.md)
@@ -797,6 +881,30 @@ Re-exports [NO_METRIC_VALUE](internal/reporting/format/variables/NO_METRIC_VALUE
 ### ODCS\_API\_VERSION
 
 Re-exports [ODCS_API_VERSION](internal/governance/contracts/odcs/variables/ODCS_API_VERSION.md)
+
+***
+
+### OPENLINEAGE\_PRODUCER
+
+Re-exports [OPENLINEAGE_PRODUCER](internal/lineage/openlineage/variables/OPENLINEAGE_PRODUCER.md)
+
+***
+
+### OpenLineageDataset
+
+Re-exports [OpenLineageDataset](types/interfaces/OpenLineageDataset.md)
+
+***
+
+### OpenLineageInputField
+
+Re-exports [OpenLineageInputField](types/interfaces/OpenLineageInputField.md)
+
+***
+
+### OpenLineageRunEvent
+
+Re-exports [OpenLineageRunEvent](types/interfaces/OpenLineageRunEvent.md)
 
 ***
 
@@ -911,6 +1019,18 @@ Re-exports [planRoadmap](internal/strategy/engine/functions/planRoadmap.md)
 ### PLATFORM\_STAGES
 
 Re-exports [PLATFORM_STAGES](presets/variables/PLATFORM_STAGES.md)
+
+***
+
+### platformLineage
+
+Re-exports [platformLineage](internal/lineage/graph/functions/platformLineage.md)
+
+***
+
+### PlatformLineage
+
+Re-exports [PlatformLineage](types/interfaces/PlatformLineage.md)
 
 ***
 
@@ -1139,6 +1259,12 @@ Re-exports [ReportFinding](types/interfaces/ReportFinding.md)
 ### ReportRow
 
 Re-exports [ReportRow](types/interfaces/ReportRow.md)
+
+***
+
+### REPORTS\_DATASET
+
+Re-exports [REPORTS_DATASET](internal/lineage/graph/variables/REPORTS_DATASET.md)
 
 ***
 
@@ -1433,6 +1559,12 @@ Re-exports [toOdcs](internal/governance/contracts/odcs/functions/toOdcs.md)
 ### toOdcsYaml
 
 Re-exports [toOdcsYaml](internal/governance/contracts/odcs/functions/toOdcsYaml.md)
+
+***
+
+### toOpenLineageEvents
+
+Re-exports [toOpenLineageEvents](internal/lineage/openlineage/functions/toOpenLineageEvents.md)
 
 ***
 

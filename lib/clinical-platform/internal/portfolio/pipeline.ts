@@ -39,6 +39,54 @@ import { Stream } from "./stream";
 /** Collected-layer datasets the bronze feeds are read from. */
 const SOURCE_DATASETS: readonly string[] = ["DM", "RAND", "SV", "EX", "DS"];
 
+/**
+ * The bronze columns each collected variable feeds, as `readSubjects` and
+ * `studyFromPipeline` read them, for studies whose subjects come from the
+ * pipeline. Kept beside the code it describes so the two change together;
+ * the lineage tests check every reference resolves.
+ */
+export const PIPELINE_BRONZE_LINEAGE: readonly {
+  readonly from: string;
+  readonly to: string;
+  readonly transformation: string;
+}[] = [
+  ["DM.USUBJID", "edc.subjects.subjectId", "identity"],
+  ["DM.USUBJID", "edc.visits.subjectId", "identity"],
+  ["DM.USUBJID", "edc.visits.visitId", "concatenate"],
+  ["DM.USUBJID", "irt.randomizations.subjectId", "identity"],
+  ["DM.USUBJID", "irt.kits.subjectId", "identity"],
+  ["DM.USUBJID", "ctms.deviations.subjectId", "identity"],
+  ["DM.USUBJID", "ctms.deviations.deviationId", "concatenate"],
+  ["DM.CONSENTDTC", "edc.subjects.screenedOn", "date-shift"],
+  ["SV.SVDTC", "edc.subjects.screenedOn", "date-shift"],
+  ["SV.SVDTC", "edc.visits.visitDate", "date-shift"],
+  ["SV.SVDTC", "edc.subjects.completedOn", "date-shift"],
+  ["SV.SVDTC", "edc.subjects.discontinuedOn", "date-shift"],
+  ["SV.SVDTC", "irt.kits.dispensedOn", "date-shift"],
+  ["SV.VISITNUM", "edc.visits.plannedVisitId", "reference-lookup"],
+  ["SV.VISITNUM", "edc.visits.visitId", "concatenate"],
+  ["SV.PLANDY", "edc.visits.dayOffset", "subtract"],
+  ["SV.ACTDY", "edc.visits.dayOffset", "subtract"],
+  ["SV.STATUS", "edc.visits.status", "derive-status"],
+  ["SV.STATUS", "ctms.deviations.category", "derive-status"],
+  ["SV.SVDTC", "ctms.deviations.occurredOn", "date-shift"],
+  ["SV.PLANDY", "ctms.deviations.occurredOn", "date-add"],
+  ["RAND.RANDDTC", "ctms.deviations.occurredOn", "date-add"],
+  ["RAND.RANDDTC", "edc.subjects.enrolledOn", "date-shift"],
+  ["RAND.RANDDTC", "edc.subjects.status", "derive-status"],
+  ["RAND.RANDDTC", "irt.randomizations.randomizedAt", "date-shift"],
+  ["RAND.ARM", "irt.randomizations.arm", "identity"],
+  ["EX.EXSTDTC", "irt.kits.dispensedOn", "filter"],
+  ["EX.EXENDTC", "irt.kits.dispensedOn", "filter"],
+  ["DS.DSDECOD", "edc.subjects.status", "derive-status"],
+  ["DS.DSSTDTC", "edc.subjects.completedOn", "date-shift"],
+  ["DS.DSSTDTC", "edc.subjects.discontinuedOn", "date-shift"],
+].map(([from, to, transformation]) => ({
+  from: `collected.${from}`,
+  to: `bronze.${to}`,
+  transformation,
+}));
+
 /** Days from the first site activation to the first consent. */
 const FIRST_CONSENT_LAG = 7;
 

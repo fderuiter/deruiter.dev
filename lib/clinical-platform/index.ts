@@ -32,6 +32,23 @@ export {
   renderWarehouseReference,
 } from "./internal/warehouse/erd";
 export { warehouseLineage } from "./internal/warehouse/lineage";
+export {
+  LINEAGE_STAGES,
+  MEASURES_DATASET,
+  METRICS_DATASET,
+  REPORTS_DATASET,
+  platformLineage,
+} from "./internal/lineage/graph";
+export {
+  checkLineage,
+  contractChangeImpact,
+  lineageImpact,
+  lineageUpstream,
+} from "./internal/lineage/impact";
+export {
+  OPENLINEAGE_PRODUCER,
+  toOpenLineageEvents,
+} from "./internal/lineage/openlineage";
 export { METRIC_GAPS, METRIC_REGISTRY } from "./internal/semantic/registry";
 export { METRIC_DIMENSIONS } from "./internal/semantic/dimensions";
 export { evaluateMetric } from "./internal/semantic/evaluate";

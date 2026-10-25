@@ -18,7 +18,7 @@ import type {
 import type { StudyBlueprint } from "./blueprint";
 import { MINUTES_PER_DAY, isoDate, isoMinute } from "./calendar";
 import type { SitePlan } from "./sites";
-import type { Stream } from "./stream";
+import { Stream } from "./stream";
 
 /** Records and enrollment facts produced for one study. */
 export interface StudySimulation {
@@ -89,6 +89,35 @@ export const SUBJECT_DEVIATION_TYPES: readonly DeviationType[] = [
     atEnrollment: false,
   },
 ];
+
+/**
+ * Why screening failed: a short, fictional controlled list with weights
+ * roughly in the order sponsors report them, eligibility first (#2879).
+ */
+const SCREEN_FAILURE_REASONS: readonly (readonly [string, number])[] = [
+  ["Inclusion criterion not met", 45],
+  ["Exclusion criterion met", 30],
+  ["Consent withdrawn", 12],
+  ["Lost before randomisation", 5],
+  ["Other", 8],
+];
+
+/**
+ * Draws screen failure reasons for one study, in subject order, from a
+ * stream of their own: adding the reasons moved no other generated value.
+ *
+ * @param seed - Portfolio seed.
+ * @param studyId - The study's id.
+ * @returns A function giving the next screen failure's reason.
+ */
+export function screenFailureReasons(
+  seed: number,
+  studyId: string
+): () => string {
+  const rng = new Stream(seed, `${studyId}/screen-failure-reasons`);
+  const weights = SCREEN_FAILURE_REASONS.map(([, weight]) => weight);
+  return () => SCREEN_FAILURE_REASONS[rng.weighted(weights)][0];
+}
 
 const QUERY_FIELDS: readonly string[] = [
   "VS.SYSBP",

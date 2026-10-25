@@ -3,7 +3,7 @@
  * statements that can break the running app (#2537).
  *
  * ADR 0049 applies migrations during the Production build, before the
- * Deployment Check, so a destructive statement reaches the live database
+ * deployment is promoted, so a destructive statement reaches the live database
  * before any gate sees the new code. The nightly train (#1168) runs this over
  * `live..candidate` and holds the release when anything is flagged.
  *

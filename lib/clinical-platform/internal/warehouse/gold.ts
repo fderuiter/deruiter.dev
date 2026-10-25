@@ -472,6 +472,7 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
         ...dims(s, day),
         event_date_key: dk(day),
         subject_status: s.subject_status,
+        screen_failure_reason: s.screen_failure_reason,
         event_count: 1,
         is_synthetic: s.is_synthetic,
       });

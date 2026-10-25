@@ -54,6 +54,18 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
+	/// Subjects whose screening ended in a screen failure, by screening date. It can be broken down by the reason screening failed; the screen failure rate cannot, because its denominator holds the subjects who passed, and they have no reason. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: subjects.
+	measure 'Screen failures' =
+			COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "screened" && 'fct_enrollment'[subject_status] = "screen-failed")) + 0
+		formatString: #,0
+		displayFolder: Enrollment
+
+		annotation MetricId = screen_failures
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
 	/// Subjects who discontinued before completing the study, as a share of subjects enrolled. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: share of enrolled subjects.
 	measure 'Early termination rate' =
 			VAR Numerator = COUNTROWS(FILTER('fct_enrollment', 'fct_enrollment'[event_type] = "discontinued")) + 0

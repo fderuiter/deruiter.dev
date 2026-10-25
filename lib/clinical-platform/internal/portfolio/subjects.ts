@@ -12,6 +12,7 @@ import {
   MISSED_ASSESSMENT_DEVIATION,
   StudyRecorder,
   SUBJECT_DEVIATION_TYPES,
+  screenFailureReasons,
   type StudySimulation,
 } from "./records";
 import type { SitePlan } from "./sites";
@@ -89,6 +90,7 @@ export function simulateStudy(
 ): StudySimulation {
   const rng = new Stream(seed, `${study.id}/subjects`);
   const out = new StudyRecorder(study, rng, asOfDay);
+  const reason = screenFailureReasons(seed, study.id);
   const enrollDays: number[] = [];
   const screening = study.plannedVisits[0];
   const anchorIndex = study.plannedVisits.findIndex((v) => v.day === 0);
@@ -251,6 +253,7 @@ export function simulateStudy(
       completedOn,
       discontinuedOn,
       status,
+      screenFailureReason: status === "screen-failed" ? reason() : null,
     });
   }
 

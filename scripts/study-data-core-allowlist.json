@@ -348,30 +348,6 @@
     },
     {
       "target": "usdm",
-      "coreId": "CORE-000827",
-      "dataset": "Encounter",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "scheduledAtId points at scheduled activity instances, not timings."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-000961",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "Encounter order by next/previous differs from the main timeline."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001048",
-      "dataset": "InterventionalStudyDesign",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "The main timeline reaches only the screening epoch."
-    },
-    {
-      "target": "usdm",
       "coreId": "CORE-001076",
       "dataset": "Activity",
       "category": "defect",
@@ -409,14 +385,6 @@
       "category": "defect",
       "issue": 2770,
       "reason": "A double-blind design with no masked roles."
-    },
-    {
-      "target": "usdm",
-      "coreId": "CORE-001016",
-      "dataset": "ScheduleTimeline",
-      "category": "defect",
-      "issue": 2770,
-      "reason": "The main timeline has no planned duration."
     },
     {
       "target": "usdm",

@@ -100,6 +100,12 @@ A schedule of activities.
 
 ***
 
+### plannedDuration?
+
+> `optional` **plannedDuration?**: [`UsdmV4Duration`](UsdmV4Duration.md) \| `null`
+
+***
+
 ### timings?
 
 > `optional` **timings?**: [`UsdmV4Timing`](UsdmV4Timing.md)[]

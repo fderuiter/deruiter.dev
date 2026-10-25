@@ -26,6 +26,7 @@ import {
   type UsdmV4BiomedicalConcept,
   type UsdmV4Code,
   type UsdmV4Document,
+  type UsdmV4Duration,
   type UsdmV4Encounter,
   type UsdmV4ExtensionAttribute,
   type UsdmV4ScheduledActivityInstance,
@@ -343,17 +344,22 @@ const ENCOUNTERS: UsdmV4Encounter[] = VISITS.map((v, idx) => ({
   type: ct(`${v.id}_type`, "C25716", "Visit"),
   previousId: idx > 0 ? VISITS[idx - 1].id : null,
   nextId: idx < VISITS.length - 1 ? VISITS[idx + 1].id : null,
-  scheduledAtId: `${v.id}_sai`,
+  scheduledAtId: `${v.id}_timing`,
   environmentalSettings: [],
   contactModes: [],
   instanceType: "Encounter",
 }));
 
+// Each instance's default condition is the next visit's instance, so the
+// main timeline walks the visits in the same order as the encounters and
+// epochs; the last one leaves through the timeline exit.
 const INSTANCES: UsdmV4ScheduledActivityInstance[] = VISITS.map((v, idx) => ({
   id: `${v.id}_sai`,
   name: `${v.label} activities`,
   label: null,
   description: null,
+  defaultConditionId:
+    idx < VISITS.length - 1 ? `${VISITS[idx + 1].id}_sai` : null,
   epochId: v.epochId,
   timelineId: null,
   timelineExitId: idx === VISITS.length - 1 ? TIMELINE_EXIT : null,
@@ -388,6 +394,26 @@ const TIMINGS: UsdmV4Timing[] = VISITS.map((v) => {
     instanceType: "Timing",
   };
 });
+
+// Screening (Day -14) to End of Study (Day 98) is 16 weeks. The visit
+// windows are tolerances around that plan, so the duration does not vary
+// (USDM allows a quantity only on a duration that does not vary).
+const PLANNED_DURATION: UsdmV4Duration = {
+  id: "timeline_main_duration",
+  text: "16 weeks",
+  quantity: {
+    id: "timeline_main_duration_qty",
+    value: 16,
+    unit: alias(
+      "timeline_main_duration_unit",
+      ct("timeline_main_duration_unit_code", "C29844", "Week")
+    ),
+    instanceType: "Quantity",
+  },
+  durationWillVary: false,
+  reasonDurationWillVary: null,
+  instanceType: "Duration",
+};
 
 // ---------------------------------------------------------------------------
 // Arms, epochs, elements and cells
@@ -848,6 +874,7 @@ export const DEMO_301_USDM: UsdmV4Document = {
                 ],
                 timings: TIMINGS,
                 instances: INSTANCES,
+                plannedDuration: PLANNED_DURATION,
                 instanceType: "ScheduleTimeline",
               },
             ],

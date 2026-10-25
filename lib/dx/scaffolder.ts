@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { scaffoldThreeViewGame } from "./scaffold-game";
 
 export type ScaffoldType = "arcade" | "game" | "api" | "adr" | "case-study" | "component" | "hook";
 
@@ -37,241 +38,20 @@ function toTitleCase(str: string): string {
 }
 
 /**
- * Scaffold Arcade Mini-Game & Engine
+ * Scaffold a three-view arcade game (ADR 0062, #2846): an engine, an action
+ * map, a session, three views over one board, the cabinet client, the route
+ * and its social card, tests, and the registry and discovery entries.
  */
 export function scaffoldArcadeGame(root: string, rawName: string, dryRun = false): GeneratedFile[] {
-  const kebab = toKebabCase(rawName);
-  const pascal = toPascalCase(rawName);
-  const title = toTitleCase(rawName);
-
-  const engineFile = path.join(root, "lib", `${kebab}-engine.ts`);
-  const uiFile = path.join(root, "components", `${pascal}.tsx`);
-  const routeFile = path.join(root, "app", "arcade", kebab, "page.tsx");
-  const engineTestFile = path.join(root, "__tests__", `${kebab}-engine.test.ts`);
-  const uiTestFile = path.join(root, "__tests__", `${kebab}-ui.test.tsx`);
-  const paletteFile = path.join(root, "components", "CommandPalette.tsx");
-
-  const results: GeneratedFile[] = [];
-
-  // Engine file content
-  const engineContent = `/**
- * ${title} - Deterministic Game AST Engine
- */
-
-export interface ${pascal}State {
-  score: number;
-  ticks: number;
-  isGameOver: boolean;
-  status: "idle" | "running" | "paused" | "completed";
-}
-
-export function createInitial${pascal}State(): ${pascal}State {
-  return {
-    score: 0,
-    ticks: 0,
-    isGameOver: false,
-    status: "idle",
-  };
-}
-
-export function step${pascal}Engine(state: ${pascal}State): ${pascal}State {
-  if (state.status !== "running" || state.isGameOver) {
-    return state;
-  }
-
-  const nextTicks = state.ticks + 1;
-  const nextScore = state.score + 10;
-
-  return {
-    ...state,
-    ticks: nextTicks,
-    score: nextScore,
-  };
-}
-`;
-
-  // UI Component content
-  const uiContent = `"use client";
-
-import React, { useState, useEffect } from "react";
-import { createInitial${pascal}State, step${pascal}Engine, type ${pascal}State } from "@/lib/${kebab}-engine";
-import { IconTerminal, IconPlayerPlay, IconPlayerPause, IconRotate } from "@tabler/icons-react";
-
-export const ${pascal}: React.FC = () => {
-  const [gameState, setGameState] = useState<${pascal}State>(createInitial${pascal}State());
-
-  useEffect(() => {
-    if (gameState.status !== "running") return;
-    const interval = setInterval(() => {
-      setGameState((prev) => step${pascal}Engine(prev));
-    }, 500);
-    return () => clearInterval(interval);
-  }, [gameState.status]);
-
-  const handleToggle = () => {
-    setGameState((prev) => ({
-      ...prev,
-      status: prev.status === "running" ? "paused" : "running",
-    }));
-  };
-
-  const handleReset = () => {
-    setGameState(createInitial${pascal}State());
-  };
-
-  return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-brand-cyan/10 rounded-lg text-brand-cyan">
-            <IconTerminal className="w-6 h-6" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-white">${title}</h2>
-            <p className="text-sm text-slate-400">Interactive systems engineering arcade simulator</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleToggle}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-brand-cyan text-slate-950 font-semibold rounded hover:bg-cyan-400 transition"
-          >
-            {gameState.status === "running" ? <IconPlayerPause className="w-4 h-4" /> : <IconPlayerPlay className="w-4 h-4" />}
-            {gameState.status === "running" ? "Pause" : "Start"}
-          </button>
-          <button
-            onClick={handleReset}
-            className="p-1.5 bg-slate-800 text-slate-300 rounded hover:bg-slate-700 transition"
-            title="Reset Simulator"
-          >
-            <IconRotate className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 text-center">
-        <div className="p-4 bg-slate-950/60 rounded-lg border border-slate-800/80">
-          <div className="text-xs uppercase text-slate-400 font-semibold">Ticks</div>
-          <div className="text-2xl font-mono text-brand-cyan mt-1">{gameState.ticks}</div>
-        </div>
-        <div className="p-4 bg-slate-950/60 rounded-lg border border-slate-800/80">
-          <div className="text-xs uppercase text-slate-400 font-semibold">Score</div>
-          <div className="text-2xl font-mono text-emerald-400 mt-1">{gameState.score}</div>
-        </div>
-      </div>
-    </div>
+  return scaffoldThreeViewGame(
+    root,
+    {
+      kebab: toKebabCase(rawName),
+      pascal: toPascalCase(rawName),
+      title: toTitleCase(rawName),
+    },
+    dryRun
   );
-};
-`;
-
-  // Route page content (Strictly no Navbar, pt-28 clearance)
-  const routeContent = `import React from "react";
-import { type Metadata } from "next";
-import { ${pascal} } from "@/components/${pascal}";
-
-export const metadata: Metadata = {
-  title: "${title} | Arcade",
-  description: "Interactive systems engineering arcade simulator",
-};
-
-export default function ${pascal}Page() {
-  return (
-    <main className="min-h-screen pt-28 pb-16 px-4 md:px-8 bg-slate-950 text-slate-100 flex flex-col items-center">
-      <div className="w-full max-w-5xl">
-        <${pascal} />
-      </div>
-    </main>
-  );
-}
-`;
-
-  // Engine test content
-  const engineTestContent = `import { describe, it, expect } from "vitest";
-import { createInitial${pascal}State, step${pascal}Engine } from "@/lib/${kebab}-engine";
-
-describe("${pascal} Engine", () => {
-  it("initializes in idle state with zero ticks and score", () => {
-    const state = createInitial${pascal}State();
-    expect(state.status).toBe("idle");
-    expect(state.ticks).toBe(0);
-    expect(state.score).toBe(0);
-    expect(state.isGameOver).toBe(false);
-  });
-
-  it("does not advance ticks when state is not running", () => {
-    const initial = createInitial${pascal}State();
-    const next = step${pascal}Engine(initial);
-    expect(next.ticks).toBe(0);
-  });
-
-  it("increments ticks and score when running", () => {
-    const running = { ...createInitial${pascal}State(), status: "running" as const };
-    const next = step${pascal}Engine(running);
-    expect(next.ticks).toBe(1);
-    expect(next.score).toBe(10);
-  });
-});
-`;
-
-  // UI test content
-  const uiTestContent = `import React from "react";
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
-import { ${pascal} } from "@/components/${pascal}";
-
-describe("${pascal} UI Component", () => {
-  it("renders header and initial stats", () => {
-    render(<${pascal} />);
-    expect(screen.getByText("${title}")).toBeDefined();
-    expect(screen.getByText("Start")).toBeDefined();
-  });
-});
-`;
-
-  const filesToWrite = [
-    { filePath: engineFile, content: engineContent },
-    { filePath: uiFile, content: uiContent },
-    { filePath: routeFile, content: routeContent },
-    { filePath: engineTestFile, content: engineTestContent },
-    { filePath: uiTestFile, content: uiTestContent },
-  ];
-
-  for (const item of filesToWrite) {
-    const rel = path.relative(root, item.filePath);
-    if (!dryRun) {
-      fs.mkdirSync(path.dirname(item.filePath), { recursive: true });
-      fs.writeFileSync(item.filePath, item.content, "utf-8");
-    }
-    results.push({
-      filePath: item.filePath,
-      relativePath: rel,
-      content: item.content,
-      action: "created",
-    });
-  }
-
-  // Register in CommandPalette.tsx if not present
-  if (fs.existsSync(paletteFile)) {
-    const paletteContent = fs.readFileSync(paletteFile, "utf-8");
-    const targetUrl = `/arcade/${kebab}`;
-    if (!paletteContent.includes(`url: "${targetUrl}"`)) {
-      const staticNavsRegex = /(const staticNavs:\s*PaletteItem\[\]\s*=\s*\[)([\s\S]*?)(\n\s*\];)/;
-      const navItem = `      {\n        id: "nav-${kebab}",\n        title: "${title}",\n        subtitle: "${title} systems arcade simulator",\n        category: "navigation",\n        url: "${targetUrl}",\n        icon: <IconTerminal className="w-4 h-4 text-brand-cyan" />\n      },`;
-      
-      const updatedContent = paletteContent.replace(staticNavsRegex, `$1$2\n${navItem}$3`);
-      if (!dryRun) {
-        fs.writeFileSync(paletteFile, updatedContent, "utf-8");
-      }
-      results.push({
-        filePath: paletteFile,
-        relativePath: path.relative(root, paletteFile),
-        content: updatedContent,
-        action: "updated",
-      });
-    }
-  }
-
-  return results;
 }
 
 /**

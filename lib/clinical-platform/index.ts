@@ -100,3 +100,47 @@ export {
   planRoadmap,
   decisionMemo,
 } from "./internal/strategy/engine";
+export {
+  fitRecruitmentPrior,
+  posteriorRate,
+  recruitmentLogLikelihood,
+  type SiteExposure,
+} from "./internal/forecast/fit";
+export { simulateEnrollmentCompletion } from "./internal/forecast/simulate";
+export {
+  FORECAST_DEFAULT_RUNS,
+  FORECAST_DEFAULT_SEED,
+  forecastEnrollment,
+} from "./internal/forecast/enrollment";
+export {
+  CSM_TESTS,
+  KRI_LIBRARY,
+  QTL_LIBRARY,
+  RISK_SIGNAL_ACTIONS,
+  qualityPlan,
+} from "./internal/rbqm/library";
+export {
+  CSM_DEFAULT_FDR,
+  CSM_MIN_SITES,
+  CSM_MIN_SITE_VISITS,
+  centralMonitoring,
+} from "./internal/rbqm/csm";
+export {
+  AUTOMATED_MONITORING,
+  appendRiskSignal,
+  checkRiskSignalLog,
+  raiseRiskSignals,
+  riskSignalStates,
+  type RaisedSignal,
+  type RiskSignalLogInput,
+} from "./internal/rbqm/signals";
+export { assessStudyRisk } from "./internal/rbqm/assess";
+export {
+  benjaminiHochberg,
+  fCdf,
+  invertMatrix,
+  logGamma,
+  poissonCdf,
+  regularizedBeta,
+  regularizedGammaP,
+} from "./internal/rbqm/stats";

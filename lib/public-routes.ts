@@ -176,6 +176,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "case-study",
   },
   {
+    path: "/case-studies/study-data-pipeline",
+    name: "CS: Study Data Pipeline",
+    category: "case-study",
+  },
+  {
     path: "/case-studies/designing-for-my-brother",
     name: "CS: Designing for My Brother",
     category: "case-study",

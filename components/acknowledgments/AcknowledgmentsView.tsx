@@ -11,6 +11,8 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ExternalLink } from "./ExternalLink";
 import { PackageSearch, type PackageTuple } from "./PackageSearch";
 import { getNavBreadcrumbParents } from "@/lib/navigation";
+import { USDM_V4_VERSION } from "@/lib/crf";
+import { STANDARD_VERSIONS } from "@/lib/study-data";
 
 const REPO_URL = "https://github.com/fderuiter/deruiter.dev";
 
@@ -41,6 +43,41 @@ const NON_NPM_CREDITS: readonly {
     use: "Optional reading font for the accessibility setting.",
     license: "SIL OFL 1.1",
     url: "https://opendyslexic.org",
+  },
+  {
+    name: `CDISC USDM ${USDM_V4_VERSION} API schema`,
+    use: "Validates the USDM study definitions CRF Studio exports and the Study Data Pipeline reads.",
+    license: "MIT",
+    url: "https://github.com/cdisc-org/DDF-RA",
+    note: "Copyright (c) 2022 CDISC. License text ships inside the schema: lib/crf/usdm-v4.0.0-wrapper.schema.json (x-license)",
+  },
+  {
+    name: "NCI EVS CDISC Controlled Terminology",
+    use: `Codes for the local codelist subset the CRF Studio and Study Data Pipeline use, aligned to the SDTM CT package of ${STANDARD_VERSIONS["NCI-EVS-CT"]}.`,
+    license: "CC BY 4.0",
+    url: "https://www.cancer.gov/about-nci/organization/cbiit/vocabulary/cdisc",
+    note: "NCI EVS distributes CDISC CT as part of the NCI Thesaurus, released under CC BY 4.0; NCI states CDISC Terminology can be used free of charge without licensing restrictions",
+  },
+  {
+    name: `CDISC Define-XML ${STANDARD_VERSIONS["Define-XML"]} and ODM schemas`,
+    use: "Test fixture: validates the Define-XML documents the pipeline writes. Never ships to visitors.",
+    license: "MIT",
+    url: "https://github.com/cdisc-org/library-xml",
+    note: "Copyright (c) 2021 cdisc; the W3C schemas they import are under the W3C license. Texts: __tests__/fixtures/schemas/define-xml-2.1/",
+  },
+  {
+    name: `CDISC Dataset-JSON ${STANDARD_VERSIONS["Dataset-JSON"]} schema`,
+    use: "Test fixture: validates every Dataset-JSON file the pipeline writes. Never ships to visitors.",
+    license: "MIT",
+    url: "https://github.com/cdisc-org/DataExchange-DatasetJson",
+    note: "Copyright (c) 2022 cdisc. Text: __tests__/fixtures/schemas/dataset-json-1.1/LICENSE",
+  },
+  {
+    name: "Open Data Contract Standard 3.2.0 schema",
+    use: "Test fixture: validates the data contracts the clinical data platform generates. Never ships to visitors.",
+    license: "Apache-2.0",
+    url: "https://github.com/bitol-io/open-data-contract-standard",
+    note: "The Bitol Contributors. Text: __tests__/fixtures/schemas/odcs-3.2.0/LICENSE",
   },
 ];
 

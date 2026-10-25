@@ -783,6 +783,25 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  studyDataPipelineCaseStudy: {
+    title: "Study Data Pipeline: USDM to TLFs",
+    description:
+      "One synthetic study carried from a USDM definition through SDTM, ADaM and Define-XML to traceable tables and figures, reproducibly, in the browser.",
+    path: "/case-studies/study-data-pipeline",
+    keywords: [
+      "Study Data Pipeline",
+      "USDM",
+      "SDTM",
+      "ADaM",
+      "Define-XML",
+      "Analysis Results Standard",
+      "Clinical Data Traceability",
+    ],
+    ogType: "article",
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   designingForMyBrother: {
     title: "Designing for My Brother: Typography",
     description:

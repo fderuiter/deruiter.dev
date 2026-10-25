@@ -373,11 +373,54 @@ export interface StudyDefinition {
 }
 
 /** Inputs that, with the study definition, fully determine a run. */
+/** The id of a scenario in `MESSY_DATA_SCENARIOS`. */
+export type ScenarioId =
+  | "impossible-date"
+  | "partial-end-date"
+  | "ae-before-first-dose"
+  | "missing-baseline"
+  | "no-post-baseline"
+  | "off-codelist-extensible"
+  | "off-codelist-non-extensible";
+
+/** What a scenario expects of the pipeline, declared as data. */
+export interface ScenarioExpectation {
+  /**
+   * Rule ids that must report at least one finding on the target subject.
+   * No other rule may report a finding on that subject that it did not
+   * report before the scenario was applied.
+   */
+  readonly findings: readonly string[];
+  /** The derivation behaviour the scenario checks, in words. */
+  readonly derivation: string;
+}
+
+/** One messy-data scenario, as the page and the tests list it. */
+export interface MessyDataScenario {
+  readonly id: ScenarioId;
+  readonly title: string;
+  /** What is done to the collected records. */
+  readonly description: string;
+  readonly expected: ScenarioExpectation;
+}
+
+/** A scenario applied to a run, and the subject it changed. */
+export interface AppliedScenario {
+  readonly id: ScenarioId;
+  /** The changed subject, or null when no subject was eligible. */
+  readonly subject: string | null;
+}
+
 export interface PipelineOptions {
   /** PRNG seed, a non-negative 32-bit integer. */
   readonly seed: number;
   /** Number of synthetic subjects to generate. */
   readonly nSubjects: number;
+  /**
+   * Messy-data scenarios to layer onto the collected data (#2605). Omitted
+   * or empty, the run is exactly the generated study.
+   */
+  readonly scenarios?: readonly ScenarioId[];
 }
 
 /** Severity of a conformance finding. */
@@ -458,6 +501,8 @@ export interface RunManifest {
   readonly stages: readonly PipelineStageId[];
   /** Hashed output files. */
   readonly outputs: readonly ManifestEntry[];
+  /** The scenarios applied, present only when the run asked for some. */
+  readonly scenarios?: readonly AppliedScenario[];
 }
 
 /** The result of one pipeline run. */

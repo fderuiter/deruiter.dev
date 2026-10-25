@@ -27,6 +27,7 @@ import {
   runDiagnostics,
   printDoctorReport,
 } from "@/lib/dx/doctor";
+import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
 describe("DX Invariant Doctor Engine", () => {
   let tempDir: string;
@@ -972,9 +973,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         ci: true,
       });
 
-      // Bounded well under the default timeout so a slow check that creeps
-      // back in (a spawned tool, a whole-tree walk) fails here, not as a flake.
-      expect(performance.now() - startedAt).toBeLessThan(5000);
+      // A slow check creeping back in (a spawned tool, a whole-tree walk)
+      // shows here when budgets are enforced; the test's timeout is the
+      // backstop under load (#2791).
+      expectWithinTimingBudget(
+        "runDiagnostics on a fixture workspace",
+        performance.now() - startedAt,
+        5000
+      );
 
       const ids = summary.results.map((result) => result.id);
       expect(summary.results.length).toBeGreaterThan(20);

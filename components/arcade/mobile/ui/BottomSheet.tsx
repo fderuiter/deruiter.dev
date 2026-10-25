@@ -54,6 +54,12 @@ export interface BottomSheetProps {
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   /** Test hook for the sheet; its backdrop gets `-backdrop`. */
   testId?: string;
+  /**
+   * The sheet is portaled to document.body rather than rendered inside the
+   * cabinet, so it takes the cabinet's own layer (z-50) and, coming later in
+   * the document, paints over a fixed cabinet. Defaults to false.
+   */
+  portaled?: boolean;
 }
 
 // Open sheets per pause controller, so closing one of two stacked sheets
@@ -126,6 +132,7 @@ function OpenSheet({
   pausesPlay = true,
   initialFocusRef,
   testId = "bottom-sheet",
+  portaled = false,
 }: BottomSheetProps) {
   const headingId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -225,7 +232,7 @@ function OpenSheet({
     <div
       ref={rootRef}
       data-testid={`${testId}-root`}
-      className="fixed inset-0 z-40 flex flex-col justify-end"
+      className={`fixed inset-0 ${portaled ? "z-50" : "z-40"} flex flex-col justify-end`}
     >
       <div
         aria-hidden="true"

@@ -286,7 +286,9 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
     // Open Field Manual with 'h' shortcut
     await page.keyboard.press("h");
 
-    const manualDialog = page.locator('[aria-labelledby="manual-title"]');
+    const manualDialog = page.getByRole("dialog", {
+      name: /Working With Duck/i,
+    });
     await expect(manualDialog).toBeVisible({ timeout: 5000 });
     await expect(
       manualDialog.getByRole("heading", { name: /Working With Duck/i })
@@ -337,7 +339,9 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // 2. Open Field Manual via 'h' shortcut
     await page.keyboard.press("h");
-    const manualDialog = page.locator('[aria-labelledby="manual-title"]');
+    const manualDialog = page.getByRole("dialog", {
+      name: /Working With Duck/i,
+    });
     await expect(manualDialog).toBeVisible({ timeout: 5000 });
 
     // Let the loop run ~1.5 s of frames: progress remains unchanged
@@ -384,7 +388,9 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
     // Open Field Manual with '?' shortcut
     await page.keyboard.press("?");
 
-    const manualDialog = page.locator('[aria-labelledby="manual-title"]');
+    const manualDialog = page.getByRole("dialog", {
+      name: /Working With Duck/i,
+    });
     await expect(manualDialog).toBeVisible({ timeout: 5000 });
     await expect(
       manualDialog.getByRole("heading", { name: /Working With Duck/i })
@@ -423,7 +429,9 @@ test.describe("Working With Duck - Interruption Suspension E2E (#602)", () => {
 
     // 1. Open and close on desktop
     await page.keyboard.press("h");
-    const manualDialog = page.locator('[aria-labelledby="manual-title"]');
+    const manualDialog = page.getByRole("dialog", {
+      name: /Working With Duck/i,
+    });
     await expect(manualDialog).toBeVisible({ timeout: 5000 });
     await page.keyboard.press("h");
     await expect(manualDialog).toBeHidden({ timeout: 5000 });

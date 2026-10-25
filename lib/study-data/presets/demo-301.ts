@@ -37,7 +37,6 @@ import {
 
 const CT_SYSTEM = "http://www.cdisc.org";
 const CT_VERSION = CLINICAL_STANDARDS_PROFILE.CT.packageDate;
-const SPONSOR_SYSTEM = "https://deruiter.dev/study-data";
 
 function ct(id: string, code: string, decode: string): UsdmV4Code {
   return {
@@ -45,17 +44,6 @@ function ct(id: string, code: string, decode: string): UsdmV4Code {
     code,
     codeSystem: CT_SYSTEM,
     codeSystemVersion: CT_VERSION,
-    decode,
-    instanceType: "Code",
-  };
-}
-
-function sponsorCode(id: string, code: string, decode: string): UsdmV4Code {
-  return {
-    id,
-    code,
-    codeSystem: SPONSOR_SYSTEM,
-    codeSystemVersion: "1.0",
     decode,
     instanceType: "Code",
   };
@@ -149,7 +137,10 @@ function concept(spec: ConceptSpec): UsdmV4BiomedicalConcept {
     id,
     name: spec.name,
     label: spec.name,
-    synonyms: [spec.testCode],
+    // A synonym equal to the name adds nothing (USDM DDF00236).
+    synonyms: [spec.testCode].filter(
+      (synonym) => synonym.toLowerCase() !== spec.name.toLowerCase()
+    ),
     reference: `https://evsexplore.semantics.cancer.gov/evsexplore/concept/ncit/${spec.nciCode}`,
     properties: [],
     code: alias(`${id}_code`, ct(`${id}_code_std`, spec.nciCode, spec.name)),
@@ -423,8 +414,8 @@ const TIMINGS: UsdmV4Timing[] = VISITS.map((v) => {
   const type = isAnchor
     ? ct(`${v.id}_timing_type`, "C201358", "Fixed Reference")
     : v.offset < 0
-      ? ct(`${v.id}_timing_type`, "C201356", "Before")
-      : ct(`${v.id}_timing_type`, "C201357", "After");
+      ? ct(`${v.id}_timing_type`, "C201357", "Before")
+      : ct(`${v.id}_timing_type`, "C201356", "After");
   return {
     id: `${v.id}_timing`,
     name: `${v.label} timing`,
@@ -438,9 +429,10 @@ const TIMINGS: UsdmV4Timing[] = VISITS.map((v) => {
     relativeToFrom: ct(`${v.id}_timing_rel`, "C201355", "Start to Start"),
     relativeFromScheduledInstanceId: `${v.id}_sai`,
     relativeToScheduledInstanceId: isAnchor ? null : `${ANCHOR_VISIT}_sai`,
-    windowLower: `P${v.windowBefore}D`,
-    windowUpper: `P${v.windowAfter}D`,
-    windowLabel: `-${v.windowBefore}/+${v.windowAfter} days`,
+    // A Fixed Reference timing carries no window (USDM DDF00025).
+    windowLower: isAnchor ? null : `P${v.windowBefore}D`,
+    windowUpper: isAnchor ? null : `P${v.windowAfter}D`,
+    windowLabel: isAnchor ? null : `-${v.windowBefore}/+${v.windowAfter} days`,
     instanceType: "Timing",
   };
 });
@@ -628,10 +620,10 @@ export const DEMO_301_USDM: UsdmV4Document = {
             label: "Demoxacin",
             description:
               "Fictional oral antihypertensive, 10 mg or 20 mg once daily.",
-            role: sponsorCode(
+            role: ct(
               "int_demoxacin_role",
-              "IP",
-              "Investigational Product"
+              "C41161",
+              "Experimental Intervention"
             ),
             type: ct("int_demoxacin_type", "C1909", "Pharmacologic Substance"),
             codes: [],
@@ -642,12 +634,11 @@ export const DEMO_301_USDM: UsdmV4Document = {
             name: "Placebo",
             label: "Placebo",
             description: "Matching placebo tablet once daily.",
-            role: sponsorCode(
-              "int_placebo_role",
-              "PLACEBO",
-              "Placebo Comparator"
-            ),
-            type: ct("int_placebo_type", "C753", "Placebo"),
+            role: ct("int_placebo_role", "C753", "Placebo"),
+            // Intervention Type Response (C99078) has no placebo term: the
+            // role says it is a placebo, and the type is that of the drug
+            // it matches.
+            type: ct("int_placebo_type", "C1909", "Pharmacologic Substance"),
             codes: [],
             instanceType: "StudyIntervention",
           },

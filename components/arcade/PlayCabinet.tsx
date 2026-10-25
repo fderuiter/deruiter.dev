@@ -1406,11 +1406,14 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
           /* CRT Warming up / Booting Screen */
           <div className="flex-1 flex flex-col justify-between font-mono text-xs text-emerald-400 z-10 p-2">
             <div className="space-y-1.5 uppercase tracking-wide">
-              <div className="flex items-center gap-2 text-[10px]">
+              <div className="cabinet-standby-text flex items-center gap-2 text-[10px]">
                 <IconTerminal className="w-4 h-4 text-emerald-500" />
                 <span>SYSTEM DIAGNOSTICS DEPLOYING...</span>
               </div>
-              <div className="text-zinc-600 mt-2">
+              <div
+                aria-hidden="true"
+                className="mt-2 overflow-hidden whitespace-nowrap text-zinc-400"
+              >
                 =================================
               </div>
               <div>
@@ -1440,8 +1443,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
             </div>
 
             <div className="space-y-2 mt-4">
-              <div className="flex justify-between items-center text-[10px]">
-                <span className="animate-pulse">Warming up CRT display...</span>
+              <div className="cabinet-standby-text flex justify-between items-center text-[10px]">
+                <span className="animate-pulse motion-reduce:animate-none">
+                  Warming up CRT display...
+                </span>
                 <span>{bootProgress}%</span>
               </div>
               <div className="w-full h-2.5 bg-zinc-900 rounded-full border border-zinc-800 overflow-hidden shadow-[0_0_8px_#10b981]">
@@ -1460,10 +1465,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
           /* Static Screen Idle State */
           <>
             {/* Header Status Bar */}
-            <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-500 z-10">
+            <div className="cabinet-standby-text flex items-center justify-between border-b border-zinc-800/80 pb-4 font-mono text-[10px] text-zinc-400 z-10">
               <div className="flex items-center gap-2">
                 <div
-                  className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "animate-pulse" : ""}`}
+                  className={`w-2 h-2 rounded-full ${isPrefetched ? "bg-amber-400" : "bg-zinc-600"} ${isPrefetched && !isLoaded ? "animate-pulse motion-reduce:animate-none" : ""}`}
                 />
                 <span className="uppercase tracking-wider">
                   {isPrefetched

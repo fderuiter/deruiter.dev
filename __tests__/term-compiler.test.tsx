@@ -9,6 +9,7 @@ import { RichNarrative } from "@/components/RichNarrative";
 import { TerminologyProvider } from "@/components/providers/TerminologyProvider";
 import { dictionary } from "@/lib/i18n-dictionary";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
+import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
 // Mock framer-motion to prevent transition freezes in jsdom tests
 vi.mock("framer-motion", async (importOriginal) => {
@@ -243,7 +244,7 @@ describe("Centralized Term Template Compiler", () => {
   });
 
   describe("5. Build Compilation Performance Requirement", () => {
-    it("should compile all case study narratives and timeline entries in under 50ms", () => {
+    it("compiles all case study narratives and timeline entries within its 500 ms budget", () => {
       const start = performance.now();
 
       for (const study of FALLBACK_CASE_STUDIES) {
@@ -257,7 +258,7 @@ describe("Centralized Term Template Compiler", () => {
       }
 
       const elapsed = performance.now() - start;
-      expect(elapsed).toBeLessThan(500);
+      expectWithinTimingBudget("compileTerms over the corpus", elapsed, 500);
     });
   });
 });

@@ -8,6 +8,7 @@ import {
   addDaysToIsoDate,
 } from "@/lib/crf/visit-window";
 import type { StudyVisit } from "@/lib/crf/types";
+import { expectWithinTimingBudget } from "../helpers/timing-budget";
 
 describe("CRF Visit Window Conflict Evaluator & Forecasting Engine", () => {
   describe("evaluateVisitWindowConflicts", () => {
@@ -392,7 +393,7 @@ describe("CRF Visit Window Conflict Evaluator & Forecasting Engine", () => {
       });
       const elapsed = performance.now() - start;
 
-      expect(elapsed).toBeLessThan(5); // Must complete in under 5ms
+      expectWithinTimingBudget("100-visit schedule analysis", elapsed, 5);
       expect(conflicts).toBeDefined();
       expect(bounds).toBeDefined();
       expect(forecast).toBeDefined();

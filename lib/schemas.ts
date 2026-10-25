@@ -845,3 +845,19 @@ export function toFieldErrors(error: z.ZodError): Record<string, string> {
   }
   return fieldErrors;
 }
+
+/**
+ * Response of `GET /api/version`: which commit the serving deployment was
+ * built from (#2534). Every field is public build metadata.
+ */
+export const VersionResponseSchema = z.object({
+  /** Full commit SHA, or "unknown" outside a Vercel build. */
+  sha: z.string(),
+  /** Branch the deployment was built from, or null outside a Vercel build. */
+  ref: z.string().nullable(),
+  /** Vercel environment: production, preview or development; null locally. */
+  env: z.enum(["production", "preview", "development"]).nullable(),
+  /** ISO 8601 build time, or null outside a build. */
+  builtAt: z.string().nullable(),
+});
+export type VersionResponse = z.infer<typeof VersionResponseSchema>;

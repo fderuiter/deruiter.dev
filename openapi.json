@@ -1635,6 +1635,24 @@
         }
       }
     },
+    "/api/version": {
+      "get": {
+        "summary": "Report the deployed commit",
+        "description": "Returns the commit SHA, branch, Vercel environment and build time of the serving deployment, so the release train can tell what is live without a Vercel token. Public build metadata only; never cached.",
+        "responses": {
+          "200": {
+            "description": "Build metadata of the serving deployment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/media/{key}": {
       "get": {
         "summary": "Retrieve media asset by key",
@@ -3199,6 +3217,38 @@
         },
         "required": [
           "received"
+        ],
+        "additionalProperties": false
+      },
+      "VersionResponse": {
+        "type": "object",
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "ref": {
+            "type": "string",
+            "nullable": true
+          },
+          "env": {
+            "type": "string",
+            "enum": [
+              "production",
+              "preview",
+              "development"
+            ],
+            "nullable": true
+          },
+          "builtAt": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "sha",
+          "ref",
+          "env",
+          "builtAt"
         ],
         "additionalProperties": false
       },

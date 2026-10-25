@@ -1,6 +1,25 @@
 import { CdashVariableMetadata, CRFForm } from "./types";
 
 /**
+ * CDASH metadata for one lab result collected in its own field. The aCRF
+ * annotation names the SDTM test code (CDISC CT LBTESTCD, C65047), which is
+ * how the study-data handoff knows which test the field holds (#2757).
+ */
+function labResultMetadata(
+  testCode: string,
+  label: string
+): CdashVariableMetadata {
+  return {
+    domain: "LB",
+    sdtmVariable: "LBORRES",
+    cdashLabel: label,
+    core: "HR",
+    acrfAnnotation: `LB.LBORRES [LBTESTCD=${testCode}]`,
+    dataCategory: "Result",
+  };
+}
+
+/**
  * Standard CDASH 2.2 Domain Variable Catalog
  */
 export const CDASH_STANDARD_VARIABLES: Record<string, CdashVariableMetadata[]> =
@@ -1354,6 +1373,10 @@ export function scaffoldCdashDomain(
                 id: "f_lb_alt",
                 variableName: "ALT",
                 label: "Alanine Aminotransferase (ALT/SGPT)",
+                cdashMetadata: labResultMetadata(
+                  "ALT",
+                  "Alanine Aminotransferase (ALT/SGPT)"
+                ),
                 dataType: "number",
                 columnSpan: 4,
                 required: true,
@@ -1365,6 +1388,10 @@ export function scaffoldCdashDomain(
                 id: "f_lb_ast",
                 variableName: "AST",
                 label: "Aspartate Aminotransferase (AST/SGOT)",
+                cdashMetadata: labResultMetadata(
+                  "AST",
+                  "Aspartate Aminotransferase (AST/SGOT)"
+                ),
                 dataType: "number",
                 columnSpan: 4,
                 required: true,
@@ -1376,6 +1403,7 @@ export function scaffoldCdashDomain(
                 id: "f_lb_bili",
                 variableName: "BILI",
                 label: "Total Bilirubin",
+                cdashMetadata: labResultMetadata("BILI", "Total Bilirubin"),
                 dataType: "number",
                 columnSpan: 4,
                 required: true,
@@ -1387,6 +1415,7 @@ export function scaffoldCdashDomain(
                 id: "f_lb_creat",
                 variableName: "CREAT",
                 label: "Serum Creatinine",
+                cdashMetadata: labResultMetadata("CREAT", "Serum Creatinine"),
                 dataType: "number",
                 columnSpan: 4,
                 required: true,
@@ -1398,6 +1427,10 @@ export function scaffoldCdashDomain(
                 id: "f_lb_anc",
                 variableName: "ANC",
                 label: "Absolute Neutrophil Count (ANC)",
+                cdashMetadata: labResultMetadata(
+                  "NEUT",
+                  "Absolute Neutrophil Count (ANC)"
+                ),
                 dataType: "number",
                 columnSpan: 4,
                 required: true,
@@ -1409,6 +1442,7 @@ export function scaffoldCdashDomain(
                 id: "f_lb_plt",
                 variableName: "PLAT",
                 label: "Platelet Count",
+                cdashMetadata: labResultMetadata("PLAT", "Platelet Count"),
                 dataType: "integer",
                 columnSpan: 4,
                 required: true,

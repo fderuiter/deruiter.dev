@@ -18,6 +18,10 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 > `readonly` **ACTUAL\_ELEMENT\_FROM\_TA\_TE**: `"The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch."` = `"The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch."`
 
+### ARM\_NULL\_REASON
+
+> `readonly` **ARM\_NULL\_REASON**: `"SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject."` = `"SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject."`
+
 ### CT\_RELATIONSHIP\_MAPPING
 
 > `readonly` **CT\_RELATIONSHIP\_MAPPING**: `"Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept."` = `"Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept."`
@@ -28,7 +32,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### EXPOSURE\_ARM
 
-> `readonly` **EXPOSURE\_ARM**: `"The randomized arm code and arm, for every randomized subject; SCRNFAIL and Screen Failure for subjects never randomized."` = `"The randomized arm code and arm, for every randomized subject; SCRNFAIL and Screen Failure for subjects never randomized."`
+> `readonly` **EXPOSURE\_ARM**: `"The randomized arm code and arm, for every randomized subject, each of whom is dosed with that arm's treatment; missing for subjects never randomized, whose reason is in ARMNRS."` = `"The randomized arm code and arm, for every randomized subject, each of whom is dosed with that arm's treatment; missing for subjects never randomized, whose reason is in ARMNRS."`
 
 ### FIRST\_EXPOSURE
 
@@ -44,7 +48,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### RANDOMIZATION
 
-> `readonly` **RANDOMIZATION**: `"Arm code and arm from the subject's randomization record; SCRNFAIL and Screen Failure for subjects never randomized."` = `"Arm code and arm from the subject's randomization record; SCRNFAIL and Screen Failure for subjects never randomized."`
+> `readonly` **RANDOMIZATION**: `"Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS."` = `"Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS."`
 
 ### SOURCE\_ORDER
 
@@ -61,6 +65,10 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 ### TEXT\_RESULT
 
 > `readonly` **TEXT\_RESULT**: `"The collected numeric result written as text."` = `"The collected numeric result written as text."`
+
+### UNPLANNED\_ARM
+
+> `readonly` **UNPLANNED\_ARM**: `"Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned."` = `"Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned."`
 
 ### USDM\_ASSESSMENT
 

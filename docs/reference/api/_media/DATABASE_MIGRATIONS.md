@@ -223,6 +223,30 @@ Expand-and-contract remains mandatory because the migration completes before
 the new deployment is promoted, while the currently promoted application may
 continue serving traffic during the build.
 
+### Checking a release range (`npm run check:migration-safety`)
+
+`scripts/check-migration-safety.ts` checks only the migrations added between
+two commits, so a release is judged on what it would apply:
+
+```bash
+npm run check:migration-safety -- <live-sha> <candidate-sha> [--json]
+```
+
+It flags a wider set than the integrity check:
+
+- `DROP TABLE` and `DROP COLUMN`;
+- renaming a table or column;
+- `SET NOT NULL`;
+- adding a `NOT NULL` column with no default;
+- changing a column's type.
+
+Each finding names the file and the statement's first line. Comments, string
+literals and index renames are ignored. Exit 1 means something was flagged, so
+the release goes out manually after review. Exit 2 means the arguments were
+missing or a commit could not be resolved. The script reads git objects only
+and never connects to a database. The nightly release train (#1168) is the
+intended caller.
+
 ## Email resilience rollout and rollback
 
 `20261015000000_add_email_resilience` is additive and uses `IF NOT EXISTS`

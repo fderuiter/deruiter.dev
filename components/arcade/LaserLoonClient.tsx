@@ -6,7 +6,6 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import Link from "next/link";
 import {
   IconCrosshair,
@@ -87,32 +86,30 @@ export const LaserLoonClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(239,68,68,0.1)]">
-          <DesktopOnlyGate gameId="laser-loon" gameTitle="Laser Loon">
-            <PlayCabinet
-              gameId="laser-loon"
-              title="Laser Loon: Quest for the State Flag"
-              subtitle="A Loon With a Legislative Agenda"
-              icon={<IconCrosshair className="w-8 h-8 text-red-400" />}
-              instructions="Fly Laser Loon toward the State Capitol, take on rival flags, and blast through red tape. There are ice weapons and boss battles. The flag committee did not request these features."
-              controls={[
-                { key: "WASD / Arrows", action: "Glide Loon" },
-                { key: "Click / Space", action: "Aim & Shoot" },
-                { key: "1 - 4", action: "Optic Arsenal" },
-                { key: "U", action: "Loon Tremolo" },
-                { key: "P", action: "Pause Game" },
-              ]}
-              importComponent={LaserLoonLoader}
-              // No game key is F (WASD, arrows, Space, Enter, 1-4, U, M, P,
-              // Escape), so the cabinet's F-for-fullscreen stays on (#2081).
-              // The arena and its dock are built to fit the touch cabinet's
-              // viewport, so the stage clips rather than scrolls (ADR 0061).
-              mobileLayout="fit"
-              // A hidden tab or a backgrounded app pauses a run in progress,
-              // through the cabinet's pause service (#2357).
-            >
-              <DynamicLaserLoon />
-            </PlayCabinet>
-          </DesktopOnlyGate>
+          <PlayCabinet
+            gameId="laser-loon"
+            title="Laser Loon: Quest for the State Flag"
+            subtitle="A Loon With a Legislative Agenda"
+            icon={<IconCrosshair className="w-8 h-8 text-red-400" />}
+            instructions="Fly Laser Loon toward the State Capitol, take on rival flags, and blast through red tape. There are ice weapons and boss battles. The flag committee did not request these features."
+            controls={[
+              { key: "WASD / Arrows", action: "Glide Loon" },
+              { key: "Click / Space", action: "Aim & Shoot" },
+              { key: "1 - 4", action: "Optic Arsenal" },
+              { key: "U", action: "Loon Tremolo" },
+              { key: "P", action: "Pause Game" },
+            ]}
+            importComponent={LaserLoonLoader}
+            // No game key is F (WASD, arrows, Space, Enter, 1-4, U, M, P,
+            // Escape), so the cabinet's F-for-fullscreen stays on (#2081).
+            // The arena and its dock are built to fit the touch cabinet's
+            // viewport, so the stage clips rather than scrolls (ADR 0061).
+            mobileLayout="fit"
+            // A hidden tab or a backgrounded app pauses a run in progress,
+            // through the cabinet's pause service (#2357).
+          >
+            <DynamicLaserLoon />
+          </PlayCabinet>
         </div>
 
         {/* Instructions & Controls Reference */}

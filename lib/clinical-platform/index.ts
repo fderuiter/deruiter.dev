@@ -32,6 +32,23 @@ export {
   renderWarehouseReference,
 } from "./internal/warehouse/erd";
 export { warehouseLineage } from "./internal/warehouse/lineage";
+export {
+  LINEAGE_STAGES,
+  MEASURES_DATASET,
+  METRICS_DATASET,
+  REPORTS_DATASET,
+  platformLineage,
+} from "./internal/lineage/graph";
+export {
+  checkLineage,
+  contractChangeImpact,
+  lineageImpact,
+  lineageUpstream,
+} from "./internal/lineage/impact";
+export {
+  OPENLINEAGE_PRODUCER,
+  toOpenLineageEvents,
+} from "./internal/lineage/openlineage";
 export { METRIC_GAPS, METRIC_REGISTRY } from "./internal/semantic/registry";
 export { METRIC_DIMENSIONS } from "./internal/semantic/dimensions";
 export { evaluateMetric } from "./internal/semantic/evaluate";
@@ -87,6 +104,15 @@ export {
   searchReportCatalog,
   type ReportCatalogOptions,
 } from "./internal/reporting/catalog";
+export { workbenchSchema } from "./internal/workbench/schema";
+export {
+  WORKBENCH_DIALECTS,
+  workbenchQueries,
+} from "./internal/workbench/queries";
+export {
+  WORKBENCH_ENGINE_SETTINGS,
+  checkWorkbenchSql,
+} from "./internal/workbench/guard";
 export {
   dataContracts,
   dataProducts,
@@ -107,6 +133,19 @@ export {
   toOdcs,
   toOdcsYaml,
 } from "./internal/governance/contracts/odcs";
+export {
+  DATA_QUALITY_RULES,
+  assessDataQuality,
+  breakDataQualityRule,
+} from "./internal/quality/assess";
+export { DQ_SCENARIOS, applyDqScenario } from "./internal/quality/faults";
+export {
+  DQ_ISSUE_LOG,
+  appendDqIssueEvent,
+  dataQualityTrend,
+  dqIssues,
+  withOpenDqIssues,
+} from "./internal/quality/issues";
 export {
   scoreVendors,
   sensitivity,

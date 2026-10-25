@@ -305,7 +305,11 @@ Amended by [#2545](https://github.com/fderuiter/deruiter.dev/issues/2545).
    off.
 
 Each game leaves `DesktopOnlyGate` in its own phone pull request, never several
-at once. ADR 0048 retires with the last game, and the legacy pieces
+at once. Leaving it is one flag: `PlayCabinet` wraps every game whose
+`views.phone` is `gated` in `ARCADE_REGISTRY`, and the hub's and the Arcade
+Daily's "Plays on phone" and "Best on a bigger screen" badges, their
+phone-first order and the gate's phone picks read the same flag
+([#2368](https://github.com/fderuiter/deruiter.dev/issues/2368)). ADR 0048 retires with the last game, and the legacy pieces
 (`ControlDocks.tsx`, `VirtualGamepad`, the per-game auto-pause modules and the
 unused engine subclasses) are removed in
 [#2373](https://github.com/fderuiter/deruiter.dev/issues/2373) after that.

@@ -41,8 +41,9 @@ test.describe("Arcade Games & Simulators Suite", () => {
     await expect(
       page.getByRole("heading", { name: /Trial & Error/i }).first()
     ).toBeVisible();
+    // The phone note's link to the same game is in the DOM but hidden here.
     await expect(
-      page.locator('main a[href="/arcade/trial-and-error"]').first()
+      page.locator('main a[href="/arcade/trial-and-error"]:visible').first()
     ).toBeVisible();
   });
 

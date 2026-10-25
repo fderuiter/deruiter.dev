@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { DesktopOnlyGate } from "../components/arcade/DesktopOnlyGate";
 import { PHONE_QUERY } from "../components/arcade/mobile";
+import { phoneReadyGames } from "@/lib/arcade";
 
 const mockCopy = vi.fn(async (text: string) => {
   void text;
@@ -25,7 +26,7 @@ describe("DesktopOnlyGate", () => {
 
   it("server-renders both the cabinet and the notice, split by the touch media query", () => {
     const html = renderToStaticMarkup(
-      <DesktopOnlyGate gameId="laser-loon" gameTitle="Laser Loon">
+      <DesktopOnlyGate gameId="laser-loon">
         <div data-testid="cabinet">cabinet</div>
       </DesktopOnlyGate>
     );
@@ -53,9 +54,9 @@ describe("DesktopOnlyGate", () => {
     );
   });
 
-  it("points at parts of the site that work on a phone", () => {
+  it("points at the games the registry says play on a phone (#2368)", () => {
     render(
-      <DesktopOnlyGate gameId="retro-labyrinth" gameTitle="Retro Labyrinth">
+      <DesktopOnlyGate gameId="retro-labyrinth">
         <div />
       </DesktopOnlyGate>
     );
@@ -63,12 +64,26 @@ describe("DesktopOnlyGate", () => {
     const hrefs = screen
       .getAllByRole("link")
       .map((link) => link.getAttribute("href"));
-    expect(hrefs).toEqual(["/arcade/meme-vault", "/blog"]);
+    expect(hrefs).toEqual(phoneReadyGames().map((game) => game.route));
+    expect(hrefs).toEqual(["/arcade/trial-and-error", "/arcade/meme-vault"]);
+  });
+
+  it("names the game from the registry", () => {
+    render(
+      <DesktopOnlyGate gameId="garmin-watch">
+        <div />
+      </DesktopOnlyGate>
+    );
+    expect(
+      screen.getByRole("heading", {
+        name: "Monkey C Mayhem needs a bigger screen",
+      })
+    ).toBeTruthy();
   });
 
   it("copies the page link when the share sheet is unavailable", async () => {
     render(
-      <DesktopOnlyGate gameId="garmin-watch" gameTitle="Monkey C Mayhem">
+      <DesktopOnlyGate gameId="garmin-watch">
         <div />
       </DesktopOnlyGate>
     );
@@ -85,7 +100,7 @@ describe("DesktopOnlyGate", () => {
 
   it("reveals only the cabinet after Try it anyway", () => {
     render(
-      <DesktopOnlyGate gameId="working-with-duck" gameTitle="Working With Duck">
+      <DesktopOnlyGate gameId="working-with-duck">
         <div data-testid="cabinet">cabinet</div>
       </DesktopOnlyGate>
     );

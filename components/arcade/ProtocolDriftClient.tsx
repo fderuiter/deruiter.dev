@@ -6,7 +6,6 @@ import { IconShieldCheck } from "@tabler/icons-react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getNavBreadcrumbParents } from "@/lib/navigation";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { requestProtocolDriftAutoPause } from "@/components/protocol-drift/auto-pause";
 
 // React Flow and the engine adapter load only when the cabinet launches, so
@@ -55,36 +54,34 @@ export const ProtocolDriftClient: React.FC = () => (
       </div>
 
       <div className="border border-zinc-800 bg-[#13151a] p-1.5 sm:p-4">
-        <DesktopOnlyGate gameId="protocol-drift" gameTitle="Protocol Drift">
-          <PlayCabinet
-            gameId="protocol-drift"
-            title="Protocol Drift"
-            subtitle="Study PD-101 · Clinical Data Architecture"
-            icon={
-              <IconShieldCheck
-                className="h-8 w-8 text-amber-400"
-                aria-hidden="true"
-              />
-            }
-            instructions="Build the Tabulation Lane, run the local test, publish a revision, then run the clock. Query with evidence, document honest uncertainty, and clear both Database Lock gates."
-            controls={[
-              { key: "Space", action: "Run or pause the clock" },
-              { key: "N", action: "Step one simulated hour" },
-              { key: "S", action: "Skip to the next event" },
-              { key: "I", action: "Expand the Forensic Inspector" },
-              { key: "Esc", action: "Dock the inspector" },
-              { key: "Tab", action: "Move through chips, wires and panes" },
-            ]}
-            importComponent={ProtocolDriftLoader}
-            // The workbench is built to fit the touch cabinet's viewport, so
-            // its stage clips rather than scrolls (ADR 0061, #2045).
-            mobileLayout="fit"
-            // A hidden tab, a blur or a turned device pauses a running clock.
-            onAutoPause={requestProtocolDriftAutoPause}
-          >
-            <DynamicProtocolDrift />
-          </PlayCabinet>
-        </DesktopOnlyGate>
+        <PlayCabinet
+          gameId="protocol-drift"
+          title="Protocol Drift"
+          subtitle="Study PD-101 · Clinical Data Architecture"
+          icon={
+            <IconShieldCheck
+              className="h-8 w-8 text-amber-400"
+              aria-hidden="true"
+            />
+          }
+          instructions="Build the Tabulation Lane, run the local test, publish a revision, then run the clock. Query with evidence, document honest uncertainty, and clear both Database Lock gates."
+          controls={[
+            { key: "Space", action: "Run or pause the clock" },
+            { key: "N", action: "Step one simulated hour" },
+            { key: "S", action: "Skip to the next event" },
+            { key: "I", action: "Expand the Forensic Inspector" },
+            { key: "Esc", action: "Dock the inspector" },
+            { key: "Tab", action: "Move through chips, wires and panes" },
+          ]}
+          importComponent={ProtocolDriftLoader}
+          // The workbench is built to fit the touch cabinet's viewport, so
+          // its stage clips rather than scrolls (ADR 0061, #2045).
+          mobileLayout="fit"
+          // A hidden tab, a blur or a turned device pauses a running clock.
+          onAutoPause={requestProtocolDriftAutoPause}
+        >
+          <DynamicProtocolDrift />
+        </PlayCabinet>
       </div>
     </div>
   </div>

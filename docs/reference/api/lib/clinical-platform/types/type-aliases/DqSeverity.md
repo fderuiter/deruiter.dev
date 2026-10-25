@@ -6,6 +6,6 @@
 
 # Type Alias: DqSeverity
 
-> **DqSeverity** = `"info"` \| `"warning"` \| `"error"` \| `"critical"`
+> **DqSeverity** = `"critical"` \| `"major"` \| `"minor"`
 
-Severity of a data quality rule breach.
+How much a failing data quality rule matters (#2636).

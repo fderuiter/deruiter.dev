@@ -6,23 +6,27 @@
 
 # Interface: DqRule
 
-One data quality rule.
+One data quality rule over a data product (#2636).
+
+## Extended by
+
+- [`PlatformDqRule`](../../internal/quality/rules/interfaces/PlatformDqRule.md)
 
 ## Properties
 
-### column
+### citation
 
-> `readonly` **column**: `string` \| `null`
+> `readonly` **citation**: `string` \| `null`
 
-Column the rule checks, or `null` for a table-level rule.
+Published rule or guide the rule models, for ingested rules; `null` otherwise.
 
 ***
 
-### description
+### dataset
 
-> `readonly` **description**: `string`
+> `readonly` **dataset**: `string` \| `null`
 
-What the rule checks, in one sentence.
+Dataset within the product, for an ingested conformance rule; `null` otherwise.
 
 ***
 
@@ -30,7 +34,13 @@ What the rule checks, in one sentence.
 
 > `readonly` **dimension**: [`DqDimension`](../type-aliases/DqDimension.md)
 
-Quality dimension.
+***
+
+### expression
+
+> `readonly` **expression**: `string`
+
+The check as a SQL-style predicate over the product's rows.
 
 ***
 
@@ -38,7 +48,15 @@ Quality dimension.
 
 > `readonly` **id**: `string`
 
-Stable rule id, for example `DQ-SITE-001`.
+Stable id: `DQ-` and a dimension letter for platform rules, the conformance rule id for ingested ones.
+
+***
+
+### name
+
+> `readonly` **name**: `string`
+
+What the rule asks, in a sentence.
 
 ***
 
@@ -46,7 +64,7 @@ Stable rule id, for example `DQ-SITE-001`.
 
 > `readonly` **owner**: `string`
 
-Accountable owner (a role).
+Data steward of the product, from its contract registration.
 
 ***
 
@@ -54,7 +72,15 @@ Accountable owner (a role).
 
 > `readonly` **productId**: `string`
 
-Id of the product the rule checks.
+Data product the rule checks: a warehouse table, or the Study Data Pipeline.
+
+***
+
+### rationale
+
+> `readonly` **rationale**: `string`
+
+Why the rule exists.
 
 ***
 
@@ -62,7 +88,13 @@ Id of the product the rule checks.
 
 > `readonly` **severity**: [`DqSeverity`](../type-aliases/DqSeverity.md)
 
-Severity of a breach.
+***
+
+### source
+
+> `readonly` **source**: `"platform"` \| `"conformance"`
+
+`platform` for rules written here, `conformance` for Study Data Pipeline rules ingested as they are.
 
 ***
 
@@ -70,4 +102,4 @@ Severity of a breach.
 
 > `readonly` **threshold**: `number`
 
-Minimum pass rate, from 0 to 1.
+Least share of checked rows that must pass, from 0 to 1.

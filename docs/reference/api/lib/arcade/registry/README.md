@@ -25,3 +25,4 @@
 
 - [getArcadeRegistryEntry](functions/getArcadeRegistryEntry.md)
 - [isPhoneGated](functions/isPhoneGated.md)
+- [phoneReadyGames](functions/phoneReadyGames.md)

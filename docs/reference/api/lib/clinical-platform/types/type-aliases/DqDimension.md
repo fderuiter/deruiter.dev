@@ -8,4 +8,4 @@
 
 > **DqDimension** = `"completeness"` \| `"validity"` \| `"uniqueness"` \| `"consistency"` \| `"timeliness"` \| `"accuracy"`
 
-Data quality dimension, after DAMA-DMBOK.
+Data quality dimension, after DAMA-DMBOK (#2636).

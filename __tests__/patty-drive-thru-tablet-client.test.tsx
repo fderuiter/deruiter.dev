@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { PHONE_QUERY } from "@/components/arcade/mobile";
 import { requestPattyAutoPause } from "@/components/patty-drive-thru/auto-pause";
 
 const cabinetProps = vi.hoisted(() => ({
@@ -41,15 +40,5 @@ describe("PattyDriveThruClient cabinet wiring (#2116)", () => {
     expect(keys).not.toContain("f");
     // The keys it lists are the ones the booth handles.
     expect(keys).toEqual(expect.arrayContaining(["a", "d", "p", "q", "e"]));
-  });
-
-  it("gates phones only, so tablets get the game", () => {
-    const { container } = render(<PattyDriveThruClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    expect(PHONE_QUERY.match(/max-width:\s*(\d+)px/)?.[1]).toBe("743");
-    expect(notice?.className).toContain("(max-width:743px)");
   });
 });

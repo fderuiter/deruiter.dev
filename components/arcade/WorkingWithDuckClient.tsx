@@ -10,7 +10,6 @@ import {
   DUCK_CABINET_GROUPS,
 } from "@/lib/working-with-duck-actions";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
-import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
 import { useTouchDevice } from "@/components/arcade/mobile";
 import {
   createDuckTouchBridge,
@@ -109,26 +108,21 @@ export const WorkingWithDuckClient: React.FC = () => {
 
         {/* Game Container */}
         <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(251,191,36,0.08)]">
-          <DesktopOnlyGate
-            gameId="working-with-duck"
-            gameTitle="Working With Duck"
-          >
-            <DuckTouchProvider bridge={touchBridge}>
-              <PlayCabinet
-                gameId="working-with-duck"
-                title="Working With Duck"
-                subtitle="Code, Toys, and Questionable Priorities"
-                icon={<IconBone className="w-8 h-8 text-amber-400" />}
-                instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
-                controls={DUCK_CABINET_CONTROLS}
-                importComponent={WorkingWithDuckLoader}
-                controlDock={touchDevice ? <DuckControlDock /> : undefined}
-                onAutoPause={handleAutoPause}
-              >
-                <DynamicWorkingWithDuck />
-              </PlayCabinet>
-            </DuckTouchProvider>
-          </DesktopOnlyGate>
+          <DuckTouchProvider bridge={touchBridge}>
+            <PlayCabinet
+              gameId="working-with-duck"
+              title="Working With Duck"
+              subtitle="Code, Toys, and Questionable Priorities"
+              icon={<IconBone className="w-8 h-8 text-amber-400" />}
+              instructions="Try to finish your code while Duck requests toys, treats, and belly rubs. Take him to the park, save a few scrapbook moments, and see how much work gets done."
+              controls={DUCK_CABINET_CONTROLS}
+              importComponent={WorkingWithDuckLoader}
+              controlDock={touchDevice ? <DuckControlDock /> : undefined}
+              onAutoPause={handleAutoPause}
+            >
+              <DynamicWorkingWithDuck />
+            </PlayCabinet>
+          </DuckTouchProvider>
         </div>
 
         {/* Instructions & Controls Reference */}

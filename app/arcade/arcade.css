@@ -646,6 +646,41 @@
 .arcade-shooter-playfield > .absolute.inset-0 > .arcade-result-card {
   max-width: min(100%, 28rem);
 }
+/* ResultCard on a phone (#2794): PHONE_QUERY from ADR 0061. The card fills
+ * the cabinet, the actions sit at the bottom in the thumb zone with the
+ * primary action last (nearest the thumb), and no text is below 12px.
+ * Tablets and desktops keep the centred card above. */
+@media (pointer: coarse) and ((max-width: 743px) or (max-height: 500px)) {
+  .arcade-result-overlay,
+  .arcade-shooter-playfield > .absolute.inset-0.arcade-result-overlay {
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+  }
+  .arcade-result-card,
+  .arcade-shooter-playfield > .absolute.inset-0 > .arcade-result-card {
+    display: flex;
+    flex-direction: column;
+    max-width: none;
+    min-height: 100%;
+    margin: 0;
+    border-width: 0;
+    border-radius: 0;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+  .arcade-result-actions {
+    margin-top: auto;
+    flex-direction: column;
+    align-items: stretch;
+    padding-top: 1.5rem;
+  }
+  .arcade-result-actions > button {
+    width: 100%;
+  }
+  .arcade-result-small {
+    font-size: 12px;
+  }
+}
 .arcade-shooter-playfield > .absolute.inset-0 > .loon-newsprint {
   max-width: min(100%, 36rem);
 }

@@ -4,6 +4,7 @@ import { execSync } from "child_process";
 import { scanFile } from "../security-scan";
 import { colors, badge, formatHeader } from "./utils";
 import {
+  checkClientEnvironmentReads,
   checkEnvironmentVariables,
   getDeclaredEnvKeys,
   parseEnvFile,
@@ -3537,6 +3538,7 @@ export async function runDiagnostics(
     checkServiceResultTypes(root, fix),
     checkSessionDeterminism(root),
     checkEnvironmentVariables(root, fix),
+    checkClientEnvironmentReads(root),
     checkGitHygieneConfig(root, fix),
     checkWorkspaceIdeConfig(root, fix),
     checkPackageLockfile(root),

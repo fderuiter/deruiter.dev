@@ -195,7 +195,7 @@ Sortify provides a zero-telemetry, fully air-gapped pipeline featuring local hyb
 Sortify is engineered to operate in high-security environments:
 
 - **Zero-Telemetry Isolation**: The application strictly prohibits any outgoing HTTP/UDP network traffic. All model parameters and dependencies are pre-compiled and bundled locally.
-- **HIPAA Safe Harbor**: Patient Health Information (PHI) identifiers are processed strictly in ephemeral memory and encrypted at rest using AES-256-CBC via SQLCipher.
+- **HIPAA Safe Harbor**: Protected Health Information (PHI) identifiers are processed strictly in ephemeral memory and encrypted at rest using AES-256-CBC via SQLCipher.
 - **21 CFR Part 11 Audit Trail**: Every file ingestion, classification decision, and filesystem relocation is recorded in an append-only, cryptographically signed SQLCipher audit table.
 
 ---

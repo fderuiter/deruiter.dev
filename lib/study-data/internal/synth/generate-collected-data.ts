@@ -1,5 +1,6 @@
 /** Seeded, schedule-driven synthetic source data for the study-data pipeline. */
 import { uniformAt } from "@/lib/utils/prng";
+import { AE_DICTIONARY } from "../sdtm/ae-dictionary";
 import type {
   CellValue,
   Dataset,
@@ -12,17 +13,6 @@ type Row = Record<string, CellValue>;
 type Domain = "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "AE" | "DS";
 
 const BASE_DATE = "2030-01-01";
-/**
- * A fictional four-term adverse event dictionary. It borrows MedDRA-style
- * names and each term's primary system organ class, but it is not MedDRA
- * and carries no MedDRA codes or version.
- */
-const AE_TERMS = [
-  { soc: "Nervous system disorders", pt: "Headache" },
-  { soc: "Gastrointestinal disorders", pt: "Nausea" },
-  { soc: "General disorders", pt: "Fatigue" },
-  { soc: "Nervous system disorders", pt: "Dizziness" },
-] as const;
 
 /**
  * The seriousness criteria the EDC asks for once an event is reported
@@ -507,7 +497,8 @@ export function generateCollectedData(
       const predose = !discontinued && pick("AE", "predose") < 0.07;
       const hasAe = predose || discontinued || pick("AE", "postdose") < 0.32;
       if (hasAe) {
-        const term = AE_TERMS[Math.floor(pick("AE", "term") * AE_TERMS.length)];
+        const term =
+          AE_DICTIONARY[Math.floor(pick("AE", "term") * AE_DICTIONARY.length)];
         const day = predose
           ? -2
           : 2 + Math.floor(pick("AE", "onset-day") * Math.max(1, stopDay - 2));

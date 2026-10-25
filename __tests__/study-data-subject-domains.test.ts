@@ -471,6 +471,27 @@ describe("SDTM subject tabulation", () => {
     }
   });
 
+  it("codes every adverse event to the fictional dictionary's five levels", () => {
+    const ae = records(get("AE"));
+    expect(ae.length).toBeGreaterThan(0);
+    for (const record of ae) {
+      expect(record.AESOC).toBe(record.AEBODSYS);
+      expect(record.AELLT).toBe(record.AEDECOD);
+      expect(record.AELLTCD).toBe(record.AEPTCD);
+      expect(record.AEBDSYCD).toBe(record.AESOCCD);
+      expect(record.AEHLT).toMatch(/^Fictional /);
+      expect(record.AEHLGT).toMatch(/^Fictional /);
+      for (const code of [
+        "AELLTCD",
+        "AEPTCD",
+        "AEHLTCD",
+        "AEHLGTCD",
+        "AESOCCD",
+      ])
+        expect(record[code], code).toBeGreaterThanOrEqual(99000000);
+    }
+  });
+
   it("flags the last pre-dose observation per subject and test", () => {
     for (const domain of ["VS", "LB"] as const) {
       const data = records(get(domain));

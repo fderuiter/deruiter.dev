@@ -328,6 +328,22 @@
         ]
       },
       {
+        "id": "AE_DICTIONARY_CODING",
+        "text": "Looked up from the preferred term (AEDECOD) in the study's fictional adverse event dictionary, which has MedDRA's five levels but is not MedDRA: its lower and group level names are invented and its codes are synthetic, from 99000000. Each lowest level term is its preferred term. Missing when the preferred term is not in the dictionary.",
+        "variables": [
+          "AE.AELLT",
+          "AE.AELLTCD",
+          "AE.AEPTCD",
+          "AE.AEHLT",
+          "AE.AEHLTCD",
+          "AE.AEHLGT",
+          "AE.AEHLGTCD",
+          "AE.AEBDSYCD",
+          "AE.AESOC",
+          "AE.AESOCCD"
+        ]
+      },
+      {
         "id": "CT_RELATIONSHIP_MAPPING",
         "text": "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
         "variables": ["AE.AEREL"]

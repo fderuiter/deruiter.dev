@@ -30,6 +30,8 @@ export const SDTM_METHODS = {
     "The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT.",
   LAB_REFERENCE_RANGE:
     "Lower and upper limits of the test's reference range at the study's fictional central laboratory, in standard units for --STNRLO and --STNRHI (numbers) and, when the result was collected in the standard unit, in original units for --ORNRLO and --ORNRHI (text). The original-unit limits are missing when the collected unit differs.",
+  AE_DICTIONARY_CODING:
+    "Looked up from the preferred term (AEDECOD) in the study's fictional adverse event dictionary, which has MedDRA's five levels but is not MedDRA: its lower and group level names are invented and its codes are synthetic, from 99000000. Each lowest level term is its preferred term. Missing when the preferred term is not in the dictionary.",
   CT_RELATIONSHIP_MAPPING:
     "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
   USDM_ASSESSMENT:

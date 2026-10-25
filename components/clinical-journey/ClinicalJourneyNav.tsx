@@ -4,6 +4,8 @@ import {
   JOURNEY_EVIDENCE_LABELS,
   PLANNED_JOURNEY_ITEMS,
   RELATED_CASE_STUDIES,
+  RELATED_GAMES,
+  RELATED_GAME_LABEL,
   journeyIssueUrl,
   journeyPlacement,
 } from "@/lib/clinical-journey";
@@ -35,6 +37,9 @@ export function ClinicalJourneyNav({
   const related = RELATED_CASE_STUDIES.filter(
     (study) => study.step === step.id && `/case-studies/${study.slug}` !== path
   );
+  const games = isStep
+    ? RELATED_GAMES.filter((game) => game.step === step.id)
+    : [];
   const planned = PLANNED_JOURNEY_ITEMS.filter((item) => item.step === step.id);
 
   return (
@@ -88,7 +93,7 @@ export function ClinicalJourneyNav({
           </>
         )}
       </p>
-      {(related.length > 0 || planned.length > 0) && (
+      {(related.length > 0 || games.length > 0 || planned.length > 0) && (
         <ul className="mt-3 space-y-1 break-words">
           {related.map((study) => (
             <li key={study.slug}>
@@ -100,6 +105,16 @@ export function ClinicalJourneyNav({
               </Link>{" "}
               <span className="text-slate-400">
                 ({JOURNEY_EVIDENCE_LABELS["own-project"]}): {study.relation}
+              </span>
+            </li>
+          ))}
+          {games.map((game) => (
+            <li key={game.href}>
+              <Link href={game.href} className={`text-slate-100 ${LINK}`}>
+                {game.title}
+              </Link>{" "}
+              <span className="text-slate-400">
+                ({RELATED_GAME_LABEL}): {game.relation}
               </span>
             </li>
           ))}

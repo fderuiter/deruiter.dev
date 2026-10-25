@@ -75,6 +75,13 @@ for (const width of [320, 1440]) {
       expect(await overflowingElements(page)).toEqual([]);
       expect(await seriousNavViolations(page)).toEqual([]);
 
+      if (step.path === "/protocol-drift") {
+        await expect(
+          nav.getByRole("link", { name: "Clinical Trial Chaos" })
+        ).toHaveAttribute("href", "/arcade/clinical-chaos");
+        await expect(nav.getByText(/\(Arcade game\)/)).toBeVisible();
+      }
+
       if (step.path === "/study-data") {
         await expect(
           page.getByText(/^Run 1: 90 subjects, seed 301/)

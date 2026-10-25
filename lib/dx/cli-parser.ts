@@ -309,9 +309,9 @@ export const COMMAND_REGISTRY: CommandDescriptor[] = [
   {
     name: "trackers",
     aliases: ["tracker-drift"],
-    summary: "Report epic checklist drift and in-progress claims",
+    summary: "Report epic checklist drift, in-progress claims and stale claims",
     description:
-      "Reads open type:epic issues and status:in-progress claims from GitHub and reports checklist lines whose tick disagrees with the issue's state, plus claims per assignee or lane label. Read-only; issue states need GITHUB_TOKEN.",
+      "Reads open type:epic issues and status:in-progress claims from GitHub and reports checklist lines whose tick disagrees with the issue's state, plus claims per assignee or lane label and the claims with no open PR, push or comment in 24 hours. Read-only; issue states and claim activity need GITHUB_TOKEN.",
     category: "diagnostics",
     isMutating: false,
     options: [

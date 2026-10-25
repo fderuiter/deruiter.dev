@@ -83,7 +83,7 @@ function printUsage(): void {
     `  ${colors.cyan}analyze [--strict] [--json]${colors.reset}    Inspect production bundle chunk sizes and budgets`
   );
   console.log(
-    `  ${colors.cyan}trackers [--repo o/n] [--json]${colors.reset} Report epic checklist drift and in-progress claims (read-only)`
+    `  ${colors.cyan}trackers [--repo o/n] [--json]${colors.reset} Report checklist drift, claims and stale claims (read-only)`
   );
   console.log(
     `  ${colors.cyan}scaffold [type] [name]${colors.reset}        Scaffold code templates (arcade, api, adr, component, hook)`
@@ -674,7 +674,8 @@ export async function handleTrackersCommand(
     printJsonEnvelope(
       createDxEnvelope({
         command: "trackers",
-        success: report.drift.length === 0,
+        success:
+          report.drift.length === 0 && (report.staleClaims?.length ?? 0) === 0,
         durationMs,
         data: report,
         remediations: [],
@@ -685,7 +686,7 @@ export async function handleTrackersCommand(
   console.log(formatHeader("DX Tracker Drift", "epic checklists • claims"));
   if (!token) {
     console.log(
-      `${colors.yellow}No GITHUB_TOKEN: issue states are not read, so checklist drift is not checked.${colors.reset}\n`
+      `${colors.yellow}No GITHUB_TOKEN: issue states and claim activity are not read, so checklist drift and stale claims are not checked.${colors.reset}\n`
     );
   }
   console.log(formatTrackerReport(report));

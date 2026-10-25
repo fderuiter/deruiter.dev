@@ -4,7 +4,8 @@
  * Release decisions are read from epic checklists and `status:in-progress`
  * claims, so a checklist that still shows a closed issue as open, or a lane
  * holding more claims than its limit, misleads the person deciding. This
- * module finds both. The rules are pure and take plain data; the GitHub reads
+ * module finds both, and the claims nobody appears to be working (#2830).
+ * The rules are pure and take plain data; the GitHub reads
  * sit behind {@link fetchTrackerData} and its injectable `fetch`.
  *
  * Report only: nothing here edits an issue.
@@ -49,6 +50,29 @@ export interface ClaimCount {
   issues: number[];
 }
 
+/** How long a claim may go without an open PR, a push or a comment. */
+export const STALE_CLAIM_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/** What GitHub shows of the work behind one claim. */
+export interface ClaimActivity {
+  /** Open pull requests that close or cross-reference the issue. */
+  openPullRequests: number[];
+  /** The newest commit time on a branch whose name contains the number. */
+  lastPushAt: string | null;
+  /** When the newest comment on the issue was made. */
+  lastCommentAt: string | null;
+}
+
+/** A claim with no open PR and no push or comment inside the window. */
+export interface StaleClaim {
+  issue: number;
+  title: string;
+  /** Assignee logins as `@login`, `lane:` labels, or "unassigned". */
+  holders: string[];
+  /** The newer of the last push and the last comment, if either exists. */
+  lastActivityAt: string | null;
+}
+
 export interface TrackerReport {
   repo: string;
   epics: number[];
@@ -56,6 +80,8 @@ export interface TrackerReport {
   /** Checklist references that could not be resolved to an issue state. */
   unresolved: number[];
   claims: ClaimCount[];
+  /** Stale claims, or null when claim activity could not be read. */
+  staleClaims: StaleClaim[] | null;
 }
 
 const CHECKLIST_LINE = /^\s*[-*]\s+\[([ xX])\]\s+(?:~~)?\*{0,2}#(\d+)\b(.*)$/;
@@ -126,6 +152,131 @@ export function findChecklistDrift(
   return { drift, unresolved: [...unresolved].sort((a, b) => a - b) };
 }
 
+function claimHolders(
+  issue: Pick<TrackerIssue, "labels" | "assignees">
+): string[] {
+  const holders = [
+    ...issue.assignees.map((login) => `@${login}`),
+    ...issue.labels.filter((label) => label.startsWith("lane:")),
+  ];
+  return holders.length ? holders : ["unassigned"];
+}
+
+/**
+ * Finds the claims that nobody appears to be working.
+ *
+ * A claim is stale when no open pull request is linked to it and neither a
+ * push to a branch named after it nor a comment on it falls inside the
+ * window. A claim with no activity entry was not read and is skipped.
+ *
+ * @param claims - Open issues carrying the in-progress label.
+ * @param activity - What GitHub shows for each claim, by issue number.
+ * @param now - The time to measure the window back from.
+ * @param windowMs - How long a claim may go quiet; defaults to 24 hours.
+ * @returns The stale claims, longest quiet first.
+ */
+export function findStaleClaims(
+  claims: readonly Pick<
+    TrackerIssue,
+    "number" | "title" | "labels" | "assignees"
+  >[],
+  activity: ReadonlyMap<number, ClaimActivity>,
+  now: Date,
+  windowMs = STALE_CLAIM_WINDOW_MS
+): StaleClaim[] {
+  const cutoff = now.getTime() - windowMs;
+  const stale: StaleClaim[] = [];
+  for (const claim of claims) {
+    const seen = activity.get(claim.number);
+    if (!seen || seen.openPullRequests.length > 0) continue;
+    const times = [seen.lastPushAt, seen.lastCommentAt]
+      .filter((t): t is string => t !== null)
+      .map((t) => Date.parse(t))
+      .filter((t) => !Number.isNaN(t));
+    const last = times.length ? Math.max(...times) : null;
+    if (last !== null && last > cutoff) continue;
+    stale.push({
+      issue: claim.number,
+      title: claim.title,
+      holders: claimHolders(claim),
+      lastActivityAt: last === null ? null : new Date(last).toISOString(),
+    });
+  }
+  return stale.sort(
+    (a, b) =>
+      (a.lastActivityAt ?? "").localeCompare(b.lastActivityAt ?? "") ||
+      a.issue - b.issue
+  );
+}
+
+interface PullRequestNode {
+  number?: number;
+  state?: string;
+}
+
+/** The GraphQL fields {@link fetchTrackerData} reads for one claim. */
+export interface ClaimActivityNodes {
+  issue?: {
+    comments?: { nodes?: ({ createdAt?: string } | null)[] };
+    closedByPullRequestsReferences?: {
+      nodes?: (PullRequestNode | null)[];
+    };
+    timelineItems?: {
+      nodes?: ({
+        source?: PullRequestNode | null;
+        subject?: PullRequestNode | null;
+      } | null)[];
+    };
+  } | null;
+  refs?: {
+    nodes?: ({
+      name?: string;
+      target?: { committedDate?: string } | null;
+    } | null)[];
+  } | null;
+}
+
+/**
+ * Reads one claim's activity from its GraphQL fields.
+ *
+ * GitHub's ref search matches substrings, so only branches where the number
+ * stands alone (`fix/foo-2830`, not `fix/foo-28301`) count as pushes. The
+ * push time is the branch head's commit time, which is the closest the API
+ * offers to when the branch was last pushed.
+ *
+ * @param issueNumber - The claimed issue.
+ * @param nodes - The issue's comments, linked PRs and timeline, and the
+ *   branches whose names matched the number.
+ * @returns The claim's activity.
+ */
+export function toClaimActivity(
+  issueNumber: number,
+  nodes: ClaimActivityNodes
+): ClaimActivity {
+  const open = new Set<number>();
+  const addIfOpen = (pr: PullRequestNode | null | undefined) => {
+    if (pr?.number !== undefined && pr.state === "OPEN") open.add(pr.number);
+  };
+  for (const pr of nodes.issue?.closedByPullRequestsReferences?.nodes ?? []) {
+    addIfOpen(pr);
+  }
+  for (const item of nodes.issue?.timelineItems?.nodes ?? []) {
+    addIfOpen(item?.source);
+    addIfOpen(item?.subject);
+  }
+  const standalone = new RegExp(`(^|\\D)${issueNumber}(\\D|$)`);
+  const pushes = (nodes.refs?.nodes ?? [])
+    .filter((ref) => ref?.name && standalone.test(ref.name))
+    .map((ref) => ref?.target?.committedDate)
+    .filter((t): t is string => typeof t === "string")
+    .sort();
+  return {
+    openPullRequests: [...open].sort((a, b) => a - b),
+    lastPushAt: pushes.at(-1) ?? null,
+    lastCommentAt: nodes.issue?.comments?.nodes?.at(-1)?.createdAt ?? null,
+  };
+}
+
 /**
  * Counts open `status:in-progress` claims per holder.
  *
@@ -143,13 +294,7 @@ export function countClaims(
   const add = (holder: string, issue: number) =>
     byHolder.set(holder, [...(byHolder.get(holder) ?? []), issue]);
   for (const issue of issues) {
-    const holders = [
-      ...issue.assignees.map((login) => `@${login}`),
-      ...issue.labels.filter((label) => label.startsWith("lane:")),
-    ];
-    for (const holder of holders.length ? holders : ["unassigned"]) {
-      add(holder, issue.number);
-    }
+    for (const holder of claimHolders(issue)) add(holder, issue.number);
   }
   return [...byHolder]
     .map(([holder, numbers]) => ({
@@ -169,13 +314,19 @@ export function countClaims(
  * @param epics - The open epics, with bodies.
  * @param states - Issue states by number.
  * @param claims - Open issues carrying the in-progress label.
+ * @param activity - Claim activity and the time to judge it at; leave it
+ *   out when the activity could not be read.
  * @returns The tracker report.
  */
 export function buildTrackerReport(
   repo: string,
   epics: readonly Pick<TrackerIssue, "number" | "body">[],
   states: ReadonlyMap<number, "open" | "closed">,
-  claims: readonly Pick<TrackerIssue, "number" | "labels" | "assignees">[]
+  claims: readonly Pick<
+    TrackerIssue,
+    "number" | "title" | "labels" | "assignees"
+  >[],
+  activity?: { byIssue: ReadonlyMap<number, ClaimActivity>; now: Date }
 ): TrackerReport {
   const { drift, unresolved } = findChecklistDrift(epics, states);
   return {
@@ -184,6 +335,9 @@ export function buildTrackerReport(
     drift,
     unresolved,
     claims: countClaims(claims),
+    staleClaims: activity
+      ? findStaleClaims(claims, activity.byIssue, activity.now)
+      : null,
   };
 }
 
@@ -222,6 +376,24 @@ export function formatTrackerReport(report: TrackerReport): string {
       `  ${holder}: ${issues.length} (${issues.map((n) => `#${n}`).join(" ")})`
     );
   }
+  if (report.staleClaims === null) {
+    lines.push("", "Stale claims: not checked (claim activity was not read)");
+  } else {
+    lines.push(
+      "",
+      `Stale claims (no open PR, push or comment in 24 h): ${report.staleClaims.length}`
+    );
+    for (const {
+      issue,
+      title,
+      holders,
+      lastActivityAt,
+    } of report.staleClaims) {
+      lines.push(
+        `  #${issue} ${holders.join(" ")} last activity ${lastActivityAt ?? "none"}: ${title.slice(0, 100)}`
+      );
+    }
+  }
   return lines.join("\n");
 }
 
@@ -254,21 +426,25 @@ function toIssue(raw: RestIssue): TrackerIssue {
 }
 
 /**
- * Reads the epics, the states of the issues they name, and the open claims.
+ * Reads the epics, the states of the issues they name, the open claims and
+ * the activity behind each claim.
  *
- * Uses the REST API for the two label lists and one GraphQL query per 100
- * referenced issues for their states, so a run costs a handful of requests.
- * GraphQL needs a token, so without one the states stay unresolved.
+ * Uses the REST API for the two label lists, one GraphQL query per 100
+ * referenced issues for their states, and one per 25 claims for their
+ * activity, so a run costs a handful of requests. GraphQL needs a token, so
+ * without one the states stay unresolved and stale claims are not checked.
  *
  * @param repo - `owner/name`.
  * @param token - A GitHub token, or undefined to read anonymously.
  * @param fetchImpl - The `fetch` to use; injected by tests.
+ * @param now - The time stale claims are judged at; injected by tests.
  * @returns The built report.
  */
 export async function fetchTrackerData(
   repo: string,
   token: string | undefined,
-  fetchImpl: FetchLike = fetch as unknown as FetchLike
+  fetchImpl: FetchLike = fetch as unknown as FetchLike,
+  now: Date = new Date()
 ): Promise<TrackerReport> {
   const [owner, name] = repo.split("/");
   if (!owner || !name) throw new Error(`Expected owner/name, got "${repo}"`);
@@ -303,33 +479,66 @@ export async function fetchTrackerData(
     ),
   ];
   const states = new Map<number, "open" | "closed">();
-  if (token) {
-    for (let start = 0; start < referenced.length; start += 100) {
-      const chunk = referenced.slice(start, start + 100);
-      const fields = chunk
+  if (!token) return buildTrackerReport(repo, epics, states, claims);
+
+  const queryRepository = async (fields: string) => {
+    const response = await fetchImpl("https://api.github.com/graphql", {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        query: `query { repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) { ${fields} } }`,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`GitHub GraphQL returned ${response.status}`);
+    }
+    const payload = (await response.json()) as {
+      data?: { repository?: Record<string, unknown> | null };
+    };
+    return payload.data?.repository ?? {};
+  };
+
+  for (let start = 0; start < referenced.length; start += 100) {
+    const chunk = referenced.slice(start, start + 100);
+    const repository = await queryRepository(
+      chunk
         .map(
           (n) =>
             `i${n}: issueOrPullRequest(number: ${n}) { ... on Issue { state } ... on PullRequest { state } }`
         )
-        .join("\n");
-      const response = await fetchImpl("https://api.github.com/graphql", {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `query { repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) { ${fields} } }`,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(`GitHub GraphQL returned ${response.status}`);
-      }
-      const payload = (await response.json()) as {
-        data?: { repository?: Record<string, { state?: string } | null> };
-      };
-      for (const n of chunk) {
-        const state = payload.data?.repository?.[`i${n}`]?.state;
-        if (state) states.set(n, state === "OPEN" ? "open" : "closed");
-      }
+        .join("\n")
+    );
+    for (const n of chunk) {
+      const state = (repository[`i${n}`] as { state?: string } | null)?.state;
+      if (state) states.set(n, state === "OPEN" ? "open" : "closed");
     }
   }
-  return buildTrackerReport(repo, epics, states, claims);
+
+  // Claim activity is heavier per issue, so it goes 25 claims at a time.
+  const byIssue = new Map<number, ClaimActivity>();
+  for (let start = 0; start < claims.length; start += 25) {
+    const chunk = claims.slice(start, start + 25).map((c) => c.number);
+    const repository = await queryRepository(
+      chunk
+        .map(
+          (n) => `c${n}: issue(number: ${n}) {
+  comments(last: 1) { nodes { createdAt } }
+  closedByPullRequestsReferences(first: 10, includeClosedPrs: false) { nodes { number state } }
+  timelineItems(itemTypes: [CROSS_REFERENCED_EVENT, CONNECTED_EVENT], last: 50) { nodes { ... on CrossReferencedEvent { source { ... on PullRequest { number state } } } ... on ConnectedEvent { subject { ... on PullRequest { number state } } } } }
+}
+b${n}: refs(refPrefix: "refs/heads/", query: "${n}", first: 20) { nodes { name target { ... on Commit { committedDate } } } }`
+        )
+        .join("\n")
+    );
+    for (const n of chunk) {
+      byIssue.set(
+        n,
+        toClaimActivity(n, {
+          issue: repository[`c${n}`] as ClaimActivityNodes["issue"],
+          refs: repository[`b${n}`] as ClaimActivityNodes["refs"],
+        })
+      );
+    }
+  }
+  return buildTrackerReport(repo, epics, states, claims, { byIssue, now });
 }

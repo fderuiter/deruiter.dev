@@ -15,6 +15,7 @@ const SECTION_IDS: readonly OperationsSectionId[] = [
   "activation",
   "data-management",
   "quality",
+  "risk",
   "milestones",
 ];
 

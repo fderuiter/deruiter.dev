@@ -29,10 +29,12 @@ export default function PlatformOperationsPage() {
           Clinical operations dashboards
         </h1>
         <p className="mt-5 max-w-3xl text-slate-300">
-          Enrollment, site activation, data management, quality and milestones
-          for a synthetic sponsor portfolio. Drill from the portfolio to a
-          study, a country and a site; every number comes from the governed
-          metric registry, and every chart has its data table.
+          Enrollment, site activation, data management, quality, risk and
+          milestones for a synthetic sponsor portfolio. Drill from the portfolio
+          to a study, a country and a site; every number comes from the governed
+          metric registry, and every chart has its data table. A study&apos;s
+          Risk tab shows its key risk indicators, quality tolerance limits and
+          central statistical monitoring.
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">
           {SYNTHETIC_DATA_NOTICE} {REGULATORY_WORDING}

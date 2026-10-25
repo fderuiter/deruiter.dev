@@ -11,6 +11,7 @@ import {
   type OperationsSectionId,
   type ReportData,
 } from "@/lib/clinical-platform";
+import { RbqmRiskView } from "../RbqmRiskView";
 import { ReportView } from "../ReportView";
 
 const ISSUES_URL = "https://github.com/fderuiter/deruiter.dev/issues";
@@ -564,6 +565,13 @@ export function OperationsView({
                   milestones={dashboard.milestones}
                 />
               )}
+            {active.id === "risk" && dashboard.risk !== null && (
+              <RbqmRiskView
+                risk={dashboard.risk}
+                narrowed={dashboard.level !== "study"}
+                siteHref={(scope) => operationsHash(scope, "risk")}
+              />
+            )}
             {active.reports.map((report) => (
               <ReportView key={report.spec.id} report={report} />
             ))}

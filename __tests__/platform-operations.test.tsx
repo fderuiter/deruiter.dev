@@ -99,6 +99,13 @@ describe("OperationsView (#2630)", () => {
       { study: "DEMO-302", site: "DEMO-302-DE-103" },
       "data-management",
     ],
+    ["a study's risk tab", { study: "DEMO-302" }, "risk"],
+    ["a QTL breach on the risk tab", { study: "DEMO-203" }, "risk"],
+    [
+      "the planted site's risk tab",
+      { study: "DEMO-302", site: "DEMO-302-BR-118" },
+      "risk",
+    ],
   ])("renders %s with zero axe violations", async (_name, scope, section) => {
     const { container } = view(scope, section);
     expect(await violations(container)).toEqual([]);
@@ -268,6 +275,125 @@ describe("OperationsView (#2630)", () => {
     view({ study: "NOPE" });
     expect(screen.getByRole("status").textContent).toBe(
       "No study NOPE in the portfolio. Showing the whole portfolio."
+    );
+  });
+});
+
+describe("Risk tab (#2631)", () => {
+  it("is offered below the portfolio only, between quality and milestones", () => {
+    view();
+    expect(screen.queryByRole("tab", { name: "Risk" })).toBeNull();
+    cleanup();
+    view({ study: "DEMO-302" });
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+      "Enrollment",
+      "Site activation",
+      "Data management",
+      "Quality and monitoring",
+      "Risk",
+      "Milestones",
+    ]);
+  });
+
+  it("gives every KRI at every site a value and a status word, and drills into the site", () => {
+    view({ study: "DEMO-302" }, "risk");
+    const risk = at({ study: "DEMO-302" }).risk!;
+    const table = screen.getByRole("table", {
+      name: /^Key risk indicators for 36 sites/,
+    });
+    const rows = within(table).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(risk.sites.length);
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((th) => th.textContent)
+    ).toEqual(["Site", ...risk.kris.map((kri) => kri.name)]);
+    const planted = within(table).getByRole("link", {
+      name: "DEMO-302-BR-118",
+    });
+    expect(planted.getAttribute("href")).toBe(
+      "#study=DEMO-302&country=BR&site=DEMO-302-BR-118&view=risk"
+    );
+    // The status is a word as well as a color.
+    const row = planted.closest("tr")!;
+    const cells = within(row).getAllByRole("cell");
+    const screenFailure = risk.kris[0].cells.find(
+      (c) => c.siteId === "DEMO-302-BR-118"
+    )!;
+    expect(cells[0].textContent).toBe(`${screenFailure.text}◆ Amber`);
+    for (const cell of within(table).getAllByRole("cell")) {
+      expect(cell.textContent).toMatch(/(Red|Amber|Green|Too little data)$/);
+    }
+  });
+
+  it("shows the sites that stand out, with their p- and q-values", () => {
+    view({ study: "DEMO-302" }, "risk");
+    const csm = screen
+      .getByRole("heading", { name: "Central statistical monitoring" })
+      .closest("section")!;
+    const flagged = within(csm)
+      .getAllByRole("listitem")
+      .filter((li) => li.textContent?.includes("q = "));
+    expect(flagged.map((li) => li.textContent?.split(" · ")[0])).toEqual([
+      "DEMO-302-BR-118",
+      "DEMO-302-BR-118",
+      "DEMO-302-BR-118",
+      "DEMO-302-US-101",
+    ]);
+    expect(within(csm).getByText(/DEMO-302-IT-106:/)).toBeTruthy();
+    const grid = within(csm).getByRole("table", {
+      name: /Adjusted q-values of every central monitoring test/,
+    });
+    expect(within(grid).getAllByText("(stands out)")).toHaveLength(4);
+  });
+
+  it("shows a QTL breach and logs the signal it raises", () => {
+    view({ study: "DEMO-203" }, "risk");
+    const qtls = screen.getByRole("table", {
+      name: "DEMO-203 quality tolerance limits, with their values, limits and status",
+    });
+    const breach = within(qtls)
+      .getByRole("rowheader", { name: "Subjects who end the study early" })
+      .closest("tr")!;
+    expect(
+      within(breach)
+        .getAllByRole("cell")
+        .map((td) => td.textContent)
+    ).toEqual(["27.8%", "18.0%", "25.0%", "▲ Breached"]);
+    const log = screen.getByRole("table", {
+      name: "7 entries of the DEMO-203 risk signal log, in order",
+    });
+    const first = within(log)
+      .getByRole("rowheader", { name: "DEMO-203-SIG-001" })
+      .closest("tr")!;
+    expect(first.textContent).toContain("past the tolerance limit of 25.0%");
+  });
+
+  it("says when the study-level limits are not narrowed, and when nothing was raised", () => {
+    view({ study: "DEMO-302", country: "DE" }, "risk");
+    expect(screen.getByText(/A limit applies to the whole study/)).toBeTruthy();
+    expect(
+      screen.getByText("No signals in scope at the data cut.")
+    ).toBeTruthy();
+    cleanup();
+    view({ study: "DEMO-302" }, "risk");
+    expect(screen.queryByText(/A limit applies to the whole study/)).toBeNull();
+  });
+
+  it("links what cannot be watched yet to the issue that adds the data", () => {
+    view({ study: "DEMO-302" }, "risk");
+    const gaps = screen.getByRole("complementary", {
+      name: "Risk: not in the governed model yet",
+    });
+    expect(
+      within(gaps).getAllByRole("link", { name: "Planned in #2776" })
+    ).toHaveLength(4);
+    const factor = screen.getByText("Adverse event reporting").closest("li")!;
+    expect(
+      within(factor).getByRole("link", { name: "Planned in #2776" })
+    ).toHaveProperty(
+      "href",
+      "https://github.com/fderuiter/deruiter.dev/issues/2776"
     );
   });
 });

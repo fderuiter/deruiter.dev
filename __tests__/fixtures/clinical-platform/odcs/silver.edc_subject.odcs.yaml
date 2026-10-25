@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/silver.edc_subject"
 name: "EDC subjects"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: EDC
 tags:
@@ -80,6 +80,14 @@ schema:
         physicalType: "VARCHAR(64)"
         description: "Status at the data cut."
         required: true
+        classification: internal
+      - name: screen_failure_reason
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 40
+        physicalType: "VARCHAR(40)"
+        description: "Why screening failed, from a short fictional controlled list; null unless the subject failed screening."
+        required: false
         classification: internal
       - name: source_system
         logicalType: string

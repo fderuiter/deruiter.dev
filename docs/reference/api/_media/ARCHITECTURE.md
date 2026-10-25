@@ -57,6 +57,10 @@ scripts/                                   # DX CLI tools, release gates, & benc
 types/                                     # Shared TypeScript interfaces & ambient declarations
 ```
 
+## Arcade Games: One Session, Three Views (ADR 0062)
+
+Each arcade game is one headless session and three views, `DesktopView`, `TabletView` and `PhoneView` ([ADR 0062](adr/0062-three-views-per-arcade-game.md)). The session owns the engine state, loop, saves, scoring and action map, and never reads the device. `PlayCabinet` picks the view by form factor, mounts the session once above it, and swaps views live without losing the run. Views share presentation through `components/<game>/parts/`, lay out on `TabletStage` and `PhoneStage`, and build touch controls from the dock presets in `components/arcade/mobile/docks/`. `npm run lint:boundaries` and DX Doctor's `arcade-three-view-guardrails` check enforce the split. Start a new game with `npm run scaffold game <name>`; [Build an arcade game for three views](docs/how-to/build-an-arcade-game-for-three-views.md) is the guide, with Retro Labyrinth as the worked example.
+
 ## Next.js 16 & Turbopack
 
 This application is built on **Next.js 16** using the **App Router** paradigm to leverage React Server Components for maximum performance and efficient data fetching.

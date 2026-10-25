@@ -29,9 +29,22 @@ import { expectWithinTimingBudget } from "./helpers/timing-budget";
  * #2706: the run's declared standards now come from the clinical standards
  * profile (USDM 4.0.0, plus ADaM OCCDS and ADaM Conformance Rules). No
  * record changed; the hash with the standards field left out is the same.
+ *
+ * #2879: every EDC subject carries a screen failure reason, drawn from a
+ * stream of its own. No other value moved; the hash with
+ * `screenFailureReason` left out is the previous golden, b4ab4b63.
  */
 const GOLDEN_SHA256 =
-  "b4ab4b6361c6d9b4f28624fb47765b9be71abf72dbad2fa1f18dc75961a250ce";
+  "330b619a3f3177f6d4febb5a295bda31cba926a73e0898216f46a2f71811133b";
+
+/** The fictional controlled list screen failure reasons come from (#2879). */
+const SCREEN_FAILURE_REASONS: readonly string[] = [
+  "Inclusion criterion not met",
+  "Exclusion criterion met",
+  "Consent withdrawn",
+  "Lost before randomisation",
+  "Other",
+];
 
 /** Record counts per study for the default seed: the readable half of the golden. */
 const GOLDEN_SUMMARY = {
@@ -294,6 +307,20 @@ describe("generatePortfolio: shape", () => {
     );
   });
 
+  it("records why each screen failure failed, in every study (#2879)", () => {
+    const failures = portfolio.feeds.edc.subjects.filter(
+      (s) => s.status === "screen-failed"
+    );
+    expect(new Set(failures.map((s) => s.screenFailureReason))).toEqual(
+      new Set(SCREEN_FAILURE_REASONS)
+    );
+    // DEMO-301's subjects come from the Study Data Pipeline, whose DS domain
+    // records the failure but not its reason; the portfolio supplies one.
+    const studies = new Set(failures.map((s) => s.studyId));
+    expect(studies.has("DEMO-301")).toBe(true);
+    expect(studies.size).toBe(portfolio.studies.length);
+  });
+
   it("links every visit to a planned visit of its study", () => {
     const planned = new Map(
       portfolio.studies.map((s) => [
@@ -546,8 +573,8 @@ describe("generatePortfolio: planted signals", () => {
 
 describe("generatePortfolio: properties over seeds", () => {
   const seeds = fc.integer({ min: 0, max: 0xffffffff });
-  // One fixed fast-check seed, so the three properties draw the same
-  // portfolio seeds and share the generated portfolios.
+  // One fixed fast-check seed, so the properties draw the same portfolio
+  // seeds and share the generated portfolios.
   const options = { numRuns: 8, seed: 2622 };
 
   it("never dates a milestone or site activation before its study's start", () => {
@@ -600,6 +627,19 @@ describe("generatePortfolio: properties over seeds", () => {
           (s) => (enrolled.get(s.id) ?? 0) <= s.plannedEnrollment
         );
       }),
+      options
+    );
+  }, 60_000);
+
+  it("gives a screen failure reason to exactly the subjects who failed screening (#2879)", () => {
+    fc.assert(
+      fc.property(seeds, (seed) =>
+        portfolioFor(seed).feeds.edc.subjects.every((subject) =>
+          subject.status === "screen-failed"
+            ? SCREEN_FAILURE_REASONS.includes(subject.screenFailureReason ?? "")
+            : subject.screenFailureReason === null
+        )
+      ),
       options
     );
   }, 60_000);

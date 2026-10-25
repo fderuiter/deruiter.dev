@@ -118,7 +118,7 @@ describe("scaffold game (#2846)", () => {
     scaffoldArcadeGame(root, "demo-check");
 
     const entry =
-      /\n {2}demoCheck: \{\s*title: "([^"]+)",\s*description: "([^"]+)"/.exec(
+      /\n {2}demoCheck: \{\s*title: "([^"]+)",\s*description:\s*"([^"]+)"/.exec(
         read("lib/seo-metadata.ts")
       );
     expect(entry).not.toBeNull();

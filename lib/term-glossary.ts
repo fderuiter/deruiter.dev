@@ -122,7 +122,8 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
     canonical: "SAE",
     simplified: "serious adverse event",
     definition:
-      "Serious Adverse Event. An untoward medical occurrence in a clinical study subject resulting in death, hospitalization, or disability.",
+      "Serious Adverse Event. An adverse event that results in death, is life-threatening, requires inpatient hospitalization or prolongs an existing one, results in persistent or significant disability or incapacity, or is a congenital anomaly or birth defect. An important medical event that may need intervention to prevent one of these outcomes can also be serious.",
+    source: "ICH E2A",
   },
   {
     key: "dmp-term",
@@ -163,11 +164,14 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
   },
   {
     key: "phi-term",
-    canonical: "Patient Health Information (PHI)",
+    canonical: "Protected Health Information (PHI)",
     simplified: "protected health records",
     definition:
-      "Patient Health Information. Sensitive health data protected under federal privacy standards.",
-    aliases: ["Patient Health Information", "PHI"],
+      "Protected Health Information. Individually identifiable health information that a HIPAA covered entity or its business associate holds or transmits, in any form, which the HIPAA Privacy Rule protects.",
+    // "Patient Health Information" is a common misreading; it stays an alias
+    // so stored copy that uses it still gets the correct tooltip.
+    aliases: ["Protected Health Information", "Patient Health Information", "PHI"],
+    source: "HIPAA Privacy Rule, 45 CFR 160.103",
   },
   {
     key: "tls-term",

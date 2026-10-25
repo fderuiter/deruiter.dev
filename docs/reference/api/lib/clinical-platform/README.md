@@ -434,6 +434,30 @@ Re-exports [emitDdl](internal/warehouse/ddl/functions/emitDdl.md)
 
 ***
 
+### EnrollmentForecast
+
+Re-exports [EnrollmentForecast](types/interfaces/EnrollmentForecast.md)
+
+***
+
+### EnrollmentForecastPoint
+
+Re-exports [EnrollmentForecastPoint](types/interfaces/EnrollmentForecastPoint.md)
+
+***
+
+### EnrollmentSimulationInput
+
+Re-exports [EnrollmentSimulationInput](types/interfaces/EnrollmentSimulationInput.md)
+
+***
+
+### EnrollmentWhatIf
+
+Re-exports [EnrollmentWhatIf](types/interfaces/EnrollmentWhatIf.md)
+
+***
+
 ### EtmfDocument
 
 Re-exports [EtmfDocument](types/interfaces/EtmfDocument.md)
@@ -467,6 +491,30 @@ Re-exports [FinanceLine](types/interfaces/FinanceLine.md)
 ### findClinicalClaims
 
 Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)
+
+***
+
+### fitRecruitmentPrior
+
+Re-exports [fitRecruitmentPrior](internal/forecast/fit/functions/fitRecruitmentPrior.md)
+
+***
+
+### FORECAST\_DEFAULT\_RUNS
+
+Re-exports [FORECAST_DEFAULT_RUNS](internal/forecast/enrollment/variables/FORECAST_DEFAULT_RUNS.md)
+
+***
+
+### FORECAST\_DEFAULT\_SEED
+
+Re-exports [FORECAST_DEFAULT_SEED](internal/forecast/enrollment/variables/FORECAST_DEFAULT_SEED.md)
+
+***
+
+### forecastEnrollment
+
+Re-exports [forecastEnrollment](internal/forecast/enrollment/functions/forecastEnrollment.md)
 
 ***
 
@@ -914,6 +962,12 @@ Re-exports [PortfolioSignalKind](types/type-aliases/PortfolioSignalKind.md)
 
 ***
 
+### posteriorRate
+
+Re-exports [posteriorRate](internal/forecast/fit/functions/posteriorRate.md)
+
+***
+
 ### ProductType
 
 Re-exports [ProductType](types/type-aliases/ProductType.md)
@@ -977,6 +1031,18 @@ Re-exports [RaisedSignal](internal/rbqm/signals/interfaces/RaisedSignal.md)
 ### raiseRiskSignals
 
 Re-exports [raiseRiskSignals](internal/rbqm/signals/functions/raiseRiskSignals.md)
+
+***
+
+### recruitmentLogLikelihood
+
+Re-exports [recruitmentLogLikelihood](internal/forecast/fit/functions/recruitmentLogLikelihood.md)
+
+***
+
+### RecruitmentRate
+
+Re-exports [RecruitmentRate](types/interfaces/RecruitmentRate.md)
 
 ***
 
@@ -1214,9 +1280,27 @@ Re-exports [sensitivity](internal/strategy/engine/functions/sensitivity.md)
 
 ***
 
+### simulateEnrollmentCompletion
+
+Re-exports [simulateEnrollmentCompletion](internal/forecast/simulate/functions/simulateEnrollmentCompletion.md)
+
+***
+
 ### Site
 
 Re-exports [Site](types/interfaces/Site.md)
+
+***
+
+### SiteExposure
+
+Re-exports [SiteExposure](internal/forecast/fit/interfaces/SiteExposure.md)
+
+***
+
+### SiteRecruitment
+
+Re-exports [SiteRecruitment](types/interfaces/SiteRecruitment.md)
 
 ***
 

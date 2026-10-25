@@ -242,7 +242,7 @@ export function deriveAdsl(
         .at(-1) ?? null;
     const planned = string(source.ARMCD);
     const actual = firstDose ? string(firstExposure?.row.EXTRT) : null;
-    const randomized = planned !== null && planned !== "SCRNFAIL";
+    const randomized = planned !== null;
     const systolicBaseline = baseline(
       vs.get(subject) ?? [],
       firstDose,

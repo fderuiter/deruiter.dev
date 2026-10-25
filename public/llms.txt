@@ -18,6 +18,7 @@ Canonical origin: https://deruiter.dev. The full architectural dossier, with cas
 - [OxidizeMath: Rust Scientific Computing](https://deruiter.dev/case-studies/oxidizemath): Explore scientific computing in Rust with numerical solvers, compile-time checks, and interactive simulations. Read the OxidizeMath writeup.
 - [PromptOps: Test Prompts Like Code](https://deruiter.dev/case-studies/promptops): Version prompts, validate response shapes, and run regression evaluations in CI. Read how PromptOps makes changes easier to inspect and compare.
 - [Sonos Network Controller in Python](https://deruiter.dev/case-studies/sonos-network-controller): Control Sonos speakers on your own network with a Python API and a small web interface. Read about the protocols and implementation choices.
+- [Study Data Pipeline: USDM to TLFs](https://deruiter.dev/case-studies/study-data-pipeline): One synthetic study carried from a USDM definition through SDTM, ADaM and Define-XML to traceable tables and figures, reproducibly, in the browser.
 - [Laser Loon: Artwork & Downloads](https://deruiter.dev/work/laser-loon): Meet Laser Loon, my Minnesota flag submission, and download the artwork in print and web formats. The eye lasers are included in the download.
 
 ## Blog

@@ -9,6 +9,7 @@
  */
 export * from "./types";
 export * from "./presets";
+export { MESSY_DATA_SCENARIOS } from "./internal/synth/scenarios";
 export { runPipeline } from "./internal/engine";
 export { deriveAdamDatasets } from "./internal/adam/derive-adam";
 export type { AdamDerivation } from "./internal/adam/derive-adam";

@@ -7,6 +7,7 @@
 import { STANDARD_VERSIONS, SUBJECT_COUNT_LIMITS } from "../presets";
 import type { PipelineOptions, PipelineRun, StudyDefinition } from "../types";
 import { generateCollectedData } from "./synth/generate-collected-data";
+import { applyScenarios } from "./synth/scenarios";
 import { deriveTrialDesign } from "./sdtm/trial-design";
 import { deriveSubjectDomains } from "./sdtm/subject-domains";
 import { runConformance } from "./conformance/run-conformance";
@@ -57,7 +58,11 @@ export function runPipeline(
   options: PipelineOptions
 ): PipelineRun {
   assertValidInputs(definition, options);
-  const collected = generateCollectedData(definition, options);
+  const generated = generateCollectedData(definition, options);
+  const scenarios = options.scenarios ?? [];
+  const messy =
+    scenarios.length > 0 ? applyScenarios(generated, scenarios) : null;
+  const collected = messy?.datasets ?? generated;
   const trialDesign = deriveTrialDesign(definition, STANDARD_VERSIONS);
   const sdtmDatasets = [
     ...collected,
@@ -81,6 +86,7 @@ export function runPipeline(
       standards: STANDARD_VERSIONS,
       stages: ["usdm", "synth", "sdtm", "conformance", "adam"],
       outputs: [],
+      ...(messy ? { scenarios: messy.applied } : {}),
     },
   };
 }

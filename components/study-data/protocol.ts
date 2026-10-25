@@ -89,6 +89,14 @@ export interface RunSummary {
   };
   readonly tables: readonly TlfTable[];
   readonly figures: readonly TlfKmFigure[];
+  /**
+   * The run's reviewer guides as HTML articles, the same markup the package
+   * ships in `csdrg.html` and `adrg.html`.
+   */
+  readonly guides: {
+    readonly csdrg: string;
+    readonly adrg: string;
+  };
 }
 
 /**

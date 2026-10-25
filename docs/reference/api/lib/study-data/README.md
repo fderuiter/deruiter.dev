@@ -68,6 +68,12 @@ Re-exports [AnalysisPopulationDefinition](types/interfaces/AnalysisPopulationDef
 
 ***
 
+### AppliedScenario
+
+Re-exports [AppliedScenario](types/interfaces/AppliedScenario.md)
+
+***
+
 ### ArmDefinition
 
 Re-exports [ArmDefinition](types/interfaces/ArmDefinition.md)
@@ -932,6 +938,18 @@ Re-exports [MAX_RAW_DECIMALS](internal/tlf/stats/variables/MAX_RAW_DECIMALS.md)
 
 ***
 
+### MESSY\_DATA\_SCENARIOS
+
+Re-exports [MESSY_DATA_SCENARIOS](internal/synth/scenarios/variables/MESSY_DATA_SCENARIOS.md)
+
+***
+
+### MessyDataScenario
+
+Re-exports [MessyDataScenario](types/interfaces/MessyDataScenario.md)
+
+***
+
 ### metaDataVersionOid
 
 Re-exports [metaDataVersionOid](internal/export/oids/functions/metaDataVersionOid.md)
@@ -1163,6 +1181,18 @@ Re-exports [runPipeline](internal/engine/functions/runPipeline.md)
 ### SAS\_MISSING\_NUMERIC
 
 Re-exports [SAS_MISSING_NUMERIC](internal/export/ibm-float/variables/SAS_MISSING_NUMERIC.md)
+
+***
+
+### ScenarioExpectation
+
+Re-exports [ScenarioExpectation](types/interfaces/ScenarioExpectation.md)
+
+***
+
+### ScenarioId
+
+Re-exports [ScenarioId](types/type-aliases/ScenarioId.md)
 
 ***
 

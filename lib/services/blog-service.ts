@@ -3,6 +3,7 @@ import { env, isBuildPhase } from "@/lib/env";
 import { failBuildOnDataSourceError } from "@/lib/build-integrity";
 import { FALLBACK_BLOG_POSTS, BlogPostData } from "@/lib/fallback-blog-posts";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
+import { RedisTimeoutError, withRedisTimeout } from "@/lib/redis-timeout";
 import { CONTENT_PILLARS, type ContentPillar } from "@/lib/blog/types";
 import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
 import { ALLOWED_REACTIONS } from "@/lib/schemas";
@@ -442,31 +443,6 @@ export function compareBlogPostsNewestFirst<
   return slugA.localeCompare(slugB);
 }
 
-/**
- * Executes a promise with an upper timeout bound, always clearing the underlying
- * timer resource upon completion to prevent timer leaks in event loops.
- */
-async function withTimeout<T>(
-  promise: Promise<T>,
-  ms: number,
-  timeoutErrorMsg: string
-): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => {
-      reject(new Error(timeoutErrorMsg));
-    }, ms);
-  });
-
-  try {
-    return await Promise.race([promise, timeoutPromise]);
-  } finally {
-    if (timer) {
-      clearTimeout(timer);
-    }
-  }
-}
-
 async function safeRevalidatePath(
   path: string,
   type?: "layout" | "page"
@@ -724,7 +700,7 @@ export class BlogPostService {
 
     try {
       if (isRedisConfigured()) {
-        const cached = await withTimeout(
+        const cached = await withRedisTimeout(
           redis.get<unknown>(cacheKey),
           1500,
           "Redis getAllPublishedBlogPosts timeout"
@@ -809,7 +785,7 @@ export class BlogPostService {
 
     if (isRedisConfigured()) {
       try {
-        await withTimeout(
+        await withRedisTimeout(
           redis.set(cacheKey, merged, { ex: 3600 }),
           1500,
           "Redis cache write timeout"
@@ -840,7 +816,7 @@ export class BlogPostService {
 
     try {
       if (isRedisConfigured()) {
-        const cached = await withTimeout(
+        const cached = await withRedisTimeout(
           redis.get<unknown>(cacheKey),
           1500,
           "Redis cache read timeout"
@@ -856,10 +832,13 @@ export class BlogPostService {
       }
     } catch (cacheErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        logger.warn(
-          `BlogPostService.getBlogPostBySlug: Redis cache read failed for "${trimmedSlug}", falling back:`,
-          cacheErr
-        );
+        const message = `BlogPostService.getBlogPostBySlug: Redis cache read failed for "${trimmedSlug}", falling back:`;
+        if (cacheErr instanceof RedisTimeoutError) {
+          // A timed-out read is a cache miss, not an incident (#2850).
+          logger.warn(message, cacheErr, { skipTelemetry: true });
+        } else {
+          logger.warn(message, cacheErr);
+        }
       }
     }
 
@@ -911,7 +890,7 @@ export class BlogPostService {
       }
       if (isRedisConfigured()) {
         try {
-          await withTimeout(
+          await withRedisTimeout(
             redis.set(cacheKey, dbResult, { ex: 3600 }),
             1500,
             "Redis cache write timeout"
@@ -931,7 +910,7 @@ export class BlogPostService {
 
     if (finalResult && isRedisConfigured()) {
       try {
-        await withTimeout(
+        await withRedisTimeout(
           redis.set(cacheKey, finalResult, { ex: 3600 }),
           1500,
           "Redis cache write timeout"
@@ -967,7 +946,7 @@ export class BlogPostService {
     let evicted = false;
     if (isRedisConfigured()) {
       try {
-        await withTimeout(
+        await withRedisTimeout(
           redis.del(cacheKey, allPublishedKey),
           1500,
           "Redis cache eviction timeout"
@@ -1009,18 +988,14 @@ export class BlogPostService {
 
       const [rawBuffer, userReactionsRaw] = !isRedisConfigured()
         ? [null, null]
-        : await Promise.race([
+        : await withRedisTimeout(
             Promise.all([
               redis.hgetall<Record<string, string | number>>(bufferKey),
               redis.smembers(userKey),
             ]),
-            new Promise<[null, null]>((_, reject) =>
-              setTimeout(
-                () => reject(new Error("Redis getBlogReactions timeout")),
-                1500
-              )
-            ),
-          ]);
+            1500,
+            "Redis getBlogReactions timeout"
+          );
 
       const counts = { ...baseCounts };
       if (rawBuffer && typeof rawBuffer === "object") {
@@ -1043,10 +1018,14 @@ export class BlogPostService {
       };
     } catch (err) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        logger.warn(
-          "BlogPostService.getReactions: Redis path failed, returning compute-shielded defaults:",
-          err
-        );
+        const message =
+          "BlogPostService.getReactions: Redis path failed, returning compute-shielded defaults:";
+        if (err instanceof RedisTimeoutError) {
+          // A timed-out read is a cache miss, not an incident (#2850).
+          logger.warn(message, err, { skipTelemetry: true });
+        } else {
+          logger.warn(message, err);
+        }
       }
 
       const counts = getDefaultBlogReactionCounts();

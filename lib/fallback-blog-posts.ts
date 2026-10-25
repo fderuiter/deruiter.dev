@@ -580,6 +580,204 @@ pub fn newton_step(x: Finite, fx: Finite, dfx: NonZeroFinite) -&gt; Finite { /* 
 <p>Later slices may add the fry station on Fridays, the plastic trays I used to sing about, and the dish pit. For now there is one booth and one shift: <a href="/arcade/patty-drive-thru">clock in at Patty's Drive-Thru</a>.</p>
 `.trim(),
   },
+  {
+    id: "fallback-blog-11",
+    slug: "the-claim-has-to-be-smaller-than-the-code",
+    title: "The Claim Has to Be Smaller Than the Code",
+    dek: "My CRF Studio advertised compliance the code never implemented. Taking the claim down took a day. Checking what was left underneath found far more.",
+    pillar: "clinical-data-engineering",
+    tags: "cdisc, controlled-terminology, cdisc-core, independent-qc, clinical-data-systems, honesty",
+    published: true,
+    reading_time_minutes: 8,
+    hero_image_url: null,
+    created_at: new Date("2026-10-25T00:00:00.000Z"),
+    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    body: `
+<h2>A badge I should not have shipped</h2>
+<p>This week I had my own site reviewed the way a clinical data manager would read it, and I did not like what came back. CRF Studio carried a badge announcing one hundred percent conformance with CDISC and SDTM. Its audit log was described as an unalterable Part 11 trail. A status line declared the whole thing ready for regulated work.</p>
+<p>None of that was implemented. What existed was a useful subset of CDASHIG 2.2 and SDTMIG 3.4 design checks, an audit trail that lives in browser state, and a local slice of controlled terminology. That is a reasonable thing for a portfolio to demonstrate. It is not what the copy said, and the people the clinical work is written for are exactly the readers who notice the difference and stop trusting the rest of the page.</p>
+<p>I cannot quote the old wording here. This file is one of more than 130 that a test now scans for it, and the build would fail.</p>
+
+<h2>Describe what is implemented</h2>
+<p>The replacement rule is easy to state: copy describes the checks that exist, never the standard they are aimed at. A clean run now reads "No findings from the implemented checks." The audit trail is a "Part 11-style audit trail (simulation)". The terminology is a local subset aligned to one NCI EVS package.</p>
+<p>A rule like that decays the moment nobody is watching, so it is a function rather than a guideline. <code>findClinicalClaims()</code> matches the shapes that kept appearing: a standard or regulation followed by "compliant", a percentage score in front of a standard, a promise to comply with a regulation, an audit trail that cannot be changed. A test runs it across the clinical routes, components and libraries, the social card presets and this blog, and names the phrase and the file when it fails. It also has to let honest sentences through, so the test keeps a list of those as well. "Three non-compliant records." must pass.</p>
+
+<h2>Then I checked the codes</h2>
+<p>"Aligned to the package" was itself a claim, so the next job was to check it. Every codelist and term in CRF Studio went up against the NCI EVS SDTM terminology file of 2026-09-25.</p>
+<p>It was worse than the issue I had filed. Most term codes were wrong or missing from the package, and several codelists sat under codes that belong to <em>other</em> codelists:</p>
+<ul>
+  <li>The yes/no codelist used C66741, which is the vital signs test code list. Sex used C66742, which is the yes/no list.</li>
+  <li>Race and ethnicity pointed at codelists that have been retired; their last appearance was the 2025-09-26 package. Collection now uses C128689 and C128690.</li>
+  <li>Severity was filed with CTCAE grade codes. Mild, moderate and severe have their own: C41338, C41339 and C41340.</li>
+</ul>
+<p>These were not cosmetic. They were published in ODM <code>def:NCICode</code> attributes, SAS format comments, the annotated CRF and the Word export. Every one of them looked right, which is the worst property a wrong identifier can have. A misspelled term fails a lookup. A real code from the neighbouring codelist passes every check that does not go back to the source file.</p>
+<p>The error had spread, too. The study data pipeline wrote a dose unit of <code>TABLETS</code>, an extension that existed only to match the wrong CRF code. It now writes the package's own <code>TABLET</code>, C48542, and the golden files that changed changed for that reason alone.</p>
+
+<h2>An outside opinion, in CI</h2>
+<p>My own conformance stage checks my own reading of the rules. That is circular in the way that matters, so the pipeline's outputs now also go through CDISC's open-source rules engine, CORE, pinned to v0.17.1, in a separate workflow that runs whenever the pipeline changes and once a week.</p>
+<p>The first run reported findings on 69 rule and dataset pairs. Sorted honestly:</p>
+<ul>
+  <li><strong>55 are real defects</strong> in my pipeline or its study definition, each tracked in an issue.</li>
+  <li><strong>12 are engine limitations,</strong> such as duplicate-check rules that misfire on the fixture.</li>
+  <li><strong>1 is by design:</strong> adverse events carry no epoch.</li>
+  <li><strong>1 is a gap</strong> in the engine's terminology cache.</li>
+</ul>
+<p>The design decision worth copying is the allowlist that explains them. CI fails on any finding the list does not explain, which is the usual rule. It also fails on any entry that CORE <em>no longer</em> reports. A fix proves itself by making its allowlist entry stale, and the list cannot quietly become a museum of problems solved months ago.</p>
+<p>The job summary also says what was not checked. CORE's newest cached terminology is from March while the pipeline declares September, so the export substitutes the older release and says so. CORE has no ADaMIG rules yet, so the analysis layer is reported as "not run". The workflow asks the engine for its rule list rather than hardcoding that, so it will notice when they arrive.</p>
+
+<h2>Program it twice</h2>
+<p>Clinical programming has an old answer to "how do you know the derivation is right": a second programmer writes it again from the specification, without looking at the first, and the outputs are compared. The pipeline now has that, as a test suite. Study days, baseline selection, change from baseline, last observation carried forward, adverse event date imputation, treatment-emergent flags, time to event and the three summary tables are each derived again from the specification and compared row for row with the pipeline, on the study's own seed and on 200 generated ones.</p>
+<p>Its pull request listed what it could not test. The synthetic generator never lands an adverse event on the edge of the treatment-emergent window, so a mutant that moves that edge from fourteen days after last dose to thirteen survives. That gap is written down next to the suite instead of being left for a reader to find.</p>
+
+<h2>Smaller claims, more checks</h2>
+<p>The page that runs the pipeline now says what it is: one fictional study, synthetic subjects, and a conformance stage that models a subset of published rules and is not a validator of record. That is a much smaller sentence than the badge was. Behind it sit a wording guard, a terminology check against the source file, an outside rules engine whose findings are tracked one by one, and an independent second implementation.</p>
+<p>I would rather publish the small sentence with all of that behind it than the large one with nothing.</p>
+
+<p>You can <a href="/study-data">run the pipeline</a> and download its package, or read how it is built in the <a href="/case-studies/study-data-pipeline">Study Data Pipeline</a> case study. <a href="/crf">CRF Studio</a> is where the corrected codes now live.</p>
+`.trim(),
+  },
+  {
+    id: "fallback-blog-12",
+    slug: "four-lanes-one-merge-slot",
+    title: "Four Lanes, One Merge Slot",
+    dek: "Thirty-eight pull requests reached main in one day from four parallel agent lanes. What made it work was a plain rule: only one of them merges at a time.",
+    pillar: "agent-first-dx",
+    tags: "agents, ci, pull-requests, merge-queue, parallel-work, typescript",
+    published: true,
+    reading_time_minutes: 7,
+    hero_image_url: null,
+    created_at: new Date("2026-10-25T00:00:00.000Z"),
+    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    body: `
+<h2>The day in numbers</h2>
+<p>On 24 October, main took 38 squash merges. They came from four lanes running in parallel: clinical release blockers, the clinical data platform, the arcade's phone work, and CI and test debt. Each lane is a coding agent working through its own queue of issues. I set the queues, make the product calls, and press the buttons only a person should press.</p>
+<p>That throughput did not come from the agents being fast. It came from a rule about how their work reaches main, and the rule came from a bad evening the day before.</p>
+
+<h2>What stacking cost</h2>
+<p>That evening I let one wave of work land as a stack: each pull request based on the branch of the one below it, so they would merge in order. It looks tidy. It went badly, for reasons that are specific to this repository's setup and are probably true of yours:</p>
+<ul>
+  <li><strong>Nothing above the bottom of the stack got CI.</strong> The workflow runs for pull requests into <code>main</code>. A pull request into another branch ran no gates at all, so the stack was green the way an empty test suite is green.</li>
+  <li><strong>Squash merges into intermediate branches leave add-versus-nothing conflicts</strong> that have to be resolved by hand, and every resolution is a chance to drop someone's change.</li>
+  <li><strong>Closing keywords only fire on a merge into the default branch,</strong> so issues stayed open after their work had merged.</li>
+  <li><strong>The history stopped describing itself.</strong> When the stack collapsed, the commit on main titled for Dataset-JSON, CSV and XPT exports also carried the arcade's stage-fitting layout and its tests. Anyone bisecting a layout regression later lands on a commit whose message is about clinical exports.</li>
+</ul>
+
+<h2>The rule: one slot</h2>
+<p>Since then every pull request is cut from main and targets main. Work stays in draft until its quick checks pass. Only one pull request at a time may be marked ready: the one holding the slot. Whoever takes the slot merges the current main into their branch, reruns the fast checks if main moved, pushes, marks it ready and turns on auto-merge once. When it lands, the next one moves up.</p>
+<p>A few files are touched by nearly every feature: the command palette, the navigation data, the sitemap, the route metadata, <code>package.json</code>, the CI workflow and the README. Those take a lock in the lane file before anyone edits them, so two lanes never find the conflict at merge time.</p>
+<p>It is a merge queue, written in Markdown, which every agent reads before any pull request action. It is slower per pull request than letting everything race. It is much faster per day, because almost nothing has to be done twice.</p>
+
+<h2>What the slot does not protect</h2>
+<p>Serialising merges does not serialise <em>resources</em>. Two pull requests that day, Duck's Halloween mode and the new study data page, each passed every gate on its own and failed together. The cold type check needed about 2.54 GB of live heap, and CI's budget was 2,560 MB. Neither change was large. The program was simply around 5,800 files by then, and those two happened to be the pair that crossed the line.</p>
+<p>Both ceilings went up by 512 MB, with the CI budget still 512 MB below the production build's, so growth still fails a pull request before it can reach a deploy. Before raising anything, the obvious suspects were measured. Leaving the tests out of the program dropped memory from about 3.0 GB to 2.0 GB. Stubbing a 7.6 MB icon declaration file down to the 262 icons actually used made no difference that rose above the run-to-run noise of about 300 MB. That second result saved a refactor nobody needed.</p>
+<p>A budget gate is a shared resource. Parallel lanes spend it together, and the lane that crosses it is rarely the one that grew it most.</p>
+
+<h2>Two smaller lessons</h2>
+<p><strong>Push everything before you turn on auto-merge.</strong> The metric registry merged while its governance commit was still being written, because auto-merge does exactly what it says. The follow-up became its own pull request from main. Now a branch is finished before auto-merge goes on, or the next change is a fresh pull request.</p>
+<p><strong>A shared types file is a serial resource too.</strong> Every platform pull request added to the same types file and the same table in the architecture decision record. One evening I marked three of them ready and turned on auto-merge for all three at once. Each merge forced the other two to merge main again and resolve the same two files. Resolving additively (keep both type blocks, keep both table rows, regenerate the docs) made it safe. Following my own rule would have made it unnecessary.</p>
+
+<h2>What I would tell someone starting</h2>
+<ul>
+  <li>Parallelise the building, not the merging. Agents in separate lanes are cheap; merges that race are not.</li>
+  <li>Do not stack branches unless CI runs on every base. Check that before you trust a green tick.</li>
+  <li>Write the lane rules where the agents read them before acting, and keep each edit small and dated.</li>
+  <li>Treat every budget CI enforces, whether memory, time or bundle size, as shared by every lane, and measure before you raise one.</li>
+  <li>Name the files everyone touches, and lock them.</li>
+</ul>
+
+<p><a href="/blog/what-agent-first-tooling-actually-requires">What Agent-First Tooling Actually Requires</a> covers the guardrails each agent works inside. This post is about what happens when several of them work at once.</p>
+`.trim(),
+  },
+  {
+    id: "fallback-blog-13",
+    slug: "one-game-three-screens",
+    title: "One Game, Three Screens",
+    dek: "Each arcade game here is being split into one headless session and three views. The first move touched 57 files and, by design, none of the gameplay.",
+    pillar: "browser-graphics-engineering",
+    tags: "arcade, react, architecture, refactoring, mobile, canvas, testing",
+    published: true,
+    reading_time_minutes: 7,
+    hero_image_url: null,
+    created_at: new Date("2026-10-25T00:00:00.000Z"),
+    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    body: `
+<h2>Where touch support had got to</h2>
+<p>Every game in the arcade has had an iPad pass, and every pass made "tablet" a branch rather than a view. A game's single component, between three and six thousand lines, gained touch conditionals and a scoped touch stylesheet. Phones are still behind a desktop-only notice. Adding a phone layout the same way would put a third branch into every one of those conditionals, and every desktop change would then risk two touch layouts.</p>
+<p>The games also repeated each other. There were eight copies of the same auto-pause module, seven bespoke touch docks, four ways to size a canvas and seven copies of the high-score store.</p>
+
+<h2>One session, three views</h2>
+<p>The plan gives each game one headless session and three views: desktop, tablet and phone.</p>
+<ul>
+  <li><strong>The session owns the game:</strong> state, the fixed-step loop, timers, saves, scoring and an action map. It never reads the viewport or the pointer type.</li>
+  <li><strong>The session is an external store.</strong> It exposes <code>getState</code>, <code>subscribe</code> and <code>dispatch</code>, plus an <code>onFrame</code> channel that asks the mounted view to paint once per frame. HUD components read slices of it, so a frame does not re-render React.</li>
+  <li><strong>A view only lays out and paints.</strong> Views never branch on the device. Choosing the view is the branch.</li>
+  <li><strong>The session holds no DOM.</strong> Canvases and WebGL contexts belong to the view and are disposed of when it unmounts. iOS caps a page at roughly sixteen live WebGL contexts, so a swap that leaked one would run out within a few rotations.</li>
+</ul>
+<p>Rotating a phone or narrowing a window pauses the game, swaps the view and keeps the run.</p>
+
+<h2>Moving code without changing it</h2>
+<p>Retro Labyrinth went first. The rule for the move was that code moved as it was and nothing was rewritten. The game's state and rules went into <code>useRetroLabyrinthSession</code>, the view now reads a typed snapshot and acts through named intents, and the presentation pieces went into shared parts. The view component went from 4,387 lines to about 1,430.</p>
+<p>"No gameplay change" is an easy claim to make about 57 changed files and a hard one to check by playing. Two things checked it instead:</p>
+<ul>
+  <li><strong>Replays.</strong> Five runs had been recorded on main before the move. After the move, all five replay to exactly the same result.</li>
+  <li><strong>Pixels.</strong> Screenshots at 1024, 1280 and 1440 pixels wide, with a frozen clock and seeded randomness, were compared against main. The launched and moved states are identical.</li>
+</ul>
+<p>The screenshot comparison earned its keep. It found that a developer-only view picker was showing in production builds, and that patrols started moving while the view's code was still downloading. The loop now runs only while a view has registered a painter and the room is not paused.</p>
+
+<h2>Generate the docs from the map</h2>
+<p>Keys and gamepad buttons now come from one action map. The cabinet's control list and the field manual's key column are generated from it, which fixed a small, old lie: the control list said the tools sat on keys 1 to 3, and the game read 1 to 5.</p>
+
+<h2>A retry is not a pass</h2>
+<p>The first CI run of that pull request failed device tests that had passed locally. They had passed locally because Playwright retried them. The summary said 120 passed, and the tests that only passed on a second attempt were counted inside that number. Device runs are now repeated with retries off before a pull request asks for review.</p>
+
+<h2>A report that was not a bug</h2>
+<p>A report said the touch controls in Working With Duck vanished after closing the wardrobe. They did, on purpose: a hardware Escape key had switched the input mode to keyboard, and the touch dock fades out until the next tap. The investigation was still worth it. The same dialog had close buttons with no accessible name and a heading order that skipped a level, and both are fixed.</p>
+
+<h2>Where it stands</h2>
+<p>One registry now decides, per game, whether the phone notice shows, which badge the hub card carries and which games the notice suggests instead. Two of the twelve games play on a phone today: Trial &amp; Error and Meme Vault. Retro Labyrinth's phone view is next. A game comes off the notice only after it has been played on a real phone and is fun there, not just when its tests pass.</p>
+
+<p>The <a href="/arcade">arcade</a> is open on desktop and tablet. On a phone, the notice points to the games that are ready.</p>
+`.trim(),
+  },
+  {
+    id: "fallback-blog-14",
+    slug: "coverage-counts-what-ran",
+    title: "Coverage Counts What Ran. Mutants Count What Was Checked.",
+    dek: "A mutation run over the study data derivations found weak spots that coverage missed, and one gap that was not in the tests at all but in the test data.",
+    pillar: "formal-verification",
+    tags: "mutation-testing, stryker, vitest, coverage, testing, clinical-data-systems",
+    published: true,
+    reading_time_minutes: 7,
+    hero_image_url: null,
+    created_at: new Date("2026-10-25T00:00:00.000Z"),
+    updated_at: new Date("2026-10-25T00:00:00.000Z"),
+    body: `
+<h2>What coverage cannot tell you</h2>
+<p>Line and branch coverage answer one question: did the tests execute this code? They say nothing about whether any test would notice if the code were wrong. A suite can run every line of a derivation and assert only that it returned an array.</p>
+<p>Mutation testing asks the second question directly. A tool (Stryker, here) makes small changes to the source one at a time: it flips a comparison, removes a <code>+ 1</code>, swaps <code>&amp;&amp;</code> for <code>||</code>. Then it runs the tests against each mutant. A mutant that no test kills is a change in behaviour your suite would have shipped.</p>
+
+<h2>The study data derivations</h2>
+<p>Until this week nothing mutation-tested the SDTM, ADaM and table derivations behind the <a href="/study-data">study data pipeline</a>. They sat under the library-wide coverage floor of 70% of branches, which is a low bar for code that decides who counts as having a treatment-emergent adverse event.</p>
+<p>The first run scored 80.65% over 1,891 mutants. The spread matters more than the total. Each file now has its own floor at its measured score: the ADaM core and the table filters at 91, the Kaplan-Meier code at 88, and the table assembly at 56. That last number is the honest one, and it is written into the configuration rather than averaged away.</p>
+<p>Writing tests aimed at the surviving mutants added 27 edge cases on hand-made SDTM fixtures: baseline ties on the first-dose day, age-group boundaries, overlapping analysis windows, year-only partial dates, censoring for a subject with no contact at all. Branch coverage on the ADaM core went from 82% to 96%, and on the event derivations from 76% to 91%.</p>
+
+<h2>A ratchet, not a target</h2>
+<p>The issue asked for 95% branch coverage across the module. Measured coverage after the new tests was 86.8%, and most of the remaining branches are <code>?? []</code> fallbacks that the public API cannot reach. Tests written to hit them would exercise paths that real inputs never take, only to move a number.</p>
+<p>I chose a ratchet instead. The floor is set at today's measurement (96% of statements, 86% of branches, 99% of functions and 96% of lines), and a test pins it so it can only go up. A target says where you wish you were. A ratchet says where you are and does not let you slide back.</p>
+
+<h2>The mutant that was a data problem</h2>
+<p>An independent QC suite programs the key derivations a second time from their specifications and compares them with the pipeline across 200 generated seeds. One mutant survives it anyway: move the end of the treatment-emergent window from fourteen days after last dose to thirteen, and nothing fails.</p>
+<p>The assertions are not the problem; the QC logic for that boundary is in place. The synthetic generator never lands an adverse event on that boundary, never writes a partial end date, and never discontinues a subject for any reason other than an adverse event. No assertion can catch a case the data never contains.</p>
+<p>That was the most useful thing the mutation run said. It points the fix at the test data rather than the tests: a library of deliberately messy scenarios, each with the findings it is expected to produce, is where those cases will come from.</p>
+
+<h2>What it costs</h2>
+<p>Mutation testing is slow, and the cost decides where it runs. The study data scope took 119 minutes on a loaded four-core container, so it runs weekly with a 150-minute bound, not on every pull request. The independent QC suite stays out of the mutation run: it costs about 30 seconds per re-import, which pushed the estimate past five hours.</p>
+<p>The tooling can fail too, and this time it failed loudly. Upgrading to Vitest 5 broke the Stryker runner: it built test-name filters with spaces, Vitest 5 joins test names with <code>" &gt; "</code>, and every mutant ran zero tests. The gate scored 0%. A zero is at least obviously wrong. A filter that matched half the tests would have produced a plausible number, and I would have believed it. Once the runner was updated, the pull request gate came back at 82.24%, the same as before the upgrade, which is the check that the upgrade changed nothing it should not have.</p>
+
+<h2>When to bother</h2>
+<p>Most code does not need this. Derivations do, along with anything where a wrong answer looks like a right one: a count that is off by the subjects on a boundary day still renders as a perfectly good table. For that kind of code, coverage tells you the tests were there. Mutants tell you they were paying attention.</p>
+`.trim(),
+  },
 ];
 
 /**

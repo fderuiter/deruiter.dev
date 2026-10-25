@@ -87,8 +87,10 @@ export const RetroLabyrinthClient: React.FC = () => {
           </div>
         </div>
 
-        {/* Game Container */}
-        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(244,63,94,0.1)] flex flex-col items-center">
+        {/* Game Container. From 1536px it widens past the text column, up
+            to 112rem with a 2rem gutter, so the maze's integer fit can take
+            the next whole step on 1920 and 2560 screens (#2842). */}
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/90 p-4 sm:p-6 shadow-[0_0_50px_rgba(244,63,94,0.1)] flex flex-col items-center 2xl:mx-[calc(50%-min(50vw-2rem,56rem))]">
           <PlayCabinet
             gameId="retro-labyrinth"
             title="Retro Labyrinth: Graveyard Roguelike"

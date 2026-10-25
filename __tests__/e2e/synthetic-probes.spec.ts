@@ -396,6 +396,14 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
       });
     });
   }
+
+  // #2648: the platform hub as the way in, from its capability map to a
+  // live route.
+  test("Probe 13: Platform hub capability map to the operations dashboard", async ({
+    page,
+  }) => {
+    await platformHubJourney(page);
+  });
 });
 
 async function studyDataJourney(page: Page) {
@@ -513,4 +521,36 @@ async function operationsJourney(page: Page) {
   // 3. Back walks the drill-down.
   await page.goBack();
   await expect(sites).toBeVisible({ timeout: 30_000 });
+}
+
+async function platformHubJourney(page: Page) {
+  const response = await page.goto("/platform", {
+    waitUntil: "domcontentloaded",
+  });
+  // The platform routes ship after the Clinical v1 hold (#2691); until
+  // production has them, the daily probe of the deployed origin skips here.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/platform is not deployed to the probed origin yet (#2691)"
+  );
+  expect(response?.status()).toBe(200);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Clinical Data Platform" })
+  ).toBeVisible();
+
+  // The reporting capability links its live route.
+  const reporting = page
+    .locator("article")
+    .filter({ hasText: "Dashboards & operational reporting" });
+  await expect(async () => {
+    await reporting
+      .getByRole("link", { name: "Operations dashboards" })
+      .click();
+    await expect(page).toHaveURL(/\/platform\/operations\/?$/, {
+      timeout: 5_000,
+    });
+  }).toPass({ timeout: 15_000 });
+  await expect(
+    page.locator('section[aria-labelledby="operations-glance"]')
+  ).toContainText("1,228", { timeout: 60_000 });
 }

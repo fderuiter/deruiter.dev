@@ -1,5 +1,6 @@
 "use client";
 
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 import React, { useState, useEffect, useMemo } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import type {
@@ -604,7 +605,7 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
           }`}
         >
           <IconCode className="w-4 h-4 text-purple-400" />
-          <span>CDISC USDM v4.0 (.json)</span>
+          <span>CDISC USDM v{CLINICAL_STANDARDS_PROFILE.USDM} (.json)</span>
         </button>
 
         <button

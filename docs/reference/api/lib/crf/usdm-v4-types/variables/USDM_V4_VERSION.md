@@ -6,6 +6,6 @@
 
 # Variable: USDM\_V4\_VERSION
 
-> `const` **USDM\_V4\_VERSION**: `"4.0.0"` = `"4.0.0"`
+> `const` **USDM\_V4\_VERSION**: `string` = `CLINICAL_STANDARDS_PROFILE.USDM`
 
 The USDM release these types and the adapter's export target.

@@ -1,0 +1,56 @@
+{
+  "format": 1,
+  "name": "retro-labyrinth/emp-dash",
+  "seed": 2376,
+  "steps": 600,
+  "actions": [
+    { "at": 5, "intent": " " },
+    { "at": 8, "intent": "ArrowRight" },
+    { "at": 11, "intent": "ArrowRight" },
+    { "at": 14, "intent": "ArrowDown" },
+    { "at": 17, "intent": "ArrowDown" },
+    { "at": 20, "intent": "ArrowRight" },
+    { "at": 23, "intent": "ArrowRight" },
+    { "at": 26, "intent": "ArrowUp" },
+    { "at": 29, "intent": "ArrowUp" },
+    { "at": 32, "intent": "ArrowRight" },
+    { "at": 35, "intent": "ArrowRight" },
+    { "at": 38, "intent": "ArrowRight" },
+    { "at": 41, "intent": "ArrowRight" },
+    { "at": 44, "intent": "ArrowRight" },
+    { "at": 47, "intent": "ArrowRight" },
+    { "at": 50, "intent": "ArrowRight" },
+    { "at": 53, "intent": "ArrowRight" },
+    { "at": 56, "intent": "ArrowDown" },
+    { "at": 59, "intent": "ArrowDown" },
+    { "at": 62, "intent": "ArrowDown" },
+    { "at": 65, "intent": "ArrowDown" },
+    { "at": 68, "intent": "ArrowDown" },
+    { "at": 71, "intent": "ArrowDown" },
+    { "at": 300, "intent": "Enter" },
+    { "at": 330, "intent": "Enter" },
+    { "at": 360, "intent": "Enter" }
+  ],
+  "state": {
+    "data": {
+      "data-exit-cell": "13,7",
+      "data-exit-locked": "false",
+      "data-grid": "###############|#....#...#....#|#.##.#.#.#.##.#|#.#....#....#.#|#.#.##.#.##.#.#|#...#.....#...#|###.#.###.#.###|#.....#...#...#|###############",
+      "data-nodes": "",
+      "data-patrol-cells": "6,5;10,1",
+      "data-player-cell": "1,1",
+      "data-threat": "none"
+    },
+    "outputs": [
+      "Score: 1010",
+      "High Score: 1010",
+      "Stage: 2",
+      "Game Status: playing",
+      "Player Location: Grid (1, 1)",
+      "Cyberdeck Integrity: 80 / 80 HP",
+      "Active Cyberdeck Weapon: npm_install",
+      "Bypass Chips: 2"
+    ],
+    "text": "Game mode, class & displayNetrunner Breach: ACTIVEClick Subnet to Focus & Hack⚡Script KiddieManual ?FullscreenEmeraldAmberMatrixCRTGraveyard RoguelikeSubnet 01Subnet 02 (Firewall)SYSTEM_LABYRINTH.EXE · ROOM 02 :: ACTIVE DIRECTORYRoom 2 of 6[Active Directory & Intranet]HP80RAM24🪙150 CryptoSCORE: 1010(BEST 1010)OBJECTIVE · REACH THE EXIT: guide your netrunner to the EXIT (bottom right). Bugs and drones cost HP.Retro Labyrinth Dungeon Crawl State and ControlsScore: 1010High Score: 1010Stage: 2Game Status: playingPlayer Location: Grid (1, 1)Cyberdeck Integrity: 80 / 80 HPActive Cyberdeck Weapon: npm_installBypass Chips: 2Move North / UpMove South / DownMove West / LeftMove East / RightExecute Selected Cyber Attack (npm_install)Consume Bypass ChipRestart Dungeon Simulation[1] npm i(12)[2] Port Scan(99)[3/SPACE] EMP(998)[4] ---[5] ---🛒 MarketMarket opens at the rest stopWASD / ARROWS · 1-3: TOOLS · SPACE: EMP · P / ESC: PAUSE · C: CRTEXPLOITEMP"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "format": 1,
+  "name": "retro-labyrinth/pause",
+  "seed": 2376,
+  "steps": 480,
+  "actions": [
+    { "at": 10, "intent": "ArrowRight" },
+    { "at": 15, "intent": "ArrowRight" },
+    { "at": 20, "intent": "ArrowDown" },
+    { "at": 25, "intent": "ArrowDown" },
+    { "at": 30, "intent": "ArrowRight" },
+    { "at": 35, "intent": "ArrowRight" },
+    { "at": 60, "intent": "p" },
+    { "at": 300, "intent": "Escape" },
+    { "at": 320, "intent": "ArrowUp" },
+    { "at": 325, "intent": "ArrowUp" },
+    { "at": 330, "intent": "ArrowRight" },
+    { "at": 335, "intent": "ArrowRight" },
+    { "at": 340, "intent": "ArrowRight" },
+    { "at": 345, "intent": "ArrowRight" },
+    { "at": 350, "intent": "ArrowRight" },
+    { "at": 355, "intent": "ArrowRight" },
+    { "at": 360, "intent": "ArrowRight" },
+    { "at": 365, "intent": "ArrowRight" },
+    { "at": 370, "intent": "ArrowDown" },
+    { "at": 375, "intent": "ArrowDown" },
+    { "at": 380, "intent": "ArrowDown" },
+    { "at": 385, "intent": "ArrowDown" },
+    { "at": 390, "intent": "ArrowDown" },
+    { "at": 395, "intent": "ArrowDown" }
+  ],
+  "state": {
+    "data": {
+      "data-exit-cell": "13,7",
+      "data-exit-locked": "false",
+      "data-grid": "###############|#...#.........#|#.#.#.#####.#.#|#.#.......#.#.#|#.#######.#.#.#|#.#.....#.#.#.#|#.#.###.#.#.#.#|#...#.......#.#|###############",
+      "data-nodes": "",
+      "data-patrol-cells": "10,1;10,7",
+      "data-player-cell": "11,7",
+      "data-threat": "none"
+    },
+    "outputs": [
+      "Score: 0",
+      "High Score: 0",
+      "Stage: 1",
+      "Game Status: playing",
+      "Player Location: Grid (11, 7)",
+      "Cyberdeck Integrity: 30 / 80 HP",
+      "Active Cyberdeck Weapon: npm_install",
+      "Bypass Chips: 2"
+    ],
+    "text": "Game mode, class & displayNetrunner Breach: ACTIVEClick Subnet to Focus & Hack⚡Script KiddieManual ?FullscreenEmeraldAmberMatrixCRTGraveyard RoguelikeSubnet 01Subnet 02 (Firewall)SYSTEM_LABYRINTH.EXE · ROOM 01 :: DMZ PERIMETERRoom 1 of 6[DMZ Gateway (Subnet 01)]HP30RAM24🪙0 CryptoSCORE: 0OBJECTIVE · REACH THE EXIT: guide your netrunner to the EXIT (bottom right). Bugs and drones cost HP.Retro Labyrinth Dungeon Crawl State and ControlsScore: 0High Score: 0Stage: 1Game Status: playingPlayer Location: Grid (11, 7)Cyberdeck Integrity: 30 / 80 HPActive Cyberdeck Weapon: npm_installBypass Chips: 2Move North / UpMove South / DownMove West / LeftMove East / RightExecute Selected Cyber Attack (npm_install)Consume Bypass ChipRestart Dungeon Simulation[1] npm i(12)[2] Port Scan(99)[3/SPACE] EMP(999)[4] ---[5] ---🛒 MarketMarket opens at the rest stopWASD / ARROWS · 1-3: TOOLS · SPACE: EMP · P / ESC: PAUSE · C: CRTEXPLOITEMP"
+  }
+}

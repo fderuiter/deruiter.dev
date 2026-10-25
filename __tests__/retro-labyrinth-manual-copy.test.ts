@@ -45,7 +45,7 @@ describe("Retro Labyrinth manual copy (#1179)", () => {
       expect(cls.starterWeapons).toHaveLength(3);
     }
     expect(RUN_LOADOUT_SLOTS).toBe(5);
-    expect(deploy?.key).toBe("1 to 5 Keys");
+    expect(deploy?.key).toBe("1-5");
   });
 
   // #1667: Nmap Port Recon is key 2 for the default class, not key 1.

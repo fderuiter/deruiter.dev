@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React, { useState, useEffect, useRef } from "react";
 import { StudyProtocol, StudyBranding } from "@/lib/crf/types";
 import { getStudyBranding } from "@/lib/crf/branding-defaults";
@@ -335,7 +336,8 @@ export const ExportDocumentModal: React.FC<ExportDocumentModalProps> = ({
                 <span>Annotated Submission aCRF</span>
               </div>
               <p className="text-[11px] text-zinc-400 font-sans">
-                CDISC SDTMIG v3.4 / CDASH v2.2 variable tags, origin badges, and
+                CDISC {standardCitation("SDTMIG")} /{" "}
+                {standardCitation("CDASHIG")} variable tags, origin badges, and
                 regulatory submission metadata.
               </p>
             </button>

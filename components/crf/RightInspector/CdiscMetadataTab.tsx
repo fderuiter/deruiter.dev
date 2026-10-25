@@ -1,5 +1,6 @@
 "use client";
 
+import { standardCitation } from "@/lib/study-data/standards";
 import React from "react";
 import { CRFField, CRFForm, CdashVariableMetadata } from "@/lib/crf/types";
 import { CDASH_STANDARD_VARIABLES } from "@/lib/crf/cdisc-cdash-library";
@@ -48,7 +49,7 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-mono uppercase text-zinc-400 font-semibold flex items-center gap-1.5">
           <IconDatabase className="w-3.5 h-3.5 text-brand-cyan" />
-          CDASH 2.2 / SDTM Mapping
+          {standardCitation("CDASHIG")} / SDTM Mapping
         </span>
         <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 border border-zinc-800 text-brand-cyan">
           Domain: {form.domain}
@@ -86,7 +87,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           <input
             type="text"
             value={cdashMeta.domain}
-            onChange={(e) => handleUpdateCdash({ domain: e.target.value.toUpperCase() })}
+            onChange={(e) =>
+              handleUpdateCdash({ domain: e.target.value.toUpperCase() })
+            }
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:border-brand-cyan focus:outline-none"
           />
         </div>
@@ -98,7 +101,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           <input
             type="text"
             value={cdashMeta.sdtmVariable}
-            onChange={(e) => handleUpdateCdash({ sdtmVariable: e.target.value.toUpperCase() })}
+            onChange={(e) =>
+              handleUpdateCdash({ sdtmVariable: e.target.value.toUpperCase() })
+            }
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono uppercase focus:border-brand-cyan focus:outline-none"
           />
         </div>
@@ -113,7 +118,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           <select
             value={cdashMeta.core}
             onChange={(e) =>
-              handleUpdateCdash({ core: e.target.value as CdashVariableMetadata["core"] })
+              handleUpdateCdash({
+                core: e.target.value as CdashVariableMetadata["core"],
+              })
             }
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none"
           >
@@ -130,7 +137,9 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
           <input
             type="text"
             value={cdashMeta.nciConceptId || ""}
-            onChange={(e) => handleUpdateCdash({ nciConceptId: e.target.value })}
+            onChange={(e) =>
+              handleUpdateCdash({ nciConceptId: e.target.value })
+            }
             className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-white font-mono focus:border-brand-cyan focus:outline-none"
             placeholder="e.g. C49487"
           />
@@ -140,17 +149,21 @@ export const CdiscMetadataTab: React.FC<CdiscMetadataTabProps> = ({
       {/* Annotated CRF (aCRF) Submission Label */}
       <div>
         <label className="block text-[11px] font-mono text-zinc-400 mb-1">
-          Annotated CRF (aCRF) Text Overlay <span className="text-brand-cyan">*</span>
+          Annotated CRF (aCRF) Text Overlay{" "}
+          <span className="text-brand-cyan">*</span>
         </label>
         <input
           type="text"
           value={cdashMeta.acrfAnnotation}
-          onChange={(e) => handleUpdateCdash({ acrfAnnotation: e.target.value })}
+          onChange={(e) =>
+            handleUpdateCdash({ acrfAnnotation: e.target.value })
+          }
           className="w-full px-2.5 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-brand-cyan font-mono text-xs focus:border-brand-cyan focus:outline-none"
           placeholder="e.g. AE.AESTDTC or VS.VSSTRESN [VSTESTCD=HEIGHT]"
         />
         <p className="text-[10px] text-zinc-500 mt-1 font-sans">
-          This string renders directly on the visual Annotated CRF overlay for regulatory submission (FDA/PMDA).
+          This string renders directly on the visual Annotated CRF overlay for
+          regulatory submission (FDA/PMDA).
         </p>
       </div>
     </div>

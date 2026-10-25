@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useCallback, useState } from "react";
-import dynamic from "next/dynamic";
+import React from "react";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import { DesktopOnlyGate } from "@/components/arcade/DesktopOnlyGate";
+import { defineGameViews } from "@/components/arcade/views";
+import { RetroLabyrinthCabinetSession } from "@/components/retro-labyrinth/RetroLabyrinthSession";
+import { LABYRINTH_CONTROLS } from "@/lib/retro-labyrinth/actions";
 import Link from "next/link";
 import {
   IconDeviceGamepad2,
@@ -19,25 +21,22 @@ import {
 const RetroLabyrinthLoader = () =>
   import("@/components/RetroLabyrinth").then((mod) => mod.RetroLabyrinth);
 
-const DynamicRetroLabyrinth = dynamic(RetroLabyrinthLoader, {
-  ssr: false,
-  loading: () => (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[380px] font-mono text-xs text-zinc-400">
-      <div className="w-8 h-8 border-2 border-rose-500/30 border-t-rose-500 rounded-full animate-spin mb-4" />
-      <span>Building the dungeon...</span>
-    </div>
-  ),
+/**
+ * The cabinet's views (ADR 0062). One session holds the run above them
+ * (#2376); the tablet and phone views borrow the desktop layout until their
+ * own passes, and the room adapts to the touch cabinet as before.
+ */
+const RETRO_LABYRINTH_VIEWS = defineGameViews({
+  session: RetroLabyrinthCabinetSession,
+  desktop: () =>
+    import("@/components/RetroLabyrinth").then((mod) => ({
+      default: mod.RetroLabyrinthCabinetView,
+    })),
+  tablet: "desktop",
+  phone: "desktop",
 });
 
 export const RetroLabyrinthClient: React.FC = () => {
-  // Counts the moments a phone cabinet should pause (ADR 0061). The game
-  // reacts to each change by pausing a running room; resuming is its choice.
-  const [autoPauseCount, setAutoPauseCount] = useState(0);
-  const handleAutoPause = useCallback(
-    () => setAutoPauseCount((count) => count + 1),
-    []
-  );
-
   return (
     <div className="min-h-screen text-white pb-24 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
@@ -95,26 +94,12 @@ export const RetroLabyrinthClient: React.FC = () => {
               subtitle="There Are Bugs in the Dungeon"
               icon={<IconDeviceGamepad2 className="w-8 h-8 text-rose-400" />}
               instructions="Explore a shifting dungeon made from abandoned codebases. Fight bugs, find your way through the fog, and face a wireframe boss with an unreasonable number of angles."
-              controls={[
-                { key: "WASD / Arrows", action: "Move" },
-                { key: "1-3", action: "Fire Class Tools" },
-                { key: "Space", action: "EMP Burst" },
-                { key: "C", action: "CRT Scanlines" },
-                { key: "P / Esc", action: "Pause" },
-                { key: "Enter / R", action: "Continue / Retry" },
-              ]}
+              controls={[...LABYRINTH_CONTROLS]}
               importComponent={RetroLabyrinthLoader}
               mobileOrientation="landscape"
               mobileLayout="fit"
-              onAutoPause={handleAutoPause}
-            >
-              <div className="flex flex-col items-center w-full min-h-0 flex-1">
-                <DynamicRetroLabyrinth
-                  isMounted={true}
-                  autoPauseCount={autoPauseCount}
-                />
-              </div>
-            </PlayCabinet>
+              views={RETRO_LABYRINTH_VIEWS}
+            />
           </DesktopOnlyGate>
         </div>
 

@@ -12,7 +12,7 @@ One table as written in the schema.
 
 ### classification
 
-> `readonly` **classification**: [`DataClassification`](../../../../types/type-aliases/DataClassification.md)
+> `readonly` **classification**: [`DataClassification`](../../../../types/platform/type-aliases/DataClassification.md)
 
 Default classification of the table's columns.
 
@@ -38,13 +38,13 @@ Default classification of the table's columns.
 
 ### kind
 
-> `readonly` **kind**: [`WarehouseTableKind`](../../../../types/type-aliases/WarehouseTableKind.md)
+> `readonly` **kind**: [`WarehouseTableKind`](../../../../types/platform/type-aliases/WarehouseTableKind.md)
 
 ***
 
 ### layer
 
-> `readonly` **layer**: [`WarehouseLayer`](../../../../types/type-aliases/WarehouseLayer.md)
+> `readonly` **layer**: [`WarehouseLayer`](../../../../types/platform/type-aliases/WarehouseLayer.md)
 
 ***
 
@@ -62,7 +62,7 @@ Default classification of the table's columns.
 
 ### scd2?
 
-> `readonly` `optional` **scd2?**: [`Scd2Definition`](../../../../types/interfaces/Scd2Definition.md)
+> `readonly` `optional` **scd2?**: [`Scd2Definition`](../../../../types/platform/interfaces/Scd2Definition.md)
 
 ***
 

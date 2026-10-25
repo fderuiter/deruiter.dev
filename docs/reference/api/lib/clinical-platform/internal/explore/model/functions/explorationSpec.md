@@ -6,7 +6,7 @@
 
 # Function: explorationSpec()
 
-> **explorationSpec**(`exploration`, `visual`, `metrics?`): [`ReportSpec`](../../../../types/interfaces/ReportSpec.md)
+> **explorationSpec**(`exploration`, `visual`, `metrics?`): [`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)
 
 The exploratory report spec an exploration builds. Nobody owns or has
 reviewed it, and the spec says so; `promotionSteps` lists what a person
@@ -16,25 +16,25 @@ has to do before it can become a managed or certified report.
 
 ### exploration
 
-[`Exploration`](../../../../types/interfaces/Exploration.md)
+[`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration.
 
 ### visual
 
-[`ReportVisual`](../../../../types/type-aliases/ReportVisual.md)
+[`ReportVisual`](../../../../types/platform/type-aliases/ReportVisual.md)
 
 The visual to draw it with.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`ReportSpec`](../../../../types/interfaces/ReportSpec.md)
+[`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)
 
 The spec.
 

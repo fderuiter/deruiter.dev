@@ -18,13 +18,13 @@ order, so every foreign key's target exists before it is referenced.
 
 ### schema
 
-[`WarehouseSchema`](../../../../types/interfaces/WarehouseSchema.md)
+[`WarehouseSchema`](../../../../types/warehouse/interfaces/WarehouseSchema.md)
 
 The schema, normally `WAREHOUSE_SCHEMA`.
 
 ### dialect
 
-[`SqlDialect`](../../../../types/type-aliases/SqlDialect.md)
+[`SqlDialect`](../../../../types/platform/type-aliases/SqlDialect.md)
 
 `duckdb`, `postgres` or `tsql`.
 

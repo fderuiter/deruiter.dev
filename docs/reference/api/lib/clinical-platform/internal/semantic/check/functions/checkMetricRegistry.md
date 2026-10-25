@@ -6,7 +6,7 @@
 
 # Function: checkMetricRegistry()
 
-> **checkMetricRegistry**(`metrics?`): [`MetricFinding`](../../../../types/interfaces/MetricFinding.md)[]
+> **checkMetricRegistry**(`metrics?`): [`MetricFinding`](../../../../types/semantic/interfaces/MetricFinding.md)[]
 
 Checks metric definitions against the gold model and the registry's rules.
 A definition must read gold tables and columns that exist, with types its
@@ -21,12 +21,12 @@ and names must be unique.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 Definitions to check; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`MetricFinding`](../../../../types/interfaces/MetricFinding.md)[]
+[`MetricFinding`](../../../../types/semantic/interfaces/MetricFinding.md)[]
 
 Every broken rule; empty when the registry is sound.

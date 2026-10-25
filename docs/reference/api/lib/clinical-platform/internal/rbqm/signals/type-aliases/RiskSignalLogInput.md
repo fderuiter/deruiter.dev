@@ -6,6 +6,6 @@
 
 # Type Alias: RiskSignalLogInput
 
-> **RiskSignalLogInput** = `Omit`\<[`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md), `"sequence"`\>
+> **RiskSignalLogInput** = `Omit`\<[`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md), `"sequence"`\>
 
 A new entry, before the log gives it its sequence number.

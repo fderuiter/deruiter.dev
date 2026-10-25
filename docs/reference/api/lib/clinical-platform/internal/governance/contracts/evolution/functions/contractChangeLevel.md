@@ -6,7 +6,7 @@
 
 # Function: contractChangeLevel()
 
-> **contractChangeLevel**(`previous`, `next`): [`ContractChangeLevel`](../../../../../types/type-aliases/ContractChangeLevel.md)
+> **contractChangeLevel**(`previous`, `next`): [`ContractChangeLevel`](../../../../../types/governance/type-aliases/ContractChangeLevel.md)
 
 The version bump a contract change needs: the largest of its differences.
 
@@ -14,18 +14,18 @@ The version bump a contract change needs: the largest of its differences.
 
 ### previous
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)
 
 The earlier contract.
 
 ### next
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)
 
 The later contract.
 
 ## Returns
 
-[`ContractChangeLevel`](../../../../../types/type-aliases/ContractChangeLevel.md)
+[`ContractChangeLevel`](../../../../../types/governance/type-aliases/ContractChangeLevel.md)
 
 `none` when nothing changed.

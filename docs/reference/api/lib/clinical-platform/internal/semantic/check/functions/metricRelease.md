@@ -6,7 +6,7 @@
 
 # Function: metricRelease()
 
-> **metricRelease**(`metric`): [`MetricRelease`](../../../../types/interfaces/MetricRelease.md)
+> **metricRelease**(`metric`): [`MetricRelease`](../../../../types/semantic/interfaces/MetricRelease.md)
 
 The release record of a metric: its id, version, status and contract, the
 part of the definition that decides its values.
@@ -15,12 +15,12 @@ part of the definition that decides its values.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 Metric definition.
 
 ## Returns
 
-[`MetricRelease`](../../../../types/interfaces/MetricRelease.md)
+[`MetricRelease`](../../../../types/semantic/interfaces/MetricRelease.md)
 
 The release, as the registry lock file records it.

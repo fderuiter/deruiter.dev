@@ -6,7 +6,7 @@
 
 # Function: checkDataProducts()
 
-> **checkDataProducts**(`products`, `contracts`): [`DataContractFinding`](../../../../../types/interfaces/DataContractFinding.md)[]
+> **checkDataProducts**(`products`, `contracts`): [`DataContractFinding`](../../../../../types/governance/interfaces/DataContractFinding.md)[]
 
 Checks the product registry: every warehouse table and the study data
 are registered and nothing else is; each product has an owner and a
@@ -18,18 +18,18 @@ and a primary key made of required, declared columns.
 
 ### products
 
-readonly [`DataProduct`](../../../../../types/interfaces/DataProduct.md)[]
+readonly [`DataProduct`](../../../../../types/platform/interfaces/DataProduct.md)[]
 
 Products, from `dataProducts`.
 
 ### contracts
 
-readonly [`DataContract`](../../../../../types/interfaces/DataContract.md)[]
+readonly [`DataContract`](../../../../../types/platform/interfaces/DataContract.md)[]
 
 Their contracts, from `dataContracts`.
 
 ## Returns
 
-[`DataContractFinding`](../../../../../types/interfaces/DataContractFinding.md)[]
+[`DataContractFinding`](../../../../../types/governance/interfaces/DataContractFinding.md)[]
 
 Every broken rule; empty when the registry is sound.

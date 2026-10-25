@@ -14,7 +14,7 @@ The state of each signal in a log: its last event.
 
 ### log
 
-readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 A risk signal log.
 

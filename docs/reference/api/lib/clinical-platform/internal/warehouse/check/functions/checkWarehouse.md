@@ -6,7 +6,7 @@
 
 # Function: checkWarehouse()
 
-> **checkWarehouse**(`schema`, `warehouse`): [`WarehouseFinding`](../../../../types/interfaces/WarehouseFinding.md)[]
+> **checkWarehouse**(`schema`, `warehouse`): [`WarehouseFinding`](../../../../types/warehouse/interfaces/WarehouseFinding.md)[]
 
 Checks a warehouse against its schema: every table and column present,
 every value of its column's type, nullability and length, one row per
@@ -18,18 +18,18 @@ non-overlapping with one current version per member.
 
 ### schema
 
-[`WarehouseSchema`](../../../../types/interfaces/WarehouseSchema.md)
+[`WarehouseSchema`](../../../../types/warehouse/interfaces/WarehouseSchema.md)
 
 The schema, normally `WAREHOUSE_SCHEMA`.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 Rows from `buildWarehouse`.
 
 ## Returns
 
-[`WarehouseFinding`](../../../../types/interfaces/WarehouseFinding.md)[]
+[`WarehouseFinding`](../../../../types/warehouse/interfaces/WarehouseFinding.md)[]
 
 Findings; empty when every invariant holds.

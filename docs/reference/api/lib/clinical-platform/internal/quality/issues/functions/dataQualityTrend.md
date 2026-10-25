@@ -6,7 +6,7 @@
 
 # Function: dataQualityTrend()
 
-> **dataQualityTrend**(`warehouse`, `run`, `log`, `weeks?`): [`DqTrendPoint`](../../../../types/interfaces/DqTrendPoint.md)[]
+> **dataQualityTrend**(`warehouse`, `run`, `log`, `weeks?`): [`DqTrendPoint`](../../../../types/quality/interfaces/DqTrendPoint.md)[]
 
 The scorecard at the end of each of the weeks up to the data cut.
 
@@ -14,7 +14,7 @@ The scorecard at the end of each of the weeks up to the data cut.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ### run
 
@@ -22,7 +22,7 @@ The scorecard at the end of each of the weeks up to the data cut.
 
 ### log
 
-readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
+readonly [`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)[]
 
 ### weeks?
 
@@ -32,7 +32,7 @@ Weeks to cover, from 1 to 52; the last ends on the cut.
 
 ## Returns
 
-[`DqTrendPoint`](../../../../types/interfaces/DqTrendPoint.md)[]
+[`DqTrendPoint`](../../../../types/quality/interfaces/DqTrendPoint.md)[]
 
 ## Throws
 

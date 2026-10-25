@@ -6,7 +6,7 @@
 
 # Function: dropRow()
 
-> **dropRow**(`warehouse`, `table`, `match`): [`Warehouse`](../../../../types/interfaces/Warehouse.md)
+> **dropRow**(`warehouse`, `table`, `match`): [`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A copy of the warehouse without the first row of a table that matches.
 
@@ -14,7 +14,7 @@ A copy of the warehouse without the first row of a table that matches.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ### table
 
@@ -26,4 +26,4 @@ A copy of the warehouse without the first row of a table that matches.
 
 ## Returns
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)

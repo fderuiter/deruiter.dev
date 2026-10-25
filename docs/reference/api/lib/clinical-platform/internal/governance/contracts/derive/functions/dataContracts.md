@@ -6,7 +6,7 @@
 
 # Function: dataContracts()
 
-> **dataContracts**(`run`): [`DataContract`](../../../../../types/interfaces/DataContract.md)[]
+> **dataContracts**(`run`): [`DataContract`](../../../../../types/platform/interfaces/DataContract.md)[]
 
 Every data contract in force: one per silver and gold table, and one for
 the Study Data Pipeline's SDTM and ADaM output covering each of its
@@ -24,6 +24,6 @@ A Study Data Pipeline run, which supplies the dataset
 
 ## Returns
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)[]
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)[]
 
 The contracts, warehouse tables in schema order, then the study data.

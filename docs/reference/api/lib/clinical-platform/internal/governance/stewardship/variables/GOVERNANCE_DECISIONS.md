@@ -6,6 +6,6 @@
 
 # Variable: GOVERNANCE\_DECISIONS
 
-> `const` **GOVERNANCE\_DECISIONS**: readonly [`GovernanceDecision`](../../../../types/interfaces/GovernanceDecision.md)[]
+> `const` **GOVERNANCE\_DECISIONS**: readonly [`GovernanceDecision`](../../../../types/governance/interfaces/GovernanceDecision.md)[]
 
 Who does what in each key decision.

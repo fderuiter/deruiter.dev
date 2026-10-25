@@ -6,7 +6,7 @@
 
 # Function: checkReportSpec()
 
-> **checkReportSpec**(`spec`, `metrics?`): [`ReportFinding`](../../../../types/interfaces/ReportFinding.md)[]
+> **checkReportSpec**(`spec`, `metrics?`): [`ReportFinding`](../../../../types/reporting/interfaces/ReportFinding.md)[]
 
 Checks a report spec against the reporting rules:
 
@@ -22,18 +22,18 @@ Checks a report spec against the reporting rules:
 
 ### spec
 
-[`ReportSpec`](../../../../types/interfaces/ReportSpec.md)
+[`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)
 
 The spec.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`ReportFinding`](../../../../types/interfaces/ReportFinding.md)[]
+[`ReportFinding`](../../../../types/reporting/interfaces/ReportFinding.md)[]
 
 One finding per broken rule; empty when the report may be built.

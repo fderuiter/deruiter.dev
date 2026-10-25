@@ -6,7 +6,7 @@
 
 # Function: centralMonitoring()
 
-> **centralMonitoring**(`warehouse`, `studyId`, `fdr?`): [`CsmRun`](../../../../types/interfaces/CsmRun.md)
+> **centralMonitoring**(`warehouse`, `studyId`, `fdr?`): [`CsmRun`](../../../../types/rbqm/interfaces/CsmRun.md)
 
 Runs the central statistical monitoring tests on one study's sites.
 
@@ -14,7 +14,7 @@ Runs the central statistical monitoring tests on one study's sites.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A warehouse from `buildWarehouse`.
 
@@ -32,7 +32,7 @@ False discovery rate, above 0 and below 1.
 
 ## Returns
 
-[`CsmRun`](../../../../types/interfaces/CsmRun.md)
+[`CsmRun`](../../../../types/rbqm/interfaces/CsmRun.md)
 
 Every test at every site with enough data, with what was left out and why.
 

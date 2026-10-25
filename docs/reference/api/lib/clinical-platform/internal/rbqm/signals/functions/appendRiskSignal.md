@@ -6,7 +6,7 @@
 
 # Function: appendRiskSignal()
 
-> **appendRiskSignal**(`log`, `entry`): readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+> **appendRiskSignal**(`log`, `entry`): readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 Appends one entry to a risk signal log.
 
@@ -14,7 +14,7 @@ Appends one entry to a risk signal log.
 
 ### log
 
-readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 The log so far; it is not changed.
 
@@ -26,7 +26,7 @@ The new entry, without its sequence number.
 
 ## Returns
 
-readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 A new, frozen log with the entry at the end.
 

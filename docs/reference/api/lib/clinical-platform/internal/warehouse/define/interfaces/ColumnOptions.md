@@ -12,7 +12,7 @@ Optional settings of one column.
 
 ### classification?
 
-> `readonly` `optional` **classification?**: [`DataClassification`](../../../../types/type-aliases/DataClassification.md)
+> `readonly` `optional` **classification?**: [`DataClassification`](../../../../types/platform/type-aliases/DataClassification.md)
 
 Classification, when it differs from the table's.
 

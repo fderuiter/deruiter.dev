@@ -6,6 +6,6 @@
 
 # Variable: DQ\_DIMENSIONS
 
-> `const` **DQ\_DIMENSIONS**: readonly [`DqDimension`](../../types/type-aliases/DqDimension.md)[]
+> `const` **DQ\_DIMENSIONS**: readonly [`DqDimension`](../../types/platform/type-aliases/DqDimension.md)[]
 
 Data quality dimensions, after DAMA-DMBOK.

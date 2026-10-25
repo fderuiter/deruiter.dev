@@ -103,7 +103,10 @@ everything under `internal/` is private. Each stage gets its own folder:
 
 The public types (`Portfolio`, `Study`, `Site`, `DataProduct`,
 `DataContract`, `MetricDefinition`, `DqRule`, `LineageEdge`) are the shared
-vocabulary every stage and consumer uses. The engine is pure TypeScript with
+vocabulary every stage and consumer uses. `types.ts` is a barrel over
+`types/`, one file per stage plus `types/platform.ts` for the contracts
+more than one stage shares, so changes to different stages touch different
+files (#2790). A stage file imports only from `types/platform.ts`. The engine is pure TypeScript with
 no DOM, React, Worker or network dependency, and seeded like ADR 0065's
 pipeline, so it can be reviewed on unit tests and golden files before any
 page exists. It reuses `lib/crf/` (FHIR, ODM, e-signature) and

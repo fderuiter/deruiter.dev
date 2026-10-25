@@ -6,7 +6,7 @@
 
 # Function: applyDqScenario()
 
-> **applyDqScenario**(`warehouse`, `scenarioId`): [`Warehouse`](../../../../types/interfaces/Warehouse.md)
+> **applyDqScenario**(`warehouse`, `scenarioId`): [`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A copy of a warehouse with one named defect in it.
 
@@ -14,7 +14,7 @@ A copy of a warehouse with one named defect in it.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ### scenarioId
 
@@ -22,7 +22,7 @@ A copy of a warehouse with one named defect in it.
 
 ## Returns
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ## Throws
 

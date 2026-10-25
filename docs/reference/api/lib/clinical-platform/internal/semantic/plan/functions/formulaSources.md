@@ -14,7 +14,7 @@ The tables a formula reads, in numerator-then-denominator order.
 
 ### formula
 
-[`MetricFormula`](../../../../types/type-aliases/MetricFormula.md)
+[`MetricFormula`](../../../../types/platform/type-aliases/MetricFormula.md)
 
 ## Returns
 

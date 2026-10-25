@@ -6,7 +6,7 @@
 
 # Function: explorationChoices()
 
-> **explorationChoices**(`exploration`, `metrics?`): [`ExplorationChoices`](../../../../types/interfaces/ExplorationChoices.md)
+> **explorationChoices**(`exploration`, `metrics?`): [`ExplorationChoices`](../../../../types/explore/interfaces/ExplorationChoices.md)
 
 What can change in an exploration next without breaking it: each
 dimension that can be added or removed, each dimension the metric may be
@@ -16,18 +16,18 @@ filtered by, and each visual that fits the grouping.
 
 ### exploration
 
-[`Exploration`](../../../../types/interfaces/Exploration.md)
+[`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`ExplorationChoices`](../../../../types/interfaces/ExplorationChoices.md)
+[`ExplorationChoices`](../../../../types/explore/interfaces/ExplorationChoices.md)
 
 The choices; all empty when the explorer does not offer the metric.

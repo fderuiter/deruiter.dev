@@ -6,7 +6,7 @@
 
 # Function: parquetType()
 
-> **parquetType**(`column`): [`ParquetColumnType`](../../../../types/interfaces/ParquetColumnType.md)
+> **parquetType**(`column`): [`ParquetColumnType`](../../../../types/warehouse/interfaces/ParquetColumnType.md)
 
 Parquet type for a column: physical type, logical annotation and repetition.
 
@@ -14,8 +14,8 @@ Parquet type for a column: physical type, logical annotation and repetition.
 
 ### column
 
-[`WarehouseColumn`](../../../../types/interfaces/WarehouseColumn.md)
+[`WarehouseColumn`](../../../../types/platform/interfaces/WarehouseColumn.md)
 
 ## Returns
 
-[`ParquetColumnType`](../../../../types/interfaces/ParquetColumnType.md)
+[`ParquetColumnType`](../../../../types/warehouse/interfaces/ParquetColumnType.md)

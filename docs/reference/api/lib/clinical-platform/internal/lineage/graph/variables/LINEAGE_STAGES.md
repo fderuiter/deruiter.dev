@@ -6,6 +6,6 @@
 
 # Variable: LINEAGE\_STAGES
 
-> `const` **LINEAGE\_STAGES**: readonly [`LineageStage`](../../../../types/type-aliases/LineageStage.md)[]
+> `const` **LINEAGE\_STAGES**: readonly [`LineageStage`](../../../../types/platform/type-aliases/LineageStage.md)[]
 
 Stages in the order data flows through them.

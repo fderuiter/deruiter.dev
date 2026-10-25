@@ -6,7 +6,7 @@
 
 # Function: businessGlossary()
 
-> **businessGlossary**(`options?`): [`BusinessGlossaryEntry`](../../../../types/interfaces/BusinessGlossaryEntry.md)[]
+> **businessGlossary**(`options?`): [`BusinessGlossaryEntry`](../../../../types/governance/interfaces/BusinessGlossaryEntry.md)[]
 
 The business glossary: every term a metric links, and the terms in
 `BUSINESS_GLOSSARY_EXTRA_TERMS`, each with the metrics that link it.
@@ -21,7 +21,7 @@ The metrics and the glossary to read.
 
 ## Returns
 
-[`BusinessGlossaryEntry`](../../../../types/interfaces/BusinessGlossaryEntry.md)[]
+[`BusinessGlossaryEntry`](../../../../types/governance/interfaces/BusinessGlossaryEntry.md)[]
 
 The entries, by term name ignoring case.
 

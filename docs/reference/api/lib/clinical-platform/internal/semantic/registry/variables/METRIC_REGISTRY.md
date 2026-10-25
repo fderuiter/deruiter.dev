@@ -6,7 +6,7 @@
 
 # Variable: METRIC\_REGISTRY
 
-> `const` **METRIC\_REGISTRY**: readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[]
+> `const` **METRIC\_REGISTRY**: readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[]
 
 The governed metrics, grouped by display folder. Every one is computable
 from the gold star schema; `METRIC_GAPS` lists the ones that are not.

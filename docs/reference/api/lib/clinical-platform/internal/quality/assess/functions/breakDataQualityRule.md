@@ -6,7 +6,7 @@
 
 # Function: breakDataQualityRule()
 
-> **breakDataQualityRule**(`warehouse`, `ruleId`): [`Warehouse`](../../../../types/interfaces/Warehouse.md)
+> **breakDataQualityRule**(`warehouse`, `ruleId`): [`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A copy of a warehouse with the smallest edit that breaks one platform
 rule, for showing the rule catch a real defect.
@@ -15,7 +15,7 @@ rule, for showing the rule catch a real defect.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ### ruleId
 
@@ -23,7 +23,7 @@ rule, for showing the rule catch a real defect.
 
 ## Returns
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ## Throws
 

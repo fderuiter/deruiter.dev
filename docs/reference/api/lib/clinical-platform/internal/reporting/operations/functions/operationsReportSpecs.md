@@ -6,7 +6,7 @@
 
 # Function: operationsReportSpecs()
 
-> **operationsReportSpecs**(`warehouse`, `scope?`): [`ReportSpec`](../../../../types/interfaces/ReportSpec.md)[]
+> **operationsReportSpecs**(`warehouse`, `scope?`): [`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)[]
 
 Every report spec the dashboard shows at a scope, the glance first, then
 each section's in order. Every one passes `checkReportSpec`.
@@ -15,19 +15,19 @@ each section's in order. Every one passes `checkReportSpec`.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 The warehouse the scope is read against.
 
 ### scope?
 
-[`OperationsScope`](../../../../types/interfaces/OperationsScope.md) = `{}`
+[`OperationsScope`](../../../../types/reporting/interfaces/OperationsScope.md) = `{}`
 
 Where the dashboard is drilled to; an invalid scope is cut
   back as `operationsDashboard` does.
 
 ## Returns
 
-[`ReportSpec`](../../../../types/interfaces/ReportSpec.md)[]
+[`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)[]
 
 The specs.

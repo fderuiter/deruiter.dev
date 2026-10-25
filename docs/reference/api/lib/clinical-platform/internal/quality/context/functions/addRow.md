@@ -6,7 +6,7 @@
 
 # Function: addRow()
 
-> **addRow**(`warehouse`, `table`, `match`, `change`): [`Warehouse`](../../../../types/interfaces/Warehouse.md)
+> **addRow**(`warehouse`, `table`, `match`, `change`): [`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A copy of the warehouse with a copy of the first matching row added,
 changed, at the end of its table.
@@ -15,7 +15,7 @@ changed, at the end of its table.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ### table
 
@@ -27,8 +27,8 @@ changed, at the end of its table.
 
 ### change
 
-(`row`) => `Record`\<`string`, [`WarehouseValue`](../../../../types/type-aliases/WarehouseValue.md)\>
+(`row`) => `Record`\<`string`, [`WarehouseValue`](../../../../types/platform/type-aliases/WarehouseValue.md)\>
 
 ## Returns
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)

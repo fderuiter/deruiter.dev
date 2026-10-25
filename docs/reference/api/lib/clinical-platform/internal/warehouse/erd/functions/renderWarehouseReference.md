@@ -16,7 +16,7 @@ columns of each gold table.
 
 ### schema
 
-[`WarehouseSchema`](../../../../types/interfaces/WarehouseSchema.md)
+[`WarehouseSchema`](../../../../types/warehouse/interfaces/WarehouseSchema.md)
 
 The schema, normally `WAREHOUSE_SCHEMA`.
 

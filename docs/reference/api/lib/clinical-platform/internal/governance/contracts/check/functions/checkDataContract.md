@@ -6,7 +6,7 @@
 
 # Function: checkDataContract()
 
-> **checkDataContract**(`contract`, `data`, `options`): [`DataContractResult`](../../../../../types/interfaces/DataContractResult.md)
+> **checkDataContract**(`contract`, `data`, `options`): [`DataContractResult`](../../../../../types/governance/interfaces/DataContractResult.md)
 
 Checks one product's data against its contract. Schema conformance comes
 first: every contract column is present and no other column is, every
@@ -19,25 +19,25 @@ than the freshness target, and every object published.
 
 ### contract
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)
 
 The contract in force.
 
 ### data
 
-`Readonly`\<`Record`\<`string`, [`ContractObjectRows`](../../../../../types/interfaces/ContractObjectRows.md) \| `undefined`\>\>
+`Readonly`\<`Record`\<`string`, [`ContractObjectRows`](../../../../../types/governance/interfaces/ContractObjectRows.md) \| `undefined`\>\>
 
 The product's rows, by contract object name.
 
 ### options
 
-[`ContractCheckOptions`](../../../../../types/interfaces/ContractCheckOptions.md)
+[`ContractCheckOptions`](../../../../../types/governance/interfaces/ContractCheckOptions.md)
 
 When the product was loaded and when it is read.
 
 ## Returns
 
-[`DataContractResult`](../../../../../types/interfaces/DataContractResult.md)
+[`DataContractResult`](../../../../../types/governance/interfaces/DataContractResult.md)
 
 The result, with every broken rule.
 

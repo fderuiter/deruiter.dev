@@ -6,6 +6,6 @@
 
 # Variable: KRI\_LIBRARY
 
-> `const` **KRI\_LIBRARY**: readonly [`KriDefinition`](../../../../types/interfaces/KriDefinition.md)[]
+> `const` **KRI\_LIBRARY**: readonly [`KriDefinition`](../../../../types/rbqm/interfaces/KriDefinition.md)[]
 
 Key risk indicators, in display order.

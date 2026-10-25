@@ -6,6 +6,6 @@
 
 # Variable: DQ\_SCENARIOS
 
-> `const` **DQ\_SCENARIOS**: readonly [`DqScenario`](../../../../types/interfaces/DqScenario.md)[]
+> `const` **DQ\_SCENARIOS**: readonly [`DqScenario`](../../../../types/quality/interfaces/DqScenario.md)[]
 
 The named defects, each with the rules that catch it.

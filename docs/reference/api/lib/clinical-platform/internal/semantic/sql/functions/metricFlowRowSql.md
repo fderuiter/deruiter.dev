@@ -15,7 +15,7 @@ unqualified columns, for dbt MetricFlow measure expressions.
 
 ### measure
 
-[`MetricMeasure`](../../../../types/interfaces/MetricMeasure.md)
+[`MetricMeasure`](../../../../types/platform/interfaces/MetricMeasure.md)
 
 The measure.
 

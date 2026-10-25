@@ -6,7 +6,7 @@
 
 # Function: startExploration()
 
-> **startExploration**(`metricId`, `metrics?`): [`Exploration`](../../../../types/interfaces/Exploration.md)
+> **startExploration**(`metricId`, `metrics?`): [`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration a metric starts from: one total, or, for a metric defined
 per study, grouped by study.
@@ -21,13 +21,13 @@ Registry metric id.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`Exploration`](../../../../types/interfaces/Exploration.md)
+[`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration.
 

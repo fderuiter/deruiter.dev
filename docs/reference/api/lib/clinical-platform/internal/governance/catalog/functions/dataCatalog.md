@@ -6,7 +6,7 @@
 
 # Function: dataCatalog()
 
-> **dataCatalog**(`input`): [`DataCatalogEntry`](../../../../types/type-aliases/DataCatalogEntry.md)[]
+> **dataCatalog**(`input`): [`DataCatalogEntry`](../../../../types/governance/type-aliases/DataCatalogEntry.md)[]
 
 The data catalog: every data product in the order given, then every
 metric in registry order.
@@ -21,7 +21,7 @@ Products, contracts and what the catalog shows of them.
 
 ## Returns
 
-[`DataCatalogEntry`](../../../../types/type-aliases/DataCatalogEntry.md)[]
+[`DataCatalogEntry`](../../../../types/governance/type-aliases/DataCatalogEntry.md)[]
 
 One entry per product and per metric.
 

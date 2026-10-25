@@ -6,7 +6,7 @@
 
 # Function: assessStudyRisk()
 
-> **assessStudyRisk**(`warehouse`, `studyId`, `options?`): [`StudyRiskAssessment`](../../../../types/interfaces/StudyRiskAssessment.md)
+> **assessStudyRisk**(`warehouse`, `studyId`, `options?`): [`StudyRiskAssessment`](../../../../types/rbqm/interfaces/StudyRiskAssessment.md)
 
 Assesses one study's risk at the warehouse's data cut.
 
@@ -14,7 +14,7 @@ Assesses one study's risk at the warehouse's data cut.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A warehouse from `buildWarehouse`.
 
@@ -34,7 +34,7 @@ The study to assess.
 
 ## Returns
 
-[`StudyRiskAssessment`](../../../../types/interfaces/StudyRiskAssessment.md)
+[`StudyRiskAssessment`](../../../../types/rbqm/interfaces/StudyRiskAssessment.md)
 
 The study's quality plan, KRIs, QTLs, central monitoring and the signals raised.
 

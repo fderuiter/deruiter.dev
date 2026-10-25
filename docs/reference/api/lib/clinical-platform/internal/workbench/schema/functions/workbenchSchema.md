@@ -6,7 +6,7 @@
 
 # Function: workbenchSchema()
 
-> **workbenchSchema**(`products`, `contracts`, `warehouse`): [`WorkbenchTable`](../../../../types/interfaces/WorkbenchTable.md)[]
+> **workbenchSchema**(`products`, `contracts`, `warehouse`): [`WorkbenchTable`](../../../../types/workbench/interfaces/WorkbenchTable.md)[]
 
 The gold tables the workbench loads, in schema order, each with its
 contract's columns and governance and its row count.
@@ -19,25 +19,25 @@ silently: a restricted column in gold is a contract decision to revisit.
 
 ### products
 
-readonly [`DataProduct`](../../../../types/interfaces/DataProduct.md)[]
+readonly [`DataProduct`](../../../../types/platform/interfaces/DataProduct.md)[]
 
 The data products, from `dataProducts`.
 
 ### contracts
 
-readonly [`DataContract`](../../../../types/interfaces/DataContract.md)[]
+readonly [`DataContract`](../../../../types/platform/interfaces/DataContract.md)[]
 
 The contracts in force, from `dataContracts`.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 The warehouse the rows are counted in.
 
 ## Returns
 
-[`WorkbenchTable`](../../../../types/interfaces/WorkbenchTable.md)[]
+[`WorkbenchTable`](../../../../types/workbench/interfaces/WorkbenchTable.md)[]
 
 The tables.
 

@@ -15,7 +15,7 @@ applies; the explorer offers only the visuals that pass it.
 
 ### visual
 
-[`ReportVisual`](../../../../types/type-aliases/ReportVisual.md)
+[`ReportVisual`](../../../../types/platform/type-aliases/ReportVisual.md)
 
 The visual.
 

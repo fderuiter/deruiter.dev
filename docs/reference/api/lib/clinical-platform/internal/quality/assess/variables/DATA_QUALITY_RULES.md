@@ -6,7 +6,7 @@
 
 # Variable: DATA\_QUALITY\_RULES
 
-> `const` **DATA\_QUALITY\_RULES**: readonly [`DqRule`](../../../../types/interfaces/DqRule.md)[]
+> `const` **DATA\_QUALITY\_RULES**: readonly [`DqRule`](../../../../types/quality/interfaces/DqRule.md)[]
 
 Every data quality rule: the platform's rules over the warehouse, then the
 Study Data Pipeline's conformance rules.

@@ -296,18 +296,6 @@
         ]
       },
       {
-        "id": "ACTUAL_ELEMENT_FROM_TA_TE",
-        "text": "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
-        "variables": [
-          "SV.EPOCH",
-          "EX.EPOCH",
-          "AE.EPOCH",
-          "VS.EPOCH",
-          "LB.EPOCH",
-          "DS.EPOCH"
-        ]
-      },
-      {
         "id": "SOURCE_ORDER",
         "text": "Number each subject's records from 1 in the order they are tabulated.",
         "variables": [
@@ -322,6 +310,17 @@
         "id": "CT_UNIT_MAPPING",
         "text": "Collected dose unit, which is already the UNIT submission value (TABLET, C48542).",
         "variables": ["EX.EXDOSU"]
+      },
+      {
+        "id": "ACTUAL_ELEMENT_FROM_TA_TE",
+        "text": "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
+        "variables": [
+          "EX.EPOCH",
+          "AE.EPOCH",
+          "VS.EPOCH",
+          "LB.EPOCH",
+          "DS.EPOCH"
+        ]
       },
       {
         "id": "CT_RELATIONSHIP_MAPPING",

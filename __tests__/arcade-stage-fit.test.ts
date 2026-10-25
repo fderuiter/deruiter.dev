@@ -29,6 +29,49 @@ const fractional = (extra: Partial<StageFitOptions> = {}): StageFitOptions => ({
   ...extra,
 });
 
+// The Labyrinth's maze slots measured in a production build at each desktop
+// size, windowed (#2842). From 1536px the cabinet widens past the text
+// column, so 1920 and 2560 take the next whole steps.
+describe("computeStageFit: Labyrinth on wide screens (#2842)", () => {
+  it.each([
+    ["1024x768", { width: 720, height: 432 }, 1, 3],
+    ["1280x800", { width: 773, height: 464 }, 1, 3],
+    ["1440x900", { width: 940, height: 564 }, 1, 3],
+    ["1920x1080", { width: 1240, height: 744 }, 1, 5],
+    ["2560x1440", { width: 1716, height: 1030 }, 1, 7],
+    ["2560x1440 at 2x", { width: 1716, height: 1030 }, 2, 14],
+  ])("%s takes the largest whole step", (_size, slot, dpr, expected) => {
+    const fit = computeStageFit(slot, dpr, integer());
+    expect(fit.scale).toBe(expected);
+    expect(fit.backingWidth).toBe(240 * expected);
+    expect(fit.backingHeight).toBe(144 * expected);
+    // One backing pixel per device pixel: the box is letterboxed, not
+    // stretched.
+    expect(fit.cssWidth * dpr).toBe(fit.backingWidth);
+    expect(fit.cssHeight * dpr).toBe(fit.backingHeight);
+  });
+
+  it("always takes the largest whole step that fits, never a fraction", () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 240, max: 4000 }),
+        fc.integer({ min: 144, max: 2400 }),
+        fc.constantFrom(1, 1.5, 2, 3),
+        (width, height, dpr) => {
+          const fit = computeStageFit({ width, height }, dpr, integer());
+          expect(Number.isInteger(fit.scale)).toBe(true);
+          expect(240 * fit.scale).toBeLessThanOrEqual(width * dpr + 1e-6);
+          expect(144 * fit.scale).toBeLessThanOrEqual(height * dpr + 1e-6);
+          const next = fit.scale + 1;
+          expect(240 * next > width * dpr || 144 * next > height * dpr).toBe(
+            true
+          );
+        }
+      )
+    );
+  });
+});
+
 describe("computeStageFit: integer scale", () => {
   it("picks the largest whole scale that fits", () => {
     const fit = computeStageFit({ width: 773, height: 464 }, 1, integer());

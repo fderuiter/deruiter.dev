@@ -55,6 +55,19 @@ export interface RelatedCaseStudy {
   readonly relation: string;
 }
 
+/**
+ * An arcade game that plays with a step's subject. It is a game, so it is
+ * never shown as a demo or as evidence of anything.
+ */
+export interface RelatedGame {
+  readonly title: string;
+  /** The game's arcade route, as `ARCADE_REGISTRY` lists it. */
+  readonly href: string;
+  readonly step: JourneyStepId;
+  /** What the game has in common with the step. */
+  readonly relation: string;
+}
+
 /** The main path, in order. */
 export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
   {
@@ -158,6 +171,20 @@ export const RELATED_CASE_STUDIES: readonly RelatedCaseStudy[] = [
       "Builds the reproducible randomization schedules that assign subjects to arms.",
   },
 ];
+
+/** Arcade games beside the journey, shown as games next to their step. */
+export const RELATED_GAMES: readonly RelatedGame[] = [
+  {
+    title: "Clinical Trial Chaos",
+    href: "/arcade/clinical-chaos",
+    step: "consequences",
+    relation:
+      "Sort clinical data into SDTM domains against the clock while an auditor watches.",
+  },
+];
+
+/** Visible label for a related game, so it never reads as a demo. */
+export const RELATED_GAME_LABEL = "Arcade game";
 
 /** The URL of the GitHub issue that tracks a planned item. */
 export function journeyIssueUrl(issue: number): string {

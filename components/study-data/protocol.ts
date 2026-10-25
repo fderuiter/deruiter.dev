@@ -16,6 +16,8 @@ import type {
   HandoffReport,
   LineageOrigin,
   LineageTrace,
+  MessyDataScenario,
+  ScenarioId,
   TlfKmFigure,
   TlfTable,
   VariableMeta,
@@ -72,6 +74,21 @@ export interface FindingSample {
   readonly items: readonly Finding[];
 }
 
+/**
+ * A messy-data scenario injected into a run, and where the gate caught it:
+ * the findings the run raised on the changed subject for the rules the
+ * scenario declares.
+ */
+export interface InjectedIssue {
+  readonly scenario: MessyDataScenario;
+  /** The changed subject, or null when no subject was eligible. */
+  readonly subject: string | null;
+  /** Findings on the changed subject from the declared rules, in run order. */
+  readonly caught: readonly Finding[];
+  /** Declared rules that raised nothing on the changed subject. */
+  readonly missed: readonly string[];
+}
+
 /** Everything the page shows about a run, small enough to post. */
 export interface RunSummary {
   readonly runId: number;
@@ -83,6 +100,8 @@ export interface RunSummary {
   readonly datasets: readonly DatasetSummary[];
   readonly conformance: ConformanceReport;
   readonly findings: FindingSample;
+  /** The injected scenario, present only when the run asked for one. */
+  readonly injected?: InjectedIssue;
   readonly define: {
     readonly sdtm: DefineDocument;
     readonly adam: DefineDocument;
@@ -153,6 +172,8 @@ export type StudyDataRequest =
       readonly nSubjects: number;
       /** A handed-over USDM document to run; DEMO-301 when absent. */
       readonly study?: unknown;
+      /** A messy-data scenario to inject (#2605); none when absent. */
+      readonly scenario?: ScenarioId;
     }
   | {
       readonly id: number;

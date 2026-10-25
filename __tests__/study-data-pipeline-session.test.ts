@@ -9,7 +9,7 @@ import type {
   RunSummary,
   StudyDataRequest,
 } from "@/components/study-data/protocol";
-import type { LineageTrace } from "@/lib/study-data";
+import type { LineageTrace, ScenarioId } from "@/lib/study-data";
 
 type Session = ReturnType<typeof createStudyDataSession>;
 type WithoutId<T> = T extends unknown ? Omit<T, "id"> : never;
@@ -170,6 +170,66 @@ describe("study data pipeline session", () => {
     expect(result.fileCount).toBeGreaterThan(0);
     const zip = await JSZip.loadAsync(result.bytes);
     expect(Object.keys(zip.files).length).toBeGreaterThan(0);
+  });
+});
+
+describe("study data pipeline session: injecting an issue", () => {
+  async function inject(
+    scenario: ScenarioId,
+    session = createStudyDataSession()
+  ) {
+    const summary = (await ask(session, {
+      type: "run",
+      seed: 7,
+      nSubjects: 24,
+      scenario,
+    })) as RunSummary;
+    return { session, summary };
+  }
+
+  it("leaves a run without a scenario as it was, with nothing injected", async () => {
+    const summary = await startRun(createStudyDataSession());
+    expect(summary).not.toHaveProperty("injected");
+  });
+
+  it("reports the changed subject and each finding the gate raised on it", async () => {
+    const { session, summary } = await inject("impossible-date");
+    const injected = summary.injected!;
+    expect(injected.scenario.id).toBe("impossible-date");
+    expect(injected.subject).toBeTruthy();
+    expect(injected.caught.length).toBeGreaterThan(0);
+    expect(injected.missed).toEqual([]);
+    for (const finding of injected.caught) {
+      expect(injected.scenario.expected.findings).toContain(finding.ruleId);
+      const key = `${finding.layer}:${finding.dataset}`;
+      const dataset = summary.datasets.find((item) => item.key === key)!;
+      const usubjid = dataset.variables.findIndex(
+        (variable) => variable.name === "USUBJID"
+      );
+      const window = (await ask(session, {
+        type: "rows",
+        runId: summary.runId,
+        key,
+        offset: finding.row!,
+        limit: 1,
+      })) as RowWindow;
+      expect(window.rows[0]![usubjid]).toBe(injected.subject);
+    }
+  });
+
+  it("reports a derivation scenario with nothing to catch", async () => {
+    const { summary } = await inject("missing-baseline");
+    const injected = summary.injected!;
+    expect(injected.scenario.expected.findings).toEqual([]);
+    expect(injected.subject).toBeTruthy();
+    expect(injected.caught).toEqual([]);
+    expect(injected.missed).toEqual([]);
+  });
+
+  it("refuses a scenario it does not know", async () => {
+    await expect(inject("not-a-scenario" as ScenarioId)).rejects.toThrow(
+      RangeError
+    );
   });
 });
 

@@ -72,6 +72,12 @@ export interface ReplaySession<State, Intent> {
   readonly step?: () => void;
   /** The session's gameplay stream. The helper moves it to the run's seed. */
   readonly rng?: { readonly setState: (state: number) => void };
+  /**
+   * Wraps each intent and each step, e.g. in React's `act`, so a game that
+   * still lives in a component settles its renders before the next input.
+   * Without it, the work runs as is.
+   */
+  readonly act?: (work: () => void) => void;
 }
 
 /** One input in the action stream. */
@@ -155,10 +161,12 @@ export function recordReplay<State, Intent>(
     const live = typeof session === "function" ? session() : session;
     live.rng?.setState(rngStateFromSeed(seed));
 
+    const settle = live.act ?? ((work: () => void) => work());
     let next = 0;
     const sendDue = (step: number) => {
       while (next < actions.length && actions[next].at === step) {
-        live.dispatch(actions[next].intent);
+        const { intent } = actions[next];
+        settle(() => live.dispatch(intent));
         next += 1;
       }
     };
@@ -166,8 +174,10 @@ export function recordReplay<State, Intent>(
     for (let step = 0; step < steps; step += 1) {
       sendDue(step);
       environment.advance();
-      if (live.step) live.step();
-      else environment.flushFrame();
+      settle(() => {
+        if (live.step) live.step();
+        else environment.flushFrame();
+      });
     }
     sendDue(steps);
 

@@ -110,15 +110,24 @@ describe("Retro Labyrinth class cards (#2338)", () => {
     expect(controlsScrambled("script_kiddie", undefined, NOW)).toBe(false);
   });
 
-  it("routes both movement paths through the class-aware check", () => {
-    const source = fs.readFileSync(
-      path.resolve(process.cwd(), "components/RetroLabyrinth.tsx"),
-      "utf8"
+  it("routes every movement path through the class-aware check", () => {
+    const read = (file: string) =>
+      fs.readFileSync(path.resolve(process.cwd(), file), "utf8");
+    // Since #2376 keys, the d-pad and swipes all step through the session's
+    // one move intent, which applies the scramble.
+    const session = read(
+      "components/retro-labyrinth/useRetroLabyrinthSession.ts"
     );
-    expect(source).not.toMatch(/activeSideEffect\?\.type === "scrambled_keys"/);
-    expect(source.match(/controlsScrambled\(/g)?.length).toBe(2);
-    expect(source).toContain("sideEffectForClass(");
-    expect(source).not.toContain('boss.name.split(" :: ")');
+    const view = read("components/RetroLabyrinth.tsx");
+    for (const source of [session, view]) {
+      expect(source).not.toMatch(
+        /activeSideEffect\?\.type === "scrambled_keys"/
+      );
+      expect(source).not.toContain('boss.name.split(" :: ")');
+    }
+    expect(session.match(/controlsScrambled\(/g)?.length).toBe(1);
+    expect(view).not.toContain("controlsScrambled(");
+    expect(session).toContain("sideEffectForClass(");
   });
 });
 

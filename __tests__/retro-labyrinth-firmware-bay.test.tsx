@@ -84,7 +84,7 @@ vi.mock("@/lib/dungeon", async (importOriginal) => {
 });
 
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
-import { FirmwareBay } from "@/components/retro-labyrinth/FirmwareBay";
+import { FirmwareBay } from "@/components/retro-labyrinth/parts/FirmwareBay";
 import { DEFAULT_CYBERDECK_PROFILE, STORAGE_KEY_PROFILE } from "@/lib/dungeon";
 import { safeRemoveItem } from "@/lib/safe-storage";
 

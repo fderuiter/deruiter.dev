@@ -1173,6 +1173,7 @@ export async function runInteractiveScaffoldWizard(): Promise<void> {
       dryRun,
       workspaceRoot,
     });
+    if (!dryRun) formatScaffoldOutput(generated);
     printScaffoldResult(generated, selectedType, selectedName);
   } catch (err: unknown) {
     const errorMsg = err instanceof Error ? err.message : String(err);
@@ -1180,6 +1181,30 @@ export async function runInteractiveScaffoldWizard(): Promise<void> {
       `\n${colors.brightRed}✖ Scaffolding failed: ${errorMsg}${colors.reset}\n`
     );
     process.exit(1);
+  }
+}
+
+/**
+ * Formats the files a scaffold wrote, since a template's line lengths change
+ * with the name. A formatter failure is reported, not fatal.
+ */
+function formatScaffoldOutput(generated: GeneratedFile[]): void {
+  const files = generated
+    .filter((f) => f.action !== "skipped" && /\.(tsx?|md)$/.test(f.filePath))
+    .map((f) => f.filePath);
+  if (files.length === 0) return;
+  try {
+    execFileSync(
+      "npx",
+      ["prettier", "--write", "--log-level", "warn", ...files],
+      {
+        stdio: "inherit",
+      }
+    );
+  } catch {
+    console.log(
+      `${colors.yellow}Prettier did not run; format the files above before committing.${colors.reset}`
+    );
   }
 }
 
@@ -1318,6 +1343,7 @@ async function handleScaffoldCommand(parsed: ParsedCliArgs): Promise<void> {
         })
       );
     } else {
+      if (!dryRun) formatScaffoldOutput(generated);
       printScaffoldResult(generated, type, name);
     }
   } catch (err: unknown) {

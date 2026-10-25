@@ -138,7 +138,10 @@ export const ${controls} = controlsFromActions(${actions});
   const sessionHook = `"use client";
 
 import { useState } from "react";
-import { createArcadeStore, type ArcadeSession } from "@/components/arcade/views";
+import {
+  createArcadeStore,
+  type ArcadeSession,
+} from "@/components/arcade/views";
 import {
   INITIAL_${constant(kebab)}_STATE,
   reduce${pascal},
@@ -217,7 +220,9 @@ export function ${pascal}Board() {
 /** The game's buttons, for the desktop footer and the touch docks. */
 export function ${pascal}Buttons({ only }: { only?: ${pascal}Intent }) {
   const dispatch = useSessionDispatch<${pascal}Intent>();
-  const intents: readonly ${pascal}Intent[] = only ? [only] : ["score", "pause"];
+  const intents: readonly ${pascal}Intent[] = only
+    ? [only]
+    : ["score", "pause"];
   return (
     <div className="flex gap-2">
       {intents.map((intent) => (
@@ -507,7 +512,8 @@ function registryInserts(names: GameScaffoldNames): readonly RegistryInsert[] {
       entry: `
   ${camel(pascal)}: {
     title: "${seoTitle(title)}",
-    description: "${SEO_DESCRIPTION}",
+    description:
+      "${SEO_DESCRIPTION}",
     path: "${route}",
     keywords: ["Arcade", "${title}"],
     inLanguage: "en-US",

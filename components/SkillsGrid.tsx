@@ -92,7 +92,7 @@ export const SkillsGrid: React.FC<SkillsGridProps> = ({ languages }) => {
                 {/* Progress bar */}
                 <div className="h-1 w-full bg-black/50 rounded-full overflow-hidden border border-white/5">
                   <motion.div
-                    initial={{ scaleX: shouldReduceMotion ? 1 : 0 }}
+                    initial={{ scaleX: 0 }}
                     whileInView={{ scaleX: 1 }}
                     viewport={{ once: true }}
                     transition={

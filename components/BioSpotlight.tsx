@@ -55,12 +55,8 @@ export const BioSpotlight: React.FC = () => {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activePhoto.id}
-                  initial={
-                    shouldReduceMotion ? false : { opacity: 0, scale: 0.96 }
-                  }
-                  animate={
-                    shouldReduceMotion ? undefined : { opacity: 1, scale: 1 }
-                  }
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={
                     shouldReduceMotion ? undefined : { opacity: 0, scale: 1.04 }
                   }

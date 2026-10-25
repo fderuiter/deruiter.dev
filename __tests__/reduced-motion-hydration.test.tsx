@@ -6,6 +6,8 @@ import { hydrateRoot, type Root } from "react-dom/client";
 import { TextReveal } from "@/components/TextReveal";
 import { TracingBeam } from "@/components/ui/TracingBeam";
 import { FooterStatusTicker } from "@/components/FooterStatusTicker";
+import { Hero } from "@/components/Hero";
+import { SkillsGrid } from "@/components/SkillsGrid";
 
 (
   globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }
@@ -69,33 +71,40 @@ describe("reduced-motion hydration parity (#2893)", () => {
       </TracingBeam>
     ),
     FooterStatusTicker: () => <FooterStatusTicker />,
+    Hero: () => <Hero />,
+    SkillsGrid: () => (
+      <SkillsGrid languages={[{ name: "TypeScript", percentage: 80 }]} />
+    ),
   };
 
-  it.each(["TextReveal", "TracingBeam", "FooterStatusTicker"])(
-    "%s hydrates without a mismatch",
-    async (name) => {
-      // The server cannot read the media query, whatever the visitor prefers.
-      framerReducedMotion.value = null;
-      const html = renderToString(make[name]());
-      container.innerHTML = html;
+  it.each([
+    "TextReveal",
+    "TracingBeam",
+    "FooterStatusTicker",
+    "Hero",
+    "SkillsGrid",
+  ])("%s hydrates without a mismatch", async (name) => {
+    // The server cannot read the media query, whatever the visitor prefers.
+    framerReducedMotion.value = null;
+    const html = renderToString(make[name]());
+    container.innerHTML = html;
 
-      framerReducedMotion.value = true;
-      const recoverable = vi.fn();
-      const consoleError = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-      await act(async () => {
-        root = hydrateRoot(container, make[name](), {
-          onRecoverableError: recoverable,
-        });
+    framerReducedMotion.value = true;
+    const recoverable = vi.fn();
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    await act(async () => {
+      root = hydrateRoot(container, make[name](), {
+        onRecoverableError: recoverable,
       });
-      const mismatchLogs = consoleError.mock.calls.filter((args) =>
-        String(args[0]).includes("hydrat")
-      );
-      consoleError.mockRestore();
+    });
+    const mismatchLogs = consoleError.mock.calls.filter((args) =>
+      String(args[0]).includes("hydrat")
+    );
+    consoleError.mockRestore();
 
-      expect(recoverable).not.toHaveBeenCalled();
-      expect(mismatchLogs).toEqual([]);
-    }
-  );
+    expect(recoverable).not.toHaveBeenCalled();
+    expect(mismatchLogs).toEqual([]);
+  });
 });

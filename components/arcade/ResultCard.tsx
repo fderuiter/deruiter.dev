@@ -8,6 +8,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { copyToClipboard } from "@/lib/clipboard";
 import { clamp } from "@/lib/game-utils";
 
 type Verdict = "win" | "loss" | "neutral";
@@ -163,7 +164,7 @@ async function shareResult({
     }
   }
   try {
-    await navigator.clipboard.writeText(url ? `${text} ${url}` : text);
+    await copyToClipboard(url ? `${text} ${url}` : text);
     return "copied";
   } catch {
     return "failed";

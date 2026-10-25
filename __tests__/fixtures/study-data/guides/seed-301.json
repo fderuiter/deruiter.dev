@@ -257,13 +257,23 @@
       },
       {
         "id": "RANDOMIZATION",
-        "text": "Arm code and arm from the subject's randomization record; SCRNFAIL and Screen Failure for subjects never randomized.",
+        "text": "Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS.",
         "variables": ["DM.ARMCD", "DM.ARM"]
       },
       {
         "id": "EXPOSURE_ARM",
-        "text": "The randomized arm code and arm, for every randomized subject; SCRNFAIL and Screen Failure for subjects never randomized.",
+        "text": "The randomized arm code and arm, for every randomized subject, each of whom is dosed with that arm's treatment; missing for subjects never randomized, whose reason is in ARMNRS.",
         "variables": ["DM.ACTARMCD", "DM.ACTARM"]
+      },
+      {
+        "id": "ARM_NULL_REASON",
+        "text": "SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject.",
+        "variables": ["DM.ARMNRS"]
+      },
+      {
+        "id": "UNPLANNED_ARM",
+        "text": "Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned.",
+        "variables": ["DM.ACTARMUD"]
       },
       {
         "id": "STUDY_DAY",

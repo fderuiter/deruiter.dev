@@ -155,6 +155,18 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "EXPOSURE_ARM",
         "Grouping Qualifier"
       ),
+      derived(
+        "ARMNRS",
+        "Reason Arm and/or Actual Arm is Null",
+        "ARM_NULL_REASON",
+        "Record Qualifier"
+      ),
+      derived(
+        "ACTARMUD",
+        "Description of Unplanned Actual Arm",
+        "UNPLANNED_ARM",
+        "Record Qualifier"
+      ),
       collected("COUNTRY", "Country", "DM.COUNTRY", "Record Qualifier"),
     ],
   },
@@ -634,7 +646,6 @@ export function deriveSubjectDomains(
     const rand = randBySubject.get(subject);
     const ex = exBySubject.get(subject);
     const death = deathBySubject.get(subject);
-    const screen = !rand;
     return item(
       {
         ...common(record.USUBJID, "DM"),
@@ -650,10 +661,14 @@ export function deriveSubjectDomains(
         AGE: record.AGE,
         AGEU: "YEARS",
         SEX: record.SEX,
-        ARMCD: screen ? "SCRNFAIL" : rand.ARMCD,
-        ARM: screen ? "Screen Failure" : rand.ARM,
-        ACTARMCD: screen ? "SCRNFAIL" : rand.ARMCD,
-        ACTARM: screen ? "Screen Failure" : rand.ARM,
+        // A subject is left unrandomized only when screening fails, so an
+        // arm is missing only for a screen failure (#2802).
+        ARMCD: rand?.ARMCD ?? null,
+        ARM: rand?.ARM ?? null,
+        ACTARMCD: rand?.ARMCD ?? null,
+        ACTARM: rand?.ARM ?? null,
+        ARMNRS: rand ? null : "SCREEN FAILURE",
+        ACTARMUD: null,
         COUNTRY: record.COUNTRY,
       },
       record,

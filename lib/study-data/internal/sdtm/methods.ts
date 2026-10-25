@@ -13,9 +13,13 @@ export const SDTM_METHODS = {
   LAST_EXPOSURE:
     "End date of the subject's exposure record (EXENDTC); missing for subjects never dosed or with no exposure end date.",
   RANDOMIZATION:
-    "Arm code and arm from the subject's randomization record; SCRNFAIL and Screen Failure for subjects never randomized.",
+    "Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS.",
   EXPOSURE_ARM:
-    "The randomized arm code and arm, for every randomized subject; SCRNFAIL and Screen Failure for subjects never randomized.",
+    "The randomized arm code and arm, for every randomized subject, each of whom is dosed with that arm's treatment; missing for subjects never randomized, whose reason is in ARMNRS.",
+  ARM_NULL_REASON:
+    "SCREEN FAILURE (Arm Null Reason, C142179) for a subject never randomized, since the pipeline leaves a subject unrandomized only when screening fails; missing for every randomized subject.",
+  UNPLANNED_ARM:
+    "Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned.",
   ACTUAL_ELEMENT_FROM_TA_TE:
     "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
   CT_UNIT_MAPPING:

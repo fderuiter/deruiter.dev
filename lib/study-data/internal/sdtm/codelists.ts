@@ -12,6 +12,7 @@ export const SDTM_CODELISTS: Readonly<Record<string, CodelistId>> =
     EPOCH: "EPOCH",
     ARMCD: "ARMCD",
     ACTARMCD: "ARMCD",
+    ARMNRS: "ARMNULRS",
     AGEU: "AGEU",
     SEX: "SEX",
     IECAT: "IECAT",

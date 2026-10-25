@@ -108,6 +108,7 @@ export type CodelistId =
   | "SBJTSTAT"
   | "AEREL"
   | "ARMCD"
+  | "ARMNULRS"
   | "AGEGR1"
   | "ADVS.PARAMCD"
   | "ADLB.PARAMCD"
@@ -221,6 +222,13 @@ const CODELISTS = [
     terms: [],
     fromData: true,
   },
+  cdisc("ARMNULRS", "Arm Null Reason", "SDTM", "C142179", true, [
+    term("ASSIGNED, NOT TREATED", "C142238"),
+    term("NOT ASSIGNED", "C142239"),
+    term("SCREEN FAILURE", "C49628"),
+    term("SCREENING NOT COMPLETED", "C166074"),
+    term("UNPLANNED TREATMENT", "C142240"),
+  ]),
   {
     id: "AGEGR1" as const,
     name: "Age Group",

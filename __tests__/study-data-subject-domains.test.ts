@@ -64,7 +64,7 @@ describe("SDTM subject tabulation", () => {
 
   it("maps screen failures without reference treatment dates or exposure", () => {
     const dm = records(get("DM"));
-    const failures = dm.filter((record) => record.ARMCD === "SCRNFAIL");
+    const failures = dm.filter((record) => record.ARMNRS === "SCREEN FAILURE");
     expect(failures.length).toBeGreaterThan(0);
     expect(
       failures.every(
@@ -73,6 +73,62 @@ describe("SDTM subject tabulation", () => {
     ).toBe(true);
     const exposed = new Set(get("EX").columns.USUBJID);
     expect(failures.every((record) => !exposed.has(record.USUBJID))).toBe(true);
+  });
+
+  it("leaves a screen failure's arms null and says why in ARMNRS (#2802)", () => {
+    const dm = records(get("DM"));
+    const collectedDm = records(source.find((d) => d.name === "DM")!);
+    const failed = new Set(
+      collectedDm
+        .filter((record) => record.SCREENFL === "FAIL")
+        .map((record) => record.USUBJID)
+    );
+    const randomized = new Map(
+      records(source.find((d) => d.name === "RAND")!).map((record) => [
+        record.USUBJID,
+        record,
+      ])
+    );
+    expect(failed.size).toBeGreaterThan(0);
+    for (const record of dm) {
+      expect(record.ARMCD).not.toBe("SCRNFAIL");
+      expect(record.ACTARMCD).not.toBe("SCRNFAIL");
+      const rand = randomized.get(record.USUBJID);
+      if (rand) {
+        // Every randomized subject here is dosed with their planned arm.
+        expect(record).toMatchObject({
+          ARMCD: rand.ARMCD,
+          ARM: rand.ARM,
+          ACTARMCD: rand.ARMCD,
+          ACTARM: rand.ARM,
+          ARMNRS: null,
+          ACTARMUD: null,
+        });
+      } else {
+        // Only a failed screening leaves a subject unrandomized.
+        expect(failed.has(record.USUBJID)).toBe(true);
+        expect(record).toMatchObject({
+          ARMCD: null,
+          ARM: null,
+          ACTARMCD: null,
+          ACTARM: null,
+          ARMNRS: "SCREEN FAILURE",
+          ACTARMUD: null,
+        });
+      }
+    }
+
+    const names = get("DM").variables.map((variable) => variable.name);
+    expect(names.indexOf("ARMNRS")).toBe(names.indexOf("ACTARM") + 1);
+    expect(names.indexOf("ACTARMUD")).toBe(names.indexOf("ARMNRS") + 1);
+    expect(
+      get("DM").variables.find((variable) => variable.name === "ARMNRS")
+    ).toMatchObject({
+      role: "Record Qualifier",
+      origin: "Derived",
+      method: "ARM_NULL_REASON",
+      codelist: "ARMNULRS",
+    });
   });
 
   it("gives every subject the site and site country the EDC recorded (#2801)", () => {
@@ -104,7 +160,8 @@ describe("SDTM subject tabulation", () => {
     const at = (name: string) => names.indexOf(name);
     expect(at("SITEID")).toBe(at("DTHFL") + 1);
     expect(at("SITEID")).toBeLessThan(at("AGE"));
-    expect(at("COUNTRY")).toBe(at("ACTARM") + 1);
+    // SDTMIG 3.4 puts the arm null reasons between ACTARM and COUNTRY.
+    expect(at("COUNTRY")).toBe(at("ACTARMUD") + 1);
     for (const name of ["SITEID", "COUNTRY"]) {
       expect(
         get("DM").variables.find((variable) => variable.name === name)

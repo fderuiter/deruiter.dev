@@ -94,6 +94,7 @@
 - [lib/build-integrity](lib/build-integrity/README.md)
 - [lib/case-studies-data](lib/case-studies-data/README.md)
 - [lib/client-sentry](lib/client-sentry/README.md)
+- [lib/clinical-journey](lib/clinical-journey/README.md)
 - [lib/clinical-platform](lib/clinical-platform/README.md)
 - [lib/clinical-platform/internal/explore/hash](lib/clinical-platform/internal/explore/hash/README.md)
 - [lib/clinical-platform/internal/explore/model](lib/clinical-platform/internal/explore/model/README.md)

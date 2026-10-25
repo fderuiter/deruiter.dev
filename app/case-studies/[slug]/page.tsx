@@ -25,6 +25,7 @@ import SchemaFlowWorkspaceWrapper from "@/components/SchemaFlowWorkspaceWrapper"
 import { VectorComparisonViewer } from "@/components/laser-loon/VectorComparisonViewer";
 import { AssetDistributionHub } from "@/components/laser-loon/AssetDistributionHub";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { resolveBaseUrl } from "@/lib/domain";
@@ -212,6 +213,11 @@ export default async function CaseStudyPage({ params }: PageProps) {
               ]}
             />
           </div>
+
+          <ClinicalJourneyNav
+            path={`/case-studies/${study.slug}`}
+            className="mb-8"
+          />
 
           {/* Title */}
           <h1 className="type-title text-neutral-100 mb-4">{study.title}</h1>

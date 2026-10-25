@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
+import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import {
   MEDALLION_LAYERS,
   REGULATORY_WORDING,
@@ -32,6 +33,7 @@ export default function PlatformPage() {
   return (
     <PageLayout className="bg-[#0d0e11] text-[#f4f4f6]">
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
+        <ClinicalJourneyNav path="/platform" className="mb-8" />
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical systems / 01
         </p>

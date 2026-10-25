@@ -13,6 +13,7 @@ import {
 import { checkGitHygieneConfig } from "./git-guard";
 import { checkDeadCode } from "./dead-code";
 import { checkBundleBudgets } from "./bundle-guard";
+import { checkArcadeThreeViews } from "./three-view-guard";
 import {
   DEFAULT_BENCHMARK_EVIDENCE_DIRECTORY,
   readBenchmarkEvidence,
@@ -3513,6 +3514,7 @@ export async function runDiagnostics(
     checkRouteIndexing(root, fix),
     checkPublicRouteRegistryDrift(root, fix),
     checkArcadeRegistryParity(root),
+    checkArcadeThreeViews(root),
     checkNavbarHierarchy(root),
     checkPageTopPadding(root),
     checkTestPathResolution(root),

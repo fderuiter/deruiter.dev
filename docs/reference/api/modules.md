@@ -297,6 +297,7 @@
 - [lib/dx/setup/types](lib/dx/setup/types/README.md)
 - [lib/dx/setup/verification](lib/dx/setup/verification/README.md)
 - [lib/dx/source-state](lib/dx/source-state/README.md)
+- [lib/dx/three-view-guard](lib/dx/three-view-guard/README.md)
 - [lib/dx/trackers](lib/dx/trackers/README.md)
 - [lib/dx/utils](lib/dx/utils/README.md)
 - [lib/email-templates](lib/email-templates/README.md)

@@ -148,7 +148,7 @@ describe("ResultCard phone layout, share and details (#2794)", () => {
       ["clipboard", originalClipboard],
     ] as const) {
       if (descriptor) Object.defineProperty(navigator, name, descriptor);
-      else delete (navigator as unknown as Record<string, unknown>)[name];
+      else Reflect.deleteProperty(navigator, name);
     }
   });
 

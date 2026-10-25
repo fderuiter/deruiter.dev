@@ -299,6 +299,7 @@
 - [lib/dx/git-guard](lib/dx/git-guard/README.md)
 - [lib/dx/page-bench](lib/dx/page-bench/README.md)
 - [lib/dx/preflight](lib/dx/preflight/README.md)
+- [lib/dx/scaffold-game](lib/dx/scaffold-game/README.md)
 - [lib/dx/scaffolder](lib/dx/scaffolder/README.md)
 - [lib/dx/setup](lib/dx/setup/README.md)
 - [lib/dx/setup/database](lib/dx/setup/database/README.md)

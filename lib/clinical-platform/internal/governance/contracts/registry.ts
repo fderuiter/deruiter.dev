@@ -298,6 +298,6 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     freshnessHours: MONTHLY_TRANSFER,
     availability: GOLD_AVAILABILITY,
     retention: TRIAL,
-    version: "2.0.0",
+    version: "2.1.0",
   },
 };

@@ -914,6 +914,12 @@ Re-exports [PHONE_MAX_WIDTH_EXCLUSIVE](form-factor/variables/PHONE_MAX_WIDTH_EXC
 
 ***
 
+### phoneReadyGames
+
+Re-exports [phoneReadyGames](registry/functions/phoneReadyGames.md)
+
+***
+
 ### PhosphorMaskType
 
 Re-exports [PhosphorMaskType](crt-pipeline/type-aliases/PhosphorMaskType.md)

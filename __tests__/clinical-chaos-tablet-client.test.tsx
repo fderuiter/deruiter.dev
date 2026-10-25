@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { PHONE_QUERY } from "@/components/arcade/mobile";
 import { requestClinicalChaosAutoPause } from "@/components/clinical-trial-chaos/auto-pause";
 
 const cabinetProps = vi.hoisted(() => ({
@@ -41,15 +40,5 @@ describe("ClinicalChaosClient cabinet wiring (#2105)", () => {
       .flatMap((control) => control.key.split(/[\s/,–-]+/))
       .map((key) => key.toLowerCase());
     expect(keys).not.toContain("f");
-  });
-
-  it("gates phones only, so tablets get the game", () => {
-    const { container } = render(<ClinicalChaosClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    expect(PHONE_QUERY.match(/max-width:\s*(\d+)px/)?.[1]).toBe("743");
-    expect(notice?.className).toContain("(max-width:743px)");
   });
 });

@@ -4,7 +4,6 @@ import React from "react";
 import fs from "node:fs";
 import path from "node:path";
 import { render, cleanup } from "@testing-library/react";
-import { PHONE_QUERY } from "@/components/arcade/mobile";
 import {
   PROTOCOL_DRIFT_AUTO_PAUSE_EVENT,
   requestProtocolDriftAutoPause,
@@ -47,20 +46,6 @@ describe("ProtocolDriftClient cabinet wiring (#2045)", () => {
     expect(cabinetProps.current?.onAutoPause).toBe(
       requestProtocolDriftAutoPause
     );
-  });
-
-  it("keeps the desktop-only notice behind the phone query, so tablets get the game", () => {
-    const { container } = render(<ProtocolDriftClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    // Phones and Split View panes narrower than 744px keep the notice. Every
-    // iPad in both orientations is wider than that, so it gets the game.
-    const phoneBound = PHONE_QUERY.match(/max-width:\s*(\d+)px/);
-    expect(phoneBound?.[1]).toBe("743");
-    expect(notice?.className).toContain("(max-width:743px)");
-    expect(notice?.className).toContain("(max-height:500px)");
   });
 
   it("the auto-pause request dispatches the event the workbench listens for", () => {

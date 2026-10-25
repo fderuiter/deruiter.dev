@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from "vitest";
 import React from "react";
-import { render, cleanup, screen } from "@testing-library/react";
+import { render, cleanup } from "@testing-library/react";
 
 const cabinetProps = vi.hoisted(() => ({
   current: null as Record<string, unknown> | null,
@@ -49,8 +49,5 @@ describe("RetroLabyrinthClient phone wiring (ADR 0061)", () => {
       key: "1-5",
       action: "Fire Class Tools",
     });
-    // The gate is CSS (PHONE_QUERY): the notice is in the markup for phones
-    // and hidden on tablets, which the cabinet owns (#2032).
-    expect(screen.getByTestId("desktop-only-notice")).toBeTruthy();
   });
 });

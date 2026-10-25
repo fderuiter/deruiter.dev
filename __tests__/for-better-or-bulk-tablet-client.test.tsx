@@ -34,13 +34,4 @@ describe("ForBetterOrBulkClient cabinet wiring (#2123)", () => {
     render(<ForBetterOrBulkClient />);
     expect(cabinetProps.current?.fullscreenKey).toBe(false);
   });
-
-  it("gates phones only, so tablets get the game", () => {
-    const { container } = render(<ForBetterOrBulkClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    expect(notice?.className).toContain("(max-width:743px)");
-  });
 });

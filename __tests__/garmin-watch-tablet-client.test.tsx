@@ -2,7 +2,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import React from "react";
 import { render, cleanup } from "@testing-library/react";
-import { PHONE_QUERY } from "@/components/arcade/mobile";
 import { requestGarminAutoPause } from "@/components/garmin-watch/auto-pause";
 
 const cabinetProps = vi.hoisted(() => ({
@@ -40,15 +39,5 @@ describe("GarminWatchClient cabinet wiring (#2122)", () => {
       .map((key) => key.toLowerCase());
     expect(keys).not.toContain("f");
     expect(keys).toEqual(expect.arrayContaining(["enter", "x", "p", "esc"]));
-  });
-
-  it("gates phones only, so tablets get the game", () => {
-    const { container } = render(<GarminWatchClient />);
-    const notice = container.querySelector(
-      '[data-testid="desktop-only-notice"]'
-    );
-    expect(notice).not.toBeNull();
-    expect(PHONE_QUERY.match(/max-width:\s*(\d+)px/)?.[1]).toBe("743");
-    expect(notice?.className).toContain("(max-width:743px)");
   });
 });

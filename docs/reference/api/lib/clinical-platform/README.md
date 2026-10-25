@@ -86,9 +86,45 @@ Re-exports [buildWarehouse](internal/warehouse/build/functions/buildWarehouse.md
 
 ***
 
+### BUSINESS\_GLOSSARY\_EXTRA\_TERMS
+
+Re-exports [BUSINESS_GLOSSARY_EXTRA_TERMS](internal/governance/glossary/variables/BUSINESS_GLOSSARY_EXTRA_TERMS.md)
+
+***
+
+### businessGlossary
+
+Re-exports [businessGlossary](internal/governance/glossary/functions/businessGlossary.md)
+
+***
+
+### BusinessGlossaryEntry
+
+Re-exports [BusinessGlossaryEntry](types/interfaces/BusinessGlossaryEntry.md)
+
+***
+
+### BusinessGlossaryOptions
+
+Re-exports [BusinessGlossaryOptions](internal/governance/glossary/interfaces/BusinessGlossaryOptions.md)
+
+***
+
 ### cashFlow
 
 Re-exports [cashFlow](internal/strategy/engine/functions/cashFlow.md)
+
+***
+
+### CatalogFacetCount
+
+Re-exports [CatalogFacetCount](types/interfaces/CatalogFacetCount.md)
+
+***
+
+### CatalogSlaStatus
+
+Re-exports [CatalogSlaStatus](types/type-aliases/CatalogSlaStatus.md)
 
 ***
 
@@ -179,6 +215,12 @@ Re-exports [checkReportSpec](internal/reporting/check/functions/checkReportSpec.
 ### checkRiskSignalLog
 
 Re-exports [checkRiskSignalLog](internal/rbqm/signals/functions/checkRiskSignalLog.md)
+
+***
+
+### checkStewardship
+
+Re-exports [checkStewardship](internal/governance/stewardship/functions/checkStewardship.md)
 
 ***
 
@@ -353,6 +395,54 @@ Re-exports [CtmsMonitoringVisit](types/interfaces/CtmsMonitoringVisit.md)
 ### DATA\_QUALITY\_RULES
 
 Re-exports [DATA_QUALITY_RULES](internal/quality/assess/variables/DATA_QUALITY_RULES.md)
+
+***
+
+### dataCatalog
+
+Re-exports [dataCatalog](internal/governance/catalog/functions/dataCatalog.md)
+
+***
+
+### DataCatalogEntry
+
+Re-exports [DataCatalogEntry](types/type-aliases/DataCatalogEntry.md)
+
+***
+
+### dataCatalogFacets
+
+Re-exports [dataCatalogFacets](internal/governance/catalog/functions/dataCatalogFacets.md)
+
+***
+
+### DataCatalogFacets
+
+Re-exports [DataCatalogFacets](types/interfaces/DataCatalogFacets.md)
+
+***
+
+### DataCatalogInput
+
+Re-exports [DataCatalogInput](internal/governance/catalog/interfaces/DataCatalogInput.md)
+
+***
+
+### DataCatalogMetric
+
+Re-exports [DataCatalogMetric](types/interfaces/DataCatalogMetric.md)
+
+***
+
+### DataCatalogProduct
+
+Re-exports [DataCatalogProduct](types/interfaces/DataCatalogProduct.md)
+
+***
+
+### DataCatalogQuery
+
+Re-exports [DataCatalogQuery](types/interfaces/DataCatalogQuery.md)
 
 ***
 
@@ -785,6 +875,72 @@ Re-exports [formatMetricValue](internal/reporting/format/functions/formatMetricV
 ### generatePortfolio
 
 Re-exports [generatePortfolio](internal/portfolio/generate/functions/generatePortfolio.md)
+
+***
+
+### GOVERNANCE\_DECISIONS
+
+Re-exports [GOVERNANCE_DECISIONS](internal/governance/stewardship/variables/GOVERNANCE_DECISIONS.md)
+
+***
+
+### GOVERNANCE\_DOMAINS
+
+Re-exports [GOVERNANCE_DOMAINS](internal/governance/stewardship/variables/GOVERNANCE_DOMAINS.md)
+
+***
+
+### GOVERNANCE\_POLICIES
+
+Re-exports [GOVERNANCE_POLICIES](internal/governance/policies/variables/GOVERNANCE_POLICIES.md)
+
+***
+
+### GovernanceDecision
+
+Re-exports [GovernanceDecision](types/interfaces/GovernanceDecision.md)
+
+***
+
+### GovernanceDecisionId
+
+Re-exports [GovernanceDecisionId](types/type-aliases/GovernanceDecisionId.md)
+
+***
+
+### GovernanceDomain
+
+Re-exports [GovernanceDomain](types/interfaces/GovernanceDomain.md)
+
+***
+
+### GovernanceDomainId
+
+Re-exports [GovernanceDomainId](types/type-aliases/GovernanceDomainId.md)
+
+***
+
+### GovernanceFinding
+
+Re-exports [GovernanceFinding](types/interfaces/GovernanceFinding.md)
+
+***
+
+### GovernancePolicy
+
+Re-exports [GovernancePolicy](types/interfaces/GovernancePolicy.md)
+
+***
+
+### GovernancePolicyId
+
+Re-exports [GovernancePolicyId](types/type-aliases/GovernancePolicyId.md)
+
+***
+
+### GovernancePolicyRule
+
+Re-exports [GovernancePolicyRule](types/interfaces/GovernancePolicyRule.md)
 
 ***
 
@@ -1400,6 +1556,12 @@ Re-exports [QualityPlanQtl](types/interfaces/QualityPlanQtl.md)
 
 ***
 
+### RaciCode
+
+Re-exports [RaciCode](types/type-aliases/RaciCode.md)
+
+***
+
 ### RaisedSignal
 
 Re-exports [RaisedSignal](internal/rbqm/signals/interfaces/RaisedSignal.md)
@@ -1658,6 +1820,18 @@ Re-exports [scoreVendors](internal/strategy/engine/functions/scoreVendors.md)
 
 ***
 
+### searchBusinessGlossary
+
+Re-exports [searchBusinessGlossary](internal/governance/glossary/functions/searchBusinessGlossary.md)
+
+***
+
+### searchDataCatalog
+
+Re-exports [searchDataCatalog](internal/governance/catalog/functions/searchDataCatalog.md)
+
+***
+
 ### searchReportCatalog
 
 Re-exports [searchReportCatalog](internal/reporting/catalog/functions/searchReportCatalog.md)
@@ -1721,6 +1895,36 @@ Re-exports [SqlDialect](types/type-aliases/SqlDialect.md)
 ### startExploration
 
 Re-exports [startExploration](internal/explore/model/functions/startExploration.md)
+
+***
+
+### STEWARDSHIP\_ROLES
+
+Re-exports [STEWARDSHIP_ROLES](internal/governance/stewardship/variables/STEWARDSHIP_ROLES.md)
+
+***
+
+### stewardshipDomainOf
+
+Re-exports [stewardshipDomainOf](internal/governance/stewardship/functions/stewardshipDomainOf.md)
+
+***
+
+### StewardshipModel
+
+Re-exports [StewardshipModel](internal/governance/stewardship/interfaces/StewardshipModel.md)
+
+***
+
+### StewardshipRole
+
+Re-exports [StewardshipRole](types/interfaces/StewardshipRole.md)
+
+***
+
+### StewardshipRoleId
+
+Re-exports [StewardshipRoleId](types/type-aliases/StewardshipRoleId.md)
 
 ***
 

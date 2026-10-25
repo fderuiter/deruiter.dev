@@ -13,8 +13,9 @@ A definition must read gold tables and columns that exist, with types its
 aggregation accepts; guard every nullable column it reads with a not-null
 condition (a `null` operand differs between SQL and DAX); reach every
 allowed dimension from every table it reads; keep a semantic version that
-its change log ends at; link an existing glossary term; and make no
-compliance or validation claim. Ids and names must be unique.
+its change log ends at; link an existing glossary term, which a certified
+metric may not leave out; and make no compliance or validation claim. Ids
+and names must be unique.
 
 ## Parameters
 

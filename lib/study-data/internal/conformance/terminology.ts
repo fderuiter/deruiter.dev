@@ -174,6 +174,7 @@ const CODELISTS = [
     term("U/L", "C67456"),
     term("umol/L", "C48508"),
     term("mmol/L", "C64387"),
+    term("mg/dL", "C67015"),
     term("g/L", "C42576"),
     term("10^9/L", "C67255"),
     term("TABLET", "C48542"),

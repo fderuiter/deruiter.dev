@@ -501,6 +501,7 @@ metrics:
         unit: subjects
         format: "number, 0 decimals"
         display_folder: Enrollment
+        glossary_term: screening-term
         allowed_dimensions:
           - study
           - study_status
@@ -530,6 +531,7 @@ metrics:
         unit: subjects
         format: "number, 0 decimals"
         display_folder: Enrollment
+        glossary_term: enrollment-term
         allowed_dimensions:
           - study
           - study_status
@@ -574,6 +576,7 @@ metrics:
         unit: "share of target"
         format: "percent, 1 decimals"
         display_folder: Enrollment
+        glossary_term: enrollment-term
         allowed_dimensions:
           - study
           - site
@@ -611,6 +614,7 @@ metrics:
         unit: "share of screened subjects"
         format: "percent, 1 decimals"
         display_folder: Enrollment
+        glossary_term: screen-failure-term
         allowed_dimensions:
           - study
           - study_status
@@ -655,6 +659,7 @@ metrics:
         unit: "share of enrolled subjects"
         format: "percent, 1 decimals"
         display_folder: Enrollment
+        glossary_term: early-termination-term
         allowed_dimensions:
           - study
           - study_status
@@ -682,6 +687,7 @@ metrics:
         unit: days
         format: "number, 1 decimals"
         display_folder: "Site start-up"
+        glossary_term: site-activation-term
         allowed_dimensions:
           - study
           - site
@@ -806,6 +812,7 @@ metrics:
         unit: "share of visits due"
         format: "percent, 1 decimals"
         display_folder: "Visits and data entry"
+        glossary_term: missed-visit-term
         allowed_dimensions:
           - study
           - study_status
@@ -850,6 +857,7 @@ metrics:
         unit: "share of visits performed"
         format: "percent, 1 decimals"
         display_folder: "Visits and data entry"
+        glossary_term: visit-window-term
         allowed_dimensions:
           - study
           - study_status
@@ -898,6 +906,7 @@ metrics:
         unit: "queries per 100 visits"
         format: "number, 1 decimals"
         display_folder: Queries
+        glossary_term: data-query-term
         allowed_dimensions:
           - study
           - study_status
@@ -928,6 +937,7 @@ metrics:
         unit: queries
         format: "number, 0 decimals"
         display_folder: Queries
+        glossary_term: data-query-term
         allowed_dimensions:
           - study
           - study_status
@@ -957,6 +967,7 @@ metrics:
         unit: days
         format: "number, 1 decimals"
         display_folder: Queries
+        glossary_term: data-query-term
         allowed_dimensions:
           - study
           - study_status
@@ -985,6 +996,7 @@ metrics:
         unit: days
         format: "number, 1 decimals"
         display_folder: Queries
+        glossary_term: data-query-term
         allowed_dimensions:
           - study
           - study_status
@@ -1060,6 +1072,7 @@ metrics:
         unit: "monitoring visits"
         format: "number, 0 decimals"
         display_folder: Monitoring
+        glossary_term: monitoring-visit-term
         allowed_dimensions:
           - study
           - study_status
@@ -1090,6 +1103,7 @@ metrics:
         unit: "planned visits"
         format: "number, 0 decimals"
         display_folder: Monitoring
+        glossary_term: monitoring-visit-term
         allowed_dimensions:
           - study
           - study_status
@@ -1118,6 +1132,7 @@ metrics:
         unit: days
         format: "number, 1 decimals"
         display_folder: Monitoring
+        glossary_term: monitoring-visit-term
         allowed_dimensions:
           - study
           - study_status
@@ -1166,6 +1181,7 @@ metrics:
         unit: "deviations per 100 enrolled subjects"
         format: "number, 1 decimals"
         display_folder: "Protocol deviations"
+        glossary_term: important-deviation-term
         allowed_dimensions:
           - study
           - study_status
@@ -1213,6 +1229,7 @@ metrics:
         unit: "deviations per 100 enrolled subjects"
         format: "number, 1 decimals"
         display_folder: "Protocol deviations"
+        glossary_term: protocol-deviation-term
         allowed_dimensions:
           - study
           - study_status
@@ -1256,6 +1273,7 @@ metrics:
         unit: "share of enrolled subjects"
         format: "percent, 1 decimals"
         display_folder: "Protocol deviations"
+        glossary_term: important-deviation-term
         allowed_dimensions:
           - study
           - study_status
@@ -1303,6 +1321,7 @@ metrics:
         unit: days
         format: "number, 0 decimals"
         display_folder: Milestones
+        glossary_term: enrollment-period-term
         allowed_dimensions:
           - study
           - study_status
@@ -1349,6 +1368,7 @@ metrics:
         unit: days
         format: "number, 0 decimals"
         display_folder: Milestones
+        glossary_term: database-lock-term
         allowed_dimensions:
           - study
           - study_status
@@ -1391,6 +1411,7 @@ metrics:
         unit: "share of budget"
         format: "percent, 1 decimals"
         display_folder: Finance
+        glossary_term: budget-burn-term
         allowed_dimensions:
           - study
           - study_status
@@ -1433,6 +1454,7 @@ metrics:
         unit: "USD per enrolled subject"
         format: "currency, 0 decimals"
         display_folder: Finance
+        glossary_term: enrollment-term
         allowed_dimensions:
           - study
           - study_status

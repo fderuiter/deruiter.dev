@@ -110,6 +110,19 @@ export {
   toOdcsYaml,
 } from "./internal/governance/contracts/odcs";
 export {
+  DATA_QUALITY_RULES,
+  assessDataQuality,
+  breakDataQualityRule,
+} from "./internal/quality/assess";
+export { DQ_SCENARIOS, applyDqScenario } from "./internal/quality/faults";
+export {
+  DQ_ISSUE_LOG,
+  appendDqIssueEvent,
+  dataQualityTrend,
+  dqIssues,
+  withOpenDqIssues,
+} from "./internal/quality/issues";
+export {
   scoreVendors,
   sensitivity,
   cashFlow,

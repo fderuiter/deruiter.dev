@@ -84,21 +84,21 @@ from a higher layer into a lower one.
 `index.ts`, `types.ts` and `presets.ts` are its public contract and
 everything under `internal/` is private. Each stage gets its own folder:
 
-| Folder                | Stage                                                                |
-| --------------------- | -------------------------------------------------------------------- |
-| `internal/portfolio`  | Seeded synthetic portfolio and its bronze feeds                      |
-| `internal/warehouse`  | Silver and gold star schemas, DDL for DuckDB, PostgreSQL and T-SQL   |
-| `internal/semantic`   | The metric registry and its compilers                                |
-| `internal/reporting`  | Report specs, certification tiers, the report catalog and its pack   |
-| `internal/quality`    | Data quality rules by DAMA dimension, results and scorecards         |
-| `internal/governance` | Catalog, glossary, stewardship and data contracts                    |
-| `internal/lineage`    | Column-level lineage as OpenLineage, with impact analysis            |
-| `internal/rbqm`       | Key risk indicators, quality tolerance limits and central monitoring |
-| `internal/forecast`   | Poisson-gamma enrollment forecasting and its what-if                 |
-| `internal/workbench`  | SQL workbench schema browser, saved queries and read-only guard      |
-| `internal/migration`  | Legacy extract mapping, reconciliation and cutover planning          |
-| `internal/interop`    | FHIR R4, HL7 v2, ODM and Dataset-JSON adapters                       |
-| `internal/strategy`   | Vendor scoring, build or buy, total cost of ownership                |
+| Folder                | Stage                                                                                                             |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `internal/portfolio`  | Seeded synthetic portfolio and its bronze feeds                                                                   |
+| `internal/warehouse`  | Silver and gold star schemas, DDL for DuckDB, PostgreSQL and T-SQL                                                |
+| `internal/semantic`   | The metric registry and its compilers                                                                             |
+| `internal/reporting`  | Report specs, certification tiers, the report catalog and its pack                                                |
+| `internal/quality`    | Data quality rules by DAMA dimension, ingested conformance results, scorecards, fault scenarios and the issue log |
+| `internal/governance` | Catalog, glossary, stewardship and data contracts                                                                 |
+| `internal/lineage`    | Column-level lineage as OpenLineage, with impact analysis                                                         |
+| `internal/rbqm`       | Key risk indicators, quality tolerance limits and central monitoring                                              |
+| `internal/forecast`   | Poisson-gamma enrollment forecasting and its what-if                                                              |
+| `internal/workbench`  | SQL workbench schema browser, saved queries and read-only guard                                                   |
+| `internal/migration`  | Legacy extract mapping, reconciliation and cutover planning                                                       |
+| `internal/interop`    | FHIR R4, HL7 v2, ODM and Dataset-JSON adapters                                                                    |
+| `internal/strategy`   | Vendor scoring, build or buy, total cost of ownership                                                             |
 
 The public types (`Portfolio`, `Study`, `Site`, `DataProduct`,
 `DataContract`, `MetricDefinition`, `DqRule`, `LineageEdge`) are the shared

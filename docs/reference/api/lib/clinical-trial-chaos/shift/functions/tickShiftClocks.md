@@ -10,7 +10,7 @@
 
 Advances the deterministic per-frame clocks by one step, in order: subject
 deadlines (expiries raise suspicion and break the combo), the auditor
-patrol, lifeline durations (the coffee break ending), and the running
+patrol (skipped once suspicion is maxed), lifeline durations (the coffee break ending), and the running
 protocol amendment. Spawning, random amendments and the sponsor inbox draw
 on randomness and stay with the caller.
 

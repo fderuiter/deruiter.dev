@@ -50,6 +50,21 @@ const VISUAL_GROUPING: Readonly<
   },
 };
 
+/**
+ * Whether a visual can draw a grouping, by the rule `checkReportSpec`
+ * applies; the explorer offers only the visuals that pass it.
+ *
+ * @param visual - The visual.
+ * @param dimensions - The dimensions grouped by.
+ * @returns `true` when the visual fits.
+ */
+export function visualFitsGrouping(
+  visual: ReportVisual,
+  dimensions: readonly string[]
+): boolean {
+  return VISUAL_GROUPING[visual].fits(dimensions);
+}
+
 function specFindings(spec: ReportSpec): string[] {
   const messages: string[] = [];
   if (!REPORT_ID.test(spec.id)) {

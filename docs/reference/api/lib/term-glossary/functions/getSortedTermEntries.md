@@ -8,6 +8,9 @@
 
 > **getSortedTermEntries**(`glossary?`): `object`[]
 
+The phrases `compileTerms` wraps, longest first: every term's canonical
+name and aliases, except terms with `autoLink` set to `false`.
+
 ## Parameters
 
 ### glossary?

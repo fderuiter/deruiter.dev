@@ -65,7 +65,7 @@ Subjects who entered screening, counted on their screening date. Each counts onc
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Screening (`screening-term`).
 
 ### Subjects enrolled
 
@@ -77,7 +77,7 @@ Subjects enrolled into a study, counted on their enrollment date. Subjects who l
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Enrollment (`enrollment-term`).
 
 ### Enrollment vs plan
 
@@ -89,7 +89,7 @@ Enrolled subjects as a share of the planned enrollment, the sum of the current s
 - Dimensions: `study`, `site`, `country`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Enrollment (`enrollment-term`).
 
 ### Screen failure rate
 
@@ -101,7 +101,7 @@ Share of screened subjects whose screening ended in a screen failure, by screeni
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Screen failure (`screen-failure-term`).
 
 ### Early termination rate
 
@@ -113,7 +113,7 @@ Subjects who discontinued before completing the study, as a share of subjects en
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Early termination (`early-termination-term`).
 
 ## Site start-up
 
@@ -127,7 +127,7 @@ Median days from the study's protocol finalisation to a site's activation, over 
 - Dimensions: `study`, `site`, `country`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Site activation (`site-activation-term`).
 
 ## Visits and data entry
 
@@ -141,7 +141,7 @@ Median days from a visit to the entry of its data in the EDC, over visits with d
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: `edc-term`.
+- Glossary term: Electronic Data Capture (EDC) (`edc-term`).
 
 ### Data entry lag (90th percentile)
 
@@ -153,7 +153,7 @@ Median days from a visit to the entry of its data in the EDC, over visits with d
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: `edc-term`.
+- Glossary term: Electronic Data Capture (EDC) (`edc-term`).
 
 ### Data entry lag (mean)
 
@@ -165,7 +165,7 @@ Mean days from a visit to the entry of its data in the EDC, over visits with dat
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: `edc-term`.
+- Glossary term: Electronic Data Capture (EDC) (`edc-term`).
 
 ### Missed visit rate
 
@@ -177,7 +177,7 @@ Missed visits as a share of all visits due by the data cut, dated by the planned
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Missed visit (`missed-visit-term`).
 
 ### Out-of-window visit rate
 
@@ -189,7 +189,7 @@ Visits performed outside their protocol window, as a share of visits performed.
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Visit window (`visit-window-term`).
 
 ## Queries
 
@@ -203,7 +203,7 @@ Data queries opened per 100 visits performed. The gold model holds no CRF page c
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: none yet.
+- Glossary term: Data query (`data-query-term`).
 
 ### Open queries
 
@@ -215,7 +215,7 @@ Queries not closed at the data cut: still open, or answered by the site and awai
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: none yet.
+- Glossary term: Data query (`data-query-term`).
 
 ### Query aging
 
@@ -227,7 +227,7 @@ Mean days from opening to the data cut of the queries not closed at the cut. Clo
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: none yet.
+- Glossary term: Data query (`data-query-term`).
 
 ### Query resolution time (median)
 
@@ -239,7 +239,7 @@ Median calendar days from a query's opening to its closing, over closed queries.
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Data Management Lead. Steward: Clinical Data Steward.
-- Glossary term: none yet.
+- Glossary term: Data query (`data-query-term`).
 
 ## Monitoring
 
@@ -253,7 +253,7 @@ CRF pages source-verified at monitoring visits as a share of the pages due for s
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: `sdv-term`.
+- Glossary term: Source Document Verification (SDV) (`sdv-term`).
 
 ### Overdue monitoring visit reports
 
@@ -265,7 +265,7 @@ Monitoring visits whose report was still not final after its due date, at the da
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Monitoring visit (`monitoring-visit-term`).
 
 ### Overdue interim monitoring visits
 
@@ -277,7 +277,7 @@ Interim monitoring visits the monitoring plan scheduled whose visit window close
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: `study_status` not in `closed`.
 - Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Monitoring visit (`monitoring-visit-term`).
 
 ### Monitoring report cycle time (median)
 
@@ -289,7 +289,7 @@ Median days from a monitoring visit to its final report, over visits whose repor
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
 - Default filters: none.
 - Owner: Clinical Monitoring Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Monitoring visit (`monitoring-visit-term`).
 
 ## Protocol deviations
 
@@ -303,7 +303,7 @@ Protocol deviations classed as important (after ICH E3) per 100 enrolled subject
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`.
 - Default filters: none.
 - Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Important protocol deviation (`important-deviation-term`).
 
 ### Non-important deviations per 100 subjects
 
@@ -315,7 +315,7 @@ Protocol deviations not classed as important per 100 enrolled subjects.
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`.
 - Default filters: none.
 - Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Protocol deviation (`protocol-deviation-term`).
 
 ### Subjects with an important deviation
 
@@ -327,7 +327,7 @@ Share of enrolled subjects with at least one important protocol deviation, a com
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`.
 - Default filters: none.
 - Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward.
-- Glossary term: none yet.
+- Glossary term: Important protocol deviation (`important-deviation-term`).
 
 ## Milestones
 
@@ -341,7 +341,7 @@ Days from the first subject's enrollment to the last subject's in one study: the
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`.
 - Default filters: none.
 - Owner: Portfolio Management Lead. Steward: Portfolio Data Steward.
-- Glossary term: none yet.
+- Glossary term: Enrollment period (`enrollment-period-term`).
 
 ### Last subject last visit to database lock
 
@@ -353,7 +353,7 @@ Days from the last subject's last visit to database lock in one study. A study t
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`.
 - Default filters: none.
 - Owner: Portfolio Management Lead. Steward: Portfolio Data Steward.
-- Glossary term: none yet.
+- Glossary term: Database lock (DBL) (`database-lock-term`).
 
 ## Finance
 
@@ -367,7 +367,7 @@ Actual spend as a share of the budget for the same months, up to the data cut. A
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `vendor`, `month`.
 - Default filters: none.
 - Owner: Clinical Finance Lead. Steward: Finance Data Steward.
-- Glossary term: none yet.
+- Glossary term: Budget burn (`budget-burn-term`).
 
 ### Cost per enrolled subject
 
@@ -379,7 +379,7 @@ Actual spend up to the data cut divided by the number of subjects enrolled. The 
 - Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`.
 - Default filters: none.
 - Owner: Clinical Finance Lead. Steward: Finance Data Steward.
-- Glossary term: none yet.
+- Glossary term: Enrollment (`enrollment-term`).
 
 ## Dimensions
 

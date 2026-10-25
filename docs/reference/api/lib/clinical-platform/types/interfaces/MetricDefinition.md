@@ -74,7 +74,9 @@ How the value is computed from the gold model.
 
 > `readonly` **glossaryTerm**: `string` \| `null`
 
-Key of the business glossary term (`CANONICAL_GLOSSARY` in `lib/term-glossary.ts`), or `null`.
+Key of the business glossary term (`CANONICAL_GLOSSARY` in
+`lib/term-glossary.ts`) that defines what the metric counts, or `null`.
+A certified metric must link one.
 
 ***
 

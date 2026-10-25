@@ -32,6 +32,12 @@ export async function initClientSentry(): Promise<boolean | null> {
   if (isDummyOrMissingDsn(dsn)) {
     return null;
   }
+  // beforeSend would drop every event outside a production deployment, so
+  // loading the SDK there spends a download on nothing. VERCEL_ENV is not
+  // inlined into browser bundles, so the browser never loads it (#2780).
+  if (!isReportableEnvironment()) {
+    return null;
+  }
 
   if (isInitialized) {
     return true;

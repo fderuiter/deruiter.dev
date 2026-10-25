@@ -24,4 +24,5 @@
 - [isBuildPhase](functions/isBuildPhase.md)
 - [isProductionBuild](functions/isProductionBuild.md)
 - [isProductionEnvironment](functions/isProductionEnvironment.md)
+- [mergeInlinedEnv](functions/mergeInlinedEnv.md)
 - [validateEnv](functions/validateEnv.md)

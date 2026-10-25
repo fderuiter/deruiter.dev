@@ -16,10 +16,13 @@ vi.mock("@sentry/nextjs", () => ({
 
 describe("Client Instrumentation Structured Logging (#1631)", () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
+  const originalVercelEnv = process.env.VERCEL_ENV;
 
   beforeEach(() => {
     vi.clearAllMocks();
     resetSentryInitializationForTesting();
+    // The SDK loads only in a production deployment (#2780).
+    process.env.VERCEL_ENV = "production";
     warnSpy = vi.spyOn(logger, "warn").mockImplementation(() => ({
       level: "warn",
       message: "",
@@ -28,6 +31,11 @@ describe("Client Instrumentation Structured Logging (#1631)", () => {
   });
 
   afterEach(() => {
+    if (originalVercelEnv === undefined) {
+      delete process.env.VERCEL_ENV;
+    } else {
+      process.env.VERCEL_ENV = originalVercelEnv;
+    }
     warnSpy.mockRestore();
     vi.restoreAllMocks();
   });

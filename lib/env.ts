@@ -129,6 +129,49 @@ export function validateEnv(
   };
 }
 
+/**
+ * The variables a browser bundle can see, each written out as
+ * `process.env.NAME`.
+ *
+ * Next inlines a variable at build time only where code names it this way. A
+ * browser bundle carries no populated `process.env` object, so parsing the
+ * object alone gives every client module the schema defaults: `NODE_ENV`
+ * reads "development" in a production build and every `NEXT_PUBLIC_*` value
+ * is undefined (#2780). Every key of `clientEnvSchema` belongs here, and a
+ * test holds the two lists together.
+ */
+function inlinedEnv(): Record<string, string | undefined> {
+  return {
+    NODE_ENV: process.env.NODE_ENV,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+    NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY:
+      process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  };
+}
+
+/**
+ * Merge the runtime `process.env` object with the inlined values.
+ *
+ * On the server the two agree. In the browser the object is empty and the
+ * inlined values are the only source, so an inlined value wins wherever it is
+ * defined.
+ *
+ * @param processEnv - The runtime `process.env` object.
+ * @param inlined - The values the bundler substituted, by name.
+ * @returns The environment to validate.
+ */
+export function mergeInlinedEnv(
+  processEnv: Record<string, string | undefined>,
+  inlined: Record<string, string | undefined>
+): Record<string, string | undefined> {
+  const merged = { ...processEnv };
+  for (const [key, value] of Object.entries(inlined)) {
+    if (value !== undefined) merged[key] = value;
+  }
+  return merged;
+}
+
 let cachedEnv: AppEnv | null = null;
 
 /**
@@ -139,7 +182,7 @@ export function getEnv(): AppEnv {
   if (cachedEnv && process.env.NODE_ENV === "production" && !process.env.VITEST)
     return cachedEnv;
 
-  const result = validateEnv(process.env);
+  const result = validateEnv(mergeInlinedEnv(process.env, inlinedEnv()));
   if (
     !result.success &&
     process.env.NODE_ENV === "production" &&
@@ -191,10 +234,9 @@ export const env = getEnv();
 /**
  * Reports whether this is a production build, in the browser as on the server.
  *
- * Next inlines `process.env.NODE_ENV` at build time only where it is written
- * out like this. `env.NODE_ENV` is parsed from the whole `process.env`
- * object, which a browser bundle does not carry, so in client code it reads
- * the schema's default, "development", even in a production build.
+ * It reads the inlined `process.env.NODE_ENV` directly, so it needs no schema
+ * parse. `env.NODE_ENV` gives the same answer now that `getEnv` merges the
+ * inlined values (#2780).
  */
 export function isProductionBuild(): boolean {
   return process.env.NODE_ENV === "production";

@@ -25,3 +25,11 @@ One row of a field manual's control table, the shape `ManualControl` takes.
 ### key
 
 > `readonly` **key**: `string`
+
+***
+
+### touch
+
+> `readonly` **touch**: `string`
+
+The same controls on a touch screen, such as "Tap Jump", for phones.

@@ -8,9 +8,9 @@
 
 > **manualControlsFromActions**(`map`, `specs`): [`ManualControlRow`](../interfaces/ManualControlRow.md)[]
 
-Rows for a field manual's control table. The keys come from the map, so
-the manual names the keys the game binds; the title and prose come from
-the spec.
+Rows for a field manual's control table. The keys and the touch hints
+come from the map, so the manual names the keys the game binds and, on a
+phone, the touch control for each; the title and prose come from the spec.
 
 ## Parameters
 

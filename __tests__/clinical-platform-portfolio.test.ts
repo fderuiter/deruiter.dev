@@ -18,6 +18,7 @@ import {
   runPipeline,
   type Dataset,
 } from "@/lib/study-data";
+import { expectWithinTimingBudget } from "./helpers/timing-budget";
 
 /**
  * SHA-256 of `JSON.stringify(generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED }))`.
@@ -233,7 +234,11 @@ describe("generatePortfolio: determinism", () => {
       generatePortfolio({ seed: DEFAULT_PORTFOLIO_SEED });
       return performance.now() - start;
     });
-    expect(median(runs)).toBeLessThan(500);
+    expectWithinTimingBudget(
+      "generatePortfolio, median of 5",
+      median(runs),
+      500
+    );
   });
 });
 

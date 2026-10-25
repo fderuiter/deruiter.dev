@@ -3327,10 +3327,7 @@ const NON_SESSION_ENGINE_PATHS = [
  * Session-owned modules whose names do not say so, which the check also
  * scans: game-state code that #2544 found drawing outside a seeded stream.
  */
-const SESSION_OWNED_MODULES = [
-  "lib/clinical-trial-chaos/scenarios.ts",
-  "components/RetroLabyrinth.tsx",
-];
+const SESSION_OWNED_MODULES = ["lib/clinical-trial-chaos/scenarios.ts"];
 
 /**
  * Existing callers, allowed until their game's seam issue threads a seeded
@@ -3340,7 +3337,8 @@ const SESSION_OWNED_MODULES = [
  */
 export const SESSION_DETERMINISM_ALLOWLIST: Readonly<Record<string, string>> = {
   "app/proof/useProofSession.ts": "Proof Studio log ids, not an arcade session",
-  "components/RetroLabyrinth.tsx": "Retro Labyrinth pilot seam (ADR 0062)",
+  "components/retro-labyrinth/useRetroLabyrinthSession.ts":
+    "Retro Labyrinth pilot: game code moved verbatim by #2376; seeding follows in the pilot",
   "lib/clinical-trial-chaos/engine.ts": "Clinical Trial Chaos seam",
   "lib/clinical-trial-chaos/scenarios.ts": "Clinical Trial Chaos seam",
   "lib/garmin/engine.ts": "Garmin Watch seam (race runs are already seeded)",

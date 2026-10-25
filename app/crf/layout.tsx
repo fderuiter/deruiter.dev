@@ -1,3 +1,7 @@
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
@@ -15,8 +19,7 @@ export default function CRFLayout({ children }: { children: React.ReactNode }) {
         dangerouslySetInnerHTML={{
           __html: getWebApplicationSchema({
             name: "CRF Studio: Next-Gen Clinical Form & Protocol Designer",
-            description:
-              "Zero-latency clinical trial form designer and EDC simulator with 12-column responsive layout, AST-powered edit checks, CDASHIG 2.2-modelled forms, ODM-XML v1.3.2 export, and live publication aCRF overlays.",
+            description: `Zero-latency clinical trial form designer and EDC simulator with 12-column responsive layout, AST-powered edit checks, ${standardCitation("CDASHIG")}-modelled forms, ODM-XML v${CLINICAL_STANDARDS_PROFILE.ODM} export, and live publication aCRF overlays.`,
             url: "/crf",
             applicationCategory: "DeveloperApplication",
             genre: "Clinical Data Management Engine",

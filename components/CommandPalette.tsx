@@ -11,6 +11,10 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { getNavGroupForHref } from "@/lib/navigation";
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
 import { logger } from "@/lib/logger";
 import { apiClient } from "@/lib/api-client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -653,8 +657,8 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
         highlights: [
           "Zero-dependency Excel AST formula transpiler",
-          "Automated CDISC CDASH 2.2 variable mapping linter",
-          "Deterministic ODM-XML v1.3.2 export generator",
+          `Automated CDISC ${standardCitation("CDASHIG")} variable mapping linter`,
+          `Deterministic ODM-XML v${CLINICAL_STANDARDS_PROFILE.ODM} export generator`,
         ],
       },
       {

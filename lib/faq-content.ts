@@ -1,3 +1,7 @@
+import {
+  CLINICAL_STANDARDS_PROFILE,
+  standardCitation,
+} from "@/lib/study-data/standards";
 import type { FAQItem } from "@/lib/seo";
 
 /**
@@ -33,8 +37,7 @@ export const SCHEDULE_FAQ: readonly FAQItem[] = [
 export const CRF_FAQ: readonly FAQItem[] = [
   {
     question: "Which clinical data standards does CRF Studio work with?",
-    answer:
-      "The studio scaffolds forms from CDISC CDASH 2.2 domains and reads and writes CDISC ODM-XML 1.3.2. It is a demonstration designer, so check exported files against your own validation tooling before relying on them.",
+    answer: `The studio scaffolds forms from CDISC ${standardCitation("CDASHIG")} domains and reads and writes CDISC ODM-XML ${CLINICAL_STANDARDS_PROFILE.ODM}. It is a demonstration designer, so check exported files against your own validation tooling before relying on them.`,
   },
   {
     question: "Where does my study data go?",

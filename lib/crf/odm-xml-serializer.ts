@@ -1,3 +1,4 @@
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 import { StudyProtocol } from "./types";
 import { escapeXml } from "../utils";
 import { consultationUrl } from "./export-annotations";
@@ -54,7 +55,7 @@ export function exportStudyToCdiscOdmXml(study: StudyProtocol): string {
      FileType="Snapshot"
      FileOID="ODM.${escapeXml(protoNum)}.${Date.now()}"
      CreationDateTime="${timestamp}"
-     ODMVersion="1.3.2">
+     ODMVersion="${CLINICAL_STANDARDS_PROFILE.ODM}">
   <Study OID="${escapeXml(studyOid)}">
     <GlobalVariables>
       <StudyName>${escapeXml(studyTitle)}</StudyName>

@@ -3,6 +3,7 @@
  * Facilitates loss-free conversion between CRF Studio protocols and CDISC USDM graph JSON specifications.
  */
 
+import { CLINICAL_STANDARDS_PROFILE } from "@/lib/study-data/standards";
 import {
   StudyProtocol,
   CRFForm,
@@ -1229,7 +1230,7 @@ export const CRF_STUDIO_USDM_EXTENSION_BASE =
   "https://deruiter.dev/usdm/extensions/crf-studio/";
 
 const CDISC_CT_SYSTEM = "http://www.cdisc.org";
-const CDISC_CT_VERSION = "2026-09-25";
+const CDISC_CT_VERSION = CLINICAL_STANDARDS_PROFILE.CT.packageDate;
 const CRF_STUDIO_CODE_SYSTEM = "https://deruiter.dev/crf-studio";
 
 function v4Code(

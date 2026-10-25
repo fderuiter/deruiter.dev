@@ -11,6 +11,7 @@ export * from "./clinical-trial-chaos/escalation";
 export * from "./clinical-trial-chaos/amendments";
 export * from "./clinical-trial-chaos/observation-generators";
 export * from "./clinical-trial-chaos/inspection";
+export * from "./clinical-trial-chaos/terminology";
 
 import { SEEDED_SCENARIOS } from "./clinical-trial-chaos/scenarios";
 import { CDISCDomain } from "./clinical-trial-chaos/types";

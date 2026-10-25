@@ -6,6 +6,6 @@
 
 # Type Alias: StandardId
 
-> **StandardId** = `"USDM"` \| `"SDTM"` \| `"SDTMIG"` \| `"ADaM"` \| `"ADaMIG"` \| `"Define-XML"` \| `"Dataset-JSON"` \| `"ARS"` \| `"NCI-EVS-CT"`
+> **StandardId** = `"USDM"` \| `"SDTM"` \| `"SDTMIG"` \| `"ADaM"` \| `"ADaMIG"` \| `"OCCDS"` \| `"ADaM-CR"` \| `"Define-XML"` \| `"Dataset-JSON"` \| `"ARS"` \| `"NCI-EVS-CT"`
 
 A standard whose version the pipeline pins and declares.

@@ -77,7 +77,7 @@ export function ReportCatalog({
             value={text}
             onChange={(event) => setText(event.target.value)}
             aria-controls={resultsId}
-            className="mt-1 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+            className="mt-1 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
             placeholder="Title, metric, owner"
           />
         </div>
@@ -152,38 +152,38 @@ export function ReportCatalog({
             </p>
             <dl className="mt-3 grid gap-x-4 gap-y-1 font-mono text-xs text-slate-400 @sm:grid-cols-2">
               <div className="min-w-0">
-                <dt className="inline text-slate-500">Audience: </dt>
+                <dt className="inline text-slate-400">Audience: </dt>
                 <dd className="inline text-slate-200">{entry.audience}</dd>
               </div>
               <div className="min-w-0">
-                <dt className="inline text-slate-500">Owner: </dt>
+                <dt className="inline text-slate-400">Owner: </dt>
                 <dd className="inline text-slate-200">{entry.owner}</dd>
               </div>
               <div className="min-w-0">
-                <dt className="inline text-slate-500">Last refresh: </dt>
+                <dt className="inline text-slate-400">Last refresh: </dt>
                 <dd className="inline text-slate-200">
                   {entry.lastRefresh ?? "Not refreshed yet"}
                 </dd>
               </div>
               <div className="min-w-0">
-                <dt className="inline text-slate-500">Views: </dt>
+                <dt className="inline text-slate-400">Views: </dt>
                 <dd className="inline text-slate-200">
                   {entry.views === null ? "Not recorded" : entry.views}
                 </dd>
               </div>
               <div className="min-w-0">
-                <dt className="inline text-slate-500">Shown as: </dt>
+                <dt className="inline text-slate-400">Shown as: </dt>
                 <dd className="inline text-slate-200">
                   {VISUAL_LABEL[entry.visual]}
                 </dd>
               </div>
               <div className="min-w-0">
-                <dt className="inline text-slate-500">Version: </dt>
+                <dt className="inline text-slate-400">Version: </dt>
                 <dd className="inline text-slate-200">{entry.version}</dd>
               </div>
             </dl>
             <p className="mt-3 break-words text-xs text-slate-400">
-              <span className="text-slate-500">Metrics: </span>
+              <span className="text-slate-400">Metrics: </span>
               {entry.metricNames.join(", ")}
             </p>
           </li>

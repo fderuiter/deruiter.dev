@@ -7,6 +7,7 @@
  * Where Workers are unavailable (jsdom tests, very old browsers) the client
  * loads this same module on demand and runs it on the main thread.
  */
+import { standardCitation } from "@/lib/study-data/standards";
 import { clamp } from "@/lib/game-utils";
 import { validateUsdmV4Document } from "@/lib/crf/usdm-v4-schema";
 import {
@@ -309,7 +310,7 @@ export function createStudyDataSession() {
       `Seed ${seed}, ${nSubjects} subjects. The same study, seed and subject count give the same files, byte for byte.`,
       "",
       "Each table is written as accessible HTML and as RTF, and the Kaplan-Meier figure as SVG and as HTML with its data tables.",
-      "ars-reporting-event.json holds every analysis result in an ARS 1.0-shaped model, with the ADaM rows each result was computed from.",
+      `ars-reporting-event.json holds every analysis result in an ${standardCitation("ARS")}-shaped model, with the ADaM rows each result was computed from.`,
       "MANIFEST.json lists the SHA-256 of every other file.",
       "",
     ].join("\r\n");

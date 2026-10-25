@@ -74,7 +74,7 @@ function stubCanvas() {
 function renderPhoneRoom() {
   const view = render(
     <CabinetTouchContext.Provider value={true}>
-      <RetroLabyrinth isMounted autoPauseCount={0} />
+      <RetroLabyrinth isMounted />
     </CabinetTouchContext.Provider>
   );
   const canvas = view.container.querySelector("canvas") as HTMLCanvasElement;

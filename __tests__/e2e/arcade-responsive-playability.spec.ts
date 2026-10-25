@@ -95,6 +95,19 @@ for (const view of views) {
           .getByRole("button", { name: "3: Aurora", exact: true })
           .click();
       }
+      if ((await cabinet.getAttribute("data-view")) !== null) {
+        // A cabinet with views owns Escape (#2357, ADR 0062): it pauses
+        // rather than leaving, and F leaves pseudo-fullscreen.
+        await page.keyboard.press("Escape");
+        await expect(cabinet).toHaveAttribute("data-paused", "true");
+        await expect(cabinet).toHaveAttribute("data-fullscreen", "true");
+        await page.keyboard.press("f");
+        await expect(cabinet).toHaveAttribute("data-fullscreen", "false");
+        await expect(
+          page.getByRole("button", { name: /Enter Fullscreen/i }).first()
+        ).toBeVisible();
+        return;
+      }
       // An in-game dialog owns the first Escape; a subsequent Escape exits
       // pseudo-fullscreen after that topmost focus trap closes.
       await expect(async () => {

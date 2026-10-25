@@ -8,6 +8,30 @@
 
 ## References
 
+### LABYRINTH\_ACTIONS
+
+Re-exports [LABYRINTH_ACTIONS](actions/variables/LABYRINTH_ACTIONS.md)
+
+***
+
+### LABYRINTH\_CONTROLS
+
+Re-exports [LABYRINTH_CONTROLS](actions/variables/LABYRINTH_CONTROLS.md)
+
+***
+
+### LabyrinthActionName
+
+Re-exports [LabyrinthActionName](actions/type-aliases/LabyrinthActionName.md)
+
+***
+
+### LabyrinthInputContext
+
+Re-exports [LabyrinthInputContext](actions/type-aliases/LabyrinthInputContext.md)
+
+***
+
 ### RetroLabyrinthConfig
 
 Re-exports [RetroLabyrinthConfig](engine/interfaces/RetroLabyrinthConfig.md)

@@ -42,7 +42,7 @@ The decisions recorded for one data product.
 
 ### retention
 
-> `readonly` **retention**: [`DataRetention`](../../../../../types/interfaces/DataRetention.md)
+> `readonly` **retention**: [`DataRetention`](../../../../../types/platform/interfaces/DataRetention.md)
 
 ***
 

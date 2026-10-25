@@ -18,4 +18,4 @@ A signal to raise: where it came from and what was found.
 
 ### source
 
-> `readonly` **source**: [`RiskSignalSource`](../../../../types/type-aliases/RiskSignalSource.md)
+> `readonly` **source**: [`RiskSignalSource`](../../../../types/rbqm/type-aliases/RiskSignalSource.md)

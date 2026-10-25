@@ -20,7 +20,7 @@ ISO 8601 data cut the reports were last refreshed to, if known.
 
 ### metrics?
 
-> `readonly` `optional` **metrics?**: readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[]
+> `readonly` `optional` **metrics?**: readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[]
 
 The registry; defaults to `METRIC_REGISTRY`.
 

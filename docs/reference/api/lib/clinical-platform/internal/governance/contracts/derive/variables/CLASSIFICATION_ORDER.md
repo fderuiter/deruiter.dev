@@ -6,6 +6,6 @@
 
 # Variable: CLASSIFICATION\_ORDER
 
-> `const` **CLASSIFICATION\_ORDER**: readonly [`DataClassification`](../../../../../types/type-aliases/DataClassification.md)[]
+> `const` **CLASSIFICATION\_ORDER**: readonly [`DataClassification`](../../../../../types/platform/type-aliases/DataClassification.md)[]
 
 Classifications from least to most protected.

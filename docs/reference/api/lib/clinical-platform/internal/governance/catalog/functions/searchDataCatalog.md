@@ -6,7 +6,7 @@
 
 # Function: searchDataCatalog()
 
-> **searchDataCatalog**(`entries`, `query`, `domains?`): [`DataCatalogEntry`](../../../../types/type-aliases/DataCatalogEntry.md)[]
+> **searchDataCatalog**(`entries`, `query`, `domains?`): [`DataCatalogEntry`](../../../../types/governance/type-aliases/DataCatalogEntry.md)[]
 
 Searches the data catalog. Every word of `text` must appear in the
 entry's id, name, description, owner, steward or stewardship domain, or,
@@ -19,24 +19,24 @@ leaves metrics out, and the metric status facet leaves products out.
 
 ### entries
 
-readonly [`DataCatalogEntry`](../../../../types/type-aliases/DataCatalogEntry.md)[]
+readonly [`DataCatalogEntry`](../../../../types/governance/type-aliases/DataCatalogEntry.md)[]
 
 Entries from `dataCatalog`.
 
 ### query
 
-[`DataCatalogQuery`](../../../../types/interfaces/DataCatalogQuery.md)
+[`DataCatalogQuery`](../../../../types/governance/interfaces/DataCatalogQuery.md)
 
 The search.
 
 ### domains?
 
-readonly [`GovernanceDomain`](../../../../types/interfaces/GovernanceDomain.md)[] = `GOVERNANCE_DOMAINS`
+readonly [`GovernanceDomain`](../../../../types/governance/interfaces/GovernanceDomain.md)[] = `GOVERNANCE_DOMAINS`
 
 Stewardship domains, for their names; defaults to `GOVERNANCE_DOMAINS`.
 
 ## Returns
 
-[`DataCatalogEntry`](../../../../types/type-aliases/DataCatalogEntry.md)[]
+[`DataCatalogEntry`](../../../../types/governance/type-aliases/DataCatalogEntry.md)[]
 
 The matching entries, in their catalog order.

@@ -6,6 +6,6 @@
 
 # Variable: METRIC\_DIMENSIONS
 
-> `const` **METRIC\_DIMENSIONS**: readonly [`MetricDimension`](../../../../types/interfaces/MetricDimension.md)[]
+> `const` **METRIC\_DIMENSIONS**: readonly [`MetricDimension`](../../../../types/semantic/interfaces/MetricDimension.md)[]
 
 The dimensions a metric may be grouped or filtered by.

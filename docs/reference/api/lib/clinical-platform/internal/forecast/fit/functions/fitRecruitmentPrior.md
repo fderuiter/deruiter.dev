@@ -6,7 +6,7 @@
 
 # Function: fitRecruitmentPrior()
 
-> **fitRecruitmentPrior**(`sites`): [`RecruitmentRate`](../../../../types/interfaces/RecruitmentRate.md)
+> **fitRecruitmentPrior**(`sites`): [`RecruitmentRate`](../../../../types/forecast/interfaces/RecruitmentRate.md)
 
 Fits the study's gamma prior of site recruitment rates by maximum
 likelihood: the shape by golden-section search on log α over [10⁻³, 10⁵],
@@ -24,7 +24,7 @@ Each site's enrollment and days recruiting; at least 2, and at least one with a 
 
 ## Returns
 
-[`RecruitmentRate`](../../../../types/interfaces/RecruitmentRate.md)
+[`RecruitmentRate`](../../../../types/forecast/interfaces/RecruitmentRate.md)
 
 The fitted prior, in subjects per site-day.
 

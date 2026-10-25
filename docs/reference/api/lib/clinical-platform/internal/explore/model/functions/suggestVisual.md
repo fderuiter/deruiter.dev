@@ -6,7 +6,7 @@
 
 # Function: suggestVisual()
 
-> **suggestVisual**(`dimensions`, `rowCount`): [`ReportVisual`](../../../../types/type-aliases/ReportVisual.md)
+> **suggestVisual**(`dimensions`, `rowCount`): [`ReportVisual`](../../../../types/platform/type-aliases/ReportVisual.md)
 
 The visual that suits the shape of a result: one number for no grouping,
 a line over months, bars for a short list, and a table for a long list
@@ -16,7 +16,7 @@ or two dimensions.
 
 ### dimensions
 
-readonly [`MetricDimensionId`](../../../../types/type-aliases/MetricDimensionId.md)[]
+readonly [`MetricDimensionId`](../../../../types/platform/type-aliases/MetricDimensionId.md)[]
 
 The dimensions grouped by.
 
@@ -28,6 +28,6 @@ How many rows the result has.
 
 ## Returns
 
-[`ReportVisual`](../../../../types/type-aliases/ReportVisual.md)
+[`ReportVisual`](../../../../types/platform/type-aliases/ReportVisual.md)
 
 The visual.

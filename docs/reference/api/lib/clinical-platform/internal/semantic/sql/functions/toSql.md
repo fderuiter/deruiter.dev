@@ -18,31 +18,31 @@ denominator is `NULL`, as in `evaluateMetric`.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 Metric definition.
 
 ### dimensions
 
-readonly [`MetricDimensionId`](../../../../types/type-aliases/MetricDimensionId.md)[]
+readonly [`MetricDimensionId`](../../../../types/platform/type-aliases/MetricDimensionId.md)[]
 
 Dimensions to group by, in output order.
 
 ### filters
 
-readonly [`MetricFilter`](../../../../types/interfaces/MetricFilter.md)[]
+readonly [`MetricFilter`](../../../../types/platform/interfaces/MetricFilter.md)[]
 
 Filters; each replaces the metric's default filter on the same dimension.
 
 ### dialect
 
-[`SqlDialect`](../../../../types/type-aliases/SqlDialect.md)
+[`SqlDialect`](../../../../types/platform/type-aliases/SqlDialect.md)
 
 `duckdb`, `postgres` or `tsql`.
 
 ### options?
 
-[`MetricCompileOptions`](../../../../types/interfaces/MetricCompileOptions.md) = `{}`
+[`MetricCompileOptions`](../../../../types/semantic/interfaces/MetricCompileOptions.md) = `{}`
 
 The data cut, for metrics that measure age at the cut.
 

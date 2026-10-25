@@ -26,4 +26,4 @@ Whether the deviation happens at enrollment rather than on treatment.
 
 ### importance
 
-> `readonly` **importance**: [`DeviationImportance`](../../../../types/type-aliases/DeviationImportance.md)
+> `readonly` **importance**: [`DeviationImportance`](../../../../types/platform/type-aliases/DeviationImportance.md)

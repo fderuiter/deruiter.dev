@@ -6,6 +6,6 @@
 
 # Type Alias: SilverTables
 
-> **SilverTables** = `Readonly`\<`Record`\<`string`, readonly [`WarehouseRow`](../../../../types/type-aliases/WarehouseRow.md)[]\>\>
+> **SilverTables** = `Readonly`\<`Record`\<`string`, readonly [`WarehouseRow`](../../../../types/platform/type-aliases/WarehouseRow.md)[]\>\>
 
 Silver rows per table name (without the `silver.` prefix).

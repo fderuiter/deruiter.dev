@@ -6,10 +6,10 @@
 
 # Function: conformanceDqRules()
 
-> **conformanceDqRules**(): [`DqRule`](../../../../types/interfaces/DqRule.md)[]
+> **conformanceDqRules**(): [`DqRule`](../../../../types/quality/interfaces/DqRule.md)[]
 
 Data quality rules for the conformance rules, in the pipeline's order.
 
 ## Returns
 
-[`DqRule`](../../../../types/interfaces/DqRule.md)[]
+[`DqRule`](../../../../types/quality/interfaces/DqRule.md)[]

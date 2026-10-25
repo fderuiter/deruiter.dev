@@ -6,6 +6,6 @@
 
 # Variable: OPERATIONAL\_RETENTION
 
-> `const` **OPERATIONAL\_RETENTION**: [`DataRetention`](../../../../../types/interfaces/DataRetention.md)
+> `const` **OPERATIONAL\_RETENTION**: [`DataRetention`](../../../../../types/platform/interfaces/DataRetention.md)
 
 Retention of operational and derived data that no regulation sets a period for.

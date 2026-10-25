@@ -32,7 +32,7 @@ Paths of the grouped dimensions, in query order.
 
 ### measure
 
-> `readonly` **measure**: [`MetricMeasure`](../../../../types/interfaces/MetricMeasure.md) \| `null`
+> `readonly` **measure**: [`MetricMeasure`](../../../../types/platform/interfaces/MetricMeasure.md) \| `null`
 
 #### Inherited from
 

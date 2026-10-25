@@ -20,7 +20,7 @@ readonly [`SiteExposure`](../interfaces/SiteExposure.md)[]
 
 ### prior
 
-[`RecruitmentRate`](../../../../types/interfaces/RecruitmentRate.md)
+[`RecruitmentRate`](../../../../types/forecast/interfaces/RecruitmentRate.md)
 
 ## Returns
 

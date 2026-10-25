@@ -6,6 +6,6 @@
 
 # Variable: PLATFORM\_STAGES
 
-> `const` **PLATFORM\_STAGES**: readonly [`PlatformStage`](../../types/interfaces/PlatformStage.md)[]
+> `const` **PLATFORM\_STAGES**: readonly [`PlatformStage`](../../types/platform/interfaces/PlatformStage.md)[]
 
 The private stage folders under `internal/`, in dependency order.

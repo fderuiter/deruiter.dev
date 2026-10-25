@@ -6,7 +6,7 @@
 
 # Function: dataCatalogFacets()
 
-> **dataCatalogFacets**(`entries`, `domains?`): [`DataCatalogFacets`](../../../../types/interfaces/DataCatalogFacets.md)
+> **dataCatalogFacets**(`entries`, `domains?`): [`DataCatalogFacets`](../../../../types/governance/interfaces/DataCatalogFacets.md)
 
 Counts catalog entries by each facet. Every value of a facet is listed in
 its defined order, including values no entry takes, so a page can show a
@@ -16,18 +16,18 @@ stable set of filters.
 
 ### entries
 
-readonly [`DataCatalogEntry`](../../../../types/type-aliases/DataCatalogEntry.md)[]
+readonly [`DataCatalogEntry`](../../../../types/governance/type-aliases/DataCatalogEntry.md)[]
 
 Entries, for example the results of a search.
 
 ### domains?
 
-readonly [`GovernanceDomain`](../../../../types/interfaces/GovernanceDomain.md)[] = `GOVERNANCE_DOMAINS`
+readonly [`GovernanceDomain`](../../../../types/governance/interfaces/GovernanceDomain.md)[] = `GOVERNANCE_DOMAINS`
 
 Stewardship domains, for their order; defaults to `GOVERNANCE_DOMAINS`.
 
 ## Returns
 
-[`DataCatalogFacets`](../../../../types/interfaces/DataCatalogFacets.md)
+[`DataCatalogFacets`](../../../../types/governance/interfaces/DataCatalogFacets.md)
 
 The counts.

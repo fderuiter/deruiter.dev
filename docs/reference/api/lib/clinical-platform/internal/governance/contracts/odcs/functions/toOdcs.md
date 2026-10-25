@@ -15,13 +15,13 @@ validates against the standard's JSON schema.
 
 ### product
 
-[`DataProduct`](../../../../../types/interfaces/DataProduct.md)
+[`DataProduct`](../../../../../types/platform/interfaces/DataProduct.md)
 
 The data product.
 
 ### contract
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)
 
 Its contract.
 

@@ -6,7 +6,7 @@
 
 # Function: checkLayerFlow()
 
-> **checkLayerFlow**(`edge`): [`PolicyFinding`](../../../types/interfaces/PolicyFinding.md) \| `null`
+> **checkLayerFlow**(`edge`): [`PolicyFinding`](../../../types/platform/interfaces/PolicyFinding.md) \| `null`
 
 Checks that a lineage edge flows towards gold. Bronze feeds silver and
 gold, silver feeds silver and gold, and gold never writes back into a
@@ -16,12 +16,12 @@ lower layer.
 
 ### edge
 
-[`LineageEdge`](../../../types/interfaces/LineageEdge.md)
+[`LineageEdge`](../../../types/platform/interfaces/LineageEdge.md)
 
 Column-level lineage edge.
 
 ## Returns
 
-[`PolicyFinding`](../../../types/interfaces/PolicyFinding.md) \| `null`
+[`PolicyFinding`](../../../types/platform/interfaces/PolicyFinding.md) \| `null`
 
 A finding when the edge flows backwards, otherwise `null`.

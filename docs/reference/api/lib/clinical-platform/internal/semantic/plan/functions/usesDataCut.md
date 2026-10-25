@@ -14,7 +14,7 @@ Whether a metric measures something against the data cut.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 ## Returns
 

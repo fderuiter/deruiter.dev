@@ -6,7 +6,7 @@
 
 # Function: qualityPlan()
 
-> **qualityPlan**(`studyId`, `productType`, `startOn`): [`QualityPlan`](../../../../types/interfaces/QualityPlan.md)
+> **qualityPlan**(`studyId`, `productType`, `startOn`): [`QualityPlan`](../../../../types/rbqm/interfaces/QualityPlan.md)
 
 The quality plan of a study: its critical-to-quality factors and QTL
 limits, in force from the study's start.
@@ -33,6 +33,6 @@ ISO 8601 study start date, from `gold.dim_study`.
 
 ## Returns
 
-[`QualityPlan`](../../../../types/interfaces/QualityPlan.md)
+[`QualityPlan`](../../../../types/rbqm/interfaces/QualityPlan.md)
 
 The study's synthetic quality plan, version 1.0.

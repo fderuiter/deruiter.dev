@@ -6,6 +6,6 @@
 
 # Variable: LAYER\_RANK
 
-> `const` **LAYER\_RANK**: `Readonly`\<`Record`\<[`MedallionLayer`](../../types/type-aliases/MedallionLayer.md), `number`\>\>
+> `const` **LAYER\_RANK**: `Readonly`\<`Record`\<[`MedallionLayer`](../../types/platform/type-aliases/MedallionLayer.md), `number`\>\>
 
 Position of each layer in the flow; data may only move to an equal or higher rank.

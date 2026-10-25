@@ -12,7 +12,7 @@ The pipeline run behind a study and the records read from it.
 
 ### reference
 
-> `readonly` **reference**: [`StudyDataRunReference`](../../../../types/interfaces/StudyDataRunReference.md)
+> `readonly` **reference**: [`StudyDataRunReference`](../../../../types/platform/interfaces/StudyDataRunReference.md)
 
 ***
 

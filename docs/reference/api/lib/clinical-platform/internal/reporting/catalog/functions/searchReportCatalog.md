@@ -6,7 +6,7 @@
 
 # Function: searchReportCatalog()
 
-> **searchReportCatalog**(`entries`, `query`): [`ReportCatalogEntry`](../../../../types/interfaces/ReportCatalogEntry.md)[]
+> **searchReportCatalog**(`entries`, `query`): [`ReportCatalogEntry`](../../../../types/reporting/interfaces/ReportCatalogEntry.md)[]
 
 Searches catalog entries. Every word of `text` must appear in the
 entry's title, purpose, audience, owner or metric names, ignoring case;
@@ -17,18 +17,18 @@ the entry's tier must be one of `tiers`; and its audience must equal
 
 ### entries
 
-readonly [`ReportCatalogEntry`](../../../../types/interfaces/ReportCatalogEntry.md)[]
+readonly [`ReportCatalogEntry`](../../../../types/reporting/interfaces/ReportCatalogEntry.md)[]
 
 Catalog entries.
 
 ### query
 
-[`ReportCatalogQuery`](../../../../types/interfaces/ReportCatalogQuery.md)
+[`ReportCatalogQuery`](../../../../types/reporting/interfaces/ReportCatalogQuery.md)
 
 The search.
 
 ## Returns
 
-[`ReportCatalogEntry`](../../../../types/interfaces/ReportCatalogEntry.md)[]
+[`ReportCatalogEntry`](../../../../types/reporting/interfaces/ReportCatalogEntry.md)[]
 
 The matching entries, in their catalog order.

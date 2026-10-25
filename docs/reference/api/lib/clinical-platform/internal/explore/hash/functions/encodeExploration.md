@@ -15,7 +15,7 @@ exploration is normalized first, so equal explorations give equal links.
 
 ### exploration
 
-[`Exploration`](../../../../types/interfaces/Exploration.md)
+[`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration.
 

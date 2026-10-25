@@ -6,7 +6,7 @@
 
 # Function: buildScd2Versions()
 
-> **buildScd2Versions**(`initial`, `changes`): [`Scd2Version`](../../../../types/interfaces/Scd2Version.md)[]
+> **buildScd2Versions**(`initial`, `changes`): [`Scd2Version`](../../../../types/warehouse/interfaces/Scd2Version.md)[]
 
 Builds the versions of one dimension member. The first version starts on
 `initial.effectiveOn` with `initial.attributes`. Each change takes effect
@@ -19,19 +19,19 @@ ends at `SCD2_OPEN_END` and is current.
 
 ### initial
 
-[`Scd2Change`](../../../../types/interfaces/Scd2Change.md)
+[`Scd2Change`](../../../../types/warehouse/interfaces/Scd2Change.md)
 
 First day the member exists, and its attributes then.
 
 ### changes
 
-readonly [`Scd2Change`](../../../../types/interfaces/Scd2Change.md)[]
+readonly [`Scd2Change`](../../../../types/warehouse/interfaces/Scd2Change.md)[]
 
 Dated changes, in any order.
 
 ## Returns
 
-[`Scd2Version`](../../../../types/interfaces/Scd2Version.md)[]
+[`Scd2Version`](../../../../types/warehouse/interfaces/Scd2Version.md)[]
 
 Versions in date order, numbered from 1.
 

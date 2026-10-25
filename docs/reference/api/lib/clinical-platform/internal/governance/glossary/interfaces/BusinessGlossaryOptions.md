@@ -18,4 +18,4 @@ What `businessGlossary` reads; both default to the platform's own.
 
 ### metrics?
 
-> `readonly` `optional` **metrics?**: readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[]
+> `readonly` `optional` **metrics?**: readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[]

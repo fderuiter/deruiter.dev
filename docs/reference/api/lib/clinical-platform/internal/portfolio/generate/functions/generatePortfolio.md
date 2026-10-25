@@ -6,7 +6,7 @@
 
 # Function: generatePortfolio()
 
-> **generatePortfolio**(`options`): [`Portfolio`](../../../../types/interfaces/Portfolio.md)
+> **generatePortfolio**(`options`): [`Portfolio`](../../../../types/platform/interfaces/Portfolio.md)
 
 Generates the synthetic sponsor portfolio and its bronze operational
 feeds: eight studies (drug Phase I to III, two device IDE studies, three
@@ -27,13 +27,13 @@ the data cut in `asOf`. Planted patterns are listed in `signals`.
 
 ### options
 
-[`PortfolioOptions`](../../../../types/interfaces/PortfolioOptions.md)
+[`PortfolioOptions`](../../../../types/portfolio/interfaces/PortfolioOptions.md)
 
 Generation options; `seed` is an integer from 0 to 4294967295.
 
 ## Returns
 
-[`Portfolio`](../../../../types/interfaces/Portfolio.md)
+[`Portfolio`](../../../../types/platform/interfaces/Portfolio.md)
 
 The portfolio.
 

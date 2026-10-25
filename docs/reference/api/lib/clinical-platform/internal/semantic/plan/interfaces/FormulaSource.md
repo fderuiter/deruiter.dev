@@ -16,7 +16,7 @@ One table a formula reads, with its measure (none for a span).
 
 ### measure
 
-> `readonly` **measure**: [`MetricMeasure`](../../../../types/interfaces/MetricMeasure.md) \| `null`
+> `readonly` **measure**: [`MetricMeasure`](../../../../types/platform/interfaces/MetricMeasure.md) \| `null`
 
 ***
 

@@ -6,7 +6,7 @@
 
 # Function: checkContractChange()
 
-> **checkContractChange**(`previous`, `next`): [`DataContractFinding`](../../../../../types/interfaces/DataContractFinding.md)[]
+> **checkContractChange**(`previous`, `next`): [`DataContractFinding`](../../../../../types/governance/interfaces/DataContractFinding.md)[]
 
 Checks one version of a contract against the one before it: the version
 may not go backwards, may not stay the same over a change, and must take
@@ -17,18 +17,18 @@ bump fails.
 
 ### previous
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)
 
 The earlier release.
 
 ### next
 
-[`DataContract`](../../../../../types/interfaces/DataContract.md)
+[`DataContract`](../../../../../types/platform/interfaces/DataContract.md)
 
 The release that follows it.
 
 ## Returns
 
-[`DataContractFinding`](../../../../../types/interfaces/DataContractFinding.md)[]
+[`DataContractFinding`](../../../../../types/governance/interfaces/DataContractFinding.md)[]
 
 Every broken versioning rule, each naming what changed.

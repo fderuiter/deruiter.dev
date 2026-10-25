@@ -6,7 +6,7 @@
 
 # Function: checkWorkbenchSql()
 
-> **checkWorkbenchSql**(`sql`): [`WorkbenchSqlFinding`](../../../../types/interfaces/WorkbenchSqlFinding.md)[]
+> **checkWorkbenchSql**(`sql`): [`WorkbenchSqlFinding`](../../../../types/workbench/interfaces/WorkbenchSqlFinding.md)[]
 
 Checks that SQL typed into the workbench is one read-only query. It
 catches what the engine settings would refuse anyway, earlier and in
@@ -22,6 +22,6 @@ The text as typed.
 
 ## Returns
 
-[`WorkbenchSqlFinding`](../../../../types/interfaces/WorkbenchSqlFinding.md)[]
+[`WorkbenchSqlFinding`](../../../../types/workbench/interfaces/WorkbenchSqlFinding.md)[]
 
 What stops the text from running; empty when it may run.

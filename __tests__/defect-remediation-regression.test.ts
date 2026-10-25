@@ -2278,7 +2278,7 @@ describe("Retro Labyrinth pass-4 playtest (#1665, #1667, #1668, #1669)", () => {
   // The view and, since #2376, the session that holds the game's rules.
   const labyrinth = () =>
     [
-      "../components/retro-labyrinth/views/DesktopView.tsx",
+      "../components/retro-labyrinth/parts/LabyrinthLayout.tsx",
       "../components/retro-labyrinth/useRetroLabyrinthSession.ts",
     ]
       .map((file) => fs.readFileSync(path.resolve(__dirname, file), "utf-8"))

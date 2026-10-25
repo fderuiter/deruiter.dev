@@ -518,7 +518,24 @@ async function operationsJourney(page: Page) {
     "Quality and monitoring"
   );
 
-  // 3. Back walks the drill-down.
+  // 3. The site's risk tab (#2631) rates it on every key risk indicator.
+  // The tab ships after Clinical v1 (#2691), so the daily probe of a
+  // deployed origin that does not have it yet goes on without this step;
+  // every local and CI run, which serve the branch, takes it.
+  const risk = page.getByRole("tab", { name: "Risk" });
+  if (!process.env.PLAYWRIGHT_TEST_BASE_URL || (await risk.count()) > 0) {
+    await expect(async () => {
+      await risk.click();
+      await expect(page).toHaveURL(/&view=risk$/, { timeout: 5_000 });
+    }).toPass({ timeout: 15_000 });
+    await expect(
+      page
+        .getByRole("table", { name: /^Key risk indicators for 1 site/ })
+        .getByRole("row")
+    ).toHaveCount(2, { timeout: 30_000 });
+  }
+
+  // 4. Back walks the drill-down.
   await page.goBack();
   await expect(sites).toBeVisible({ timeout: 30_000 });
 }

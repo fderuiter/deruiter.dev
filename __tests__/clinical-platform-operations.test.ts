@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
+  CSM_TESTS,
   DEFAULT_PORTFOLIO_SEED,
+  KRI_LIBRARY,
   METRIC_GAPS,
   METRIC_REGISTRY,
+  QTL_LIBRARY,
+  assessStudyRisk,
   buildWarehouse,
   checkReportSpec,
   dataContracts,
   dataProducts,
   evaluateMetric,
+  formatMetricValue,
   generatePortfolio,
   operationsDashboard,
   operationsReportSpecs,
@@ -402,22 +407,24 @@ describe("operations sections (#2630)", () => {
     ).toEqual(["DEMO-201", "DEMO-203", "DEMO-302"]);
   });
 
-  it("shows milestones at the portfolio and study levels only", () => {
+  it("shows milestones at the portfolio and study levels only, and risk below the portfolio (#2631)", () => {
     const ids = (scope: OperationsScope) =>
       operationsDashboard(warehouse, scope).sections.map((s) => s.id);
-    const all = [
-      "enrollment",
-      "activation",
-      "data-management",
-      "quality",
+    const shared = ["enrollment", "activation", "data-management", "quality"];
+    expect(ids({})).toEqual([...shared, "milestones"]);
+    expect(ids({ study: "DEMO-302" })).toEqual([
+      ...shared,
+      "risk",
       "milestones",
-    ];
-    expect(ids({})).toEqual(all);
-    expect(ids({ study: "DEMO-302" })).toEqual(all);
-    expect(ids({ study: "DEMO-302", country: "DE" })).toEqual(all.slice(0, 4));
-    expect(ids({ study: "DEMO-302", site: "DEMO-302-DE-103" })).toEqual(
-      all.slice(0, 4)
-    );
+    ]);
+    expect(ids({ study: "DEMO-302", country: "DE" })).toEqual([
+      ...shared,
+      "risk",
+    ]);
+    expect(ids({ study: "DEMO-302", site: "DEMO-302-DE-103" })).toEqual([
+      ...shared,
+      "risk",
+    ]);
   });
 
   it("shows overdue reports and interim visits against each study's monitoring plan (#2736)", () => {
@@ -482,6 +489,10 @@ describe("operations data freshness (#2630, #2626)", () => {
         p.consumers.some((c) => c.kind === "metric" && metricIds.includes(c.id))
       )
       .map((p) => p.id);
+  const RISK_METRICS = [
+    ...KRI_LIBRARY.flatMap((k) => [k.metricId, k.minimum.metricId]),
+    ...QTL_LIBRARY.map((q) => q.metricId),
+  ];
   const reports = (d: OperationsDashboard) => [
     d.glance,
     ...d.sections.flatMap((s) => s.reports),
@@ -495,6 +506,14 @@ describe("operations data freshness (#2630, #2626)", () => {
       if (dashboard.milestones !== null) {
         expected.add("gold.dim_milestone");
         expected.add("gold.fct_milestone");
+      }
+      if (dashboard.risk !== null) {
+        for (const id of readBy(RISK_METRICS)) expected.add(id);
+        for (const test of CSM_TESTS) {
+          for (const column of test.reads) {
+            expected.add(column.split(".").slice(0, 2).join("."));
+          }
+        }
       }
       expect(dashboard.sources.map((s) => s.productId)).toEqual(
         [...expected].sort()
@@ -541,5 +560,177 @@ describe("operations data freshness (#2630, #2626)", () => {
     expect(new Set(sources.map((s) => s.freshnessHours))).toEqual(
       new Set([24])
     );
+  });
+});
+
+describe("operations risk tab (#2631)", () => {
+  const risk = (scope: OperationsScope) =>
+    operationsDashboard(warehouse, scope).risk;
+  const metric = (id: string) => METRIC_REGISTRY.find((m) => m.id === id)!;
+  const activated = (study: string) =>
+    sites
+      .filter((s) => s.study_id === study && s.activated_on !== null)
+      .map((s) => String(s.site_id))
+      .sort();
+
+  it("has no risk tab at the portfolio level", () => {
+    expect(risk({})).toBeNull();
+    expect(risk({ runBy: "sponsor" })).toBeNull();
+  });
+
+  it("shows each study's assessment whole at the study level", () => {
+    for (const study of studies) {
+      const id = String(study.study_id);
+      const tab = risk({ study: id })!;
+      const assessment = assessStudyRisk(warehouse, id);
+      expect(tab.studyId).toBe(id);
+      expect(tab.sites.map((s) => s.id)).toEqual(activated(id));
+      expect(tab.planVersion).toBe(assessment.plan.version);
+      expect(tab.planEffectiveOn).toBe(assessment.plan.effectiveOn);
+      expect(tab.kris.map((k) => k.id)).toEqual(KRI_LIBRARY.map((k) => k.id));
+      for (const kri of tab.kris) {
+        const definition = KRI_LIBRARY.find((k) => k.id === kri.id)!;
+        const expected = assessment.kris.filter((a) => a.kriId === kri.id);
+        expect(kri.cells.map((c) => [c.siteId, c.status])).toEqual(
+          expected.map((a) => [a.siteId, a.status])
+        );
+        expect(kri.cells.map((c) => c.text)).toEqual(
+          expected.map((a) =>
+            formatMetricValue(metric(definition.metricId), a.value)
+          )
+        );
+      }
+      expect(tab.qtls.map((q) => [q.id, q.status])).toEqual(
+        assessment.qtls.map((q) => [q.qtlId, q.status])
+      );
+      expect(tab.csm.results).toEqual(assessment.csm.results);
+      expect(tab.csm.excluded).toEqual(assessment.csm.excluded);
+      expect(tab.log).toEqual(assessment.log);
+    }
+  });
+
+  it("narrows sites, KRIs, central monitoring and signals to the scope, but never the QTLs", () => {
+    for (const scope of EVERY_SCOPE.filter((s) => s.country !== undefined)) {
+      const tab = risk(scope)!;
+      const whole = risk({ study: scope.study })!;
+      const inScope = new Set(
+        sites
+          .filter(
+            (s) =>
+              s.study_id === scope.study &&
+              s.country_code === scope.country &&
+              (scope.site === undefined || s.site_id === scope.site)
+          )
+          .map((s) => String(s.site_id))
+      );
+      const shown = new Set(tab.sites.map((s) => s.id));
+      expect(
+        [...shown].every((id) => inScope.has(id)),
+        JSON.stringify(scope)
+      ).toBe(true);
+      expect(tab.sites.map((s) => s.id)).toEqual(
+        whole.sites.map((s) => s.id).filter((id) => inScope.has(id))
+      );
+      for (const kri of tab.kris) {
+        expect(kri.cells.every((c) => shown.has(c.siteId))).toBe(true);
+      }
+      expect(tab.csm.sites.every((id) => shown.has(id))).toBe(true);
+      expect(tab.csm.results.every((r) => shown.has(r.siteId))).toBe(true);
+      expect(
+        tab.csm.excluded.every((e) => e.siteId === null || shown.has(e.siteId))
+      ).toBe(true);
+      for (const entry of tab.log) {
+        const raised = whole.log.find(
+          (e) => e.signalId === entry.signalId && e.event === "raised"
+        )!;
+        const source = raised.source!;
+        expect(source.kind === "qtl" || shown.has(source.siteId)).toBe(true);
+      }
+      expect(tab.qtls).toEqual(whole.qtls);
+    }
+  });
+
+  it("drills from each site row into that site's own scope", () => {
+    for (const site of risk({ study: "DEMO-302" })!.sites) {
+      const dashboard = operationsDashboard(warehouse, site.scope);
+      expect(dashboard.notice).toBeNull();
+      expect(dashboard.scope).toEqual(site.scope);
+      expect(dashboard.risk!.sites).toEqual([site]);
+    }
+  });
+
+  it("puts each KRI's thresholds in its metric's unit", () => {
+    const tab = risk({ study: "DEMO-302" })!;
+    const kri = (id: string) => tab.kris.find((k) => k.id === id)!;
+    expect(kri("kri-screen-failure").thresholds).toBe(
+      "Amber at 50.0% or more, red at 65.0% or more."
+    );
+    expect(kri("kri-screen-failure").minimum).toBe("8 subjects screened");
+    expect(kri("kri-sdv").thresholds).toBe(
+      "Amber at 80.0% or less, red at 70.0% or less."
+    );
+    expect(kri("kri-entry-lag").minimum).toBe("3 subjects enrolled");
+  });
+
+  it("flags the planted site on several tests, and shows its signal only where it is in scope", () => {
+    const planted = "DEMO-302-BR-118";
+    const flagged = (scope: OperationsScope) =>
+      risk(scope)!
+        .csm.results.filter((r) => r.flagged && r.siteId === planted)
+        .map((r) => r.testId);
+    expect(flagged({ study: "DEMO-302" }).length).toBeGreaterThanOrEqual(2);
+    // One query reads as one, not "1 queries".
+    expect(
+      risk({ study: "DEMO-302" })!.csm.results.find(
+        (r) => r.siteId === planted && r.testId === "csm-query-under-reporting"
+      )!.detail
+    ).toMatch(/^1 query over 32 entered visits;/);
+    expect(flagged({ study: "DEMO-302", country: "BR" })).toEqual(
+      flagged({ study: "DEMO-302" })
+    );
+    const signals = (scope: OperationsScope) =>
+      risk(scope)!.log.map((e) => e.signalId);
+    expect(signals({ study: "DEMO-302", country: "BR" })).toContain(
+      "DEMO-302-SIG-001"
+    );
+    expect(signals({ study: "DEMO-302", country: "DE" })).toEqual([]);
+  });
+
+  it("shows a QTL breach and the signal it raises (DEMO-203)", () => {
+    const tab = risk({ study: "DEMO-203" })!;
+    const breach = tab.qtls.find((q) => q.id === "qtl-early-termination")!;
+    expect(breach).toMatchObject({
+      status: "breached",
+      value: "27.8%",
+      secondaryLimit: "18.0%",
+      limit: "25.0%",
+    });
+    const raised = tab.log.find(
+      (e) => e.source?.kind === "qtl" && e.source.qtlId === breach.id
+    )!;
+    expect(raised.event).toBe("raised");
+    expect(raised.note).toContain("past the tolerance limit of 25.0%");
+    // A study-level signal belongs to every country of the study.
+    expect(
+      risk({ study: "DEMO-203", country: "JP" })!.log.map((e) => e.signalId)
+    ).toContain(raised.signalId);
+  });
+
+  it("names what central monitoring cannot test yet, with the issue that adds the data", () => {
+    const section = operationsDashboard(warehouse, {
+      study: "DEMO-302",
+    }).sections.find((s) => s.id === "risk")!;
+    expect(section.reports).toEqual([]);
+    expect(section.gaps.map((g) => `${g.name} #${g.issue}`)).toEqual([
+      "Adverse event under-reporting #2776",
+      "Digit preference in vital signs #2776",
+      "Weekend and holiday visit dates #2776",
+      "Time of day of data entry #2776",
+    ]);
+    const factor = risk({ study: "DEMO-302" })!.factors.find(
+      (f) => f.id === "ctq-safety-reporting"
+    )!;
+    expect(factor.gap?.issue).toBe(2776);
+    expect(factor.kris).toEqual([]);
   });
 });

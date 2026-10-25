@@ -3,6 +3,15 @@
  * types.
  */
 import type { ReportData, ReportTier, ReportVisual } from "./platform";
+import type {
+  CsmExclusion,
+  CsmResult,
+  CsmTestDefinition,
+  CriticalToQualityFactor,
+  KriStatus,
+  QtlStatus,
+  RiskSignalLogEntry,
+} from "./rbqm";
 
 /** A broken report rule, as found by `checkReportSpec`. */
 export interface ReportFinding {
@@ -150,7 +159,12 @@ export interface OperationsStudyProfile {
 
 /** Section of the operations dashboard. */
 export type OperationsSectionId =
-  "enrollment" | "activation" | "data-management" | "quality" | "milestones";
+  | "enrollment"
+  | "activation"
+  | "data-management"
+  | "quality"
+  | "risk"
+  | "milestones";
 
 /** One tab of the operations dashboard: its reports and what it cannot show yet. */
 export interface OperationsSection {
@@ -177,6 +191,98 @@ export interface OperationsSource {
   readonly contractVersion: string;
 }
 
+/** One KRI at one site, as the Risk tab shows it. */
+export interface OperationsKriCell {
+  readonly siteId: string;
+  readonly status: KriStatus;
+  /** The value in the metric's unit, for example `12.5%`. */
+  readonly text: string;
+}
+
+/** A key risk indicator across the sites in scope. */
+export interface OperationsKri {
+  readonly id: string;
+  readonly name: string;
+  /** The registry metric it evaluates. */
+  readonly metricId: string;
+  /** Where it turns amber and red, in words and the metric's unit. */
+  readonly thresholds: string;
+  /** Why those thresholds. */
+  readonly reason: string;
+  /** Fewest observations a site needs before it is assessed, in words. */
+  readonly minimum: string;
+  /** One cell per site in scope, in site order. */
+  readonly cells: readonly OperationsKriCell[];
+}
+
+/** A quality tolerance limit of the study, as the Risk tab shows it. */
+export interface OperationsQtl {
+  readonly id: string;
+  readonly name: string;
+  readonly status: QtlStatus;
+  /** Values in the metric's unit. */
+  readonly value: string;
+  readonly secondaryLimit: string;
+  readonly limit: string;
+  /** What the parameter stands for and why it matters. */
+  readonly rationale: string;
+  /** The response planned before any breach. */
+  readonly response: string;
+}
+
+/** A site on the Risk tab, and the dashboard scope that drills into it. */
+export interface OperationsRiskSite {
+  readonly id: string;
+  readonly scope: OperationsScope;
+}
+
+/** A critical-to-quality factor, with the KRIs and QTLs that watch it by name. */
+export interface OperationsRiskFactor {
+  readonly id: string;
+  readonly name: string;
+  readonly risk: string;
+  readonly kris: readonly string[];
+  readonly qtls: readonly string[];
+  /** What the platform cannot watch yet, with the issue that adds it; `null` when nothing is missing. */
+  readonly gap: CriticalToQualityFactor["gap"];
+}
+
+/** Central statistical monitoring of the sites in scope. */
+export interface OperationsCsm {
+  /** False discovery rate the tests are controlled at, across the whole study. */
+  readonly fdr: number;
+  readonly tests: readonly CsmTestDefinition[];
+  /** Sites in scope with enough data to test, in id order. */
+  readonly sites: readonly string[];
+  /** Every result at those sites, by site then test. */
+  readonly results: readonly CsmResult[];
+  /** What could not be tested in scope, and why. */
+  readonly excluded: readonly CsmExclusion[];
+}
+
+/**
+ * Risk-based quality management for the study drilled into (#2631),
+ * narrowed to the country or site in scope. QTLs are study-level, so they
+ * are never narrowed.
+ */
+export interface OperationsRisk {
+  readonly studyId: string;
+  /** Quality plan version, and the ISO 8601 date it took effect. */
+  readonly planVersion: string;
+  readonly planEffectiveOn: string;
+  /** Activated sites in scope, in id order, each with the scope that drills into it. */
+  readonly sites: readonly OperationsRiskSite[];
+  readonly factors: readonly OperationsRiskFactor[];
+  readonly kris: readonly OperationsKri[];
+  readonly qtls: readonly OperationsQtl[];
+  readonly csm: OperationsCsm;
+  /**
+   * The risk signal log at the data cut: every study-level signal, and the
+   * site signals raised at a site in scope.
+   */
+  readonly log: readonly RiskSignalLogEntry[];
+}
+
 /** The operations dashboard at one scope, evaluated over one warehouse. */
 export interface OperationsDashboard {
   /** The scope shown: the one asked for, cut back to its deepest valid level. */
@@ -201,6 +307,8 @@ export interface OperationsDashboard {
   readonly sections: readonly OperationsSection[];
   /** The study's milestones at the study level; `null` at every other level. */
   readonly milestones: readonly OperationsMilestone[] | null;
+  /** Risk-based quality management at the study level and below; `null` at the portfolio level. */
+  readonly risk: OperationsRisk | null;
   /** Data products the numbers shown read, in id order. */
   readonly sources: readonly OperationsSource[];
 }

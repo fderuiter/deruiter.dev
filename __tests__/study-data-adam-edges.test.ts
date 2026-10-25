@@ -273,6 +273,18 @@ describe("ADSL edges (#2607)", () => {
       DCSREAS: null,
     });
   });
+
+  it("dates a death from DM.DTHDTC only when it is a full date (#2787)", () => {
+    const death = (DTHDTC: CellValue) =>
+      derive({ DM: [dm({ DTHDTC, DTHFL: DTHDTC ? "Y" : null })] }).get(
+        "ADSL"
+      )[0].DTHDT;
+    expect(death(addDays(FIRST_DOSE, 40))).toBe(addDays(FIRST_DOSE, 40));
+    // ADaMIG 1.3 would impute a partial date and flag it in DTHDTF; the
+    // pipeline does not impute, so the date stays missing.
+    expect(death("2030-02")).toBeNull();
+    expect(death(null)).toBeNull();
+  });
 });
 
 describe("ADVS edges (#2607)", () => {

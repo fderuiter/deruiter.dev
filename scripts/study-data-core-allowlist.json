@@ -7,7 +7,7 @@
       "dataset": "DM",
       "category": "defect",
       "issue": 2769,
-      "reason": "RACE, DTHDTC, DTHFL and RFPENDTC are not derived."
+      "reason": "RACE and RFPENDTC are not derived."
     },
     {
       "target": "sdtm",

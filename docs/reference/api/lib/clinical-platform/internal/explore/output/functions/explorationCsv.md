@@ -18,7 +18,7 @@ CRLF, as RFC 4180 asks.
 
 ### report
 
-[`ReportData`](../../../../types/interfaces/ReportData.md)
+[`ReportData`](../../../../types/platform/interfaces/ReportData.md)
 
 A report from `runExploration` or `buildReport`.
 

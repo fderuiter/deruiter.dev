@@ -6,7 +6,7 @@
 
 # Function: checkMetricChange()
 
-> **checkMetricChange**(`previous`, `next`): [`MetricFinding`](../../../../types/interfaces/MetricFinding.md)[]
+> **checkMetricChange**(`previous`, `next`): [`MetricFinding`](../../../../types/semantic/interfaces/MetricFinding.md)[]
 
 Checks one release of a metric against the release before it. A change to
 the formula, grain, unit or default filters, or a removed dimension, is
@@ -19,18 +19,18 @@ deprecated metric does not return to use.
 
 ### previous
 
-[`MetricRelease`](../../../../types/interfaces/MetricRelease.md)
+[`MetricRelease`](../../../../types/semantic/interfaces/MetricRelease.md)
 
 The earlier release.
 
 ### next
 
-[`MetricRelease`](../../../../types/interfaces/MetricRelease.md)
+[`MetricRelease`](../../../../types/semantic/interfaces/MetricRelease.md)
 
 The release that follows it.
 
 ## Returns
 
-[`MetricFinding`](../../../../types/interfaces/MetricFinding.md)[]
+[`MetricFinding`](../../../../types/semantic/interfaces/MetricFinding.md)[]
 
 Every broken versioning rule; empty when the change is versioned correctly.

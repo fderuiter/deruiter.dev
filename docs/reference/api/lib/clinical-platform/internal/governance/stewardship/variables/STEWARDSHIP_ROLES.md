@@ -6,6 +6,6 @@
 
 # Variable: STEWARDSHIP\_ROLES
 
-> `const` **STEWARDSHIP\_ROLES**: readonly [`StewardshipRole`](../../../../types/interfaces/StewardshipRole.md)[]
+> `const` **STEWARDSHIP\_ROLES**: readonly [`StewardshipRole`](../../../../types/governance/interfaces/StewardshipRole.md)[]
 
 The four stewardship roles.

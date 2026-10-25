@@ -6,7 +6,7 @@
 
 # Function: dqIssues()
 
-> **dqIssues**(`log`): [`DqIssue`](../../../../types/interfaces/DqIssue.md)[]
+> **dqIssues**(`log`): [`DqIssue`](../../../../types/quality/interfaces/DqIssue.md)[]
 
 Issues as their log entries leave them, in id order.
 
@@ -14,8 +14,8 @@ Issues as their log entries leave them, in id order.
 
 ### log
 
-readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
+readonly [`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)[]
 
 ## Returns
 
-[`DqIssue`](../../../../types/interfaces/DqIssue.md)[]
+[`DqIssue`](../../../../types/quality/interfaces/DqIssue.md)[]

@@ -6,6 +6,6 @@
 
 # Variable: QTL\_LIBRARY
 
-> `const` **QTL\_LIBRARY**: readonly [`QtlDefinition`](../../../../types/interfaces/QtlDefinition.md)[]
+> `const` **QTL\_LIBRARY**: readonly [`QtlDefinition`](../../../../types/rbqm/interfaces/QtlDefinition.md)[]
 
 Quality tolerance limits, in display order.

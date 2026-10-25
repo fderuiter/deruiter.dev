@@ -6,7 +6,7 @@
 
 # Function: assessDataQuality()
 
-> **assessDataQuality**(`warehouse`, `run`): [`DqAssessment`](../../../../types/interfaces/DqAssessment.md)
+> **assessDataQuality**(`warehouse`, `run`): [`DqAssessment`](../../../../types/platform/interfaces/DqAssessment.md)
 
 Runs every data quality rule and scores the results.
 
@@ -14,7 +14,7 @@ Runs every data quality rule and scores the results.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 The warehouse the platform rules check.
 
@@ -27,7 +27,7 @@ The Study Data Pipeline run whose conformance results are
 
 ## Returns
 
-[`DqAssessment`](../../../../types/interfaces/DqAssessment.md)
+[`DqAssessment`](../../../../types/platform/interfaces/DqAssessment.md)
 
 One result per rule in `DATA_QUALITY_RULES` order, and the scores
   overall, by product and by dimension. A score is the mean pass rate of

@@ -6,7 +6,7 @@
 
 # Function: evaluateMetric()
 
-> **evaluateMetric**(`warehouse`, `metric`, `query?`): [`MetricResult`](../../../../types/interfaces/MetricResult.md)
+> **evaluateMetric**(`warehouse`, `metric`, `query?`): [`MetricResult`](../../../../types/semantic/interfaces/MetricResult.md)
 
 Evaluates a governed metric over the gold tables of a warehouse. This is
 the engine behind the platform's own dashboards; the SQL, MetricFlow and
@@ -16,25 +16,25 @@ TMDL compilers express the same definition for other consumers.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A warehouse from `buildWarehouse`; its `asOf` is the data cut.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 Metric definition, usually from `METRIC_REGISTRY`.
 
 ### query?
 
-[`MetricQuery`](../../../../types/interfaces/MetricQuery.md) = `{}`
+[`MetricQuery`](../../../../types/semantic/interfaces/MetricQuery.md) = `{}`
 
 Dimensions to group by and filters; defaults to one total.
 
 ## Returns
 
-[`MetricResult`](../../../../types/interfaces/MetricResult.md)
+[`MetricResult`](../../../../types/semantic/interfaces/MetricResult.md)
 
 One row per group, sorted by dimension values. Additive measures
 (counts and sums) are 0 over no rows; means, medians, percentiles and

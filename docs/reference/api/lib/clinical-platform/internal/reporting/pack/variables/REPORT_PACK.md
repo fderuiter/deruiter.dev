@@ -6,6 +6,6 @@
 
 # Variable: REPORT\_PACK
 
-> `const` **REPORT\_PACK**: readonly [`ReportSpec`](../../../../types/interfaces/ReportSpec.md)[]
+> `const` **REPORT\_PACK**: readonly [`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)[]
 
 The standard report pack, in catalog order.

@@ -6,7 +6,7 @@
 
 # Function: checkDataContracts()
 
-> **checkDataContracts**(`contracts`, `data`, `options`): [`DataContractResult`](../../../../../types/interfaces/DataContractResult.md)[]
+> **checkDataContracts**(`contracts`, `data`, `options`): [`DataContractResult`](../../../../../types/governance/interfaces/DataContractResult.md)[]
 
 Checks every product's data against its contract.
 
@@ -14,24 +14,24 @@ Checks every product's data against its contract.
 
 ### contracts
 
-readonly [`DataContract`](../../../../../types/interfaces/DataContract.md)[]
+readonly [`DataContract`](../../../../../types/platform/interfaces/DataContract.md)[]
 
 Contracts in force, from `dataContracts`.
 
 ### data
 
-`Readonly`\<`Record`\<`string`, `Readonly`\<`Record`\<`string`, [`ContractObjectRows`](../../../../../types/interfaces/ContractObjectRows.md)\>\>\>\>
+`Readonly`\<`Record`\<`string`, `Readonly`\<`Record`\<`string`, [`ContractObjectRows`](../../../../../types/governance/interfaces/ContractObjectRows.md)\>\>\>\>
 
 Rows by product id, from `contractData`.
 
 ### options
 
-[`ContractCheckOptions`](../../../../../types/interfaces/ContractCheckOptions.md)
+[`ContractCheckOptions`](../../../../../types/governance/interfaces/ContractCheckOptions.md)
 
 When the products were loaded and when they are read.
 
 ## Returns
 
-[`DataContractResult`](../../../../../types/interfaces/DataContractResult.md)[]
+[`DataContractResult`](../../../../../types/governance/interfaces/DataContractResult.md)[]
 
 One result per contract, in contract order.

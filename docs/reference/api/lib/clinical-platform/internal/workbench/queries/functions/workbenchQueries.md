@@ -6,7 +6,7 @@
 
 # Function: workbenchQueries()
 
-> **workbenchQueries**(`dataCut`, `metrics?`): [`WorkbenchQuery`](../../../../types/interfaces/WorkbenchQuery.md)[]
+> **workbenchQueries**(`dataCut`, `metrics?`): [`WorkbenchQuery`](../../../../types/workbench/interfaces/WorkbenchQuery.md)[]
 
 The saved queries: the worked examples, then one per governed metric in
 registry order, each metric query carrying its DuckDB, PostgreSQL and
@@ -23,13 +23,13 @@ ISO 8601 date of the data cut, written into the queries
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 Metrics to include, usually `METRIC_REGISTRY`.
 
 ## Returns
 
-[`WorkbenchQuery`](../../../../types/interfaces/WorkbenchQuery.md)[]
+[`WorkbenchQuery`](../../../../types/workbench/interfaces/WorkbenchQuery.md)[]
 
 The queries, with unique ids.
 

@@ -70,10 +70,19 @@ describe("[#1202] Exports tab downloads match what the tab promises", () => {
     await act(async () => {
       tab?.click();
     });
-    // computeContent awaits dynamic imports.
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 50));
-    });
+    // computeContent awaits dynamic imports, which can outlast any fixed
+    // sleep under load (#2831), so wait for the loading state to clear.
+    await vi.waitFor(
+      async () => {
+        await act(async () => {
+          await new Promise((r) => setTimeout(r, 0));
+        });
+        expect(container.textContent).not.toContain(
+          "Generating export representation"
+        );
+      },
+      { timeout: 10_000 }
+    );
   }
 
   async function download(): Promise<Download> {

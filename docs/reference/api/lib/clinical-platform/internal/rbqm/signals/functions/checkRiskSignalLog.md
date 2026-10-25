@@ -6,7 +6,7 @@
 
 # Function: checkRiskSignalLog()
 
-> **checkRiskSignalLog**(`log`): [`RiskSignalLogFinding`](../../../../types/interfaces/RiskSignalLogFinding.md)[]
+> **checkRiskSignalLog**(`log`): [`RiskSignalLogFinding`](../../../../types/rbqm/interfaces/RiskSignalLogFinding.md)[]
 
 Checks a risk signal log, for example one read back from storage, against
 the rules `appendRiskSignal` enforces.
@@ -15,12 +15,12 @@ the rules `appendRiskSignal` enforces.
 
 ### log
 
-readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 The log to check.
 
 ## Returns
 
-[`RiskSignalLogFinding`](../../../../types/interfaces/RiskSignalLogFinding.md)[]
+[`RiskSignalLogFinding`](../../../../types/rbqm/interfaces/RiskSignalLogFinding.md)[]
 
 One finding per entry that breaks a rule; empty when the log is sound.

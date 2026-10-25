@@ -6,6 +6,6 @@
 
 # Type Alias: GoldTables
 
-> **GoldTables** = `Readonly`\<`Record`\<`string`, readonly [`WarehouseRow`](../../../../types/type-aliases/WarehouseRow.md)[]\>\>
+> **GoldTables** = `Readonly`\<`Record`\<`string`, readonly [`WarehouseRow`](../../../../types/platform/type-aliases/WarehouseRow.md)[]\>\>
 
 Gold rows per table name (without the `gold.` prefix).

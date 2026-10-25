@@ -6,7 +6,7 @@
 
 # Function: runExploration()
 
-> **runExploration**(`warehouse`, `exploration`, `metrics?`): [`ExplorationResult`](../../../../types/interfaces/ExplorationResult.md)
+> **runExploration**(`warehouse`, `exploration`, `metrics?`): [`ExplorationResult`](../../../../types/explore/interfaces/ExplorationResult.md)
 
 Runs an exploration over one warehouse: builds its exploratory report
 spec, suggests a visual from the result's shape, and draws it with the
@@ -16,25 +16,25 @@ chosen visual or else the suggested one.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 The warehouse to explore.
 
 ### exploration
 
-[`Exploration`](../../../../types/interfaces/Exploration.md)
+[`Exploration`](../../../../types/explore/interfaces/Exploration.md)
 
 The exploration.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`ExplorationResult`](../../../../types/interfaces/ExplorationResult.md)
+[`ExplorationResult`](../../../../types/explore/interfaces/ExplorationResult.md)
 
 The result.
 

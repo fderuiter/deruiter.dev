@@ -6,7 +6,7 @@
 
 # Function: effectiveFilters()
 
-> **effectiveFilters**(`metric`, `filters`): [`MetricFilter`](../../../../types/interfaces/MetricFilter.md)[]
+> **effectiveFilters**(`metric`, `filters`): [`MetricFilter`](../../../../types/platform/interfaces/MetricFilter.md)[]
 
 The filters in force for a query: the query's own, then each default
 filter on a dimension the query does not filter.
@@ -15,12 +15,12 @@ filter on a dimension the query does not filter.
 
 ### metric
 
-[`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)
+[`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)
 
 ### filters
 
-readonly [`MetricFilter`](../../../../types/interfaces/MetricFilter.md)[]
+readonly [`MetricFilter`](../../../../types/platform/interfaces/MetricFilter.md)[]
 
 ## Returns
 
-[`MetricFilter`](../../../../types/interfaces/MetricFilter.md)[]
+[`MetricFilter`](../../../../types/platform/interfaces/MetricFilter.md)[]

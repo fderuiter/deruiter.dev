@@ -6,7 +6,7 @@
 
 # Function: posteriorRate()
 
-> **posteriorRate**(`prior`, `site`): [`RecruitmentRate`](../../../../types/interfaces/RecruitmentRate.md)
+> **posteriorRate**(`prior`, `site`): [`RecruitmentRate`](../../../../types/forecast/interfaces/RecruitmentRate.md)
 
 A site's rate given the prior and its own enrollment: the gamma posterior
 Gamma(α + n, β + τ). A site with no days recruiting yet keeps the prior.
@@ -15,7 +15,7 @@ Gamma(α + n, β + τ). A site with no days recruiting yet keeps the prior.
 
 ### prior
 
-[`RecruitmentRate`](../../../../types/interfaces/RecruitmentRate.md)
+[`RecruitmentRate`](../../../../types/forecast/interfaces/RecruitmentRate.md)
 
 The study's prior.
 
@@ -27,6 +27,6 @@ The site's enrollment and days recruiting, 0 or more.
 
 ## Returns
 
-[`RecruitmentRate`](../../../../types/interfaces/RecruitmentRate.md)
+[`RecruitmentRate`](../../../../types/forecast/interfaces/RecruitmentRate.md)
 
 The posterior rate.

@@ -6,7 +6,7 @@
 
 # Function: stewardshipDomainOf()
 
-> **stewardshipDomainOf**(`role`, `domains?`): [`GovernanceDomainId`](../../../../types/type-aliases/GovernanceDomainId.md)
+> **stewardshipDomainOf**(`role`, `domains?`): [`GovernanceDomainId`](../../../../types/governance/type-aliases/GovernanceDomainId.md)
 
 The domain an owner or steward role belongs to.
 
@@ -20,13 +20,13 @@ An owner or steward role, as a product or metric names it.
 
 ### domains?
 
-readonly [`GovernanceDomain`](../../../../types/interfaces/GovernanceDomain.md)[] = `GOVERNANCE_DOMAINS`
+readonly [`GovernanceDomain`](../../../../types/governance/interfaces/GovernanceDomain.md)[] = `GOVERNANCE_DOMAINS`
 
 Domains to look in; defaults to `GOVERNANCE_DOMAINS`.
 
 ## Returns
 
-[`GovernanceDomainId`](../../../../types/type-aliases/GovernanceDomainId.md)
+[`GovernanceDomainId`](../../../../types/governance/type-aliases/GovernanceDomainId.md)
 
 The domain's id.
 

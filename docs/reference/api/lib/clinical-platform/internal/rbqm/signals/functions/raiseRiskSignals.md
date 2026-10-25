@@ -6,7 +6,7 @@
 
 # Function: raiseRiskSignals()
 
-> **raiseRiskSignals**(`studyId`, `on`, `signals`): readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+> **raiseRiskSignals**(`studyId`, `on`, `signals`): readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 Raises signals in a new log, numbered per study in the order given.
 
@@ -32,6 +32,6 @@ What to raise.
 
 ## Returns
 
-readonly [`RiskSignalLogEntry`](../../../../types/interfaces/RiskSignalLogEntry.md)[]
+readonly [`RiskSignalLogEntry`](../../../../types/rbqm/interfaces/RiskSignalLogEntry.md)[]
 
 A new, frozen log with one `raised` entry per signal.

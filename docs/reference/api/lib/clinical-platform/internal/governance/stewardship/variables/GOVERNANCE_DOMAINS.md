@@ -6,6 +6,6 @@
 
 # Variable: GOVERNANCE\_DOMAINS
 
-> `const` **GOVERNANCE\_DOMAINS**: readonly [`GovernanceDomain`](../../../../types/interfaces/GovernanceDomain.md)[]
+> `const` **GOVERNANCE\_DOMAINS**: readonly [`GovernanceDomain`](../../../../types/governance/interfaces/GovernanceDomain.md)[]
 
 Every stewardship domain, with the owner and steward roles it holds.

@@ -6,7 +6,7 @@
 
 # Function: dimension()
 
-> **dimension**(`id`): [`MetricDimension`](../../../../types/interfaces/MetricDimension.md)
+> **dimension**(`id`): [`MetricDimension`](../../../../types/semantic/interfaces/MetricDimension.md)
 
 The dimension with an id.
 
@@ -14,8 +14,8 @@ The dimension with an id.
 
 ### id
 
-[`MetricDimensionId`](../../../../types/type-aliases/MetricDimensionId.md)
+[`MetricDimensionId`](../../../../types/platform/type-aliases/MetricDimensionId.md)
 
 ## Returns
 
-[`MetricDimension`](../../../../types/interfaces/MetricDimension.md)
+[`MetricDimension`](../../../../types/semantic/interfaces/MetricDimension.md)

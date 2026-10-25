@@ -124,7 +124,7 @@ The study's monitoring plan.
 
 ### operatingModel
 
-> `readonly` **operatingModel**: [`OperatingModel`](../../../../types/type-aliases/OperatingModel.md)
+> `readonly` **operatingModel**: [`OperatingModel`](../../../../types/platform/type-aliases/OperatingModel.md)
 
 #### Inherited from
 
@@ -134,7 +134,7 @@ The study's monitoring plan.
 
 ### phase
 
-> `readonly` **phase**: [`StudyPhase`](../../../../types/type-aliases/StudyPhase.md)
+> `readonly` **phase**: [`StudyPhase`](../../../../types/platform/type-aliases/StudyPhase.md)
 
 #### Inherited from
 
@@ -150,13 +150,13 @@ The study's monitoring plan.
 
 ### plannedVisits
 
-> `readonly` **plannedVisits**: readonly [`PlannedVisit`](../../../../types/interfaces/PlannedVisit.md)[]
+> `readonly` **plannedVisits**: readonly [`PlannedVisit`](../../../../types/platform/interfaces/PlannedVisit.md)[]
 
 ***
 
 ### productType
 
-> `readonly` **productType**: [`ProductType`](../../../../types/type-aliases/ProductType.md)
+> `readonly` **productType**: [`ProductType`](../../../../types/platform/type-aliases/ProductType.md)
 
 #### Inherited from
 

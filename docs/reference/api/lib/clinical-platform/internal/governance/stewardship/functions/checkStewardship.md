@@ -6,7 +6,7 @@
 
 # Function: checkStewardship()
 
-> **checkStewardship**(`model`): [`GovernanceFinding`](../../../../types/interfaces/GovernanceFinding.md)[]
+> **checkStewardship**(`model`): [`GovernanceFinding`](../../../../types/governance/interfaces/GovernanceFinding.md)[]
 
 Checks the stewardship model and the policies. Each role belongs to one
 domain; every product and metric names an owner of some domain and a
@@ -24,6 +24,6 @@ The products to check, and optionally the rest of the model.
 
 ## Returns
 
-[`GovernanceFinding`](../../../../types/interfaces/GovernanceFinding.md)[]
+[`GovernanceFinding`](../../../../types/governance/interfaces/GovernanceFinding.md)[]
 
 Every broken rule; empty when the model is sound.

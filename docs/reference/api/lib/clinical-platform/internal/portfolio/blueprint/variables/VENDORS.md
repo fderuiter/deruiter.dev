@@ -6,6 +6,6 @@
 
 # Variable: VENDORS
 
-> `const` **VENDORS**: readonly [`Vendor`](../../../../types/interfaces/Vendor.md)[]
+> `const` **VENDORS**: readonly [`Vendor`](../../../../types/platform/interfaces/Vendor.md)[]
 
 The fictional vendors. None is the name of a real company.

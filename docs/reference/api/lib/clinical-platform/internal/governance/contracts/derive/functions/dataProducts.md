@@ -6,7 +6,7 @@
 
 # Function: dataProducts()
 
-> **dataProducts**(`run`): [`DataProduct`](../../../../../types/interfaces/DataProduct.md)[]
+> **dataProducts**(`run`): [`DataProduct`](../../../../../types/platform/interfaces/DataProduct.md)[]
 
 Every data product, with its owner, steward, classification, upstream
 sources and known consumers (downstream products, and the governed
@@ -22,6 +22,6 @@ A Study Data Pipeline run, as for `dataContracts`.
 
 ## Returns
 
-[`DataProduct`](../../../../../types/interfaces/DataProduct.md)[]
+[`DataProduct`](../../../../../types/platform/interfaces/DataProduct.md)[]
 
 The products, in the same order as `dataContracts`.

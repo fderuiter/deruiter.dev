@@ -6,7 +6,7 @@
 
 # Function: buildWarehouse()
 
-> **buildWarehouse**(`portfolio`, `options?`): [`Warehouse`](../../../../types/interfaces/Warehouse.md)
+> **buildWarehouse**(`portfolio`, `options?`): [`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 Builds the silver and gold layers of a portfolio. Silver conforms each
 bronze feed and keeps one row per primary key; gold is a star schema of
@@ -18,7 +18,7 @@ locale or random input.
 
 ### portfolio
 
-[`Portfolio`](../../../../types/interfaces/Portfolio.md)
+[`Portfolio`](../../../../types/platform/interfaces/Portfolio.md)
 
 The portfolio, from `generatePortfolio`.
 
@@ -30,7 +30,7 @@ Optional site staff override.
 
 ## Returns
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 Rows per qualified table name, in `WAREHOUSE_SCHEMA` order.
 

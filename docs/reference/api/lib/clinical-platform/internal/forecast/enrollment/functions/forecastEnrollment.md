@@ -6,7 +6,7 @@
 
 # Function: forecastEnrollment()
 
-> **forecastEnrollment**(`warehouse`, `studyId`, `options?`): [`EnrollmentForecast`](../../../../types/interfaces/EnrollmentForecast.md)
+> **forecastEnrollment**(`warehouse`, `studyId`, `options?`): [`EnrollmentForecast`](../../../../types/forecast/interfaces/EnrollmentForecast.md)
 
 Forecasts when a study enrolls its last subject.
 
@@ -14,7 +14,7 @@ Forecasts when a study enrolls its last subject.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 A warehouse from `buildWarehouse`.
 
@@ -38,11 +38,11 @@ A study still enrolling at the warehouse's data cut.
 
 #### whatIf?
 
-[`EnrollmentWhatIf`](../../../../types/interfaces/EnrollmentWhatIf.md) \| `null`
+[`EnrollmentWhatIf`](../../../../types/forecast/interfaces/EnrollmentWhatIf.md) \| `null`
 
 ## Returns
 
-[`EnrollmentForecast`](../../../../types/interfaces/EnrollmentForecast.md)
+[`EnrollmentForecast`](../../../../types/forecast/interfaces/EnrollmentForecast.md)
 
 The forecast: the fitted prior, each site's posterior, the chance of meeting the planned date, quantiles and a weekly curve.
 

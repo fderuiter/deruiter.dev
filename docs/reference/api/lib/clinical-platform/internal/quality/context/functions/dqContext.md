@@ -14,7 +14,7 @@ A context that indexes each table and column at most once.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 ## Returns
 

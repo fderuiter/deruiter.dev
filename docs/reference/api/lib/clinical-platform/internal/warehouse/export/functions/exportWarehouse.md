@@ -6,7 +6,7 @@
 
 # Function: exportWarehouse()
 
-> **exportWarehouse**(`schema`, `warehouse`): [`WarehouseExport`](../../../../types/interfaces/WarehouseExport.md)
+> **exportWarehouse**(`schema`, `warehouse`): [`WarehouseExport`](../../../../types/warehouse/interfaces/WarehouseExport.md)
 
 Exports every warehouse table as CSV with a header row and RFC 4180 quoting (fields
 separated by commas, lines by LF), plus a manifest of each file's columns
@@ -19,18 +19,18 @@ write each column.
 
 ### schema
 
-[`WarehouseSchema`](../../../../types/interfaces/WarehouseSchema.md)
+[`WarehouseSchema`](../../../../types/warehouse/interfaces/WarehouseSchema.md)
 
 The schema, normally `WAREHOUSE_SCHEMA`.
 
 ### warehouse
 
-[`Warehouse`](../../../../types/interfaces/Warehouse.md)
+[`Warehouse`](../../../../types/platform/interfaces/Warehouse.md)
 
 Rows from `buildWarehouse`.
 
 ## Returns
 
-[`WarehouseExport`](../../../../types/interfaces/WarehouseExport.md)
+[`WarehouseExport`](../../../../types/warehouse/interfaces/WarehouseExport.md)
 
 The files in schema order and their manifest.

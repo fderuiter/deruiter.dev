@@ -18,7 +18,7 @@ Name of a constraint, unique across the warehouse and at most 63 characters.
 
 ### table
 
-[`WarehouseTable`](../../../../types/interfaces/WarehouseTable.md)
+[`WarehouseTable`](../../../../types/platform/interfaces/WarehouseTable.md)
 
 ### suffix?
 

@@ -14,7 +14,7 @@ Simulates the time to enroll the remaining subjects.
 
 ### input
 
-[`EnrollmentSimulationInput`](../../../../types/interfaces/EnrollmentSimulationInput.md)
+[`EnrollmentSimulationInput`](../../../../types/forecast/interfaces/EnrollmentSimulationInput.md)
 
 The sites, the later sites, the subjects still to enroll, the runs and the stream key.
 

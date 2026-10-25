@@ -21,7 +21,7 @@ Attribute column.
 
 ### id
 
-> `readonly` **id**: [`MetricDimensionId`](../../../../types/type-aliases/MetricDimensionId.md)
+> `readonly` **id**: [`MetricDimensionId`](../../../../types/platform/type-aliases/MetricDimensionId.md)
 
 Dimension id.
 

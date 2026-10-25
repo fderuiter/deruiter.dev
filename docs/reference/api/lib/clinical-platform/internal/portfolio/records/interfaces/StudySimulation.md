@@ -12,13 +12,13 @@ Records and enrollment facts produced for one study.
 
 ### cec
 
-> `readonly` **cec**: [`CecAdjudication`](../../../../types/interfaces/CecAdjudication.md)[]
+> `readonly` **cec**: [`CecAdjudication`](../../../../types/platform/interfaces/CecAdjudication.md)[]
 
 ***
 
 ### deviations
 
-> `readonly` **deviations**: [`ProtocolDeviation`](../../../../types/interfaces/ProtocolDeviation.md)[]
+> `readonly` **deviations**: [`ProtocolDeviation`](../../../../types/platform/interfaces/ProtocolDeviation.md)[]
 
 ***
 
@@ -32,7 +32,7 @@ Enrollment day numbers, ascending.
 
 ### kits
 
-> `readonly` **kits**: [`IrtKit`](../../../../types/interfaces/IrtKit.md)[]
+> `readonly` **kits**: [`IrtKit`](../../../../types/platform/interfaces/IrtKit.md)[]
 
 ***
 
@@ -62,22 +62,22 @@ Day the last enrolled subject finished, or `null` while any is ongoing.
 
 ### queries
 
-> `readonly` **queries**: [`EdcQuery`](../../../../types/interfaces/EdcQuery.md)[]
+> `readonly` **queries**: [`EdcQuery`](../../../../types/platform/interfaces/EdcQuery.md)[]
 
 ***
 
 ### randomizations
 
-> `readonly` **randomizations**: [`IrtRandomization`](../../../../types/interfaces/IrtRandomization.md)[]
+> `readonly` **randomizations**: [`IrtRandomization`](../../../../types/platform/interfaces/IrtRandomization.md)[]
 
 ***
 
 ### subjects
 
-> `readonly` **subjects**: [`EdcSubject`](../../../../types/interfaces/EdcSubject.md)[]
+> `readonly` **subjects**: [`EdcSubject`](../../../../types/platform/interfaces/EdcSubject.md)[]
 
 ***
 
 ### visits
 
-> `readonly` **visits**: [`EdcVisit`](../../../../types/interfaces/EdcVisit.md)[]
+> `readonly` **visits**: [`EdcVisit`](../../../../types/platform/interfaces/EdcVisit.md)[]

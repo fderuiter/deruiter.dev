@@ -6,6 +6,6 @@
 
 # Variable: WORKBENCH\_DIALECTS
 
-> `const` **WORKBENCH\_DIALECTS**: readonly [`SqlDialect`](../../../../types/type-aliases/SqlDialect.md)[]
+> `const` **WORKBENCH\_DIALECTS**: readonly [`SqlDialect`](../../../../types/platform/type-aliases/SqlDialect.md)[]
 
 The three dialects the metric compiler writes, in display order.

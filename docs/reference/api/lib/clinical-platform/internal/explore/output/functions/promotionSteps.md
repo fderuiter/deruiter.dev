@@ -6,7 +6,7 @@
 
 # Function: promotionSteps()
 
-> **promotionSteps**(`spec`, `metrics?`): [`PromotionStep`](../../../../types/interfaces/PromotionStep.md)[]
+> **promotionSteps**(`spec`, `metrics?`): [`PromotionStep`](../../../../types/explore/interfaces/PromotionStep.md)[]
 
 The steps that promote an exploratory report to a managed report, owned
 and maintained by a team, and then to a certified one. A step is `met`
@@ -17,18 +17,18 @@ The explorer shows the list; it never promotes anything itself.
 
 ### spec
 
-[`ReportSpec`](../../../../types/interfaces/ReportSpec.md)
+[`ReportSpec`](../../../../types/platform/interfaces/ReportSpec.md)
 
 An exploratory report spec, usually from `runExploration`.
 
 ### metrics?
 
-readonly [`MetricDefinition`](../../../../types/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
+readonly [`MetricDefinition`](../../../../types/platform/interfaces/MetricDefinition.md)[] = `METRIC_REGISTRY`
 
 The registry; defaults to `METRIC_REGISTRY`.
 
 ## Returns
 
-[`PromotionStep`](../../../../types/interfaces/PromotionStep.md)[]
+[`PromotionStep`](../../../../types/explore/interfaces/PromotionStep.md)[]
 
 The steps, managed first, then certified.

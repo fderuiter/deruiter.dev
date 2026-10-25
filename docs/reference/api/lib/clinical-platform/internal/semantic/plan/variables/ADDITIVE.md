@@ -6,6 +6,6 @@
 
 # Variable: ADDITIVE
 
-> `const` **ADDITIVE**: `ReadonlySet`\<[`MetricAggregation`](../../../../types/type-aliases/MetricAggregation.md)\>
+> `const` **ADDITIVE**: `ReadonlySet`\<[`MetricAggregation`](../../../../types/platform/type-aliases/MetricAggregation.md)\>
 
 Aggregations whose value over no rows is 0 rather than `null`.

@@ -14,7 +14,7 @@ Vary one weight at a time while leaving all other weights fixed.
 
 ### scenario
 
-[`StrategyScenario`](../../../../types/interfaces/StrategyScenario.md)
+[`StrategyScenario`](../../../../types/strategy/interfaces/StrategyScenario.md)
 
 ### fraction?
 

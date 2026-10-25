@@ -6,7 +6,7 @@
 
 # Function: checkRegulatoryWording()
 
-> **checkRegulatoryWording**(`text`): [`PolicyFinding`](../../../types/interfaces/PolicyFinding.md)[]
+> **checkRegulatoryWording**(`text`): [`PolicyFinding`](../../../types/platform/interfaces/PolicyFinding.md)[]
 
 Finds compliance or validation claims in page copy. Platform pages say
 "designed to these controls"; they never call the platform compliant or
@@ -22,6 +22,6 @@ Copy to check.
 
 ## Returns
 
-[`PolicyFinding`](../../../types/interfaces/PolicyFinding.md)[]
+[`PolicyFinding`](../../../types/platform/interfaces/PolicyFinding.md)[]
 
 One finding per prohibited word, in order of appearance.

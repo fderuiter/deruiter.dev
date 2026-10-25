@@ -14,7 +14,7 @@ Finds the version in force on a day.
 
 ### T
 
-`T` *extends* `Pick`\<[`Scd2Version`](../../../../types/interfaces/Scd2Version.md), `"validFrom"` \| `"validTo"`\>
+`T` *extends* `Pick`\<[`Scd2Version`](../../../../types/warehouse/interfaces/Scd2Version.md), `"validFrom"` \| `"validTo"`\>
 
 ## Parameters
 

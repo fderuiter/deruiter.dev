@@ -6,7 +6,7 @@
 
 # Function: appendDqIssueEvent()
 
-> **appendDqIssueEvent**(`log`, `event`): readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
+> **appendDqIssueEvent**(`log`, `event`): readonly [`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)[]
 
 The log with one more entry.
 
@@ -14,15 +14,15 @@ The log with one more entry.
 
 ### log
 
-readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
+readonly [`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)[]
 
 ### event
 
-[`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)
+[`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)
 
 ## Returns
 
-readonly [`DqIssueEvent`](../../../../types/interfaces/DqIssueEvent.md)[]
+readonly [`DqIssueEvent`](../../../../types/quality/interfaces/DqIssueEvent.md)[]
 
 ## Throws
 

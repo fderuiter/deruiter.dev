@@ -14,7 +14,7 @@ Ready items respect dependencies and the capacity budget in each horizon.
 
 ### items
 
-readonly [`RoadmapItem`](../../../../types/interfaces/RoadmapItem.md)[]
+readonly [`RoadmapItem`](../../../../types/strategy/interfaces/RoadmapItem.md)[]
 
 ### capacity
 
@@ -26,7 +26,7 @@ readonly [`RoadmapItem`](../../../../types/interfaces/RoadmapItem.md)[]
 
 ### blocked
 
-> **blocked**: [`RoadmapItem`](../../../../types/interfaces/RoadmapItem.md)[] = `remaining`
+> **blocked**: [`RoadmapItem`](../../../../types/strategy/interfaces/RoadmapItem.md)[] = `remaining`
 
 ### horizons
 

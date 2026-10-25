@@ -12,7 +12,7 @@ A dimension filter located on one source.
 
 ### filter
 
-> `readonly` **filter**: [`MetricFilter`](../../../../types/interfaces/MetricFilter.md)
+> `readonly` **filter**: [`MetricFilter`](../../../../types/platform/interfaces/MetricFilter.md)
 
 ***
 

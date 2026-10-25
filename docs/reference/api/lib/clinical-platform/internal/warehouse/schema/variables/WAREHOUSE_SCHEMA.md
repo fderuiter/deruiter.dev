@@ -6,7 +6,7 @@
 
 # Variable: WAREHOUSE\_SCHEMA
 
-> `const` **WAREHOUSE\_SCHEMA**: [`WarehouseSchema`](../../../../types/interfaces/WarehouseSchema.md)
+> `const` **WAREHOUSE\_SCHEMA**: [`WarehouseSchema`](../../../../types/warehouse/interfaces/WarehouseSchema.md)
 
 The silver and gold layers, described once: every table with its grain,
 keys and SCD type 2 settings, and every column with its type,

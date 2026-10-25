@@ -12,7 +12,7 @@
 
 ### memo
 
-[`StrategyMemo`](../../../../types/interfaces/StrategyMemo.md)
+[`StrategyMemo`](../../../../types/strategy/interfaces/StrategyMemo.md)
 
 ### format
 

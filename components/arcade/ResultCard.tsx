@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useId, useRef, type ReactNode } from "react";
+import React, {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { clamp } from "@/lib/game-utils";
 
@@ -19,6 +25,17 @@ interface ResultAction {
   icon?: ReactNode;
 }
 
+interface ResultShare {
+  /** The text to share, e.g. "I cleared Act 1 with 1,250 points." */
+  text: string;
+  title?: string;
+  url?: string;
+  /** The button label. Defaults to "Share". */
+  label?: string;
+}
+
+type ShareOutcome = "shared" | "cancelled" | "copied" | "failed";
+
 interface ResultCardProps {
   title: string;
   /** Short stamp text, e.g. "Cleared" or "Down". */
@@ -32,6 +49,10 @@ interface ResultCardProps {
   previousBest?: number;
   primary: ResultAction;
   secondary?: ResultAction;
+  /** Game-specific numbers, kept in a "More stats" disclosure. */
+  details?: ResultStat[];
+  /** Offers a Share action: Web Share where it exists, else a copy. */
+  share?: ResultShare;
   /** Extra content under the numbers, such as an unlocked reward. */
   children?: ReactNode;
   /** A stable id for the title, when tests or the game refer to it. */
@@ -119,12 +140,53 @@ function bestLine(score: number, previousBest: number): ReactNode {
 }
 
 /**
+ * Shares through the Web Share API where the browser has it, and copies the
+ * text otherwise. Dismissing the share sheet is not a failure.
+ */
+async function shareResult({
+  text,
+  title,
+  url,
+}: ResultShare): Promise<ShareOutcome> {
+  const data = { text, title, url };
+  if (
+    typeof navigator.share === "function" &&
+    (typeof navigator.canShare !== "function" || navigator.canShare(data))
+  ) {
+    try {
+      await navigator.share(data);
+      return "shared";
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return "cancelled";
+      }
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(url ? `${text} ${url}` : text);
+    return "copied";
+  } catch {
+    return "failed";
+  }
+}
+
+const SHARE_STATUS: Record<ShareOutcome, string> = {
+  shared: "",
+  cancelled: "",
+  copied: "Copied to the clipboard.",
+  failed: "Sharing is not available here.",
+};
+
+/**
  * The shared end-of-round card: a title, a verdict stamp, a roll-up of the
  * round's numbers, a best-score line and Replay / Next actions.
  *
  * It is a modal dialog that traps focus and starts on the primary action.
  * Escape is left to the cabinet unless `onEscape` is given. The roll-up and the stamp's entrance are
  * skipped under reduced motion.
+ *
+ * On a phone it fills the cabinet and moves the actions to the bottom, with
+ * the primary action nearest the thumb (`app/arcade/arcade.css`, #2794).
  */
 export function ResultCard({
   title,
@@ -136,6 +198,8 @@ export function ResultCard({
   previousBest,
   primary,
   secondary,
+  details,
+  share,
   children,
   headingId,
   onEscape,
@@ -148,6 +212,11 @@ export function ResultCard({
       ? bestLine(score, previousBest)
       : null;
   const primaryRef = useRef<HTMLButtonElement>(null);
+  const [shareStatus, setShareStatus] = useState("");
+  const onShare = async () => {
+    if (!share) return;
+    setShareStatus(SHARE_STATUS[await shareResult(share)]);
+  };
   const trapRef = useFocusTrap<HTMLDivElement>(true, {
     initialFocusRef: primaryRef,
     onEscape,
@@ -155,7 +224,7 @@ export function ResultCard({
   });
 
   return (
-    <div className="absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/75 p-4 select-none">
+    <div className="arcade-result-overlay absolute inset-0 z-30 flex items-center justify-center overflow-y-auto bg-black/75 p-4 select-none">
       <div
         ref={trapRef}
         role="dialog"
@@ -189,7 +258,7 @@ export function ResultCard({
         >
           {stats.map((stat) => (
             <div key={stat.label} className="bg-[#0d0e11] px-3 py-2.5">
-              <dt className="font-mono text-[10px] uppercase tracking-wider text-zinc-400">
+              <dt className="arcade-result-small font-mono text-[10px] uppercase tracking-wider text-zinc-400">
                 {stat.label}
               </dt>
               <dd className="mt-0.5 font-mono text-lg font-bold text-[#f4f4f6]">
@@ -203,11 +272,35 @@ export function ResultCard({
           ))}
         </dl>
 
-        {best && <p className="mt-3 font-mono text-[11px]">{best}</p>}
+        {details && details.length > 0 && (
+          <details className="group mt-3 rounded-xl border border-white/[0.08]">
+            <summary className="flex min-h-[44px] cursor-pointer items-center px-3 font-mono text-xs uppercase tracking-wider text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--game-accent)]">
+              More stats
+            </summary>
+            <dl className="grid grid-cols-2 gap-px border-t border-white/[0.08] bg-white/[0.08]">
+              {details.map((stat) => (
+                <div key={stat.label} className="bg-[#0d0e11] px-3 py-2">
+                  <dt className="font-mono text-xs text-zinc-400">
+                    {stat.label}
+                  </dt>
+                  <dd className="font-mono text-sm font-bold tabular-nums text-[#f4f4f6]">
+                    {`${stat.value}${stat.suffix ?? ""}`}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </details>
+        )}
+
+        {best && (
+          <p className="arcade-result-small mt-3 font-mono text-[11px]">
+            {best}
+          </p>
+        )}
 
         {children}
 
-        <div className="mt-6 flex flex-wrap items-center justify-end gap-2 font-mono text-xs font-bold uppercase tracking-wider">
+        <div className="arcade-result-actions mt-6 flex flex-wrap items-center justify-end gap-2 font-mono text-xs font-bold uppercase tracking-wider">
           {secondary && (
             <button
               type="button"
@@ -216,6 +309,15 @@ export function ResultCard({
             >
               {secondary.icon}
               {secondary.label}
+            </button>
+          )}
+          {share && (
+            <button
+              type="button"
+              onClick={onShare}
+              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-xl border border-white/[0.08] bg-transparent px-4 text-zinc-200 transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--game-accent)]"
+            >
+              {share.label ?? "Share"}
             </button>
           )}
           <button
@@ -228,6 +330,14 @@ export function ResultCard({
             {primary.label}
           </button>
         </div>
+        {share && (
+          <p
+            role="status"
+            className="mt-2 min-h-[1rem] text-right font-mono text-xs text-zinc-300"
+          >
+            {shareStatus}
+          </p>
+        )}
       </div>
     </div>
   );

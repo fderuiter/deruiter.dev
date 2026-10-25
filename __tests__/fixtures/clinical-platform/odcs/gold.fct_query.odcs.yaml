@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/gold.fct_query"
 name: "Query facts"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "Operations mart"
 tags:
@@ -91,6 +91,14 @@ schema:
           maxLength: 64
         physicalType: "VARCHAR(64)"
         description: "Queried field, as DOMAIN.VARIABLE."
+        required: true
+        classification: internal
+      - name: queried_form
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 8
+        physicalType: "VARCHAR(8)"
+        description: "CRF form of the queried field: its CDASH domain, the part of queried_field before the dot."
         required: true
         classification: internal
       - name: query_origin
@@ -191,3 +199,7 @@ customProperties:
       - "metric:open_query_count"
       - "metric:query_aging_mean"
       - "metric:query_resolution_time_median"
+      - "metric:open_queries_aged_0_7_days"
+      - "metric:open_queries_aged_8_30_days"
+      - "metric:open_queries_aged_31_60_days"
+      - "metric:open_queries_aged_over_60_days"

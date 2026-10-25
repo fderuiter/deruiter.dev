@@ -101,6 +101,15 @@ const MONTHLY_DIMENSIONS: readonly MetricDimensionId[] = [
   ...FACT_DIMENSIONS,
   "month",
 ];
+const QUERY_DIMENSIONS: readonly MetricDimensionId[] = [
+  ...MONTHLY_DIMENSIONS,
+  "queried_form",
+];
+const DEVIATION_DIMENSIONS: readonly MetricDimensionId[] = [
+  ...MONTHLY_DIMENSIONS,
+  "deviation_category",
+  "deviation_importance",
+];
 const SITE_TARGET_DIMENSIONS: readonly MetricDimensionId[] = [
   "study",
   "site",
@@ -187,6 +196,52 @@ const enteredLag = (aggregation: MetricAggregation) =>
     present("visit_date_key")
   );
 const unresolvedQuery = oneOf("query_status", ["open", "answered"]);
+const queryAge = daysBetween(keyDate("opened_date_key"), DATA_CUT);
+/** Revisions that let a query metric be grouped by the queried form. */
+const BY_FORM: readonly [string, string, string] = [
+  "1.1.0",
+  "2026-10-25",
+  "Allows the queried_form dimension, the CRF form of the queried field (#2759).",
+];
+
+/**
+ * Queries not closed at the data cut whose age at the cut falls in a band
+ * of whole days, from `from` to `to` inclusive (`to` null for no upper end).
+ */
+function agedQueries(
+  id: string,
+  name: string,
+  from: number,
+  to: number | null
+): MetricDefinition {
+  const band = to === null ? `more than ${from - 1}` : `${from} to ${to}`;
+  return define(
+    {
+      id,
+      name,
+      description: `Queries not closed at the data cut that opened ${band} days before it, counted between UTC dates. With the other age bands it splits the open queries, so the four add up to them. Closed studies are left out by default, because their backlog is history.`,
+      formula: {
+        kind: "simple",
+        measure: count(
+          QUERY,
+          "opened_date_key",
+          unresolvedQuery,
+          compare(queryAge, ">=", lit(from)),
+          ...(to === null ? [] : [compare(queryAge, "<=", lit(to))])
+        ),
+      },
+      allowedDimensions: QUERY_DIMENSIONS,
+      defaultFilters: ONGOING_STUDIES,
+      unit: "queries",
+      format: WHOLE,
+      owner: DM_OWNER,
+      steward: DM_STEWARD,
+      glossaryTerm: "data-query-term",
+      displayFolder: "Queries",
+    },
+    2759
+  );
+}
 const actualSpend = measure(SPEND, "sum", col("actual_usd"), "month_date_key");
 
 /**
@@ -434,71 +489,104 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     glossaryTerm: "data-query-term",
     displayFolder: "Queries",
   }),
-  define({
-    id: "open_query_count",
-    name: "Open queries",
-    description:
-      "Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history.",
-    formula: {
-      kind: "simple",
-      measure: count(QUERY, "opened_date_key", unresolvedQuery),
-    },
-    allowedDimensions: MONTHLY_DIMENSIONS,
-    defaultFilters: ONGOING_STUDIES,
-    unit: "queries",
-    format: WHOLE,
-    owner: DM_OWNER,
-    steward: DM_STEWARD,
-    glossaryTerm: "data-query-term",
-    displayFolder: "Queries",
-  }),
-  define({
-    id: "query_aging_mean",
-    name: "Query aging",
-    description:
-      "Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history.",
-    formula: {
-      kind: "simple",
-      measure: measure(
-        QUERY,
-        "mean",
-        daysBetween(keyDate("opened_date_key"), DATA_CUT),
-        "opened_date_key",
-        unresolvedQuery
-      ),
-    },
-    allowedDimensions: MONTHLY_DIMENSIONS,
-    defaultFilters: ONGOING_STUDIES,
-    unit: "days",
-    format: ONE_DECIMAL,
-    owner: DM_OWNER,
-    steward: DM_STEWARD,
-    glossaryTerm: "data-query-term",
-    displayFolder: "Queries",
-  }),
-  define({
-    id: "query_resolution_time_median",
-    name: "Query resolution time (median)",
-    description:
-      "Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates.",
-    formula: {
-      kind: "simple",
-      measure: measure(
-        QUERY,
-        "median",
-        daysBetween(keyDate("opened_date_key"), keyDate("closed_date_key")),
-        "opened_date_key",
-        present("closed_date_key")
-      ),
-    },
-    allowedDimensions: MONTHLY_DIMENSIONS,
-    unit: "days",
-    format: ONE_DECIMAL,
-    owner: DM_OWNER,
-    steward: DM_STEWARD,
-    glossaryTerm: "data-query-term",
-    displayFolder: "Queries",
-  }),
+  revise(
+    define({
+      id: "open_query_count",
+      name: "Open queries",
+      description:
+        "Queries not closed at the data cut: still open, or answered by the site and awaiting review. Closed studies are left out by default, because their backlog is history.",
+      formula: {
+        kind: "simple",
+        measure: count(QUERY, "opened_date_key", unresolvedQuery),
+      },
+      allowedDimensions: QUERY_DIMENSIONS,
+      defaultFilters: ONGOING_STUDIES,
+      unit: "queries",
+      format: WHOLE,
+      owner: DM_OWNER,
+      steward: DM_STEWARD,
+      glossaryTerm: "data-query-term",
+      displayFolder: "Queries",
+    }),
+    ...BY_FORM
+  ),
+  revise(
+    define({
+      id: "query_aging_mean",
+      name: "Query aging",
+      description:
+        "Mean days from opening to the data cut of the queries not closed at the cut. Closed studies are left out by default, because their backlog is history.",
+      formula: {
+        kind: "simple",
+        measure: measure(
+          QUERY,
+          "mean",
+          queryAge,
+          "opened_date_key",
+          unresolvedQuery
+        ),
+      },
+      allowedDimensions: QUERY_DIMENSIONS,
+      defaultFilters: ONGOING_STUDIES,
+      unit: "days",
+      format: ONE_DECIMAL,
+      owner: DM_OWNER,
+      steward: DM_STEWARD,
+      glossaryTerm: "data-query-term",
+      displayFolder: "Queries",
+    }),
+    ...BY_FORM
+  ),
+  revise(
+    define({
+      id: "query_resolution_time_median",
+      name: "Query resolution time (median)",
+      description:
+        "Median calendar days from a query's opening to its closing, over closed queries. Days are counted between UTC dates.",
+      formula: {
+        kind: "simple",
+        measure: measure(
+          QUERY,
+          "median",
+          daysBetween(keyDate("opened_date_key"), keyDate("closed_date_key")),
+          "opened_date_key",
+          present("closed_date_key")
+        ),
+      },
+      allowedDimensions: QUERY_DIMENSIONS,
+      unit: "days",
+      format: ONE_DECIMAL,
+      owner: DM_OWNER,
+      steward: DM_STEWARD,
+      glossaryTerm: "data-query-term",
+      displayFolder: "Queries",
+    }),
+    ...BY_FORM
+  ),
+  agedQueries(
+    "open_queries_aged_0_7_days",
+    "Open queries aged 0 to 7 days",
+    0,
+    7
+  ),
+  agedQueries(
+    "open_queries_aged_8_30_days",
+    "Open queries aged 8 to 30 days",
+    8,
+    30
+  ),
+  agedQueries(
+    "open_queries_aged_31_60_days",
+    "Open queries aged 31 to 60 days",
+    31,
+    60
+  ),
+  agedQueries(
+    "open_queries_aged_over_60_days",
+    "Open queries aged over 60 days",
+    61,
+    null
+  ),
   define({
     id: "sdv_completion",
     name: "SDV completion",
@@ -680,6 +768,26 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     glossaryTerm: "important-deviation-term",
     displayFolder: "Protocol deviations",
   }),
+  define(
+    {
+      id: "protocol_deviation_count",
+      name: "Protocol deviations",
+      description:
+        "Protocol deviations that occurred, important or not, counted on the date each occurred. It can be broken down by category and importance; the rates per 100 enrolled subjects cannot, because enrollment has neither.",
+      formula: {
+        kind: "simple",
+        measure: count(DEVIATION, "occurred_date_key"),
+      },
+      allowedDimensions: DEVIATION_DIMENSIONS,
+      unit: "deviations",
+      format: WHOLE,
+      owner: "Clinical Quality Lead",
+      steward: OPS_STEWARD,
+      glossaryTerm: "protocol-deviation-term",
+      displayFolder: "Protocol deviations",
+    },
+    2759
+  ),
   define({
     id: "fpi_to_lpi_days",
     name: "First subject in to last subject in",

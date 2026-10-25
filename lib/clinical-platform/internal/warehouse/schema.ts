@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.1.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.2.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -1346,6 +1346,12 @@ const FACTS: readonly TableDraft[] = [
         { ...key.date, nullable: true, from: ["closed_at"] },
       ],
       ["queried_field", "string", "Queried field, as DOMAIN.VARIABLE."],
+      [
+        "queried_form",
+        "string",
+        "CRF form of the queried field: its CDASH domain, the part of queried_field before the dot.",
+        { length: 8, from: ["queried_field"], how: "split-part" },
+      ],
       ["query_origin", "string", "edit-check or manual."],
       ["query_status", "string", "State at the data cut."],
       [

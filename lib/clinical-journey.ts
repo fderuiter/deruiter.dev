@@ -120,12 +120,6 @@ export const CLINICAL_JOURNEY: readonly ClinicalJourneyStep[] = [
 /** Planned additions, shown with their issue and never as live links. */
 export const PLANNED_JOURNEY_ITEMS: readonly PlannedJourneyItem[] = [
   {
-    title: "Data entered in CRF Studio flows into the pipeline",
-    step: "collect",
-    issue: 2615,
-    evidence: ["synthetic"],
-  },
-  {
     title: "Modernizing a clinical data platform: a case study",
     step: "lessons",
     issue: 2647,

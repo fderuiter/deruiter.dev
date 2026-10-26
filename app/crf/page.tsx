@@ -4,7 +4,6 @@ import React from "react";
 import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
-import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { PageLayout } from "@/components/PageLayout";
 import { EngineeringBridge } from "@/components/EngineeringBridge";
 import { FieldManualButton } from "@/components/FieldManualButton";
@@ -47,7 +46,7 @@ export default function CRFStudioPage() {
         <FieldManualButton manualId="crf" label="Studio Guide" />
       </div>
       <div className="mx-auto mb-4 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <ClinicalJourneyNav path="/crf" />
+        <ClinicalJourneyNav path="/crf" variant="compact" />
       </div>
 
       {/* The studio has three panes, so it takes the full width up to a
@@ -62,24 +61,6 @@ export default function CRFStudioPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12 w-full">
         <FAQAccordion items={CRF_FAQ} pageUrl="/crf" className="mb-12" />
-        <NextPrevNav
-          prev={{
-            title: "NeuroRecon: FreeSurfer Simulator",
-            href: "/neuro",
-            label: "Neuroimaging CAD",
-            tag: "Interactive 3D Pipeline",
-          }}
-          next={{
-            title: "Logical Proof Workspace",
-            href: "/proof",
-            label: "Formal Logic Engine",
-            tag: "Deductive Proof Canvas",
-          }}
-          backToHub={{
-            title: "Return to Portfolio",
-            href: "/",
-          }}
-        />
       </div>
     </PageLayout>
   );

@@ -41,11 +41,21 @@ describe("Retro Labyrinth views (#2859)", () => {
     });
   });
 
-  it("lays the phone view out as a phone's touch cabinet (#2917)", () => {
+  it("lays the phone view out as a phone, touch only in a touch cabinet (#2917)", () => {
+    device.touch = true;
     render(<PhoneView isMounted={false} />);
     expect(layoutProps.current.at(-1)).toEqual({
       isMounted: false,
       touch: true,
+      phone: true,
+    });
+
+    // A phone-sized window worked with a mouse keeps the desktop controls.
+    device.touch = false;
+    render(<PhoneView />);
+    expect(layoutProps.current.at(-1)).toEqual({
+      isMounted: true,
+      touch: false,
       phone: true,
     });
   });

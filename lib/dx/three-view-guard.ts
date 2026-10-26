@@ -57,10 +57,8 @@ const ENGINE_PATHS: Readonly<Record<string, readonly string[]>> = {
  * whose file is gone or clean is reported, so the list cannot go stale.
  */
 export const THREE_VIEW_ALLOWLIST: Readonly<Record<string, number>> = {
-  // The desktop and phone views read the cabinet's touch state (and the
-  // desktop view the phone state) for the shared layout, until the phone's
-  // own layout lands and the shared code is cleaned up (#2379, #2863).
-  "components/retro-labyrinth/views/DesktopView.tsx": 2375,
+  // The phone view reads the cabinet's touch state: a phone-sized window
+  // worked with a mouse keeps the desktop controls (#2917, #2968).
   "components/retro-labyrinth/views/PhoneView.tsx": 2375,
 };
 

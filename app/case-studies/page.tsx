@@ -14,7 +14,9 @@ import { PageLayout } from "@/components/PageLayout";
 import { resolveBaseUrl } from "@/lib/domain";
 import { getBreadcrumbSchema } from "@/lib/seo";
 
-export const revalidate = 3600;
+// Daily: each regeneration bills Vercel active CPU, and content writes
+// revalidate these paths on demand, so the timer is only a backstop (#2971).
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   // No site name here: app/layout.tsx templates this as

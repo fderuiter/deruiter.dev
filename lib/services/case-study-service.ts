@@ -26,6 +26,28 @@ async function safeRevalidateTag(tag: string): Promise<void> {
   }
 }
 
+async function safeRevalidatePath(path: string): Promise<void> {
+  try {
+    const { revalidatePath } = await import("next/cache");
+    if (typeof revalidatePath === "function") {
+      revalidatePath(path);
+    }
+  } catch {
+    // Tolerated outside of Next.js server runtime (e.g. unit tests)
+  }
+}
+
+/**
+ * Pages that render a case study. No read is tagged, so the tags alone leave
+ * these pages to their daily ISR timer; revalidating the paths shows an edit
+ * at once (#2971).
+ */
+function caseStudyPaths(slug: string): string[] {
+  const paths = ["/", "/case-studies", `/case-studies/${slug}`];
+  if (slug === "laser-loon") paths.push("/work/laser-loon");
+  return paths;
+}
+
 export interface CaseStudySubmissionInput {
   title: string;
   slug: string;
@@ -543,6 +565,9 @@ export class CaseStudyService {
       }
     }
 
+    for (const path of caseStudyPaths(slug)) {
+      await safeRevalidatePath(path);
+    }
     await safeRevalidateTag(`case-study-${slug}`);
     await safeRevalidateTag("case-studies");
 

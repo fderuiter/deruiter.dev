@@ -105,6 +105,10 @@ describe("Blog Cache Contracts & Concrete Invalidation Suite", () => {
         "/blog/resilient-blog-engine",
         undefined
       );
+      expect(revalidatePath).toHaveBeenCalledWith(
+        "/blog/resilient-blog-engine/opengraph-image",
+        undefined
+      );
       expect(revalidatePath).toHaveBeenCalledWith("/blog", undefined);
       expect(revalidatePath).toHaveBeenCalledWith("/sitemap.xml", undefined);
 

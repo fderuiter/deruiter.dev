@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+From the first weekly release ([ADR 0063](adr/0063-weekly-release-train.md)),
+each production release is a versioned
+[GitHub Release](https://github.com/fderuiter/deruiter.dev/releases) with
+notes generated from the commit messages; this file keeps the history up to
+that point.
+
 Everything merged to `main` after 0.4.0 (2026-09-24). The Added, Changed,
 Performance and Fixed sections shipped in the 2026-09-29 production release
 (`main` at `d1a66b7`); the first section lists what has merged since. The

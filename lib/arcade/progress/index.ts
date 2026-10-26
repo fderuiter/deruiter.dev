@@ -44,8 +44,11 @@ export type { ArcadeCoachMarks } from "./coach-marks-slice";
 export {
   ARCADE_DEVICE_SETTINGS_KEY,
   DEFAULT_DEVICE_SETTINGS,
+  DEVICE_LAYOUT_MIN_WIDTH,
   arcadeDeviceSettingsSlice,
+  effectiveLayout,
   getDeviceSettings,
+  layoutFits,
   setDeviceSettings,
   useDeviceSettings,
 } from "./device-settings-slice";

@@ -275,7 +275,9 @@ describe("Standardized Pre-Game Setup Wizard", () => {
           vi.advanceTimersByTime(2000);
         });
 
-        // Open setup wizard via cabinet frame setup button
+        // The cabinet's Setup key opens the Setup sheet, which leads to the
+        // wizard (#2923).
+        fireEvent.click(screen.getByTitle("Setup"));
         const setupBtn = screen.getByTitle(/Pre-Game Setup Wizard/i);
         fireEvent.click(setupBtn);
 

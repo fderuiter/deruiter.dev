@@ -50,6 +50,35 @@ function niceStep(rough: number): number {
   return multiple * power;
 }
 
+const compact = new Map<string, Intl.NumberFormat>();
+
+/**
+ * A gridline's label. Past 10,000 a number or dollar amount is written
+ * compactly, as $10M or 25K, so five labels fit a phone-width axis; the
+ * data table under every chart keeps the full values.
+ */
+function tickText(
+  metric: MetricDefinition,
+  value: number,
+  high: number
+): string {
+  const { style } = metric.format;
+  if (style === "percent" || high < 10_000) {
+    return formatMetricValue(metric, value);
+  }
+  let found = compact.get(style);
+  if (!found) {
+    found = new Intl.NumberFormat("en-US", {
+      notation: "compact",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+      ...(style === "currency" ? { style: "currency", currency: "USD" } : {}),
+    });
+    compact.set(style, found);
+  }
+  return found.format(value);
+}
+
 /**
  * About four evenly spaced gridlines that cover every value and 0, at
  * round steps.
@@ -74,7 +103,10 @@ function scaleFor(
   const ticks = Array.from({ length: count + 1 }, (_, index) => {
     // Rounded to the step's precision so 0.1 + 0.2 never labels as 0.30000000000000004.
     const value = Number((min + index * step).toPrecision(12));
-    return { value, text: formatMetricValue(metric, value) };
+    return {
+      value,
+      text: tickText(metric, value, Math.max(Math.abs(min), Math.abs(max))),
+    };
   });
   return { min, max, ticks };
 }

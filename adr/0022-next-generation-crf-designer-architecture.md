@@ -47,3 +47,13 @@ We introduce a comprehensive 7-pillar architectural overhaul across the CRF Stud
   - Seamlessly maintains 100% lossless export parity with CDISC ODM-XML 1.3.2, HL7 FHIR SDC, SAS, R, and aCRF documents.
 - **Negative**:
   - Requires maintaining bi-directional synchronization across Canvas, Grid, Wire, and Simulator states.
+
+## Amendment 2026-10-26: what was built
+
+A review of CRF Studio against this record ([#2927](https://github.com/fderuiter/deruiter.dev/issues/2927)) found that some of the decision above describes intent rather than the studio as it exists. This amendment records the difference, in the spirit of [#2712](https://github.com/fderuiter/deruiter.dev/issues/2712), which made the site's copy describe implemented checks instead of compliance claims. The original text above is left as written.
+
+- **Built as described:** the three-pane workspace, slash commands and smart blocks, the sentence rule builder and visual logic wires, the bi-directional grid, the deletion blast-radius preview, the test dock, field-level review threads, and baseline diffs.
+- **Collaborative presence was not built.** There are no peer cursors or collaborator badges, simulated or otherwise. Review threads carry role attribution only.
+- **The omnibar is Find, not `Ctrl+K`.** `Ctrl+K` opens the site search, so the studio's omnibar uses `F` (#1208). It finds forms, fields, visits and actions. It offers no MedDRA or WHODrug lookups and says so, because those dictionaries are licensed.
+- **21 CFR Part 11 is a modelled workflow, not a compliance claim.** CRF Studio is not a validated system; the page's notice and FAQ say so.
+- **The consequences above are not measured.** The figures for tab-switching and setup time are not backed by any study, and export fidelity is checked by per-format tests rather than claimed as lossless.

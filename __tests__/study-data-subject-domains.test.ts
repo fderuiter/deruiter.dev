@@ -324,7 +324,7 @@ describe("SDTM subject tabulation", () => {
       );
     });
     const names = dm.variables.map((variable) => variable.name);
-    expect(names.indexOf("RFPENDTC")).toBe(names.indexOf("RFXENDTC") + 1);
+    expect(names.indexOf("RFPENDTC")).toBe(names.indexOf("RFICDTC") + 1);
     expect(dm.variables.find(({ name }) => name === "RFPENDTC")).toMatchObject({
       label: "Date/Time of End of Participation",
       role: "Record Qualifier",
@@ -369,7 +369,7 @@ describe("SDTM subject tabulation", () => {
     const variables = get("AE").variables;
     const names = variables.map((variable) => variable.name);
     expect(
-      names.slice(names.indexOf("AEACN") + 1, names.indexOf("AEACN") + 7)
+      names.slice(names.indexOf("AEREL") + 1, names.indexOf("AEREL") + 7)
     ).toEqual(criteria);
     for (const name of criteria)
       expect(

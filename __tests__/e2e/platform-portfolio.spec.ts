@@ -130,3 +130,24 @@ test("hovering a milestone shows its dates", async ({ page }) => {
   await expect(readout).toContainText("DEMO-101");
   await expect(readout).toContainText("Actual");
 });
+
+test("the finance section forecasts each study's cost at completion", async ({
+  page,
+}) => {
+  test.slow();
+  await page.goto("/platform/portfolio");
+  await settled(page);
+  const finance = page.locator("section", {
+    has: page.getByRole("heading", {
+      level: 2,
+      name: "Budget against forecast at completion",
+    }),
+  });
+  await expect(finance).toContainText("Forecast to overrun: DEMO-302");
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Budget, actual and forecast at completion by vendor",
+    })
+  ).toBeVisible();
+});

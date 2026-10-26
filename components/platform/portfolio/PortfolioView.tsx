@@ -3,7 +3,9 @@
 import type {
   PortfolioBenchmark,
   PortfolioDashboard,
+  PortfolioFinance,
   PortfolioLane,
+  PortfolioOverrun,
   ReportScale,
 } from "@/lib/clinical-platform";
 import { ReportView } from "../ReportView";
@@ -257,10 +259,89 @@ function BenchmarkSummary({ benchmark }: { benchmark: PortfolioBenchmark }) {
   );
 }
 
+/** "DEMO-302, by $4,628,681 (115.4% of budget)", joined with "and". */
+function overrunList(overruns: readonly PortfolioOverrun[]): string {
+  const items = overruns.map(
+    (o) => `${o.name}, by ${o.varianceText} (${o.shareText} of budget)`
+  );
+  return items.length <= 1
+    ? items.join("")
+    : `${items.slice(0, -1).join("; ")} and ${items[items.length - 1]}`;
+}
+
+function overrunText(finance: PortfolioFinance): string {
+  const { studyOverruns, vendorOverruns } = finance;
+  const studies =
+    studyOverruns.length === 0
+      ? "No study is forecast to overrun its budget."
+      : `Forecast to overrun: ${overrunList(studyOverruns)}.`;
+  const vendors =
+    vendorOverruns.length === 0
+      ? "No vendor is forecast to overrun across its studies."
+      : `Vendors forecast to overrun across their studies: ${overrunList(vendorOverruns)}.`;
+  return `${studies} ${vendors}`;
+}
+
+/** The portfolio's budget, actual and forecast at completion, then the reports. */
+function FinanceSection({ finance }: { finance: PortfolioFinance }) {
+  const variance = finance.varianceAtCompletion ?? 0;
+  const figures = [
+    ["Budget at completion", finance.budgetAtCompletionText],
+    ["Actual spend to date", finance.actualSpendText],
+    ["Forecast at completion", finance.forecastAtCompletionText],
+    // The sign reads as a word, so the amount is shown without it.
+    [
+      variance > 0
+        ? "Forecast overrun"
+        : variance < 0
+          ? "Forecast underrun"
+          : "Variance at completion",
+      finance.varianceAtCompletionText.replace(/^-/, ""),
+    ],
+  ] as const;
+  return (
+    <section
+      aria-labelledby="portfolio-finance"
+      className="@container min-w-0 border border-white/[0.08] bg-[#0d0e11] p-4 sm:p-6"
+    >
+      <h2
+        id="portfolio-finance"
+        className="text-xl font-semibold tracking-[-0.02em]"
+      >
+        Budget against forecast at completion
+      </h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-300">
+        What the portfolio is budgeted to cost by each study&apos;s final
+        report, what it has spent to the data cut and what it is now forecast to
+        cost. The forecast takes the budget still to come and scales it by each
+        vendor&apos;s actual spend over its budget so far, so a vendor running
+        over budget is assumed to keep doing so.
+      </p>
+      <dl className="mt-5 grid grid-cols-1 gap-3 @sm:grid-cols-2 @3xl:grid-cols-4">
+        {figures.map(([label, value]) => (
+          <div
+            key={label}
+            className="min-w-0 border border-white/[0.08] bg-[#13151a] p-4"
+          >
+            <dt className="text-xs text-slate-400">{label}</dt>
+            <dd className="mt-1 break-words font-mono text-xl tabular-nums text-[#f4f4f6]">
+              {value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-4 max-w-3xl text-sm leading-relaxed text-slate-300">
+        The forecast is {finance.shareText} of the budget at completion.{" "}
+        {overrunText(finance)}
+      </p>
+    </section>
+  );
+}
+
 /**
  * The /platform/portfolio dashboard: every study's milestones on one time
- * axis, then each cycle time compared across the studies, with the
- * governed report behind each comparison.
+ * axis, then each cycle time compared across the studies, then budget
+ * against forecast at completion, with the governed report behind each.
  *
  * @param dashboard - The dashboard from `portfolioDashboard`.
  */
@@ -323,6 +404,11 @@ export function PortfolioView({
 
       {benchmarks.map((benchmark) => (
         <ReportView key={benchmark.report.spec.id} report={benchmark.report} />
+      ))}
+
+      <FinanceSection finance={dashboard.finance} />
+      {dashboard.finance.reports.map((report) => (
+        <ReportView key={report.spec.id} report={report} />
       ))}
     </div>
   );

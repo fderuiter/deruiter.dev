@@ -163,7 +163,7 @@ describe("the milestone swimlane (#2911)", () => {
 
 describe("the cycle-time benchmarks (#2911)", () => {
   it("are governed reports that pass every reporting rule", () => {
-    const specs = portfolioReportSpecs();
+    const specs = portfolioReportSpecs().slice(0, 3);
     expect(specs.map((s) => s.metrics[0])).toEqual([
       "protocol_final_to_fpi_days",
       "fpi_to_lpi_days",
@@ -283,5 +283,134 @@ describe("the cycle-time benchmarks (#2911)", () => {
     expect(none.swimlane.lanes.every((l) => l.milestones.length === 0)).toBe(
       true
     );
+  });
+});
+
+describe("budget against forecast at completion (#2912)", () => {
+  const { finance } = dashboard;
+  const total = (id: string, w: Warehouse = warehouse) =>
+    evaluateMetric(
+      w,
+      METRIC_REGISTRY.find((m) => m.id === id)!
+    ).rows[0]?.value ?? null;
+
+  it("are governed reports that pass every reporting rule, after the benchmarks", () => {
+    const specs = portfolioReportSpecs().slice(3);
+    expect(specs.map((s) => [s.id, s.dimensions, s.visual])).toEqual([
+      ["portfolio-cost-at-completion-by-study", ["study"], "bar"],
+      ["portfolio-cost-at-completion-by-vendor", ["vendor"], "bar"],
+      ["portfolio-variance-at-completion-by-study", ["study"], "table"],
+      ["portfolio-variance-at-completion-by-vendor", ["vendor"], "table"],
+    ]);
+    for (const spec of specs) {
+      expect(checkReportSpec(spec)).toEqual([]);
+      expect(spec.owner).toBe("Clinical Finance Lead");
+    }
+    expect(finance.reports.map((r) => r.spec)).toEqual(specs);
+  });
+
+  it("show each study's and vendor's values as the registry computes them", () => {
+    for (const report of finance.reports) {
+      report.spec.metrics.forEach((id, column) => {
+        const expected = evaluateMetric(
+          warehouse,
+          METRIC_REGISTRY.find((m) => m.id === id)!,
+          { dimensions: report.spec.dimensions }
+        ).rows.map((r) => [r.dimensions[report.spec.dimensions[0]], r.value]);
+        expect(
+          report.rows.map((r) => [r.labels[0], r.cells[column].value]),
+          `${report.spec.id} ${id}`
+        ).toEqual(expected);
+      });
+    }
+  });
+
+  it("add the vendor rows up to the portfolio, as the study rows do", () => {
+    const [byStudy, byVendor] = finance.reports;
+    byStudy.spec.metrics.forEach((id, column) => {
+      const sum = (rows: typeof byStudy.rows) =>
+        rows.reduce((acc, r) => acc + (r.cells[column].value ?? 0), 0);
+      expect(sum(byVendor.rows), id).toBe(total(id));
+      expect(sum(byStudy.rows), id).toBe(total(id));
+    });
+  });
+
+  it("totals the portfolio and names who is forecast to overrun", () => {
+    const { reports, ...summary } = finance;
+    expect(reports).toHaveLength(4);
+    expect(summary).toEqual({
+      budgetAtCompletionText: "$67,121,250",
+      actualSpendText: "$46,465,932",
+      forecastAtCompletionText: "$69,930,442",
+      varianceAtCompletion: 2809192,
+      varianceAtCompletionText: "$2,809,192",
+      shareText: "104.2%",
+      studyOverruns: [
+        {
+          name: "DEMO-302",
+          variance: 4628681,
+          varianceText: "$4,628,681",
+          shareText: "115.4%",
+        },
+      ],
+      // The CRO the generator plants over budget, which runs DEMO-302.
+      vendorOverruns: [
+        {
+          name: "Quillfeather Clinical Research",
+          variance: 4935420,
+          varianceText: "$4,935,420",
+          shareText: "129.4%",
+        },
+      ],
+    });
+  });
+
+  it("labels a dollar axis compactly, so five labels fit a phone", () => {
+    expect(finance.reports[0].scale?.ticks.map((t) => t.text)).toEqual([
+      "$0",
+      "$10M",
+      "$20M",
+      "$30M",
+      "$40M",
+    ]);
+    // An axis under 10,000 keeps the metric's own format.
+    expect(
+      dashboard.benchmarks[0].report.scale?.ticks.map((t) => t.text)
+    ).toEqual(["0", "50", "100", "150", "200"]);
+  });
+
+  it("orders overruns largest first", () => {
+    // Every vendor of DEMO-201 runs 20% over budget from here on.
+    const study = studies.find((s) => s.study_id === "DEMO-201")!;
+    const w: Warehouse = {
+      ...warehouse,
+      tables: {
+        ...warehouse.tables,
+        "gold.fct_spend_forecast": warehouse.tables[
+          "gold.fct_spend_forecast"
+        ].map((r) =>
+          r.study_key === study.study_key
+            ? {
+                ...r,
+                forecast_at_completion_usd: Math.round(
+                  Number(r.budget_at_completion_usd) * 1.2
+                ),
+                variance_at_completion_usd: Math.round(
+                  Number(r.budget_at_completion_usd) * 0.2
+                ),
+              }
+            : r
+        ),
+      },
+    };
+    expect(
+      portfolioDashboard(w).finance.studyOverruns.map((o) => [
+        o.name,
+        o.shareText,
+      ])
+    ).toEqual([
+      ["DEMO-302", "115.4%"],
+      ["DEMO-201", "120.0%"],
+    ]);
   });
 });

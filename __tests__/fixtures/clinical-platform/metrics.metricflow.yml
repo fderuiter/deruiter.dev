@@ -556,6 +556,58 @@ semantic_models:
         agg: sum
         expr: "CAST(actual_usd AS DOUBLE)"
         agg_time_dimension: month_date
+      - name: actual_spend__value
+        description: "Measure of actual_spend."
+        agg: sum
+        expr: "CAST(actual_usd AS DOUBLE)"
+        agg_time_dimension: month_date
+  - name: fct_spend_forecast
+    description: "Budget, actual spend and forecast at completion per study and vendor at the data cut. The forecast is the actual spend to date plus the planned budget still to come, scaled by the vendor's spend-to-budget ratio to date. Grain: One row per study and vendor at the data cut."
+    model: "ref('fct_spend_forecast')"
+    defaults:
+      agg_time_dimension: as_of_date
+    entities:
+      - name: fct_spend_forecast
+        type: primary
+        expr: "CAST(study_key AS VARCHAR) || '|' || CAST(vendor_key AS VARCHAR)"
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: vendor
+        type: foreign
+        expr: vendor_key
+    dimensions:
+      - name: as_of_date
+        type: time
+        expr: "CAST(strptime(CAST(as_of_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: budget_at_completion__value
+        description: "Measure of budget_at_completion."
+        agg: sum
+        expr: "CAST(budget_at_completion_usd AS DOUBLE)"
+        agg_time_dimension: as_of_date
+      - name: forecast_at_completion__value
+        description: "Measure of forecast_at_completion."
+        agg: sum
+        expr: "CAST(forecast_at_completion_usd AS DOUBLE)"
+        agg_time_dimension: as_of_date
+      - name: variance_at_completion__value
+        description: "Measure of variance_at_completion."
+        agg: sum
+        expr: "CAST(variance_at_completion_usd AS DOUBLE)"
+        agg_time_dimension: as_of_date
+      - name: forecast_vs_budget_at_completion__numerator
+        description: "The numerator of forecast_vs_budget_at_completion."
+        agg: sum
+        expr: "CAST(forecast_at_completion_usd AS DOUBLE)"
+        agg_time_dimension: as_of_date
+      - name: forecast_vs_budget_at_completion__denominator
+        description: "The denominator of forecast_vs_budget_at_completion."
+        agg: sum
+        expr: "CAST(budget_at_completion_usd AS DOUBLE)"
+        agg_time_dimension: as_of_date
   - name: fct_visit
     description: "Subject visits against the schedule, with entry timeliness. Grain: One row per subject visit record."
     model: "ref('fct_visit')"
@@ -2217,3 +2269,154 @@ metrics:
           - phase
           - product_type
           - operating_model
+  - name: actual_spend
+    label: "Actual spend"
+    description: "Actual spend booked up to the data cut, in US dollars, with each quarter spread evenly over its three months."
+    type: simple
+    type_params:
+      measure:
+        name: actual_spend__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: USD
+        format: "currency, 0 decimals"
+        display_folder: Finance
+        glossary_term: budget-burn-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - vendor
+          - month
+  - name: budget_at_completion
+    label: "Budget at completion"
+    description: "The budget booked up to the data cut plus the planned budget for every quarter after it, up to the planned final report. Once the final report is in, nothing remains and it is the budget booked."
+    type: simple
+    type_params:
+      measure:
+        name: budget_at_completion__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: USD
+        format: "currency, 0 decimals"
+        display_folder: Finance
+        glossary_term: forecast-at-completion-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - vendor
+  - name: forecast_at_completion
+    label: "Forecast at completion"
+    description: "Actual spend up to the data cut plus the planned budget still to come, scaled by each vendor's actual spend over its budget to date. A vendor running 10% over budget is forecast to stay 10% over for the rest of the study. Each vendor is forecast on its own ratio, so the vendors add up to the study."
+    type: simple
+    type_params:
+      measure:
+        name: forecast_at_completion__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: USD
+        format: "currency, 0 decimals"
+        display_folder: Finance
+        glossary_term: forecast-at-completion-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - vendor
+  - name: variance_at_completion
+    label: "Variance at completion"
+    description: "Forecast at completion minus budget at completion. Above 0 is a forecast overrun, below 0 an underrun, the same sign as spend variance."
+    type: simple
+    type_params:
+      measure:
+        name: variance_at_completion__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: USD
+        format: "currency, 0 decimals"
+        display_folder: Finance
+        glossary_term: forecast-at-completion-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - vendor
+  - name: forecast_vs_budget_at_completion__numerator
+    label: "Forecast against budget at completion (numerator)"
+    description: "Forecast against budget at completion (numerator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: forecast_vs_budget_at_completion__numerator
+        fill_nulls_with: 0
+  - name: forecast_vs_budget_at_completion__denominator
+    label: "Forecast against budget at completion (denominator)"
+    description: "Forecast against budget at completion (denominator): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: forecast_vs_budget_at_completion__denominator
+        fill_nulls_with: 0
+  - name: forecast_vs_budget_at_completion
+    label: "Forecast against budget at completion"
+    description: "Forecast at completion as a share of the budget at completion. Above 100% means the study or vendor is forecast to overrun its budget."
+    type: ratio
+    type_params:
+      numerator: forecast_vs_budget_at_completion__numerator
+      denominator: forecast_vs_budget_at_completion__denominator
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Finance Lead"
+        steward: "Finance Data Steward"
+        grain: portfolio
+        unit: "share of budget"
+        format: "percent, 1 decimals"
+        display_folder: Finance
+        glossary_term: forecast-at-completion-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - vendor

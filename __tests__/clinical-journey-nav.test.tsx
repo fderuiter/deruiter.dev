@@ -1,4 +1,10 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { ClinicalJourneyHighlight } from "@/components/clinical-journey/ClinicalJourneyHighlight";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
@@ -133,6 +139,42 @@ describe("clinical journey navigation", () => {
     expect(
       screen.queryByRole("link", { name: /Clinical Data Mapper case study/ })
     ).toBeNull();
+  });
+
+  it("folds on phones behind a button that names its state (#2896)", () => {
+    render(<ClinicalJourneyNav path="/study-data" />);
+    const toggle = screen.getByRole("button", { name: /All steps/ });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.className).toContain("sm:hidden");
+    const details = document.getElementById(
+      toggle.getAttribute("aria-controls") ?? ""
+    );
+    expect(details?.className).toContain("hidden sm:block");
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(details?.className).not.toContain("hidden");
+  });
+
+  it("keeps a workbench's panel folded at every width when compact", () => {
+    render(<ClinicalJourneyNav path="/crf" variant="compact" />);
+    const toggle = screen.getByRole("button", { name: /About this step/ });
+    expect(toggle.className).not.toContain("sm:hidden");
+    const details = document.getElementById(
+      toggle.getAttribute("aria-controls") ?? ""
+    );
+    expect(details?.className.split(" ")).toContain("hidden");
+    expect(details?.className).not.toContain("sm:block");
+    // The step names stay whole for assistive technology.
+    const current = document.querySelector('[aria-current="step"]');
+    expect(current?.textContent).toBe("1. Collect: CRF Studio");
+    expect(
+      screen.getByRole("link", { name: "Next step: Protocol Drift →" })
+    ).toBeTruthy();
+  });
+
+  it("lists no planned item whose issue is closed (#2615)", () => {
+    render(<ClinicalJourneyNav path="/crf" />);
+    expect(screen.queryByText(/issue #2615/)).toBeNull();
   });
 
   it("renders nothing off the journey", () => {

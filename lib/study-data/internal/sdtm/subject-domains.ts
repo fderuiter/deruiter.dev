@@ -98,13 +98,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     columns: [
       ...COMMON,
       collected("SUBJID", "Subject Identifier", "DM.USUBJID", "Topic"),
-      collected(
-        "RFICDTC",
-        "Informed Consent Date",
-        "DM.CONSENTDTC",
-        "Record Qualifier",
-        "date"
-      ),
       derived(
         "RFSTDTC",
         "Subject Reference Start Date",
@@ -130,6 +123,13 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "RFXENDTC",
         "Date of Last Study Treatment",
         "LAST_EXPOSURE",
+        "Record Qualifier",
+        "date"
+      ),
+      collected(
+        "RFICDTC",
+        "Informed Consent Date",
+        "DM.CONSENTDTC",
         "Record Qualifier",
         "date"
       ),
@@ -238,6 +238,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       collected("EXDOSE", "Dose", "EX.EXDOSE", "Record Qualifier", "float"),
       derived("EXDOSU", "Dose Units", "CT_UNIT_MAPPING", "Variable Qualifier"),
       derived("EXDOSFRM", "Dose Form", "USDM_DOSE_FORM", "Variable Qualifier"),
+      EPOCH,
       collected(
         "EXSTDTC",
         "Start Date of Treatment",
@@ -266,7 +267,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      EPOCH,
     ],
   },
   AE: {
@@ -301,21 +301,22 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       coded("AESOC", "Primary System Organ Class"),
       coded("AESOCCD", "Primary System Organ Class Code", "integer"),
       collected("AESER", "Serious Event", "AE.AESER", "Record Qualifier"),
-      derived(
-        "AEREL",
-        "Causality",
-        "CT_RELATIONSHIP_MAPPING",
-        "Record Qualifier"
-      ),
       collected(
         "AEACN",
         "Action Taken with Study Treatment",
         "AE.AEACN",
         "Record Qualifier"
       ),
+      derived(
+        "AEREL",
+        "Causality",
+        "CT_RELATIONSHIP_MAPPING",
+        "Record Qualifier"
+      ),
       ...AE_SERIOUSNESS_CRITERIA.map(([name, label]) =>
         collected(name, label, `AE.${name}`, "Record Qualifier")
       ),
+      EPOCH,
       collected(
         "AESTDTC",
         "Start Date of Adverse Event",
@@ -344,7 +345,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      EPOCH,
     ],
   },
   VS: {
@@ -393,8 +393,15 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "USDM_ASSESSMENT",
         "Variable Qualifier"
       ),
+      derived(
+        "VSLOBXFL",
+        "Last Observation Before Exposure Flag",
+        "LAST_PRE_DOSE",
+        "Record Qualifier"
+      ),
       VISITNUM,
       VISIT,
+      EPOCH,
       collected("VSDTC", "Date of Vital Signs", "VS.VSDTC", "Timing", "date"),
       derived(
         "VSDY",
@@ -403,13 +410,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      derived(
-        "VSLOBXFL",
-        "Last Observation Before Exposure Flag",
-        "LAST_PRE_DOSE",
-        "Record Qualifier"
-      ),
-      EPOCH,
     ],
   },
   LB: {
@@ -496,8 +496,15 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "LB.LBNRIND",
         "Variable Qualifier"
       ),
+      derived(
+        "LBLOBXFL",
+        "Last Observation Before Exposure Flag",
+        "LAST_PRE_DOSE",
+        "Record Qualifier"
+      ),
       VISITNUM,
       VISIT,
+      EPOCH,
       collected("LBDTC", "Date of Lab Test", "LB.LBDTC", "Timing", "date"),
       derived(
         "LBDY",
@@ -506,13 +513,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      derived(
-        "LBLOBXFL",
-        "Last Observation Before Exposure Flag",
-        "LAST_PRE_DOSE",
-        "Record Qualifier"
-      ),
-      EPOCH,
     ],
   },
   DS: {
@@ -537,6 +537,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "DS.DSSCAT",
         "Grouping Qualifier"
       ),
+      EPOCH,
       collected(
         "DSSTDTC",
         "Start Date of Disposition Event",
@@ -551,7 +552,6 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
-      EPOCH,
     ],
   },
   SUPPDM: {

@@ -170,11 +170,17 @@ function BarChart({ report, label }: { report: ReportData; label: string }) {
       <div aria-hidden="true">
         <div className="grid grid-cols-[minmax(0,6.5rem)_minmax(0,1fr)] gap-x-3">
           <span />
-          <div className="relative h-5 border-b border-white/[0.08]">
-            {scale.ticks.map((tick) => (
+          <div className="@container relative h-5 border-b border-white/[0.08]">
+            {scale.ticks.map((tick, index) => (
               <span
                 key={tick.value}
-                className="absolute bottom-1 -translate-x-1/2 font-mono text-[10px] tabular-nums text-slate-400 first:translate-x-0 last:-translate-x-full"
+                // A phone-width axis labels every other gridline and the
+                // last, so five labels never run together; every gridline stays.
+                className={`absolute bottom-1 -translate-x-1/2 font-mono text-[10px] tabular-nums text-slate-400 first:translate-x-0 last:-translate-x-full ${
+                  index % 2 === 1 && index < scale.ticks.length - 1
+                    ? "hidden @min-[12rem]:inline"
+                    : ""
+                }`}
                 style={{ left: `${fraction(scale, tick.value) * 100}%` }}
               >
                 {tick.text}

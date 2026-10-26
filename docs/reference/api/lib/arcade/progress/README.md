@@ -20,6 +20,12 @@ Re-exports [ARCADE_CORRUPT_SUFFIX](store/variables/ARCADE_CORRUPT_SUFFIX.md)
 
 ***
 
+### ARCADE\_DEVICE\_SETTINGS\_KEY
+
+Re-exports [ARCADE_DEVICE_SETTINGS_KEY](device-settings-slice/variables/ARCADE_DEVICE_SETTINGS_KEY.md)
+
+***
+
 ### ARCADE\_PROGRESS\_CATALOG
 
 Re-exports [ARCADE_PROGRESS_CATALOG](catalog/variables/ARCADE_PROGRESS_CATALOG.md)
@@ -65,6 +71,24 @@ Re-exports [arcadeCoreSlice](core/variables/arcadeCoreSlice.md)
 ### arcadeDailySlice
 
 Re-exports [arcadeDailySlice](daily-slice/variables/arcadeDailySlice.md)
+
+***
+
+### ArcadeDeviceSettings
+
+Re-exports [ArcadeDeviceSettings](device-settings-slice/interfaces/ArcadeDeviceSettings.md)
+
+***
+
+### ArcadeDeviceSettingsPatch
+
+Re-exports [ArcadeDeviceSettingsPatch](device-settings-slice/type-aliases/ArcadeDeviceSettingsPatch.md)
+
+***
+
+### arcadeDeviceSettingsSlice
+
+Re-exports [arcadeDeviceSettingsSlice](device-settings-slice/variables/arcadeDeviceSettingsSlice.md)
 
 ***
 
@@ -134,15 +158,45 @@ Re-exports [createArcadeStore](store/functions/createArcadeStore.md)
 
 ***
 
+### DEFAULT\_DEVICE\_SETTINGS
+
+Re-exports [DEFAULT_DEVICE_SETTINGS](device-settings-slice/variables/DEFAULT_DEVICE_SETTINGS.md)
+
+***
+
 ### defineSlice
 
 Re-exports [defineSlice](slice/functions/defineSlice.md)
 
 ***
 
+### DeviceDockSize
+
+Re-exports [DeviceDockSize](device-settings-slice/type-aliases/DeviceDockSize.md)
+
+***
+
+### DeviceHandedness
+
+Re-exports [DeviceHandedness](device-settings-slice/type-aliases/DeviceHandedness.md)
+
+***
+
+### DeviceLayout
+
+Re-exports [DeviceLayout](device-settings-slice/type-aliases/DeviceLayout.md)
+
+***
+
 ### getArcadeCatalogEntry
 
 Re-exports [getArcadeCatalogEntry](catalog/functions/getArcadeCatalogEntry.md)
+
+***
+
+### getDeviceSettings
+
+Re-exports [getDeviceSettings](device-settings-slice/functions/getDeviceSettings.md)
 
 ***
 
@@ -188,9 +242,21 @@ Re-exports [setCoachMarksSeen](coach-marks-slice/functions/setCoachMarksSeen.md)
 
 ***
 
+### setDeviceSettings
+
+Re-exports [setDeviceSettings](device-settings-slice/functions/setDeviceSettings.md)
+
+***
+
 ### subscribe
 
 Re-exports [subscribe](slice/functions/subscribe.md)
+
+***
+
+### useDeviceSettings
+
+Re-exports [useDeviceSettings](device-settings-slice/functions/useDeviceSettings.md)
 
 ***
 

@@ -504,6 +504,19 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
     aliases: ["Burn rate", "Budget burn vs plan"],
     autoLink: false,
   },
+  {
+    key: "forecast-at-completion-term",
+    canonical: "Forecast at completion",
+    simplified: "what a study is now expected to cost in the end",
+    definition:
+      "The expected total cost of a study when it finishes: actual spend to date plus the budget still to come, adjusted for how spend has run against budget so far. Set against the budget at completion, it shows an overrun or underrun before it happens.",
+    aliases: [
+      "Estimate at completion",
+      "Budget at completion",
+      "Variance at completion",
+    ],
+    autoLink: false,
+  },
 ];
 
 export function getGlossaryKeyMap(

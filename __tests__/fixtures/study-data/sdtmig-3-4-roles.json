@@ -53,11 +53,11 @@
     "DOMAIN": "Identifier",
     "USUBJID": "Identifier",
     "SUBJID": "Topic",
-    "RFICDTC": "Record Qualifier",
     "RFSTDTC": "Record Qualifier",
     "RFENDTC": "Record Qualifier",
     "RFXSTDTC": "Record Qualifier",
     "RFXENDTC": "Record Qualifier",
+    "RFICDTC": "Record Qualifier",
     "RFPENDTC": "Record Qualifier",
     "DTHDTC": "Record Qualifier",
     "DTHFL": "Record Qualifier",
@@ -96,11 +96,11 @@
     "EXDOSE": "Record Qualifier",
     "EXDOSU": "Variable Qualifier",
     "EXDOSFRM": "Variable Qualifier",
+    "EPOCH": "Timing",
     "EXSTDTC": "Timing",
     "EXENDTC": "Timing",
     "EXSTDY": "Timing",
-    "EXENDY": "Timing",
-    "EPOCH": "Timing"
+    "EXENDY": "Timing"
   },
   "AE": {
     "STUDYID": "Identifier",
@@ -121,19 +121,19 @@
     "AESOC": "Variable Qualifier",
     "AESOCCD": "Variable Qualifier",
     "AESER": "Record Qualifier",
-    "AEREL": "Record Qualifier",
     "AEACN": "Record Qualifier",
+    "AEREL": "Record Qualifier",
     "AESCONG": "Record Qualifier",
     "AESDISAB": "Record Qualifier",
     "AESDTH": "Record Qualifier",
     "AESHOSP": "Record Qualifier",
     "AESLIFE": "Record Qualifier",
     "AESMIE": "Record Qualifier",
+    "EPOCH": "Timing",
     "AESTDTC": "Timing",
     "AEENDTC": "Timing",
     "AESTDY": "Timing",
-    "AEENDY": "Timing",
-    "EPOCH": "Timing"
+    "AEENDY": "Timing"
   },
   "VS": {
     "STUDYID": "Identifier",
@@ -147,12 +147,12 @@
     "VSSTRESC": "Result Qualifier",
     "VSSTRESN": "Result Qualifier",
     "VSSTRESU": "Variable Qualifier",
+    "VSLOBXFL": "Record Qualifier",
     "VISITNUM": "Timing",
     "VISIT": "Timing",
+    "EPOCH": "Timing",
     "VSDTC": "Timing",
-    "VSDY": "Timing",
-    "VSLOBXFL": "Record Qualifier",
-    "EPOCH": "Timing"
+    "VSDY": "Timing"
   },
   "LB": {
     "STUDYID": "Identifier",
@@ -172,12 +172,12 @@
     "LBSTNRLO": "Variable Qualifier",
     "LBSTNRHI": "Variable Qualifier",
     "LBNRIND": "Variable Qualifier",
+    "LBLOBXFL": "Record Qualifier",
     "VISITNUM": "Timing",
     "VISIT": "Timing",
+    "EPOCH": "Timing",
     "LBDTC": "Timing",
-    "LBDY": "Timing",
-    "LBLOBXFL": "Record Qualifier",
-    "EPOCH": "Timing"
+    "LBDY": "Timing"
   },
   "DS": {
     "STUDYID": "Identifier",
@@ -187,8 +187,8 @@
     "DSTERM": "Topic",
     "DSDECOD": "Synonym Qualifier",
     "DSCAT": "Grouping Qualifier",
+    "EPOCH": "Timing",
     "DSSTDTC": "Timing",
-    "DSSTDY": "Timing",
-    "EPOCH": "Timing"
+    "DSSTDY": "Timing"
   }
 }

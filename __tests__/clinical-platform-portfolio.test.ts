@@ -37,9 +37,13 @@ import { expectWithinTimingBudget } from "./helpers/timing-budget";
  * #2880: every site carries its start-up stages (`selectedOn`,
  * `contractedOn`, `irbApprovedOn`), drawn from a stream of their own. With
  * those left out the hash is the previous golden, 330b619a.
+ *
+ * #2912: the finance feed's budget plan (`feeds.financePlan`) is new. It
+ * draws nothing from any stream; with it left out the hash is the previous
+ * golden, a72bba8e, so no other value moved.
  */
 const GOLDEN_SHA256 =
-  "a72bba8e78c24f74af70d5be1d0d917725d738585477214408e12df64d1a9fb0";
+  "73ae03f5feb220d13e873a746e457e7d3085943110140776b869e2fa9f20df96";
 
 /** The fictional controlled list screen failure reasons come from (#2879). */
 const SCREEN_FAILURE_REASONS: readonly string[] = [

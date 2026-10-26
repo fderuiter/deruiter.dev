@@ -22,4 +22,5 @@ A warehouse from `buildWarehouse`.
 
 [`PortfolioDashboard`](../../../../types/portfolio-dashboard/interfaces/PortfolioDashboard.md)
 
-The milestone swimlane and the cycle-time benchmarks.
+The milestone swimlane, the cycle-time benchmarks and the
+budget against forecast at completion.

@@ -76,6 +76,9 @@ for (const width of [320, 1440]) {
       expect(await seriousNavViolations(page)).toEqual([]);
 
       if (step.path === "/protocol-drift") {
+        // Protocol Drift is a workbench, so its journey panel is compact and
+        // the related game sits behind "About this step".
+        await nav.getByRole("button", { name: /About this step/ }).click();
         await expect(
           nav.getByRole("link", { name: "Clinical Trial Chaos" })
         ).toHaveAttribute("href", "/arcade/clinical-chaos");
@@ -109,10 +112,22 @@ for (const width of [320, 1440]) {
       }).toPass({ timeout: 20_000 });
     }
 
-    // The return path: the case study leads back to the platform.
-    await journeyNav(page)
-      .getByRole("link", { name: "← Previous step: Clinical Data Platform" })
-      .click();
+    // The return path: the case study leads back to the platform. On a
+    // phone the previous step sits in the folded step list (#2896).
+    if (width < 640) {
+      await journeyNav(page)
+        .getByRole("button", { name: /All steps/ })
+        .click();
+      await journeyNav(page)
+        .getByRole("link", {
+          name: "4. Govern the portfolio: Clinical Data Platform",
+        })
+        .click();
+    } else {
+      await journeyNav(page)
+        .getByRole("link", { name: "← Previous step: Clinical Data Platform" })
+        .click();
+    }
     await expect(page).toHaveURL(/\/platform$/);
     await expect(
       journeyNav(page).locator('[aria-current="step"]')

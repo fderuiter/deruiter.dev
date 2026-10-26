@@ -3321,6 +3321,188 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.fct_visit",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "confidential",
+              "description": "Visit record id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned visit id.",
+              "maxLength": 64,
+              "name": "planned_visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force on the visit date, or the planned date of a missed visit.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Visit date, or null for a missed visit.",
+              "maxLength": null,
+              "name": "visit_date_key",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Planned date: enrollment plus the planned day.",
+              "maxLength": null,
+              "name": "planned_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "entered, pending-entry or missed.",
+              "maxLength": 64,
+              "name": "visit_status",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Actual minus planned day.",
+              "maxLength": null,
+              "name": "day_offset",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Whether the visit fell outside its window.",
+              "maxLength": null,
+              "name": "is_out_of_window",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            },
+            {
+              "classification": "internal",
+              "description": "Days from the visit to data entry.",
+              "maxLength": null,
+              "name": "entry_lag_days",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Hour of the day, 0 to 23 in UTC, the visit's data was entered.",
+              "maxLength": null,
+              "name": "entry_hour",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Subject visits against the schedule, with entry timeliness.",
+          "grain": "One row per subject visit record.",
+          "name": "fct_visit",
+          "physicalName": "gold.fct_visit",
+          "primaryKey": [
+            "visit_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_visit",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
+    },
+    {
       "id": "clinical-platform/silver.cec_adjudication",
       "objects": [
         {

@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.6.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.7.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -125,6 +125,7 @@ erDiagram
     int day_offset
     boolean is_out_of_window
     int entry_lag_days
+    int entry_hour
     boolean is_synthetic
   }
   fct_query {
@@ -512,6 +513,7 @@ Subject visits against the schedule, with entry timeliness.
 | `day_offset` | integer | yes |  | internal | Actual minus planned day. |
 | `is_out_of_window` | boolean | no |  | internal | Whether the visit fell outside its window. |
 | `entry_lag_days` | integer | yes |  | internal | Days from the visit to data entry. |
+| `entry_hour` | integer | yes |  | internal | Hour of the day, 0 to 23 in UTC, the visit's data was entered. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 
 ## `gold.fct_query`

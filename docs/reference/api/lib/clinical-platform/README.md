@@ -236,6 +236,12 @@ Re-exports [checkWorkbenchSql](internal/workbench/guard/functions/checkWorkbench
 
 ***
 
+### chiSquareCdf
+
+Re-exports [chiSquareCdf](internal/rbqm/stats/functions/chiSquareCdf.md)
+
+***
+
 ### ColumnRef
 
 Re-exports [ColumnRef](types/platform/interfaces/ColumnRef.md)

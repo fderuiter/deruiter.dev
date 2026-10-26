@@ -200,7 +200,7 @@ test("the risk tab flags the planted site and drills into it (#2631)", async ({
   const csm = page.locator('section[aria-labelledby="risk-csm"]');
   await expect(
     csm.getByRole("listitem").filter({ hasText: "DEMO-302-BR-118 · " })
-  ).toHaveCount(3);
+  ).toHaveCount(4);
   await expect(
     page.getByRole("table", { name: /risk signal log/ }).getByRole("row")
   ).toHaveCount(3);

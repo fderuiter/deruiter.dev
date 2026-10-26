@@ -32,10 +32,12 @@ export default function PlatformPortfolioPage() {
           Eight synthetic studies side by side against their plans: every
           study&apos;s milestones on one timeline, with the slips highlighted,
           how long each took to start up, recruit and lock its database against
-          the rest of the portfolio, and what each is now forecast to cost
-          against its budget. Every number comes from the governed metric
-          registry, and every chart has its data table. To drill into one study,
-          open the{" "}
+          the rest of the portfolio, what each is now forecast to cost against
+          its budget, and when each study still enrolling is likely to enroll
+          its last subject, with a what-if that adds sites. Every measure comes
+          from the governed metric registry, the enrollment forecast from a
+          seeded Monte Carlo model, and every chart has its data table. To drill
+          into one study, open the{" "}
           <Link
             href="/platform/operations"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"

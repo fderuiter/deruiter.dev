@@ -61,6 +61,15 @@ export class Stream {
     return Math.floor(-Math.log(1 - this.next()) * mean);
   }
 
+  /**
+   * A normal draw with the given mean and standard deviation (Box-Muller,
+   * two uniform draws per call, the sine half discarded).
+   */
+  normal(mean: number, sd: number): number {
+    const radius = Math.sqrt(-2 * Math.log(1 - this.next()));
+    return mean + sd * radius * Math.cos(2 * Math.PI * this.next());
+  }
+
   /** A Poisson count with the given mean (Knuth's method, for small means). */
   poisson(mean: number): number {
     const limit = Math.exp(-mean);

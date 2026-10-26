@@ -184,6 +184,14 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     DAILY,
     TRIAL
   ),
+  // 1.0.0 (#2957): vital signs at every portfolio study but DEMO-301.
+  "silver.edc_vital_sign": silver(
+    "EDC vital signs",
+    "EDC",
+    DATA_MANAGEMENT,
+    DAILY,
+    TRIAL
+  ),
   "silver.ctms_milestone": silver(
     "Study milestones",
     "CTMS",
@@ -311,6 +319,8 @@ export const PRODUCT_REGISTRATIONS: Readonly<
   ),
   // 1.0.0 (#2956): adverse events, for safety reporting and monitoring.
   "gold.fct_adverse_event": gold("Adverse event facts", "Safety mart", SAFETY),
+  // 1.0.0 (#2957): vital signs, for central monitoring.
+  "gold.fct_vital_sign": gold("Vital sign facts", "RBQM mart", DATA_MANAGEMENT),
   "gold.fct_monitoring_visit": {
     ...gold("Monitoring visit facts", "Operations mart", MONITORING),
     // 1.1.0 (#2736): the plan in force and the report due date.

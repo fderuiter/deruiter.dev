@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.8.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.9.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -601,6 +601,81 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'silver',
   @level1type = N'TABLE', @level1name = N'edc_adverse_event',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [silver].[edc_vital_sign] (
+  [vital_sign_id] NVARCHAR(64) NOT NULL,
+  [visit_id]      NVARCHAR(64) NOT NULL,
+  [subject_id]    NVARCHAR(64) NOT NULL,
+  [study_id]      NVARCHAR(64) NOT NULL,
+  [site_id]       NVARCHAR(64) NOT NULL,
+  [vs_test_code]  NVARCHAR(8) NOT NULL,
+  [vs_value]      DECIMAL(6, 1) NOT NULL,
+  [vs_unit]       NVARCHAR(16) NOT NULL,
+  [measured_on]   DATE NOT NULL,
+  [source_system] NVARCHAR(64) NOT NULL,
+  [is_synthetic]  BIT NOT NULL,
+  CONSTRAINT [pk_edc_vital_sign] PRIMARY KEY ([vital_sign_id])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'EDC vital signs, one reading of each sign at each entered visit (#2957). Grain: One row per visit and vital sign.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Reading id: the visit record id and the test code.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'vital_sign_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Visit record id the reading was taken at.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'visit_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Subject id.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'subject_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Protocol id.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'study_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Site id.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'site_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'SDTM VSTESTCD: SYSBP, DIABP, PULSE or WEIGHT.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'vs_test_code';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'The reading, in its unit.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'vs_value';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Unit: mmHg, beats/min or kg.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'vs_unit';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date of the visit the reading was taken at.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'measured_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Source system the record came from.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'source_system';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'edc_vital_sign',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 
@@ -2381,6 +2456,85 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_adverse_event',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [gold].[fct_vital_sign] (
+  [visit_id]          NVARCHAR(64) NOT NULL,
+  [subject_id]        NVARCHAR(64) NOT NULL,
+  [study_key]         INT NOT NULL,
+  [site_key]          INT NOT NULL,
+  [country_key]       INT NOT NULL,
+  [measured_date_key] INT NOT NULL,
+  [systolic_bp_mmhg]  INT,
+  [diastolic_bp_mmhg] INT,
+  [pulse_bpm]         INT,
+  [weight_kg]         DECIMAL(5, 1),
+  [is_synthetic]      BIT NOT NULL,
+  CONSTRAINT [pk_fct_vital_sign] PRIMARY KEY ([visit_id]),
+  CONSTRAINT [fk_fct_vital_sign_study_key] FOREIGN KEY ([study_key]) REFERENCES [gold].[dim_study] ([study_key]),
+  CONSTRAINT [fk_fct_vital_sign_site_key] FOREIGN KEY ([site_key]) REFERENCES [gold].[dim_site] ([site_key]),
+  CONSTRAINT [fk_fct_vital_sign_country_key] FOREIGN KEY ([country_key]) REFERENCES [gold].[dim_country] ([country_key]),
+  CONSTRAINT [fk_fct_vital_sign_measured_date_key] FOREIGN KEY ([measured_date_key]) REFERENCES [gold].[dim_date] ([date_key])
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957). Grain: One row per visit with vital signs.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Visit record id the signs were taken at (degenerate dimension).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'visit_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Subject id (degenerate dimension).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'subject_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Study.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'study_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Site version in force on the day of the visit.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'site_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Country of the site.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'country_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the signs were taken.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'measured_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'systolic_bp_mmhg';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'diastolic_bp_mmhg';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'pulse_bpm';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Weight (VSTESTCD WEIGHT), in kg; null when not recorded.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
+  @level2type = N'COLUMN', @level2name = N'weight_kg';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_vital_sign',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 

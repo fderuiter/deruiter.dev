@@ -100,6 +100,29 @@ The next uniform draw in [0, 1).
 
 ***
 
+### normal()
+
+> **normal**(`mean`, `sd`): `number`
+
+A normal draw with the given mean and standard deviation (Box-Muller,
+two uniform draws per call, the sine half discarded).
+
+#### Parameters
+
+##### mean
+
+`number`
+
+##### sd
+
+`number`
+
+#### Returns
+
+`number`
+
+***
+
 ### pick()
 
 > **pick**\<`T`\>(`items`): `T`

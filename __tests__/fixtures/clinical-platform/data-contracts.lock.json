@@ -3674,6 +3674,155 @@
       "version": "1.1.0"
     },
     {
+      "id": "clinical-platform/gold.fct_vital_sign",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "confidential",
+              "description": "Visit record id the signs were taken at (degenerate dimension).",
+              "maxLength": 64,
+              "name": "visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force on the day of the visit.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the signs were taken.",
+              "maxLength": null,
+              "name": "measured_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded.",
+              "maxLength": null,
+              "name": "systolic_bp_mmhg",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded.",
+              "maxLength": null,
+              "name": "diastolic_bp_mmhg",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded.",
+              "maxLength": null,
+              "name": "pulse_bpm",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "confidential",
+              "description": "Weight (VSTESTCD WEIGHT), in kg; null when not recorded.",
+              "maxLength": null,
+              "name": "weight_kg",
+              "nullable": true,
+              "pattern": null,
+              "precision": 5,
+              "scale": 1,
+              "type": "decimal"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957).",
+          "grain": "One row per visit with vital signs.",
+          "name": "fct_vital_sign",
+          "physicalName": "gold.fct_vital_sign",
+          "primaryKey": [
+            "visit_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_vital_sign",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
       "id": "clinical-platform/silver.cec_adjudication",
       "objects": [
         {
@@ -5257,6 +5406,155 @@
         }
       ],
       "productId": "silver.edc_visit",
+      "retention": {
+        "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
+        "regulatory": true,
+        "years": 25
+      },
+      "sla": {
+        "availability": 0.99,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
+      "id": "clinical-platform/silver.edc_vital_sign",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "confidential",
+              "description": "Reading id: the visit record id and the test code.",
+              "maxLength": 64,
+              "name": "vital_sign_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Visit record id the reading was taken at.",
+              "maxLength": 64,
+              "name": "visit_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject id.",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Site id.",
+              "maxLength": 64,
+              "name": "site_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "SDTM VSTESTCD: SYSBP, DIABP, PULSE or WEIGHT.",
+              "maxLength": 8,
+              "name": "vs_test_code",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "The reading, in its unit.",
+              "maxLength": null,
+              "name": "vs_value",
+              "nullable": false,
+              "pattern": null,
+              "precision": 6,
+              "scale": 1,
+              "type": "decimal"
+            },
+            {
+              "classification": "internal",
+              "description": "Unit: mmHg, beats/min or kg.",
+              "maxLength": 16,
+              "name": "vs_unit",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Date of the visit the reading was taken at.",
+              "maxLength": null,
+              "name": "measured_on",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Source system the record came from.",
+              "maxLength": 64,
+              "name": "source_system",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "EDC vital signs, one reading of each sign at each entered visit (#2957).",
+          "grain": "One row per visit and vital sign.",
+          "name": "edc_vital_sign",
+          "physicalName": "silver.edc_vital_sign",
+          "primaryKey": [
+            "vital_sign_id"
+          ]
+        }
+      ],
+      "productId": "silver.edc_vital_sign",
       "retention": {
         "basis": "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial.",
         "regulatory": true,

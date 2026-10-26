@@ -78,6 +78,14 @@ export const KRI_IDS = [
   "entry-lag-days",
 ] as const;
 
+/** The `fct_vital_sign` column each SDTM vital sign test code pivots to. */
+const VITAL_SIGN_COLUMNS: Readonly<Record<string, string | undefined>> = {
+  SYSBP: "systolic_bp_mmhg",
+  DIABP: "diastolic_bp_mmhg",
+  PULSE: "pulse_bpm",
+  WEIGHT: "weight_kg",
+};
+
 /** Smart date key `YYYYMMDD` of an ISO 8601 date. */
 export function dateKey(iso: string): number {
   return Number(iso.slice(0, 10).replaceAll("-", ""));
@@ -634,6 +642,38 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     };
   });
 
+  // Vital signs pivoted to one row per visit, a column per sign, keyed by
+  // the site version in force on the day of the visit (#2957).
+  const fctVitalSign: Record<string, WarehouseValue>[] = [];
+  const vitalsByVisit = new Map<
+    WarehouseValue,
+    Record<string, WarehouseValue>
+  >();
+  for (const v of silver.edc_vital_sign) {
+    let row = vitalsByVisit.get(v.visit_id);
+    if (row === undefined) {
+      const measured = str(v, "measured_on");
+      row = {
+        visit_id: v.visit_id,
+        subject_id: v.subject_id,
+        ...dims(v, measured),
+        measured_date_key: dk(measured),
+        systolic_bp_mmhg: null,
+        diastolic_bp_mmhg: null,
+        pulse_bpm: null,
+        weight_kg: null,
+        is_synthetic: v.is_synthetic,
+      };
+      vitalsByVisit.set(v.visit_id, row);
+      fctVitalSign.push(row);
+    }
+    const test = str(v, "vs_test_code");
+    const column = VITAL_SIGN_COLUMNS[test];
+    if (column === undefined)
+      throw new Error(`no gold column for vital sign ${test}`);
+    row[column] = v.vs_value;
+  }
+
   const dimMonitoringPlan = silver.ctms_monitoring_plan.map((p, index) => ({
     monitoring_plan_key: index + 1,
     monitoring_plan_id: p.monitoring_plan_id,
@@ -850,6 +890,7 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     fct_deviation: fctDeviation,
     fct_cec_adjudication: fctCecAdjudication,
     fct_adverse_event: fctAdverseEvent,
+    fct_vital_sign: fctVitalSign,
     fct_monitoring_visit: fctMonitoringVisit,
     fct_planned_monitoring_visit: fctPlannedMonitoringVisit,
     fct_milestone: fctMilestone,

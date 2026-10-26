@@ -60,9 +60,13 @@ import {
  * #2956: `silver.edc_adverse_event` and `gold.fct_adverse_event` are new.
  * With those two tables left out the hash is the previous golden, 5258dfe3,
  * so no other value moved.
+ *
+ * #2957: `silver.edc_vital_sign` and `gold.fct_vital_sign` are new. With
+ * those two tables left out the hash is the previous golden, 140be786, so
+ * no other value moved.
  */
 const GOLDEN_SHA256 =
-  "140be786185f57907beb7450766c32f0c1006f69f18c9b04c4bd14bdacc03e16";
+  "0b41b9c26ec953c98636fbfccfb02ec7fe0366db74e2ccd3c694173e96a5d797";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -74,6 +78,7 @@ const GOLDEN_ROW_COUNTS = {
   "silver.edc_visit": 7727,
   "silver.edc_query": 3559,
   "silver.edc_adverse_event": 2084,
+  "silver.edc_vital_sign": 27836,
   "silver.ctms_milestone": 72,
   "silver.ctms_monitoring_plan": 8,
   "silver.ctms_monitoring_visit": 1123,
@@ -98,6 +103,7 @@ const GOLDEN_ROW_COUNTS = {
   "gold.fct_deviation": 329,
   "gold.fct_cec_adjudication": 39,
   "gold.fct_adverse_event": 2084,
+  "gold.fct_vital_sign": 6959,
   "gold.fct_monitoring_visit": 1123,
   "gold.fct_planned_monitoring_visit": 1077,
   "gold.fct_milestone": 72,
@@ -302,9 +308,7 @@ describe("buildWarehouse: integrity", () => {
     );
     expect(facts.size).toBe(events.length);
     const key = (day: unknown) => Number(String(day).replaceAll("-", ""));
-    const siteKeys = new Map(
-      rows("gold.dim_site").map((s) => [s.site_key, s])
-    );
+    const siteKeys = new Map(rows("gold.dim_site").map((s) => [s.site_key, s]));
     for (const event of events) {
       const fact = facts.get(event.ae_id)!;
       const id = String(event.ae_id);
@@ -338,6 +342,58 @@ describe("buildWarehouse: integrity", () => {
         ),
       },
     ]);
+  });
+
+  it("pivots each visit's vital signs onto one fact, keyed by the site version on the day (#2957)", () => {
+    const readings = rows("silver.edc_vital_sign");
+    const facts = new Map(
+      rows("gold.fct_vital_sign").map((f) => [f.visit_id, f])
+    );
+    expect(facts.size).toBe(rows("gold.fct_vital_sign").length);
+    expect(facts.size * 4).toBe(readings.length);
+    const column: Record<string, string> = {
+      SYSBP: "systolic_bp_mmhg",
+      DIABP: "diastolic_bp_mmhg",
+      PULSE: "pulse_bpm",
+      WEIGHT: "weight_kg",
+    };
+    const siteKeys = new Map(rows("gold.dim_site").map((s) => [s.site_key, s]));
+    for (const reading of readings) {
+      const fact = facts.get(reading.visit_id)!;
+      const id = String(reading.vital_sign_id);
+      const measured = String(reading.measured_on);
+      expect(fact[column[String(reading.vs_test_code)]], id).toBe(
+        reading.vs_value
+      );
+      expect(fact.subject_id, id).toBe(reading.subject_id);
+      expect(fact.measured_date_key, id).toBe(
+        Number(measured.replaceAll("-", ""))
+      );
+      expect(siteKeys.get(fact.site_key), id).toBe(
+        siteVersionOn(warehouse, String(reading.site_id), measured)
+      );
+    }
+  });
+
+  it("leaves a sign the site did not record empty in its visit's fact (#2957)", () => {
+    const [first] = portfolio.feeds.edc.vitalSigns;
+    const fact = rows(
+      "gold.fct_vital_sign",
+      buildWarehouse({
+        ...portfolio,
+        feeds: {
+          ...portfolio.feeds,
+          edc: {
+            ...portfolio.feeds.edc,
+            vitalSigns: portfolio.feeds.edc.vitalSigns.filter(
+              (r) => r.visitId !== first.visitId || r.test !== "WEIGHT"
+            ),
+          },
+        },
+      })
+    ).find((f) => f.visit_id === first.visitId);
+    expect(fact?.weight_kg).toBeNull();
+    expect(fact?.systolic_bp_mmhg).toBe(first.value);
   });
 
   it("carries each subject's screen failure reason into every enrollment fact (#2879)", () => {
@@ -936,6 +992,7 @@ describe("lineage", () => {
     "bronze.edc.visits": portfolio.feeds.edc.visits[0],
     "bronze.edc.queries": portfolio.feeds.edc.queries[0],
     "bronze.edc.adverseEvents": portfolio.feeds.edc.adverseEvents[0],
+    "bronze.edc.vitalSigns": portfolio.feeds.edc.vitalSigns[0],
     "bronze.ctms.milestones": portfolio.feeds.ctms.milestones[0],
     "bronze.ctms.monitoringPlans": portfolio.feeds.ctms.monitoringPlans[0],
     "bronze.ctms.monitoringVisits": portfolio.feeds.ctms.monitoringVisits[0],
@@ -1161,6 +1218,8 @@ describe("exports, ERD and reference page", () => {
         "string:BYTE_ARRAY:STRING",
         "integer:INT32:INT(32, true)",
         "decimal:INT64:DECIMAL(12, 4)",
+        "decimal:INT64:DECIMAL(6, 1)",
+        "decimal:INT64:DECIMAL(5, 1)",
         "boolean:BOOLEAN:null",
         "date:INT32:DATE",
         "timestamp:INT64:TIMESTAMP(isAdjustedToUTC=true, unit=MILLIS)",

@@ -123,8 +123,8 @@ describe("Route nodes are collected the same way by touch and keyboard (#2003)",
     expect(read().startsWith("3,1:0")).toBe(true);
 
     // The player starts at (1,1); node 1 is at (3,1), two steps right.
-    tap(screen.getByRole("button", { name: "Move Right" }));
-    tap(screen.getByRole("button", { name: "Move Right" }));
+    tap(screen.getByRole("button", { name: "Move right" }));
+    tap(screen.getByRole("button", { name: "Move right" }));
 
     expect(read().startsWith("3,1:1")).toBe(true);
   });

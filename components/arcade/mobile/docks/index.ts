@@ -18,6 +18,7 @@ export type { HoldButtonProps } from "./HoldButton";
 export { ActionDock } from "./ActionDock";
 export type { ActionDockProps } from "./ActionDock";
 export {
+  DOCK_KEY_CLASS,
   DOCK_KEY_PX,
   dockActionLabel,
   useDockHeight,

@@ -1,0 +1,175 @@
+# ODCS v3.2.0 data contract for gold.fct_adverse_event. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_adverse_event"
+name: "Adverse event facts"
+version: "1.0.0"
+status: active
+domain: "Safety mart"
+tags:
+  - gold
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956)."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_adverse_event
+    name: fct_adverse_event
+    physicalName: gold.fct_adverse_event
+    physicalType: table
+    logicalType: object
+    description: "Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956)."
+    dataGranularityDescription: "One row per adverse event."
+    properties:
+      - name: ae_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Adverse event id (degenerate dimension)."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id the event was reported at (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force when the site reported the event."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: onset_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the event began."
+        required: true
+        classification: internal
+      - name: reported_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the site reported the event."
+        required: true
+        classification: internal
+      - name: days_to_report
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Days from onset to the site's report."
+        required: true
+        classification: internal
+      - name: ae_term
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Reported term."
+        required: true
+        classification: confidential
+      - name: is_serious
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Whether the event is serious (ICH E2A)."
+        required: true
+        classification: internal
+      - name: severity
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 16
+        physicalType: "VARCHAR(16)"
+        description: "Severity: mild, moderate or severe."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_adverse_event_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - ae_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (ae_id) identifies one row."
+team:
+  name: "Safety mart"
+  members:
+    - username: medical-safety-lead
+      name: "Medical Safety Lead"
+      role: owner
+    - username: safety-data-steward
+      name: "Safety Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.edc_adverse_event
+      - silver.site
+  - property: consumers
+    value: []

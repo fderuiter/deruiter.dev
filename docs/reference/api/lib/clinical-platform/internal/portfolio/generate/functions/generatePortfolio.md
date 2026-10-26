@@ -11,8 +11,8 @@
 Generates the synthetic sponsor portfolio and its bronze operational
 feeds: eight studies (drug Phase I to III, two device IDE studies, three
 run by fictional CROs), about 120 sites in 12 countries, and EDC, CTMS,
-IRT, eTMF, finance, budget plan, protocol deviation and CEC
-adjudication records.
+IRT, eTMF, finance, budget plan, protocol deviation, adverse event and
+CEC adjudication records.
 
 DEMO-301 is the Study Data Pipeline's study. Its protocol is the USDM
 definition the pipeline reads, and its subjects, randomisations and visits

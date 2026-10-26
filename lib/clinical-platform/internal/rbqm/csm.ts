@@ -8,8 +8,8 @@
  *
  * Each test compares like with like. Sites differ legitimately in how fast
  * they enter data, so no test asks a site to match its peers' entry lag;
- * the schedule and the query and deviation rates are the study's own, so
- * those are what a site is held to.
+ * the schedule and the query, deviation and adverse event rates are the
+ * study's own, so those are what a site is held to.
  */
 import type {
   CsmExclusion,
@@ -54,6 +54,7 @@ interface SiteData {
   readonly entered: number;
   readonly queries: number;
   readonly deviations: number;
+  readonly adverseEvents: number;
   /** Entry lags in days of the entered visits. */
   readonly lags: readonly number[];
   /** Visits made to planned visits that have a window, by planned visit. */
@@ -78,6 +79,7 @@ interface Tally {
   entered: number;
   queries: number;
   deviations: number;
+  adverseEvents: number;
   lags: number[];
   offsets: { plannedVisit: string; offset: number }[];
   entryHours: number[];
@@ -117,6 +119,7 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
         entered: 0,
         queries: 0,
         deviations: 0,
+        adverseEvents: 0,
         lags: [],
         offsets: [],
         entryHours: Array.from({ length: HOURS }, () => 0),
@@ -155,6 +158,9 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
     if (deviation.study_key === studyKey)
       of(deviation.site_key).deviations += 1;
   }
+  for (const event of warehouse.tables["gold.fct_adverse_event"]) {
+    if (event.study_key === studyKey) of(event.site_key).adverseEvents += 1;
+  }
   return [...tallies.entries()]
     .map(([siteId, tally]) => {
       const scheduled = new Map<string, number>();
@@ -170,6 +176,7 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
         entered: tally.entered,
         queries: tally.queries,
         deviations: tally.deviations,
+        adverseEvents: tally.adverseEvents,
         lags: tally.lags,
         scheduled,
         onDay,
@@ -454,6 +461,15 @@ export function centralMonitoring(
         (s) => s.visits,
         ["deviation", "deviations"],
         "visits"
+      ),
+      underReporting(
+        "csm-ae-under-reporting",
+        site,
+        peers,
+        (s) => s.adverseEvents,
+        (s) => s.entered,
+        ["adverse event", "adverse events"],
+        "entered visits"
       ),
       exactDayVisits("csm-exact-day-visits", site, peers),
       entryHour("csm-entry-hour", site, peers),

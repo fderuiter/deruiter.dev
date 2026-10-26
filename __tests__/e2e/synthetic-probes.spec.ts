@@ -690,12 +690,15 @@ async function governanceJourney(page: Page) {
     "/platform/governance is not deployed to the probed origin yet (#2691)"
   );
   expect(response?.status()).toBe(200);
-  await expect(page.getByText("90 entries", { exact: true })).toBeVisible();
+  // The probe also runs against the deployed origin, which can be a release
+  // behind the catalog in the repository, so it reads the total rather than
+  // pinning it; __tests__/e2e/platform-governance.spec.ts pins the count.
+  await expect(page.getByText(/^\d+ entries$/)).toBeVisible();
   const search = page.getByRole("searchbox", { name: "Search the catalog" });
   await expect(async () => {
     await search.fill("");
     await search.fill("screening");
-    await expect(page.getByText(/^\d+ of 90 entries$/)).toBeVisible({
+    await expect(page.getByText(/^\d+ of \d+ entries$/)).toBeVisible({
       timeout: 1_000,
     });
   }).toPass({ timeout: 15_000 });

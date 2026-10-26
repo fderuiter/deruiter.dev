@@ -176,6 +176,14 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     DAILY,
     TRIAL
   ),
+  // 1.0.0 (#2956): adverse events at every portfolio study but DEMO-301.
+  "silver.edc_adverse_event": silver(
+    "EDC adverse events",
+    "EDC",
+    SAFETY,
+    DAILY,
+    TRIAL
+  ),
   "silver.ctms_milestone": silver(
     "Study milestones",
     "CTMS",
@@ -301,6 +309,8 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     "Safety mart",
     SAFETY
   ),
+  // 1.0.0 (#2956): adverse events, for safety reporting and monitoring.
+  "gold.fct_adverse_event": gold("Adverse event facts", "Safety mart", SAFETY),
   "gold.fct_monitoring_visit": {
     ...gold("Monitoring visit facts", "Operations mart", MONITORING),
     // 1.1.0 (#2736): the plan in force and the report due date.

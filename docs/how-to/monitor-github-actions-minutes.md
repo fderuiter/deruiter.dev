@@ -101,8 +101,10 @@ a gate or lowering a threshold:
   runs the CDISC Rules Engine (CORE) on the Study Data Pipeline's seed-301
   SDTM and the USDM fixture, and fails on any finding that
   `scripts/study-data-core-allowlist.json` does not explain (#2603). It
-  runs only on changes to `lib/study-data/**` or its own files, and weekly,
-  bounded at 30 minutes.
+  also runs CORE over all 16 "Inject an issue" scenarios and fails when the
+  committed findings are stale (#2992), four views at a time. It runs only
+  on changes to `lib/study-data/**` or its own files, and weekly, bounded
+  at 45 minutes.
 - `security-gate` (vulnerability, license and secret audits) runs on every
   trigger.
 - `build` runs `npm run build` once per PR, in parallel with `static-gate`

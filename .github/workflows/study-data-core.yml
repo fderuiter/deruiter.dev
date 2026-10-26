@@ -9,6 +9,13 @@ name: Study Data CDISC CORE
 # CORE no longer reports. The Define-XML XSD check runs in the unit suite
 # (`__tests__/study-data-define.test.ts`).
 #
+# #2992: CORE also runs over every "Inject an issue" scenario, and
+# `study-data-core.ts record` writes every view's findings to
+# lib/study-data/internal/core/recorded-findings.json, which the site reads.
+# The job fails when the committed file differs from what CORE reports now,
+# and uploads the fresh file so the PR can commit it
+# (docs/how-to/refresh-cdisc-core-findings.md).
+#
 # CORE v0.17.1 ships its rule and terminology cache in the repository, so no
 # CDISC Library API key is needed. It publishes no ADaMIG rules yet; the
 # ADaM layer is reported as not run until it does. This is a separate
@@ -47,7 +54,7 @@ jobs:
   core:
     name: CDISC CORE (SDTMIG 3.4, USDM 4.0)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout Code
@@ -82,43 +89,50 @@ jobs:
           # so validate against the newest cached SDTM CT release.
           ct="$(ls "$RUNNER_TEMP/core/resources/cache" | sed -n 's/^sdtmct-\(.*\)\.pkl$/\1/p' | sort | tail -n 1)"
           echo "Newest cached SDTM CT release: $ct"
-          npx --no-install tsx scripts/study-data-core.ts export "$RUNNER_TEMP/core-in" --ct-version "$ct"
+          npx --no-install tsx scripts/study-data-core.ts export-views "$RUNNER_TEMP/core-in" --ct-version "$ct"
 
-      - name: Run CORE
-        working-directory: ${{ runner.temp }}/core
+      - name: Run CORE over Every View
         run: |
-          in="$RUNNER_TEMP/core-in"
-          out="$RUNNER_TEMP/core-reports"
-          mkdir -p "$out"
-          core() { "$RUNNER_TEMP/core-venv/bin/python" core.py "$@"; }
-          core validate -s sdtmig -v 3-4 -ft json \
-            -d "$in/m5/datasets/tabulations/sdtm" \
-            -dxp "$in/m5/datasets/tabulations/sdtm/define.xml" \
-            -o "$out/sdtm" -of json -p disabled
-          core validate -s usdm -v 4-0 -ft json -d "$in/usdm" \
-            -o "$out/usdm" -of json -p disabled
-          rules="$(core list-rules -s adamig -v 1-3 2>/dev/null | python3 -c 'import json, sys; print(len(json.load(sys.stdin)))')"
-          if [ "$rules" = "0" ]; then
-            echo "CDISC CORE $CORE_TAG publishes no ADaMIG 1.3 rules." > "$out/adam.skipped"
-          else
-            core validate -s adamig -v 1-3 -ft json \
-              -d "$in/m5/datasets/analysis/adam" \
-              -dxp "$in/m5/datasets/analysis/adam/define.xml" \
-              -o "$out/adam" -of json -p disabled
-          fi
+          scripts/study-data-core-views.sh "$RUNNER_TEMP/core" \
+            "$RUNNER_TEMP/core-venv/bin/python" \
+            "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" 4
 
       - name: Reconcile with the In-Browser Gate
+        id: reconcile
         run: |
           npx --no-install tsx scripts/study-data-core.ts reconcile \
-            "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" \
+            "$RUNNER_TEMP/core-in/default" "$RUNNER_TEMP/core-reports/default" \
             --engine "CDISC CORE $CORE_TAG"
+
+      - name: Check the Recorded Findings Are Current
+        if: ${{ !cancelled() && steps.reconcile.conclusion != 'skipped' }}
+        run: |
+          npx --no-install tsx scripts/study-data-core.ts record \
+            "$RUNNER_TEMP/core-in" "$RUNNER_TEMP/core-reports" \
+            --core-tag "$CORE_TAG" --core-commit "$CORE_COMMIT"
+          file=lib/study-data/internal/core/recorded-findings.json
+          if ! git diff --quiet -- "$file"; then
+            git diff --stat -- "$file"
+            echo "::error file=$file::The recorded CDISC CORE findings are stale. Download the study-data-core-recorded-findings artifact from this run and commit it as $file (docs/how-to/refresh-cdisc-core-findings.md)."
+            exit 1
+          fi
+          echo "The recorded CDISC CORE findings match this run."
 
       - name: Publish Job Summary
         if: always()
         run: |
-          if [ -f "$RUNNER_TEMP/core-reports/reconciliation.md" ]; then
-            cat "$RUNNER_TEMP/core-reports/reconciliation.md" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f "$RUNNER_TEMP/core-reports/default/reconciliation.md" ]; then
+            cat "$RUNNER_TEMP/core-reports/default/reconciliation.md" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      - name: Upload Recorded Findings
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: study-data-core-recorded-findings
+          path: lib/study-data/internal/core/recorded-findings.json
+          retention-days: 14
+          if-no-files-found: warn
 
       - name: Upload CORE Reports
         if: always()
@@ -127,7 +141,7 @@ jobs:
           name: study-data-core-reports
           path: |
             ${{ runner.temp }}/core-reports/
-            ${{ runner.temp }}/core-in/export-notes.json
-            ${{ runner.temp }}/core-in/gate-findings.json
+            ${{ runner.temp }}/core-in/*/export-notes.json
+            ${{ runner.temp }}/core-in/default/gate-findings.json
           retention-days: 14
           if-no-files-found: warn

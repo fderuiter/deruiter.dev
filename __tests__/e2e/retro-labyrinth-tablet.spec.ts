@@ -144,3 +144,48 @@ test("Retro Labyrinth lays a portrait iPad out under the maze (#2861)", async ({
   }
   await assertNoHorizontalOverflow(page);
 });
+
+// A left-handed player (the cabinet's Setup sheet, #2862) gets the d-pad on
+// the right and the tools on the left, in both orientations.
+test("Retro Labyrinth swaps the tablet docks for a left hand (#2862)", async ({
+  page,
+}, testInfo) => {
+  const viewport = testInfo.project.use.viewport;
+  test.skip(
+    !/^iPad/.test(testInfo.project.name) || !viewport,
+    "iPad projects only"
+  );
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "arcade_device_settings_v1",
+      JSON.stringify({ version: 1, handedness: "left" })
+    );
+  });
+  await launchOnTablet(page);
+  await expect(page.locator(".arcade-stage")).toHaveAttribute(
+    "data-handedness",
+    "left"
+  );
+
+  const middle = viewport!.width / 2;
+  const up = await page
+    .getByRole("group", { name: "Directional pad" })
+    .getByRole("button", { name: "Move Up" })
+    .boundingBox();
+  const emp = await page
+    .getByRole("button", { name: "EMP: fire an EMP burst" })
+    .boundingBox();
+  expect(up && emp).toBeTruthy();
+  expect(up!.x + up!.width / 2).toBeGreaterThan(middle);
+  expect(emp!.x + emp!.width / 2).toBeLessThan(middle);
+  if (viewport!.width > viewport!.height) {
+    // Landscape: each dock stays in its own column beside the maze.
+    const canvas = await page
+      .locator("[data-arcade-cabinet] canvas")
+      .first()
+      .boundingBox();
+    expect(up!.x).toBeGreaterThanOrEqual(canvas!.x + canvas!.width);
+    expect(emp!.x + emp!.width).toBeLessThanOrEqual(canvas!.x);
+  }
+  await assertNoHorizontalOverflow(page);
+});

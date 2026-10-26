@@ -34,7 +34,6 @@ import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/
 import {
   ActionSinkProvider,
   useActionInput,
-  setDeviceSettings,
   useDeviceSettings,
   type ActionDefinition,
   type ActionInput,
@@ -337,9 +336,10 @@ export function LabyrinthLayout({
     pendingMoreRef.current = null;
     pending?.();
   }, [moreOpen, gameStatus]);
-  // Key size and dominant hand are this device's settings, shared with the
-  // cabinet's Setup sheet and every other game (#2924).
-  const { dockSize: chosenDockSize, handedness } = useDeviceSettings();
+  // Key size is this device's setting, shared with the cabinet's Setup sheet
+  // and every other game (#2924). The stages and docks read the dominant hand
+  // from the same settings themselves (#2862).
+  const { dockSize: chosenDockSize } = useDeviceSettings();
   const roomForMd = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.md}px)`);
   const roomForLg = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.lg}px)`);
   // A phone held upright shows the rotate prompt, not the maze, so its keys
@@ -1296,30 +1296,6 @@ export function LabyrinthLayout({
                   </button>
                 </div>
                 {optionsContent}
-                <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-300">
-                  <span>Dominant hand</span>
-                  <div
-                    role="group"
-                    aria-label="Dominant hand"
-                    className="flex gap-1"
-                  >
-                    {(["right", "left"] as const).map((hand) => (
-                      <button
-                        key={hand}
-                        type="button"
-                        aria-pressed={handedness === hand}
-                        onClick={() => setDeviceSettings({ handedness: hand })}
-                        className={`min-h-11 min-w-11 rounded-lg border px-3 text-xs font-bold capitalize ${
-                          handedness === hand
-                            ? "border-amber-500/50 bg-amber-500/20 text-amber-300"
-                            : "border-zinc-700 bg-zinc-900 text-zinc-300"
-                        }`}
-                      >
-                        {hand}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </section>
             )}
           </>
@@ -1665,7 +1641,6 @@ export function LabyrinthLayout({
         map={phoneActions}
         actions={phoneClusterActions}
         disabled={phoneClusterDisabled}
-        handedness={handedness}
         size={dockSize}
       />
       <div className="flex gap-1">
@@ -1756,7 +1731,6 @@ export function LabyrinthLayout({
   const phoneStage = (
     <PhoneStage
       orientation="landscape"
-      handedness={handedness}
       // The playfield already pads 4px, which the toolbar inset counts too.
       className="[--arcade-stage-edge:4px]"
       hud={
@@ -1795,7 +1769,6 @@ export function LabyrinthLayout({
   const tabletStage = (
     <TabletStage
       hud={tabletHud}
-      handedness={handedness}
       portraitFill="dock"
       // The playfield already pads 4px, which the toolbar inset counts too.
       className="[--arcade-stage-edge:4px]"

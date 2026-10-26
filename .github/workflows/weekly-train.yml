@@ -524,10 +524,13 @@ jobs:
             --label "release:hold" --assignee "$OWNER" --body "$body"
 
   # The synthetic probes, against the release now serving deruiter.dev.
+  # `!cancelled()` replaces the implicit success(), which fails whenever any
+  # upstream job was skipped: in a dry run rc-build and rc-browser always are,
+  # so without it the dry run skipped the very probes it exists to run (#3021).
   probe:
     name: Smoke-test the live site
     needs: train
-    if: needs.train.outputs.verified == 'true'
+    if: ${{ !cancelled() && needs.train.result == 'success' && needs.train.outputs.verified == 'true' }}
     permissions:
       contents: read
     uses: ./.github/workflows/synthetic-probes.yml

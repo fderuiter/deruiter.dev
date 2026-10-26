@@ -149,6 +149,15 @@ describe("production deploy configuration", () => {
     // ...and the synthetic probes passed against it (#2538).
     expect(train).toContain("uses: ./.github/workflows/synthetic-probes.yml");
     expect(train).toContain("needs.probe.result == 'success'");
+    // The dry run skips the release candidate jobs, so the probe job must not
+    // rely on the implicit success(), which a skipped upstream job fails (#3021).
+    const probeJob = train.slice(
+      train.indexOf("\n  probe:"),
+      train.indexOf("\n  publish:")
+    );
+    expect(probeJob).toMatch(
+      /if: \$\{\{ !cancelled\(\) && needs\.train\.result == 'success'/
+    );
     expect(read(".github/workflows/synthetic-probes.yml")).toMatch(
       /workflow_call:/
     );

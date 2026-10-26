@@ -23,5 +23,5 @@ A warehouse from `buildWarehouse`.
 [`PortfolioDashboard`](../../../../types/portfolio-dashboard/interfaces/PortfolioDashboard.md)
 
 The milestone swimlane, the cycle-time benchmarks, the
-budget against forecast at completion and the baseline enrollment
-forecast of each study still enrolling.
+budget against forecast at completion, the baseline enrollment
+forecast of each study still enrolling, and the risk heatmap.

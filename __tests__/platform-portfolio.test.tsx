@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axe from "axe-core";
 import { PortfolioDashboard } from "@/components/platform/portfolio/PortfolioDashboard";
 import { PortfolioView } from "@/components/platform/portfolio/PortfolioView";
+import { operationsHash } from "@/components/platform/operations/OperationsView";
 import { createPortfolioClient } from "@/components/platform/portfolio/portfolio-client";
 import type { PortfolioResponse } from "@/components/platform/portfolio/protocol";
 import {
@@ -515,6 +516,131 @@ describe("the enrollment forecast and its what-if (#2913)", () => {
     expect(
       screen.getByText("No study is enrolling at the data cut.")
     ).toBeTruthy();
+  });
+});
+
+describe("the risk heatmap (#2914)", () => {
+  const region = () => screen.getByRole("region", { name: "Risk heatmap" });
+  const cell = (studyId: string, column: number) => {
+    const row = within(region())
+      .getByRole("rowheader", { name: studyId })
+      .closest("tr")!;
+    return within(row).getAllByRole("link")[column];
+  };
+
+  it("rates every study on schedule, budget and quality in words", () => {
+    view();
+    const table = within(region()).getByRole("table");
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((h) => h.textContent)
+    ).toEqual(["Study", "Schedule", "Budget", "Quality"]);
+    expect(
+      within(table)
+        .getAllByRole("rowheader")
+        .map((h) => h.textContent)
+    ).toEqual(dashboard.risk.rows.map((r) => r.studyId));
+    const label = { green: "On track", amber: "Watch", red: "At risk" };
+    for (const row of dashboard.risk.rows) {
+      const cells = [row.schedule, row.budget, row.quality];
+      cells.forEach((rated, column) => {
+        const link = cell(row.studyId, column);
+        expect(link.textContent, `${row.studyId} ${column}`).toContain(
+          label[rated.rating]
+        );
+        // The reason travels with the link, for a screen reader and on hover.
+        expect(link.textContent).toContain(rated.reason);
+        expect(link.getAttribute("title")).toBe(rated.reason);
+      });
+    }
+  });
+
+  it("links each rating to the evidence behind it", () => {
+    const { container } = view();
+    const target = (href: string) =>
+      container.querySelector(`[id="${href.slice(1)}"]`);
+    // Still enrolling: the study's forecast card.
+    const late = cell("DEMO-302", 0).getAttribute("href")!;
+    expect(late).toBe("#forecast-DEMO-302");
+    expect(target(late)?.tagName).toBe("ARTICLE");
+    // Enrollment over: the milestones.
+    const done = cell("DEMO-101", 0).getAttribute("href")!;
+    expect(done).toBe("#portfolio-milestones");
+    expect(target(done)).not.toBeNull();
+    const money = cell("DEMO-302", 1).getAttribute("href")!;
+    expect(money).toBe("#portfolio-finance");
+    expect(target(money)).not.toBeNull();
+    // The study's Risk tab, at the address the operations dashboard uses.
+    expect(cell("DEMO-203", 2).getAttribute("href")).toBe(
+      `/platform/operations${operationsHash({ study: "DEMO-203" }, "risk")}`
+    );
+  });
+
+  it("lists what needs attention, at risk first, with each reason", () => {
+    view();
+    const list = screen
+      .getByRole("heading", { name: "What needs attention" })
+      .nextElementSibling as HTMLElement;
+    const items = within(list)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent);
+    expect(items.map((text) => text!.split(":")[0])).toEqual([
+      "▲DEMO-203 quality, at risk",
+      "▲DEMO-302 schedule, at risk",
+      "▲DEMO-302 budget, at risk",
+      "▲DEV-402 schedule, at risk",
+      "◆DEMO-302 quality, watch",
+    ]);
+    const quality = dashboard.risk.rows.find((r) => r.studyId === "DEMO-302")!
+      .quality;
+    expect(items[4]).toContain(quality.reason);
+    expect(
+      within(list)
+        .getAllByRole("link")
+        .map((link) => link.textContent)
+    ).toEqual([
+      "See the risk assessment",
+      "See the enrollment forecast",
+      "See budget at completion",
+      "See the enrollment forecast",
+      "See the risk assessment",
+    ]);
+  });
+
+  it("says so when every study is on track", () => {
+    const green = (row: (typeof dashboard.risk.rows)[number]) => ({
+      ...row,
+      schedule: { ...row.schedule, rating: "green" as const },
+      budget: { ...row.budget, rating: "green" as const },
+      quality: { ...row.quality, rating: "green" as const },
+    });
+    render(
+      <PortfolioView
+        dashboard={{
+          ...dashboard,
+          risk: { ...dashboard.risk, rows: dashboard.risk.rows.map(green) },
+        }}
+      />
+    );
+    expect(
+      screen.getByText("Every study is on track on every dimension.")
+    ).toBeTruthy();
+  });
+
+  it("states each column's rule and why", () => {
+    view();
+    const rules = screen
+      .getByText("How each column is rated")
+      .closest("details")!;
+    for (const rule of dashboard.risk.rules) {
+      const heading = within(rules).getByRole("heading", { name: rule.name });
+      const block = heading.parentElement!;
+      expect(block.textContent).toContain(rule.green);
+      expect(block.textContent).toContain(rule.amber);
+      expect(block.textContent).toContain(rule.red);
+      expect(block.textContent).toContain(`Why: ${rule.reason}`);
+    }
   });
 });
 

@@ -13,6 +13,7 @@ import {
   EnrollmentForecastSection,
   type RunWhatIf,
 } from "./EnrollmentForecast";
+import { RiskHeatmap } from "./RiskHeatmap";
 import {
   MilestoneMark,
   MilestoneSwimlane,
@@ -310,7 +311,7 @@ function FinanceSection({ finance }: { finance: PortfolioFinance }) {
     >
       <h2
         id="portfolio-finance"
-        className="text-xl font-semibold tracking-[-0.02em]"
+        className="scroll-mt-24 text-xl font-semibold tracking-[-0.02em]"
       >
         Budget against forecast at completion
       </h2>
@@ -343,8 +344,9 @@ function FinanceSection({ finance }: { finance: PortfolioFinance }) {
 }
 
 /**
- * The /platform/portfolio dashboard: every study's milestones on one time
- * axis, then each cycle time compared across the studies, then budget
+ * The /platform/portfolio dashboard: every study rated on schedule, budget
+ * and quality, then every study's milestones on one time axis, then each
+ * cycle time compared across the studies, then budget
  * against forecast at completion, with the governed report behind each,
  * then when each study still enrolling is forecast to enroll its last
  * subject.
@@ -362,13 +364,15 @@ export function PortfolioView({
   const { swimlane, benchmarks } = dashboard;
   return (
     <div className="space-y-10">
+      <RiskHeatmap heatmap={dashboard.risk} />
+
       <section
         aria-labelledby="portfolio-milestones"
         className="@container min-w-0 border border-white/[0.08] bg-[#0d0e11] p-4 sm:p-6"
       >
         <h2
           id="portfolio-milestones"
-          className="text-xl font-semibold tracking-[-0.02em]"
+          className="scroll-mt-24 text-xl font-semibold tracking-[-0.02em]"
         >
           Milestones across the portfolio
         </h2>

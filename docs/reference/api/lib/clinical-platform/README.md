@@ -1520,6 +1520,12 @@ Re-exports [PORTFOLIO_FORECAST_ASSUMPTIONS](internal/reporting/portfolio-forecas
 
 ***
 
+### PORTFOLIO\_RISK\_THRESHOLDS
+
+Re-exports [PORTFOLIO_RISK_THRESHOLDS](internal/reporting/portfolio-risk/variables/PORTFOLIO_RISK_THRESHOLDS.md)
+
+***
+
 ### PORTFOLIO\_WHAT\_IF\_LIMITS
 
 Re-exports [PORTFOLIO_WHAT_IF_LIMITS](internal/reporting/portfolio-forecast/variables/PORTFOLIO_WHAT_IF_LIMITS.md)
@@ -1607,6 +1613,48 @@ Re-exports [PortfolioOverrun](types/portfolio-dashboard/interfaces/PortfolioOver
 ### portfolioReportSpecs
 
 Re-exports [portfolioReportSpecs](internal/reporting/portfolio/functions/portfolioReportSpecs.md)
+
+***
+
+### PortfolioRiskCell
+
+Re-exports [PortfolioRiskCell](types/portfolio-dashboard/interfaces/PortfolioRiskCell.md)
+
+***
+
+### PortfolioRiskDimension
+
+Re-exports [PortfolioRiskDimension](types/portfolio-dashboard/type-aliases/PortfolioRiskDimension.md)
+
+***
+
+### portfolioRiskHeatmap
+
+Re-exports [portfolioRiskHeatmap](internal/reporting/portfolio-risk/functions/portfolioRiskHeatmap.md)
+
+***
+
+### PortfolioRiskHeatmap
+
+Re-exports [PortfolioRiskHeatmap](types/portfolio-dashboard/interfaces/PortfolioRiskHeatmap.md)
+
+***
+
+### PortfolioRiskRating
+
+Re-exports [PortfolioRiskRating](types/portfolio-dashboard/type-aliases/PortfolioRiskRating.md)
+
+***
+
+### PortfolioRiskRow
+
+Re-exports [PortfolioRiskRow](types/portfolio-dashboard/interfaces/PortfolioRiskRow.md)
+
+***
+
+### PortfolioRiskRule
+
+Re-exports [PortfolioRiskRule](types/portfolio-dashboard/interfaces/PortfolioRiskRule.md)
 
 ***
 

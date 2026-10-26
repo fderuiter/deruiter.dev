@@ -367,8 +367,29 @@ describe("[#680] review package builder", () => {
   });
 
   it("records a native source that does not reopen as a limitation", async () => {
+    // SDTM caps variable names at 8 characters; the schema rejects a 9th.
+    const [first, ...rest] = PK_ESCALATION_PRESET.forms;
+    const tooLong = {
+      ...PK_ESCALATION_PRESET,
+      forms: [
+        {
+          ...first,
+          sections: first.sections.map((section, i) =>
+            i === 0
+              ? {
+                  ...section,
+                  fields: section.fields.map((field, j) =>
+                    j === 0 ? { ...field, variableName: "PCTIME_00" } : field
+                  ),
+                }
+              : section
+          ),
+        },
+        ...rest,
+      ],
+    };
     const result = await buildReviewPackage(
-      createReviewPackageSnapshot(PK_ESCALATION_PRESET),
+      createReviewPackageSnapshot(tooLong),
       { generatedAt: GENERATED_AT, exclude: ["forms_pdf"] }
     );
     expect(result.manifest.nativeSource.reopens).toBe(false);

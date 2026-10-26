@@ -1132,7 +1132,7 @@ export const CLINICAL_SMART_BLOCKS: ClinicalSmartBlockDefinition[] = [
       const fields: CRFField[] = [
         {
           id: `f_pro_fatigue_${now}`,
-          variableName: "PRO_FATIGUE",
+          variableName: "PROFATIG",
           label:
             "Fatigue Severity Rating (0 = None, 10 = As bad as you can imagine)",
           dataType: "nrs_scale",
@@ -1168,7 +1168,7 @@ export const CLINICAL_SMART_BLOCKS: ClinicalSmartBlockDefinition[] = [
         },
         {
           id: `f_pro_interf_${now}`,
-          variableName: "PRO_INTERF",
+          variableName: "PROINTRF",
           label: "Interference with Daily Activities Over Past 7 Days",
           dataType: "single_select",
           required: true,
@@ -1554,7 +1554,7 @@ export const ATOMIC_SLASH_COMMANDS: SlashCommandItem[] = [
     fieldTemplate: {
       dataType: "multi_select",
       label: "Multi-Select Factors",
-      variableName: "VAR_MULTI",
+      variableName: "VARMULTI",
       required: false,
       columnSpan: 12,
       customOptions: [

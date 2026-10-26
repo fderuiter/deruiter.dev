@@ -338,6 +338,18 @@ Re-exports [LASER_LOON_STARS_KEY](engine/variables/LASER_LOON_STARS_KEY.md)
 
 ***
 
+### LASER\_LOON\_TUTORIAL
+
+Re-exports [LASER_LOON_TUTORIAL](tutorial/variables/LASER_LOON_TUTORIAL.md)
+
+***
+
+### LASER\_LOON\_TUTORIAL\_SIGNALS
+
+Re-exports [LASER_LOON_TUTORIAL_SIGNALS](tutorial/variables/LASER_LOON_TUTORIAL_SIGNALS.md)
+
+***
+
 ### LaserHitResult
 
 Re-exports [LaserHitResult](engine/interfaces/LaserHitResult.md)

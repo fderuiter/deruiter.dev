@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { ARCADE_REGISTRY } from "./lib/arcade/registry";
 
 /**
  * When set, probes run against an already-deployed origin (production, or a
@@ -14,6 +15,38 @@ const externalBaseUrl = process.env.PLAYWRIGHT_TEST_BASE_URL;
  * bypass across same-origin navigations and asset requests.
  */
 const vercelBypassSecret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+
+const baseURL = externalBaseUrl || "http://localhost:3000";
+
+/**
+ * Every game's guided tutorial (#2972) is offered once on a device's first
+ * launch, and the offer takes focus. Specs start on a device that has already
+ * answered it, so a launch lands on the game as before; the tutorial's own
+ * spec clears this record. `arcade_tutorials_v1` mirrors
+ * `lib/arcade/progress/tutorials-slice.ts`.
+ */
+const TUTORIALS_ANSWERED = {
+  cookies: [],
+  origins: [
+    {
+      origin: new URL(baseURL).origin,
+      localStorage: [
+        {
+          name: "arcade_tutorials_v1",
+          value: JSON.stringify({
+            version: 1,
+            games: Object.fromEntries(
+              ARCADE_REGISTRY.map((game) => [
+                game.slug,
+                { version: 9999, outcome: "declined" },
+              ])
+            ),
+          }),
+        },
+      ],
+    },
+  ],
+};
 
 /**
  * ADR 0061 tablet matrix. Chromium with touch emulation stands in for iPad
@@ -61,7 +94,8 @@ export default defineConfig({
   workers: process.env.CI ? 2 : undefined,
   reporter: process.env.CI ? "github" : "list",
   use: {
-    baseURL: externalBaseUrl || "http://localhost:3000",
+    baseURL,
+    storageState: TUTORIALS_ANSWERED,
     trace: "on-first-retry",
     extraHTTPHeaders: vercelBypassSecret
       ? {

@@ -302,6 +302,10 @@ export interface ExportROptions {
   tibblePrefix?: string;
 }
 
+/** Phases the studio offers when a study is created or edited. */
+export type StudyPhase =
+  "Phase I" | "Phase I/II" | "Phase II" | "Phase III" | "Phase IV" | "Registry";
+
 export interface StudyProtocol {
   $schema?: string;
   schemaVersion?: string;
@@ -310,13 +314,11 @@ export interface StudyProtocol {
   protocolId?: string;
   studyName: string; // e.g. "Phase III Multicenter Study of Immuno-Oncology..."
   title?: string;
-  phase:
-    | "Phase I"
-    | "Phase I/II"
-    | "Phase II"
-    | "Phase III"
-    | "Phase IV"
-    | "Registry";
+  /**
+   * One of the studio's phases, or the phase an imported study arrived with
+   * (a USDM decode such as "Phase II/III Trial" is kept as written).
+   */
+  phase: StudyPhase | (string & {});
   sponsor: string;
   therapeuticArea: string; // Oncology, Neurology, Cardiology, Infectious Disease, etc.
   version: string;

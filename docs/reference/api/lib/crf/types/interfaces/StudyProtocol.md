@@ -94,7 +94,10 @@ after native export and reopen.
 
 ### phase
 
-> **phase**: `"Phase I"` \| `"Phase I/II"` \| `"Phase II"` \| `"Phase III"` \| `"Phase IV"` \| `"Registry"`
+> **phase**: `string` & `object` \| [`StudyPhase`](../type-aliases/StudyPhase.md)
+
+One of the studio's phases, or the phase an imported study arrived with
+(a USDM decode such as "Phase II/III Trial" is kept as written).
 
 ***
 

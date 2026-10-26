@@ -615,6 +615,254 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.dim_site",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Surrogate key of the version.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site id, the natural key.",
+              "maxLength": 64,
+              "name": "site_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Version of the site, from 1.",
+              "maxLength": null,
+              "name": "version_number",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Site number within the study.",
+              "maxLength": 64,
+              "name": "site_number",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Fictional site name.",
+              "maxLength": 120,
+              "name": "site_name",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "ISO 3166-1 alpha-2 country code.",
+              "maxLength": 2,
+              "name": "country_code",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Enrollment target for the site.",
+              "maxLength": null,
+              "name": "planned_enrollment",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the site was selected (start-up stage 1).",
+              "maxLength": null,
+              "name": "selected_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the clinical trial agreement was executed (stage 2).",
+              "maxLength": null,
+              "name": "contracted_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the IRB or ethics committee approved the study at the site (stage 3).",
+              "maxLength": null,
+              "name": "irb_approved_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Date of the site initiation visit (stage 4).",
+              "maxLength": null,
+              "name": "initiated_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Activation date (stage 5).",
+              "maxLength": null,
+              "name": "activated_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the site enrolled its first subject (stage 6).",
+              "maxLength": null,
+              "name": "first_subject_in_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Status during the version: start-up, active or closed.",
+              "maxLength": 64,
+              "name": "site_status",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Fictional id of the principal investigator during the version, or null when none is on file.",
+              "maxLength": 64,
+              "name": "principal_investigator_id",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "First day the version is in force (inclusive).",
+              "maxLength": null,
+              "name": "valid_from",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Day the next version takes over (exclusive), or 9999-12-31.",
+              "maxLength": null,
+              "name": "valid_to",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Whether this is the latest version.",
+              "maxLength": null,
+              "name": "is_current",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Conformed site dimension, slowly changing type 2 on site status and principal investigator.",
+          "grain": "One row per site version: a new row each time the status or the principal investigator changes.",
+          "name": "dim_site",
+          "physicalName": "gold.dim_site",
+          "primaryKey": [
+            "site_key"
+          ]
+        }
+      ],
+      "productId": "gold.dim_site",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
+    },
+    {
       "id": "clinical-platform/gold.dim_study",
       "objects": [
         {
@@ -4962,6 +5210,155 @@
         "freshnessHours": 24
       },
       "version": "1.0.0"
+    },
+    {
+      "id": "clinical-platform/silver.site",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Site id, unique within the portfolio.",
+              "maxLength": 64,
+              "name": "site_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Protocol id.",
+              "maxLength": 64,
+              "name": "study_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Site number within the study.",
+              "maxLength": 64,
+              "name": "site_number",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "ISO 3166-1 alpha-2 country code, upper case.",
+              "maxLength": 2,
+              "name": "country_code",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Fictional site name.",
+              "maxLength": 120,
+              "name": "site_name",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Enrollment target for the site.",
+              "maxLength": null,
+              "name": "planned_enrollment",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the sponsor selected the site, or null before then.",
+              "maxLength": null,
+              "name": "selected_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the clinical trial agreement was executed, or null before then.",
+              "maxLength": null,
+              "name": "contracted_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the IRB or ethics committee approved the study at the site, or null before then.",
+              "maxLength": null,
+              "name": "irb_approved_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "internal",
+              "description": "Activation date, or null before activation.",
+              "maxLength": null,
+              "name": "activated_on",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "date"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Investigator sites, one row per site in one study.",
+          "grain": "One row per site.",
+          "name": "site",
+          "physicalName": "silver.site",
+          "primaryKey": [
+            "site_id"
+          ]
+        }
+      ],
+      "productId": "silver.site",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.99,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.1.0"
     },
     {
       "id": "clinical-platform/silver.study",

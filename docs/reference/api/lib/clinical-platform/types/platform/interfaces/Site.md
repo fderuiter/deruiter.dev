@@ -22,6 +22,14 @@ ISO 8601 activation date, or `null` before activation.
 
 ***
 
+### contractedOn
+
+> `readonly` **contractedOn**: `string` \| `null`
+
+ISO 8601 date the clinical trial agreement was executed, or `null` before then.
+
+***
+
 ### country
 
 > `readonly` **country**: `string`
@@ -38,6 +46,14 @@ Stable site id, unique within the portfolio.
 
 ***
 
+### irbApprovedOn
+
+> `readonly` **irbApprovedOn**: `string` \| `null`
+
+ISO 8601 date the IRB or ethics committee approved the study at the site, or `null` before then.
+
+***
+
 ### name
 
 > `readonly` **name**: `string`
@@ -51,6 +67,14 @@ Fictional site name.
 > `readonly` **plannedEnrollment**: `number`
 
 Enrollment target for this site.
+
+***
+
+### selectedOn
+
+> `readonly` **selectedOn**: `string` \| `null`
+
+ISO 8601 date the sponsor selected the site, or `null` before then (#2880).
 
 ***
 

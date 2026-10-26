@@ -79,10 +79,11 @@ const BY_WORDS: Readonly<Record<MetricDimensionId, string>> = {
  * is used where the report groups by the level below; `siteVisual` at a
  * single site, where there is nothing below to group by (`line` groups by
  * month instead). A `breakdown` report groups by its own dimensions at every
- * level instead, still filtered to the scope. A `bands` report's metrics
- * split one count into bands, so a group one band counts reads zero in the
- * others rather than having no rows. `levels` limits where the report
- * appears.
+ * level instead, still filtered to the scope. Each metric of a `bands`
+ * report counts the rows of one table that meet its own condition, such as
+ * the age bands of one count or the stages of a funnel, so a group one of
+ * them counts reads zero in the others rather than having no rows.
+ * `levels` limits where the report appears.
  */
 interface Panel {
   readonly id: string;
@@ -215,7 +216,7 @@ const SECTIONS: readonly SectionPlan[] = [
     id: "activation",
     title: "Site activation",
     summary:
-      "How long sites take to open, from protocol finalisation to activation.",
+      "How long sites take to open, from protocol finalisation to activation, and how far each has got through start-up.",
     panels: [
       {
         id: "site-activation",
@@ -230,15 +231,48 @@ const SECTIONS: readonly SectionPlan[] = [
         siteVisual: "stat",
         refreshSlaHours: 24,
       },
-    ],
-    gaps: () => [
       {
-        name: "Site activation funnel",
-        reason:
-          "The portfolio records only each site's activation date, not when it was selected, contracted, approved by the IRB or initiated.",
-        issue: GOLD_FACTS_ISSUE,
+        id: "site-activation-funnel",
+        title: "Site activation funnel",
+        purpose:
+          "How many sites have reached each start-up stage, from selection to their first subject, so the stage where sites stall stands out.",
+        audience: "Clinical operations",
+        owner: OPS,
+        tier: "managed",
+        metrics: [
+          "sites_selected",
+          "sites_contracted",
+          "sites_irb_approved",
+          "sites_initiated",
+          "sites_activated",
+          "sites_with_first_subject_in",
+        ],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
+        bands: true,
+      },
+      {
+        id: "site-start-up-stages",
+        title: "Days between start-up stages",
+        purpose:
+          "Median days from each start-up stage to the next, so contracting, ethics review or initiation delays can be told apart.",
+        audience: "Clinical operations",
+        owner: OPS,
+        tier: "managed",
+        metrics: [
+          "selection_to_contract_days",
+          "contract_to_irb_approval_days",
+          "irb_approval_to_initiation_days",
+          "initiation_to_activation_days",
+          "activation_to_first_subject_in_days",
+        ],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
       },
     ],
+    gaps: () => [],
   },
   {
     id: "data-management",

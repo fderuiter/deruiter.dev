@@ -77,6 +77,19 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     screen_failures: 562,
     early_termination_rate: 0.0830618892508,
     site_activation_cycle_time: 154,
+    // #2880: every site has activated by the data cut; two have not yet
+    // enrolled a subject.
+    sites_selected: 120,
+    sites_contracted: 120,
+    sites_irb_approved: 120,
+    sites_initiated: 120,
+    sites_activated: 120,
+    sites_with_first_subject_in: 118,
+    selection_to_contract_days: 38,
+    contract_to_irb_approval_days: 26,
+    irb_approval_to_initiation_days: 20,
+    initiation_to_activation_days: 3,
+    activation_to_first_subject_in_days: 50,
     data_entry_lag_median: 2,
     data_entry_lag_p90: 9,
     data_entry_lag_mean: 3.48151595745,
@@ -116,8 +129,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 32 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(32);
+  it("defines 43 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(43);
     expect(checkMetricRegistry()).toEqual([]);
   });
 

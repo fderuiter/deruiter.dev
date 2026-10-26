@@ -653,7 +653,7 @@ export const FormCanvas: React.FC<FormCanvasProps> = ({
                     <p className="text-xs text-zinc-400 font-mono">
                       No fields in this section yet.
                     </p>
-                    <p className="text-[11px] text-zinc-500 mt-1">
+                    <p className="text-[11px] text-zinc-400 mt-1">
                       Tap or click to pick a widget or press / for Smart Blocks.
                     </p>
                   </button>

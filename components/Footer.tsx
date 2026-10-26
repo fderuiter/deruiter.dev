@@ -43,7 +43,7 @@ const FooterNavLink: React.FC<{
       href={item.href}
       onClick={onClick}
       onMouseEnter={onHover}
-      className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
+      className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
     >
       <NavIcon name={item.icon} tone={item.tone} className="h-3 w-3" />
       {item.title}
@@ -115,7 +115,7 @@ export const Footer: React.FC = () => {
               <Link
                 href="/"
                 onMouseEnter={handleHover}
-                className="inline-flex items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground group"
+                className="inline-flex items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground group pointer-coarse:min-h-11"
               >
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping-settle absolute inline-flex h-full w-full rounded-full bg-accent/70 opacity-75" />
@@ -135,7 +135,7 @@ export const Footer: React.FC = () => {
             <Link
               href="/stack"
               onMouseEnter={handleHover}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-accent/40 text-[11px] font-mono text-zinc-300 hover:text-white transition-all w-fit group"
+              className="inline-flex items-center gap-2 px-3 py-1.5 pointer-coarse:min-h-11 rounded-full bg-zinc-900/80 hover:bg-zinc-900 border border-zinc-800 hover:border-accent/40 text-[11px] font-mono text-zinc-300 hover:text-white transition-all w-fit group"
             >
               <span className="w-2 h-2 rounded-full bg-emerald-500 group-hover:animate-pulse" />
               <span>Explore the projects</span>
@@ -152,7 +152,7 @@ export const Footer: React.FC = () => {
               <IconSparkles className="w-3.5 h-3.5 text-accent" />
               Arcade
             </span>
-            <ul className="space-y-2 text-xs font-mono">
+            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
               {[
                 ...getNavGroup("arcade").sections[0].items,
                 ...FOOTER_EXTRA_ITEMS.filter((i) => i.id === "merch"),
@@ -172,7 +172,7 @@ export const Footer: React.FC = () => {
               <IconTerminal className="w-3.5 h-3.5 text-accent" />
               Simulators
             </span>
-            <ul className="space-y-2 text-xs font-mono">
+            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
               {getNavGroup("simulators").sections.map((section) =>
                 filterNavItems(section.items, persona).map((item) => (
                   <FooterNavLink
@@ -191,12 +191,12 @@ export const Footer: React.FC = () => {
               <IconArticle className="w-3.5 h-3.5 text-accent" />
               Site
             </span>
-            <ul className="space-y-2 text-xs font-mono">
+            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
               <li>
                 <Link
                   href="/case-studies"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors"
+                  className="text-zinc-400 hover:text-accent transition-colors pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:items-center"
                 >
                   Work
                 </Link>
@@ -211,7 +211,7 @@ export const Footer: React.FC = () => {
                 <Link
                   href="/blog"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
                 >
                   <IconArticle className="w-3 h-3 text-accent" />
                   Blog
@@ -246,12 +246,12 @@ export const Footer: React.FC = () => {
               <IconCalendar className="w-3.5 h-3.5 text-accent" />
               Connect
             </span>
-            <ul className="space-y-2 text-xs font-mono">
+            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
               <li>
                 <Link
                   href="/schedule"
                   onMouseEnter={handleHover}
-                  className="text-accent font-bold hover:underline transition-all flex items-center gap-1.5"
+                  className="text-accent font-bold hover:underline transition-all flex items-center gap-1.5 pointer-coarse:min-h-11"
                 >
                   <IconCalendar className="w-3 h-3 text-accent" />
                   Book a Chat ↗
@@ -261,7 +261,7 @@ export const Footer: React.FC = () => {
                 <Link
                   href="/contact"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
                 >
                   <IconMessageCode className="w-3 h-3 text-accent" />
                   Contact ↗
@@ -273,7 +273,7 @@ export const Footer: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
                 >
                   <IconBrandGithub className="w-3 h-3 text-zinc-400" />
                   GitHub Repos ↗
@@ -285,7 +285,7 @@ export const Footer: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
                 >
                   <IconBrandLinkedin className="w-3 h-3 text-zinc-400" />
                   LinkedIn ↗
@@ -296,7 +296,7 @@ export const Footer: React.FC = () => {
                   type="button"
                   onClick={() => emitAppEvent("open-photo-gallery")}
                   onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 cursor-pointer text-left"
+                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11 cursor-pointer text-left"
                 >
                   <IconCamera className="w-3 h-3 text-amber-400" />
                   Behind the Code (Photos)
@@ -353,7 +353,7 @@ export const Footer: React.FC = () => {
                 );
               }}
               onMouseEnter={handleHover}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 pointer-coarse:min-h-11 rounded-md border text-[11px] transition-colors cursor-pointer ${
                 isDyslexic
                   ? "bg-amber-500/10 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
                   : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700"
@@ -378,7 +378,7 @@ export const Footer: React.FC = () => {
             <Link
               href="/proof"
               onMouseEnter={handleHover}
-              className="hover:text-accent transition-colors"
+              className="hover:text-accent transition-colors pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center"
             >
               Logic &amp; Proofs
             </Link>
@@ -387,7 +387,7 @@ export const Footer: React.FC = () => {
               type="button"
               onClick={scrollToTop}
               onMouseEnter={handleHover}
-              className="inline-flex items-center gap-1 text-zinc-400 hover:text-accent transition-colors cursor-pointer group"
+              className="inline-flex items-center gap-1 text-zinc-400 hover:text-accent transition-colors cursor-pointer group pointer-coarse:min-h-11"
               aria-label="Scroll back to top of page"
             >
               <span>Back to Top</span>

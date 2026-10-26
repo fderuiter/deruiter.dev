@@ -54,6 +54,8 @@ export interface TableDraft {
   readonly primaryKey: readonly string[];
   readonly uniqueKeys?: readonly (readonly string[])[];
   readonly scd2?: Scd2Definition;
+  /** Date columns reached in order. Default none. */
+  readonly sequences?: readonly (readonly string[])[];
   /** Default classification of the table's columns. */
   readonly classification: DataClassification;
   /** Default lineage source, as `layer.product`, or `null` for generated tables. */
@@ -146,6 +148,7 @@ export function defineTable(draft: TableDraft): WarehouseTable {
     primaryKey: draft.primaryKey,
     uniqueKeys: draft.uniqueKeys ?? [],
     scd2: draft.scd2 ?? null,
+    sequences: draft.sequences ?? [],
     columns,
   };
 }

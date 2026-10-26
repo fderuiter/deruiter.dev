@@ -17,6 +17,7 @@ import { CATEGORY_VENDOR, OVER_BUDGET_VENDOR_ID } from "./blueprint";
 import { isoDate, nextQuarterStart, quarterOf } from "./calendar";
 import { Stream } from "./stream";
 import { FIRST_ACTIVATION_OFFSET, type SitePlan } from "./sites";
+import { SIV_LEAD_DAYS } from "./start-up";
 import type { StudySimulation } from "./records";
 
 /** Planned days from first subject in, used for the planned milestone dates. */
@@ -218,7 +219,10 @@ export function studyOperations(
         actionItems: rng.poisson(site.integrity ? 0.2 : 1.5),
       });
     };
-    push("SIV", Math.max(startDay, site.activationDay - rng.int(0, 7)));
+    push(
+      "SIV",
+      Math.max(startDay, site.activationDay - rng.int(0, SIV_LEAD_DAYS))
+    );
     const lastActivity =
       sim.lastActivityBySite.get(site.id) ?? site.activationDay;
     const stopDay =

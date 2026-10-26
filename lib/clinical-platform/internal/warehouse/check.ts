@@ -193,11 +193,39 @@ function checkScd2(
 }
 
 /**
+ * Checks that each row reaches its table's date sequences in order: a
+ * column holds a date only when the column before it does, on or before it.
+ */
+function checkSequences(
+  table: WarehouseTable,
+  rows: readonly Readonly<Record<string, WarehouseValue>>[],
+  findings: WarehouseFinding[]
+): void {
+  const name = qualifiedName(table);
+  for (const sequence of table.sequences) {
+    for (const row of rows) {
+      for (let i = 1; i < sequence.length; i += 1) {
+        const [before, after] = [row[sequence[i - 1]], row[sequence[i]]];
+        if (after === null || after === undefined) continue;
+        if (before === null || before === undefined || before > after) {
+          findings.push({
+            rule: "sequence",
+            table: name,
+            message: `${sequence[i]} = ${JSON.stringify(after)} without ${sequence[i - 1]} on or before it (${JSON.stringify(before ?? null)}).`,
+          });
+        }
+      }
+    }
+  }
+}
+
+/**
  * Checks a warehouse against its schema: every table and column present,
  * every value of its column's type, nullability and length, one row per
  * declared grain, unique natural keys, every foreign key resolving to its
- * dimension, and SCD type 2 versions that are numbered, contiguous and
- * non-overlapping with one current version per member.
+ * dimension, SCD type 2 versions that are numbered, contiguous and
+ * non-overlapping with one current version per member, and date sequences
+ * reached in order.
  *
  * @param schema - The schema, normally `WAREHOUSE_SCHEMA`.
  * @param warehouse - Rows from `buildWarehouse`.
@@ -235,6 +263,7 @@ export function checkWarehouse(
       checkUnique(table, rows, unique, "unique", findings);
     }
     checkScd2(table, rows, findings);
+    checkSequences(table, rows, findings);
     for (const column of table.columns) {
       const ref = column.references;
       if (ref === null) continue;

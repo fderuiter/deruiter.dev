@@ -159,6 +159,7 @@ customProperties:
       - bronze.edc.subjects
   - property: consumers
     value:
+      - "product:gold.dim_site"
       - "product:gold.fct_enrollment"
       - "product:gold.fct_visit"
       - "product:gold.fct_kri_snapshot"

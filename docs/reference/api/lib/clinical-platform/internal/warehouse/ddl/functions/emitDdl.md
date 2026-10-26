@@ -9,7 +9,8 @@
 > **emitDdl**(`schema`, `dialect`): `string`
 
 Writes the warehouse DDL for one SQL dialect: schemas, then every table
-with its columns, primary key, unique keys and foreign keys, then its
+with its columns, primary key, unique keys, foreign keys and the checks
+that keep its date sequences in order, then its
 table and column descriptions (`COMMENT ON` in DuckDB and PostgreSQL,
 `MS_Description` extended properties in T-SQL). Tables come in schema
 order, so every foreign key's target exists before it is referenced.

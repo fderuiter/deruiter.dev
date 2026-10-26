@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.3.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.4.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -44,7 +44,12 @@ erDiagram
     varchar site_name
     varchar country_code
     int planned_enrollment
+    date selected_on
+    date contracted_on
+    date irb_approved_on
+    date initiated_on
     date activated_on
+    date first_subject_in_on
     varchar site_status
     varchar principal_investigator_id
     date valid_from UK
@@ -353,7 +358,12 @@ Conformed site dimension, slowly changing type 2 on site status and principal in
 | `site_name` | string | no |  | internal | Fictional site name. |
 | `country_code` | string | no |  | internal | ISO 3166-1 alpha-2 country code. |
 | `planned_enrollment` | integer | no |  | internal | Enrollment target for the site. |
-| `activated_on` | date | yes |  | internal | Activation date. |
+| `selected_on` | date | yes |  | internal | Date the site was selected (start-up stage 1). |
+| `contracted_on` | date | yes |  | internal | Date the clinical trial agreement was executed (stage 2). |
+| `irb_approved_on` | date | yes |  | internal | Date the IRB or ethics committee approved the study at the site (stage 3). |
+| `initiated_on` | date | yes |  | internal | Date of the site initiation visit (stage 4). |
+| `activated_on` | date | yes |  | internal | Activation date (stage 5). |
+| `first_subject_in_on` | date | yes |  | internal | Date the site enrolled its first subject (stage 6). |
 | `site_status` | string | no |  | internal | Status during the version: start-up, active or closed. |
 | `principal_investigator_id` | string | yes |  | confidential | Fictional id of the principal investigator during the version, or null when none is on file. |
 | `valid_from` | date | no | UK | internal | First day the version is in force (inclusive). |

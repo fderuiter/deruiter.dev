@@ -1417,6 +1417,124 @@ SELECT
 FROM "measure"
 ORDER BY 1, 2;
 
+-- Events sent for adjudication: cec_events_reported 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Events sent for adjudication: cec_events_reported 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Events adjudicated: cec_events_adjudicated 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  WHERE "f"."adjudicated_date_key" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Events adjudicated: cec_events_adjudicated 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  WHERE "f"."adjudicated_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Events awaiting adjudication: cec_adjudication_backlog 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    COUNT(*) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  WHERE "f"."adjudicated_date_key" IS NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Events awaiting adjudication: cec_adjudication_backlog 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    COUNT(*) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  WHERE "f"."adjudicated_date_key" IS NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
+-- Time to adjudication (median): cec_adjudication_time_median 1.0.0 (certified), DuckDB.
+-- Grouped by: none. Filters: none.
+WITH "measure" AS (
+  SELECT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(date_diff('day', CAST(strptime(CAST("f"."reported_date_key" AS VARCHAR), '%Y%m%d') AS DATE), CAST(strptime(CAST("f"."adjudicated_date_key" AS VARCHAR), '%Y%m%d') AS DATE)) AS DOUBLE)) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  WHERE "f"."adjudicated_date_key" IS NOT NULL
+)
+SELECT CAST((SELECT "value" FROM "measure") AS DOUBLE) AS "value";
+
+-- Time to adjudication (median): cec_adjudication_time_median 1.0.0 (certified), DuckDB.
+-- Grouped by: study, month. Filters: none.
+WITH "measure" AS (
+  SELECT
+    "dim_study"."study_id" AS "study",
+    "dim_date"."year_month" AS "month",
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(date_diff('day', CAST(strptime(CAST("f"."reported_date_key" AS VARCHAR), '%Y%m%d') AS DATE), CAST(strptime(CAST("f"."adjudicated_date_key" AS VARCHAR), '%Y%m%d') AS DATE)) AS DOUBLE)) AS "value"
+  FROM "gold"."fct_cec_adjudication" AS "f"
+  JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "f"."study_key"
+  JOIN "gold"."dim_date" AS "dim_date" ON "dim_date"."date_key" = "f"."reported_date_key"
+  WHERE "f"."adjudicated_date_key" IS NOT NULL
+  GROUP BY "dim_study"."study_id", "dim_date"."year_month"
+)
+SELECT
+  "study",
+  "month",
+  CAST("value" AS DOUBLE) AS "value"
+FROM "measure"
+ORDER BY 1, 2;
+
 -- First subject in to last subject in: fpi_to_lpi_days 1.0.0 (certified), DuckDB.
 -- Grouped by: study. Filters: none.
 WITH "span" AS (

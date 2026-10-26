@@ -170,7 +170,11 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
       "Protected Health Information. Individually identifiable health information that a HIPAA covered entity or its business associate holds or transmits, in any form, which the HIPAA Privacy Rule protects.",
     // "Patient Health Information" is a common misreading; it stays an alias
     // so stored copy that uses it still gets the correct tooltip.
-    aliases: ["Protected Health Information", "Patient Health Information", "PHI"],
+    aliases: [
+      "Protected Health Information",
+      "Patient Health Information",
+      "PHI",
+    ],
     source: "HIPAA Privacy Rule, 45 CFR 160.103",
   },
   {
@@ -393,6 +397,15 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
     definition:
       "The point at which a study site is cleared to start enrolling, once its approvals, contract, training and supplies are in place.",
     aliases: ["Activated site", "Site green light"],
+    autoLink: false,
+  },
+  {
+    key: "event-adjudication-term",
+    canonical: "Event adjudication",
+    simplified: "independent review of events",
+    definition:
+      "Review of site-reported clinical events by a clinical events committee, a panel of independent clinicians who decide against the protocol's definitions whether each event counts as an endpoint, and whether it was device-related in a device study.",
+    aliases: ["Clinical events committee", "CEC adjudication"],
     autoLink: false,
   },
   {

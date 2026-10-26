@@ -107,6 +107,162 @@
       "contract": {
         "allowedDimensions": [
           "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_cec_adjudication",
+            "timeKey": "reported_date_key",
+            "where": [
+              {
+                "column": "adjudicated_date_key",
+                "isNull": true,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "events"
+      },
+      "id": "cec_adjudication_backlog",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "reported_date_key",
+                "kind": "date-of-key"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "adjudicated_date_key",
+                "kind": "date-of-key"
+              }
+            },
+            "table": "gold.fct_cec_adjudication",
+            "timeKey": "reported_date_key",
+            "where": [
+              {
+                "column": "adjudicated_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "cec_adjudication_time_median",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_cec_adjudication",
+            "timeKey": "reported_date_key",
+            "where": [
+              {
+                "column": "adjudicated_date_key",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "events"
+      },
+      "id": "cec_events_adjudicated",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "study_status",
+          "therapeutic_area",
+          "phase",
+          "product_type",
+          "operating_model",
+          "site",
+          "country",
+          "region",
+          "month"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.fct_cec_adjudication",
+            "timeKey": "reported_date_key",
+            "where": []
+          }
+        },
+        "grain": "portfolio",
+        "unit": "events"
+      },
+      "id": "cec_events_reported",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
           "site",
           "country"
         ],

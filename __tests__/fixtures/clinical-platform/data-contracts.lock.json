@@ -1161,6 +1161,166 @@
       "version": "1.0.0"
     },
     {
+      "id": "clinical-platform/gold.fct_cec_adjudication",
+      "objects": [
+        {
+          "columns": [
+            {
+              "classification": "internal",
+              "description": "Event id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "event_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Subject id (degenerate dimension).",
+              "maxLength": 64,
+              "name": "subject_id",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "internal",
+              "description": "Study.",
+              "maxLength": null,
+              "name": "study_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Site version in force when the event was reported.",
+              "maxLength": null,
+              "name": "site_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Country of the site.",
+              "maxLength": null,
+              "name": "country_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the event occurred.",
+              "maxLength": null,
+              "name": "occurred_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the site reported the event.",
+              "maxLength": null,
+              "name": "reported_date_key",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Date the committee adjudicated the event, or null while it waits.",
+              "maxLength": null,
+              "name": "adjudicated_date_key",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Days from the site's report to adjudication.",
+              "maxLength": null,
+              "name": "days_to_adjudicate",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "integer"
+            },
+            {
+              "classification": "internal",
+              "description": "Whether the site judged the event device-related.",
+              "maxLength": null,
+              "name": "site_device_related",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            },
+            {
+              "classification": "internal",
+              "description": "Whether the committee judged the event device-related.",
+              "maxLength": null,
+              "name": "cec_device_related",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            },
+            {
+              "classification": "public",
+              "description": "Always true: the row describes synthetic data, nothing real.",
+              "maxLength": null,
+              "name": "is_synthetic",
+              "nullable": false,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "boolean"
+            }
+          ],
+          "description": "Events sent to the clinical events committee, with when each was reported and adjudicated (#2881).",
+          "grain": "One row per event sent for adjudication.",
+          "name": "fct_cec_adjudication",
+          "physicalName": "gold.fct_cec_adjudication",
+          "primaryKey": [
+            "event_id"
+          ]
+        }
+      ],
+      "productId": "gold.fct_cec_adjudication",
+      "retention": {
+        "basis": "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum.",
+        "regulatory": false,
+        "years": 10
+      },
+      "sla": {
+        "availability": 0.995,
+        "completeness": 1,
+        "freshnessHours": 24
+      },
+      "version": "1.0.0"
+    },
+    {
       "id": "clinical-platform/gold.fct_deviation",
       "objects": [
         {

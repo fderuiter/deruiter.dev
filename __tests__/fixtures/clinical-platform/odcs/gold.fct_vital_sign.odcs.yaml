@@ -1,0 +1,157 @@
+# ODCS v3.2.0 data contract for gold.fct_vital_sign. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/gold.fct_vital_sign"
+name: "Vital sign facts"
+version: "1.0.0"
+status: active
+domain: "RBQM mart"
+tags:
+  - gold
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957)."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: fct_vital_sign
+    name: fct_vital_sign
+    physicalName: gold.fct_vital_sign
+    physicalType: table
+    logicalType: object
+    description: "Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957)."
+    dataGranularityDescription: "One row per visit with vital signs."
+    properties:
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id the signs were taken at (degenerate dimension)."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id (degenerate dimension)."
+        required: true
+        classification: confidential
+      - name: study_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: Study.
+        required: true
+        classification: internal
+      - name: site_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Site version in force on the day of the visit."
+        required: true
+        classification: internal
+      - name: country_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Country of the site."
+        required: true
+        classification: internal
+      - name: measured_date_key
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Date the signs were taken."
+        required: true
+        classification: internal
+      - name: systolic_bp_mmhg
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded."
+        required: false
+        classification: confidential
+      - name: diastolic_bp_mmhg
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded."
+        required: false
+        classification: confidential
+      - name: pulse_bpm
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded."
+        required: false
+        classification: confidential
+      - name: weight_kg
+        logicalType: number
+        physicalType: "DECIMAL(5, 1)"
+        description: "Weight (VSTESTCD WEIGHT), in kg; null when not recorded."
+        required: false
+        classification: confidential
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: fct_vital_sign_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - visit_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (visit_id) identifies one row."
+team:
+  name: "RBQM mart"
+  members:
+    - username: clinical-data-management-lead
+      name: "Clinical Data Management Lead"
+      role: owner
+    - username: clinical-data-steward
+      name: "Clinical Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99.5
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - gold.dim_country
+      - gold.dim_site
+      - gold.dim_study
+      - silver.edc_vital_sign
+      - silver.site
+  - property: consumers
+    value: []

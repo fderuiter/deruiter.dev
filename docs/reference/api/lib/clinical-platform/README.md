@@ -680,6 +680,12 @@ Re-exports [EdcVisit](types/platform/interfaces/EdcVisit.md)
 
 ***
 
+### EdcVitalSign
+
+Re-exports [EdcVitalSign](types/platform/interfaces/EdcVitalSign.md)
+
+***
+
 ### emitDdl
 
 Re-exports [emitDdl](internal/warehouse/ddl/functions/emitDdl.md)
@@ -2279,6 +2285,12 @@ Re-exports [toTmdl](internal/semantic/tmdl/functions/toTmdl.md)
 ### Vendor
 
 Re-exports [Vendor](types/platform/interfaces/Vendor.md)
+
+***
+
+### VitalSignTest
+
+Re-exports [VitalSignTest](types/platform/type-aliases/VitalSignTest.md)
 
 ***
 

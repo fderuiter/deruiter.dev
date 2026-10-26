@@ -344,6 +344,12 @@ Re-exports [EdcVisit](platform/interfaces/EdcVisit.md)
 
 ***
 
+### EdcVitalSign
+
+Re-exports [EdcVitalSign](platform/interfaces/EdcVitalSign.md)
+
+***
+
 ### EnrollmentForecast
 
 Re-exports [EnrollmentForecast](forecast/interfaces/EnrollmentForecast.md)
@@ -1319,6 +1325,12 @@ Re-exports [SyntheticRecord](platform/interfaces/SyntheticRecord.md)
 ### Vendor
 
 Re-exports [Vendor](platform/interfaces/Vendor.md)
+
+***
+
+### VitalSignTest
+
+Re-exports [VitalSignTest](platform/type-aliases/VitalSignTest.md)
 
 ***
 

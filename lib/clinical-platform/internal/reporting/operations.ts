@@ -442,12 +442,6 @@ const SECTIONS: readonly SectionPlan[] = [
     panels: [],
     gaps: () => [
       {
-        name: "Digit preference in vital signs",
-        reason:
-          "The operational portfolio has no vital signs feed to test for rounded or repeated readings.",
-        issue: GENERATOR_FEEDS_ISSUE,
-      },
-      {
         name: "Weekend and holiday visit dates",
         reason:
           "The generator has no weekday calendar, so every site sees weekend visits at the same base rate and the test would find nothing.",

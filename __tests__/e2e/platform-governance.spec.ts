@@ -84,7 +84,7 @@ test("the catalog searches, filters and still lands a link the filters hide", as
   await expect(async () => {
     await search.fill("");
     await search.fill("enrollment");
-    await expect(page.getByText(/^\d+ of 92 entries$/)).toBeVisible({
+    await expect(page.getByText(/^\d+ of 94 entries$/)).toBeVisible({
       timeout: 1_000,
     });
   }).toPass({ timeout: 15_000 });
@@ -102,7 +102,7 @@ test("the catalog searches, filters and still lands a link the filters hide", as
   await expect(product).toBeVisible();
   await expect(product).toBeFocused();
   await expect(search).toHaveValue("");
-  await expect(page.getByText("92 entries", { exact: true })).toBeVisible();
+  await expect(page.getByText("94 entries", { exact: true })).toBeVisible();
 
   // The metric's glossary term is on the same page.
   await enrolled.getByRole("link", { name: "Enrollment", exact: true }).click();

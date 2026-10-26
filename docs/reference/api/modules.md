@@ -129,6 +129,7 @@
 - [lib/clinical-platform/internal/portfolio/start-up](lib/clinical-platform/internal/portfolio/start-up/README.md)
 - [lib/clinical-platform/internal/portfolio/stream](lib/clinical-platform/internal/portfolio/stream/README.md)
 - [lib/clinical-platform/internal/portfolio/subjects](lib/clinical-platform/internal/portfolio/subjects/README.md)
+- [lib/clinical-platform/internal/portfolio/vital-signs](lib/clinical-platform/internal/portfolio/vital-signs/README.md)
 - [lib/clinical-platform/internal/quality/assess](lib/clinical-platform/internal/quality/assess/README.md)
 - [lib/clinical-platform/internal/quality/conformance](lib/clinical-platform/internal/quality/conformance/README.md)
 - [lib/clinical-platform/internal/quality/context](lib/clinical-platform/internal/quality/context/README.md)

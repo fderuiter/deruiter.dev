@@ -4,11 +4,11 @@
  * manifest, the ERD, the lineage edges and the integrity checks all read
  * this description, so they cannot disagree.
  */
-import { defineTable, type TableDraft } from "./define";
+import { defineTable, type ColumnOptions, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.8.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.9.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -429,6 +429,55 @@ const SILVER: readonly TableDraft[] = [
         "Severity: mild, moderate or severe.",
         { length: 16 },
       ],
+      [
+        "source_system",
+        "string",
+        "Source system the record came from.",
+        { classification: "internal", from: ["source"] },
+      ],
+    ],
+  },
+  {
+    layer: "silver",
+    name: "edc_vital_sign",
+    kind: "conformed",
+    description:
+      "EDC vital signs, one reading of each sign at each entered visit (#2957).",
+    grain: "One row per visit and vital sign.",
+    primaryKey: ["vital_sign_id"],
+    classification: "confidential",
+    source: "bronze.edc.vitalSigns",
+    synthetic: true,
+    columns: [
+      [
+        "vital_sign_id",
+        "string",
+        "Reading id: the visit record id and the test code.",
+        { from: ["vitalSignId"] },
+      ],
+      ["visit_id", "string", "Visit record id the reading was taken at."],
+      ["subject_id", "string", "Subject id."],
+      ["study_id", "string", "Protocol id.", { classification: "internal" }],
+      ["site_id", "string", "Site id.", { classification: "internal" }],
+      [
+        "vs_test_code",
+        "string",
+        "SDTM VSTESTCD: SYSBP, DIABP, PULSE or WEIGHT.",
+        { length: 8, classification: "internal", from: ["test"] },
+      ],
+      [
+        "vs_value",
+        "decimal",
+        "The reading, in its unit.",
+        { precision: 6, scale: 1, from: ["value"] },
+      ],
+      [
+        "vs_unit",
+        "string",
+        "Unit: mmHg, beats/min or kg.",
+        { length: 16, classification: "internal", from: ["unit"] },
+      ],
+      ["measured_on", "date", "Date of the visit the reading was taken at."],
       [
         "source_system",
         "string",
@@ -916,6 +965,17 @@ const key = {
   date: { ref: "gold.dim_date.date_key", how: "date-key" },
   site: { ref: "gold.dim_site.site_key", how: "scd2-lookup" },
 } as const;
+
+/**
+ * A vital sign's column in the visit-grain fact (#2957): the silver
+ * reading whose test code names the sign, pivoted onto its visit.
+ */
+const PIVOT_SIGN: ColumnOptions = {
+  from: ["vs_test_code", "vs_value"],
+  how: "pivot",
+  nullable: true,
+  classification: "confidential",
+};
 
 const DIMENSIONS: readonly TableDraft[] = [
   {
@@ -1806,6 +1866,86 @@ const FACTS: readonly TableDraft[] = [
         "string",
         "Severity: mild, moderate or severe.",
         { length: 16 },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_vital_sign",
+    kind: "fact",
+    description:
+      "Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957).",
+    grain: "One row per visit with vital signs.",
+    primaryKey: ["visit_id"],
+    classification: "internal",
+    source: "silver.edc_vital_sign",
+    synthetic: true,
+    columns: [
+      [
+        "visit_id",
+        "string",
+        "Visit record id the signs were taken at (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "subject_id",
+        "string",
+        "Subject id (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        { ...key.study, from: ["study_id", "gold.dim_study.study_key"] },
+      ],
+      [
+        "site_key",
+        "integer",
+        "Site version in force on the day of the visit.",
+        {
+          ...key.site,
+          from: ["site_id", "measured_on", "gold.dim_site.site_key"],
+        },
+      ],
+      [
+        "country_key",
+        "integer",
+        "Country of the site.",
+        {
+          ...key.country,
+          from: ["silver.site.country_code", "gold.dim_country.country_key"],
+        },
+      ],
+      [
+        "measured_date_key",
+        "integer",
+        "Date the signs were taken.",
+        { ...key.date, from: ["measured_on"] },
+      ],
+      [
+        "systolic_bp_mmhg",
+        "integer",
+        "Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded.",
+        PIVOT_SIGN,
+      ],
+      [
+        "diastolic_bp_mmhg",
+        "integer",
+        "Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded.",
+        PIVOT_SIGN,
+      ],
+      [
+        "pulse_bpm",
+        "integer",
+        "Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded.",
+        PIVOT_SIGN,
+      ],
+      [
+        "weight_kg",
+        "decimal",
+        "Weight (VSTESTCD WEIGHT), in kg; null when not recorded.",
+        { ...PIVOT_SIGN, precision: 5, scale: 1 },
       ],
     ],
   },

@@ -164,6 +164,7 @@ customProperties:
       - "product:gold.fct_deviation"
       - "product:gold.fct_cec_adjudication"
       - "product:gold.fct_adverse_event"
+      - "product:gold.fct_vital_sign"
       - "product:gold.fct_monitoring_visit"
       - "product:gold.fct_planned_monitoring_visit"
       - "product:gold.fct_kri_snapshot"

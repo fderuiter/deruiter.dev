@@ -208,8 +208,9 @@ describe("conformance results", () => {
     expect(
       results.filter((r) => r.status === "warn").map((r) => r.ruleId)
     ).toEqual(["SD-031", "SD-032", "SD-033", "SD-034"]);
-    // SD-036 to SD-039 (duplicates and units, #2605) pass on the plain run.
-    expect(results.filter((r) => r.status === "pass")).toHaveLength(40);
+    // SD-036 to SD-039 (duplicates and units, #2605) and the 13 lineage
+    // rules (#2930) pass on the plain run.
+    expect(results.filter((r) => r.status === "pass")).toHaveLength(53);
     const visits = resultOf(baseline, "SD-031");
     expect(visits.checked).toBe(
       run.datasets.find((d) => d.name === "SV" && d.layer === "sdtm")?.rowCount
@@ -271,8 +272,8 @@ describe("scorecards", () => {
     expect(baseline.dataCut).toBe(warehouse.asOf);
     expect(baseline.overall).toMatchObject({
       key: "overall",
-      rules: 92,
-      passing: 90,
+      rules: 105,
+      passing: 103,
     });
     expect(baseline.overall.score).toBeCloseTo(
       mean(DATA_QUALITY_RULES.map((r) => r.id)),

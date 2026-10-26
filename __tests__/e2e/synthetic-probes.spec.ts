@@ -429,6 +429,13 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
   }) => {
     await sqlWorkbenchJourney(page);
   });
+
+  // #2638: the governance page's catalog, searched in the browser.
+  test("Probe 17: Governance catalog searches its entries", async ({
+    page,
+  }) => {
+    await governanceJourney(page);
+  });
 });
 
 async function studyDataJourney(page: Page) {
@@ -670,4 +677,27 @@ async function sqlWorkbenchJourney(page: Page) {
   await expect(
     page.getByRole("button", { name: "Start SQL engine" })
   ).toBeVisible();
+}
+
+async function governanceJourney(page: Page) {
+  const response = await page.goto("/platform/governance", {
+    waitUntil: "domcontentloaded",
+  });
+  // /platform/governance ships after the Clinical v1 hold (#2691); until
+  // production has it, the daily probe of the deployed origin skips here.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/platform/governance is not deployed to the probed origin yet (#2691)"
+  );
+  expect(response?.status()).toBe(200);
+  await expect(page.getByText("90 entries", { exact: true })).toBeVisible();
+  const search = page.getByRole("searchbox", { name: "Search the catalog" });
+  await expect(async () => {
+    await search.fill("");
+    await search.fill("screening");
+    await expect(page.getByText(/^\d+ of 90 entries$/)).toBeVisible({
+      timeout: 1_000,
+    });
+  }).toPass({ timeout: 15_000 });
+  await expect(page.locator('[id="catalog-subjects_screened"]')).toBeVisible();
 }

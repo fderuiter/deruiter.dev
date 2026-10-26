@@ -6,4 +6,4 @@
 
 # Variable: CONFORMANCE\_RULES\_VERSION
 
-> `const` **CONFORMANCE\_RULES\_VERSION**: `"1.1.0"` = `"1.1.0"`
+> `const` **CONFORMANCE\_RULES\_VERSION**: `"1.2.0"` = `"1.2.0"`

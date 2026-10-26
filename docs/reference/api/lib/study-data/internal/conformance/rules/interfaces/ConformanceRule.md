@@ -42,7 +42,7 @@ readonly [`RuleIssue`](RuleIssue.md)[]
 
 ### kind
 
-> `readonly` **kind**: `"duplicate"` \| `"unique"` \| `"baseline"` \| `"required"` \| `"unit"` \| `"visit"` \| `"adam"` \| `"iso"` \| `"ct"` \| `"study-day"` \| `"epoch"` \| `"exception"`
+> `readonly` **kind**: `"duplicate"` \| `"adam"` \| `"lineage"` \| `"unique"` \| `"baseline"` \| `"required"` \| `"unit"` \| `"visit"` \| `"iso"` \| `"ct"` \| `"study-day"` \| `"epoch"` \| `"exception"`
 
 ***
 
@@ -60,7 +60,7 @@ readonly [`RuleIssue`](RuleIssue.md)[]
 
 #### layer
 
-> `readonly` **layer**: `"adam"` \| `"sdtm"`
+> `readonly` **layer**: `"sdtm"` \| `"adam"`
 
 ***
 

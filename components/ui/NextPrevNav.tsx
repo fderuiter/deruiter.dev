@@ -45,7 +45,7 @@ export const NextPrevNav: React.FC<NextPrevNavProps> = ({
           <Link
             href={backToHub.href}
             onMouseEnter={handleHover}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs font-mono text-zinc-400 hover:text-accent hover:border-accent/40 transition-all duration-200 group"
+            className="inline-flex items-center gap-2 px-4 py-2 pointer-coarse:min-h-11 rounded-xl bg-zinc-900/60 border border-zinc-800 text-xs font-mono text-zinc-400 hover:text-accent hover:border-accent/40 transition-all duration-200 group"
           >
             <IconGridDots className="w-4 h-4 text-accent group-hover:rotate-90 transition-transform duration-300" />
             <span>{backToHub.title}</span>

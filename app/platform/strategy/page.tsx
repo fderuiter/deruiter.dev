@@ -18,7 +18,7 @@ export default function PlatformStrategyPage() {
       <header className="border-b border-white/[0.08] pb-10">
         <Link
           href="/platform"
-          className="text-sm text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"
+          className="text-sm text-amber-300 underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center focus-visible:outline-2 focus-visible:outline-amber-400"
         >
           ← Clinical Data Platform
         </Link>

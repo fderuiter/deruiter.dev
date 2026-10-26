@@ -1,0 +1,108 @@
+name: DSQL Load
+
+# ADR 0070 (#3007): loads the clinical platform's gold layer into Aurora
+# DSQL, the warehouse of record, checks that every table reads back with the
+# fingerprint the plan expects, and writes `platform_meta.load_manifest`,
+# which production builds read. Then it reads the load's TotalDPU from
+# CloudWatch into the job summary, against DSQL's 100,000 free DPUs a month.
+#
+# Manual only until the first load's DPUs are measured (ADR 0070); a later
+# change runs it from the weekly train. Writes come from here and nowhere
+# else: the AWS role trusts only this repository's `main`, through GitHub
+# OIDC, so no AWS key is stored. Needs two repository variables, both
+# outputs of `infra/aws/github-actions-role.json`: AWS_GITHUB_ROLE_ARN and
+# DSQL_ENDPOINT.
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: dsql-load
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  load:
+    name: Load gold layer into Aurora DSQL
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      AWS_GITHUB_ROLE_ARN: ${{ vars.AWS_GITHUB_ROLE_ARN }}
+      DSQL_ENDPOINT: ${{ vars.DSQL_ENDPOINT }}
+
+    steps:
+      - name: Check configuration
+        run: |
+          if [ -z "$AWS_GITHUB_ROLE_ARN" ] || [ -z "$DSQL_ENDPOINT" ]; then
+            echo "::error::Set the repository variables AWS_GITHUB_ROLE_ARN and DSQL_ENDPOINT from the infra/aws stack outputs (infra/aws/README.md)."
+            exit 1
+          fi
+
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Assume the AWS role through GitHub OIDC
+        run: |
+          # The endpoint is CLUSTER-ID.dsql.REGION.on.aws.
+          region="$(echo "$DSQL_ENDPOINT" | cut -d. -f3)"
+          jwt="$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=sts.amazonaws.com" | jq -r .value)"
+          echo "::add-mask::$jwt"
+          creds="$(aws sts assume-role-with-web-identity \
+            --role-arn "$AWS_GITHUB_ROLE_ARN" \
+            --role-session-name "dsql-load-$GITHUB_RUN_ID" \
+            --web-identity-token "$jwt" \
+            --duration-seconds 3600 \
+            --region "$region" \
+            --query Credentials --output json)"
+          for key in AccessKeyId SecretAccessKey SessionToken; do
+            echo "::add-mask::$(echo "$creds" | jq -r ".$key")"
+          done
+          {
+            echo "AWS_REGION=$region"
+            echo "AWS_ACCESS_KEY_ID=$(echo "$creds" | jq -r .AccessKeyId)"
+            echo "AWS_SECRET_ACCESS_KEY=$(echo "$creds" | jq -r .SecretAccessKey)"
+            echo "AWS_SESSION_TOKEN=$(echo "$creds" | jq -r .SessionToken)"
+          } >> "$GITHUB_ENV"
+
+      - name: Load, check parity and write the manifest
+        run: |
+          PGPASSWORD="$(aws dsql generate-db-connect-admin-auth-token \
+            --hostname "$DSQL_ENDPOINT" --region "$AWS_REGION" --expires-in 3600)"
+          echo "::add-mask::$PGPASSWORD"
+          export PGPASSWORD
+          npx tsx scripts/dsql-load.ts \
+            --summary "$GITHUB_STEP_SUMMARY" \
+            --out "$RUNNER_TEMP/dsql-load.json"
+
+      - name: Record the load's DPUs
+        run: |
+          # CloudWatch publishes DSQL usage a few minutes behind.
+          sleep 300
+          started="$(jq -r .startedAt "$RUNNER_TEMP/dsql-load.json")"
+          start="$(date -u -d "@$(( $(date -u -d "$started" +%s) - 60 ))" +%Y-%m-%dT%H:%M:%SZ)"
+          end="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          dpu="$(aws cloudwatch get-metric-statistics \
+            --namespace AWS/AuroraDSQL --metric-name TotalDPU \
+            --dimensions Name=ClusterId,Value="${DSQL_ENDPOINT%%.*}" \
+            --start-time "$start" --end-time "$end" --period 60 \
+            --statistics Sum --query 'sum(Datapoints[].Sum)' --output text)"
+          {
+            echo "### DSQL usage"
+            echo ""
+            echo "TotalDPU from $start to $end: **$dpu** (free quota: 100,000 a month)."
+            echo "Zero can mean CloudWatch has not published the window yet; the DSQL console's cluster usage shows it later."
+          } | tee -a "$GITHUB_STEP_SUMMARY"

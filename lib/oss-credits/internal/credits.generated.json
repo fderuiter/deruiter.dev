@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "source": "package-lock.json",
   "counts": {
-    "total": 1211,
+    "total": 1226,
     "runtime": 565,
-    "tooling": 646,
-    "direct": 77
+    "tooling": 661,
+    "direct": 79
   },
   "packages": [
     {
@@ -3747,6 +3747,17 @@
       "direct": false,
       "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/pako",
       "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped"
+    },
+    {
+      "name": "@types/pg",
+      "version": "8.23.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": true,
+      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/pg",
+      "repository": "https://github.com/DefinitelyTyped/DefinitelyTyped",
+      "group": "Build and types",
+      "reason": "pg type definitions."
     },
     {
       "name": "@types/raf",
@@ -9057,6 +9068,80 @@
       "repository": "https://github.com/braveg1rl/performance-now"
     },
     {
+      "name": "pg",
+      "version": "8.23.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": true,
+      "homepage": "https://github.com/brianc/node-postgres",
+      "repository": "https://github.com/brianc/node-postgres",
+      "group": "Data and storage",
+      "reason": "PostgreSQL client that loads and reads Aurora DSQL from CI and builds."
+    },
+    {
+      "name": "pg-cloudflare",
+      "version": "1.4.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/brianc/node-postgres",
+      "repository": "https://github.com/brianc/node-postgres"
+    },
+    {
+      "name": "pg-connection-string",
+      "version": "2.14.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/brianc/node-postgres/tree/master/packages/pg-connection-string",
+      "repository": "https://github.com/brianc/node-postgres"
+    },
+    {
+      "name": "pg-int8",
+      "version": "1.0.1",
+      "license": "ISC",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/charmander/pg-int8",
+      "repository": "https://github.com/charmander/pg-int8"
+    },
+    {
+      "name": "pg-pool",
+      "version": "3.14.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/brianc/node-postgres/tree/master/packages/pg-pool",
+      "repository": "https://github.com/brianc/node-postgres"
+    },
+    {
+      "name": "pg-protocol",
+      "version": "1.16.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/brianc/node-postgres",
+      "repository": "https://github.com/brianc/node-postgres"
+    },
+    {
+      "name": "pg-types",
+      "version": "2.2.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/brianc/node-pg-types",
+      "repository": "https://github.com/brianc/node-pg-types"
+    },
+    {
+      "name": "pgpass",
+      "version": "1.0.5",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/hoegaarden/pgpass",
+      "repository": "https://github.com/hoegaarden/pgpass"
+    },
+    {
       "name": "picocolors",
       "version": "1.1.1",
       "license": "ISC",
@@ -9175,12 +9260,48 @@
     },
     {
       "name": "postgres-array",
+      "version": "2.0.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/bendrucker/postgres-array",
+      "repository": "https://github.com/bendrucker/postgres-array"
+    },
+    {
+      "name": "postgres-array",
       "version": "3.0.4",
       "license": "MIT",
       "scope": "runtime",
       "direct": false,
       "homepage": "https://github.com/bendrucker/postgres-array",
       "repository": "https://github.com/bendrucker/postgres-array"
+    },
+    {
+      "name": "postgres-bytea",
+      "version": "1.0.1",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/bendrucker/postgres-bytea",
+      "repository": "https://github.com/bendrucker/postgres-bytea"
+    },
+    {
+      "name": "postgres-date",
+      "version": "1.0.7",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/bendrucker/postgres-date",
+      "repository": "https://github.com/bendrucker/postgres-date"
+    },
+    {
+      "name": "postgres-interval",
+      "version": "1.2.0",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/bendrucker/postgres-interval",
+      "repository": "https://github.com/bendrucker/postgres-interval"
     },
     {
       "name": "prelude-ls",
@@ -9929,6 +10050,15 @@
       "direct": false,
       "homepage": "https://github.com/7rulnik/source-map-js",
       "repository": "https://github.com/7rulnik/source-map-js"
+    },
+    {
+      "name": "split2",
+      "version": "4.2.0",
+      "license": "ISC",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/mcollina/split2",
+      "repository": "https://github.com/mcollina/split2"
     },
     {
       "name": "sql-escaper",
@@ -10948,6 +11078,15 @@
       "repository": "https://github.com/noppa/xmllint-wasm",
       "group": "Testing",
       "reason": "Checks the study data pipeline's Define-XML files against the Define-XML 2.1.0 schema in a unit test, with libxml2 compiled to WebAssembly."
+    },
+    {
+      "name": "xtend",
+      "version": "4.0.2",
+      "license": "MIT",
+      "scope": "tooling",
+      "direct": false,
+      "homepage": "https://github.com/Raynos/xtend",
+      "repository": "https://github.com/Raynos/xtend"
     },
     {
       "name": "y18n",

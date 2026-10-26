@@ -80,6 +80,12 @@
                     "dynamodb:DescribeTable"
                   ],
                   "Resource": { "Ref": "DynamoDbTableArn" }
+                },
+                {
+                  "Sid": "ReadLoadUsage",
+                  "Effect": "Allow",
+                  "Action": ["cloudwatch:GetMetricStatistics"],
+                  "Resource": "*"
                 }
               ]
             }
@@ -92,6 +98,40 @@
     "RoleArn": {
       "Description": "Save this as the GitHub repository variable AWS_GITHUB_ROLE_ARN.",
       "Value": { "Fn::GetAtt": ["GitHubActionsRole", "Arn"] }
+    },
+    "DsqlEndpoint": {
+      "Description": "Save this as the GitHub repository variable DSQL_ENDPOINT (CLUSTER-ID.dsql.REGION.on.aws, taken from the cluster ARN).",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            {
+              "Fn::Select": [
+                1,
+                {
+                  "Fn::Split": [
+                    "/",
+                    {
+                      "Fn::Select": [
+                        5,
+                        { "Fn::Split": [":", { "Ref": "DsqlClusterArn" }] }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            ".dsql.",
+            {
+              "Fn::Select": [
+                3,
+                { "Fn::Split": [":", { "Ref": "DsqlClusterArn" }] }
+              ]
+            },
+            ".on.aws"
+          ]
+        ]
+      }
     }
   }
 }

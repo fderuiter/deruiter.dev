@@ -15,6 +15,7 @@ cluster and the table. No access keys are stored anywhere.
 | -------------- | -------------------------------------------------------------- |
 | DSQL cluster   | `dsql:DbConnectAdmin` (load the gold layer)                    |
 | DynamoDB table | `dynamodb:PutItem`, `dynamodb:Query`, `dynamodb:DescribeTable` |
+| CloudWatch     | `cloudwatch:GetMetricStatistics` (read the load's DPU use)     |
 
 Only workflows running on `main` of `fderuiter/deruiter.dev` can assume it.
 Pull requests, forks and other branches cannot.
@@ -34,9 +35,18 @@ Pull requests, forks and other branches cannot.
    `token.actions.githubusercontent.com` identity provider.
 4. Acknowledge that the stack creates IAM resources with a custom name, and
    create it.
-5. Copy the `RoleArn` output. In GitHub, open the repository's **Settings**,
+5. Copy the two outputs. In GitHub, open the repository's **Settings**,
    **Secrets and variables**, **Actions**, **Variables**, and add
-   `AWS_GITHUB_ROLE_ARN` with that value. It is an identifier, not a secret.
+   `AWS_GITHUB_ROLE_ARN` with the `RoleArn` output and `DSQL_ENDPOINT` with
+   the `DsqlEndpoint` output. They are identifiers, not secrets.
 
 Deleting the stack removes the role and the identity provider; the data
 stores are untouched.
+
+## Loading the warehouse
+
+**Actions**, **DSQL Load**, **Run workflow** on `main` runs
+`scripts/dsql-load.ts`: it loads the gold layer, reads every table back,
+and writes `platform_meta.load_manifest` only when all of them match. The
+job summary lists each table's fingerprint and the load's `TotalDPU`. It
+runs by hand until the first load's DPUs are known, as ADR 0070 requires.

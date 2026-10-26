@@ -1172,6 +1172,56 @@ export interface Warehouse {
 /** SQL dialect a DDL emitter writes. */
 export type SqlDialect = "duckdb" | "postgres" | "tsql";
 
+/** One parameterised `INSERT` of a DSQL load: up to the batch limit of one table's rows. */
+export interface DsqlInsertBatch {
+  /** Qualified table name, for example `gold.dim_site`. */
+  readonly table: string;
+  /** Statement text with `$1`, `$2`, ... placeholders, row by row. */
+  readonly text: string;
+  /** Parameter values in placeholder order; decimals as text at their declared scale. */
+  readonly values: readonly WarehouseValue[];
+  /** Rows the statement inserts. */
+  readonly rowCount: number;
+}
+
+/** What a DSQL load must hold for one table, and how to read it back. */
+export interface DsqlTableParity {
+  /** Qualified table name. */
+  readonly table: string;
+  /** Rows the table holds after the load. */
+  readonly rowCount: number;
+  /** Fingerprint of the table's rows, as `fingerprintDsqlRows` computes it. */
+  readonly fingerprint: string;
+  /** `SELECT` returning every column as canonical text, for `fingerprintDsqlRows`. */
+  readonly readback: string;
+}
+
+/**
+ * Everything a runner sends to Aurora DSQL to load a set of warehouse
+ * tables, in order, inside DSQL's limits: each DDL statement runs in its own
+ * transaction, and each insert modifies far fewer than 3,000 rows (ADR 0070).
+ */
+export interface DsqlLoadPlan {
+  /** Warehouse schema version loaded. */
+  readonly schemaVersion: string;
+  /** `DROP TABLE IF EXISTS` statements, dependants first. */
+  readonly drop: readonly string[];
+  /** `CREATE SCHEMA` and `CREATE TABLE` statements, referenced tables first. */
+  readonly create: readonly string[];
+  /** Inserts in table order, so every foreign key's target is loaded first. */
+  readonly inserts: readonly DsqlInsertBatch[];
+  /** Expected contents of each table after the load. */
+  readonly parity: readonly DsqlTableParity[];
+  /** Size of the loaded rows as CSV, in bytes: a floor for DSQL storage, against its 1 GB free quota. */
+  readonly csvBytes: number;
+}
+
+/** Options for `planDsqlLoad`. */
+export interface DsqlLoadOptions {
+  /** Most rows per `INSERT`, 1 to 3,000. Defaults to 1,000. */
+  readonly maxRowsPerInsert?: number;
+}
+
 /**
  * Certification tier of a report (#2625). `certified` reports use only
  * certified metrics and carry an owner's sign-off on their version;

@@ -314,6 +314,30 @@ Re-exports [DqTrendPoint](quality/interfaces/DqTrendPoint.md)
 
 ***
 
+### DsqlInsertBatch
+
+Re-exports [DsqlInsertBatch](platform/interfaces/DsqlInsertBatch.md)
+
+***
+
+### DsqlLoadOptions
+
+Re-exports [DsqlLoadOptions](platform/interfaces/DsqlLoadOptions.md)
+
+***
+
+### DsqlLoadPlan
+
+Re-exports [DsqlLoadPlan](platform/interfaces/DsqlLoadPlan.md)
+
+***
+
+### DsqlTableParity
+
+Re-exports [DsqlTableParity](platform/interfaces/DsqlTableParity.md)
+
+***
+
 ### EdcAdverseEvent
 
 Re-exports [EdcAdverseEvent](platform/interfaces/EdcAdverseEvent.md)

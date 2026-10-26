@@ -16,7 +16,10 @@ import type {
 import { qualifiedName } from "./schema";
 
 /** One CSV field. `null` is empty and unquoted; an empty string is `""`. */
-function field(column: WarehouseColumn, value: WarehouseValue): string {
+export function csvField(
+  column: WarehouseColumn,
+  value: WarehouseValue
+): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "boolean") return value ? "true" : "false";
   if (typeof value === "number") {
@@ -81,7 +84,7 @@ export function exportWarehouse(
     const lines = [
       table.columns.map((c) => c.name).join(","),
       ...rows.map((row) =>
-        table.columns.map((c) => field(c, row[c.name] ?? null)).join(",")
+        table.columns.map((c) => csvField(c, row[c.name] ?? null)).join(",")
       ),
     ];
     return {

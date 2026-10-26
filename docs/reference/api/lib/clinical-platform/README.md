@@ -650,6 +650,30 @@ Re-exports [DqTrendPoint](types/quality/interfaces/DqTrendPoint.md)
 
 ***
 
+### DsqlInsertBatch
+
+Re-exports [DsqlInsertBatch](types/platform/interfaces/DsqlInsertBatch.md)
+
+***
+
+### DsqlLoadOptions
+
+Re-exports [DsqlLoadOptions](types/platform/interfaces/DsqlLoadOptions.md)
+
+***
+
+### DsqlLoadPlan
+
+Re-exports [DsqlLoadPlan](types/platform/interfaces/DsqlLoadPlan.md)
+
+***
+
+### DsqlTableParity
+
+Re-exports [DsqlTableParity](types/platform/interfaces/DsqlTableParity.md)
+
+***
+
 ### EdcAdverseEvent
 
 Re-exports [EdcAdverseEvent](types/platform/interfaces/EdcAdverseEvent.md)
@@ -863,6 +887,12 @@ Re-exports [FinancePlanLine](types/platform/interfaces/FinancePlanLine.md)
 ### findClinicalClaims
 
 Re-exports [findClinicalClaims](internal/policy/functions/findClinicalClaims.md)
+
+***
+
+### fingerprintDsqlRows
+
+Re-exports [fingerprintDsqlRows](internal/warehouse/dsql/functions/fingerprintDsqlRows.md)
 
 ***
 
@@ -1469,6 +1499,12 @@ Re-exports [OperationsStudyProfile](types/reporting/interfaces/OperationsStudyPr
 ### ParquetColumnType
 
 Re-exports [ParquetColumnType](types/warehouse/interfaces/ParquetColumnType.md)
+
+***
+
+### planDsqlLoad
+
+Re-exports [planDsqlLoad](internal/warehouse/dsql/functions/planDsqlLoad.md)
 
 ***
 

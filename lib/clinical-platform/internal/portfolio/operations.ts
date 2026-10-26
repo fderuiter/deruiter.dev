@@ -9,6 +9,7 @@ import type {
   CtmsMonitoringVisit,
   EtmfDocument,
   FinanceLine,
+  FinancePlanLine,
   MilestoneKind,
   StudyStatus,
 } from "../../types";
@@ -22,6 +23,9 @@ import type { StudySimulation } from "./records";
 
 /** Planned days from first subject in, used for the planned milestone dates. */
 const PLANNED_FIRST_SUBJECT_OFFSET = FIRST_ACTIVATION_OFFSET + 50;
+
+/** Planned days from last subject last visit to the final report. */
+const PLANNED_REPORT_AFTER_LSLV = 150;
 
 const DRUG_LABELS: Readonly<Record<MilestoneKind, string>> = {
   "protocol-final": "Protocol final",
@@ -55,6 +59,7 @@ export interface StudyOperations {
   readonly monitoringVisits: CtmsMonitoringVisit[];
   readonly documents: EtmfDocument[];
   readonly finance: FinanceLine[];
+  readonly financePlan: FinancePlanLine[];
 }
 
 const STUDY_DOCUMENTS = [
@@ -130,6 +135,7 @@ export function studyOperations(
   const plannedFsi = startDay + PLANNED_FIRST_SUBJECT_OFFSET;
   const plannedLsi = plannedFsi + study.enrollmentDays;
   const plannedLslv = plannedLsi + lastVisitDay;
+  const plannedReport = plannedLslv + PLANNED_REPORT_AFTER_LSLV;
   const activations = sites
     .map((site) => site.activationDay)
     .filter((day): day is number => day !== null);
@@ -160,7 +166,7 @@ export function studyOperations(
     ["last-subject-in", plannedLsi, lsi],
     ["last-subject-last-visit", plannedLslv, lslv],
     ["database-lock", plannedLslv + 60, dbl],
-    ["final-report", plannedLslv + 150, report],
+    ["final-report", plannedReport, report],
   ];
   const labels = study.productType === "device" ? DEVICE_LABELS : DRUG_LABELS;
   const milestones: CtmsMilestone[] = plan.map(([kind, planned, actual]) => ({
@@ -282,17 +288,36 @@ export function studyOperations(
     }
   }
 
-  // Finance: quarterly budget against actual per vendor category.
+  // Finance: quarterly budget against actual per vendor category, and the
+  // approved budget plan from the start to the planned final report. The
+  // plan draws nothing from the stream, so adding it left every other
+  // generated value as it was.
   const finance: FinanceLine[] = [];
+  const financePlan: FinancePlanLine[] = [];
   const endDay = report ?? asOfDay;
   for (const [category, annual] of Object.entries(study.annualBudgetUsd)) {
     const vendorId =
       category === "CRO"
         ? study.croVendorId
         : (CATEGORY_VENDOR[category] ?? null);
+    const budget = Math.round(annual / 4);
+    for (
+      let day = startDay;
+      day <= plannedReport;
+      day = nextQuarterStart(day)
+    ) {
+      financePlan.push({
+        synthetic: true,
+        source: "Finance",
+        studyId: study.id,
+        vendorId,
+        category,
+        period: quarterOf(day),
+        budgetUsd: budget,
+      });
+    }
     let quarterIndex = 0;
     for (let day = startDay; day <= endDay; day = nextQuarterStart(day)) {
-      const budget = Math.round(annual / 4);
       const factor =
         vendorId === OVER_BUDGET_VENDOR_ID
           ? rng.real(1.15, 1.3) + 0.02 * quarterIndex
@@ -318,5 +343,6 @@ export function studyOperations(
     monitoringVisits,
     documents,
     finance,
+    financePlan,
   };
 }

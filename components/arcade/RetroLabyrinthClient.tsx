@@ -22,8 +22,8 @@ const RetroLabyrinthLoader = () =>
 
 /**
  * The cabinet's views (ADR 0062). One session holds the run above them
- * (#2376); the phone view borrows the desktop layout until its own pass
- * (#2379), and the room adapts to the touch cabinet as before.
+ * (#2376), and each view lays the room out for its device (#2839, #2859,
+ * #2917).
  */
 const RETRO_LABYRINTH_VIEWS = defineGameViews({
   session: RetroLabyrinthCabinetSession,
@@ -35,7 +35,10 @@ const RETRO_LABYRINTH_VIEWS = defineGameViews({
     import("@/components/retro-labyrinth/views/TabletView").then((mod) => ({
       default: mod.TabletView,
     })),
-  phone: "desktop",
+  phone: () =>
+    import("@/components/retro-labyrinth/views/PhoneView").then((mod) => ({
+      default: mod.PhoneView,
+    })),
 });
 
 export const RetroLabyrinthClient: React.FC = () => {

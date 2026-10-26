@@ -211,4 +211,5 @@ customProperties:
       - "product:gold.fct_planned_monitoring_visit"
       - "product:gold.fct_milestone"
       - "product:gold.fct_spend"
+      - "product:gold.fct_spend_forecast"
       - "product:gold.fct_kri_snapshot"

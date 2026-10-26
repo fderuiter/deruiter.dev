@@ -11,14 +11,15 @@ import { createRoot, type Root } from "react-dom/client";
 import { TracingBeam } from "@/components/ui/TracingBeam";
 import { designManifest } from "@/lib/design-manifest";
 
-// Mock framer-motion's useReducedMotion hook
+// Mock the hydration-safe reduced-motion hook TracingBeam reads (#2893)
 const mockUseReducedMotion = vi.fn();
 
-vi.mock("framer-motion", async (importOriginal) => {
-  const original = await importOriginal<typeof import("framer-motion")>();
+vi.mock("@/hooks/useMediaQuery", async (importOriginal) => {
+  const original =
+    await importOriginal<typeof import("@/hooks/useMediaQuery")>();
   return {
     ...original,
-    useReducedMotion: () => mockUseReducedMotion(),
+    usePrefersReducedMotion: () => mockUseReducedMotion(),
   };
 });
 

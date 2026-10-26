@@ -49,9 +49,13 @@ import {
  *
  * #2881: `gold.fct_cec_adjudication` is new. With that table left out the
  * hash is the previous golden, 14ee6464, so no other value moved.
+ *
+ * #2912: `silver.finance_plan_line` and `gold.fct_spend_forecast` are new.
+ * With those two tables left out the hash is the previous golden, 6922ab5e,
+ * so no other value moved.
  */
 const GOLDEN_SHA256 =
-  "6922ab5e70fb0c38632a1c3484c31c623850d3be45554aac0a74657cb580b052";
+  "9c976355f27d2340e08a6adb8044950022d2eb113cb437e254e28732b4fae1ce";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -71,6 +75,7 @@ const GOLDEN_ROW_COUNTS = {
   "silver.irt_kit": 3342,
   "silver.etmf_document": 656,
   "silver.finance_line": 363,
+  "silver.finance_plan_line": 504,
   "silver.cec_adjudication": 39,
   "gold.dim_study": 8,
   "gold.dim_site": 265,
@@ -88,6 +93,7 @@ const GOLDEN_ROW_COUNTS = {
   "gold.fct_planned_monitoring_visit": 1077,
   "gold.fct_milestone": 72,
   "gold.fct_spend": 1089,
+  "gold.fct_spend_forecast": 48,
   "gold.fct_kri_snapshot": 7944,
 };
 
@@ -865,6 +871,7 @@ describe("lineage", () => {
     "bronze.irt.kits": portfolio.feeds.irt.kits[0],
     "bronze.etmf": portfolio.feeds.etmf[0],
     "bronze.finance": portfolio.feeds.finance[0],
+    "bronze.financePlan": portfolio.feeds.financePlan[0],
     "bronze.cec": portfolio.feeds.cec[0],
   };
 

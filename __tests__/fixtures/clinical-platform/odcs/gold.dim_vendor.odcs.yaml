@@ -117,3 +117,4 @@ customProperties:
   - property: consumers
     value:
       - "product:gold.fct_spend"
+      - "product:gold.fct_spend_forecast"

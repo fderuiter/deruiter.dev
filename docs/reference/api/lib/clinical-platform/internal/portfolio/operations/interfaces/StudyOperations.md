@@ -22,6 +22,12 @@ Study-level operational records and the derived status.
 
 ***
 
+### financePlan
+
+> `readonly` **financePlan**: [`FinancePlanLine`](../../../../types/platform/interfaces/FinancePlanLine.md)[]
+
+***
+
 ### milestones
 
 > `readonly` **milestones**: [`CtmsMilestone`](../../../../types/platform/interfaces/CtmsMilestone.md)[]

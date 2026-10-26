@@ -146,6 +146,12 @@ Re-exports [ARCADE_CORRUPT_SUFFIX](progress/store/variables/ARCADE_CORRUPT_SUFFI
 
 ***
 
+### ARCADE\_DEVICE\_SETTINGS\_KEY
+
+Re-exports [ARCADE_DEVICE_SETTINGS_KEY](progress/device-settings-slice/variables/ARCADE_DEVICE_SETTINGS_KEY.md)
+
+***
+
 ### ARCADE\_GAME\_COUNT
 
 Re-exports [ARCADE_GAME_COUNT](games/variables/ARCADE_GAME_COUNT.md)
@@ -209,6 +215,24 @@ Re-exports [arcadeCoreSlice](progress/core/variables/arcadeCoreSlice.md)
 ### arcadeDailySlice
 
 Re-exports [arcadeDailySlice](progress/daily-slice/variables/arcadeDailySlice.md)
+
+***
+
+### ArcadeDeviceSettings
+
+Re-exports [ArcadeDeviceSettings](progress/device-settings-slice/interfaces/ArcadeDeviceSettings.md)
+
+***
+
+### ArcadeDeviceSettingsPatch
+
+Re-exports [ArcadeDeviceSettingsPatch](progress/device-settings-slice/type-aliases/ArcadeDeviceSettingsPatch.md)
+
+***
+
+### arcadeDeviceSettingsSlice
+
+Re-exports [arcadeDeviceSettingsSlice](progress/device-settings-slice/variables/arcadeDeviceSettingsSlice.md)
 
 ***
 
@@ -578,6 +602,12 @@ Re-exports [DEFAULT_CRT_PRESET_ID](crt-pipeline/variables/DEFAULT_CRT_PRESET_ID.
 
 ***
 
+### DEFAULT\_DEVICE\_SETTINGS
+
+Re-exports [DEFAULT_DEVICE_SETTINGS](progress/device-settings-slice/variables/DEFAULT_DEVICE_SETTINGS.md)
+
+***
+
 ### defineActions
 
 Re-exports [defineActions](input/actions/functions/defineActions.md)
@@ -587,6 +617,24 @@ Re-exports [defineActions](input/actions/functions/defineActions.md)
 ### defineSlice
 
 Re-exports [defineSlice](progress/slice/functions/defineSlice.md)
+
+***
+
+### DeviceDockSize
+
+Re-exports [DeviceDockSize](progress/device-settings-slice/type-aliases/DeviceDockSize.md)
+
+***
+
+### DeviceHandedness
+
+Re-exports [DeviceHandedness](progress/device-settings-slice/type-aliases/DeviceHandedness.md)
+
+***
+
+### DeviceLayout
+
+Re-exports [DeviceLayout](progress/device-settings-slice/type-aliases/DeviceLayout.md)
 
 ***
 
@@ -689,6 +737,12 @@ Re-exports [getCabinetCrtProfile](crt-pipeline/functions/getCabinetCrtProfile.md
 ### getDefaultCrtFilter
 
 Re-exports [getDefaultCrtFilter](crt-pipeline/functions/getDefaultCrtFilter.md)
+
+***
+
+### getDeviceSettings
+
+Re-exports [getDeviceSettings](progress/device-settings-slice/functions/getDeviceSettings.md)
 
 ***
 
@@ -1088,6 +1142,12 @@ Re-exports [setCoachMarksSeen](progress/coach-marks-slice/functions/setCoachMark
 
 ***
 
+### setDeviceSettings
+
+Re-exports [setDeviceSettings](progress/device-settings-slice/functions/setDeviceSettings.md)
+
+***
+
 ### shouldCabinetDrawCrt
 
 Re-exports [shouldCabinetDrawCrt](crt-pipeline/functions/shouldCabinetDrawCrt.md)
@@ -1205,6 +1265,12 @@ Re-exports [UseActionInputOptions](input/react/interfaces/UseActionInputOptions.
 ### useActionSink
 
 Re-exports [useActionSink](input/react/functions/useActionSink.md)
+
+***
+
+### useDeviceSettings
+
+Re-exports [useDeviceSettings](progress/device-settings-slice/functions/useDeviceSettings.md)
 
 ***
 

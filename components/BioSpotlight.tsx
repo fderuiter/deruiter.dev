@@ -52,15 +52,13 @@ export const BioSpotlight: React.FC = () => {
           {/* Left Column: Image with interactive controls */}
           <div className="@2xl:col-span-5 min-w-0 flex flex-col items-center">
             <div className="relative w-full max-w-[280px] sm:max-w-[320px] @2xl:max-w-none aspect-[3/4] min-w-0 rounded-2xl overflow-hidden border border-white/15 shadow-xl bg-black/60">
-              <AnimatePresence mode="wait">
+              {/* initial={false}: the first photo renders at rest on the
+                  server and the client alike, and only later changes animate. */}
+              <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={activePhoto.id}
-                  initial={
-                    shouldReduceMotion ? false : { opacity: 0, scale: 0.96 }
-                  }
-                  animate={
-                    shouldReduceMotion ? undefined : { opacity: 1, scale: 1 }
-                  }
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={
                     shouldReduceMotion ? undefined : { opacity: 0, scale: 1.04 }
                   }

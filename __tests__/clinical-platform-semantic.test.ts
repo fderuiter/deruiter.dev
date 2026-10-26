@@ -143,11 +143,47 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     lplv_to_dbl_days: { "DEMO-101": 75, "DEMO-301": 46, "DEV-401": 43 },
     budget_burn_vs_plan: 1.03643410472,
     cost_per_enrolled_subject: 37838.7068404,
+    // #2912: forecast at completion. Only DEMO-302 is forecast to overrun:
+    // its CRO, the over-budget vendor the generator plants, runs about 30%
+    // over budget and is forecast to stay there for the quarters to come.
+    actual_spend: 46465932,
+    budget_at_completion: {
+      "DEMO-101": 1225000,
+      "DEMO-201": 8900000,
+      "DEMO-202": 4152500,
+      "DEMO-203": 8880000,
+      "DEMO-301": 2205000,
+      "DEMO-302": 29960000,
+      "DEV-401": 2103750,
+      "DEV-402": 9695000,
+    },
+    forecast_at_completion: {
+      // DEMO-101 has issued its final report: nothing remains to forecast.
+      "DEMO-101": 1142433,
+      "DEMO-201": 8245247,
+      "DEMO-202": 4013154,
+      "DEMO-203": 8569157,
+      "DEMO-301": 2075506,
+      "DEMO-302": 34588681,
+      "DEV-401": 1912580,
+      "DEV-402": 9383684,
+    },
+    variance_at_completion: {
+      "DEMO-101": -82567,
+      "DEMO-201": -654753,
+      "DEMO-202": -139346,
+      "DEMO-203": -310843,
+      "DEMO-301": -129494,
+      "DEMO-302": 4628681,
+      "DEV-401": -191170,
+      "DEV-402": -311316,
+    },
+    forecast_vs_budget_at_completion: 1.04185249828,
   };
 
 describe("the metric registry", () => {
-  it("defines 48 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(48);
+  it("defines 53 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(53);
     expect(checkMetricRegistry()).toEqual([]);
   });
 
@@ -181,7 +217,6 @@ describe("the metric registry", () => {
     for (const id of asked) expect(ids).toContain(id);
     expect(METRIC_GAPS.map((g) => g.name)).toEqual([
       "eTMF completeness",
-      "Forecast at completion",
       "Cost per randomised subject",
       "Query rate per 100 CRF pages",
       "Enrollment against a time-phased plan",

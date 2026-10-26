@@ -8,4 +8,4 @@
 
 > `const` **VALUE\_LEVEL**: `Readonly`\<`Record`\<`string`, [`ValueLevelSpec`](../interfaces/ValueLevelSpec.md)\>\>
 
-Value-level metadata for the VS, LB, ADVS and ADLB parameters.
+Value-level metadata for the VS, LB, EG, ADVS and ADLB parameters.

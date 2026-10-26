@@ -543,7 +543,10 @@ function exceptionRule(
  * A findings record that repeats an earlier one for the same subject, test,
  * date, result and unit: the same measurement entered twice.
  */
-function duplicateRule(id: string, domain: "VS" | "LB"): ConformanceRule {
+function duplicateRule(
+  id: string,
+  domain: "VS" | "LB" | "EG"
+): ConformanceRule {
   const fields = ["USUBJID", "TESTCD", "DTC", "ORRES", "ORRESU"].map((field) =>
     field === "USUBJID" ? field : `${domain}${field}`
   );
@@ -580,7 +583,7 @@ function duplicateRule(id: string, domain: "VS" | "LB"): ConformanceRule {
  * SDTM converts it where a conversion is defined; either way the change of
  * unit is reported so it can be confirmed with the site.
  */
-function unitRule(id: string, domain: "VS" | "LB"): ConformanceRule {
+function unitRule(id: string, domain: "VS" | "LB" | "EG"): ConformanceRule {
   return {
     id,
     severity: "warning",
@@ -718,6 +721,19 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   duplicateRule("SD-037", "LB"),
   unitRule("SD-038", "VS"),
   unitRule("SD-039", "LB"),
+  required("SD-048", "EG", [
+    "STUDYID",
+    "USUBJID",
+    "EGSEQ",
+    "EGTESTCD",
+    "EGORRES",
+  ]),
+  unique("SD-049", "EG", "EGSEQ"),
+  dateRule("SD-050", "EG", "EGDTC"),
+  studyDay("SD-051", "EG", "EGDTC", "EGDY"),
+  duplicateRule("SD-052", "EG"),
+  unitRule("SD-053", "EG"),
+  sourceLineageRule("SD-054", "EG"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

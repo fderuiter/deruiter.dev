@@ -13,6 +13,7 @@ import type {
   EdcVisit,
   EtmfDocument,
   FinanceLine,
+  FinancePlanLine,
   IrtKit,
   IrtRandomization,
   Portfolio,
@@ -46,7 +47,8 @@ const BEHIND_PLAN_PACE = 0.55;
  * Generates the synthetic sponsor portfolio and its bronze operational
  * feeds: eight studies (drug Phase I to III, two device IDE studies, three
  * run by fictional CROs), about 120 sites in 12 countries, and EDC, CTMS,
- * IRT, eTMF, finance, protocol deviation and CEC adjudication records.
+ * IRT, eTMF, finance, budget plan, protocol deviation and CEC
+ * adjudication records.
  *
  * DEMO-301 is the Study Data Pipeline's study. Its protocol is the USDM
  * definition the pipeline reads, and its subjects, randomisations and visits
@@ -90,6 +92,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
     irt: { randomizations: [] as IrtRandomization[], kits: [] as IrtKit[] },
     etmf: [] as EtmfDocument[],
     finance: [] as FinanceLine[],
+    financePlan: [] as FinancePlanLine[],
     cec: [] as CecAdjudication[],
   };
 
@@ -206,6 +209,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
     feeds.irt.kits.push(...sim.kits);
     feeds.etmf.push(...ops.documents);
     feeds.finance.push(...ops.finance);
+    feeds.financePlan.push(...ops.financePlan);
     feeds.cec.push(...sim.cec);
   }
 

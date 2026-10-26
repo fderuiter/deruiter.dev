@@ -50,6 +50,14 @@ Finance: budget against actual.
 
 ***
 
+### financePlan
+
+> `readonly` **financePlan**: readonly [`FinancePlanLine`](FinancePlanLine.md)[]
+
+Finance: the approved budget plan, quarter by quarter to completion.
+
+***
+
 ### irt
 
 > `readonly` **irt**: [`IrtFeed`](IrtFeed.md)

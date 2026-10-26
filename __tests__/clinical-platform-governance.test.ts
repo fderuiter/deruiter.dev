@@ -355,6 +355,7 @@ describe("business glossary", () => {
       "database-lock-term",
       "teae-term",
       "budget-burn-term",
+      "forecast-at-completion-term",
     ]);
     const phrases = platformOnly.flatMap((t) => [
       t.canonical,

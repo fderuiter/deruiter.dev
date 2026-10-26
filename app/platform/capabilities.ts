@@ -98,7 +98,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     evidence: [
       route("/platform/operations", "Operations dashboards"),
       route("/platform/portfolio", "Portfolio dashboard"),
-      issue(2632, "Portfolio forecast and finance plan"),
+      issue(2632, "Portfolio enrollment forecast and risk heatmap"),
     ],
   },
   {

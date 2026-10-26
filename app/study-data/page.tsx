@@ -69,7 +69,7 @@ export default function StudyDataPage() {
         }}
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
-        <ClinicalJourneyNav path="/study-data" />
+        <ClinicalJourneyNav path="/study-data" variant="compact" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical systems / Study data
         </p>

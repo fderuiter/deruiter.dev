@@ -362,6 +362,15 @@ export const CANONICAL_GLOSSARY: TermDefinition[] = [
     source: "CDISC Glossary",
   },
   {
+    key: "study-start-up-term",
+    canonical: "Study start-up",
+    simplified: "getting a study ready to enroll",
+    definition:
+      "The work from a final protocol to the first subject's enrollment: regulatory and ethics approval, site selection and contracts, and activating the first sites.",
+    aliases: ["Study startup", "Protocol final to FPI"],
+    autoLink: false,
+  },
+  {
     key: "enrollment-period-term",
     canonical: "Enrollment period",
     simplified: "time to recruit",

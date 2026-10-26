@@ -1514,9 +1514,57 @@ Re-exports [Portfolio](types/platform/interfaces/Portfolio.md)
 
 ***
 
+### PortfolioBenchmark
+
+Re-exports [PortfolioBenchmark](types/portfolio-dashboard/interfaces/PortfolioBenchmark.md)
+
+***
+
+### portfolioDashboard
+
+Re-exports [portfolioDashboard](internal/reporting/portfolio/functions/portfolioDashboard.md)
+
+***
+
+### PortfolioDashboard
+
+Re-exports [PortfolioDashboard](types/portfolio-dashboard/interfaces/PortfolioDashboard.md)
+
+***
+
+### PortfolioLane
+
+Re-exports [PortfolioLane](types/portfolio-dashboard/interfaces/PortfolioLane.md)
+
+***
+
+### PortfolioMilestone
+
+Re-exports [PortfolioMilestone](types/portfolio-dashboard/interfaces/PortfolioMilestone.md)
+
+***
+
+### PortfolioMilestoneStatus
+
+Re-exports [PortfolioMilestoneStatus](types/portfolio-dashboard/type-aliases/PortfolioMilestoneStatus.md)
+
+***
+
 ### PortfolioOptions
 
 Re-exports [PortfolioOptions](types/portfolio/interfaces/PortfolioOptions.md)
+
+***
+
+### PortfolioOutlier
+
+Re-exports [PortfolioOutlier](types/portfolio-dashboard/interfaces/PortfolioOutlier.md)
+
+***
+
+### portfolioReportSpecs
+
+Re-exports [portfolioReportSpecs](internal/reporting/portfolio/functions/portfolioReportSpecs.md)
 
 ***
 
@@ -1529,6 +1577,12 @@ Re-exports [PortfolioSignal](types/platform/interfaces/PortfolioSignal.md)
 ### PortfolioSignalKind
 
 Re-exports [PortfolioSignalKind](types/platform/type-aliases/PortfolioSignalKind.md)
+
+***
+
+### PortfolioSwimlane
+
+Re-exports [PortfolioSwimlane](types/portfolio-dashboard/interfaces/PortfolioSwimlane.md)
 
 ***
 

@@ -42,9 +42,13 @@ import {
  * #2879: `silver.edc_subject` and `gold.fct_enrollment` gained
  * `screen_failure_reason`. With that column left out the hash is the
  * previous golden, ee7c3ef4, so no other value moved.
+ *
+ * #2880: `silver.site` gained the three CTMS start-up stages, and
+ * `gold.dim_site` those plus `initiated_on` and `first_subject_in_on`. With
+ * those five columns left out the hash is the previous golden, e4bd17a7.
  */
 const GOLDEN_SHA256 =
-  "e4bd17a746b2da215bf1f786fd4da4bb3cbf1cd47895972810bc2d07fd90a5be";
+  "14ee64649dc2efefae2a148aa78dbbc1b7aeba425dedea72b70f405bc5b41deb";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -172,6 +176,59 @@ describe("buildWarehouse: determinism and budget", () => {
 describe("buildWarehouse: integrity", () => {
   it("passes every schema check for the default seed", () => {
     expect(checkWarehouse(WAREHOUSE_SCHEMA, warehouse)).toEqual([]);
+  });
+
+  it("dates each site's initiation and first subject from the CTMS and EDC (#2880)", () => {
+    const earliest = (
+      table: string,
+      column: string,
+      keep = (_: WarehouseRow) => true
+    ) => {
+      const found = new Map<string, string>();
+      for (const row of rows(table)) {
+        const day = row[column];
+        if (typeof day !== "string" || !keep(row)) continue;
+        const site = String(row.site_id);
+        if (!found.has(site) || day < found.get(site)!) found.set(site, day);
+      }
+      return found;
+    };
+    const siv = earliest(
+      "silver.ctms_monitoring_visit",
+      "visit_date",
+      (v) => v.visit_type === "SIV"
+    );
+    const fsi = earliest("silver.edc_subject", "enrolled_on");
+    const silverSites = new Map(rows("silver.site").map((s) => [s.site_id, s]));
+    for (const site of rows("gold.dim_site")) {
+      const id = String(site.site_id);
+      expect(site.initiated_on, id).toBe(siv.get(id) ?? null);
+      expect(site.first_subject_in_on, id).toBe(fsi.get(id) ?? null);
+      for (const stage of ["selected_on", "contracted_on", "irb_approved_on"]) {
+        expect(site[stage], `${id} ${stage}`).toBe(
+          silverSites.get(site.site_id)?.[stage]
+        );
+      }
+    }
+  });
+
+  it("reports a site whose start-up stages are out of order (#2880)", () => {
+    const swapped = rows("gold.dim_site").map((site, index) =>
+      index === 0 ? { ...site, contracted_on: null } : site
+    );
+    const findings = checkWarehouse(WAREHOUSE_SCHEMA, {
+      ...warehouse,
+      tables: { ...warehouse.tables, "gold.dim_site": swapped },
+    });
+    expect(findings).toEqual([
+      {
+        rule: "sequence",
+        table: "gold.dim_site",
+        message: expect.stringMatching(
+          /^irb_approved_on = "\d{4}-\d{2}-\d{2}" without contracted_on on or before it \(null\)\.$/
+        ),
+      },
+    ]);
   });
 
   it("carries each subject's screen failure reason into every enrollment fact (#2879)", () => {

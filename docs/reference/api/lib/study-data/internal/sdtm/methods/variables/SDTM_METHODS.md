@@ -50,6 +50,14 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 > `readonly` **FIRST\_EXPOSURE**: `"Start date of the subject's exposure record (EXSTDTC); missing for subjects never dosed."` = `"Start date of the subject's exposure record (EXSTDTC); missing for subjects never dosed."`
 
+### LAB\_CATEGORY
+
+> `readonly` **LAB\_CATEGORY**: `"The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT."` = `"The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT."`
+
+### LAB\_REFERENCE\_RANGE
+
+> `readonly` **LAB\_REFERENCE\_RANGE**: `"Lower and upper limits of the test's reference range at the study's fictional central laboratory, in standard units for --STNRLO and --STNRHI (numbers) and, when the result was collected in the standard unit, in original units for --ORNRLO and --ORNRHI (text). The original-unit limits are missing when the collected unit differs."` = `"Lower and upper limits of the test's reference range at the study's fictional central laboratory, in standard units for --STNRLO and --STNRHI (numbers) and, when the result was collected in the standard unit, in original units for --ORNRLO and --ORNRHI (text). The original-unit limits are missing when the collected unit differs."`
+
 ### LAST\_EXPOSURE
 
 > `readonly` **LAST\_EXPOSURE**: `"End date of the subject's exposure record (EXENDTC); missing for subjects never dosed or with no exposure end date."` = `"End date of the subject's exposure record (EXENDTC); missing for subjects never dosed or with no exposure end date."`
@@ -89,3 +97,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 ### USDM\_ASSESSMENT
 
 > `readonly` **USDM\_ASSESSMENT**: `"Test name and standard unit of the USDM biomedical concept for the test code."` = `"Test name and standard unit of the USDM biomedical concept for the test code."`
+
+### USDM\_DOSE\_FORM
+
+> `readonly` **USDM\_DOSE\_FORM**: `"Dose form of the investigational product in the USDM administrable product, written as its Dosage Form (C66726) submission value: TABLET for C42998. Missing when the study names no investigational product or its dose form is not in the codelist."` = `"Dose form of the investigational product in the USDM administrable product, written as its Dosage Form (C66726) submission value: TABLET for C42998. Missing when the study names no investigational product or its dose form is not in the codelist."`

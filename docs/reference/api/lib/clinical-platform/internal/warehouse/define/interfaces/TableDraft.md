@@ -66,6 +66,14 @@ Default classification of the table's columns.
 
 ***
 
+### sequences?
+
+> `readonly` `optional` **sequences?**: readonly (readonly `string`[])[]
+
+Date columns reached in order. Default none.
+
+***
+
 ### source
 
 > `readonly` **source**: `string` \| `null`

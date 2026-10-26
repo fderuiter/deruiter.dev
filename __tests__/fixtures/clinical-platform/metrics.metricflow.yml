@@ -63,6 +63,61 @@ semantic_models:
         agg: median
         expr: "CASE WHEN version_number = 1 AND activated_on IS NOT NULL THEN CAST(date_diff('day', valid_from, activated_on) AS DOUBLE) END"
         agg_time_dimension: valid_from
+      - name: sites_selected__value
+        description: "Measure of sites_selected."
+        agg: sum
+        expr: "CASE WHEN version_number = 1 AND selected_on IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: sites_contracted__value
+        description: "Measure of sites_contracted."
+        agg: sum
+        expr: "CASE WHEN version_number = 1 AND contracted_on IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: sites_irb_approved__value
+        description: "Measure of sites_irb_approved."
+        agg: sum
+        expr: "CASE WHEN version_number = 1 AND irb_approved_on IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: sites_initiated__value
+        description: "Measure of sites_initiated."
+        agg: sum
+        expr: "CASE WHEN version_number = 1 AND initiated_on IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: sites_activated__value
+        description: "Measure of sites_activated."
+        agg: sum
+        expr: "CASE WHEN version_number = 1 AND activated_on IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: sites_with_first_subject_in__value
+        description: "Measure of sites_with_first_subject_in."
+        agg: sum
+        expr: "CASE WHEN version_number = 1 AND first_subject_in_on IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: valid_from
+      - name: selection_to_contract_days__value
+        description: "Measure of selection_to_contract_days."
+        agg: median
+        expr: "CASE WHEN version_number = 1 AND selected_on IS NOT NULL AND contracted_on IS NOT NULL THEN CAST(date_diff('day', selected_on, contracted_on) AS DOUBLE) END"
+        agg_time_dimension: valid_from
+      - name: contract_to_irb_approval_days__value
+        description: "Measure of contract_to_irb_approval_days."
+        agg: median
+        expr: "CASE WHEN version_number = 1 AND contracted_on IS NOT NULL AND irb_approved_on IS NOT NULL THEN CAST(date_diff('day', contracted_on, irb_approved_on) AS DOUBLE) END"
+        agg_time_dimension: valid_from
+      - name: irb_approval_to_initiation_days__value
+        description: "Measure of irb_approval_to_initiation_days."
+        agg: median
+        expr: "CASE WHEN version_number = 1 AND irb_approved_on IS NOT NULL AND initiated_on IS NOT NULL THEN CAST(date_diff('day', irb_approved_on, initiated_on) AS DOUBLE) END"
+        agg_time_dimension: valid_from
+      - name: initiation_to_activation_days__value
+        description: "Measure of initiation_to_activation_days."
+        agg: median
+        expr: "CASE WHEN version_number = 1 AND initiated_on IS NOT NULL AND activated_on IS NOT NULL THEN CAST(date_diff('day', initiated_on, activated_on) AS DOUBLE) END"
+        agg_time_dimension: valid_from
+      - name: activation_to_first_subject_in_days__value
+        description: "Measure of activation_to_first_subject_in_days."
+        agg: median
+        expr: "CASE WHEN version_number = 1 AND activated_on IS NOT NULL AND first_subject_in_on IS NOT NULL THEN CAST(date_diff('day', activated_on, first_subject_in_on) AS DOUBLE) END"
+        agg_time_dimension: valid_from
   - name: dim_study
     description: "Conformed study dimension. Grain: One row per study."
     model: "ref('dim_study')"
@@ -750,6 +805,254 @@ metrics:
     type_params:
       measure:
         name: site_activation_cycle_time__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: sites_selected
+    label: "Sites selected"
+    description: "Sites selected by the sponsor by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in."
+    type: simple
+    type_params:
+      measure:
+        name: sites_selected__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: sites
+        format: "number, 0 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: sites_contracted
+    label: "Sites contracted"
+    description: "Sites with an executed clinical trial agreement by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in."
+    type: simple
+    type_params:
+      measure:
+        name: sites_contracted__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: sites
+        format: "number, 0 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: sites_irb_approved
+    label: "Sites IRB approved"
+    description: "Sites with the study approved by their IRB or ethics committee by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in."
+    type: simple
+    type_params:
+      measure:
+        name: sites_irb_approved__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: sites
+        format: "number, 0 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: sites_initiated
+    label: "Sites initiated"
+    description: "Sites with a site initiation visit by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in."
+    type: simple
+    type_params:
+      measure:
+        name: sites_initiated__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: sites
+        format: "number, 0 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: sites_activated
+    label: "Sites activated"
+    description: "Sites activated by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in."
+    type: simple
+    type_params:
+      measure:
+        name: sites_activated__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: sites
+        format: "number, 0 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: sites_with_first_subject_in
+    label: "Sites with a first subject in"
+    description: "Sites that have enrolled a subject by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in."
+    type: simple
+    type_params:
+      measure:
+        name: sites_with_first_subject_in__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: sites
+        format: "number, 0 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: selection_to_contract_days
+    label: "Selection to executed agreement"
+    description: "Median days from a site's selection to its executed clinical trial agreement, over sites that reached both stages by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: selection_to_contract_days__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: contract_to_irb_approval_days
+    label: "Executed agreement to IRB approval"
+    description: "Median days from the executed agreement to the IRB or ethics committee's approval, over sites that reached both stages by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: contract_to_irb_approval_days__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: irb_approval_to_initiation_days
+    label: "IRB approval to initiation visit"
+    description: "Median days from IRB or ethics approval to the site initiation visit, over sites that reached both stages by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: irb_approval_to_initiation_days__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: initiation_to_activation_days
+    label: "Initiation visit to activation"
+    description: "Median days from the site initiation visit to activation, over sites that reached both stages by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: initiation_to_activation_days__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Clinical Operations Lead"
+        steward: "Clinical Operations Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Site start-up"
+        glossary_term: site-activation-term
+        allowed_dimensions:
+          - study
+          - site
+          - country
+  - name: activation_to_first_subject_in_days
+    label: "Activation to first subject in"
+    description: "Median days from activation to the first subject the site enrolled, over sites that reached both stages by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: activation_to_first_subject_in_days__value
     config:
       meta:
         version: "1.0.0"

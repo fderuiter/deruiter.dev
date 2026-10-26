@@ -102,6 +102,19 @@ function rowValues(data: ReportData, label: string) {
   );
 }
 
+/** The reports whose empty cells read zero, by panel id (#2759, #2880). */
+const ZERO_FILLED = ["query-age-bands", "site-activation-funnel"] as const;
+
+/** The site start-up stage counts, in the order sites reach them (#2880). */
+const FUNNEL = [
+  "sites_selected",
+  "sites_contracted",
+  "sites_irb_approved",
+  "sites_initiated",
+  "sites_activated",
+  "sites_with_first_subject_in",
+] as const;
+
 /** The reports that group by their own dimensions at every level (#2759). */
 const BREAKDOWNS: Readonly<Record<string, readonly MetricDimensionId[]>> = {
   "screen-failure-reasons": ["screen_failure_reason"],
@@ -151,6 +164,8 @@ describe("operations report specs (#2630)", () => {
       "screening-and-enrollment-by-month": "month",
       "screening-outcomes": "",
       "site-activation": "",
+      "site-activation-funnel": "",
+      "site-start-up-stages": "",
       "data-entry-and-queries": "",
       "query-age-bands": "",
       "protocol-deviations": "",
@@ -209,6 +224,31 @@ describe("operations report specs (#2630)", () => {
         byReason.reduce((n, row) => n + (row.value ?? 0), 0),
         label
       ).toBe(total ?? 0);
+    }
+  });
+
+  it("never lets a later start-up stage count more sites than an earlier one (#2880)", () => {
+    for (const scope of EVERY_SCOPE) {
+      const dashboard = dashboardAt(scope);
+      const funnel = panel(dashboard, "site-activation-funnel");
+      const plan = panel(dashboard, "enrollment-against-plan");
+      expect(funnel.columns.map((c) => c.metricId)).toEqual(FUNNEL);
+      const label = JSON.stringify(scope);
+      // Every group with a site has a row, and no cell reads "No rows".
+      expect(
+        funnel.rows.map((r) => r.labels),
+        label
+      ).toEqual(plan.rows.map((r) => r.labels));
+      for (const row of funnel.rows) {
+        expect(row.cells.map((c) => c.text)).not.toContain(NO_METRIC_ROWS);
+        const counts = row.cells.map((c) => c.value ?? 0);
+        counts.slice(1).forEach((count, index) => {
+          expect(
+            count,
+            `${label} ${row.labels.join()} ${FUNNEL[index + 1]}`
+          ).toBeLessThanOrEqual(counts[index]);
+        });
+      }
     }
   });
 
@@ -307,9 +347,12 @@ describe("operations dashboard numbers (#2630)", () => {
                 (d, i) => e.dimensions[d] === row.labels[i]
               )
             );
-            // A query age band with no row for a group counted none of
-            // its open queries (#2759); any other missing row has no value.
-            const missing = data.spec.id.startsWith("query-age-bands")
+            // A query age band or funnel stage with no row for a group
+            // counted none of it (#2759, #2880); any other missing row has
+            // no value.
+            const missing = ZERO_FILLED.some((id) =>
+              data.spec.id.startsWith(id)
+            )
               ? 0
               : null;
             expect(
@@ -581,7 +624,6 @@ describe("operations sections (#2630)", () => {
     }
     expect(gaps.map((g) => `${g.name} #${g.issue ?? "none"}`)).toEqual([
       "Enrollment against a time-phased plan #none",
-      "Site activation funnel #2760",
       "Query rate per 100 CRF pages #none",
       "eTMF completeness #none",
     ]);

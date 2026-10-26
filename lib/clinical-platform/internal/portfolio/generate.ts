@@ -36,6 +36,7 @@ import { studyOperations } from "./operations";
 import { studyFromPipeline } from "./pipeline";
 import type { StudySimulation } from "./records";
 import { planSites } from "./sites";
+import { startUpStages } from "./start-up";
 import { simulateStudy } from "./subjects";
 
 /** Screening pace of the study planted behind plan, against plan. */
@@ -118,6 +119,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
       );
     }
     const ops = studyOperations(seed, blueprint, plans, sim, startDay, asOfDay);
+    const startUp = startUpStages(seed, blueprint, plans, startDay, asOfDay);
 
     studies.push({
       synthetic: true,
@@ -141,6 +143,9 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
     });
 
     for (const plan of plans) {
+      const stages = startUp.get(plan.id);
+      if (stages === undefined) throw new Error(`no start-up for ${plan.id}`);
+      const day = (d: number | null) => (d === null ? null : isoDate(d));
       sites.push({
         synthetic: true,
         id: plan.id,
@@ -149,6 +154,9 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
         country: plan.country,
         name: plan.name,
         plannedEnrollment: plan.plannedEnrollment,
+        selectedOn: day(stages.selected),
+        contractedOn: day(stages.contracted),
+        irbApprovedOn: day(stages.irbApproved),
         activatedOn:
           plan.activationDay === null ? null : isoDate(plan.activationDay),
       });

@@ -138,22 +138,44 @@ function ratio(numerator: number, denominator: number): number | null {
   return Math.round((numerator / denominator) * 10_000) / 10_000;
 }
 
+/** The earliest date per site among rows, read from one date column. */
+function earliestBySite(
+  rows: readonly WarehouseRow[],
+  column: string,
+  keep: (row: WarehouseRow) => boolean = () => true
+): Map<string, string> {
+  const earliest = new Map<string, string>();
+  for (const row of rows) {
+    const day = optStr(row, column);
+    if (day === null || !keep(row)) continue;
+    const site = str(row, "site_id");
+    const known = earliest.get(site);
+    if (known === undefined || day < known) earliest.set(site, day);
+  }
+  return earliest;
+}
+
 /**
  * Builds the site dimension's versions from the study start, the activation
- * date, the principal investigator assignments and the close-out visit.
+ * date, the principal investigator assignments and the close-out visit. Each
+ * version also carries the site's start-up stages, which do not version it:
+ * the CTMS stages, the initiation visit and the first subject enrolled.
  */
 function siteVersions(silver: SilverTables) {
   const studyStart = new Map(
     silver.study.map((s) => [str(s, "study_id"), str(s, "start_on")])
   );
-  const closeOn = new Map<string, string>();
-  for (const visit of silver.ctms_monitoring_visit) {
-    if (visit.visit_type !== "COV") continue;
-    const site = str(visit, "site_id");
-    const day = str(visit, "visit_date");
-    const known = closeOn.get(site);
-    if (known === undefined || day < known) closeOn.set(site, day);
-  }
+  const closeOn = earliestBySite(
+    silver.ctms_monitoring_visit,
+    "visit_date",
+    (visit) => visit.visit_type === "COV"
+  );
+  const initiatedOn = earliestBySite(
+    silver.ctms_monitoring_visit,
+    "visit_date",
+    (visit) => visit.visit_type === "SIV"
+  );
+  const firstSubjectInOn = earliestBySite(silver.edc_subject, "enrolled_on");
   const staffBySite = new Map<string, WarehouseRow[]>();
   for (const row of silver.ctms_site_staff) {
     if (row.staff_role !== "principal-investigator") continue;
@@ -214,7 +236,12 @@ function siteVersions(silver: SilverTables) {
         site_name: site.site_name,
         country_code: site.country_code,
         planned_enrollment: site.planned_enrollment,
+        selected_on: site.selected_on,
+        contracted_on: site.contracted_on,
+        irb_approved_on: site.irb_approved_on,
+        initiated_on: initiatedOn.get(siteId) ?? null,
         activated_on: site.activated_on,
+        first_subject_in_on: firstSubjectInOn.get(siteId) ?? null,
         site_status: version.attributes.site_status,
         principal_investigator_id: version.attributes.principal_investigator_id,
         valid_from: version.validFrom,

@@ -5,6 +5,64 @@
       "contract": {
         "allowedDimensions": [
           "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "activated_on",
+                "kind": "column"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "first_subject_in_on",
+                "kind": "column"
+              }
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "activated_on",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "first_subject_in_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "activation_to_first_subject_in_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
           "study_status",
           "therapeutic_area",
           "phase",
@@ -42,6 +100,64 @@
         "unit": "share of budget"
       },
       "id": "budget_burn_vs_plan",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "contracted_on",
+                "kind": "column"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "irb_approved_on",
+                "kind": "column"
+              }
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "contracted_on",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "irb_approved_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "contract_to_irb_approval_days",
       "status": "certified",
       "version": "1.0.0"
     },
@@ -447,6 +563,122 @@
         "unit": "deviations per 100 enrolled subjects"
       },
       "id": "important_deviation_rate",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "initiated_on",
+                "kind": "column"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "activated_on",
+                "kind": "column"
+              }
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "initiated_on",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "activated_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "initiation_to_activation_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
+                "column": "irb_approved_on",
+                "kind": "column"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "initiated_on",
+                "kind": "column"
+              }
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "irb_approved_on",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "initiated_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "irb_approval_to_initiation_days",
       "status": "certified",
       "version": "1.0.0"
     },
@@ -1815,6 +2047,64 @@
             "aggregation": "median",
             "expression": {
               "from": {
+                "column": "selected_on",
+                "kind": "column"
+              },
+              "kind": "days-between",
+              "to": {
+                "column": "contracted_on",
+                "kind": "column"
+              }
+            },
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "selected_on",
+                "isNull": false,
+                "kind": "null"
+              },
+              {
+                "column": "contracted_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "days"
+      },
+      "id": "selection_to_contract_days",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "median",
+            "expression": {
+              "from": {
                 "column": "valid_from",
                 "kind": "column"
               },
@@ -1851,6 +2141,264 @@
         "unit": "days"
       },
       "id": "site_activation_cycle_time",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "activated_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "sites"
+      },
+      "id": "sites_activated",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "contracted_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "sites"
+      },
+      "id": "sites_contracted",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "initiated_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "sites"
+      },
+      "id": "sites_initiated",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "irb_approved_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "sites"
+      },
+      "id": "sites_irb_approved",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "selected_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "sites"
+      },
+      "id": "sites_selected",
+      "status": "certified",
+      "version": "1.0.0"
+    },
+    {
+      "contract": {
+        "allowedDimensions": [
+          "study",
+          "site",
+          "country"
+        ],
+        "defaultFilters": [],
+        "formula": {
+          "kind": "simple",
+          "measure": {
+            "aggregation": "count",
+            "expression": null,
+            "table": "gold.dim_site",
+            "timeKey": null,
+            "where": [
+              {
+                "kind": "compare",
+                "left": {
+                  "column": "version_number",
+                  "kind": "column"
+                },
+                "operator": "=",
+                "right": {
+                  "kind": "literal",
+                  "value": 1
+                }
+              },
+              {
+                "column": "first_subject_in_on",
+                "isNull": false,
+                "kind": "null"
+              }
+            ]
+          }
+        },
+        "grain": "portfolio",
+        "unit": "sites"
+      },
+      "id": "sites_with_first_subject_in",
       "status": "certified",
       "version": "1.0.0"
     },

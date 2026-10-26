@@ -58,6 +58,15 @@ Arm by epoch study cells.
 
 ***
 
+### doseForm
+
+> `readonly` **doseForm**: [`CodedValue`](CodedValue.md) \| `null`
+
+Dose form of the investigational product, for example `C42998` Tablet
+Dosage Form. Null when the study names no investigational product.
+
+***
+
 ### elements
 
 > `readonly` **elements**: readonly [`ElementDefinition`](ElementDefinition.md)[]

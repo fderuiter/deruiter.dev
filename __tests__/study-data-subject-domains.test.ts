@@ -448,6 +448,29 @@ describe("SDTM subject tabulation", () => {
     ).toBe(true);
   });
 
+  it("writes the dose form and lab ranges that agree with LBNRIND", () => {
+    expect(
+      records(get("EX")).every((record) => record.EXDOSFRM === "TABLET")
+    ).toBe(true);
+    const lb = records(get("LB"));
+    expect(lb.length).toBeGreaterThan(0);
+    for (const record of lb) {
+      expect(["CHEMISTRY", "HEMATOLOGY"]).toContain(record.LBCAT);
+      const value = record.LBSTRESN as number;
+      const low = record.LBSTNRLO as number;
+      const high = record.LBSTNRHI as number;
+      expect(record.LBORNRLO).toBe(String(low));
+      expect(record.LBORNRHI).toBe(String(high));
+      if (record.LBNRIND === "NORMAL") {
+        expect(value).toBeGreaterThanOrEqual(low);
+        expect(value).toBeLessThanOrEqual(high);
+      } else {
+        expect(record.LBNRIND).toBe("HIGH");
+        expect(value).toBeGreaterThan(high);
+      }
+    }
+  });
+
   it("codes every adverse event to the fictional dictionary's five levels", () => {
     const ae = records(get("AE"));
     expect(ae.length).toBeGreaterThan(0);

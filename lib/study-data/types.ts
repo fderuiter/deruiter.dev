@@ -348,6 +348,11 @@ export interface StudyDesignDefinition {
    */
   readonly pharmacologicClass:
     (CodedValue & { readonly version: string }) | null;
+  /**
+   * Dose form of the investigational product, for example `C42998` Tablet
+   * Dosage Form. Null when the study names no investigational product.
+   */
+  readonly doseForm: CodedValue | null;
   /** Planned number of subjects. */
   readonly plannedEnrollment: number;
   /** Arms, in protocol order. */

@@ -273,6 +273,341 @@ SELECT
 FROM [measure]
 ORDER BY 1, 2;
 
+-- Sites selected: sites_selected 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[selected_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Sites selected: sites_selected 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[selected_on] IS NOT NULL
+  GROUP BY [f].[study_id], [f].[site_id]
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Sites contracted: sites_contracted 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[contracted_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Sites contracted: sites_contracted 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[contracted_on] IS NOT NULL
+  GROUP BY [f].[study_id], [f].[site_id]
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Sites IRB approved: sites_irb_approved 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[irb_approved_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Sites IRB approved: sites_irb_approved 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[irb_approved_on] IS NOT NULL
+  GROUP BY [f].[study_id], [f].[site_id]
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Sites initiated: sites_initiated 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[initiated_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Sites initiated: sites_initiated 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[initiated_on] IS NOT NULL
+  GROUP BY [f].[study_id], [f].[site_id]
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Sites activated: sites_activated 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[activated_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Sites activated: sites_activated 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[activated_on] IS NOT NULL
+  GROUP BY [f].[study_id], [f].[site_id]
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Sites with a first subject in: sites_with_first_subject_in 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[first_subject_in_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Sites with a first subject in: sites_with_first_subject_in 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    COUNT(*) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[first_subject_in_on] IS NOT NULL
+  GROUP BY [f].[study_id], [f].[site_id]
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Selection to executed agreement: selection_to_contract_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[selected_on], [f].[contracted_on]) AS FLOAT)) OVER () AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[selected_on] IS NOT NULL
+    AND [f].[contracted_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Selection to executed agreement: selection_to_contract_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[selected_on], [f].[contracted_on]) AS FLOAT)) OVER (PARTITION BY [f].[study_id], [f].[site_id]) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[selected_on] IS NOT NULL
+    AND [f].[contracted_on] IS NOT NULL
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Executed agreement to IRB approval: contract_to_irb_approval_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[contracted_on], [f].[irb_approved_on]) AS FLOAT)) OVER () AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[contracted_on] IS NOT NULL
+    AND [f].[irb_approved_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Executed agreement to IRB approval: contract_to_irb_approval_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[contracted_on], [f].[irb_approved_on]) AS FLOAT)) OVER (PARTITION BY [f].[study_id], [f].[site_id]) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[contracted_on] IS NOT NULL
+    AND [f].[irb_approved_on] IS NOT NULL
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- IRB approval to initiation visit: irb_approval_to_initiation_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[irb_approved_on], [f].[initiated_on]) AS FLOAT)) OVER () AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[irb_approved_on] IS NOT NULL
+    AND [f].[initiated_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- IRB approval to initiation visit: irb_approval_to_initiation_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[irb_approved_on], [f].[initiated_on]) AS FLOAT)) OVER (PARTITION BY [f].[study_id], [f].[site_id]) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[irb_approved_on] IS NOT NULL
+    AND [f].[initiated_on] IS NOT NULL
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Initiation visit to activation: initiation_to_activation_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[initiated_on], [f].[activated_on]) AS FLOAT)) OVER () AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[initiated_on] IS NOT NULL
+    AND [f].[activated_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Initiation visit to activation: initiation_to_activation_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[initiated_on], [f].[activated_on]) AS FLOAT)) OVER (PARTITION BY [f].[study_id], [f].[site_id]) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[initiated_on] IS NOT NULL
+    AND [f].[activated_on] IS NOT NULL
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
+-- Activation to first subject in: activation_to_first_subject_in_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: none. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[activated_on], [f].[first_subject_in_on]) AS FLOAT)) OVER () AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[activated_on] IS NOT NULL
+    AND [f].[first_subject_in_on] IS NOT NULL
+)
+SELECT CAST((SELECT [value] FROM [measure]) AS FLOAT) AS [value];
+
+-- Activation to first subject in: activation_to_first_subject_in_days 1.0.0 (certified), SQL Server T-SQL.
+-- Grouped by: study, site. Filters: none.
+WITH [measure] AS (
+  SELECT DISTINCT
+    [f].[study_id] AS [study],
+    [f].[site_id] AS [site],
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(DATEDIFF(DAY, [f].[activated_on], [f].[first_subject_in_on]) AS FLOAT)) OVER (PARTITION BY [f].[study_id], [f].[site_id]) AS [value]
+  FROM [gold].[dim_site] AS [f]
+  WHERE [f].[version_number] = 1
+    AND [f].[activated_on] IS NOT NULL
+    AND [f].[first_subject_in_on] IS NOT NULL
+)
+SELECT
+  [study],
+  [site],
+  CAST([value] AS FLOAT) AS [value]
+FROM [measure]
+ORDER BY 1, 2;
+
 -- Data entry lag (median): data_entry_lag_median 1.0.0 (certified), SQL Server T-SQL.
 -- Grouped by: none. Filters: none.
 WITH [measure] AS (

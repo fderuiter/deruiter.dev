@@ -20,7 +20,7 @@ What is wrong, in one sentence.
 
 ### rule
 
-> `readonly` **rule**: `"type"` \| `"length"` \| `"table"` \| `"column"` \| `"nullability"` \| `"grain"` \| `"unique"` \| `"foreign-key"` \| `"scd2"`
+> `readonly` **rule**: `"type"` \| `"length"` \| `"table"` \| `"sequence"` \| `"column"` \| `"nullability"` \| `"grain"` \| `"unique"` \| `"foreign-key"` \| `"scd2"`
 
 Invariant that failed.
 

@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.3.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.4.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -181,9 +181,15 @@ CREATE TABLE [silver].[site] (
   [country_code]       NVARCHAR(2) NOT NULL,
   [site_name]          NVARCHAR(120) NOT NULL,
   [planned_enrollment] INT NOT NULL,
+  [selected_on]        DATE,
+  [contracted_on]      DATE,
+  [irb_approved_on]    DATE,
   [activated_on]       DATE,
   [is_synthetic]       BIT NOT NULL,
-  CONSTRAINT [pk_site] PRIMARY KEY ([site_id])
+  CONSTRAINT [pk_site] PRIMARY KEY ([site_id]),
+  CONSTRAINT [ck_site_contracted_on] CHECK ([contracted_on] IS NULL OR ([selected_on] IS NOT NULL AND [selected_on] <= [contracted_on])),
+  CONSTRAINT [ck_site_irb_approved_on] CHECK ([irb_approved_on] IS NULL OR ([contracted_on] IS NOT NULL AND [contracted_on] <= [irb_approved_on])),
+  CONSTRAINT [ck_site_activated_on] CHECK ([activated_on] IS NULL OR ([irb_approved_on] IS NOT NULL AND [irb_approved_on] <= [activated_on]))
 );
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Investigator sites, one row per site in one study. Grain: One row per site.',
@@ -219,6 +225,21 @@ EXEC sys.sp_addextendedproperty
   @level0type = N'SCHEMA', @level0name = N'silver',
   @level1type = N'TABLE', @level1name = N'site',
   @level2type = N'COLUMN', @level2name = N'planned_enrollment';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the sponsor selected the site, or null before then.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'site',
+  @level2type = N'COLUMN', @level2name = N'selected_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the clinical trial agreement was executed, or null before then.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'site',
+  @level2type = N'COLUMN', @level2name = N'contracted_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the IRB or ethics committee approved the study at the site, or null before then.',
+  @level0type = N'SCHEMA', @level0name = N'silver',
+  @level1type = N'TABLE', @level1name = N'site',
+  @level2type = N'COLUMN', @level2name = N'irb_approved_on';
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Activation date, or null before activation.',
   @level0type = N'SCHEMA', @level0name = N'silver',
@@ -1296,7 +1317,12 @@ CREATE TABLE [gold].[dim_site] (
   [site_name]                 NVARCHAR(120) NOT NULL,
   [country_code]              NVARCHAR(2) NOT NULL,
   [planned_enrollment]        INT NOT NULL,
+  [selected_on]               DATE,
+  [contracted_on]             DATE,
+  [irb_approved_on]           DATE,
+  [initiated_on]              DATE,
   [activated_on]              DATE,
+  [first_subject_in_on]       DATE,
   [site_status]               NVARCHAR(64) NOT NULL,
   [principal_investigator_id] NVARCHAR(64),
   [valid_from]                DATE NOT NULL,
@@ -1305,7 +1331,12 @@ CREATE TABLE [gold].[dim_site] (
   [is_synthetic]              BIT NOT NULL,
   CONSTRAINT [pk_dim_site] PRIMARY KEY ([site_key]),
   CONSTRAINT [uq_dim_site_1] UNIQUE ([site_id], [version_number]),
-  CONSTRAINT [uq_dim_site_2] UNIQUE ([site_id], [valid_from])
+  CONSTRAINT [uq_dim_site_2] UNIQUE ([site_id], [valid_from]),
+  CONSTRAINT [ck_dim_site_contracted_on] CHECK ([contracted_on] IS NULL OR ([selected_on] IS NOT NULL AND [selected_on] <= [contracted_on])),
+  CONSTRAINT [ck_dim_site_irb_approved_on] CHECK ([irb_approved_on] IS NULL OR ([contracted_on] IS NOT NULL AND [contracted_on] <= [irb_approved_on])),
+  CONSTRAINT [ck_dim_site_initiated_on] CHECK ([initiated_on] IS NULL OR ([irb_approved_on] IS NOT NULL AND [irb_approved_on] <= [initiated_on])),
+  CONSTRAINT [ck_dim_site_activated_on] CHECK ([activated_on] IS NULL OR ([initiated_on] IS NOT NULL AND [initiated_on] <= [activated_on])),
+  CONSTRAINT [ck_dim_site_first_subject_in_on] CHECK ([first_subject_in_on] IS NULL OR ([activated_on] IS NOT NULL AND [activated_on] <= [first_subject_in_on]))
 );
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Conformed site dimension, slowly changing type 2 on site status and principal investigator. Grain: One row per site version: a new row each time the status or the principal investigator changes.',
@@ -1352,10 +1383,35 @@ EXEC sys.sp_addextendedproperty
   @level1type = N'TABLE', @level1name = N'dim_site',
   @level2type = N'COLUMN', @level2name = N'planned_enrollment';
 EXEC sys.sp_addextendedproperty
-  @name = N'MS_Description', @value = N'Activation date.',
+  @name = N'MS_Description', @value = N'Date the site was selected (start-up stage 1).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_site',
+  @level2type = N'COLUMN', @level2name = N'selected_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the clinical trial agreement was executed (stage 2).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_site',
+  @level2type = N'COLUMN', @level2name = N'contracted_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the IRB or ethics committee approved the study at the site (stage 3).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_site',
+  @level2type = N'COLUMN', @level2name = N'irb_approved_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date of the site initiation visit (stage 4).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_site',
+  @level2type = N'COLUMN', @level2name = N'initiated_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Activation date (stage 5).',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'dim_site',
   @level2type = N'COLUMN', @level2name = N'activated_on';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the site enrolled its first subject (stage 6).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'dim_site',
+  @level2type = N'COLUMN', @level2name = N'first_subject_in_on';
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Status during the version: start-up, active or closed.',
   @level0type = N'SCHEMA', @level0name = N'gold',

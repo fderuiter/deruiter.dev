@@ -39,7 +39,7 @@ would carry.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Studies | `silver.study` | Portfolio | Portfolio Management Lead | Portfolio Data Steward | internal | No | 7 days | 99% | 10 years | 1.0.0 |
 | Planned visits | `silver.planned_visit` | Portfolio | Portfolio Management Lead | Portfolio Data Steward | internal | No | 7 days | 99% | 10 years | 1.0.0 |
-| Sites | `silver.site` | Site management | Clinical Operations Lead | Clinical Operations Data Steward | internal | No | 1 day | 99% | 10 years | 1.0.0 |
+| Sites | `silver.site` | Site management | Clinical Operations Lead | Clinical Operations Data Steward | internal | No | 1 day | 99% | 10 years | 1.1.0 |
 | Vendors | `silver.vendor` | Vendor management | Clinical Outsourcing Lead | Vendor Data Steward | internal | No | 7 days | 99% | 10 years | 1.0.0 |
 | EDC subjects | `silver.edc_subject` | EDC | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.1.0 |
 | EDC visits | `silver.edc_visit` | EDC | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
@@ -55,7 +55,7 @@ would carry.
 | Finance lines | `silver.finance_line` | Finance | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99% | 10 years | 1.0.0 |
 | Event adjudications | `silver.cec_adjudication` | Clinical events committee | Medical Safety Lead | Safety Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
 | Study dimension | `gold.dim_study` | Conformed dimensions | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Site dimension | `gold.dim_site` | Conformed dimensions | Clinical Operations Lead | Clinical Operations Data Steward | confidential | No | 1 day | 99.5% | 10 years | 1.0.0 |
+| Site dimension | `gold.dim_site` | Conformed dimensions | Clinical Operations Lead | Clinical Operations Data Steward | confidential | No | 1 day | 99.5% | 10 years | 1.1.0 |
 | Country dimension | `gold.dim_country` | Conformed dimensions | Clinical Operations Lead | Clinical Operations Data Steward | public | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Date dimension | `gold.dim_date` | Conformed dimensions | Data Platform Lead | Platform Data Steward | public | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Vendor dimension | `gold.dim_vendor` | Conformed dimensions | Clinical Outsourcing Lead | Vendor Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
@@ -87,7 +87,7 @@ would carry.
 | `silver.planned_visit` | `bronze.portfolio.studies` | `gold.fct_visit` |
 | `silver.site` | `bronze.portfolio.sites` | `gold.dim_site`, `gold.dim_country`, `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_kri_snapshot` |
 | `silver.vendor` | `bronze.portfolio.vendors` | `gold.dim_vendor` |
-| `silver.edc_subject` | `bronze.edc.subjects` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_kri_snapshot` |
+| `silver.edc_subject` | `bronze.edc.subjects` | `gold.dim_site`, `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_kri_snapshot` |
 | `silver.edc_visit` | `bronze.edc.visits` | `gold.fct_visit`, `gold.fct_kri_snapshot` |
 | `silver.edc_query` | `bronze.edc.queries` | `gold.fct_query`, `gold.fct_kri_snapshot` |
 | `silver.ctms_milestone` | `bronze.ctms.milestones` | `gold.dim_milestone`, `gold.fct_milestone` |
@@ -101,7 +101,7 @@ would carry.
 | `silver.finance_line` | `bronze.finance` | `gold.fct_spend` |
 | `silver.cec_adjudication` | `bronze.cec` | None recorded |
 | `gold.dim_study` | `silver.study` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_milestone`, `gold.fct_spend`, `gold.fct_kri_snapshot` |
-| `gold.dim_site` | `silver.ctms_monitoring_visit`, `silver.ctms_site_staff`, `silver.site`, `silver.study` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_kri_snapshot`, `enrollment_vs_plan`, `site_activation_cycle_time` |
+| `gold.dim_site` | `silver.ctms_monitoring_visit`, `silver.ctms_site_staff`, `silver.edc_subject`, `silver.site`, `silver.study` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_kri_snapshot`, `enrollment_vs_plan`, `site_activation_cycle_time`, `sites_selected`, `sites_contracted`, `sites_irb_approved`, `sites_initiated`, `sites_activated`, `sites_with_first_subject_in`, `selection_to_contract_days`, `contract_to_irb_approval_days`, `irb_approval_to_initiation_days`, `initiation_to_activation_days`, `activation_to_first_subject_in_days` |
 | `gold.dim_country` | `silver.site` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_kri_snapshot` |
 | `gold.dim_date` | None | None recorded |
 | `gold.dim_vendor` | `silver.vendor` | `gold.fct_spend` |

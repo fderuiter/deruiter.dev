@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/gold.dim_site"
 name: "Site dimension"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "Conformed dimensions"
 tags:
@@ -82,10 +82,40 @@ schema:
         description: "Enrollment target for the site."
         required: true
         classification: internal
+      - name: selected_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the site was selected (start-up stage 1)."
+        required: false
+        classification: internal
+      - name: contracted_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the clinical trial agreement was executed (stage 2)."
+        required: false
+        classification: internal
+      - name: irb_approved_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the IRB or ethics committee approved the study at the site (stage 3)."
+        required: false
+        classification: internal
+      - name: initiated_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date of the site initiation visit (stage 4)."
+        required: false
+        classification: internal
       - name: activated_on
         logicalType: date
         physicalType: DATE
-        description: "Activation date."
+        description: "Activation date (stage 5)."
+        required: false
+        classification: internal
+      - name: first_subject_in_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date the site enrolled its first subject (stage 6)."
         required: false
         classification: internal
       - name: site_status
@@ -183,6 +213,7 @@ customProperties:
     value:
       - silver.ctms_monitoring_visit
       - silver.ctms_site_staff
+      - silver.edc_subject
       - silver.site
       - silver.study
   - property: consumers
@@ -196,3 +227,14 @@ customProperties:
       - "product:gold.fct_kri_snapshot"
       - "metric:enrollment_vs_plan"
       - "metric:site_activation_cycle_time"
+      - "metric:sites_selected"
+      - "metric:sites_contracted"
+      - "metric:sites_irb_approved"
+      - "metric:sites_initiated"
+      - "metric:sites_activated"
+      - "metric:sites_with_first_subject_in"
+      - "metric:selection_to_contract_days"
+      - "metric:contract_to_irb_approval_days"
+      - "metric:irb_approval_to_initiation_days"
+      - "metric:initiation_to_activation_days"
+      - "metric:activation_to_first_subject_in_days"

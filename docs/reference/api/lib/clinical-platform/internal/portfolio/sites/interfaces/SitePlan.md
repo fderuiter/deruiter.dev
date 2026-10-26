@@ -52,6 +52,14 @@ Planted data integrity signal.
 
 ***
 
+### plannedActivationDay
+
+> `readonly` **plannedActivationDay**: `number`
+
+Day the site is planned to activate, even after the data cut.
+
+***
+
 ### plannedEnrollment
 
 > `readonly` **plannedEnrollment**: `number`

@@ -74,6 +74,16 @@ SCD type 2 settings, or `null` for a table that keeps no history.
 
 ***
 
+### sequences
+
+> `readonly` **sequences**: readonly (readonly `string`[])[]
+
+Date columns whose stages are reached in order, such as a site's
+start-up: a column holds a date only when the one before it does, on
+or before it (#2880).
+
+***
+
 ### uniqueKeys
 
 > `readonly` **uniqueKeys**: readonly (readonly `string`[])[]

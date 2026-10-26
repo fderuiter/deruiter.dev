@@ -31,6 +31,7 @@ const REQUIRED: Readonly<Record<string, ReadonlySet<string>>> = {
   AE: new Set(["STUDYID", "DOMAIN", "USUBJID", "AESEQ", "AETERM", "AEDECOD"]),
   VS: new Set(["STUDYID", "DOMAIN", "USUBJID", "VSSEQ", "VSTESTCD", "VSTEST"]),
   LB: new Set(["STUDYID", "DOMAIN", "USUBJID", "LBSEQ", "LBTESTCD", "LBTEST"]),
+  EG: new Set(["STUDYID", "DOMAIN", "USUBJID", "EGSEQ", "EGTESTCD", "EGTEST"]),
   DS: new Set(["STUDYID", "DOMAIN", "USUBJID", "DSSEQ", "DSTERM", "DSDECOD"]),
 };
 

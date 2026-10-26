@@ -16,7 +16,16 @@ import type { SdtmMethodId } from "./methods";
 import { toStandardUnit } from "./units";
 
 type Row = Record<string, CellValue>;
-type SubjectDomain = "DM" | "SV" | "EX" | "AE" | "VS" | "LB" | "DS" | "SUPPDM";
+type SubjectDomain =
+  | "DM"
+  | "SV"
+  | "EX"
+  | "AE"
+  | "VS"
+  | "LB"
+  | "EG"
+  | "DS"
+  | "SUPPDM";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -515,6 +524,66 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       ),
     ],
   },
+  EG: {
+    label: "ECG Test Results",
+    class: "Findings",
+    structure:
+      "One record per ECG observation per replicate per time point or one record per ECG observation per beat per visit per subject",
+    keys: ["STUDYID", "USUBJID", "EGSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("EG"),
+      collected("EGTESTCD", "ECG Test or Examination Short Name", "EG.EGTESTCD"),
+      derived(
+        "EGTEST",
+        "ECG Test or Examination Name",
+        "USDM_ASSESSMENT",
+        "Synonym Qualifier"
+      ),
+      derived(
+        "EGORRES",
+        "Result or Finding in Original Units",
+        "TEXT_RESULT",
+        "Result Qualifier"
+      ),
+      collected(
+        "EGORRESU",
+        "Original Units",
+        "EG.EGORRESU",
+        "Variable Qualifier"
+      ),
+      derived(
+        "EGSTRESC",
+        "Character Result/Finding in Std Format",
+        "STANDARD_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "EGSTRESN",
+        "Numeric Result/Finding in Standard Units",
+        "STANDARD_RESULT",
+        "Result Qualifier",
+        "float"
+      ),
+      derived(
+        "EGSTRESU",
+        "Standard Units",
+        "USDM_ASSESSMENT",
+        "Variable Qualifier"
+      ),
+      derived(
+        "EGLOBXFL",
+        "Last Observation Before Exposure Flag",
+        "LAST_PRE_DOSE",
+        "Record Qualifier"
+      ),
+      VISITNUM,
+      VISIT,
+      EPOCH,
+      collected("EGDTC", "Date/Time of ECG", "EG.EGDTC", "Timing", "date"),
+      derived("EGDY", "Study Day of ECG", "STUDY_DAY", "Timing", "integer"),
+    ],
+  },
   DS: {
     label: "Disposition",
     class: "Events",
@@ -668,7 +737,7 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, AE, VS, LB, DS and SUPPDM from collected records. */
+/** Derive DM, SV, EX, AE, VS, LB, EG, DS and SUPPDM from collected records. */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -879,21 +948,13 @@ export function deriveSubjectDomains(
       )
     )
   );
-  const findings = (name: "VS" | "LB") => {
-    const dates =
-      name === "VS"
-        ? {
-            date: "VSDTC",
-            code: "VSTESTCD",
-            result: "VSORRES",
-            unit: "VSORRESU",
-          }
-        : {
-            date: "LBDTC",
-            code: "LBTESTCD",
-            result: "LBORRES",
-            unit: "LBORRESU",
-          };
+  const findings = (name: "VS" | "LB" | "EG") => {
+    const dates = {
+      date: `${name}DTC`,
+      code: `${name}TESTCD`,
+      result: `${name}ORRES`,
+      unit: `${name}ORRESU`,
+    };
     const records = get(name);
     const baseline = new Map<string, { date: string; source: string }>();
     for (const record of records) {
@@ -1000,6 +1061,7 @@ export function deriveSubjectDomains(
     numbered("AE", ae),
     numbered("VS", findings("VS")),
     numbered("LB", findings("LB")),
+    numbered("EG", findings("EG")),
     numbered("DS", ds),
     table("SUPPDM", suppdm),
   ];

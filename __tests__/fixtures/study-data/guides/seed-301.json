@@ -166,6 +166,15 @@
         "file": "lb.xpt"
       },
       {
+        "name": "EG",
+        "label": "ECG Test Results",
+        "class": "Findings",
+        "structure": "One record per ECG observation per replicate per time point or one record per ECG observation per beat per visit per subject",
+        "keys": ["STUDYID", "USUBJID", "EGSEQ"],
+        "records": 1620,
+        "file": "eg.xpt"
+      },
+      {
         "name": "DS",
         "label": "Disposition",
         "class": "Events",
@@ -190,7 +199,7 @@
       "terminologyVersion": "2026-09-25",
       "scopeNotice": "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.",
       "coreUrl": "https://www.cdisc.org/core",
-      "rulesChecked": 47,
+      "rulesChecked": 54,
       "issues": [
         {
           "ruleId": "SD-031",
@@ -302,6 +311,7 @@
           "AE.AEENDY",
           "VS.VSDY",
           "LB.LBDY",
+          "EG.EGDY",
           "DS.DSSTDY"
         ]
       },
@@ -313,6 +323,7 @@
           "AE.AESEQ",
           "VS.VSSEQ",
           "LB.LBSEQ",
+          "EG.EGSEQ",
           "DS.DSSEQ"
         ]
       },
@@ -334,6 +345,7 @@
           "AE.EPOCH",
           "VS.EPOCH",
           "LB.EPOCH",
+          "EG.EPOCH",
           "DS.EPOCH"
         ]
       },
@@ -361,12 +373,19 @@
       {
         "id": "USDM_ASSESSMENT",
         "text": "Test name and standard unit of the USDM biomedical concept for the test code.",
-        "variables": ["VS.VSTEST", "VS.VSSTRESU", "LB.LBTEST", "LB.LBSTRESU"]
+        "variables": [
+          "VS.VSTEST",
+          "VS.VSSTRESU",
+          "LB.LBTEST",
+          "LB.LBSTRESU",
+          "EG.EGTEST",
+          "EG.EGSTRESU"
+        ]
       },
       {
         "id": "TEXT_RESULT",
         "text": "The collected numeric result written as text.",
-        "variables": ["VS.VSORRES", "LB.LBORRES"]
+        "variables": ["VS.VSORRES", "LB.LBORRES", "EG.EGORRES"]
       },
       {
         "id": "STANDARD_RESULT",
@@ -375,13 +394,15 @@
           "VS.VSSTRESC",
           "VS.VSSTRESN",
           "LB.LBSTRESC",
-          "LB.LBSTRESN"
+          "LB.LBSTRESN",
+          "EG.EGSTRESC",
+          "EG.EGSTRESN"
         ]
       },
       {
         "id": "LAST_PRE_DOSE",
         "text": "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
-        "variables": ["VS.VSLOBXFL", "LB.LBLOBXFL"]
+        "variables": ["VS.VSLOBXFL", "LB.LBLOBXFL", "EG.EGLOBXFL"]
       },
       {
         "id": "LAB_CATEGORY",

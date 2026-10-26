@@ -325,6 +325,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     freshnessHours: MONTHLY_TRANSFER,
     availability: GOLD_AVAILABILITY,
     retention: TRIAL,
-    version: "2.4.0",
+    // 2.5.0 (#2942): the SDTM EG dataset.
+    version: "2.5.0",
   },
 };

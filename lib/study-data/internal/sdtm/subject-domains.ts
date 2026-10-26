@@ -8,7 +8,7 @@ import type {
   VariableRole,
 } from "../../types";
 import { terminologyCodelist } from "../conformance/terminology";
-import { codeAeTerm } from "./ae-dictionary";
+import { codeAeTerm, codeHistoryTerm } from "./ae-dictionary";
 import { codeMedication } from "./cm-dictionary";
 import { sdtmCodelist } from "./codelists";
 import { labReference } from "./lab-ranges";
@@ -18,7 +18,17 @@ import { toStandardUnit } from "./units";
 
 type Row = Record<string, CellValue>;
 type SubjectDomain =
-  "DM" | "SV" | "EX" | "CM" | "AE" | "VS" | "LB" | "EG" | "DS" | "SUPPDM";
+  | "DM"
+  | "SV"
+  | "EX"
+  | "CM"
+  | "AE"
+  | "MH"
+  | "VS"
+  | "LB"
+  | "EG"
+  | "DS"
+  | "SUPPDM";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -362,6 +372,74 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing"
       ),
       derived("CMENTPT", "End Reference Time Point", "CM_ONGOING", "Timing"),
+    ],
+  },
+  MH: {
+    label: "Medical History",
+    class: "Events",
+    structure: "One record per medical history event per subject",
+    keys: ["STUDYID", "USUBJID", "MHSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("MH"),
+      collected(
+        "MHTERM",
+        "Reported Term for the Medical History",
+        "MH.MHTERM"
+      ),
+      derived(
+        "MHDECOD",
+        "Dictionary-Derived Term",
+        "MH_DICTIONARY_CODING",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "MHCAT",
+        "Category for Medical History",
+        "MH.MHCAT",
+        "Grouping Qualifier"
+      ),
+      derived(
+        "MHBODSYS",
+        "Body System or Organ Class",
+        "MH_DICTIONARY_CODING",
+        "Record Qualifier"
+      ),
+      collected(
+        "MHDTC",
+        "Date/Time of History Collection",
+        "MH.MHDTC",
+        "Timing",
+        "date"
+      ),
+      collected(
+        "MHSTDTC",
+        "Start Date/Time of Medical History Event",
+        "MH.MHSTDTC",
+        "Timing",
+        "date"
+      ),
+      collected(
+        "MHENDTC",
+        "End Date/Time of Medical History Event",
+        "MH.MHENDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "MHDY",
+        "Study Day of History Collection",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "MHENRTPT",
+        "End Relative to Reference Time Point",
+        "MH_ONGOING",
+        "Timing"
+      ),
+      derived("MHENTPT", "End Reference Time Point", "MH_ONGOING", "Timing"),
     ],
   },
   AE: {
@@ -827,7 +905,7 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, CM, AE, VS, LB, EG, DS and SUPPDM from collected records. */
+/** Derive DM, SV, EX, CM, AE, MH, VS, LB, EG, DS and SUPPDM from collected records. */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -1069,6 +1147,28 @@ export function deriveSubjectDomains(
       exposure
     );
   });
+  const mh = get("MH").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    const coding = codeHistoryTerm(record.MHTERM);
+    const ongoing = record.MHONGO === "Y";
+    return item(
+      {
+        ...common(record.USUBJID, "MH"),
+        MHTERM: record.MHTERM,
+        MHDECOD: coding?.pt ?? null,
+        MHCAT: record.MHCAT,
+        MHBODSYS: coding?.soc ?? null,
+        MHDTC: record.MHDTC,
+        MHSTDTC: record.MHSTDTC,
+        MHENDTC: record.MHENDTC,
+        MHDY: day(record.MHDTC, exposure?.EXSTDTC ?? null),
+        MHENRTPT: ongoing ? "ONGOING" : null,
+        MHENTPT: ongoing ? "SCREENING" : null,
+      },
+      record,
+      exposure
+    );
+  });
   const assessmentByCode = new Map(
     definition.design.activities.flatMap((activity) =>
       activity.assessments.map(
@@ -1188,6 +1288,7 @@ export function deriveSubjectDomains(
     numbered("EX", ex),
     numbered("CM", cm),
     numbered("AE", ae),
+    numbered("MH", mh),
     numbered("VS", findings("VS")),
     numbered("LB", findings("LB")),
     numbered("EG", findings("EG")),

@@ -72,11 +72,19 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### LAST\_PARTICIPATION
 
-> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."`
+> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."`
 
 ### LAST\_PRE\_DOSE
 
 > `readonly` **LAST\_PRE\_DOSE**: `"Y on the subject's latest record for the test dated on or before first exposure; missing otherwise."` = `"Y on the subject's latest record for the test dated on or before first exposure; missing otherwise."`
+
+### MH\_DICTIONARY\_CODING
+
+> `readonly` **MH\_DICTIONARY\_CODING**: `"Looked up from the reported term (MHTERM) in the study's fictional event dictionary, the one adverse events are coded with, which has MedDRA's shape but is not MedDRA: MHDECOD is the preferred term and MHBODSYS its primary system organ class, and the codes are synthetic, from 99000000. Missing when the reported term is not in the dictionary."` = `"Looked up from the reported term (MHTERM) in the study's fictional event dictionary, the one adverse events are coded with, which has MedDRA's shape but is not MedDRA: MHDECOD is the preferred term and MHBODSYS its primary system organ class, and the codes are synthetic, from 99000000. Missing when the reported term is not in the dictionary."`
+
+### MH\_ONGOING
+
+> `readonly` **MH\_ONGOING**: `"When the condition was marked ongoing at the screening visit, MHENRTPT is ONGOING (Relation to Reference Period, C66728) and MHENTPT is SCREENING; both are missing otherwise."` = `"When the condition was marked ongoing at the screening visit, MHENRTPT is ONGOING (Relation to Reference Period, C66728) and MHENTPT is SCREENING; both are missing otherwise."`
 
 ### PLANNED\_VISIT
 

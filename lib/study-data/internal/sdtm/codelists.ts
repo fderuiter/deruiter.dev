@@ -23,6 +23,7 @@ export const SDTM_CODELISTS: Readonly<Record<string, CodelistId>> =
     CMDOSFRQ: "FREQ",
     CMROUTE: "ROUTE",
     CMENRTPT: "STENRF",
+    MHENRTPT: "STENRF",
     AESER: "NY",
     AESCONG: "NY",
     AESDISAB: "NY",

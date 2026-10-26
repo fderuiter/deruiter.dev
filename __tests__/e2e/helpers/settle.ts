@@ -126,9 +126,18 @@ export async function waitForVisualSettle(
           .map((animation) => {
             const target = (animation.effect as KeyframeEffect | null)
               ?.target as Element | null;
+            const kind =
+              (animation as Animation & { transitionProperty?: string })
+                .transitionProperty ??
+              (animation as Animation & { animationName?: string })
+                .animationName ??
+              animation.constructor.name;
+            const timing = animation.effect?.getComputedTiming();
             return `${target?.tagName.toLowerCase() ?? "?"}.${String(
               target?.getAttribute("class") ?? ""
-            ).slice(0, 60)}`;
+            ).slice(0, 40)} (${kind} ${Math.round(
+              Number(timing?.localTime ?? 0)
+            )}/${Math.round(Number(timing?.endTime ?? 0))}ms)`;
           })
           .slice(0, 8);
         return { mutations: w.__e2eSettle?.recent ?? [], animations };

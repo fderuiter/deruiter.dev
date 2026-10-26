@@ -148,6 +148,7 @@
 - [lib/clinical-platform/internal/reporting/pack](lib/clinical-platform/internal/reporting/pack/README.md)
 - [lib/clinical-platform/internal/reporting/portfolio](lib/clinical-platform/internal/reporting/portfolio/README.md)
 - [lib/clinical-platform/internal/reporting/portfolio-forecast](lib/clinical-platform/internal/reporting/portfolio-forecast/README.md)
+- [lib/clinical-platform/internal/reporting/portfolio-risk](lib/clinical-platform/internal/reporting/portfolio-risk/README.md)
 - [lib/clinical-platform/internal/semantic/check](lib/clinical-platform/internal/semantic/check/README.md)
 - [lib/clinical-platform/internal/semantic/describe](lib/clinical-platform/internal/semantic/describe/README.md)
 - [lib/clinical-platform/internal/semantic/dimensions](lib/clinical-platform/internal/semantic/dimensions/README.md)

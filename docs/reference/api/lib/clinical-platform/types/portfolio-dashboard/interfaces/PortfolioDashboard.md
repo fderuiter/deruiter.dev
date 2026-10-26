@@ -43,6 +43,14 @@ subject in, last subject not yet in. In study id order (#2913).
 
 ***
 
+### risk
+
+> `readonly` **risk**: [`PortfolioRiskHeatmap`](PortfolioRiskHeatmap.md)
+
+Schedule, budget and quality for every study (#2914).
+
+***
+
 ### swimlane
 
 > `readonly` **swimlane**: [`PortfolioSwimlane`](PortfolioSwimlane.md)

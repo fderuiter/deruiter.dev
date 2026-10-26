@@ -171,6 +171,51 @@ export interface PortfolioForecast {
   readonly countries: readonly PortfolioForecastCountry[];
 }
 
+/** How a study stands on one dimension of the risk heatmap (#2914). */
+export type PortfolioRiskRating = "green" | "amber" | "red";
+
+/** The dimensions of the risk heatmap, in column order (#2914). */
+export type PortfolioRiskDimension = "schedule" | "budget" | "quality";
+
+/** One cell of the risk heatmap: a study's rating on one dimension (#2914). */
+export interface PortfolioRiskCell {
+  readonly dimension: PortfolioRiskDimension;
+  readonly rating: PortfolioRiskRating;
+  /** Why, in words: the values the rule read against its thresholds. */
+  readonly reason: string;
+}
+
+/** One study's row of the risk heatmap (#2914). */
+export interface PortfolioRiskRow {
+  readonly studyId: string;
+  readonly title: string;
+  /** Whether the study has an enrollment forecast on the page. */
+  readonly enrolling: boolean;
+  readonly schedule: PortfolioRiskCell;
+  readonly budget: PortfolioRiskCell;
+  readonly quality: PortfolioRiskCell;
+}
+
+/** A heatmap column's rule, written from its thresholds (#2914). */
+export interface PortfolioRiskRule {
+  readonly dimension: PortfolioRiskDimension;
+  readonly name: string;
+  /** When a study rates green, amber and red, in words. */
+  readonly green: string;
+  readonly amber: string;
+  readonly red: string;
+  /** Why these thresholds. */
+  readonly reason: string;
+}
+
+/** Schedule, budget and quality for every study, rated by stated rules (#2914). */
+export interface PortfolioRiskHeatmap {
+  /** The rule of each column, in column order. */
+  readonly rules: readonly PortfolioRiskRule[];
+  /** One row per study, in study id order. */
+  readonly rows: readonly PortfolioRiskRow[];
+}
+
 /** The /platform/portfolio dashboard over one warehouse (#2911). */
 export interface PortfolioDashboard {
   /** ISO 8601 data cut of the warehouse. */
@@ -185,4 +230,6 @@ export interface PortfolioDashboard {
    * subject in, last subject not yet in. In study id order (#2913).
    */
   readonly forecasts: readonly PortfolioForecast[];
+  /** Schedule, budget and quality for every study (#2914). */
+  readonly risk: PortfolioRiskHeatmap;
 }

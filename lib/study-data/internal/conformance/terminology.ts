@@ -62,6 +62,7 @@ export const DECODE_VARIABLES: Readonly<Record<string, string>> = Object.freeze(
     PARAMCD: "PARAM",
     VSTESTCD: "VSTEST",
     LBTESTCD: "LBTEST",
+    EGTESTCD: "EGTEST",
   }
 );
 
@@ -98,6 +99,7 @@ export type CodelistId =
   | "EPOCH"
   | "VSTESTCD"
   | "LBTESTCD"
+  | "EGTESTCD"
   | "VSRESU"
   | "UNIT"
   | "FRM"
@@ -140,6 +142,7 @@ const CODELISTS = [
     term("AE", "C49562"),
     term("DM", "C49572"),
     term("DS", "C49576"),
+    term("EG", "C49626"),
     term("EX", "C49587"),
     term("LB", "C49592"),
     term("SV", "C49617"),
@@ -177,6 +180,16 @@ const CODELISTS = [
     ]),
     fromData: true,
   },
+  {
+    ...cdisc("EGTESTCD", "ECG Test Code", "SDTM", "C71153", true, [
+      term("EGHRMN", "C119259"),
+      term("PRAG", "C117773"),
+      term("QRSAG", "C117779"),
+      term("QTAG", "C117783"),
+      term("RRAG", "C117791"),
+    ]),
+    fromData: true,
+  },
   cdisc("VSRESU", "Units for Vital Signs Results", "SDTM", "C66770", true, [
     term("mmHg", "C49670"),
     term("beats/min", "C49673"),
@@ -190,6 +203,8 @@ const CODELISTS = [
     term("g/L", "C42576"),
     term("10^9/L", "C67255"),
     term("TABLET", "C48542"),
+    term("ms", "C41140"),
+    term("beats/min", "C49673"),
   ]),
   cdisc("FRM", "Dosage Form", "SDTM", "C66726", true, [
     term("TABLET", "C42998"),

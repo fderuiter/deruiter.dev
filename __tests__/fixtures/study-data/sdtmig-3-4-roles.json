@@ -179,6 +179,25 @@
     "LBDTC": "Timing",
     "LBDY": "Timing"
   },
+  "EG": {
+    "STUDYID": "Identifier",
+    "DOMAIN": "Identifier",
+    "USUBJID": "Identifier",
+    "EGSEQ": "Identifier",
+    "EGTESTCD": "Topic",
+    "EGTEST": "Synonym Qualifier",
+    "EGORRES": "Result Qualifier",
+    "EGORRESU": "Variable Qualifier",
+    "EGSTRESC": "Result Qualifier",
+    "EGSTRESN": "Result Qualifier",
+    "EGSTRESU": "Variable Qualifier",
+    "EGLOBXFL": "Record Qualifier",
+    "VISITNUM": "Timing",
+    "VISIT": "Timing",
+    "EPOCH": "Timing",
+    "EGDTC": "Timing",
+    "EGDY": "Timing"
+  },
   "DS": {
     "STUDYID": "Identifier",
     "DOMAIN": "Identifier",

@@ -23,6 +23,10 @@
     "rows": 2592,
     "sha256": "713b37aa75d45a30135f481cb46e144214d5f111be6140ea2bc9059e7eaea8d7"
   },
+  "EG": {
+    "rows": 1620,
+    "sha256": "f1f01cca64e7ee64ac2716160f1e391c0fbf3e762a455f909bfbe9d4c08037d5"
+  },
   "DS": {
     "rows": 261,
     "sha256": "1dc4f778fb8ef42d7db86de7e932202b8d07f155c9f52b4279b82dcc3b77a6d0"

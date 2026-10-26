@@ -292,3 +292,56 @@ the gold model cannot compute, such as eTMF completeness or an adverse event
 reporting rate, are listed with what they need in the
 [metric catalog](../docs/reference/clinical-platform-metrics.md) rather
 than approximated.
+
+## Amendment 2026-10-26: The SQL workbench's engine
+
+[#2633](https://github.com/fderuiter/deruiter.dev/issues/2633) built
+`/platform/sql`. Six details fill in the decision above.
+
+- **One engine build, pinned.** The page runs `@duckdb/duckdb-wasm` 1.32.0
+  (DuckDB v1.4.3) and reads results with `apache-arrow` 17.0.0, both
+  pinned exactly. It ships only the build that needs WebAssembly exception
+  handling (`duckdb-eh.wasm`), which current Chrome, Edge, Firefox and
+  Safari all support; a browser without it is told so rather than sent a
+  second 30 MB binary. The engine's files are bundled assets served from
+  this origin, never a CDN.
+- **Two workers.** A data worker builds the synthetic warehouse and hands
+  the engine its load (`workbenchLoad`): the gold DDL, each table as CSV
+  and its `COPY`, then `WORKBENCH_ENGINE_SETTINGS`, run last so nothing
+  after them can reopen file, network or extension access. The engine runs
+  in DuckDB's own worker. Both start only when the visitor presses Start.
+- **WebAssembly allowed on one route.** The site's Content-Security-Policy
+  refuses WebAssembly. `WASM_POLICY_SOURCES` in `lib/security-headers.ts`
+  adds `'wasm-unsafe-eval'`, which compiles WebAssembly and never evaluates
+  JavaScript, to `/platform/sql` and to the engine worker's script only.
+  The worker needs it: Chromium compiles under the worker script's own
+  policy, and `__tests__/e2e/platform-sql.spec.ts` shows the engine cannot
+  start when only the worker's allowance is removed. The page carries it
+  too because browsers have disagreed on whether a dedicated worker takes
+  its own response's policy or its page's. A refused compile fails inside
+  DuckDB's worker without ever answering, so a start that goes a minute
+  without progress is given up with a message rather than left waiting.
+- **Bounded queries.** One query runs at a time and is checked by
+  `checkWorkbenchSql` before DuckDB sees it. A result keeps 10,000 rows
+  for the grid and the CSV and counts the rest. A query stops after 30
+  seconds or when the visitor stops it; a stop that does not land within
+  five seconds shuts the engine down, and the visitor starts it again.
+- **The cost of a start.** The binary is 34 MB, about 7 MB as the CDN
+  compresses it. Its file name carries a hash of its content and
+  `_next/static` files are cached as immutable, so a browser downloads it
+  once until the engine is upgraded. On the Hobby plan's 100 GB of
+  monthly transfer that is roughly 14,000 first starts. The binary is the
+  largest file in the deployment, so the first deploy that carries it is
+  checked for upload and file-size limits before it is promoted.
+
+- **Not a chunk budget.** The engine's JavaScript (the browser API and
+  Apache Arrow) is one lazy chunk of about 46 KB gzipped, inside the
+  default single-chunk ceiling, so `lib/dx/bundle-guard.ts` needs no entry
+  of its own. The binary and its worker are media files the chunk guard
+  does not read; they are kept out of the service worker's precache and
+  runtime cache, and the end-to-end test checks the page requests neither
+  before the visitor presses Start.
+
+`platform-sql-engine.test.ts` runs every saved query on the same WebAssembly
+binary through the blocking Node build and compares each result with the
+native engine.

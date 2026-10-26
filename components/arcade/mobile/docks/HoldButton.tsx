@@ -7,8 +7,9 @@ import {
   DOCK_KEY_PX,
   DOCK_KEY_STYLE,
   dockActionLabel,
-  useDockHeight,
   type DockSize,
+  useDockHeight,
+  useDockSize,
 } from "./dock-kit";
 
 /** Props for {@link HoldButton}. */
@@ -18,7 +19,7 @@ export interface HoldButtonProps<A extends string> {
   action: A;
   /** Drawn before the label. */
   icon?: React.ReactNode;
-  /** Defaults to `md`. */
+  /** Defaults to this device's key size, from the Setup sheet. */
   size?: DockSize;
   className?: string;
 }
@@ -36,9 +37,10 @@ export function HoldButton<A extends string>({
   map,
   action,
   icon,
-  size = "md",
+  size: sizeProp,
   className = "",
 }: HoldButtonProps<A>) {
+  const size = useDockSize(sizeProp);
   const dockRef = useDockHeight<HTMLDivElement>();
   const [held, setHeld] = useState(false);
   const edge = DOCK_KEY_PX[size];

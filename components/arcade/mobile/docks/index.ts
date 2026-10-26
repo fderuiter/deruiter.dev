@@ -21,7 +21,9 @@ export {
   DOCK_KEY_CLASS,
   DOCK_KEY_PX,
   dockActionLabel,
+  useDockHandedness,
   useDockHeight,
+  useDockSize,
   type DockSize,
 } from "./dock-kit";
 export { axisVector } from "./axis-pointer";

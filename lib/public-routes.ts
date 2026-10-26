@@ -51,6 +51,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "tool",
   },
   {
+    path: "/platform/sql",
+    name: "In-Browser Clinical SQL Workbench",
+    category: "tool",
+  },
+  {
     path: "/platform/governance",
     name: "Clinical Data Governance & Catalog",
     category: "tool",

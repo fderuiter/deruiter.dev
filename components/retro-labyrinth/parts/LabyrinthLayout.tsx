@@ -21,7 +21,6 @@ import {
   TouchButton,
   useControlHint,
   useInputModality,
-  type Handedness,
 } from "@/components/arcade/mobile";
 import {
   ActionCluster,
@@ -35,6 +34,7 @@ import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/
 import {
   ActionSinkProvider,
   useActionInput,
+  setDeviceSettings,
   useDeviceSettings,
   type ActionDefinition,
   type ActionInput,
@@ -337,7 +337,9 @@ export function LabyrinthLayout({
     pendingMoreRef.current = null;
     pending?.();
   }, [moreOpen, gameStatus]);
-  const { dockSize: chosenDockSize } = useDeviceSettings();
+  // Key size and dominant hand are this device's settings, shared with the
+  // cabinet's Setup sheet and every other game (#2924).
+  const { dockSize: chosenDockSize, handedness } = useDeviceSettings();
   const roomForMd = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.md}px)`);
   const roomForLg = useMediaQuery(`(min-width: ${PHONE_DOCK_MIN_WIDTH.lg}px)`);
   // A phone held upright shows the rotate prompt, not the maze, so its keys
@@ -352,7 +354,6 @@ export function LabyrinthLayout({
     [loadout, weapons]
   );
   const phoneActions = useMemo(() => phoneActionMap(toolSlots), [toolSlots]);
-  const [handedness, setHandedness] = useState<Handedness>("right");
   const swipeStartRef = useRef<{ id: number; x: number; y: number } | null>(
     null
   );
@@ -1307,7 +1308,7 @@ export function LabyrinthLayout({
                         key={hand}
                         type="button"
                         aria-pressed={handedness === hand}
-                        onClick={() => setHandedness(hand)}
+                        onClick={() => setDeviceSettings({ handedness: hand })}
                         className={`min-h-11 min-w-11 rounded-lg border px-3 text-xs font-bold capitalize ${
                           handedness === hand
                             ? "border-amber-500/50 bg-amber-500/20 text-amber-300"

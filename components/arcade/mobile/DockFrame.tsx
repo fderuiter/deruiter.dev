@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useDockHandedness } from "./docks/dock-kit";
 
 /**
  * The dominant hand. `right` keeps the movement group on the left and the
@@ -10,7 +11,7 @@ import React from "react";
 export type Handedness = "left" | "right";
 
 export interface DockFrameProps {
-  /** Which thumb works the actions. Defaults to `right`. */
+  /** Which thumb works the actions. Defaults to this device's hand. */
   handedness?: Handedness;
   /** Pass the movement dock first and the action dock second. */
   children: React.ReactNode;
@@ -24,16 +25,19 @@ export interface DockFrameProps {
  * them, and each dock centres itself in its own column.
  */
 export const DockFrame: React.FC<DockFrameProps> = ({
-  handedness = "right",
+  handedness: handednessProp,
   children,
   className = "",
-}) => (
-  <div
-    data-handedness={handedness}
-    className={`flex w-full items-stretch justify-between gap-1 ${
-      handedness === "left" ? "flex-row-reverse" : "flex-row"
-    } ${className}`}
-  >
-    {children}
-  </div>
-);
+}) => {
+  const handedness = useDockHandedness(handednessProp);
+  return (
+    <div
+      data-handedness={handedness}
+      className={`flex w-full items-stretch justify-between gap-1 ${
+        handedness === "left" ? "flex-row-reverse" : "flex-row"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+};

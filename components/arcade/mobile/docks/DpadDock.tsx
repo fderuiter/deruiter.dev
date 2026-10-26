@@ -25,6 +25,7 @@ import {
   DOCK_KEY_STYLE,
   dockActionLabel,
   useDockHeight,
+  useDockSize,
   type DockSize,
 } from "./dock-kit";
 
@@ -87,7 +88,7 @@ const DIAGONALS: ReadonlySet<DpadDirection> = new Set([
 /** Props for {@link DpadDock}. */
 export type DpadDockProps<A extends string> = {
   map: ActionMap<A>;
-  /** Defaults to `md`. */
+  /** Defaults to this device's key size, from the Setup sheet. */
   size?: DockSize;
   /** True while the game takes no input; a hold in progress lets go. */
   paused?: boolean;
@@ -172,7 +173,8 @@ function PressArrow<A extends string>({
  * @returns The pad.
  */
 export function DpadDock<A extends string>(props: DpadDockProps<A>) {
-  const { map, size = "md", paused = false, className = "" } = props;
+  const { map, paused = false, className = "" } = props;
+  const size = useDockSize(props.size);
   const dockRef = useDockHeight<HTMLDivElement>();
   const sink = useActionSink();
   const heldRef = useRef<Set<DpadDirection>>(new Set());

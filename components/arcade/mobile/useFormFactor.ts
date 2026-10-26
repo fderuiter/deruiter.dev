@@ -6,15 +6,17 @@ import {
   parseViewOverride,
   type FormFactor,
 } from "@/lib/arcade/form-factor";
+import { layoutFits, useDeviceSettings } from "@/lib/arcade";
 import { getMatchMediaMatches } from "@/hooks/useMediaQuery";
 import { TOUCH_DEVICE_QUERY } from "./immersive";
 
 /** Options for {@link useFormFactor}. */
 export interface UseFormFactorOptions {
   /**
-   * A forced view, such as the player's Layout setting. `"auto"` or
-   * undefined lets the size and pointer decide. A `?view=` URL parameter
-   * wins over this, so tests and debugging can force any view.
+   * A forced view, such as the cabinet's developer view picker. `"auto"` or
+   * undefined leaves it to this device's Layout setting (#2924), then the
+   * size and pointer. A `?view=` URL parameter wins over this, so tests and
+   * debugging can force any view.
    */
   readonly override?: FormFactor | "auto";
   /**
@@ -113,6 +115,11 @@ function getSnapshot(): FormFactor {
 const serverSnapshot = (): FormFactor => "desktop";
 
 const noSubscription = () => () => {};
+function subscribeResize(callback: () => void): () => void {
+  window.addEventListener("resize", callback);
+  return () => window.removeEventListener("resize", callback);
+}
+const noFit = () => false;
 const readUrlOverride = (): FormFactor | null =>
   parseViewOverride(window.location?.search ?? "");
 const noUrlOverride = (): FormFactor | null => null;
@@ -124,7 +131,9 @@ const noUrlOverride = (): FormFactor | null => null;
  * never the visual viewport (pinch zoom and the on-screen keyboard shrink
  * it). It re-decides on resize, rotation and pointer changes, with 24 px
  * hysteresis so a size on the line does not flip views, and holds its choice
- * while a text field has focus. The server and the first client
+ * while a text field has focus. This device's Layout setting from the
+ * cabinet's Setup sheet picks a view instead while the window is wide enough
+ * for it; in a narrower window Auto applies until it fits again (#2924). The server and the first client
  * render return `"desktop"`; views mount only after Launch, so nothing
  * depends on the server value.
  *
@@ -132,7 +141,7 @@ const noUrlOverride = (): FormFactor | null => null;
  * CSS-first surfaces, the desktop-only gate and the hub badges, which must be
  * right before hydration.
  *
- * @param options - A forced view, such as the player's Layout setting.
+ * @param options - Whether to measure, and a forced view such as the developer view picker.
  * @returns The view to show.
  */
 export function useFormFactor(options: UseFormFactorOptions = {}): FormFactor {
@@ -147,8 +156,15 @@ export function useFormFactor(options: UseFormFactorOptions = {}): FormFactor {
     readUrlOverride,
     noUrlOverride
   );
+  const { layout } = useDeviceSettings();
+  const layoutApplies = useSyncExternalStore(
+    enabled && layout !== "auto" ? subscribeResize : noSubscription,
+    () => layout !== "auto" && layoutFits(layout, window.innerWidth),
+    noFit
+  );
   if (!enabled) return "desktop";
   if (urlOverride) return urlOverride;
   if (options.override && options.override !== "auto") return options.override;
+  if (layout !== "auto" && layoutApplies) return layout;
   return measured;
 }

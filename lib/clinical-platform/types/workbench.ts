@@ -79,3 +79,46 @@ export interface WorkbenchSqlFinding {
   /** What is wrong, in a sentence a visitor can act on. */
   readonly message: string;
 }
+
+/** One column of a query's result in the SQL workbench (#2633). */
+export interface WorkbenchResultColumn {
+  readonly name: string;
+  /** The engine's type for the column, for example `Int64` or `Utf8`. */
+  readonly type: string;
+  /** Whether the column holds numbers, so it aligns right and exports unquoted. */
+  readonly numeric: boolean;
+}
+
+/** The rows a query returned in the SQL workbench (#2633). */
+export interface WorkbenchResult {
+  readonly columns: readonly WorkbenchResultColumn[];
+  /** Each value as text, `null` for SQL NULL, in column order. */
+  readonly rows: readonly (readonly (string | null)[])[];
+  /** Rows the query returned, which is more than `rows` holds when truncated. */
+  readonly rowCount: number;
+  /** Whether rows past the workbench's limit were counted but not kept. */
+  readonly truncated: boolean;
+  /** Time the engine took, in milliseconds. */
+  readonly elapsedMs: number;
+}
+
+/** One gold table's rows, ready for the SQL workbench's engine to load (#2633). */
+export interface WorkbenchLoadFile {
+  /** Qualified table name, for example `gold.fct_query`. */
+  readonly table: string;
+  /** Name the CSV is registered under in the engine's virtual file system. */
+  readonly fileName: string;
+  /** The rows as CSV, from `exportWarehouse`. */
+  readonly text: string;
+  /** The statement that copies the file into its table. */
+  readonly copy: string;
+}
+
+/** Everything the SQL workbench's engine runs to become the read-only warehouse (#2633). */
+export interface WorkbenchLoad {
+  /** DuckDB DDL for the gold tables, with their descriptions as comments. */
+  readonly ddl: string;
+  readonly files: readonly WorkbenchLoadFile[];
+  /** Settings applied last, from `WORKBENCH_ENGINE_SETTINGS`. */
+  readonly settings: readonly string[];
+}

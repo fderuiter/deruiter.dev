@@ -9,8 +9,9 @@ import {
   DOCK_KEY_PX,
   DOCK_KEY_STYLE,
   dockActionLabel,
-  useDockHeight,
   type DockSize,
+  useDockHeight,
+  useDockSize,
 } from "./dock-kit";
 
 /** Props for {@link ActionStrip}. */
@@ -25,7 +26,7 @@ export interface ActionStripProps<A extends string> {
   max?: number;
   /** An icon per action, drawn before its label. */
   icons?: Partial<Record<A, React.ReactNode>>;
-  /** Defaults to `md`. */
+  /** Defaults to this device's key size, from the Setup sheet. */
   size?: DockSize;
   className?: string;
 }
@@ -44,9 +45,10 @@ export function ActionStrip<A extends string>({
   actions,
   max = 4,
   icons = {},
-  size = "md",
+  size: sizeProp,
   className = "",
 }: ActionStripProps<A>) {
+  const size = useDockSize(sizeProp);
   const dockRef = useDockHeight<HTMLDivElement>();
   const sink = useActionSink();
   const [moreOpen, setMoreOpen] = useState(false);

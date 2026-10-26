@@ -3,7 +3,12 @@
 import React, { useId } from "react";
 import type { ActionMap } from "@/lib/arcade";
 import { useAxisPointer } from "./axis-pointer";
-import { dockActionLabel, useDockHeight, type DockSize } from "./dock-kit";
+import {
+  dockActionLabel,
+  type DockSize,
+  useDockHeight,
+  useDockSize,
+} from "./dock-kit";
 
 /** The pad's minimum height for each dock size, in px. */
 const PAD_MIN_PX: Readonly<Record<DockSize, number>> = {
@@ -22,7 +27,7 @@ export interface DragPadProps<A extends string> {
   reach?: number;
   /** The share of `reach` that reads as still, 0 to 1. Defaults to 0.12. */
   deadZone?: number;
-  /** Defaults to `md`. */
+  /** Defaults to this device's key size, from the Setup sheet. */
   size?: DockSize;
   /** True while the game takes no input; a drag in progress lets go. */
   paused?: boolean;
@@ -44,10 +49,11 @@ export function DragPad<A extends string>({
   action,
   reach = 48,
   deadZone = 0.12,
-  size = "md",
+  size: sizeProp,
   paused = false,
   className = "",
 }: DragPadProps<A>) {
+  const size = useDockSize(sizeProp);
   const hintId = useId();
   const dockRef = useDockHeight<HTMLDivElement>();
   const handlers = useAxisPointer({

@@ -250,6 +250,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Self-service",
   },
   {
+    id: "platform-sql",
+    title: "SQL Workbench",
+    subtitle: "Run read-only SQL on the warehouse in your browser",
+    href: "/platform/sql",
+    icon: "terminal",
+    tone: "amber",
+    badge: "DuckDB-WASM",
+  },
+  {
     id: "platform-governance",
     title: "Data Governance",
     subtitle: "The catalog, glossary, stewardship and policies",

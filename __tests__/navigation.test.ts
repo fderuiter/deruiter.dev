@@ -65,6 +65,7 @@ describe("navigation structure (#1842, #1843)", () => {
       "/platform/operations",
       "/platform/portfolio",
       "/platform/explore",
+      "/platform/sql",
       "/platform/governance",
       "/simulator",
       "/patrol",
@@ -122,6 +123,7 @@ describe("navigation structure (#1842, #1843)", () => {
       "/platform/operations",
       "/platform/portfolio",
       "/platform/explore",
+      "/platform/sql",
       "/platform/governance",
       "/patrol",
     ]);

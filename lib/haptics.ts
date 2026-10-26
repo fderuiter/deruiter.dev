@@ -1,10 +1,15 @@
+import { getDeviceSettings } from "@/lib/arcade";
+
 /**
  * Triggers physical haptic vibration feedback with graceful degradation
- * for devices or browsers that do not support navigator.vibrate.
- * 
+ * for devices or browsers that do not support navigator.vibrate. It stays
+ * still while this device's Vibration setting, from the arcade cabinet's
+ * Setup sheet, is off (#2924).
+ *
  * @param pattern Single duration in ms or pattern array of durations
  */
 export const triggerHaptic = (pattern: number | number[] = 15): void => {
+  if (!getDeviceSettings().haptics) return;
   if (typeof navigator !== "undefined" && typeof navigator.vibrate === "function") {
     try {
       navigator.vibrate(pattern);

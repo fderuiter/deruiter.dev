@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { ActionMap } from "@/lib/arcade";
+import {
+  useDeviceSettings,
+  type ActionMap,
+  type DeviceHandedness,
+} from "@/lib/arcade";
 
 /**
  * A dock's key size: `sm` is the 44px touch floor, `md` 52px and `lg` 60px.
@@ -29,6 +33,32 @@ export const DOCK_KEY_CLASS: Readonly<Record<DockSize, string>> = Object.freeze(
 /** The look every dock key shares, on the site's graphite palette. */
 export const DOCK_KEY_STYLE =
   "flex items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800/90 font-mono text-xs font-bold text-zinc-100 active:bg-amber-500/25 active:text-amber-200";
+
+/**
+ * A dock's key size: the size it is given, else this device's key-size
+ * setting from the cabinet's Setup sheet (#2924).
+ *
+ * @param size - The size the game passed, if any.
+ * @returns The size to draw.
+ */
+export function useDockSize(size: DockSize | undefined): DockSize {
+  const { dockSize } = useDeviceSettings();
+  return size ?? dockSize;
+}
+
+/**
+ * A dock's or stage's dominant hand: the hand it is given, else this
+ * device's setting from the cabinet's Setup sheet (#2924).
+ *
+ * @param handedness - The hand the game passed, if any.
+ * @returns The hand to lay out for.
+ */
+export function useDockHandedness(
+  handedness: DeviceHandedness | undefined
+): DeviceHandedness {
+  const settings = useDeviceSettings();
+  return handedness ?? settings.handedness;
+}
 
 /**
  * The name a player hears for an action: its label from the map, so the

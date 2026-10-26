@@ -662,7 +662,9 @@ async function sqlWorkbenchJourney(page: Page) {
     "'wasm-unsafe-eval'"
   );
   const schema = page.getByRole("region", { name: "Schema" });
-  await expect(schema.getByText("gold.fct_enrollment")).toBeVisible();
+  await expect(
+    schema.getByText("gold.fct_enrollment", { exact: true })
+  ).toBeVisible();
   const saved = page.getByRole("combobox", { name: "Saved query" });
   await expect(saved.locator("optgroup")).toHaveCount(2);
   await expect(

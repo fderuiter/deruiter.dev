@@ -5,6 +5,7 @@ import type {
   HandoffAssumption,
   HandoffReport,
 } from "@/lib/study-data";
+import Link from "next/link";
 import { BUTTON_SECONDARY, PANEL } from "./ui";
 
 const ACTIVITY_REASON: Record<
@@ -174,6 +175,10 @@ export function HandoffPanel({
         >
           Use the DEMO-301 study instead
         </button>
+        {/* CRF Studio keeps the draft in this browser, so it reopens on it. */}
+        <Link href="/crf" className={`${BUTTON_SECONDARY} min-h-12`}>
+          Change this study in CRF Studio
+        </Link>
       </div>
     </div>
   );

@@ -1764,7 +1764,9 @@ export function LabyrinthLayout({
   // Portrait: the maze takes the first full-width row at its own height, the
   // room panel the next, and the movement and tool docks share the rest, so
   // the controls sit under the thumbs. Each portrait dock is a size container
-  // below 480px, so its keys scale to fill it. The stage mirrors the docks for
+  // below 480px, so its keys scale to fill it. From 480px a key is at most a
+  // third of half the screen, so the d-pad fits its column on an iPad mini
+  // and a left hand's mirrored d-pad stays on screen (#2862). The stage mirrors the docks for
   // left-handed players.
   const tabletStage = (
     <TabletStage
@@ -1774,7 +1776,7 @@ export function LabyrinthLayout({
       className="[--arcade-stage-edge:4px]"
       classNames={{
         hud: "border-b border-neutral-900/60",
-        body: "portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,16vw,120px)]",
+        body: "portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,min(16vw,calc((50vw_-_2rem)/3)),120px)]",
         // The room panel shows on a portrait screen 480px wide or more.
         status: "hidden portrait:min-[480px]:block",
         moveDock:

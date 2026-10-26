@@ -122,6 +122,9 @@ test("Retro Labyrinth lays a portrait iPad out under the maze (#2861)", async ({
     .boundingBox();
   expect(up && left).toBeTruthy();
   expect(left!.x).toBeLessThan(viewport!.width / 2);
+  // The d-pad keeps to its half: it never reaches into the tools' column.
+  const padBox = await pad.boundingBox();
+  expect(padBox!.x + padBox!.width).toBeLessThanOrEqual(viewport!.width / 2);
   expect(up!.y).toBeGreaterThanOrEqual(objective!.y + objective!.height);
   const down = await pad
     .getByRole("button", { name: "Move Down" })

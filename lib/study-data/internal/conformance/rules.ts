@@ -124,7 +124,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.6.0";
+export const CONFORMANCE_RULES_VERSION = "1.7.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -450,7 +450,7 @@ function baselineRule(): ConformanceRule {
 function adamRule(
   id: string,
   domain: string,
-  kind: "base" | "chg" | "trtemfl"
+  kind: "base" | "chg" | "trtemfl" | "prefl" | "ontrtfl"
 ): ConformanceRule {
   return {
     id,
@@ -504,6 +504,34 @@ function adamRule(
               row,
               variable: "TRTEMFL",
               message: "TRTEMFL disagrees with event and treatment dates.",
+            });
+        }
+        if (kind === "prefl" || kind === "ontrtfl") {
+          // ADCM: recomputed from the analysis dates, independently of the
+          // derivation (ADCM_TIMING). Never-dosed subjects carry neither flag.
+          const start = fullDate(at(dataset, "ASTDT", row));
+          const stop = fullDate(at(dataset, "AENDT", row));
+          const first = fullDate(at(dataset, "TRTSDT", row));
+          const last = fullDate(at(dataset, "TRTEDT", row));
+          const contact = fullDate(at(dataset, "LSTALVDT", row));
+          const windowEnd = last ? last.getTime() + 14 * 86_400_000 : null;
+          const end =
+            windowEnd !== null && contact
+              ? Math.min(windowEnd, contact.getTime())
+              : windowEnd;
+          const flag = kind === "prefl" ? "PREFL" : "ONTRTFL";
+          const expected = !first
+            ? null
+            : kind === "prefl"
+              ? !start || start.getTime() < first.getTime()
+              : end !== null &&
+                (!start || start.getTime() <= end) &&
+                (!stop || stop.getTime() >= first.getTime());
+          if ((expected ? "Y" : null) !== at(dataset, flag, row))
+            issues.push({
+              row,
+              variable: flag,
+              message: `${flag} disagrees with the medication and treatment dates.`,
             });
         }
       }
@@ -868,6 +896,9 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
         at(dataset, "CRIT2FL", row) === "Y")
   ),
   qtcfNotDerivedRule("AD-015"),
+  adamRule("AD-016", "ADCM", "prefl"),
+  adamRule("AD-017", "ADCM", "ontrtfl"),
+  adamSourceRule("AD-018", "ADCM"),
   ...(["DM", "SV", "EX", "AE", "VS", "LB", "DS", "SUPPDM"] as const).map(
     (domain, index) => sourceLineageRule(`SD-0${40 + index}`, domain)
   ),

@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.9.0"
+version: "2.10.0"
 status: active
 domain: "Study data"
 tags:
@@ -3425,6 +3425,244 @@ schema:
         classification: confidential
     quality:
       - id: ADAE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ASEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ASEQ) identifies one row."
+  - id: ADCM
+    name: ADCM
+    physicalName: "m5/datasets/analysis/adam/adcm.json"
+    physicalType: file
+    logicalType: object
+    description: "Concomitant Meds Analysis"
+    dataGranularityDescription: "One record per medication per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: ASEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: CMTRT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Reported Name of Drug, Med, or Therapy"
+        required: false
+        classification: confidential
+      - name: CMDECOD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Standardized Medication Name"
+        required: false
+        classification: confidential
+      - name: CMCAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Category for Medication"
+        required: false
+        classification: confidential
+      - name: CMINDC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Indication
+        required: false
+        classification: confidential
+      - name: CMCLAS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Medication Class"
+        required: false
+        classification: confidential
+      - name: ASTDT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis Start Date"
+        required: false
+        classification: confidential
+      - name: ASTDTF
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Start Date Imputation Flag"
+        required: false
+        classification: confidential
+      - name: AENDT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis End Date"
+        required: false
+        classification: confidential
+      - name: AENDTF
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "End Date Imputation Flag"
+        required: false
+        classification: confidential
+      - name: ASTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Start Relative Day"
+        required: false
+        classification: confidential
+      - name: AENDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis End Relative Day"
+        required: false
+        classification: confidential
+      - name: CMENRTPT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "End Relative to Reference Time Point"
+        required: false
+        classification: confidential
+      - name: PREFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Pre-treatment Flag"
+        required: false
+        classification: confidential
+      - name: ONTRTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "On Treatment Record Flag"
+        required: false
+        classification: confidential
+      - name: RESCUEFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Rescue Medication Flag"
+        required: false
+        classification: confidential
+      - name: LSTALVDT
+        logicalType: date
+        physicalType: DATE
+        description: "Last Known Contact Date"
+        required: false
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: TRTSDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment Start Date"
+        required: false
+        classification: confidential
+      - name: TRTEDT
+        logicalType: date
+        physicalType: DATE
+        description: "Treatment End Date"
+        required: false
+        classification: confidential
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence Number"
+        required: false
+        classification: confidential
+      - name: SRCVAL
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Key Value"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADCM_primary_key
         type: library
         metric: duplicateValues
         arguments:

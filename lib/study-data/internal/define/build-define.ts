@@ -95,7 +95,7 @@ const ADAM_CLASSES: Readonly<Record<string, string>> = {
 
 const ADAM_SUBCLASSES = new Set(["ADVERSE EVENT", "TIME-TO-EVENT"]);
 
-const IMPUTATION_METHODS = new Set(["ADAE_IMPUTE", "BDS_LOCF"]);
+const IMPUTATION_METHODS = new Set(["ADAE_IMPUTE", "ADCM_IMPUTE", "BDS_LOCF"]);
 
 const DISPLAY_FORMATS: Readonly<Partial<Record<StorageKind, string>>> = {
   "sas-date": "DATE9.",

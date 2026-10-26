@@ -145,6 +145,13 @@ function baseFor(rule: ConformanceRule): {
     });
     return { good, context: [good] };
   }
+  if (rule.scope.domain === "ADCM") {
+    // The seed-301 ADCM, whose flags agree with its dates.
+    const good = datasets.find(
+      (item) => item.layer === "adam" && item.name === "ADCM"
+    )!;
+    return { good, context: datasets };
+  }
   const good = mini("ADAE", "adam", {
     USUBJID: "01",
     ASTDT: "2030-01-02",
@@ -225,6 +232,9 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
         return set(good, "BASE", 0, 9);
       if (rule.id === "AD-004" || rule.id === "AD-012")
         return set(good, "CHG", 0, 3);
+      // ADCM's first record is a prior medication still taken on treatment.
+      if (rule.id === "AD-016") return set(good, "PREFL", 0, null);
+      if (rule.id === "AD-017") return set(good, "ONTRTFL", 0, null);
       return set(good, "TRTEMFL", 0, "N");
     }
   }

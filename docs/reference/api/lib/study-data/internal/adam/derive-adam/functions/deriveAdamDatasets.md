@@ -8,7 +8,7 @@
 
 > **deriveAdamDatasets**(`definition`, `sdtm`): [`AdamDerivation`](../interfaces/AdamDerivation.md)
 
-Derive ADSL, ADVS, ADLB, ADEG, ADAE and ADTTE from a study's SDTM layer.
+Derive ADSL, ADVS, ADLB, ADEG, ADAE, ADCM and ADTTE from a study's SDTM layer.
 
 ## Parameters
 

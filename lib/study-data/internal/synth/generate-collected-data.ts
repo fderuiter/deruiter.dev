@@ -1,6 +1,7 @@
 /** Seeded, schedule-driven synthetic source data for the study-data pipeline. */
 import { uniformAt } from "@/lib/utils/prng";
 import { AE_DICTIONARY } from "../sdtm/ae-dictionary";
+import { CM_DICTIONARY } from "../sdtm/cm-dictionary";
 import type {
   CellValue,
   Dataset,
@@ -10,7 +11,8 @@ import type {
 } from "../../types";
 
 type Row = Record<string, CellValue>;
-type Domain = "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "EG" | "AE" | "DS";
+type Domain =
+  "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "EG" | "AE" | "CM" | "DS";
 
 const BASE_DATE = "2030-01-01";
 
@@ -38,6 +40,91 @@ const SERIOUSNESS_REASONS = [
   { name: "AESLIFE", upTo: 0.95 },
   { name: "AESDISAB", upTo: 1 },
 ] as const;
+
+/** A medication as the CRF records it: dose, unit, frequency and route. */
+interface Regimen {
+  readonly reported: string;
+  readonly dose: number;
+  readonly frequency: "QD" | "BID" | "PRN";
+  readonly indication: string;
+}
+
+/** The dictionary's reported name for a medication, checked once here. */
+function reportedName(decod: string): string {
+  return CM_DICTIONARY.find((entry) => entry.decod === decod)!.reported;
+}
+
+/**
+ * Long-term medications a subject may take for another condition, with the
+ * share of subjects who do. All continue through the study. The shares are
+ * round, illustrative figures, not prevalence statistics.
+ */
+const BACKGROUND_MEDICATIONS: readonly (Regimen & {
+  readonly share: number;
+})[] = [
+  {
+    reported: reportedName("ATORVASTATIN"),
+    dose: 20,
+    frequency: "QD",
+    indication: "Hypercholesterolaemia",
+    share: 0.25,
+  },
+  {
+    reported: reportedName("METFORMIN"),
+    dose: 500,
+    frequency: "BID",
+    indication: "Type 2 diabetes mellitus",
+    share: 0.12,
+  },
+  {
+    reported: reportedName("OMEPRAZOLE"),
+    dose: 20,
+    frequency: "QD",
+    indication: "Gastro-oesophageal reflux disease",
+    share: 0.15,
+  },
+  {
+    reported: reportedName("ACETYLSALICYLIC ACID"),
+    dose: 75,
+    frequency: "QD",
+    indication: "Cardiovascular prophylaxis",
+    share: 0.1,
+  },
+];
+
+/** An antihypertensive stopped for the washout before first dose. */
+const WASHED_OUT: Regimen = {
+  reported: reportedName("RAMIPRIL"),
+  dose: 5,
+  frequency: "QD",
+  indication: "Hypertension",
+};
+
+/** The rescue antihypertensive the protocol allows on treatment. */
+const RESCUE: Regimen = {
+  reported: reportedName("AMLODIPINE"),
+  dose: 5,
+  frequency: "QD",
+  indication: "Hypertension",
+};
+
+/** Medications taken for an adverse event, keyed by its preferred term. */
+const AE_TREATMENTS: Readonly<
+  Record<string, Omit<Regimen, "indication"> & { readonly share: number }>
+> = {
+  Headache: {
+    reported: reportedName("PARACETAMOL"),
+    dose: 1000,
+    frequency: "PRN",
+    share: 0.6,
+  },
+  Nausea: {
+    reported: reportedName("ONDANSETRON"),
+    dose: 4,
+    frequency: "PRN",
+    share: 0.5,
+  },
+};
 
 /**
  * The race a subject reports, by cumulative probability, as the EDC
@@ -188,6 +275,21 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     NUM("EGORRES", "Original result"),
     TEXT("EGORRESU", "Original result unit"),
   ],
+  CM: [
+    SRC,
+    SUBJ,
+    TEXT("CMTRT", "Medication name"),
+    TEXT("CMCAT", "Medication category"),
+    TEXT("CMINDC", "Indication"),
+    NUM("CMDOSE", "Dose"),
+    TEXT("CMDOSU", "Dose unit"),
+    TEXT("CMDOSFRQ", "Frequency"),
+    TEXT("CMROUTE", "Route"),
+    DATE("CMSTDTC", "Start date"),
+    DATE("CMENDTC", "End date"),
+    TEXT("CMONGO", "Ongoing at end of study"),
+    TEXT("CMAENO", "Related adverse event number"),
+  ],
   AE: [
     SRC,
     SUBJ,
@@ -323,6 +425,7 @@ export function generateCollectedData(
     LB: [],
     EG: [],
     AE: [],
+    CM: [],
     DS: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
@@ -591,10 +694,70 @@ export function generateCollectedData(
           ),
         });
       }
+
+      // Medications are keyed by their own draws, so adding them leaves
+      // every other domain as it was generated.
+      const medication = (key: string, regimen: Regimen, fields: Row) =>
+        rows.CM.push({
+          SRCID: sourceId(studyId, "CM", number, key),
+          USUBJID: subject,
+          CMTRT: regimen.reported,
+          CMCAT: "GENERAL MEDICATION",
+          CMINDC: regimen.indication,
+          CMDOSE: regimen.dose,
+          CMDOSU: "mg",
+          CMDOSFRQ: regimen.frequency,
+          CMROUTE: "ORAL",
+          CMENDTC: null,
+          CMONGO: null,
+          CMAENO: null,
+          ...fields,
+        });
+      // A long-term medication's start is remembered to the month only.
+      const startedYearsAgo = (key: string) => {
+        const years = 1 + Math.floor(pick("CM", `${key}:years`) * 6);
+        const month = 1 + Math.floor(pick("CM", `${key}:month`) * 12);
+        return `${Number(consentDate.slice(0, 4)) - years}-${String(month).padStart(2, "0")}`;
+      };
+      if (pick("CM", "washout") < 0.3)
+        medication("washout", WASHED_OUT, {
+          CMSTDTC: startedYearsAgo("washout"),
+          CMENDTC: addDays(baselineDate, -7),
+        });
+      for (const background of BACKGROUND_MEDICATIONS) {
+        const key = background.reported.toLowerCase();
+        if (pick("CM", key) < background.share)
+          medication(key, background, {
+            CMSTDTC: startedYearsAgo(key),
+            CMONGO: "Y",
+          });
+      }
+      const ae = rows.AE.at(-1);
+      const treatment =
+        ae?.USUBJID === subject ? AE_TREATMENTS[String(ae.AEDECOD)] : undefined;
+      if (ae && treatment && pick("CM", "ae-treatment") < treatment.share)
+        medication(
+          "ae-1",
+          { ...treatment, indication: String(ae.AEDECOD) },
+          {
+            CMSTDTC: ae.AESTDTC,
+            CMENDTC: ae.AEENDTC,
+            CMAENO: "1",
+          }
+        );
+      const rescueShare = armIndex === 0 ? 0.15 : 0.06;
+      if (!discontinued && stopDay > 22 && pick("CM", "rescue") < rescueShare) {
+        const day = 15 + Math.floor(pick("CM", "rescue-day") * (stopDay - 22));
+        medication("rescue", RESCUE, {
+          CMCAT: "RESCUE MEDICATION",
+          CMSTDTC: addDays(baselineDate, offset(day)),
+          CMONGO: "Y",
+        });
+      }
     }
   }
 
   return (
-    ["DM", "RAND", "SV", "EX", "VS", "LB", "EG", "AE", "DS"] as const
+    ["DM", "RAND", "SV", "EX", "VS", "LB", "EG", "AE", "CM", "DS"] as const
   ).map((domain) => dataset(domain, rows[domain]));
 }

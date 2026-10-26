@@ -327,6 +327,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     retention: TRIAL,
     // 2.5.0 (#2942): the SDTM EG dataset.
     // 2.6.0 (#2943): the ADaM ADEG dataset.
-    version: "2.6.0",
+    // 2.7.0 (#2961): the SDTM CM dataset.
+    version: "2.7.0",
   },
 };

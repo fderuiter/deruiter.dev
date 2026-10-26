@@ -9,6 +9,7 @@ import type {
 } from "../../types";
 import { terminologyCodelist } from "../conformance/terminology";
 import { codeAeTerm } from "./ae-dictionary";
+import { codeMedication } from "./cm-dictionary";
 import { sdtmCodelist } from "./codelists";
 import { labReference } from "./lab-ranges";
 import { sdtmRequired } from "./required";
@@ -17,15 +18,7 @@ import { toStandardUnit } from "./units";
 
 type Row = Record<string, CellValue>;
 type SubjectDomain =
-  | "DM"
-  | "SV"
-  | "EX"
-  | "AE"
-  | "VS"
-  | "LB"
-  | "EG"
-  | "DS"
-  | "SUPPDM";
+  "DM" | "SV" | "EX" | "CM" | "AE" | "VS" | "LB" | "EG" | "DS" | "SUPPDM";
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -276,6 +269,99 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing",
         "integer"
       ),
+    ],
+  },
+  CM: {
+    label: "Concomitant/Prior Medications",
+    class: "Interventions",
+    structure:
+      "One record per recorded intervention occurrence or constant-dosing interval per subject",
+    keys: ["STUDYID", "USUBJID", "CMSEQ"],
+    columns: [
+      ...COMMON,
+      SEQ("CM"),
+      collected("CMTRT", "Reported Name of Drug, Med, or Therapy", "CM.CMTRT"),
+      derived(
+        "CMDECOD",
+        "Standardized Medication Name",
+        "CM_DICTIONARY_CODING",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "CMCAT",
+        "Category for Medication",
+        "CM.CMCAT",
+        "Grouping Qualifier"
+      ),
+      collected("CMINDC", "Indication", "CM.CMINDC", "Record Qualifier"),
+      derived(
+        "CMCLAS",
+        "Medication Class",
+        "CM_DICTIONARY_CODING",
+        "Variable Qualifier"
+      ),
+      derived(
+        "CMCLASCD",
+        "Medication Class Code",
+        "CM_DICTIONARY_CODING",
+        "Variable Qualifier"
+      ),
+      collected(
+        "CMDOSE",
+        "Dose per Administration",
+        "CM.CMDOSE",
+        "Record Qualifier",
+        "float"
+      ),
+      collected("CMDOSU", "Dose Units", "CM.CMDOSU", "Variable Qualifier"),
+      collected(
+        "CMDOSFRQ",
+        "Dosing Frequency per Interval",
+        "CM.CMDOSFRQ",
+        "Record Qualifier"
+      ),
+      collected(
+        "CMROUTE",
+        "Route of Administration",
+        "CM.CMROUTE",
+        "Variable Qualifier"
+      ),
+      EPOCH,
+      collected(
+        "CMSTDTC",
+        "Start Date/Time of Medication",
+        "CM.CMSTDTC",
+        "Timing",
+        "date"
+      ),
+      collected(
+        "CMENDTC",
+        "End Date/Time of Medication",
+        "CM.CMENDTC",
+        "Timing",
+        "date"
+      ),
+      derived(
+        "CMSTDY",
+        "Study Day of Start of Medication",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "CMENDY",
+        "Study Day of End of Medication",
+        "STUDY_DAY",
+        "Timing",
+        "integer"
+      ),
+      derived(
+        "CMENRTPT",
+        "End Relative to Reference Time Point",
+        "CM_ONGOING",
+        "Timing"
+      ),
+      derived("CMENTPT", "End Reference Time Point", "CM_ONGOING", "Timing"),
     ],
   },
   AE: {
@@ -533,7 +619,11 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     columns: [
       ...COMMON,
       SEQ("EG"),
-      collected("EGTESTCD", "ECG Test or Examination Short Name", "EG.EGTESTCD"),
+      collected(
+        "EGTESTCD",
+        "ECG Test or Examination Short Name",
+        "EG.EGTESTCD"
+      ),
       derived(
         "EGTEST",
         "ECG Test or Examination Name",
@@ -737,7 +827,7 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, AE, VS, LB, EG, DS and SUPPDM from collected records. */
+/** Derive DM, SV, EX, CM, AE, VS, LB, EG, DS and SUPPDM from collected records. */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -906,6 +996,44 @@ export function deriveSubjectDomains(
       record
     );
   });
+  const dmBySubject = bySubject("DM");
+  const cm = get("CM").map((record) => {
+    const exposure = exBySubject.get(text(record.USUBJID));
+    const consent = isoDate(
+      dmBySubject.get(text(record.USUBJID))?.CONSENTDTC ?? null
+    );
+    const start = isoDate(record.CMSTDTC);
+    const coding = codeMedication(record.CMTRT);
+    const ongoing = record.CMONGO === "Y";
+    return item(
+      {
+        ...common(record.USUBJID, "CM"),
+        CMTRT: record.CMTRT,
+        CMDECOD: coding?.decod ?? null,
+        CMCAT: record.CMCAT,
+        CMINDC: record.CMINDC,
+        CMCLAS: coding?.cls ?? null,
+        CMCLASCD: coding?.clscd ?? null,
+        CMDOSE: record.CMDOSE,
+        CMDOSU: record.CMDOSU,
+        CMDOSFRQ: record.CMDOSFRQ,
+        CMROUTE: record.CMROUTE,
+        // A medication started before consent began before the study.
+        EPOCH:
+          start && consent && start >= consent
+            ? epochAt(start, exposure)
+            : null,
+        CMSTDTC: record.CMSTDTC,
+        CMENDTC: record.CMENDTC,
+        CMSTDY: day(record.CMSTDTC, exposure?.EXSTDTC ?? null),
+        CMENDY: day(record.CMENDTC, exposure?.EXSTDTC ?? null),
+        CMENRTPT: ongoing ? "ONGOING" : null,
+        CMENTPT: ongoing ? "END OF STUDY" : null,
+      },
+      record,
+      exposure
+    );
+  });
   const ae = get("AE").map((record) => {
     const exposure = exBySubject.get(text(record.USUBJID));
     const coding = codeAeTerm(record.AEDECOD);
@@ -1058,6 +1186,7 @@ export function deriveSubjectDomains(
     table("DM", dm),
     table("SV", sv),
     numbered("EX", ex),
+    numbered("CM", cm),
     numbered("AE", ae),
     numbered("VS", findings("VS")),
     numbered("LB", findings("LB")),

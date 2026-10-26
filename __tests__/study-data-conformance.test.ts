@@ -181,8 +181,7 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
     case "ct":
       return set(good, rule.variable!, 0, "INVALID");
     case "study-day": {
-      const date =
-        rule.scope.domain === "AE" ? "AESTDTC" : `${rule.scope.domain}DTC`;
+      const date = rule.variable!.replace(/DY$/, "DTC");
       const row = good.columns[date].findIndex(
         (value) =>
           typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)

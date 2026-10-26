@@ -21,7 +21,7 @@ export const SDTM_METHODS = {
   UNPLANNED_ARM:
     "Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned.",
   ACTUAL_ELEMENT_FROM_TA_TE:
-    "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
+    "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch, and so does a medication started before informed consent.",
   PLANNED_VISIT:
     "Y when the visit is one of the planned visits in TV; missing for an unscheduled visit.",
   VISIT_OCCURRED:
@@ -36,6 +36,10 @@ export const SDTM_METHODS = {
     "Lower and upper limits of the test's reference range at the study's fictional central laboratory, in standard units for --STNRLO and --STNRHI (numbers) and, when the result was collected in the standard unit, in original units for --ORNRLO and --ORNRHI (text). The original-unit limits are missing when the collected unit differs.",
   AE_DICTIONARY_CODING:
     "Looked up from the preferred term (AEDECOD) in the study's fictional adverse event dictionary, which has MedDRA's five levels but is not MedDRA: its lower and group level names are invented and its codes are synthetic, from 99000000. Each lowest level term is its preferred term. Missing when the preferred term is not in the dictionary.",
+  CM_DICTIONARY_CODING:
+    "Looked up from the reported name (CMTRT) in the study's fictional drug dictionary, which has WHODrug's shape but is not WHODrug: standardized names are generic drug names, class names are plain descriptions and class codes are synthetic, starting with Z, a letter the ATC classification does not use. Missing when the reported name is not in the dictionary.",
+  CM_ONGOING:
+    "When the medication was marked ongoing at the end of the subject's participation, CMENRTPT is ONGOING (Relation to Reference Period, C66728) and CMENTPT is END OF STUDY; both are missing otherwise.",
   CT_RELATIONSHIP_MAPPING:
     "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
   USDM_ASSESSMENT:
@@ -46,7 +50,7 @@ export const SDTM_METHODS = {
   LAST_PRE_DOSE:
     "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
   LAST_PARTICIPATION:
-    "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, adverse events, vital signs, laboratory tests and disposition events. Partial dates are ignored.",
+    "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored.",
   DEATH_DATE:
     "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
   DEATH_FLAG:

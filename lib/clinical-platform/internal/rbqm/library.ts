@@ -19,8 +19,8 @@ import type {
   RiskSignalAction,
 } from "../../types";
 
-/** The issue that adds AE, vitals and weekday data to the portfolio. */
-const CLINICAL_FEEDS_ISSUE = 2776;
+/** The issue that adds adverse event KRIs to the library. */
+const SAFETY_KRIS_ISSUE = 2980;
 
 const ENROLLED = (value: number) => ({
   metricId: "subjects_enrolled",
@@ -171,6 +171,15 @@ export const CSM_TESTS: readonly CsmTestDefinition[] = [
     reads: ["gold.fct_deviation.deviation_id", "gold.fct_visit.visit_date_key"],
   },
   {
+    id: "csm-ae-under-reporting",
+    name: "Adverse event under-reporting",
+    question:
+      "Does the site report fewer adverse events per entered visit than its peers would predict?",
+    method:
+      "Lower tail of a Poisson count: the site's adverse events against the peer adverse event rate times the site's entered visits.",
+    reads: ["gold.fct_adverse_event.ae_id", "gold.fct_visit.entry_lag_days"],
+  },
+  {
     id: "csm-exact-day-visits",
     name: "Visits on their exact planned day",
     question:
@@ -178,6 +187,43 @@ export const CSM_TESTS: readonly CsmTestDefinition[] = [
     method:
       "Upper tail of a Poisson count: the site's visits on their planned day against the sum, over its scheduled visits, of the peers' on-day rate for the same planned visit. Visits that are on their planned day everywhere in the study, such as screening, have no window and are left out.",
     reads: ["gold.fct_visit.day_offset", "gold.fct_visit.planned_visit_id"],
+  },
+  {
+    id: "csm-entry-hour",
+    name: "Unusual hours of data entry",
+    question:
+      "Does the site enter its data at different hours of the day from its peers?",
+    method:
+      "Upper tail of a chi-square goodness of fit: the site's entered visits by UTC entry hour against the peers' pooled distribution of entry hours. Adjacent hours are pooled until each pool expects at least 5 entries, and the statistic has one degree of freedom fewer than there are pools.",
+    reads: ["gold.fct_visit.entry_hour"],
+  },
+  {
+    id: "csm-vs-digit-preference",
+    name: "Rounded vital signs",
+    question:
+      "Do the site's blood pressure and pulse readings end in some digits more than chance allows?",
+    method:
+      "Upper tail of a chi-square goodness of fit: the last digits of the site's systolic and diastolic pressure and pulse readings against an even spread over 0 to 9, on 9 degrees of freedom. A site rounding to 0 or 5 leaves the other digits nearly empty.",
+    reads: [
+      "gold.fct_vital_sign.systolic_bp_mmhg",
+      "gold.fct_vital_sign.diastolic_bp_mmhg",
+      "gold.fct_vital_sign.pulse_bpm",
+    ],
+  },
+  {
+    id: "csm-vs-low-variability",
+    name: "Vital signs that barely vary",
+    question:
+      "Do the site's subjects' vital signs vary less from visit to visit than its peers' subjects' do?",
+    method:
+      "Lower tail of an F test: each sign's within-subject sum of squares, scaled by the peers' pooled within-subject variance for that sign, pooled across signs over the site's within-subject degrees of freedom, against the peers' degrees of freedom.",
+    reads: [
+      "gold.fct_vital_sign.systolic_bp_mmhg",
+      "gold.fct_vital_sign.diastolic_bp_mmhg",
+      "gold.fct_vital_sign.pulse_bpm",
+      "gold.fct_vital_sign.weight_kg",
+      "gold.fct_vital_sign.subject_id",
+    ],
   },
   {
     id: "csm-kri-profile",
@@ -259,10 +305,13 @@ function factors(device: boolean): CriticalToQualityFactor[] {
       risk: "Under-reported or late safety events hide risk from subjects, investigators and regulators.",
       kriIds: [],
       qtlIds: [],
+      // Central monitoring tests each site's AE rate against its peers
+      // (#2956); what is still missing is a KRI to follow it week by week.
       gap: {
-        reason:
-          "The operational portfolio has no adverse event feed, so AE reporting rates are not monitored yet.",
-        issue: CLINICAL_FEEDS_ISSUE,
+        reason: device
+          ? "No key risk indicator follows a site's adverse event rate or how long it takes to report an event, and the portfolio has no device deficiency feed. Central monitoring compares each site's adverse event rate with its peers in the meantime."
+          : "No key risk indicator follows a site's adverse event rate or how long it takes to report an event. Central monitoring compares each site's rate with its peers in the meantime.",
+        issue: SAFETY_KRIS_ISSUE,
       },
     },
   ];

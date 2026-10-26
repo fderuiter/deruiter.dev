@@ -8,8 +8,8 @@
  *
  * Each test compares like with like. Sites differ legitimately in how fast
  * they enter data, so no test asks a site to match its peers' entry lag;
- * the schedule and the query and deviation rates are the study's own, so
- * those are what a site is held to.
+ * the schedule and the query, deviation and adverse event rates are the
+ * study's own, so those are what a site is held to.
  */
 import type {
   CsmExclusion,
@@ -21,6 +21,7 @@ import type {
 import { CSM_TESTS } from "./library";
 import {
   benjaminiHochberg,
+  chiSquareCdf,
   fCdf,
   invertMatrix,
   mean,
@@ -37,6 +38,45 @@ export const CSM_DEFAULT_FDR = 0.05;
 /** Measures in the KRI profile, in vector order. */
 const PROFILE_MEASURES = 4;
 
+/** Hours in a day, the entry-hour test's categories. */
+const HOURS = 24;
+/**
+ * Entries a pool of adjacent hours must expect before the chi-square
+ * approximation is trusted (Cochran's rule).
+ */
+const MIN_EXPECTED_PER_POOL = 5;
+
+/**
+ * The vital sign columns of `gold.fct_vital_sign`, each with whether it is
+ * recorded as a whole number, so its last digit is tested (#2957).
+ */
+const VITAL_SIGN_COLUMNS: readonly (readonly [string, boolean])[] = [
+  ["systolic_bp_mmhg", true],
+  ["diastolic_bp_mmhg", true],
+  ["pulse_bpm", true],
+  ["weight_kg", false],
+];
+/** Last digits, the digit test's categories. */
+const DIGITS = 10;
+/**
+ * Readings the digit test needs: 5 expected in each of the ten digits
+ * (Cochran's rule).
+ */
+const MIN_DIGIT_READINGS = DIGITS * MIN_EXPECTED_PER_POOL;
+/**
+ * Repeat readings (degrees of freedom within subjects) the variability test
+ * needs before its variance estimate means anything.
+ */
+const MIN_REPEAT_READINGS = 10;
+
+/** Spread of readings within subjects, for one vital sign at one site. */
+interface WithinSpread {
+  /** Sum of squared deviations from each subject's own mean. */
+  readonly ss: number;
+  /** Readings less one per subject. */
+  readonly df: number;
+}
+
 interface SiteData {
   readonly siteId: string;
   /** Visits made, entered or not. */
@@ -45,12 +85,19 @@ interface SiteData {
   readonly entered: number;
   readonly queries: number;
   readonly deviations: number;
+  readonly adverseEvents: number;
   /** Entry lags in days of the entered visits. */
   readonly lags: readonly number[];
   /** Visits made to planned visits that have a window, by planned visit. */
   readonly scheduled: ReadonlyMap<string, number>;
   /** Of those, the visits made exactly on their planned day. */
   readonly onDay: ReadonlyMap<string, number>;
+  /** Entered visits by the UTC hour their data was entered, 0 to 23. */
+  readonly entryHours: readonly number[];
+  /** Whole-number vital sign readings by last digit, 0 to 9 (#2957). */
+  readonly lastDigits: readonly number[];
+  /** Within-subject spread of the readings, by vital sign (#2957). */
+  readonly vitalSpread: ReadonlyMap<string, WithinSpread>;
 }
 
 interface Draft {
@@ -67,8 +114,13 @@ interface Tally {
   entered: number;
   queries: number;
   deviations: number;
+  adverseEvents: number;
   lags: number[];
   offsets: { plannedVisit: string; offset: number }[];
+  entryHours: number[];
+  lastDigits: number[];
+  /** Readings by vital sign column, then by subject. */
+  vitals: Map<string, Map<string, number[]>>;
 }
 
 const num = (row: WarehouseRow, column: string): number | null => {
@@ -85,6 +137,18 @@ const sum = (values: Iterable<number>) => {
 };
 const add = (map: Map<string, number>, key: string, by = 1) =>
   map.set(key, (map.get(key) ?? 0) + by);
+
+/** Pooled spread of each subject's readings about the subject's own mean. */
+function withinSpread(subjects: Iterable<readonly number[]>): WithinSpread {
+  let ss = 0;
+  let df = 0;
+  for (const values of subjects) {
+    const centre = sum(values) / values.length;
+    ss += sum(values.map((v) => (v - centre) ** 2));
+    df += values.length - 1;
+  }
+  return { ss, df };
+}
 
 /** Gathers what the tests read, per site of one study. */
 function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
@@ -105,8 +169,12 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
         entered: 0,
         queries: 0,
         deviations: 0,
+        adverseEvents: 0,
         lags: [],
         offsets: [],
+        entryHours: Array.from({ length: HOURS }, () => 0),
+        lastDigits: Array.from({ length: DIGITS }, () => 0),
+        vitals: new Map(),
       };
       tallies.set(siteId, tally);
     }
@@ -132,6 +200,8 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
       tally.entered += 1;
       tally.lags.push(lag);
     }
+    const hour = num(visit, "entry_hour");
+    if (hour !== null) tally.entryHours[hour] += 1;
   }
   for (const query of warehouse.tables["gold.fct_query"]) {
     if (query.study_key === studyKey) of(query.site_key).queries += 1;
@@ -139,6 +209,26 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
   for (const deviation of warehouse.tables["gold.fct_deviation"]) {
     if (deviation.study_key === studyKey)
       of(deviation.site_key).deviations += 1;
+  }
+  for (const event of warehouse.tables["gold.fct_adverse_event"]) {
+    if (event.study_key === studyKey) of(event.site_key).adverseEvents += 1;
+  }
+  for (const visit of warehouse.tables["gold.fct_vital_sign"]) {
+    if (visit.study_key !== studyKey) continue;
+    const tally = of(visit.site_key);
+    const subject = String(visit.subject_id);
+    for (const [column, wholeNumber] of VITAL_SIGN_COLUMNS) {
+      const value = num(visit, column);
+      if (value === null) continue;
+      if (wholeNumber)
+        tally.lastDigits[Math.abs(Math.round(value)) % DIGITS] += 1;
+      let bySubject = tally.vitals.get(column);
+      if (bySubject === undefined) {
+        bySubject = new Map();
+        tally.vitals.set(column, bySubject);
+      }
+      bySubject.set(subject, [...(bySubject.get(subject) ?? []), value]);
+    }
   }
   return [...tallies.entries()]
     .map(([siteId, tally]) => {
@@ -155,9 +245,18 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
         entered: tally.entered,
         queries: tally.queries,
         deviations: tally.deviations,
+        adverseEvents: tally.adverseEvents,
         lags: tally.lags,
         scheduled,
         onDay,
+        entryHours: tally.entryHours,
+        lastDigits: tally.lastDigits,
+        vitalSpread: new Map(
+          [...tally.vitals].map(([test, bySubject]) => [
+            test,
+            withinSpread(bySubject.values()),
+          ])
+        ),
       };
     })
     .sort((a, b) => (a.siteId < b.siteId ? -1 : 1));
@@ -234,6 +333,144 @@ function exactDayVisits(
     statistic: observed,
     pValue: clamp01(pValue),
     detail: `${observed} of ${n} scheduled visits on their exact planned day; the peers' rates predict ${fixed(expected)}.`,
+  };
+}
+
+/**
+ * The site's entry hours against the peers' pooled distribution, upper tail
+ * of a chi-square goodness of fit. Hours are pooled in clock order until
+ * each pool expects at least `MIN_EXPECTED_PER_POOL` entries, and a short
+ * remainder joins the last pool, so every pool the statistic divides by has
+ * a positive expectation, including hours the peers never enter data in.
+ */
+function entryHour(
+  testId: string,
+  site: SiteData,
+  peers: readonly SiteData[]
+): Draft | CsmExclusion {
+  const peerHours = Array.from({ length: HOURS }, (_, h) =>
+    sum(peers.map((p) => p.entryHours[h]))
+  );
+  const peerTotal = sum(peerHours);
+  const n = sum(site.entryHours);
+  if (peerTotal === 0 || n === 0) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason:
+        n === 0
+          ? "The site has no entered visits with an entry time."
+          : "The site's peers have no entered visits with an entry time, so there is no distribution to compare against.",
+    };
+  }
+  const pools: { observed: number; expected: number }[] = [];
+  let observed = 0;
+  let expected = 0;
+  for (let h = 0; h < HOURS; h++) {
+    observed += site.entryHours[h];
+    expected += (n * peerHours[h]) / peerTotal;
+    if (expected >= MIN_EXPECTED_PER_POOL) {
+      pools.push({ observed, expected });
+      observed = 0;
+      expected = 0;
+    }
+  }
+  const last = pools.at(-1);
+  if (last !== undefined) {
+    last.observed += observed;
+    last.expected += expected;
+  }
+  if (pools.length < 2) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason: `${n} entered visits expect fewer than ${MIN_EXPECTED_PER_POOL} entries in all but one pool of hours, too few for a chi-square test.`,
+    };
+  }
+  const statistic = sum(
+    pools.map((p) => (p.observed - p.expected) ** 2 / p.expected)
+  );
+  const df = pools.length - 1;
+  const busiest = site.entryHours.indexOf(Math.max(...site.entryHours));
+  const hh = String(busiest).padStart(2, "0");
+  return {
+    testId,
+    siteId: site.siteId,
+    n,
+    statistic,
+    pValue: clamp01(1 - chiSquareCdf(statistic, df)),
+    detail: `${site.entryHours[busiest]} of ${n} entries in the ${hh}:00 UTC hour, against ${fixed((peerHours[busiest] / peerTotal) * 100)}% of the peers' entries; chi-square ${fixed(statistic)} on ${df} degrees of freedom.`,
+  };
+}
+
+/**
+ * Last digits of the site's whole-number vital signs against a uniform
+ * spread, upper tail of a chi-square goodness of fit on 9 degrees of
+ * freedom. Readings rounded to 0 or 5 leave eight digits nearly empty.
+ */
+function digitPreference(testId: string, site: SiteData): Draft | CsmExclusion {
+  const n = sum(site.lastDigits);
+  if (n < MIN_DIGIT_READINGS) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason: `${n} blood pressure and pulse readings; the digit test needs ${MIN_DIGIT_READINGS}, 5 for each last digit.`,
+    };
+  }
+  const expected = n / DIGITS;
+  const statistic = sum(
+    site.lastDigits.map((o) => (o - expected) ** 2 / expected)
+  );
+  const df = DIGITS - 1;
+  const zeroOrFive = site.lastDigits[0] + site.lastDigits[5];
+  return {
+    testId,
+    siteId: site.siteId,
+    n,
+    statistic,
+    pValue: clamp01(1 - chiSquareCdf(statistic, df)),
+    detail: `${zeroOrFive} of ${n} blood pressure and pulse readings end in 0 or 5, against 20% if every last digit is as likely; chi-square ${fixed(statistic)} on ${df} degrees of freedom.`,
+  };
+}
+
+/**
+ * Within-subject variance of the site's vital signs against its peers',
+ * lower tail of an F test. Each sign's spread is scaled by the peers'
+ * pooled within-subject variance for that sign, so blood pressure, pulse
+ * and weight count alike, and the scaled sums pool into one ratio.
+ */
+function lowVariability(
+  testId: string,
+  site: SiteData,
+  peers: readonly SiteData[]
+): Draft | CsmExclusion {
+  let scaled = 0;
+  let siteDf = 0;
+  let peerDf = 0;
+  for (const [test, spread] of site.vitalSpread) {
+    const peerSpreads = peers.flatMap((p) => p.vitalSpread.get(test) ?? []);
+    const pooledSs = sum(peerSpreads.map((p) => p.ss));
+    const pooledDf = sum(peerSpreads.map((p) => p.df));
+    if (spread.df === 0 || pooledDf === 0 || pooledSs === 0) continue;
+    scaled += spread.ss / (pooledSs / pooledDf);
+    siteDf += spread.df;
+    peerDf += pooledDf;
+  }
+  if (siteDf < MIN_REPEAT_READINGS) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason: `${siteDf} repeat vital sign readings within subjects; the variability test needs ${MIN_REPEAT_READINGS}.`,
+    };
+  }
+  const ratio = scaled / siteDf;
+  return {
+    testId,
+    siteId: site.siteId,
+    n: siteDf,
+    statistic: ratio,
+    pValue: clamp01(fCdf(ratio, siteDf, peerDf)),
+    detail: `Readings vary from visit to visit ${fixed(ratio * 100, 0)}% as much as at peer sites (variance ratio ${fixed(ratio, 2)} on ${siteDf} and ${peerDf} degrees of freedom).`,
   };
 }
 
@@ -372,7 +609,19 @@ export function centralMonitoring(
         ["deviation", "deviations"],
         "visits"
       ),
+      underReporting(
+        "csm-ae-under-reporting",
+        site,
+        peers,
+        (s) => s.adverseEvents,
+        (s) => s.entered,
+        ["adverse event", "adverse events"],
+        "entered visits"
+      ),
       exactDayVisits("csm-exact-day-visits", site, peers),
+      entryHour("csm-entry-hour", site, peers),
+      digitPreference("csm-vs-digit-preference", site),
+      lowVariability("csm-vs-low-variability", site, peers),
       kriProfile("csm-kri-profile", site, peers),
     ];
     for (const outcome of outcomes) {

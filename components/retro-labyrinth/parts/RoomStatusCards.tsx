@@ -6,8 +6,8 @@ import type { LabyrinthOverlay } from "@/components/retro-labyrinth/useRetroLaby
 
 /** Props for {@link RoomStatusCards}. */
 interface RoomStatusCardsProps {
-  /** The phone cabinet draws the pause card solid, with no blur. */
-  readonly phoneCabinet: boolean;
+  /** The touch cabinet draws the pause card solid, with no blur. */
+  readonly touchCabinet: boolean;
   readonly resumeHint: string;
   readonly retryHint: string;
   readonly openOverlay: (overlay: LabyrinthOverlay) => void;
@@ -20,7 +20,7 @@ interface RoomStatusCardsProps {
  * shows its own pause overlay instead of this pause card (#2357).
  */
 export function RoomStatusCards({
-  phoneCabinet,
+  touchCabinet,
   resumeHint,
   retryHint,
   openOverlay,
@@ -34,7 +34,7 @@ export function RoomStatusCards({
       {/* Pause Overlay. A cabinet with views shows its own (#2357). */}
       {gameStatus === "paused" && !cabinetPause && (
         <div
-          className={`absolute inset-0 ${phoneCabinet ? "bg-black/90" : "bg-neutral-950/90 backdrop-blur-sm"} flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30`}
+          className={`absolute inset-0 ${touchCabinet ? "bg-black/90" : "bg-neutral-950/90 backdrop-blur-sm"} flex flex-col items-center justify-center text-center p-3 rounded-lg border border-zinc-700 z-30`}
         >
           <h2 className="text-zinc-100 font-bold text-xs uppercase tracking-widest">
             PAUSED

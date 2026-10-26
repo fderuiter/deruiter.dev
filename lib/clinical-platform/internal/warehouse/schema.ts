@@ -4,11 +4,11 @@
  * manifest, the ERD, the lineage edges and the integrity checks all read
  * this description, so they cannot disagree.
  */
-import { defineTable, type TableDraft } from "./define";
+import { defineTable, type ColumnOptions, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.6.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.9.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -379,6 +379,105 @@ const SILVER: readonly TableDraft[] = [
         "State at the data cut.",
         { classification: "internal", from: ["status"] },
       ],
+      [
+        "source_system",
+        "string",
+        "Source system the record came from.",
+        { classification: "internal", from: ["source"] },
+      ],
+    ],
+  },
+  {
+    layer: "silver",
+    name: "edc_adverse_event",
+    kind: "conformed",
+    description:
+      "EDC adverse events, each on the visit it was reported at (#2956).",
+    grain: "One row per adverse event.",
+    primaryKey: ["ae_id"],
+    classification: "confidential",
+    source: "bronze.edc.adverseEvents",
+    synthetic: true,
+    sequences: [["onset_on", "reported_on"]],
+    columns: [
+      ["ae_id", "string", "Adverse event id."],
+      ["visit_id", "string", "Visit record id the event was reported at."],
+      ["subject_id", "string", "Subject id."],
+      ["study_id", "string", "Protocol id.", { classification: "internal" }],
+      ["site_id", "string", "Site id.", { classification: "internal" }],
+      [
+        "ae_term",
+        "string",
+        "Reported term, from a short fictional list.",
+        { length: 80, from: ["term"] },
+      ],
+      ["onset_on", "date", "Date the event began."],
+      [
+        "reported_on",
+        "date",
+        "Date the site reported the event, the day it entered the visit's data.",
+      ],
+      [
+        "is_serious",
+        "boolean",
+        "Whether the event is serious (ICH E2A).",
+        { from: ["serious"] },
+      ],
+      [
+        "severity",
+        "string",
+        "Severity: mild, moderate or severe.",
+        { length: 16 },
+      ],
+      [
+        "source_system",
+        "string",
+        "Source system the record came from.",
+        { classification: "internal", from: ["source"] },
+      ],
+    ],
+  },
+  {
+    layer: "silver",
+    name: "edc_vital_sign",
+    kind: "conformed",
+    description:
+      "EDC vital signs, one reading of each sign at each entered visit (#2957).",
+    grain: "One row per visit and vital sign.",
+    primaryKey: ["vital_sign_id"],
+    classification: "confidential",
+    source: "bronze.edc.vitalSigns",
+    synthetic: true,
+    columns: [
+      [
+        "vital_sign_id",
+        "string",
+        "Reading id: the visit record id and the test code.",
+        { from: ["vitalSignId"] },
+      ],
+      ["visit_id", "string", "Visit record id the reading was taken at."],
+      ["subject_id", "string", "Subject id."],
+      ["study_id", "string", "Protocol id.", { classification: "internal" }],
+      ["site_id", "string", "Site id.", { classification: "internal" }],
+      [
+        "vs_test_code",
+        "string",
+        "SDTM VSTESTCD: SYSBP, DIABP, PULSE or WEIGHT.",
+        { length: 8, classification: "internal", from: ["test"] },
+      ],
+      [
+        "vs_value",
+        "decimal",
+        "The reading, in its unit.",
+        { precision: 6, scale: 1, from: ["value"] },
+      ],
+      [
+        "vs_unit",
+        "string",
+        "Unit: mmHg, beats/min or kg.",
+        { length: 16, classification: "internal", from: ["unit"] },
+      ],
+      ["measured_on", "date", "Date of the visit the reading was taken at."],
       [
         "source_system",
         "string",
@@ -866,6 +965,17 @@ const key = {
   date: { ref: "gold.dim_date.date_key", how: "date-key" },
   site: { ref: "gold.dim_site.site_key", how: "scd2-lookup" },
 } as const;
+
+/**
+ * A vital sign's column in the visit-grain fact (#2957): the silver
+ * reading whose test code names the sign, pivoted onto its visit.
+ */
+const PIVOT_SIGN: ColumnOptions = {
+  from: ["vs_test_code", "vs_value"],
+  how: "pivot",
+  nullable: true,
+  classification: "confidential",
+};
 
 const DIMENSIONS: readonly TableDraft[] = [
   {
@@ -1418,6 +1528,12 @@ const FACTS: readonly TableDraft[] = [
           how: "date-diff",
         },
       ],
+      [
+        "entry_hour",
+        "integer",
+        "Hour of the day, 0 to 23 in UTC, the visit's data was entered.",
+        { nullable: true, from: ["data_entered_at"], how: "hour-of-day" },
+      ],
     ],
   },
   {
@@ -1667,6 +1783,169 @@ const FACTS: readonly TableDraft[] = [
         "boolean",
         "Whether the committee judged the event device-related.",
         { nullable: true },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_adverse_event",
+    kind: "fact",
+    description:
+      "Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956).",
+    grain: "One row per adverse event.",
+    primaryKey: ["ae_id"],
+    classification: "internal",
+    source: "silver.edc_adverse_event",
+    synthetic: true,
+    sequences: [["onset_date_key", "reported_date_key"]],
+    columns: [
+      ["ae_id", "string", "Adverse event id (degenerate dimension)."],
+      [
+        "visit_id",
+        "string",
+        "Visit record id the event was reported at (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "subject_id",
+        "string",
+        "Subject id (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        { ...key.study, from: ["study_id", "gold.dim_study.study_key"] },
+      ],
+      [
+        "site_key",
+        "integer",
+        "Site version in force when the site reported the event.",
+        {
+          ...key.site,
+          from: ["site_id", "reported_on", "gold.dim_site.site_key"],
+        },
+      ],
+      [
+        "country_key",
+        "integer",
+        "Country of the site.",
+        {
+          ...key.country,
+          from: ["silver.site.country_code", "gold.dim_country.country_key"],
+        },
+      ],
+      [
+        "onset_date_key",
+        "integer",
+        "Date the event began.",
+        { ...key.date, from: ["onset_on"] },
+      ],
+      [
+        "reported_date_key",
+        "integer",
+        "Date the site reported the event.",
+        { ...key.date, from: ["reported_on"] },
+      ],
+      [
+        "days_to_report",
+        "integer",
+        "Days from onset to the site's report.",
+        { from: ["onset_on", "reported_on"], how: "date-diff" },
+      ],
+      [
+        "ae_term",
+        "string",
+        "Reported term.",
+        { length: 80, classification: "confidential" },
+      ],
+      ["is_serious", "boolean", "Whether the event is serious (ICH E2A)."],
+      [
+        "severity",
+        "string",
+        "Severity: mild, moderate or severe.",
+        { length: 16 },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_vital_sign",
+    kind: "fact",
+    description:
+      "Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957).",
+    grain: "One row per visit with vital signs.",
+    primaryKey: ["visit_id"],
+    classification: "internal",
+    source: "silver.edc_vital_sign",
+    synthetic: true,
+    columns: [
+      [
+        "visit_id",
+        "string",
+        "Visit record id the signs were taken at (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "subject_id",
+        "string",
+        "Subject id (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        { ...key.study, from: ["study_id", "gold.dim_study.study_key"] },
+      ],
+      [
+        "site_key",
+        "integer",
+        "Site version in force on the day of the visit.",
+        {
+          ...key.site,
+          from: ["site_id", "measured_on", "gold.dim_site.site_key"],
+        },
+      ],
+      [
+        "country_key",
+        "integer",
+        "Country of the site.",
+        {
+          ...key.country,
+          from: ["silver.site.country_code", "gold.dim_country.country_key"],
+        },
+      ],
+      [
+        "measured_date_key",
+        "integer",
+        "Date the signs were taken.",
+        { ...key.date, from: ["measured_on"] },
+      ],
+      [
+        "systolic_bp_mmhg",
+        "integer",
+        "Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded.",
+        PIVOT_SIGN,
+      ],
+      [
+        "diastolic_bp_mmhg",
+        "integer",
+        "Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded.",
+        PIVOT_SIGN,
+      ],
+      [
+        "pulse_bpm",
+        "integer",
+        "Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded.",
+        PIVOT_SIGN,
+      ],
+      [
+        "weight_kg",
+        "decimal",
+        "Weight (VSTESTCD WEIGHT), in kg; null when not recorded.",
+        { ...PIVOT_SIGN, precision: 5, scale: 1 },
       ],
     ],
   },

@@ -53,9 +53,20 @@ import {
  * #2912: `silver.finance_plan_line` and `gold.fct_spend_forecast` are new.
  * With those two tables left out the hash is the previous golden, 6922ab5e,
  * so no other value moved.
+ *
+ * #2955: `gold.fct_visit` gained `entry_hour`. With that column left out the
+ * hash is the previous golden, 9c976355, so no other value moved.
+ *
+ * #2956: `silver.edc_adverse_event` and `gold.fct_adverse_event` are new.
+ * With those two tables left out the hash is the previous golden, 5258dfe3,
+ * so no other value moved.
+ *
+ * #2957: `silver.edc_vital_sign` and `gold.fct_vital_sign` are new. With
+ * those two tables left out the hash is the previous golden, 140be786, so
+ * no other value moved.
  */
 const GOLDEN_SHA256 =
-  "9c976355f27d2340e08a6adb8044950022d2eb113cb437e254e28732b4fae1ce";
+  "0b41b9c26ec953c98636fbfccfb02ec7fe0366db74e2ccd3c694173e96a5d797";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -66,6 +77,8 @@ const GOLDEN_ROW_COUNTS = {
   "silver.edc_subject": 1808,
   "silver.edc_visit": 7727,
   "silver.edc_query": 3559,
+  "silver.edc_adverse_event": 2084,
+  "silver.edc_vital_sign": 27836,
   "silver.ctms_milestone": 72,
   "silver.ctms_monitoring_plan": 8,
   "silver.ctms_monitoring_visit": 1123,
@@ -89,6 +102,8 @@ const GOLDEN_ROW_COUNTS = {
   "gold.fct_query": 3559,
   "gold.fct_deviation": 329,
   "gold.fct_cec_adjudication": 39,
+  "gold.fct_adverse_event": 2084,
+  "gold.fct_vital_sign": 6959,
   "gold.fct_monitoring_visit": 1123,
   "gold.fct_planned_monitoring_visit": 1077,
   "gold.fct_milestone": 72,
@@ -286,6 +301,101 @@ describe("buildWarehouse: integrity", () => {
     ]);
   });
 
+  it("keeps one adverse event fact per event, keyed by the site version that reported it (#2956)", () => {
+    const events = rows("silver.edc_adverse_event");
+    const facts = new Map(
+      rows("gold.fct_adverse_event").map((f) => [f.ae_id, f])
+    );
+    expect(facts.size).toBe(events.length);
+    const key = (day: unknown) => Number(String(day).replaceAll("-", ""));
+    const siteKeys = new Map(rows("gold.dim_site").map((s) => [s.site_key, s]));
+    for (const event of events) {
+      const fact = facts.get(event.ae_id)!;
+      const id = String(event.ae_id);
+      const reported = String(event.reported_on);
+      expect(siteKeys.get(fact.site_key), id).toBe(
+        siteVersionOn(warehouse, String(event.site_id), reported)
+      );
+      expect(fact.onset_date_key, id).toBe(key(event.onset_on));
+      expect(fact.reported_date_key, id).toBe(key(reported));
+      expect(fact.days_to_report, id).toBe(
+        (Date.parse(reported) - Date.parse(String(event.onset_on))) / 86_400_000
+      );
+      expect(fact.is_serious, id).toBe(event.is_serious);
+    }
+  });
+
+  it("reports an adverse event reported before it began (#2956)", () => {
+    const early = rows("silver.edc_adverse_event").map((event, index) =>
+      index === 0 ? { ...event, reported_on: "2000-01-01" } : event
+    );
+    const findings = checkWarehouse(WAREHOUSE_SCHEMA, {
+      ...warehouse,
+      tables: { ...warehouse.tables, "silver.edc_adverse_event": early },
+    });
+    expect(findings).toEqual([
+      {
+        rule: "sequence",
+        table: "silver.edc_adverse_event",
+        message: expect.stringMatching(
+          /^reported_on = "2000-01-01" without onset_on on or before it \("\d{4}-\d{2}-\d{2}"\)\.$/
+        ),
+      },
+    ]);
+  });
+
+  it("pivots each visit's vital signs onto one fact, keyed by the site version on the day (#2957)", () => {
+    const readings = rows("silver.edc_vital_sign");
+    const facts = new Map(
+      rows("gold.fct_vital_sign").map((f) => [f.visit_id, f])
+    );
+    expect(facts.size).toBe(rows("gold.fct_vital_sign").length);
+    expect(facts.size * 4).toBe(readings.length);
+    const column: Record<string, string> = {
+      SYSBP: "systolic_bp_mmhg",
+      DIABP: "diastolic_bp_mmhg",
+      PULSE: "pulse_bpm",
+      WEIGHT: "weight_kg",
+    };
+    const siteKeys = new Map(rows("gold.dim_site").map((s) => [s.site_key, s]));
+    for (const reading of readings) {
+      const fact = facts.get(reading.visit_id)!;
+      const id = String(reading.vital_sign_id);
+      const measured = String(reading.measured_on);
+      expect(fact[column[String(reading.vs_test_code)]], id).toBe(
+        reading.vs_value
+      );
+      expect(fact.subject_id, id).toBe(reading.subject_id);
+      expect(fact.measured_date_key, id).toBe(
+        Number(measured.replaceAll("-", ""))
+      );
+      expect(siteKeys.get(fact.site_key), id).toBe(
+        siteVersionOn(warehouse, String(reading.site_id), measured)
+      );
+    }
+  });
+
+  it("leaves a sign the site did not record empty in its visit's fact (#2957)", () => {
+    const [first] = portfolio.feeds.edc.vitalSigns;
+    const fact = rows(
+      "gold.fct_vital_sign",
+      buildWarehouse({
+        ...portfolio,
+        feeds: {
+          ...portfolio.feeds,
+          edc: {
+            ...portfolio.feeds.edc,
+            vitalSigns: portfolio.feeds.edc.vitalSigns.filter(
+              (r) => r.visitId !== first.visitId || r.test !== "WEIGHT"
+            ),
+          },
+        },
+      })
+    ).find((f) => f.visit_id === first.visitId);
+    expect(fact?.weight_kg).toBeNull();
+    expect(fact?.systolic_bp_mmhg).toBe(first.value);
+  });
+
   it("carries each subject's screen failure reason into every enrollment fact (#2879)", () => {
     const reasons = new Map(
       rows("silver.edc_subject").map((s) => [
@@ -302,6 +412,25 @@ describe("buildWarehouse: integrity", () => {
     for (const fact of rows("gold.fct_enrollment")) {
       expect(fact.screen_failure_reason).toBe(reasons.get(fact.subject_id));
     }
+  });
+
+  it("carries the UTC hour each visit's data was entered (#2955)", () => {
+    const entered = new Map(
+      rows("silver.edc_visit").map((v) => [v.visit_id, v.data_entered_at])
+    );
+    const hours = new Set<number>();
+    for (const visit of rows("gold.fct_visit")) {
+      const at = entered.get(visit.visit_id);
+      if (at === null) {
+        expect(visit.entry_hour).toBeNull();
+        continue;
+      }
+      expect(visit.entry_hour).toBe(new Date(String(at)).getUTCHours());
+      hours.add(Number(visit.entry_hour));
+    }
+    // Sites enter data through the working day.
+    expect(Math.min(...hours)).toBe(8);
+    expect(Math.max(...hours)).toBe(19);
   });
 
   it("names each query's form by the CDASH domain of its field (#2759)", () => {
@@ -862,6 +991,8 @@ describe("lineage", () => {
     "bronze.edc.subjects": portfolio.feeds.edc.subjects[0],
     "bronze.edc.visits": portfolio.feeds.edc.visits[0],
     "bronze.edc.queries": portfolio.feeds.edc.queries[0],
+    "bronze.edc.adverseEvents": portfolio.feeds.edc.adverseEvents[0],
+    "bronze.edc.vitalSigns": portfolio.feeds.edc.vitalSigns[0],
     "bronze.ctms.milestones": portfolio.feeds.ctms.milestones[0],
     "bronze.ctms.monitoringPlans": portfolio.feeds.ctms.monitoringPlans[0],
     "bronze.ctms.monitoringVisits": portfolio.feeds.ctms.monitoringVisits[0],
@@ -1087,6 +1218,8 @@ describe("exports, ERD and reference page", () => {
         "string:BYTE_ARRAY:STRING",
         "integer:INT32:INT(32, true)",
         "decimal:INT64:DECIMAL(12, 4)",
+        "decimal:INT64:DECIMAL(6, 1)",
+        "decimal:INT64:DECIMAL(5, 1)",
         "boolean:BOOLEAN:null",
         "date:INT32:DATE",
         "timestamp:INT64:TIMESTAMP(isAdjustedToUTC=true, unit=MILLIS)",

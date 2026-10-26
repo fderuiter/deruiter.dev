@@ -5,8 +5,11 @@ import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
-export const revalidate = 3600;
+// Daily: each regeneration bills Vercel active CPU, and content writes
+// revalidate these paths on demand, so the timer is only a backstop (#2971).
+export const revalidate = 86400;
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.blog
@@ -23,17 +26,14 @@ export default async function BlogIndexPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Blog", url: "/blog" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/blog")),
         }}
       />
 
       <div className="relative z-10 w-full flex flex-col items-center">
         {/* Navigation Breadcrumb */}
         <div className="w-full mb-6 sm:mb-8 flex justify-start">
-          <Breadcrumbs items={[{ label: "Blog" }]} />
+          <Breadcrumbs path="/blog" />
         </div>
 
         {/* Page Header */}

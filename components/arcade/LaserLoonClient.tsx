@@ -44,12 +44,7 @@ export const LaserLoonClient: React.FC = () => {
               <span>Back to Arcade Hub</span>
             </Link>
             <span className="text-zinc-700 hidden sm:inline">|</span>
-            <Breadcrumbs
-              items={[
-                { label: "Arcade Hub", href: "/arcade" },
-                { label: "Laser Loon" },
-              ]}
-            />
+            <Breadcrumbs path="/arcade/laser-loon" />
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link

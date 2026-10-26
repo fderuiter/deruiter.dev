@@ -124,7 +124,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.3.0";
+export const CONFORMANCE_RULES_VERSION = "1.5.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -771,6 +771,22 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   duplicateRule("SD-052", "EG"),
   unitRule("SD-053", "EG"),
   sourceLineageRule("SD-054", "EG"),
+  required("SD-055", "CM", ["STUDYID", "USUBJID", "CMSEQ", "CMTRT"]),
+  unique("SD-056", "CM", "CMSEQ"),
+  dateRule("SD-057", "CM", "CMSTDTC"),
+  dateRule("SD-058", "CM", "CMENDTC"),
+  studyDay("SD-059", "CM", "CMSTDTC", "CMSTDY"),
+  studyDay("SD-060", "CM", "CMENDTC", "CMENDY"),
+  terminology("SD-061", "CM", "CMDOSU", "CL_DOSU", false),
+  terminology("SD-062", "CM", "CMROUTE", "CL_ROUTE", true),
+  sourceLineageRule("SD-063", "CM"),
+  required("SD-064", "MH", ["STUDYID", "USUBJID", "MHSEQ", "MHTERM"]),
+  unique("SD-065", "MH", "MHSEQ"),
+  dateRule("SD-066", "MH", "MHDTC"),
+  dateRule("SD-067", "MH", "MHSTDTC"),
+  dateRule("SD-068", "MH", "MHENDTC"),
+  studyDay("SD-069", "MH", "MHDTC", "MHDY"),
+  sourceLineageRule("SD-070", "MH"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

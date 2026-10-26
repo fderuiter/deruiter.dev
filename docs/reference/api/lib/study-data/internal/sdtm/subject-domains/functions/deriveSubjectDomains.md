@@ -8,7 +8,7 @@
 
 > **deriveSubjectDomains**(`definition`, `collectedDatasets`, `trialDesign`): readonly [`Dataset`](../../../../types/interfaces/Dataset.md)[]
 
-Derive DM, SV, EX, AE, VS, LB, EG, DS and SUPPDM from collected records.
+Derive DM, SV, EX, CM, AE, MH, VS, LB, EG, DS and SUPPDM from collected records.
 
 ## Parameters
 

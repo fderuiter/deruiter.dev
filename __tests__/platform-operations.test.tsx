@@ -168,7 +168,7 @@ describe("OperationsView (#2630)", () => {
 
   it("marks the current step in the breadcrumb trail", () => {
     view({ study: "DEMO-302", site: "DEMO-302-DE-103" });
-    const trail = screen.getByRole("navigation", { name: "Breadcrumb" });
+    const trail = screen.getByRole("navigation", { name: "Dashboard level" });
     expect(
       within(trail)
         .getAllByRole("link")
@@ -339,7 +339,14 @@ describe("Risk tab (#2631)", () => {
     const flagged = within(csm)
       .getAllByRole("listitem")
       .filter((li) => li.textContent?.includes("q = "));
+    // BR-118 is the planted data-integrity site: queries, adverse events
+    // (#2956), exact-day visits, entry hours (#2955), rounded and barely
+    // varying vital signs (#2957) and its KRI profile.
     expect(flagged.map((li) => li.textContent?.split(" · ")[0])).toEqual([
+      "DEMO-302-BR-118",
+      "DEMO-302-BR-118",
+      "DEMO-302-BR-118",
+      "DEMO-302-BR-118",
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
@@ -349,7 +356,7 @@ describe("Risk tab (#2631)", () => {
     const grid = within(csm).getByRole("table", {
       name: /Adjusted q-values of every central monitoring test/,
     });
-    expect(within(grid).getAllByText("(stands out)")).toHaveLength(4);
+    expect(within(grid).getAllByText("(stands out)")).toHaveLength(8);
   });
 
   it("shows a QTL breach and logs the signal it raises", () => {
@@ -390,15 +397,20 @@ describe("Risk tab (#2631)", () => {
     const gaps = screen.getByRole("complementary", {
       name: "Risk: not in the governed model yet",
     });
+    // The weekday calendar; adverse events (#2956), entry hours (#2955) and
+    // vital signs (#2957) are tested now.
     expect(
       within(gaps).getAllByRole("link", { name: "Planned in #2776" })
-    ).toHaveLength(4);
+    ).toHaveLength(1);
     const factor = screen.getByText("Adverse event reporting").closest("li")!;
+    expect(factor.textContent).toContain(
+      "Central monitoring compares each site's rate with its peers"
+    );
     expect(
-      within(factor).getByRole("link", { name: "Planned in #2776" })
+      within(factor).getByRole("link", { name: "Planned in #2980" })
     ).toHaveProperty(
       "href",
-      "https://github.com/fderuiter/deruiter.dev/issues/2776"
+      "https://github.com/fderuiter/deruiter.dev/issues/2980"
     );
   });
 });

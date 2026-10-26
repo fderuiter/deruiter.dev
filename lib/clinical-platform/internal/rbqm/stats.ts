@@ -178,6 +178,21 @@ export function poissonCdf(k: number, mean: number): number {
 }
 
 /**
+ * Cumulative distribution function of the chi-square distribution.
+ *
+ * @param x - Value, zero or more.
+ * @param df - Degrees of freedom, positive.
+ * @returns P(X ≤ x).
+ */
+export function chiSquareCdf(x: number, df: number): number {
+  requirePositive("df", df);
+  requireFinite("x", x);
+  if (x <= 0) return 0;
+  // A chi-square with df degrees of freedom is a gamma(df / 2, 2).
+  return regularizedGammaP(df / 2, x / 2);
+}
+
+/**
  * Cumulative distribution function of the F distribution.
  *
  * @param x - Value, zero or more.

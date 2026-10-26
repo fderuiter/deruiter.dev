@@ -27,6 +27,19 @@ const NEURO_SYMPTOMS = {
   hlgt: "Fictional neurological symptoms",
   hlgtcd: 99000101,
 } as const;
+const METABOLISM = {
+  soc: "Metabolism and nutrition disorders",
+  soccd: 99000005,
+} as const;
+const METABOLIC_CONDITIONS = {
+  hlgt: "Fictional metabolic conditions",
+  hlgtcd: 99000113,
+} as const;
+const INFECTIONS = { soc: "Infections and infestations", soccd: 99000006 } as const;
+const INFECTIONS_GROUP = {
+  hlgt: "Fictional infections",
+  hlgtcd: 99000114,
+} as const;
 const term = (
   pt: string,
   ptcd: number,
@@ -81,9 +94,102 @@ export const AE_DICTIONARY: readonly AeDictionaryTerm[] = [
   ),
 ];
 
+/** A medical history condition as the site reports it, and its coding. */
+export interface HistoryDictionaryEntry {
+  /** The condition as the site reports it, written to MHTERM. */
+  readonly reported: string;
+  readonly term: AeDictionaryTerm;
+}
+
+/**
+ * Medical history conditions, coded with the same fictional dictionary. They
+ * are kept apart from `AE_DICTIONARY` because the generator draws adverse
+ * events from that list by position, so adding a term there would change
+ * every adverse event drawn after it. A condition's reported name is the
+ * indication the concomitant medication page records for it.
+ */
+export const HISTORY_DICTIONARY: readonly HistoryDictionaryEntry[] = [
+  {
+    reported: "Hypertension",
+    term: term(
+      "Hypertension",
+      99001101,
+      "Fictional vascular hypertensive terms",
+      99000211,
+      { hlgt: "Fictional vascular conditions", hlgtcd: 99000111 },
+      { soc: "Vascular disorders", soccd: 99000004 }
+    ),
+  },
+  {
+    reported: "Hypercholesterolaemia",
+    term: term(
+      "Hypercholesterolaemia",
+      99001102,
+      "Fictional lipid terms",
+      99000212,
+      METABOLIC_CONDITIONS,
+      METABOLISM
+    ),
+  },
+  {
+    reported: "Type 2 diabetes mellitus",
+    term: term(
+      "Type 2 diabetes mellitus",
+      99001103,
+      "Fictional glucose terms",
+      99000213,
+      METABOLIC_CONDITIONS,
+      METABOLISM
+    ),
+  },
+  {
+    reported: "Gastro-oesophageal reflux disease",
+    term: term(
+      "Gastrooesophageal reflux disease",
+      99001104,
+      "Fictional reflux terms",
+      99000214,
+      { hlgt: "Fictional gastrointestinal conditions", hlgtcd: 99000112 },
+      { soc: "Gastrointestinal disorders", soccd: 99000002 }
+    ),
+  },
+  {
+    reported: "Appendicitis",
+    term: term(
+      "Appendicitis",
+      99001105,
+      "Fictional abdominal infection terms",
+      99000215,
+      INFECTIONS_GROUP,
+      INFECTIONS
+    ),
+  },
+  {
+    reported: "Pneumonia",
+    term: term(
+      "Pneumonia",
+      99001106,
+      "Fictional respiratory infection terms",
+      99000216,
+      INFECTIONS_GROUP,
+      INFECTIONS
+    ),
+  },
+];
+
 const BY_PT = new Map(AE_DICTIONARY.map((entry) => [entry.pt, entry]));
+const BY_REPORTED_CONDITION = new Map(
+  HISTORY_DICTIONARY.map((entry) => [entry.reported, entry.term])
+);
 
 /** The dictionary entry for a preferred term, or undefined when it has none. */
 export function codeAeTerm(pt: unknown): AeDictionaryTerm | undefined {
   return typeof pt === "string" ? BY_PT.get(pt) : undefined;
+}
+
+/** The coding of a reported medical history condition, when it has one. */
+export function codeHistoryTerm(reported: unknown): AeDictionaryTerm | undefined {
+  return typeof reported === "string"
+    ? BY_REPORTED_CONDITION.get(reported)
+    : undefined;
 }

@@ -93,6 +93,11 @@ export const RUNTIME_ANNOTATIONS: Record<string, DirectAnnotation> = {
     group: "Data and storage",
     reason: "Serverless Postgres driver for Neon.",
   },
+  pg: {
+    group: "Data and storage",
+    reason:
+      "PostgreSQL client that loads and reads Aurora DSQL from CI and builds.",
+  },
   "@duckdb/duckdb-wasm": {
     group: "Data and storage",
     reason:
@@ -275,6 +280,7 @@ export const TOOLING_ANNOTATIONS: Record<string, DirectAnnotation> = {
     reason: "jsdom type definitions.",
   },
   "@types/ws": { group: "Build and types", reason: "ws type definitions." },
+  "@types/pg": { group: "Build and types", reason: "pg type definitions." },
   eslint: {
     group: "Linting and docs",
     reason: "Static analysis with zero warnings allowed.",

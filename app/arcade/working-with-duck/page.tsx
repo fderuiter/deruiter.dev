@@ -4,8 +4,11 @@ import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 
 import { PageLayout } from "@/components/PageLayout";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.workingWithDuck);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.workingWithDuck
+);
 
 export default function WorkingWithDuckPage() {
   return (
@@ -25,11 +28,9 @@ export default function WorkingWithDuckPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "Working With Duck", url: "/arcade/working-with-duck" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/working-with-duck")
+          ),
         }}
       />
       <WorkingWithDuckClient />

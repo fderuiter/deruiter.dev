@@ -254,6 +254,66 @@ export interface EdcQuery extends BronzeRecord {
   readonly status: "open" | "answered" | "closed";
 }
 
+/** Severity of an adverse event, as the SDTM AESEV codelist words it (#2956). */
+export type AdverseEventSeverity = "mild" | "moderate" | "severe";
+
+/**
+ * An adverse event as the site records it in EDC, on the visit at which it
+ * was reported (#2956). Portfolio studies carry these; DEMO-301's adverse
+ * events stay in its Study Data Pipeline run.
+ */
+export interface EdcAdverseEvent extends BronzeRecord {
+  /** Adverse event id. */
+  readonly aeId: string;
+  /** Visit record id the event was reported at. */
+  readonly visitId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** Reported term, from a short fictional list such as `Headache`. */
+  readonly term: string;
+  /** ISO 8601 date the event began. */
+  readonly onsetOn: string;
+  /** ISO 8601 date the site reported it: the day it entered the visit's data. */
+  readonly reportedOn: string;
+  /** Whether the event is serious, as ICH E2A defines it. */
+  readonly serious: boolean;
+  /** Severity. */
+  readonly severity: AdverseEventSeverity;
+}
+
+/** A vital sign, by its SDTM VSTESTCD (#2957). */
+export type VitalSignTest = "SYSBP" | "DIABP" | "PULSE" | "WEIGHT";
+
+/**
+ * One vital sign reading as the site records it in EDC at a visit (#2957).
+ * Portfolio studies carry these; DEMO-301's vital signs stay in its Study
+ * Data Pipeline run.
+ */
+export interface EdcVitalSign extends BronzeRecord {
+  /** Reading id: the visit record id and the test code. */
+  readonly vitalSignId: string;
+  /** Visit record id the reading was taken at. */
+  readonly visitId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** What was measured. */
+  readonly test: VitalSignTest;
+  /** The reading: whole mmHg or beats per minute, or kilograms to 0.1. */
+  readonly value: number;
+  /** Unit: `mmHg`, `beats/min` or `kg`. */
+  readonly unit: string;
+  /** ISO 8601 date of the visit the reading was taken at. */
+  readonly measuredOn: string;
+}
+
 /** Study milestone kind, covering drug and ISO 14155 device milestones. */
 export type MilestoneKind =
   | "protocol-final"
@@ -487,7 +547,7 @@ export interface CecAdjudication extends BronzeRecord {
   readonly cecDeviceRelated: boolean | null;
 }
 
-/** The EDC feed: subjects, visits and queries. */
+/** The EDC feed: subjects, visits, queries, adverse events and vital signs. */
 export interface EdcFeed {
   /** Subject records. */
   readonly subjects: readonly EdcSubject[];
@@ -495,6 +555,10 @@ export interface EdcFeed {
   readonly visits: readonly EdcVisit[];
   /** Query records. */
   readonly queries: readonly EdcQuery[];
+  /** Adverse event records (#2956). */
+  readonly adverseEvents: readonly EdcAdverseEvent[];
+  /** Vital sign readings (#2957). */
+  readonly vitalSigns: readonly EdcVitalSign[];
 }
 
 /** The CTMS feed: milestones, monitoring visits and protocol deviations. */
@@ -1138,6 +1202,56 @@ export interface Warehouse {
 
 /** SQL dialect a DDL emitter writes. */
 export type SqlDialect = "duckdb" | "postgres" | "tsql";
+
+/** One parameterised `INSERT` of a DSQL load: up to the batch limit of one table's rows. */
+export interface DsqlInsertBatch {
+  /** Qualified table name, for example `gold.dim_site`. */
+  readonly table: string;
+  /** Statement text with `$1`, `$2`, ... placeholders, row by row. */
+  readonly text: string;
+  /** Parameter values in placeholder order; decimals as text at their declared scale. */
+  readonly values: readonly WarehouseValue[];
+  /** Rows the statement inserts. */
+  readonly rowCount: number;
+}
+
+/** What a DSQL load must hold for one table, and how to read it back. */
+export interface DsqlTableParity {
+  /** Qualified table name. */
+  readonly table: string;
+  /** Rows the table holds after the load. */
+  readonly rowCount: number;
+  /** Fingerprint of the table's rows, as `fingerprintDsqlRows` computes it. */
+  readonly fingerprint: string;
+  /** `SELECT` returning every column as canonical text, for `fingerprintDsqlRows`. */
+  readonly readback: string;
+}
+
+/**
+ * Everything a runner sends to Aurora DSQL to load a set of warehouse
+ * tables, in order, inside DSQL's limits: each DDL statement runs in its own
+ * transaction, and each insert modifies far fewer than 3,000 rows (ADR 0070).
+ */
+export interface DsqlLoadPlan {
+  /** Warehouse schema version loaded. */
+  readonly schemaVersion: string;
+  /** `DROP TABLE IF EXISTS` statements, dependants first. */
+  readonly drop: readonly string[];
+  /** `CREATE SCHEMA` and `CREATE TABLE` statements, referenced tables first. */
+  readonly create: readonly string[];
+  /** Inserts in table order, so every foreign key's target is loaded first. */
+  readonly inserts: readonly DsqlInsertBatch[];
+  /** Expected contents of each table after the load. */
+  readonly parity: readonly DsqlTableParity[];
+  /** Size of the loaded rows as CSV, in bytes: a floor for DSQL storage, against its 1 GB free quota. */
+  readonly csvBytes: number;
+}
+
+/** Options for `planDsqlLoad`. */
+export interface DsqlLoadOptions {
+  /** Most rows per `INSERT`, 1 to 3,000. Defaults to 1,000. */
+  readonly maxRowsPerInsert?: number;
+}
 
 /**
  * Certification tier of a report (#2625). `certified` reports use only

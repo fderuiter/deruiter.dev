@@ -32,22 +32,30 @@ describe("Retro Labyrinth views (#2859)", () => {
     device.phone = false;
   });
 
-  it("lays the tablet view out as a tablet's touch cabinet", () => {
+  it("lays the tablet view out as a tablet's touch cabinet on its own stage (#2967)", () => {
     render(<TabletView isMounted={false} />);
     expect(layoutProps.current.at(-1)).toEqual({
       isMounted: false,
-      touch: true,
-      phone: false,
+      touchStage: {
+        mazeClassName: expect.stringContaining("portrait:aspect-[5/3]"),
+        orientationHint: true,
+        Stage: expect.any(Function),
+      },
     });
   });
 
-  it("lays the phone view out as a phone, touch only in a touch cabinet (#2917)", () => {
+  it("lays the phone view out on its own stage, only in a touch cabinet (#2917, #2968)", () => {
     device.touch = true;
     render(<PhoneView isMounted={false} />);
     expect(layoutProps.current.at(-1)).toEqual({
       isMounted: false,
-      touch: true,
-      phone: true,
+      touchStage: {
+        mazeClassName: "",
+        maxDpr: 2,
+        orientationHint: false,
+        MazeOverlay: expect.any(Function),
+        Stage: expect.any(Function),
+      },
     });
 
     // A phone-sized window worked with a mouse keeps the desktop controls.
@@ -55,27 +63,18 @@ describe("Retro Labyrinth views (#2859)", () => {
     render(<PhoneView />);
     expect(layoutProps.current.at(-1)).toEqual({
       isMounted: true,
-      touch: false,
-      phone: true,
+      touchStage: undefined,
     });
   });
 
-  it("passes the desktop view's cabinet state through", () => {
+  it("lays the desktop view out as the desktop cabinet, whatever the device (#2966)", () => {
     render(<DesktopView />);
-    expect(layoutProps.current.at(-1)).toEqual({
-      isMounted: true,
-      touch: false,
-      phone: false,
-    });
+    expect(layoutProps.current.at(-1)).toEqual({ isMounted: true });
 
-    // The shared layout still reads the cabinet state until #2863.
+    // A touch player who picks the Desktop layout gets the desktop layout.
     device.touch = true;
     device.phone = true;
-    render(<DesktopView />);
-    expect(layoutProps.current.at(-1)).toEqual({
-      isMounted: true,
-      touch: true,
-      phone: true,
-    });
+    render(<DesktopView isMounted={false} />);
+    expect(layoutProps.current.at(-1)).toEqual({ isMounted: false });
   });
 });

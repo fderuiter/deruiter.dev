@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ROUTE_METADATA_CONFIGS, buildRouteMetadata } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema } from "@/lib/seo";
-import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 import { WeddingArchiveView } from "@/components/wedding/WeddingArchiveView";
 
 export const metadata: Metadata = buildRouteMetadata(
@@ -14,11 +14,7 @@ export default function WeddingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            ...getNavBreadcrumbSchemaParents("/wedding"),
-            { name: "Our Wedding", url: "/wedding" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/wedding")),
         }}
       />
       <WeddingArchiveView />

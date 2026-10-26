@@ -17,6 +17,8 @@ A raw record in a bronze feed, as received from its source system.
 - [`EdcSubject`](EdcSubject.md)
 - [`EdcVisit`](EdcVisit.md)
 - [`EdcQuery`](EdcQuery.md)
+- [`EdcAdverseEvent`](EdcAdverseEvent.md)
+- [`EdcVitalSign`](EdcVitalSign.md)
 - [`CtmsMilestone`](CtmsMilestone.md)
 - [`CtmsMonitoringPlan`](CtmsMonitoringPlan.md)
 - [`CtmsMonitoringVisit`](CtmsMonitoringVisit.md)

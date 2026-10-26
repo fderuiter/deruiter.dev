@@ -4,6 +4,7 @@ import { CaseStudyService } from "@/lib/services/case-study-service";
 import { FALLBACK_CASE_STUDIES } from "@/lib/case-studies-data";
 import { prisma } from "@/lib/db";
 import { getScopedRedisKey } from "@/lib/redis";
+import { revalidatePath } from "next/cache";
 
 const { mockRedisGet, mockRedisSet, mockRedisDel, mockRedisConfigured } =
   vi.hoisted(() => ({
@@ -35,6 +36,7 @@ vi.mock("@/lib/redis", async (importOriginal) => {
 });
 
 vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
 }));
 
@@ -202,6 +204,27 @@ describe("CaseStudyService.getPublishedCaseStudies projection (#1113)", () => {
     );
     expect(mockRedisDel).toHaveBeenCalledWith(
       getScopedRedisKey("cs:all_published")
+    );
+  });
+
+  it("revalidates every page that renders the case study (#2971)", async () => {
+    vi.mocked(revalidatePath).mockClear();
+    await CaseStudyService.evictCaseStudyCache("cadence-clinical");
+
+    const paths = vi.mocked(revalidatePath).mock.calls.map(([p]) => p);
+    expect(paths).toEqual([
+      "/",
+      "/case-studies",
+      "/case-studies/cadence-clinical",
+    ]);
+  });
+
+  it("revalidates the Laser Loon work page with its case study (#2971)", async () => {
+    vi.mocked(revalidatePath).mockClear();
+    await CaseStudyService.evictCaseStudyCache("laser-loon");
+
+    expect(vi.mocked(revalidatePath).mock.calls.map(([p]) => p)).toContain(
+      "/work/laser-loon"
     );
   });
 });

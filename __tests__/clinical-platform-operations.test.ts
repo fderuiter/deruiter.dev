@@ -950,16 +950,15 @@ describe("operations risk tab (#2631)", () => {
       study: "DEMO-302",
     }).sections.find((s) => s.id === "risk")!;
     expect(section.reports).toEqual([]);
+    // Adverse event under-reporting (#2956), the time of day of entry
+    // (#2955) and digit preference in vital signs (#2957) are tested now.
     expect(section.gaps.map((g) => `${g.name} #${g.issue}`)).toEqual([
-      "Adverse event under-reporting #2776",
-      "Digit preference in vital signs #2776",
       "Weekend and holiday visit dates #2776",
-      "Time of day of data entry #2776",
     ]);
     const factor = risk({ study: "DEMO-302" })!.factors.find(
       (f) => f.id === "ctq-safety-reporting"
     )!;
-    expect(factor.gap?.issue).toBe(2776);
+    expect(factor.gap?.issue).toBe(2980);
     expect(factor.kris).toEqual([]);
   });
 });

@@ -103,6 +103,9 @@ export type CodelistId =
   | "VSRESU"
   | "UNIT"
   | "FRM"
+  | "FREQ"
+  | "ROUTE"
+  | "STENRF"
   | "NRIND"
   | "ACN"
   | "DSCAT"
@@ -141,11 +144,13 @@ const CODELISTS = [
   cdisc("AGEU", "Age Unit", "SDTM", "C66781", false, [term("YEARS", "C29848")]),
   cdisc("DOMAIN", "SDTM Domain Abbreviation", "SDTM", "C66734", true, [
     term("AE", "C49562"),
+    term("CM", "C49568"),
     term("DM", "C49572"),
     term("DS", "C49576"),
     term("EG", "C49626"),
     term("EX", "C49587"),
     term("LB", "C49592"),
+    term("MH", "C49603"),
     term("SV", "C49617"),
     term("TA", "C49618"),
     term("TE", "C49619"),
@@ -206,9 +211,21 @@ const CODELISTS = [
     term("TABLET", "C48542"),
     term("ms", "C41140"),
     term("beats/min", "C49673"),
+    term("mg", "C28253"),
   ]),
   cdisc("FRM", "Dosage Form", "SDTM", "C66726", true, [
     term("TABLET", "C42998"),
+  ]),
+  cdisc("FREQ", "Frequency", "SDTM", "C71113", true, [
+    term("QD", "C25473"),
+    term("BID", "C64496"),
+    term("PRN", "C64499"),
+  ]),
+  cdisc("ROUTE", "Route of Administration Response", "SDTM", "C66729", true, [
+    term("ORAL", "C38288"),
+  ]),
+  cdisc("STENRF", "Relation to Reference Period", "SDTM", "C66728", false, [
+    term("ONGOING", "C53279"),
   ]),
   cdisc("NRIND", "Reference Range Indicator", "SDTM", "C78736", true, [
     term("NORMAL", "C78727"),

@@ -8,9 +8,11 @@ import type {
   CtmsMilestone,
   CtmsMonitoringPlan,
   CtmsMonitoringVisit,
+  EdcAdverseEvent,
   EdcQuery,
   EdcSubject,
   EdcVisit,
+  EdcVitalSign,
   EtmfDocument,
   FinanceLine,
   FinancePlanLine,
@@ -32,6 +34,7 @@ import {
   VENDORS,
   studyBlueprints,
 } from "./blueprint";
+import { adverseEvents } from "./adverse-events";
 import { isoDate, toDay } from "./calendar";
 import { studyOperations } from "./operations";
 import { studyFromPipeline } from "./pipeline";
@@ -39,6 +42,7 @@ import type { StudySimulation } from "./records";
 import { planSites } from "./sites";
 import { startUpStages } from "./start-up";
 import { simulateStudy } from "./subjects";
+import { vitalSigns } from "./vital-signs";
 
 /** Screening pace of the study planted behind plan, against plan. */
 const BEHIND_PLAN_PACE = 0.55;
@@ -47,8 +51,8 @@ const BEHIND_PLAN_PACE = 0.55;
  * Generates the synthetic sponsor portfolio and its bronze operational
  * feeds: eight studies (drug Phase I to III, two device IDE studies, three
  * run by fictional CROs), about 120 sites in 12 countries, and EDC, CTMS,
- * IRT, eTMF, finance, budget plan, protocol deviation and CEC
- * adjudication records.
+ * IRT, eTMF, finance, budget plan, protocol deviation, adverse event, vital
+ * sign and CEC adjudication records.
  *
  * DEMO-301 is the Study Data Pipeline's study. Its protocol is the USDM
  * definition the pipeline reads, and its subjects, randomisations and visits
@@ -82,6 +86,8 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
       subjects: [] as EdcSubject[],
       visits: [] as EdcVisit[],
       queries: [] as EdcQuery[],
+      adverseEvents: [] as EdcAdverseEvent[],
+      vitalSigns: [] as EdcVitalSign[],
     },
     ctms: {
       milestones: [] as CtmsMilestone[],
@@ -182,7 +188,7 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
           siteId: plan.id,
           vendorId: null,
           description:
-            "Every visit falls on its planned day, all data is entered at the same minute, and queries and deviations are nearly absent.",
+            "Every visit falls on its planned day, all data is entered at the same minute, queries, deviations and adverse events are nearly absent, and vital signs are rounded to 0 or 5 and barely vary.",
         });
       }
     }
@@ -201,6 +207,14 @@ export function generatePortfolio(options: PortfolioOptions): Portfolio {
     feeds.edc.subjects.push(...sim.subjects);
     feeds.edc.visits.push(...sim.visits);
     feeds.edc.queries.push(...sim.queries);
+    // DEMO-301's adverse events (#2956) and vital signs (#2957) stay in its
+    // Study Data Pipeline run.
+    if (blueprint.studyDefinition === null) {
+      feeds.edc.adverseEvents.push(
+        ...adverseEvents(seed, blueprint.id, plans, sim)
+      );
+      feeds.edc.vitalSigns.push(...vitalSigns(seed, blueprint.id, plans, sim));
+    }
     feeds.ctms.milestones.push(...ops.milestones);
     feeds.ctms.monitoringPlans.push(ops.monitoringPlan);
     feeds.ctms.monitoringVisits.push(...ops.monitoringVisits);

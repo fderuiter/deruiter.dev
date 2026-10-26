@@ -78,6 +78,14 @@ export const KRI_IDS = [
   "entry-lag-days",
 ] as const;
 
+/** The `fct_vital_sign` column each SDTM vital sign test code pivots to. */
+const VITAL_SIGN_COLUMNS: Readonly<Record<string, string | undefined>> = {
+  SYSBP: "systolic_bp_mmhg",
+  DIABP: "diastolic_bp_mmhg",
+  PULSE: "pulse_bpm",
+  WEIGHT: "weight_kg",
+};
+
 /** Smart date key `YYYYMMDD` of an ISO 8601 date. */
 export function dateKey(iso: string): number {
   return Number(iso.slice(0, 10).replaceAll("-", ""));
@@ -548,6 +556,8 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
         entered !== null && visitDate !== null
           ? daysBetween(visitDate, entered.slice(0, 10))
           : null,
+      // Silver timestamps are UTC, `YYYY-MM-DDTHH:MM:SSZ`.
+      entry_hour: entered === null ? null : Number(entered.slice(11, 13)),
       is_synthetic: v.is_synthetic,
     };
   });
@@ -611,6 +621,58 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
       is_synthetic: e.is_synthetic,
     };
   });
+
+  // Adverse events, keyed by the site version in force when the site
+  // reported them (#2956).
+  const fctAdverseEvent = silver.edc_adverse_event.map((e) => {
+    const onset = str(e, "onset_on");
+    const reported = str(e, "reported_on");
+    return {
+      ae_id: e.ae_id,
+      visit_id: e.visit_id,
+      subject_id: e.subject_id,
+      ...dims(e, reported),
+      onset_date_key: dk(onset),
+      reported_date_key: dk(reported),
+      days_to_report: daysBetween(onset, reported),
+      ae_term: e.ae_term,
+      is_serious: e.is_serious,
+      severity: e.severity,
+      is_synthetic: e.is_synthetic,
+    };
+  });
+
+  // Vital signs pivoted to one row per visit, a column per sign, keyed by
+  // the site version in force on the day of the visit (#2957).
+  const fctVitalSign: Record<string, WarehouseValue>[] = [];
+  const vitalsByVisit = new Map<
+    WarehouseValue,
+    Record<string, WarehouseValue>
+  >();
+  for (const v of silver.edc_vital_sign) {
+    let row = vitalsByVisit.get(v.visit_id);
+    if (row === undefined) {
+      const measured = str(v, "measured_on");
+      row = {
+        visit_id: v.visit_id,
+        subject_id: v.subject_id,
+        ...dims(v, measured),
+        measured_date_key: dk(measured),
+        systolic_bp_mmhg: null,
+        diastolic_bp_mmhg: null,
+        pulse_bpm: null,
+        weight_kg: null,
+        is_synthetic: v.is_synthetic,
+      };
+      vitalsByVisit.set(v.visit_id, row);
+      fctVitalSign.push(row);
+    }
+    const test = str(v, "vs_test_code");
+    const column = VITAL_SIGN_COLUMNS[test];
+    if (column === undefined)
+      throw new Error(`no gold column for vital sign ${test}`);
+    row[column] = v.vs_value;
+  }
 
   const dimMonitoringPlan = silver.ctms_monitoring_plan.map((p, index) => ({
     monitoring_plan_key: index + 1,
@@ -827,6 +889,8 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     fct_query: fctQuery,
     fct_deviation: fctDeviation,
     fct_cec_adjudication: fctCecAdjudication,
+    fct_adverse_event: fctAdverseEvent,
+    fct_vital_sign: fctVitalSign,
     fct_monitoring_visit: fctMonitoringVisit,
     fct_planned_monitoring_visit: fctPlannedMonitoringVisit,
     fct_milestone: fctMilestone,

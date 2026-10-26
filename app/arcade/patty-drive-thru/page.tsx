@@ -3,6 +3,7 @@ import { PattyDriveThruClient } from "@/components/arcade/PattyDriveThruClient";
 import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.pattyDriveThru
@@ -26,14 +27,9 @@ export default function PattyDriveThruPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            {
-              name: "Patty's Drive-Thru",
-              url: "/arcade/patty-drive-thru",
-            },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/patty-drive-thru")
+          ),
         }}
       />
       <PattyDriveThruClient />

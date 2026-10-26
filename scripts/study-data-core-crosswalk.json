@@ -1,0 +1,577 @@
+{
+  "engine": "CDISC CORE v0.17.1",
+  "standard": "SDTMIG 3.4",
+  "terminology": "SDTM CT 2026-03-27",
+  "method": "For each SDTM rule, the defect in `planted` was written into one record of the seed-301 export, CORE was run, and its findings were compared with the unchanged export's. `same-defect`: the CORE rules listed report the planted defect. `related`: they report a consequence of it but not the defect itself. `none`: CORE raised nothing for it.",
+  "entries": [
+    {
+      "ruleId": "SD-001",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Dropped DM.ARMCD.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-002",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding. VISIT is Permissible in SDTMIG 3.4 SV, so CORE does not require it; the local rule requires it because visit-window and epoch derivations read it.",
+      "planted": "Dropped SV.VISIT."
+    },
+    {
+      "ruleId": "SD-003",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Dropped EX.EXSTDTC.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-004",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Dropped AE.AESTDTC.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-005",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Dropped VS.VSORRES.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-006",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Dropped LB.LBORRES.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-007",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Dropped DS.DSDECOD.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-008",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Dropped SUPPDM.QVAL.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-009",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second EX record of one subject the same EXSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-010",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second AE record of one subject the same AESEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-011",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second VS record of one subject the same VSSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-012",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second LB record of one subject the same LBSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-013",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second DS record of one subject the same DSSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-035",
+      "core": ["CORE-000351"],
+      "coverage": "same-defect",
+      "planted": "Gave a second DM record the same USUBJID.",
+      "reason": "CG0151: USUBJID is not unique in DM. CORE also reports knock-on findings (CORE-000201 and others) on every dataset of the affected subjects."
+    },
+    {
+      "ruleId": "SD-014",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set DM.RFICDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-015",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set SV.SVSTDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-016",
+      "core": ["CORE-000138", "CORE-000238", "CORE-000239"],
+      "coverage": "related",
+      "planted": "Set EX.EXSTDTC to 2030-13-45 on one record.",
+      "reason": "CORE does not check the date's format; it reports the consequences: a study day beside an incomplete date (CG0221) and DM.RFXSTDTC/RFXENDTC no longer matching EX (CG0147, CG0148)."
+    },
+    {
+      "ruleId": "SD-017",
+      "core": ["CORE-000138"],
+      "coverage": "related",
+      "planted": "Set AE.AESTDTC to 2030-13-45 on one record.",
+      "reason": "CORE does not check the date's format; it reports the consequence, a study day beside an incomplete date (CG0221)."
+    },
+    {
+      "ruleId": "SD-018",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set VS.VSDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-019",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set LB.LBDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-020",
+      "core": ["CORE-000363", "CORE-000370"],
+      "coverage": "related",
+      "planted": "Set DS.DSSTDTC to 2030-13-45 on one record.",
+      "reason": "CORE does not check the date's format; it reports the consequence, the informed-consent disposition date no longer matching DM.RFICDTC (CG0068, CG0143)."
+    },
+    {
+      "ruleId": "SD-021",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: run against SDTM CT 2026-03-27, CORE v0.17.1 raised nothing for this off-codelist value, so the local terminology check stays.",
+      "planted": "Set DM.SEX to INVALID on one record."
+    },
+    {
+      "ruleId": "SD-022",
+      "core": ["CORE-000087"],
+      "coverage": "same-defect",
+      "planted": "Set AE.AESER to INVALID on one record.",
+      "reason": "CG0387: AESER is populated but not N or Y. CORE also reports CG0042 (CORE-000266) for the seriousness criteria."
+    },
+    {
+      "ruleId": "SD-023",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: run against SDTM CT 2026-03-27, CORE v0.17.1 raised nothing for this off-codelist value, so the local terminology check stays.",
+      "planted": "Set AE.AEREL to INVALID on one record."
+    },
+    {
+      "ruleId": "SD-024",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: run against SDTM CT 2026-03-27, CORE v0.17.1 raised nothing for this off-codelist value, so the local terminology check stays.",
+      "planted": "Set EX.EXDOSU to INVALID on one record."
+    },
+    {
+      "ruleId": "SD-025",
+      "core": ["CORE-000552"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to AESTDY on one record with a full date.",
+      "reason": "CG0220: --STDY is not calculated per the study day algorithm. CORE also reports --STDY greater than --ENDY (CORE-000708) here."
+    },
+    {
+      "ruleId": "SD-026",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to VSDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-027",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to LBDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-028",
+      "core": ["CORE-000036", "CORE-000269"],
+      "coverage": "same-defect",
+      "planted": "Set SV.VISIT to WRONG VISIT on one record.",
+      "reason": "CG0657 and CG0031: a planned visit's VISIT is not among the trial visits in TV. CORE also reports the broken VISIT to VISITNUM pairing (CG0035, CORE-000361)."
+    },
+    {
+      "ruleId": "SD-029",
+      "core": ["CORE-000271"],
+      "coverage": "related",
+      "planted": "Set VS.EPOCH to WRONG EPOCH on one record.",
+      "reason": "CG0009: EPOCH is not in TA.EPOCH. CORE catches an epoch that is not in the trial design, but not a valid epoch assigned to the wrong date, which the local rule derives and checks."
+    },
+    {
+      "ruleId": "SD-030",
+      "core": ["CORE-000529"],
+      "coverage": "related",
+      "planted": "Moved LBDY on a baseline record to day 2.",
+      "reason": "CORE reports the miscalculated study day (CG0006) but has no rule on which record carries the last-observation-before-exposure flag, which the local rule checks."
+    },
+    {
+      "ruleId": "SD-031",
+      "core": [],
+      "coverage": "none",
+      "reason": "A planted review warning (visit outside its window), not a conformance defect. CORE's only finding on this record, CORE-000138, concerns the incomplete date beside the changed day.",
+      "planted": "Set SVSTDY to 999 on one record."
+    },
+    {
+      "ruleId": "SD-032",
+      "core": [],
+      "coverage": "none",
+      "reason": "A planted review warning (reference range indicator against the result), which CORE has no rule for.",
+      "planted": "Set LBNRIND to HIGH on one record."
+    },
+    {
+      "ruleId": "SD-033",
+      "core": [],
+      "coverage": "none",
+      "reason": "A planted review warning (partial onset date needing imputation). CORE's only finding on this record, CORE-000138, is the study day left beside the partial date.",
+      "planted": "Set AESTDTC to 2030-01 on one record."
+    },
+    {
+      "ruleId": "SD-034",
+      "core": [],
+      "coverage": "none",
+      "reason": "A planted review warning (adverse event before first dose). CORE's only finding, CORE-000552, is the deliberately wrong study day, not the clinical pattern.",
+      "planted": "Set AESTDY to -1 on one record."
+    },
+    {
+      "ruleId": "SD-036",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 has no rule for a repeated test, date and result under a new sequence number.",
+      "planted": "Appended a copy of one VS record with a new VSSEQ."
+    },
+    {
+      "ruleId": "SD-037",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 has no rule for a repeated test, date and result under a new sequence number.",
+      "planted": "Appended a copy of one LB record with a new LBSEQ."
+    },
+    {
+      "ruleId": "SD-038",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not compare the collected unit with the standard unit.",
+      "planted": "Set VSORRESU to mg/dL on one record."
+    },
+    {
+      "ruleId": "SD-039",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not compare the collected unit with the standard unit.",
+      "planted": "Set LBORRESU to mg/dL on one record."
+    },
+    {
+      "ruleId": "SD-048",
+      "core": ["CORE-000334"],
+      "coverage": "same-defect",
+      "planted": "Dropped EG.EGORRES.",
+      "reason": "CG0016: an Expected variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-049",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second EG record of one subject the same EGSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-050",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set EG.EGDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-051",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to EGDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-052",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 has no rule for a repeated test, date and result under a new sequence number.",
+      "planted": "Appended a copy of one EG record with a new EGSEQ."
+    },
+    {
+      "ruleId": "SD-053",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not compare the collected unit with the standard unit.",
+      "planted": "Set EGORRESU to mg/dL on one record."
+    },
+    {
+      "ruleId": "SD-054",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-055",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Dropped CM.CMTRT.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-056",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second CM record of one subject the same CMSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-057",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set CM.CMSTDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-058",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set CM.CMENDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-059",
+      "core": ["CORE-000552"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to CMSTDY on one record with a full date.",
+      "reason": "CG0220: --STDY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-060",
+      "core": ["CORE-000553"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to CMENDY on one record with a full date.",
+      "reason": "CG0222: --ENDY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-061",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: run against SDTM CT 2026-03-27, CORE v0.17.1 raised nothing for this off-codelist value, so the local terminology check stays.",
+      "planted": "Set CM.CMDOSU to INVALID on one record."
+    },
+    {
+      "ruleId": "SD-062",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: run against SDTM CT 2026-03-27, CORE v0.17.1 raised nothing for this off-codelist value, so the local terminology check stays.",
+      "planted": "Set CM.CMROUTE to INVALID on one record."
+    },
+    {
+      "ruleId": "SD-063",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-064",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Dropped MH.MHTERM.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does."
+    },
+    {
+      "ruleId": "SD-065",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Gave a second MH record of one subject the same MHSEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat."
+    },
+    {
+      "ruleId": "SD-066",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set MH.MHDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-067",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set MH.MHSTDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-068",
+      "core": [],
+      "coverage": "none",
+      "reason": "No CORE finding: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date, and no other rule reads this variable in a way an impossible date breaks.",
+      "planted": "Set MH.MHENDTC to 2030-13-45 on one record."
+    },
+    {
+      "ruleId": "SD-069",
+      "core": ["CORE-000529"],
+      "coverage": "same-defect",
+      "planted": "Added 5 to MHDY on one record with a full date.",
+      "reason": "CG0006: --DY is not calculated per the study day algorithm."
+    },
+    {
+      "ruleId": "SD-070",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "AD-001",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-002",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-003",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-004",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-005",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-011",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-012",
+      "core": [],
+      "coverage": "none",
+      "reason": "An ADaM rule; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-013",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-014",
+      "core": [],
+      "coverage": "none",
+      "reason": "A planted ECG review warning on ADEG; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-015",
+      "core": [],
+      "coverage": "none",
+      "reason": "A planted ECG review warning on ADEG; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "SD-040",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-041",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-042",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-043",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-044",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-045",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-046",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "SD-047",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
+      "ruleId": "AD-006",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-007",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-008",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-009",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    },
+    {
+      "ruleId": "AD-010",
+      "core": [],
+      "coverage": "none",
+      "reason": "ADaM source traceability (SRCDOM, SRCSEQ) to SDTM; CORE v0.17.1 publishes no ADaMIG rules."
+    }
+  ]
+}

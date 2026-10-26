@@ -1,0 +1,137 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "deruiter.dev: lets GitHub Actions on main write to the Aurora DSQL cluster and the DynamoDB run ledger through OIDC, with no stored keys (ADR 0070).",
+  "Parameters": {
+    "DsqlClusterArn": {
+      "Type": "String",
+      "Description": "ARN of the Aurora DSQL cluster the Vercel integration created (arn:aws:dsql:REGION:ACCOUNT:cluster/ID).",
+      "AllowedPattern": "^arn:aws:dsql:[a-z0-9-]+:[0-9]{12}:cluster/[a-z0-9]+$"
+    },
+    "DynamoDbTableArn": {
+      "Type": "String",
+      "Description": "ARN of the DynamoDB table the Vercel integration created (arn:aws:dynamodb:REGION:ACCOUNT:table/NAME).",
+      "AllowedPattern": "^arn:aws:dynamodb:[a-z0-9-]+:[0-9]{12}:table/[A-Za-z0-9_.-]+$"
+    },
+    "CreateOidcProvider": {
+      "Type": "String",
+      "Default": "true",
+      "AllowedValues": ["true", "false"],
+      "Description": "Choose false if this AWS account already has the token.actions.githubusercontent.com identity provider."
+    }
+  },
+  "Conditions": {
+    "ShouldCreateProvider": {
+      "Fn::Equals": [{ "Ref": "CreateOidcProvider" }, "true"]
+    }
+  },
+  "Resources": {
+    "GitHubOidcProvider": {
+      "Type": "AWS::IAM::OIDCProvider",
+      "Condition": "ShouldCreateProvider",
+      "Properties": {
+        "Url": "https://token.actions.githubusercontent.com",
+        "ClientIdList": ["sts.amazonaws.com"]
+      }
+    },
+    "GitHubActionsRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "deruiter-dev-github-actions",
+        "Description": "Assumed by GitHub Actions on fderuiter/deruiter.dev main only.",
+        "MaxSessionDuration": 3600,
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Federated": {
+                  "Fn::Sub": "arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+                }
+              },
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:sub": "repo:fderuiter/deruiter.dev:ref:refs/heads/main"
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "always-free-data-stores",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Sid": "LoadWarehouseOfRecord",
+                  "Effect": "Allow",
+                  "Action": ["dsql:DbConnectAdmin"],
+                  "Resource": { "Ref": "DsqlClusterArn" }
+                },
+                {
+                  "Sid": "AppendRunLedger",
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:PutItem",
+                    "dynamodb:Query",
+                    "dynamodb:DescribeTable"
+                  ],
+                  "Resource": { "Ref": "DynamoDbTableArn" }
+                },
+                {
+                  "Sid": "ReadLoadUsage",
+                  "Effect": "Allow",
+                  "Action": ["cloudwatch:GetMetricStatistics"],
+                  "Resource": "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "RoleArn": {
+      "Description": "Save this as the GitHub repository variable AWS_GITHUB_ROLE_ARN.",
+      "Value": { "Fn::GetAtt": ["GitHubActionsRole", "Arn"] }
+    },
+    "DsqlEndpoint": {
+      "Description": "Save this as the GitHub repository variable DSQL_ENDPOINT (CLUSTER-ID.dsql.REGION.on.aws, taken from the cluster ARN).",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            {
+              "Fn::Select": [
+                1,
+                {
+                  "Fn::Split": [
+                    "/",
+                    {
+                      "Fn::Select": [
+                        5,
+                        { "Fn::Split": [":", { "Ref": "DsqlClusterArn" }] }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            ".dsql.",
+            {
+              "Fn::Select": [
+                3,
+                { "Fn::Split": [":", { "Ref": "DsqlClusterArn" }] }
+              ]
+            },
+            ".on.aws"
+          ]
+        ]
+      }
+    }
+  }
+}

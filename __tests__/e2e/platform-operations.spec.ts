@@ -28,7 +28,7 @@ const WIDTHS = [320, 375, 768, 1440] as const;
 async function settled(page: Page, current: string) {
   await expect(
     page
-      .getByRole("navigation", { name: "Breadcrumb" })
+      .getByRole("navigation", { name: "Dashboard level" })
       .locator('[aria-current="page"]')
   ).toHaveText(current, { timeout: 60_000 });
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0, {
@@ -169,7 +169,7 @@ test("the drill-down works with the keyboard alone", async ({ page }) => {
     .first();
   await tabTo(page, site);
   await page.keyboard.press("Enter");
-  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
+  const trail = page.getByRole("navigation", { name: "Dashboard level" });
   await expect(trail.locator('[aria-current="page"]')).toHaveText(
     /^DEMO-302-DE-\d+$/,
     { timeout: 60_000 }
@@ -200,7 +200,7 @@ test("the risk tab flags the planted site and drills into it (#2631)", async ({
   const csm = page.locator('section[aria-labelledby="risk-csm"]');
   await expect(
     csm.getByRole("listitem").filter({ hasText: "DEMO-302-BR-118 · " })
-  ).toHaveCount(3);
+  ).toHaveCount(7);
   await expect(
     page.getByRole("table", { name: /risk signal log/ }).getByRole("row")
   ).toHaveCount(3);

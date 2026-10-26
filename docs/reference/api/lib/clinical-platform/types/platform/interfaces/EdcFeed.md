@@ -6,9 +6,17 @@
 
 # Interface: EdcFeed
 
-The EDC feed: subjects, visits and queries.
+The EDC feed: subjects, visits, queries, adverse events and vital signs.
 
 ## Properties
+
+### adverseEvents
+
+> `readonly` **adverseEvents**: readonly [`EdcAdverseEvent`](EdcAdverseEvent.md)[]
+
+Adverse event records (#2956).
+
+***
 
 ### queries
 
@@ -31,3 +39,11 @@ Subject records.
 > `readonly` **visits**: readonly [`EdcVisit`](EdcVisit.md)[]
 
 Visit records.
+
+***
+
+### vitalSigns
+
+> `readonly` **vitalSigns**: readonly [`EdcVitalSign`](EdcVitalSign.md)[]
+
+Vital sign readings (#2957).

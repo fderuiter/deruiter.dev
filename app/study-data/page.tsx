@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
@@ -6,7 +7,7 @@ import {
   toDefinitionCounts,
   toScheduleDesign,
 } from "@/components/study-data/schedule-design";
-import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import {
@@ -20,6 +21,7 @@ import {
   SYNTHETIC_DATA_NOTICE,
   type StandardId,
 } from "@/lib/study-data";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.studyData
@@ -61,14 +63,11 @@ export default function StudyDataPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            ...getNavBreadcrumbSchemaParents("/study-data"),
-            { name: "Study Data Pipeline", url: "/study-data" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/study-data")),
         }}
       />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
+        <Breadcrumbs path="/study-data" className="mb-6" />
         <ClinicalJourneyNav path="/study-data" variant="compact" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical systems / Study data
@@ -80,7 +79,15 @@ export default function StudyDataPage() {
           One fictional study, defined once in USDM, taken through collected
           data, SDTM, conformance checks, ADaM, Define-XML and the tables and
           figures of a study report. Select any number to see the records it
-          came from and the protocol activity that scheduled them.
+          came from and the protocol activity that scheduled them. To run a
+          study of your own, design it in{" "}
+          <Link
+            href="/crf"
+            className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          >
+            CRF Studio
+          </Link>{" "}
+          and press Run Pipeline.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 font-mono text-xs">
           <span className="border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-amber-300">

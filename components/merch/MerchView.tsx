@@ -16,10 +16,7 @@ export function MerchView() {
 
   return (
     <div className="mx-auto w-full max-w-5xl min-w-0 px-4 pb-24 sm:px-6 lg:px-8">
-      <Breadcrumbs
-        items={[{ label: "Home", href: "/" }, { label: "Laser Loon Merch" }]}
-        className="mb-6"
-      />
+      <Breadcrumbs path="/merch" label="Laser Loon Merch" className="mb-6" />
 
       <header className="mb-8 min-w-0">
         <p className="mb-2 font-mono text-[11px] font-bold uppercase tracking-widest text-zinc-400">

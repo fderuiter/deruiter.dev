@@ -10,6 +10,13 @@
     },
     {
       "target": "sdtm",
+      "coreId": "CORE-000701",
+      "dataset": "CM",
+      "category": "by-design",
+      "reason": "Medications started before informed consent have no EPOCH, since they began before the study's first epoch; most are remembered to the month only. Medications for an AE with a month-only start date have none either."
+    },
+    {
+      "target": "sdtm",
       "coreId": "CORE-000761",
       "dataset": "TS",
       "category": "ct-cache",
@@ -19,6 +26,13 @@
       "target": "sdtm",
       "coreId": "CORE-000767",
       "dataset": "AE",
+      "category": "core-limitation",
+      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000767",
+      "dataset": "CM",
       "category": "core-limitation",
       "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
     },
@@ -112,6 +126,34 @@
       "dataset": "StudyVersion",
       "category": "core-limitation",
       "reason": "Reports duplicate governance dates although the fixture has none."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000264",
+      "dataset": "MH",
+      "category": "by-design",
+      "reason": "SDTMIG 3.4 MH has no MHSOC variable; MHBODSYS carries the primary system organ class from the study's dictionary, so the rule compares it with a variable the domain does not define."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000328",
+      "dataset": "MH",
+      "category": "by-design",
+      "reason": "SDTMIG 3.4 MH has no MHSTDY. History starts years before first dose and is mostly year or year-month only, so MHDY on the collection date is the study day the domain carries."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000767",
+      "dataset": "MH",
+      "category": "core-limitation",
+      "reason": "The rule reports FAOBJ as unequal to --DECOD on every row although the study has no FA domain or RELREC."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000776",
+      "dataset": "MH",
+      "category": "by-design",
+      "reason": "SDTMIG 3.4 MH has no MHENDY. Resolved conditions ended before screening and are dated to the year or month, so no study day can be derived from them."
     }
   ]
 }

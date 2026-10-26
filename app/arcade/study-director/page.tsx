@@ -3,6 +3,7 @@ import { StudyDirectorClient } from "@/components/arcade/StudyDirectorClient";
 import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.studyDirector
@@ -26,14 +27,9 @@ export default function StudyDirectorPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            {
-              name: "Study Director: Everything Is Fine",
-              url: "/arcade/study-director",
-            },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/study-director")
+          ),
         }}
       />
       <StudyDirectorClient />

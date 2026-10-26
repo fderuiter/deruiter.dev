@@ -62,7 +62,9 @@ describe("runPipeline", () => {
       "LB",
       "EG",
       "AE",
+      "CM",
       "DS",
+      "MH",
       "TA",
       "TE",
       "TV",
@@ -71,7 +73,9 @@ describe("runPipeline", () => {
       "DM",
       "SV",
       "EX",
+      "CM",
       "AE",
+      "MH",
       "VS",
       "LB",
       "EG",
@@ -86,10 +90,10 @@ describe("runPipeline", () => {
     ]);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "collected")
-    ).toHaveLength(9);
+    ).toHaveLength(11);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "sdtm")
-    ).toHaveLength(14);
+    ).toHaveLength(16);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "adam")
     ).toHaveLength(6);

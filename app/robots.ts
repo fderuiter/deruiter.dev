@@ -16,7 +16,9 @@ export const AI_CRAWLER_USER_AGENTS = [
   "CCBot",
 ];
 
-const DISALLOWED_PATHS = ["/api/", "/_next/", "/admin", "/admin/"];
+// `/_next/` holds the JS, CSS and optimized images a renderer needs to see a
+// page the way visitors do, so it stays crawlable (#2987).
+const DISALLOWED_PATHS = ["/api/", "/admin", "/admin/"];
 
 export default function robots(): MetadataRoute.Robots {
   const isProd = isProductionEnvironment();

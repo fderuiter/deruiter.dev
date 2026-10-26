@@ -26,10 +26,16 @@
 - [DqAssessment](interfaces/DqAssessment.md)
 - [DqRuleResult](interfaces/DqRuleResult.md)
 - [DqScore](interfaces/DqScore.md)
+- [DsqlInsertBatch](interfaces/DsqlInsertBatch.md)
+- [DsqlLoadOptions](interfaces/DsqlLoadOptions.md)
+- [DsqlLoadPlan](interfaces/DsqlLoadPlan.md)
+- [DsqlTableParity](interfaces/DsqlTableParity.md)
+- [EdcAdverseEvent](interfaces/EdcAdverseEvent.md)
 - [EdcFeed](interfaces/EdcFeed.md)
 - [EdcQuery](interfaces/EdcQuery.md)
 - [EdcSubject](interfaces/EdcSubject.md)
 - [EdcVisit](interfaces/EdcVisit.md)
+- [EdcVitalSign](interfaces/EdcVitalSign.md)
 - [EtmfDocument](interfaces/EtmfDocument.md)
 - [FinanceLine](interfaces/FinanceLine.md)
 - [FinancePlanLine](interfaces/FinancePlanLine.md)
@@ -75,6 +81,7 @@
 
 ## Type Aliases
 
+- [AdverseEventSeverity](type-aliases/AdverseEventSeverity.md)
 - [ContractColumnType](type-aliases/ContractColumnType.md)
 - [DataClassification](type-aliases/DataClassification.md)
 - [DeviationImportance](type-aliases/DeviationImportance.md)
@@ -102,6 +109,7 @@
 - [StudyPhase](type-aliases/StudyPhase.md)
 - [StudyStatus](type-aliases/StudyStatus.md)
 - [SubjectStatus](type-aliases/SubjectStatus.md)
+- [VitalSignTest](type-aliases/VitalSignTest.md)
 - [WarehouseColumnType](type-aliases/WarehouseColumnType.md)
 - [WarehouseLayer](type-aliases/WarehouseLayer.md)
 - [WarehouseRow](type-aliases/WarehouseRow.md)

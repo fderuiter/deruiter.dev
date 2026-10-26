@@ -541,11 +541,13 @@ async function operationsJourney(page: Page) {
   });
   await expect(sites).toBeVisible({ timeout: 30_000 });
   await sites.getByRole("link").first().click();
-  const trail = page.getByRole("navigation", { name: "Breadcrumb" });
-  await expect(trail.locator('[aria-current="page"]')).toHaveText(
-    /^DEMO-302-DE-\d+$/,
-    { timeout: 30_000 }
-  );
+  // The drill-down is labelled "Dashboard level" since #2952 N3; a deployed
+  // origin from before that labels it "Breadcrumb", beside no page trail.
+  const level = page
+    .getByRole("navigation", { name: /^(Dashboard level|Breadcrumb)$/ })
+    .locator('[aria-current="page"]')
+    .filter({ hasText: /^DEMO-302-DE-\d+$/ });
+  await expect(level).toBeVisible({ timeout: 30_000 });
   await expect(page.getByRole("tab", { selected: true })).toHaveText(
     "Quality and monitoring"
   );
@@ -690,12 +692,15 @@ async function governanceJourney(page: Page) {
     "/platform/governance is not deployed to the probed origin yet (#2691)"
   );
   expect(response?.status()).toBe(200);
-  await expect(page.getByText("90 entries", { exact: true })).toBeVisible();
+  // The probe also runs against the deployed origin, which can be a release
+  // behind the catalog in the repository, so it reads the total rather than
+  // pinning it; __tests__/e2e/platform-governance.spec.ts pins the count.
+  await expect(page.getByText(/^\d+ entries$/)).toBeVisible();
   const search = page.getByRole("searchbox", { name: "Search the catalog" });
   await expect(async () => {
     await search.fill("");
     await search.fill("screening");
-    await expect(page.getByText(/^\d+ of 90 entries$/)).toBeVisible({
+    await expect(page.getByText(/^\d+ of \d+ entries$/)).toBeVisible({
       timeout: 1_000,
     });
   }).toPass({ timeout: 15_000 });

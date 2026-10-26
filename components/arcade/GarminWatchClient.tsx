@@ -49,12 +49,7 @@ export const GarminWatchClient: React.FC = () => {
               <span>Back to Arcade Hub</span>
             </Link>
             <span className="text-zinc-700 hidden sm:inline">|</span>
-            <Breadcrumbs
-              items={[
-                { label: "Arcade Hub", href: "/arcade" },
-                { label: "Monkey C Mayhem" },
-              ]}
-            />
+            <Breadcrumbs path="/arcade/garmin-watch" />
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-500/10 text-amber-300 border border-amber-500/30">

@@ -27,6 +27,7 @@ export { buildScd2Versions } from "./internal/warehouse/scd2";
 export { checkWarehouse } from "./internal/warehouse/check";
 export { emitDdl } from "./internal/warehouse/ddl";
 export { exportWarehouse } from "./internal/warehouse/export";
+export { fingerprintDsqlRows, planDsqlLoad } from "./internal/warehouse/dsql";
 export {
   renderWarehouseErd,
   renderWarehouseReference,
@@ -227,6 +228,7 @@ export {
 export { assessStudyRisk } from "./internal/rbqm/assess";
 export {
   benjaminiHochberg,
+  chiSquareCdf,
   fCdf,
   invertMatrix,
   logGamma,

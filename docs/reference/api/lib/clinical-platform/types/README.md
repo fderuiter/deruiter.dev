@@ -8,6 +8,12 @@
 
 ## References
 
+### AdverseEventSeverity
+
+Re-exports [AdverseEventSeverity](platform/type-aliases/AdverseEventSeverity.md)
+
+***
+
 ### BronzeFeeds
 
 Re-exports [BronzeFeeds](platform/interfaces/BronzeFeeds.md)
@@ -308,6 +314,36 @@ Re-exports [DqTrendPoint](quality/interfaces/DqTrendPoint.md)
 
 ***
 
+### DsqlInsertBatch
+
+Re-exports [DsqlInsertBatch](platform/interfaces/DsqlInsertBatch.md)
+
+***
+
+### DsqlLoadOptions
+
+Re-exports [DsqlLoadOptions](platform/interfaces/DsqlLoadOptions.md)
+
+***
+
+### DsqlLoadPlan
+
+Re-exports [DsqlLoadPlan](platform/interfaces/DsqlLoadPlan.md)
+
+***
+
+### DsqlTableParity
+
+Re-exports [DsqlTableParity](platform/interfaces/DsqlTableParity.md)
+
+***
+
+### EdcAdverseEvent
+
+Re-exports [EdcAdverseEvent](platform/interfaces/EdcAdverseEvent.md)
+
+***
+
 ### EdcFeed
 
 Re-exports [EdcFeed](platform/interfaces/EdcFeed.md)
@@ -329,6 +365,12 @@ Re-exports [EdcSubject](platform/interfaces/EdcSubject.md)
 ### EdcVisit
 
 Re-exports [EdcVisit](platform/interfaces/EdcVisit.md)
+
+***
+
+### EdcVitalSign
+
+Re-exports [EdcVitalSign](platform/interfaces/EdcVitalSign.md)
 
 ***
 
@@ -1307,6 +1349,12 @@ Re-exports [SyntheticRecord](platform/interfaces/SyntheticRecord.md)
 ### Vendor
 
 Re-exports [Vendor](platform/interfaces/Vendor.md)
+
+***
+
+### VitalSignTest
+
+Re-exports [VitalSignTest](platform/type-aliases/VitalSignTest.md)
 
 ***
 

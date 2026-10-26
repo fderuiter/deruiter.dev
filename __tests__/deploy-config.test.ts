@@ -110,7 +110,33 @@ describe("production deploy configuration", () => {
     expect(train).toContain("--draft");
 
     // Vercel builds and migrates; the train only asks it to.
-    expect(train).not.toMatch(/npm run build|prisma migrate|npx vercel/);
+    expect(train).not.toMatch(/prisma migrate|npx vercel/);
+
+    // Its own build only tests the release candidate (#2536): one build, in
+    // the read-only rc-build job, against a database that cannot answer, and
+    // nothing fires unless the browser suite passed on that commit.
+    const job = (name: string) => {
+      const start = train.indexOf(`\n  ${name}:\n`);
+      const next = train.slice(start + 1).search(/\n {2}[a-z][a-z0-9-]*:\n/);
+      return next === -1
+        ? train.slice(start)
+        : train.slice(start, start + 1 + next);
+    };
+    expect(train.match(/npm run build/g)).toHaveLength(1);
+    const rcBuild = job("rc-build");
+    expect(rcBuild).toContain("npm run build");
+    expect(rcBuild).toContain("127.0.0.1:59999");
+    expect(rcBuild).toContain("npm run analyze:bundle -- --strict");
+    for (const name of ["rc-build", "rc-browser"]) {
+      expect(job(name), name).toMatch(
+        /permissions:\s*\n\s*contents: read\s*\n/
+      );
+      expect(job(name), name).toContain(
+        "ref: ${{ needs.gate.outputs.candidate }}"
+      );
+    }
+    expect(job("rc-browser")).toContain("playwright test --project=chromium");
+    expect(job("train")).toContain("needs.rc-browser.result == 'success'");
     const secrets = [...train.matchAll(/secrets\.(\w+)/g)].map((m) => m[1]);
     expect(new Set(secrets)).toEqual(new Set(["VERCEL_DEPLOY_HOOK_MAIN"]));
 

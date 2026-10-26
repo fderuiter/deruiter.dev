@@ -32,7 +32,8 @@ the build starts.
 
 - `.github/workflows/weekly-train.yml` runs every Monday at 01:00 UTC (Sunday
   7 PM Central Standard Time, 8 PM during daylight saving time) and on
-  **Run workflow**. It never builds, migrates, or holds a Vercel token.
+  **Run workflow**. It never migrates or holds a Vercel token, and its own
+  build only tests the release candidate; Vercel builds what ships.
 - **Gates, in order.** Scheduled runs exit unless the repository variable
   `WEEKLY_TRAIN` is `on`. Every run exits while an open issue carries the
   `release:hold` label. The candidate is `main` HEAD; the run exits when the
@@ -41,6 +42,14 @@ the build starts.
   minutes and follows HEAD if a newer merge lands). `scripts/check-migration-safety.ts`
   must find no destructive migration between the live commit and the
   candidate; a finding opens a `release:hold` issue for a manual release.
+- **Test the release candidate itself.** PRs pass the browser suite before
+  they merge, but a squash merge makes a new commit and `main` push CI skips
+  the browser jobs. The train builds the candidate with the same entrypoint
+  and bundle budgets as CI's `build` job and runs the full chromium
+  Playwright suite on it in three shards, in the same digest-pinned image
+  (#2536). These jobs get a read-only token. A failure ships nothing and
+  opens an issue for the operator, without `release:hold`, since production
+  is unchanged. An `rc_only` input runs just this stage on `main` HEAD.
 - **Versioning.** Semantic Versioning from the Conventional Commits since the
   last `v*` tag: a `feat` bumps the minor version, otherwise the patch; a
   breaking change bumps the major version, or the minor version before 1.0.0.
@@ -87,9 +96,11 @@ the build starts.
 - Whether a Deploy Hook builds while `git.deploymentEnabled` is `false` is
   not documented. The operator's first manual run settles it; if it does not
   build, this ADR is amended to the `production` branch before acceptance.
-- `main` push CI skips the browser suite, which every PR ran before merge.
-  Running it on the release commit (#2536) is the next step; the live smoke
-  test after the release (#2538) is part of the train.
+- The release candidate suite adds about 35 minutes of standard runner time
+  a week and widens the window in which a merge can move `main` past the
+  candidate. When that happens the run stops before firing and ships
+  nothing; run it again, or move to the `production` branch described above
+  if it recurs.
 
 ## Acceptance
 

@@ -85,6 +85,7 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
     summary:
       "Stewardship, quality rules, column lineage and risk-based validation evidence.",
     evidence: [
+      route("/platform/governance", "Catalog, glossary and stewardship"),
       issue(2636, "Quality plan"),
       issue(2637, "Lineage plan"),
       issue(2639, "Validation evidence plan"),

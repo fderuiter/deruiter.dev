@@ -20,6 +20,11 @@ import {
 } from "@/lib/clinical-platform";
 import { plural } from "./MilestoneSwimlane";
 
+/** The id of a study's forecast, for links from the risk heatmap. */
+export function forecastAnchor(studyId: string): string {
+  return `forecast-${studyId}`;
+}
+
 /** Asks the page's worker for a study's forecast with sites added. */
 export type RunWhatIf = (
   studyId: string,
@@ -618,8 +623,9 @@ function ForecastCard({
 
   return (
     <article
+      id={forecastAnchor(studyId)}
       aria-labelledby={`${id}-title`}
-      className="@container min-w-0 border border-white/[0.08] bg-[#0d0e11] p-4 sm:p-6"
+      className="@container min-w-0 scroll-mt-24 border border-white/[0.08] bg-[#0d0e11] p-4 sm:p-6"
     >
       <h3 id={`${id}-title`} className="text-lg font-semibold">
         <span className="font-mono">{studyId}</span>{" "}

@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   CONFORMANCE_RULES,
   DEMO_301_STUDY,
+  MESSY_DATA_SCENARIOS,
   runConformance,
   runPipeline,
   type ConformanceRule,
@@ -59,6 +60,13 @@ function baseFor(rule: ConformanceRule): {
   good: Dataset;
   context: readonly Dataset[];
 } {
+  if (rule.kind === "lineage") {
+    const good = datasets.find(
+      (item) =>
+        item.layer === rule.scope.layer && item.name === rule.scope.domain
+    )!;
+    return { good, context: datasets };
+  }
   if (rule.scope.layer === "sdtm") {
     const domain = datasets.find(
       (item) => item.layer === "sdtm" && item.name === rule.scope.domain
@@ -192,6 +200,15 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
     }
     case "unit":
       return set(good, rule.variable!, 0, "mg/dL");
+    case "lineage":
+      return rule.scope.layer === "sdtm"
+        ? {
+            ...good,
+            lineage: good.lineage!.map((sources, index) =>
+              index === 0 ? ["DEMO-301:XX:0000:missing"] : sources
+            ),
+          }
+        : set(good, "SRCDOM", 0, "ZZ");
     case "adam": {
       if (rule.id === "AD-003") return set(good, "BASE", 0, 9);
       if (rule.id === "AD-004") return set(good, "CHG", 0, 3);
@@ -245,6 +262,61 @@ describe("versioned dataset conformance", () => {
         (finding) => finding.ruleId === "SD-021" && finding.row === 0
       )
     ).toBe(true);
+  });
+
+  it("traces every SDTM and ADaM record to its source across seeds and scenarios (#2930)", () => {
+    const lineageRules = new Set(
+      CONFORMANCE_RULES.filter((rule) => rule.kind === "lineage").map(
+        (rule) => rule.id
+      )
+    );
+    const runs = [
+      ...[1, 2, 302, 999].map((seed) => ({ seed, scenarios: [] })),
+      {
+        seed: 301,
+        scenarios: MESSY_DATA_SCENARIOS.map((scenario) => scenario.id),
+      },
+    ];
+    for (const options of runs) {
+      const { findings } = runPipeline(DEMO_301_STUDY, {
+        ...options,
+        nSubjects: 60,
+      });
+      expect(
+        findings.filter((finding) => lineageRules.has(finding.ruleId))
+      ).toEqual([]);
+    }
+  });
+
+  it("reports an ADaM record whose SRCSEQ matches no SDTM record (#2930)", () => {
+    const adae = datasets.find((dataset) => dataset.name === "ADAE")!;
+    const rule = CONFORMANCE_RULES.find(
+      (candidate) =>
+        candidate.kind === "lineage" && candidate.scope.domain === "ADAE"
+    )!;
+    const issues = rule.check(set(adae, "SRCSEQ", 0, 9999), datasets);
+    expect(issues).toEqual([
+      expect.objectContaining({ row: 0, variable: "SRCSEQ" }),
+    ]);
+  });
+
+  it("reports an SDTM record with no lineage (#2930)", () => {
+    const vs = datasets.find(
+      (dataset) => dataset.layer === "sdtm" && dataset.name === "VS"
+    )!;
+    const rule = CONFORMANCE_RULES.find(
+      (candidate) =>
+        candidate.kind === "lineage" && candidate.scope.domain === "VS"
+    )!;
+    const orphan = {
+      ...vs,
+      lineage: vs.lineage!.map((sources, index) =>
+        index === 3 ? [] : sources
+      ),
+    };
+    expect(rule.check(orphan, datasets)).toEqual([
+      expect.objectContaining({ row: 3 }),
+    ]);
   });
 
   it("never throws on malformed dataset structures", () => {

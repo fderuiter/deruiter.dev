@@ -170,6 +170,12 @@ Re-exports [defineSlice](slice/functions/defineSlice.md)
 
 ***
 
+### DEVICE\_LAYOUT\_MIN\_WIDTH
+
+Re-exports [DEVICE_LAYOUT_MIN_WIDTH](device-settings-slice/variables/DEVICE_LAYOUT_MIN_WIDTH.md)
+
+***
+
 ### DeviceDockSize
 
 Re-exports [DeviceDockSize](device-settings-slice/type-aliases/DeviceDockSize.md)
@@ -188,6 +194,12 @@ Re-exports [DeviceLayout](device-settings-slice/type-aliases/DeviceLayout.md)
 
 ***
 
+### effectiveLayout
+
+Re-exports [effectiveLayout](device-settings-slice/functions/effectiveLayout.md)
+
+***
+
 ### getArcadeCatalogEntry
 
 Re-exports [getArcadeCatalogEntry](catalog/functions/getArcadeCatalogEntry.md)
@@ -203,6 +215,12 @@ Re-exports [getDeviceSettings](device-settings-slice/functions/getDeviceSettings
 ### hasSeenCoachMarks
 
 Re-exports [hasSeenCoachMarks](coach-marks-slice/functions/hasSeenCoachMarks.md)
+
+***
+
+### layoutFits
+
+Re-exports [layoutFits](device-settings-slice/functions/layoutFits.md)
 
 ***
 

@@ -103,6 +103,10 @@ export {
   portfolioForecast,
 } from "./internal/reporting/portfolio-forecast";
 export {
+  PORTFOLIO_RISK_THRESHOLDS,
+  portfolioRiskHeatmap,
+} from "./internal/reporting/portfolio-risk";
+export {
   NO_METRIC_ROWS,
   NO_METRIC_VALUE,
   formatMetricValue,

@@ -99,7 +99,6 @@ export const PLATFORM_CAPABILITIES: readonly PlatformCapability[] = [
       route("/platform/explore", "Self-service explorer"),
       route("/platform/operations", "Operations dashboards"),
       route("/platform/portfolio", "Portfolio dashboard"),
-      issue(2632, "Portfolio risk heatmap"),
     ],
   },
   {

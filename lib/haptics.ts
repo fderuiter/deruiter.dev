@@ -13,3 +13,12 @@ export const triggerHaptic = (pattern: number | number[] = 15): void => {
     }
   }
 };
+
+/**
+ * Whether this browser can vibrate at all, so a setting can say so instead
+ * of offering a switch that does nothing.
+ *
+ * @returns True when `navigator.vibrate` exists.
+ */
+export const canVibrate = (): boolean =>
+  typeof navigator !== "undefined" && typeof navigator.vibrate === "function";

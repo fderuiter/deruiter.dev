@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
 
 test.describe("Arcade Games & Simulators Suite", () => {
   test("Arcade Hub (/arcade) loads all arcade/puzzle games successfully", async ({
@@ -120,8 +121,9 @@ test.describe("Arcade Games & Simulators Suite", () => {
     });
     await expect(watch).toHaveAttribute("aria-label", /Status: idle/);
 
-    // Open Setup, pick Hard + Heavy Scanlines, and confirm.
+    // Open Setup, then its wizard; pick Hard + Heavy Scanlines, and confirm.
     await expect(async () => {
+      await page.getByTitle("Setup", { exact: true }).first().click();
       await page.getByTitle("Pre-Game Setup Wizard").first().click();
       await expect(page.getByTestId("wizard-step-1")).toBeVisible({
         timeout: 2000,
@@ -142,11 +144,70 @@ test.describe("Arcade Games & Simulators Suite", () => {
       "scanlines"
     );
 
-    // Reopening Setup mid-run pauses the run underneath the wizard.
+    // Reopening Setup mid-run pauses the run underneath the sheet and the
+    // wizard.
+    await page.getByTitle("Setup", { exact: true }).first().click();
+    await expect(watch).toHaveAttribute("aria-label", /Status: paused/);
     await page.getByTitle("Pre-Game Setup Wizard").first().click();
     await expect(watch).toHaveAttribute("aria-label", /Status: paused/);
     await page.getByRole("button", { name: /Skip Setup/i }).click();
     await expect(watch).toHaveAttribute("aria-label", /Status: playing/);
+  });
+
+  test("the cabinet Setup key opens one Setup dialog with device settings (#2923)", async ({
+    page,
+  }) => {
+    await page.goto("/arcade/garmin-watch", { waitUntil: "domcontentloaded" });
+    await expect(async () => {
+      const launchBtn = page.getByRole("button", { name: /Launch Cabinet/i });
+      if (await launchBtn.isVisible()) {
+        await launchBtn.click({ force: true });
+      }
+      await expect(page.locator("canvas").first()).toBeVisible({
+        timeout: 2000,
+      });
+    }).toPass({ timeout: 20000 });
+
+    const setupKey = page.getByTitle("Setup", { exact: true }).first();
+    const dialog = page.getByRole("dialog", { name: "Setup" });
+    await expect(async () => {
+      await setupKey.click();
+      await expect(dialog).toBeVisible({ timeout: 2000 });
+    }).toPass({ timeout: 15000 });
+
+    // Focus starts on Close, and the device settings are there.
+    await expect(
+      dialog.getByRole("button", { name: "Close setup" })
+    ).toBeFocused();
+    await expect(
+      dialog.getByRole("group", { name: "Dominant hand" })
+    ).toBeVisible();
+    await expect(dialog.getByRole("slider", { name: "Music" })).toBeVisible();
+
+    const results = await new AxeBuilder({ page })
+      .include('[data-testid="cabinet-setup-sheet"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(
+      results.violations
+        .filter((v) => ["critical", "serious", "moderate"].includes(v.impact ?? ""))
+        .map((v) => v.id)
+    ).toEqual([]);
+
+    // A setting sticks, and Escape hands focus back to Setup.
+    await dialog.getByRole("button", { name: "Left" }).click();
+    await expect(dialog.getByRole("button", { name: "Left" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(setupKey).toBeFocused();
+    expect(
+      await page.evaluate(() =>
+        window.localStorage.getItem("arcade_device_settings_v1")
+      )
+    ).toContain('"handedness":"left"');
   });
 
   test("Garmin Watch Simulator switches device targets and starts", async ({

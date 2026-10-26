@@ -25,4 +25,5 @@ example `new Date().toISOString()`. It is written to
 > `readonly` `optional` **reportingEvent?**: [`ArsReportingEvent`](../../../../types/interfaces/ArsReportingEvent.md)
 
 The run's ARS reporting event, from `buildTlfOutputs`. When given, the
-ADRG-lite lists every output and the analyses it displays.
+ADRG-lite lists every output and the analyses it displays, and every
+result whose rows do not resolve in the run is a finding.

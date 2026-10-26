@@ -41,9 +41,7 @@ export function LabyrinthPhoneHud({
     {
       id: "room",
       label: roguelike ? "Room" : "Subnet",
-      value: roguelike
-        ? String(roomIndex + 1).padStart(2, "0")
-        : `0${stage}`,
+      value: roguelike ? String(roomIndex + 1).padStart(2, "0") : `0${stage}`,
       testId: "labyrinth-phone-floor",
     },
     { id: "hp", label: "HP", value: playerHp, testId: "labyrinth-phone-hp" },

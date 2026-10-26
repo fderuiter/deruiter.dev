@@ -506,6 +506,7 @@ function TabletLayoutStage({ parts, optionsButtonRef }: LabyrinthStageProps) {
 const TABLET_STAGE: LabyrinthStage = {
   mazeClassName:
     "portrait:w-full portrait:aspect-[5/3] portrait:h-auto portrait:flex-none",
+  orientationHint: true,
   Stage: TabletLayoutStage,
 };
 
@@ -519,12 +520,5 @@ export function TabletView({
 }: {
   readonly isMounted?: boolean;
 }) {
-  return (
-    <LabyrinthLayout
-      isMounted={isMounted}
-      touch
-      phone={false}
-      tabletStage={TABLET_STAGE}
-    />
-  );
+  return <LabyrinthLayout isMounted={isMounted} touchStage={TABLET_STAGE} />;
 }

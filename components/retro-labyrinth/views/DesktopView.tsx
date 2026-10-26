@@ -14,5 +14,5 @@ export function DesktopView({
 }: {
   readonly isMounted?: boolean;
 }) {
-  return <LabyrinthLayout isMounted={isMounted} touch={false} phone={false} />;
+  return <LabyrinthLayout isMounted={isMounted} />;
 }

@@ -11,8 +11,9 @@
 Checks a warehouse against its schema: every table and column present,
 every value of its column's type, nullability and length, one row per
 declared grain, unique natural keys, every foreign key resolving to its
-dimension, and SCD type 2 versions that are numbered, contiguous and
-non-overlapping with one current version per member.
+dimension, SCD type 2 versions that are numbered, contiguous and
+non-overlapping with one current version per member, and date sequences
+reached in order.
 
 ## Parameters
 

@@ -95,6 +95,12 @@ export interface Site extends SyntheticRecord {
   readonly name: string;
   /** Enrollment target for this site. */
   readonly plannedEnrollment: number;
+  /** ISO 8601 date the sponsor selected the site, or `null` before then (#2880). */
+  readonly selectedOn: string | null;
+  /** ISO 8601 date the clinical trial agreement was executed, or `null` before then. */
+  readonly contractedOn: string | null;
+  /** ISO 8601 date the IRB or ethics committee approved the study at the site, or `null` before then. */
+  readonly irbApprovedOn: string | null;
   /** ISO 8601 activation date, or `null` before activation. */
   readonly activatedOn: string | null;
 }
@@ -1082,6 +1088,12 @@ export interface WarehouseTable {
   readonly uniqueKeys: readonly (readonly string[])[];
   /** SCD type 2 settings, or `null` for a table that keeps no history. */
   readonly scd2: Scd2Definition | null;
+  /**
+   * Date columns whose stages are reached in order, such as a site's
+   * start-up: a column holds a date only when the one before it does, on
+   * or before it (#2880).
+   */
+  readonly sequences: readonly (readonly string[])[];
   /** Columns, in table order. */
   readonly columns: readonly WarehouseColumn[];
 }

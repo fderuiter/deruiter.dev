@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.3.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.4.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -148,6 +148,9 @@ const SILVER: readonly TableDraft[] = [
     classification: "internal",
     source: "bronze.portfolio.sites",
     synthetic: true,
+    sequences: [
+      ["selected_on", "contracted_on", "irb_approved_on", "activated_on"],
+    ],
     columns: [
       [
         "site_id",
@@ -170,6 +173,24 @@ const SILVER: readonly TableDraft[] = [
         { length: 120, from: ["name"] },
       ],
       ["planned_enrollment", "integer", "Enrollment target for the site."],
+      [
+        "selected_on",
+        "date",
+        "Date the sponsor selected the site, or null before then.",
+        { nullable: true },
+      ],
+      [
+        "contracted_on",
+        "date",
+        "Date the clinical trial agreement was executed, or null before then.",
+        { nullable: true },
+      ],
+      [
+        "irb_approved_on",
+        "date",
+        "Date the IRB or ethics committee approved the study at the site, or null before then.",
+        { nullable: true },
+      ],
       [
         "activated_on",
         "date",
@@ -863,6 +884,16 @@ const DIMENSIONS: readonly TableDraft[] = [
     classification: "internal",
     source: "silver.site",
     synthetic: true,
+    sequences: [
+      [
+        "selected_on",
+        "contracted_on",
+        "irb_approved_on",
+        "initiated_on",
+        "activated_on",
+        "first_subject_in_on",
+      ],
+    ],
     columns: [
       ["site_key", "integer", "Surrogate key of the version.", { from: [] }],
       ["site_id", "string", "Site id, the natural key."],
@@ -882,7 +913,53 @@ const DIMENSIONS: readonly TableDraft[] = [
         { length: 2 },
       ],
       ["planned_enrollment", "integer", "Enrollment target for the site."],
-      ["activated_on", "date", "Activation date.", { nullable: true }],
+      [
+        "selected_on",
+        "date",
+        "Date the site was selected (start-up stage 1).",
+        { nullable: true },
+      ],
+      [
+        "contracted_on",
+        "date",
+        "Date the clinical trial agreement was executed (stage 2).",
+        { nullable: true },
+      ],
+      [
+        "irb_approved_on",
+        "date",
+        "Date the IRB or ethics committee approved the study at the site (stage 3).",
+        { nullable: true },
+      ],
+      [
+        "initiated_on",
+        "date",
+        "Date of the site initiation visit (stage 4).",
+        {
+          nullable: true,
+          from: [
+            "silver.ctms_monitoring_visit.visit_type",
+            "silver.ctms_monitoring_visit.visit_date",
+          ],
+          how: "aggregate",
+        },
+      ],
+      [
+        "activated_on",
+        "date",
+        "Activation date (stage 5).",
+        { nullable: true },
+      ],
+      [
+        "first_subject_in_on",
+        "date",
+        "Date the site enrolled its first subject (stage 6).",
+        {
+          nullable: true,
+          from: ["silver.edc_subject.enrolled_on"],
+          how: "aggregate",
+        },
+      ],
       [
         "site_status",
         "string",

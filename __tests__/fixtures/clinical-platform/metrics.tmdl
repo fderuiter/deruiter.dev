@@ -92,6 +92,138 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
+	/// Sites selected by the sponsor by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: sites.
+	measure 'Sites selected' =
+			COUNTROWS(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[selected_on]))) + 0
+		formatString: #,0
+		displayFolder: Site start-up
+
+		annotation MetricId = sites_selected
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Sites with an executed clinical trial agreement by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: sites.
+	measure 'Sites contracted' =
+			COUNTROWS(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[contracted_on]))) + 0
+		formatString: #,0
+		displayFolder: Site start-up
+
+		annotation MetricId = sites_contracted
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Sites with the study approved by their IRB or ethics committee by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: sites.
+	measure 'Sites IRB approved' =
+			COUNTROWS(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[irb_approved_on]))) + 0
+		formatString: #,0
+		displayFolder: Site start-up
+
+		annotation MetricId = sites_irb_approved
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Sites with a site initiation visit by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: sites.
+	measure 'Sites initiated' =
+			COUNTROWS(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[initiated_on]))) + 0
+		formatString: #,0
+		displayFolder: Site start-up
+
+		annotation MetricId = sites_initiated
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Sites activated by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: sites.
+	measure 'Sites activated' =
+			COUNTROWS(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[activated_on]))) + 0
+		formatString: #,0
+		displayFolder: Site start-up
+
+		annotation MetricId = sites_activated
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Sites that have enrolled a subject by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: sites.
+	measure 'Sites with a first subject in' =
+			COUNTROWS(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[first_subject_in_on]))) + 0
+		formatString: #,0
+		displayFolder: Site start-up
+
+		annotation MetricId = sites_with_first_subject_in
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from a site's selection to its executed clinical trial agreement, over sites that reached both stages by the data cut. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'Selection to executed agreement' =
+			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[selected_on]) && NOT ISBLANK('dim_site'[contracted_on])), DATEDIFF('dim_site'[selected_on], 'dim_site'[contracted_on], DAY))
+		formatString: #,0.0
+		displayFolder: Site start-up
+
+		annotation MetricId = selection_to_contract_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from the executed agreement to the IRB or ethics committee's approval, over sites that reached both stages by the data cut. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'Executed agreement to IRB approval' =
+			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[contracted_on]) && NOT ISBLANK('dim_site'[irb_approved_on])), DATEDIFF('dim_site'[contracted_on], 'dim_site'[irb_approved_on], DAY))
+		formatString: #,0.0
+		displayFolder: Site start-up
+
+		annotation MetricId = contract_to_irb_approval_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from IRB or ethics approval to the site initiation visit, over sites that reached both stages by the data cut. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'IRB approval to initiation visit' =
+			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[irb_approved_on]) && NOT ISBLANK('dim_site'[initiated_on])), DATEDIFF('dim_site'[irb_approved_on], 'dim_site'[initiated_on], DAY))
+		formatString: #,0.0
+		displayFolder: Site start-up
+
+		annotation MetricId = irb_approval_to_initiation_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from the site initiation visit to activation, over sites that reached both stages by the data cut. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'Initiation visit to activation' =
+			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[initiated_on]) && NOT ISBLANK('dim_site'[activated_on])), DATEDIFF('dim_site'[initiated_on], 'dim_site'[activated_on], DAY))
+		formatString: #,0.0
+		displayFolder: Site start-up
+
+		annotation MetricId = initiation_to_activation_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median days from activation to the first subject the site enrolled, over sites that reached both stages by the data cut. Version 1.0.0, certified. Owner: Clinical Operations Lead. Steward: Clinical Operations Data Steward. Unit: days.
+	measure 'Activation to first subject in' =
+			MEDIANX(FILTER('dim_site', 'dim_site'[version_number] = 1 && NOT ISBLANK('dim_site'[activated_on]) && NOT ISBLANK('dim_site'[first_subject_in_on])), DATEDIFF('dim_site'[activated_on], 'dim_site'[first_subject_in_on], DAY))
+		formatString: #,0.0
+		displayFolder: Site start-up
+
+		annotation MetricId = activation_to_first_subject_in_days
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
 	/// Median days from a visit to the entry of its data in the EDC, over visits with data entered. Version 1.0.0, certified. Owner: Clinical Data Management Lead. Steward: Clinical Data Steward. Unit: days.
 	measure 'Data entry lag (median)' =
 			MEDIANX(FILTER('fct_visit', NOT ISBLANK('fct_visit'[entry_lag_days]) && NOT ISBLANK('fct_visit'[visit_date_key])), 'fct_visit'[entry_lag_days])

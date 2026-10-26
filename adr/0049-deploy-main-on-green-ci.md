@@ -53,6 +53,8 @@ deploys.
 - Vercel's Deployment Checks hold the production domains until the GitHub
   `Merge Gate (Required Checks Summary)` check passes on the deployed commit.
   This is a project setting in the Vercel dashboard, not repository code.
+  (Never configured as described; the project now keeps no Deployment
+  Checks. See the 2026-10-25 amendment to ADR 0051.)
 - The Hobby plan runs one build at a time, so two merges never migrate
   concurrently, and Prisma's migration lock guards the rare overlap.
 - Rollback is Vercel's Instant Rollback. The GitHub `production-release`
@@ -67,8 +69,8 @@ deploys.
 - Migrations run before the build that depends on them. A failed migration
   or build publishes nothing, and a build that cannot reach its data sources
   still fails rather than baking fallback content.
-- Migrations apply at build time, before the Deployment Check passes. A
-  commit whose CI then fails leaves its migration applied but its code
+- Migrations apply at build time, before the deployment is promoted. A
+  commit whose build then fails leaves its migration applied but its code
   unpromoted, so expand/contract discipline is mandatory at review time:
   the live app must keep working against the migrated schema.
 - The pre-promotion smoke test against a staged URL is gone. The scheduled

@@ -100,6 +100,7 @@ export type CodelistId =
   | "LBTESTCD"
   | "VSRESU"
   | "UNIT"
+  | "FRM"
   | "NRIND"
   | "ACN"
   | "DSCAT"
@@ -189,6 +190,9 @@ const CODELISTS = [
     term("g/L", "C42576"),
     term("10^9/L", "C67255"),
     term("TABLET", "C48542"),
+  ]),
+  cdisc("FRM", "Dosage Form", "SDTM", "C66726", true, [
+    term("TABLET", "C42998"),
   ]),
   cdisc("NRIND", "Reference Range Indicator", "SDTM", "C78736", true, [
     term("NORMAL", "C78727"),

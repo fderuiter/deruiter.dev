@@ -141,13 +141,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     WEEKLY,
     OPERATIONAL
   ),
-  "silver.site": silver(
-    "Sites",
-    "Site management",
-    OPERATIONS,
-    DAILY,
-    OPERATIONAL
-  ),
+  "silver.site": {
+    ...silver("Sites", "Site management", OPERATIONS, DAILY, OPERATIONAL),
+    // 1.1.0 (#2880): the start-up stages before activation.
+    version: "1.1.0",
+  },
   "silver.vendor": silver(
     "Vendors",
     "Vendor management",
@@ -239,7 +237,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     TRIAL
   ),
   "gold.dim_study": gold("Study dimension", "Conformed dimensions", PORTFOLIO),
-  "gold.dim_site": gold("Site dimension", "Conformed dimensions", OPERATIONS),
+  "gold.dim_site": {
+    ...gold("Site dimension", "Conformed dimensions", OPERATIONS),
+    // 1.1.0 (#2880): the start-up stages, initiation and first subject in.
+    version: "1.1.0",
+  },
   "gold.dim_country": gold(
     "Country dimension",
     "Conformed dimensions",
@@ -298,6 +300,6 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     freshnessHours: MONTHLY_TRANSFER,
     availability: GOLD_AVAILABILITY,
     retention: TRIAL,
-    version: "2.1.0",
+    version: "2.2.0",
   },
 };

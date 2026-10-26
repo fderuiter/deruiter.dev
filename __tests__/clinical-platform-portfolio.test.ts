@@ -33,9 +33,13 @@ import { expectWithinTimingBudget } from "./helpers/timing-budget";
  * #2879: every EDC subject carries a screen failure reason, drawn from a
  * stream of its own. No other value moved; the hash with
  * `screenFailureReason` left out is the previous golden, b4ab4b63.
+ *
+ * #2880: every site carries its start-up stages (`selectedOn`,
+ * `contractedOn`, `irbApprovedOn`), drawn from a stream of their own. With
+ * those left out the hash is the previous golden, 330b619a.
  */
 const GOLDEN_SHA256 =
-  "330b619a3f3177f6d4febb5a295bda31cba926a73e0898216f46a2f71811133b";
+  "a72bba8e78c24f74af70d5be1d0d917725d738585477214408e12df64d1a9fb0";
 
 /** The fictional controlled list screen failure reasons come from (#2879). */
 const SCREEN_FAILURE_REASONS: readonly string[] = [
@@ -626,6 +630,35 @@ describe("generatePortfolio: properties over seeds", () => {
         return p.studies.every(
           (s) => (enrolled.get(s.id) ?? 0) <= s.plannedEnrollment
         );
+      }),
+      options
+    );
+  }, 60_000);
+
+  it("takes every site through start-up in order, after protocol finalisation and by the data cut (#2880)", () => {
+    fc.assert(
+      fc.property(seeds, (seed) => {
+        const p = portfolioFor(seed);
+        const start = new Map(p.studies.map((s) => [s.id, s.startOn]));
+        return p.sites.every((site) => {
+          const stages = [
+            site.selectedOn,
+            site.contractedOn,
+            site.irbApprovedOn,
+            site.activatedOn,
+          ];
+          const reached = stages.filter((d): d is string => d !== null);
+          // Reached stages come first, in order; the rest are still ahead.
+          return (
+            stages.slice(0, reached.length).every((d) => d !== null) &&
+            reached.every(
+              (day, i) =>
+                day >= (start.get(site.studyId) ?? "") &&
+                day <= p.asOf &&
+                (i === 0 || reached[i - 1] <= day)
+            )
+          );
+        });
       }),
       options
     );

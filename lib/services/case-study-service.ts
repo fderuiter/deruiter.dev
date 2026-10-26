@@ -3,6 +3,7 @@ import { env, isBuildPhase } from "@/lib/env";
 import { failBuildOnDataSourceError } from "@/lib/build-integrity";
 import { FALLBACK_CASE_STUDIES, CaseStudyData } from "@/lib/case-studies-data";
 import { redis, getScopedRedisKey, isRedisConfigured } from "@/lib/redis";
+import { RedisTimeoutError, withRedisTimeout } from "@/lib/redis-timeout";
 import { sanitizeContentHtmlLazy } from "@/lib/content-sanitizer-lazy";
 import { logger } from "@/lib/logger";
 import { z } from "zod";
@@ -411,15 +412,11 @@ export class CaseStudyService {
     try {
       const cached = !isRedisConfigured()
         ? null
-        : await Promise.race([
+        : await withRedisTimeout(
             redis.get<CaseStudyData>(cacheKey),
-            new Promise<null>((_, reject) =>
-              setTimeout(
-                () => reject(new Error("Redis cache read timeout")),
-                1500
-              )
-            ),
-          ]);
+            1500,
+            "Redis cache read timeout"
+          );
 
       if (cached && typeof cached === "object" && cached.slug === slug) {
         return {
@@ -430,10 +427,13 @@ export class CaseStudyService {
       }
     } catch (cacheErr) {
       if (env.VERCEL_ENV === "production" && !isBuildPhase()) {
-        logger.warn(
-          `CaseStudyService.getCaseStudyBySlug: Redis cache read failed for "${slug}", falling back:`,
-          cacheErr
-        );
+        const message = `CaseStudyService.getCaseStudyBySlug: Redis cache read failed for "${slug}", falling back:`;
+        if (cacheErr instanceof RedisTimeoutError) {
+          // A timed-out read is a cache miss, not an incident (#2850).
+          logger.warn(message, cacheErr, { skipTelemetry: true });
+        } else {
+          logger.warn(message, cacheErr);
+        }
       }
     }
 

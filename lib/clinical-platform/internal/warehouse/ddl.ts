@@ -136,7 +136,7 @@ const DIALECTS: Readonly<Record<SqlDialect, Dialect>> = {
 
 /** Name of a constraint, unique across the warehouse and at most 63 characters. */
 export function constraintName(
-  kind: "pk" | "uq" | "fk",
+  kind: "pk" | "uq" | "fk" | "ck",
   table: WarehouseTable,
   suffix = ""
 ): string {
@@ -168,12 +168,21 @@ function createTable(table: WarehouseTable, dialect: Dialect): string {
       `  CONSTRAINT ${q(constraintName("fk", table, column.name))} FOREIGN KEY (${q(column.name)}) REFERENCES ${q(layer)}.${q(name)} (${q(ref.column)})`
     );
   }
+  for (const sequence of table.sequences) {
+    for (let i = 1; i < sequence.length; i += 1) {
+      const [before, after] = [q(sequence[i - 1]), q(sequence[i])];
+      lines.push(
+        `  CONSTRAINT ${q(constraintName("ck", table, sequence[i]))} CHECK (${after} IS NULL OR (${before} IS NOT NULL AND ${before} <= ${after}))`
+      );
+    }
+  }
   return `CREATE TABLE ${q(table.layer)}.${q(table.name)} (\n${lines.join(",\n")}\n);`;
 }
 
 /**
  * Writes the warehouse DDL for one SQL dialect: schemas, then every table
- * with its columns, primary key, unique keys and foreign keys, then its
+ * with its columns, primary key, unique keys, foreign keys and the checks
+ * that keep its date sequences in order, then its
  * table and column descriptions (`COMMENT ON` in DuckDB and PostgreSQL,
  * `MS_Description` extended properties in T-SQL). Tables come in schema
  * order, so every foreign key's target exists before it is referenced.

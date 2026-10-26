@@ -104,6 +104,23 @@ describe("DuckDB: the generated DDL", () => {
     );
   });
 
+  it("checks that every date sequence is reached in order (#2880)", async () => {
+    const checks = await scalar(
+      "SELECT count(*) FROM duckdb_constraints() WHERE constraint_type = 'CHECK'"
+    );
+    expect(checks).toBe(
+      WAREHOUSE_SCHEMA.tables
+        .flatMap((t) => t.sequences)
+        .reduce((n, sequence) => n + sequence.length - 1, 0)
+    );
+    // A site whose agreement predates its selection is refused.
+    await expect(
+      db.run(
+        `INSERT INTO "silver"."site" SELECT 'CHECK-SITE', study_id, site_number, country_code, site_name, planned_enrollment, contracted_on, selected_on, irb_approved_on, activated_on, is_synthetic FROM "silver"."site" WHERE selected_on < contracted_on LIMIT 1`
+      )
+    ).rejects.toThrow(/check constraint/i);
+  });
+
   it("rejects a fact row whose foreign key has no dimension row", async () => {
     await expect(
       db.run(

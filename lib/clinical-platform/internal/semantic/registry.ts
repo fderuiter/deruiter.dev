@@ -120,6 +120,98 @@ const SITE_TARGET_DIMENSIONS: readonly MetricDimensionId[] = [
   "country",
 ];
 
+/**
+ * Sites that reached a start-up stage by the data cut, counted once each on
+ * their first site dimension version (#2880).
+ */
+const sitesReaching = (stage: string) =>
+  count(SITE, null, is("version_number", 1), present(stage));
+
+/** Median days between two start-up stages, over sites that reached both. */
+const stageGap = (from: string, to: string) =>
+  measure(
+    SITE,
+    "median",
+    daysBetween(col(from), col(to)),
+    null,
+    is("version_number", 1),
+    present(from),
+    present(to)
+  );
+
+/** The site start-up stages, in the order sites reach them (#2880). */
+const START_UP_STAGES: readonly (readonly [
+  column: string,
+  id: string,
+  name: string,
+  reached: string,
+])[] = [
+  [
+    "selected_on",
+    "sites_selected",
+    "Sites selected",
+    "selected by the sponsor",
+  ],
+  [
+    "contracted_on",
+    "sites_contracted",
+    "Sites contracted",
+    "with an executed clinical trial agreement",
+  ],
+  [
+    "irb_approved_on",
+    "sites_irb_approved",
+    "Sites IRB approved",
+    "with the study approved by their IRB or ethics committee",
+  ],
+  [
+    "initiated_on",
+    "sites_initiated",
+    "Sites initiated",
+    "with a site initiation visit",
+  ],
+  ["activated_on", "sites_activated", "Sites activated", "activated"],
+  [
+    "first_subject_in_on",
+    "sites_with_first_subject_in",
+    "Sites with a first subject in",
+    "that have enrolled a subject",
+  ],
+];
+
+/** The gap after each start-up stage but the last: id, name and span. */
+const START_UP_GAPS: readonly (readonly [
+  id: string,
+  name: string,
+  span: string,
+])[] = [
+  [
+    "selection_to_contract_days",
+    "Selection to executed agreement",
+    "from a site's selection to its executed clinical trial agreement",
+  ],
+  [
+    "contract_to_irb_approval_days",
+    "Executed agreement to IRB approval",
+    "from the executed agreement to the IRB or ethics committee's approval",
+  ],
+  [
+    "irb_approval_to_initiation_days",
+    "IRB approval to initiation visit",
+    "from IRB or ethics approval to the site initiation visit",
+  ],
+  [
+    "initiation_to_activation_days",
+    "Initiation visit to activation",
+    "from the site initiation visit to activation",
+  ],
+  [
+    "activation_to_first_subject_in_days",
+    "Activation to first subject in",
+    "from activation to the first subject the site enrolled",
+  ],
+];
+
 const PERCENT: MetricFormat = { style: "percent", decimals: 1 };
 const WHOLE: MetricFormat = { style: "number", decimals: 0 };
 const ONE_DECIMAL: MetricFormat = { style: "number", decimals: 1 };
@@ -413,6 +505,44 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     steward: OPS_STEWARD,
     glossaryTerm: "site-activation-term",
     displayFolder: "Site start-up",
+  }),
+  ...START_UP_STAGES.map(([column, id, name, reached]) =>
+    define(
+      {
+        id,
+        name,
+        description: `Sites ${reached} by the data cut, each counted once. A site reaches the start-up stages in order: selection, executed agreement, IRB or ethics approval, initiation visit, activation, first subject in.`,
+        formula: { kind: "simple", measure: sitesReaching(column) },
+        allowedDimensions: SITE_TARGET_DIMENSIONS,
+        unit: "sites",
+        format: WHOLE,
+        owner: OPS_OWNER,
+        steward: OPS_STEWARD,
+        glossaryTerm: "site-activation-term",
+        displayFolder: "Site start-up",
+      },
+      2880
+    )
+  ),
+  ...START_UP_GAPS.map(([id, name, span], index) => {
+    const [from] = START_UP_STAGES[index];
+    const [to] = START_UP_STAGES[index + 1];
+    return define(
+      {
+        id,
+        name,
+        description: `Median days ${span}, over sites that reached both stages by the data cut.`,
+        formula: { kind: "simple", measure: stageGap(from, to) },
+        allowedDimensions: SITE_TARGET_DIMENSIONS,
+        unit: "days",
+        format: ONE_DECIMAL,
+        owner: OPS_OWNER,
+        steward: OPS_STEWARD,
+        glossaryTerm: "site-activation-term",
+        displayFolder: "Site start-up",
+      },
+      2880
+    );
   }),
   define({
     id: "data_entry_lag_median",

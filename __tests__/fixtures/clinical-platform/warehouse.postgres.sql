@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.3.0, PostgreSQL dialect.
+-- Clinical Data Platform warehouse, schema 1.4.0, PostgreSQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -72,9 +72,15 @@ CREATE TABLE "silver"."site" (
   "country_code"       VARCHAR(2) NOT NULL,
   "site_name"          VARCHAR(120) NOT NULL,
   "planned_enrollment" INTEGER NOT NULL,
+  "selected_on"        DATE,
+  "contracted_on"      DATE,
+  "irb_approved_on"    DATE,
   "activated_on"       DATE,
   "is_synthetic"       BOOLEAN NOT NULL,
-  CONSTRAINT "pk_site" PRIMARY KEY ("site_id")
+  CONSTRAINT "pk_site" PRIMARY KEY ("site_id"),
+  CONSTRAINT "ck_site_contracted_on" CHECK ("contracted_on" IS NULL OR ("selected_on" IS NOT NULL AND "selected_on" <= "contracted_on")),
+  CONSTRAINT "ck_site_irb_approved_on" CHECK ("irb_approved_on" IS NULL OR ("contracted_on" IS NOT NULL AND "contracted_on" <= "irb_approved_on")),
+  CONSTRAINT "ck_site_activated_on" CHECK ("activated_on" IS NULL OR ("irb_approved_on" IS NOT NULL AND "irb_approved_on" <= "activated_on"))
 );
 COMMENT ON TABLE "silver"."site" IS 'Investigator sites, one row per site in one study. Grain: One row per site.';
 COMMENT ON COLUMN "silver"."site"."site_id" IS 'Site id, unique within the portfolio.';
@@ -83,6 +89,9 @@ COMMENT ON COLUMN "silver"."site"."site_number" IS 'Site number within the study
 COMMENT ON COLUMN "silver"."site"."country_code" IS 'ISO 3166-1 alpha-2 country code, upper case.';
 COMMENT ON COLUMN "silver"."site"."site_name" IS 'Fictional site name.';
 COMMENT ON COLUMN "silver"."site"."planned_enrollment" IS 'Enrollment target for the site.';
+COMMENT ON COLUMN "silver"."site"."selected_on" IS 'Date the sponsor selected the site, or null before then.';
+COMMENT ON COLUMN "silver"."site"."contracted_on" IS 'Date the clinical trial agreement was executed, or null before then.';
+COMMENT ON COLUMN "silver"."site"."irb_approved_on" IS 'Date the IRB or ethics committee approved the study at the site, or null before then.';
 COMMENT ON COLUMN "silver"."site"."activated_on" IS 'Activation date, or null before activation.';
 COMMENT ON COLUMN "silver"."site"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
@@ -479,7 +488,12 @@ CREATE TABLE "gold"."dim_site" (
   "site_name"                 VARCHAR(120) NOT NULL,
   "country_code"              VARCHAR(2) NOT NULL,
   "planned_enrollment"        INTEGER NOT NULL,
+  "selected_on"               DATE,
+  "contracted_on"             DATE,
+  "irb_approved_on"           DATE,
+  "initiated_on"              DATE,
   "activated_on"              DATE,
+  "first_subject_in_on"       DATE,
   "site_status"               VARCHAR(64) NOT NULL,
   "principal_investigator_id" VARCHAR(64),
   "valid_from"                DATE NOT NULL,
@@ -488,7 +502,12 @@ CREATE TABLE "gold"."dim_site" (
   "is_synthetic"              BOOLEAN NOT NULL,
   CONSTRAINT "pk_dim_site" PRIMARY KEY ("site_key"),
   CONSTRAINT "uq_dim_site_1" UNIQUE ("site_id", "version_number"),
-  CONSTRAINT "uq_dim_site_2" UNIQUE ("site_id", "valid_from")
+  CONSTRAINT "uq_dim_site_2" UNIQUE ("site_id", "valid_from"),
+  CONSTRAINT "ck_dim_site_contracted_on" CHECK ("contracted_on" IS NULL OR ("selected_on" IS NOT NULL AND "selected_on" <= "contracted_on")),
+  CONSTRAINT "ck_dim_site_irb_approved_on" CHECK ("irb_approved_on" IS NULL OR ("contracted_on" IS NOT NULL AND "contracted_on" <= "irb_approved_on")),
+  CONSTRAINT "ck_dim_site_initiated_on" CHECK ("initiated_on" IS NULL OR ("irb_approved_on" IS NOT NULL AND "irb_approved_on" <= "initiated_on")),
+  CONSTRAINT "ck_dim_site_activated_on" CHECK ("activated_on" IS NULL OR ("initiated_on" IS NOT NULL AND "initiated_on" <= "activated_on")),
+  CONSTRAINT "ck_dim_site_first_subject_in_on" CHECK ("first_subject_in_on" IS NULL OR ("activated_on" IS NOT NULL AND "activated_on" <= "first_subject_in_on"))
 );
 COMMENT ON TABLE "gold"."dim_site" IS 'Conformed site dimension, slowly changing type 2 on site status and principal investigator. Grain: One row per site version: a new row each time the status or the principal investigator changes.';
 COMMENT ON COLUMN "gold"."dim_site"."site_key" IS 'Surrogate key of the version.';
@@ -499,7 +518,12 @@ COMMENT ON COLUMN "gold"."dim_site"."site_number" IS 'Site number within the stu
 COMMENT ON COLUMN "gold"."dim_site"."site_name" IS 'Fictional site name.';
 COMMENT ON COLUMN "gold"."dim_site"."country_code" IS 'ISO 3166-1 alpha-2 country code.';
 COMMENT ON COLUMN "gold"."dim_site"."planned_enrollment" IS 'Enrollment target for the site.';
-COMMENT ON COLUMN "gold"."dim_site"."activated_on" IS 'Activation date.';
+COMMENT ON COLUMN "gold"."dim_site"."selected_on" IS 'Date the site was selected (start-up stage 1).';
+COMMENT ON COLUMN "gold"."dim_site"."contracted_on" IS 'Date the clinical trial agreement was executed (stage 2).';
+COMMENT ON COLUMN "gold"."dim_site"."irb_approved_on" IS 'Date the IRB or ethics committee approved the study at the site (stage 3).';
+COMMENT ON COLUMN "gold"."dim_site"."initiated_on" IS 'Date of the site initiation visit (stage 4).';
+COMMENT ON COLUMN "gold"."dim_site"."activated_on" IS 'Activation date (stage 5).';
+COMMENT ON COLUMN "gold"."dim_site"."first_subject_in_on" IS 'Date the site enrolled its first subject (stage 6).';
 COMMENT ON COLUMN "gold"."dim_site"."site_status" IS 'Status during the version: start-up, active or closed.';
 COMMENT ON COLUMN "gold"."dim_site"."principal_investigator_id" IS 'Fictional id of the principal investigator during the version, or null when none is on file.';
 COMMENT ON COLUMN "gold"."dim_site"."valid_from" IS 'First day the version is in force (inclusive).';

@@ -16,6 +16,38 @@ export interface RouteMetaConfig {
 }
 
 export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
+  clinical: {
+    title: "Clinical Data, End to End: The Journey",
+    description:
+      "One synthetic study followed from case report forms through SDTM, ADaM and study tables to a governed portfolio, with the evidence behind each step.",
+    path: "/clinical",
+    keywords: [
+      "Clinical Data Management",
+      "CDISC",
+      "Case Report Forms",
+      "SDTM",
+      "Clinical Data Platform",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
+  labs: {
+    title: "Labs: Studios and Simulators",
+    description:
+      "Interactive studios and simulators outside clinical data: a proof workspace, a 3D MRI viewer, an outage triage drill and a ski-patrol judgment simulator.",
+    path: "/labs",
+    keywords: [
+      "Interactive Simulators",
+      "Proof Assistant",
+      "MRI Viewer",
+      "Incident Response",
+      "Decision Simulation",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platformStrategy: {
     title: "Clinical Platform Strategy Toolkit",
     description:

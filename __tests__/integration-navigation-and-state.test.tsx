@@ -113,7 +113,7 @@ describe("Navigation & Global State Integration Suite", () => {
   });
 
   describe("1. Full-Spectrum Navbar & Mobile Drawer Lifecycle", () => {
-    it.each(["arcade", "simulators"])(
+    it.each(["arcade", "clinical"])(
       "returns focus from %s links to their disclosure button on Escape",
       async (navigation) => {
         await act(async () => root.render(<Navbar />));
@@ -141,9 +141,9 @@ describe("Navigation & Global State Integration Suite", () => {
         root.render(<Navbar />);
       });
 
-      // 1. Desktop Simulators Dropdown
+      // 1. Desktop Clinical Dropdown
       const systemsBtn = container.querySelector(
-        'button[aria-controls="simulators-navigation"]'
+        'button[aria-controls="clinical-navigation"]'
       ) as HTMLButtonElement;
       expect(systemsBtn).toBeTruthy();
 

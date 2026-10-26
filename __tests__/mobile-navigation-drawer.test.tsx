@@ -115,7 +115,7 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
     expect(document.body.style.overflow).toBe("");
   });
 
-  it("uses the canonical Work, Blog, Arcade, Simulators, About, and Contact destinations", async () => {
+  it("uses the canonical Clinical, Labs, Arcade, Writing, About, and Contact destinations", async () => {
     await act(async () => {
       root.render(<Navbar />);
     });
@@ -123,16 +123,22 @@ describe("Mobile Navigation Drawer & Touch Interaction Suite", () => {
     const mainNavigation = container.querySelector(
       'nav[aria-label="Main Navigation"]'
     );
-    expect(mainNavigation?.textContent).toContain("Work");
-    expect(mainNavigation?.textContent).toContain("Simulators");
-    expect(mainNavigation?.textContent).toContain("Arcade");
-    expect(mainNavigation?.textContent).toContain("About");
-    expect(mainNavigation?.textContent).toContain("Contact");
+    for (const label of [
+      "Clinical",
+      "Labs",
+      "Arcade",
+      "Writing",
+      "About",
+      "Contact",
+    ]) {
+      expect(mainNavigation?.textContent).toContain(label);
+    }
+    expect(mainNavigation?.textContent).not.toContain("Simulators");
 
-    const workLink = Array.from(
+    const contactLink = Array.from(
       mainNavigation?.querySelectorAll("a") ?? []
-    ).find((link) => link.textContent?.trim() === "Work");
-    expect(workLink?.getAttribute("href")).toBe("/case-studies");
+    ).find((link) => link.textContent?.trim() === "Contact");
+    expect(contactLink?.getAttribute("href")).toMatch(/^\/#?contact$/);
   });
 
   it("opens a consolidated preferences panel and dismisses it with Escape", async () => {

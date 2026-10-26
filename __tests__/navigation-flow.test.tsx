@@ -136,14 +136,15 @@ describe("Navigation Flow Components Suite", () => {
       expect(container.textContent).toContain("Quasi-Perfect Puzzler");
       expect(container.textContent).toContain("Monkey C Mayhem");
 
-      // Systems links
+      // Labs links
       expect(container.textContent).toContain("Proof Workspace");
       expect(container.textContent).toContain("NeuroRecon Studio");
       expect(container.textContent).toContain("Incident Simulator");
 
-      // Connect links & Newsletter
-      expect(container.textContent).toContain("Book a Chat ↗");
-      expect(container.textContent).toContain("Contact ↗");
+      // Clinical journey, About links & Newsletter
+      expect(container.textContent).toContain("CRF Studio");
+      expect(container.textContent).toContain("Office Hours");
+      expect(container.textContent).toContain("Contact");
       expect(container.textContent).toContain("Project Notes");
       expect(container.textContent).not.toContain("fpderuiter@gmail.com");
 

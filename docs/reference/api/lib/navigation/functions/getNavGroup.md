@@ -14,7 +14,7 @@ Looks a group up by id.
 
 ### id
 
-`"arcade"` \| `"work"` \| `"blog"` \| `"simulators"` \| `"about"` \| `"contact"`
+`"arcade"` \| `"clinical"` \| `"labs"` \| `"writing"` \| `"about"` \| `"contact"`
 
 ## Returns
 

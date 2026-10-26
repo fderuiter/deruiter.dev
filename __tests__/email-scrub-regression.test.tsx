@@ -50,7 +50,7 @@ describe("Email Scrub Regression Invariant", () => {
     const mailto = container?.querySelector('a[href*="mailto:"]');
     expect(mailto).toBeNull();
     expect(container?.textContent).not.toContain("fpderuiter@gmail.com");
-    expect(container?.textContent).toContain("Contact ↗");
+    expect(container?.querySelector('a[href="/contact"]')).not.toBeNull();
   });
 
   it("should not render mailto:fpderuiter@gmail.com in SchedulePage", async () => {

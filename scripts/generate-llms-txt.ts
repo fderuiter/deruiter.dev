@@ -66,15 +66,12 @@ interface Section {
 /**
  * One section per top-bar item, in top-bar order, so the manifest groups pages
  * the way the site's navigation does (#1848). Phone-sized variants stay in the
- * utility section, and the Laser Loon artwork page sits under Work.
+ * utility section.
  */
 const SECTIONS: Section[] = [
   ...PRIMARY_NAV.map((group) => ({
     heading: group.label,
-    match: (p: string) =>
-      !p.startsWith("/m/") &&
-      (isNavGroupActive(group, p) ||
-        (group.id === "work" && p === "/work/laser-loon")),
+    match: (p: string) => !p.startsWith("/m/") && isNavGroupActive(group, p),
   })),
   {
     heading: "Mobile and utility routes",

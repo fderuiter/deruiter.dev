@@ -8,4 +8,5 @@
 
 ## Functions
 
+- [canVibrate](functions/canVibrate.md)
 - [triggerHaptic](functions/triggerHaptic.md)

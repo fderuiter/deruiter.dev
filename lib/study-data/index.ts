@@ -57,6 +57,10 @@ export {
   buildDefine,
   DEFINE_XML_VERSION,
 } from "./internal/define/build-define";
+export {
+  checkDefineParity,
+  DEFINE_PARITY_RULES,
+} from "./internal/define/parity";
 export { writeDefineXml } from "./internal/define/write-define-xml";
 export { renderDefineHtml } from "./internal/define/render-define-html";
 export type {

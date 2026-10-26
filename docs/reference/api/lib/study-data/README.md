@@ -326,6 +326,12 @@ Re-exports [CellValue](types/type-aliases/CellValue.md)
 
 ***
 
+### checkDefineParity
+
+Re-exports [checkDefineParity](internal/define/parity/functions/checkDefineParity.md)
+
+***
+
 ### checkReportingEvent
 
 Re-exports [checkReportingEvent](internal/tlf/check-reporting-event/functions/checkReportingEvent.md)
@@ -509,6 +515,12 @@ Re-exports [DEFAULT_SEED](presets/variables/DEFAULT_SEED.md)
 ### DEFAULT\_SUBJECT\_COUNT
 
 Re-exports [DEFAULT_SUBJECT_COUNT](presets/variables/DEFAULT_SUBJECT_COUNT.md)
+
+***
+
+### DEFINE\_PARITY\_RULES
+
+Re-exports [DEFINE_PARITY_RULES](internal/define/parity/variables/DEFINE_PARITY_RULES.md)
 
 ***
 

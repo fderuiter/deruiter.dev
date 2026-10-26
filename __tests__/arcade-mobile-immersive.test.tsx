@@ -782,14 +782,14 @@ describe("PlayCabinet touch toolbar (ADR 0061)", () => {
     expect(toolbar.className).toContain("absolute");
     expect(toolbar.style.right).toContain("8px");
     expect(
-      screen.getByRole("button", { name: "Pre-Game Setup Wizard" }).textContent
+      screen.getByRole("button", { name: "Setup" }).textContent
     ).toBe("");
     expect(
       screen.getByRole("button", { name: "Reset / Power Off Cabinet" })
         .textContent
     ).toBe("");
     expect(
-      screen.getByRole("button", { name: "Pre-Game Setup Wizard" }).className
+      screen.getByRole("button", { name: "Setup" }).className
     ).toContain("h-12 w-12");
   });
 

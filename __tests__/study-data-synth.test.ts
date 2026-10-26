@@ -35,42 +35,39 @@ describe("seeded synthetic collection", () => {
       .update(JSON.stringify(datasets))
       .digest("hex");
     expect(digest).toBe(
-      "5c762b4eb43ceadb00039a5c6d21b90609294466b3460e6911a9bdefb1746686"
+      "c35ce8134d140b95fbb520c4d4bd7f798910c6af868c77cd1935322a5ac9806c"
     );
-    // Adding medical history (#2963) left every other domain's bytes alone:
-    // without MH the run hashes as it did before.
+    // Eligibility (#2964) changed only screen failures: their IE records and
+    // the screening age, blood pressure or creatinine that shows the
+    // criterion they did not meet. Every enrolled subject's records hash as
+    // they did before. (Earlier domains made the same check by leaving out
+    // the new domain; see git history for those values.)
+    const dm = datasets.find((dataset) => dataset.name === "DM")!;
+    const failed = new Set(
+      dm.columns.USUBJID.filter(
+        (_, index) => dm.columns.SCREENFL[index] === "FAIL"
+      )
+    );
+    const enrolledOnly = datasets
+      .filter((dataset) => dataset.name !== "IE")
+      .map((dataset) => {
+        const keep = dataset.columns.USUBJID.map(
+          (subject) => !failed.has(subject)
+        );
+        return {
+          ...dataset,
+          columns: Object.fromEntries(
+            Object.entries(dataset.columns).map(([name, values]) => [
+              name,
+              values.filter((_, index) => keep[index]),
+            ])
+          ),
+          rowCount: keep.filter(Boolean).length,
+        };
+      });
     expect(
-      createHash("sha256")
-        .update(
-          JSON.stringify(datasets.filter((dataset) => dataset.name !== "MH"))
-        )
-        .digest("hex")
-    ).toBe("9def1c38db1d4cc265e126cac141658b8e312e2f438ae931347d89f6c0cec0c2");
-    // Adding medication collection (#2961) left every other domain's bytes
-    // alone: without CM the run hashes as it did before.
-    expect(
-      createHash("sha256")
-        .update(
-          JSON.stringify(
-            datasets.filter(
-              (dataset) => dataset.name !== "CM" && dataset.name !== "MH"
-            )
-          )
-        )
-        .digest("hex")
-    ).toBe("fa790cc10afe1c4539b634f8f28f90807439b25b245c0ae2fc6e0a85f68d8116");
-    // Adding ECG collection (#2941) left every other domain's bytes alone.
-    expect(
-      createHash("sha256")
-        .update(
-          JSON.stringify(
-            datasets.filter(
-              (dataset) => !["EG", "CM", "MH"].includes(dataset.name)
-            )
-          )
-        )
-        .digest("hex")
-    ).toBe("d0ad7aae03f8c7e6e59bc0c2d7ad24f934a6d1e5d05d6fab11939b0c0757baa0");
+      createHash("sha256").update(JSON.stringify(enrolledOnly)).digest("hex")
+    ).toBe("f2f6140dea5bb6aa85caf8a1d0e4682060275a43344ae68efdc42ac5494182d9");
   });
 
   it("collects consistent 12-lead ECG intervals at the ECG visits (#2941)", () => {

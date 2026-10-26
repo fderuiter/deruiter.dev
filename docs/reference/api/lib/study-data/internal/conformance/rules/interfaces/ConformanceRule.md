@@ -42,7 +42,7 @@ readonly [`RuleIssue`](RuleIssue.md)[]
 
 ### kind
 
-> `readonly` **kind**: `"duplicate"` \| `"adam"` \| `"lineage"` \| `"unique"` \| `"baseline"` \| `"required"` \| `"unit"` \| `"visit"` \| `"iso"` \| `"ct"` \| `"study-day"` \| `"epoch"` \| `"exception"`
+> `readonly` **kind**: `"duplicate"` \| `"adam"` \| `"lineage"` \| `"unique"` \| `"baseline"` \| `"required"` \| `"unit"` \| `"visit"` \| `"iso"` \| `"ct"` \| `"study-day"` \| `"epoch"` \| `"exception"` \| `"eligibility"`
 
 ***
 

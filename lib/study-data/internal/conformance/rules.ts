@@ -124,7 +124,7 @@ function adamSourceRule(id: string, domain: string): ConformanceRule {
   };
 }
 
-export const CONFORMANCE_RULES_VERSION = "1.5.0";
+export const CONFORMANCE_RULES_VERSION = "1.6.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
@@ -158,6 +158,7 @@ export interface ConformanceRule {
     | "exception"
     | "duplicate"
     | "unit"
+    | "eligibility"
     | "lineage";
   readonly variable?: string;
   readonly check: (
@@ -649,6 +650,54 @@ function unitRule(id: string, domain: "VS" | "LB" | "EG"): ConformanceRule {
   };
 }
 
+/**
+ * IE and disposition disagree about who failed screening. IE records the
+ * criteria a subject did not meet, so a SCREEN FAILURE disposition needs at
+ * least one IE record, and a subject who was not a screen failure needs none
+ * (SDTMIG 3.4 section 6.3.4). CORE v0.17.1 checks IE against TI but has no
+ * rule relating IE to disposition.
+ */
+function eligibilityRule(id: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain: "IE" },
+    citation: SDTM_CITATION,
+    kind: "eligibility",
+    variable: "USUBJID",
+    check(dataset, datasets) {
+      const ds = datasets.find(
+        (item) => item.layer === "sdtm" && item.name === "DS"
+      );
+      const failed = new Set<string>();
+      if (ds)
+        for (let row = 0; row < ds.rowCount; row += 1)
+          if (at(ds, "DSDECOD", row) === "SCREEN FAILURE")
+            failed.add(String(at(ds, "USUBJID", row)));
+      const withRecords = new Set<string>();
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const subject = String(at(dataset, "USUBJID", row));
+        withRecords.add(subject);
+        if (!failed.has(subject))
+          issues.push({
+            row,
+            variable: "USUBJID",
+            message:
+              "Subject has an IE record but no SCREEN FAILURE disposition; IE holds only criteria not met.",
+          });
+      }
+      for (const subject of failed)
+        if (!withRecords.has(subject))
+          issues.push({
+            variable: "USUBJID",
+            message: `${subject} failed screening but has no IE record of the criterion not met.`,
+          });
+      return issues;
+    },
+  };
+}
+
 /** Local rule ids model a documented subset; they are not official CORE ids. */
 export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   required("SD-001", "DM", ["STUDYID", "USUBJID", "RFSTDTC", "ARMCD"]),
@@ -787,6 +836,18 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   dateRule("SD-068", "MH", "MHENDTC"),
   studyDay("SD-069", "MH", "MHDTC", "MHDY"),
   sourceLineageRule("SD-070", "MH"),
+  required("SD-071", "IE", [
+    "STUDYID",
+    "USUBJID",
+    "IESEQ",
+    "IETESTCD",
+    "IECAT",
+    "IEORRES",
+  ]),
+  unique("SD-072", "IE", "IESEQ"),
+  dateRule("SD-073", "IE", "IEDTC"),
+  eligibilityRule("SD-074"),
+  sourceLineageRule("SD-075", "IE"),
   required("AD-001", "ADSL", ["STUDYID", "USUBJID", "TRTSDT"], "adam"),
   unique("AD-002", "ADSL", "USUBJID", "adam"),
   adamRule("AD-003", "ADVS", "base"),

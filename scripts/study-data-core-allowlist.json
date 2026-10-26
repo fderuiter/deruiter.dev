@@ -154,6 +154,20 @@
       "dataset": "MH",
       "category": "by-design",
       "reason": "SDTMIG 3.4 MH has no MHENDY. Resolved conditions ended before screening and are dated to the year or month, so no study day can be derived from them."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000321",
+      "dataset": "IE",
+      "category": "by-design",
+      "reason": "IE holds only screen failures, who were never dosed and have no RFSTDTC, so no study day can be derived from IEDTC and IEDY is left out."
+    },
+    {
+      "target": "sdtm",
+      "coreId": "CORE-000793",
+      "dataset": "IE",
+      "category": "by-design",
+      "reason": "IE holds only screen failures, who were never dosed and have no RFSTDTC, so no study day can be derived from IEDTC and IEDY is left out."
     }
   ]
 }

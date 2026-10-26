@@ -168,8 +168,20 @@ describe("DEMO-301 collection against CRF Studio's CDASH catalog", () => {
     // Dates the catalog collects as --DAT fields (VSDAT, LBDAT, ICDAT), the
     // ECG date a CDASHIG EG page collects as EGDAT, and the date the medical
     // history page was completed, which a CDASHIG MH page collects as MHDAT
-    // (#2963).
-    "collection date": ["VSDTC", "LBDTC", "CONSENTDTC", "EGDTC", "MHDTC"],
+    // (#2963), and the eligibility assessment date a CDASHIG IE page
+    // collects as IEDAT (#2964).
+    "collection date": [
+      "VSDTC",
+      "LBDTC",
+      "CONSENTDTC",
+      "EGDTC",
+      "MHDTC",
+      "IEDTC",
+    ],
+    // The criterion a screen failure did not meet, which a CDASHIG IE page
+    // collects as IETESTCD with its category; CRF Studio's catalog has no
+    // IE page yet (#2964).
+    eligibility: ["IETESTCD", "IECAT"],
     // CDASHIG AE seriousness criteria that CRF Studio's catalog does not
     // list yet (#2826).
     "seriousness criteria": [

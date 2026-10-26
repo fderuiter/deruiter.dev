@@ -24,6 +24,7 @@ type SubjectDomain =
   | "CM"
   | "AE"
   | "MH"
+  | "IE"
   | "VS"
   | "LB"
   | "EG"
@@ -382,11 +383,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
     columns: [
       ...COMMON,
       SEQ("MH"),
-      collected(
-        "MHTERM",
-        "Reported Term for the Medical History",
-        "MH.MHTERM"
-      ),
+      collected("MHTERM", "Reported Term for the Medical History", "MH.MHTERM"),
       derived(
         "MHDECOD",
         "Dictionary-Derived Term",
@@ -440,6 +437,56 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Timing"
       ),
       derived("MHENTPT", "End Reference Time Point", "MH_ONGOING", "Timing"),
+    ],
+  },
+  IE: {
+    label: "Inclusion/Exclusion Criteria Not Met",
+    class: "Findings",
+    structure:
+      "One record per inclusion/exclusion criterion not met per subject",
+    keys: ["STUDYID", "USUBJID", "IETESTCD"],
+    columns: [
+      ...COMMON,
+      SEQ("IE"),
+      collected(
+        "IETESTCD",
+        "Inclusion/Exclusion Criterion Short Name",
+        "IE.IETESTCD"
+      ),
+      derived(
+        "IETEST",
+        "Inclusion/Exclusion Criterion",
+        "IE_CRITERION_FROM_TI",
+        "Synonym Qualifier"
+      ),
+      collected(
+        "IECAT",
+        "Inclusion/Exclusion Category",
+        "IE.IECAT",
+        "Grouping Qualifier"
+      ),
+      derived(
+        "IEORRES",
+        "I/E Criterion Original Result",
+        "IE_RESULT",
+        "Result Qualifier"
+      ),
+      derived(
+        "IESTRESC",
+        "I/E Criterion Result in Std Format",
+        "IE_RESULT",
+        "Result Qualifier"
+      ),
+      VISITNUM,
+      VISIT,
+      EPOCH,
+      collected(
+        "IEDTC",
+        "Date/Time of Collection",
+        "IE.IEDTC",
+        "Timing",
+        "date"
+      ),
     ],
   },
   AE: {
@@ -905,7 +952,7 @@ function numbered(
   );
 }
 
-/** Derive DM, SV, EX, CM, AE, MH, VS, LB, EG, DS and SUPPDM from collected records. */
+/** Derive DM, SV, EX, CM, AE, MH, IE, VS, LB, EG, DS and SUPPDM from collected records. */
 export function deriveSubjectDomains(
   definition: StudyDefinition,
   collectedDatasets: readonly Dataset[],
@@ -1169,6 +1216,35 @@ export function deriveSubjectDomains(
       exposure
     );
   });
+  const ti = trialDesign.find((dataset) => dataset.name === "TI");
+  const criterionByCode = new Map(
+    (ti ? rows(ti) : []).map((row) => [text(row.IETESTCD), row])
+  );
+  const ie = get("IE").map((record) => {
+    const criterion = criterionByCode.get(text(record.IETESTCD));
+    // IE holds only criteria not met: an inclusion answered No, an
+    // exclusion answered Yes.
+    const result =
+      record.IECAT === "INCLUSION"
+        ? "N"
+        : record.IECAT === "EXCLUSION"
+          ? "Y"
+          : null;
+    return item(
+      {
+        ...common(record.USUBJID, "IE"),
+        IETESTCD: record.IETESTCD,
+        IETEST: criterion?.IETEST ?? null,
+        IECAT: record.IECAT,
+        IEORRES: result,
+        IESTRESC: result,
+        ...visit(record),
+        EPOCH: epochAt(record.IEDTC, exBySubject.get(text(record.USUBJID))),
+        IEDTC: record.IEDTC,
+      },
+      record
+    );
+  });
   const assessmentByCode = new Map(
     definition.design.activities.flatMap((activity) =>
       activity.assessments.map(
@@ -1289,6 +1365,7 @@ export function deriveSubjectDomains(
     numbered("CM", cm),
     numbered("AE", ae),
     numbered("MH", mh),
+    numbered("IE", ie),
     numbered("VS", findings("VS")),
     numbered("LB", findings("LB")),
     numbered("EG", findings("EG")),

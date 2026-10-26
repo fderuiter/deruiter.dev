@@ -436,6 +436,40 @@
       "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
     },
     {
+      "ruleId": "SD-071",
+      "core": ["CORE-000355"],
+      "coverage": "same-defect",
+      "planted": "Drop IE.IEORRES.",
+      "reason": "CG0014: a Required variable is missing from the dataset. CORE checks the variable's presence once per dataset, as the local rule does. Paired by reading the rule's definition in the CORE v0.17.1 cache (domains ALL), the same pairing planting measured for every other domain; not yet planted for IE."
+    },
+    {
+      "ruleId": "SD-072",
+      "core": ["CORE-000544"],
+      "coverage": "same-defect",
+      "planted": "Give a second IE record of one subject the same IESEQ.",
+      "reason": "CG0028: --SEQ is not unique within USUBJID. CORE reports both records; the local rule reports the repeat. Paired by reading the rule's definition in the CORE v0.17.1 cache (every domain but TS); not yet planted for IE."
+    },
+    {
+      "ruleId": "SD-073",
+      "core": [],
+      "coverage": "none",
+      "planted": "Set IE.IEDTC to 2030-13-45 on one record.",
+      "reason": "No CORE finding expected: CORE v0.17.1 does not check that a --DTC value is a valid ISO 8601 date (measured on MH, CM, EG and the other domains), and IE has no --DY for an impossible date to break."
+    },
+    {
+      "ruleId": "SD-074",
+      "core": [],
+      "coverage": "none",
+      "planted": "Give an enrolled subject an IE record, or drop a screen failure's only IE record.",
+      "reason": "No CORE v0.17.1 rule relates IE to disposition: its IE rules (CORE-000001, -000011, -000025, -000227, -000228) check results and TI, and its screen-failure rules read DM and EX only. Found by searching the rule cache."
+    },
+    {
+      "ruleId": "SD-075",
+      "core": [],
+      "coverage": "none",
+      "reason": "Row lineage to the collected source is this pipeline's traceability model and sits outside any implementation guide, so CORE has no rule for it."
+    },
+    {
       "ruleId": "AD-001",
       "core": [],
       "coverage": "none",

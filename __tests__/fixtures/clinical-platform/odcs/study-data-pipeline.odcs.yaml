@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.8.0"
+version: "2.9.0"
 status: active
 domain: "Study data"
 tags:
@@ -1459,6 +1459,132 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, USUBJID, MHSEQ) identifies one row."
+  - id: IE
+    name: IE
+    physicalName: "m5/datasets/tabulations/sdtm/ie.json"
+    physicalType: file
+    logicalType: object
+    description: "Inclusion/Exclusion Criteria Not Met"
+    dataGranularityDescription: "One record per inclusion/exclusion criterion not met per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: IESEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        classification: confidential
+      - name: IETESTCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Inclusion/Exclusion Criterion Short Name"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: IETEST
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Inclusion/Exclusion Criterion"
+        required: true
+        classification: confidential
+      - name: IECAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Inclusion/Exclusion Category"
+        required: true
+        classification: confidential
+      - name: IEORRES
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "I/E Criterion Original Result"
+        required: true
+        classification: confidential
+      - name: IESTRESC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "I/E Criterion Result in Std Format"
+        required: true
+        classification: confidential
+      - name: VISITNUM
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Visit Number"
+        required: false
+        classification: confidential
+      - name: VISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Visit Name"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+      - name: IEDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date/Time of Collection"
+        required: false
+        classification: confidential
+    quality:
+      - id: IE_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - IETESTCD
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, IETESTCD) identifies one row."
   - id: VS
     name: VS
     physicalName: "m5/datasets/tabulations/sdtm/vs.json"

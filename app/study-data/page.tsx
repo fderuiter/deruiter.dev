@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { ClinicalJourneyNav } from "@/components/clinical-journey/ClinicalJourneyNav";
 import { StudyDataWorkbench } from "@/components/study-data/StudyDataWorkbench";
@@ -78,7 +79,15 @@ export default function StudyDataPage() {
           One fictional study, defined once in USDM, taken through collected
           data, SDTM, conformance checks, ADaM, Define-XML and the tables and
           figures of a study report. Select any number to see the records it
-          came from and the protocol activity that scheduled them.
+          came from and the protocol activity that scheduled them. To run a
+          study of your own, design it in{" "}
+          <Link
+            href="/crf"
+            className="text-slate-100 underline decoration-zinc-600 underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          >
+            CRF Studio
+          </Link>{" "}
+          and press Run Pipeline.
         </p>
         <div className="mt-8 flex flex-wrap gap-3 font-mono text-xs">
           <span className="border border-amber-500/50 bg-amber-500/10 px-3 py-2 text-amber-300">

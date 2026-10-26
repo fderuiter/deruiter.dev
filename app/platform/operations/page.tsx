@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { OperationsDashboard } from "@/components/platform/operations/OperationsDashboard";
 import {
@@ -9,6 +10,9 @@ import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 import { getBreadcrumbSchema } from "@/lib/seo";
+
+const LINK =
+  "text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.platformOperations
@@ -39,7 +43,19 @@ export default function PlatformOperationsPage() {
           to a study, a country and a site; every number comes from the governed
           metric registry, and every chart has its data table. A study&apos;s
           Risk tab shows its key risk indicators, quality tolerance limits and
-          central statistical monitoring.
+          central statistical monitoring. Every study side by side is on the{" "}
+          <Link href="/platform/portfolio" className={LINK}>
+            portfolio dashboard
+          </Link>
+          , a question of your own goes to the{" "}
+          <Link href="/platform/explore" className={LINK}>
+            metrics explorer
+          </Link>
+          , and each metric&apos;s definition and owner are in the{" "}
+          <Link href="/platform/governance" className={LINK}>
+            data catalog
+          </Link>
+          .
         </p>
         <p className="mt-4 border-l-2 border-amber-500 pl-3 text-sm text-amber-200">
           {SYNTHETIC_DATA_NOTICE} {REGULATORY_WORDING}

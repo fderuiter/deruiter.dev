@@ -6,4 +6,4 @@
 
 # Variable: StudyProvenanceSchema
 
-> `const` **StudyProvenanceSchema**: `ZodObject`\<\{ `author`: `ZodOptional`\<`ZodString`\>; `derivedFromBaselineId`: `ZodOptional`\<`ZodString`\>; `importedAt`: `ZodOptional`\<`ZodString`\>; `importedBy`: `ZodOptional`\<`ZodString`\>; `notes`: `ZodOptional`\<`ZodString`\>; `restoredAt`: `ZodOptional`\<`ZodString`\>; `restoredBy`: `ZodOptional`\<`ZodString`\>; `sourceFormat`: `ZodOptional`\<`ZodString`\>; `sourceVersion`: `ZodOptional`\<`ZodString`\>; `timestamp`: `ZodOptional`\<`ZodString`\>; \}, `$strip`\>
+> `const` **StudyProvenanceSchema**: `ZodObject`\<\{ `author`: `ZodOptional`\<`ZodString`\>; `derivedFromBaselineId`: `ZodOptional`\<`ZodString`\>; `derivedFromVersionTag`: `ZodOptional`\<`ZodString`\>; `importedAt`: `ZodOptional`\<`ZodString`\>; `importedBy`: `ZodOptional`\<`ZodString`\>; `notes`: `ZodOptional`\<`ZodString`\>; `restoredAt`: `ZodOptional`\<`ZodString`\>; `restoredBy`: `ZodOptional`\<`ZodString`\>; `sourceFormat`: `ZodOptional`\<`ZodString`\>; `sourceVersion`: `ZodOptional`\<`ZodString`\>; `timestamp`: `ZodOptional`\<`ZodString`\>; \}, `$strip`\>

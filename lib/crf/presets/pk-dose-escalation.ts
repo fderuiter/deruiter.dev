@@ -51,7 +51,7 @@ const PK_SAMPLING_FORM: CRFForm = {
       fields: [
         {
           id: "f_pk_pre",
-          variableName: "PCTIME_00",
+          variableName: "PCTIME00",
           label: "Pre-Dose (0h) Draw Time",
           dataType: "time",
           columnSpan: 4,
@@ -59,7 +59,7 @@ const PK_SAMPLING_FORM: CRFForm = {
         },
         {
           id: "f_pk_05h",
-          variableName: "PCTIME_05",
+          variableName: "PCTIME05",
           label: "30 Min (0.5h) Post-Dose Draw Time",
           dataType: "time",
           columnSpan: 4,
@@ -99,7 +99,7 @@ const PK_SAMPLING_FORM: CRFForm = {
         },
         {
           id: "f_pk_24h",
-          variableName: "PCTIME_24",
+          variableName: "PCTIME24",
           label: "24.0 Hours (Day 2) Post-Dose Draw Time",
           dataType: "time",
           columnSpan: 6,

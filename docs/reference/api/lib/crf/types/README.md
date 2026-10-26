@@ -60,5 +60,6 @@
 - [ScenarioExpectation](type-aliases/ScenarioExpectation.md)
 - [StudioMode](type-aliases/StudioMode.md)
 - [StudioTheme](type-aliases/StudioTheme.md)
+- [StudyPhase](type-aliases/StudyPhase.md)
 - [StudyReviewEvent](type-aliases/StudyReviewEvent.md)
 - [StudyReviewRole](type-aliases/StudyReviewRole.md)

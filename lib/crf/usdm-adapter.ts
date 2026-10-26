@@ -722,7 +722,7 @@ export function importStudyFromUsdm(
 
   // Support direct StudyProtocol JSON fallback if user pasted a Universal CRF JSON
   if (doc.forms && doc.visits && doc.protocolNumber) {
-    const val = validateUniversalCrf(doc as unknown as StudyProtocol);
+    const val = validateUniversalCrf(doc);
     if (val.success) {
       const uStudy = val.study!;
       return {
@@ -1018,8 +1018,7 @@ export function importStudyFromUsdm(
         `Invalid supplied simulationState extension: payload failed EDC simulation schema validation (${details}).`
       );
     }
-    validatedSimulationState =
-      simResult.data as unknown as StudyProtocol["simulationState"];
+    validatedSimulationState = simResult.data;
   }
 
   let validatedProvenance: StudyProtocol["provenance"] = undefined;
@@ -1054,7 +1053,7 @@ export function importStudyFromUsdm(
     id: studyObj.id ?? "imported_usdm_study",
     protocolNumber: studyObj.protocolNumber ?? studyObj.name ?? "USDM-STUDY",
     studyName: studyObj.title ?? studyObj.name ?? "Imported USDM Protocol",
-    phase: (studyObj.phase as StudyProtocol["phase"]) ?? "Phase III",
+    phase: studyObj.phase ?? "Phase III",
     sponsor: studyObj.sponsor ?? "Clinical Sponsor",
     therapeuticArea: studyObj.therapeuticArea ?? "General Medicine",
     version: studyObj.version ?? "1.0",

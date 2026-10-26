@@ -1414,6 +1414,30 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-platform-governance",
+        title: "Clinical Data Governance",
+        subtitle:
+          "The data catalog, business glossary, stewardship and policies.",
+        category: "navigation",
+        url: "/platform/governance",
+        icon: <IconShieldCheck className="h-4 w-4 text-amber-400" />,
+        badge: "Catalog",
+        status: "Interactive",
+        description:
+          "Every data product and governed metric with its owner, steward, classification, contract status and quality score, searchable by facet, beside the glossary, RACI and policies.",
+        techStack: [
+          "Next.js 16",
+          "TypeScript",
+          "Data Contracts",
+          "Semantic Layer",
+        ],
+        highlights: [
+          "Search and facets over 90 catalog entries",
+          "Glossary terms linked to the metrics defined in them",
+          "Who decides what, and which rules code applies",
+        ],
+      },
+      {
         id: "nav-clinical",
         title: "Clinical Journey",
         subtitle:

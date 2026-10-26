@@ -185,6 +185,15 @@ const PLATFORM_TOOL_ITEMS: NavItem[] = [
     badge: "DuckDB-WASM",
   },
   {
+    id: "platform-governance",
+    title: "Data Governance",
+    subtitle: "The catalog, glossary, stewardship and policies",
+    href: "/platform/governance",
+    icon: "shield",
+    tone: "amber",
+    badge: "Catalog",
+  },
+  {
     id: "platform-strategy",
     title: "Platform Strategy",
     subtitle: "Fictional vendor scoring and investment decisions",

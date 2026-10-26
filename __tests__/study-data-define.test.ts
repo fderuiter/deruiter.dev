@@ -3,8 +3,10 @@ import { describe, expect, it } from "vitest";
 import {
   ADAM_DEFINE_PATH,
   CONTROLLED_TERMINOLOGY,
+  DEFINE_PARITY_RULES,
   DEFINE_XML_VERSION,
   DEMO_301_STUDY,
+  MESSY_DATA_SCENARIOS,
   PACKAGE_FIXED_TIMESTAMP,
   SDTM_DEFINE_PATH,
   STANDARD_VERSIONS,
@@ -12,6 +14,7 @@ import {
   VALUE_LEVEL,
   buildDefine,
   buildStudyDataPackage,
+  checkDefineParity,
   defineFileOid,
   itemGroupOid,
   itemOid,
@@ -408,6 +411,187 @@ describe.each(LAYERS)("%s define/data parity", (layer) => {
     for (const method of all(document, ODM_NS, "MethodDef")) {
       expect(method.textContent?.trim().length).toBeGreaterThan(20);
     }
+  });
+});
+
+describe("checkDefineParity (#2931)", () => {
+  const ruleIds = (findings: readonly { ruleId: string }[]) =>
+    findings.map((finding) => finding.ruleId);
+
+  it("finds no gap between seed 301's defines and its datasets", () => {
+    for (const layer of LAYERS) {
+      expect(checkDefineParity(defines[layer], run.datasets)).toEqual([]);
+    }
+  });
+
+  it("finds no gap across seeds and the messy-data scenarios", () => {
+    // The off-codelist scenarios put values outside non-extensible codelists,
+    // which buildDefine refuses to describe; they are covered by its own tests.
+    const scenarios = MESSY_DATA_SCENARIOS.map(
+      (scenario) => scenario.id
+    ).filter((id) => !id.startsWith("off-codelist-"));
+    const runs = [
+      ...[1, 2, 302, 999].map((seed) => ({ seed })),
+      { seed: 301, scenarios },
+    ];
+    for (const options of runs) {
+      const source = runPipeline(DEMO_301_STUDY, { ...options, nSubjects: 60 });
+      for (const layer of LAYERS) {
+        expect(
+          checkDefineParity(defineOf(source, layer), source.datasets),
+          `${JSON.stringify(options)} ${layer}`
+        ).toEqual([]);
+      }
+    }
+  });
+
+  it("reports an ItemDef no dataset or value list uses", () => {
+    const define = defines.sdtm;
+    const stray = {
+      ...define.items.find((item) => item.dataset === "DM")!,
+      oid: "IT.DM.STRAY",
+      name: "STRAY",
+    };
+    const findings = checkDefineParity(
+      { ...define, items: [...define.items, stray] },
+      run.datasets
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        ruleId: DEFINE_PARITY_RULES.itemUnused,
+        severity: "error",
+        layer: "sdtm",
+        dataset: "DM",
+        variable: "STRAY",
+      }),
+    ]);
+  });
+
+  it("reports a data column the define does not describe", () => {
+    const dm = run.datasets.find(
+      (dataset) => dataset.layer === "sdtm" && dataset.name === "DM"
+    )!;
+    const extra: Dataset = {
+      ...dm,
+      columns: { ...dm.columns, EXTRA: dm.columns.USUBJID },
+    };
+    const findings = checkDefineParity(
+      defines.sdtm,
+      run.datasets.map((dataset) => (dataset === dm ? extra : dataset))
+    );
+    expect(findings).toEqual([
+      expect.objectContaining({
+        ruleId: DEFINE_PARITY_RULES.itemMissing,
+        dataset: "DM",
+        variable: "EXTRA",
+      }),
+    ]);
+  });
+
+  it("reports a Derived variable whose ItemRef names no method", () => {
+    const define = defines.adam;
+    const derived = define.items.find(
+      (item) => item.origin.type === "Derived" && !item.whereValue
+    )!;
+    const methodOid = define.itemGroups
+      .flatMap((group) => group.itemRefs)
+      .find((ref) => ref.itemOid === derived.oid)!.methodOid;
+    const findings = checkDefineParity(
+      {
+        ...define,
+        itemGroups: define.itemGroups.map((group) => ({
+          ...group,
+          itemRefs: group.itemRefs.map((ref) => {
+            if (ref.itemOid !== derived.oid) return ref;
+            const { methodOid: _dropped, ...rest } = ref;
+            return rest;
+          }),
+        })),
+      },
+      run.datasets
+    );
+    const shared = define.itemGroups
+      .flatMap((group) => group.itemRefs)
+      .filter((ref) => ref.methodOid === methodOid).length;
+    expect(ruleIds(findings)).toEqual([
+      DEFINE_PARITY_RULES.methodMissing,
+      ...(shared === 1 ? [DEFINE_PARITY_RULES.methodUnused] : []),
+    ]);
+    expect(findings[0]).toMatchObject({
+      dataset: derived.dataset,
+      variable: derived.name,
+    });
+  });
+
+  it("reports a dangling codelist reference and a codelist nothing uses", () => {
+    const define = defines.sdtm;
+    const coded = define.items.findIndex((item) => item.codeListOid);
+    const items = define.items.map((item, index) =>
+      index === coded ? { ...item, codeListOid: "CL.MISSING" } : item
+    );
+    const orphan = { ...define.codeLists[0], oid: "CL.ORPHAN", id: "ORPHAN" };
+    const findings = checkDefineParity(
+      { ...define, items, codeLists: [...define.codeLists, orphan] },
+      run.datasets
+    );
+    expect(ruleIds(findings)).toContain(DEFINE_PARITY_RULES.codeListMissing);
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        ruleId: DEFINE_PARITY_RULES.codeListUnused,
+        message: "CodeList CL.ORPHAN is not referenced by any ItemDef.",
+      })
+    );
+  });
+
+  it("reports a dataset with no ItemGroupDef and a dangling where clause", () => {
+    const define = defines.sdtm;
+    const vs = define.valueLists.find((list) => list.dataset === "VS")!;
+    const findings = checkDefineParity(
+      {
+        ...define,
+        itemGroups: define.itemGroups.filter((group) => group.name !== "AE"),
+        whereClauses: define.whereClauses.filter(
+          (clause) => clause.oid !== vs.itemRefs[0].whereClauseOid
+        ),
+      },
+      run.datasets
+    );
+    expect(findings).toContainEqual(
+      expect.objectContaining({
+        ruleId: DEFINE_PARITY_RULES.groupMissing,
+        dataset: "AE",
+      })
+    );
+    expect(ruleIds(findings)).toContain(DEFINE_PARITY_RULES.whereClauseMissing);
+    expect(ruleIds(findings)).toContain(DEFINE_PARITY_RULES.itemUnused);
+  });
+
+  it("puts parity findings in the package manifest", async () => {
+    const withExtra: PipelineRun = {
+      ...run,
+      datasets: run.datasets.map((dataset) =>
+        dataset.name === "DM"
+          ? {
+              ...dataset,
+              columns: { ...dataset.columns, EXTRA: dataset.columns.USUBJID },
+            }
+          : dataset
+      ),
+    };
+    const pkg = await buildStudyDataPackage(withExtra, {
+      generatedAt: "2026-10-23T12:00:00.000Z",
+    });
+    expect(
+      pkg.packageManifest.findings.filter((finding) =>
+        finding.ruleId.startsWith("DEFINE-PARITY-")
+      )
+    ).toEqual([
+      expect.objectContaining({
+        ruleId: DEFINE_PARITY_RULES.itemMissing,
+        dataset: "DM",
+        variable: "EXTRA",
+      }),
+    ]);
   });
 });
 

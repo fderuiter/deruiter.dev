@@ -28,6 +28,7 @@ import { daysBetween } from "../warehouse/dates";
 import { buildReport } from "./build";
 import { formatMetricValue } from "./format";
 import { studyMilestones } from "./milestones";
+import { isEnrolling, portfolioForecast } from "./portfolio-forecast";
 
 const PORTFOLIO_OWNER = "Portfolio Management Lead";
 const FINANCE_OWNER = "Clinical Finance Lead";
@@ -374,17 +375,22 @@ function finance(
  * The portfolio dashboard over one warehouse.
  *
  * @param warehouse - A warehouse from `buildWarehouse`.
- * @returns The milestone swimlane, the cycle-time benchmarks and the
- * budget against forecast at completion.
+ * @returns The milestone swimlane, the cycle-time benchmarks, the
+ * budget against forecast at completion and the baseline enrollment
+ * forecast of each study still enrolling.
  */
 export function portfolioDashboard(warehouse: Warehouse): PortfolioDashboard {
   const specs = portfolioReportSpecs();
+  const lanes = swimlane(warehouse);
   return {
     dataCut: warehouse.asOf,
-    swimlane: swimlane(warehouse),
+    swimlane: lanes,
     benchmarks: specs
       .slice(0, BENCHMARKS.length)
       .map((spec) => benchmark(warehouse, spec)),
     finance: finance(warehouse, specs.slice(BENCHMARKS.length)),
+    forecasts: lanes.lanes
+      .filter(isEnrolling)
+      .map((lane) => portfolioForecast(warehouse, lane.studyId)),
   };
 }

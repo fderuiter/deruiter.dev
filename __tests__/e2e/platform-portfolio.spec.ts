@@ -6,7 +6,9 @@ import { settleFooterTicker } from "./helpers/footer-ticker";
  * Real-browser checks for /platform/portfolio (#2911): the whole page at
  * the four widths of the layout matrix, with zero critical, serious or
  * moderate axe violations and no horizontal overflow, and the milestone
- * swimlane read with the keyboard and with a pointer.
+ * swimlane read with the keyboard and with a pointer. The enrollment
+ * what-if (#2913) runs in the page's worker, and the risk heatmap (#2914)
+ * links each rating to its evidence.
  */
 
 const WIDTHS = [320, 375, 768, 1440] as const;
@@ -64,9 +66,12 @@ for (const width of WIDTHS) {
     await page.goto("/platform/portfolio");
     await settled(page);
 
-    // Open every calculation panel so its SQL is checked too.
+    // Open every calculation panel so its SQL is checked too, every weekly
+    // forecast table and the heatmap's rules.
     for (const summary of await page
-      .locator("summary", { hasText: "is calculated" })
+      .locator("summary", {
+        hasText: /is calculated|Weekly completion|How each column is rated/,
+      })
       .all()) {
       await summary.click();
     }
@@ -117,6 +122,8 @@ test("hovering a milestone shows its dates", async ({ page }) => {
   await page.goto("/platform/portfolio");
   await settled(page);
   const swimlane = page.getByTestId("portfolio-swimlane");
+  // The heatmap comes first, so the swimlane starts below the fold.
+  await swimlane.scrollIntoViewIfNeeded();
   const box = (await swimlane.boundingBox())!;
   // The middle of the first lane, 56 of the chart's 360 units down, at its
   // left end: DEMO-101's protocol final.
@@ -150,4 +157,58 @@ test("the finance section forecasts each study's cost at completion", async ({
       name: "Budget, actual and forecast at completion by vendor",
     })
   ).toBeVisible();
+});
+
+test("the enrollment what-if runs in the worker and stays contained on a phone", async ({
+  page,
+}) => {
+  test.slow();
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.goto("/platform/portfolio");
+  await settled(page);
+  const card = page.locator("article", {
+    has: page.getByRole("heading", { level: 3, name: /^DEMO-302 / }),
+  });
+  await expect(card).toContainText("Planned date passed");
+  await card.getByLabel("Country").selectOption("DE");
+  await card.getByLabel(/^Sites to add/).fill("5");
+  await card.getByLabel(/^Days until they recruit/).fill("90");
+  await card.getByRole("button", { name: "Run the what-if" }).click();
+  await expect(
+    card.getByRole("heading", {
+      level: 4,
+      name: "With 5 sites in Germany from day 90",
+    })
+  ).toBeVisible({ timeout: 30_000 });
+  await expect(card).toContainText("the median moves from 2027-09-25 to");
+  await card.locator("summary", { hasText: "Weekly completion" }).click();
+  await expect(
+    card.getByRole("columnheader", { name: "With the what-if" })
+  ).toBeVisible();
+  expect(await overflowing(page)).toEqual([]);
+  expect(await seriousViolations(page)).toEqual([]);
+});
+
+test("a heatmap rating takes a phone reader to its evidence", async ({
+  page,
+}) => {
+  test.slow();
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/platform/portfolio");
+  await settled(page);
+  const heatmap = page.getByRole("region", { name: "Risk heatmap" });
+  const row = heatmap.getByRole("row", { name: /^DEMO-302/ });
+  await expect(row.getByRole("link")).toHaveText([
+    /At risk/,
+    /At risk/,
+    /Watch/,
+  ]);
+  await row.getByRole("link").first().click();
+  await expect(page).toHaveURL(/#forecast-DEMO-302$/);
+  const card = page.locator("#forecast-DEMO-302");
+  await expect(card).toBeInViewport();
+  // The sticky navbar must not cover the card's heading.
+  const heading = card.getByRole("heading", { level: 3, name: /^DEMO-302 / });
+  expect((await heading.boundingBox())!.y).toBeGreaterThan(48);
+  expect(await overflowing(page)).toEqual([]);
 });

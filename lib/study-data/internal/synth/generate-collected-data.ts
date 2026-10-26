@@ -10,7 +10,7 @@ import type {
 } from "../../types";
 
 type Row = Record<string, CellValue>;
-type Domain = "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "AE" | "DS";
+type Domain = "DM" | "RAND" | "SV" | "EX" | "VS" | "LB" | "EG" | "AE" | "DS";
 
 const BASE_DATE = "2030-01-01";
 
@@ -178,6 +178,16 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     TEXT("LBORRESU", "Original result unit"),
     TEXT("LBNRIND", "Reference range indicator"),
   ],
+  EG: [
+    SRC,
+    SUBJ,
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("EGDTC", "ECG date"),
+    TEXT("EGTESTCD", "ECG test code"),
+    NUM("EGORRES", "Original result"),
+    TEXT("EGORRESU", "Original result unit"),
+  ],
   AE: [
     SRC,
     SUBJ,
@@ -264,6 +274,31 @@ function measuredValue(
 }
 
 /**
+ * The machine-read intervals of one 12-lead ECG, in ms and beats/min. The
+ * heart rate is drawn first and the RR interval follows from it, so the two
+ * agree. QT is the subject's Fridericia-corrected QT, plus a small arm
+ * effect that grows over treatment, uncorrected with that RR interval.
+ */
+function ecgValues(
+  armIndex: number,
+  fraction: number,
+  qtcBaseline: number,
+  draws: (key: string) => number
+): Readonly<Record<string, number>> {
+  const noise = (key: string) => (draws(key) - 0.5) * 2;
+  const heartRate = Math.round(66 + noise("hr") * 8);
+  const rr = Math.round(60000 / heartRate);
+  const qtc = qtcBaseline + [0, 2, 5][armIndex] * fraction + noise("qt") * 6;
+  return {
+    EGHRMN: heartRate,
+    RRAG: rr,
+    PRAG: Math.round(158 + noise("pr") * 14),
+    QRSAG: Math.round(92 + noise("qrs") * 7),
+    QTAG: Math.round(qtc * Math.cbrt(rr / 1000)),
+  };
+}
+
+/**
  * Generates CDASH-shaped source datasets. `nSubjects` counts screened people;
  * only randomized people have RAND and EX records. Every stochastic choice is
  * keyed by study, seed, subject, domain and field, so extending a run preserves
@@ -286,6 +321,7 @@ export function generateCollectedData(
     EX: [],
     VS: [],
     LB: [],
+    EG: [],
     AE: [],
     DS: [],
   };
@@ -390,6 +426,7 @@ export function generateCollectedData(
     });
 
     const baselineSbp = 142 + (pick("VS", "baseline-sbp") - 0.5) * 12;
+    const qtcBaseline = 405 + (pick("EG", "baseline-qtc") - 0.5) * 30;
     for (const visit of design.visits) {
       if (screenFailure && visit.targetDay > 0) continue;
       const visitKey = visit.id;
@@ -435,6 +472,34 @@ export function generateCollectedData(
         .map((id) => activityById.get(id))
         .filter((activity) => activity !== undefined);
       for (const activity of activities) {
+        if (activity.domain === "EG") {
+          const values = ecgValues(
+            Math.max(0, armIndex),
+            fraction,
+            qtcBaseline,
+            (key) => pick("EG", `${visitKey}:${key}`)
+          );
+          for (const assessment of activity.assessments) {
+            const value = values[assessment.testCode];
+            if (value === undefined) continue;
+            rows.EG.push({
+              SRCID: sourceId(
+                studyId,
+                "EG",
+                number,
+                `${visitKey}:${assessment.testCode}`
+              ),
+              USUBJID: subject,
+              VISITNUM: visit.visitNum,
+              VISIT: visit.name,
+              EGDTC: visitDate,
+              EGTESTCD: assessment.testCode,
+              EGORRES: value,
+              EGORRESU: assessment.unit ?? null,
+            });
+          }
+          continue;
+        }
         if (activity.domain !== "VS" && activity.domain !== "LB") continue;
         for (const assessment of activity.assessments) {
           const key = `${visitKey}:${assessment.testCode}`;
@@ -529,7 +594,7 @@ export function generateCollectedData(
     }
   }
 
-  return (["DM", "RAND", "SV", "EX", "VS", "LB", "AE", "DS"] as const).map(
-    (domain) => dataset(domain, rows[domain])
-  );
+  return (
+    ["DM", "RAND", "SV", "EX", "VS", "LB", "EG", "AE", "DS"] as const
+  ).map((domain) => dataset(domain, rows[domain]));
 }

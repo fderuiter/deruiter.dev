@@ -27,15 +27,18 @@ export function runConformance(
   datasets: readonly Dataset[],
   rules: readonly ConformanceRule[] = CONFORMANCE_RULES
 ): ConformanceOutcome {
-  const safeDatasets = Array.isArray(datasets)
+  const wellFormed = Array.isArray(datasets)
     ? datasets.filter(
         (value): value is Dataset =>
           value !== null &&
           typeof value === "object" &&
-          typeof value.name === "string" &&
-          (value.layer === "sdtm" || value.layer === "adam")
+          typeof value.name === "string"
       )
     : [];
+  // Rules see the collected layer too, so lineage can be traced to source.
+  const safeDatasets = wellFormed.filter(
+    (value) => value.layer === "sdtm" || value.layer === "adam"
+  );
   const findings: Finding[] = [];
   const ruleResults: ConformanceRuleResult[] = [];
   for (const dataset of safeDatasets) {
@@ -48,7 +51,7 @@ export function runConformance(
         continue;
       let issues: readonly RuleIssue[];
       try {
-        issues = rule.check(dataset, safeDatasets);
+        issues = rule.check(dataset, wellFormed);
       } catch {
         issues = [
           { message: "Rule could not evaluate malformed dataset structure." },

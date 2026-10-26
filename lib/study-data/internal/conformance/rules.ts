@@ -3,10 +3,132 @@ import { STANDARD_CODELISTS } from "@/lib/crf/cdisc-controlled-terminology";
 import { CLINICAL_STANDARDS_PROFILE, standardCitation } from "../../standards";
 import type { CellValue, Dataset, FindingSeverity } from "../../types";
 
-export const CONFORMANCE_RULES_VERSION = "1.1.0";
+/** The ids of every collected source record in the run. */
+function collectedSourceIds(datasets: readonly Dataset[]): ReadonlySet<string> {
+  const ids = new Set<string>();
+  for (const dataset of datasets)
+    if (dataset.layer === "collected")
+      for (const id of values(dataset, "SRCID"))
+        if (typeof id === "string") ids.add(id);
+  return ids;
+}
+
+/** The lineage of one row, or null when the dataset carries none. */
+function rowLineage(dataset: Dataset, row: number): readonly string[] | null {
+  const lineage = Array.isArray(dataset.lineage) ? dataset.lineage[row] : null;
+  return Array.isArray(lineage) ? lineage : null;
+}
+
+/**
+ * An SDTM subject record that does not trace to a collected source: its
+ * lineage is missing or empty, or names a record the collected data does not
+ * hold. Trial design datasets are Protocol origin and carry no lineage.
+ */
+function sourceLineageRule(id: string, domain: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "sdtm", domain },
+    citation: LINEAGE_CITATION,
+    kind: "lineage",
+    check(dataset, datasets) {
+      const sources = collectedSourceIds(datasets);
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const lineage = rowLineage(dataset, row);
+        if (!lineage || lineage.length === 0)
+          issues.push({
+            row,
+            message: "Record has no lineage to a collected source record.",
+          });
+        else {
+          const missing = lineage.filter((source) => !sources.has(source));
+          if (missing.length > 0)
+            issues.push({
+              row,
+              message: `Lineage names collected records that do not exist: ${missing.join(", ")}.`,
+            });
+        }
+      }
+      return issues;
+    },
+  };
+}
+
+/**
+ * An ADaM record whose SRCDOM and SRCSEQ do not resolve to an SDTM record of
+ * the same subject, or whose lineage does not reach collected data. A source
+ * domain with a --SEQ variable needs a SRCSEQ that matches one; one without
+ * (DM, SV) needs a record for the subject and no SRCSEQ.
+ */
+function adamSourceRule(id: string, domain: string): ConformanceRule {
+  return {
+    id,
+    severity: "error",
+    scope: { layer: "adam", domain },
+    citation: ADAM_CITATION,
+    kind: "lineage",
+    variable: "SRCDOM",
+    check(dataset, datasets) {
+      const sources = collectedSourceIds(datasets);
+      const sdtm = new Map(
+        datasets
+          .filter((item) => item.layer === "sdtm")
+          .map((item) => [item.name, item])
+      );
+      const issues: RuleIssue[] = [];
+      for (let row = 0; row < dataset.rowCount; row += 1) {
+        const lineage = rowLineage(dataset, row);
+        if (!lineage || lineage.length === 0)
+          issues.push({
+            row,
+            message: "Record has no lineage to a collected source record.",
+          });
+        else if (lineage.some((source) => !sources.has(source)))
+          issues.push({
+            row,
+            message: "Lineage names collected records that do not exist.",
+          });
+        const domainName = string(at(dataset, "SRCDOM", row));
+        const source = domainName ? sdtm.get(domainName) : undefined;
+        if (!source) {
+          issues.push({
+            row,
+            variable: "SRCDOM",
+            message: `SRCDOM ${domainName ?? "(missing)"} is not an SDTM dataset of this run.`,
+          });
+          continue;
+        }
+        const subject = at(dataset, "USUBJID", row);
+        const sequence = number(at(dataset, "SRCSEQ", row));
+        const seqVariable = `${domainName}SEQ`;
+        const hasSeq = source.variables.some(
+          (variable) => variable.name === seqVariable
+        );
+        let found = false;
+        for (let index = 0; index < source.rowCount && !found; index += 1)
+          found =
+            at(source, "USUBJID", index) === subject &&
+            (!hasSeq || at(source, seqVariable, index) === sequence);
+        if (!found || (hasSeq ? sequence === null : sequence !== null))
+          issues.push({
+            row,
+            variable: "SRCSEQ",
+            message: hasSeq
+              ? `SRCSEQ ${sequence ?? "(missing)"} does not match a ${seqVariable} of the subject in ${domainName}.`
+              : `${domainName} has no record for the subject, or SRCSEQ is set although ${domainName} has no ${seqVariable}.`,
+          });
+      }
+      return issues;
+    },
+  };
+}
+
+export const CONFORMANCE_RULES_VERSION = "1.2.0";
 export const CDISC_CORE_URL = "https://www.cdisc.org/core";
 const SDTM_CITATION = `${standardCitation("SDTMIG")} / ${standardCitation("SDTM-CR")}: https://www.cdisc.org/standards/foundational/sdtmig/sdtm-and-sdtmig-conformance-rules-v2-0`;
 const ADAM_CITATION = `${standardCitation("ADaMIG")}: https://www.cdisc.org/standards/foundational/adam/adamig-v1-3`;
+const LINEAGE_CITATION = `Source traceability for ${standardCitation("Define-XML")} origins: https://www.cdisc.org/standards/data-exchange/define-xml`;
 const CT_CITATION = `Local CT subset aligned to NCI EVS CDISC CT ${CLINICAL_STANDARDS_PROFILE.CT.packageDate}, not verified against the package: https://evs.nci.nih.gov/ftp1/CDISC/`;
 
 export interface RuleIssue {
@@ -35,7 +157,8 @@ export interface ConformanceRule {
     | "adam"
     | "exception"
     | "duplicate"
-    | "unit";
+    | "unit"
+    | "lineage";
   readonly variable?: string;
   readonly check: (
     dataset: Dataset,
@@ -600,4 +723,10 @@ export const CONFORMANCE_RULES: readonly ConformanceRule[] = [
   adamRule("AD-003", "ADVS", "base"),
   adamRule("AD-004", "ADVS", "chg"),
   adamRule("AD-005", "ADAE", "trtemfl"),
+  ...(["DM", "SV", "EX", "AE", "VS", "LB", "DS", "SUPPDM"] as const).map(
+    (domain, index) => sourceLineageRule(`SD-0${40 + index}`, domain)
+  ),
+  ...(["ADSL", "ADVS", "ADLB", "ADAE", "ADTTE"] as const).map((domain, index) =>
+    adamSourceRule(`AD-${String(6 + index).padStart(3, "0")}`, domain)
+  ),
 ];

@@ -34,6 +34,23 @@ Budget, actual and forecast at completion (#2912).
 
 ***
 
+### forecasts
+
+> `readonly` **forecasts**: readonly [`PortfolioForecast`](PortfolioForecast.md)[]
+
+The baseline enrollment forecast of every study still enrolling: first
+subject in, last subject not yet in. In study id order (#2913).
+
+***
+
+### risk
+
+> `readonly` **risk**: [`PortfolioRiskHeatmap`](PortfolioRiskHeatmap.md)
+
+Schedule, budget and quality for every study (#2914).
+
+***
+
 ### swimlane
 
 > `readonly` **swimlane**: [`PortfolioSwimlane`](PortfolioSwimlane.md)

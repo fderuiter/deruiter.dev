@@ -884,6 +884,18 @@ Re-exports [PortfolioFinance](portfolio-dashboard/interfaces/PortfolioFinance.md
 
 ***
 
+### PortfolioForecast
+
+Re-exports [PortfolioForecast](portfolio-dashboard/interfaces/PortfolioForecast.md)
+
+***
+
+### PortfolioForecastCountry
+
+Re-exports [PortfolioForecastCountry](portfolio-dashboard/interfaces/PortfolioForecastCountry.md)
+
+***
+
 ### PortfolioLane
 
 Re-exports [PortfolioLane](portfolio-dashboard/interfaces/PortfolioLane.md)
@@ -917,6 +929,42 @@ Re-exports [PortfolioOutlier](portfolio-dashboard/interfaces/PortfolioOutlier.md
 ### PortfolioOverrun
 
 Re-exports [PortfolioOverrun](portfolio-dashboard/interfaces/PortfolioOverrun.md)
+
+***
+
+### PortfolioRiskCell
+
+Re-exports [PortfolioRiskCell](portfolio-dashboard/interfaces/PortfolioRiskCell.md)
+
+***
+
+### PortfolioRiskDimension
+
+Re-exports [PortfolioRiskDimension](portfolio-dashboard/type-aliases/PortfolioRiskDimension.md)
+
+***
+
+### PortfolioRiskHeatmap
+
+Re-exports [PortfolioRiskHeatmap](portfolio-dashboard/interfaces/PortfolioRiskHeatmap.md)
+
+***
+
+### PortfolioRiskRating
+
+Re-exports [PortfolioRiskRating](portfolio-dashboard/type-aliases/PortfolioRiskRating.md)
+
+***
+
+### PortfolioRiskRow
+
+Re-exports [PortfolioRiskRow](portfolio-dashboard/interfaces/PortfolioRiskRow.md)
+
+***
+
+### PortfolioRiskRule
+
+Re-exports [PortfolioRiskRule](portfolio-dashboard/interfaces/PortfolioRiskRule.md)
 
 ***
 

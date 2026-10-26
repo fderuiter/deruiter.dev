@@ -57,6 +57,10 @@ export {
   buildDefine,
   DEFINE_XML_VERSION,
 } from "./internal/define/build-define";
+export {
+  checkDefineParity,
+  DEFINE_PARITY_RULES,
+} from "./internal/define/parity";
 export { writeDefineXml } from "./internal/define/write-define-xml";
 export { renderDefineHtml } from "./internal/define/render-define-html";
 export type {
@@ -159,6 +163,10 @@ export {
   resolveResultRows,
   rowSetRowIds,
 } from "./internal/tlf/row-ids";
+export {
+  checkReportingEvent,
+  REPORTING_EVENT_RULES,
+} from "./internal/tlf/check-reporting-event";
 export { selectAdamRows } from "./internal/tlf/where";
 export { escapeHtml, writeTableHtml } from "./internal/tlf/html";
 export { escapeRtf, writeTableRtf } from "./internal/tlf/rtf";

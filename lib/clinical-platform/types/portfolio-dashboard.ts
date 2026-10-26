@@ -1,6 +1,7 @@
 /**
  * Clinical Data Platform: the /platform/portfolio dashboard types (#2632).
  */
+import type { EnrollmentForecast } from "./forecast";
 import type { MilestoneKind, ReportData } from "./platform";
 import type { OperationsMilestone } from "./reporting";
 
@@ -138,6 +139,83 @@ export interface PortfolioFinance {
   readonly reports: readonly ReportData[];
 }
 
+/** A country a what-if can open sites in (#2913). */
+export interface PortfolioForecastCountry {
+  /** ISO 3166-1 alpha-2 code. */
+  readonly code: string;
+  /** English short name, from `gold.dim_country`. */
+  readonly name: string;
+  /** The study's sites recruiting there at the data cut; 0 where it has none. */
+  readonly sites: number;
+}
+
+/** One study's enrollment forecast as the portfolio page shows it (#2913). */
+export interface PortfolioForecast {
+  readonly studyId: string;
+  readonly title: string;
+  /** The forecast from `forecastEnrollment`, with the what-if if one was asked. */
+  readonly forecast: EnrollmentForecast;
+  /**
+   * Whether the planned last-subject-in date is on or before the data cut,
+   * so no run can meet it.
+   */
+  readonly planPassed: boolean;
+  /** The chance of meeting the planned date, or "Planned date passed". */
+  readonly probabilityText: string;
+  /** Runs that enroll the last subject by the planned date. */
+  readonly runsByPlan: number;
+  /**
+   * Every country with a site in the portfolio, by name: the countries a
+   * what-if can open sites in.
+   */
+  readonly countries: readonly PortfolioForecastCountry[];
+}
+
+/** How a study stands on one dimension of the risk heatmap (#2914). */
+export type PortfolioRiskRating = "green" | "amber" | "red";
+
+/** The dimensions of the risk heatmap, in column order (#2914). */
+export type PortfolioRiskDimension = "schedule" | "budget" | "quality";
+
+/** One cell of the risk heatmap: a study's rating on one dimension (#2914). */
+export interface PortfolioRiskCell {
+  readonly dimension: PortfolioRiskDimension;
+  readonly rating: PortfolioRiskRating;
+  /** Why, in words: the values the rule read against its thresholds. */
+  readonly reason: string;
+}
+
+/** One study's row of the risk heatmap (#2914). */
+export interface PortfolioRiskRow {
+  readonly studyId: string;
+  readonly title: string;
+  /** Whether the study has an enrollment forecast on the page. */
+  readonly enrolling: boolean;
+  readonly schedule: PortfolioRiskCell;
+  readonly budget: PortfolioRiskCell;
+  readonly quality: PortfolioRiskCell;
+}
+
+/** A heatmap column's rule, written from its thresholds (#2914). */
+export interface PortfolioRiskRule {
+  readonly dimension: PortfolioRiskDimension;
+  readonly name: string;
+  /** When a study rates green, amber and red, in words. */
+  readonly green: string;
+  readonly amber: string;
+  readonly red: string;
+  /** Why these thresholds. */
+  readonly reason: string;
+}
+
+/** Schedule, budget and quality for every study, rated by stated rules (#2914). */
+export interface PortfolioRiskHeatmap {
+  /** The rule of each column, in column order. */
+  readonly rules: readonly PortfolioRiskRule[];
+  /** One row per study, in study id order. */
+  readonly rows: readonly PortfolioRiskRow[];
+}
+
 /** The /platform/portfolio dashboard over one warehouse (#2911). */
 export interface PortfolioDashboard {
   /** ISO 8601 data cut of the warehouse. */
@@ -147,4 +225,11 @@ export interface PortfolioDashboard {
   readonly benchmarks: readonly PortfolioBenchmark[];
   /** Budget, actual and forecast at completion (#2912). */
   readonly finance: PortfolioFinance;
+  /**
+   * The baseline enrollment forecast of every study still enrolling: first
+   * subject in, last subject not yet in. In study id order (#2913).
+   */
+  readonly forecasts: readonly PortfolioForecast[];
+  /** Schedule, budget and quality for every study (#2914). */
+  readonly risk: PortfolioRiskHeatmap;
 }

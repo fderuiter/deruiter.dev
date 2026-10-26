@@ -3,7 +3,9 @@
  * side against their plans. The milestone swimlane reads the CTMS
  * milestones straight from `gold.fct_milestone`; the cycle-time benchmarks
  * and the finance reports are governed reports, so every number comes from
- * the metric registry through `buildReport` or `evaluateMetric`.
+ * the metric registry through `buildReport` or `evaluateMetric`. The
+ * enrollment forecasts come from `forecastEnrollment`, and the risk heatmap
+ * rates each study from these and its RBQM assessment.
  */
 import type {
   MetricDefinition,
@@ -28,6 +30,8 @@ import { daysBetween } from "../warehouse/dates";
 import { buildReport } from "./build";
 import { formatMetricValue } from "./format";
 import { studyMilestones } from "./milestones";
+import { isEnrolling, portfolioForecast } from "./portfolio-forecast";
+import { portfolioRiskHeatmap } from "./portfolio-risk";
 
 const PORTFOLIO_OWNER = "Portfolio Management Lead";
 const FINANCE_OWNER = "Clinical Finance Lead";
@@ -374,17 +378,24 @@ function finance(
  * The portfolio dashboard over one warehouse.
  *
  * @param warehouse - A warehouse from `buildWarehouse`.
- * @returns The milestone swimlane, the cycle-time benchmarks and the
- * budget against forecast at completion.
+ * @returns The milestone swimlane, the cycle-time benchmarks, the
+ * budget against forecast at completion, the baseline enrollment
+ * forecast of each study still enrolling, and the risk heatmap.
  */
 export function portfolioDashboard(warehouse: Warehouse): PortfolioDashboard {
   const specs = portfolioReportSpecs();
+  const lanes = swimlane(warehouse);
+  const forecasts = lanes.lanes
+    .filter(isEnrolling)
+    .map((lane) => portfolioForecast(warehouse, lane.studyId));
   return {
     dataCut: warehouse.asOf,
-    swimlane: swimlane(warehouse),
+    swimlane: lanes,
     benchmarks: specs
       .slice(0, BENCHMARKS.length)
       .map((spec) => benchmark(warehouse, spec)),
     finance: finance(warehouse, specs.slice(BENCHMARKS.length)),
+    forecasts,
+    risk: portfolioRiskHeatmap(warehouse, lanes, forecasts),
   };
 }

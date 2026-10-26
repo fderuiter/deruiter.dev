@@ -35,8 +35,54 @@ describe("seeded synthetic collection", () => {
       .update(JSON.stringify(datasets))
       .digest("hex");
     expect(digest).toBe(
-      "d0ad7aae03f8c7e6e59bc0c2d7ad24f934a6d1e5d05d6fab11939b0c0757baa0"
+      "fa790cc10afe1c4539b634f8f28f90807439b25b245c0ae2fc6e0a85f68d8116"
     );
+    // Adding ECG collection (#2941) left every other domain's bytes alone.
+    expect(
+      createHash("sha256")
+        .update(
+          JSON.stringify(datasets.filter((dataset) => dataset.name !== "EG"))
+        )
+        .digest("hex")
+    ).toBe("d0ad7aae03f8c7e6e59bc0c2d7ad24f934a6d1e5d05d6fab11939b0c0757baa0");
+  });
+
+  it("collects consistent 12-lead ECG intervals at the ECG visits (#2941)", () => {
+    const eg = collected(301, 90).get("EG")!;
+    const byEcg = new Map<string, Map<string, number>>();
+    for (const record of eg) {
+      const key = `${record.USUBJID}|${record.VISITNUM}`;
+      const tests = byEcg.get(key) ?? new Map<string, number>();
+      tests.set(String(record.EGTESTCD), Number(record.EGORRES));
+      byEcg.set(key, tests);
+      expect(record.EGORRESU).toBe(
+        record.EGTESTCD === "EGHRMN" ? "beats/min" : "ms"
+      );
+    }
+    expect([...new Set(eg.map((record) => record.VISIT))].sort()).toEqual([
+      "BASELINE",
+      "SCREENING",
+      "WEEK 12",
+      "WEEK 4",
+    ]);
+    expect(byEcg.size).toBeGreaterThan(200);
+    for (const [key, tests] of byEcg) {
+      expect([...tests.keys()].sort(), key).toEqual([
+        "EGHRMN",
+        "PRAG",
+        "QRSAG",
+        "QTAG",
+        "RRAG",
+      ]);
+      const heartRate = tests.get("EGHRMN")!;
+      const rr = tests.get("RRAG")!;
+      expect(rr, key).toBe(Math.round(60000 / heartRate));
+      const qtcf = tests.get("QTAG")! / Math.cbrt(rr / 1000);
+      expect(qtcf, key).toBeGreaterThan(370);
+      expect(qtcf, key).toBeLessThan(440);
+      expect(tests.get("PRAG")!, key).toBeGreaterThan(120);
+      expect(tests.get("QRSAG")!, key).toBeLessThan(120);
+    }
   });
 
   it("generates traceable CDASH-shaped source records and expected seeded exceptions", () => {

@@ -27,9 +27,11 @@ import type {
   StandardVersions,
 } from "../../types";
 import { buildDefine, DEFINE_XML_VERSION } from "../define/build-define";
+import { checkDefineParity } from "../define/parity";
 import { writeDefineXml } from "../define/write-define-xml";
 import { writeReviewerGuideDocument } from "../guides/render-reviewer-guide";
 import { buildReviewerGuides } from "../guides/reviewer-guides";
+import { checkReportingEvent } from "../tlf/check-reporting-event";
 import { utf8 } from "./columns";
 import { writeCsv } from "./csv";
 import { writeDatasetJson } from "./dataset-json";
@@ -132,7 +134,8 @@ export interface PackageOptions {
   readonly generatedAt: string;
   /**
    * The run's ARS reporting event, from `buildTlfOutputs`. When given, the
-   * ADRG-lite lists every output and the analyses it displays.
+   * ADRG-lite lists every output and the analyses it displays, and every
+   * result whose rows do not resolve in the run is a finding.
    */
   readonly reportingEvent?: ArsReportingEvent;
 }
@@ -280,17 +283,26 @@ export async function buildStudyDataPackage(
       }
     );
   }
+  // Each define is checked against the datasets it describes before it is
+  // written, so a gap between the two is a finding in the package manifest.
+  const defineFor = (layer: "sdtm" | "adam") => {
+    const define = buildDefine(run, {
+      layer,
+      createdAt: PACKAGE_FIXED_TIMESTAMP,
+    });
+    findings.push(...checkDefineParity(define, exported));
+    return define;
+  };
   const defineFiles: PackageFile[] = (["sdtm", "adam"] as const)
     .filter((layer) => exported.some((dataset) => dataset.layer === layer))
     .map((layer) => ({
       path: layer === "sdtm" ? SDTM_DEFINE_PATH : ADAM_DEFINE_PATH,
       mediaType: MEDIA_TYPES.xml,
-      bytes: utf8(
-        writeDefineXml(
-          buildDefine(run, { layer, createdAt: PACKAGE_FIXED_TIMESTAMP })
-        )
-      ),
+      bytes: utf8(writeDefineXml(defineFor(layer))),
     }));
+  if (options.reportingEvent) {
+    findings.push(...checkReportingEvent(options.reportingEvent, run));
+  }
   const guides = buildReviewerGuides(run, options.reportingEvent);
   const guideFiles: PackageFile[] = [
     { path: CSDRG_PATH, guide: guides.csdrg },

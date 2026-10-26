@@ -166,6 +166,7 @@ describe("prepareStudyHandoff", () => {
       "EX",
       "VS",
       "LB",
+      "EG",
       "AE",
       "DS",
     ]);

@@ -182,6 +182,7 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
   }) => {
     await launchCabinet(page);
 
+    await page.locator(`${IMMERSIVE} button[title="Setup"]`).tap();
     await page
       .locator(`${IMMERSIVE} button[title="Pre-Game Setup Wizard"]`)
       .tap();
@@ -191,6 +192,56 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     await skip.tap();
     await expect(skip).toHaveCount(0);
     await expect(page.locator(IMMERSIVE)).toBeVisible();
+  });
+
+  test("Setup opens one Setup sheet with the device settings, clean under axe (#2923)", async ({
+    page,
+  }) => {
+    await launchCabinet(page);
+    const setupKey = page.locator(`${IMMERSIVE} button[title="Setup"]`);
+    await setupKey.tap();
+    const sheet = page.getByRole("dialog", { name: "Setup" });
+    await expect(sheet).toBeVisible();
+    await expect(
+      sheet.getByRole("group", { name: "Dominant hand" })
+    ).toBeVisible();
+    // A phone window is narrower than a tablet or desktop view needs.
+    const layout = sheet.getByRole("group", { name: "Layout" });
+    await expect(layout.getByRole("button", { name: "Phone" })).toBeEnabled();
+    await expect(
+      layout.getByRole("button", { name: "Desktop" })
+    ).toBeDisabled();
+
+    const results = await new AxeBuilder({ page })
+      .include('[data-testid="cabinet-setup-sheet"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    expect(
+      results.violations
+        .filter((v) => BLOCKING.has(v.impact ?? ""))
+        .map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)
+    ).toEqual([]);
+
+    await sheet.getByRole("button", { name: "Large" }).tap();
+    await expect(sheet.getByRole("button", { name: "Large" })).toHaveAttribute(
+      "aria-pressed",
+      "true"
+    );
+    await page.keyboard.press("Escape");
+    await expect(sheet).toHaveCount(0);
+    // A tap never focuses the toolbar (its keys keep focus on the game), so
+    // focus returns to where it was before Setup: inside the cabinet.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) =>
+            !!document.activeElement &&
+            document.activeElement !== document.body &&
+            !!document.querySelector(selector)?.contains(document.activeElement),
+          IMMERSIVE
+        )
+      )
+      .toBe(true);
   });
 
   test("a scroll-layout stage reaches all of its content at 320x568", async ({
@@ -286,19 +337,19 @@ test.describe("Mobile arcade kit: phone and browser Back", () => {
     const runBefore = await runOf();
     expect(runBefore).not.toBe("");
 
-    // A sheet over the game: the cabinet's Setup.
-    const skip = page.getByRole("button", { name: "Skip Setup" });
+    // A sheet over the game: the cabinet's Setup sheet (#2923).
+    const sheet = page.getByTestId("cabinet-setup-sheet");
     await expect(async () => {
       await page
-        .locator(`${CABINET} button[title="Pre-Game Setup Wizard"]`)
+        .locator(`${CABINET} button[title="Setup"]`)
         .first()
         .click({ timeout: 2000 });
-      await expect(skip).toBeVisible({ timeout: 3000 });
+      await expect(sheet).toBeVisible({ timeout: 3000 });
     }).toPass({ timeout: 15000 });
 
     // Back one: the sheet closes and the run is intact.
     await page.goBack();
-    await expect(skip).toHaveCount(0);
+    await expect(sheet).toHaveCount(0);
     await expect(page.locator(CABINET)).toBeVisible();
     expect(await onCabinetEntry(page)).toBe(true);
     expect(await runOf()).toBe(runBefore);

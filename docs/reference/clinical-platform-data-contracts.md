@@ -63,7 +63,7 @@ would carry.
 | Milestone dimension | `gold.dim_milestone` | Conformed dimensions | Portfolio Management Lead | Portfolio Data Steward | public | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Monitoring plan dimension | `gold.dim_monitoring_plan` | Conformed dimensions | Clinical Monitoring Lead | Clinical Operations Data Steward | internal | No | 7 days | 99.5% | 10 years | 1.0.0 |
 | Enrollment facts | `gold.fct_enrollment` | Operations mart | Clinical Operations Lead | Clinical Operations Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.1.0 |
-| Visit facts | `gold.fct_visit` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
+| Visit facts | `gold.fct_visit` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.1.0 |
 | Query facts | `gold.fct_query` | Operations mart | Clinical Data Management Lead | Clinical Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.1.0 |
 | Deviation facts | `gold.fct_deviation` | Operations mart | Clinical Quality Lead | Clinical Quality Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |
 | Event adjudication facts | `gold.fct_cec_adjudication` | Safety mart | Medical Safety Lead | Safety Data Steward | confidential | Yes | 1 day | 99.5% | 10 years | 1.0.0 |

@@ -339,7 +339,10 @@ describe("Risk tab (#2631)", () => {
     const flagged = within(csm)
       .getAllByRole("listitem")
       .filter((li) => li.textContent?.includes("q = "));
+    // BR-118 is the planted data-integrity site: queries, exact-day visits,
+    // entry hours (#2955) and its KRI profile.
     expect(flagged.map((li) => li.textContent?.split(" · ")[0])).toEqual([
+      "DEMO-302-BR-118",
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
       "DEMO-302-BR-118",
@@ -349,7 +352,7 @@ describe("Risk tab (#2631)", () => {
     const grid = within(csm).getByRole("table", {
       name: /Adjusted q-values of every central monitoring test/,
     });
-    expect(within(grid).getAllByText("(stands out)")).toHaveLength(4);
+    expect(within(grid).getAllByText("(stands out)")).toHaveLength(5);
   });
 
   it("shows a QTL breach and logs the signal it raises", () => {

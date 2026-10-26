@@ -53,9 +53,12 @@ import {
  * #2912: `silver.finance_plan_line` and `gold.fct_spend_forecast` are new.
  * With those two tables left out the hash is the previous golden, 6922ab5e,
  * so no other value moved.
+ *
+ * #2955: `gold.fct_visit` gained `entry_hour`. With that column left out the
+ * hash is the previous golden, 9c976355, so no other value moved.
  */
 const GOLDEN_SHA256 =
-  "9c976355f27d2340e08a6adb8044950022d2eb113cb437e254e28732b4fae1ce";
+  "5258dfe3ff43c8bb4c7843d2963f106cf1218546dbf9546d650c07f8cb0e679f";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -302,6 +305,25 @@ describe("buildWarehouse: integrity", () => {
     for (const fact of rows("gold.fct_enrollment")) {
       expect(fact.screen_failure_reason).toBe(reasons.get(fact.subject_id));
     }
+  });
+
+  it("carries the UTC hour each visit's data was entered (#2955)", () => {
+    const entered = new Map(
+      rows("silver.edc_visit").map((v) => [v.visit_id, v.data_entered_at])
+    );
+    const hours = new Set<number>();
+    for (const visit of rows("gold.fct_visit")) {
+      const at = entered.get(visit.visit_id);
+      if (at === null) {
+        expect(visit.entry_hour).toBeNull();
+        continue;
+      }
+      expect(visit.entry_hour).toBe(new Date(String(at)).getUTCHours());
+      hours.add(Number(visit.entry_hour));
+    }
+    // Sites enter data through the working day.
+    expect(Math.min(...hours)).toBe(8);
+    expect(Math.max(...hours)).toBe(19);
   });
 
   it("names each query's form by the CDASH domain of its field (#2759)", () => {

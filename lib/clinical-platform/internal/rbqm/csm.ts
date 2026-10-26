@@ -21,6 +21,7 @@ import type {
 import { CSM_TESTS } from "./library";
 import {
   benjaminiHochberg,
+  chiSquareCdf,
   fCdf,
   invertMatrix,
   mean,
@@ -37,6 +38,14 @@ export const CSM_DEFAULT_FDR = 0.05;
 /** Measures in the KRI profile, in vector order. */
 const PROFILE_MEASURES = 4;
 
+/** Hours in a day, the entry-hour test's categories. */
+const HOURS = 24;
+/**
+ * Entries a pool of adjacent hours must expect before the chi-square
+ * approximation is trusted (Cochran's rule).
+ */
+const MIN_EXPECTED_PER_POOL = 5;
+
 interface SiteData {
   readonly siteId: string;
   /** Visits made, entered or not. */
@@ -51,6 +60,8 @@ interface SiteData {
   readonly scheduled: ReadonlyMap<string, number>;
   /** Of those, the visits made exactly on their planned day. */
   readonly onDay: ReadonlyMap<string, number>;
+  /** Entered visits by the UTC hour their data was entered, 0 to 23. */
+  readonly entryHours: readonly number[];
 }
 
 interface Draft {
@@ -69,6 +80,7 @@ interface Tally {
   deviations: number;
   lags: number[];
   offsets: { plannedVisit: string; offset: number }[];
+  entryHours: number[];
 }
 
 const num = (row: WarehouseRow, column: string): number | null => {
@@ -107,6 +119,7 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
         deviations: 0,
         lags: [],
         offsets: [],
+        entryHours: Array.from({ length: HOURS }, () => 0),
       };
       tallies.set(siteId, tally);
     }
@@ -132,6 +145,8 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
       tally.entered += 1;
       tally.lags.push(lag);
     }
+    const hour = num(visit, "entry_hour");
+    if (hour !== null) tally.entryHours[hour] += 1;
   }
   for (const query of warehouse.tables["gold.fct_query"]) {
     if (query.study_key === studyKey) of(query.site_key).queries += 1;
@@ -158,6 +173,7 @@ function siteData(warehouse: Warehouse, studyKey: number): SiteData[] {
         lags: tally.lags,
         scheduled,
         onDay,
+        entryHours: tally.entryHours,
       };
     })
     .sort((a, b) => (a.siteId < b.siteId ? -1 : 1));
@@ -234,6 +250,73 @@ function exactDayVisits(
     statistic: observed,
     pValue: clamp01(pValue),
     detail: `${observed} of ${n} scheduled visits on their exact planned day; the peers' rates predict ${fixed(expected)}.`,
+  };
+}
+
+/**
+ * The site's entry hours against the peers' pooled distribution, upper tail
+ * of a chi-square goodness of fit. Hours are pooled in clock order until
+ * each pool expects at least `MIN_EXPECTED_PER_POOL` entries, and a short
+ * remainder joins the last pool, so every pool the statistic divides by has
+ * a positive expectation, including hours the peers never enter data in.
+ */
+function entryHour(
+  testId: string,
+  site: SiteData,
+  peers: readonly SiteData[]
+): Draft | CsmExclusion {
+  const peerHours = Array.from({ length: HOURS }, (_, h) =>
+    sum(peers.map((p) => p.entryHours[h]))
+  );
+  const peerTotal = sum(peerHours);
+  const n = sum(site.entryHours);
+  if (peerTotal === 0 || n === 0) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason:
+        n === 0
+          ? "The site has no entered visits with an entry time."
+          : "The site's peers have no entered visits with an entry time, so there is no distribution to compare against.",
+    };
+  }
+  const pools: { observed: number; expected: number }[] = [];
+  let observed = 0;
+  let expected = 0;
+  for (let h = 0; h < HOURS; h++) {
+    observed += site.entryHours[h];
+    expected += (n * peerHours[h]) / peerTotal;
+    if (expected >= MIN_EXPECTED_PER_POOL) {
+      pools.push({ observed, expected });
+      observed = 0;
+      expected = 0;
+    }
+  }
+  const last = pools.at(-1);
+  if (last !== undefined) {
+    last.observed += observed;
+    last.expected += expected;
+  }
+  if (pools.length < 2) {
+    return {
+      siteId: site.siteId,
+      testId,
+      reason: `${n} entered visits expect fewer than ${MIN_EXPECTED_PER_POOL} entries in all but one pool of hours, too few for a chi-square test.`,
+    };
+  }
+  const statistic = sum(
+    pools.map((p) => (p.observed - p.expected) ** 2 / p.expected)
+  );
+  const df = pools.length - 1;
+  const busiest = site.entryHours.indexOf(Math.max(...site.entryHours));
+  const hh = String(busiest).padStart(2, "0");
+  return {
+    testId,
+    siteId: site.siteId,
+    n,
+    statistic,
+    pValue: clamp01(1 - chiSquareCdf(statistic, df)),
+    detail: `${site.entryHours[busiest]} of ${n} entries in the ${hh}:00 UTC hour, against ${fixed((peerHours[busiest] / peerTotal) * 100)}% of the peers' entries; chi-square ${fixed(statistic)} on ${df} degrees of freedom.`,
   };
 }
 
@@ -373,6 +456,7 @@ export function centralMonitoring(
         "visits"
       ),
       exactDayVisits("csm-exact-day-visits", site, peers),
+      entryHour("csm-entry-hour", site, peers),
       kriProfile("csm-kri-profile", site, peers),
     ];
     for (const outcome of outcomes) {

@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/gold.fct_visit"
 name: "Visit facts"
-version: "1.0.0"
+version: "1.1.0"
 status: active
 domain: "Operations mart"
 tags:
@@ -103,6 +103,12 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Days from the visit to data entry."
+        required: false
+        classification: internal
+      - name: entry_hour
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Hour of the day, 0 to 23 in UTC, the visit's data was entered."
         required: false
         classification: internal
       - name: is_synthetic

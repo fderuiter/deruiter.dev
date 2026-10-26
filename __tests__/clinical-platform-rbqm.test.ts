@@ -14,6 +14,7 @@ import {
   buildWarehouse,
   centralMonitoring,
   checkRegulatoryWording,
+  chiSquareCdf,
   checkRiskSignalLog,
   evaluateMetric,
   fCdf,
@@ -78,6 +79,18 @@ describe("RBQM statistics against textbook values (#2631)", () => {
     expect(fCdf(3.478, 4, 10)).toBeCloseTo(0.95, 3);
     expect(fCdf(2.711, 5, 20)).toBeCloseTo(0.95, 3);
     expect(fCdf(0, 4, 10)).toBe(0);
+  });
+
+  it("computes the chi-square distribution function (#2955)", () => {
+    // Upper 5% and 1% points from standard chi-square tables.
+    expect(chiSquareCdf(3.841, 1)).toBeCloseTo(0.95, 4);
+    expect(chiSquareCdf(18.307, 10)).toBeCloseTo(0.95, 4);
+    expect(chiSquareCdf(16.812, 6)).toBeCloseTo(0.99, 4);
+    // With 2 degrees of freedom it is an exponential: 1 − e^(−x/2).
+    expect(chiSquareCdf(5, 2)).toBeCloseTo(1 - Math.exp(-2.5), 12);
+    expect(chiSquareCdf(0, 3)).toBe(0);
+    expect(() => chiSquareCdf(1, 0)).toThrow(RangeError);
+    expect(() => chiSquareCdf(Number.NaN, 2)).toThrow(RangeError);
   });
 
   it("reproduces the Benjamini-Hochberg worked example", () => {
@@ -263,7 +276,15 @@ describe("central statistical monitoring (#2631)", () => {
     // Queries and visit dates are separate data: neither test reads the other's.
     expect(tests).toContain("csm-query-under-reporting");
     expect(tests).toContain("csm-exact-day-visits");
+    // It enters every visit at 17:00 UTC; its peers spread over the day.
+    expect(tests).toContain("csm-entry-hour");
     expect(tests.length).toBeGreaterThanOrEqual(2);
+    const hour = runs
+      .get("DEMO-302")!
+      .results.find(
+        (r) => r.siteId === integritySite && r.testId === "csm-entry-hour"
+      )!;
+    expect(hour.detail).toMatch(/^(\d+) of \1 entries in the 17:00 UTC hour/);
   });
 
   it("flags no site without a planted signal at the configured false discovery rate", () => {
@@ -287,6 +308,7 @@ describe("central statistical monitoring (#2631)", () => {
         expect.arrayContaining([
           "csm-query-under-reporting",
           "csm-exact-day-visits",
+          "csm-entry-hour",
         ])
       );
     }
@@ -322,6 +344,33 @@ describe("central statistical monitoring (#2631)", () => {
       for (const site of run.sites) expect(tested.has(site)).toBe(true);
       for (const e of run.excluded) expect(e.reason.length).toBeGreaterThan(10);
     }
+  });
+
+  it("leaves the entry-hour test out, saying why, when no entry time is known (#2955)", () => {
+    const blank: typeof warehouse = {
+      ...warehouse,
+      tables: {
+        ...warehouse.tables,
+        "gold.fct_visit": warehouse.tables["gold.fct_visit"].map((v) => ({
+          ...v,
+          entry_hour: null,
+        })),
+      },
+    };
+    const run = centralMonitoring(blank, "DEMO-302");
+    expect(run.results.some((r) => r.testId === "csm-entry-hour")).toBe(false);
+    const reasons = run.excluded.filter((e) => e.testId === "csm-entry-hour");
+    expect(reasons.map((e) => e.siteId)).toEqual(run.sites);
+    for (const e of reasons)
+      expect(e.reason).toMatch(/no entered visits with an entry time/);
+    // The other tests do not read the entry hour, so they are unchanged.
+    const others = (r: { testId: string }) => r.testId !== "csm-entry-hour";
+    expect(run.results.map((r) => r.pValue)).toEqual(
+      runs
+        .get("DEMO-302")!
+        .results.filter(others)
+        .map((r) => r.pValue)
+    );
   });
 
   it("refuses a rate outside (0, 1) and an unknown study", () => {

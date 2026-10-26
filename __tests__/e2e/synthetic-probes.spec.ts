@@ -404,6 +404,14 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
   }) => {
     await platformHubJourney(page);
   });
+
+  // #2911: the portfolio dashboard computed in its worker, with the seed's
+  // one overdue milestone in the table.
+  test("Probe 14: Portfolio dashboard milestones and cycle times", async ({
+    page,
+  }) => {
+    await portfolioJourney(page);
+  });
 });
 
 async function studyDataJourney(page: Page) {
@@ -570,4 +578,27 @@ async function platformHubJourney(page: Page) {
   await expect(
     page.locator('section[aria-labelledby="operations-glance"]')
   ).toContainText("1,228", { timeout: 60_000 });
+}
+
+async function portfolioJourney(page: Page) {
+  const response = await page.goto("/platform/portfolio", {
+    waitUntil: "domcontentloaded",
+  });
+  // /platform/portfolio ships after the Clinical v1 hold (#2691); until
+  // production has it, the daily probe of the deployed origin skips here.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/platform/portfolio is not deployed to the probed origin yet (#2691)"
+  );
+  expect(response?.status()).toBe(200);
+  const table = page.getByRole("table", { name: /^Milestones by study/ });
+  await expect(
+    table.getByRole("row").filter({ hasText: "DEMO-302" })
+  ).toContainText("108 days overdue", { timeout: 60_000 });
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Protocol final to first subject in by study",
+    })
+  ).toBeVisible();
 }

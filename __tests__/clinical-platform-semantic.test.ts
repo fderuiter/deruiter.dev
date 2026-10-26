@@ -115,6 +115,17 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
     // Every deviation (#2759): the 168 important and 161 not important that
     // the two deviation rates count per 100 enrolled subjects.
     protocol_deviation_count: 329,
+    // Study start-up (#2911): every study has reached both milestones.
+    protocol_final_to_fpi_days: {
+      "DEMO-101": 90,
+      "DEMO-201": 90,
+      "DEMO-202": 132,
+      "DEMO-203": 147,
+      "DEMO-301": 93,
+      "DEMO-302": 185,
+      "DEV-401": 114,
+      "DEV-402": 86,
+    },
     fpi_to_lpi_days: {
       "DEMO-101": 128,
       "DEMO-201": 457,
@@ -129,8 +140,8 @@ const GOLDEN_VALUES: Readonly<Record<string, number | Record<string, number>>> =
   };
 
 describe("the metric registry", () => {
-  it("defines 43 metrics that pass every governance check", () => {
-    expect(METRIC_REGISTRY).toHaveLength(43);
+  it("defines 44 metrics that pass every governance check", () => {
+    expect(METRIC_REGISTRY).toHaveLength(44);
     expect(checkMetricRegistry()).toEqual([]);
   });
 

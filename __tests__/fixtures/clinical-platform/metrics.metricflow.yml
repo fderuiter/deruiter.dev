@@ -316,6 +316,11 @@ semantic_models:
         type_params:
           time_granularity: day
     measures:
+      - name: protocol_final_to_fpi_days__actual_date
+        description: "Actual milestone date of protocol_final_to_fpi_days."
+        agg: max
+        expr: "CAST(strptime(CAST(actual_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        agg_time_dimension: actual_date
       - name: fpi_to_lpi_days__actual_date
         description: "Actual milestone date of fpi_to_lpi_days."
         agg: max
@@ -1823,6 +1828,53 @@ metrics:
           - month
           - deviation_category
           - deviation_importance
+  - name: protocol_final_to_fpi_days__from_date
+    label: "Protocol final to first subject in (start date)"
+    description: "Protocol final to first subject in (start date): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: protocol_final_to_fpi_days__actual_date
+    filter: "{{ Dimension('milestone__milestone_kind') }} = 'protocol-final'"
+  - name: protocol_final_to_fpi_days__to_date
+    label: "Protocol final to first subject in (end date)"
+    description: "Protocol final to first subject in (end date): an input of a governed metric, not reported on its own."
+    type: simple
+    type_params:
+      measure:
+        name: protocol_final_to_fpi_days__actual_date
+    filter: "{{ Dimension('milestone__milestone_kind') }} = 'first-subject-in'"
+  - name: protocol_final_to_fpi_days
+    label: "Protocol final to first subject in"
+    description: "Days from protocol finalisation to the first subject's enrollment in one study: study start-up, through regulatory approval and the first site's activation. A study that has not reached both milestones has no value."
+    type: derived
+    type_params:
+      expr: "date_diff('day', from_date, to_date)"
+      metrics:
+        - name: protocol_final_to_fpi_days__from_date
+          alias: from_date
+        - name: protocol_final_to_fpi_days__to_date
+          alias: to_date
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Portfolio Management Lead"
+        steward: "Portfolio Data Steward"
+        grain: study
+        unit: days
+        format: "number, 0 decimals"
+        display_folder: Milestones
+        glossary_term: study-start-up-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+        required_group_by:
+          - study__study_id
   - name: fpi_to_lpi_days__from_date
     label: "First subject in to last subject in (start date)"
     description: "First subject in to last subject in (start date): an input of a governed metric, not reported on its own."

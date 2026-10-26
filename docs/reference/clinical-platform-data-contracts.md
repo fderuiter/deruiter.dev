@@ -113,7 +113,7 @@ would carry.
 | `gold.fct_deviation` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_deviation`, `silver.site` | `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `protocol_deviation_count` |
 | `gold.fct_monitoring_visit` | `gold.dim_country`, `gold.dim_monitoring_plan`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_monitoring_plan`, `silver.ctms_monitoring_visit`, `silver.site` | `sdv_completion`, `monitoring_reports_overdue`, `monitoring_report_cycle_time_median` |
 | `gold.fct_planned_monitoring_visit` | `gold.dim_country`, `gold.dim_monitoring_plan`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_monitoring_plan`, `silver.ctms_monitoring_visit`, `silver.site` | `monitoring_visits_overdue` |
-| `gold.fct_milestone` | `gold.dim_milestone`, `gold.dim_study`, `silver.ctms_milestone` | `fpi_to_lpi_days`, `lplv_to_dbl_days` |
+| `gold.fct_milestone` | `gold.dim_milestone`, `gold.dim_study`, `silver.ctms_milestone` | `protocol_final_to_fpi_days`, `fpi_to_lpi_days`, `lplv_to_dbl_days` |
 | `gold.fct_spend` | `gold.dim_study`, `gold.dim_vendor`, `silver.finance_line` | `budget_burn_vs_plan`, `cost_per_enrolled_subject` |
 | `gold.fct_kri_snapshot` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_deviation`, `silver.edc_query`, `silver.edc_subject`, `silver.edc_visit`, `silver.site` | None recorded |
 | `study-data-pipeline` | `usdm.DEMO-301` | None recorded |

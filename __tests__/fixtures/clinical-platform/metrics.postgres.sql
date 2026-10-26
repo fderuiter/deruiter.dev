@@ -1417,6 +1417,49 @@ SELECT
 FROM "measure"
 ORDER BY 1, 2;
 
+-- Protocol final to first subject in: protocol_final_to_fpi_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study. Filters: none.
+WITH "span" AS (
+  SELECT
+    "f"."study_key",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'protocol-final' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "from_date",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'first-subject-in' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "to_date"
+  FROM "gold"."fct_milestone" AS "f"
+  JOIN "gold"."dim_milestone" AS "dim_milestone" ON "dim_milestone"."milestone_key" = "f"."milestone_key"
+  WHERE "f"."actual_date_key" IS NOT NULL
+  GROUP BY "f"."study_key"
+)
+SELECT
+  "dim_study"."study_id" AS "study",
+  CAST(("s"."to_date" - "s"."from_date") AS DOUBLE PRECISION) AS "value"
+FROM "span" AS "s"
+JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "s"."study_key"
+WHERE "s"."from_date" IS NOT NULL
+  AND "s"."to_date" IS NOT NULL
+ORDER BY 1;
+
+-- Protocol final to first subject in: protocol_final_to_fpi_days 1.0.0 (certified), PostgreSQL.
+-- Grouped by: study, phase. Filters: none.
+WITH "span" AS (
+  SELECT
+    "f"."study_key",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'protocol-final' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "from_date",
+    MAX(CASE WHEN "dim_milestone"."milestone_kind" = 'first-subject-in' THEN TO_DATE(CAST("f"."actual_date_key" AS TEXT), 'YYYYMMDD') END) AS "to_date"
+  FROM "gold"."fct_milestone" AS "f"
+  JOIN "gold"."dim_milestone" AS "dim_milestone" ON "dim_milestone"."milestone_key" = "f"."milestone_key"
+  WHERE "f"."actual_date_key" IS NOT NULL
+  GROUP BY "f"."study_key"
+)
+SELECT
+  "dim_study"."study_id" AS "study",
+  "dim_study"."phase" AS "phase",
+  CAST(("s"."to_date" - "s"."from_date") AS DOUBLE PRECISION) AS "value"
+FROM "span" AS "s"
+JOIN "gold"."dim_study" AS "dim_study" ON "dim_study"."study_key" = "s"."study_key"
+WHERE "s"."from_date" IS NOT NULL
+  AND "s"."to_date" IS NOT NULL
+ORDER BY 1, 2;
+
 -- First subject in to last subject in: fpi_to_lpi_days 1.0.0 (certified), PostgreSQL.
 -- Grouped by: study. Filters: none.
 WITH "span" AS (

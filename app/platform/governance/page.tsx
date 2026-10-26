@@ -3,12 +3,20 @@ import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { BusinessGlossary } from "@/components/platform/governance/BusinessGlossary";
 import { DataCatalog } from "@/components/platform/governance/DataCatalog";
+import {
+  DataQuality,
+  type DqScenarioEffect,
+} from "@/components/platform/governance/DataQuality";
 import { GovernancePolicies } from "@/components/platform/governance/GovernancePolicies";
 import { StewardshipModel } from "@/components/platform/governance/StewardshipModel";
 import {
+  DATA_QUALITY_RULES,
   DEFAULT_PORTFOLIO_SEED,
+  DQ_ISSUE_LOG,
+  DQ_SCENARIOS,
   GOVERNANCE_POLICIES,
   REPORT_PACK,
+  applyDqScenario,
   assessDataQuality,
   buildWarehouse,
   businessGlossary,
@@ -18,7 +26,11 @@ import {
   dataCatalog,
   dataContracts,
   dataProducts,
+  dataQualityTrend,
+  dqIssues,
   generatePortfolio,
+  type DqAssessment,
+  type Warehouse,
   operationsReportSpecs,
   platformLineage,
 } from "@/lib/clinical-platform";
@@ -32,6 +44,7 @@ import {
   DEFAULT_SUBJECT_COUNT,
   DEMO_301_STUDY,
   runPipeline,
+  type PipelineRun,
 } from "@/lib/study-data";
 
 export const metadata: Metadata = buildRouteMetadata(
@@ -40,10 +53,40 @@ export const metadata: Metadata = buildRouteMetadata(
 
 const SECTIONS = [
   { id: "catalog", name: "Data catalog" },
+  { id: "quality", name: "Data quality" },
   { id: "glossary", name: "Business glossary" },
   { id: "stewardship", name: "Stewardship" },
   { id: "policies", name: "Policies" },
 ] as const;
+
+/**
+ * What each seeded defect does to the rules it names: their failing rows on
+ * the clean warehouse and on a copy carrying the defect.
+ */
+function scenarioEffects(
+  warehouse: Warehouse,
+  run: PipelineRun,
+  baseline: DqAssessment
+): DqScenarioEffect[] {
+  const before = new Map(baseline.results.map((r) => [r.ruleId, r]));
+  return DQ_SCENARIOS.map((scenario) => {
+    const after = new Map(
+      assessDataQuality(
+        applyDqScenario(warehouse, scenario.id),
+        run
+      ).results.map((r) => [r.ruleId, r])
+    );
+    return {
+      scenario,
+      rules: scenario.ruleIds.map((ruleId) => ({
+        ruleId,
+        failedBefore: before.get(ruleId)?.failed ?? 0,
+        failedAfter: after.get(ruleId)?.failed ?? 0,
+        status: after.get(ruleId)?.status ?? "not-applicable",
+      })),
+    };
+  });
+}
 
 /**
  * Builds the catalog and glossary from the synthetic portfolio and the
@@ -62,6 +105,7 @@ function governanceContent() {
   const products = dataProducts(run);
   const contracts = dataContracts(run);
   const reports = [...REPORT_PACK, ...operationsReportSpecs(warehouse)];
+  const quality = assessDataQuality(warehouse, run);
   const catalog = dataCatalog({
     products,
     contracts,
@@ -70,12 +114,20 @@ function governanceContent() {
       contractData(warehouse, run),
       { loadedAt: warehouse.asOf }
     ),
-    quality: assessDataQuality(warehouse, run),
+    quality,
     lineage: platformLineage(run, reports),
     reports,
   });
   return {
     catalog,
+    quality,
+    trend: dataQualityTrend(warehouse, run, DQ_ISSUE_LOG),
+    issues: dqIssues(DQ_ISSUE_LOG),
+    effects: scenarioEffects(warehouse, run, quality),
+    productNames: Object.fromEntries(
+      quality.byProduct.map((p) => [p.key, p.label])
+    ),
+    catalogIds: new Set(catalog.map((e) => e.id)),
     glossary: businessGlossary(),
     findings: checkStewardship({ products }),
     reportTitles: Object.fromEntries(reports.map((r) => [r.id, r.title])),
@@ -162,6 +214,32 @@ export default function PlatformGovernancePage() {
             <DataCatalog
               entries={content.catalog}
               reportTitles={content.reportTitles}
+            />
+          </div>
+        </section>
+
+        <section aria-labelledby="quality" className="min-w-0">
+          <h2
+            id="quality"
+            className="scroll-mt-24 text-2xl font-semibold tracking-[-0.02em]"
+          >
+            Data quality
+          </h2>
+          <p className="mt-2 max-w-3xl text-sm text-slate-300">
+            {DATA_QUALITY_RULES.length} rules check the platform&apos;s data
+            products and the Study Data Pipeline, each under one DAMA dimension,
+            with a severity, a threshold and the steward who owns it. The same
+            assessment gives each catalog entry its quality score.
+          </p>
+          <div className="mt-6">
+            <DataQuality
+              assessment={content.quality}
+              trend={content.trend}
+              issues={content.issues}
+              effects={content.effects}
+              rules={DATA_QUALITY_RULES}
+              productNames={content.productNames}
+              catalogIds={content.catalogIds}
             />
           </div>
         </section>

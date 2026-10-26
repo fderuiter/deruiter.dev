@@ -33,7 +33,9 @@ import { CaseStudyFeedbackSection } from "@/components/CaseStudyFeedbackSection"
 
 import type { Metadata } from "next";
 
-export const revalidate = 3600;
+// Daily: each regeneration bills Vercel active CPU, and content writes
+// revalidate these paths on demand, so the timer is only a backstop (#2971).
+export const revalidate = 86400;
 export const dynamicParams = true;
 
 interface PageProps {

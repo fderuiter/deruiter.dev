@@ -136,14 +136,14 @@ export function isHalloweenCardSeason(date: Date): boolean {
 export interface GameCardOptions {
   /**
    * Render the October card. Seasonal cards, and a seasonal game's everyday
-   * card, are cached for an hour rather than a year, so a crawler sees the
+   * card, are cached for a day rather than a year, so a crawler sees the
    * change of month.
    */
   halloween?: boolean;
 }
 
 /** How long a seasonal game's card may be cached, matching its route's revalidate. */
-export const SEASONAL_CARD_MAX_AGE_SECONDS = 3600;
+export const SEASONAL_CARD_MAX_AGE_SECONDS = 86400;
 
 /** Alt text for one game's link preview. */
 export function gameCardAlt(slug: GameCardSlug): string {

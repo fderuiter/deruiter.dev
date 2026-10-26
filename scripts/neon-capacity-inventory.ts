@@ -175,7 +175,7 @@ export function getNeonCapacityInventory(): NeonCapacityInventory {
       maxComputeUnits: 0.25,
       coldStartLatencySeconds: "1–3s cold-start on un-cached public queries",
       readThroughShieldRequirement:
-        "Upstash Read-Through Cache (#708) and Next.js ISR (revalidate=3600) keep Neon compute in zero-compute sleep state during public visitor traffic (ADR 0036)",
+        "Upstash Read-Through Cache (#708) and Next.js ISR (revalidate=86400 with on-demand revalidation) keep Neon compute in zero-compute sleep state during public visitor traffic (ADR 0036)",
     },
     connectionHygiene: {
       runtimePooledUrl: {

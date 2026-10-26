@@ -12,7 +12,9 @@ export const size = OG_IMAGE_SIZE;
 export const contentType = OG_IMAGE_CONTENT_TYPE;
 // Cache each card like the article page. Without static params the route ran
 // Satori on every crawler fetch, which is the costliest render on the site.
-export const revalidate = 3600;
+// Daily, because each rebuild bills Vercel active CPU and a post edit
+// revalidates its card on demand (#2971).
+export const revalidate = 86400;
 
 /** No cards are built ahead of time; each is rendered once and then cached. */
 export async function generateStaticParams() {
@@ -55,6 +57,12 @@ export default async function Image({ params }: ImageProps) {
     post = await getBlogPostBySlug(slug);
   } catch {
     post = null;
+  }
+
+  // A made-up slug gets no card: rendering one would run Satori for every
+  // URL a crawler invents (#2971).
+  if (!post && !config) {
+    return new Response("Not Found", { status: 404 });
   }
 
   return createSocialImageResponse({

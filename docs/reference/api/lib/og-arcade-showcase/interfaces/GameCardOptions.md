@@ -15,5 +15,5 @@ Options for one game's link preview.
 > `optional` **halloween?**: `boolean`
 
 Render the October card. Seasonal cards, and a seasonal game's everyday
-card, are cached for an hour rather than a year, so a crawler sees the
+card, are cached for a day rather than a year, so a crawler sees the
 change of month.

@@ -238,11 +238,11 @@ describe("screenshot link previews (#1903)", () => {
     120_000
   );
 
-  it("caches a seasonal game's cards for an hour and every other card for a year (#2740)", () => {
-    const hour = `max-age=${SEASONAL_CARD_MAX_AGE_SECONDS},`;
+  it("caches a seasonal game's cards for a day and every other card for a year (#2740, #2971)", () => {
+    const day = `max-age=${SEASONAL_CARD_MAX_AGE_SECONDS},`;
     for (const slug of Object.keys(GAME_CARD_HALLOWEEN_COPY)) {
-      expect(cards[slug]!.cacheControl).toContain(hour);
-      expect(cards[`${slug}-halloween`]!.cacheControl).toContain(hour);
+      expect(cards[slug]!.cacheControl).toContain(day);
+      expect(cards[`${slug}-halloween`]!.cacheControl).toContain(day);
     }
     expect(cards["laser-loon"]!.cacheControl).toContain("max-age=31536000");
     // The October card is its own image, not the everyday one.
@@ -298,7 +298,7 @@ describe("October link previews (#2740)", () => {
     expect(isHalloweenCardSeason(new Date(iso))).toBe(expected);
   });
 
-  it("rebuilds Duck's card hourly and picks it by the date", () => {
+  it("rebuilds Duck's card daily and picks it by the date", () => {
     const source = fs.readFileSync(
       path.join(
         process.cwd(),

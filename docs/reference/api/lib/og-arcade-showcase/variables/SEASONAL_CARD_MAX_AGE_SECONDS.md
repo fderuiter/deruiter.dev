@@ -6,6 +6,6 @@
 
 # Variable: SEASONAL\_CARD\_MAX\_AGE\_SECONDS
 
-> `const` **SEASONAL\_CARD\_MAX\_AGE\_SECONDS**: `3600` = `3600`
+> `const` **SEASONAL\_CARD\_MAX\_AGE\_SECONDS**: `86400` = `86400`
 
 How long a seasonal game's card may be cached, matching its route's revalidate.

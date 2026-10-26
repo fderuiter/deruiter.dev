@@ -166,18 +166,6 @@ export default function RootLayout({
               `,
           }}
         />
-        <script
-          src="https://va.vercel-scripts.com/v1/script.js"
-          defer
-          integrity="sha384-BZkUlnHxIcBvxJPoeKYfzzACTHqHtpUJ0qHirqeslo4I3k8wEaoSnJyPGyguandz"
-          crossOrigin="anonymous"
-        />
-        <script
-          src="https://va.vercel-scripts.com/v1/speed-insights/script.js"
-          defer
-          integrity="sha384-+0Qu2ywcjV4AEzNpfUDkt+pgMgvC6r5/Dv3PULLimAa3Jk5UCiQ0plSg53uQkjBn"
-          crossOrigin="anonymous"
-        />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-950 text-foreground antialiased pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]">
         <SkipToContent />

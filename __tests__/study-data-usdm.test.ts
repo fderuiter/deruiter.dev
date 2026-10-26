@@ -250,6 +250,7 @@ describe("readStudyDefinition(DEMO-301)", () => {
       "VS",
       "LB",
       "LB",
+      "EG",
       "EX",
       "AE",
       "DS",
@@ -274,6 +275,14 @@ describe("readStudyDefinition(DEMO-301)", () => {
       "WBC",
       "PLAT",
     ]);
+    const eg = design.activities.find((a) => a.domain === "EG")!;
+    expect(eg.assessments.map((t) => [t.testCode, t.nciCode, t.unit])).toEqual([
+      ["EGHRMN", "C119259", "beats/min"],
+      ["PRAG", "C117773", "ms"],
+      ["QRSAG", "C117779", "ms"],
+      ["QTAG", "C117783", "ms"],
+      ["RRAG", "C117791", "ms"],
+    ]);
   });
 
   it("builds the schedule of activities", () => {
@@ -287,6 +296,11 @@ describe("readStudyDefinition(DEMO-301)", () => {
     );
     expect(at("enc_week2")).not.toContain("act_lb_chem");
     expect(at("enc_week12")).toContain("act_ds");
+    expect(
+      design.visits
+        .filter((visit) => at(visit.id).includes("act_eg"))
+        .map((visit) => visit.id)
+    ).toEqual(["enc_screening", "enc_baseline", "enc_week4", "enc_week12"]);
     for (const visit of design.visits) {
       expect(at(visit.id)).toContain("act_vs");
     }

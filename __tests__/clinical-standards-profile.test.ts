@@ -153,10 +153,21 @@ describe("DEMO-301 collection against CRF Studio's CDASH catalog", () => {
     // Visit tracking the EDC records against the schedule.
     visit: ["VISITNUM", "VISIT", "PLANDY", "ACTDY", "SVDTC", "STATUS"],
     // Long-format test rows: the test code and result of a catalog field
-    // (VS: SYSBP, DIABP, PULSE, WEIGHT; LB: LBTEST, LBORRES, LBORRESU).
-    "test row": ["VSTESTCD", "VSORRES", "VSORRESU", "LBTESTCD"],
-    // Dates the catalog collects as --DAT fields (VSDAT, LBDAT, ICDAT).
-    "collection date": ["VSDTC", "LBDTC", "CONSENTDTC"],
+    // (VS: SYSBP, DIABP, PULSE, WEIGHT; LB: LBTEST, LBORRES, LBORRESU). The
+    // catalog has no EG page yet, so the ECG intervals are machine-read
+    // test rows in the same shape (#2941).
+    "test row": [
+      "VSTESTCD",
+      "VSORRES",
+      "VSORRESU",
+      "LBTESTCD",
+      "EGTESTCD",
+      "EGORRES",
+      "EGORRESU",
+    ],
+    // Dates the catalog collects as --DAT fields (VSDAT, LBDAT, ICDAT), and
+    // the ECG date a CDASHIG EG page collects as EGDAT.
+    "collection date": ["VSDTC", "LBDTC", "CONSENTDTC", "EGDTC"],
     // CDASHIG AE seriousness criteria that CRF Studio's catalog does not
     // list yet (#2826).
     "seriousness criteria": [

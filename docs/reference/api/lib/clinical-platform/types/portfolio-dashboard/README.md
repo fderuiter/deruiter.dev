@@ -11,6 +11,8 @@
 - [PortfolioBenchmark](interfaces/PortfolioBenchmark.md)
 - [PortfolioDashboard](interfaces/PortfolioDashboard.md)
 - [PortfolioFinance](interfaces/PortfolioFinance.md)
+- [PortfolioForecast](interfaces/PortfolioForecast.md)
+- [PortfolioForecastCountry](interfaces/PortfolioForecastCountry.md)
 - [PortfolioLane](interfaces/PortfolioLane.md)
 - [PortfolioMilestone](interfaces/PortfolioMilestone.md)
 - [PortfolioOutlier](interfaces/PortfolioOutlier.md)

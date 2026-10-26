@@ -65,7 +65,7 @@ export function PortfolioDashboard() {
           </div>
         )
       ) : (
-        <PortfolioView dashboard={dashboard} />
+        <PortfolioView dashboard={dashboard} onWhatIf={client.forecast} />
       )}
     </div>
   );

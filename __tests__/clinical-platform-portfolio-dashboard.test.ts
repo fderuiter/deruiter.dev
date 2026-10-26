@@ -365,6 +365,20 @@ describe("budget against forecast at completion (#2912)", () => {
     });
   });
 
+  it("labels a dollar axis compactly, so five labels fit a phone", () => {
+    expect(finance.reports[0].scale?.ticks.map((t) => t.text)).toEqual([
+      "$0",
+      "$10M",
+      "$20M",
+      "$30M",
+      "$40M",
+    ]);
+    // An axis under 10,000 keeps the metric's own format.
+    expect(
+      dashboard.benchmarks[0].report.scale?.ticks.map((t) => t.text)
+    ).toEqual(["0", "50", "100", "150", "200"]);
+  });
+
   it("orders overruns largest first", () => {
     // Every vendor of DEMO-201 runs 20% over budget from here on.
     const study = studies.find((s) => s.study_id === "DEMO-201")!;

@@ -1258,7 +1258,10 @@ export interface ReportCalculation {
 export interface ReportTick {
   /** Value the gridline marks. */
   readonly value: number;
-  /** Label, with the metrics' format. */
+  /**
+   * Label, with the metrics' format; written compactly (`$10M`, `25K`) on
+   * an axis that reaches 10,000 or more, so the labels fit a narrow chart.
+   */
   readonly text: string;
 }
 

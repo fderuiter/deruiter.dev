@@ -180,6 +180,15 @@ export const CSM_TESTS: readonly CsmTestDefinition[] = [
     reads: ["gold.fct_visit.day_offset", "gold.fct_visit.planned_visit_id"],
   },
   {
+    id: "csm-entry-hour",
+    name: "Unusual hours of data entry",
+    question:
+      "Does the site enter its data at different hours of the day from its peers?",
+    method:
+      "Upper tail of a chi-square goodness of fit: the site's entered visits by UTC entry hour against the peers' pooled distribution of entry hours. Adjacent hours are pooled until each pool expects at least 5 entries, and the statistic has one degree of freedom fewer than there are pools.",
+    reads: ["gold.fct_visit.entry_hour"],
+  },
+  {
     id: "csm-kri-profile",
     name: "Unusual KRI profile",
     question:

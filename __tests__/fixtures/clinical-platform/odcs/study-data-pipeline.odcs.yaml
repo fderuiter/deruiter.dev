@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.5.0"
+version: "2.6.0"
 status: active
 domain: "Study data"
 tags:
@@ -2489,6 +2489,238 @@ schema:
         classification: confidential
     quality:
       - id: ADLB_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - ASEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, ASEQ) identifies one row."
+  - id: ADEG
+    name: ADEG
+    physicalName: "m5/datasets/analysis/adam/adeg.json"
+    physicalType: file
+    logicalType: object
+    description: "ECG Analysis"
+    dataGranularityDescription: "One or more records per subject per parameter per analysis visit"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: ASEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: PARAMCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Parameter Code"
+        required: false
+        classification: confidential
+      - name: PARAM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: Parameter
+        required: false
+        classification: confidential
+      - name: PARAMTYP
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Parameter Type"
+        required: false
+        classification: confidential
+      - name: AVAL
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Analysis Value"
+        required: false
+        classification: confidential
+      - name: AVALU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Value Unit"
+        required: false
+        classification: confidential
+      - name: ADT
+        logicalType: date
+        physicalType: DATE
+        description: "Analysis Date"
+        required: false
+        classification: confidential
+      - name: ADY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Day"
+        required: false
+        classification: confidential
+      - name: AVISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Visit"
+        required: false
+        classification: confidential
+      - name: AVISITN
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Analysis Visit Number"
+        required: false
+        classification: confidential
+      - name: ABLFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Baseline Record Flag"
+        required: false
+        classification: confidential
+      - name: BASE
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Baseline Value"
+        required: false
+        classification: confidential
+      - name: CHG
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Change from Baseline"
+        required: false
+        classification: confidential
+      - name: PCHG
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Percent Change from Baseline"
+        required: false
+        classification: confidential
+      - name: ANL01FL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Primary Analysis Flag"
+        required: false
+        classification: confidential
+      - name: DTYPE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Derivation Type"
+        required: false
+        classification: confidential
+      - name: ANRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Normal Range Indicator"
+        required: false
+        classification: confidential
+      - name: BNRIND
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Baseline Normal Range Indicator"
+        required: false
+        classification: confidential
+      - name: TRT01P
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Planned Treatment"
+        required: false
+        classification: restricted
+      - name: TRT01A
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Actual Treatment"
+        required: false
+        classification: restricted
+      - name: SAFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Safety Population Flag"
+        required: false
+        classification: confidential
+      - name: ITTFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "ITT Population Flag"
+        required: false
+        classification: confidential
+      - name: EFFFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Efficacy Population Flag"
+        required: false
+        classification: confidential
+      - name: SRCDOM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Domain"
+        required: false
+        classification: confidential
+      - name: SRCVAR
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Source Variable"
+        required: false
+        classification: confidential
+      - name: SRCSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Source Sequence"
+        required: false
+        classification: confidential
+    quality:
+      - id: ADEG_primary_key
         type: library
         metric: duplicateValues
         arguments:

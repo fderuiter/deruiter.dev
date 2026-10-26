@@ -345,3 +345,13 @@ than approximated.
 `platform-sql-engine.test.ts` runs every saved query on the same WebAssembly
 binary through the blocking Node build and compares each result with the
 native engine.
+
+## Amendment 2026-10-26: Two always-free AWS resources
+
+[ADR 0070](0070-always-free-aws-data-stores.md) replaces "nothing is
+deployed to AWS" for two resources only: an Aurora DSQL cluster as the
+warehouse of record and a DynamoDB table as the data-product run ledger,
+both inside AWS's permanent monthly free quotas. GitHub Actions writes to
+them and production builds read them; public pages still read nothing at
+request time. The rest of the reference architecture stays synthesized,
+never deployed.

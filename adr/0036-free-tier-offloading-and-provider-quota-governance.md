@@ -89,3 +89,14 @@ All child issues governing this architecture are delivered using the dual-tracke
 
 - Cache Invalidation Complexity: Mutation of case studies or author data requires explicit cache bust (`revalidateTag` or Redis key eviction).
 - 24-Hour Email Retry Backoff on Hobby Base: Transient email failures processed by daily cron may wait up to 24 hours unless Upstash QStash event-driven scheduler is active.
+
+## Amendment 2026-10-26: AWS (Aurora DSQL, DynamoDB)
+
+[ADR 0070](0070-always-free-aws-data-stores.md) adds AWS as a provider,
+limited to its permanent monthly free quotas: Aurora DSQL at 100,000 DPUs
+and 1 GB, and DynamoDB at 25 GB with 25 read and 25 write capacity units in
+provisioned mode. Writes come only from GitHub Actions and reads only from
+production builds, so AWS adds no Vercel Fluid Compute and no visitor
+request depends on it. The account is on AWS's Free plan, which closes
+after six months unless upgraded; the deadline is tracked on
+[#2974](https://github.com/fderuiter/deruiter.dev/issues/2974).

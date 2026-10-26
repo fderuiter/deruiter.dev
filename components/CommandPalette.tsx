@@ -1376,6 +1376,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-platform-explore",
+        title: "Clinical Metrics Explorer",
+        subtitle: "Group and filter any governed metric, and see its SQL.",
+        category: "navigation",
+        url: "/platform/explore",
+        icon: <IconSearch className="h-4 w-4 text-amber-400" />,
+        badge: "Self-service",
+        status: "Interactive",
+        description:
+          "A no-code explorer over the semantic layer: it offers only the groupings, filters and visuals a metric allows, and shows each result's definition, version and SQL.",
+        techStack: ["Next.js 16", "TypeScript", "Web Worker", "Semantic Layer"],
+        highlights: [
+          "Only valid metric and dimension combinations",
+          "Shareable link, CSV download",
+          "The steps to promote it to a managed report",
+        ],
+      },
+      {
         id: "nav-platform",
         title: "Clinical Data Platform",
         subtitle:

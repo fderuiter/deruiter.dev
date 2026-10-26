@@ -104,8 +104,12 @@ function shareAt(
   week: number
 ): string {
   if (week < curve.length) return share.format(curve[week].completed);
-  // The curve stops once 99% of runs are complete, so later weeks are at least that.
-  return `${share.format(curve[curve.length - 1].completed)} or more`;
+  // The curve stops once 99% of runs are complete, so later weeks are at
+  // least that: every run, or the last share rounded down and more.
+  const last = curve[curve.length - 1].completed;
+  return last >= 1
+    ? share.format(1)
+    : `${share.format(Math.floor(last * 100) / 100)} or more`;
 }
 
 /** What a what-if adds, in words. */
@@ -289,7 +293,8 @@ function ForecastCurve({
             </g>
           ))}
           {months.map((month, index) =>
-            index % every === 0 ? (
+            // A label too near the right edge to fit is left out.
+            index % every === 0 && x(month) <= right - 28 ? (
               <g key={month}>
                 <line
                   x1={x(month)}

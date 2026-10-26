@@ -388,6 +388,36 @@ describe("the enrollment forecast and its what-if (#2913)", () => {
     expect(await violations(screen.getByRole("main"))).toEqual([]);
   });
 
+  it("reads the weeks after a shorter curve ends as all, or at least, its last share", async () => {
+    render(<PortfolioView dashboard={dashboard} onWhatIf={answer} />);
+    ask("DEMO-302", { country: "DE", sites: "20", days: "90" });
+    await within(card("DEMO-302")).findByRole("heading", {
+      level: 4,
+      name: "With 20 sites in Germany from day 90",
+    });
+    const shorter = portfolioForecast(warehouse, "DEMO-302", {
+      countryCode: "DE",
+      sites: 20,
+      activationDelayDays: 90,
+    }).forecast.curve;
+    const baseline = dashboard.forecasts[0].forecast.curve;
+    expect(shorter.length).toBeLessThan(baseline.length);
+    const end = shorter[shorter.length - 1].completed;
+    const after = end >= 1 ? "100%" : `${Math.floor(end * 100)}% or more`;
+    const rows = within(
+      within(card("DEMO-302")).getByRole("table")
+    ).getAllByRole("row");
+    expect(rows).toHaveLength(baseline.length + 1);
+    const cells = (row: number) =>
+      within(rows[row])
+        .getAllByRole("cell")
+        .map((cell) => cell.textContent);
+    expect(cells(shorter.length)[1]).toBe(`${Math.round(end * 100)}%`);
+    expect(cells(shorter.length + 1)[1]).toBe(after);
+    expect(cells(baseline.length)[1]).toBe(after);
+    expect(after).not.toBe("100% or more");
+  });
+
   it("checks the what-if before it asks", () => {
     const onWhatIf = vi.fn(answer);
     render(<PortfolioView dashboard={dashboard} onWhatIf={onWhatIf} />);

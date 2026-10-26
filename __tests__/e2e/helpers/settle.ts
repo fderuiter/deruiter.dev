@@ -93,8 +93,12 @@ export async function waitForVisualSettle(
           if (animation.playState !== "running") return false;
           const target = (animation.effect as KeyframeEffect | null)?.target;
           if (target && !el.contains(target)) return false;
-          const iterations = animation.effect?.getComputedTiming().iterations;
-          return iterations !== Infinity;
+          const timing = animation.effect?.getComputedTiming();
+          // WebKit can leave a sub-millisecond transition (seen on `tab-size`
+          // under the reduced-motion reset) in "running" indefinitely. It
+          // has no frames left to paint, so there is nothing to wait for.
+          if (Number(timing?.endTime ?? 0) < 1) return false;
+          return timing?.iterations !== Infinity;
         });
         if (state.changed || animating) {
           state.changed = false;
@@ -121,6 +125,7 @@ export async function waitForVisualSettle(
           .filter(
             (animation) =>
               animation.playState === "running" &&
+              Number(animation.effect?.getComputedTiming().endTime ?? 0) >= 1 &&
               animation.effect?.getComputedTiming().iterations !== Infinity
           )
           .map((animation) => {

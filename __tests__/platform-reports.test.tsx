@@ -92,6 +92,27 @@ describe("ReportView (#2625)", () => {
     expect(screen.getByText(SYNTHETIC_DATA_NOTICE)).toBeTruthy();
   });
 
+  it("labels every other gridline and the last on a narrow bar axis (#2912)", () => {
+    const data = report("study-status");
+    render(<ReportView report={data} />);
+    const chart = screen.getByRole("group", { name: /Bar chart/ });
+    const labels = [
+      ...chart.querySelectorAll<HTMLElement>(
+        '[aria-hidden="true"] > div > div > span'
+      ),
+    ];
+    const ticks = data.scale!.ticks;
+    // Enough gridlines that one is thinned out and the last kept.
+    expect(ticks.length).toBeGreaterThan(3);
+    expect(labels.map((label) => label.textContent)).toEqual(
+      ticks.map((tick) => tick.text)
+    );
+    labels.forEach((label, index) => {
+      const thinned = index % 2 === 1 && index < ticks.length - 1;
+      expect(label.classList.contains("hidden"), `tick ${index}`).toBe(thinned);
+    });
+  });
+
   it("draws a table-only report without a chart", () => {
     render(<ReportView report={report("site-performance")} />);
     expect(screen.queryByRole("group", { name: /chart/ })).toBeNull();

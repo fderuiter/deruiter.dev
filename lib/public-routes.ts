@@ -45,6 +45,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     name: "Clinical Portfolio Dashboard",
     category: "tool",
   },
+  {
+    path: "/platform/explore",
+    name: "Self-Service Clinical Metrics Explorer",
+    category: "tool",
+  },
   { path: "/m/crf", name: "Mobile CRF Builder & AST", category: "tool" },
   { path: "/patrol", name: "Patrol Shift Studio", category: "tool" },
   { path: "/m/patrol", name: "Mobile Patrol Shift Studio", category: "tool" },

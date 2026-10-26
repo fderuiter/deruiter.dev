@@ -83,7 +83,9 @@ const BY_WORDS: Readonly<Record<MetricDimensionId, string>> = {
  * report counts the rows of one table that meet its own condition, such as
  * the age bands of one count or the stages of a funnel, so a group one of
  * them counts reads zero in the others rather than having no rows.
- * `levels` limits where the report appears.
+ * `levels` limits where the report appears, and an `adjudicated` report
+ * appears only where a study in scope sends its events to a clinical events
+ * committee.
  */
 interface Panel {
   readonly id: string;
@@ -99,11 +101,13 @@ interface Panel {
   readonly breakdown?: readonly MetricDimensionId[];
   readonly bands?: true;
   readonly levels?: readonly OperationsLevel[];
+  readonly adjudicated?: true;
 }
 
 const OPS = "Clinical Operations Lead";
 const DM = "Clinical Data Management Lead";
 const MONITORING = "Clinical Monitoring Lead";
+const SAFETY = "Medical Safety Lead";
 
 /** Headline numbers for the scope, shown above the sections. */
 const GLANCE: Panel = {
@@ -146,8 +150,6 @@ function registryGap(name: string, issue: number | null): OperationsGap {
 
 /** The issue that adds adverse event and vital sign feeds and a weekday calendar to the generator. */
 const GENERATOR_FEEDS_ISSUE = 2776;
-/** The issue that adds activation stages, screen failure reasons and CEC adjudication to gold. */
-const GOLD_FACTS_ISSUE = 2760;
 
 const SECTIONS: readonly SectionPlan[] = [
   {
@@ -344,7 +346,7 @@ const SECTIONS: readonly SectionPlan[] = [
     id: "quality",
     title: "Quality and monitoring",
     summary:
-      "Protocol deviations, source data verification and monitoring visit reports.",
+      "Protocol deviations, source data verification, monitoring visit reports and, for device studies, the event adjudication backlog.",
     panels: [
       {
         id: "protocol-deviations",
@@ -394,6 +396,39 @@ const SECTIONS: readonly SectionPlan[] = [
         visual: "table",
         siteVisual: "table",
         refreshSlaHours: 168,
+      },
+      {
+        id: "cec-adjudication-backlog",
+        title: "Event adjudication backlog",
+        purpose:
+          "Events sent to the clinical events committee, how many it has adjudicated and how many still wait, so a backlog that would hold up the endpoint analysis or database lock is seen in time. A site that has sent no events has no row.",
+        audience: "Clinical operations and medical safety",
+        owner: SAFETY,
+        tier: "managed",
+        metrics: [
+          "cec_events_reported",
+          "cec_events_adjudicated",
+          "cec_adjudication_backlog",
+        ],
+        visual: "table",
+        siteVisual: "table",
+        refreshSlaHours: 24,
+        bands: true,
+        adjudicated: true,
+      },
+      {
+        id: "cec-adjudication-time",
+        title: "Time to adjudication",
+        purpose:
+          "Median days from a site's report of an event to the committee's decision on it.",
+        audience: "Clinical operations and medical safety",
+        owner: SAFETY,
+        tier: "managed",
+        metrics: ["cec_adjudication_time_median"],
+        visual: "bar",
+        siteVisual: "stat",
+        refreshSlaHours: 24,
+        adjudicated: true,
       },
     ],
     gaps: () => [registryGap("eTMF completeness", null)],
@@ -453,17 +488,7 @@ const SECTIONS: readonly SectionPlan[] = [
         levels: ["portfolio"],
       },
     ],
-    gaps: (study) =>
-      study?.hasCecAdjudication
-        ? [
-            {
-              name: "CEC adjudication backlog",
-              reason:
-                "Clinical events committee adjudications reach silver (silver.cec_adjudication) but no gold fact.",
-              issue: GOLD_FACTS_ISSUE,
-            },
-          ]
-        : [],
+    gaps: () => [],
   },
 ];
 
@@ -809,6 +834,35 @@ function shownAt(
 }
 
 /**
+ * Whether a study in scope sends its events to a clinical events committee:
+ * the scope's study at a study, country or site, and any study the run-by
+ * choice keeps at the portfolio.
+ */
+function adjudicatesInScope(warehouse: Warehouse, resolved: Resolved) {
+  const studies =
+    resolved.study === null
+      ? rows(warehouse, "gold.dim_study").filter((study) =>
+          runByKeeps(resolved.scope.runBy, study)
+        )
+      : [resolved.study];
+  return studies.some((study) => study.has_cec_adjudication === true);
+}
+
+/** The panels of a section the dashboard shows at a scope. */
+function panelsShown(
+  section: SectionPlan,
+  warehouse: Warehouse,
+  resolved: Resolved
+): Panel[] {
+  const adjudicates = adjudicatesInScope(warehouse, resolved);
+  return section.panels.filter(
+    (panel) =>
+      shownAt(panel.levels, resolved.level) &&
+      (panel.adjudicated === undefined || adjudicates)
+  );
+}
+
+/**
  * Every report spec the dashboard shows at a scope, the glance first, then
  * each section's in order. Every one passes `checkReportSpec`.
  *
@@ -827,9 +881,9 @@ export function operationsReportSpecs(
     glanceSpec(resolved.level, filters),
     ...SECTIONS.filter((s) => shownAt(s.levels, resolved.level)).flatMap(
       (section) =>
-        section.panels
-          .filter((p) => shownAt(p.levels, resolved.level))
-          .map((panel) => panelSpec(panel, resolved.level, filters))
+        panelsShown(section, warehouse, resolved).map((panel) =>
+          panelSpec(panel, resolved.level, filters)
+        )
     ),
   ];
 }
@@ -1002,15 +1056,13 @@ export function operationsDashboard(
     id: section.id,
     title: section.title,
     summary: section.summary,
-    reports: section.panels
-      .filter((panel) => shownAt(panel.levels, resolved.level))
-      .map((panel) => {
-        const data = buildReport(
-          warehouse,
-          panelSpec(panel, resolved.level, filters)
-        );
-        return panel.bands ? zeroFilled(data) : data;
-      }),
+    reports: panelsShown(section, warehouse, resolved).map((panel) => {
+      const data = buildReport(
+        warehouse,
+        panelSpec(panel, resolved.level, filters)
+      );
+      return panel.bands ? zeroFilled(data) : data;
+    }),
     gaps: section.gaps(study),
   }));
   const glance = buildReport(warehouse, glanceSpec(resolved.level, filters));

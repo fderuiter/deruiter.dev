@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.4.0, PostgreSQL dialect.
+-- Clinical Data Platform warehouse, schema 1.5.0, PostgreSQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -422,7 +422,9 @@ CREATE TABLE "silver"."cec_adjudication" (
   "cec_device_related"  BOOLEAN,
   "source_system"       VARCHAR(64) NOT NULL,
   "is_synthetic"        BOOLEAN NOT NULL,
-  CONSTRAINT "pk_cec_adjudication" PRIMARY KEY ("event_id")
+  CONSTRAINT "pk_cec_adjudication" PRIMARY KEY ("event_id"),
+  CONSTRAINT "ck_cec_adjudication_reported_on" CHECK ("reported_on" IS NULL OR ("occurred_on" IS NOT NULL AND "occurred_on" <= "reported_on")),
+  CONSTRAINT "ck_cec_adjudication_adjudicated_on" CHECK ("adjudicated_on" IS NULL OR ("reported_on" IS NOT NULL AND "reported_on" <= "adjudicated_on"))
 );
 COMMENT ON TABLE "silver"."cec_adjudication" IS 'Clinical events committee adjudications of site-reported events. Grain: One row per adjudicated event.';
 COMMENT ON COLUMN "silver"."cec_adjudication"."event_id" IS 'Event id.';
@@ -769,6 +771,43 @@ COMMENT ON COLUMN "gold"."fct_deviation"."importance" IS 'important or not-impor
 COMMENT ON COLUMN "gold"."fct_deviation"."is_important" IS 'Whether the deviation is important per ICH E3.';
 COMMENT ON COLUMN "gold"."fct_deviation"."days_to_identify" IS 'Days from occurrence to identification.';
 COMMENT ON COLUMN "gold"."fct_deviation"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "gold"."fct_cec_adjudication" (
+  "event_id"             VARCHAR(64) NOT NULL,
+  "subject_id"           VARCHAR(64) NOT NULL,
+  "study_key"            INTEGER NOT NULL,
+  "site_key"             INTEGER NOT NULL,
+  "country_key"          INTEGER NOT NULL,
+  "occurred_date_key"    INTEGER NOT NULL,
+  "reported_date_key"    INTEGER NOT NULL,
+  "adjudicated_date_key" INTEGER,
+  "days_to_adjudicate"   INTEGER,
+  "site_device_related"  BOOLEAN NOT NULL,
+  "cec_device_related"   BOOLEAN,
+  "is_synthetic"         BOOLEAN NOT NULL,
+  CONSTRAINT "pk_fct_cec_adjudication" PRIMARY KEY ("event_id"),
+  CONSTRAINT "fk_fct_cec_adjudication_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
+  CONSTRAINT "fk_fct_cec_adjudication_site_key" FOREIGN KEY ("site_key") REFERENCES "gold"."dim_site" ("site_key"),
+  CONSTRAINT "fk_fct_cec_adjudication_country_key" FOREIGN KEY ("country_key") REFERENCES "gold"."dim_country" ("country_key"),
+  CONSTRAINT "fk_fct_cec_adjudication_occurred_date_key" FOREIGN KEY ("occurred_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "fk_fct_cec_adjudication_reported_date_key" FOREIGN KEY ("reported_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "fk_fct_cec_adjudication_adjudicated_date_key" FOREIGN KEY ("adjudicated_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "ck_fct_cec_adjudication_reported_date_key" CHECK ("reported_date_key" IS NULL OR ("occurred_date_key" IS NOT NULL AND "occurred_date_key" <= "reported_date_key")),
+  CONSTRAINT "ck_fct_cec_adjudication_adjudicated_date_key" CHECK ("adjudicated_date_key" IS NULL OR ("reported_date_key" IS NOT NULL AND "reported_date_key" <= "adjudicated_date_key"))
+);
+COMMENT ON TABLE "gold"."fct_cec_adjudication" IS 'Events sent to the clinical events committee, with when each was reported and adjudicated (#2881). Grain: One row per event sent for adjudication.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."event_id" IS 'Event id (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."subject_id" IS 'Subject id (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."study_key" IS 'Study.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."site_key" IS 'Site version in force when the event was reported.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."country_key" IS 'Country of the site.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."occurred_date_key" IS 'Date the event occurred.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."reported_date_key" IS 'Date the site reported the event.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."adjudicated_date_key" IS 'Date the committee adjudicated the event, or null while it waits.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."days_to_adjudicate" IS 'Days from the site''s report to adjudication.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."site_device_related" IS 'Whether the site judged the event device-related.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."cec_device_related" IS 'Whether the committee judged the event device-related.';
+COMMENT ON COLUMN "gold"."fct_cec_adjudication"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_monitoring_visit" (
   "monitoring_visit_id"   VARCHAR(64) NOT NULL,

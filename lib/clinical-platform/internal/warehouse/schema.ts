@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.4.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.5.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -748,6 +748,7 @@ const SILVER: readonly TableDraft[] = [
     classification: "confidential",
     source: "bronze.cec",
     synthetic: true,
+    sequences: [["occurred_on", "reported_on", "adjudicated_on"]],
     columns: [
       ["event_id", "string", "Event id."],
       ["study_id", "string", "Protocol id.", { classification: "internal" }],
@@ -1533,6 +1534,93 @@ const FACTS: readonly TableDraft[] = [
         "integer",
         "Days from occurrence to identification.",
         { from: ["occurred_on", "identified_on"], how: "date-diff" },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_cec_adjudication",
+    kind: "fact",
+    description:
+      "Events sent to the clinical events committee, with when each was reported and adjudicated (#2881).",
+    grain: "One row per event sent for adjudication.",
+    primaryKey: ["event_id"],
+    classification: "internal",
+    source: "silver.cec_adjudication",
+    synthetic: true,
+    sequences: [
+      ["occurred_date_key", "reported_date_key", "adjudicated_date_key"],
+    ],
+    columns: [
+      ["event_id", "string", "Event id (degenerate dimension)."],
+      [
+        "subject_id",
+        "string",
+        "Subject id (degenerate dimension).",
+        { classification: "confidential" },
+      ],
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        { ...key.study, from: ["study_id", "gold.dim_study.study_key"] },
+      ],
+      [
+        "site_key",
+        "integer",
+        "Site version in force when the event was reported.",
+        {
+          ...key.site,
+          from: ["site_id", "reported_on", "gold.dim_site.site_key"],
+        },
+      ],
+      [
+        "country_key",
+        "integer",
+        "Country of the site.",
+        {
+          ...key.country,
+          from: ["silver.site.country_code", "gold.dim_country.country_key"],
+        },
+      ],
+      [
+        "occurred_date_key",
+        "integer",
+        "Date the event occurred.",
+        { ...key.date, from: ["occurred_on"] },
+      ],
+      [
+        "reported_date_key",
+        "integer",
+        "Date the site reported the event.",
+        { ...key.date, from: ["reported_on"] },
+      ],
+      [
+        "adjudicated_date_key",
+        "integer",
+        "Date the committee adjudicated the event, or null while it waits.",
+        { ...key.date, nullable: true, from: ["adjudicated_on"] },
+      ],
+      [
+        "days_to_adjudicate",
+        "integer",
+        "Days from the site's report to adjudication.",
+        {
+          nullable: true,
+          from: ["reported_on", "adjudicated_on"],
+          how: "date-diff",
+        },
+      ],
+      [
+        "site_device_related",
+        "boolean",
+        "Whether the site judged the event device-related.",
+      ],
+      [
+        "cec_device_related",
+        "boolean",
+        "Whether the committee judged the event device-related.",
+        { nullable: true },
       ],
     ],
   },

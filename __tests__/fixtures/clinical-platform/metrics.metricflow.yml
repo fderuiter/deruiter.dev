@@ -155,6 +155,51 @@ semantic_models:
       - name: vendor_name
         type: categorical
         description: "Fictional vendor name."
+  - name: fct_cec_adjudication
+    description: "Events sent to the clinical events committee, with when each was reported and adjudicated (#2881). Grain: One row per event sent for adjudication."
+    model: "ref('fct_cec_adjudication')"
+    defaults:
+      agg_time_dimension: reported_date
+    entities:
+      - name: fct_cec_adjudication
+        type: primary
+        expr: event_id
+      - name: study
+        type: foreign
+        expr: study_key
+      - name: site
+        type: foreign
+        expr: site_key
+      - name: country
+        type: foreign
+        expr: country_key
+    dimensions:
+      - name: reported_date
+        type: time
+        expr: "CAST(strptime(CAST(reported_date_key AS VARCHAR), '%Y%m%d') AS DATE)"
+        type_params:
+          time_granularity: day
+    measures:
+      - name: cec_events_reported__value
+        description: "Measure of cec_events_reported."
+        agg: sum
+        expr: "1"
+        agg_time_dimension: reported_date
+      - name: cec_events_adjudicated__value
+        description: "Measure of cec_events_adjudicated."
+        agg: sum
+        expr: "CASE WHEN adjudicated_date_key IS NOT NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: reported_date
+      - name: cec_adjudication_backlog__value
+        description: "Measure of cec_adjudication_backlog."
+        agg: sum
+        expr: "CASE WHEN adjudicated_date_key IS NULL THEN 1 ELSE 0 END"
+        agg_time_dimension: reported_date
+      - name: cec_adjudication_time_median__value
+        description: "Measure of cec_adjudication_time_median."
+        agg: median
+        expr: "CASE WHEN adjudicated_date_key IS NOT NULL THEN CAST(date_diff('day', CAST(strptime(CAST(reported_date_key AS VARCHAR), '%Y%m%d') AS DATE), CAST(strptime(CAST(adjudicated_date_key AS VARCHAR), '%Y%m%d') AS DATE)) AS DOUBLE) END"
+        agg_time_dimension: reported_date
   - name: fct_deviation
     description: "Protocol deviations with their time to identification. Grain: One row per protocol deviation."
     model: "ref('fct_deviation')"
@@ -1828,6 +1873,125 @@ metrics:
           - month
           - deviation_category
           - deviation_importance
+  - name: cec_events_reported
+    label: "Events sent for adjudication"
+    description: "Events sites reported to the clinical events committee by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: cec_events_reported__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: events
+        format: "number, 0 decimals"
+        display_folder: "Event adjudication"
+        glossary_term: event-adjudication-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: cec_events_adjudicated
+    label: "Events adjudicated"
+    description: "Reported events the clinical events committee had adjudicated by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: cec_events_adjudicated__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: events
+        format: "number, 0 decimals"
+        display_folder: "Event adjudication"
+        glossary_term: event-adjudication-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: cec_adjudication_backlog
+    label: "Events awaiting adjudication"
+    description: "Reported events the clinical events committee had not adjudicated by the data cut. Closed studies are counted too, because an event still waiting holds up database lock."
+    type: simple
+    type_params:
+      measure:
+        name: cec_adjudication_backlog__value
+        fill_nulls_with: 0
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: events
+        format: "number, 0 decimals"
+        display_folder: "Event adjudication"
+        glossary_term: event-adjudication-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
+  - name: cec_adjudication_time_median
+    label: "Time to adjudication (median)"
+    description: "Median calendar days from the site's report of an event to its adjudication by the clinical events committee, over events adjudicated by the data cut."
+    type: simple
+    type_params:
+      measure:
+        name: cec_adjudication_time_median__value
+    config:
+      meta:
+        version: "1.0.0"
+        status: certified
+        owner: "Medical Safety Lead"
+        steward: "Safety Data Steward"
+        grain: portfolio
+        unit: days
+        format: "number, 1 decimals"
+        display_folder: "Event adjudication"
+        glossary_term: event-adjudication-term
+        allowed_dimensions:
+          - study
+          - study_status
+          - therapeutic_area
+          - phase
+          - product_type
+          - operating_model
+          - site
+          - country
+          - region
+          - month
   - name: protocol_final_to_fpi_days__from_date
     label: "Protocol final to first subject in (start date)"
     description: "Protocol final to first subject in (start date): an input of a governed metric, not reported on its own."

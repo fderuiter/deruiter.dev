@@ -26,6 +26,7 @@ const MONITORING = "gold.fct_monitoring_visit";
 const PLANNED_MONITORING = "gold.fct_planned_monitoring_visit";
 const SPEND = "gold.fct_spend";
 const SITE = "gold.dim_site";
+const ADJUDICATION = "gold.fct_cec_adjudication";
 
 const col = (column: string): MetricExpression => ({ kind: "column", column });
 const lit = (value: string | number | boolean): MetricExpression => ({
@@ -220,6 +221,39 @@ const OPS_OWNER = "Clinical Operations Lead";
 const OPS_STEWARD = "Clinical Operations Data Steward";
 const DM_OWNER = "Clinical Data Management Lead";
 const DM_STEWARD = "Clinical Data Steward";
+const SAFETY_OWNER = "Medical Safety Lead";
+const SAFETY_STEWARD = "Safety Data Steward";
+
+/**
+ * Counts of the events device studies send to their clinical events
+ * committee, each counted on the date the site reported it (#2881): id,
+ * name, description and the condition on the event. Closed studies stay
+ * in, because an event still waiting for adjudication holds up the lock.
+ */
+const ADJUDICATION_COUNTS: readonly (readonly [
+  string,
+  string,
+  string,
+  ...MetricPredicate[],
+])[] = [
+  [
+    "cec_events_reported",
+    "Events sent for adjudication",
+    "Events sites reported to the clinical events committee by the data cut.",
+  ],
+  [
+    "cec_events_adjudicated",
+    "Events adjudicated",
+    "Reported events the clinical events committee had adjudicated by the data cut.",
+    present("adjudicated_date_key"),
+  ],
+  [
+    "cec_adjudication_backlog",
+    "Events awaiting adjudication",
+    "Reported events the clinical events committee had not adjudicated by the data cut. Closed studies are counted too, because an event still waiting holds up database lock.",
+    absent("adjudicated_date_key"),
+  ],
+];
 
 /** Backlog metrics leave closed studies out unless a query says otherwise. */
 const ONGOING_STUDIES: readonly MetricFilter[] = [
@@ -946,6 +980,56 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
       displayFolder: "Protocol deviations",
     },
     2759
+  ),
+  ...ADJUDICATION_COUNTS.map(([id, name, description, ...where]) =>
+    define(
+      {
+        id,
+        name,
+        description,
+        formula: {
+          kind: "simple",
+          measure: count(ADJUDICATION, "reported_date_key", ...where),
+        },
+        allowedDimensions: MONTHLY_DIMENSIONS,
+        unit: "events",
+        format: WHOLE,
+        owner: SAFETY_OWNER,
+        steward: SAFETY_STEWARD,
+        glossaryTerm: "event-adjudication-term",
+        displayFolder: "Event adjudication",
+      },
+      2881
+    )
+  ),
+  define(
+    {
+      id: "cec_adjudication_time_median",
+      name: "Time to adjudication (median)",
+      description:
+        "Median calendar days from the site's report of an event to its adjudication by the clinical events committee, over events adjudicated by the data cut.",
+      formula: {
+        kind: "simple",
+        measure: measure(
+          ADJUDICATION,
+          "median",
+          daysBetween(
+            keyDate("reported_date_key"),
+            keyDate("adjudicated_date_key")
+          ),
+          "reported_date_key",
+          present("adjudicated_date_key")
+        ),
+      },
+      allowedDimensions: MONTHLY_DIMENSIONS,
+      unit: "days",
+      format: ONE_DECIMAL,
+      owner: SAFETY_OWNER,
+      steward: SAFETY_STEWARD,
+      glossaryTerm: "event-adjudication-term",
+      displayFolder: "Event adjudication",
+    },
+    2881
   ),
   define(
     {

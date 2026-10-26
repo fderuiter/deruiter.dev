@@ -38,6 +38,12 @@ Re-exports [ARCADE_PROGRESS_CHANGED_EVENT](store/variables/ARCADE_PROGRESS_CHANG
 
 ***
 
+### ARCADE\_TUTORIALS\_KEY
+
+Re-exports [ARCADE_TUTORIALS_KEY](tutorials-slice/variables/ARCADE_TUTORIALS_KEY.md)
+
+***
+
 ### ARCADE\_UNIFIED\_PROGRESS\_KEY
 
 Re-exports [ARCADE_UNIFIED_PROGRESS_KEY](core/variables/ARCADE_UNIFIED_PROGRESS_KEY.md)
@@ -149,6 +155,18 @@ Re-exports [ArcadeStore](store/interfaces/ArcadeStore.md)
 ### ArcadeStoreOptions
 
 Re-exports [ArcadeStoreOptions](store/interfaces/ArcadeStoreOptions.md)
+
+***
+
+### ArcadeTutorials
+
+Re-exports [ArcadeTutorials](tutorials-slice/interfaces/ArcadeTutorials.md)
+
+***
+
+### arcadeTutorialsSlice
+
+Re-exports [arcadeTutorialsSlice](tutorials-slice/variables/arcadeTutorialsSlice.md)
 
 ***
 
@@ -266,9 +284,33 @@ Re-exports [setDeviceSettings](device-settings-slice/functions/setDeviceSettings
 
 ***
 
+### setTutorialOutcome
+
+Re-exports [setTutorialOutcome](tutorials-slice/functions/setTutorialOutcome.md)
+
+***
+
+### shouldOfferTutorial
+
+Re-exports [shouldOfferTutorial](tutorials-slice/functions/shouldOfferTutorial.md)
+
+***
+
 ### subscribe
 
 Re-exports [subscribe](slice/functions/subscribe.md)
+
+***
+
+### TutorialOutcome
+
+Re-exports [TutorialOutcome](tutorials-slice/type-aliases/TutorialOutcome.md)
+
+***
+
+### TutorialRecord
+
+Re-exports [TutorialRecord](tutorials-slice/interfaces/TutorialRecord.md)
 
 ***
 

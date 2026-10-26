@@ -8,5 +8,6 @@
 
 ## Functions
 
+- [csvField](functions/csvField.md)
 - [exportWarehouse](functions/exportWarehouse.md)
 - [parquetType](functions/parquetType.md)

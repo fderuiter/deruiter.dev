@@ -57,8 +57,10 @@ manual hold with `.github/workflows/weekly-train.yml`. Every Sunday at 7 PM
 Central (01:00 UTC Monday), it checks that **Merge Gate (Required Checks
 Summary)** passed on `main` HEAD and that no migration since the live commit
 is destructive, drafts a GitHub Release with the next semantic version, POSTs
-the Vercel Deploy Hook, waits for `/api/version` to report the commit, and
-then publishes the Release. It is inert until the operator finishes the steps
+the Vercel Deploy Hook, waits for `/api/version` to report the commit, runs
+the synthetic probes against the live site, and only then publishes the
+Release. **Run workflow** with `dry_run` probes the live site without
+drafting or deploying anything. It is inert until the operator finishes the steps
 in [#2889](https://github.com/fderuiter/deruiter.dev/issues/2889):
 
 1. Vercel, `portfolio`, Settings, Git, **Deploy Hooks**: create `weekly-train`
@@ -71,8 +73,8 @@ in [#2889](https://github.com/fderuiter/deruiter.dev/issues/2889):
 5. Set the repository variable `WEEKLY_TRAIN` to `on`.
 
 To pause it, set `WEEKLY_TRAIN` to `off` or open any issue labelled
-`release:hold`. A failed release leaves its GitHub Release as a draft and
-opens a `release:hold` issue, so the next week skips until a person closes
+`release:hold`. A failed release or smoke test leaves its GitHub Release as
+a draft and opens a `release:hold` issue, so the next week skips until a person closes
 it. **Create Deployment** and **Instant Rollback** work as before.
 
 ## One-Time Setup

@@ -14,6 +14,14 @@ on:
         description: "Origin to probe (defaults to the canonical production domain)"
         required: false
         default: ""
+  # The weekly train (ADR 0063) calls this after each release goes live.
+  workflow_call:
+    inputs:
+      target_url:
+        description: "Origin to probe (defaults to the canonical production domain)"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -49,8 +57,10 @@ jobs:
 
       - name: Resolve Probe Target
         id: target
+        env:
+          TARGET_INPUT: ${{ inputs.target_url }}
         run: |
-          TARGET="${{ github.event.inputs.target_url }}"
+          TARGET="${TARGET_INPUT}"
           if [ -z "$TARGET" ]; then
             TARGET="${DEFAULT_PROBE_TARGET}"
           fi

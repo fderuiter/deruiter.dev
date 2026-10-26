@@ -19,10 +19,15 @@ name: Weekly Train
 #   3. Version: next semantic version from the Conventional Commits since the
 #      last `v*` tag; draft a GitHub Release with grouped notes.
 #   4. Fire: re-check that HEAD is still the candidate, POST the hook.
-#   5. Confirm: wait for /api/version to report the candidate, then publish
-#      the Release (which creates the tag). A failure after firing leaves the
-#      Release as a draft and opens a `release:hold` issue, which pauses the
-#      next run until a person closes it.
+#   5. Confirm: wait for /api/version to report the candidate.
+#   6. Smoke test: run the synthetic probes against the live site (#2538).
+#   7. Publish the Release, which creates the tag. A failure after firing
+#      leaves the Release as a draft and opens a `release:hold` issue, which
+#      pauses the next run until a person closes it.
+#
+# `dry_run` skips straight to the smoke test against whatever is live: it
+# drafts nothing, fires nothing and ignores the switch and holds, so the
+# probe path can be exercised before the train is switched on.
 
 on:
   schedule:
@@ -39,6 +44,10 @@ on:
         description: "Override the computed version, e.g. 1.0.0 (blank = automatic)"
         type: string
         default: ""
+      dry_run:
+        description: "Only smoke-test the live site; draft and deploy nothing"
+        type: boolean
+        default: false
 
 concurrency:
   group: weekly-train
@@ -54,6 +63,11 @@ jobs:
     name: Weekly Train
     runs-on: ubuntu-latest
     timeout-minutes: 100
+    outputs:
+      candidate: ${{ steps.select.outputs.candidate }}
+      tag: ${{ steps.version.outputs.tag }}
+      fired: ${{ steps.fire.outputs.fired }}
+      verified: ${{ steps.confirm.outputs.verified }}
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -67,6 +81,7 @@ jobs:
           EVENT: ${{ github.event_name }}
           SWITCH: ${{ vars.WEEKLY_TRAIN }}
           FORCE: ${{ inputs.force }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: |
           set -euo pipefail
           skip() {
@@ -74,6 +89,13 @@ jobs:
             echo "ship=false" >> "$GITHUB_OUTPUT"
             exit 0
           }
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "Dry run: smoke-testing what $SITE serves now; nothing is drafted or deployed." >> "$GITHUB_STEP_SUMMARY"
+            echo "ship=false" >> "$GITHUB_OUTPUT"
+            echo "dry=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
 
           if [ "$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]; then
             skip "the repository variable WEEKLY_TRAIN is not \"on\"."
@@ -244,19 +266,24 @@ jobs:
           echo "fired=true" >> "$GITHUB_OUTPUT"
           echo "Deploy Hook fired for \`$CANDIDATE\`." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Confirm the release is live, then publish it
-        if: steps.fire.outputs.fired == 'true'
+      - name: Confirm the release is live
+        id: confirm
+        if: steps.fire.outputs.fired == 'true' || steps.select.outputs.dry == 'true'
         env:
           CANDIDATE: ${{ steps.select.outputs.candidate }}
-          TAG: ${{ steps.version.outputs.tag }}
+          DRY: ${{ steps.select.outputs.dry }}
         run: |
           set -euo pipefail
+          if [ "$DRY" = "true" ]; then
+            echo "verified=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           deadline=$(( $(date +%s) + 40 * 60 ))
           while [ "$(date +%s)" -lt "$deadline" ]; do
             sha=$(curl -fsS "$SITE/api/version" | jq -r '.sha' || true)
             if [ "$sha" = "$CANDIDATE" ]; then
-              gh release edit "$TAG" --draft=false --latest
-              echo "Live: $TAG (\`$sha\`) on $SITE." >> "$GITHUB_STEP_SUMMARY"
+              echo "verified=true" >> "$GITHUB_OUTPUT"
+              echo "Live: \`$sha\` on $SITE." >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             sleep 60
@@ -284,4 +311,61 @@ jobs:
           EOF
           )
           gh issue create --title "ops(release): weekly train failed for $TAG" \
+            --label "release:hold" --assignee "$OWNER" --body "$body"
+
+  # The synthetic probes, against the release now serving deruiter.dev.
+  probe:
+    name: Smoke-test the live site
+    needs: train
+    if: needs.train.outputs.verified == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/synthetic-probes.yml
+    with:
+      target_url: "https://deruiter.dev"
+
+  publish:
+    name: Publish the GitHub Release
+    needs: [train, probe]
+    if: needs.train.outputs.fired == 'true' && needs.probe.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.train.outputs.tag }}
+      CANDIDATE: ${{ needs.train.outputs.candidate }}
+    steps:
+      - name: Publish the Release and its tag
+        run: |
+          set -euo pipefail
+          gh release edit "$TAG" --draft=false --latest
+          echo "Released $TAG (\`$CANDIDATE\`): live and smoke-tested." >> "$GITHUB_STEP_SUMMARY"
+
+  hold-after-probe:
+    name: Hold the train after a failed smoke test
+    needs: [train, probe]
+    if: always() && needs.train.outputs.fired == 'true' && needs.train.outputs.verified == 'true' && needs.probe.result != 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      TAG: ${{ needs.train.outputs.tag }}
+      CANDIDATE: ${{ needs.train.outputs.candidate }}
+      OWNER: ${{ github.repository_owner }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Open a release:hold issue
+        run: |
+          set -euo pipefail
+          body=$(cat <<EOF
+          $TAG (\`$CANDIDATE\`) is live on https://deruiter.dev, but the synthetic probes failed against it. The GitHub Release stays a draft.
+
+          - Run: $RUN_URL (open the "Smoke-test the live site" job for the failing journey)
+
+          If the site is broken, use **Instant Rollback** in Vercel to the previous Production deployment. This issue carries \`release:hold\`, so the next weekly run skips until it is closed.
+          EOF
+          )
+          gh issue create --title "ops(release): smoke test failed after $TAG" \
             --label "release:hold" --assignee "$OWNER" --body "$body"

@@ -100,7 +100,7 @@ interface Handoff {
 
 function handoffNotice(taken: TakenHandoff, prepared?: PreparedStudy): string {
   if (taken.status === "missing") {
-    return "No study was handed over from CRF Studio in this tab, so the page runs DEMO-301. In CRF Studio, open the USDM export and choose Run the pipeline on this study.";
+    return "No study was handed over from CRF Studio in this tab, so the page runs DEMO-301. In CRF Studio, press Run Pipeline on a study.";
   }
   if (taken.status === "unreadable") {
     return "The study handed over from CRF Studio could not be read from this tab's storage, so the page runs DEMO-301.";

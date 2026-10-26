@@ -251,7 +251,7 @@ describe("OperationsView (#2630)", () => {
     ).toBeTruthy();
   });
 
-  it("shows a device study's own milestones and its CEC gap", () => {
+  it("shows a device study's own milestones", () => {
     view({ study: "DEV-402" }, "milestones");
     const table = screen.getByRole("table", {
       name: "DEV-402 milestones, planned and actual",
@@ -259,16 +259,21 @@ describe("OperationsView (#2630)", () => {
     expect(
       within(table).getByRole("rowheader", { name: "IDE approval" })
     ).toBeTruthy();
-    const gaps = screen.getByRole("complementary", {
-      name: "Milestones: not in the governed model yet",
-    });
-    expect(within(gaps).getByText(/CEC adjudication backlog/)).toBeTruthy();
+    // The adjudication backlog left the gaps for the quality tab (#2881).
     expect(
-      within(gaps).getByRole("link", { name: "Planned in #2760" })
-    ).toHaveProperty(
-      "href",
-      "https://github.com/fderuiter/deruiter.dev/issues/2760"
-    );
+      screen.queryByRole("complementary", {
+        name: "Milestones: not in the governed model yet",
+      })
+    ).toBeNull();
+  });
+
+  it("shows the adjudication backlog for a device study only (#2881)", () => {
+    const backlog = { name: "Event adjudication backlog by country" };
+    view({ study: "DEV-402" }, "quality");
+    expect(screen.getByRole("heading", backlog)).toBeTruthy();
+    cleanup();
+    view({ study: "DEMO-302" }, "quality");
+    expect(screen.queryByRole("heading", backlog)).toBeNull();
   });
 
   it("says why a scope was cut back", () => {

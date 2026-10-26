@@ -8,6 +8,10 @@
 
 A study milestone, planned and actual, in the study's own vocabulary (drug or device).
 
+## Extended by
+
+- [`PortfolioMilestone`](../../portfolio-dashboard/interfaces/PortfolioMilestone.md)
+
 ## Properties
 
 ### actual

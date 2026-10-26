@@ -1358,6 +1358,24 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         ],
       },
       {
+        id: "nav-platform-portfolio",
+        title: "Clinical Portfolio Dashboard",
+        subtitle: "Every study's milestones and cycle times side by side.",
+        category: "navigation",
+        url: "/platform/portfolio",
+        icon: <IconCpu className="h-4 w-4 text-amber-400" />,
+        badge: "Dashboards",
+        status: "Interactive",
+        description:
+          "A milestone swimlane of eight synthetic studies with the slips highlighted, and start-up, enrollment and close-out cycle times against the portfolio median.",
+        techStack: ["Next.js 16", "TypeScript", "Web Worker", "Semantic Layer"],
+        highlights: [
+          "Planned against actual milestones",
+          "Cycle-time medians, quartiles and the furthest study",
+          "Every chart with its data table",
+        ],
+      },
+      {
         id: "nav-platform",
         title: "Clinical Data Platform",
         subtitle:

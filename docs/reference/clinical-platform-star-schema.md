@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.4.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.5.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -159,6 +159,20 @@ erDiagram
     int days_to_identify
     boolean is_synthetic
   }
+  fct_cec_adjudication {
+    varchar event_id PK
+    varchar subject_id
+    int study_key FK
+    int site_key FK
+    int country_key FK
+    int occurred_date_key FK
+    int reported_date_key FK
+    int adjudicated_date_key FK
+    int days_to_adjudicate
+    boolean site_device_related
+    boolean cec_device_related
+    boolean is_synthetic
+  }
   fct_monitoring_visit {
     varchar monitoring_visit_id PK
     int study_key FK
@@ -240,6 +254,12 @@ erDiagram
   dim_country ||--o{ fct_deviation : "country_key"
   dim_date ||--o{ fct_deviation : "occurred_date_key"
   dim_date ||--o{ fct_deviation : "identified_date_key"
+  dim_study ||--o{ fct_cec_adjudication : "study_key"
+  dim_site ||--o{ fct_cec_adjudication : "site_key"
+  dim_country ||--o{ fct_cec_adjudication : "country_key"
+  dim_date ||--o{ fct_cec_adjudication : "occurred_date_key"
+  dim_date ||--o{ fct_cec_adjudication : "reported_date_key"
+  dim_date |o--o{ fct_cec_adjudication : "adjudicated_date_key"
   dim_study ||--o{ fct_monitoring_visit : "study_key"
   dim_site ||--o{ fct_monitoring_visit : "site_key"
   dim_country ||--o{ fct_monitoring_visit : "country_key"
@@ -275,6 +295,7 @@ erDiagram
 | `fct_visit` | One row per subject visit record. | `visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_query` | One row per query. | `query_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_deviation` | One row per protocol deviation. | `deviation_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
+| `fct_cec_adjudication` | One row per event sent for adjudication. | `event_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date`, `dim_monitoring_plan` |
 | `fct_planned_monitoring_visit` | One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored. | `planned_visit_id` | `dim_monitoring_plan`, `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_milestone` | One row per study and milestone kind. | `study_key`, `milestone_key` | `dim_study`, `dim_milestone`, `dim_date` |
@@ -516,6 +537,25 @@ Protocol deviations with their time to identification.
 | `importance` | string | no |  | internal | important or not-important. |
 | `is_important` | boolean | no |  | internal | Whether the deviation is important per ICH E3. |
 | `days_to_identify` | integer | no |  | internal | Days from occurrence to identification. |
+| `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
+
+## `gold.fct_cec_adjudication`
+
+Events sent to the clinical events committee, with when each was reported and adjudicated (#2881).
+
+| Column | Type | Null | Key | Classification | Description |
+| --- | --- | --- | --- | --- | --- |
+| `event_id` | string | no | PK | internal | Event id (degenerate dimension). |
+| `subject_id` | string | no |  | confidential | Subject id (degenerate dimension). |
+| `study_key` | integer | no | FK to `gold.dim_study` | internal | Study. |
+| `site_key` | integer | no | FK to `gold.dim_site` | internal | Site version in force when the event was reported. |
+| `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
+| `occurred_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the event occurred. |
+| `reported_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the site reported the event. |
+| `adjudicated_date_key` | integer | yes | FK to `gold.dim_date` | internal | Date the committee adjudicated the event, or null while it waits. |
+| `days_to_adjudicate` | integer | yes |  | internal | Days from the site's report to adjudication. |
+| `site_device_related` | boolean | no |  | internal | Whether the site judged the event device-related. |
+| `cec_device_related` | boolean | yes |  | internal | Whether the committee judged the event device-related. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 
 ## `gold.fct_monitoring_visit`

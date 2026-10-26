@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.4.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.5.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -1123,7 +1123,9 @@ CREATE TABLE [silver].[cec_adjudication] (
   [cec_device_related]  BIT,
   [source_system]       NVARCHAR(64) NOT NULL,
   [is_synthetic]        BIT NOT NULL,
-  CONSTRAINT [pk_cec_adjudication] PRIMARY KEY ([event_id])
+  CONSTRAINT [pk_cec_adjudication] PRIMARY KEY ([event_id]),
+  CONSTRAINT [ck_cec_adjudication_reported_on] CHECK ([reported_on] IS NULL OR ([occurred_on] IS NOT NULL AND [occurred_on] <= [reported_on])),
+  CONSTRAINT [ck_cec_adjudication_adjudicated_on] CHECK ([adjudicated_on] IS NULL OR ([reported_on] IS NOT NULL AND [reported_on] <= [adjudicated_on]))
 );
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Clinical events committee adjudications of site-reported events. Grain: One row per adjudicated event.',
@@ -2052,6 +2054,95 @@ EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_deviation',
+  @level2type = N'COLUMN', @level2name = N'is_synthetic';
+GO
+
+CREATE TABLE [gold].[fct_cec_adjudication] (
+  [event_id]             NVARCHAR(64) NOT NULL,
+  [subject_id]           NVARCHAR(64) NOT NULL,
+  [study_key]            INT NOT NULL,
+  [site_key]             INT NOT NULL,
+  [country_key]          INT NOT NULL,
+  [occurred_date_key]    INT NOT NULL,
+  [reported_date_key]    INT NOT NULL,
+  [adjudicated_date_key] INT,
+  [days_to_adjudicate]   INT,
+  [site_device_related]  BIT NOT NULL,
+  [cec_device_related]   BIT,
+  [is_synthetic]         BIT NOT NULL,
+  CONSTRAINT [pk_fct_cec_adjudication] PRIMARY KEY ([event_id]),
+  CONSTRAINT [fk_fct_cec_adjudication_study_key] FOREIGN KEY ([study_key]) REFERENCES [gold].[dim_study] ([study_key]),
+  CONSTRAINT [fk_fct_cec_adjudication_site_key] FOREIGN KEY ([site_key]) REFERENCES [gold].[dim_site] ([site_key]),
+  CONSTRAINT [fk_fct_cec_adjudication_country_key] FOREIGN KEY ([country_key]) REFERENCES [gold].[dim_country] ([country_key]),
+  CONSTRAINT [fk_fct_cec_adjudication_occurred_date_key] FOREIGN KEY ([occurred_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
+  CONSTRAINT [fk_fct_cec_adjudication_reported_date_key] FOREIGN KEY ([reported_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
+  CONSTRAINT [fk_fct_cec_adjudication_adjudicated_date_key] FOREIGN KEY ([adjudicated_date_key]) REFERENCES [gold].[dim_date] ([date_key]),
+  CONSTRAINT [ck_fct_cec_adjudication_reported_date_key] CHECK ([reported_date_key] IS NULL OR ([occurred_date_key] IS NOT NULL AND [occurred_date_key] <= [reported_date_key])),
+  CONSTRAINT [ck_fct_cec_adjudication_adjudicated_date_key] CHECK ([adjudicated_date_key] IS NULL OR ([reported_date_key] IS NOT NULL AND [reported_date_key] <= [adjudicated_date_key]))
+);
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Events sent to the clinical events committee, with when each was reported and adjudicated (#2881). Grain: One row per event sent for adjudication.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Event id (degenerate dimension).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'event_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Subject id (degenerate dimension).',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'subject_id';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Study.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'study_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Site version in force when the event was reported.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'site_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Country of the site.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'country_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the event occurred.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'occurred_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the site reported the event.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'reported_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Date the committee adjudicated the event, or null while it waits.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'adjudicated_date_key';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Days from the site''s report to adjudication.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'days_to_adjudicate';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Whether the site judged the event device-related.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'site_device_related';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Whether the committee judged the event device-related.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
+  @level2type = N'COLUMN', @level2name = N'cec_device_related';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_cec_adjudication',
   @level2type = N'COLUMN', @level2name = N'is_synthetic';
 GO
 

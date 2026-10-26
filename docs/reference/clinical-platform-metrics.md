@@ -65,6 +65,11 @@ metrics.
 | Non-important deviations per 100 subjects | `non_important_deviation_rate` | certified | 1.0.0 | portfolio | 13.1 deviations per 100 enrolled subjects |
 | Subjects with an important deviation | `subjects_with_important_deviation` | certified | 1.0.0 | portfolio | 12.9% |
 | Protocol deviations | `protocol_deviation_count` | certified | 1.0.0 | portfolio | 329 deviations |
+| Events sent for adjudication | `cec_events_reported` | certified | 1.0.0 | portfolio | 39 events |
+| Events adjudicated | `cec_events_adjudicated` | certified | 1.0.0 | portfolio | 28 events |
+| Events awaiting adjudication | `cec_adjudication_backlog` | certified | 1.0.0 | portfolio | 11 events |
+| Time to adjudication (median) | `cec_adjudication_time_median` | certified | 1.0.0 | portfolio | 27.5 days |
+| Protocol final to first subject in | `protocol_final_to_fpi_days` | certified | 1.0.0 | study | DEMO-101: 90 days; DEMO-201: 90 days; DEMO-202: 132 days; DEMO-203: 147 days; DEMO-301: 93 days; DEMO-302: 185 days; DEV-401: 114 days; DEV-402: 86 days |
 | First subject in to last subject in | `fpi_to_lpi_days` | certified | 1.0.0 | study | DEMO-101: 128 days; DEMO-201: 457 days; DEMO-202: 527 days; DEMO-203: 442 days; DEMO-301: 176 days; DEV-401: 201 days |
 | Last subject last visit to database lock | `lplv_to_dbl_days` | certified | 1.0.0 | study | DEMO-101: 75 days; DEMO-301: 46 days; DEV-401: 43 days |
 | Budget burn vs plan | `budget_burn_vs_plan` | certified | 1.0.0 | portfolio | 103.6% |
@@ -550,7 +555,69 @@ Protocol deviations that occurred, important or not, counted on the date each oc
 - Owner: Clinical Quality Lead. Steward: Clinical Operations Data Steward.
 - Glossary term: Protocol deviation (`protocol-deviation-term`).
 
+## Event adjudication
+
+### Events sent for adjudication
+
+Events sites reported to the clinical events committee by the data cut.
+
+- Id: `cec_events_reported`, version 1.0.0, certified.
+- Formula: count of gold.fct_cec_adjudication rows.
+- Unit: events. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Event adjudication (`event-adjudication-term`).
+
+### Events adjudicated
+
+Reported events the clinical events committee had adjudicated by the data cut.
+
+- Id: `cec_events_adjudicated`, version 1.0.0, certified.
+- Formula: count of gold.fct_cec_adjudication rows where adjudicated_date_key is not null.
+- Unit: events. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Event adjudication (`event-adjudication-term`).
+
+### Events awaiting adjudication
+
+Reported events the clinical events committee had not adjudicated by the data cut. Closed studies are counted too, because an event still waiting holds up database lock.
+
+- Id: `cec_adjudication_backlog`, version 1.0.0, certified.
+- Formula: count of gold.fct_cec_adjudication rows where adjudicated_date_key is null.
+- Unit: events. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Event adjudication (`event-adjudication-term`).
+
+### Time to adjudication (median)
+
+Median calendar days from the site's report of an event to its adjudication by the clinical events committee, over events adjudicated by the data cut.
+
+- Id: `cec_adjudication_time_median`, version 1.0.0, certified.
+- Formula: median of days from date(reported_date_key) to date(adjudicated_date_key) over gold.fct_cec_adjudication rows where adjudicated_date_key is not null.
+- Unit: days. Grain: portfolio.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`, `site`, `country`, `region`, `month`.
+- Default filters: none.
+- Owner: Medical Safety Lead. Steward: Safety Data Steward.
+- Glossary term: Event adjudication (`event-adjudication-term`).
+
 ## Milestones
+
+### Protocol final to first subject in
+
+Days from protocol finalisation to the first subject's enrollment in one study: study start-up, through regulatory approval and the first site's activation. A study that has not reached both milestones has no value.
+
+- Id: `protocol_final_to_fpi_days`, version 1.0.0, certified.
+- Formula: days from the actual protocol-final date to the actual first-subject-in date in gold.fct_milestone, per study.
+- Unit: days. Grain: study.
+- Dimensions: `study`, `study_status`, `therapeutic_area`, `phase`, `product_type`, `operating_model`.
+- Default filters: none.
+- Owner: Portfolio Management Lead. Steward: Portfolio Data Steward.
+- Glossary term: Study start-up (`study-start-up-term`).
 
 ### First subject in to last subject in
 

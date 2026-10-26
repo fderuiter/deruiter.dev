@@ -150,3 +150,38 @@ export function setDeviceSettings(patch: ArcadeDeviceSettingsPatch): boolean {
 export function useDeviceSettings(): ArcadeDeviceSettings {
   return useProgress(arcadeDeviceSettingsSlice);
 }
+
+/**
+ * The narrowest window, in CSS px, each layout fits (#2923, the design
+ * review on #2362). A phone view fits any window; a tablet needs 744px and a
+ * desktop 1024px, the widths their views are built for.
+ */
+export const DEVICE_LAYOUT_MIN_WIDTH: Readonly<Record<DeviceLayout, number>> =
+  Object.freeze({ auto: 0, phone: 0, tablet: 744, desktop: 1024 });
+
+/**
+ * Whether a layout fits a window this wide.
+ *
+ * @param layout - The layout to check.
+ * @param width - The window's width in CSS px.
+ * @returns True when the layout's view fits.
+ */
+export function layoutFits(layout: DeviceLayout, width: number): boolean {
+  return width >= DEVICE_LAYOUT_MIN_WIDTH[layout];
+}
+
+/**
+ * The layout the cabinet uses: the stored choice while it fits, and `auto`
+ * while it does not. The stored choice is kept, so it applies again once
+ * the window is wide enough.
+ *
+ * @param layout - The stored layout.
+ * @param width - The window's width in CSS px.
+ * @returns The layout to use now.
+ */
+export function effectiveLayout(
+  layout: DeviceLayout,
+  width: number
+): DeviceLayout {
+  return layoutFits(layout, width) ? layout : "auto";
+}

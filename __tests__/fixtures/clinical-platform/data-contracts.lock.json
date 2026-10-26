@@ -53863,6 +53863,50 @@
               "type": "string"
             },
             {
+              "classification": "confidential",
+              "description": "Analysis Criterion 1",
+              "maxLength": 80,
+              "name": "CRIT1",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Criterion 1 Evaluation Result Flag",
+              "maxLength": 80,
+              "name": "CRIT1FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Analysis Criterion 2",
+              "maxLength": 80,
+              "name": "CRIT2",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
+              "classification": "confidential",
+              "description": "Criterion 2 Evaluation Result Flag",
+              "maxLength": 80,
+              "name": "CRIT2FL",
+              "nullable": true,
+              "pattern": null,
+              "precision": null,
+              "scale": null,
+              "type": "string"
+            },
+            {
               "classification": "restricted",
               "description": "Planned Treatment",
               "maxLength": 80,

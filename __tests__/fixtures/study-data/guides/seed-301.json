@@ -654,6 +654,11 @@
         "variables": ["ADVS.DTYPE", "ADLB.DTYPE", "ADEG.DTYPE"]
       },
       {
+        "id": "ADEG_CRIT",
+        "text": "QTcF records only: CRIT1FL is Y when AVAL exceeds 500 ms, and CRIT2FL is Y when CHG exceeds 60 ms, the ICH E14 categorical thresholds for a QTc outlier. CRIT2FL is blank when there is no baseline.",
+        "variables": ["ADEG.CRIT1FL", "ADEG.CRIT2FL"]
+      },
+      {
         "id": "ADAE_IMPUTE",
         "text": "Impute month-only AE starts to the first day, or first dose when it lies in that month; impute month-only ends to month end capped at last contact. Flag imputed days.",
         "variables": ["ADAE.ASTDT", "ADAE.ASTDTF", "ADAE.AENDT", "ADAE.AENDTF"]

@@ -145,6 +145,6 @@ would carry.
 | ADSL | Subject-Level Analysis Dataset | One record per subject | STUDYID, USUBJID | 24 |
 | ADVS | Vital Signs Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
 | ADLB | Laboratory Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 27 |
-| ADEG | ECG Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 28 |
+| ADEG | ECG Analysis | One or more records per subject per parameter per analysis visit | STUDYID, USUBJID, ASEQ | 32 |
 | ADAE | Adverse Events Analysis | One record per adverse event per subject | STUDYID, USUBJID, ASEQ | 27 |
 | ADTTE | Time-to-Event Analysis | One record per subject per parameter | STUDYID, USUBJID, ASEQ | 22 |

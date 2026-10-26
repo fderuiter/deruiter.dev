@@ -2657,6 +2657,38 @@ schema:
         description: "Baseline Normal Range Indicator"
         required: false
         classification: confidential
+      - name: CRIT1
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Criterion 1"
+        required: false
+        classification: confidential
+      - name: CRIT1FL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Criterion 1 Evaluation Result Flag"
+        required: false
+        classification: confidential
+      - name: CRIT2
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Analysis Criterion 2"
+        required: false
+        classification: confidential
+      - name: CRIT2FL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 80
+        physicalType: "VARCHAR(80)"
+        description: "Criterion 2 Evaluation Result Flag"
+        required: false
+        classification: confidential
       - name: TRT01P
         logicalType: string
         logicalTypeOptions:

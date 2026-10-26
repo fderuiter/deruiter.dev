@@ -365,6 +365,16 @@ function attachBaseline(row: AnalysisRow, baselineValue: number | null): void {
       : null;
 }
 
+/** ADEG's QTcF outlier criteria (ICH E14 categorical analysis). */
+const QTCF_CRITERIA = {
+  CRIT1: { text: "QTcF > 500 ms", exceeds: 500, variable: "AVAL" },
+  CRIT2: {
+    text: "QTcF increase from baseline > 60 ms",
+    exceeds: 60,
+    variable: "CHG",
+  },
+} as const;
+
 /** The QTcF parameter ADEG derives, and the collected ones it comes from. */
 const QTCF = {
   code: "QTCFAG",
@@ -489,6 +499,18 @@ function deriveBdsDomain(
           SRCSEQ: number(record[`${domain}SEQ`]),
         };
         attachBaseline(row, baseValue);
+        if (domain === "EG")
+          for (const [name, criterion] of Object.entries(QTCF_CRITERIA)) {
+            const value = number(row[criterion.variable]);
+            const applies = param === QTCF.code;
+            row[name] = applies ? criterion.text : null;
+            row[`${name}FL`] =
+              applies && value !== null
+                ? value > criterion.exceeds
+                  ? "Y"
+                  : "N"
+                : null;
+          }
         observed.push({ row, lineage: sourceRecord.lineage });
       }
       const candidatesByVisit = new Map<number, typeof observed>();
@@ -589,7 +611,26 @@ function deriveBdsDomain(
                 variable,
                 column("PARAMTYP", "Parameter Type", "text", "Assigned"),
               ]
-            : [variable]
+            : variable.name === "BNRIND"
+              ? [
+                  variable,
+                  ...Object.keys(QTCF_CRITERIA).flatMap((name, index) => [
+                    column(
+                      name,
+                      `Analysis Criterion ${index + 1}`,
+                      "text",
+                      "Assigned"
+                    ),
+                    column(
+                      `${name}FL`,
+                      `Criterion ${index + 1} Evaluation Result Flag`,
+                      "text",
+                      "Derived",
+                      "ADEG_CRIT"
+                    ),
+                  ]),
+                ]
+              : [variable]
         )
       : BDS_VARIABLES;
   return table(

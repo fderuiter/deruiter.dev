@@ -126,6 +126,57 @@ describe("ADEG (#2943)", () => {
     expect(qtcf.find((row) => row.ABLFL === "Y")?.AVAL).toBe(411.4);
   });
 
+  it("flags QTcF over 500 ms or rising more than 60 ms (ICH E14)", () => {
+    const data = records(adeg);
+    for (const row of data) {
+      const qtcf = row.PARAMCD === "QTCFAG";
+      expect(row.CRIT1).toBe(qtcf ? "QTcF > 500 ms" : null);
+      expect(row.CRIT2).toBe(
+        qtcf ? "QTcF increase from baseline > 60 ms" : null
+      );
+      if (!qtcf) expect([row.CRIT1FL, row.CRIT2FL]).toEqual([null, null]);
+    }
+    // DEMO-301's QTcF stays physiologic, so nothing is an outlier.
+    const qtcf = data.filter((row) => row.PARAMCD === "QTCFAG");
+    expect(qtcf.every((row) => row.CRIT1FL === "N")).toBe(true);
+    expect(
+      qtcf.every((row) => row.CRIT2FL === (row.CHG === null ? null : "N"))
+    ).toBe(true);
+
+    // Week 4 QT raised to 540 ms at RR 1000 ms: QTcF 540, change 133.8.
+    const eg = sdtm.find((dataset) => dataset.name === "EG")!;
+    const egRows = records(eg);
+    const target = egRows.findIndex(
+      (row) =>
+        row.USUBJID === "DEMO-301-0002" &&
+        row.VISIT === "WEEK 4" &&
+        row.EGTESTCD === "QTAG"
+    );
+    const raised: Dataset = {
+      ...eg,
+      columns: {
+        ...eg.columns,
+        EGSTRESN: eg.columns.EGSTRESN.map((value, index) =>
+          index === target ? 540 : value
+        ),
+      },
+    };
+    const result = deriveAdamDatasets(
+      DEMO_301_STUDY,
+      sdtm.map((dataset) => (dataset === eg ? raised : dataset))
+    );
+    const week4 = records(
+      result.datasets.find((dataset) => dataset.name === "ADEG")!
+    ).find(
+      (row) =>
+        row.USUBJID === "DEMO-301-0002" &&
+        row.PARAMCD === "QTCFAG" &&
+        row.AVISIT === "WEEK 4"
+    )!;
+    expect(week4).toMatchObject({ AVAL: 540, CRIT1FL: "Y", CRIT2FL: "Y" });
+    expect(week4.CHG).toBeCloseTo(133.8, 9);
+  });
+
   it("flags one baseline per subject and parameter and derives change from it", () => {
     const data = records(adeg);
     const baselines = data.filter((row) => row.ABLFL === "Y");

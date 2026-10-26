@@ -326,6 +326,7 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     availability: GOLD_AVAILABILITY,
     retention: TRIAL,
     // 2.5.0 (#2942): the SDTM EG dataset.
-    version: "2.5.0",
+    // 2.6.0 (#2943): the ADaM ADEG dataset.
+    version: "2.6.0",
   },
 };

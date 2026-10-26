@@ -24,6 +24,14 @@ Versioned analysis method text shared by derivations and future Define-XML.
 
 > `readonly` **ADAE\_TEAE**: `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."` = `"A treatment-emergent AE starts from first dose through 14 days after last dose, capped at last known study contact."`
 
+### ADEG\_CRIT
+
+> `readonly` **ADEG\_CRIT**: `"QTcF records only: CRIT1FL is Y when AVAL exceeds 500 ms, and CRIT2FL is Y when CHG exceeds 60 ms, the ICH E14 categorical thresholds for a QTc outlier. CRIT2FL is blank when there is no baseline."` = `"QTcF records only: CRIT1FL is Y when AVAL exceeds 500 ms, and CRIT2FL is Y when CHG exceeds 60 ms, the ICH E14 categorical thresholds for a QTc outlier. CRIT2FL is blank when there is no baseline."`
+
+### ADEG\_QTCF
+
+> `readonly` **ADEG\_QTCF**: `"QTcF is the QT interval corrected for heart rate by Fridericia's formula, QTcF = QT / (RR / 1000)^(1/3) with QT and RR in ms from the QTAG and RRAG results of the same ECG, rounded to 0.1 ms. It is not derived when either result is missing."` = `"QTcF is the QT interval corrected for heart rate by Fridericia's formula, QTcF = QT / (RR / 1000)^(1/3) with QT and RR in ms from the QTAG and RRAG results of the same ECG, rounded to 0.1 ms. It is not derived when either result is missing."`
+
 ### ADSL\_DEATH
 
 > `readonly` **ADSL\_DEATH**: `"Date of death is DM.DTHDTC when that is a full date; missing for subjects with no recorded death. No death date is imputed."` = `"Date of death is DM.DTHDTC when that is a full date; missing for subjects with no recorded death. No death date is imputed."`

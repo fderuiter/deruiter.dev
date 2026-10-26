@@ -62,6 +62,26 @@ function getElementsByLocalName(
 }
 
 /** Helper to get text content of first child matching local name */
+/**
+ * The NCI C-code on a CodeList or CodeListItem: the Define-XML 2.1 Alias
+ * (`Context="nci:ExtCodeID"`), or the `def:NCICode` attribute earlier CRF
+ * Studio exports wrote. Only the element's own Alias children count, so a
+ * CodeList does not pick up one of its items' codes.
+ */
+function nciCodeOf(el: Element): string | undefined {
+  const alias = Array.from(el.children).find(
+    (child) =>
+      child.localName === "Alias" &&
+      child.getAttribute("Context") === "nci:ExtCodeID"
+  );
+  return (
+    alias?.getAttribute("Name") ||
+    el.getAttribute("def:NCICode") ||
+    el.getAttribute("NCICode") ||
+    undefined
+  );
+}
+
 function getChildTextContent(parent: Element, localName: string): string {
   const children = getElementsByLocalName(parent, localName);
   return children.length > 0 ? (children[0].textContent || "").trim() : "";
@@ -147,10 +167,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     const clOid = clEl.getAttribute("OID");
     if (!clOid) return;
     const clName = clEl.getAttribute("Name") || clOid;
-    const nciCode =
-      clEl.getAttribute("def:NCICode") ||
-      clEl.getAttribute("NCICode") ||
-      undefined;
+    const nciCode = nciCodeOf(clEl);
 
     const itemEls = getElementsByLocalName(clEl, "CodeListItem");
     const options: CodelistOption[] = itemEls.map((itemEl, idx) => {
@@ -158,10 +175,7 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
       const decodes = getElementsByLocalName(itemEl, "TranslatedText");
       const label =
         decodes.length > 0 ? (decodes[0].textContent || "").trim() : code;
-      const optNci =
-        itemEl.getAttribute("def:NCICode") ||
-        itemEl.getAttribute("NCICode") ||
-        undefined;
+      const optNci = nciCodeOf(itemEl);
       return {
         code,
         label: label || code,
@@ -193,7 +207,14 @@ export function importStudyFromCdiscOdmXml(xmlContent: string): StudyProtocol {
     if (!itemOid) return;
     const name = itemEl.getAttribute("Name") || itemOid.replace(/^IT\./, "");
     const odmDataType = itemEl.getAttribute("DataType") || "text";
-    const codelistOid = itemEl.getAttribute("CodeListOID") || undefined;
+    // ODM 1.3.2 names the codelist in a CodeListRef child; earlier CRF
+    // Studio exports put a CodeListOID attribute on the ItemDef.
+    const codelistOid =
+      getElementsByLocalName(itemEl, "CodeListRef")[0]?.getAttribute(
+        "CodeListOID"
+      ) ||
+      itemEl.getAttribute("CodeListOID") ||
+      undefined;
 
     const descTexts = getElementsByLocalName(itemEl, "TranslatedText");
     const label =

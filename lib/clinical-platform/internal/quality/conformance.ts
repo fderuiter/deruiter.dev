@@ -29,6 +29,7 @@ const DIMENSIONS: Readonly<Record<Kind, DqDimension>> = {
   exception: "accuracy",
   duplicate: "uniqueness",
   unit: "consistency",
+  eligibility: "consistency",
   lineage: "consistency",
 };
 
@@ -88,6 +89,11 @@ const TEXT: Readonly<
     name: (d) => `${d} records trace to their source records`,
     rationale:
       "A record that cannot be traced to its source cannot be verified or reproduced.",
+  },
+  eligibility: {
+    name: (d) => `${d} records match who failed screening`,
+    rationale:
+      "Screen failure counts and reasons come from the criteria a subject did not meet; a disposition and its eligibility record must agree.",
   },
   unit: {
     name: (d, v) => `${d}.${v} is the test's standard unit`,

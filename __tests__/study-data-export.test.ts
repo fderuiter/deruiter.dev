@@ -515,6 +515,7 @@ describe("study data package", () => {
       pkg.findings.map((finding) => `${finding.ruleId} ${finding.dataset}`)
     ).toEqual([
       "XPT-LABEL-TRUNCATED TI",
+      "XPT-LABEL-TRUNCATED IE",
       "XPT-LABEL-TRUNCATED SUPPDM",
       "XPT-LABEL-TRUNCATED ADSL",
     ]);

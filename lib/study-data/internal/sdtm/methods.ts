@@ -44,6 +44,10 @@ export const SDTM_METHODS = {
     "Looked up from the reported term (MHTERM) in the study's fictional event dictionary, the one adverse events are coded with, which has MedDRA's shape but is not MedDRA: MHDECOD is the preferred term and MHBODSYS its primary system organ class, and the codes are synthetic, from 99000000. Missing when the reported term is not in the dictionary.",
   MH_ONGOING:
     "When the condition was marked ongoing at the screening visit, MHENRTPT is ONGOING (Relation to Reference Period, C66728) and MHENTPT is SCREENING; both are missing otherwise.",
+  IE_CRITERION_FROM_TI:
+    "The criterion text TI holds for the same IETESTCD, so IE and TI cannot disagree; missing when TI has no such criterion.",
+  IE_RESULT:
+    "IE records only the criteria a subject did not meet: N (No Yes Response, C66742) for an INCLUSION criterion and Y for an EXCLUSION criterion. IESTRESC repeats IEORRES.",
   CT_RELATIONSHIP_MAPPING:
     "Collected causality mapped to the submission value: RELATED is written as POSSIBLY RELATED; other values are kept.",
   USDM_ASSESSMENT:
@@ -54,7 +58,7 @@ export const SDTM_METHODS = {
   LAST_PRE_DOSE:
     "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
   LAST_PARTICIPATION:
-    "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored.",
+    "The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, eligibility, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored.",
   DEATH_DATE:
     "Date of the subject's DEATH disposition event (DSSTDTC); missing for subjects with no recorded death.",
   DEATH_FLAG:

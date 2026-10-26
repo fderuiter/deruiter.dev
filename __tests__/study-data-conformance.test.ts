@@ -208,6 +208,9 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
     }
     case "unit":
       return set(good, rule.variable!, 0, "mg/dL");
+    case "eligibility":
+      // A criterion not met, recorded for an enrolled subject.
+      return set(good, "USUBJID", 0, "DEMO-301-0002");
     case "lineage":
       return rule.scope.layer === "sdtm"
         ? {

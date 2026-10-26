@@ -35,7 +35,10 @@ const METABOLIC_CONDITIONS = {
   hlgt: "Fictional metabolic conditions",
   hlgtcd: 99000113,
 } as const;
-const INFECTIONS = { soc: "Infections and infestations", soccd: 99000006 } as const;
+const INFECTIONS = {
+  soc: "Infections and infestations",
+  soccd: 99000006,
+} as const;
 const INFECTIONS_GROUP = {
   hlgt: "Fictional infections",
   hlgtcd: 99000114,
@@ -188,7 +191,9 @@ export function codeAeTerm(pt: unknown): AeDictionaryTerm | undefined {
 }
 
 /** The coding of a reported medical history condition, when it has one. */
-export function codeHistoryTerm(reported: unknown): AeDictionaryTerm | undefined {
+export function codeHistoryTerm(
+  reported: unknown
+): AeDictionaryTerm | undefined {
   return typeof reported === "string"
     ? BY_REPORTED_CONDITION.get(reported)
     : undefined;

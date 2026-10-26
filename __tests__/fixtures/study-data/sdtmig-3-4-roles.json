@@ -207,6 +207,26 @@
     "MHENRTPT": "Timing",
     "MHENTPT": "Timing"
   },
+  "IE": {
+    "STUDYID": "Identifier",
+    "DOMAIN": "Identifier",
+    "USUBJID": "Identifier",
+    "IESEQ": "Identifier",
+    "IESPID": "Identifier",
+    "IETESTCD": "Topic",
+    "IETEST": "Synonym Qualifier",
+    "IECAT": "Grouping Qualifier",
+    "IESCAT": "Grouping Qualifier",
+    "IEORRES": "Result Qualifier",
+    "IESTRESC": "Result Qualifier",
+    "VISITNUM": "Timing",
+    "VISIT": "Timing",
+    "VISITDY": "Timing",
+    "TAETORD": "Timing",
+    "EPOCH": "Timing",
+    "IEDTC": "Timing",
+    "IEDY": "Timing"
+  },
   "VS": {
     "STUDYID": "Identifier",
     "DOMAIN": "Identifier",

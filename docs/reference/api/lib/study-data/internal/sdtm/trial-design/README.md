@@ -8,4 +8,5 @@
 
 ## Functions
 
+- [criterionTestCode](functions/criterionTestCode.md)
 - [deriveTrialDesign](functions/deriveTrialDesign.md)

@@ -2,6 +2,7 @@
 import { uniformAt } from "@/lib/utils/prng";
 import { AE_DICTIONARY, HISTORY_DICTIONARY } from "../sdtm/ae-dictionary";
 import { CM_DICTIONARY } from "../sdtm/cm-dictionary";
+import { criterionTestCode } from "../sdtm/trial-design";
 import type {
   CellValue,
   Dataset,
@@ -22,6 +23,7 @@ type Domain =
   | "AE"
   | "CM"
   | "MH"
+  | "IE"
   | "DS";
 
 const BASE_DATE = "2030-01-01";
@@ -133,6 +135,22 @@ const RESOLVED_CONDITIONS = [
   { reported: condition("Appendicitis"), share: 0.06, years: [10, 30] },
   { reported: condition("Pneumonia"), share: 0.08, years: [2, 8] },
 ] as const;
+
+/**
+ * How a screen failure's own screening data shows the DEMO-301 criterion it
+ * did not meet, keyed by the USDM criterion id. The age criterion is 18 to 75
+ * years, the blood pressure criterion a seated systolic pressure of 140 to
+ * 159 mmHg, and the renal exclusion an eGFR below 45 mL/min/1.73 m2. The
+ * creatinine range, 200 to 260 umol/L, puts CKD-EPI 2021 eGFR below 45 at
+ * every age and either sex the study screens.
+ */
+const FAILED_CRITERION_EVIDENCE = {
+  ec_inc_age: "age",
+  ec_inc_bp: "systolic",
+  ec_exc_renal: "creatinine",
+} as const satisfies Readonly<Record<string, string>>;
+type Evidence =
+  (typeof FAILED_CRITERION_EVIDENCE)[keyof typeof FAILED_CRITERION_EVIDENCE];
 
 /** Medications taken for an adverse event, keyed by its preferred term. */
 const AE_TREATMENTS: Readonly<
@@ -326,6 +344,15 @@ const COLUMNS: Record<Domain, readonly VariableMeta[]> = {
     DATE("MHENDTC", "End date"),
     TEXT("MHONGO", "Ongoing at screening"),
   ],
+  IE: [
+    SRC,
+    SUBJ,
+    NUM("VISITNUM", "Protocol visit number"),
+    TEXT("VISIT", "Visit name"),
+    DATE("IEDTC", "Eligibility assessment date"),
+    TEXT("IETESTCD", "Criterion not met"),
+    TEXT("IECAT", "Criterion category"),
+  ],
   AE: [
     SRC,
     SUBJ,
@@ -463,10 +490,14 @@ export function generateCollectedData(
     AE: [],
     CM: [],
     MH: [],
+    IE: [],
     DS: [],
   };
   const lastDay = Math.max(...design.visits.map((visit) => visit.targetDay));
   const firstDay = Math.min(...design.visits.map((visit) => visit.targetDay));
+  const screeningVisit = design.visits.find(
+    (visit) => visit.targetDay === firstDay
+  )!;
   const activityById = new Map(
     design.activities.map((activity) => [activity.id, activity])
   );
@@ -485,6 +516,35 @@ export function generateCollectedData(
     const consentDate = addDays(baselineDate, offset(firstDay) - 3);
     const screenFailure = pick("DM", "screen-failure") < 0.09;
     const randomized = !screenFailure;
+    // A screen failure did not meet one protocol criterion, sometimes two.
+    // These draws are keyed to IE, so no other domain's draws move.
+    const criteria = design.eligibilityCriteria;
+    const failedCriteria = new Set<number>();
+    if (screenFailure && criteria.length > 0) {
+      const first = Math.floor(pick("IE", "criterion") * criteria.length);
+      failedCriteria.add(first);
+      if (criteria.length > 1 && pick("IE", "second") < 0.15)
+        failedCriteria.add(
+          (first +
+            1 +
+            Math.floor(
+              pick("IE", "second-criterion") * (criteria.length - 1)
+            )) %
+            criteria.length
+        );
+    }
+    const failedEvidence = new Set<Evidence>(
+      [...failedCriteria].flatMap((index) => {
+        const id = criteria[index].id;
+        return id in FAILED_CRITERION_EVIDENCE
+          ? [
+              FAILED_CRITERION_EVIDENCE[
+                id as keyof typeof FAILED_CRITERION_EVIDENCE
+              ],
+            ]
+          : [];
+      })
+    );
     const armIndex = randomized
       ? Math.floor(pick("RAND", "arm") * design.arms.length)
       : -1;
@@ -499,7 +559,9 @@ export function generateCollectedData(
         )
       : lastDay;
     const stopDate = addDays(baselineDate, offset(stopDay));
-    const age = 25 + Math.floor(pick("DM", "age") * 51);
+    const age = failedEvidence.has("age")
+      ? 76 + Math.floor(pick("IE", "age") * 7)
+      : 25 + Math.floor(pick("DM", "age") * 51);
     const sex = pick("DM", "sex") < 0.5 ? "F" : "M";
     const site = SITES[Math.floor(pick("DM", "site") * SITES.length)];
     const raceDraw = pick("DM", "race");
@@ -656,6 +718,19 @@ export function generateCollectedData(
             noise
           );
           if (abnormal) value = round(value * 1.8);
+          const failedHere =
+            visit.targetDay === firstDay &&
+            ((assessment.testCode === "SYSBP" &&
+              failedEvidence.has("systolic")) ||
+              (assessment.testCode === "CREAT" &&
+                failedEvidence.has("creatinine")));
+          if (failedHere && assessment.testCode === "SYSBP")
+            value =
+              pick("IE", "systolic-side") < 0.5
+                ? 130 + Math.floor(pick("IE", "systolic") * 9)
+                : 160 + Math.floor(pick("IE", "systolic") * 11);
+          if (failedHere && assessment.testCode === "CREAT")
+            value = 200 + Math.floor(pick("IE", "creatinine") * 61);
           if (activity.domain === "VS") {
             rows.VS.push({
               SRCID: sourceId(studyId, "VS", number, key),
@@ -677,7 +752,7 @@ export function generateCollectedData(
               LBTESTCD: assessment.testCode,
               LBORRES: value,
               LBORRESU: assessment.unit ?? null,
-              LBNRIND: abnormal ? "HIGH" : "NORMAL",
+              LBNRIND: abnormal || failedHere ? "HIGH" : "NORMAL",
             });
           }
         }
@@ -856,9 +931,38 @@ export function generateCollectedData(
         MHONGO: "N",
       });
     }
+
+    // The eligibility CRF records only the criteria a subject did not meet,
+    // at the screening visit, so an enrolled subject has no IE record.
+    for (const index of [...failedCriteria].sort((a, b) => a - b)) {
+      const criterion = criteria[index];
+      const testCode = criterionTestCode(criterion);
+      rows.IE.push({
+        SRCID: sourceId(studyId, "IE", number, testCode),
+        USUBJID: subject,
+        VISITNUM: screeningVisit.visitNum,
+        VISIT: screeningVisit.name,
+        IEDTC: screeningDate,
+        IETESTCD: testCode,
+        IECAT: criterion.category,
+      });
+    }
   }
 
   return (
-    ["DM", "RAND", "SV", "EX", "VS", "LB", "EG", "AE", "CM", "DS", "MH"] as const
+    [
+      "DM",
+      "RAND",
+      "SV",
+      "EX",
+      "VS",
+      "LB",
+      "EG",
+      "AE",
+      "CM",
+      "DS",
+      "MH",
+      "IE",
+    ] as const
   ).map((domain) => dataset(domain, rows[domain]));
 }

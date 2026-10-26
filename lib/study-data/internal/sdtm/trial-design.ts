@@ -2,6 +2,7 @@
 import type {
   CellValue,
   Dataset,
+  EligibilityCriterionDefinition,
   StudyDefinition,
   VariableMeta,
   VariableRole,
@@ -11,6 +12,16 @@ import { sdtmRequired } from "./required";
 
 type Row = Record<string, CellValue>;
 type DomainName = "TA" | "TE" | "TV" | "TI" | "TS";
+
+/**
+ * The IETESTCD of a protocol criterion in TI, which IE records repeat: INC
+ * or EXC followed by the protocol's own identifier, such as INC01.
+ */
+export function criterionTestCode(
+  criterion: Pick<EligibilityCriterionDefinition, "category" | "identifier">
+): string {
+  return `${criterion.category === "INCLUSION" ? "INC" : "EXC"}${criterion.identifier}`;
+}
 interface ColumnSpec {
   readonly name: string;
   readonly label: string;
@@ -297,10 +308,7 @@ export function deriveTrialDesign(
   const ti: Row[] = design.eligibilityCriteria.map((criterion) => ({
     STUDYID: studyId,
     DOMAIN: "TI",
-    IETESTCD:
-      criterion.category === "INCLUSION"
-        ? `INC${criterion.identifier}`
-        : `EXC${criterion.identifier}`,
+    IETESTCD: criterionTestCode(criterion),
     IETEST: criterion.text,
     IECAT: criterion.category,
   }));

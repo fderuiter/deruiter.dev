@@ -58,6 +58,14 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 > `readonly` **FIRST\_EXPOSURE**: `"Start date of the subject's exposure record (EXSTDTC); missing for subjects never dosed."` = `"Start date of the subject's exposure record (EXSTDTC); missing for subjects never dosed."`
 
+### IE\_CRITERION\_FROM\_TI
+
+> `readonly` **IE\_CRITERION\_FROM\_TI**: `"The criterion text TI holds for the same IETESTCD, so IE and TI cannot disagree; missing when TI has no such criterion."` = `"The criterion text TI holds for the same IETESTCD, so IE and TI cannot disagree; missing when TI has no such criterion."`
+
+### IE\_RESULT
+
+> `readonly` **IE\_RESULT**: `"IE records only the criteria a subject did not meet: N (No Yes Response, C66742) for an INCLUSION criterion and Y for an EXCLUSION criterion. IESTRESC repeats IEORRES."` = `"IE records only the criteria a subject did not meet: N (No Yes Response, C66742) for an INCLUSION criterion and Y for an EXCLUSION criterion. IESTRESC repeats IEORRES."`
+
 ### LAB\_CATEGORY
 
 > `readonly` **LAB\_CATEGORY**: `"The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT."` = `"The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT."`
@@ -72,7 +80,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 ### LAST\_PARTICIPATION
 
-> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."`
+> `readonly` **LAST\_PARTICIPATION**: `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, eligibility, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."` = `"The latest complete date on any of the subject's collected records: consent, randomization, visits, exposure, concomitant medications, medical history, eligibility, adverse events, vital signs, ECGs, laboratory tests and disposition events. Partial dates are ignored."`
 
 ### LAST\_PRE\_DOSE
 

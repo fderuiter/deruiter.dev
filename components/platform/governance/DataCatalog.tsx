@@ -392,13 +392,15 @@ export function DataCatalog({
           onChange={(event) => setText(event.target.value)}
           aria-controls={resultsId}
           className="mt-1 min-h-12 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-          placeholder="Name, owner, steward, source or glossary term"
+          placeholder="Name, owner, steward or term"
         />
         <div className="mt-4 grid gap-4 @2xl:grid-cols-2 @5xl:grid-cols-4">
           {FACETS.filter((f) => offered[f.key].length > 0).map((facet) => (
             <fieldset key={facet.key} className="min-w-0">
               <legend className="text-xs text-slate-400">{facet.legend}</legend>
-              <div className="mt-1 flex flex-col">
+              {/* The values wrap in rows, so on a phone the filters take
+                  a few rows instead of a screen of one checkbox per line. */}
+              <div className="mt-1 flex flex-wrap gap-x-5">
                 {offered[facet.key].map((value) => {
                   const count =
                     counts[facet.key].find((c) => c.value === value)?.count ??

@@ -91,11 +91,12 @@ test("the catalog searches, filters and still lands a link the filters hide", as
   const kind = page.getByRole("group", { name: "Kind", exact: true });
   await kind.getByRole("checkbox", { name: /^Metrics/ }).check();
   await expect(entry(page, "gold.fct_enrollment")).toHaveCount(0);
-  const screened = entry(page, "subjects_screened");
-  await expect(screened).toBeVisible();
+  // Subjects enrolled reads the enrollment fact the filter now hides.
+  const enrolled = entry(page, "subjects_enrolled");
+  await expect(enrolled).toBeVisible();
 
-  await screened.locator("summary").click();
-  await screened.getByRole("link", { name: /enrollment/i }).click();
+  await enrolled.locator("summary").click();
+  await enrolled.locator('a[href="#catalog-gold.fct_enrollment"]').click();
   const product = entry(page, "gold.fct_enrollment");
   await expect(product).toBeVisible();
   await expect(product).toBeFocused();
@@ -103,7 +104,9 @@ test("the catalog searches, filters and still lands a link the filters hide", as
   await expect(page.getByText("90 entries", { exact: true })).toBeVisible();
 
   // The metric's glossary term is on the same page.
-  await screened.getByRole("link", { name: "Screening" }).click();
-  await expect(page).toHaveURL(/#glossary-screening-term$/);
-  await expect(page.locator('[id="glossary-screening-term"]')).toBeInViewport();
+  await enrolled.getByRole("link", { name: "Enrollment", exact: true }).click();
+  await expect(page).toHaveURL(/#glossary-enrollment-term$/);
+  await expect(
+    page.locator('[id="glossary-enrollment-term"]')
+  ).toBeInViewport();
 });

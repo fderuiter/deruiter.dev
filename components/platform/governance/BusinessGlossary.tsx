@@ -48,7 +48,7 @@ export function BusinessGlossary({
           onChange={(event) => setText(event.target.value)}
           aria-controls={resultsId}
           className="mt-1 min-h-12 w-full border border-white/[0.12] bg-[#13151a] px-3 py-2 text-sm text-[#f4f4f6] placeholder:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
-          placeholder="Term, other name, definition or metric"
+          placeholder="Term, definition or metric"
         />
       </form>
       <p className="mt-4 text-xs text-slate-400" aria-live="polite">

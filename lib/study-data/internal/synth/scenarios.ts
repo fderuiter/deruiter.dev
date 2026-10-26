@@ -165,6 +165,38 @@ function endParticipation(
   };
 }
 
+/** The QT and RR records of one ECG: one subject, date and visit. */
+interface Ecg {
+  readonly date: string;
+  readonly qt: Row;
+  readonly rr: Row;
+}
+
+/** The subject's ECGs with a QT and a positive RR, in collection order. */
+function ecgs(view: SubjectView): Ecg[] {
+  const byEcg = new Map<string, Partial<Record<string, Row>>>();
+  for (const row of view.rows("EG")) {
+    if (!isFullDate(row.EGDTC)) continue;
+    const key = `${row.EGDTC}|${String(row.VISITNUM)}`;
+    byEcg.set(key, { ...byEcg.get(key), [String(row.EGTESTCD)]: row });
+  }
+  return [...byEcg.values()].flatMap((tests) => {
+    const { QTAG: qt, RRAG: rr } = tests;
+    return qt &&
+      rr &&
+      typeof qt.EGORRES === "number" &&
+      typeof rr.EGORRES === "number" &&
+      rr.EGORRES > 0
+      ? [{ date: String(qt.EGDTC), qt, rr }]
+      : [];
+  });
+}
+
+/** The subject's first post-dose ECG with a QT and an RR. */
+function postDoseEcg(view: SubjectView): Ecg | undefined {
+  return ecgs(view).find((ecg) => isPostDose(view, ecg.qt, "EGDTC"));
+}
+
 const RULES: readonly ScenarioRule[] = [
   {
     id: "impossible-date",
@@ -513,6 +545,46 @@ const RULES: readonly ScenarioRule[] = [
     eligible: (view) => earlyStop(view) !== null,
     apply: (view) =>
       endParticipation(view, earlyStop(view)!, "WITHDRAWAL BY SUBJECT"),
+  },
+  {
+    id: "qtcf-outlier",
+    title: "QTcF outlier on treatment",
+    description:
+      "At the first post-dose ECG, the QT interval is raised so that QTcF reaches 530 ms, more than 60 ms above the subject's baseline.",
+    expected: {
+      findings: ["AD-014"],
+      derivation:
+        "ADEG derives QTcF from the raised QT and flags the record CRIT1FL = Y (QTcF > 500 ms) and CRIT2FL = Y (increase from baseline > 60 ms), the ICH E14 categorical thresholds. The collected QT is kept as recorded.",
+    },
+    eligible: (view) =>
+      postDoseEcg(view) !== undefined &&
+      ecgs(view).some((ecg) => !isPostDose(view, ecg.qt, "EGDTC")),
+    apply(view) {
+      const { qt, rr } = postDoseEcg(view)!;
+      // QTcF = QT / (RR / 1000)^(1/3); rounding QT up keeps QTcF >= 530.
+      const raised = Math.ceil(530 * Math.cbrt((rr.EGORRES as number) / 1000));
+      return {
+        EG: view
+          .rows("EG")
+          .map((row) => (row === qt ? { ...row, EGORRES: raised } : row)),
+      };
+    },
+  },
+  {
+    id: "ecg-missing-rr",
+    title: "ECG without an RR interval",
+    description:
+      "The RR interval of the first post-dose ECG is not recorded; the QT, PR, QRS and heart rate of that ECG are.",
+    expected: {
+      findings: ["AD-015"],
+      derivation:
+        "ADEG keeps the ECG's other intervals but derives no QTcF for it, since Fridericia's correction needs RR, and nothing is imputed. The analysis reviewer guide lists the ECG under AD-015 as an injected finding.",
+    },
+    eligible: (view) => postDoseEcg(view) !== undefined,
+    apply(view) {
+      const { rr } = postDoseEcg(view)!;
+      return { EG: view.rows("EG").filter((row) => row !== rr) };
+    },
   },
 ];
 

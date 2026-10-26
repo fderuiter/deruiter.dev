@@ -289,6 +289,26 @@ describe("/study-data workbench", () => {
     ).toBeTruthy();
   });
 
+  it.each([
+    ["qtcf-outlier", "QTcF outlier on treatment"],
+    ["ecg-missing-rr", "ECG without an RR interval"],
+  ])(
+    "injects the ECG scenario %s and shows the gate catching it",
+    async (id, title) => {
+      await renderFinishedRun();
+      fireEvent.change(screen.getByLabelText("Inject an issue"), {
+        target: { value: id },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Run pipeline" }));
+      const panel = await screen.findByRole(
+        "region",
+        { name: `Injected: ${title}` },
+        RUN_TIMEOUT
+      );
+      expect(within(panel).getByText(/^The gate caught it: /)).toBeTruthy();
+    }
+  );
+
   it("explains invalid run settings next to the field", async () => {
     await renderFinishedRun();
     const seed = screen.getByLabelText("Seed");

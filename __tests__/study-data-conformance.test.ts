@@ -126,6 +126,14 @@ function baseFor(rule: ConformanceRule): {
     });
     return { good, context: [good] };
   }
+  if (rule.kind === "exception") {
+    // The ADEG review rules: the seed-301 run has no QTcF outlier and no
+    // ECG without an RR.
+    const good = datasets.find(
+      (item) => item.layer === "adam" && item.name === rule.scope.domain
+    )!;
+    return { good, context: datasets };
+  }
   if (rule.scope.domain === "ADVS" || rule.scope.domain === "ADEG") {
     const change = rule.id === "AD-004" || rule.id === "AD-012";
     const good = mini(rule.scope.domain, "adam", {
@@ -193,6 +201,10 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
       if (rule.id === "SD-031") return set(good, "SVSTDY", 0, 999);
       if (rule.id === "SD-032") return set(good, "LBNRIND", 0, "HIGH");
       if (rule.id === "SD-033") return set(good, "AESTDTC", 0, "2030-01");
+      const qtcf = good.columns.PARAMCD?.indexOf("QTCFAG") ?? -1;
+      if (rule.id === "AD-014") return set(good, "CRIT1FL", qtcf, "Y");
+      // Dropping a QTcF's code leaves its QT without a QTcF.
+      if (rule.id === "AD-015") return set(good, "PARAMCD", qtcf, "XX");
       return set(good, "AESTDY", 0, -1);
     }
     case "unit":

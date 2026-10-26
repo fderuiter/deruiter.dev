@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useId, useRef, useSyncExternalStore } from "react";
-import { IconAdjustments, IconX } from "@tabler/icons-react";
+import { IconAdjustments, IconSchool, IconX } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { canVibrate } from "@/lib/haptics";
 import { BottomSheet } from "@/components/arcade/mobile/ui";
@@ -24,6 +24,8 @@ interface CabinetSetupSheetProps {
   readonly asSheet: boolean;
   /** Opens the game's Pre-Game Setup Wizard in place of this sheet. */
   readonly onOpenWizard: () => void;
+  /** Replays the game's guided tutorial (#2972); absent when it has none. */
+  readonly onOpenTutorial?: () => void;
   /** The game's own options, shown under the device settings. */
   readonly setupItems?: React.ReactNode;
   /** The Setup key, which takes focus back when the dialog closes. */
@@ -258,6 +260,7 @@ export function CabinetSetupSheet({
   onClose,
   asSheet,
   onOpenWizard,
+  onOpenTutorial,
   setupItems,
   returnFocusTo,
 }: CabinetSetupSheetProps) {
@@ -291,6 +294,16 @@ export function CabinetSetupSheet({
         <IconAdjustments className="h-4 w-4" aria-hidden="true" />
         Game setup: difficulty, loadout and CRT
       </button>
+      {onOpenTutorial && (
+        <button
+          type="button"
+          onClick={onOpenTutorial}
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-neutral-900/90 px-3 text-xs font-bold text-amber-400 touch-manipulation hover:bg-neutral-800 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400"
+        >
+          <IconSchool className="h-4 w-4" aria-hidden="true" />
+          Replay the tutorial
+        </button>
+      )}
     </div>
   );
 

@@ -182,6 +182,12 @@ Re-exports [ARCADE_REGISTRY](registry/variables/ARCADE_REGISTRY.md)
 
 ***
 
+### ARCADE\_TUTORIALS\_KEY
+
+Re-exports [ARCADE_TUTORIALS_KEY](progress/tutorials-slice/variables/ARCADE_TUTORIALS_KEY.md)
+
+***
+
 ### ARCADE\_UNIFIED\_PROGRESS\_KEY
 
 Re-exports [ARCADE_UNIFIED_PROGRESS_KEY](progress/core/variables/ARCADE_UNIFIED_PROGRESS_KEY.md)
@@ -353,6 +359,18 @@ Re-exports [ArcadeStore](progress/store/interfaces/ArcadeStore.md)
 ### ArcadeStoreOptions
 
 Re-exports [ArcadeStoreOptions](progress/store/interfaces/ArcadeStoreOptions.md)
+
+***
+
+### ArcadeTutorials
+
+Re-exports [ArcadeTutorials](progress/tutorials-slice/interfaces/ArcadeTutorials.md)
+
+***
+
+### arcadeTutorialsSlice
+
+Re-exports [arcadeTutorialsSlice](progress/tutorials-slice/variables/arcadeTutorialsSlice.md)
 
 ***
 
@@ -830,6 +848,12 @@ Re-exports [isRngState](rng/functions/isRngState.md)
 
 ***
 
+### isStepComplete
+
+Re-exports [isStepComplete](tutorial/functions/isStepComplete.md)
+
+***
+
 ### isStepCount
 
 Re-exports [isStepCount](step-clock/functions/isStepCount.md)
@@ -1010,6 +1034,12 @@ Re-exports [PoolOverflowPolicy](core/pool/type-aliases/PoolOverflowPolicy.md)
 
 ***
 
+### practiceTarget
+
+Re-exports [practiceTarget](tutorial/functions/practiceTarget.md)
+
+***
+
 ### PrimaryPointerState
 
 Re-exports [PrimaryPointerState](core/input/interfaces/PrimaryPointerState.md)
@@ -1166,9 +1196,27 @@ Re-exports [setDeviceSettings](progress/device-settings-slice/functions/setDevic
 
 ***
 
+### setTutorialOutcome
+
+Re-exports [setTutorialOutcome](progress/tutorials-slice/functions/setTutorialOutcome.md)
+
+***
+
 ### shouldCabinetDrawCrt
 
 Re-exports [shouldCabinetDrawCrt](crt-pipeline/functions/shouldCabinetDrawCrt.md)
+
+***
+
+### shouldOfferTutorial
+
+Re-exports [shouldOfferTutorial](progress/tutorials-slice/functions/shouldOfferTutorial.md)
+
+***
+
+### signalCounts
+
+Re-exports [signalCounts](tutorial/functions/signalCounts.md)
 
 ***
 
@@ -1268,6 +1316,66 @@ Re-exports [touchAxisInput](input/actions/functions/touchAxisInput.md)
 
 ***
 
+### TUTORIAL\_IDLE
+
+Re-exports [TUTORIAL_IDLE](tutorial/variables/TUTORIAL_IDLE.md)
+
+***
+
+### TutorialAction
+
+Re-exports [TutorialAction](tutorial/type-aliases/TutorialAction.md)
+
+***
+
+### TutorialOutcome
+
+Re-exports [TutorialOutcome](progress/tutorials-slice/type-aliases/TutorialOutcome.md)
+
+***
+
+### TutorialPractice
+
+Re-exports [TutorialPractice](tutorial/interfaces/TutorialPractice.md)
+
+***
+
+### TutorialRecord
+
+Re-exports [TutorialRecord](progress/tutorials-slice/interfaces/TutorialRecord.md)
+
+***
+
+### tutorialReducer
+
+Re-exports [tutorialReducer](tutorial/functions/tutorialReducer.md)
+
+***
+
+### TutorialScript
+
+Re-exports [TutorialScript](tutorial/interfaces/TutorialScript.md)
+
+***
+
+### TutorialState
+
+Re-exports [TutorialState](tutorial/interfaces/TutorialState.md)
+
+***
+
+### TutorialStatus
+
+Re-exports [TutorialStatus](tutorial/type-aliases/TutorialStatus.md)
+
+***
+
+### TutorialStep
+
+Re-exports [TutorialStep](tutorial/interfaces/TutorialStep.md)
+
+***
+
 ### useActionInput
 
 Re-exports [useActionInput](input/react/functions/useActionInput.md)
@@ -1295,6 +1403,12 @@ Re-exports [useDeviceSettings](progress/device-settings-slice/functions/useDevic
 ### useProgress
 
 Re-exports [useProgress](progress/slice/functions/useProgress.md)
+
+***
+
+### validateTutorialScript
+
+Re-exports [validateTutorialScript](tutorial/functions/validateTutorialScript.md)
 
 ***
 

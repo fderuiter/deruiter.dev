@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { NextPrevNav } from "@/components/ui/NextPrevNav";
 import { getArcadeNeighbors } from "@/lib/arcade";
+import { LASER_LOON_TUTORIAL } from "@/lib/laser-loon";
 import { PlayCabinet } from "@/components/arcade/PlayCabinet";
 import Link from "next/link";
 import {
@@ -105,6 +106,9 @@ export const LaserLoonClient: React.FC = () => {
             // The arena and its dock are built to fit the touch cabinet's
             // viewport, so the stage clips rather than scrolls (ADR 0061).
             mobileLayout="fit"
+            // A guided tutorial in the Sandbox, offered on first launch
+            // (#2972).
+            tutorial={LASER_LOON_TUTORIAL}
             // A hidden tab or a backgrounded app pauses a run in progress,
             // through the cabinet's pause service (#2357).
           >

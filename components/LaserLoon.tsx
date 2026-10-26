@@ -64,6 +64,7 @@ import {
 } from "@/components/arcade/pause";
 import "@/components/laser-loon/laser-loon-touch.css";
 import { useCabinetTouch, useTouchHint } from "@/components/arcade/mobile";
+import { useCabinetTutorial } from "@/components/arcade/tutorial";
 import { ArcadeHud } from "@/components/arcade/ArcadeHud";
 import { ResultCard } from "@/components/arcade/ResultCard";
 import { useArcadeFx } from "@/hooks/useArcadeFx";
@@ -117,6 +118,7 @@ import {
   SURVIVAL_WAVE_SECONDS,
   getActProgressReadout,
   getActStars,
+  LASER_LOON_TUTORIAL_SIGNALS as TUTORIAL,
   parseActBestRecord,
   mergeActBest,
   countActStars,
@@ -327,6 +329,10 @@ export const LaserLoon: React.FC = () => {
   const touch = useCabinetTouch();
   // Key names read as taps while the last input was a finger or the Pencil.
   const touchHint = useTouchHint();
+  // The cabinet's guided tutorial (#2972) runs in the Sandbox and hears what
+  // the player does through these signals.
+  const tutorial = useCabinetTutorial();
+  const tutorialSignal = tutorial.signal;
   const keyTag = (key: string) => (touchHint ? "" : ` [${key}]`);
   // The simulation also stops behind the Flag Museum, the Field Manual and the
   // menu sheet, so reading them never costs a run.
@@ -377,6 +383,7 @@ export const LaserLoon: React.FC = () => {
 
   const selectLaserType = (type: LaserType) => {
     setLaserType(type);
+    tutorialSignal(TUTORIAL.optic);
     const weaponName = WEAPONS[type]?.name || type;
     announce(`Weapon selected: ${weaponName}`, "polite");
   };
@@ -663,6 +670,7 @@ export const LaserLoon: React.FC = () => {
       let cue: CounterHitPoint | undefined;
       for (const pt of points) {
         if (pt.counter === "weak") {
+          tutorialSignal(TUTORIAL.crit);
           spawnExplosion(pt.x, pt.y, "#f59e0b", 8, false, true);
           if (!cue || cue.counter !== "weak") cue = pt;
         } else if (pt.counter === "resisted" || pt.counter === "blocked") {
@@ -685,7 +693,13 @@ export const LaserLoon: React.FC = () => {
         playResistSound();
       }
     },
-    [spawnExplosion, addFloatingText, playCritSound, playResistSound]
+    [
+      spawnExplosion,
+      addFloatingText,
+      playCritSound,
+      playResistSound,
+      tutorialSignal,
+    ]
   );
 
   // Launch Ice Block
@@ -832,6 +846,7 @@ export const LaserLoon: React.FC = () => {
 
   const recordCampaignKill = useCallback(
     (t: Target) => {
+      tutorialSignal(TUTORIAL.kill);
       runKillsRef.current += 1;
       setRunKills(runKillsRef.current);
       if (mode !== "campaign") return;
@@ -883,7 +898,7 @@ export const LaserLoon: React.FC = () => {
         playSuccess();
       }
     },
-    [mode, currentActNum, actBests, playSuccess, recordEvent]
+    [mode, currentActNum, actBests, playSuccess, recordEvent, tutorialSignal]
   );
 
   // The render loop reads the latest handlers through a ref rather than
@@ -904,6 +919,7 @@ export const LaserLoon: React.FC = () => {
   // Trigger Ultimate Move
   const fireUltimateTremolo = useCallback(() => {
     if (ultimateMeterRef.current < 100 && mode !== "sandbox") return;
+    tutorialSignal(TUTORIAL.ultimate);
 
     ultimateMeterRef.current = 0;
     setUltimateMeter(0);
@@ -955,6 +971,7 @@ export const LaserLoon: React.FC = () => {
     spawnExplosion,
     addFloatingText,
     recordCampaignKill,
+    tutorialSignal,
   ]);
 
   // Start campaign act
@@ -1146,6 +1163,7 @@ export const LaserLoon: React.FC = () => {
 
     if (now - lastFireTimeRef.current < fireInterval) return;
     lastFireTimeRef.current = now;
+    tutorialSignal(TUTORIAL.fire);
 
     playLaserSound(laserType);
 
@@ -1222,6 +1240,7 @@ export const LaserLoon: React.FC = () => {
     recordCampaignKill,
     showCounterHits,
     isHalted,
+    tutorialSignal,
   ]);
 
   // A lost 2D context stops the loop until the browser restores it.
@@ -1914,6 +1933,8 @@ export const LaserLoon: React.FC = () => {
     keyboardAimRef.current = false;
     aimPosRef.current = { x: mouseX, y: mouseY };
 
+    // A finger steers the loon on a touch cabinet, so it counts as flying.
+    if (touch || isDraggingLoonRef.current) tutorialSignal(TUTORIAL.move);
     if (isDraggingLoonRef.current) {
       loonPosRef.current.x = mouseX;
       loonPosRef.current.y = mouseY;
@@ -2099,6 +2120,27 @@ export const LaserLoon: React.FC = () => {
     else resetGame();
   };
 
+  // The tutorial (#2972) flies in the Sandbox, where nothing hurts the loon
+  // and the Tremolo is always full, and returns to the player's mode after.
+  const modeBeforeTutorialRef = useRef<LaserMode | null>(null);
+  useEffect(() => {
+    const before = modeBeforeTutorialRef.current;
+    if (tutorial.active === (before !== null)) return;
+    resetGame();
+    if (tutorial.active) {
+      modeBeforeTutorialRef.current = mode;
+      loonPosRef.current = { x: 120, y: 180, targetX: 120, targetY: 180 };
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShowMenu(false);
+      setMode("sandbox");
+      setGameState("playing");
+    } else {
+      modeBeforeTutorialRef.current = null;
+      setMode(before ?? "campaign");
+      if (before === "sandbox") setGameState("playing");
+    }
+  }, [tutorial.active, mode, resetGame]);
+
   // Keyboard Handlers
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // The touch menu sheet is a dialog inside the playfield: its keys,
@@ -2201,6 +2243,7 @@ export const LaserLoon: React.FC = () => {
       e.stopPropagation();
       setShowMuseum(true);
     } else if (e.key === "ArrowUp" || e.key.toLowerCase() === "w") {
+      tutorialSignal(TUTORIAL.move);
       const nextY = Math.max(LOON_MIN_Y, loonPosRef.current.targetY - 25);
       loonPosRef.current.targetY = nextY;
       announce(
@@ -2208,6 +2251,7 @@ export const LaserLoon: React.FC = () => {
         "polite"
       );
     } else if (e.key === "ArrowDown" || e.key.toLowerCase() === "s") {
+      tutorialSignal(TUTORIAL.move);
       const nextY = Math.min(LOON_MAX_Y, loonPosRef.current.targetY + 25);
       loonPosRef.current.targetY = nextY;
       announce(
@@ -2215,6 +2259,7 @@ export const LaserLoon: React.FC = () => {
         "polite"
       );
     } else if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
+      tutorialSignal(TUTORIAL.move);
       const nextX = Math.max(LOON_MIN_X, loonPosRef.current.targetX - 25);
       loonPosRef.current.targetX = nextX;
       announce(
@@ -2222,6 +2267,7 @@ export const LaserLoon: React.FC = () => {
         "polite"
       );
     } else if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
+      tutorialSignal(TUTORIAL.move);
       const nextX = Math.min(LOON_MAX_X, loonPosRef.current.targetX + 25);
       loonPosRef.current.targetX = nextX;
       announce(
@@ -2421,6 +2467,7 @@ export const LaserLoon: React.FC = () => {
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
         data-keyboard-boundary="true"
+        data-tutorial-target="arena"
         // A run in progress takes Escape for itself (it pauses), so the touch
         // cabinet's Escape does not also leave the game (#2081).
         data-escape-docks={
@@ -3318,7 +3365,10 @@ export const LaserLoon: React.FC = () => {
 
       {/* Mobile/Tablet Touch Aim & Fire Dock */}
       {touch ? (
-        <div className="arcade-shooter-controls ll-dock-wrap">
+        <div
+          className="arcade-shooter-controls ll-dock-wrap"
+          data-tutorial-target="controls"
+        >
           <LoonTouchControls
             laserType={laserType}
             energyPercent={mode === "sandbox" ? 100 : ultimateMeter}
@@ -3331,7 +3381,10 @@ export const LaserLoon: React.FC = () => {
           />
         </div>
       ) : (
-        <div className="arcade-shooter-controls w-full max-w-3xl mt-3 flex justify-center">
+        <div
+          className="arcade-shooter-controls w-full max-w-3xl mt-3 flex justify-center"
+          data-tutorial-target="controls"
+        >
           <TwinStickAimDock
             onFirePress={() => {
               isFiringRef.current = true;

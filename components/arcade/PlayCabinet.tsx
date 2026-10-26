@@ -17,6 +17,7 @@ import {
   IconPower,
   IconTerminal,
   IconAdjustments,
+  IconSchool,
 } from "@tabler/icons-react";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -67,12 +68,19 @@ import {
   type PauseReason,
 } from "@/components/arcade/pause";
 import {
+  CabinetTutorialContext,
+  TutorialOverlay,
+  useTutorialRun,
+} from "@/components/arcade/tutorial";
+import {
+  ARCADE_REGISTRY,
   buildCrtOverlayBackground,
   crtCalibrationForFilter,
   FORM_FACTORS,
   isPhoneGated,
   shouldCabinetDrawCrt,
   type FormFactor,
+  type TutorialScript,
 } from "@/lib/arcade";
 
 interface ControlItem {
@@ -146,6 +154,12 @@ interface PlayCabinetProps {
    * device settings every game shares.
    */
   setupItems?: React.ReactNode;
+  /**
+   * The game's guided tutorial (#2972). The cabinet offers it once on
+   * launch, adds a Tutorial key beside Setup, and gives the game
+   * `useCabinetTutorial()` for its practice signals.
+   */
+  tutorial?: TutorialScript;
   children?: React.ReactNode;
 }
 
@@ -239,6 +253,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   onAutoPause,
   views,
   setupItems,
+  tutorial,
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -266,6 +281,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     touchImmersive && phoneOrientation && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
+  const tutorialRun = useTutorialRun(tutorial);
+  const startTutorial = tutorialRun.start;
+  const gameName =
+    ARCADE_REGISTRY.find((game) => game.slug === gameId)?.name ?? title;
   // The Setup sheet (#2923): device settings, the game's own options and a
   // way into the wizard. The toolbar's Setup key opens it.
   const [showSetup, setShowSetup] = useState(false);
@@ -364,7 +383,8 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   const immersive = isFullscreen || touchImmersive;
   // The touch toolbar's buttons: Fullscreen only where the API exists (iOS has
   // none), plus Setup and Power.
-  const toolbarButtonCount = (fullscreenSupported ? 1 : 0) + 2;
+  const toolbarButtonCount =
+    (fullscreenSupported ? 1 : 0) + (tutorialRun.available ? 1 : 0) + 2;
   // iPhone has no element fullscreen, so its phone view shows no Fullscreen
   // control at all; the installed app already runs standalone (ADR 0062). A
   // narrow desktop window in the phone view keeps it.
@@ -1098,6 +1118,17 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                 variant="icon"
               />
             )}
+            {tutorialRun.available && (
+              <button
+                type="button"
+                onClick={startTutorial}
+                aria-label="Tutorial"
+                title="Tutorial"
+                className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+              >
+                <IconSchool className="w-4 h-4" aria-hidden="true" />
+              </button>
+            )}
             <button
               ref={setupKeyRef}
               type="button"
@@ -1131,6 +1162,18 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                 onToggle={toggleCabinetFullscreen}
                 variant="header"
               />
+            )}
+            {tutorialRun.available && (
+              <button
+                type="button"
+                onClick={startTutorial}
+                aria-label="Tutorial"
+                className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+                title="Tutorial"
+              >
+                <IconSchool className="w-3.5 h-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Tutorial</span>
+              </button>
             )}
             <button
               ref={setupKeyRef}
@@ -1199,6 +1242,20 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                 />
               )}
 
+              {tutorialRun.available && (
+                <button
+                  type="button"
+                  onClick={startTutorial}
+                  aria-label="Tutorial"
+                  data-testid="cabinet-tutorial-key"
+                  className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
+                  title="Tutorial"
+                >
+                  <IconSchool className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span className="hidden sm:inline">Tutorial</span>
+                </button>
+              )}
+
               <button
                 ref={setupKeyRef}
                 type="button"
@@ -1249,15 +1306,17 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               >
                 <CabinetSetupContext.Provider value={setupValue}>
                   <CabinetPauseProvider controller={pauseController}>
-                    {views && activeView ? (
-                      <GameViewHost
-                        views={views}
-                        view={activeView}
-                        failedSwap={failedSwap}
-                      />
-                    ) : (
-                      children
-                    )}
+                    <CabinetTutorialContext.Provider value={tutorialRun.value}>
+                      {views && activeView ? (
+                        <GameViewHost
+                          views={views}
+                          view={activeView}
+                          failedSwap={failedSwap}
+                        />
+                      ) : (
+                        children
+                      )}
+                    </CabinetTutorialContext.Provider>
                   </CabinetPauseProvider>
                 </CabinetSetupContext.Provider>
               </CabinetFullscreenContext.Provider>
@@ -1296,6 +1355,18 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               />
             )}
 
+            {/* The game's guided tutorial (#2972): the offer, the coach card
+              and the closing card, over the stage. */}
+            {tutorialRun.available && isLaunched && (
+              <TutorialOverlay
+                run={tutorialRun}
+                gameName={gameName}
+                launched={isLaunched}
+                touch={touchImmersive}
+                covered={setupOpen || overlayOpen || rotateBlocked}
+              />
+            )}
+
             {/* 3-Step Setup Wizard Overlay prior to active gameplay / when reconfiguring */}
             <PreGameSetupWizard
               gameId={gameId}
@@ -1323,6 +1394,14 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                   setShowSetup(false);
                   setShowWizard(true);
                 }}
+                onOpenTutorial={
+                  tutorialRun.available
+                    ? () => {
+                        setShowSetup(false);
+                        startTutorial();
+                      }
+                    : undefined
+                }
                 setupItems={setupItems}
                 returnFocusTo={setupKeyRef}
               />

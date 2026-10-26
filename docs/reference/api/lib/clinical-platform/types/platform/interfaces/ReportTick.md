@@ -14,7 +14,8 @@ One gridline of a report's value axis.
 
 > `readonly` **text**: `string`
 
-Label, with the metrics' format.
+Label, with the metrics' format; written compactly (`$10M`, `25K`) on
+an axis that reaches 10,000 or more, so the labels fit a narrow chart.
 
 ***
 

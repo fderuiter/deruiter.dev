@@ -10,9 +10,11 @@
 
 - [PortfolioBenchmark](interfaces/PortfolioBenchmark.md)
 - [PortfolioDashboard](interfaces/PortfolioDashboard.md)
+- [PortfolioFinance](interfaces/PortfolioFinance.md)
 - [PortfolioLane](interfaces/PortfolioLane.md)
 - [PortfolioMilestone](interfaces/PortfolioMilestone.md)
 - [PortfolioOutlier](interfaces/PortfolioOutlier.md)
+- [PortfolioOverrun](interfaces/PortfolioOverrun.md)
 - [PortfolioSwimlane](interfaces/PortfolioSwimlane.md)
 
 ## Type Aliases

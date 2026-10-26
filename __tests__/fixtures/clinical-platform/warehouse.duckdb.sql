@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.5.0, DuckDB dialect.
+-- Clinical Data Platform warehouse, schema 1.6.0, DuckDB dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -407,6 +407,27 @@ COMMENT ON COLUMN "silver"."finance_line"."budget_usd" IS 'Budgeted amount, whol
 COMMENT ON COLUMN "silver"."finance_line"."actual_usd" IS 'Actual spend, whole US dollars.';
 COMMENT ON COLUMN "silver"."finance_line"."source_system" IS 'Source system the record came from.';
 COMMENT ON COLUMN "silver"."finance_line"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "silver"."finance_plan_line" (
+  "study_id"         VARCHAR NOT NULL,
+  "vendor_id"        VARCHAR,
+  "cost_category"    VARCHAR NOT NULL,
+  "fiscal_quarter"   VARCHAR NOT NULL,
+  "quarter_start_on" DATE NOT NULL,
+  "budget_usd"       INTEGER NOT NULL,
+  "source_system"    VARCHAR NOT NULL,
+  "is_synthetic"     BOOLEAN NOT NULL,
+  CONSTRAINT "pk_finance_plan_line" PRIMARY KEY ("study_id", "cost_category", "fiscal_quarter")
+);
+COMMENT ON TABLE "silver"."finance_plan_line" IS 'The approved budget plan per study, cost category and calendar quarter, from the study''s start to its planned final report. Grain: One row per study, cost category and quarter.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."study_id" IS 'Protocol id.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."vendor_id" IS 'Vendor id, or null for investigator grants.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."cost_category" IS 'Cost category.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."fiscal_quarter" IS 'Calendar quarter, for example 2027-Q1.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."quarter_start_on" IS 'First day of the quarter.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."budget_usd" IS 'Planned budget, whole US dollars.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."source_system" IS 'Source system the record came from.';
+COMMENT ON COLUMN "silver"."finance_plan_line"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "silver"."cec_adjudication" (
   "event_id"            VARCHAR NOT NULL,
@@ -931,6 +952,34 @@ COMMENT ON COLUMN "gold"."fct_spend"."budget_usd" IS 'Budgeted amount, whole US 
 COMMENT ON COLUMN "gold"."fct_spend"."actual_usd" IS 'Actual spend, whole US dollars.';
 COMMENT ON COLUMN "gold"."fct_spend"."variance_usd" IS 'Actual minus budget, whole US dollars.';
 COMMENT ON COLUMN "gold"."fct_spend"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "gold"."fct_spend_forecast" (
+  "study_key"                  INTEGER NOT NULL,
+  "vendor_key"                 INTEGER NOT NULL,
+  "as_of_date_key"             INTEGER NOT NULL,
+  "budget_to_date_usd"         INTEGER NOT NULL,
+  "actual_to_date_usd"         INTEGER NOT NULL,
+  "remaining_budget_usd"       INTEGER NOT NULL,
+  "budget_at_completion_usd"   INTEGER NOT NULL,
+  "forecast_at_completion_usd" INTEGER NOT NULL,
+  "variance_at_completion_usd" INTEGER NOT NULL,
+  "is_synthetic"               BOOLEAN NOT NULL,
+  CONSTRAINT "pk_fct_spend_forecast" PRIMARY KEY ("study_key", "vendor_key"),
+  CONSTRAINT "fk_fct_spend_forecast_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
+  CONSTRAINT "fk_fct_spend_forecast_vendor_key" FOREIGN KEY ("vendor_key") REFERENCES "gold"."dim_vendor" ("vendor_key"),
+  CONSTRAINT "fk_fct_spend_forecast_as_of_date_key" FOREIGN KEY ("as_of_date_key") REFERENCES "gold"."dim_date" ("date_key")
+);
+COMMENT ON TABLE "gold"."fct_spend_forecast" IS 'Budget, actual spend and forecast at completion per study and vendor at the data cut. The forecast is the actual spend to date plus the planned budget still to come, scaled by the vendor''s spend-to-budget ratio to date. Grain: One row per study and vendor at the data cut.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."study_key" IS 'Study.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."vendor_key" IS 'Vendor; 0 for investigator grants.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."as_of_date_key" IS 'The data cut the forecast was made at.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."budget_to_date_usd" IS 'Budget for every quarter booked up to the data cut, whole US dollars.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."actual_to_date_usd" IS 'Actual spend for every quarter booked up to the data cut, whole US dollars.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."remaining_budget_usd" IS 'Planned budget for the quarters after the data cut, whole US dollars; 0 once the study''s final report is in.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."budget_at_completion_usd" IS 'Budget to date plus the remaining budget, whole US dollars.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."forecast_at_completion_usd" IS 'Actual spend to date plus the remaining budget times actual over budget to date, rounded to whole US dollars; the remaining budget as planned when nothing was budgeted to date.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."variance_at_completion_usd" IS 'Forecast minus budget at completion, whole US dollars; above 0 is a forecast overrun.';
+COMMENT ON COLUMN "gold"."fct_spend_forecast"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_kri_snapshot" (
   "site_key"          INTEGER NOT NULL,

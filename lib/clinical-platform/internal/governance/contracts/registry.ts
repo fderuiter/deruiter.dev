@@ -233,6 +233,14 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     MONTHLY_CLOSE,
     OPERATIONAL
   ),
+  // 1.0.0 (#2912): the approved budget plan, quarter by quarter.
+  "silver.finance_plan_line": silver(
+    "Budget plan lines",
+    "Finance",
+    FINANCE,
+    MONTHLY_CLOSE,
+    OPERATIONAL
+  ),
   "silver.cec_adjudication": silver(
     "Event adjudications",
     "Clinical events committee",
@@ -301,6 +309,13 @@ export const PRODUCT_REGISTRATIONS: Readonly<
   ),
   "gold.fct_milestone": gold("Milestone facts", "Portfolio mart", PORTFOLIO),
   "gold.fct_spend": gold("Spend facts", "Finance mart", FINANCE, MONTHLY_CLOSE),
+  // 1.0.0 (#2912): budget and forecast at completion.
+  "gold.fct_spend_forecast": gold(
+    "Spend forecast facts",
+    "Finance mart",
+    FINANCE,
+    MONTHLY_CLOSE
+  ),
   "gold.fct_kri_snapshot": gold("KRI snapshots", "RBQM mart", QUALITY),
   [STUDY_DATA_PRODUCT_ID]: {
     name: "Study data: SDTM and ADaM",

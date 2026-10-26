@@ -25,6 +25,9 @@ const DEVIATION = "gold.fct_deviation";
 const MONITORING = "gold.fct_monitoring_visit";
 const PLANNED_MONITORING = "gold.fct_planned_monitoring_visit";
 const SPEND = "gold.fct_spend";
+const FORECAST = "gold.fct_spend_forecast";
+/** The forecast's data cut: the date its measures are dated by. */
+const AS_OF = "as_of_date_key";
 const SITE = "gold.dim_site";
 const ADJUDICATION = "gold.fct_cec_adjudication";
 
@@ -373,6 +376,35 @@ function agedQueries(
   );
 }
 const actualSpend = measure(SPEND, "sum", col("actual_usd"), "month_date_key");
+
+const FINANCE_OWNER = "Clinical Finance Lead";
+const FINANCE_STEWARD = "Finance Data Steward";
+const USD: MetricFormat = { style: "currency", decimals: 0 };
+
+/**
+ * The at-completion sums of `gold.fct_spend_forecast`: id, name,
+ * description and the column summed.
+ */
+const AT_COMPLETION: readonly (readonly [string, string, string, string])[] = [
+  [
+    "budget_at_completion",
+    "Budget at completion",
+    "The budget booked up to the data cut plus the planned budget for every quarter after it, up to the planned final report. Once the final report is in, nothing remains and it is the budget booked.",
+    "budget_at_completion_usd",
+  ],
+  [
+    "forecast_at_completion",
+    "Forecast at completion",
+    "Actual spend up to the data cut plus the planned budget still to come, scaled by each vendor's actual spend over its budget to date. A vendor running 10% over budget is forecast to stay 10% over for the rest of the study. Each vendor is forecast on its own ratio, so the vendors add up to the study.",
+    "forecast_at_completion_usd",
+  ],
+  [
+    "variance_at_completion",
+    "Variance at completion",
+    "Forecast at completion minus budget at completion. Above 0 is a forecast overrun, below 0 an underrun, the same sign as spend variance.",
+    "variance_at_completion_usd",
+  ],
+];
 
 /**
  * The governed metrics, grouped by display folder. Every one is computable
@@ -1129,6 +1161,76 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = Object.freeze([
     glossaryTerm: "enrollment-term",
     displayFolder: "Finance",
   }),
+  define(
+    {
+      id: "actual_spend",
+      name: "Actual spend",
+      description:
+        "Actual spend booked up to the data cut, in US dollars, with each quarter spread evenly over its three months.",
+      formula: { kind: "simple", measure: actualSpend },
+      allowedDimensions: [...STUDY_DIMENSIONS, "vendor", "month"],
+      unit: "USD",
+      format: USD,
+      owner: FINANCE_OWNER,
+      steward: FINANCE_STEWARD,
+      glossaryTerm: "budget-burn-term",
+      displayFolder: "Finance",
+    },
+    2912
+  ),
+  ...AT_COMPLETION.map(([id, name, description, column]) =>
+    define(
+      {
+        id,
+        name,
+        description,
+        formula: {
+          kind: "simple",
+          measure: measure(FORECAST, "sum", col(column), AS_OF),
+        },
+        allowedDimensions: [...STUDY_DIMENSIONS, "vendor"],
+        unit: "USD",
+        format: USD,
+        owner: FINANCE_OWNER,
+        steward: FINANCE_STEWARD,
+        glossaryTerm: "forecast-at-completion-term",
+        displayFolder: "Finance",
+      },
+      2912
+    )
+  ),
+  define(
+    {
+      id: "forecast_vs_budget_at_completion",
+      name: "Forecast against budget at completion",
+      description:
+        "Forecast at completion as a share of the budget at completion. Above 100% means the study or vendor is forecast to overrun its budget.",
+      formula: {
+        kind: "ratio",
+        numerator: measure(
+          FORECAST,
+          "sum",
+          col("forecast_at_completion_usd"),
+          AS_OF
+        ),
+        denominator: measure(
+          FORECAST,
+          "sum",
+          col("budget_at_completion_usd"),
+          AS_OF
+        ),
+        scale: 1,
+      },
+      allowedDimensions: [...STUDY_DIMENSIONS, "vendor"],
+      unit: "share of budget",
+      format: PERCENT,
+      owner: FINANCE_OWNER,
+      steward: FINANCE_STEWARD,
+      glossaryTerm: "forecast-at-completion-term",
+      displayFolder: "Finance",
+    },
+    2912
+  ),
 ]);
 
 /**
@@ -1144,14 +1246,6 @@ export const METRIC_GAPS: readonly MetricGap[] = Object.freeze([
     missing:
       "A gold fact of expected eTMF documents with due and filed date keys and the site and study keys.",
     nearestMetricId: null,
-  },
-  {
-    name: "Forecast at completion",
-    reason:
-      "gold.fct_spend holds budget only for months up to the data cut, so there is no budget at completion to forecast against.",
-    missing:
-      "The approved budget for future periods, or a budget at completion per study and vendor.",
-    nearestMetricId: "budget_burn_vs_plan",
   },
   {
     name: "Cost per randomised subject",

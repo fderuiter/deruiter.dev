@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.5.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.6.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -729,6 +729,52 @@ const SILVER: readonly TableDraft[] = [
       ],
       ["budget_usd", "integer", "Budgeted amount, whole US dollars."],
       ["actual_usd", "integer", "Actual spend, whole US dollars."],
+      [
+        "source_system",
+        "string",
+        "Source system the record came from.",
+        { classification: "internal", from: ["source"] },
+      ],
+    ],
+  },
+  {
+    layer: "silver",
+    name: "finance_plan_line",
+    kind: "conformed",
+    description:
+      "The approved budget plan per study, cost category and calendar quarter, from the study's start to its planned final report.",
+    grain: "One row per study, cost category and quarter.",
+    primaryKey: ["study_id", "cost_category", "fiscal_quarter"],
+    classification: "confidential",
+    source: "bronze.financePlan",
+    synthetic: true,
+    columns: [
+      ["study_id", "string", "Protocol id.", { classification: "internal" }],
+      [
+        "vendor_id",
+        "string",
+        "Vendor id, or null for investigator grants.",
+        { nullable: true, classification: "internal" },
+      ],
+      [
+        "cost_category",
+        "string",
+        "Cost category.",
+        { classification: "internal", from: ["category"] },
+      ],
+      [
+        "fiscal_quarter",
+        "string",
+        "Calendar quarter, for example 2027-Q1.",
+        { length: 7, classification: "internal", from: ["period"] },
+      ],
+      [
+        "quarter_start_on",
+        "date",
+        "First day of the quarter.",
+        { classification: "internal", from: ["period"], how: "quarter-start" },
+      ],
+      ["budget_usd", "integer", "Planned budget, whole US dollars."],
       [
         "source_system",
         "string",
@@ -1942,6 +1988,112 @@ const FACTS: readonly TableDraft[] = [
         "integer",
         "Actual minus budget, whole US dollars.",
         { from: ["budget_usd", "actual_usd"], how: "subtract" },
+      ],
+    ],
+  },
+  {
+    layer: "gold",
+    name: "fct_spend_forecast",
+    kind: "fact",
+    description:
+      "Budget, actual spend and forecast at completion per study and vendor at the data cut. The forecast is the actual spend to date plus the planned budget still to come, scaled by the vendor's spend-to-budget ratio to date.",
+    grain: "One row per study and vendor at the data cut.",
+    primaryKey: ["study_key", "vendor_key"],
+    classification: "confidential",
+    source: "silver.finance_line",
+    synthetic: true,
+    columns: [
+      [
+        "study_key",
+        "integer",
+        "Study.",
+        {
+          ...key.study,
+          classification: "internal",
+          from: ["study_id", "gold.dim_study.study_key"],
+        },
+      ],
+      [
+        "vendor_key",
+        "integer",
+        "Vendor; 0 for investigator grants.",
+        {
+          ...key.vendor,
+          classification: "internal",
+          from: ["vendor_id", "gold.dim_vendor.vendor_key"],
+        },
+      ],
+      [
+        "as_of_date_key",
+        "integer",
+        "The data cut the forecast was made at.",
+        {
+          ...key.date,
+          classification: "internal",
+          from: [],
+          how: "data-cut",
+        },
+      ],
+      [
+        "budget_to_date_usd",
+        "integer",
+        "Budget for every quarter booked up to the data cut, whole US dollars.",
+        { from: ["budget_usd"], how: "aggregate" },
+      ],
+      [
+        "actual_to_date_usd",
+        "integer",
+        "Actual spend for every quarter booked up to the data cut, whole US dollars.",
+        { from: ["actual_usd"], how: "aggregate" },
+      ],
+      [
+        "remaining_budget_usd",
+        "integer",
+        "Planned budget for the quarters after the data cut, whole US dollars; 0 once the study's final report is in.",
+        {
+          from: [
+            "silver.finance_plan_line.budget_usd",
+            "silver.finance_plan_line.quarter_start_on",
+            "silver.ctms_milestone.milestone_kind",
+            "silver.ctms_milestone.actual_on",
+          ],
+          how: "aggregate",
+        },
+      ],
+      [
+        "budget_at_completion_usd",
+        "integer",
+        "Budget to date plus the remaining budget, whole US dollars.",
+        {
+          from: ["budget_usd", "silver.finance_plan_line.budget_usd"],
+          how: "add",
+        },
+      ],
+      [
+        "forecast_at_completion_usd",
+        "integer",
+        "Actual spend to date plus the remaining budget times actual over budget to date, rounded to whole US dollars; the remaining budget as planned when nothing was budgeted to date.",
+        {
+          from: [
+            "budget_usd",
+            "actual_usd",
+            "silver.finance_plan_line.budget_usd",
+          ],
+          how: "forecast-at-completion",
+        },
+      ],
+      [
+        "variance_at_completion_usd",
+        "integer",
+        "Forecast minus budget at completion, whole US dollars; above 0 is a forecast overrun.",
+        {
+          from: [
+            "budget_usd",
+            "actual_usd",
+            "silver.finance_plan_line.budget_usd",
+          ],
+          how: "subtract",
+        },
       ],
     ],
   },

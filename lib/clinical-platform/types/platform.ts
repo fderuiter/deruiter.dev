@@ -400,6 +400,24 @@ export interface FinanceLine extends BronzeRecord {
 }
 
 /**
+ * One quarter of a study's approved budget plan for one cost category, from
+ * the study's start to its planned final report. Unlike a `FinanceLine` it
+ * covers quarters still to come, so it gives the budget at completion.
+ */
+export interface FinancePlanLine extends BronzeRecord {
+  /** Study id. */
+  readonly studyId: string;
+  /** Vendor id, or `null` for investigator grants paid to sites. */
+  readonly vendorId: string | null;
+  /** Cost category. */
+  readonly category: string;
+  /** Calendar quarter, for example `2027-Q1`. */
+  readonly period: string;
+  /** Planned budget, whole US dollars. */
+  readonly budgetUsd: number;
+}
+
+/**
  * One principal investigator assignment at one site, as CTMS holds it. The
  * feed comes from `siteStaffFeed`, not from `generatePortfolio`.
  */
@@ -511,6 +529,8 @@ export interface BronzeFeeds {
   readonly etmf: readonly EtmfDocument[];
   /** Finance: budget against actual. */
   readonly finance: readonly FinanceLine[];
+  /** Finance: the approved budget plan, quarter by quarter to completion. */
+  readonly financePlan: readonly FinancePlanLine[];
   /** Clinical events committee adjudications, for studies that have one. */
   readonly cec: readonly CecAdjudication[];
 }
@@ -1238,7 +1258,10 @@ export interface ReportCalculation {
 export interface ReportTick {
   /** Value the gridline marks. */
   readonly value: number;
-  /** Label, with the metrics' format. */
+  /**
+   * Label, with the metrics' format; written compactly (`$10M`, `25K`) on
+   * an axis that reaches 10,000 or more, so the labels fit a narrow chart.
+   */
   readonly text: string;
 }
 

@@ -8,10 +8,46 @@ import {
   addDaysToIsoDate,
 } from "@/lib/crf/visit-window";
 import type { StudyVisit } from "@/lib/crf/types";
+import { STUDY_PRESETS } from "@/lib/crf/presets";
 import { expectWithinTimingBudget } from "../helpers/timing-budget";
 
 describe("CRF Visit Window Conflict Evaluator & Forecasting Engine", () => {
   describe("evaluateVisitWindowConflicts", () => {
+    it("leaves unscheduled visits off the timeline (#2927)", () => {
+      const visits: StudyVisit[] = [
+        {
+          id: "v_eos",
+          oid: "SE.EOS",
+          name: "End of Study",
+          visitType: "Scheduled",
+          targetDay: 120,
+          windowBefore: 7,
+          windowAfter: 7,
+          assignedFormIds: [],
+        },
+        {
+          id: "v_unsched",
+          oid: "SE.UNSCHED",
+          name: "Unscheduled Visit",
+          visitType: "Unscheduled",
+          targetDay: 0,
+          windowBefore: 0,
+          windowAfter: 0,
+          assignedFormIds: [],
+        },
+      ];
+      expect(evaluateVisitWindowConflicts(visits).conflicts).toEqual([]);
+    });
+
+    it("opens every study preset with no window errors (#2927)", () => {
+      for (const preset of STUDY_PRESETS) {
+        const errors = evaluateVisitWindowConflicts(
+          preset.study.visits
+        ).conflicts.filter((c) => c.severity === "error");
+        expect(errors, preset.id).toEqual([]);
+      }
+    });
+
     it("detects overlap when targetDay_A + windowAfter_A >= targetDay_B - windowBefore_B (symmetric windows)", () => {
       const visits: StudyVisit[] = [
         {

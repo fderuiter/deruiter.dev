@@ -53,6 +53,7 @@ would carry.
 | Drug kits | `silver.irt_kit` | IRT | Clinical Supply Lead | IRT Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
 | TMF documents | `silver.etmf_document` | eTMF | Trial Master File Lead | TMF Data Steward | internal | No | 1 day | 99% | 25 years | 1.0.0 |
 | Finance lines | `silver.finance_line` | Finance | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99% | 10 years | 1.0.0 |
+| Budget plan lines | `silver.finance_plan_line` | Finance | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99% | 10 years | 1.0.0 |
 | Event adjudications | `silver.cec_adjudication` | Clinical events committee | Medical Safety Lead | Safety Data Steward | confidential | Yes | 1 day | 99% | 25 years | 1.0.0 |
 | Study dimension | `gold.dim_study` | Conformed dimensions | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Site dimension | `gold.dim_site` | Conformed dimensions | Clinical Operations Lead | Clinical Operations Data Steward | confidential | No | 1 day | 99.5% | 10 years | 1.1.0 |
@@ -70,6 +71,7 @@ would carry.
 | Planned monitoring visit facts | `gold.fct_planned_monitoring_visit` | Operations mart | Clinical Monitoring Lead | Clinical Operations Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Milestone facts | `gold.fct_milestone` | Portfolio mart | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
+| Spend forecast facts | `gold.fct_spend_forecast` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.4.0 |
 
@@ -77,7 +79,7 @@ would carry.
 
 | Period | Basis | Products |
 | --- | --- | --- |
-| 10 years | Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum. | 23 |
+| 10 years | Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum. | 25 |
 | 25 years | Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial. | 12 |
 
 ## Lineage and consumers
@@ -91,7 +93,7 @@ would carry.
 | `silver.edc_subject` | `bronze.edc.subjects` | `gold.dim_site`, `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_kri_snapshot` |
 | `silver.edc_visit` | `bronze.edc.visits` | `gold.fct_visit`, `gold.fct_kri_snapshot` |
 | `silver.edc_query` | `bronze.edc.queries` | `gold.fct_query`, `gold.fct_kri_snapshot` |
-| `silver.ctms_milestone` | `bronze.ctms.milestones` | `gold.dim_milestone`, `gold.fct_milestone` |
+| `silver.ctms_milestone` | `bronze.ctms.milestones` | `gold.dim_milestone`, `gold.fct_milestone`, `gold.fct_spend_forecast` |
 | `silver.ctms_monitoring_plan` | `bronze.ctms.monitoringPlans` | `gold.dim_monitoring_plan`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit` |
 | `silver.ctms_monitoring_visit` | `bronze.ctms.monitoringVisits` | `gold.dim_site`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit` |
 | `silver.ctms_deviation` | `bronze.ctms.deviations` | `gold.fct_deviation`, `gold.fct_kri_snapshot` |
@@ -99,13 +101,14 @@ would carry.
 | `silver.irt_randomization` | `bronze.irt.randomizations` | None recorded |
 | `silver.irt_kit` | `bronze.irt.kits` | None recorded |
 | `silver.etmf_document` | `bronze.etmf` | None recorded |
-| `silver.finance_line` | `bronze.finance` | `gold.fct_spend` |
+| `silver.finance_line` | `bronze.finance` | `gold.fct_spend`, `gold.fct_spend_forecast` |
+| `silver.finance_plan_line` | `bronze.financePlan` | `gold.fct_spend_forecast` |
 | `silver.cec_adjudication` | `bronze.cec` | `gold.fct_cec_adjudication` |
-| `gold.dim_study` | `silver.study` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_cec_adjudication`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_milestone`, `gold.fct_spend`, `gold.fct_kri_snapshot` |
+| `gold.dim_study` | `silver.study` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_cec_adjudication`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_milestone`, `gold.fct_spend`, `gold.fct_spend_forecast`, `gold.fct_kri_snapshot` |
 | `gold.dim_site` | `silver.ctms_monitoring_visit`, `silver.ctms_site_staff`, `silver.edc_subject`, `silver.site`, `silver.study` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_cec_adjudication`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_kri_snapshot`, `enrollment_vs_plan`, `site_activation_cycle_time`, `sites_selected`, `sites_contracted`, `sites_irb_approved`, `sites_initiated`, `sites_activated`, `sites_with_first_subject_in`, `selection_to_contract_days`, `contract_to_irb_approval_days`, `irb_approval_to_initiation_days`, `initiation_to_activation_days`, `activation_to_first_subject_in_days` |
 | `gold.dim_country` | `silver.site` | `gold.fct_enrollment`, `gold.fct_visit`, `gold.fct_query`, `gold.fct_deviation`, `gold.fct_cec_adjudication`, `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit`, `gold.fct_kri_snapshot` |
 | `gold.dim_date` | None | None recorded |
-| `gold.dim_vendor` | `silver.vendor` | `gold.fct_spend` |
+| `gold.dim_vendor` | `silver.vendor` | `gold.fct_spend`, `gold.fct_spend_forecast` |
 | `gold.dim_milestone` | `silver.ctms_milestone` | `gold.fct_milestone` |
 | `gold.dim_monitoring_plan` | `silver.ctms_monitoring_plan` | `gold.fct_monitoring_visit`, `gold.fct_planned_monitoring_visit` |
 | `gold.fct_enrollment` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.edc_subject`, `silver.site` | `subjects_screened`, `subjects_enrolled`, `enrollment_vs_plan`, `screen_failure_rate`, `screen_failures`, `early_termination_rate`, `important_deviation_rate`, `non_important_deviation_rate`, `subjects_with_important_deviation`, `cost_per_enrolled_subject` |
@@ -116,7 +119,8 @@ would carry.
 | `gold.fct_monitoring_visit` | `gold.dim_country`, `gold.dim_monitoring_plan`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_monitoring_plan`, `silver.ctms_monitoring_visit`, `silver.site` | `sdv_completion`, `monitoring_reports_overdue`, `monitoring_report_cycle_time_median` |
 | `gold.fct_planned_monitoring_visit` | `gold.dim_country`, `gold.dim_monitoring_plan`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_monitoring_plan`, `silver.ctms_monitoring_visit`, `silver.site` | `monitoring_visits_overdue` |
 | `gold.fct_milestone` | `gold.dim_milestone`, `gold.dim_study`, `silver.ctms_milestone` | `protocol_final_to_fpi_days`, `fpi_to_lpi_days`, `lplv_to_dbl_days` |
-| `gold.fct_spend` | `gold.dim_study`, `gold.dim_vendor`, `silver.finance_line` | `budget_burn_vs_plan`, `cost_per_enrolled_subject` |
+| `gold.fct_spend` | `gold.dim_study`, `gold.dim_vendor`, `silver.finance_line` | `budget_burn_vs_plan`, `cost_per_enrolled_subject`, `actual_spend` |
+| `gold.fct_spend_forecast` | `gold.dim_study`, `gold.dim_vendor`, `silver.ctms_milestone`, `silver.finance_line`, `silver.finance_plan_line` | `budget_at_completion`, `forecast_at_completion`, `variance_at_completion`, `forecast_vs_budget_at_completion` |
 | `gold.fct_kri_snapshot` | `gold.dim_country`, `gold.dim_site`, `gold.dim_study`, `silver.ctms_deviation`, `silver.edc_query`, `silver.edc_subject`, `silver.edc_visit`, `silver.site` | None recorded |
 | `study-data-pipeline` | `usdm.DEMO-301` | None recorded |
 

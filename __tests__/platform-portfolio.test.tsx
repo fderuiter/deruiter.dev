@@ -178,6 +178,69 @@ describe("the outlier sentence (#2911)", () => {
   });
 });
 
+describe("budget against forecast at completion (#2912)", () => {
+  const section = () =>
+    screen
+      .getByRole("heading", {
+        level: 2,
+        name: "Budget against forecast at completion",
+      })
+      .closest("section")!;
+
+  it("totals the portfolio and names the study and vendor forecast to overrun", () => {
+    view();
+    const figures = within(section()).getAllByRole("definition");
+    expect(figures.map((f) => f.textContent)).toEqual([
+      "$67,121,250",
+      "$46,465,932",
+      "$69,930,442",
+      "$2,809,192",
+    ]);
+    expect(within(section()).getByText("Forecast overrun")).toBeTruthy();
+    expect(section().textContent).toContain(
+      "The forecast is 104.2% of the budget at completion. Forecast to overrun: DEMO-302, by $4,628,681 (115.4% of budget). Vendors forecast to overrun across their studies: Quillfeather Clinical Research, by $4,935,420 (129.4% of budget)."
+    );
+  });
+
+  it("follows the totals with the four governed finance reports", () => {
+    view();
+    for (const title of [
+      "Budget, actual and forecast at completion by study",
+      "Budget, actual and forecast at completion by vendor",
+      "Variance at completion and cost per enrolled subject by study",
+      "Variance at completion by vendor",
+    ]) {
+      expect(
+        screen.getByRole("heading", { level: 2, name: title })
+      ).toBeTruthy();
+    }
+  });
+
+  it("says so when nobody is forecast to overrun, and calls an underrun one", () => {
+    render(
+      <main>
+        <PortfolioView
+          dashboard={{
+            ...dashboard,
+            finance: {
+              ...dashboard.finance,
+              varianceAtCompletion: -1000,
+              varianceAtCompletionText: "-$1,000",
+              studyOverruns: [],
+              vendorOverruns: [],
+            },
+          }}
+        />
+      </main>
+    );
+    expect(within(section()).getByText("Forecast underrun")).toBeTruthy();
+    expect(within(section()).getByText("$1,000")).toBeTruthy();
+    expect(section().textContent).toContain(
+      "No study is forecast to overrun its budget. No vendor is forecast to overrun across its studies."
+    );
+  });
+});
+
 describe("PortfolioDashboard (#2911)", () => {
   it("shows a placeholder, then the dashboard computed off the page", async () => {
     render(<PortfolioDashboard />);

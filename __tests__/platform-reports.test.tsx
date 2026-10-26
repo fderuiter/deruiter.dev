@@ -123,8 +123,10 @@ describe("ReportView (#2625)", () => {
         /Signed off by the Clinical Operations Lead on 2026-10-24 for version 1\.0\.0/
       )
     ).toBeTruthy();
+    // The metric keeps its own name and capitals, so a plural name still
+    // reads as one sentence (#2888).
     const panel = screen.getByText(
-      "How subjects enrolled is calculated"
+      "How “Subjects enrolled” is calculated"
     ).parentElement!;
     expect(panel.textContent).toContain("subjects_enrolled · version");
     expect(panel.querySelector("code")!.textContent).toBe(

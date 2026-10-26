@@ -201,7 +201,7 @@ export function ReportView({
             className="group border border-white/[0.08] bg-[#13151a]"
           >
             <summary className="cursor-pointer px-3 py-2 text-sm text-slate-200 marker:text-slate-500">
-              How {calc.name.toLowerCase()} is calculated
+              How “{calc.name}” is calculated
             </summary>
             <div className="space-y-3 border-t border-white/[0.08] px-3 py-3 text-xs leading-relaxed text-slate-300">
               <p>{calc.description}</p>

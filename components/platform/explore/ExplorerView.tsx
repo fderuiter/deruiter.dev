@@ -39,10 +39,10 @@ const STEP_STATUS = {
 } as const;
 
 const control =
-  "min-h-11 w-full min-w-0 border border-white/[0.12] bg-[#13151a] px-3 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-amber-400";
+  "min-h-12 w-full min-w-0 border border-white/[0.12] bg-[#13151a] px-3 text-sm text-slate-100 focus-visible:outline-2 focus-visible:outline-amber-400";
 
 const button =
-  "inline-flex min-h-11 items-center justify-center border border-white/[0.12] bg-[#13151a] px-3 text-sm text-slate-100 hover:border-amber-400/60 focus-visible:outline-2 focus-visible:outline-amber-400 active:scale-[0.98]";
+  "inline-flex items-center justify-center border border-white/[0.12] bg-[#13151a] px-3 text-sm text-slate-100 hover:border-amber-400/60 focus-visible:outline-2 focus-visible:outline-amber-400 active:scale-[0.98]";
 
 const METRICS = explorerMetrics();
 
@@ -113,7 +113,7 @@ function FilterEditor({
         {(["in", "not-in"] as const).map((operator) => (
           <label
             key={operator}
-            className="inline-flex min-h-11 items-center gap-2"
+            className="inline-flex min-h-12 items-center gap-2"
           >
             <input
               type="radio"
@@ -144,7 +144,7 @@ function FilterEditor({
             {values.map((value) => (
               <label
                 key={value}
-                className="flex min-h-11 min-w-0 items-center gap-2 text-sm text-slate-200"
+                className="flex min-h-12 min-w-0 items-center gap-2 text-sm text-slate-200"
               >
                 <input
                   type="checkbox"
@@ -166,7 +166,11 @@ function FilterEditor({
           </div>
         </>
       )}
-      <button type="button" onClick={onRemove} className={`${button} mt-3`}>
+      <button
+        type="button"
+        onClick={onRemove}
+        className={`${button} mt-3 min-h-12`}
+      >
         {`Remove the ${label.toLowerCase()} filter`}
       </button>
     </fieldset>
@@ -397,7 +401,7 @@ export function ExplorerView({
                       <button
                         type="button"
                         aria-label={`${dimensionLabel(id)}: stop grouping by it`}
-                        className={button}
+                        className={`${button} min-h-12`}
                         onClick={() =>
                           onChange(
                             {
@@ -420,7 +424,7 @@ export function ExplorerView({
                         </span>
                       </button>
                     ) : (
-                      <span className="inline-flex min-h-11 items-center border border-white/[0.08] px-3 text-sm text-slate-300">
+                      <span className="inline-flex min-h-12 items-center border border-white/[0.08] px-3 text-sm text-slate-300">
                         {`${dimensionLabel(id)}, kept: the metric is defined per study`}
                       </span>
                     )}
@@ -575,7 +579,7 @@ export function ExplorerView({
             {choices.visuals.map((option) => (
               <label
                 key={option}
-                className="inline-flex min-h-11 items-center gap-2 text-sm text-slate-200"
+                className="inline-flex min-h-12 items-center gap-2 text-sm text-slate-200"
               >
                 <input
                   type="radio"
@@ -634,7 +638,7 @@ export function ExplorerView({
           >
             <button
               type="button"
-              className={button}
+              className={`${button} min-h-12`}
               onClick={() => {
                 copyToClipboard(
                   `${getActiveHostUrl()}/platform/explore#${hash}`
@@ -648,7 +652,7 @@ export function ExplorerView({
             </button>
             <button
               type="button"
-              className={button}
+              className={`${button} min-h-12`}
               onClick={() =>
                 download(`${result.spec.id}.csv`, explorationCsv(result.report))
               }

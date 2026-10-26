@@ -15,7 +15,6 @@ import { FieldManualButton } from "@/components/FieldManualButton";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import {
   controlHint,
-  HoldDpad,
   TouchControlsGate,
   swipeDirection,
   TouchButton,
@@ -29,7 +28,7 @@ import {
   type DockSize,
 } from "@/components/arcade/mobile/docks";
 import { BottomSheet } from "@/components/arcade/mobile/ui";
-import { PhoneStage, TabletStage } from "@/components/arcade/stage";
+import { PhoneStage } from "@/components/arcade/stage";
 import { DynamicCRTCalibrationModal as CRTCalibrationModal } from "@/components/arcade/DynamicCRTCalibrationModal";
 import {
   ActionSinkProvider,
@@ -41,6 +40,7 @@ import {
 } from "@/lib/arcade";
 import { triggerHaptic } from "@/lib/haptics";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import type { ThreatLevel } from "@/components/retro-labyrinth/threat";
 import { DarknetMarket } from "@/components/retro-labyrinth/parts/DarknetMarket";
 import { RoomClearedCard } from "@/components/retro-labyrinth/parts/RoomClearedCard";
 import { ClassSelect } from "@/components/retro-labyrinth/parts/ClassSelect";
@@ -202,6 +202,47 @@ function phoneActionMap(
   return { ...LABYRINTH_ACTIONS, actions };
 }
 
+/** What the shared layout hands a view's stage (#2967). */
+export interface LabyrinthStageParts {
+  /** The maze frame, its overlays and the accessible subtree. */
+  readonly maze: React.ReactNode;
+  /** The room status: route, exit, bars, tool, EMP and the event line. */
+  readonly roomPanel: React.ReactNode;
+  /** How close a patrol is, for the HUD's warning. */
+  readonly threat: ThreatLevel;
+  /** Whether key numbers show, which they do while a keyboard is in use. */
+  readonly showKeyHints: boolean;
+  /** The latest tool answer, or null. */
+  readonly toast: string | null;
+  /** Whether the options sheet is open. */
+  readonly optionsOpen: boolean;
+  /** Opens the options sheet. */
+  readonly onOptions: () => void;
+  /** Whether held movement stops: the room is not running or a sheet is open. */
+  readonly controlsPaused: boolean;
+  /** Opens the darknet market. */
+  readonly openMarket: () => void;
+}
+
+/**
+ * Props for a view's {@link LabyrinthStage}. The Options key's ref sits apart
+ * from the parts, since a render may not read an object holding a ref.
+ */
+export interface LabyrinthStageProps {
+  /** The parts the shared layout builds. */
+  readonly parts: LabyrinthStageParts;
+  /** The Options key, so the sheet can hand focus back to it. */
+  readonly optionsButtonRef: React.RefObject<HTMLButtonElement | null>;
+}
+
+/** A view's own stage for the shared layout (#2967). */
+export interface LabyrinthStage {
+  /** Classes the touch maze frame adds on this stage. */
+  readonly mazeClassName: string;
+  /** Lays the stage out around the shared parts. */
+  readonly Stage: React.ComponentType<LabyrinthStageProps>;
+}
+
 /** Props for {@link LabyrinthLayout}. */
 interface LabyrinthLayoutProps {
   /** False while the cabinet keeps the game mounted but hidden. */
@@ -216,19 +257,25 @@ interface LabyrinthLayoutProps {
    * phone stage; a tablet keeps the orientation hint and the tablet stage.
    */
   readonly phone: boolean;
+  /**
+   * The tablet's stage (#2967): the tablet view supplies it, so its docks,
+   * cards and portrait sizing live with that view.
+   */
+  readonly tabletStage?: LabyrinthStage;
 }
 
 /**
  * Retro Labyrinth's layout (ADR 0062): the maze, its HUD, hotbar, cards and
  * controls, drawn from the session above it. The views choose `touch` and
  * `phone` for it, so it reads no device itself. The phone lays out on
- * PhoneStage with its own HUD (#2918), the tablet on TabletStage (#2860,
- * #2861), and the desktop in its column.
+ * PhoneStage with its own HUD (#2918), the tablet on the stage its view
+ * supplies (#2967), and the desktop in its column.
  */
 export function LabyrinthLayout({
   isMounted = true,
   touch,
   phone,
+  tabletStage,
 }: LabyrinthLayoutProps) {
   // The view always sits inside a provider: RetroLabyrinth makes one when the
   // cabinet has not.
@@ -238,7 +285,6 @@ export function LabyrinthLayout({
     gameStatus,
     gameMode,
     stage,
-    roomIndex,
     runLength,
     isFinalRoom,
     currentMaze,
@@ -269,9 +315,7 @@ export function LabyrinthLayout({
     dronesStunned,
     activeSideEffect,
     runComplete,
-    boss,
     tspNodes,
-    exitLock,
     exitLocked,
     wallShiftLabel,
     hexPuzzle,
@@ -292,12 +336,6 @@ export function LabyrinthLayout({
   const phoneDevice = phone;
   // A portrait tablet has the room for larger keys under the maze.
   const portraitView = useMediaQuery("(orientation: portrait)");
-  // A landscape tablet frames the maze with a column each side: the route
-  // and the d-pad on the left, the objective and the tools on the right.
-  const tabletLandscape = phoneCabinet && !phoneDevice && !portraitView;
-  // A portrait tablet puts the route, the objective and the boss bar under
-  // the maze and the room status, in the room the docks leave (#2861).
-  const tabletPortrait = phoneCabinet && !phoneDevice && portraitView;
   // Key numbers are keyboard hints, so they show only while a keyboard is in use.
   const showKeyHints = useInputModality() === "keyboard";
   const resumeHint = useControlHint(RESUME_HINT);
@@ -629,93 +667,6 @@ export function LabyrinthLayout({
     setOptionsOpen(false);
   };
 
-  const roomBadge =
-    gameMode === "roguelike"
-      ? `ROOM ${String(roomIndex + 1).padStart(2, "0")}`
-      : `SUBNET 0${stage}`;
-
-  // The tablet's HUD row. The phone has its own (LabyrinthPhoneHud).
-  const tabletHud = (
-    <div className="flex h-full w-full min-w-0 items-center gap-2 pl-1 text-xs font-bold">
-      <span
-        className="shrink-0 text-neutral-300"
-        data-testid="labyrinth-phone-floor"
-      >
-        {roomBadge}
-      </span>
-      {wallShiftLabel && (
-        <span
-          className="hidden landscape:min-[700px]:inline shrink-0 text-amber-300"
-          data-testid="labyrinth-wall-telegraph-phone"
-        >
-          {wallShiftLabel}
-        </span>
-      )}
-      <span className="flex shrink-0 items-center gap-1">
-        <span className="text-neutral-400">HP</span>
-        <span className="h-2 w-10 overflow-hidden rounded-full border border-neutral-800 bg-neutral-900">
-          <span
-            className={`block h-full motion-safe:transition-all motion-safe:duration-200 ${
-              playerHp > 50
-                ? "bg-emerald-500"
-                : playerHp > 25
-                  ? "bg-amber-500"
-                  : "bg-rose-500"
-            }`}
-            style={{ width: `${Math.max(0, (playerHp / maxPlayerHp) * 100)}%` }}
-          />
-        </span>
-        <span className="text-neutral-300" data-testid="labyrinth-phone-hp">
-          {playerHp}
-        </span>
-      </span>
-      {gameMode === "roguelike" && boss && (
-        <span
-          className="shrink-0 text-rose-400"
-          data-testid="labyrinth-phone-boss"
-        >
-          BOSS {boss.defeated ? "DOWN" : boss.hp}
-        </span>
-      )}
-      <span className="min-w-0 flex-1" aria-hidden="true" />
-      <span
-        className="shrink-0 text-zinc-100"
-        data-testid="labyrinth-phone-score"
-      >
-        {score}
-      </span>
-      <span
-        className="flex shrink-0 items-center gap-1"
-        data-testid="labyrinth-phone-ram"
-      >
-        {threatLevel !== "none" && (
-          <span
-            role="status"
-            className={`font-bold uppercase ${
-              threatLevel === "red" ? "text-rose-400" : "text-amber-400"
-            }`}
-          >
-            {threatLevel === "red" ? "Patrol adjacent" : "Patrol 2 steps out"}
-          </span>
-        )}
-        <span className="text-slate-400">RAM</span>
-        <span className="text-neutral-300">
-          {currentRam}/{maxRam}
-        </span>
-      </span>
-      <button
-        ref={optionsButtonRef}
-        type="button"
-        onClick={openOptionsSheet}
-        aria-expanded={optionsOpen}
-        aria-controls="labyrinth-options-sheet"
-        className="h-11 shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-2.5 text-xs font-bold text-zinc-200 touch-manipulation active:scale-[0.98]"
-      >
-        Options
-      </button>
-    </div>
-  );
-
   // The tablet's room panel, kept to a few short rows: the route and exit, the
   // bars, the tool and EMP with the wall countdown, and the event line. CSS
   // shows it on a portrait tablet only.
@@ -825,82 +776,6 @@ export function LabyrinthLayout({
         </p>
       )}
     </section>
-  );
-
-  // The touch tools. Landscape (the phone) keys are 44px tall and wide enough
-  // for a 12px label; a portrait tablet scales them to its dock.
-  const touchActionGrid = (
-    <div
-      role="group"
-      aria-label="Tools and actions"
-      className="grid grid-cols-2 gap-1 portrait:min-[480px]:w-max portrait:min-[480px]:gap-2"
-    >
-      {[0, 1, 2].map((slotIdx) => {
-        const weaponId = loadout[slotIdx];
-        // A starter slot holding EMP would duplicate the EMP key, so the key
-        // stands for it alone.
-        if (weaponId === "emp_blast") return null;
-        const weapon = weaponId ? weapons[weaponId] : null;
-        const hasAmmo = !!weapon && weapon.ammo > 0;
-        const shortLabel = weaponId
-          ? PHONE_TOOL_LABELS[weaponId] ||
-            WEAPON_SHORT_LABELS[weaponId] ||
-            weapon?.name ||
-            weaponId
-          : "---";
-        return (
-          <TouchButton
-            key={`tool-${slotIdx}`}
-            label={
-              hasAmmo
-                ? `${shortLabel}: fire tool ${slotIdx + 1}`
-                : `${shortLabel}: out of ammo`
-            }
-            disabled={!hasAmmo}
-            onPress={() => intents.fireTool(slotIdx)}
-            className="relative flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] flex-col items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-1 text-amber-300 disabled:opacity-40"
-          >
-            {showKeyHints && (
-              <span
-                aria-hidden="true"
-                className="absolute left-1.5 top-1 text-xs leading-none text-amber-200/80"
-              >
-                {slotIdx + 1}
-              </span>
-            )}
-            <span className="max-w-full truncate text-xs leading-tight portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)]">
-              {shortLabel}
-            </span>
-          </TouchButton>
-        );
-      })}
-      <TouchButton
-        label="EMP: fire an EMP burst"
-        onPress={intents.emp}
-        className="flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-slate-700 bg-slate-900 text-xs portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-slate-200"
-      >
-        EMP
-      </TouchButton>
-      <TouchButton
-        label="Exploit: cycle to the next tool and fire it"
-        onPress={intents.exploit}
-        className="flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-cyan-700/60 bg-cyan-950/50 text-xs portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-cyan-200"
-      >
-        EXPLOIT
-      </TouchButton>
-      <TouchButton
-        label={
-          marketOpen
-            ? "Market: open the darknet market"
-            : `Market: ${MARKET_CLOSED_REASON}`
-        }
-        disabled={!marketOpen}
-        onPress={() => openOverlay("darknet_shop")}
-        className="disabled:opacity-40 flex h-11 w-14 portrait:h-[calc((100cqh-0.5rem)/3)] portrait:w-[calc((100cqw-0.25rem)/2)] portrait:min-[480px]:h-[var(--touch-key)] portrait:min-[480px]:w-[var(--touch-key)] items-center justify-center rounded-lg border border-amber-700/50 bg-amber-950/40 text-xs portrait:text-sm portrait:min-[480px]:text-[calc(var(--touch-key)*0.16)] font-bold text-amber-300"
-      >
-        Market
-      </TouchButton>
-    </div>
   );
 
   // Mode, class, phosphor theme and calibration. The desktop disclosure and the
@@ -1071,7 +946,7 @@ export function LabyrinthLayout({
         onPointerCancel={handleCanvasPointerCancel}
         frameClassName={`arcade-labyrinth-canvas relative ${
           phoneCabinet
-            ? "min-h-0 min-w-0 flex-1 self-stretch portrait:w-full portrait:aspect-[5/3] portrait:h-auto portrait:flex-none"
+            ? `min-h-0 min-w-0 flex-1 self-stretch ${phoneDevice ? "" : (tabletStage?.mazeClassName ?? "")}`
             : isFullscreen
               ? "w-full flex-1 max-h-[var(--layout-viewport-budget,calc(100vh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[var(--layout-viewport-budget,calc(100dvh-var(--header-height,80px)-var(--footer-height,48px)))] max-h-[calc(100vh-var(--header-height,80px)-var(--footer-height,48px))] max-h-[calc(100dvh-var(--header-height,80px)-var(--footer-height,48px))] aspect-[240/144] min-h-0"
               : "w-[min(100%,calc((100dvh-21rem)*5/3))] min-w-[240px] aspect-[240/144] h-auto"
@@ -1419,201 +1294,6 @@ export function LabyrinthLayout({
     </>
   );
 
-  // The landscape tablet's columns (#2860). Each is a card on top and its
-  // keys in the bottom corner, under a thumb. Keys are 48px.
-  const tabletRouteCard = (
-    <section
-      aria-label="Route"
-      data-testid="labyrinth-tablet-route"
-      className="flex min-h-0 flex-col gap-2 rounded-xl border border-zinc-800 bg-zinc-950/80 p-2 font-mono text-xs"
-    >
-      <div className="flex items-center justify-between gap-2">
-        <span className="font-bold uppercase tracking-wider text-zinc-400">
-          {roomBadge}
-        </span>
-        {roomNodes.length > 0 && (
-          <span className="font-bold text-zinc-300">
-            {routeVisited}/{roomNodes.length}
-          </span>
-        )}
-      </div>
-      {roomNodes.length > 0 && (
-        <ul aria-label="Route nodes" className="grid grid-cols-4 gap-1">
-          {roomNodes.map((node, index) => (
-            <li
-              key={`${node.x},${node.y}`}
-              aria-label={`Node ${index + 1} ${node.visited ? "visited" : "not visited"}`}
-              className={`flex h-7 items-center justify-center rounded border text-xs font-bold ${
-                node.visited
-                  ? "border-emerald-500/60 bg-emerald-500/15 text-emerald-200"
-                  : "border-zinc-700 text-zinc-400"
-              }`}
-            >
-              {index + 1}
-            </li>
-          ))}
-        </ul>
-      )}
-      <span
-        className={`font-bold uppercase tracking-wider ${
-          exitLocked ? "text-rose-400" : "text-emerald-400"
-        }`}
-      >
-        {exitLocked ? "Exit locked" : "Exit open"}
-      </span>
-      {wallShiftLabel && (
-        <span className="font-bold text-amber-300">{wallShiftLabel}</span>
-      )}
-    </section>
-  );
-
-  const tabletObjectiveCard = (
-    <section
-      aria-label="Objective"
-      data-testid="labyrinth-tablet-objective"
-      className="flex min-h-0 flex-col gap-2 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950/80 p-2 font-mono text-xs"
-    >
-      {!runComplete && (
-        <p className="line-clamp-3 font-bold text-zinc-300">
-          <span className="text-amber-400">OBJECTIVE</span>{" "}
-          {exitLock.locked ? exitLock.objective : "Reach the exit"}
-        </p>
-      )}
-      {gameMode === "roguelike" && boss && (
-        <div
-          className="flex flex-col gap-1"
-          data-testid="labyrinth-tablet-boss"
-        >
-          <div className="flex items-center justify-between gap-2 font-bold">
-            <span className="text-rose-400">BOSS</span>
-            <span className="text-zinc-200">
-              {boss.defeated ? "DOWN" : `${boss.hp}/${boss.maxHp}`}
-            </span>
-          </div>
-          <span className="block h-2 overflow-hidden rounded-full border border-zinc-800 bg-zinc-900">
-            <span
-              className="block h-full bg-rose-500 motion-safe:transition-[width] motion-safe:duration-200"
-              style={{ width: `${Math.max(0, (boss.hp / boss.maxHp) * 100)}%` }}
-            />
-          </span>
-          {!boss.defeated && boss.phaseTitle && (
-            <span className="truncate text-zinc-400">{boss.phaseTitle}</span>
-          )}
-        </div>
-      )}
-      {/* Portrait shows EMP in the room status above this card. */}
-      {!tabletPortrait && (
-        <span
-          className={`${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}
-        >
-          {empWeapon && empWeapon.maxAmmo >= 999
-            ? `EMP ∞ · ${empWeapon.ramCost ?? 0} RAM`
-            : `EMP ${empWeapon?.ammo ?? 0}/${empWeapon?.maxAmmo ?? 0}`}
-          {dronesStunned ? " · stunned" : ""}
-        </span>
-      )}
-      {phoneToast && (
-        <p className="line-clamp-2 text-amber-200" aria-hidden="true">
-          {phoneToast.text}
-        </p>
-      )}
-    </section>
-  );
-
-  const tabletKeyClass =
-    "relative flex h-12 w-full flex-col items-center justify-center rounded-lg border px-1 text-xs font-bold disabled:opacity-40";
-  const tabletToolGrid = (
-    <div
-      role="group"
-      aria-label="Tools and actions"
-      className="grid grid-cols-[repeat(4,minmax(3rem,auto))] gap-1"
-    >
-      {[0, 1, 2, 3, 4].map((slotIdx) => {
-        const weaponId = loadout[slotIdx];
-        const weapon = weaponId ? weapons[weaponId] : null;
-        const hasAmmo = !!weapon && weapon.ammo > 0;
-        const shortLabel = weaponId
-          ? PHONE_TOOL_LABELS[weaponId] ||
-            WEAPON_SHORT_LABELS[weaponId] ||
-            weapon?.name ||
-            weaponId
-          : "---";
-        // The name starts with the key's visible text, so speech input can say
-        // what it reads.
-        let label = `T${slotIdx + 1}: tool ${slotIdx + 1} is empty`;
-        if (weaponId) {
-          label = hasAmmo
-            ? `T${slotIdx + 1} ${shortLabel}: fire tool ${slotIdx + 1}`
-            : `T${slotIdx + 1} ${shortLabel}: tool ${slotIdx + 1} is out of ammo`;
-        }
-        return (
-          <TouchButton
-            key={`tablet-tool-${slotIdx}`}
-            label={label}
-            disabled={!hasAmmo}
-            onPress={() => intents.fireTool(slotIdx)}
-            className={`${tabletKeyClass} border-zinc-700 bg-zinc-900 text-amber-300`}
-          >
-            <span className="leading-none text-amber-200/80">
-              T{slotIdx + 1}
-            </span>{" "}
-            <span className="max-w-full truncate leading-tight">
-              {weaponId ? shortLabel : "---"}
-            </span>
-          </TouchButton>
-        );
-      })}
-      <TouchButton
-        label="EMP: fire an EMP burst"
-        onPress={intents.emp}
-        className={`${tabletKeyClass} border-slate-700 bg-slate-900 text-slate-200`}
-      >
-        EMP
-      </TouchButton>
-      <TouchButton
-        label="Exploit: cycle to the next tool and fire it"
-        onPress={intents.exploit}
-        className={`${tabletKeyClass} border-cyan-700/60 bg-cyan-950/50 text-cyan-200`}
-      >
-        EXPLOIT
-      </TouchButton>
-      <TouchButton
-        label={
-          marketOpen
-            ? "Market: open the darknet market"
-            : `Market: ${MARKET_CLOSED_REASON}`
-        }
-        disabled={!marketOpen}
-        onPress={() => openOverlay("darknet_shop")}
-        className={`${tabletKeyClass} border-amber-700/50 bg-amber-950/40 text-amber-300`}
-      >
-        MARKET
-      </TouchButton>
-    </div>
-  );
-
-  const tabletMoveColumn = (
-    <div className="flex min-h-0 w-[13.25rem] flex-1 flex-col justify-between gap-2 pb-3">
-      {tabletRouteCard}
-      <div className="flex justify-start">
-        <TouchControlsGate>
-          <HoldDpad
-            onMove={intents.move}
-            paused={gameStatus !== "playing" || optionsOpen}
-          />
-        </TouchControlsGate>
-      </div>
-    </div>
-  );
-  const tabletActionColumn = (
-    <div className="flex min-h-0 w-[14.5rem] flex-1 flex-col justify-between gap-2 pb-3">
-      {tabletObjectiveCard}
-      <div className="flex justify-end">
-        <TouchControlsGate>{tabletToolGrid}</TouchControlsGate>
-      </div>
-    </div>
-  );
-
   // The phone's action column (#2919): the class's first three tools and EMP
   // in a thumb arc, then Exploit and More. A starter slot holding EMP would
   // duplicate the EMP key, so the key stands for it alone. Each key sends its
@@ -1760,69 +1440,6 @@ export function LabyrinthLayout({
     </PhoneStage>
   );
 
-  // The tablet stage (#2358). Landscape: movement, maze, tools in one row.
-  // Portrait: the maze takes the first full-width row at its own height, the
-  // room panel the next, and the movement and tool docks share the rest, so
-  // the controls sit under the thumbs. Each portrait dock is a size container
-  // below 480px, so its keys scale to fill it. From 480px a key is at most a
-  // third of half the screen, so the d-pad fits its column on an iPad mini
-  // and a left hand's mirrored d-pad stays on screen (#2862). The stage mirrors the docks for
-  // left-handed players.
-  const tabletStage = (
-    <TabletStage
-      hud={tabletHud}
-      portraitFill="dock"
-      // The playfield already pads 4px, which the toolbar inset counts too.
-      className="[--arcade-stage-edge:4px]"
-      classNames={{
-        hud: "border-b border-neutral-900/60",
-        body: "portrait:min-[480px]:pb-[max(0.75rem,env(safe-area-inset-bottom))] portrait:min-[480px]:[--touch-key:clamp(80px,min(16vw,calc((50vw_-_2rem)/3)),120px)]",
-        // The room panel shows on a portrait screen 480px wide or more.
-        status: "hidden portrait:min-[480px]:block",
-        moveDock:
-          "portrait:grid portrait:grid-cols-1 portrait:grid-rows-1 portrait:[container-type:size] portrait:min-[480px]:self-end portrait:min-[480px]:justify-items-start portrait:min-[480px]:[container-type:normal]",
-        actionDock:
-          "portrait:h-full portrait:items-center portrait:justify-center portrait:[container-type:size] portrait:min-[480px]:h-auto portrait:min-[480px]:self-end portrait:min-[480px]:items-end portrait:min-[480px]:[container-type:normal]",
-      }}
-      moveDock={
-        tabletLandscape ? (
-          tabletMoveColumn
-        ) : (
-          <TouchControlsGate>
-            <HoldDpad
-              onMove={intents.move}
-              compact={!portraitView}
-              large={portraitView}
-              paused={gameStatus !== "playing" || optionsOpen}
-            />
-          </TouchControlsGate>
-        )
-      }
-      status={
-        tabletPortrait ? (
-          <div className="flex min-h-0 flex-col gap-2">
-            {roomPanel}
-            <div className="grid min-h-0 grid-cols-2 gap-2">
-              {tabletRouteCard}
-              {tabletObjectiveCard}
-            </div>
-          </div>
-        ) : (
-          roomPanel
-        )
-      }
-      actionDock={
-        tabletLandscape ? (
-          tabletActionColumn
-        ) : (
-          <TouchControlsGate>{touchActionGrid}</TouchControlsGate>
-        )
-      }
-    >
-      {canvasFrameNode}
-    </TabletStage>
-  );
-
   return (
     <div
       className={`arcade-labyrinth w-full flex flex-col select-none font-mono ${
@@ -1892,7 +1509,22 @@ export function LabyrinthLayout({
               {moreSheet}
             </ActionSinkProvider>
           ) : (
-            tabletStage
+            tabletStage && (
+              <tabletStage.Stage
+                parts={{
+                  maze: canvasFrameNode,
+                  roomPanel,
+                  threat: threatLevel,
+                  showKeyHints,
+                  toast: phoneToast?.text ?? null,
+                  optionsOpen,
+                  onOptions: openOptionsSheet,
+                  controlsPaused: gameStatus !== "playing" || optionsOpen,
+                  openMarket: () => openOverlay("darknet_shop"),
+                }}
+                optionsButtonRef={optionsButtonRef}
+              />
+            )
           )
         ) : (
           canvasFrameNode

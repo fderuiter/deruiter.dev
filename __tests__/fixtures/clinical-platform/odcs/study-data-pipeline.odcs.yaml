@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.2.0"
+version: "2.3.0"
 status: active
 domain: "Study data"
 tags:
@@ -827,6 +827,14 @@ schema:
         description: "Dose Units"
         required: false
         classification: confidential
+      - name: EXDOSFRM
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Dose Form"
+        required: false
+        classification: confidential
       - name: EXSTDTC
         logicalType: string
         logicalTypeOptions:
@@ -1345,6 +1353,14 @@ schema:
         description: "Lab Test Name"
         required: true
         classification: confidential
+      - name: LBCAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Category for Lab Test"
+        required: false
+        classification: confidential
       - name: LBORRES
         logicalType: string
         logicalTypeOptions:
@@ -1359,6 +1375,22 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Original Units"
+        required: false
+        classification: confidential
+      - name: LBORNRLO
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reference Range Lower Limit in Orig Unit"
+        required: false
+        classification: confidential
+      - name: LBORNRHI
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reference Range Upper Limit in Orig Unit"
         required: false
         classification: confidential
       - name: LBSTRESC
@@ -1381,6 +1413,18 @@ schema:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Standard Units"
+        required: false
+        classification: confidential
+      - name: LBSTNRLO
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Reference Range Lower Limit-Std Units"
+        required: false
+        classification: confidential
+      - name: LBSTNRHI
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Reference Range Upper Limit-Std Units"
         required: false
         classification: confidential
       - name: LBNRIND

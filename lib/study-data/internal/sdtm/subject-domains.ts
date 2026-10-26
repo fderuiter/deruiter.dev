@@ -7,8 +7,10 @@ import type {
   VariableOrigin,
   VariableRole,
 } from "../../types";
+import { terminologyCodelist } from "../conformance/terminology";
 import { codeAeTerm } from "./ae-dictionary";
 import { sdtmCodelist } from "./codelists";
+import { labReference } from "./lab-ranges";
 import { sdtmRequired } from "./required";
 import type { SdtmMethodId } from "./methods";
 import { toStandardUnit } from "./units";
@@ -235,6 +237,7 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
       collected("EXTRT", "Name of Treatment", "EX.EXTRT"),
       collected("EXDOSE", "Dose", "EX.EXDOSE", "Record Qualifier", "float"),
       derived("EXDOSU", "Dose Units", "CT_UNIT_MAPPING", "Variable Qualifier"),
+      derived("EXDOSFRM", "Dose Form", "USDM_DOSE_FORM", "Variable Qualifier"),
       collected(
         "EXSTDTC",
         "Start Date of Treatment",
@@ -425,6 +428,12 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Synonym Qualifier"
       ),
       derived(
+        "LBCAT",
+        "Category for Lab Test",
+        "LAB_CATEGORY",
+        "Grouping Qualifier"
+      ),
+      derived(
         "LBORRES",
         "Result or Finding in Original Units",
         "TEXT_RESULT",
@@ -434,6 +443,18 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "LBORRESU",
         "Original Units",
         "LB.LBORRESU",
+        "Variable Qualifier"
+      ),
+      derived(
+        "LBORNRLO",
+        "Reference Range Lower Limit in Orig Unit",
+        "LAB_REFERENCE_RANGE",
+        "Variable Qualifier"
+      ),
+      derived(
+        "LBORNRHI",
+        "Reference Range Upper Limit in Orig Unit",
+        "LAB_REFERENCE_RANGE",
         "Variable Qualifier"
       ),
       derived(
@@ -454,6 +475,20 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
         "Standard Units",
         "USDM_ASSESSMENT",
         "Variable Qualifier"
+      ),
+      derived(
+        "LBSTNRLO",
+        "Reference Range Lower Limit-Std Units",
+        "LAB_REFERENCE_RANGE",
+        "Variable Qualifier",
+        "float"
+      ),
+      derived(
+        "LBSTNRHI",
+        "Reference Range Upper Limit-Std Units",
+        "LAB_REFERENCE_RANGE",
+        "Variable Qualifier",
+        "float"
       ),
       collected(
         "LBNRIND",
@@ -780,6 +815,10 @@ export function deriveSubjectDomains(
       ex
     );
   });
+  const doseForm =
+    terminologyCodelist("FRM").terms.find(
+      (term) => term.nciCode === definition.design.doseForm?.code
+    )?.value ?? null;
   const ex = get("EX").map((record) => {
     const exposure = exBySubject.get(text(record.USUBJID));
     return item(
@@ -788,6 +827,7 @@ export function deriveSubjectDomains(
         EXTRT: record.EXTRT,
         EXDOSE: record.EXDOSE,
         EXDOSU: record.EXDOSU,
+        EXDOSFRM: doseForm,
         EXSTDTC: record.EXSTDTC,
         EXENDTC: record.EXENDTC,
         EXSTDY: 1,
@@ -898,7 +938,18 @@ export function deriveSubjectDomains(
         [`${name}LOBXFL`]: baselineFlag,
         EPOCH: epochAt(record[dates.date], exposure),
       };
-      if (name === "LB") row.LBNRIND = record.LBNRIND;
+      if (name === "LB") {
+        const reference = labReference(record[dates.code]);
+        const inStandardUnit = text(record[dates.unit]) === standardUnit;
+        row.LBCAT = reference?.category ?? null;
+        row.LBORNRLO =
+          reference && inStandardUnit ? String(reference.low) : null;
+        row.LBORNRHI =
+          reference && inStandardUnit ? String(reference.high) : null;
+        row.LBSTNRLO = reference?.low ?? null;
+        row.LBSTNRHI = reference?.high ?? null;
+        row.LBNRIND = record.LBNRIND;
+      }
       return item(row, record, exposure);
     });
   };

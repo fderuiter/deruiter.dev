@@ -18,6 +18,7 @@ export const SDTM_CODELISTS: Readonly<Record<string, CodelistId>> =
     RACE: "RACEC",
     IECAT: "IECAT",
     EXDOSU: "UNIT",
+    EXDOSFRM: "FRM",
     AESER: "NY",
     AESCONG: "NY",
     AESDISAB: "NY",

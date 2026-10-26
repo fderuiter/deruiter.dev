@@ -70,7 +70,7 @@ would carry.
 | Milestone facts | `gold.fct_milestone` | Portfolio mart | Portfolio Management Lead | Portfolio Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
 | Spend facts | `gold.fct_spend` | Finance mart | Clinical Finance Lead | Finance Data Steward | confidential | No | 31 days | 99.5% | 10 years | 1.0.0 |
 | KRI snapshots | `gold.fct_kri_snapshot` | RBQM mart | Clinical Quality Lead | Clinical Quality Data Steward | internal | No | 1 day | 99.5% | 10 years | 1.0.0 |
-| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.2.0 |
+| Study data: SDTM and ADaM | `study-data-pipeline` | Study data | Biostatistics Lead | Clinical Data Standards Steward | restricted | Yes | 30 days | 99.5% | 25 years | 2.3.0 |
 
 ## Retention
 
@@ -129,10 +129,10 @@ would carry.
 | TS | Trial Summary | One record per trial summary parameter value | STUDYID, TSPARMCD, TSSEQ | 9 |
 | DM | Demographics | One record per subject | STUDYID, USUBJID | 24 |
 | SV | Subject Visits | One record per actual or planned visit per subject | STUDYID, USUBJID, VISITNUM | 11 |
-| EX | Exposure | One record per constant-dosing interval per subject | STUDYID, USUBJID, EXSEQ | 12 |
+| EX | Exposure | One record per constant-dosing interval per subject | STUDYID, USUBJID, EXSEQ | 13 |
 | AE | Adverse Events | One record per adverse event per subject | STUDYID, USUBJID, AESEQ | 31 |
 | VS | Vital Signs | One record per vital sign measurement per visit per subject | STUDYID, USUBJID, VSSEQ | 17 |
-| LB | Laboratory Test Results | One record per lab test per visit per subject | STUDYID, USUBJID, LBSEQ | 18 |
+| LB | Laboratory Test Results | One record per lab test per visit per subject | STUDYID, USUBJID, LBSEQ | 23 |
 | DS | Disposition | One record per disposition status or protocol milestone per subject | STUDYID, USUBJID, DSSEQ | 10 |
 | SUPPDM | Supplemental Qualifiers for DM | One record per supplemental qualifier per subject | STUDYID, RDOMAIN, USUBJID, QNAM | 10 |
 | ADSL | Subject-Level Analysis Dataset | One record per subject | STUDYID, USUBJID | 24 |

@@ -322,6 +322,11 @@
         "variables": ["EX.EXDOSU"]
       },
       {
+        "id": "USDM_DOSE_FORM",
+        "text": "Dose form of the investigational product in the USDM administrable product, written as its Dosage Form (C66726) submission value: TABLET for C42998. Missing when the study names no investigational product or its dose form is not in the codelist.",
+        "variables": ["EX.EXDOSFRM"]
+      },
+      {
         "id": "ACTUAL_ELEMENT_FROM_TA_TE",
         "text": "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
         "variables": [
@@ -377,6 +382,21 @@
         "id": "LAST_PRE_DOSE",
         "text": "Y on the subject's latest record for the test dated on or before first exposure; missing otherwise.",
         "variables": ["VS.VSLOBXFL", "LB.LBLOBXFL"]
+      },
+      {
+        "id": "LAB_CATEGORY",
+        "text": "The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT.",
+        "variables": ["LB.LBCAT"]
+      },
+      {
+        "id": "LAB_REFERENCE_RANGE",
+        "text": "Lower and upper limits of the test's reference range at the study's fictional central laboratory, in standard units for --STNRLO and --STNRHI (numbers) and, when the result was collected in the standard unit, in original units for --ORNRLO and --ORNRHI (text). The original-unit limits are missing when the collected unit differs.",
+        "variables": [
+          "LB.LBORNRLO",
+          "LB.LBORNRHI",
+          "LB.LBSTNRLO",
+          "LB.LBSTNRHI"
+        ]
       }
     ]
   },

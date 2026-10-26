@@ -28,6 +28,12 @@ export const SDTM_METHODS = {
     "For a planned visit, Y when the visit has a date and N when it was missed; missing for an unscheduled visit.",
   CT_UNIT_MAPPING:
     "Collected dose unit, which is already the UNIT submission value (TABLET, C48542).",
+  USDM_DOSE_FORM:
+    "Dose form of the investigational product in the USDM administrable product, written as its Dosage Form (C66726) submission value: TABLET for C42998. Missing when the study names no investigational product or its dose form is not in the codelist.",
+  LAB_CATEGORY:
+    "The laboratory panel of the test at the study's fictional central laboratory: CHEMISTRY for ALT, AST, BILI, CREAT and GLUC; HEMATOLOGY for HGB, WBC and PLAT.",
+  LAB_REFERENCE_RANGE:
+    "Lower and upper limits of the test's reference range at the study's fictional central laboratory, in standard units for --STNRLO and --STNRHI (numbers) and, when the result was collected in the standard unit, in original units for --ORNRLO and --ORNRHI (text). The original-unit limits are missing when the collected unit differs.",
   AE_DICTIONARY_CODING:
     "Looked up from the preferred term (AEDECOD) in the study's fictional adverse event dictionary, which has MedDRA's five levels but is not MedDRA: its lower and group level names are invented and its codes are synthetic, from 99000000. Each lowest level term is its preferred term. Missing when the preferred term is not in the dictionary.",
   CT_RELATIONSHIP_MAPPING:

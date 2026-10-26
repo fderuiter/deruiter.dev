@@ -59,8 +59,8 @@ it live telemetry, and `executeAutomatedRollback` has no caller.
 [ADR 0049](0049-deploy-main-on-green-ci.md) records the automatic production
 trigger now superseded by [ADR 0051](0051-manual-production-releases.md).
 During the hold, an operator starts the production build from the Vercel
-Dashboard after Merge Gate passes, with a Vercel Deployment Check before
-domains move. Keep the hold until a replacement release policy is approved
+Dashboard after Merge Gate passes; a READY build takes the domains, because
+the project keeps no Vercel Deployment Checks (ADR 0051 amendment, #2899). Keep the hold until a replacement release policy is approved
 and verified. Rollback remains a person using Vercel's Instant Rollback.
 
 The analyzer stays as manual tooling for judging a deploy from metrics a

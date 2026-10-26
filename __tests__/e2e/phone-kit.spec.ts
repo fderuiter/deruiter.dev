@@ -229,7 +229,19 @@ test.describe("Mobile arcade kit: immersive touch cabinet", () => {
     );
     await page.keyboard.press("Escape");
     await expect(sheet).toHaveCount(0);
-    await expect(setupKey).toBeFocused();
+    // A tap never focuses the toolbar (its keys keep focus on the game), so
+    // focus returns to where it was before Setup: inside the cabinet.
+    await expect
+      .poll(() =>
+        page.evaluate(
+          (selector) =>
+            !!document.activeElement &&
+            document.activeElement !== document.body &&
+            !!document.querySelector(selector)?.contains(document.activeElement),
+          IMMERSIVE
+        )
+      )
+      .toBe(true);
   });
 
   test("a scroll-layout stage reaches all of its content at 320x568", async ({

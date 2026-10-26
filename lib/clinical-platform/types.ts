@@ -15,6 +15,7 @@ export * from "./types/governance";
 export * from "./types/lineage";
 export * from "./types/platform";
 export * from "./types/portfolio";
+export * from "./types/portfolio-dashboard";
 export * from "./types/quality";
 export * from "./types/rbqm";
 export * from "./types/reporting";

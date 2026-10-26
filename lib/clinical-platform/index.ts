@@ -94,6 +94,10 @@ export {
   operationsReportSpecs,
 } from "./internal/reporting/operations";
 export {
+  portfolioDashboard,
+  portfolioReportSpecs,
+} from "./internal/reporting/portfolio";
+export {
   NO_METRIC_ROWS,
   NO_METRIC_VALUE,
   formatMetricValue,

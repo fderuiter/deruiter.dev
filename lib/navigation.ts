@@ -232,6 +232,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Dashboards",
   },
   {
+    id: "platform-portfolio",
+    title: "Portfolio Dashboard",
+    subtitle: "Every study's milestones and cycle times side by side",
+    href: "/platform/portfolio",
+    icon: "activity",
+    tone: "amber",
+    badge: "Dashboards",
+  },
+  {
     id: "incident-simulator",
     title: "Incident Simulator",
     subtitle: "Architecture bias and outage triage",

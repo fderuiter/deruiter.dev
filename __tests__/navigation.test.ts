@@ -3,7 +3,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  FOOTER_EXTRA_ITEMS,
   PRIMARY_NAV,
   filterNavItems,
   getAllNavHrefs,
@@ -14,6 +13,7 @@ import {
   isNavMenu,
 } from "@/lib/navigation";
 import { ARCADE_GAME_ROUTES } from "@/lib/arcade";
+import { CLINICAL_JOURNEY } from "@/lib/clinical-journey";
 import { PUBLIC_ROUTE_REGISTRY } from "@/lib/public-routes";
 import nextConfig from "../next.config";
 
@@ -21,22 +21,24 @@ import nextConfig from "../next.config";
 // The wordmark links home, and the offline page is a service worker fallback.
 const NOT_NAVIGATION = new Set(["/", "/offline"]);
 
-describe("navigation structure (#1842, #1843)", () => {
+describe("navigation structure (#1842, #2952)", () => {
   it("has exactly the six top bar items, in order", () => {
     expect(PRIMARY_NAV.map((g) => g.label)).toEqual([
-      "Work",
-      "Blog",
+      "Clinical",
+      "Labs",
       "Arcade",
-      "Simulators",
+      "Writing",
       "About",
       "Contact",
     ]);
   });
 
-  it("makes Arcade, Simulators and About menus and the rest plain links", () => {
+  it("makes every item a menu except Contact", () => {
     expect(PRIMARY_NAV.filter(isNavMenu).map((g) => g.id)).toEqual([
+      "clinical",
+      "labs",
       "arcade",
-      "simulators",
+      "writing",
       "about",
     ]);
   });
@@ -54,25 +56,50 @@ describe("navigation structure (#1842, #1843)", () => {
     expect(hrefs).not.toContain("/protocol-drift");
   });
 
-  it("splits Simulators into Simulators and Studios", () => {
-    const sections = getNavGroup("simulators").sections;
-    expect(sections.map((s) => s.label)).toEqual(["Simulators", "Studios"]);
-    expect(sections[0].items.map((i) => i.href)).toEqual([
-      "/protocol-drift",
-      "/platform",
-      "/study-data",
-      "/platform/strategy",
-      "/platform/operations",
-      "/platform/portfolio",
-      "/platform/explore",
-      "/simulator",
-      "/patrol",
+  it("lists the clinical journey's pages in journey order, then the platform tools", () => {
+    const [journey, tools] = getNavGroup("clinical").sections;
+    const pages = CLINICAL_JOURNEY.filter(
+      (step) => !step.href.startsWith("/case-studies/")
+    );
+    expect(journey.items.map((i) => i.href)).toEqual(pages.map((s) => s.href));
+    expect(journey.items.map((i) => i.title)).toEqual(
+      pages.map((s) => s.title)
+    );
+    expect(journey.items.map((i) => i.step)).toEqual([1, 2, 3, 4]);
+    expect(tools.label).toBe("Platform tools");
+    expect(tools.items.every((i) => i.href.startsWith("/platform/"))).toBe(
+      true
+    );
+  });
+
+  it("puts the studios and non-clinical simulators under Labs", () => {
+    expect(
+      getNavGroup("labs").sections.flatMap((s) => s.items.map((i) => i.href))
+    ).toEqual(["/proof", "/neuro", "/simulator", "/patrol"]);
+  });
+
+  it("gives Clinical and Labs an overview page of their own", () => {
+    for (const id of ["clinical", "labs"] as const) {
+      const group = getNavGroup(id);
+      expect(group.overviewLabel).toBeTruthy();
+      expect(
+        PUBLIC_ROUTE_REGISTRY.map((r) => r.path),
+        group.href
+      ).toContain(group.href);
+    }
+  });
+
+  it("groups Blog, Case studies and the featured write-ups under Writing", () => {
+    const hrefs = getNavGroup("writing").sections.flatMap((s) =>
+      s.items.map((i) => i.href)
+    );
+    expect(hrefs).toEqual([
+      "/blog",
+      "/case-studies",
+      "/work/laser-loon",
+      "/case-studies/designing-for-my-brother",
     ]);
-    expect(sections[1].items.map((i) => i.href)).toEqual([
-      "/crf",
-      "/proof",
-      "/neuro",
-    ]);
+    expect(getNavGroup("writing").noBreadcrumb).toBe(true);
   });
 
   it("puts the site pages under About, with GitHub opening off-site", () => {
@@ -80,6 +107,8 @@ describe("navigation structure (#1842, #1843)", () => {
     const byId = Object.fromEntries(items.map((i) => [i.id, i]));
     expect(byId.stack.href).toBe("/stack");
     expect(byId.credits.href).toBe("/acknowledgments");
+    expect(byId.wedding.href).toBe("/wedding");
+    expect(byId.merch.href).toBe("/merch");
     expect(byId.github.external).toBe(true);
     expect(byId.github.href.startsWith("https://")).toBe(true);
   });
@@ -110,19 +139,10 @@ describe("navigation structure (#1842, #1843)", () => {
   });
 
   it("hides items by reading mode and swaps phone variants", () => {
-    const sims = getNavGroup("simulators").sections[0].items;
+    const sims = getNavGroup("labs").sections[0].items;
     expect(
       filterNavItems(sims, "behind-the-scenes").map((i) => i.href)
-    ).toEqual([
-      "/protocol-drift",
-      "/platform",
-      "/study-data",
-      "/platform/strategy",
-      "/platform/operations",
-      "/platform/portfolio",
-      "/platform/explore",
-      "/patrol",
-    ]);
+    ).toEqual(["/proof", "/neuro", "/patrol"]);
     expect(filterNavItems(sims, "professional")).toHaveLength(sims.length);
     const patrol = sims.find((i) => i.id === "patrol-shift")!;
     expect(getNavHref(patrol, "mobile")).toBe("/m/patrol");
@@ -133,13 +153,19 @@ describe("navigation structure (#1842, #1843)", () => {
     const current = (p: string) =>
       PRIMARY_NAV.filter((g) => isNavGroupActive(g, p)).map((g) => g.id);
     expect(current("/arcade/study-director")).toEqual(["arcade"]);
-    expect(current("/merch")).toEqual(["arcade"]);
-    expect(current("/protocol-drift")).toEqual(["simulators"]);
-    expect(current("/patrol")).toEqual(["simulators"]);
-    expect(current("/m/crf")).toEqual(["simulators"]);
+    expect(current("/merch")).toEqual(["about"]);
+    expect(current("/protocol-drift")).toEqual(["clinical"]);
+    expect(current("/platform/portfolio")).toEqual(["clinical"]);
+    expect(current("/clinical")).toEqual(["clinical"]);
+    expect(current("/m/crf")).toEqual(["clinical"]);
+    expect(current("/patrol")).toEqual(["labs"]);
+    expect(current("/labs")).toEqual(["labs"]);
     expect(current("/stack")).toEqual(["about"]);
-    expect(current("/case-studies/equipose-randomization")).toEqual(["work"]);
-    expect(current("/blog/some-post")).toEqual(["blog"]);
+    expect(current("/case-studies/equipose-randomization")).toEqual([
+      "writing",
+    ]);
+    expect(current("/work/laser-loon")).toEqual(["writing"]);
+    expect(current("/blog/some-post")).toEqual(["writing"]);
     expect(current("/contact")).toEqual(["contact"]);
     expect(current("/")).toEqual([]);
   });
@@ -152,10 +178,9 @@ describe("navigation structure (#1842, #1843)", () => {
         !NOT_NAVIGATION.has(p) &&
         // Phone variants are reached through their desktop item's mobileHref.
         !p.startsWith("/m/") &&
-        // Individual case studies and posts hang off the Work and Blog links.
+        // Individual case studies and posts hang off their Writing indexes.
         !p.startsWith("/case-studies/") &&
-        !p.startsWith("/blog/") &&
-        !p.startsWith("/work/")
+        !p.startsWith("/blog/")
     );
     expect(
       missing,
@@ -172,7 +197,6 @@ describe("navigation structure (#1842, #1843)", () => {
         expect(registered.has(item.mobileHref), item.mobileHref).toBe(true);
       }
     }
-    expect(FOOTER_EXTRA_ITEMS.every((i) => !i.mobileHref)).toBe(true);
   });
 
   it("is covered by the command palette", () => {

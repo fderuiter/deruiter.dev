@@ -23,6 +23,12 @@ export const PUBLIC_ROUTE_REGISTRY = [
     category: "top-level",
   },
   { path: "/arcade", name: "Arcade Hub", category: "top-level" },
+  {
+    path: "/clinical",
+    name: "Clinical Journey Overview",
+    category: "top-level",
+  },
+  { path: "/labs", name: "Labs Overview", category: "top-level" },
   { path: "/proof", name: "Formal Proof Studio", category: "tool" },
   { path: "/m/proof", name: "Mobile Formal Proof Studio", category: "tool" },
   { path: "/neuro", name: "Neuro 3D Simulator", category: "tool" },

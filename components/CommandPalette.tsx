@@ -30,6 +30,8 @@ import {
   IconBrain,
   IconFileSpreadsheet,
   IconCpu,
+  IconFlask,
+  IconStethoscope,
   IconHeartHandshake,
   IconHeart,
   IconShoppingBag,
@@ -1391,6 +1393,43 @@ const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
           "Only valid metric and dimension combinations",
           "Shareable link, CSV download",
           "The steps to promote it to a managed report",
+        ],
+      },
+      {
+        id: "nav-clinical",
+        title: "Clinical Journey",
+        subtitle:
+          "Forms to study tables to a governed portfolio, step by step.",
+        category: "navigation",
+        url: "/clinical",
+        icon: <IconStethoscope className="h-4 w-4 text-amber-400" />,
+        badge: "Overview",
+        status: "Journey Hub",
+        description:
+          "The clinical data journey on one page: CRF Studio, Protocol Drift, the Study Data Pipeline and the Clinical Data Platform, with each step's evidence and related case studies.",
+        techStack: ["Next.js 16", "TypeScript", "CDISC", "Synthetic Data"],
+        highlights: [
+          "Four working steps in journey order",
+          "What each step's evidence is drawn from",
+          "Related case studies and planned work",
+        ],
+      },
+      {
+        id: "nav-labs",
+        title: "Labs",
+        subtitle: "Studios and simulators outside clinical data.",
+        category: "navigation",
+        url: "/labs",
+        icon: <IconFlask className="h-4 w-4 text-cyan-400" />,
+        badge: "Overview",
+        status: "Labs Hub",
+        description:
+          "The proof workspace, the 3D MRI viewer, the incident simulator and Patrol Shift, listed together.",
+        techStack: ["Next.js 16", "TypeScript", "Canvas", "WebGL"],
+        highlights: [
+          "Proof Workspace and NeuroRecon Studio",
+          "Incident and patrol judgment simulators",
+          "Phone-sized variants where they exist",
         ],
       },
       {

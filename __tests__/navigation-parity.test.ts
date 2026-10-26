@@ -24,12 +24,13 @@ vi.mock("@/lib/blog", () => ({ getAllPublishedBlogPosts: async () => [] }));
 describe("navigation groups for pages (#1848)", () => {
   it("names the group a page belongs to", () => {
     expect(getNavGroupForHref("/arcade/laser-loon")?.id).toBe("arcade");
-    expect(getNavGroupForHref("/merch")?.id).toBe("arcade");
-    expect(getNavGroupForHref("/protocol-drift")?.id).toBe("simulators");
-    expect(getNavGroupForHref("/crf")?.id).toBe("simulators");
+    expect(getNavGroupForHref("/merch")?.id).toBe("about");
+    expect(getNavGroupForHref("/protocol-drift")?.id).toBe("clinical");
+    expect(getNavGroupForHref("/crf")?.id).toBe("clinical");
+    expect(getNavGroupForHref("/proof")?.id).toBe("labs");
     expect(getNavGroupForHref("/stack")?.id).toBe("about");
     expect(getNavGroupForHref("/#about")?.id).toBe("about");
-    expect(getNavGroupForHref("/case-studies/4glory")?.id).toBe("work");
+    expect(getNavGroupForHref("/case-studies/4glory")?.id).toBe("writing");
     expect(getNavGroupForHref("/contact")?.id).toBe("contact");
     expect(getNavGroupForHref("/offline")).toBeUndefined();
     expect(getNavGroupForHref("")).toBeUndefined();
@@ -44,21 +45,30 @@ describe("navigation groups for pages (#1848)", () => {
 });
 
 describe("breadcrumb parents (#1848)", () => {
-  it("uses the menu group's label and overview, never Systems", () => {
+  it("uses the menu group's label and overview page", () => {
     expect(getNavBreadcrumbParents("/crf")).toEqual([
-      { label: "Simulators", href: "/simulator" },
+      { label: "Clinical", href: "/clinical" },
+    ]);
+    expect(getNavBreadcrumbParents("/platform/operations")).toEqual([
+      { label: "Clinical", href: "/clinical" },
+    ]);
+    expect(getNavBreadcrumbParents("/simulator")).toEqual([
+      { label: "Labs", href: "/labs" },
     ]);
     expect(getNavBreadcrumbParents("/stack")).toEqual([
       { label: "About", href: "/#about" },
     ]);
     expect(getNavBreadcrumbSchemaParents("/neuro")).toEqual([
-      { name: "Simulators", url: "/simulator" },
+      { name: "Labs", url: "/labs" },
     ]);
   });
 
   it("leaves out the parent on a group's own overview page and on plain links", () => {
-    expect(getNavBreadcrumbParents("/simulator")).toEqual([]);
+    expect(getNavBreadcrumbParents("/clinical")).toEqual([]);
+    expect(getNavBreadcrumbParents("/labs")).toEqual([]);
     expect(getNavBreadcrumbParents("/blog")).toEqual([]);
+    // Writing has no overview page, so its pages get no parent from it.
+    expect(getNavBreadcrumbParents("/case-studies/4glory")).toEqual([]);
     expect(getNavBreadcrumbParents("/")).toEqual([]);
   });
 });
@@ -87,15 +97,18 @@ describe("llms.txt sections (#1848)", () => {
     ]);
   });
 
-  it("lists Protocol Drift with the simulators, not the arcade", () => {
-    expect(sectionOf("/protocol-drift")).toBe("Simulators");
-    expect(sectionOf("/crf")).toBe("Simulators");
+  it("lists the clinical pages under Clinical and the studios under Labs", () => {
+    expect(sectionOf("/protocol-drift")).toBe("Clinical");
+    expect(sectionOf("/crf")).toBe("Clinical");
+    expect(sectionOf("/clinical")).toBe("Clinical");
+    expect(sectionOf("/proof")).toBe("Labs");
     expect(sectionOf("/arcade/laser-loon")).toBe("Arcade");
-    expect(sectionOf("/merch")).toBe("Arcade");
+    expect(sectionOf("/merch")).toBe("About");
     expect(sectionOf("/stack")).toBe("About");
     expect(sectionOf("/schedule")).toBe("About");
-    expect(sectionOf("/case-studies")).toBe("Work");
-    expect(sectionOf("/work/laser-loon")).toBe("Work");
+    expect(sectionOf("/case-studies")).toBe("Writing");
+    expect(sectionOf("/work/laser-loon")).toBe("Writing");
+    expect(sectionOf("/blog")).toBe("Writing");
     expect(sectionOf("/m/crf")).toBe("Mobile and utility routes");
   });
 
@@ -114,7 +127,7 @@ describe("llms.txt sections (#1848)", () => {
 });
 
 describe("sitemap priorities (#1848)", () => {
-  it("rates the Simulators menu pages as flagship and keeps phone variants lower", async () => {
+  it("rates the Clinical and Labs menu pages as flagship and keeps phone variants lower", async () => {
     const { default: sitemap } = await import("@/app/sitemap");
     const entries = await sitemap();
     const priority = (routePath: string) =>

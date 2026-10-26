@@ -26,14 +26,6 @@ Paths and path prefixes that mark the group as the current one.
 
 ***
 
-### also?
-
-> `optional` **also?**: `string`[]
-
-Pages that belong under the group but are not menu entries.
-
-***
-
 ### href
 
 > **href**: `string`
@@ -44,13 +36,32 @@ Where the label goes when it is a plain link, or the menu's overview.
 
 ### id
 
-> **id**: `"arcade"` \| `"work"` \| `"blog"` \| `"simulators"` \| `"about"` \| `"contact"`
+> **id**: `"arcade"` \| `"clinical"` \| `"labs"` \| `"writing"` \| `"about"` \| `"contact"`
 
 ***
 
 ### label
 
 > **label**: `string`
+
+***
+
+### noBreadcrumb?
+
+> `optional` **noBreadcrumb?**: `boolean`
+
+The group has no overview page of its own (its href is its first entry),
+so it adds no parent crumb to the pages it lists.
+
+***
+
+### overviewLabel?
+
+> `optional` **overviewLabel?**: `string`
+
+Text of the link to the group's own overview page, shown at the foot of
+its menu. Omitted when the overview is already a menu entry or a section
+of another page.
 
 ***
 

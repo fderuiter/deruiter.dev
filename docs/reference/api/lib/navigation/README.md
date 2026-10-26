@@ -21,7 +21,6 @@
 
 ## Variables
 
-- [FOOTER\_EXTRA\_ITEMS](variables/FOOTER_EXTRA_ITEMS.md)
 - [PRIMARY\_NAV](variables/PRIMARY_NAV.md)
 
 ## Functions

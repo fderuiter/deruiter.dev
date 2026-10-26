@@ -17,8 +17,8 @@ const read = (file: string) => fs.readFileSync(path.join(root, file), "utf8");
 describe("Protocol Drift discovery matrix", () => {
   it("is listed in the command palette, navbar and footer", () => {
     expect(read("components/CommandPalette.tsx")).toContain(`url: "${ROUTE}"`);
-    // The navbar and footer read the shared navigation data (#1843).
-    expect(read("lib/navigation.ts")).toContain(`href: "${ROUTE}"`);
+    // The navbar and footer read the shared navigation data (#1843), whose
+    // Clinical entries come from the journey map (#2952).
     expect(getAllNavHrefs()).toContain(ROUTE);
   });
 

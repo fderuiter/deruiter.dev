@@ -538,8 +538,10 @@ function registryInserts(names: GameScaffoldNames): readonly RegistryInsert[] {
   },`,
     },
     {
+      // A new game lands under "Puzzles and classics"; move it to the
+      // Arcade section that fits once it has a subject (#2952).
       file: "lib/navigation.ts",
-      listStart: "const ARCADE_ITEMS",
+      listStart: "const ARCADE_PUZZLE_ITEMS",
       listEnd: "\n];",
       present: `href: "${route}"`,
       entry: `

@@ -8,8 +8,10 @@
  * here.
  *
  * This module holds no JSX: icons are named by key and drawn by the
- * components. The structure follows issue #1842.
+ * components. The structure follows issue #1842, regrouped by #2952.
  */
+
+import { CLINICAL_JOURNEY, type JourneyStepId } from "./clinical-journey";
 
 /** Names an icon the components know how to draw. */
 export type NavIconKey =
@@ -59,6 +61,8 @@ export interface NavItem {
   external?: boolean;
   /** Reading mode that hides this item. */
   hiddenFor?: NavHiddenFor;
+  /** Position on the clinical journey, shown before the title. */
+  step?: number;
 }
 
 /** A labelled run of items inside a menu. */
@@ -71,10 +75,21 @@ export interface NavSection {
 
 /** One entry in the top bar. */
 export interface NavGroup {
-  id: "work" | "blog" | "arcade" | "simulators" | "about" | "contact";
+  id: "clinical" | "labs" | "arcade" | "writing" | "about" | "contact";
   label: string;
   /** Where the label goes when it is a plain link, or the menu's overview. */
   href: string;
+  /**
+   * Text of the link to the group's own overview page, shown at the foot of
+   * its menu. Omitted when the overview is already a menu entry or a section
+   * of another page.
+   */
+  overviewLabel?: string;
+  /**
+   * The group has no overview page of its own (its href is its first entry),
+   * so it adds no parent crumb to the pages it lists.
+   */
+  noBreadcrumb?: boolean;
   /** Menu contents. A group with no sections is a plain link. */
   sections: NavSection[];
   /** Paths and path prefixes that mark the group as the current one. */
@@ -82,160 +97,71 @@ export interface NavGroup {
     exact?: string[];
     prefixes?: string[];
   };
-  /** Pages that belong under the group but are not menu entries. */
-  also?: string[];
 }
 
-const ARCADE_ITEMS: NavItem[] = [
-  {
-    id: "arcade-hub",
-    title: "Arcade Hub",
-    subtitle: "Every game in one place",
-    href: "/arcade",
-    icon: "arcade",
-    tone: "cyan",
-  },
-  {
-    id: "laser-loon",
-    title: "Laser Loon",
-    subtitle: "A loon, lasers, and a trip to the Capitol",
-    href: "/arcade/laser-loon",
-    icon: "laser-loon",
-    tone: "cyan",
-  },
-  {
-    id: "study-director",
-    title: "Study Director",
-    subtitle: "Run a clinical study. Everything is fine.",
-    href: "/arcade/study-director",
-    icon: "clipboard",
-    tone: "cyan",
-  },
-  {
-    id: "patty-drive-thru",
-    title: "Patty's Drive-Thru",
-    subtitle: "One shift at my first job, in first person",
-    href: "/arcade/patty-drive-thru",
-    icon: "headset",
-    tone: "cyan",
-  },
-  {
-    id: "for-better-or-bulk",
-    title: "For Better or Bulk",
-    subtitle: "Set up our Costco wedding before 4:00",
-    href: "/arcade/for-better-or-bulk",
-    icon: "rings",
-    tone: "cyan",
-  },
-  {
-    id: "quasi-puzzler",
-    title: "Quasi-Perfect Puzzler",
-    subtitle: "Deductive logic puzzle assistant",
-    href: "/arcade/quasi-puzzler",
-    icon: "puzzle",
-    tone: "cyan",
-  },
-  {
-    id: "trial-and-error",
-    title: "Trial & Error: Biostat Ops",
-    subtitle: "Clinical-output roguelike deckbuilder",
-    href: "/arcade/trial-and-error",
-    icon: "cards",
-    tone: "cyan",
-  },
-  {
-    id: "retro-labyrinth",
-    title: "Retro Labyrinth",
-    subtitle: "Retro procedural dungeon crawler",
-    href: "/arcade/retro-labyrinth",
-    icon: "terminal",
-    tone: "cyan",
-  },
-  {
-    id: "working-with-duck",
-    title: "Working With Duck",
-    subtitle: "You have work. Duck has other plans.",
-    href: "/arcade/working-with-duck",
-    icon: "duck",
-    tone: "cyan",
-  },
-  {
-    id: "clinical-chaos",
-    title: "Clinical Trial Chaos",
-    subtitle: "Fast-paced medical trial simulator",
-    href: "/arcade/clinical-chaos",
-    icon: "shield",
-    tone: "cyan",
-  },
-  {
-    id: "garmin-watch",
-    title: "Monkey C Mayhem",
-    subtitle: "A Garmin 5K Platformer",
-    href: "/arcade/garmin-watch",
-    icon: "watch",
-    tone: "cyan",
-  },
-  {
-    id: "meme-vault",
-    title: "Meme Vault",
-    subtitle: "Soundboard and easter egg trophies",
-    href: "/arcade/meme-vault",
-    icon: "vault",
-    tone: "emerald",
-  },
-];
-
-const SIMULATOR_ITEMS: NavItem[] = [
-  {
-    id: "protocol-drift",
-    title: "Protocol Drift",
-    subtitle: "A clinical data pipeline under pressure",
-    href: "/protocol-drift",
-    icon: "shield",
+/** Presentation of each journey step that is a page in the Clinical menu. */
+const JOURNEY_MENU_STYLE: Partial<
+  Record<JourneyStepId, Omit<NavItem, "title" | "href" | "step">>
+> = {
+  collect: {
+    id: "crf-studio",
+    subtitle: "Design the forms and enter data as a site would",
+    mobileHref: "/m/crf",
+    icon: "spreadsheet",
     tone: "amber",
     badge: "CDISC",
   },
-  {
-    id: "clinical-platform",
-    title: "Clinical Data Platform",
-    subtitle: "Governed portfolio architecture and capability evidence",
-    href: "/platform",
-    icon: "cpu",
+  consequences: {
+    id: "protocol-drift",
+    subtitle: "A clinical data pipeline under pressure",
+    icon: "shield",
     tone: "amber",
-    badge: "Platform",
+    badge: "Simulation",
   },
-  {
+  tabulate: {
     id: "study-data",
-    title: "Study Data Pipeline",
     subtitle: "One synthetic study from USDM to tables, traced end to end",
-    href: "/study-data",
     icon: "spreadsheet",
     tone: "amber",
     badge: "Lineage",
   },
-  {
-    id: "platform-strategy",
-    title: "Platform Strategy",
-    subtitle: "Fictional vendor scoring and investment decisions",
-    href: "/platform/strategy",
-    icon: "clipboard",
+  govern: {
+    id: "clinical-platform",
+    subtitle: "Eight synthetic studies governed as one portfolio",
+    icon: "cpu",
     tone: "amber",
-    badge: "Toolkit",
+    badge: "Platform",
+  },
+};
+
+/**
+ * The journey's pages in journey order. The order and titles come from
+ * `lib/clinical-journey.ts`, so the menu and the journey strip on each page
+ * cannot disagree; the case-study step is reached from Writing instead.
+ */
+const JOURNEY_ITEMS: NavItem[] = CLINICAL_JOURNEY.flatMap((step, index) => {
+  const style = JOURNEY_MENU_STYLE[step.id];
+  return style
+    ? [{ ...style, title: step.title, href: step.href, step: index + 1 }]
+    : [];
+});
+
+/** Tools that hang off the Clinical Data Platform hub. */
+const PLATFORM_TOOL_ITEMS: NavItem[] = [
+  {
+    id: "platform-portfolio",
+    title: "Portfolio Dashboard",
+    subtitle: "Every study's milestones and cycle times side by side",
+    href: "/platform/portfolio",
+    icon: "activity",
+    tone: "amber",
+    badge: "Dashboards",
   },
   {
     id: "platform-operations",
     title: "Operations Dashboards",
     subtitle: "Portfolio to site drill-down from governed metrics",
     href: "/platform/operations",
-    icon: "activity",
-    tone: "amber",
-    badge: "Dashboards",
-  },
-  {
-    id: "platform-portfolio",
-    title: "Portfolio Dashboard",
-    subtitle: "Every study's milestones and cycle times side by side",
-    href: "/platform/portfolio",
     icon: "activity",
     tone: "amber",
     badge: "Dashboards",
@@ -248,6 +174,38 @@ const SIMULATOR_ITEMS: NavItem[] = [
     icon: "spreadsheet",
     tone: "amber",
     badge: "Self-service",
+  },
+  {
+    id: "platform-strategy",
+    title: "Platform Strategy",
+    subtitle: "Fictional vendor scoring and investment decisions",
+    href: "/platform/strategy",
+    icon: "clipboard",
+    tone: "amber",
+    badge: "Toolkit",
+  },
+];
+
+const LABS_ITEMS: NavItem[] = [
+  {
+    id: "proof-workspace",
+    title: "Proof Workspace",
+    subtitle: "Build a proof, one step at a time",
+    href: "/proof",
+    mobileHref: "/m/proof",
+    icon: "brain",
+    tone: "purple",
+    badge: "AST",
+  },
+  {
+    id: "neuro-studio",
+    title: "NeuroRecon Studio",
+    subtitle: "Interactive 3D MRI brain viewer",
+    href: "/neuro",
+    mobileHref: "/m/neuro",
+    icon: "brain",
+    tone: "emerald",
+    badge: "3D MRI",
   },
   {
     id: "incident-simulator",
@@ -271,36 +229,151 @@ const SIMULATOR_ITEMS: NavItem[] = [
   },
 ];
 
-const STUDIO_ITEMS: NavItem[] = [
+const ARCADE_HUB_ITEMS: NavItem[] = [
   {
-    id: "crf-studio",
-    title: "CRF Studio",
-    subtitle: "Clinical form designer and live trial simulator",
-    href: "/crf",
-    mobileHref: "/m/crf",
-    icon: "spreadsheet",
+    id: "arcade-hub",
+    title: "Arcade Hub",
+    subtitle: "Every game in one place",
+    href: "/arcade",
+    icon: "arcade",
     tone: "cyan",
-    badge: "CDISC",
+  },
+];
+
+/** Games about clinical research and the work around it. */
+const ARCADE_CLINICAL_ITEMS: NavItem[] = [
+  {
+    id: "study-director",
+    title: "Study Director",
+    subtitle: "Run a clinical study. Everything is fine.",
+    href: "/arcade/study-director",
+    icon: "clipboard",
+    tone: "cyan",
   },
   {
-    id: "proof-workspace",
-    title: "Proof Workspace",
-    subtitle: "Build a proof, one step at a time",
-    href: "/proof",
-    mobileHref: "/m/proof",
-    icon: "brain",
-    tone: "purple",
-    badge: "AST",
+    id: "trial-and-error",
+    title: "Trial & Error: Biostat Ops",
+    subtitle: "Clinical-output roguelike deckbuilder",
+    href: "/arcade/trial-and-error",
+    icon: "cards",
+    tone: "cyan",
   },
   {
-    id: "neuro-studio",
-    title: "NeuroRecon Studio",
-    subtitle: "Interactive 3D MRI brain viewer",
-    href: "/neuro",
-    mobileHref: "/m/neuro",
-    icon: "brain",
+    id: "clinical-chaos",
+    title: "Clinical Trial Chaos",
+    subtitle: "Fast-paced medical trial simulator",
+    href: "/arcade/clinical-chaos",
+    icon: "shield",
+    tone: "cyan",
+  },
+];
+
+/** Games drawn from Fred's own life. */
+const ARCADE_LIFE_ITEMS: NavItem[] = [
+  {
+    id: "laser-loon",
+    title: "Laser Loon",
+    subtitle: "A loon, lasers, and a trip to the Capitol",
+    href: "/arcade/laser-loon",
+    icon: "laser-loon",
+    tone: "cyan",
+  },
+  {
+    id: "patty-drive-thru",
+    title: "Patty's Drive-Thru",
+    subtitle: "One shift at my first job, in first person",
+    href: "/arcade/patty-drive-thru",
+    icon: "headset",
+    tone: "cyan",
+  },
+  {
+    id: "for-better-or-bulk",
+    title: "For Better or Bulk",
+    subtitle: "Set up our Costco wedding before 4:00",
+    href: "/arcade/for-better-or-bulk",
+    icon: "rings",
+    tone: "cyan",
+  },
+  {
+    id: "working-with-duck",
+    title: "Working With Duck",
+    subtitle: "You have work. Duck has other plans.",
+    href: "/arcade/working-with-duck",
+    icon: "duck",
+    tone: "cyan",
+  },
+  {
+    id: "garmin-watch",
+    title: "Monkey C Mayhem",
+    subtitle: "A Garmin 5K Platformer",
+    href: "/arcade/garmin-watch",
+    icon: "watch",
+    tone: "cyan",
+  },
+];
+
+const ARCADE_PUZZLE_ITEMS: NavItem[] = [
+  {
+    id: "retro-labyrinth",
+    title: "Retro Labyrinth",
+    subtitle: "Retro procedural dungeon crawler",
+    href: "/arcade/retro-labyrinth",
+    icon: "terminal",
+    tone: "cyan",
+  },
+  {
+    id: "quasi-puzzler",
+    title: "Quasi-Perfect Puzzler",
+    subtitle: "Deductive logic puzzle assistant",
+    href: "/arcade/quasi-puzzler",
+    icon: "puzzle",
+    tone: "cyan",
+  },
+  {
+    id: "meme-vault",
+    title: "Meme Vault",
+    subtitle: "Soundboard and easter egg trophies",
+    href: "/arcade/meme-vault",
+    icon: "vault",
     tone: "emerald",
-    badge: "3D MRI",
+  },
+];
+
+const WRITING_ITEMS: NavItem[] = [
+  {
+    id: "blog",
+    title: "Blog",
+    subtitle: "Notes on what I'm building and why",
+    href: "/blog",
+    icon: "article",
+    tone: "cyan",
+  },
+  {
+    id: "case-studies",
+    title: "Case Studies",
+    subtitle: "Projects, the decisions behind them and their limits",
+    href: "/case-studies",
+    icon: "article",
+    tone: "cyan",
+  },
+];
+
+const FEATURED_WRITING_ITEMS: NavItem[] = [
+  {
+    id: "laser-loon-design",
+    title: "The Laser Loon, by Design",
+    subtitle: "How the flag-inspired loon artwork came together",
+    href: "/work/laser-loon",
+    icon: "laser-loon",
+    tone: "amber",
+  },
+  {
+    id: "brother-case-study",
+    title: "Designing for My Brother",
+    subtitle: "Dyslexia-first typography and cognitive accessibility",
+    href: "/case-studies/designing-for-my-brother",
+    icon: "article",
+    tone: "amber",
   },
 ];
 
@@ -311,6 +384,14 @@ const ABOUT_ITEMS: NavItem[] = [
     subtitle: "Background, experience and how I work",
     href: "/#about",
     icon: "user",
+    tone: "cyan",
+  },
+  {
+    id: "schedule",
+    title: "Office Hours",
+    subtitle: "Book a chat and see the schedule",
+    href: "/schedule",
+    icon: "calendar",
     tone: "cyan",
   },
   {
@@ -332,12 +413,21 @@ const ABOUT_ITEMS: NavItem[] = [
     badge: "Licenses",
   },
   {
-    id: "schedule",
-    title: "Office Hours",
-    subtitle: "Book a chat and see the schedule",
-    href: "/schedule",
-    icon: "calendar",
-    tone: "cyan",
+    id: "wedding",
+    title: "Our Wedding",
+    subtitle: "An archive of Abbi and Fred's wedding website and photos",
+    href: "/wedding",
+    icon: "heart",
+    tone: "amber",
+  },
+  {
+    id: "merch",
+    title: "Laser Loon Merch (soon)",
+    subtitle: "Flag stickers, shirts and prints at cost, coming soon",
+    href: "/merch",
+    icon: "merch",
+    tone: "amber",
+    badge: "Coming soon",
   },
   {
     id: "github",
@@ -350,89 +440,67 @@ const ABOUT_ITEMS: NavItem[] = [
   },
 ];
 
-/**
- * Pages the footer lists that the top bar does not. Merch is reached from
- * Laser Loon and the footer rather than from the Arcade menu.
- */
-export const FOOTER_EXTRA_ITEMS: readonly NavItem[] = [
-  {
-    id: "merch",
-    title: "Laser Loon Merch (soon)",
-    subtitle: "Flag stickers, shirts and prints at cost, coming soon",
-    href: "/merch",
-    icon: "merch",
-    tone: "amber",
-    badge: "Coming soon",
-  },
-  {
-    id: "brother-case-study",
-    title: "Designing for My Brother",
-    subtitle: "Dyslexia-first typography and cognitive accessibility",
-    href: "/case-studies/designing-for-my-brother",
-    icon: "article",
-    tone: "amber",
-  },
-  {
-    id: "wedding",
-    title: "Our Wedding",
-    subtitle: "An archive of Abbi and Fred's wedding website and photos",
-    href: "/wedding",
-    icon: "heart",
-    tone: "amber",
-  },
-];
-
 /** The top bar, left to right. */
 export const PRIMARY_NAV: readonly NavGroup[] = [
   {
-    id: "work",
-    label: "Work",
-    href: "/case-studies",
-    sections: [],
-    activeWhen: { prefixes: ["/case-studies"] },
-    also: ["/case-studies/designing-for-my-brother"],
+    id: "clinical",
+    label: "Clinical",
+    href: "/clinical",
+    overviewLabel: "The whole clinical journey",
+    sections: [
+      { id: "journey", label: "The journey, in order", items: JOURNEY_ITEMS },
+      {
+        id: "platform-tools",
+        label: "Platform tools",
+        items: PLATFORM_TOOL_ITEMS,
+      },
+    ],
+    activeWhen: {
+      exact: ["/clinical", "/crf", "/protocol-drift", "/study-data"],
+      prefixes: ["/platform", "/m/crf"],
+    },
   },
   {
-    id: "blog",
-    label: "Blog",
-    href: "/blog",
-    sections: [],
-    activeWhen: { prefixes: ["/blog"] },
+    id: "labs",
+    label: "Labs",
+    href: "/labs",
+    overviewLabel: "Every lab on one page",
+    sections: [{ id: "labs", items: LABS_ITEMS }],
+    activeWhen: {
+      exact: ["/labs", "/simulator", "/proof", "/neuro"],
+      prefixes: ["/patrol", "/m/proof", "/m/neuro", "/m/patrol"],
+    },
   },
   {
     id: "arcade",
     label: "Arcade",
     href: "/arcade",
-    sections: [{ id: "games", items: ARCADE_ITEMS }],
+    sections: [
+      { id: "hub", items: ARCADE_HUB_ITEMS },
+      {
+        id: "clinical-life",
+        label: "Clinical life",
+        items: ARCADE_CLINICAL_ITEMS,
+      },
+      { id: "freds-life", label: "Fred's life", items: ARCADE_LIFE_ITEMS },
+      {
+        id: "puzzles",
+        label: "Puzzles and classics",
+        items: ARCADE_PUZZLE_ITEMS,
+      },
+    ],
     activeWhen: { prefixes: ["/arcade"] },
-    also: ["/merch"],
   },
   {
-    id: "simulators",
-    label: "Simulators",
-    href: "/simulator",
+    id: "writing",
+    label: "Writing",
+    href: "/blog",
+    noBreadcrumb: true,
     sections: [
-      { id: "simulators", label: "Simulators", items: SIMULATOR_ITEMS },
-      { id: "studios", label: "Studios", items: STUDIO_ITEMS },
+      { id: "writing", items: WRITING_ITEMS },
+      { id: "featured", label: "Featured", items: FEATURED_WRITING_ITEMS },
     ],
-    activeWhen: {
-      exact: [
-        "/protocol-drift",
-        "/study-data",
-        "/simulator",
-        "/crf",
-        "/proof",
-        "/neuro",
-      ],
-      prefixes: [
-        "/platform",
-        "/patrol",
-        "/m/crf",
-        "/m/proof",
-        "/m/neuro",
-        "/m/patrol",
-      ],
-    },
+    activeWhen: { prefixes: ["/blog", "/case-studies", "/work"] },
   },
   {
     id: "about",
@@ -440,7 +508,7 @@ export const PRIMARY_NAV: readonly NavGroup[] = [
     href: "/#about",
     sections: [{ id: "about", items: ABOUT_ITEMS }],
     activeWhen: {
-      exact: ["/stack", "/acknowledgments", "/schedule", "/wedding"],
+      exact: ["/stack", "/acknowledgments", "/schedule", "/wedding", "/merch"],
     },
   },
   {
@@ -467,15 +535,13 @@ export function getAllNavItems(): NavItem[] {
   return PRIMARY_NAV.flatMap(getNavGroupItems);
 }
 
-/** Every href the navigation reaches, menu entries and footer extras alike. */
+/** Every href the navigation reaches: group overviews and menu entries. */
 export function getAllNavHrefs(): string[] {
   const hrefs = new Set<string>();
   for (const group of PRIMARY_NAV) {
     hrefs.add(group.href);
     for (const item of getNavGroupItems(group)) hrefs.add(item.href);
-    for (const path of group.also ?? []) hrefs.add(path);
   }
-  for (const item of FOOTER_EXTRA_ITEMS) hrefs.add(item.href);
   return [...hrefs];
 }
 
@@ -491,8 +557,7 @@ export function isNavGroupActive(group: NavGroup, pathname: string): boolean {
   const { exact = [], prefixes = [] } = group.activeWhen;
   return (
     exact.includes(pathname) ||
-    prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`)) ||
-    (group.also ?? []).includes(pathname)
+    prefixes.some((p) => pathname === p || pathname.startsWith(`${p}/`))
   );
 }
 
@@ -516,15 +581,23 @@ export interface NavBreadcrumbParent {
 
 /**
  * The parent crumb a page shows between Home and its own name: the label and
- * overview href of the menu group that lists it (Simulators, About). Empty for
- * pages outside a menu group, and for the group's own overview page, so a trail
+ * overview href of the menu group that lists it (Clinical, Labs, Arcade, About).
+ * Empty for pages outside a menu group, for a group with no overview page of its
+ * own (Writing), and for the group's own overview page, so a trail
  * never links to the page it is on.
  */
 export function getNavBreadcrumbParents(
   pathname: string
 ): NavBreadcrumbParent[] {
   const group = getNavGroupForHref(pathname);
-  if (!group || !isNavMenu(group) || pathname === group.href) return [];
+  if (
+    !group ||
+    !isNavMenu(group) ||
+    group.noBreadcrumb ||
+    pathname === group.href
+  ) {
+    return [];
+  }
   return [{ label: group.label, href: group.href }];
 }
 

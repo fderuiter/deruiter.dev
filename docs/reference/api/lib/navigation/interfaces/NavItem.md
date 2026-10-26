@@ -62,6 +62,14 @@ Phone-sized variant of the page, used by the mobile drawer.
 
 ***
 
+### step?
+
+> `optional` **step?**: `number`
+
+Position on the clinical journey, shown before the title.
+
+***
+
 ### subtitle
 
 > **subtitle**: `string`

@@ -31,10 +31,11 @@ export default function PlatformPortfolioPage() {
         <p className="mt-5 max-w-3xl text-slate-300">
           Eight synthetic studies side by side against their plans: every
           study&apos;s milestones on one timeline, with the slips highlighted,
-          and how long each took to start up, recruit and lock its database
-          against the rest of the portfolio. Every cycle time comes from the
-          governed metric registry, and every chart has its data table. To drill
-          into one study, open the{" "}
+          how long each took to start up, recruit and lock its database against
+          the rest of the portfolio, and what each is now forecast to cost
+          against its budget. Every number comes from the governed metric
+          registry, and every chart has its data table. To drill into one study,
+          open the{" "}
           <Link
             href="/platform/operations"
             className="text-amber-300 underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-amber-400"

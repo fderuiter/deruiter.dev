@@ -23,6 +23,7 @@ vi.mock("@/components/arcade/mobile", () => ({
 
 import { DesktopView } from "@/components/retro-labyrinth/views/DesktopView";
 import { TabletView } from "@/components/retro-labyrinth/views/TabletView";
+import { PhoneView } from "@/components/retro-labyrinth/views/PhoneView";
 
 describe("Retro Labyrinth views (#2859)", () => {
   beforeEach(() => {
@@ -40,6 +41,25 @@ describe("Retro Labyrinth views (#2859)", () => {
     });
   });
 
+  it("lays the phone view out as a phone, touch only in a touch cabinet (#2917)", () => {
+    device.touch = true;
+    render(<PhoneView isMounted={false} />);
+    expect(layoutProps.current.at(-1)).toEqual({
+      isMounted: false,
+      touch: true,
+      phone: true,
+    });
+
+    // A phone-sized window worked with a mouse keeps the desktop controls.
+    device.touch = false;
+    render(<PhoneView />);
+    expect(layoutProps.current.at(-1)).toEqual({
+      isMounted: true,
+      touch: false,
+      phone: true,
+    });
+  });
+
   it("passes the desktop view's cabinet state through", () => {
     render(<DesktopView />);
     expect(layoutProps.current.at(-1)).toEqual({
@@ -48,7 +68,7 @@ describe("Retro Labyrinth views (#2859)", () => {
       phone: false,
     });
 
-    // The phone still borrows the desktop view until #2379.
+    // The shared layout still reads the cabinet state until #2863.
     device.touch = true;
     device.phone = true;
     render(<DesktopView />);

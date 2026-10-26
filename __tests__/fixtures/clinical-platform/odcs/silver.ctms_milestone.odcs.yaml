@@ -135,3 +135,4 @@ customProperties:
     value:
       - "product:gold.dim_milestone"
       - "product:gold.fct_milestone"
+      - "product:gold.fct_spend_forecast"

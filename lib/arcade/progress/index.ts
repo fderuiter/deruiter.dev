@@ -41,3 +41,18 @@ export {
   setCoachMarksSeen,
 } from "./coach-marks-slice";
 export type { ArcadeCoachMarks } from "./coach-marks-slice";
+export {
+  ARCADE_DEVICE_SETTINGS_KEY,
+  DEFAULT_DEVICE_SETTINGS,
+  arcadeDeviceSettingsSlice,
+  getDeviceSettings,
+  setDeviceSettings,
+  useDeviceSettings,
+} from "./device-settings-slice";
+export type {
+  ArcadeDeviceSettings,
+  ArcadeDeviceSettingsPatch,
+  DeviceDockSize,
+  DeviceHandedness,
+  DeviceLayout,
+} from "./device-settings-slice";

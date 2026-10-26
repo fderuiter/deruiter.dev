@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.5.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.6.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -222,6 +222,18 @@ erDiagram
     int variance_usd
     boolean is_synthetic
   }
+  fct_spend_forecast {
+    int study_key PK, FK
+    int vendor_key PK, FK
+    int as_of_date_key FK
+    int budget_to_date_usd
+    int actual_to_date_usd
+    int remaining_budget_usd
+    int budget_at_completion_usd
+    int forecast_at_completion_usd
+    int variance_at_completion_usd
+    boolean is_synthetic
+  }
   fct_kri_snapshot {
     int site_key PK, FK
     int snapshot_date_key PK, FK
@@ -281,6 +293,9 @@ erDiagram
   dim_study ||--o{ fct_spend : "study_key"
   dim_vendor ||--o{ fct_spend : "vendor_key"
   dim_date ||--o{ fct_spend : "month_date_key"
+  dim_study ||--o{ fct_spend_forecast : "study_key"
+  dim_vendor ||--o{ fct_spend_forecast : "vendor_key"
+  dim_date ||--o{ fct_spend_forecast : "as_of_date_key"
   dim_site ||--o{ fct_kri_snapshot : "site_key"
   dim_date ||--o{ fct_kri_snapshot : "snapshot_date_key"
   dim_study ||--o{ fct_kri_snapshot : "study_key"
@@ -300,6 +315,7 @@ erDiagram
 | `fct_planned_monitoring_visit` | One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored. | `planned_visit_id` | `dim_monitoring_plan`, `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_milestone` | One row per study and milestone kind. | `study_key`, `milestone_key` | `dim_study`, `dim_milestone`, `dim_date` |
 | `fct_spend` | One row per study, vendor and calendar month. | `study_key`, `vendor_key`, `month_date_key` | `dim_study`, `dim_vendor`, `dim_date` |
+| `fct_spend_forecast` | One row per study and vendor at the data cut. | `study_key`, `vendor_key` | `dim_study`, `dim_vendor`, `dim_date` |
 | `fct_kri_snapshot` | One row per site, month-end snapshot date and key risk indicator. | `site_key`, `snapshot_date_key`, `kri_id` | `dim_site`, `dim_date`, `dim_study`, `dim_country` |
 
 ## Dimensions
@@ -339,6 +355,7 @@ keeps the earlier investigator.
 | `irt_kit` | One row per kit. | `kit_id` | `bronze.irt.kits` |
 | `etmf_document` | One row per expected document. | `document_id` | `bronze.etmf` |
 | `finance_line` | One row per study, cost category and quarter. | `study_id`, `cost_category`, `fiscal_quarter` | `bronze.finance` |
+| `finance_plan_line` | One row per study, cost category and quarter. | `study_id`, `cost_category`, `fiscal_quarter` | `bronze.financePlan` |
 | `cec_adjudication` | One row per adjudicated event. | `event_id` | `bronze.cec` |
 
 ## `gold.dim_study`
@@ -625,6 +642,23 @@ Budget against actual spend, with each quarter spread evenly over its three mont
 | `budget_usd` | integer | no |  | confidential | Budgeted amount, whole US dollars. |
 | `actual_usd` | integer | no |  | confidential | Actual spend, whole US dollars. |
 | `variance_usd` | integer | no |  | confidential | Actual minus budget, whole US dollars. |
+| `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
+
+## `gold.fct_spend_forecast`
+
+Budget, actual spend and forecast at completion per study and vendor at the data cut. The forecast is the actual spend to date plus the planned budget still to come, scaled by the vendor's spend-to-budget ratio to date.
+
+| Column | Type | Null | Key | Classification | Description |
+| --- | --- | --- | --- | --- | --- |
+| `study_key` | integer | no | PK, FK to `gold.dim_study` | internal | Study. |
+| `vendor_key` | integer | no | PK, FK to `gold.dim_vendor` | internal | Vendor; 0 for investigator grants. |
+| `as_of_date_key` | integer | no | FK to `gold.dim_date` | internal | The data cut the forecast was made at. |
+| `budget_to_date_usd` | integer | no |  | confidential | Budget for every quarter booked up to the data cut, whole US dollars. |
+| `actual_to_date_usd` | integer | no |  | confidential | Actual spend for every quarter booked up to the data cut, whole US dollars. |
+| `remaining_budget_usd` | integer | no |  | confidential | Planned budget for the quarters after the data cut, whole US dollars; 0 once the study's final report is in. |
+| `budget_at_completion_usd` | integer | no |  | confidential | Budget to date plus the remaining budget, whole US dollars. |
+| `forecast_at_completion_usd` | integer | no |  | confidential | Actual spend to date plus the remaining budget times actual over budget to date, rounded to whole US dollars; the remaining budget as planned when nothing was budgeted to date. |
+| `variance_at_completion_usd` | integer | no |  | confidential | Forecast minus budget at completion, whole US dollars; above 0 is a forecast overrun. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 
 ## `gold.fct_kri_snapshot`

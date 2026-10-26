@@ -73,6 +73,7 @@
 - [lib/arcade/progress/coach-marks-slice](lib/arcade/progress/coach-marks-slice/README.md)
 - [lib/arcade/progress/core](lib/arcade/progress/core/README.md)
 - [lib/arcade/progress/daily-slice](lib/arcade/progress/daily-slice/README.md)
+- [lib/arcade/progress/device-settings-slice](lib/arcade/progress/device-settings-slice/README.md)
 - [lib/arcade/progress/react](lib/arcade/progress/react/README.md)
 - [lib/arcade/progress/slice](lib/arcade/progress/slice/README.md)
 - [lib/arcade/progress/store](lib/arcade/progress/store/README.md)

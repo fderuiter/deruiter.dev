@@ -32,6 +32,7 @@
 - [EdcVisit](interfaces/EdcVisit.md)
 - [EtmfDocument](interfaces/EtmfDocument.md)
 - [FinanceLine](interfaces/FinanceLine.md)
+- [FinancePlanLine](interfaces/FinancePlanLine.md)
 - [IrtFeed](interfaces/IrtFeed.md)
 - [IrtKit](interfaces/IrtKit.md)
 - [IrtRandomization](interfaces/IrtRandomization.md)

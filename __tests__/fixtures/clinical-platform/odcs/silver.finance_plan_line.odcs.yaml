@@ -1,0 +1,147 @@
+# ODCS v3.2.0 data contract for silver.finance_plan_line. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.finance_plan_line"
+name: "Budget plan lines"
+version: "1.0.0"
+status: active
+domain: Finance
+tags:
+  - silver
+  - confidential
+  - synthetic
+description:
+  purpose: "The approved budget plan per study, cost category and calendar quarter, from the study's start to its planned final report."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: finance_plan_line
+    name: finance_plan_line
+    physicalName: silver.finance_plan_line
+    physicalType: table
+    logicalType: object
+    description: "The approved budget plan per study, cost category and calendar quarter, from the study's start to its planned final report."
+    dataGranularityDescription: "One row per study, cost category and quarter."
+    properties:
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: vendor_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Vendor id, or null for investigator grants."
+        required: false
+        classification: internal
+      - name: cost_category
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Cost category."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: internal
+      - name: fiscal_quarter
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 7
+        physicalType: "VARCHAR(7)"
+        description: "Calendar quarter, for example 2027-Q1."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: internal
+      - name: quarter_start_on
+        logicalType: date
+        physicalType: DATE
+        description: "First day of the quarter."
+        required: true
+        classification: internal
+      - name: budget_usd
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Planned budget, whole US dollars."
+        required: true
+        classification: confidential
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: finance_plan_line_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - study_id
+            - cost_category
+            - fiscal_quarter
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (study_id, cost_category, fiscal_quarter) identifies one row."
+team:
+  name: Finance
+  members:
+    - username: clinical-finance-lead
+      name: "Clinical Finance Lead"
+      role: owner
+    - username: finance-data-steward
+      name: "Finance Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 744
+    unit: h
+    driver: operational
+    description: "The latest load is at most 744 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 10
+    unit: "y"
+    driver: operational
+    description: "Sponsor records policy for operational and derived data: a policy choice, not a regulatory minimum."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: false
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.financePlan
+  - property: consumers
+    value:
+      - "product:gold.fct_spend_forecast"

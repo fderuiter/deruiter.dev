@@ -24,6 +24,7 @@ import { useInterval } from "@/hooks/useInterval";
 import { useSafeTimeout } from "@/hooks/useSafeTimeout";
 import { CabinetFullscreenContext } from "./CabinetFullscreen";
 import { CabinetSetupContext } from "./CabinetSetupContext";
+import { CabinetSetupSheet } from "./CabinetSetupSheet";
 import { FullscreenButton } from "@/components/arcade/FullscreenButton";
 import {
   PreGameSetupWizard,
@@ -44,6 +45,7 @@ import {
   PHONE_ORIENTATION_QUERY,
   useTouchDevice,
   useFormFactor,
+  usePhone,
   type MobileOrientation,
 } from "@/components/arcade/mobile";
 import {
@@ -139,6 +141,11 @@ interface PlayCabinetProps {
    * Without it the cabinet renders `children`, as before.
    */
   views?: GameViews;
+  /**
+   * The game's own options for the Setup sheet (#2923), shown under the
+   * device settings every game shares.
+   */
+  setupItems?: React.ReactNode;
   children?: React.ReactNode;
 }
 
@@ -231,6 +238,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   mobileLayout = "scroll",
   onAutoPause,
   views,
+  setupItems,
   children,
 }) => {
   const gameId = rawGameId || title.toLowerCase().replace(/[^a-z0-9]/g, "-");
@@ -258,6 +266,11 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     touchImmersive && phoneOrientation && orientationMismatch;
 
   const [showWizard, setShowWizard] = useState(false);
+  // The Setup sheet (#2923): device settings, the game's own options and a
+  // way into the wizard. The toolbar's Setup key opens it.
+  const [showSetup, setShowSetup] = useState(false);
+  const setupKeyRef = useRef<HTMLButtonElement>(null);
+  const phoneScreen = usePhone();
   const cabinetRef = useRef<HTMLDivElement>(null);
   // The view a cabinet with views shows (ADR 0062). A dev-only picker in the
   // marquee can force one; `?view=` forces one in any build.
@@ -313,10 +326,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
     () => ({
       config: setupConfig,
       runRevision,
-      isSetupOpen: showWizard,
+      isSetupOpen: showWizard || showSetup,
       skipTitleScreen: singleTitleScreen,
     }),
-    [setupConfig, runRevision, showWizard, singleTitleScreen]
+    [setupConfig, runRevision, showWizard, showSetup, singleTitleScreen]
   );
 
   // The one CRT layer (#1516): the Setup Wizard's crtFilter mapped onto
@@ -368,7 +381,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   // its orientation is inert behind the rotate prompt, which owns focus, so
   // the trap waits for the prompt to go (#2039 playtest).
   const fullscreenFocusRef = useFocusTrap(
-    (isFullscreen || touchImmersive) && !showWizard && !rotateBlocked,
+    (isFullscreen || touchImmersive) &&
+      !showWizard &&
+      !showSetup &&
+      !rotateBlocked,
     {
       initialFocusRef: boundaryFocusRef,
       returnFocus: false,
@@ -519,10 +535,11 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   );
 
   // Setup is a pause of its own, cleared when Setup closes.
+  const setupOpen = showWizard || showSetup;
   useEffect(() => {
-    if (showWizard) pauseController.pause("setup");
+    if (setupOpen) pauseController.pause("setup");
     else pauseController.resume("setup");
-  }, [showWizard, pauseController]);
+  }, [setupOpen, pauseController]);
 
   // The screen stays awake while a real-time run plays, and sleeps on pause.
   useScreenWakeLock(isLaunched && pauseState.running && !pauseState.paused);
@@ -530,7 +547,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
   // The shared pause overlay belongs to cabinets with views; a game on the
   // old path keeps its own pause menu.
   const overlayOpen =
-    hostsViews && !showWizard && showsPauseOverlay(pauseState.reasons);
+    hostsViews && !setupOpen && showsPauseOverlay(pauseState.reasons);
   const [exitOffered, setExitOffered] = useState(false);
   if (exitOffered && !overlayOpen) setExitOffered(false);
 
@@ -824,6 +841,10 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
       setShowWizard(false);
       return "stay";
     }
+    if (showSetup) {
+      setShowSetup(false);
+      return "stay";
+    }
     const sheet = findBackSheet(cabinet);
     if (hostsViews) {
       const action = resolveBack({ sheetOpen: sheet !== null, overlayOpen });
@@ -905,7 +926,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
             // to that overlay, so its Escape closes the overlay, not the game.
             !event.currentTarget.contains(target) ||
             syntheticEscapeRef.current ||
-            showWizard ||
+            setupOpen ||
             event.repeat ||
             event.ctrlKey ||
             event.metaKey ||
@@ -1078,10 +1099,12 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               />
             )}
             <button
+              ref={setupKeyRef}
               type="button"
-              onClick={() => setShowWizard(true)}
-              aria-label="Pre-Game Setup Wizard"
-              title="Pre-Game Setup Wizard"
+              onClick={() => setShowSetup(true)}
+              aria-label="Setup"
+              title="Setup"
+              aria-haspopup="dialog"
               className="h-12 w-12 inline-flex items-center justify-center rounded-xl bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 border border-amber-500/30 transition-all cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
             >
               <IconAdjustments className="w-4 h-4" aria-hidden="true" />
@@ -1110,10 +1133,13 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               />
             )}
             <button
+              ref={setupKeyRef}
               type="button"
-              onClick={() => setShowWizard(true)}
+              onClick={() => setShowSetup(true)}
+              aria-label="Setup"
+              aria-haspopup="dialog"
               className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-              title="Pre-Game Setup Wizard"
+              title="Setup"
             >
               <IconAdjustments className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Setup</span>
@@ -1174,10 +1200,13 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               )}
 
               <button
+                ref={setupKeyRef}
                 type="button"
-                onClick={() => setShowWizard(true)}
+                onClick={() => setShowSetup(true)}
+                aria-label="Setup"
+                aria-haspopup="dialog"
                 className="min-h-12 min-w-12 px-2.5 py-1.5 bg-neutral-900/90 hover:bg-neutral-800 text-amber-400 rounded-xl border border-amber-500/30 transition-all font-mono font-bold text-xs flex items-center justify-center gap-1 cursor-pointer touch-manipulation select-none active:scale-95 focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:outline-none"
-                title="Pre-Game Setup Wizard"
+                title="Setup"
               >
                 <IconAdjustments className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Setup</span>
@@ -1245,7 +1274,7 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
                   setRunRevision((revision) => revision + 1);
                   resumeFromOverlay();
                 }}
-                onSettings={() => setShowWizard(true)}
+                onSettings={() => setShowSetup(true)}
                 onExit={handleExit}
                 howToPlay={
                   <>
@@ -1279,6 +1308,25 @@ const Cabinet: React.FC<PlayCabinetProps> = ({
               }}
               onCancel={() => setShowWizard(false)}
             />
+
+            {/* The Setup sheet (#2923). The bottom sheet pauses through the
+              cabinet's pause service, so it sits inside the provider. */}
+            <CabinetPauseProvider controller={pauseController}>
+              <CabinetSetupSheet
+                open={showSetup}
+                onClose={() => setShowSetup(false)}
+                asSheet={
+                  touchImmersive &&
+                  (activeView ? activeView === "phone" : phoneScreen)
+                }
+                onOpenWizard={() => {
+                  setShowSetup(false);
+                  setShowWizard(true);
+                }}
+                setupItems={setupItems}
+                returnFocusTo={setupKeyRef}
+              />
+            </CabinetPauseProvider>
           </div>
 
           {/* Cabinet CRT layer: static, above the game, never over the wizard

@@ -620,6 +620,12 @@ Re-exports [defineSlice](progress/slice/functions/defineSlice.md)
 
 ***
 
+### DEVICE\_LAYOUT\_MIN\_WIDTH
+
+Re-exports [DEVICE_LAYOUT_MIN_WIDTH](progress/device-settings-slice/variables/DEVICE_LAYOUT_MIN_WIDTH.md)
+
+***
+
 ### DeviceDockSize
 
 Re-exports [DeviceDockSize](progress/device-settings-slice/type-aliases/DeviceDockSize.md)
@@ -635,6 +641,12 @@ Re-exports [DeviceHandedness](progress/device-settings-slice/type-aliases/Device
 ### DeviceLayout
 
 Re-exports [DeviceLayout](progress/device-settings-slice/type-aliases/DeviceLayout.md)
+
+***
+
+### effectiveLayout
+
+Re-exports [effectiveLayout](progress/device-settings-slice/functions/effectiveLayout.md)
 
 ***
 
@@ -839,6 +851,12 @@ Re-exports [isUnassisted](run-tags/functions/isUnassisted.md)
 ### keyNameForCode
 
 Re-exports [keyNameForCode](input/actions/functions/keyNameForCode.md)
+
+***
+
+### layoutFits
+
+Re-exports [layoutFits](progress/device-settings-slice/functions/layoutFits.md)
 
 ***
 

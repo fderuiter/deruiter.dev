@@ -47,7 +47,9 @@ function ItemRow({
       {item.badge ? (
         <span
           className={cn(
-            "shrink-0 rounded bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px]",
+            // Below 360 px the badge would cut the title short ("Study Data
+            // Pipeli…"), and the title is the part that names the page.
+            "shrink-0 rounded bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] max-[359px]:hidden",
             navToneClass(item.tone)
           )}
         >

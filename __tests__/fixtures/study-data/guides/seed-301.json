@@ -520,6 +520,15 @@
         "file": "adlb.xpt"
       },
       {
+        "name": "ADEG",
+        "label": "ECG Analysis",
+        "class": "BDS",
+        "structure": "One or more records per subject per parameter per analysis visit",
+        "keys": ["STUDYID", "USUBJID", "ASEQ"],
+        "records": 1980,
+        "file": "adeg.xpt"
+      },
+      {
         "name": "ADAE",
         "label": "Adverse Events Analysis",
         "class": "OCCDS (ADVERSE EVENT)",
@@ -544,7 +553,7 @@
       "terminologyVersion": "2026-09-25",
       "scopeNotice": "Models a subset of published SDTMIG 3.4 and ADaMIG 1.3 rules. Run CDISC CORE for the complete published conformance catalog.",
       "coreUrl": "https://www.cdisc.org/core",
-      "rulesChecked": 10,
+      "rulesChecked": 13,
       "issues": []
     },
     "derivations": [
@@ -574,7 +583,10 @@
           "ADVS.EFFFL",
           "ADLB.SAFFL",
           "ADLB.ITTFL",
-          "ADLB.EFFFL"
+          "ADLB.EFFFL",
+          "ADEG.SAFFL",
+          "ADEG.ITTFL",
+          "ADEG.EFFFL"
         ]
       },
       {
@@ -588,7 +600,10 @@
           "ADVS.BNRIND",
           "ADLB.ABLFL",
           "ADLB.BASE",
-          "ADLB.BNRIND"
+          "ADLB.BNRIND",
+          "ADEG.ABLFL",
+          "ADEG.BASE",
+          "ADEG.BNRIND"
         ]
       },
       {
@@ -610,23 +625,38 @@
           "ADVS.AVISITN",
           "ADLB.ADY",
           "ADLB.AVISIT",
-          "ADLB.AVISITN"
+          "ADLB.AVISITN",
+          "ADEG.ADY",
+          "ADEG.AVISIT",
+          "ADEG.AVISITN"
         ]
       },
       {
         "id": "BDS_CHANGE",
         "text": "CHG is AVAL minus BASE; PCHG is 100 times CHG divided by nonzero BASE.",
-        "variables": ["ADVS.CHG", "ADVS.PCHG", "ADLB.CHG", "ADLB.PCHG"]
+        "variables": [
+          "ADVS.CHG",
+          "ADVS.PCHG",
+          "ADLB.CHG",
+          "ADLB.PCHG",
+          "ADEG.CHG",
+          "ADEG.PCHG"
+        ]
       },
       {
         "id": "BDS_ANALYSIS",
         "text": "For each subject, parameter and analysis visit, select the observed row closest to target day, then earlier date, then lower source sequence.",
-        "variables": ["ADVS.ANL01FL", "ADLB.ANL01FL"]
+        "variables": ["ADVS.ANL01FL", "ADLB.ANL01FL", "ADEG.ANL01FL"]
       },
       {
         "id": "BDS_LOCF",
         "text": "For a missing postbaseline visit, carry the latest earlier postbaseline result as a flagged sensitivity row; exclude it from primary ANL01FL selection.",
-        "variables": ["ADVS.DTYPE", "ADLB.DTYPE"]
+        "variables": ["ADVS.DTYPE", "ADLB.DTYPE", "ADEG.DTYPE"]
+      },
+      {
+        "id": "ADEG_CRIT",
+        "text": "QTcF records only: CRIT1FL is Y when AVAL exceeds 500 ms, and CRIT2FL is Y when CHG exceeds 60 ms, the ICH E14 categorical thresholds for a QTc outlier. CRIT2FL is blank when there is no baseline.",
+        "variables": ["ADEG.CRIT1FL", "ADEG.CRIT2FL"]
       },
       {
         "id": "ADAE_IMPUTE",

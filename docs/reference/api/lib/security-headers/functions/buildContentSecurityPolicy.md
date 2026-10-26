@@ -6,7 +6,7 @@
 
 # Function: buildContentSecurityPolicy()
 
-> **buildContentSecurityPolicy**(`admin`): `string`
+> **buildContentSecurityPolicy**(`admin`, `wasm?`): `string`
 
 Builds the Content-Security-Policy for the public or admin surface.
 
@@ -22,6 +22,18 @@ this origin and the named hosts.
 ### admin
 
 `boolean`
+
+Whether the policy is for the admin surface, which also
+  allows the configured Clerk origin.
+
+### wasm?
+
+`boolean` = `false`
+
+Whether the policy also allows WebAssembly compilation
+  (`'wasm-unsafe-eval'`), which `WASM_POLICY_SOURCES` lists the paths for.
+  It lets the page compile WebAssembly and never lets it evaluate
+  JavaScript.
 
 ## Returns
 

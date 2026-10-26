@@ -64,6 +64,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  platformSql: {
+    title: "In-Browser Clinical SQL Workbench",
+    description:
+      "Run read-only SQL on a synthetic clinical warehouse in your browser with DuckDB-WASM: saved queries, governed metric SQL in three dialects and a schema browser.",
+    path: "/platform/sql",
+    keywords: [
+      "SQL Workbench",
+      "DuckDB-WASM",
+      "Clinical Data Platform",
+      "Governed Metrics",
+      "Data Contracts",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platformOperations: {
     title: "Clinical Operations Dashboards",
     description:

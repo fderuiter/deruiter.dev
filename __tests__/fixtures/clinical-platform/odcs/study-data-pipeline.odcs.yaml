@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.6.0"
+version: "2.7.0"
 status: active
 domain: "Study data"
 tags:
@@ -883,6 +883,192 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, USUBJID, EXSEQ) identifies one row."
+  - id: CM
+    name: CM
+    physicalName: "m5/datasets/tabulations/sdtm/cm.json"
+    physicalType: file
+    logicalType: object
+    description: "Concomitant/Prior Medications"
+    dataGranularityDescription: "One record per recorded intervention occurrence or constant-dosing interval per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: CMSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: CMTRT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Reported Name of Drug, Med, or Therapy"
+        required: true
+        classification: confidential
+      - name: CMDECOD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Standardized Medication Name"
+        required: false
+        classification: confidential
+      - name: CMCAT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Category for Medication"
+        required: false
+        classification: confidential
+      - name: CMINDC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Indication
+        required: false
+        classification: confidential
+      - name: CMCLAS
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Medication Class"
+        required: false
+        classification: confidential
+      - name: CMCLASCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Medication Class Code"
+        required: false
+        classification: confidential
+      - name: CMDOSE
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Dose per Administration"
+        required: false
+        classification: confidential
+      - name: CMDOSU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Dose Units"
+        required: false
+        classification: confidential
+      - name: CMDOSFRQ
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Dosing Frequency per Interval"
+        required: false
+        classification: confidential
+      - name: CMROUTE
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Route of Administration"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+      - name: CMSTDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Start Date/Time of Medication"
+        required: false
+        classification: confidential
+      - name: CMENDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "End Date/Time of Medication"
+        required: false
+        classification: confidential
+      - name: CMSTDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of Start of Medication"
+        required: false
+        classification: confidential
+      - name: CMENDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of End of Medication"
+        required: false
+        classification: confidential
+      - name: CMENRTPT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "End Relative to Reference Time Point"
+        required: false
+        classification: confidential
+      - name: CMENTPT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "End Reference Time Point"
+        required: false
+        classification: confidential
+    quality:
+      - id: CM_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - CMSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, CMSEQ) identifies one row."
   - id: AE
     name: AE
     physicalName: "m5/datasets/tabulations/sdtm/ae.json"

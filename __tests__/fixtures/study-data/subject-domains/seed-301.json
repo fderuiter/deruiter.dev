@@ -11,6 +11,10 @@
     "rows": 81,
     "sha256": "3936071f80bbb2a3609f0fc9192aeefed02c357236e30d97a9c8278293edbf88"
   },
+  "CM": {
+    "rows": 99,
+    "sha256": "6399d9a75f16bd4c09f7770e54541dfb7dda9607a810857791c428e1f05bb7ae"
+  },
   "AE": {
     "rows": 44,
     "sha256": "cd1ff0a7fa27e3c6452a643d9a463411644c11b9fb186f7f89451ea71052b866"

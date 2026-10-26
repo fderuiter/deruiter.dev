@@ -1,6 +1,7 @@
 /**
  * Clinical Data Platform: the /platform/portfolio dashboard types (#2632).
  */
+import type { EnrollmentForecast } from "./forecast";
 import type { MilestoneKind, ReportData } from "./platform";
 import type { OperationsMilestone } from "./reporting";
 
@@ -138,6 +139,38 @@ export interface PortfolioFinance {
   readonly reports: readonly ReportData[];
 }
 
+/** A country a what-if can open sites in (#2913). */
+export interface PortfolioForecastCountry {
+  /** ISO 3166-1 alpha-2 code. */
+  readonly code: string;
+  /** English short name, from `gold.dim_country`. */
+  readonly name: string;
+  /** The study's sites recruiting there at the data cut; 0 where it has none. */
+  readonly sites: number;
+}
+
+/** One study's enrollment forecast as the portfolio page shows it (#2913). */
+export interface PortfolioForecast {
+  readonly studyId: string;
+  readonly title: string;
+  /** The forecast from `forecastEnrollment`, with the what-if if one was asked. */
+  readonly forecast: EnrollmentForecast;
+  /**
+   * Whether the planned last-subject-in date is on or before the data cut,
+   * so no run can meet it.
+   */
+  readonly planPassed: boolean;
+  /** The chance of meeting the planned date, or "Planned date passed". */
+  readonly probabilityText: string;
+  /** Runs that enroll the last subject by the planned date. */
+  readonly runsByPlan: number;
+  /**
+   * Every country with a site in the portfolio, by name: the countries a
+   * what-if can open sites in.
+   */
+  readonly countries: readonly PortfolioForecastCountry[];
+}
+
 /** The /platform/portfolio dashboard over one warehouse (#2911). */
 export interface PortfolioDashboard {
   /** ISO 8601 data cut of the warehouse. */
@@ -147,4 +180,9 @@ export interface PortfolioDashboard {
   readonly benchmarks: readonly PortfolioBenchmark[];
   /** Budget, actual and forecast at completion (#2912). */
   readonly finance: PortfolioFinance;
+  /**
+   * The baseline enrollment forecast of every study still enrolling: first
+   * subject in, last subject not yet in. In study id order (#2913).
+   */
+  readonly forecasts: readonly PortfolioForecast[];
 }

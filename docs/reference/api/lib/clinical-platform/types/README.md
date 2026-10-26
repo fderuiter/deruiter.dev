@@ -884,6 +884,18 @@ Re-exports [PortfolioFinance](portfolio-dashboard/interfaces/PortfolioFinance.md
 
 ***
 
+### PortfolioForecast
+
+Re-exports [PortfolioForecast](portfolio-dashboard/interfaces/PortfolioForecast.md)
+
+***
+
+### PortfolioForecastCountry
+
+Re-exports [PortfolioForecastCountry](portfolio-dashboard/interfaces/PortfolioForecastCountry.md)
+
+***
+
 ### PortfolioLane
 
 Re-exports [PortfolioLane](portfolio-dashboard/interfaces/PortfolioLane.md)

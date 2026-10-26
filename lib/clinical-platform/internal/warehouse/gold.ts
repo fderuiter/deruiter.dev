@@ -723,6 +723,82 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
   }
   const fctSpend = [...spend.values()];
 
+  // Forecast at completion per study and vendor. What is booked to date
+  // comes from the finance lines; what is still to come from the budget plan,
+  // for the quarters after the data cut of a study whose final report is not
+  // in. Each vendor's remaining budget is scaled by its own spend-to-budget
+  // ratio to date, so the vendor rows add up to the study.
+  const reported = new Set(
+    silver.ctms_milestone
+      .filter(
+        (m) =>
+          m.milestone_kind === "final-report" && optStr(m, "actual_on") !== null
+      )
+      .map((m) => str(m, "study_id"))
+  );
+  const forecast = new Map<
+    string,
+    {
+      study: number;
+      vendor: number;
+      budget: number;
+      actual: number;
+      remaining: number;
+    }
+  >();
+  const forecastRow = (line: WarehouseRow) => {
+    const study = lookup(studyKey, str(line, "study_id"), "study");
+    const vendorId = optStr(line, "vendor_id");
+    const vendor =
+      vendorId === null
+        ? NOT_APPLICABLE_VENDOR_KEY
+        : lookup(vendorKey, vendorId, "vendor");
+    const id = `${study}|${vendor}`;
+    const row = forecast.get(id) ?? {
+      study,
+      vendor,
+      budget: 0,
+      actual: 0,
+      remaining: 0,
+    };
+    forecast.set(id, row);
+    return row;
+  };
+  for (const line of silver.finance_line) {
+    const row = forecastRow(line);
+    row.budget += num(line, "budget_usd");
+    row.actual += num(line, "actual_usd");
+  }
+  for (const line of silver.finance_plan_line) {
+    const row = forecastRow(line);
+    if (
+      !reported.has(str(line, "study_id")) &&
+      str(line, "quarter_start_on") > asOf
+    ) {
+      row.remaining += num(line, "budget_usd");
+    }
+  }
+  const fctSpendForecast = [...forecast.values()].map((f) => {
+    const atCompletion = f.budget + f.remaining;
+    const forecastAtCompletion =
+      f.actual +
+      (f.budget === 0
+        ? f.remaining
+        : Math.round((f.remaining * f.actual) / f.budget));
+    return {
+      study_key: f.study,
+      vendor_key: f.vendor,
+      as_of_date_key: dk(asOf),
+      budget_to_date_usd: f.budget,
+      actual_to_date_usd: f.actual,
+      remaining_budget_usd: f.remaining,
+      budget_at_completion_usd: atCompletion,
+      forecast_at_completion_usd: forecastAtCompletion,
+      variance_at_completion_usd: forecastAtCompletion - atCompletion,
+      is_synthetic: true,
+    };
+  });
+
   const fctKri = kriSnapshots(
     silver,
     asOf,
@@ -755,6 +831,7 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
     fct_planned_monitoring_visit: fctPlannedMonitoringVisit,
     fct_milestone: fctMilestone,
     fct_spend: fctSpend,
+    fct_spend_forecast: fctSpendForecast,
     fct_kri_snapshot: fctKri,
   };
 }

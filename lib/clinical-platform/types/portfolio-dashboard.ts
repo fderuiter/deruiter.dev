@@ -100,6 +100,44 @@ export interface PortfolioBenchmark {
   readonly beyondFences: readonly string[];
 }
 
+/** One study or vendor forecast to overrun its budget at completion (#2912). */
+export interface PortfolioOverrun {
+  /** Study id, or vendor name. */
+  readonly name: string;
+  /** Forecast minus budget at completion, US dollars; above 0. */
+  readonly variance: number;
+  /** The variance, formatted as the metric shows it. */
+  readonly varianceText: string;
+  /** Forecast as a share of budget at completion, formatted. */
+  readonly shareText: string;
+}
+
+/** Budget against forecast at completion, across the portfolio (#2912). */
+export interface PortfolioFinance {
+  /** Budget at completion of every study, formatted. */
+  readonly budgetAtCompletionText: string;
+  /** Actual spend to the data cut, formatted. */
+  readonly actualSpendText: string;
+  /** Forecast at completion of every study, formatted. */
+  readonly forecastAtCompletionText: string;
+  /** Forecast minus budget at completion, US dollars; `null` with no budget. */
+  readonly varianceAtCompletion: number | null;
+  /** The variance, formatted. */
+  readonly varianceAtCompletionText: string;
+  /** Forecast as a share of budget at completion, formatted. */
+  readonly shareText: string;
+  /** Studies forecast to overrun, largest overrun first. */
+  readonly studyOverruns: readonly PortfolioOverrun[];
+  /** Vendors forecast to overrun across their studies, largest first. */
+  readonly vendorOverruns: readonly PortfolioOverrun[];
+  /**
+   * The governed finance reports: budget, actual and forecast at completion
+   * by study and by vendor, then the variance and cost per enrolled
+   * subject by study, then the variance by vendor.
+   */
+  readonly reports: readonly ReportData[];
+}
+
 /** The /platform/portfolio dashboard over one warehouse (#2911). */
 export interface PortfolioDashboard {
   /** ISO 8601 data cut of the warehouse. */
@@ -107,4 +145,6 @@ export interface PortfolioDashboard {
   readonly swimlane: PortfolioSwimlane;
   /** Start-up, enrollment and close-out cycle times, in study order. */
   readonly benchmarks: readonly PortfolioBenchmark[];
+  /** Budget, actual and forecast at completion (#2912). */
+  readonly finance: PortfolioFinance;
 }

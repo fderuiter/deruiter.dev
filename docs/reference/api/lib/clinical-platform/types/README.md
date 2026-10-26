@@ -398,6 +398,12 @@ Re-exports [FinanceLine](platform/interfaces/FinanceLine.md)
 
 ***
 
+### FinancePlanLine
+
+Re-exports [FinancePlanLine](platform/interfaces/FinancePlanLine.md)
+
+***
+
 ### GovernanceDecision
 
 Re-exports [GovernanceDecision](governance/interfaces/GovernanceDecision.md)
@@ -872,6 +878,12 @@ Re-exports [PortfolioDashboard](portfolio-dashboard/interfaces/PortfolioDashboar
 
 ***
 
+### PortfolioFinance
+
+Re-exports [PortfolioFinance](portfolio-dashboard/interfaces/PortfolioFinance.md)
+
+***
+
 ### PortfolioLane
 
 Re-exports [PortfolioLane](portfolio-dashboard/interfaces/PortfolioLane.md)
@@ -899,6 +911,12 @@ Re-exports [PortfolioOptions](portfolio/interfaces/PortfolioOptions.md)
 ### PortfolioOutlier
 
 Re-exports [PortfolioOutlier](portfolio-dashboard/interfaces/PortfolioOutlier.md)
+
+***
+
+### PortfolioOverrun
+
+Re-exports [PortfolioOverrun](portfolio-dashboard/interfaces/PortfolioOverrun.md)
 
 ***
 

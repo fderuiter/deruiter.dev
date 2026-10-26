@@ -616,3 +616,65 @@ table 'Governed Metrics'
 		annotation MetricVersion = 1.0.0
 
 		annotation MetricStatus = certified
+
+	/// Actual spend booked up to the data cut, in US dollars, with each quarter spread evenly over its three months. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: USD.
+	measure 'Actual spend' =
+			SUMX('fct_spend', 'fct_spend'[actual_usd]) + 0
+		formatString: \$#,0
+		displayFolder: Finance
+
+		annotation MetricId = actual_spend
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// The budget booked up to the data cut plus the planned budget for every quarter after it, up to the planned final report. Once the final report is in, nothing remains and it is the budget booked. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: USD.
+	measure 'Budget at completion' =
+			SUMX('fct_spend_forecast', 'fct_spend_forecast'[budget_at_completion_usd]) + 0
+		formatString: \$#,0
+		displayFolder: Finance
+
+		annotation MetricId = budget_at_completion
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Actual spend up to the data cut plus the planned budget still to come, scaled by each vendor's actual spend over its budget to date. A vendor running 10% over budget is forecast to stay 10% over for the rest of the study. Each vendor is forecast on its own ratio, so the vendors add up to the study. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: USD.
+	measure 'Forecast at completion' =
+			SUMX('fct_spend_forecast', 'fct_spend_forecast'[forecast_at_completion_usd]) + 0
+		formatString: \$#,0
+		displayFolder: Finance
+
+		annotation MetricId = forecast_at_completion
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Forecast at completion minus budget at completion. Above 0 is a forecast overrun, below 0 an underrun, the same sign as spend variance. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: USD.
+	measure 'Variance at completion' =
+			SUMX('fct_spend_forecast', 'fct_spend_forecast'[variance_at_completion_usd]) + 0
+		formatString: \$#,0
+		displayFolder: Finance
+
+		annotation MetricId = variance_at_completion
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Forecast at completion as a share of the budget at completion. Above 100% means the study or vendor is forecast to overrun its budget. Version 1.0.0, certified. Owner: Clinical Finance Lead. Steward: Finance Data Steward. Unit: share of budget.
+	measure 'Forecast against budget at completion' =
+			VAR Numerator = SUMX('fct_spend_forecast', 'fct_spend_forecast'[forecast_at_completion_usd]) + 0
+			VAR Denominator = SUMX('fct_spend_forecast', 'fct_spend_forecast'[budget_at_completion_usd]) + 0
+			RETURN DIVIDE(Numerator, Denominator)
+		formatString: 0.0%
+		displayFolder: Finance
+
+		annotation MetricId = forecast_vs_budget_at_completion
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified

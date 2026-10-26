@@ -57,7 +57,7 @@ export function conformBronze(
   portfolio: Portfolio,
   staff: readonly SiteStaffAssignment[] = siteStaffFeed(portfolio)
 ): SilverTables {
-  const { edc, ctms, irt, etmf, finance, cec } = portfolio.feeds;
+  const { edc, ctms, irt, etmf, finance, financePlan, cec } = portfolio.feeds;
   return {
     study: portfolio.studies.map((s) => ({
       study_id: s.id,
@@ -249,6 +249,16 @@ export function conformBronze(
       quarter_start_on: quarterStart(f.period),
       budget_usd: f.budgetUsd,
       actual_usd: f.actualUsd,
+      source_system: f.source,
+      is_synthetic: f.synthetic,
+    })),
+    finance_plan_line: financePlan.map((f) => ({
+      study_id: f.studyId,
+      vendor_id: f.vendorId,
+      cost_category: f.category,
+      fiscal_quarter: f.period,
+      quarter_start_on: quarterStart(f.period),
+      budget_usd: f.budgetUsd,
       source_system: f.source,
       is_synthetic: f.synthetic,
     })),

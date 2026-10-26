@@ -24,6 +24,7 @@ A raw record in a bronze feed, as received from its source system.
 - [`IrtKit`](IrtKit.md)
 - [`EtmfDocument`](EtmfDocument.md)
 - [`FinanceLine`](FinanceLine.md)
+- [`FinancePlanLine`](FinancePlanLine.md)
 - [`SiteStaffAssignment`](SiteStaffAssignment.md)
 - [`ProtocolDeviation`](ProtocolDeviation.md)
 - [`CecAdjudication`](CecAdjudication.md)

@@ -26,6 +26,14 @@ ISO 8601 data cut of the warehouse.
 
 ***
 
+### finance
+
+> `readonly` **finance**: [`PortfolioFinance`](PortfolioFinance.md)
+
+Budget, actual and forecast at completion (#2912).
+
+***
+
 ### swimlane
 
 > `readonly` **swimlane**: [`PortfolioSwimlane`](PortfolioSwimlane.md)

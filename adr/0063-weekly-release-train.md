@@ -52,10 +52,13 @@ the build starts.
   against the candidate, re-checks that `main` HEAD still equals it, then
   POSTs the Vercel Deploy Hook stored in the secret `VERCEL_DEPLOY_HOOK_MAIN`.
   The hook builds `main` and can do nothing else.
-- **Confirm, then publish.** The run waits up to 40 minutes for
-  `/api/version` to report the candidate, then publishes the Release, which
-  creates the tag. Otherwise the Release stays a draft and the run opens a
-  `release:hold` issue assigned to the operator, which pauses the next week.
+- **Confirm, smoke-test, then publish.** The run waits up to 40 minutes for
+  `/api/version` to report the candidate, runs the synthetic probes
+  (`synthetic-probes.yml` through `workflow_call`) against deruiter.dev,
+  and only then publishes the Release, which creates the tag. Otherwise the
+  Release stays a draft and the run opens a `release:hold` issue assigned to
+  the operator, which pauses the next week. A `dry_run` input probes the
+  live site without drafting or firing anything.
 - `vercel.json` keeps `git.deploymentEnabled: false`, so merges and branch
   pushes never build. **Create Deployment** stays the break-glass path and
   **Instant Rollback** stays the rollback.
@@ -85,8 +88,8 @@ the build starts.
   not documented. The operator's first manual run settles it; if it does not
   build, this ADR is amended to the `production` branch before acceptance.
 - `main` push CI skips the browser suite, which every PR ran before merge.
-  Running it on the release commit (#2536) and smoke-testing the live site
-  after the release (#2538) are the next steps.
+  Running it on the release commit (#2536) is the next step; the live smoke
+  test after the release (#2538) is part of the train.
 
 ## Acceptance
 

@@ -419,9 +419,30 @@ describe("SEO Architecture & JSON-LD Schemas", () => {
       ).toEqual({
         userAgent: "*",
         allow: "/",
-        disallow: ["/api/", "/_next/", "/admin", "/admin/"],
+        disallow: ["/api/", "/admin", "/admin/"],
       });
       expect(result.sitemap).toBe(`${resolveBaseUrl()}/sitemap.xml`);
+    } finally {
+      process.env.VERCEL_ENV = originalVercelEnv;
+    }
+  });
+
+  it("robots never blocks /_next/ assets for any production crawler (#2987)", () => {
+    const originalVercelEnv = process.env.VERCEL_ENV;
+    try {
+      process.env.VERCEL_ENV = "production";
+      const result = robots();
+      const rules = Array.isArray(result.rules) ? result.rules : [result.rules];
+      expect(rules.length).toBeGreaterThan(0);
+      for (const rule of rules) {
+        const disallow = [rule.disallow ?? []].flat();
+        expect(
+          disallow.some((path) => "/_next/static/x.js".startsWith(path))
+        ).toBe(false);
+        expect(disallow.some((path) => "/_next/image".startsWith(path))).toBe(
+          false
+        );
+      }
     } finally {
       process.env.VERCEL_ENV = originalVercelEnv;
     }

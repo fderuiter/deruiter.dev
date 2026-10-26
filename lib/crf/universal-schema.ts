@@ -36,7 +36,6 @@ export const UniversalClinicalDataTypeSchema = z.enum([
   "precision_date",
   "time",
   "datetime",
-  "boolean",
   "single_select",
   "multi_select",
   "radio",
@@ -101,8 +100,15 @@ export const AstConditionSchema = z.object({
     "is_not_empty",
   ]),
   value: z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]),
+  compareFieldId: z.string().optional(),
 });
 export type UniversalAstCondition = z.infer<typeof AstConditionSchema>;
+
+export const ConditionGroupSchema = z.object({
+  id: z.string().min(1),
+  logicalOperator: z.enum(["AND", "OR"]),
+  conditions: z.array(AstConditionSchema),
+});
 
 export const EditCheckRuleSchema = z.object({
   id: z.string().min(1),
@@ -117,11 +123,17 @@ export const EditCheckRuleSchema = z.object({
     "set_value",
   ]),
   targetFieldId: z.string().min(1),
-  conditions: z.array(AstConditionSchema).min(1),
+  // Calculation and set_value rules carry a formula and no conditions.
+  conditions: z.array(AstConditionSchema),
   logicalOperator: z.enum(["AND", "OR"]).default("AND"),
+  conditionGroups: z.array(ConditionGroupSchema).optional(),
+  groupLogicalOperator: z.enum(["AND", "OR"]).optional(),
   querySeverity: z.enum(["info", "warning", "error"]).optional(),
   queryMessage: z.string().optional(),
   formulaExpression: z.string().optional(),
+  unsupportedExpression: z
+    .object({ raw: z.unknown(), reason: z.string() })
+    .optional(),
 });
 export type UniversalEditCheckRule = z.infer<typeof EditCheckRuleSchema>;
 
@@ -518,6 +530,7 @@ export type UniversalEdcSimulationState = z.infer<
 
 export const StudyProvenanceSchema = z.object({
   derivedFromBaselineId: z.string().optional(),
+  derivedFromVersionTag: z.string().optional(),
   restoredAt: z.string().optional(),
   restoredBy: z.string().optional(),
   notes: z.string().optional(),
@@ -595,6 +608,23 @@ export type UniversalStudyProtocol = UniversalCrfProtocol;
 
 // 10. Validation & Serialization Utilities
 
+/**
+ * Fills the identifiers a StudyProtocol always has but an older or
+ * hand-written file may omit, the same way the USDM import names them.
+ */
+function toStudyProtocol(data: UniversalCrfProtocol): StudyProtocol {
+  const protocolNumber = data.protocolNumber ?? data.protocolId ?? data.id;
+  return {
+    ...data,
+    protocolNumber,
+    studyName: data.studyName ?? data.title ?? protocolNumber,
+    visits: data.visits.map((visit) => ({
+      ...visit,
+      oid: visit.oid ?? `SE.${visit.id.toUpperCase()}`,
+    })),
+  };
+}
+
 export interface UniversalCrfValidationResult {
   success: boolean;
   study?: StudyProtocol;
@@ -611,7 +641,7 @@ export function validateUniversalCrf(
   if (result.success) {
     return {
       success: true,
-      study: result.data as unknown as StudyProtocol,
+      study: toStudyProtocol(result.data),
       errors: [],
     };
   }

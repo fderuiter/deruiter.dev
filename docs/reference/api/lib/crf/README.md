@@ -578,6 +578,12 @@ Re-exports [ConditionGroup](types/interfaces/ConditionGroup.md)
 
 ***
 
+### ConditionGroupSchema
+
+Re-exports [ConditionGroupSchema](universal-schema/variables/ConditionGroupSchema.md)
+
+***
+
 ### ConditionResult
 
 Re-exports [ConditionResult](types/type-aliases/ConditionResult.md)
@@ -2849,6 +2855,12 @@ Re-exports [StudyLibraryUseSchema](universal-schema/variables/StudyLibraryUseSch
 ### StudyMilestoneForecast
 
 Re-exports [StudyMilestoneForecast](visit-window/interfaces/StudyMilestoneForecast.md)
+
+***
+
+### StudyPhase
+
+Re-exports [StudyPhase](types/type-aliases/StudyPhase.md)
 
 ***
 

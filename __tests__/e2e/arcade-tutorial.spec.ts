@@ -52,11 +52,20 @@ test.describe("Laser Loon guided tutorial", () => {
     await expect.poll(() => step(page)).toBe("kill");
     await page.keyboard.up(" ");
 
-    // Every practice can be skipped.
+    // Every practice can be skipped. A shot already in flight can still
+    // down a flag or land a weakness hit, completing a step on its own just
+    // as Skip is pressed (#3026), so each press skips whichever practice is
+    // showing and the count of presses is what the closing card reports.
+    const order = ["kill", "optic", "crit", "ultimate"];
+    const at = async () => order.indexOf((await step(page)) ?? "");
+    let skipped = 0;
     for (const id of ["kill", "optic", "crit"]) {
-      await expect.poll(() => step(page)).toBe(id);
+      await expect.poll(at).toBeGreaterThanOrEqual(order.indexOf(id));
+      if ((await step(page)) !== id) continue;
       await page.getByRole("button", { name: "Skip this step" }).click();
+      skipped += 1;
     }
+    expect(skipped).toBeGreaterThan(0);
     await expect.poll(() => step(page)).toBe("ultimate");
     await page.keyboard.press("u");
 
@@ -66,7 +75,9 @@ test.describe("Laser Loon guided tutorial", () => {
     await page.getByRole("button", { name: "Finish" }).click();
 
     const finished = page.getByTestId("tutorial-finished");
-    await expect(finished).toContainText("You skipped 3 practice steps");
+    await expect(finished).toContainText(
+      `You skipped ${skipped} practice ${skipped === 1 ? "step" : "steps"}`
+    );
     await page.getByRole("button", { name: "Start playing" }).click();
     await expect(
       page.getByRole("button", { name: /Start Campaign/i })

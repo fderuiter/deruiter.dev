@@ -46,6 +46,7 @@
 - [CdashVariableMetadataSchema](variables/CdashVariableMetadataSchema.md)
 - [CodelistDefinitionSchema](variables/CodelistDefinitionSchema.md)
 - [CodelistOptionSchema](variables/CodelistOptionSchema.md)
+- [ConditionGroupSchema](variables/ConditionGroupSchema.md)
 - [EDCQuerySchema](variables/EDCQuerySchema.md)
 - [EdcSimulationStateSchema](variables/EdcSimulationStateSchema.md)
 - [EditCheckRuleSchema](variables/EditCheckRuleSchema.md)

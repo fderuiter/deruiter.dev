@@ -6,4 +6,4 @@
 
 # Variable: AstConditionSchema
 
-> `const` **AstConditionSchema**: `ZodObject`\<\{ `crossVisitId`: `ZodOptional`\<`ZodString`\>; `fieldId`: `ZodString`; `operator`: `ZodEnum`\<\{ `contains`: `"contains"`; `eq`: `"eq"`; `gt`: `"gt"`; `gte`: `"gte"`; `in`: `"in"`; `is_empty`: `"is_empty"`; `is_not_empty`: `"is_not_empty"`; `lt`: `"lt"`; `lte`: `"lte"`; `neq`: `"neq"`; \}\>; `value`: `ZodUnion`\<readonly \[`ZodString`, `ZodNumber`, `ZodBoolean`, `ZodArray`\<`ZodString`\>\]\>; \}, `$strip`\>
+> `const` **AstConditionSchema**: `ZodObject`\<\{ `compareFieldId`: `ZodOptional`\<`ZodString`\>; `crossVisitId`: `ZodOptional`\<`ZodString`\>; `fieldId`: `ZodString`; `operator`: `ZodEnum`\<\{ `contains`: `"contains"`; `eq`: `"eq"`; `gt`: `"gt"`; `gte`: `"gte"`; `in`: `"in"`; `is_empty`: `"is_empty"`; `is_not_empty`: `"is_not_empty"`; `lt`: `"lt"`; `lte`: `"lte"`; `neq`: `"neq"`; \}\>; `value`: `ZodUnion`\<readonly \[`ZodString`, `ZodNumber`, `ZodBoolean`, `ZodArray`\<`ZodString`\>\]\>; \}, `$strip`\>

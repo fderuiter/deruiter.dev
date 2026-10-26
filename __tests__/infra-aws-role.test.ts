@@ -65,11 +65,43 @@ describe("infra/aws GitHub Actions role", () => {
       "dynamodb:PutItem,dynamodb:Query,dynamodb:DescribeTable": {
         Ref: "DynamoDbTableArn",
       },
+      "cloudwatch:GetMetricStatistics": "*",
     });
     for (const statement of permissions) {
       expect(statement.Effect).toBe("Allow");
+      // CloudWatch metric reads take no resource; every write is scoped.
+      if (actionsOf(statement).every((a) => a.startsWith("cloudwatch:Get"))) {
+        continue;
+      }
       expect(JSON.stringify(statement)).not.toContain("*");
     }
+  });
+
+  it("derives the DSQL endpoint from the cluster ARN", () => {
+    const resolve = (node: unknown, arn: string): unknown => {
+      if (Array.isArray(node)) return node.map((n) => resolve(n, arn));
+      if (node === null || typeof node !== "object") return node;
+      const [fn, args] = Object.entries(node)[0] as [string, unknown[]];
+      const a = resolve(args, arn) as unknown[];
+      switch (fn) {
+        case "Ref":
+          return arn;
+        case "Fn::Split":
+          return (a[1] as string).split(a[0] as string);
+        case "Fn::Select":
+          return (a[1] as string[])[a[0] as number];
+        case "Fn::Join":
+          return (a[1] as string[]).join(a[0] as string);
+        default:
+          throw new Error(`Unexpected ${fn}`);
+      }
+    };
+    expect(
+      resolve(
+        template.Outputs.DsqlEndpoint.Value,
+        "arn:aws:dsql:us-east-1:123456789012:cluster/abc123def456"
+      )
+    ).toBe("abc123def456.dsql.us-east-1.on.aws");
   });
 
   it("rejects ARNs that are not a single cluster or table", () => {

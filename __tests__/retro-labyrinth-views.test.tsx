@@ -32,12 +32,16 @@ describe("Retro Labyrinth views (#2859)", () => {
     device.phone = false;
   });
 
-  it("lays the tablet view out as a tablet's touch cabinet", () => {
+  it("lays the tablet view out as a tablet's touch cabinet on its own stage (#2967)", () => {
     render(<TabletView isMounted={false} />);
     expect(layoutProps.current.at(-1)).toEqual({
       isMounted: false,
       touch: true,
       phone: false,
+      tabletStage: {
+        mazeClassName: expect.stringContaining("portrait:aspect-[5/3]"),
+        Stage: expect.any(Function),
+      },
     });
   });
 

@@ -94,6 +94,12 @@ describe("/study-data with a study handed over from CRF Studio", () => {
       /Mini-Mental State Examination \(MMSE\) \(QS\) is not tabulated: the generator does not produce this domain/
     );
     expect(panel.textContent).toMatch(/one arm, Study treatment \(TRT\)/);
+    // The way back to change the study, which CRF Studio keeps as a draft.
+    expect(
+      within(panel)
+        .getByRole("link", { name: "Change this study in CRF Studio" })
+        .getAttribute("href")
+    ).toBe("/crf");
     expect(
       screen.getByText(/Study NEURO-2026-401 is ready\. Run the pipeline/)
     ).toBeTruthy();
@@ -145,7 +151,9 @@ describe("/study-data with a study handed over from CRF Studio", () => {
     openWithHandoff();
     renderWorkbench();
     expect(
-      await screen.findByText(/No study was handed over from CRF Studio/)
+      await screen.findByText(
+        /No study was handed over from CRF Studio.*press Run Pipeline/
+      )
     ).toBeTruthy();
     await waitFor(
       () =>

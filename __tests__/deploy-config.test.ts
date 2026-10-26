@@ -120,6 +120,12 @@ describe("production deploy configuration", () => {
     expect(fire).toBeGreaterThan(-1);
     expect(publish).toBeGreaterThan(fire);
     expect(train.slice(fire, publish)).toContain("/api/version");
+    // ...and the synthetic probes passed against it (#2538).
+    expect(train).toContain("uses: ./.github/workflows/synthetic-probes.yml");
+    expect(train).toContain("needs.probe.result == 'success'");
+    expect(read(".github/workflows/synthetic-probes.yml")).toMatch(
+      /workflow_call:/
+    );
 
     const adr = read("adr/0063-weekly-release-train.md");
     expect(adr).toMatch(/## Status\s+Proposed/);

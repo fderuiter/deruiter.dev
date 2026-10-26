@@ -435,6 +435,37 @@ test.describe("Mobile arcade kit: shared view assertions", () => {
     await assertThumbZone(page, `[data-coach="play"]`);
   });
 
+  // A phone held sideways fits the table to the stage: Play Hand and Discard
+  // are on screen without scrolling, beside the hand (#2897). Geometry, not a
+  // tap, because a tap scrolls a hidden button into view first.
+  test("a sideways phone shows Play Hand and Discard without scrolling", async ({
+    page,
+  }) => {
+    const viewport = page.viewportSize();
+    test.skip(
+      !viewport || viewport.width <= viewport.height || viewport.height > 500,
+      "short landscape only"
+    );
+    const stage = await page
+      .locator(`${IMMERSIVE} .arcade-cabinet-stage`)
+      .evaluate((el) => ({
+        scrollTop: el.scrollTop,
+        overflow: el.scrollHeight - el.clientHeight,
+      }));
+    expect(stage.scrollTop).toBe(0);
+    expect(stage.overflow).toBeLessThanOrEqual(1);
+    for (const name of [PLAY_HAND, /^Discard/]) {
+      const box = await page.getByRole("button", { name }).boundingBox();
+      expect(box).toBeTruthy();
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width);
+    }
+    const hand = await page.getByTestId("hand").boundingBox();
+    expect(hand!.y).toBeLessThan(viewport!.height);
+    expect(hand!.y + hand!.height).toBeGreaterThan(0);
+  });
+
   test("the cabinet has no blocking axe violations", async ({ page }) => {
     await axeCabinet(page);
   });

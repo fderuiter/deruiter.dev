@@ -1295,7 +1295,7 @@ export function CardTable({
       <section
         ref={sectionRef}
         aria-labelledby="card-table-heading"
-        className={`relative w-full min-w-0 bg-[color:var(--te-surface-0)] font-mono text-[color:var(--te-text)] border border-zinc-800 section-isolate${touch ? " te-touch" : ""}${touch && !playing && view.status !== "REVIEWING" ? " te-between" : ""}`}
+        className={`relative w-full min-w-0 bg-[color:var(--te-surface-0)] font-mono text-[color:var(--te-text)] border border-zinc-800 section-isolate${touch ? " te-touch" : ""}${touch && !playing && view.status !== "REVIEWING" ? " te-between" : ""}${touch && playing ? " te-playing" : ""}`}
         style={
           touch
             ? ({
@@ -1433,7 +1433,10 @@ export function CardTable({
             >
               {scenario.blind.name}
             </p>
-            <RunChoiceBadges choice={runView.choice} className="mt-1" />
+            <RunChoiceBadges
+              choice={runView.choice}
+              className="te-run-badges mt-1"
+            />
             <dl className="mt-2 grid grid-cols-3 gap-1 tabular-nums">
               <div className={STAT_TILE}>
                 <dt className={STAT_LABEL}>Target</dt>
@@ -2290,7 +2293,7 @@ export function CardTable({
                 </Reorder.Group>
 
                 <div
-                  className={`mt-3 grid grid-cols-1 gap-2 ${focusedCard?.stale || focusedCard?.faceDown ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}
+                  className={`te-hand-actions mt-3 grid grid-cols-1 gap-2 ${focusedCard?.stale || focusedCard?.faceDown ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}
                 >
                   {/* Its own box only on a sideways phone, where te-touch.css
                       docks it in the right thumb column (#2763). */}

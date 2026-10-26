@@ -50,11 +50,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     let changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"] =
       "weekly";
 
-    // Pages the Simulators menu lists are the site's flagship tools (#1848);
-    // the phone-sized variants of them stay at the default.
+    // Pages the Clinical and Labs menus list are the site's flagship tools
+    // (#1848, #2952); the phone-sized variants of them stay at the default.
+    const navGroup = getNavGroupForHref(config.path)?.id;
     const isSimulatorPage =
       !config.path.startsWith("/m/") &&
-      getNavGroupForHref(config.path)?.id === "simulators";
+      (navGroup === "clinical" || navGroup === "labs");
 
     if (
       isSimulatorPage ||

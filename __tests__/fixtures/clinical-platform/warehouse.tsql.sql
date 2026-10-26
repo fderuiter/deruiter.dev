@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.6.0, SQL Server T-SQL dialect.
+-- Clinical Data Platform warehouse, schema 1.7.0, SQL Server T-SQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -1838,6 +1838,7 @@ CREATE TABLE [gold].[fct_visit] (
   [day_offset]       INT,
   [is_out_of_window] BIT NOT NULL,
   [entry_lag_days]   INT,
+  [entry_hour]       INT,
   [is_synthetic]     BIT NOT NULL,
   CONSTRAINT [pk_fct_visit] PRIMARY KEY ([visit_id]),
   CONSTRAINT [fk_fct_visit_study_key] FOREIGN KEY ([study_key]) REFERENCES [gold].[dim_study] ([study_key]),
@@ -1910,6 +1911,11 @@ EXEC sys.sp_addextendedproperty
   @level0type = N'SCHEMA', @level0name = N'gold',
   @level1type = N'TABLE', @level1name = N'fct_visit',
   @level2type = N'COLUMN', @level2name = N'entry_lag_days';
+EXEC sys.sp_addextendedproperty
+  @name = N'MS_Description', @value = N'Hour of the day, 0 to 23 in UTC, the visit''s data was entered.',
+  @level0type = N'SCHEMA', @level0name = N'gold',
+  @level1type = N'TABLE', @level1name = N'fct_visit',
+  @level2type = N'COLUMN', @level2name = N'entry_hour';
 EXEC sys.sp_addextendedproperty
   @name = N'MS_Description', @value = N'Always true: the row describes synthetic data, nothing real.',
   @level0type = N'SCHEMA', @level0name = N'gold',

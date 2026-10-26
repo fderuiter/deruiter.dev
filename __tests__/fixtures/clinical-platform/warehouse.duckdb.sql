@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.6.0, DuckDB dialect.
+-- Clinical Data Platform warehouse, schema 1.7.0, DuckDB dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -693,6 +693,7 @@ CREATE TABLE "gold"."fct_visit" (
   "day_offset"       INTEGER,
   "is_out_of_window" BOOLEAN NOT NULL,
   "entry_lag_days"   INTEGER,
+  "entry_hour"       INTEGER,
   "is_synthetic"     BOOLEAN NOT NULL,
   CONSTRAINT "pk_fct_visit" PRIMARY KEY ("visit_id"),
   CONSTRAINT "fk_fct_visit_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
@@ -714,6 +715,7 @@ COMMENT ON COLUMN "gold"."fct_visit"."visit_status" IS 'entered, pending-entry o
 COMMENT ON COLUMN "gold"."fct_visit"."day_offset" IS 'Actual minus planned day.';
 COMMENT ON COLUMN "gold"."fct_visit"."is_out_of_window" IS 'Whether the visit fell outside its window.';
 COMMENT ON COLUMN "gold"."fct_visit"."entry_lag_days" IS 'Days from the visit to data entry.';
+COMMENT ON COLUMN "gold"."fct_visit"."entry_hour" IS 'Hour of the day, 0 to 23 in UTC, the visit''s data was entered.';
 COMMENT ON COLUMN "gold"."fct_visit"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_query" (

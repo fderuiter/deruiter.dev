@@ -98,3 +98,43 @@ Phase N3 ([#1848](https://github.com/fderuiter/deruiter.dev/issues/1848),
 - `__tests__/e2e/navigation-matrix.spec.ts` covers the bar, the three menus, the
   drawer and Preferences at 320, 375, 768, 1024 and 1440 px, with a header
   overflow check at each width and at 200% text.
+
+## Amendment 2026-10-26: Clinical, Labs, Arcade, Writing and About
+
+[#2952](https://github.com/fderuiter/deruiter.dev/issues/2952), carrying
+[#2927](https://github.com/fderuiter/deruiter.dev/issues/2927) item 1. Fred
+chose this grouping on 2026-10-26. The inventory, the current and proposed
+sitemaps and the mockups are in the project's
+`plans/2026-10-26-site-navigation/` notes.
+
+The clinical work grew after the original decision: CRF Studio, Protocol
+Drift, the Study Data Pipeline and the Clinical Data Platform with its
+dashboards were all filed under Simulators. That menu reached eleven items,
+half of them dashboards rather than simulators. Its href was `/simulator`, so
+the "Simulators" breadcrumb on every clinical page led to the Incident
+Simulator.
+
+The top bar keeps six items.
+
+| Item     | Kind | Contents                                                                                                                                       |
+| -------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clinical | menu | The journey in order (CRF Studio, Protocol Drift, Study Data Pipeline, Clinical Data Platform), then Platform tools; overview page `/clinical` |
+| Labs     | menu | Proof Workspace, NeuroRecon Studio, Incident Simulator, Patrol Shift; overview page `/labs`                                                    |
+| Arcade   | menu | The hub, then Clinical life, Fred's life, and Puzzles and classics                                                                             |
+| Writing  | menu | Blog, Case Studies, and the featured Laser Loon design study and Designing for My Brother                                                      |
+| About    | menu | About Fred, Office Hours, Under the Hood, Open Source Credits, Our Wedding, Laser Loon Merch, GitHub                                           |
+| Contact  | link |                                                                                                                                                |
+
+- The Clinical menu builds its journey entries from `CLINICAL_JOURNEY` in
+  `lib/clinical-journey.ts`, so the menu, the journey strip on each step and
+  the `/clinical` overview cannot list the steps in different orders. The
+  case-study step is reached from Writing.
+- A group can name an overview page (`overviewLabel`), shown at the foot of
+  its menu and its drawer section. Writing has none: its href is the blog and
+  it sets `noBreadcrumb`, so case studies and posts get no "Writing" parent.
+- The footer has one column per menu, in bar order. The "Site" column and
+  `FOOTER_EXTRA_ITEMS` are gone; Merch and Our Wedding moved into About, and
+  `/work/laser-loon` is in the navigation for the first time.
+- Journey entries carry their step number, shown before the title in the
+  menu and the drawer.
+- No URLs changed.

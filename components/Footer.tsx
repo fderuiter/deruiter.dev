@@ -9,10 +9,10 @@ import { resolveScrollBehavior } from "@/lib/scroll";
 import { emitAppEvent } from "@/lib/event-bus";
 import {
   IconArrowUp,
-  IconBrandGithub,
   IconBrandLinkedin,
-  IconCalendar,
+  IconStethoscope,
   IconTerminal,
+  IconUser,
   IconSparkles,
   IconMessageCode,
   IconArticle,
@@ -25,12 +25,24 @@ import { useAnnouncer } from "@/hooks/useAnnouncer";
 import { FooterStatusTicker } from "@/components/FooterStatusTicker";
 import { NewsletterForm } from "@/components/NewsletterForm";
 import {
-  FOOTER_EXTRA_ITEMS,
   filterNavItems,
   getNavGroup,
+  type NavGroup,
   type NavItem,
 } from "@/lib/navigation";
 import { NavIcon } from "@/components/nav/NavIcon";
+
+/** The footer's link columns: each top-bar menu, in top-bar order. */
+const FOOTER_GROUPS: {
+  id: NavGroup["id"];
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { id: "clinical", Icon: IconStethoscope },
+  { id: "labs", Icon: IconTerminal },
+  { id: "arcade", Icon: IconSparkles },
+  { id: "writing", Icon: IconArticle },
+  { id: "about", Icon: IconUser },
+];
 
 /** One footer link, drawn from a navigation item. */
 const FooterNavLink: React.FC<{
@@ -108,9 +120,9 @@ export const Footer: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 md:px-12 pt-12 pb-[max(4rem,env(safe-area-inset-bottom)+2rem)]">
         {/* Main Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-10 lg:gap-8 mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-16">
           {/* Col 1: Brand & Bio */}
-          <div className="lg:col-span-2 flex flex-col justify-between space-y-6">
+          <div className="sm:col-span-2 lg:col-span-5 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="space-y-3">
               <Link
                 href="/"
@@ -146,164 +158,93 @@ export const Footer: React.FC = () => {
             </Link>
           </div>
 
-          {/* Col 2: Arcade, from the shared navigation data */}
-          <div className="space-y-4">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconSparkles className="w-3.5 h-3.5 text-accent" />
-              Arcade
-            </span>
-            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
-              {[
-                ...getNavGroup("arcade").sections[0].items,
-                ...FOOTER_EXTRA_ITEMS.filter((i) => i.id === "merch"),
-              ].map((item) => (
-                <FooterNavLink
-                  key={item.id}
-                  item={item}
-                  onHover={handleHover}
-                />
-              ))}
-            </ul>
-          </div>
-
-          {/* Col 3: Simulators and studios */}
-          <div className="space-y-4">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconTerminal className="w-3.5 h-3.5 text-accent" />
-              Simulators
-            </span>
-            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
-              {getNavGroup("simulators").sections.map((section) =>
-                filterNavItems(section.items, persona).map((item) => (
-                  <FooterNavLink
-                    key={item.id}
-                    item={item}
-                    onHover={handleHover}
-                  />
-                ))
-              )}
-            </ul>
-          </div>
-
-          {/* Col 4: Site pages */}
-          <div className="space-y-4">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconArticle className="w-3.5 h-3.5 text-accent" />
-              Site
-            </span>
-            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
-              <li>
-                <Link
-                  href="/case-studies"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors pointer-coarse:flex pointer-coarse:min-h-11 pointer-coarse:items-center"
-                >
-                  Work
-                </Link>
-              </li>
-              <FooterNavLink
-                item={FOOTER_EXTRA_ITEMS.find(
-                  (i) => i.id === "brother-case-study"
-                )!}
-                onHover={handleHover}
-              />
-              <li>
-                <Link
-                  href="/blog"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
-                >
-                  <IconArticle className="w-3 h-3 text-accent" />
-                  Blog
-                </Link>
-              </li>
-              {getNavGroup("about")
-                .sections[0].items.filter(
-                  (i) => !i.external && i.id !== "schedule"
-                )
-                .map((item) => (
-                  <FooterNavLink
-                    key={item.id}
-                    item={item}
-                    onHover={handleHover}
-                    onClick={
-                      item.href === "/#about"
-                        ? (e) => handleHashClick(e, "about")
-                        : undefined
-                    }
-                  />
-                ))}
-              <FooterNavLink
-                item={FOOTER_EXTRA_ITEMS.find((i) => i.id === "wedding")!}
-                onHover={handleHover}
-              />
-            </ul>
-          </div>
-
-          {/* Col 5: Connect & Schedule */}
-          <div className="space-y-4">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-              <IconCalendar className="w-3.5 h-3.5 text-accent" />
-              Connect
-            </span>
-            <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
-              <li>
-                <Link
-                  href="/schedule"
-                  onMouseEnter={handleHover}
-                  className="text-accent font-bold hover:underline transition-all flex items-center gap-1.5 pointer-coarse:min-h-11"
-                >
-                  <IconCalendar className="w-3 h-3 text-accent" />
-                  Book a Chat ↗
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/contact"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
-                >
-                  <IconMessageCode className="w-3 h-3 text-accent" />
-                  Contact ↗
-                </Link>
-              </li>
-              <li>
-                <a
-                  href="https://github.com/fderuiter"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
-                >
-                  <IconBrandGithub className="w-3 h-3 text-zinc-400" />
-                  GitHub Repos ↗
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://www.linkedin.com/in/frederick-de-ruiter-88012467/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
-                >
-                  <IconBrandLinkedin className="w-3 h-3 text-zinc-400" />
-                  LinkedIn ↗
-                </a>
-              </li>
-              <li data-testid="footer-photo-gallery">
-                <button
-                  type="button"
-                  onClick={() => emitAppEvent("open-photo-gallery")}
-                  onMouseEnter={handleHover}
-                  className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11 cursor-pointer text-left"
-                >
-                  <IconCamera className="w-3 h-3 text-amber-400" />
-                  Behind the Code (Photos)
-                </button>
-              </li>
-            </ul>
-          </div>
+          {/* One column per top-bar menu, from the shared navigation data */}
+          {FOOTER_GROUPS.map(({ id, Icon }) => {
+            const group = getNavGroup(id);
+            return (
+              <div key={id} className="space-y-4">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+                  <Icon className="w-3.5 h-3.5 text-accent" />
+                  {group.label}
+                </span>
+                <ul className="space-y-2 pointer-coarse:space-y-0 text-xs font-mono">
+                  {group.overviewLabel ? (
+                    <li>
+                      <Link
+                        href={group.href}
+                        onMouseEnter={handleHover}
+                        className="text-zinc-300 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
+                      >
+                        Overview
+                      </Link>
+                    </li>
+                  ) : null}
+                  {group.sections.map((section) => {
+                    const items = filterNavItems(section.items, persona);
+                    if (items.length === 0) return null;
+                    return (
+                      <React.Fragment key={section.id}>
+                        {section.label ? (
+                          <li className="pt-2 text-[10px] uppercase tracking-widest text-zinc-400">
+                            {section.label}
+                          </li>
+                        ) : null}
+                        {items.map((item) => (
+                          <FooterNavLink
+                            key={item.id}
+                            item={item}
+                            onHover={handleHover}
+                            onClick={
+                              item.href === "/#about"
+                                ? (e) => handleHashClick(e, "about")
+                                : undefined
+                            }
+                          />
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+                  {id === "about" ? (
+                    <>
+                      <li>
+                        <Link
+                          href="/contact"
+                          onMouseEnter={handleHover}
+                          className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
+                        >
+                          <IconMessageCode className="w-3 h-3 text-accent" />
+                          Contact
+                        </Link>
+                      </li>
+                      <li>
+                        <a
+                          href="https://www.linkedin.com/in/frederick-de-ruiter-88012467/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onMouseEnter={handleHover}
+                          className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11"
+                        >
+                          <IconBrandLinkedin className="w-3 h-3 text-zinc-400" />
+                          LinkedIn ↗
+                        </a>
+                      </li>
+                      <li data-testid="footer-photo-gallery">
+                        <button
+                          type="button"
+                          onClick={() => emitAppEvent("open-photo-gallery")}
+                          onMouseEnter={handleHover}
+                          className="text-zinc-400 hover:text-accent transition-colors flex items-center gap-1.5 pointer-coarse:min-h-11 cursor-pointer text-left"
+                        >
+                          <IconCamera className="w-3 h-3 text-amber-400" />
+                          Behind the Code (Photos)
+                        </button>
+                      </li>
+                    </>
+                  ) : null}
+                </ul>
+              </div>
+            );
+          })}
         </div>
 
         {/* Newsletter Subscription Strip */}

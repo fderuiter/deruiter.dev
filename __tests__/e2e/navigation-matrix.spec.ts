@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 
 // Navigation layout matrix (#1849, phase N3 of #1842): every top-level item,
-// the three menus, the mobile drawer and the Preferences menu at 320, 375, 768,
+// the five menus (#2952), the mobile drawer and the Preferences menu at 320, 375, 768,
 // 1024 and 1440, with a horizontal overflow check on the header at each width
 // and at 200% text. Clicks that need React to have hydrated sit in toPass
 // blocks so they cannot land on static HTML that has no listeners yet.
@@ -12,19 +12,27 @@ const WIDTHS = [320, 375, 768, 1024, 1440] as const;
 const DESKTOP_MIN_WIDTH = 1280;
 
 const TOP_LEVEL = {
-  links: ["Work", "Blog", "Contact"],
-  menus: ["Arcade", "Simulators", "About"],
+  links: ["Contact"],
+  menus: ["Clinical", "Labs", "Arcade", "Writing", "About"],
 } as const;
 
 const MENU_SAMPLES: Record<string, RegExp[]> = {
-  Arcade: [/Arcade Hub/, /Laser Loon/, /Study Director/, /Meme Vault/],
-  Simulators: [
-    /Protocol Drift/,
-    /Incident Simulator/,
+  Clinical: [
     /CRF Studio/,
+    /Protocol Drift/,
+    /Study Data Pipeline/,
+    /Clinical Data Platform/,
+    /Portfolio Dashboard/,
+    /The whole clinical journey/,
+  ],
+  Labs: [
     /Proof Workspace/,
     /NeuroRecon Studio/,
+    /Incident Simulator/,
+    /Patrol Shift/,
   ],
+  Arcade: [/Arcade Hub/, /Laser Loon/, /Study Director/, /Meme Vault/],
+  Writing: [/^Blog/, /Case Studies/, /Designing for My Brother/],
   About: [/Under the Hood/, /Open Source Credits/, /Office Hours/, /GitHub/],
 };
 

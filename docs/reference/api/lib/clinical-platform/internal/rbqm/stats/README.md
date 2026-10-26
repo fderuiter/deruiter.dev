@@ -9,6 +9,7 @@
 ## Functions
 
 - [benjaminiHochberg](functions/benjaminiHochberg.md)
+- [chiSquareCdf](functions/chiSquareCdf.md)
 - [fCdf](functions/fCdf.md)
 - [invertMatrix](functions/invertMatrix.md)
 - [logGamma](functions/logGamma.md)

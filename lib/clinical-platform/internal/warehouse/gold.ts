@@ -548,6 +548,8 @@ export function buildGold(silver: SilverTables, asOf: string): GoldTables {
         entered !== null && visitDate !== null
           ? daysBetween(visitDate, entered.slice(0, 10))
           : null,
+      // Silver timestamps are UTC, `YYYY-MM-DDTHH:MM:SSZ`.
+      entry_hour: entered === null ? null : Number(entered.slice(11, 13)),
       is_synthetic: v.is_synthetic,
     };
   });

@@ -99,24 +99,28 @@ test.describe("Mobile & Tablet Touch Interactions Suite", () => {
     }).toPass({ timeout: 15000 });
 
     // Verify nav links inside drawer
-    const workLink = overlay.getByRole("link", { name: /^work\b/i });
-    await expect(workLink).toBeVisible();
+    const contactLink = overlay.getByRole("link", { name: /^contact\b/i });
+    await expect(contactLink).toBeVisible();
 
-    // Arcade and Simulators fold into sections (#1842); open each one.
+    // Arcade, Clinical and Labs fold into sections (#1842, #2952); open each.
     const arcadeSection = overlay.getByRole("button", { name: /^arcade\b/i });
     await arcadeSection.click();
     await expect(arcadeSection).toHaveAttribute("aria-expanded", "true");
     const arcadeLink = overlay.getByRole("link", { name: /arcade hub/i });
     await expect(arcadeLink).toBeVisible();
 
-    const simulatorsSection = overlay.getByRole("button", {
-      name: /^simulators\b/i,
+    const clinicalSection = overlay.getByRole("button", {
+      name: /^clinical\b/i,
     });
-    await simulatorsSection.click();
-    await expect(simulatorsSection).toHaveAttribute("aria-expanded", "true");
+    await clinicalSection.click();
+    await expect(clinicalSection).toHaveAttribute("aria-expanded", "true");
 
     const crfLink = overlay.getByRole("link", { name: /crf studio/i });
     await expect(crfLink).toBeVisible();
+
+    const labsSection = overlay.getByRole("button", { name: /^labs\b/i });
+    await labsSection.click();
+    await expect(labsSection).toHaveAttribute("aria-expanded", "true");
 
     const proofLink = overlay.getByRole("link", { name: /proof workspace/i });
     await expect(proofLink).toBeVisible();

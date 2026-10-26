@@ -1,5 +1,5 @@
 {
-  "manifestSha256": "41a4fc70a4ce2b77cb81473424777e0606046d89fb1ef5e36da7cedcf9d9153c",
+  "manifestSha256": "45b09664ddfa3e9613191987351161a093fb5f178cfcb1c14d39c51c289ef093",
   "files": {
     "README.txt": {
       "bytes": 1910,
@@ -43,7 +43,7 @@
     },
     "m5/datasets/analysis/adam/adrg.html": {
       "bytes": 7935,
-      "sha256": "f926f2dc9e347d7a9ee658a2647802dbaba5275e55f854964494aef4ea5ad297"
+      "sha256": "37f30932bf7f5047f916a6146e830f1cd581148901dc900918510fe2204485c2"
     },
     "m5/datasets/analysis/adam/adsl.csv": {
       "bytes": 12421,
@@ -99,7 +99,7 @@
     },
     "m5/datasets/tabulations/sdtm/csdrg.html": {
       "bytes": 13748,
-      "sha256": "8259e2870ab4006e33811b9651d2b100c508f82175bef2765d40d336356f575e"
+      "sha256": "bf9a11e9d9fca22ea3221707cdf5396c3a1dd80134e247f24a1bf42684c1d0b0"
     },
     "m5/datasets/tabulations/sdtm/define.xml": {
       "bytes": 187233,

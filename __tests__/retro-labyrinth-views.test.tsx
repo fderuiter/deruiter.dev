@@ -60,7 +60,7 @@ describe("Retro Labyrinth views (#2859)", () => {
     });
   });
 
-  it("passes the desktop view's cabinet state through", () => {
+  it("lays the desktop view out as the desktop cabinet, whatever the device (#2966)", () => {
     render(<DesktopView />);
     expect(layoutProps.current.at(-1)).toEqual({
       isMounted: true,
@@ -68,14 +68,14 @@ describe("Retro Labyrinth views (#2859)", () => {
       phone: false,
     });
 
-    // The shared layout still reads the cabinet state until #2863.
+    // A touch player who picks the Desktop layout gets the desktop layout.
     device.touch = true;
     device.phone = true;
-    render(<DesktopView />);
+    render(<DesktopView isMounted={false} />);
     expect(layoutProps.current.at(-1)).toEqual({
-      isMounted: true,
-      touch: true,
-      phone: true,
+      isMounted: false,
+      touch: false,
+      phone: false,
     });
   });
 });

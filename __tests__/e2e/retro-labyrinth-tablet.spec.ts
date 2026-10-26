@@ -192,3 +192,26 @@ test("Retro Labyrinth swaps the tablet docks for a left hand (#2862)", async ({
   }
   await assertNoHorizontalOverflow(page);
 });
+
+// An iPad's Split View panes are phone-sized, so the cabinet mounts the phone
+// view there; the desktop view no longer stands in for it (#2966).
+for (const width of [507, 678]) {
+  test(`Retro Labyrinth mounts the phone view in a ${width}px Split View pane (#2966)`, async ({
+    page,
+  }, testInfo) => {
+    test.skip(!/^iPad/.test(testInfo.project.name), "iPad projects only");
+    await page.setViewportSize({ width, height: 1024 });
+    await page.goto("/arcade/retro-labyrinth");
+    const launch = page.getByRole("button", { name: /Launch Cabinet/i });
+    await expect(async () => {
+      if ((await launch.count()) > 0) {
+        await launch.first().tap({ timeout: 2000 });
+      }
+      await expect(
+        page.locator('[data-arcade-cabinet][data-immersive="true"]')
+      ).toBeVisible({ timeout: 3000 });
+    }).toPass({ timeout: 90000 });
+    await expectView(page, "phone");
+    await assertNoHorizontalOverflow(page);
+  });
+}

@@ -455,17 +455,6 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <a
-            href="/schedule"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => recordEvent("crf", "project_click")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold transition-all shadow-sm"
-          >
-            <IconCalendar className="w-4 h-4" />
-            <span>Schedule Consultation</span>
-          </a>
-
           {onOpenBranding && (
             <button
               onClick={onOpenBranding}
@@ -511,6 +500,18 @@ export const ExportImportModal: React.FC<ExportImportModalProps> = ({
             <IconDownload className="w-4 h-4" />
             <span>Download File</span>
           </button>
+          {/* Office hours stay one click away, after the export's own
+              actions rather than ahead of them. */}
+          <a
+            href="/schedule"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => recordEvent("crf", "project_click")}
+            className="inline-flex items-center gap-1.5 px-2 py-1.5 text-zinc-400 hover:text-white font-mono text-xs underline decoration-zinc-600 underline-offset-4 transition-colors"
+          >
+            <IconCalendar className="w-4 h-4" />
+            <span>Schedule Consultation</span>
+          </a>
         </div>
       </div>
 

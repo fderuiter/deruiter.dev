@@ -18,7 +18,7 @@ const records = (dataset: Dataset) =>
   );
 
 describe("SDTM subject tabulation", () => {
-  it("matches the seed-301 golden file for all eight subject domains", () => {
+  it("matches the seed-301 golden file for all nine subject domains", () => {
     const expected = JSON.parse(
       readFileSync(
         resolve(
@@ -514,7 +514,7 @@ describe("SDTM subject tabulation", () => {
   });
 
   it("flags the last pre-dose observation per subject and test", () => {
-    for (const domain of ["VS", "LB"] as const) {
+    for (const domain of ["VS", "LB", "EG"] as const) {
       const data = records(get(domain));
       const flagged = data.filter(
         (record) => record[`${domain}LOBXFL`] === "Y"
@@ -528,5 +528,46 @@ describe("SDTM subject tabulation", () => {
         flagged.every((record) => Number(record[`${domain}DY`]) <= 1)
       ).toBe(true);
     }
+  });
+
+  it("tabulates each collected ECG interval as one EG record (#2942)", () => {
+    const collectedEg = source.find((dataset) => dataset.name === "EG")!;
+    const eg = get("EG");
+    expect(eg.rowCount).toBe(collectedEg.rowCount);
+    expect(eg.lineage!.map((sources) => sources[0])).toEqual(
+      collectedEg.columns.SRCID
+    );
+    const data = records(eg);
+    expect(new Set(data.map((record) => record.EGTESTCD))).toEqual(
+      new Set(["EGHRMN", "PRAG", "QRSAG", "QTAG", "RRAG"])
+    );
+    const names = Object.fromEntries(
+      data.map((record) => [record.EGTESTCD, record.EGTEST])
+    );
+    expect(names).toEqual({
+      EGHRMN: "ECG Mean Heart Rate",
+      PRAG: "PR Interval, Aggregate",
+      QRSAG: "QRS Duration, Aggregate",
+      QTAG: "QT Interval, Aggregate",
+      RRAG: "RR Interval, Aggregate",
+    });
+    for (const record of data) {
+      expect(record.DOMAIN).toBe("EG");
+      expect(record.EGSTRESU).toBe(
+        record.EGTESTCD === "EGHRMN" ? "beats/min" : "ms"
+      );
+      expect(record.EGORRESU).toBe(record.EGSTRESU);
+      expect(record.EGSTRESN).toBe(Number(record.EGORRES));
+      expect(record.EGSTRESC).toBe(record.EGORRES);
+      expect(record.EGDY).not.toBe(0);
+    }
+    const sequence = new Map<unknown, number[]>();
+    for (const record of data)
+      sequence.set(record.USUBJID, [
+        ...(sequence.get(record.USUBJID) ?? []),
+        Number(record.EGSEQ),
+      ]);
+    for (const numbers of sequence.values())
+      expect(numbers).toEqual(numbers.map((_, index) => index + 1));
   });
 });

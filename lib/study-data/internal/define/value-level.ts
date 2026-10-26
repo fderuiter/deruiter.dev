@@ -12,7 +12,7 @@ export interface ValueLevelSpec {
   readonly variables: readonly string[];
 }
 
-/** Value-level metadata for the VS, LB, ADVS and ADLB parameters. */
+/** Value-level metadata for the VS, LB, EG, ADVS and ADLB parameters. */
 export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
   Object.freeze({
     VS: {
@@ -22,6 +22,10 @@ export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
     LB: {
       by: "LBTESTCD",
       variables: ["LBORRES", "LBORRESU", "LBSTRESC", "LBSTRESN", "LBSTRESU"],
+    },
+    EG: {
+      by: "EGTESTCD",
+      variables: ["EGORRES", "EGORRESU", "EGSTRESC", "EGSTRESN", "EGSTRESU"],
     },
     ADVS: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
     ADLB: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },

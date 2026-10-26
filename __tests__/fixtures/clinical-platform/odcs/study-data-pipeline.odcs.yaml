@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.4.0"
+version: "2.5.0"
 status: active
 domain: "Study data"
 tags:
@@ -1491,6 +1491,160 @@ schema:
         mustBe: 0
         dimension: uniqueness
         description: "The primary key (STUDYID, USUBJID, LBSEQ) identifies one row."
+  - id: EG
+    name: EG
+    physicalName: "m5/datasets/tabulations/sdtm/eg.json"
+    physicalType: file
+    logicalType: object
+    description: "ECG Test Results"
+    dataGranularityDescription: "One record per ECG observation per replicate per time point or one record per ECG observation per beat per visit per subject"
+    properties:
+      - name: STUDYID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Study Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: internal
+      - name: DOMAIN
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Domain Abbreviation"
+        required: true
+        classification: internal
+      - name: USUBJID
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Unique Subject Identifier"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 2
+        classification: confidential
+      - name: EGSEQ
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Sequence Number"
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 3
+        classification: confidential
+      - name: EGTESTCD
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "ECG Test or Examination Short Name"
+        required: true
+        classification: confidential
+      - name: EGTEST
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "ECG Test or Examination Name"
+        required: true
+        classification: confidential
+      - name: EGORRES
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Result or Finding in Original Units"
+        required: false
+        classification: confidential
+      - name: EGORRESU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Original Units"
+        required: false
+        classification: confidential
+      - name: EGSTRESC
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Character Result/Finding in Std Format"
+        required: false
+        classification: confidential
+      - name: EGSTRESN
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Numeric Result/Finding in Standard Units"
+        required: false
+        classification: confidential
+      - name: EGSTRESU
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Standard Units"
+        required: false
+        classification: confidential
+      - name: EGLOBXFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Last Observation Before Exposure Flag"
+        required: false
+        classification: confidential
+      - name: VISITNUM
+        logicalType: number
+        physicalType: DOUBLE
+        description: "Visit Number"
+        required: false
+        classification: confidential
+      - name: VISIT
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Visit Name"
+        required: false
+        classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
+      - name: EGDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Date/Time of ECG"
+        required: false
+        classification: confidential
+      - name: EGDY
+        logicalType: integer
+        physicalType: INTEGER
+        description: "Study Day of ECG"
+        required: false
+        classification: confidential
+    quality:
+      - id: EG_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - STUDYID
+            - USUBJID
+            - EGSEQ
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (STUDYID, USUBJID, EGSEQ) identifies one row."
   - id: DS
     name: DS
     physicalName: "m5/datasets/tabulations/sdtm/ds.json"

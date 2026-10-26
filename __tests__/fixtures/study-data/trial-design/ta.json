@@ -70,6 +70,22 @@
       "origin": "Protocol"
     },
     {
+      "name": "TABRANCH",
+      "label": "Branch",
+      "type": "text",
+      "length": 200,
+      "role": "Rule",
+      "origin": "Protocol"
+    },
+    {
+      "name": "TATRANS",
+      "label": "Transition Rule",
+      "type": "text",
+      "length": 200,
+      "role": "Rule",
+      "origin": "Protocol"
+    },
+    {
       "name": "EPOCH",
       "label": "Epoch",
       "type": "text",
@@ -128,6 +144,18 @@
       "Demoxacin 20 mg",
       "Follow-up"
     ],
+    "TABRANCH": [
+      "Randomized to Placebo",
+      null,
+      null,
+      "Randomized to Demoxacin 10 mg",
+      null,
+      null,
+      "Randomized to Demoxacin 20 mg",
+      null,
+      null
+    ],
+    "TATRANS": [null, null, null, null, null, null, null, null, null],
     "EPOCH": [
       "SCREENING",
       "TREATMENT",

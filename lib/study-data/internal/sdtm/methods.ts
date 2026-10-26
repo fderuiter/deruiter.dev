@@ -22,6 +22,10 @@ export const SDTM_METHODS = {
     "Missing for every subject: each dosed subject receives the treatment of the arm they were randomized to, so no actual arm is unplanned.",
   ACTUAL_ELEMENT_FROM_TA_TE:
     "The epoch on the record date, in USDM epoch order: before first exposure the first epoch, from first through last exposure the second, after that the third, kept only when TA lists it. Records of subjects never dosed are in the first epoch; a missing or partial date gives no epoch.",
+  PLANNED_VISIT:
+    "Y when the visit is one of the planned visits in TV; missing for an unscheduled visit.",
+  VISIT_OCCURRED:
+    "For a planned visit, Y when the visit has a date and N when it was missed; missing for an unscheduled visit.",
   CT_UNIT_MAPPING:
     "Collected dose unit, which is already the UNIT submission value (TABLET, C48542).",
   USDM_DOSE_FORM:

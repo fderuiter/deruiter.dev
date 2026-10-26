@@ -85,6 +85,20 @@ describe("USDM-derived trial design", () => {
     expect(ts.columns.TSPARMCD).toContain("INTTYPE");
   });
 
+  it("branches each arm at randomization and gives every arm the same visits (#2886)", () => {
+    const ta = trial().find((dataset) => dataset.name === "TA")!;
+    const tv = trial().find((dataset) => dataset.name === "TV")!;
+    const rows = ta.columns.ARM.map((arm, index) => ({
+      arm,
+      order: ta.columns.TAETORD[index],
+      branch: ta.columns.TABRANCH[index],
+    }));
+    for (const { arm, order, branch } of rows)
+      expect(branch).toBe(order === 1 ? `Randomized to ${arm}` : null);
+    expect(ta.columns.TATRANS.every((value) => value === null)).toBe(true);
+    expect(tv.columns.ARMCD.every((value) => value === null)).toBe(true);
+  });
+
   it("changes TA when the USDM arm changes", () => {
     const modified = structuredClone(DEMO_301_USDM);
     modified.study.versions![0].studyDesigns![0].arms[0].label = "NEWPBO";

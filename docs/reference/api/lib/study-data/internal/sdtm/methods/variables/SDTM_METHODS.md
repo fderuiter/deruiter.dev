@@ -70,6 +70,10 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 
 > `readonly` **LAST\_PRE\_DOSE**: `"Y on the subject's latest record for the test dated on or before first exposure; missing otherwise."` = `"Y on the subject's latest record for the test dated on or before first exposure; missing otherwise."`
 
+### PLANNED\_VISIT
+
+> `readonly` **PLANNED\_VISIT**: `"Y when the visit is one of the planned visits in TV; missing for an unscheduled visit."` = `"Y when the visit is one of the planned visits in TV; missing for an unscheduled visit."`
+
 ### RANDOMIZATION
 
 > `readonly` **RANDOMIZATION**: `"Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS."` = `"Arm code and arm from the subject's randomization record; missing for subjects never randomized, whose reason is in ARMNRS."`
@@ -101,3 +105,7 @@ MethodDef, so the method a reviewer reads is the one the spec names.
 ### USDM\_DOSE\_FORM
 
 > `readonly` **USDM\_DOSE\_FORM**: `"Dose form of the investigational product in the USDM administrable product, written as its Dosage Form (C66726) submission value: TABLET for C42998. Missing when the study names no investigational product or its dose form is not in the codelist."` = `"Dose form of the investigational product in the USDM administrable product, written as its Dosage Form (C66726) submission value: TABLET for C42998. Missing when the study names no investigational product or its dose form is not in the codelist."`
+
+### VISIT\_OCCURRED
+
+> `readonly` **VISIT\_OCCURRED**: `"For a planned visit, Y when the visit has a date and N when it was missed; missing for an unscheduled visit."` = `"For a planned visit, Y when the visit has a date and N when it was missed; missing for an unscheduled visit."`

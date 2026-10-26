@@ -8,7 +8,7 @@ import { defineTable, type TableDraft } from "./define";
 import type { WarehouseSchema, WarehouseTable } from "../../types";
 
 /** Semantic version of the warehouse schema. */
-export const WAREHOUSE_SCHEMA_VERSION = "1.6.0";
+export const WAREHOUSE_SCHEMA_VERSION = "1.7.0";
 
 const SILVER: readonly TableDraft[] = [
   {
@@ -1417,6 +1417,12 @@ const FACTS: readonly TableDraft[] = [
           from: ["visit_date", "data_entered_at"],
           how: "date-diff",
         },
+      ],
+      [
+        "entry_hour",
+        "integer",
+        "Hour of the day, 0 to 23 in UTC, the visit's data was entered.",
+        { nullable: true, from: ["data_entered_at"], how: "hour-of-day" },
       ],
     ],
   },

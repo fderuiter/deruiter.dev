@@ -227,6 +227,7 @@ export {
 export { assessStudyRisk } from "./internal/rbqm/assess";
 export {
   benjaminiHochberg,
+  chiSquareCdf,
   fCdf,
   invertMatrix,
   logGamma,

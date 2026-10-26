@@ -284,7 +284,11 @@ export const PRODUCT_REGISTRATIONS: Readonly<
     // 1.1.0 (#2879): the screen failure reason.
     version: "1.1.0",
   },
-  "gold.fct_visit": gold("Visit facts", "Operations mart", DATA_MANAGEMENT),
+  "gold.fct_visit": {
+    ...gold("Visit facts", "Operations mart", DATA_MANAGEMENT),
+    // 1.1.0 (#2955): the entry hour.
+    version: "1.1.0",
+  },
   "gold.fct_query": {
     ...gold("Query facts", "Operations mart", DATA_MANAGEMENT),
     // 1.1.0 (#2759): the queried form.

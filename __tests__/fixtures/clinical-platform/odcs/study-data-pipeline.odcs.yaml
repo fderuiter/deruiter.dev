@@ -3,7 +3,7 @@ apiVersion: v3.2.0
 kind: DataContract
 id: "clinical-platform/study-data-pipeline"
 name: "Study data: SDTM and ADaM"
-version: "2.3.0"
+version: "2.4.0"
 status: active
 domain: "Study data"
 tags:
@@ -484,14 +484,6 @@ schema:
         description: "Subject Identifier"
         required: true
         classification: confidential
-      - name: RFICDTC
-        logicalType: string
-        logicalTypeOptions:
-          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
-        physicalType: VARCHAR
-        description: "Informed Consent Date"
-        required: false
-        classification: confidential
       - name: RFSTDTC
         logicalType: string
         logicalTypeOptions:
@@ -522,6 +514,14 @@ schema:
           pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
         physicalType: VARCHAR
         description: "Date of Last Study Treatment"
+        required: false
+        classification: confidential
+      - name: RFICDTC
+        logicalType: string
+        logicalTypeOptions:
+          pattern: "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        physicalType: VARCHAR
+        description: "Informed Consent Date"
         required: false
         classification: confidential
       - name: RFPENDTC
@@ -835,6 +835,14 @@ schema:
         description: "Dose Form"
         required: false
         classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
       - name: EXSTDTC
         logicalType: string
         logicalTypeOptions:
@@ -861,14 +869,6 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of End of Treatment"
-        required: false
-        classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
         required: false
         classification: confidential
     quality:
@@ -1027,20 +1027,20 @@ schema:
         description: "Serious Event"
         required: false
         classification: confidential
-      - name: AEREL
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Causality
-        required: false
-        classification: confidential
       - name: AEACN
         logicalType: string
         logicalTypeOptions:
           maxLength: 200
         physicalType: "VARCHAR(200)"
         description: "Action Taken with Study Treatment"
+        required: false
+        classification: confidential
+      - name: AEREL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Causality
         required: false
         classification: confidential
       - name: AESCONG
@@ -1091,6 +1091,14 @@ schema:
         description: "Other Medically Important Serious Event"
         required: false
         classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
       - name: AESTDTC
         logicalType: string
         logicalTypeOptions:
@@ -1117,14 +1125,6 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of End of Adverse Event"
-        required: false
-        classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
         required: false
         classification: confidential
     quality:
@@ -1237,6 +1237,14 @@ schema:
         description: "Standard Units"
         required: false
         classification: confidential
+      - name: VSLOBXFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Last Observation Before Exposure Flag"
+        required: false
+        classification: confidential
       - name: VISITNUM
         logicalType: number
         physicalType: DOUBLE
@@ -1251,6 +1259,14 @@ schema:
         description: "Visit Name"
         required: false
         classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
       - name: VSDTC
         logicalType: string
         logicalTypeOptions:
@@ -1263,22 +1279,6 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of Vital Signs"
-        required: false
-        classification: confidential
-      - name: VSLOBXFL
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: "Last Observation Before Exposure Flag"
-        required: false
-        classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
         required: false
         classification: confidential
     quality:
@@ -1435,6 +1435,14 @@ schema:
         description: "Reference Range Indicator"
         required: false
         classification: confidential
+      - name: LBLOBXFL
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: "Last Observation Before Exposure Flag"
+        required: false
+        classification: confidential
       - name: VISITNUM
         logicalType: number
         physicalType: DOUBLE
@@ -1449,6 +1457,14 @@ schema:
         description: "Visit Name"
         required: false
         classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
       - name: LBDTC
         logicalType: string
         logicalTypeOptions:
@@ -1461,22 +1477,6 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of Lab Test"
-        required: false
-        classification: confidential
-      - name: LBLOBXFL
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: "Last Observation Before Exposure Flag"
-        required: false
-        classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
         required: false
         classification: confidential
     quality:
@@ -1559,6 +1559,14 @@ schema:
         description: "Category for Disposition"
         required: false
         classification: confidential
+      - name: EPOCH
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 200
+        physicalType: "VARCHAR(200)"
+        description: Epoch
+        required: false
+        classification: confidential
       - name: DSSTDTC
         logicalType: string
         logicalTypeOptions:
@@ -1571,14 +1579,6 @@ schema:
         logicalType: integer
         physicalType: INTEGER
         description: "Study Day of Disposition Event"
-        required: false
-        classification: confidential
-      - name: EPOCH
-        logicalType: string
-        logicalTypeOptions:
-          maxLength: 200
-        physicalType: "VARCHAR(200)"
-        description: Epoch
         required: false
         classification: confidential
     quality:

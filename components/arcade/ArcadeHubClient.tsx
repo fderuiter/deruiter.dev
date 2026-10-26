@@ -376,9 +376,7 @@ function GameCard({ game, index }: { game: ArcadeGameCard; index: number }) {
 
   return (
     <motion.div
-      initial={
-        shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
-      }
+      initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={
         shouldReduceMotion
@@ -591,9 +589,7 @@ export const ArcadeHubClient: React.FC = () => {
 
         {/* Easter Egg Meme Vault Discovery Card */}
         <motion.div
-          initial={
-            shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
-          }
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={
             shouldReduceMotion ? { duration: 0 } : { delay: 0.5, duration: 0.4 }

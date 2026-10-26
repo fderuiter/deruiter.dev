@@ -239,9 +239,11 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
       <div className="relative z-10 w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-10 lg:gap-12 items-center">
         {/* Left Column: Editorial Statement & Actions */}
         <div className="lg:col-span-7 min-w-0 flex flex-col items-start text-left">
-          {/* Micro Brand Identifier */}
+          {/* Micro Brand Identifier. Every entrance below keeps the same
+              `initial` on the server and the client and only drops its
+              duration to 0 under reduced motion, so hydration matches (#2893). */}
           <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, y: -8 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={
               shouldReduceMotion
@@ -262,7 +264,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
 
           {/* CTA Action Group */}
           <motion.div
-            initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={
               shouldReduceMotion
@@ -327,7 +329,7 @@ export const Hero: React.FC<HeroProps> = ({ className }) => {
 
         {/* Right Column: Duck's Co-Pilot Spotlight */}
         <motion.div
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={
             shouldReduceMotion

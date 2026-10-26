@@ -6,10 +6,10 @@ import { LabyrinthLayout } from "@/components/retro-labyrinth/parts/LabyrinthLay
 
 /**
  * Retro Labyrinth's desktop view (ADR 0062, #2839): the maze at integer
- * scale, its HUD, hotbar, cards and controls. The phone still resolves to
- * this view until its own lands (#2379), so it reads the cabinet's touch and
- * phone state for the shared layout; the three-view guard allow-lists it
- * until then (#2863).
+ * scale, its HUD, hotbar, cards and controls. The phone has its own view
+ * now (#2917); this one still reads the cabinet's touch and phone state for
+ * the shared layout, which the three-view guard allow-lists until the shared
+ * code is cleaned up (#2863).
  */
 export function DesktopView({
   isMounted = true,

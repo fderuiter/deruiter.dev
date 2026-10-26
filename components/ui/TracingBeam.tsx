@@ -1,13 +1,8 @@
 "use client";
 
 import React, { useRef } from "react";
-import {
-  motion,
-  useScroll,
-  useSpring,
-  useTransform,
-  useReducedMotion,
-} from "framer-motion";
+import { motion, useScroll, useSpring, useTransform } from "framer-motion";
+import { usePrefersReducedMotion } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { designManifest } from "@/lib/design-manifest";
 
@@ -21,7 +16,9 @@ export const TracingBeam: React.FC<TracingBeamProps> = ({
   className,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const shouldReduceMotion = useReducedMotion();
+  // Hydration-safe: matches the server render, which cannot read the media
+  // query, so the pulsing ring only mounts after hydration (#2893).
+  const shouldReduceMotion = usePrefersReducedMotion();
 
   // 1. Track scroll progress of the container relative to the viewport
   const { scrollYProgress } = useScroll({

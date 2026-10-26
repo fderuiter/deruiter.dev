@@ -7,7 +7,8 @@ import { settleFooterTicker } from "./helpers/footer-ticker";
  * the four widths of the layout matrix, with zero critical, serious or
  * moderate axe violations and no horizontal overflow, and the milestone
  * swimlane read with the keyboard and with a pointer. The enrollment
- * what-if (#2913) runs in the page's worker.
+ * what-if (#2913) runs in the page's worker, and the risk heatmap (#2914)
+ * links each rating to its evidence.
  */
 
 const WIDTHS = [320, 375, 768, 1440] as const;
@@ -65,10 +66,12 @@ for (const width of WIDTHS) {
     await page.goto("/platform/portfolio");
     await settled(page);
 
-    // Open every calculation panel so its SQL is checked too, and every
-    // weekly forecast table.
+    // Open every calculation panel so its SQL is checked too, every weekly
+    // forecast table and the heatmap's rules.
     for (const summary of await page
-      .locator("summary", { hasText: /is calculated|Weekly completion/ })
+      .locator("summary", {
+        hasText: /is calculated|Weekly completion|How each column is rated/,
+      })
       .all()) {
       await summary.click();
     }
@@ -182,4 +185,28 @@ test("the enrollment what-if runs in the worker and stays contained on a phone",
   ).toBeVisible();
   expect(await overflowing(page)).toEqual([]);
   expect(await seriousViolations(page)).toEqual([]);
+});
+
+test("a heatmap rating takes a phone reader to its evidence", async ({
+  page,
+}) => {
+  test.slow();
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto("/platform/portfolio");
+  await settled(page);
+  const heatmap = page.getByRole("region", { name: "Risk heatmap" });
+  const row = heatmap.getByRole("row", { name: /^DEMO-302/ });
+  await expect(row.getByRole("link")).toHaveText([
+    /At risk/,
+    /At risk/,
+    /Watch/,
+  ]);
+  await row.getByRole("link").first().click();
+  await expect(page).toHaveURL(/#forecast-DEMO-302$/);
+  const card = page.locator("#forecast-DEMO-302");
+  await expect(card).toBeInViewport();
+  // The sticky navbar must not cover the card's heading.
+  const heading = card.getByRole("heading", { level: 3, name: /^DEMO-302 / });
+  expect((await heading.boundingBox())!.y).toBeGreaterThan(48);
+  expect(await overflowing(page)).toEqual([]);
 });

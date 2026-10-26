@@ -17,8 +17,14 @@
 - [PortfolioMilestone](interfaces/PortfolioMilestone.md)
 - [PortfolioOutlier](interfaces/PortfolioOutlier.md)
 - [PortfolioOverrun](interfaces/PortfolioOverrun.md)
+- [PortfolioRiskCell](interfaces/PortfolioRiskCell.md)
+- [PortfolioRiskHeatmap](interfaces/PortfolioRiskHeatmap.md)
+- [PortfolioRiskRow](interfaces/PortfolioRiskRow.md)
+- [PortfolioRiskRule](interfaces/PortfolioRiskRule.md)
 - [PortfolioSwimlane](interfaces/PortfolioSwimlane.md)
 
 ## Type Aliases
 
 - [PortfolioMilestoneStatus](type-aliases/PortfolioMilestoneStatus.md)
+- [PortfolioRiskDimension](type-aliases/PortfolioRiskDimension.md)
+- [PortfolioRiskRating](type-aliases/PortfolioRiskRating.md)

@@ -8,7 +8,7 @@
 
 > **getAllNavHrefs**(): `string`[]
 
-Every href the navigation reaches, menu entries and footer extras alike.
+Every href the navigation reaches: group overviews and menu entries.
 
 ## Returns
 

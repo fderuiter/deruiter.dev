@@ -13,7 +13,6 @@ import {
   type NavGroup,
   type NavItem,
 } from "@/lib/navigation";
-import { ARCADE_GAME_COUNT } from "@/lib/arcade";
 import { NavIcon, navToneClass } from "@/components/nav/NavIcon";
 
 interface MobileNavSectionsProps {
@@ -38,6 +37,9 @@ function ItemRow({
       <span className="flex min-w-0 items-center gap-2">
         <NavIcon name={item.icon} tone={item.tone} />
         <span className="truncate">
+          {item.step ? (
+            <span className="font-mono text-xs text-accent">{item.step}. </span>
+          ) : null}
           {item.title}
           {item.external ? " ↗" : ""}
         </span>
@@ -104,7 +106,7 @@ function ExpandableGroup({
       >
         <span>{group.label}</span>
         <span className="flex shrink-0 items-center gap-2 font-mono text-xs text-zinc-400">
-          {group.id === "arcade" ? `${ARCADE_GAME_COUNT} Games` : count}
+          {count}
           <IconChevronDown
             aria-hidden="true"
             className={cn(
@@ -138,13 +140,26 @@ function ExpandableGroup({
             </div>
           );
         })}
+        {group.overviewLabel ? (
+          <Link
+            href={group.href}
+            aria-current={pathname === group.href ? "page" : undefined}
+            onClick={(e) => onNavigate(e, group.href)}
+            className="min-h-[48px] px-3.5 py-3 rounded-xl border border-zinc-800/80 text-sm font-semibold text-accent flex items-center justify-between gap-2 active:scale-[0.98] transition-all min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <span className="truncate">{group.overviewLabel}</span>
+            <span aria-hidden="true" className="font-mono text-xs">
+              →
+            </span>
+          </Link>
+        ) : null}
       </div>
     </div>
   );
 }
 
 /**
- * The drawer's navigation: plain links for Work, Blog and Contact, and a
+ * The drawer's navigation: a plain link for Contact, and a
  * folding section for each menu, in the order the top bar shows them.
  */
 export const MobileNavSections: React.FC<MobileNavSectionsProps> = (props) => {

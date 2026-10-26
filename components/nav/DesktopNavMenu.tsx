@@ -48,6 +48,9 @@ function MenuLink({
       </div>
       <div className="flex min-w-0 flex-col">
         <span className="truncate font-mono text-xs font-bold tracking-tight text-neutral-200 transition-colors group-hover:text-accent">
+          {item.step ? (
+            <span className="text-accent">{item.step}. </span>
+          ) : null}
           {item.title}
           {item.external ? " ↗" : ""}
         </span>
@@ -217,6 +220,19 @@ export const DesktopNavMenu: React.FC<DesktopNavMenuProps> = ({
                 </div>
               );
             })}
+            {group.overviewLabel ? (
+              <Link
+                href={group.href}
+                data-nav-menu-item=""
+                aria-current={pathname === group.href ? "page" : undefined}
+                onClick={(e) => onNavigate(e, group.href)}
+                onMouseEnter={onLinkHover}
+                className="mt-1 flex min-w-0 items-center justify-between gap-3 rounded-xl border-t border-zinc-800/80 px-3 py-2.5 font-mono text-xs font-bold text-accent transition-colors hover:bg-zinc-900/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              >
+                <span className="truncate">{group.overviewLabel}</span>
+                <span aria-hidden="true">→</span>
+              </Link>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>

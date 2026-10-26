@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// The top bar, its three menus and the mobile drawer (#1842, phase N1). Every
+// The top bar, its five menus and the mobile drawer (#1842 phase N1, #2952). Every
 // click that depends on React having hydrated sits in a toPass block so it
 // cannot land on static HTML that has no listeners yet.
 
@@ -27,15 +27,16 @@ test.describe("Top bar and menus on a wide screen", () => {
   }) => {
     await page.goto("/");
     const bar = page.getByRole("navigation", { name: "Main Navigation" });
-    await expect(bar.getByRole("link", { name: "Work" })).toBeVisible();
-    await expect(bar.getByRole("link", { name: "Blog" })).toBeVisible();
-    for (const menu of ["Arcade", "Simulators", "About"]) {
+    for (const menu of ["Clinical", "Labs", "Arcade", "Writing", "About"]) {
       await expect(
         bar.getByRole("button", { name: menu, exact: true })
       ).toBeVisible();
     }
     await expect(bar.getByRole("link", { name: "Contact" })).toBeVisible();
     await expect(bar.getByRole("button", { name: "Systems" })).toHaveCount(0);
+    await expect(bar.getByRole("button", { name: "Simulators" })).toHaveCount(
+      0
+    );
     await expect(bar.getByRole("link", { name: /GitHub/ })).toHaveCount(0);
   });
 
@@ -58,7 +59,9 @@ test.describe("Top bar and menus on a wide screen", () => {
     await page.keyboard.press("ArrowDown");
     await expect(panel.getByRole("link", { name: /Arcade Hub/ })).toBeFocused();
     await page.keyboard.press("ArrowDown");
-    await expect(panel.getByRole("link", { name: /Laser Loon/ })).toBeFocused();
+    await expect(
+      panel.getByRole("link", { name: /Study Director/ })
+    ).toBeFocused();
     await page.keyboard.press("ArrowUp");
     await expect(panel.getByRole("link", { name: /Arcade Hub/ })).toBeFocused();
     await page.keyboard.press("End");
@@ -71,29 +74,52 @@ test.describe("Top bar and menus on a wide screen", () => {
     await expect(trigger).toBeFocused();
   });
 
-  test("Simulators menu has Simulators and Studios groups and opens Protocol Drift", async ({
+  test("Clinical menu lists the journey in order and opens Protocol Drift", async ({
     page,
   }) => {
     await page.goto("/");
-    await openMenu(page, "Simulators");
-    const panel = page.locator("#simulators-navigation");
-    await expect(panel.getByText("Simulators", { exact: true })).toBeVisible();
-    await expect(panel.getByText("Studios", { exact: true })).toBeVisible();
-    for (const name of [
-      /Protocol Drift/,
-      /Incident Simulator/,
-      /Patrol Shift/,
-      /CRF Studio/,
-      /Proof Workspace/,
-      /NeuroRecon Studio/,
-    ]) {
-      await expect(panel.getByRole("link", { name })).toBeVisible();
-    }
+    await openMenu(page, "Clinical");
+    const panel = page.locator("#clinical-navigation");
+    await expect(
+      panel.getByText("The journey, in order", { exact: true })
+    ).toBeVisible();
+    await expect(
+      panel.getByText("Platform tools", { exact: true })
+    ).toBeVisible();
+    const journey = panel.getByRole("group", { name: "The journey, in order" });
+    await expect(journey.getByRole("link")).toHaveText([
+      /1\. CRF Studio/,
+      /2\. Protocol Drift/,
+      /3\. Study Data Pipeline/,
+      /4\. Clinical Data Platform/,
+    ]);
+    await expect(
+      panel.getByRole("link", { name: /The whole clinical journey/ })
+    ).toHaveAttribute("href", "/clinical");
     await expect(async () => {
       await panel.getByRole("link", { name: /Protocol Drift/ }).click();
       await expect(page).toHaveURL(/\/protocol-drift$/, { timeout: 4000 });
     }).toPass({ timeout: 15000 });
     await expect(page.locator("h1")).toContainText("Protocol Drift");
+  });
+
+  test("Labs menu holds the studios and non-clinical simulators", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await openMenu(page, "Labs");
+    const panel = page.locator("#labs-navigation");
+    for (const name of [
+      /Proof Workspace/,
+      /NeuroRecon Studio/,
+      /Incident Simulator/,
+      /Patrol Shift/,
+    ]) {
+      await expect(panel.getByRole("link", { name })).toBeVisible();
+    }
+    await expect(panel.getByRole("link", { name: /CRF Studio/ })).toHaveCount(
+      0
+    );
   });
 
   test("About menu holds the site pages and GitHub opens in a new tab", async ({
@@ -142,7 +168,7 @@ test.describe("Top bar and menus on a wide screen", () => {
 test.describe("Mobile drawer", () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test("folds Arcade and Simulators and closes on Escape", async ({ page }) => {
+  test("folds Arcade and Clinical and closes on Escape", async ({ page }) => {
     await page.goto("/");
     const hamburger = page.locator('button[aria-controls="mobile-navigation"]');
     await expect(async () => {
@@ -156,7 +182,7 @@ test.describe("Mobile drawer", () => {
 
     const drawer = page.locator("#mobile-navigation");
     const arcade = drawer.getByRole("button", { name: /^Arcade/ });
-    const sims = drawer.getByRole("button", { name: /^Simulators/ });
+    const sims = drawer.getByRole("button", { name: /^Clinical/ });
     await expect(arcade).toHaveAttribute("aria-expanded", "false");
     await expect(sims).toHaveAttribute("aria-expanded", "false");
 
@@ -171,7 +197,7 @@ test.describe("Mobile drawer", () => {
       drawer.getByRole("link", { name: /Protocol Drift/ })
     ).toBeVisible();
     await expect(
-      drawer.getByRole("link", { name: /Incident Simulator/ })
+      drawer.getByRole("link", { name: /The whole clinical journey/ })
     ).toBeVisible();
 
     // 48px minimum touch targets on the section buttons and links.

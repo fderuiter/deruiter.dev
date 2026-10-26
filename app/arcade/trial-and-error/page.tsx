@@ -3,6 +3,7 @@ import { TrialAndErrorClient } from "@/components/arcade/TrialAndErrorClient";
 import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.trialAndError
@@ -26,14 +27,9 @@ export default function TrialAndErrorPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            {
-              name: "Trial & Error: Biostat Ops",
-              url: "/arcade/trial-and-error",
-            },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/trial-and-error")
+          ),
         }}
       />
       <TrialAndErrorClient />

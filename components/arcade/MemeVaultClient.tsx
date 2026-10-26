@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import {
   MEME_QUOTES,
   SOUNDBOARD_BUTTONS,
@@ -320,6 +321,7 @@ export const MemeVaultClient: React.FC = () => {
           <IconArrowLeft className="w-4 h-4" />
           <span>Back to Arcade Hub</span>
         </Link>
+        <Breadcrumbs path="/arcade/meme-vault" className="mr-auto" />
 
         <div className="flex flex-wrap items-center gap-2">
           <FieldManualButton manualId="meme-vault" variant="inline" />

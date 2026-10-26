@@ -19,8 +19,8 @@ import type {
   RiskSignalAction,
 } from "../../types";
 
-/** The issue that adds AE, vitals and weekday data to the portfolio. */
-const CLINICAL_FEEDS_ISSUE = 2776;
+/** The issue that adds adverse event KRIs to the library. */
+const SAFETY_KRIS_ISSUE = 2980;
 
 const ENROLLED = (value: number) => ({
   metricId: "subjects_enrolled",
@@ -171,6 +171,15 @@ export const CSM_TESTS: readonly CsmTestDefinition[] = [
     reads: ["gold.fct_deviation.deviation_id", "gold.fct_visit.visit_date_key"],
   },
   {
+    id: "csm-ae-under-reporting",
+    name: "Adverse event under-reporting",
+    question:
+      "Does the site report fewer adverse events per entered visit than its peers would predict?",
+    method:
+      "Lower tail of a Poisson count: the site's adverse events against the peer adverse event rate times the site's entered visits.",
+    reads: ["gold.fct_adverse_event.ae_id", "gold.fct_visit.entry_lag_days"],
+  },
+  {
     id: "csm-exact-day-visits",
     name: "Visits on their exact planned day",
     question:
@@ -268,10 +277,13 @@ function factors(device: boolean): CriticalToQualityFactor[] {
       risk: "Under-reported or late safety events hide risk from subjects, investigators and regulators.",
       kriIds: [],
       qtlIds: [],
+      // Central monitoring tests each site's AE rate against its peers
+      // (#2956); what is still missing is a KRI to follow it week by week.
       gap: {
-        reason:
-          "The operational portfolio has no adverse event feed, so AE reporting rates are not monitored yet.",
-        issue: CLINICAL_FEEDS_ISSUE,
+        reason: device
+          ? "No key risk indicator follows a site's adverse event rate or how long it takes to report an event, and the portfolio has no device deficiency feed. Central monitoring compares each site's adverse event rate with its peers in the meantime."
+          : "No key risk indicator follows a site's adverse event rate or how long it takes to report an event. Central monitoring compares each site's rate with its peers in the meantime.",
+        issue: SAFETY_KRIS_ISSUE,
       },
     },
   ];

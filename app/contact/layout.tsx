@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.contact);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.contact
+);
 
 export default function ContactLayout({
   children,
@@ -26,10 +29,7 @@ export default function ContactLayout({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Contact & Direct Inquiries", url: "/contact" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/contact")),
         }}
       />
       {children}

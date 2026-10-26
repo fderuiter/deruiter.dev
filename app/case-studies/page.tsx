@@ -13,6 +13,7 @@ import { ClinicalJourneyHighlight } from "@/components/clinical-journey/Clinical
 import { PageLayout } from "@/components/PageLayout";
 import { resolveBaseUrl } from "@/lib/domain";
 import { getBreadcrumbSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 // Daily: each regeneration bills Vercel active CPU, and content writes
 // revalidate these paths on demand, so the timer is only a backstop (#2971).
@@ -92,17 +93,16 @@ export default async function CaseStudiesPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Case Studies", url: "/case-studies" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/case-studies")
+          ),
         }}
       />
 
       <div className="relative z-10 w-full flex flex-col items-center">
         {/* Navigation Breadcrumb */}
         <div className="w-full mb-6 sm:mb-8 flex justify-start">
-          <Breadcrumbs items={[{ label: "Case Studies" }]} />
+          <Breadcrumbs path="/case-studies" />
         </div>
 
         {/* Page Header */}

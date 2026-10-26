@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageLayout } from "@/components/PageLayout";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
-import { getNavGroupItems, getNavGroup } from "@/lib/navigation";
+import {
+  getBreadcrumbTrailSchema,
+  getNavGroup,
+  getNavGroupItems,
+} from "@/lib/navigation";
 import { getBreadcrumbSchema } from "@/lib/seo";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 
@@ -22,14 +26,11 @@ export default function LabsPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Labs", url: "/labs" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/labs")),
         }}
       />
       <header className="border-b border-white/[0.08] pb-10 sm:pb-14">
-        <Breadcrumbs items={[{ label: "Labs" }]} />
+        <Breadcrumbs path="/labs" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Labs
         </p>

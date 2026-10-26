@@ -4,8 +4,11 @@ import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 
 import { PageLayout } from "@/components/PageLayout";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
-export const metadata: Metadata = buildRouteMetadata(ROUTE_METADATA_CONFIGS.quasiPuzzler);
+export const metadata: Metadata = buildRouteMetadata(
+  ROUTE_METADATA_CONFIGS.quasiPuzzler
+);
 
 export default function QuasiPuzzlerPage() {
   return (
@@ -25,11 +28,9 @@ export default function QuasiPuzzlerPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "Quasi-Perfect Puzzler", url: "/arcade/quasi-puzzler" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/quasi-puzzler")
+          ),
         }}
       />
       <QuasiPuzzlerClient />

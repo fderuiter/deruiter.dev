@@ -26,6 +26,7 @@
 - [DqAssessment](interfaces/DqAssessment.md)
 - [DqRuleResult](interfaces/DqRuleResult.md)
 - [DqScore](interfaces/DqScore.md)
+- [EdcAdverseEvent](interfaces/EdcAdverseEvent.md)
 - [EdcFeed](interfaces/EdcFeed.md)
 - [EdcQuery](interfaces/EdcQuery.md)
 - [EdcSubject](interfaces/EdcSubject.md)
@@ -75,6 +76,7 @@
 
 ## Type Aliases
 
+- [AdverseEventSeverity](type-aliases/AdverseEventSeverity.md)
 - [ContractColumnType](type-aliases/ContractColumnType.md)
 - [DataClassification](type-aliases/DataClassification.md)
 - [DeviationImportance](type-aliases/DeviationImportance.md)

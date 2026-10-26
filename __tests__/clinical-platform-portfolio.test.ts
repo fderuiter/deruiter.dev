@@ -41,9 +41,15 @@ import { expectWithinTimingBudget } from "./helpers/timing-budget";
  * #2912: the finance feed's budget plan (`feeds.financePlan`) is new. It
  * draws nothing from any stream; with it left out the hash is the previous
  * golden, a72bba8e, so no other value moved.
+ *
+ * #2956: the EDC feed carries adverse events (`feeds.edc.adverseEvents`),
+ * drawn from a stream of their own, and the data integrity signal's
+ * description says its site reports almost none. With the events left out
+ * and the old description put back the hash is the previous golden,
+ * 73ae03f5.
  */
 const GOLDEN_SHA256 =
-  "73ae03f5feb220d13e873a746e457e7d3085943110140776b869e2fa9f20df96";
+  "e376174fcf7563eb77fe80e6a7002112cd0576e94b38fb62e58bd9ecfb954451";
 
 /** The fictional controlled list screen failure reasons come from (#2879). */
 const SCREEN_FAILURE_REASONS: readonly string[] = [
@@ -65,6 +71,7 @@ const GOLDEN_SUMMARY = {
     queries: 131,
     deviations: 12,
     kits: 92,
+    adverseEvents: 116,
   },
   "DEMO-201": {
     status: "follow-up",
@@ -75,6 +82,7 @@ const GOLDEN_SUMMARY = {
     queries: 588,
     deviations: 39,
     kits: 863,
+    adverseEvents: 455,
   },
   "DEMO-202": {
     status: "follow-up",
@@ -85,6 +93,7 @@ const GOLDEN_SUMMARY = {
     queries: 394,
     deviations: 44,
     kits: 467,
+    adverseEvents: 280,
   },
   "DEMO-203": {
     status: "follow-up",
@@ -95,6 +104,7 @@ const GOLDEN_SUMMARY = {
     queries: 378,
     deviations: 18,
     kits: 435,
+    adverseEvents: 196,
   },
   "DEMO-301": {
     status: "closed",
@@ -105,6 +115,7 @@ const GOLDEN_SUMMARY = {
     queries: 220,
     deviations: 50,
     kits: 366,
+    adverseEvents: 0,
   },
   "DEMO-302": {
     status: "enrolling",
@@ -115,6 +126,7 @@ const GOLDEN_SUMMARY = {
     queries: 994,
     deviations: 93,
     kits: 1119,
+    adverseEvents: 580,
   },
   "DEV-401": {
     status: "closed",
@@ -125,6 +137,7 @@ const GOLDEN_SUMMARY = {
     queries: 137,
     deviations: 10,
     kits: 0,
+    adverseEvents: 76,
   },
   "DEV-402": {
     status: "enrolling",
@@ -135,6 +148,7 @@ const GOLDEN_SUMMARY = {
     queries: 717,
     deviations: 63,
     kits: 0,
+    adverseEvents: 381,
   },
 };
 
@@ -167,6 +181,7 @@ function allRecords(p: Portfolio): SyntheticRecord[] {
     ...edc.subjects,
     ...edc.visits,
     ...edc.queries,
+    ...edc.adverseEvents,
     ...ctms.milestones,
     ...ctms.monitoringVisits,
     ...ctms.deviations,
@@ -195,6 +210,7 @@ function summarize(p: Portfolio) {
           queries: of(edc.queries),
           deviations: of(ctms.deviations),
           kits: of(irt.kits),
+          adverseEvents: of(edc.adverseEvents),
         },
       ];
     })
@@ -295,6 +311,7 @@ describe("generatePortfolio: shape", () => {
       edc.subjects,
       edc.visits,
       edc.queries,
+      edc.adverseEvents,
       ctms.milestones,
       ctms.monitoringVisits,
       ctms.deviations,
@@ -500,6 +517,74 @@ describe("generatePortfolio: DEMO-301 from the Study Data Pipeline", () => {
   }, 60_000);
 });
 
+describe("generatePortfolio: adverse events (#2956)", () => {
+  const { edc } = portfolio.feeds;
+  const visits = new Map(edc.visits.map((v) => [v.visitId, v]));
+  const enrolledOn = new Map(
+    edc.subjects.map((s) => [s.subjectId, s.enrolledOn])
+  );
+
+  it("reports each event at an entered on-study visit of its own subject", () => {
+    expect(edc.adverseEvents.length).toBeGreaterThan(1000);
+    expect(new Set(edc.adverseEvents.map((e) => e.aeId)).size).toBe(
+      edc.adverseEvents.length
+    );
+    for (const event of edc.adverseEvents) {
+      const visit = visits.get(event.visitId);
+      expect(visit?.status).toBe("entered");
+      expect(visit?.subjectId).toBe(event.subjectId);
+      expect(visit?.siteId).toBe(event.siteId);
+      expect(visit?.studyId).toBe(event.studyId);
+      expect(event.reportedOn).toBe(visit?.dataEnteredAt?.slice(0, 10));
+      expect(event.aeId.startsWith(`${event.visitId}-AE`)).toBe(true);
+    }
+  });
+
+  it("begins every event after enrollment and within four weeks before its visit", () => {
+    for (const event of edc.adverseEvents) {
+      const visitDate = visits.get(event.visitId)?.visitDate ?? "";
+      const enrolled = enrolledOn.get(event.subjectId) ?? "";
+      expect(event.onsetOn >= enrolled).toBe(true);
+      expect(event.onsetOn <= visitDate).toBe(true);
+      expect(event.onsetOn >= addDays(visitDate, -27)).toBe(true);
+      expect(event.onsetOn <= event.reportedOn).toBe(true);
+    }
+  });
+
+  it("reports about four events per ten on-study visits, mostly mild and rarely serious", () => {
+    const integrity = new Set(
+      portfolio.signals
+        .filter((s) => s.kind === "data-integrity")
+        .map((s) => s.siteId)
+    );
+    const onStudy = edc.visits.filter(
+      (v) =>
+        v.studyId !== "DEMO-301" &&
+        !integrity.has(v.siteId) &&
+        v.status === "entered" &&
+        v.visitDate !== null &&
+        v.visitDate >= (enrolledOn.get(v.subjectId) ?? "9999")
+    );
+    const events = edc.adverseEvents.filter((e) => !integrity.has(e.siteId));
+    expect(events.length / onStudy.length).toBeGreaterThan(0.36);
+    expect(events.length / onStudy.length).toBeLessThan(0.44);
+    const serious = events.filter((e) => e.serious).length / events.length;
+    expect(serious).toBeGreaterThan(0.03);
+    expect(serious).toBeLessThan(0.09);
+    const mild = events.filter((e) => e.severity === "mild").length;
+    expect(mild / events.length).toBeGreaterThan(0.5);
+    expect(new Set(events.map((e) => e.severity))).toEqual(
+      new Set(["mild", "moderate", "severe"])
+    );
+  });
+
+  it("leaves DEMO-301's adverse events in its Study Data Pipeline run", () => {
+    expect(edc.adverseEvents.some((e) => e.studyId === "DEMO-301")).toBe(
+      false
+    );
+  });
+});
+
 describe("generatePortfolio: planted signals", () => {
   const { signals, sites, feeds } = portfolio;
 
@@ -546,6 +631,25 @@ describe("generatePortfolio: planted signals", () => {
       (q) => q.siteId === signal?.siteId
     ).length;
     expect(queries / visits.length).toBeLessThan(0.1);
+  });
+
+  it("the data integrity site reports adverse events at a fraction of its peers' rate (#2956)", () => {
+    const signal = signals.find((s) => s.kind === "data-integrity");
+    const rate = (inSite: (siteId: string) => boolean) => {
+      const entered = feeds.edc.visits.filter(
+        (v) =>
+          v.studyId === signal?.studyId &&
+          inSite(v.siteId) &&
+          v.status === "entered"
+      ).length;
+      const events = feeds.edc.adverseEvents.filter(
+        (e) => e.studyId === signal?.studyId && inSite(e.siteId)
+      ).length;
+      return events / entered;
+    };
+    const site = rate((id) => id === signal?.siteId);
+    const peers = rate((id) => id !== signal?.siteId);
+    expect(site).toBeLessThan(peers * 0.25);
   });
 
   it("the study behind plan misses its planned 50% enrollment date", () => {
@@ -691,6 +795,18 @@ describe("generatePortfolio: properties over seeds", () => {
             (q.closedAt === null ||
               (q.answeredAt !== null && q.closedAt >= q.answeredAt)) &&
             q.openedAt.slice(0, 10) <= p.asOf
+        );
+      }),
+      options
+    );
+  }, 60_000);
+
+  it("never reports an adverse event before it began, or after the data cut (#2956)", () => {
+    fc.assert(
+      fc.property(seeds, (seed) => {
+        const p = portfolioFor(seed);
+        return p.feeds.edc.adverseEvents.every(
+          (e) => e.onsetOn <= e.reportedOn && e.reportedOn <= p.asOf
         );
       }),
       options

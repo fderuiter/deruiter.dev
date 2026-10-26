@@ -14,5 +14,4 @@ export const ILLUSTRATIVE_CT_CODES: Readonly<Record<string, string>> =
     C25347: "Height observations (VS)",
     C25488: "Dose corruptions (EXDOSE)",
     C49677: "Heart rate observations (VS)",
-    C71113: "Dosing frequency corrections (FREQ)",
   });

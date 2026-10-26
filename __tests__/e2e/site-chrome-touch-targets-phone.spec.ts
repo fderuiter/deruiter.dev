@@ -59,7 +59,7 @@ test.describe("site chrome touch targets on a phone (#2894)", () => {
     );
   });
 
-  test("platform back link", async ({ page }) => {
+  test("platform breadcrumb back to the hub", async ({ page }) => {
     await page.goto("/platform/operations");
     expectAllTappable(await heights(page, "main header a[href='/platform']"));
   });

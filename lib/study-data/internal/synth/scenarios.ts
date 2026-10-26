@@ -133,8 +133,8 @@ function earlyStop(view: SubjectView): string | null {
 
 /**
  * Ends the subject's participation on `stop` for `reason`: exposure stops,
- * the final disposition event changes, and visits and measurements that
- * would have followed are not collected.
+ * the final disposition event changes, and visits, measurements and
+ * medications that would have followed are not collected.
  */
 function endParticipation(
   view: SubjectView,
@@ -162,6 +162,10 @@ function endParticipation(
       ),
     VS: view.rows("VS").filter(kept("VSDTC")),
     LB: view.rows("LB").filter(kept("LBDTC")),
+    // A medication remembered to the month began long before the study.
+    CM: view
+      .rows("CM")
+      .filter((row) => !isFullDate(row.CMSTDTC) || row.CMSTDTC <= stop),
   };
 }
 

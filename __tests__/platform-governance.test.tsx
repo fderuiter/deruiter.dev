@@ -17,19 +17,31 @@ import PlatformGovernancePage, {
 } from "@/app/platform/governance/page";
 import { BusinessGlossary } from "@/components/platform/governance/BusinessGlossary";
 import { DataCatalog } from "@/components/platform/governance/DataCatalog";
+import {
+  DataQuality,
+  type DqScenarioEffect,
+} from "@/components/platform/governance/DataQuality";
 import { GovernancePolicies } from "@/components/platform/governance/GovernancePolicies";
 import { StewardshipModel } from "@/components/platform/governance/StewardshipModel";
 import {
+  DQ_STATUS_LABEL,
   RACI_LABEL,
   catalogAnchor,
+  dqIssueAnchor,
+  dqProductAnchor,
+  dqRuleAnchor,
   percent,
 } from "@/components/platform/governance/labels";
 import {
+  DATA_QUALITY_RULES,
   DEFAULT_PORTFOLIO_SEED,
+  DQ_ISSUE_LOG,
+  DQ_SCENARIOS,
   GOVERNANCE_DECISIONS,
   GOVERNANCE_POLICIES,
   REPORT_PACK,
   STEWARDSHIP_ROLES,
+  applyDqScenario,
   assessDataQuality,
   buildWarehouse,
   businessGlossary,
@@ -39,6 +51,8 @@ import {
   dataCatalogFacets,
   dataContracts,
   dataProducts,
+  dataQualityTrend,
+  dqIssues,
   generatePortfolio,
   operationsReportSpecs,
   platformLineage,
@@ -54,9 +68,9 @@ import {
 } from "@/lib/study-data";
 
 /**
- * The /platform/governance page (#2638): the data catalog, business
- * glossary, stewardship model and policies, each read from the platform's
- * own definitions.
+ * The /platform/governance page (#2638, #2636): the data catalog, data
+ * quality scorecard, business glossary, stewardship model and policies,
+ * each read from the platform's own definitions.
  */
 
 const warehouse = buildWarehouse(
@@ -69,13 +83,14 @@ const run = runPipeline(DEMO_301_STUDY, {
 const products = dataProducts(run);
 const contracts = dataContracts(run);
 const reports = [...REPORT_PACK, ...operationsReportSpecs(warehouse)];
+const quality = assessDataQuality(warehouse, run);
 const catalog = dataCatalog({
   products,
   contracts,
   contractResults: checkDataContracts(contracts, contractData(warehouse, run), {
     loadedAt: warehouse.asOf,
   }),
-  quality: assessDataQuality(warehouse, run),
+  quality,
   lineage: platformLineage(run, reports),
   reports,
 });
@@ -118,7 +133,7 @@ afterEach(() => {
 });
 
 describe("the governance page", () => {
-  it("shows the four sections, the catalog and a passing stewardship check", async () => {
+  it("shows the five sections, the catalog and a passing stewardship check", async () => {
     const { container } = render(<PlatformGovernancePage />);
     expect(
       screen.getByRole("heading", { level: 1, name: "Govern the data" })
@@ -128,6 +143,7 @@ describe("the governance page", () => {
       .map((h) => h.textContent);
     expect(headings).toEqual([
       "Data catalog",
+      "Data quality",
       "Business glossary",
       "Stewardship",
       "Policies",
@@ -137,11 +153,17 @@ describe("the governance page", () => {
       within(nav)
         .getAllByRole("link")
         .map((a) => a.getAttribute("href"))
-    ).toEqual(["#catalog", "#glossary", "#stewardship", "#policies"]);
+    ).toEqual([
+      "#catalog",
+      "#quality",
+      "#glossary",
+      "#stewardship",
+      "#policies",
+    ]);
     expect(shownIds(container)).toEqual(catalog.map((e) => e.id));
     expect(container.textContent).toContain("The stewardship check passes");
     expect(container.textContent).toContain(
-      "37 data products and 53 governed metrics"
+      "39 data products and 53 governed metrics"
     );
     expect(String(metadata.title)).toContain(
       "Clinical Data Governance & Catalog"
@@ -312,6 +334,244 @@ describe("the data catalog", () => {
     expect(
       document.getElementById(catalogAnchor(health.id))!.textContent
     ).toContain("Personal health data");
+  });
+});
+
+describe("the data quality section", () => {
+  const trend = dataQualityTrend(warehouse, run, DQ_ISSUE_LOG);
+  const issues = dqIssues(DQ_ISSUE_LOG);
+  const catalogIds = new Set(catalog.map((e) => e.id));
+  // The table's oracle: each defect's rules, failing rows before and with it.
+  const before = new Map(quality.results.map((r) => [r.ruleId, r]));
+  const effects: DqScenarioEffect[] = DQ_SCENARIOS.map((scenario) => {
+    const after = new Map(
+      assessDataQuality(
+        applyDqScenario(warehouse, scenario.id),
+        run
+      ).results.map((r) => [r.ruleId, r])
+    );
+    return {
+      scenario,
+      rules: scenario.ruleIds.map((ruleId) => ({
+        ruleId,
+        failedBefore: before.get(ruleId)!.failed,
+        failedAfter: after.get(ruleId)!.failed,
+        status: after.get(ruleId)!.status,
+      })),
+    };
+  });
+
+  const renderQuality = () =>
+    render(
+      <DataQuality
+        assessment={quality}
+        trend={trend}
+        issues={issues}
+        effects={effects}
+        rules={DATA_QUALITY_RULES}
+        productNames={Object.fromEntries(
+          quality.byProduct.map((p) => [p.key, p.label])
+        )}
+        catalogIds={catalogIds}
+      />
+    );
+
+  /** The body rows of the table a region holds, as their cells' text. */
+  const rowsOf = (label: string) =>
+    within(screen.getByRole("region", { name: label }))
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) =>
+        [...row.querySelectorAll("th, td")].map((cell) => cell.textContent)
+      );
+
+  it("shows the overall score and every dimension and product as a table", async () => {
+    const { container } = renderQuality();
+    const tile = (term: string) =>
+      screen.getByText(term, { selector: "dt" }).nextElementSibling!
+        .textContent;
+    expect(tile("Overall score")).toBe(percent(quality.overall.score!));
+    expect(tile("Rules passing")).toBe(
+      `${quality.overall.passing} of ${quality.overall.rules}`
+    );
+    expect(tile("Data cut")).toBe(quality.dataCut);
+
+    expect(rowsOf("Data quality score by dimension")).toEqual(
+      quality.byDimension.map((d) => [
+        d.label,
+        String(d.rules),
+        String(d.passing),
+        percent(d.score!),
+      ])
+    );
+    const products = rowsOf("Data quality score by data product");
+    expect(products.map((row) => row[0])).toEqual(
+      quality.byProduct.map((p) => p.label)
+    );
+    for (const product of quality.byProduct) {
+      const row = document.getElementById(dqProductAnchor(product.key))!;
+      const link = row.querySelector("a");
+      // A product links to its catalog entry exactly when the catalog holds one.
+      expect(link?.getAttribute("href") ?? null).toBe(
+        catalogIds.has(product.key) ? `#${catalogAnchor(product.key)}` : null
+      );
+    }
+    expect(await violations(container)).toEqual([]);
+  }, 60_000);
+
+  it("shows each of the last twelve weeks with its failing rules and open issues", () => {
+    renderQuality();
+    const weeks = rowsOf("Weekly data quality scorecard");
+    expect(weeks).toHaveLength(12);
+    expect(weeks.map((row) => row[0])).toEqual(trend.map((p) => p.weekEnding));
+    expect(weeks.at(-1)![0]).toBe(warehouse.asOf);
+    weeks.forEach((row, i) => {
+      expect(row[1]).toBe(percent(trend[i].overall.score!));
+      expect(row[2]).toBe(
+        `${trend[i].failingRuleIds.length}${trend[i].failingRuleIds.join(", ")}`
+      );
+      expect(row[3]).toBe(
+        trend[i].openIssueIds.length === 0
+          ? "None"
+          : trend[i].openIssueIds.join(", ")
+      );
+    });
+    // Some week carried a defect the rules caught, so the trend is not flat.
+    expect(
+      new Set(trend.map((p) => p.failingRuleIds.length)).size
+    ).toBeGreaterThan(1);
+    const region = screen.getByRole("region", {
+      name: "Weekly data quality scorecard",
+    });
+    const hrefs = [...region.querySelectorAll("a")].map((a) =>
+      a.getAttribute("href")
+    );
+    expect(hrefs.length).toBeGreaterThan(0);
+    for (const href of hrefs) {
+      expect(href).toMatch(/^#dq-(rule|issue)-/);
+      expect(document.getElementById(href!.slice(1))).not.toBeNull();
+    }
+  });
+
+  it("logs every issue with its history, and counts the ones still in the data", () => {
+    const { container } = renderQuality();
+    const cards = [...container.querySelectorAll("li[id^='dq-issue-']")];
+    expect(cards.map((card) => card.id)).toEqual(
+      issues.map((issue) => dqIssueAnchor(issue.issueId))
+    );
+    const open = issues.filter((issue) => issue.fixedOn === null);
+    expect(open.length).toBeGreaterThan(0);
+    expect(open.length).toBeLessThan(issues.length);
+    expect(
+      screen.getByText("Open issues", { selector: "dt" }).nextElementSibling!
+        .textContent
+    ).toBe(String(open.length));
+    for (const issue of issues) {
+      const card = document.getElementById(dqIssueAnchor(issue.issueId))!;
+      expect(card.querySelectorAll("ol > li")).toHaveLength(
+        issue.history.length
+      );
+      expect(card.textContent).toContain(
+        issue.fixedOn === null ? "still in the data" : `fixed ${issue.fixedOn}`
+      );
+      const scenario = DQ_SCENARIOS.find((s) => s.id === issue.scenarioId)!;
+      expect(within(card as HTMLElement).getByRole("heading").textContent).toBe(
+        `${issue.issueId} ${scenario.name}`
+      );
+    }
+  });
+
+  it("shows what each defect does to its rules, including one the threshold absorbs", () => {
+    renderQuality();
+    for (const effect of effects) {
+      expect(rowsOf(`Rules ${effect.scenario.name} trips`)).toEqual(
+        effect.rules.map((rule) => [
+          rule.ruleId,
+          String(rule.failedBefore),
+          String(rule.failedAfter),
+          DQ_STATUS_LABEL[rule.status].glyph +
+            " " +
+            DQ_STATUS_LABEL[rule.status].label,
+        ])
+      );
+    }
+    // A late backlog raises DQ-T01's failing rows and still meets its threshold.
+    const late = effects.find((e) => e.scenario.id === "late-edc-entry")!;
+    expect(late.rules).toEqual([
+      expect.objectContaining({ ruleId: "DQ-T01", status: "pass" }),
+    ]);
+    expect(late.rules[0].failedAfter).toBeGreaterThan(
+      late.rules[0].failedBefore
+    );
+    // Every other defect fails a rule it trips: none of them goes unseen.
+    for (const effect of effects.filter((e) => e !== late)) {
+      expect(effect.rules.some((rule) => rule.status !== "pass")).toBe(true);
+    }
+  }, 60_000);
+
+  it("lists every rule, opening the dimensions that hold a rule to look at", () => {
+    const { container } = renderQuality();
+    expect(
+      [...container.querySelectorAll("tr[id^='dq-rule-']")].map((tr) => tr.id)
+    ).toEqual(
+      quality.byDimension.flatMap((d) =>
+        DATA_QUALITY_RULES.filter((r) => r.dimension === d.key).map((r) =>
+          dqRuleAnchor(r.id)
+        )
+      )
+    );
+    expect(container.querySelectorAll("tr[id^='dq-rule-']")).toHaveLength(
+      DATA_QUALITY_RULES.length
+    );
+    const status = new Map(quality.results.map((r) => [r.ruleId, r.status]));
+    const groups = [...container.querySelectorAll("details")];
+    expect(groups).toHaveLength(quality.byDimension.length);
+    const opened = groups.map((group) =>
+      [...group.querySelectorAll("tr[id^='dq-rule-']")].some((tr) => {
+        const s = status.get(tr.id.slice("dq-rule-".length));
+        return s === "fail" || s === "warn";
+      })
+    );
+    expect(groups.map((group) => group.open)).toEqual(opened);
+    // Both states occur, so the rule is exercised either way.
+    expect(new Set(opened).size).toBe(2);
+
+    for (const result of quality.results.filter((r) => r.status === "fail")) {
+      const row = document.getElementById(dqRuleAnchor(result.ruleId))!;
+      expect(row.textContent).toContain(DQ_STATUS_LABEL.fail.label);
+      expect(row.textContent).toContain(
+        `${result.failed} of ${result.checked} rows fail, for example`
+      );
+    }
+  });
+
+  it("opens a closed rule group when a link points into it", () => {
+    const { container } = renderQuality();
+    // DQI-004's rule passes today, so its group starts closed.
+    const issue = document.getElementById(dqIssueAnchor("DQI-004"))!;
+    const link = issue.querySelector<HTMLAnchorElement>(
+      `a[href="#${dqRuleAnchor("DQ-K04")}"]`
+    )!;
+    const rule = document.getElementById(dqRuleAnchor("DQ-K04"))!;
+    const group = rule.closest("details")!;
+    expect(group.open).toBe(false);
+
+    act(() => {
+      window.location.hash = link.getAttribute("href")!;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(group.open).toBe(true);
+    expect(document.activeElement).toBe(rule);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalled();
+
+    // A link into an open group, or elsewhere, is left to the browser.
+    rule.blur();
+    act(() => {
+      window.location.hash = `#${catalogAnchor("gold.fct_visit")}`;
+      window.dispatchEvent(new HashChangeEvent("hashchange"));
+    });
+    expect(container.querySelectorAll("details[open]").length).toBe(3);
+    expect(document.activeElement).toBe(document.body);
   });
 });
 

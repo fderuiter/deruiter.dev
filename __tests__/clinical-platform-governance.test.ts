@@ -558,10 +558,12 @@ describe("data catalog search and facets", () => {
       ])
     );
     // The safety lead owns the adjudication feed, its fact and its metrics
-    // (#2881).
+    // (#2881), and the adverse event feed and its fact (#2956).
     expect(search({ text: "medical safety" })).toEqual([
+      "silver.edc_adverse_event",
       "silver.cec_adjudication",
       "gold.fct_cec_adjudication",
+      "gold.fct_adverse_event",
       "cec_events_reported",
       "cec_events_adjudicated",
       "cec_adjudication_backlog",

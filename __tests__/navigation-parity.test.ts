@@ -2,8 +2,8 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   PRIMARY_NAV,
-  getNavBreadcrumbParents,
-  getNavBreadcrumbSchemaParents,
+  getBreadcrumbTrail,
+  getBreadcrumbTrailSchema,
   getNavGroup,
   getNavGroupForHref,
   getAllNavHrefs,
@@ -44,32 +44,68 @@ describe("navigation groups for pages (#1848)", () => {
   });
 });
 
-describe("breadcrumb parents (#1848)", () => {
-  it("uses the menu group's label and overview page", () => {
-    expect(getNavBreadcrumbParents("/crf")).toEqual([
+describe("breadcrumb trails (#1848, #2952)", () => {
+  it("names the menu group, then the page by its menu entry", () => {
+    expect(getBreadcrumbTrail("/crf")).toEqual([
       { label: "Clinical", href: "/clinical" },
+      { label: "CRF Studio" },
     ]);
-    expect(getNavBreadcrumbParents("/platform/operations")).toEqual([
-      { label: "Clinical", href: "/clinical" },
-    ]);
-    expect(getNavBreadcrumbParents("/simulator")).toEqual([
+    expect(getBreadcrumbTrail("/simulator")).toEqual([
       { label: "Labs", href: "/labs" },
+      { label: "Incident Simulator" },
     ]);
-    expect(getNavBreadcrumbParents("/stack")).toEqual([
+    expect(getBreadcrumbTrail("/stack")).toEqual([
       { label: "About", href: "/#about" },
-    ]);
-    expect(getNavBreadcrumbSchemaParents("/neuro")).toEqual([
-      { name: "Labs", url: "/labs" },
+      { label: "Under the Hood" },
     ]);
   });
 
-  it("leaves out the parent on a group's own overview page and on plain links", () => {
-    expect(getNavBreadcrumbParents("/clinical")).toEqual([]);
-    expect(getNavBreadcrumbParents("/labs")).toEqual([]);
-    expect(getNavBreadcrumbParents("/blog")).toEqual([]);
-    // Writing has no overview page, so its pages get no parent from it.
-    expect(getNavBreadcrumbParents("/case-studies/4glory")).toEqual([]);
-    expect(getNavBreadcrumbParents("/")).toEqual([]);
+  it("adds the index page a path extends", () => {
+    expect(getBreadcrumbTrail("/platform/operations")).toEqual([
+      { label: "Clinical", href: "/clinical" },
+      { label: "Clinical Data Platform", href: "/platform" },
+      { label: "Operations Dashboards" },
+    ]);
+    expect(getBreadcrumbTrail("/blog/some-post", "Some Post")).toEqual([
+      { label: "Blog", href: "/blog" },
+      { label: "Some Post" },
+    ]);
+  });
+
+  it("links the arcade hub once, through the Arcade group", () => {
+    expect(getBreadcrumbTrail("/arcade/garmin-watch")).toEqual([
+      { label: "Arcade", href: "/arcade" },
+      { label: "Monkey C Mayhem" },
+    ]);
+    expect(getBreadcrumbTrail("/arcade")).toEqual([{ label: "Arcade" }]);
+  });
+
+  it("gives phone-sized variants the trail of the page they mirror", () => {
+    expect(getBreadcrumbTrail("/m/proof")).toEqual(
+      getBreadcrumbTrail("/proof")
+    );
+  });
+
+  it("never links a group crumb to the page it is on", () => {
+    expect(getBreadcrumbTrail("/clinical")).toEqual([{ label: "Clinical" }]);
+    expect(getBreadcrumbTrail("/labs")).toEqual([{ label: "Labs" }]);
+    expect(getBreadcrumbTrail("/blog")).toEqual([{ label: "Blog" }]);
+    expect(getBreadcrumbTrail("/")).toEqual([]);
+  });
+
+  it("leaves out Writing, which has no overview page", () => {
+    expect(getBreadcrumbTrail("/case-studies/4glory", "4Glory")).toEqual([
+      { label: "Case Studies", href: "/case-studies" },
+      { label: "4Glory" },
+    ]);
+  });
+
+  it("gives the JSON-LD the same trail, Home first", () => {
+    expect(getBreadcrumbTrailSchema("/neuro")).toEqual([
+      { name: "Home", url: "/" },
+      { name: "Labs", url: "/labs" },
+      { name: "NeuroRecon Studio", url: "/neuro" },
+    ]);
   });
 });
 

@@ -9,6 +9,9 @@ import {
 } from "@/lib/clinical-platform/presets";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { PLATFORM_CAPABILITIES, capabilityStatus } from "./capabilities";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
+import { getBreadcrumbSchema } from "@/lib/seo";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.platform
@@ -32,7 +35,14 @@ const flow = [
 export default function PlatformPage() {
   return (
     <PageLayout className="bg-[#0d0e11] text-[#f4f4f6]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/platform")),
+        }}
+      />
       <header className="border-b border-white/[0.08] pb-12 sm:pb-16">
+        <Breadcrumbs path="/platform" className="mb-6" />
         <ClinicalJourneyNav path="/platform" className="mb-8" />
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-amber-400">
           Clinical systems / 01

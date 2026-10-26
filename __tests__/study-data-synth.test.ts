@@ -35,13 +35,26 @@ describe("seeded synthetic collection", () => {
       .update(JSON.stringify(datasets))
       .digest("hex");
     expect(digest).toBe(
-      "fa790cc10afe1c4539b634f8f28f90807439b25b245c0ae2fc6e0a85f68d8116"
+      "9def1c38db1d4cc265e126cac141658b8e312e2f438ae931347d89f6c0cec0c2"
     );
+    // Adding medication collection (#2961) left every other domain's bytes
+    // alone: without CM the run hashes as it did before.
+    expect(
+      createHash("sha256")
+        .update(
+          JSON.stringify(datasets.filter((dataset) => dataset.name !== "CM"))
+        )
+        .digest("hex")
+    ).toBe("fa790cc10afe1c4539b634f8f28f90807439b25b245c0ae2fc6e0a85f68d8116");
     // Adding ECG collection (#2941) left every other domain's bytes alone.
     expect(
       createHash("sha256")
         .update(
-          JSON.stringify(datasets.filter((dataset) => dataset.name !== "EG"))
+          JSON.stringify(
+            datasets.filter(
+              (dataset) => dataset.name !== "EG" && dataset.name !== "CM"
+            )
+          )
         )
         .digest("hex")
     ).toBe("d0ad7aae03f8c7e6e59bc0c2d7ad24f934a6d1e5d05d6fab11939b0c0757baa0");

@@ -8,6 +8,7 @@ import {
   EngineeringBridge,
   EngineeringBridgeJump,
 } from "@/components/EngineeringBridge";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.laserLoon
@@ -31,11 +32,9 @@ export default function LaserLoonPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "Laser Loon", url: "/arcade/laser-loon" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/laser-loon")
+          ),
         }}
       />
       <LaserLoonClient />

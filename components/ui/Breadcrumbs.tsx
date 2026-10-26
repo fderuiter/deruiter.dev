@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { IconChevronRight, IconHome } from "@tabler/icons-react";
 import { useAudio } from "@/components/providers/AudioProvider";
+import { getBreadcrumbTrail } from "@/lib/navigation";
 
 interface BreadcrumbCrumb {
   label: string;
@@ -11,15 +12,26 @@ interface BreadcrumbCrumb {
 }
 
 interface BreadcrumbsProps {
-  items: BreadcrumbCrumb[];
+  /**
+   * The page's path. The trail is built from the site navigation
+   * (`getBreadcrumbTrail`), so pages name their parents the same way.
+   */
+  path?: string;
+  /** The page's own crumb, for pages the navigation does not list by name. */
+  label?: string;
+  /** An explicit trail, for views below page level. */
+  items?: BreadcrumbCrumb[];
   className?: string;
 }
 
 export const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
-  items,
+  path,
+  label,
+  items: explicitItems,
   className = "",
 }) => {
   const { playHover } = useAudio();
+  const items = explicitItems ?? (path ? getBreadcrumbTrail(path, label) : []);
 
   const isRootCrumb = (crumb: BreadcrumbCrumb) => {
     const labelLower = (crumb.label || "").trim().toLowerCase();

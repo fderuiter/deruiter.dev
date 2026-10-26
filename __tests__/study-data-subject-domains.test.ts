@@ -18,7 +18,7 @@ const records = (dataset: Dataset) =>
   );
 
 describe("SDTM subject tabulation", () => {
-  it("matches the seed-301 golden file for all nine subject domains", () => {
+  it("matches the seed-301 golden file for all ten subject domains", () => {
     const expected = JSON.parse(
       readFileSync(
         resolve(

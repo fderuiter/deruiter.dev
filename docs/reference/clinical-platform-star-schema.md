@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.7.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.8.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -174,6 +174,21 @@ erDiagram
     boolean cec_device_related
     boolean is_synthetic
   }
+  fct_adverse_event {
+    varchar ae_id PK
+    varchar visit_id
+    varchar subject_id
+    int study_key FK
+    int site_key FK
+    int country_key FK
+    int onset_date_key FK
+    int reported_date_key FK
+    int days_to_report
+    varchar ae_term
+    boolean is_serious
+    varchar severity
+    boolean is_synthetic
+  }
   fct_monitoring_visit {
     varchar monitoring_visit_id PK
     int study_key FK
@@ -273,6 +288,11 @@ erDiagram
   dim_date ||--o{ fct_cec_adjudication : "occurred_date_key"
   dim_date ||--o{ fct_cec_adjudication : "reported_date_key"
   dim_date |o--o{ fct_cec_adjudication : "adjudicated_date_key"
+  dim_study ||--o{ fct_adverse_event : "study_key"
+  dim_site ||--o{ fct_adverse_event : "site_key"
+  dim_country ||--o{ fct_adverse_event : "country_key"
+  dim_date ||--o{ fct_adverse_event : "onset_date_key"
+  dim_date ||--o{ fct_adverse_event : "reported_date_key"
   dim_study ||--o{ fct_monitoring_visit : "study_key"
   dim_site ||--o{ fct_monitoring_visit : "site_key"
   dim_country ||--o{ fct_monitoring_visit : "country_key"
@@ -312,6 +332,7 @@ erDiagram
 | `fct_query` | One row per query. | `query_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_deviation` | One row per protocol deviation. | `deviation_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_cec_adjudication` | One row per event sent for adjudication. | `event_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
+| `fct_adverse_event` | One row per adverse event. | `ae_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date`, `dim_monitoring_plan` |
 | `fct_planned_monitoring_visit` | One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored. | `planned_visit_id` | `dim_monitoring_plan`, `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_milestone` | One row per study and milestone kind. | `study_key`, `milestone_key` | `dim_study`, `dim_milestone`, `dim_date` |
@@ -347,6 +368,7 @@ keeps the earlier investigator.
 | `edc_subject` | One row per subject. | `subject_id` | `bronze.edc.subjects` |
 | `edc_visit` | One row per subject visit record. | `visit_id` | `bronze.edc.visits` |
 | `edc_query` | One row per query. | `query_id` | `bronze.edc.queries` |
+| `edc_adverse_event` | One row per adverse event. | `ae_id` | `bronze.edc.adverseEvents` |
 | `ctms_milestone` | One row per study and milestone kind. | `study_id`, `milestone_kind` | `bronze.ctms.milestones` |
 | `ctms_monitoring_plan` | One row per monitoring plan version. | `monitoring_plan_id` | `bronze.ctms.monitoringPlans` |
 | `ctms_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `bronze.ctms.monitoringVisits` |
@@ -575,6 +597,26 @@ Events sent to the clinical events committee, with when each was reported and ad
 | `days_to_adjudicate` | integer | yes |  | internal | Days from the site's report to adjudication. |
 | `site_device_related` | boolean | no |  | internal | Whether the site judged the event device-related. |
 | `cec_device_related` | boolean | yes |  | internal | Whether the committee judged the event device-related. |
+| `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
+
+## `gold.fct_adverse_event`
+
+Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956).
+
+| Column | Type | Null | Key | Classification | Description |
+| --- | --- | --- | --- | --- | --- |
+| `ae_id` | string | no | PK | internal | Adverse event id (degenerate dimension). |
+| `visit_id` | string | no |  | confidential | Visit record id the event was reported at (degenerate dimension). |
+| `subject_id` | string | no |  | confidential | Subject id (degenerate dimension). |
+| `study_key` | integer | no | FK to `gold.dim_study` | internal | Study. |
+| `site_key` | integer | no | FK to `gold.dim_site` | internal | Site version in force when the site reported the event. |
+| `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
+| `onset_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the event began. |
+| `reported_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the site reported the event. |
+| `days_to_report` | integer | no |  | internal | Days from onset to the site's report. |
+| `ae_term` | string | no |  | confidential | Reported term. |
+| `is_serious` | boolean | no |  | internal | Whether the event is serious (ICH E2A). |
+| `severity` | string | no |  | internal | Severity: mild, moderate or severe. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 
 ## `gold.fct_monitoring_visit`

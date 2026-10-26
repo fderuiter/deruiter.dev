@@ -8,6 +8,12 @@
 
 ## References
 
+### AdverseEventSeverity
+
+Re-exports [AdverseEventSeverity](types/platform/type-aliases/AdverseEventSeverity.md)
+
+***
+
 ### appendDqIssueEvent
 
 Re-exports [appendDqIssueEvent](internal/quality/issues/functions/appendDqIssueEvent.md)
@@ -641,6 +647,12 @@ Re-exports [DqStatus](types/platform/type-aliases/DqStatus.md)
 ### DqTrendPoint
 
 Re-exports [DqTrendPoint](types/quality/interfaces/DqTrendPoint.md)
+
+***
+
+### EdcAdverseEvent
+
+Re-exports [EdcAdverseEvent](types/platform/interfaces/EdcAdverseEvent.md)
 
 ***
 

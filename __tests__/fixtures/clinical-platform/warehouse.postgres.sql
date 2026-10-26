@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.7.0, PostgreSQL dialect.
+-- Clinical Data Platform warehouse, schema 1.8.0, PostgreSQL dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -192,6 +192,36 @@ COMMENT ON COLUMN "silver"."edc_query"."closed_at" IS 'UTC time the query was cl
 COMMENT ON COLUMN "silver"."edc_query"."query_status" IS 'State at the data cut.';
 COMMENT ON COLUMN "silver"."edc_query"."source_system" IS 'Source system the record came from.';
 COMMENT ON COLUMN "silver"."edc_query"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "silver"."edc_adverse_event" (
+  "ae_id"         VARCHAR(64) NOT NULL,
+  "visit_id"      VARCHAR(64) NOT NULL,
+  "subject_id"    VARCHAR(64) NOT NULL,
+  "study_id"      VARCHAR(64) NOT NULL,
+  "site_id"       VARCHAR(64) NOT NULL,
+  "ae_term"       VARCHAR(80) NOT NULL,
+  "onset_on"      DATE NOT NULL,
+  "reported_on"   DATE NOT NULL,
+  "is_serious"    BOOLEAN NOT NULL,
+  "severity"      VARCHAR(16) NOT NULL,
+  "source_system" VARCHAR(64) NOT NULL,
+  "is_synthetic"  BOOLEAN NOT NULL,
+  CONSTRAINT "pk_edc_adverse_event" PRIMARY KEY ("ae_id"),
+  CONSTRAINT "ck_edc_adverse_event_reported_on" CHECK ("reported_on" IS NULL OR ("onset_on" IS NOT NULL AND "onset_on" <= "reported_on"))
+);
+COMMENT ON TABLE "silver"."edc_adverse_event" IS 'EDC adverse events, each on the visit it was reported at (#2956). Grain: One row per adverse event.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."ae_id" IS 'Adverse event id.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."visit_id" IS 'Visit record id the event was reported at.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."subject_id" IS 'Subject id.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."study_id" IS 'Protocol id.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."site_id" IS 'Site id.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."ae_term" IS 'Reported term, from a short fictional list.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."onset_on" IS 'Date the event began.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."reported_on" IS 'Date the site reported the event, the day it entered the visit''s data.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."is_serious" IS 'Whether the event is serious (ICH E2A).';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."severity" IS 'Severity: mild, moderate or severe.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."source_system" IS 'Source system the record came from.';
+COMMENT ON COLUMN "silver"."edc_adverse_event"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "silver"."ctms_milestone" (
   "study_id"        VARCHAR(64) NOT NULL,
@@ -831,6 +861,43 @@ COMMENT ON COLUMN "gold"."fct_cec_adjudication"."days_to_adjudicate" IS 'Days fr
 COMMENT ON COLUMN "gold"."fct_cec_adjudication"."site_device_related" IS 'Whether the site judged the event device-related.';
 COMMENT ON COLUMN "gold"."fct_cec_adjudication"."cec_device_related" IS 'Whether the committee judged the event device-related.';
 COMMENT ON COLUMN "gold"."fct_cec_adjudication"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "gold"."fct_adverse_event" (
+  "ae_id"             VARCHAR(64) NOT NULL,
+  "visit_id"          VARCHAR(64) NOT NULL,
+  "subject_id"        VARCHAR(64) NOT NULL,
+  "study_key"         INTEGER NOT NULL,
+  "site_key"          INTEGER NOT NULL,
+  "country_key"       INTEGER NOT NULL,
+  "onset_date_key"    INTEGER NOT NULL,
+  "reported_date_key" INTEGER NOT NULL,
+  "days_to_report"    INTEGER NOT NULL,
+  "ae_term"           VARCHAR(80) NOT NULL,
+  "is_serious"        BOOLEAN NOT NULL,
+  "severity"          VARCHAR(16) NOT NULL,
+  "is_synthetic"      BOOLEAN NOT NULL,
+  CONSTRAINT "pk_fct_adverse_event" PRIMARY KEY ("ae_id"),
+  CONSTRAINT "fk_fct_adverse_event_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
+  CONSTRAINT "fk_fct_adverse_event_site_key" FOREIGN KEY ("site_key") REFERENCES "gold"."dim_site" ("site_key"),
+  CONSTRAINT "fk_fct_adverse_event_country_key" FOREIGN KEY ("country_key") REFERENCES "gold"."dim_country" ("country_key"),
+  CONSTRAINT "fk_fct_adverse_event_onset_date_key" FOREIGN KEY ("onset_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "fk_fct_adverse_event_reported_date_key" FOREIGN KEY ("reported_date_key") REFERENCES "gold"."dim_date" ("date_key"),
+  CONSTRAINT "ck_fct_adverse_event_reported_date_key" CHECK ("reported_date_key" IS NULL OR ("onset_date_key" IS NOT NULL AND "onset_date_key" <= "reported_date_key"))
+);
+COMMENT ON TABLE "gold"."fct_adverse_event" IS 'Adverse events with their onset, report and seriousness, for safety reporting and central monitoring (#2956). Grain: One row per adverse event.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."ae_id" IS 'Adverse event id (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."visit_id" IS 'Visit record id the event was reported at (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."subject_id" IS 'Subject id (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."study_key" IS 'Study.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."site_key" IS 'Site version in force when the site reported the event.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."country_key" IS 'Country of the site.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."onset_date_key" IS 'Date the event began.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."reported_date_key" IS 'Date the site reported the event.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."days_to_report" IS 'Days from onset to the site''s report.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."ae_term" IS 'Reported term.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."is_serious" IS 'Whether the event is serious (ICH E2A).';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."severity" IS 'Severity: mild, moderate or severe.';
+COMMENT ON COLUMN "gold"."fct_adverse_event"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_monitoring_visit" (
   "monitoring_visit_id"   VARCHAR(64) NOT NULL,

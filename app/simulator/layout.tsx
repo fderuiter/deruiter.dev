@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
-import { getNavBreadcrumbSchemaParents } from "@/lib/navigation";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.simulator
@@ -30,11 +30,7 @@ export default function SimulatorLayout({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            ...getNavBreadcrumbSchemaParents("/simulator"),
-            { name: "Incident Simulator", url: "/simulator" },
-          ]),
+          __html: getBreadcrumbSchema(getBreadcrumbTrailSchema("/simulator")),
         }}
       />
       {children}

@@ -3,6 +3,7 @@ import { ForBetterOrBulkClient } from "@/components/arcade/ForBetterOrBulkClient
 import { PageLayout } from "@/components/PageLayout";
 import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getBreadcrumbSchema, getWebApplicationSchema } from "@/lib/seo";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.forBetterOrBulk
@@ -26,11 +27,9 @@ export default function ForBetterOrBulkPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "For Better or Bulk", url: "/arcade/for-better-or-bulk" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/for-better-or-bulk")
+          ),
         }}
       />
       <ForBetterOrBulkClient />

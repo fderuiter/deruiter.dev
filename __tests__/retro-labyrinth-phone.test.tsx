@@ -12,6 +12,8 @@ import {
 } from "@testing-library/react";
 import { setDeviceSettings } from "@/lib/arcade";
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
+import { RetroLabyrinthSessionProvider } from "@/components/retro-labyrinth/RetroLabyrinthSession";
+import { PhoneView } from "@/components/retro-labyrinth/views/PhoneView";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
 import {
   CabinetPauseProvider,
@@ -84,7 +86,15 @@ function renderGame(options: { touch: boolean }) {
   const view = render(
     <CabinetTouchContext.Provider value={options.touch}>
       <CabinetPauseProvider controller={controller}>
-        <RetroLabyrinth isMounted />
+        {/* A touch cabinet here is a phone's, so the phone view lays it
+            out; the desktop view reads no device (#2966). */}
+        {options.touch ? (
+          <RetroLabyrinthSessionProvider active>
+            <PhoneView isMounted />
+          </RetroLabyrinthSessionProvider>
+        ) : (
+          <RetroLabyrinth isMounted />
+        )}
       </CabinetPauseProvider>
     </CabinetTouchContext.Provider>
   );

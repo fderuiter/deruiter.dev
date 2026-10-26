@@ -50,6 +50,11 @@ export const PUBLIC_ROUTE_REGISTRY = [
     name: "Self-Service Clinical Metrics Explorer",
     category: "tool",
   },
+  {
+    path: "/platform/governance",
+    name: "Clinical Data Governance & Catalog",
+    category: "tool",
+  },
   { path: "/m/crf", name: "Mobile CRF Builder & AST", category: "tool" },
   { path: "/patrol", name: "Patrol Shift Studio", category: "tool" },
   { path: "/m/patrol", name: "Mobile Patrol Shift Studio", category: "tool" },

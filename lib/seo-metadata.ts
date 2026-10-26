@@ -64,6 +64,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  platformGovernance: {
+    title: "Clinical Data Governance & Catalog",
+    description:
+      "Search a synthetic clinical data catalog of products and governed metrics with their owners, stewards, contracts and quality scores, plus a glossary and RACI.",
+    path: "/platform/governance",
+    keywords: [
+      "Data Governance",
+      "Data Catalog",
+      "Business Glossary",
+      "Data Stewardship",
+      "Clinical Data Platform",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platformOperations: {
     title: "Clinical Operations Dashboards",
     description:

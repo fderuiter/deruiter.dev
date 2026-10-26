@@ -250,6 +250,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Self-service",
   },
   {
+    id: "platform-governance",
+    title: "Data Governance",
+    subtitle: "The catalog, glossary, stewardship and policies",
+    href: "/platform/governance",
+    icon: "shield",
+    tone: "amber",
+    badge: "Catalog",
+  },
+  {
     id: "incident-simulator",
     title: "Incident Simulator",
     subtitle: "Architecture bias and outage triage",

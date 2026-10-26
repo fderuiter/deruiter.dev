@@ -29,6 +29,12 @@ function expectAllTappable(found: { label: string; height: number }[]) {
 }
 
 test.describe("site chrome touch targets on a phone (#2894)", () => {
+  // The targets only grow on a coarse pointer, so desktop projects that
+  // match every spec file have nothing to measure here.
+  test.beforeEach(({}, testInfo) => {
+    test.skip(!/^Phone /.test(testInfo.project.name), "phone projects only");
+  });
+
   test("footer links and buttons", async ({ page }) => {
     await page.goto("/blog");
     expectAllTappable(

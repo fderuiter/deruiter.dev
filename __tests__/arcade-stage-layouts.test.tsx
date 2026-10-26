@@ -18,6 +18,7 @@ import {
   type UseStageFitOptions,
   type UseStageFitResult,
 } from "@/components/arcade/stage";
+import { setDeviceSettings } from "@/lib/arcade";
 import { CounterSessionHolder } from "./fixtures/three-view-game/session";
 import PhoneView from "./fixtures/three-view-game/PhoneView";
 import TabletView from "./fixtures/three-view-game/TabletView";
@@ -419,5 +420,28 @@ describe("the three-view fixture game", () => {
     expect(
       screen.getByText("Tablet view: 0").closest('[data-stage="tablet"]')
     ).not.toBeNull();
+  });
+
+  it("mirrors its stages live when the device's hand changes (#2924)", () => {
+    localStorage.clear();
+    try {
+      const { container } = render(
+        <CounterSessionHolder>
+          <PhoneView />
+          <TabletView />
+        </CounterSessionHolder>
+      );
+      const hands = () =>
+        Array.from(container.querySelectorAll(".arcade-stage")).map((stage) =>
+          stage.getAttribute("data-handedness")
+        );
+      expect(hands()).toEqual(["right", "right"]);
+      act(() => {
+        setDeviceSettings({ handedness: "left" });
+      });
+      expect(hands()).toEqual(["left", "left"]);
+    } finally {
+      localStorage.clear();
+    }
   });
 });

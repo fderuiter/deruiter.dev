@@ -3,7 +3,12 @@
 import React, { useId, useRef } from "react";
 import type { ActionMap } from "@/lib/arcade";
 import { useAxisPointer, type AxisOrigin } from "./axis-pointer";
-import { dockActionLabel, useDockHeight, type DockSize } from "./dock-kit";
+import {
+  dockActionLabel,
+  type DockSize,
+  useDockHeight,
+  useDockSize,
+} from "./dock-kit";
 
 /** The stick's diameter for each dock size, in px. */
 const STICK_PX: Readonly<Record<DockSize, number>> = {
@@ -26,7 +31,7 @@ export interface StickDockProps<A extends string> {
   origin?: "fixed" | "floating";
   /** The share of the radius that reads as centred, 0 to 1. Defaults to 0.15. */
   deadZone?: number;
-  /** Defaults to `md`. */
+  /** Defaults to this device's key size, from the Setup sheet. */
   size?: DockSize;
   /** True while the game takes no input; a held stick lets go. */
   paused?: boolean;
@@ -48,10 +53,11 @@ export function StickDock<A extends string>({
   action,
   origin = "fixed",
   deadZone = 0.15,
-  size = "md",
+  size: sizeProp,
   paused = false,
   className = "",
 }: StickDockProps<A>) {
+  const size = useDockSize(sizeProp);
   const knobRef = useRef<HTMLSpanElement>(null);
   const hintId = useId();
   const dockRef = useDockHeight<HTMLDivElement>();

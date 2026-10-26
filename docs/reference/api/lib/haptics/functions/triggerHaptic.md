@@ -9,7 +9,9 @@
 > **triggerHaptic**(`pattern?`): `void`
 
 Triggers physical haptic vibration feedback with graceful degradation
-for devices or browsers that do not support navigator.vibrate.
+for devices or browsers that do not support navigator.vibrate. It stays
+still while this device's Vibration setting, from the arcade cabinet's
+Setup sheet, is off (#2924).
 
 ## Parameters
 

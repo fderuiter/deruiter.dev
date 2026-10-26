@@ -9,7 +9,9 @@ import {
   act,
   fireEvent,
   waitFor,
+  within,
 } from "@testing-library/react";
+import { getDeviceSettings, setDeviceSettings } from "@/lib/arcade";
 import { RetroLabyrinth } from "@/components/RetroLabyrinth";
 import { CabinetTouchContext } from "@/components/arcade/mobile";
 import {
@@ -415,6 +417,40 @@ describe("RetroLabyrinth phone input (ADR 0061)", () => {
     fireEvent.keyDown(sheet, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "More" })).toBeNull();
     await waitFor(() => expect(document.activeElement).toBe(more));
+  });
+
+  it("the options sheet's Dominant hand writes the shared device setting, and the stage follows it (#2924)", () => {
+    window.history.replaceState(null, "", "/?view=phone");
+    try {
+      const { container } = renderGame({ touch: true });
+      const stage = () =>
+        container
+          .querySelector(".arcade-stage")
+          ?.getAttribute("data-handedness");
+      expect(stage()).toBe("right");
+
+      fireEvent.click(screen.getByRole("button", { name: "Options" }));
+      const hands = screen.getByRole("group", { name: "Dominant hand" });
+      act(() => {
+        fireEvent.click(within(hands).getByRole("button", { name: "left" }));
+      });
+      expect(getDeviceSettings().handedness).toBe("left");
+      expect(stage()).toBe("left");
+      expect(
+        container
+          .querySelector('[data-dock-preset="cluster"]')
+          ?.getAttribute("data-handedness")
+      ).toBe("left");
+
+      // A change made elsewhere, such as the cabinet's Setup sheet, applies
+      // live too.
+      act(() => {
+        setDeviceSettings({ handedness: "right" });
+      });
+      expect(stage()).toBe("right");
+    } finally {
+      window.history.replaceState(null, "", "/");
+    }
   });
 
   it("the options sheet is a modal dialog: focus moves in, Escape closes it, and focus returns to Options", async () => {

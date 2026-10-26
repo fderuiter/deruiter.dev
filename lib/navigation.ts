@@ -241,6 +241,15 @@ const SIMULATOR_ITEMS: NavItem[] = [
     badge: "Dashboards",
   },
   {
+    id: "platform-explore",
+    title: "Metrics Explorer",
+    subtitle: "Group and filter any governed metric, and see its SQL",
+    href: "/platform/explore",
+    icon: "spreadsheet",
+    tone: "amber",
+    badge: "Self-service",
+  },
+  {
     id: "incident-simulator",
     title: "Incident Simulator",
     subtitle: "Architecture bias and outage triage",

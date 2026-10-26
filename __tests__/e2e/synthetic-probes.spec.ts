@@ -412,6 +412,14 @@ test.describe("Headless Synthetic User Probes & Journey Monitoring", () => {
   }) => {
     await portfolioJourney(page);
   });
+
+  // #2634: a shared exploration link opens the same exploration, run in the
+  // explorer's worker, with its SQL.
+  test("Probe 15: Metrics explorer opens a shared exploration", async ({
+    page,
+  }) => {
+    await exploreJourney(page);
+  });
 });
 
 async function studyDataJourney(page: Page) {
@@ -601,4 +609,31 @@ async function portfolioJourney(page: Page) {
       name: "Protocol final to first subject in by study",
     })
   ).toBeVisible();
+}
+
+async function exploreJourney(page: Page) {
+  const response = await page.goto(
+    "/platform/explore#metric=subjects_screened&by=country&in.study=DEMO-302&visual=table",
+    { waitUntil: "domcontentloaded" }
+  );
+  // /platform/explore ships after the Clinical v1 hold (#2691); until
+  // production has it, the daily probe of the deployed origin skips here.
+  test.skip(
+    !!process.env.PLAYWRIGHT_TEST_BASE_URL && response?.status() === 404,
+    "/platform/explore is not deployed to the probed origin yet (#2691)"
+  );
+  expect(response?.status()).toBe(200);
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Subjects screened by country",
+    })
+  ).toBeVisible({ timeout: 60_000 });
+  const table = page.getByRole("region", {
+    name: "Subjects screened by country data",
+  });
+  await expect(table.getByRole("row").nth(1)).toBeVisible();
+  await expect(
+    page.locator("summary", { hasText: "is calculated" })
+  ).toHaveCount(1);
 }

@@ -2,24 +2,27 @@
  * The /platform/portfolio dashboard (#2632): the eight studies side by
  * side against their plans. The milestone swimlane reads the CTMS
  * milestones straight from `gold.fct_milestone`; the cycle-time benchmarks
- * are governed reports by study, so every number comes from the metric
- * registry through `buildReport`.
+ * and the finance reports are governed reports, so every number comes from
+ * the metric registry through `buildReport` or `evaluateMetric`.
  */
 import type {
   MetricDefinition,
   MilestoneKind,
   PortfolioBenchmark,
   PortfolioDashboard,
+  PortfolioFinance,
   PortfolioLane,
   PortfolioMilestone,
   PortfolioMilestoneStatus,
   PortfolioOutlier,
+  PortfolioOverrun,
   PortfolioSwimlane,
+  ReportData,
   ReportSpec,
   Warehouse,
   WarehouseRow,
 } from "../../types";
-import { percentile } from "../semantic/evaluate";
+import { evaluateMetric, percentile } from "../semantic/evaluate";
 import { METRIC_REGISTRY } from "../semantic/registry";
 import { daysBetween } from "../warehouse/dates";
 import { buildReport } from "./build";
@@ -27,6 +30,7 @@ import { formatMetricValue } from "./format";
 import { studyMilestones } from "./milestones";
 
 const PORTFOLIO_OWNER = "Portfolio Management Lead";
+const FINANCE_OWNER = "Clinical Finance Lead";
 
 /**
  * The cycle times compared across studies, in the order a study meets
@@ -57,6 +61,56 @@ const BENCHMARKS: readonly {
   },
 ];
 
+/** Budget against forecast at completion, by study and by vendor (#2912). */
+const AT_COMPLETION = [
+  "budget_at_completion",
+  "actual_spend",
+  "forecast_at_completion",
+];
+const VARIANCE = ["variance_at_completion", "forecast_vs_budget_at_completion"];
+
+const FINANCE: readonly Pick<
+  ReportSpec,
+  "id" | "title" | "purpose" | "metrics" | "dimensions" | "visual"
+>[] = [
+  {
+    id: "portfolio-cost-at-completion-by-study",
+    title: "Budget, actual and forecast at completion by study",
+    purpose:
+      "What each study is budgeted to cost by its final report, what it has spent so far and what it is now forecast to cost, so an overrun shows before it happens.",
+    metrics: AT_COMPLETION,
+    dimensions: ["study"],
+    visual: "bar",
+  },
+  {
+    id: "portfolio-cost-at-completion-by-vendor",
+    title: "Budget, actual and forecast at completion by vendor",
+    purpose:
+      "The same across every study a vendor works on, so a vendor running over budget shows whichever study it is in.",
+    metrics: AT_COMPLETION,
+    dimensions: ["vendor"],
+    visual: "bar",
+  },
+  {
+    id: "portfolio-variance-at-completion-by-study",
+    title: "Variance at completion and cost per enrolled subject by study",
+    purpose:
+      "How far each study's forecast is from its budget, in dollars and as a share, beside what each enrolled subject has cost so far.",
+    metrics: [...VARIANCE, "cost_per_enrolled_subject"],
+    dimensions: ["study"],
+    visual: "table",
+  },
+  {
+    id: "portfolio-variance-at-completion-by-vendor",
+    title: "Variance at completion by vendor",
+    purpose:
+      "How far each vendor's forecast is from its budget across its studies, in dollars and as a share.",
+    metrics: VARIANCE,
+    dimensions: ["vendor"],
+    visual: "table",
+  },
+];
+
 function rows(warehouse: Warehouse, table: string): readonly WarehouseRow[] {
   const found = warehouse.tables[table];
   if (found === undefined) throw new Error(`the warehouse has no ${table}`);
@@ -70,27 +124,40 @@ function metric(id: string): MetricDefinition {
 }
 
 /**
- * The report spec of each cycle-time benchmark: one metric by study, as
- * a bar chart.
+ * The report spec of every governed report on the page: each cycle-time
+ * benchmark, one metric by study as a bar chart, then the finance reports
+ * (#2912).
  *
- * @returns The specs, in benchmark order.
+ * @returns The specs, benchmarks first, in page order.
  */
 export function portfolioReportSpecs(): ReportSpec[] {
-  return BENCHMARKS.map((benchmark) => ({
-    id: benchmark.id,
-    title: `${metric(benchmark.metricId).name} by study`,
+  const common = {
     audience: "Portfolio leadership",
-    purpose: benchmark.purpose,
     tier: "managed",
-    owner: PORTFOLIO_OWNER,
     version: "1.0.0",
-    metrics: [benchmark.metricId],
-    dimensions: ["study"],
     filters: [],
-    visual: "bar",
-    refreshSlaHours: 720,
     signOff: null,
-  }));
+  } as const;
+  return [
+    ...BENCHMARKS.map((benchmark): ReportSpec => ({
+      ...common,
+      id: benchmark.id,
+      title: `${metric(benchmark.metricId).name} by study`,
+      purpose: benchmark.purpose,
+      owner: PORTFOLIO_OWNER,
+      metrics: [benchmark.metricId],
+      dimensions: ["study"],
+      visual: "bar",
+      refreshSlaHours: 720,
+    })),
+    ...FINANCE.map((report): ReportSpec => ({
+      ...common,
+      ...report,
+      owner: FINANCE_OWNER,
+      // After each monthly finance close, as gold.fct_spend_forecast.
+      refreshSlaHours: 744,
+    })),
+  ];
 }
 
 /** Where a milestone stands at the data cut. */
@@ -248,18 +315,76 @@ function benchmark(warehouse: Warehouse, spec: ReportSpec): PortfolioBenchmark {
   };
 }
 
+/** The value of one metric over the whole portfolio. */
+function total(warehouse: Warehouse, id: string): number | null {
+  return evaluateMetric(warehouse, metric(id)).rows[0]?.value ?? null;
+}
+
+/**
+ * The studies or vendors of a variance report forecast to overrun, largest
+ * overrun first, then by name.
+ */
+function overruns(report: ReportData): PortfolioOverrun[] {
+  return report.rows
+    .flatMap((row) => {
+      const [variance, share] = row.cells;
+      return variance.value !== null && variance.value > 0
+        ? [
+            {
+              name: row.labels[0],
+              variance: variance.value,
+              varianceText: variance.text,
+              shareText: share.text,
+            },
+          ]
+        : [];
+    })
+    .sort(
+      (a, b) =>
+        b.variance - a.variance ||
+        (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+    );
+}
+
+function finance(
+  warehouse: Warehouse,
+  specs: readonly ReportSpec[]
+): PortfolioFinance {
+  const reports = specs.map((spec) => buildReport(warehouse, spec));
+  const text = (id: string) =>
+    formatMetricValue(metric(id), total(warehouse, id));
+  const variance = total(warehouse, "variance_at_completion");
+  return {
+    budgetAtCompletionText: text("budget_at_completion"),
+    actualSpendText: text("actual_spend"),
+    forecastAtCompletionText: text("forecast_at_completion"),
+    varianceAtCompletion: variance,
+    varianceAtCompletionText: formatMetricValue(
+      metric("variance_at_completion"),
+      variance
+    ),
+    shareText: text("forecast_vs_budget_at_completion"),
+    studyOverruns: overruns(reports[2]),
+    vendorOverruns: overruns(reports[3]),
+    reports,
+  };
+}
+
 /**
  * The portfolio dashboard over one warehouse.
  *
  * @param warehouse - A warehouse from `buildWarehouse`.
- * @returns The milestone swimlane and the cycle-time benchmarks.
+ * @returns The milestone swimlane, the cycle-time benchmarks and the
+ * budget against forecast at completion.
  */
 export function portfolioDashboard(warehouse: Warehouse): PortfolioDashboard {
+  const specs = portfolioReportSpecs();
   return {
     dataCut: warehouse.asOf,
     swimlane: swimlane(warehouse),
-    benchmarks: portfolioReportSpecs().map((spec) =>
-      benchmark(warehouse, spec)
-    ),
+    benchmarks: specs
+      .slice(0, BENCHMARKS.length)
+      .map((spec) => benchmark(warehouse, spec)),
+    finance: finance(warehouse, specs.slice(BENCHMARKS.length)),
   };
 }

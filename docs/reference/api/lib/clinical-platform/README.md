@@ -1532,6 +1532,12 @@ Re-exports [PortfolioDashboard](types/portfolio-dashboard/interfaces/PortfolioDa
 
 ***
 
+### PortfolioFinance
+
+Re-exports [PortfolioFinance](types/portfolio-dashboard/interfaces/PortfolioFinance.md)
+
+***
+
 ### PortfolioLane
 
 Re-exports [PortfolioLane](types/portfolio-dashboard/interfaces/PortfolioLane.md)
@@ -1559,6 +1565,12 @@ Re-exports [PortfolioOptions](types/portfolio/interfaces/PortfolioOptions.md)
 ### PortfolioOutlier
 
 Re-exports [PortfolioOutlier](types/portfolio-dashboard/interfaces/PortfolioOutlier.md)
+
+***
+
+### PortfolioOverrun
+
+Re-exports [PortfolioOverrun](types/portfolio-dashboard/interfaces/PortfolioOverrun.md)
 
 ***
 

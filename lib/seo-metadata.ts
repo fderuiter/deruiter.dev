@@ -35,7 +35,7 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
   platformPortfolio: {
     title: "Clinical Portfolio Dashboard",
     description:
-      "A synthetic sponsor portfolio against its plans: every study's milestones on one timeline with the slips highlighted, and start-up, enrollment and close-out cycle times compared across studies.",
+      "Eight synthetic studies against their plans: every milestone on one timeline with its slips, and start-up, enrollment and close-out times compared.",
     path: "/platform/portfolio",
     keywords: [
       "Clinical Portfolio Management",

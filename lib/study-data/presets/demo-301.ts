@@ -124,6 +124,41 @@ const HAEMATOLOGY: ConceptSpec[] = [
   { testCode: "PLAT", name: "Platelets", nciCode: "C51951", unit: "10^9/L" },
 ];
 
+// Machine-read intervals of a single 12-lead ECG, with the ECG Test Code
+// (C71153) submission values. QTcF is derived in ADaM, so it is not collected.
+const ECG: ConceptSpec[] = [
+  {
+    testCode: "EGHRMN",
+    name: "ECG Mean Heart Rate",
+    nciCode: "C119259",
+    unit: "beats/min",
+  },
+  {
+    testCode: "PRAG",
+    name: "PR Interval, Aggregate",
+    nciCode: "C117773",
+    unit: "ms",
+  },
+  {
+    testCode: "QRSAG",
+    name: "QRS Duration, Aggregate",
+    nciCode: "C117779",
+    unit: "ms",
+  },
+  {
+    testCode: "QTAG",
+    name: "QT Interval, Aggregate",
+    nciCode: "C117783",
+    unit: "ms",
+  },
+  {
+    testCode: "RRAG",
+    name: "RR Interval, Aggregate",
+    nciCode: "C117791",
+    unit: "ms",
+  },
+];
+
 function conceptId(spec: ConceptSpec): string {
   return `bc_${spec.testCode.toLowerCase()}`;
 }
@@ -254,6 +289,13 @@ const ACTIVITIES: UsdmV4Activity[] = [
     HAEMATOLOGY
   ),
   activity(
+    "act_eg",
+    "12-lead ECG",
+    "EG",
+    "Single 12-lead ECG after ten minutes' supine rest, with machine-read intervals.",
+    ECG
+  ),
+  activity(
     "act_ex",
     "Study drug administration",
     "EX",
@@ -313,7 +355,7 @@ const VISITS: VisitSpec[] = [
     offset: -14,
     windowBefore: 14,
     windowAfter: 13,
-    activityIds: ["act_dm", "act_vs", "act_lb_chem", "act_lb_hem"],
+    activityIds: ["act_dm", "act_vs", "act_lb_chem", "act_lb_hem", "act_eg"],
   },
   {
     id: "enc_baseline",
@@ -323,7 +365,14 @@ const VISITS: VisitSpec[] = [
     offset: 0,
     windowBefore: 0,
     windowAfter: 0,
-    activityIds: ["act_vs", "act_lb_chem", "act_lb_hem", "act_ex", "act_ae"],
+    activityIds: [
+      "act_vs",
+      "act_lb_chem",
+      "act_lb_hem",
+      "act_eg",
+      "act_ex",
+      "act_ae",
+    ],
   },
   {
     id: "enc_week2",
@@ -343,7 +392,14 @@ const VISITS: VisitSpec[] = [
     offset: 28,
     windowBefore: 3,
     windowAfter: 3,
-    activityIds: ["act_vs", "act_lb_chem", "act_lb_hem", "act_ex", "act_ae"],
+    activityIds: [
+      "act_vs",
+      "act_lb_chem",
+      "act_lb_hem",
+      "act_eg",
+      "act_ex",
+      "act_ae",
+    ],
   },
   {
     id: "enc_week8",
@@ -367,6 +423,7 @@ const VISITS: VisitSpec[] = [
       "act_vs",
       "act_lb_chem",
       "act_lb_hem",
+      "act_eg",
       "act_ex",
       "act_ae",
       "act_ds",
@@ -719,9 +776,12 @@ export const DEMO_301_USDM: UsdmV4Document = {
             instanceType: "EligibilityCriterionItem",
           },
         ],
-        biomedicalConcepts: [...VITAL_SIGNS, ...CHEMISTRY, ...HAEMATOLOGY].map(
-          concept
-        ),
+        biomedicalConcepts: [
+          ...VITAL_SIGNS,
+          ...CHEMISTRY,
+          ...HAEMATOLOGY,
+          ...ECG,
+        ].map(concept),
         bcSurrogates: BC_SURROGATES,
         studyDesigns: [
           {

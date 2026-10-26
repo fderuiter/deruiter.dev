@@ -60,6 +60,7 @@ describe("runPipeline", () => {
       "EX",
       "VS",
       "LB",
+      "EG",
       "AE",
       "DS",
       "TA",
@@ -83,7 +84,7 @@ describe("runPipeline", () => {
     ]);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "collected")
-    ).toHaveLength(8);
+    ).toHaveLength(9);
     expect(
       run.datasets.filter((dataset) => dataset.layer === "sdtm")
     ).toHaveLength(13);

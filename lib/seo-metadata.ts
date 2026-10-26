@@ -48,6 +48,22 @@ export const ROUTE_METADATA_CONFIGS: Record<string, RouteMetaConfig> = {
     locale: "en-US",
     isAccessibleForFree: true,
   },
+  platformExplore: {
+    title: "Self-Service Clinical Metrics Explorer",
+    description:
+      "Pick a governed clinical metric, group and filter it only the ways its semantic layer allows, and see its chart, data table, definition and generated SQL.",
+    path: "/platform/explore",
+    keywords: [
+      "Self-Service Analytics",
+      "Semantic Layer",
+      "Clinical Data Platform",
+      "Governed Metrics",
+      "Metric Explorer",
+    ],
+    inLanguage: "en-US",
+    locale: "en-US",
+    isAccessibleForFree: true,
+  },
   platformSql: {
     title: "In-Browser SQL Workbench for Clinical Data",
     description:

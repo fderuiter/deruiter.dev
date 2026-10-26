@@ -36,12 +36,13 @@ export const HANDOFF_GENERATED_DOMAINS = Object.freeze([
   "EX",
   "VS",
   "LB",
+  "EG",
   "AE",
   "DS",
 ] as const);
 
 /** Domains whose assessments are generated per test code. */
-const TESTED_DOMAINS = new Set(["VS", "LB"]);
+const TESTED_DOMAINS = new Set(["VS", "LB", "EG"]);
 
 /**
  * Extension URL CRF Studio uses to carry a field's full concept definition,

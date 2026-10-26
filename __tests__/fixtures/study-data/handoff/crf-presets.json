@@ -308,9 +308,40 @@
         "name": "12-Lead Electrocardiogram & QTc",
         "domain": "EG",
         "tabulated": false,
-        "reason": "domain-not-generated",
+        "reason": "no-modelled-tests",
         "tests": [],
-        "skippedConcepts": []
+        "skippedConcepts": [
+          {
+            "conceptId": "bc_eg_egdtc",
+            "name": "ECG Assessment Date & Time",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_eg_eghr",
+            "name": "Ventricular Heart Rate",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_eg_egqt",
+            "name": "Raw QT Interval",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_eg_egrr",
+            "name": "RR Interval",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_eg_egqtcb",
+            "name": "Bazett Corrected QTc (QTcB = QT / sqrt(RR))",
+            "reason": "no-test-code"
+          },
+          {
+            "conceptId": "bc_eg_nyhaclas",
+            "name": "NYHA Functional Class",
+            "reason": "no-test-code"
+          }
+        ]
       },
       {
         "id": "form_sae_expedited",

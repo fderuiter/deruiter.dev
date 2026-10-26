@@ -6,6 +6,6 @@
 
 # Variable: HANDOFF\_GENERATED\_DOMAINS
 
-> `const` **HANDOFF\_GENERATED\_DOMAINS**: readonly \[`"DM"`, `"SV"`, `"EX"`, `"VS"`, `"LB"`, `"AE"`, `"DS"`\]
+> `const` **HANDOFF\_GENERATED\_DOMAINS**: readonly \[`"DM"`, `"SV"`, `"EX"`, `"VS"`, `"LB"`, `"EG"`, `"AE"`, `"DS"`\]
 
 Domains the synthetic generator produces source data for.

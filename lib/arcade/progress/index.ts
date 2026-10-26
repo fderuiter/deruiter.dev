@@ -42,6 +42,17 @@ export {
 } from "./coach-marks-slice";
 export type { ArcadeCoachMarks } from "./coach-marks-slice";
 export {
+  ARCADE_TUTORIALS_KEY,
+  arcadeTutorialsSlice,
+  setTutorialOutcome,
+  shouldOfferTutorial,
+} from "./tutorials-slice";
+export type {
+  ArcadeTutorials,
+  TutorialOutcome,
+  TutorialRecord,
+} from "./tutorials-slice";
+export {
   ARCADE_DEVICE_SETTINGS_KEY,
   DEFAULT_DEVICE_SETTINGS,
   DEVICE_LAYOUT_MIN_WIDTH,

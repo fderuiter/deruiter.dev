@@ -10,3 +10,4 @@ export * from "./run-snapshot";
 export * from "./rng";
 export * from "./step-clock";
 export * from "./run-tags";
+export * from "./tutorial";

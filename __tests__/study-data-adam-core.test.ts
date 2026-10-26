@@ -29,7 +29,7 @@ function analysis(seed: number, nSubjects: number) {
   return { run, get };
 }
 
-describe("ADSL, ADVS and ADLB", () => {
+describe("ADSL, ADVS, ADLB and ADEG", () => {
   it("matches the seed-301 golden file", () => {
     const { get } = analysis(301, 90);
     const expected = JSON.parse(
@@ -42,7 +42,7 @@ describe("ADSL, ADVS and ADLB", () => {
       )
     );
     const actual = Object.fromEntries(
-      ["ADSL", "ADVS", "ADLB"].map((name) => {
+      ["ADSL", "ADVS", "ADLB", "ADEG"].map((name) => {
         const dataset = get(name);
         return [
           name,

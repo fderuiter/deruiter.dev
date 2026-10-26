@@ -30,6 +30,7 @@ import {
   buildContentSecurityPolicy,
   securityHeaderRules,
   SECURITY_HEADERS,
+  WASM_POLICY_SOURCES,
 } from "@/lib/security-headers";
 import RootLayout from "@/app/layout";
 
@@ -84,6 +85,7 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
     const rules = securityHeaderRules();
     expect(rules[0].source).toBe("/:path*");
     expect(rules.slice(1).map((r) => r.source)).toEqual([
+      ...WASM_POLICY_SOURCES,
       "/admin/:path*",
       "/api/admin/:path*",
     ]);
@@ -96,6 +98,37 @@ describe("Static CSP keeps public pages cacheable (#1900)", () => {
         "X-Content-Type-Options",
         "Referrer-Policy",
       ])
+    );
+  });
+
+  it("allows WebAssembly only on the SQL workbench and its engine worker (#2633)", () => {
+    const csp = (source: string) =>
+      securityHeaderRules()
+        .find((rule) => rule.source === source)!
+        .headers.find((h) => h.key === "Content-Security-Policy")!.value;
+
+    expect(parseDirectives(csp("/:path*"))["script-src"]).not.toContain(
+      "'wasm-unsafe-eval'"
+    );
+    expect(WASM_POLICY_SOURCES).toEqual([
+      "/platform/sql",
+      expect.stringMatching(
+        /^\/_next\/static\/media\/:file\(duckdb-browser-eh/
+      ),
+    ]);
+    for (const source of WASM_POLICY_SOURCES) {
+      const policy = csp(source);
+      const scriptSrc = parseDirectives(policy)["script-src"];
+      expect(scriptSrc).toContain("'wasm-unsafe-eval'");
+      // WebAssembly compilation only: JavaScript eval stays refused.
+      expect(scriptSrc).not.toContain("'unsafe-eval'");
+      // Otherwise the public policy, word for word.
+      expect(policy.replace(" 'wasm-unsafe-eval'", "")).toBe(
+        SECURITY_HEADERS["Content-Security-Policy"]
+      );
+    }
+    expect(buildContentSecurityPolicy(true, true)).toContain(
+      "'wasm-unsafe-eval'"
     );
   });
 

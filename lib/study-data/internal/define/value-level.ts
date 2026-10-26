@@ -10,9 +10,20 @@ export interface ValueLevelSpec {
   readonly by: string;
   /** The variables described per parameter, in dataset order. */
   readonly variables: readonly string[];
+  /**
+   * Parameters whose values are derived rather than carried from a
+   * predecessor, with the variables that are derived and the method that
+   * derives them, for example ADEG's QTcF.
+   */
+  readonly derived?: Readonly<
+    Record<
+      string,
+      { readonly variables: readonly string[]; readonly method: string }
+    >
+  >;
 }
 
-/** Value-level metadata for the VS, LB, EG, ADVS and ADLB parameters. */
+/** Value-level metadata for the VS, LB, EG, ADVS, ADLB and ADEG parameters. */
 export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
   Object.freeze({
     VS: {
@@ -29,4 +40,9 @@ export const VALUE_LEVEL: Readonly<Record<string, ValueLevelSpec>> =
     },
     ADVS: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
     ADLB: { by: "PARAMCD", variables: ["AVAL", "AVALU"] },
+    ADEG: {
+      by: "PARAMCD",
+      variables: ["AVAL", "AVALU"],
+      derived: { QTCFAG: { variables: ["AVAL"], method: "ADEG_QTCF" } },
+    },
   });

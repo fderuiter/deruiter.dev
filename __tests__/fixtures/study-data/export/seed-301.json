@@ -1,9 +1,9 @@
 {
-  "manifestSha256": "718bfea8bd615a2ba1d7a255964c219f9f78776b9808b897f6f436e32ade7b1d",
+  "manifestSha256": "41a4fc70a4ce2b77cb81473424777e0606046d89fb1ef5e36da7cedcf9d9153c",
   "files": {
     "README.txt": {
       "bytes": 1910,
-      "sha256": "899330d4bfb76a0adf76043e323028653745f25a8c8ae1396b90cadf9de92e58"
+      "sha256": "cc6ecf0a057b03becac6cf7a6e17eeacabd76f61f0d1edaf600445e211aa1ffb"
     },
     "m5/datasets/analysis/adam/adae.csv": {
       "bytes": 8741,
@@ -16,6 +16,18 @@
     "m5/datasets/analysis/adam/adae.xpt": {
       "bytes": 13120,
       "sha256": "188af2c9231b1453ff7545c177c70a1d6f6e6f054ca3246970c601589b47c5e2"
+    },
+    "m5/datasets/analysis/adam/adeg.csv": {
+      "bytes": 351189,
+      "sha256": "a81444930b0d4375eb2f13b36b2f0c3490e2898b0f108070f10692de0ee6e66e"
+    },
+    "m5/datasets/analysis/adam/adeg.json": {
+      "bytes": 481246,
+      "sha256": "e85429c6609420eceeb7df62b2cfc728bdce063c44bf865408906a761f2f47b5"
+    },
+    "m5/datasets/analysis/adam/adeg.xpt": {
+      "bytes": 502240,
+      "sha256": "57eea5f1d8bf60d6fa1f9e36f770afbe0c0436af617b9358b615ee3259a6e4da"
     },
     "m5/datasets/analysis/adam/adlb.csv": {
       "bytes": 461050,
@@ -30,8 +42,8 @@
       "sha256": "84abb4d98f9c3a7a1dbe32254a50bbe9c9f1a633f7f464d143199cdcaf923b0e"
     },
     "m5/datasets/analysis/adam/adrg.html": {
-      "bytes": 7321,
-      "sha256": "cafce5122c1e582d240f48df09003f0e53804c109d64c1c3709c768ecbd738ce"
+      "bytes": 7935,
+      "sha256": "f926f2dc9e347d7a9ee658a2647802dbaba5275e55f854964494aef4ea5ad297"
     },
     "m5/datasets/analysis/adam/adsl.csv": {
       "bytes": 12421,
@@ -70,8 +82,8 @@
       "sha256": "e67038301b690a1d09c06a69e64c6db408e333fc02c301801df7b7af2971588d"
     },
     "m5/datasets/analysis/adam/define.xml": {
-      "bytes": 95389,
-      "sha256": "53e29859b3b1051718df61a0bc2a84e6ce4dcec312e440fb9950a70765beca5f"
+      "bytes": 121291,
+      "sha256": "8c4bcd8fdb0c5bdb9f1feb760ba14d32a053381bddbc88f21ec1d5214e12fc75"
     },
     "m5/datasets/tabulations/sdtm/ae.csv": {
       "bytes": 12891,

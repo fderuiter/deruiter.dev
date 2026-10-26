@@ -12,6 +12,10 @@ const withSerwist = withSerwistInit({
   // Precache all of public/ except videos: the arcade trailer is several
   // megabytes and plays on demand, so every visitor shouldn't download it (#1788).
   globPublicPatterns: ["*", "!(videos)/**/*"],
+  // The SQL workbench's engine (#2633) is a 34 MB binary and its worker,
+  // fetched only when a visitor starts it, so they are not precached either.
+  // The first two patterns are Serwist's defaults, which this list replaces.
+  exclude: [/\.map$/, /^manifest.*\.js$/, /^static\/media\/duckdb-/],
 });
 
 /** Route globs (picomatch, so bracketed segments match via wildcards) for every metadata image route. */
@@ -58,6 +62,14 @@ const nextConfig: NextConfig = {
     if (isServer) {
       config.externals = config.externals || [];
       config.externals.push("bufferutil", "utf-8-validate");
+      // The SQL workbench's engine runs only in the browser, after a click
+      // (#2633). Resolved on the server, the package's Node build is bundled
+      // for nothing and its binaries would be traced into the function.
+      config.resolve = config.resolve || {};
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        "@duckdb/duckdb-wasm": false,
+      };
     }
     // Fails the build on a cycle between runtime chunks instead of letting
     // webpack print a warning (AGENTS.md section 21, #853).

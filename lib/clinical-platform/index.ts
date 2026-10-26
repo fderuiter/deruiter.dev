@@ -126,6 +126,8 @@ export {
   WORKBENCH_ENGINE_SETTINGS,
   checkWorkbenchSql,
 } from "./internal/workbench/guard";
+export { workbenchLoad } from "./internal/workbench/load";
+export { workbenchResultCsv } from "./internal/workbench/output";
 export {
   dataContracts,
   dataProducts,

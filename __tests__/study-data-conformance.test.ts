@@ -126,13 +126,14 @@ function baseFor(rule: ConformanceRule): {
     });
     return { good, context: [good] };
   }
-  if (rule.scope.domain === "ADVS") {
-    const good = mini("ADVS", "adam", {
+  if (rule.scope.domain === "ADVS" || rule.scope.domain === "ADEG") {
+    const change = rule.id === "AD-004" || rule.id === "AD-012";
+    const good = mini(rule.scope.domain, "adam", {
       USUBJID: "01",
       ABLFL: "Y",
       AVAL: 10,
-      BASE: rule.id === "AD-004" ? 8 : 10,
-      CHG: rule.id === "AD-004" ? 2 : 0,
+      BASE: change ? 8 : 10,
+      CHG: change ? 2 : 0,
     });
     return { good, context: [good] };
   }
@@ -206,8 +207,10 @@ function negative(rule: ConformanceRule, good: Dataset): Dataset {
           }
         : set(good, "SRCDOM", 0, "ZZ");
     case "adam": {
-      if (rule.id === "AD-003") return set(good, "BASE", 0, 9);
-      if (rule.id === "AD-004") return set(good, "CHG", 0, 3);
+      if (rule.id === "AD-003" || rule.id === "AD-011")
+        return set(good, "BASE", 0, 9);
+      if (rule.id === "AD-004" || rule.id === "AD-012")
+        return set(good, "CHG", 0, 3);
       return set(good, "TRTEMFL", 0, "N");
     }
   }

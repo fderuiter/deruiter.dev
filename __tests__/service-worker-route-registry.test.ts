@@ -53,6 +53,26 @@ describe("service worker route registry", () => {
     }
   });
 
+  it("leaves the SQL engine's binary to the HTTP cache (#2633)", async () => {
+    vi.stubGlobal("self", { __SW_MANIFEST: [] });
+
+    await import("@/app/sw");
+
+    const rules = workerCapture.config?.runtimeCaching as Array<{
+      matcher: (args: { url: URL }) => boolean;
+    }>;
+    const matching = (path: string) =>
+      rules.filter((rule) =>
+        rule.matcher({ url: new URL(path, "https://deruiter.dev") })
+      ).length;
+
+    expect(matching("/_next/static/media/duckdb-eh.562c00b2.wasm")).toBe(1);
+    expect(
+      matching("/_next/static/media/duckdb-browser-eh.worker.1a2b3c4d.js")
+    ).toBe(0);
+    expect(matching("/_next/static/media/other.wasm")).toBe(0);
+  });
+
   it("keeps benchmark and metadata routes inside the shared public catalog", () => {
     const registeredPaths = new Set(
       PUBLIC_ROUTE_REGISTRY.map(({ path }) => path)

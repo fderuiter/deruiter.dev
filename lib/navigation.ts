@@ -176,6 +176,15 @@ const PLATFORM_TOOL_ITEMS: NavItem[] = [
     badge: "Self-service",
   },
   {
+    id: "platform-sql",
+    title: "SQL Workbench",
+    subtitle: "Run read-only SQL on the warehouse in your browser",
+    href: "/platform/sql",
+    icon: "terminal",
+    tone: "amber",
+    badge: "DuckDB-WASM",
+  },
+  {
     id: "platform-strategy",
     title: "Platform Strategy",
     subtitle: "Fictional vendor scoring and investment decisions",

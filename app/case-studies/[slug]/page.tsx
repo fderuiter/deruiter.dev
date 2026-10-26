@@ -32,6 +32,7 @@ import { resolveBaseUrl } from "@/lib/domain";
 import { CaseStudyFeedbackSection } from "@/components/CaseStudyFeedbackSection";
 
 import type { Metadata } from "next";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 // Daily: each regeneration bills Vercel active CPU, and content writes
 // revalidate these paths on demand, so the timer is only a backstop (#2971).
@@ -196,11 +197,9 @@ export default async function CaseStudyPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Case Studies", url: "/case-studies" },
-            { name: study.title, url: `/case-studies/${study.slug}` },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema(`/case-studies/${study.slug}`, study.title)
+          ),
         }}
       />
 
@@ -209,10 +208,8 @@ export default async function CaseStudyPage({ params }: PageProps) {
           {/* Breadcrumbs Navigation */}
           <div className="mb-8">
             <Breadcrumbs
-              items={[
-                { label: "Case Studies", href: "/case-studies" },
-                { label: study.title },
-              ]}
+              path={`/case-studies/${study.slug}`}
+              label={study.title}
             />
           </div>
 

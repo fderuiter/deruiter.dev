@@ -46,6 +46,9 @@ import {
   runPipeline,
   type PipelineRun,
 } from "@/lib/study-data";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
+import { getBreadcrumbSchema } from "@/lib/seo";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.platformGovernance
@@ -146,13 +149,16 @@ export default function PlatformGovernancePage() {
   const content = governanceContent();
   return (
     <PageLayout className="overflow-x-hidden bg-[#0d0e11] text-[#f4f4f6]">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/platform/governance")
+          ),
+        }}
+      />
       <header className="border-b border-white/[0.08] pb-10">
-        <Link
-          href="/platform"
-          className="text-sm text-amber-300 underline underline-offset-4 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center focus-visible:outline-2 focus-visible:outline-amber-400"
-        >
-          ← Clinical Data Platform
-        </Link>
+        <Breadcrumbs path="/platform/governance" />
         <p className="mt-8 font-mono text-xs uppercase tracking-[0.18em] text-amber-400">
           Governance / Catalog
         </p>

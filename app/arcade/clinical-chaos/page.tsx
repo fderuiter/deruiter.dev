@@ -5,6 +5,7 @@ import { buildRouteMetadata, ROUTE_METADATA_CONFIGS } from "@/lib/seo-metadata";
 import { getWebApplicationSchema, getBreadcrumbSchema } from "@/lib/seo";
 
 import { PageLayout } from "@/components/PageLayout";
+import { getBreadcrumbTrailSchema } from "@/lib/navigation";
 
 export const metadata: Metadata = buildRouteMetadata(
   ROUTE_METADATA_CONFIGS.clinicalChaos
@@ -28,11 +29,9 @@ export default function ClinicalChaosPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: getBreadcrumbSchema([
-            { name: "Home", url: "/" },
-            { name: "Arcade Hub", url: "/arcade" },
-            { name: "Clinical Trial Chaos", url: "/arcade/clinical-chaos" },
-          ]),
+          __html: getBreadcrumbSchema(
+            getBreadcrumbTrailSchema("/arcade/clinical-chaos")
+          ),
         }}
       />
       <div className="mx-auto mb-4 w-full max-w-5xl">

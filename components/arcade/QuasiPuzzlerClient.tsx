@@ -45,12 +45,7 @@ export const QuasiPuzzlerClient: React.FC = () => {
               <span>Back to Arcade Hub</span>
             </Link>
             <span className="text-zinc-700 hidden sm:inline">|</span>
-            <Breadcrumbs
-              items={[
-                { label: "Arcade Hub", href: "/arcade" },
-                { label: "Quasi-Perfect Puzzler" },
-              ]}
-            />
+            <Breadcrumbs path="/arcade/quasi-puzzler" />
           </div>
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-zinc-900 text-zinc-300 border border-zinc-800">

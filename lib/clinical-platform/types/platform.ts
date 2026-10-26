@@ -285,6 +285,35 @@ export interface EdcAdverseEvent extends BronzeRecord {
   readonly severity: AdverseEventSeverity;
 }
 
+/** A vital sign, by its SDTM VSTESTCD (#2957). */
+export type VitalSignTest = "SYSBP" | "DIABP" | "PULSE" | "WEIGHT";
+
+/**
+ * One vital sign reading as the site records it in EDC at a visit (#2957).
+ * Portfolio studies carry these; DEMO-301's vital signs stay in its Study
+ * Data Pipeline run.
+ */
+export interface EdcVitalSign extends BronzeRecord {
+  /** Reading id: the visit record id and the test code. */
+  readonly vitalSignId: string;
+  /** Visit record id the reading was taken at. */
+  readonly visitId: string;
+  /** Subject id. */
+  readonly subjectId: string;
+  /** Study id. */
+  readonly studyId: string;
+  /** Site id. */
+  readonly siteId: string;
+  /** What was measured. */
+  readonly test: VitalSignTest;
+  /** The reading: whole mmHg or beats per minute, or kilograms to 0.1. */
+  readonly value: number;
+  /** Unit: `mmHg`, `beats/min` or `kg`. */
+  readonly unit: string;
+  /** ISO 8601 date of the visit the reading was taken at. */
+  readonly measuredOn: string;
+}
+
 /** Study milestone kind, covering drug and ISO 14155 device milestones. */
 export type MilestoneKind =
   | "protocol-final"
@@ -518,7 +547,7 @@ export interface CecAdjudication extends BronzeRecord {
   readonly cecDeviceRelated: boolean | null;
 }
 
-/** The EDC feed: subjects, visits, queries and adverse events. */
+/** The EDC feed: subjects, visits, queries, adverse events and vital signs. */
 export interface EdcFeed {
   /** Subject records. */
   readonly subjects: readonly EdcSubject[];
@@ -528,6 +557,8 @@ export interface EdcFeed {
   readonly queries: readonly EdcQuery[];
   /** Adverse event records (#2956). */
   readonly adverseEvents: readonly EdcAdverseEvent[];
+  /** Vital sign readings (#2957). */
+  readonly vitalSigns: readonly EdcVitalSign[];
 }
 
 /** The CTMS feed: milestones, monitoring visits and protocol deviations. */

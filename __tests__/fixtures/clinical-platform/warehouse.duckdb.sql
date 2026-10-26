@@ -1,4 +1,4 @@
--- Clinical Data Platform warehouse, schema 1.8.0, DuckDB dialect.
+-- Clinical Data Platform warehouse, schema 1.9.0, DuckDB dialect.
 -- Generated from WAREHOUSE_SCHEMA in lib/clinical-platform; do not edit by hand.
 -- Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
@@ -222,6 +222,33 @@ COMMENT ON COLUMN "silver"."edc_adverse_event"."is_serious" IS 'Whether the even
 COMMENT ON COLUMN "silver"."edc_adverse_event"."severity" IS 'Severity: mild, moderate or severe.';
 COMMENT ON COLUMN "silver"."edc_adverse_event"."source_system" IS 'Source system the record came from.';
 COMMENT ON COLUMN "silver"."edc_adverse_event"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "silver"."edc_vital_sign" (
+  "vital_sign_id" VARCHAR NOT NULL,
+  "visit_id"      VARCHAR NOT NULL,
+  "subject_id"    VARCHAR NOT NULL,
+  "study_id"      VARCHAR NOT NULL,
+  "site_id"       VARCHAR NOT NULL,
+  "vs_test_code"  VARCHAR NOT NULL,
+  "vs_value"      DECIMAL(6, 1) NOT NULL,
+  "vs_unit"       VARCHAR NOT NULL,
+  "measured_on"   DATE NOT NULL,
+  "source_system" VARCHAR NOT NULL,
+  "is_synthetic"  BOOLEAN NOT NULL,
+  CONSTRAINT "pk_edc_vital_sign" PRIMARY KEY ("vital_sign_id")
+);
+COMMENT ON TABLE "silver"."edc_vital_sign" IS 'EDC vital signs, one reading of each sign at each entered visit (#2957). Grain: One row per visit and vital sign.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."vital_sign_id" IS 'Reading id: the visit record id and the test code.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."visit_id" IS 'Visit record id the reading was taken at.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."subject_id" IS 'Subject id.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."study_id" IS 'Protocol id.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."site_id" IS 'Site id.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."vs_test_code" IS 'SDTM VSTESTCD: SYSBP, DIABP, PULSE or WEIGHT.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."vs_value" IS 'The reading, in its unit.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."vs_unit" IS 'Unit: mmHg, beats/min or kg.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."measured_on" IS 'Date of the visit the reading was taken at.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."source_system" IS 'Source system the record came from.';
+COMMENT ON COLUMN "silver"."edc_vital_sign"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "silver"."ctms_milestone" (
   "study_id"        VARCHAR NOT NULL,
@@ -898,6 +925,37 @@ COMMENT ON COLUMN "gold"."fct_adverse_event"."ae_term" IS 'Reported term.';
 COMMENT ON COLUMN "gold"."fct_adverse_event"."is_serious" IS 'Whether the event is serious (ICH E2A).';
 COMMENT ON COLUMN "gold"."fct_adverse_event"."severity" IS 'Severity: mild, moderate or severe.';
 COMMENT ON COLUMN "gold"."fct_adverse_event"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
+
+CREATE TABLE "gold"."fct_vital_sign" (
+  "visit_id"          VARCHAR NOT NULL,
+  "subject_id"        VARCHAR NOT NULL,
+  "study_key"         INTEGER NOT NULL,
+  "site_key"          INTEGER NOT NULL,
+  "country_key"       INTEGER NOT NULL,
+  "measured_date_key" INTEGER NOT NULL,
+  "systolic_bp_mmhg"  INTEGER,
+  "diastolic_bp_mmhg" INTEGER,
+  "pulse_bpm"         INTEGER,
+  "weight_kg"         DECIMAL(5, 1),
+  "is_synthetic"      BOOLEAN NOT NULL,
+  CONSTRAINT "pk_fct_vital_sign" PRIMARY KEY ("visit_id"),
+  CONSTRAINT "fk_fct_vital_sign_study_key" FOREIGN KEY ("study_key") REFERENCES "gold"."dim_study" ("study_key"),
+  CONSTRAINT "fk_fct_vital_sign_site_key" FOREIGN KEY ("site_key") REFERENCES "gold"."dim_site" ("site_key"),
+  CONSTRAINT "fk_fct_vital_sign_country_key" FOREIGN KEY ("country_key") REFERENCES "gold"."dim_country" ("country_key"),
+  CONSTRAINT "fk_fct_vital_sign_measured_date_key" FOREIGN KEY ("measured_date_key") REFERENCES "gold"."dim_date" ("date_key")
+);
+COMMENT ON TABLE "gold"."fct_vital_sign" IS 'Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957). Grain: One row per visit with vital signs.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."visit_id" IS 'Visit record id the signs were taken at (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."subject_id" IS 'Subject id (degenerate dimension).';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."study_key" IS 'Study.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."site_key" IS 'Site version in force on the day of the visit.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."country_key" IS 'Country of the site.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."measured_date_key" IS 'Date the signs were taken.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."systolic_bp_mmhg" IS 'Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."diastolic_bp_mmhg" IS 'Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."pulse_bpm" IS 'Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."weight_kg" IS 'Weight (VSTESTCD WEIGHT), in kg; null when not recorded.';
+COMMENT ON COLUMN "gold"."fct_vital_sign"."is_synthetic" IS 'Always true: the row describes synthetic data, nothing real.';
 
 CREATE TABLE "gold"."fct_monitoring_visit" (
   "monitoring_visit_id"   VARCHAR NOT NULL,

@@ -3,9 +3,10 @@ name: Weekly Train
 # ADR 0063 (Proposed): merges to `main` never deploy. Once a week this
 # workflow cuts a versioned GitHub Release from green `main` and ships exactly
 # that commit to Production through the Vercel Deploy Hook. Vercel builds,
-# migrates and serves; this workflow never builds, migrates or holds a Vercel
-# token. The hook URL is the only production-adjacent value GitHub holds, and
-# it can only build `main`.
+# migrates and serves; this workflow never migrates or holds a Vercel token,
+# and its own build exists only to browser-test the release commit. The hook
+# URL is the only production-adjacent value GitHub holds, and it can only
+# build `main`.
 #
 # Inert until the operator turns it on (#2889):
 #   - scheduled runs exit unless the repository variable WEEKLY_TRAIN is "on";
@@ -16,18 +17,24 @@ name: Weekly Train
 #   1. Select: live SHA from /api/version; candidate = `main` HEAD.
 #   2. Gate: Merge Gate on the candidate must pass (wait while it runs), and
 #      no destructive migration may sit between live and candidate.
-#   3. Version: next semantic version from the Conventional Commits since the
+#   3. Release candidate suite: build the candidate and run the full chromium
+#      Playwright suite against it (#2536). PRs ran it before they merged, but
+#      a squash merge makes a new commit that main push CI never browser-tests.
+#   4. Version: next semantic version from the Conventional Commits since the
 #      last `v*` tag; draft a GitHub Release with grouped notes.
-#   4. Fire: re-check that HEAD is still the candidate, POST the hook.
-#   5. Confirm: wait for /api/version to report the candidate.
-#   6. Smoke test: run the synthetic probes against the live site (#2538).
-#   7. Publish the Release, which creates the tag. A failure after firing
+#   5. Fire: re-check that HEAD is still the candidate, POST the hook.
+#   6. Confirm: wait for /api/version to report the candidate.
+#   7. Smoke test: run the synthetic probes against the live site (#2538).
+#   8. Publish the Release, which creates the tag. A failure after firing
 #      leaves the Release as a draft and opens a `release:hold` issue, which
 #      pauses the next run until a person closes it.
 #
 # `dry_run` skips straight to the smoke test against whatever is live: it
 # drafts nothing, fires nothing and ignores the switch and holds, so the
-# probe path can be exercised before the train is switched on.
+# probe path can be exercised before the train is switched on. `rc_only`
+# runs stages 1 and 3 on main HEAD and stops: it ignores the switch, holds
+# and the live commit, so the release candidate suite can be timed and
+# trusted before the first real release.
 
 on:
   schedule:
@@ -48,6 +55,10 @@ on:
         description: "Only smoke-test the live site; draft and deploy nothing"
         type: boolean
         default: false
+      rc_only:
+        description: "Only browser-test main HEAD as a release candidate; draft and deploy nothing"
+        type: boolean
+        default: false
 
 concurrency:
   group: weekly-train
@@ -59,15 +70,16 @@ permissions:
   issues: write
 
 jobs:
-  train:
-    name: Weekly Train
+  gate:
+    name: Select and gate the candidate
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 60
     outputs:
       candidate: ${{ steps.select.outputs.candidate }}
-      tag: ${{ steps.version.outputs.tag }}
-      fired: ${{ steps.fire.outputs.fired }}
-      verified: ${{ steps.confirm.outputs.verified }}
+      live: ${{ steps.select.outputs.live }}
+      ship: ${{ steps.select.outputs.ship }}
+      rc: ${{ steps.select.outputs.rc }}
+      dry: ${{ steps.select.outputs.dry }}
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
@@ -82,6 +94,7 @@ jobs:
           SWITCH: ${{ vars.WEEKLY_TRAIN }}
           FORCE: ${{ inputs.force }}
           DRY_RUN: ${{ inputs.dry_run }}
+          RC_ONLY: ${{ inputs.rc_only }}
         run: |
           set -euo pipefail
           skip() {
@@ -97,13 +110,15 @@ jobs:
             exit 0
           fi
 
-          if [ "$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]; then
-            skip "the repository variable WEEKLY_TRAIN is not \"on\"."
-          fi
+          if [ "$RC_ONLY" != "true" ]; then
+            if [ "$EVENT" = "schedule" ] && [ "$SWITCH" != "on" ]; then
+              skip "the repository variable WEEKLY_TRAIN is not \"on\"."
+            fi
 
-          holds=$(gh issue list --state open --label "release:hold" --json number --jq '[.[].number] | map("#" + tostring) | join(", ")')
-          if [ -n "$holds" ]; then
-            skip "open release:hold issue(s) $holds."
+            holds=$(gh issue list --state open --label "release:hold" --json number --jq '[.[].number] | map("#" + tostring) | join(", ")')
+            if [ -n "$holds" ]; then
+              skip "open release:hold issue(s) $holds."
+            fi
           fi
 
           live=$(curl -fsS --retry 3 "$SITE/api/version" | jq -r '.sha')
@@ -114,7 +129,7 @@ jobs:
           deadline=$(( $(date +%s) + 45 * 60 ))
           while :; do
             candidate=$(gh api "repos/$GH_REPO/commits/main" --jq '.sha')
-            if [ "$candidate" = "$live" ] && [ "$FORCE" != "true" ]; then
+            if [ "$candidate" = "$live" ] && [ "$FORCE" != "true" ] && [ "$RC_ONLY" != "true" ]; then
               skip "the live site already runs main HEAD ${candidate:0:7}."
             fi
             run=$(gh api -X GET "repos/$GH_REPO/commits/$candidate/check-runs" \
@@ -137,8 +152,14 @@ jobs:
           done
 
           echo "candidate=$candidate" >> "$GITHUB_OUTPUT"
-          echo "ship=true" >> "$GITHUB_OUTPUT"
-          echo "Candidate: \`$candidate\` (live: \`$live\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "rc=true" >> "$GITHUB_OUTPUT"
+          if [ "$RC_ONLY" = "true" ]; then
+            echo "ship=false" >> "$GITHUB_OUTPUT"
+            echo "Release candidate suite only: \`$candidate\`; nothing is drafted or deployed." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "ship=true" >> "$GITHUB_OUTPUT"
+            echo "Candidate: \`$candidate\` (live: \`$live\`)" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Checkout Code
         if: steps.select.outputs.ship == 'true'
@@ -177,11 +198,200 @@ jobs:
           fi
           exit "$status"
 
+  # #2536: PRs pass the browser suite before they merge, but a squash merge
+  # makes a new commit, and main push CI skips the browser jobs. Build the
+  # release candidate itself and run the full chromium suite against it before
+  # anything ships. These jobs mirror `build` and `heavy-gate` in ci.yml (same
+  # build entrypoint, bundle budgets, image and shards) rather than calling
+  # ci.yml, whose concurrency group and Merge Gate belong to PRs and pushes.
+  # They run untrusted-by-default package code, so they get a read-only token.
+  rc-build:
+    name: Release candidate build (bundle budgets)
+    needs: gate
+    if: needs.gate.outputs.rc == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.candidate }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      # Restore only, from the key cache-warm saves on every main push.
+      - name: Next.js Cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ github.workspace }}/.next/cache
+          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('app/**', 'components/**', 'lib/**', 'hooks/**', '*.config.*') }}
+          restore-keys: |
+            nextjs-${{ hashFiles('package-lock.json') }}-
+
+      # The same entrypoint Vercel runs. Off Vercel, scripts/build.js never
+      # migrates, and the dead-end DATABASE_URL makes static generation fall
+      # back exactly as ci.yml's `build` job does.
+      - name: Build Production
+        run: npm run build
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+
+      - name: Verify Bundle Performance Budgets
+        run: npm run analyze:bundle -- --strict
+
+      - name: Upload Release Candidate Build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release-candidate-build
+          path: |
+            .next/
+            !.next/cache/
+            !**/.env*
+            public/sw.js
+            public/sw.js.map
+            public/garmin-engine.js
+            public/monkey-c-mayhem.js
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  rc-browser:
+    name: Release candidate browser suite (chromium shard ${{ matrix.shard }}/3)
+    needs: [gate, rc-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    # The Playwright image pinned by digest to the locked @playwright/test
+    # (__tests__/ci-toolchain-pinning.test.ts checks every workflow).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+      options: --user 1001 --ipc=host
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.candidate }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Theme and Prisma Schema (Pre-build steps)
+        run: |
+          npx --no-install tsx scripts/generate-theme.ts
+          npx --no-install prisma generate
+
+      - name: Download Release Candidate Build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-candidate-build
+
+      - name: Run the Playwright suite (chromium shard)
+        run: npx --no-install playwright test --project=chromium --shard=${{ matrix.shard }}/3 --reporter=github,blob
+        env:
+          DATABASE_URL: "postgresql://dummy:dummy@127.0.0.1:59999/dummy"
+          CRON_SECRET: "ci_placeholder_cron_secret"
+
+      - name: Upload Playwright Blob Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rc-playwright-blob-${{ matrix.shard }}
+          path: blob-report/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  # Nothing shipped, so no release:hold: next week's candidate gets a fresh
+  # suite. The issue makes sure a person sees the failure before then.
+  rc-failed:
+    name: Report a failed release candidate
+    needs: [gate, rc-build, rc-browser]
+    if: always() && needs.gate.outputs.ship == 'true' && (needs.rc-build.result == 'failure' || needs.rc-browser.result == 'failure')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      CANDIDATE: ${{ needs.gate.outputs.candidate }}
+      BUILD: ${{ needs.rc-build.result }}
+      BROWSER: ${{ needs.rc-browser.result }}
+      OWNER: ${{ github.repository_owner }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Open an issue
+        run: |
+          set -euo pipefail
+          body=$(cat <<EOF
+          The weekly train stopped before deploying: the release candidate \`$CANDIDATE\` failed its own tests. Production is unchanged and no GitHub Release was drafted.
+
+          - Release candidate build: $BUILD
+          - Release candidate browser suite: $BROWSER
+          - Run: $RUN_URL
+
+          Fix the failure on \`main\`. The next weekly run tests the new HEAD; to release sooner, use Run workflow.
+          EOF
+          )
+          gh issue create --title "ops(release): release candidate ${CANDIDATE:0:7} failed its browser suite" \
+            --assignee "$OWNER" --body "$body"
+
+  train:
+    name: Weekly Train
+    needs: [gate, rc-browser]
+    if: always() && (needs.gate.outputs.dry == 'true' || (needs.gate.outputs.ship == 'true' && needs.rc-browser.result == 'success'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      candidate: ${{ needs.gate.outputs.candidate }}
+      tag: ${{ steps.version.outputs.tag }}
+      fired: ${{ steps.fire.outputs.fired }}
+      verified: ${{ steps.confirm.outputs.verified }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      SITE: "https://deruiter.dev"
+
+    steps:
+      - name: Checkout Code
+        if: needs.gate.outputs.ship == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.gate.outputs.candidate }}
+          fetch-depth: 0
+          persist-credentials: false
+
       - name: Draft the versioned GitHub Release
         id: version
-        if: steps.select.outputs.ship == 'true'
+        if: needs.gate.outputs.ship == 'true'
         env:
-          CANDIDATE: ${{ steps.select.outputs.candidate }}
+          CANDIDATE: ${{ needs.gate.outputs.candidate }}
           OVERRIDE: ${{ inputs.version }}
         run: |
           set -euo pipefail
@@ -245,10 +455,10 @@ jobs:
 
       - name: Fire the Vercel Deploy Hook
         id: fire
-        if: steps.select.outputs.ship == 'true'
+        if: needs.gate.outputs.ship == 'true'
         env:
           HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_MAIN }}
-          CANDIDATE: ${{ steps.select.outputs.candidate }}
+          CANDIDATE: ${{ needs.gate.outputs.candidate }}
         run: |
           set -euo pipefail
           if [ -z "$HOOK" ]; then
@@ -259,7 +469,7 @@ jobs:
           # HEAD is still the commit the Release was drafted for.
           head=$(gh api "repos/$GH_REPO/commits/main" --jq '.sha')
           if [ "$head" != "$CANDIDATE" ]; then
-            echo "::error::main moved to ${head:0:7} after its gate passed for ${CANDIDATE:0:7}; run the workflow again."
+            echo "::error::main moved to ${head:0:7} while the release candidate ${CANDIDATE:0:7} was being tested, and the hook can only build HEAD; nothing shipped. Run the workflow again."
             exit 1
           fi
           curl -fsS --retry 3 -X POST "$HOOK" -o /dev/null
@@ -268,10 +478,10 @@ jobs:
 
       - name: Confirm the release is live
         id: confirm
-        if: steps.fire.outputs.fired == 'true' || steps.select.outputs.dry == 'true'
+        if: steps.fire.outputs.fired == 'true' || needs.gate.outputs.dry == 'true'
         env:
-          CANDIDATE: ${{ steps.select.outputs.candidate }}
-          DRY: ${{ steps.select.outputs.dry }}
+          CANDIDATE: ${{ needs.gate.outputs.candidate }}
+          DRY: ${{ needs.gate.outputs.dry }}
         run: |
           set -euo pipefail
           if [ "$DRY" = "true" ]; then
@@ -294,8 +504,8 @@ jobs:
       - name: Hold the train after a failed release
         if: failure() && steps.fire.outputs.fired == 'true'
         env:
-          CANDIDATE: ${{ steps.select.outputs.candidate }}
-          LIVE: ${{ steps.select.outputs.live }}
+          CANDIDATE: ${{ needs.gate.outputs.candidate }}
+          LIVE: ${{ needs.gate.outputs.live }}
           TAG: ${{ steps.version.outputs.tag }}
           OWNER: ${{ github.repository_owner }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

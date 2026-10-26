@@ -281,6 +281,10 @@ describe("central statistical monitoring (#2631)", () => {
     expect(tests).toContain("csm-entry-hour");
     // It reports a tenth of its peers' adverse events (#2956).
     expect(tests).toContain("csm-ae-under-reporting");
+    // It rounds blood pressure and pulse to 0 or 5, and its subjects'
+    // readings barely move from visit to visit (#2957).
+    expect(tests).toContain("csm-vs-digit-preference");
+    expect(tests).toContain("csm-vs-low-variability");
     expect(tests.length).toBeGreaterThanOrEqual(2);
     const hour = runs
       .get("DEMO-302")!
@@ -288,6 +292,62 @@ describe("central statistical monitoring (#2631)", () => {
         (r) => r.siteId === integritySite && r.testId === "csm-entry-hour"
       )!;
     expect(hour.detail).toMatch(/^(\d+) of \1 entries in the 17:00 UTC hour/);
+    const digits = runs
+      .get("DEMO-302")!
+      .results.find(
+        (r) =>
+          r.siteId === integritySite && r.testId === "csm-vs-digit-preference"
+      )!;
+    expect(digits.detail).toMatch(
+      /^(\d+) of \1 blood pressure and pulse readings end in 0 or 5, against 20%/
+    );
+    const spread = runs
+      .get("DEMO-302")!
+      .results.find(
+        (r) =>
+          r.siteId === integritySite && r.testId === "csm-vs-low-variability"
+      )!;
+    expect(spread.statistic).toBeLessThan(0.3);
+  });
+
+  it("does not test vital signs where the study's readings stay in the Study Data Pipeline (#2957)", () => {
+    const run = centralMonitoring(warehouse, "DEMO-301");
+    const vitals = (r: { testId: string | null }) =>
+      r.testId === "csm-vs-digit-preference" ||
+      r.testId === "csm-vs-low-variability";
+    expect(run.results.filter(vitals)).toEqual([]);
+    const excluded = run.excluded.filter(vitals);
+    expect(excluded).toHaveLength(run.sites.length * 2);
+    expect(new Set(excluded.map((e) => e.reason))).toEqual(
+      new Set([
+        "0 blood pressure and pulse readings; the digit test needs 50, 5 for each last digit.",
+        "0 repeat vital sign readings within subjects; the variability test needs 10.",
+      ])
+    );
+  });
+
+  it("leaves the variability test out, saying why, when no subject has a second visit (#2957)", () => {
+    // Keep each subject's first visit only: no subject has a repeat reading.
+    const seen = new Set<unknown>();
+    const firstOnly = warehouse.tables["gold.fct_vital_sign"].filter((v) => {
+      if (seen.has(v.subject_id)) return false;
+      seen.add(v.subject_id);
+      return true;
+    });
+    const firstVisits: typeof warehouse = {
+      ...warehouse,
+      tables: { ...warehouse.tables, "gold.fct_vital_sign": firstOnly },
+    };
+    const run = centralMonitoring(firstVisits, "DEMO-302");
+    expect(run.results.some((r) => r.testId === "csm-vs-low-variability")).toBe(
+      false
+    );
+    const reasons = run.excluded.filter(
+      (e) => e.testId === "csm-vs-low-variability"
+    );
+    expect(reasons.map((e) => e.siteId)).toEqual(run.sites);
+    for (const e of reasons)
+      expect(e.reason).toMatch(/^0 repeat vital sign readings within subjects/);
   });
 
   it("does not test adverse events where the study's events stay in the Study Data Pipeline (#2956)", () => {
@@ -329,6 +389,8 @@ describe("central statistical monitoring (#2631)", () => {
           "csm-ae-under-reporting",
           "csm-exact-day-visits",
           "csm-entry-hour",
+          "csm-vs-digit-preference",
+          "csm-vs-low-variability",
         ])
       );
     }

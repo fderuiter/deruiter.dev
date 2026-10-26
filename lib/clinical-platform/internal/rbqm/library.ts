@@ -198,6 +198,34 @@ export const CSM_TESTS: readonly CsmTestDefinition[] = [
     reads: ["gold.fct_visit.entry_hour"],
   },
   {
+    id: "csm-vs-digit-preference",
+    name: "Rounded vital signs",
+    question:
+      "Do the site's blood pressure and pulse readings end in some digits more than chance allows?",
+    method:
+      "Upper tail of a chi-square goodness of fit: the last digits of the site's systolic and diastolic pressure and pulse readings against an even spread over 0 to 9, on 9 degrees of freedom. A site rounding to 0 or 5 leaves the other digits nearly empty.",
+    reads: [
+      "gold.fct_vital_sign.systolic_bp_mmhg",
+      "gold.fct_vital_sign.diastolic_bp_mmhg",
+      "gold.fct_vital_sign.pulse_bpm",
+    ],
+  },
+  {
+    id: "csm-vs-low-variability",
+    name: "Vital signs that barely vary",
+    question:
+      "Do the site's subjects' vital signs vary less from visit to visit than its peers' subjects' do?",
+    method:
+      "Lower tail of an F test: each sign's within-subject sum of squares, scaled by the peers' pooled within-subject variance for that sign, pooled across signs over the site's within-subject degrees of freedom, against the peers' degrees of freedom.",
+    reads: [
+      "gold.fct_vital_sign.systolic_bp_mmhg",
+      "gold.fct_vital_sign.diastolic_bp_mmhg",
+      "gold.fct_vital_sign.pulse_bpm",
+      "gold.fct_vital_sign.weight_kg",
+      "gold.fct_vital_sign.subject_id",
+    ],
+  },
+  {
     id: "csm-kri-profile",
     name: "Unusual KRI profile",
     question:

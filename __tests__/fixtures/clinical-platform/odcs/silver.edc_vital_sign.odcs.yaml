@@ -1,0 +1,166 @@
+# ODCS v3.2.0 data contract for silver.edc_vital_sign. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+apiVersion: v3.2.0
+kind: DataContract
+id: "clinical-platform/silver.edc_vital_sign"
+name: "EDC vital signs"
+version: "1.0.0"
+status: active
+domain: EDC
+tags:
+  - silver
+  - confidential
+  - personal-health-data
+  - synthetic
+description:
+  purpose: "EDC vital signs, one reading of each sign at each entered visit (#2957)."
+  limitations: "Synthetic data for demonstration. Every study, site, subject and vendor is fictional."
+schema:
+  - id: edc_vital_sign
+    name: edc_vital_sign
+    physicalName: silver.edc_vital_sign
+    physicalType: table
+    logicalType: object
+    description: "EDC vital signs, one reading of each sign at each entered visit (#2957)."
+    dataGranularityDescription: "One row per visit and vital sign."
+    properties:
+      - name: vital_sign_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Reading id: the visit record id and the test code."
+        required: true
+        primaryKey: true
+        primaryKeyPosition: 1
+        classification: confidential
+      - name: visit_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Visit record id the reading was taken at."
+        required: true
+        classification: confidential
+      - name: subject_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Subject id."
+        required: true
+        classification: confidential
+      - name: study_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Protocol id."
+        required: true
+        classification: internal
+      - name: site_id
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Site id."
+        required: true
+        classification: internal
+      - name: vs_test_code
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 8
+        physicalType: "VARCHAR(8)"
+        description: "SDTM VSTESTCD: SYSBP, DIABP, PULSE or WEIGHT."
+        required: true
+        classification: internal
+      - name: vs_value
+        logicalType: number
+        physicalType: "DECIMAL(6, 1)"
+        description: "The reading, in its unit."
+        required: true
+        classification: confidential
+      - name: vs_unit
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 16
+        physicalType: "VARCHAR(16)"
+        description: "Unit: mmHg, beats/min or kg."
+        required: true
+        classification: internal
+      - name: measured_on
+        logicalType: date
+        physicalType: DATE
+        description: "Date of the visit the reading was taken at."
+        required: true
+        classification: confidential
+      - name: source_system
+        logicalType: string
+        logicalTypeOptions:
+          maxLength: 64
+        physicalType: "VARCHAR(64)"
+        description: "Source system the record came from."
+        required: true
+        classification: internal
+      - name: is_synthetic
+        logicalType: boolean
+        physicalType: BOOLEAN
+        description: "Always true: the row describes synthetic data, nothing real."
+        required: true
+        classification: public
+    quality:
+      - id: edc_vital_sign_primary_key
+        type: library
+        metric: duplicateValues
+        arguments:
+          properties:
+            - vital_sign_id
+        mustBe: 0
+        dimension: uniqueness
+        description: "The primary key (vital_sign_id) identifies one row."
+team:
+  name: EDC
+  members:
+    - username: clinical-data-management-lead
+      name: "Clinical Data Management Lead"
+      role: owner
+    - username: clinical-data-steward
+      name: "Clinical Data Steward"
+      role: "data steward"
+slaProperties:
+  - id: latency
+    property: latency
+    value: 24
+    unit: h
+    driver: operational
+    description: "The latest load is at most 24 hours old when the data is read."
+  - id: completeness
+    property: completeness
+    value: 100
+    unit: percent
+    driver: operational
+    description: "Share of the values of required properties that are present."
+  - id: availability
+    property: availability
+    value: 99
+    unit: percent
+    driver: operational
+    description: "Share of time the product can be read."
+  - id: retention
+    property: retention
+    value: 25
+    unit: "y"
+    driver: regulatory
+    description: "Regulation (EU) No 536/2014, Article 58: the trial master file is archived for at least 25 years after the end of the trial."
+customProperties:
+  - property: dataClassification
+    value: confidential
+  - property: personalHealthData
+    value: true
+  - property: synthetic
+    value: true
+  - property: upstream
+    value:
+      - bronze.edc.vitalSigns
+  - property: consumers
+    value:
+      - "product:gold.fct_vital_sign"

@@ -1,0 +1,171 @@
+{
+  "default": [
+    "SD-031 sdtm SV DEMO-301-0006#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0007#7 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0008#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0008#7 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0012#7 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0016#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0019#7 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0023#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0025#3 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0029#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0029#5 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0032#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0042#5 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0050#7 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0052#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0055#3 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0056#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0057#4 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0068#6 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0075#3 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0075#6 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0076#7 SVSTDY",
+    "SD-031 sdtm SV DEMO-301-0090#4 SVSTDY",
+    "SD-033 sdtm AE DEMO-301-0027#1 AESTDTC",
+    "SD-033 sdtm AE DEMO-301-0034#1 AESTDTC",
+    "SD-033 sdtm AE DEMO-301-0035#1 AESTDTC",
+    "SD-033 sdtm AE DEMO-301-0059#1 AESTDTC",
+    "SD-033 sdtm AE DEMO-301-0084#1 AESTDTC",
+    "SD-033 sdtm AE DEMO-301-0087#1 AESTDTC",
+    "SD-034 sdtm AE DEMO-301-0018#1 AESTDY",
+    "SD-034 sdtm AE DEMO-301-0022#1 AESTDY",
+    "SD-034 sdtm AE DEMO-301-0057#1 AESTDY",
+    "SD-034 sdtm AE DEMO-301-0080#1 AESTDY",
+    "SD-034 sdtm AE DEMO-301-0083#1 AESTDY",
+    "SD-032 sdtm LB DEMO-301-0001#8 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0003#28 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0004#7 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0004#20 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0004#28 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0004#30 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0005#2 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0006#22 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0010#11 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0011#1 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0011#17 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0013#7 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0014#24 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0014#26 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0014#28 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0015#20 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0016#4 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0016#6 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0016#31 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0017#10 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0018#30 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0020#5 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0020#8 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0022#3 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0022#5 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0023#9 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0024#4 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0025#20 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0027#7 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0027#17 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0032#29 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0033#15 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0035#7 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0035#14 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0036#10 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0038#1 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0038#10 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0039#8 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0039#31 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0043#19 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0047#9 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0048#3 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0049#3 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0050#14 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0050#20 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0050#29 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0051#12 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0051#15 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0051#21 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0055#19 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0063#3 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0063#22 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0065#27 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0068#25 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0073#4 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0074#26 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0077#7 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0077#14 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0077#19 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0079#20 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0085#19 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0087#19 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0087#29 LBNRIND",
+    "SD-032 sdtm LB DEMO-301-0090#5 LBNRIND"
+  ],
+  "scenarios": {
+    "impossible-date": {
+      "added": ["SD-017 sdtm AE DEMO-301-0003#1 AESTDTC"],
+      "removed": []
+    },
+    "partial-end-date": {
+      "added": [],
+      "removed": []
+    },
+    "ae-before-first-dose": {
+      "added": ["SD-034 sdtm AE DEMO-301-0003#1 AESTDY"],
+      "removed": []
+    },
+    "missing-baseline": {
+      "added": [],
+      "removed": []
+    },
+    "no-post-baseline": {
+      "added": [],
+      "removed": []
+    },
+    "off-codelist-extensible": {
+      "added": ["SD-023 sdtm AE DEMO-301-0003#1 AEREL"],
+      "removed": []
+    },
+    "off-codelist-non-extensible": {
+      "added": ["SD-021 sdtm DM DEMO-301-0002#1 SEX"],
+      "removed": []
+    },
+    "duplicate-record": {
+      "added": ["SD-036 sdtm VS DEMO-301-0002#10 VSORRES"],
+      "removed": []
+    },
+    "unit-change": {
+      "added": ["SD-039 sdtm LB DEMO-301-0002#21 LBORRESU"],
+      "removed": []
+    },
+    "lab-retest-same-day": {
+      "added": [],
+      "removed": []
+    },
+    "unscheduled-visit-in-window": {
+      "added": [],
+      "removed": []
+    },
+    "rescreened-subject": {
+      "added": [
+        "SD-035 sdtm DM DEMO-301-0001#2 USUBJID",
+        "AD-002 adam ADSL DEMO-301-0001#2 USUBJID"
+      ],
+      "removed": []
+    },
+    "death-during-treatment": {
+      "added": [],
+      "removed": []
+    },
+    "withdrawal-before-week-12": {
+      "added": [],
+      "removed": []
+    },
+    "qtcf-outlier": {
+      "added": ["AD-014 adam ADEG DEMO-301-0002#19 CRIT1FL"],
+      "removed": []
+    },
+    "ecg-missing-rr": {
+      "added": ["AD-015 adam ADEG DEMO-301-0002#15 PARAMCD"],
+      "removed": []
+    }
+  }
+}

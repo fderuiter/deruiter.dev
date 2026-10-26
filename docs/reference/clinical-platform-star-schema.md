@@ -2,7 +2,7 @@
 
 <!-- Generated from WAREHOUSE_SCHEMA by scripts/generate-warehouse-artifacts.ts. Do not edit by hand. -->
 
-Schema version 1.8.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
+Schema version 1.9.0. Synthetic data for demonstration. Every study, site, subject and vendor is fictional.
 
 The silver and gold layers of the Clinical Data Platform
 ([ADR 0066](../../adr/0066-clinical-data-platform-architecture.md)),
@@ -189,6 +189,19 @@ erDiagram
     varchar severity
     boolean is_synthetic
   }
+  fct_vital_sign {
+    varchar visit_id PK
+    varchar subject_id
+    int study_key FK
+    int site_key FK
+    int country_key FK
+    int measured_date_key FK
+    int systolic_bp_mmhg
+    int diastolic_bp_mmhg
+    int pulse_bpm
+    decimal weight_kg
+    boolean is_synthetic
+  }
   fct_monitoring_visit {
     varchar monitoring_visit_id PK
     int study_key FK
@@ -293,6 +306,10 @@ erDiagram
   dim_country ||--o{ fct_adverse_event : "country_key"
   dim_date ||--o{ fct_adverse_event : "onset_date_key"
   dim_date ||--o{ fct_adverse_event : "reported_date_key"
+  dim_study ||--o{ fct_vital_sign : "study_key"
+  dim_site ||--o{ fct_vital_sign : "site_key"
+  dim_country ||--o{ fct_vital_sign : "country_key"
+  dim_date ||--o{ fct_vital_sign : "measured_date_key"
   dim_study ||--o{ fct_monitoring_visit : "study_key"
   dim_site ||--o{ fct_monitoring_visit : "site_key"
   dim_country ||--o{ fct_monitoring_visit : "country_key"
@@ -333,6 +350,7 @@ erDiagram
 | `fct_deviation` | One row per protocol deviation. | `deviation_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_cec_adjudication` | One row per event sent for adjudication. | `event_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_adverse_event` | One row per adverse event. | `ae_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
+| `fct_vital_sign` | One row per visit with vital signs. | `visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `dim_study`, `dim_site`, `dim_country`, `dim_date`, `dim_monitoring_plan` |
 | `fct_planned_monitoring_visit` | One row per planned interim monitoring visit: one per interim visit made, plus the next one due at each site still being monitored. | `planned_visit_id` | `dim_monitoring_plan`, `dim_study`, `dim_site`, `dim_country`, `dim_date` |
 | `fct_milestone` | One row per study and milestone kind. | `study_key`, `milestone_key` | `dim_study`, `dim_milestone`, `dim_date` |
@@ -369,6 +387,7 @@ keeps the earlier investigator.
 | `edc_visit` | One row per subject visit record. | `visit_id` | `bronze.edc.visits` |
 | `edc_query` | One row per query. | `query_id` | `bronze.edc.queries` |
 | `edc_adverse_event` | One row per adverse event. | `ae_id` | `bronze.edc.adverseEvents` |
+| `edc_vital_sign` | One row per visit and vital sign. | `vital_sign_id` | `bronze.edc.vitalSigns` |
 | `ctms_milestone` | One row per study and milestone kind. | `study_id`, `milestone_kind` | `bronze.ctms.milestones` |
 | `ctms_monitoring_plan` | One row per monitoring plan version. | `monitoring_plan_id` | `bronze.ctms.monitoringPlans` |
 | `ctms_monitoring_visit` | One row per monitoring visit. | `monitoring_visit_id` | `bronze.ctms.monitoringVisits` |
@@ -617,6 +636,24 @@ Adverse events with their onset, report and seriousness, for safety reporting an
 | `ae_term` | string | no |  | confidential | Reported term. |
 | `is_serious` | boolean | no |  | internal | Whether the event is serious (ICH E2A). |
 | `severity` | string | no |  | internal | Severity: mild, moderate or severe. |
+| `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
+
+## `gold.fct_vital_sign`
+
+Vital signs by visit, one column per sign, for central monitoring of how sites record them (#2957).
+
+| Column | Type | Null | Key | Classification | Description |
+| --- | --- | --- | --- | --- | --- |
+| `visit_id` | string | no | PK | confidential | Visit record id the signs were taken at (degenerate dimension). |
+| `subject_id` | string | no |  | confidential | Subject id (degenerate dimension). |
+| `study_key` | integer | no | FK to `gold.dim_study` | internal | Study. |
+| `site_key` | integer | no | FK to `gold.dim_site` | internal | Site version in force on the day of the visit. |
+| `country_key` | integer | no | FK to `gold.dim_country` | internal | Country of the site. |
+| `measured_date_key` | integer | no | FK to `gold.dim_date` | internal | Date the signs were taken. |
+| `systolic_bp_mmhg` | integer | yes |  | confidential | Systolic blood pressure (VSTESTCD SYSBP), in mmHg; null when not recorded. |
+| `diastolic_bp_mmhg` | integer | yes |  | confidential | Diastolic blood pressure (VSTESTCD DIABP), in mmHg; null when not recorded. |
+| `pulse_bpm` | integer | yes |  | confidential | Pulse rate (VSTESTCD PULSE), in beats/min; null when not recorded. |
+| `weight_kg` | decimal | yes |  | confidential | Weight (VSTESTCD WEIGHT), in kg; null when not recorded. |
 | `is_synthetic` | boolean | no |  | public | Always true: the row describes synthetic data, nothing real. |
 
 ## `gold.fct_monitoring_visit`

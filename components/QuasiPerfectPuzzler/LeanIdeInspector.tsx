@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { LeanProofStep, PuzzlerLevelDef } from "@/lib/quasi-perfect/types";
 import { tacticDefs } from "@/lib/quasi-perfect/tactics";
@@ -13,7 +13,6 @@ import {
   IconSparkles,
   IconRefresh,
   IconAlertTriangle,
-  IconAlertCircle,
   IconTerminal,
   IconDownload,
   IconFileExport,
@@ -21,6 +20,11 @@ import {
 import { downloadFile } from "@/lib/download";
 import { InlineCodeText } from "./InlineCodeText";
 import { downloadLeanSource, leanFileStem } from "./leanDownload";
+import {
+  simulateLeanCheck,
+  type LeanDiagnostic,
+  type LeanSimulationResult,
+} from "./leanSimulation";
 
 interface LeanIdeInspectorProps {
   level: PuzzlerLevelDef;
@@ -28,20 +32,12 @@ interface LeanIdeInspectorProps {
   isComplete: boolean;
 }
 
-interface DiagnosticItem {
-  line: number;
-  column?: number;
-  severity: "error" | "warning" | "info";
-  message: string;
-}
-
-interface ServerVerifyResult {
+interface IdleCheckResult {
   success: boolean;
-  status: "verified" | "error" | "in_progress" | "fallback_simulated" | "idle";
-  diagnostics: DiagnosticItem[];
-  goalState?: string;
-  executionTimeMs?: number;
-  engine?: "lean4_kernel" | "fallback_simulator";
+  status: "idle";
+  diagnostics: LeanDiagnostic[];
+  goalState: string;
+  engine?: undefined;
 }
 
 export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
@@ -52,25 +48,19 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
   const [activeTab, setActiveTab] = useState<"code" | "encyclopedia">("code");
   const [selectedTactic, setSelectedTactic] = useState<string>("rfl");
   const [isLiveSync, setIsLiveSync] = useState<boolean>(true);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-
-  const [verifyResult, setVerifyResult] = useState<ServerVerifyResult>({
-    success: true,
-    status: "idle",
-    diagnostics: [],
-  });
 
   const leanCode = generateLeanProofScript(level, steps, isComplete);
   const hasAdmittedStep = steps.some((step) => step.tacticId === "sorry");
 
-  const idleVerifyResult: ServerVerifyResult = {
+  const idleVerifyResult: IdleCheckResult = {
     success: !hasAdmittedStep,
     status: "idle",
     diagnostics: [],
     goalState: isComplete ? "Goals closed (Local)" : "Goal open",
   };
 
-  const effectiveVerifyResult = isLiveSync ? verifyResult : idleVerifyResult;
+  const effectiveVerifyResult: LeanSimulationResult | IdleCheckResult =
+    isLiveSync ? simulateLeanCheck(leanCode) : idleVerifyResult;
 
   const handleExportStepLog = () => {
     const { engine, status, success, diagnostics, goalState } =
@@ -110,81 +100,6 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
       { mimeType: "application/json" }
     );
   };
-
-  useEffect(() => {
-    if (!isLiveSync) return;
-
-    let isMounted = true;
-
-    const timer = setTimeout(async () => {
-      if (isMounted) setIsSyncing(true);
-      try {
-        const res = await fetch("/api/quasi-perfect/lean-verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            theoremName: level.leanTheoremName || "custom_theorem",
-            typeSignature: level.leanTypeSignature,
-            leanScript: leanCode,
-            proofSteps: steps.map((s) => ({
-              id: s.id,
-              tacticId: s.tacticId,
-              leanLine: s.leanLine,
-              goalBefore: s.goalBefore,
-              goalAfter: s.goalAfter,
-            })),
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-
-        const data = await res.json();
-        if (isMounted) {
-          setVerifyResult({
-            success: Boolean(data.success),
-            status: data.status || "fallback_simulated",
-            diagnostics: data.diagnostics || [],
-            goalState:
-              data.goalState || (isComplete ? "Goals closed ✔" : "Goal open"),
-            executionTimeMs: data.executionTimeMs,
-            engine: data.engine,
-          });
-        }
-      } catch {
-        if (isMounted) {
-          // Graceful fallback simulation if API endpoint fails
-          const lines = leanCode.split("\n");
-          const fallbackDiagnostics: DiagnosticItem[] = [];
-          lines.forEach((line, idx) => {
-            if (line.trim().startsWith("sorry")) {
-              fallbackDiagnostics.push({
-                line: idx + 1,
-                severity: "warning",
-                message: "Goal admitted via sorry axiom (Fallback)",
-              });
-            }
-          });
-
-          setVerifyResult({
-            success: !hasAdmittedStep,
-            status: "fallback_simulated",
-            diagnostics: fallbackDiagnostics,
-            goalState: isComplete ? "Goals closed (Fallback)" : "Goal open",
-            engine: "fallback_simulator",
-          });
-        }
-      } finally {
-        if (isMounted) setIsSyncing(false);
-      }
-    }, 300);
-
-    return () => {
-      isMounted = false;
-      clearTimeout(timer);
-    };
-  }, [leanCode, isLiveSync, level, steps, isComplete, hasAdmittedStep]);
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-950 p-4 font-mono shadow-lg space-y-3">
@@ -230,9 +145,7 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
                   : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-zinc-200"
               }`}
             >
-              <IconRefresh
-                className={`w-3.5 h-3.5 ${isSyncing ? "animate-spin text-emerald-400" : ""}`}
-              />
+              <IconRefresh className="w-3.5 h-3.5" />
               <span>Live Lean 4 Sync: {isLiveSync ? "ON" : "OFF"}</span>
             </button>
 
@@ -277,34 +190,14 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
           <div className="flex items-center justify-between text-xs bg-zinc-900/80 p-2.5 rounded-xl border border-zinc-800 flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <span className="text-zinc-400 font-bold">Kernel Status:</span>
-              {isSyncing ? (
-                <span className="qp-text-accent-strong font-bold flex items-center gap-1">
-                  <IconRefresh className="w-3.5 h-3.5 animate-spin" />{" "}
-                  Verifying...
-                </span>
-              ) : effectiveVerifyResult.status === "verified" ? (
-                <span className="text-emerald-400 font-bold flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30">
-                  <IconCheck className="w-3.5 h-3.5" /> Lean 4 Verified
-                </span>
-              ) : effectiveVerifyResult.status === "fallback_simulated" ? (
+              {effectiveVerifyResult.status === "fallback_simulated" ? (
                 <span className="text-amber-300 font-bold flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
                   <IconAlertTriangle className="w-3.5 h-3.5" /> Fallback
                   Simulation Active
                 </span>
-              ) : effectiveVerifyResult.status === "error" ? (
-                <span className="text-rose-400 font-bold flex items-center gap-1 px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/30">
-                  <IconAlertCircle className="w-3.5 h-3.5" /> Kernel
-                  Verification Error
-                </span>
               ) : (
                 <span className="text-zinc-400 font-semibold">
                   Local Uncompiled
-                </span>
-              )}
-
-              {effectiveVerifyResult.executionTimeMs !== undefined && (
-                <span className="text-[10px] text-zinc-400">
-                  ({effectiveVerifyResult.executionTimeMs}ms)
                 </span>
               )}
             </div>
@@ -367,7 +260,9 @@ export const LeanIdeInspector: React.FC<LeanIdeInspectorProps> = ({
             <div className="flex items-center justify-between text-[10px] text-zinc-400 mb-2 border-b border-zinc-800/80 pb-1.5">
               <span>
                 Main.lean ·{" "}
-                {isLiveSync ? "Lean 4 Server Connected" : "Local Generator"}
+                {isLiveSync
+                  ? "Simulated Lean check (no kernel)"
+                  : "Local Generator"}
               </span>
               <span>
                 {hasAdmittedStep

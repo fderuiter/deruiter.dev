@@ -38,8 +38,6 @@ import {
   VersionResponseSchema,
   QStashRetryPayloadSchema,
   QStashRetryResponseSchema,
-  QuasiPerfectLeanVerifySchema,
-  QuasiPerfectLeanVerifyResponseSchema,
 } from "../lib/schemas";
 
 // Helper to recursively find API route files
@@ -1568,45 +1566,6 @@ export const openApiSpec = {
         },
       },
     },
-    "/api/quasi-perfect/lean-verify": {
-      post: {
-        summary: "Verify Lean 4 theorem script or simulate local proof state",
-        description:
-          "Accepts theorem AST and proof steps to execute against Lean 4 server or local fallback simulator.",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                $ref: "#/components/schemas/QuasiPerfectLeanVerify",
-              },
-            },
-          },
-        },
-        responses: {
-          200: {
-            description: "Verification results with structured diagnostics",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/QuasiPerfectLeanVerifyResponse",
-                },
-              },
-            },
-          },
-          400: {
-            description: "Invalid request payload",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ValidationError",
-                },
-              },
-            },
-          },
-        },
-      },
-    },
   },
   components: {
     securitySchemes: {
@@ -1660,10 +1619,6 @@ export const openApiSpec = {
       VersionResponse: zodToOpenApi(VersionResponseSchema),
       QStashRetryPayload: zodToOpenApi(QStashRetryPayloadSchema),
       QStashRetryResponse: zodToOpenApi(QStashRetryResponseSchema),
-      QuasiPerfectLeanVerify: zodToOpenApi(QuasiPerfectLeanVerifySchema),
-      QuasiPerfectLeanVerifyResponse: zodToOpenApi(
-        QuasiPerfectLeanVerifyResponseSchema
-      ),
     },
   },
 };

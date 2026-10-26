@@ -195,12 +195,19 @@ const SPECS: Record<SubjectDomain, DomainSpec> = {
   SV: {
     label: "Subject Visits",
     class: "Special Purpose",
-    structure: "One record per actual visit per subject",
+    structure: "One record per actual or planned visit per subject",
     keys: ["STUDYID", "USUBJID", "VISITNUM"],
     columns: [
       ...COMMON,
       SV_VISITNUM,
       SV_VISIT,
+      derived(
+        "SVPRESP",
+        "Pre-specified",
+        "PLANNED_VISIT",
+        "Variable Qualifier"
+      ),
+      derived("SVOCCUR", "Occurrence", "VISIT_OCCURRED", "Record Qualifier"),
       collected("SVSTDTC", "Start Date of Visit", "SV.SVDTC", "Timing", "date"),
       collected("SVENDTC", "End Date of Visit", "SV.SVDTC", "Timing", "date"),
       derived(
@@ -792,10 +799,13 @@ export function deriveSubjectDomains(
   });
   const sv = get("SV").map((record) => {
     const ex = exBySubject.get(text(record.USUBJID));
+    const planned = plannedVisits.has(num(record.VISITNUM));
     return item(
       {
         ...common(record.USUBJID, "SV"),
         ...visit(record),
+        SVPRESP: planned ? "Y" : null,
+        SVOCCUR: planned ? (record.SVDTC ? "Y" : "N") : null,
         SVSTDTC: record.SVDTC,
         SVENDTC: record.SVDTC,
         SVSTDY: day(record.SVDTC, ex?.EXSTDTC ?? null),

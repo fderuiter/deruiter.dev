@@ -344,6 +344,7 @@ describe("business glossary", () => {
       "randomisation-term",
       "early-termination-term",
       "site-activation-term",
+      "event-adjudication-term",
       "visit-window-term",
       "missed-visit-term",
       "data-query-term",
@@ -554,10 +555,21 @@ describe("data catalog search and facets", () => {
         "query_resolution_time_median",
       ])
     );
+    // The safety lead owns the adjudication feed, its fact and its metrics
+    // (#2881).
     expect(search({ text: "medical safety" })).toEqual([
       "silver.cec_adjudication",
+      "gold.fct_cec_adjudication",
+      "cec_events_reported",
+      "cec_events_adjudicated",
+      "cec_adjudication_backlog",
+      "cec_adjudication_time_median",
     ]);
-    expect(search({ text: "Database lock" })).toEqual(["lplv_to_dbl_days"]);
+    // The backlog says why a waiting event matters: it holds up the lock.
+    expect(search({ text: "Database lock" })).toEqual([
+      "cec_adjudication_backlog",
+      "lplv_to_dbl_days",
+    ]);
     expect(search({ text: "eTMF documents" })).toEqual([
       "silver.etmf_document",
     ]);

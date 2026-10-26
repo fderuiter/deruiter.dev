@@ -490,6 +490,54 @@ table 'Governed Metrics'
 
 		annotation MetricStatus = certified
 
+	/// Events sites reported to the clinical events committee by the data cut. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: events.
+	measure 'Events sent for adjudication' =
+			COUNTROWS('fct_cec_adjudication') + 0
+		formatString: #,0
+		displayFolder: Event adjudication
+
+		annotation MetricId = cec_events_reported
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Reported events the clinical events committee had adjudicated by the data cut. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: events.
+	measure 'Events adjudicated' =
+			COUNTROWS(FILTER('fct_cec_adjudication', NOT ISBLANK('fct_cec_adjudication'[adjudicated_date_key]))) + 0
+		formatString: #,0
+		displayFolder: Event adjudication
+
+		annotation MetricId = cec_events_adjudicated
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Reported events the clinical events committee had not adjudicated by the data cut. Closed studies are counted too, because an event still waiting holds up database lock. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: events.
+	measure 'Events awaiting adjudication' =
+			COUNTROWS(FILTER('fct_cec_adjudication', ISBLANK('fct_cec_adjudication'[adjudicated_date_key]))) + 0
+		formatString: #,0
+		displayFolder: Event adjudication
+
+		annotation MetricId = cec_adjudication_backlog
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
+	/// Median calendar days from the site's report of an event to its adjudication by the clinical events committee, over events adjudicated by the data cut. Version 1.0.0, certified. Owner: Medical Safety Lead. Steward: Safety Data Steward. Unit: days.
+	measure 'Time to adjudication (median)' =
+			MEDIANX(FILTER('fct_cec_adjudication', NOT ISBLANK('fct_cec_adjudication'[adjudicated_date_key])), DATEDIFF(DATE(QUOTIENT('fct_cec_adjudication'[reported_date_key], 10000), MOD(QUOTIENT('fct_cec_adjudication'[reported_date_key], 100), 100), MOD('fct_cec_adjudication'[reported_date_key], 100)), DATE(QUOTIENT('fct_cec_adjudication'[adjudicated_date_key], 10000), MOD(QUOTIENT('fct_cec_adjudication'[adjudicated_date_key], 100), 100), MOD('fct_cec_adjudication'[adjudicated_date_key], 100)), DAY))
+		formatString: #,0.0
+		displayFolder: Event adjudication
+
+		annotation MetricId = cec_adjudication_time_median
+
+		annotation MetricVersion = 1.0.0
+
+		annotation MetricStatus = certified
+
 	/// Days from the first subject's enrollment to the last subject's in one study: the enrollment period. A study that has not reached both milestones has no value. Defined per study: slice by one study. Version 1.0.0, certified. Owner: Portfolio Management Lead. Steward: Portfolio Data Steward. Unit: days.
 	measure 'First subject in to last subject in' =
 			IF(

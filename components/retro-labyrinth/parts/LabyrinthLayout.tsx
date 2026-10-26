@@ -211,6 +211,9 @@ export function LabyrinthLayout({
   // A landscape tablet frames the maze with a column each side: the route
   // and the d-pad on the left, the objective and the tools on the right.
   const tabletLandscape = phoneCabinet && !phoneDevice && !portraitView;
+  // A portrait tablet puts the route, the objective and the boss bar under
+  // the maze and the room status, in the room the docks leave (#2861).
+  const tabletPortrait = phoneCabinet && !phoneDevice && portraitView;
   // Key numbers are keyboard hints, so they show only while a keyboard is in use.
   const showKeyHints = useInputModality() === "keyboard";
   const resumeHint = useControlHint(RESUME_HINT);
@@ -1396,12 +1399,17 @@ export function LabyrinthLayout({
           )}
         </div>
       )}
-      <span className={`${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}>
-        {empWeapon && empWeapon.maxAmmo >= 999
-          ? `EMP ∞ · ${empWeapon.ramCost ?? 0} RAM`
-          : `EMP ${empWeapon?.ammo ?? 0}/${empWeapon?.maxAmmo ?? 0}`}
-        {dronesStunned ? " · stunned" : ""}
-      </span>
+      {/* Portrait shows EMP in the room status above this card. */}
+      {!tabletPortrait && (
+        <span
+          className={`${dronesStunned ? "text-cyan-300" : "text-amber-300"}`}
+        >
+          {empWeapon && empWeapon.maxAmmo >= 999
+            ? `EMP ∞ · ${empWeapon.ramCost ?? 0} RAM`
+            : `EMP ${empWeapon?.ammo ?? 0}/${empWeapon?.maxAmmo ?? 0}`}
+          {dronesStunned ? " · stunned" : ""}
+        </span>
+      )}
       {phoneToast && (
         <p className="line-clamp-2 text-amber-200" aria-hidden="true">
           {phoneToast.text}
@@ -1545,7 +1553,19 @@ export function LabyrinthLayout({
           </TouchControlsGate>
         )
       }
-      status={phoneRoomPanel}
+      status={
+        tabletPortrait ? (
+          <div className="flex min-h-0 flex-col gap-2">
+            {phoneRoomPanel}
+            <div className="grid min-h-0 grid-cols-2 gap-2">
+              {tabletRouteCard}
+              {tabletObjectiveCard}
+            </div>
+          </div>
+        ) : (
+          phoneRoomPanel
+        )
+      }
       actionDock={
         tabletLandscape ? (
           tabletActionColumn

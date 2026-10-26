@@ -367,7 +367,7 @@ export function ContactForm({
                 key={item}
                 type="button"
                 onClick={() => setIntent(item)}
-                className={`flex-1 min-w-[100px] px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all border text-center cursor-pointer min-h-[40px] flex items-center justify-center ${
+                className={`flex-1 min-w-[100px] px-3 py-2 rounded-xl text-xs font-mono font-bold uppercase tracking-wider transition-all border text-center cursor-pointer min-h-[40px] pointer-coarse:min-h-11 flex items-center justify-center ${
                   isSelected
                     ? "bg-amber-500/15 border-amber-400/60 text-amber-300"
                     : "bg-[#0d0e11] border-white/10 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700"
@@ -479,7 +479,7 @@ export function ContactForm({
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-amber-400 text-zinc-950 font-mono font-bold text-xs hover:bg-amber-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 pointer-coarse:min-h-11 rounded-xl bg-amber-400 text-zinc-950 font-mono font-bold text-xs hover:bg-amber-300 active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer"
         >
           {status === "submitting" ? (
             <>

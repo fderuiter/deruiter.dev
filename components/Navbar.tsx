@@ -242,7 +242,7 @@ export const Navbar: React.FC = () => {
             href="/"
             onClick={(e) => handleNavClick(e, "/#hero")}
             onMouseEnter={handleLinkHover}
-            className="group flex min-h-6 items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground cursor-pointer focus-visible:ring-2 focus-visible:ring-accent rounded-md shrink-0"
+            className="group flex min-h-6 pointer-coarse:min-h-11 items-center gap-2.5 font-mono text-sm tracking-widest font-extrabold text-foreground cursor-pointer focus-visible:ring-2 focus-visible:ring-accent rounded-md shrink-0"
             aria-label="FDERUITER, Frederick de Ruiter home page"
           >
             <span className="relative flex h-2 w-2">

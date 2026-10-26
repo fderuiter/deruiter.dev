@@ -46,9 +46,12 @@ import {
  * #2880: `silver.site` gained the three CTMS start-up stages, and
  * `gold.dim_site` those plus `initiated_on` and `first_subject_in_on`. With
  * those five columns left out the hash is the previous golden, e4bd17a7.
+ *
+ * #2881: `gold.fct_cec_adjudication` is new. With that table left out the
+ * hash is the previous golden, 14ee6464, so no other value moved.
  */
 const GOLDEN_SHA256 =
-  "14ee64649dc2efefae2a148aa78dbbc1b7aeba425dedea72b70f405bc5b41deb";
+  "6922ab5e70fb0c38632a1c3484c31c623850d3be45554aac0a74657cb580b052";
 
 /** Rows per table for the default seed: the readable half of the golden. */
 const GOLDEN_ROW_COUNTS = {
@@ -80,6 +83,7 @@ const GOLDEN_ROW_COUNTS = {
   "gold.fct_visit": 7727,
   "gold.fct_query": 3559,
   "gold.fct_deviation": 329,
+  "gold.fct_cec_adjudication": 39,
   "gold.fct_monitoring_visit": 1123,
   "gold.fct_planned_monitoring_visit": 1077,
   "gold.fct_milestone": 72,
@@ -226,6 +230,51 @@ describe("buildWarehouse: integrity", () => {
         table: "gold.dim_site",
         message: expect.stringMatching(
           /^irb_approved_on = "\d{4}-\d{2}-\d{2}" without contracted_on on or before it \(null\)\.$/
+        ),
+      },
+    ]);
+  });
+
+  it("keeps one adjudication fact per event, from the committee's own dates (#2881)", () => {
+    const events = rows("silver.cec_adjudication");
+    const facts = new Map(
+      rows("gold.fct_cec_adjudication").map((f) => [f.event_id, f])
+    );
+    expect(facts.size).toBe(events.length);
+    const key = (day: unknown) =>
+      typeof day === "string" ? Number(day.replaceAll("-", "")) : null;
+    const studyKeys = new Map(
+      rows("gold.dim_study").map((s) => [s.study_key, s])
+    );
+    for (const event of events) {
+      const fact = facts.get(event.event_id)!;
+      const id = String(event.event_id);
+      expect(studyKeys.get(fact.study_key)?.has_cec_adjudication, id).toBe(
+        true
+      );
+      expect(fact.occurred_date_key, id).toBe(key(event.occurred_on));
+      expect(fact.reported_date_key, id).toBe(key(event.reported_on));
+      expect(fact.adjudicated_date_key, id).toBe(key(event.adjudicated_on));
+      expect(fact.days_to_adjudicate === null, id).toBe(
+        event.adjudicated_on === null
+      );
+    }
+  });
+
+  it("reports an event adjudicated before it was reported (#2881)", () => {
+    const early = rows("silver.cec_adjudication").map((event, index) =>
+      index === 0 ? { ...event, adjudicated_on: "2000-01-01" } : event
+    );
+    const findings = checkWarehouse(WAREHOUSE_SCHEMA, {
+      ...warehouse,
+      tables: { ...warehouse.tables, "silver.cec_adjudication": early },
+    });
+    expect(findings).toEqual([
+      {
+        rule: "sequence",
+        table: "silver.cec_adjudication",
+        message: expect.stringMatching(
+          /^adjudicated_on = "2000-01-01" without reported_on on or before it \("\d{4}-\d{2}-\d{2}"\)\.$/
         ),
       },
     ]);

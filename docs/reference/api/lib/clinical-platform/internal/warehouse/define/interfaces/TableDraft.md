@@ -70,7 +70,7 @@ Default classification of the table's columns.
 
 > `readonly` `optional` **sequences?**: readonly (readonly `string`[])[]
 
-Date columns reached in order. Default none.
+Date or date-key columns reached in order. Default none.
 
 ***
 
